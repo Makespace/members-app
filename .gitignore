@@ -1,1 +1,7 @@
 .idea
+
+# Used for local files that should not be committed.
+/.local_admin/*
+
+# Put your public IP here, but make sure not to commit it.
+google-cloud-sql/IP_ranges/me.txt
