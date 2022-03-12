@@ -5,7 +5,7 @@ import {checkYourMailPage} from './check-your-mail-page';
 import {invalidEmailPage} from './invalid-email-page';
 import {landingPage} from './landing-page';
 import * as E from 'fp-ts/Either';
-import * as t from 'io-ts';
+import {sendMemberNumberByEmail} from './send-member-number-by-email';
 
 const app: Application = express();
 const port = 8080;
@@ -24,14 +24,9 @@ app.get('/check-your-mail', (req: Request, res: Response) => {
 app.use('/static', express.static(path.resolve(__dirname, './static')));
 
 app.post('/send-member-number-by-email', (req: Request, res: Response) => {
-  const sendMemberNumberByEmailParams = t.type({
-    email: t.string,
-  });
-
   pipe(
     req.body,
-    sendMemberNumberByEmailParams.decode,
-    E.map(() => 'foo'),
+    sendMemberNumberByEmail,
     E.matchW(
       () => res.status(400).send(invalidEmailPage),
       email => res.redirect(`/check-your-mail?email=${email}`)
