@@ -1,24 +1,14 @@
-console.log('Try npm run lint/fix!');
+import express, {Application, Request, Response} from 'express';
 
-const longString =
-  'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ut aliquet diam.';
+const app: Application = express();
+const port = 8080;
 
-const trailing = 'Semicolon';
+app.get('/', (req: Request, res: Response) => {
+  res.status(200).send(`
+    <h1>Makespace Member Number Lookup</h1>
+  `);
+});
 
-const why = 'am I tabbed?';
-
-export function doSomeStuff(
-  withThis: string,
-  andThat: string,
-  andThose: string[]
-) {
-  //function on one line
-  if (!andThose.length) {
-    return false;
-  }
-  console.log(withThis);
-  console.log(andThat);
-  console.dir(andThose);
-  return;
-}
-// TODO: more examples
+app.listen(port, () =>
+  process.stdout.write(`Server is listening on port ${port}!\n`)
+);
