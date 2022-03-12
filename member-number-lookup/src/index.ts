@@ -6,6 +6,7 @@ import {invalidEmailPage} from './invalid-email-page';
 import {landingPage} from './landing-page';
 import * as E from 'fp-ts/Either';
 import {parseEmailAddressFromBody} from './parse-email-address-from-body';
+import PubSub from 'pubsub-js';
 
 const app: Application = express();
 const port = 8080;
@@ -18,6 +19,12 @@ app.get('/', (req: Request, res: Response) => {
 
 app.use('/static', express.static(path.resolve(__dirname, './static')));
 
+const logData = (topic: PubSubJS.Message, data: string) => {
+  console.log(`Received message on '${String(topic)}' topic: ${data}`);
+};
+
+PubSub.subscribe('send-member-number-to-email', logData);
+
 app.post(
   '/send-member-number-by-email',
   async (req: Request, res: Response) => {
@@ -26,7 +33,10 @@ app.post(
       parseEmailAddressFromBody,
       E.matchW(
         () => res.status(400).send(invalidEmailPage),
-        email => res.status(200).send(checkYourMailPage(email))
+        email => {
+          PubSub.publish('send-member-number-to-email', JSON.stringify(email));
+          res.status(200).send(checkYourMailPage(email));
+        }
       )
     );
   }
