@@ -23,7 +23,7 @@ export const invalidEmailPage = `
 		<body>
 			<h1>Whoops...</h1>
 
-			<p>You entered something that isn't a valid email address</p>
+			<p>You entered something that isn't a valid email address.</p>
 		</body>
 	</html>
 `;
