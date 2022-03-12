@@ -7,6 +7,7 @@ import {landingPage} from './landing-page';
 import * as E from 'fp-ts/Either';
 import {parseEmailAddressFromBody} from './parse-email-address-from-body';
 import PubSub from 'pubsub-js';
+import {sendMemberNumberToEmail} from './send-member-number-to-email.ts';
 
 const app: Application = express();
 const port = 8080;
@@ -20,10 +21,11 @@ app.get('/', (req: Request, res: Response) => {
 app.use('/static', express.static(path.resolve(__dirname, './static')));
 
 const logData = (topic: PubSubJS.Message, data: string) => {
-  console.log(`Received message on '${String(topic)}' topic: ${data}`);
+  console.log(`Received message. topic: '${String(topic)}' payload: ${data}`);
 };
 
 PubSub.subscribe('send-member-number-to-email', logData);
+PubSub.subscribe('send-member-number-to-email', sendMemberNumberToEmail);
 
 app.post(
   '/send-member-number-by-email',

@@ -1,0 +1,1 @@
+export const sendMemberNumberToEmail = () => undefined;
