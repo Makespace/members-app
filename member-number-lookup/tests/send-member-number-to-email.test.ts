@@ -4,21 +4,23 @@ import * as TE from 'fp-ts/TaskEither';
 import {Email} from '../src/email';
 
 describe('send-member-number-to-email', () => {
-  describe.skip('when the email can be uniquely linked to a member number', () => {
+  describe('when the email can be uniquely linked to a member number', () => {
     const email = faker.internet.email() as Email;
     const memberNumber = faker.datatype.number();
     const adapters = {
-      sendMemberNumberEmail: jest.fn(),
+      sendMemberNumberEmail: jest.fn(() => TE.right(undefined)),
       getMemberNumberForEmail: () => TE.right(memberNumber),
     };
 
-    sendMemberNumberToEmail(adapters)(email);
+    beforeEach(async () => {
+      await sendMemberNumberToEmail(adapters)(email);
+    });
 
     it('tries to send an email with the number', () => {
-      expect(adapters.sendMemberNumberEmail).toHaveBeenCalledWith([
+      expect(adapters.sendMemberNumberEmail).toHaveBeenCalledWith(
         email,
-        memberNumber,
-      ]);
+        memberNumber
+      );
     });
   });
 
