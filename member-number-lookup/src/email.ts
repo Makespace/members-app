@@ -1,4 +1,5 @@
 import * as t from 'io-ts';
+import isEmail from 'validator/lib/isEmail';
 
 type EmailBrand = {
   readonly Email: unique symbol;
@@ -6,7 +7,7 @@ type EmailBrand = {
 
 export const EmailCodec = t.brand(
   t.string,
-  (input): input is t.Branded<string, EmailBrand> => input !== '',
+  (input): input is t.Branded<string, EmailBrand> => isEmail(input),
   'Email'
 );
 

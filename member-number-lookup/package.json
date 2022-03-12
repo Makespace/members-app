@@ -11,7 +11,7 @@
   "keywords": [],
   "scripts": {
     "start": "ts-node-dev --transpile-only ./src/index.ts",
-    "test": "ts-jest",
+    "test": "jest",
     "lint": "gts lint",
     "clean": "gts clean",
     "compile": "tsc",
@@ -24,6 +24,7 @@
     "@types/express": "^4.17.13",
     "@types/jest": "^27.4.1",
     "@types/node": "^14.18.12",
+    "@types/validator": "^13.7.1",
     "@typescript-eslint/eslint-plugin": "^5.14.0",
     "eslint": "^8.11.0",
     "eslint-plugin-jest": "^26.1.1",
@@ -40,6 +41,7 @@
     "io-ts-reporters": "^2.0.1",
     "io-ts-types": "^0.5.16",
     "monocle-ts": "^2.3.12",
-    "newtype-ts": "^0.3.5"
+    "newtype-ts": "^0.3.5",
+    "validator": "^13.7.0"
   }
 }
