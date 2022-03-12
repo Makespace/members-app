@@ -6,9 +6,7 @@ type Ports = {
     email: Email,
     memberNumber: number
   ) => TE.TaskEither<string, void>;
-  getMemberNumberForEmail: (
-    email: Email
-  ) => TE.TaskEither<string, ReadonlyArray<number>>;
+  getMemberNumberForEmail: (email: Email) => TE.TaskEither<string, number>;
 };
 
 type SendMemberNumberToEmail = (ports: Ports) => (email: string) => void;
