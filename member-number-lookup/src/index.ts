@@ -14,8 +14,9 @@ const app: Application = express();
 const port = 8080;
 
 const adapters = {
-  sendMemberNumberEmail: () => TE.left('not implemented'),
-  getMemberNumberForEmail: () => TE.left('not implemented'),
+  sendMemberNumberEmail: () => TE.left('sendMemberNumberEmail not implemented'),
+  getMemberNumberForEmail: () =>
+    TE.left('getMemberNumberForEmail not implemented'),
 };
 
 app.use(express.urlencoded({extended: true}));
@@ -31,9 +32,8 @@ const logData = (topic: PubSubJS.Message, data: string) => {
 };
 
 PubSub.subscribe('send-member-number-to-email', logData);
-PubSub.subscribe(
-  'send-member-number-to-email',
-  sendMemberNumberToEmail(adapters)
+PubSub.subscribe('send-member-number-to-email', (msg, email) =>
+  sendMemberNumberToEmail(adapters)(email)
 );
 
 app.post(
@@ -45,7 +45,7 @@ app.post(
       E.matchW(
         () => res.status(400).send(invalidEmailPage),
         email => {
-          PubSub.publish('send-member-number-to-email', JSON.stringify(email));
+          PubSub.publish('send-member-number-to-email', email);
           res.status(200).send(checkYourMailPage(email));
         }
       )

@@ -39,5 +39,9 @@ export const sendMemberNumberToEmail: SendMemberNumberToEmail =
       ),
       TE.chain(({memberNumber, validatedEmail}) =>
         ports.sendMemberNumberEmail(validatedEmail, memberNumber)
+      ),
+      TE.match(
+        e => console.log(e),
+        () => console.log(`Successfully sent member number to ${email}`)
       )
     )();
