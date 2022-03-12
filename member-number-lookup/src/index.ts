@@ -10,22 +10,17 @@ import * as TE from 'fp-ts/TaskEither';
 const app: Application = express();
 const port = 8080;
 
+const adapters = {
+  getMemberNumberForEmail: (): TE.TaskEither<string, number> => TE.right(42),
+};
+
 app.use(express.urlencoded({extended: true}));
 
 app.get('/', (req: Request, res: Response) => {
   res.status(200).send(landingPage);
 });
 
-app.get('/check-your-mail', (req: Request, res: Response) => {
-  const email = req.query.email ?? '<no email supplied>';
-  res.status(200).send(checkYourMailPage(email.toString()));
-});
-
 app.use('/static', express.static(path.resolve(__dirname, './static')));
-
-const adapters = {
-  getMemberNumberForEmail: (): TE.TaskEither<string, number> => TE.right(42),
-};
 
 app.post(
   '/send-member-number-by-email',
@@ -35,7 +30,7 @@ app.post(
       sendMemberNumberByEmail(adapters),
       TE.matchW(
         () => res.status(400).send(invalidEmailPage),
-        email => res.redirect(`/check-your-mail?email=${email}`)
+        email => res.status(200).send(checkYourMailPage(email))
       )
     )();
   }
