@@ -1,6 +1,7 @@
 import express, {Application, Request, Response} from 'express';
 import path from 'path';
 import {checkYourMailPage} from './check-your-mail-page';
+import {invalidEmailPage} from './invalid-email-page';
 import {landingPage} from './landing-page';
 
 const app: Application = express();
@@ -15,6 +16,10 @@ app.get('/', (req: Request, res: Response) => {
 app.get('/check-your-mail', (req: Request, res: Response) => {
   const email = req.query.email ?? '<no email supplied>';
   res.status(200).send(checkYourMailPage(email.toString()));
+});
+
+app.get('/invalid-email', (req: Request, res: Response) => {
+  res.status(400).send(invalidEmailPage);
 });
 
 app.use('/static', express.static(path.resolve(__dirname, './static')));
