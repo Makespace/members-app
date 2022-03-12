@@ -1,4 +1,4 @@
-export const checkYourMailPage = `
+export const checkYourMailPage = (submittedEmailAddress: string) => `
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
@@ -24,7 +24,7 @@ export const checkYourMailPage = `
 			<h1>Check your mail</h1>
 
 			<p>
-				If this email address is linked to a Makespace number you should receive an email with that number.
+				If <b>${submittedEmailAddress}</b> is linked to a Makespace number you should receive an email with that number.
 			</p>
 
 			<p>

@@ -11,7 +11,7 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 app.get('/check-your-mail', (req: Request, res: Response) => {
-  res.status(200).send(checkYourMailPage);
+  res.status(200).send(checkYourMailPage('foo'));
 });
 
 app.use('/static', express.static(path.resolve(__dirname, './static')));
