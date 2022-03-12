@@ -6,13 +6,18 @@ describe('send-member-number-to-email', () => {
   describe.skip('when the email can be uniquely linked to a member number', () => {
     const email = faker.internet.email();
     const memberNumber = faker.datatype.number();
-    const sendEmail = jest.fn();
-    const getMemberNumberForEmail = () => TE.right([memberNumber]);
+    const adapters = {
+      sendMemberNumberEmail: jest.fn(),
+      getMemberNumberForEmail: () => TE.right([memberNumber]),
+    };
 
-    sendMemberNumberToEmail(email);
+    sendMemberNumberToEmail(adapters)(email);
 
     it('tries to send an email with the number', () => {
-      expect(sendEmail).toHaveBeenCalledWith([email, memberNumber]);
+      expect(adapters.sendMemberNumberEmail).toHaveBeenCalledWith([
+        email,
+        memberNumber,
+      ]);
     });
   });
 
