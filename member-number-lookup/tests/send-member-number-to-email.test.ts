@@ -1,6 +1,19 @@
+import {faker} from '@faker-js/faker';
+import {sendMemberNumberToEmail} from '../src/send-member-number-to-email';
+import * as TE from 'fp-ts/TaskEither';
+
 describe('send-member-number-to-email', () => {
-  describe('when the email can be uniquely linked to a member number', () => {
-    it.todo('tries to send an email with the number');
+  describe.skip('when the email can be uniquely linked to a member number', () => {
+    const email = faker.internet.email();
+    const memberNumber = faker.datatype.number();
+    const sendEmail = jest.fn();
+    const getMemberNumberForEmail = () => TE.right([memberNumber]);
+
+    sendMemberNumberToEmail(email);
+
+    it('tries to send an email with the number', () => {
+      expect(sendEmail).toHaveBeenCalledWith([email, memberNumber]);
+    });
   });
 
   describe('when the email is used by multiple member numbers', () => {

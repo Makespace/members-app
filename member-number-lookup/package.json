@@ -21,6 +21,7 @@
     "posttest": "npm run lint"
   },
   "devDependencies": {
+    "@faker-js/faker": "^6.0.0-beta.0",
     "@types/express": "^4.17.13",
     "@types/jest": "^27.4.1",
     "@types/node": "^14.18.12",
