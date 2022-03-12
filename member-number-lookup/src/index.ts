@@ -4,10 +4,8 @@ import path from 'path';
 import {checkYourMailPage} from './check-your-mail-page';
 import {invalidEmailPage} from './invalid-email-page';
 import {landingPage} from './landing-page';
-import * as E from 'fp-ts/Either';
 import {sendMemberNumberByEmail} from './send-member-number-by-email';
 import * as TE from 'fp-ts/TaskEither';
-import {string} from 'fp-ts';
 
 const app: Application = express();
 const port = 8080;
