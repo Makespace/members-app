@@ -4,15 +4,11 @@ import path from 'path';
 import {checkYourMailPage} from './check-your-mail-page';
 import {invalidEmailPage} from './invalid-email-page';
 import {landingPage} from './landing-page';
-import {sendMemberNumberByEmail} from './send-member-number-by-email';
-import * as TE from 'fp-ts/TaskEither';
+import * as E from 'fp-ts/Either';
+import {parseEmailAddressFromBody} from './parse-email-address-from-body';
 
 const app: Application = express();
 const port = 8080;
-
-const adapters = {
-  getMemberNumberForEmail: (): TE.TaskEither<string, number> => TE.right(42),
-};
 
 app.use(express.urlencoded({extended: true}));
 
@@ -25,14 +21,14 @@ app.use('/static', express.static(path.resolve(__dirname, './static')));
 app.post(
   '/send-member-number-by-email',
   async (req: Request, res: Response) => {
-    await pipe(
+    pipe(
       req.body,
-      sendMemberNumberByEmail(adapters),
-      TE.matchW(
+      parseEmailAddressFromBody,
+      E.matchW(
         () => res.status(400).send(invalidEmailPage),
         email => res.status(200).send(checkYourMailPage(email))
       )
-    )();
+    );
   }
 );
 
