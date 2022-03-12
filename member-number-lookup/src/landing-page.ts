@@ -6,7 +6,7 @@ export const landingPage = `
 			<meta name="viewport" content="width=device-width, initial-scale=1.0">
 			<meta http-equiv="X-UA-Compatible" content="ie=edge">
 			<title>MS Member Number Lookup</title>
-			<link rel="stylesheet" href="style.css">
+			<link rel="stylesheet" href="static/vanilla.css">
 		</head>
 		<body>
 			<h1>Lookup Your Member Number</h1>
