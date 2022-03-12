@@ -22,6 +22,12 @@ export const landingPage = `
 		</head>
 		<body>
 			<h1>Lookup Your Member Number</h1>
+
+			<form action="/send-member-number-by-email" method="post">
+			<label for="email">E-Mail: </label>
+			<input id="email" type="text" name="email" value="">
+			<input type="submit" value="Send Member Number">
+		</form>
 		</body>
 	</html>
 `;
