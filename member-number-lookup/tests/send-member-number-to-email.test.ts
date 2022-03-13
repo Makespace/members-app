@@ -2,6 +2,7 @@ import {faker} from '@faker-js/faker';
 import {sendMemberNumberToEmail} from '../src/send-member-number-to-email';
 import * as TE from 'fp-ts/TaskEither';
 import {Email} from '../src/email';
+import * as E from 'fp-ts/Either';
 
 describe('send-member-number-to-email', () => {
   describe('when the email can be uniquely linked to a member number', () => {
@@ -26,18 +27,25 @@ describe('send-member-number-to-email', () => {
 
   describe('when the email has no matches in database', () => {
     const email = faker.internet.email() as Email;
+    const errorMsg = 'no matching member number found';
     const adapters = {
       sendMemberNumberEmail: jest.fn(() => TE.right(undefined)),
-      getMemberNumberForEmail: () => TE.left('no member number found'),
+      getMemberNumberForEmail: () => TE.left(errorMsg),
     };
 
+    let result: E.Either<string, string>;
+
     beforeEach(async () => {
-      await sendMemberNumberToEmail(adapters)(email);
+      result = await sendMemberNumberToEmail(adapters)(email)();
     });
+
     it('does not send any emails', () => {
       expect(adapters.sendMemberNumberEmail).not.toHaveBeenCalled();
     });
-    it.todo('logs an info');
+
+    it('return on Left with message', () => {
+      expect(result).toStrictEqual(E.left(errorMsg));
+    });
   });
 
   describe('when database query fails', () => {
@@ -48,7 +56,7 @@ describe('send-member-number-to-email', () => {
     };
 
     beforeEach(async () => {
-      await sendMemberNumberToEmail(adapters)(email);
+      await sendMemberNumberToEmail(adapters)(email)();
     });
     it('does not send any emails', () => {
       expect(adapters.sendMemberNumberEmail).not.toHaveBeenCalled();
