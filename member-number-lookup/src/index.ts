@@ -1,14 +1,12 @@
 import express, {Application, Request, Response} from 'express';
 import {pipe} from 'fp-ts/lib/function';
 import path from 'path';
-import {checkYourMailPage} from './check-your-mail-page';
-import {invalidEmailPage} from './invalid-email-page';
-import {landingPage} from './landing-page';
 import * as E from 'fp-ts/Either';
 import {parseEmailAddressFromBody} from './parse-email-address-from-body';
 import PubSub from 'pubsub-js';
 import {sendMemberNumberToEmail} from './send-member-number-to-email';
 import * as TE from 'fp-ts/TaskEither';
+import {landingPage, invalidEmailPage, checkYourMailPage} from './pages';
 
 const app: Application = express();
 const port = 8080;
