@@ -41,7 +41,18 @@ describe('send-member-number-to-email', () => {
   });
 
   describe('when database query fails', () => {
-    it.todo('does not send any emails');
+    const email = faker.internet.email() as Email;
+    const adapters = {
+      sendMemberNumberEmail: jest.fn(() => TE.right(undefined)),
+      getMemberNumberForEmail: () => TE.left('query to db failed'),
+    };
+
+    beforeEach(async () => {
+      await sendMemberNumberToEmail(adapters)(email);
+    });
+    it('does not send any emails', () => {
+      expect(adapters.sendMemberNumberEmail).not.toHaveBeenCalled();
+    });
     it.todo('logs an error');
   });
 
