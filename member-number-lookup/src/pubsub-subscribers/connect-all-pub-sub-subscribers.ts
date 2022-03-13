@@ -5,7 +5,7 @@ import * as TE from 'fp-ts/TaskEither';
 import {Logger} from 'pino';
 
 const adapters = {
-  sendMemberNumberEmail: () => TE.left('sendMemberNumberEmail not implemented'),
+  sendEmail: () => TE.left('sendEmail not implemented'),
   getMemberNumberForEmail: () =>
     TE.left('getMemberNumberForEmail not implemented'),
 };

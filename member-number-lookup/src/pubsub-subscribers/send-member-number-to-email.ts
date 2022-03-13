@@ -6,10 +6,7 @@ import {formatValidationErrors} from 'io-ts-reporters';
 import * as E from 'fp-ts/Either';
 
 type Ports = {
-  sendMemberNumberEmail: (
-    email: Email,
-    memberNumber: number
-  ) => TE.TaskEither<string, void>;
+  sendEmail: (email: Email, message: string) => TE.TaskEither<string, string>;
   getMemberNumberForEmail: (email: Email) => TE.TaskEither<string, number>;
 };
 
@@ -19,6 +16,12 @@ const validateEmail = (input: string) =>
     EmailCodec.decode,
     E.mapLeft(flow(formatValidationErrors, errors => errors.join('\n')))
   );
+
+const renderMessage = (memberNumber: number) => `
+  Hi,
+
+  Your Makespace member number is: ${memberNumber}.
+`;
 
 type SendMemberNumberToEmail = (
   ports: Ports
@@ -39,8 +42,12 @@ export const sendMemberNumberToEmail: SendMemberNumberToEmail =
           sequenceS(TE.ApplyPar)
         )
       ),
-      TE.chain(({memberNumber, validatedEmail}) =>
-        ports.sendMemberNumberEmail(validatedEmail, memberNumber)
+      TE.map(({memberNumber, validatedEmail}) => ({
+        validatedEmail,
+        message: renderMessage(memberNumber),
+      })),
+      TE.chain(({message, validatedEmail}) =>
+        ports.sendEmail(validatedEmail, message)
       ),
       TE.map(() => `Successfully sent member number to ${email}`)
     );
