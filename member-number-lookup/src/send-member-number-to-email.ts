@@ -20,11 +20,13 @@ const validateEmail = (input: string) =>
     E.mapLeft(flow(formatValidationErrors, errors => errors.join('\n')))
   );
 
-type SendMemberNumberToEmail = (ports: Ports) => (email: string) => void;
+type SendMemberNumberToEmail = (
+  ports: Ports
+) => (email: string) => TE.TaskEither<string, string>;
 
 export const sendMemberNumberToEmail: SendMemberNumberToEmail =
-  ports => async email =>
-    await pipe(
+  ports => email =>
+    pipe(
       email,
       validateEmail,
       TE.fromEither,
@@ -40,8 +42,5 @@ export const sendMemberNumberToEmail: SendMemberNumberToEmail =
       TE.chain(({memberNumber, validatedEmail}) =>
         ports.sendMemberNumberEmail(validatedEmail, memberNumber)
       ),
-      TE.match(
-        e => console.log(e),
-        () => console.log(`Successfully sent member number to ${email}`)
-      )
-    )();
+      TE.map(() => `Successfully sent member number to ${email}`)
+    );

@@ -32,8 +32,20 @@ const logData = (topic: PubSubJS.Message, data: string) => {
 };
 
 PubSub.subscribe('send-member-number-to-email', logData);
-PubSub.subscribe('send-member-number-to-email', (msg, email) =>
-  sendMemberNumberToEmail(adapters)(email)
+PubSub.subscribe(
+  'send-member-number-to-email',
+  async (msg, email) =>
+    await pipe(
+      sendMemberNumberToEmail(adapters)(email),
+      TE.match(
+        errMsg =>
+          console.log(
+            `Failed to process message. topic: ${msg} error: ${errMsg}`
+          ),
+        successMsg =>
+          console.log(`Processed message. topic: ${msg} result: ${successMsg}`)
+      )
+    )()
 );
 
 app.post(

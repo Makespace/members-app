@@ -13,7 +13,7 @@ describe('send-member-number-to-email', () => {
     };
 
     beforeEach(async () => {
-      await sendMemberNumberToEmail(adapters)(email);
+      await sendMemberNumberToEmail(adapters)(email)();
     });
 
     it('tries to send an email with the number', () => {
