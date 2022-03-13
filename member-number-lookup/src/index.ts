@@ -6,8 +6,10 @@ import {parseEmailAddressFromBody} from './parse-email-address-from-body';
 import {landingPage, invalidEmailPage, checkYourMailPage} from './pages';
 import {subscribeAll} from './pubsub-subscribers/subscribe-all';
 import PubSub from 'pubsub-js';
+import createLogger from 'pino';
 
 const app: Application = express();
+const logger = createLogger();
 const port = 8080;
 app.use(express.urlencoded({extended: true}));
 
@@ -36,8 +38,6 @@ app.post(
 );
 
 // START APPLICATION
-subscribeAll();
+subscribeAll(logger);
 
-app.listen(port, () =>
-  process.stdout.write(`Server is listening on port ${port}!\n`)
-);
+app.listen(port, () => logger.info({port}, 'Server listening'));
