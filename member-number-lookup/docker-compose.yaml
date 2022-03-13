@@ -7,8 +7,22 @@ services:
       - 8080:80
     volumes:
       - ./src:/app/src
+    environment:
+      MYSQL_DATABASE: makespace
+      MYSQL_USER: root
+      MYSQL_PASSWORD: secret
+      MYSQL_HOST: mariadb
 
   mailcatcher:
     image: sj26/mailcatcher@sha256:1f02ff3bd4fd728837d7ddf768346eebd39e5e2232883c41378c02691378e986
     ports:
       - 1080:1080
+
+  mariadb:
+    image: mariadb:alpine@sha256:c1988f7cf41786b77bccd23891d1afa2f83c999f4b303bfcd5f333e934b51cc4
+    environment:
+      MYSQL_ROOT_USER: root
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: makespace
+      MYSQL_USER: root
+      MYSQL_PASSWORD: secret
