@@ -2,7 +2,7 @@ import * as E from 'fp-ts/Either';
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import {formatValidationErrors} from 'io-ts-reporters';
-import {Email, EmailCodec} from './email';
+import {Email, EmailCodec} from './types/email';
 
 const BodyCodec = t.type({
   email: EmailCodec,

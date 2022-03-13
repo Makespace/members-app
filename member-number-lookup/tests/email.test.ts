@@ -1,5 +1,5 @@
 import * as E from 'fp-ts/Either';
-import {EmailCodec} from '../src/email';
+import {EmailCodec} from '../src/types/email';
 
 describe('email', () => {
   describe.each([[''], ['foo'], ['"Bob Example" <bob@example.com>']])(

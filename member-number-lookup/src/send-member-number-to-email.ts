@@ -1,4 +1,4 @@
-import {Email, EmailCodec} from './email';
+import {Email, EmailCodec} from './types/email';
 import * as TE from 'fp-ts/TaskEither';
 import {flow, pipe} from 'fp-ts/lib/function';
 import {sequenceS} from 'fp-ts/lib/Apply';

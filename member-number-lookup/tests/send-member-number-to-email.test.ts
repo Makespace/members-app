@@ -1,7 +1,7 @@
 import {faker} from '@faker-js/faker';
 import {sendMemberNumberToEmail} from '../src/send-member-number-to-email';
 import * as TE from 'fp-ts/TaskEither';
-import {Email} from '../src/email';
+import {Email} from '../src/types/email';
 import * as E from 'fp-ts/Either';
 
 describe('send-member-number-to-email', () => {
