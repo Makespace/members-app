@@ -3,12 +3,11 @@ import {sendMemberNumberToEmail} from './send-member-number-to-email';
 import PubSub from 'pubsub-js';
 import * as TE from 'fp-ts/TaskEither';
 import {Logger} from 'pino';
-import {sendEmail} from '../adapters/send-email';
+import {sendEmail, getMemberNumber} from '../adapters';
 
 const adapters = {
   sendEmail: sendEmail(),
-  getMemberNumberForEmail: () =>
-    TE.left('getMemberNumberForEmail not implemented'),
+  getMemberNumber: getMemberNumber(),
 };
 
 export const connectAllPubSubSubscribers = (logger: Logger) => {

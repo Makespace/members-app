@@ -7,7 +7,7 @@ import * as E from 'fp-ts/Either';
 
 type Ports = {
   sendEmail: (email: Email, message: string) => TE.TaskEither<string, string>;
-  getMemberNumberForEmail: (email: Email) => TE.TaskEither<string, number>;
+  getMemberNumber: (email: Email) => TE.TaskEither<string, number>;
 };
 
 const validateEmail = (input: string) =>
@@ -36,7 +36,7 @@ export const sendMemberNumberToEmail: SendMemberNumberToEmail =
       TE.chain(validatedEmail =>
         pipe(
           {
-            memberNumber: ports.getMemberNumberForEmail(validatedEmail),
+            memberNumber: ports.getMemberNumber(validatedEmail),
             validatedEmail: TE.right(validatedEmail),
           },
           sequenceS(TE.ApplyPar)
