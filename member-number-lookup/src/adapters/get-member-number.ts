@@ -1,7 +1,10 @@
 import * as TE from 'fp-ts/TaskEither';
 import {Email} from '../types';
 import mysql from 'mysql';
-import {identity, pipe} from 'fp-ts/lib/function';
+import {flow, pipe} from 'fp-ts/lib/function';
+import * as t from 'io-ts';
+import * as E from 'fp-ts/Either';
+import {formatValidationErrors} from 'io-ts-reporters';
 
 type GetMemberNumber = (email: Email) => TE.TaskEither<string, number>;
 
@@ -12,24 +15,36 @@ const pool = mysql.createPool({
   password: process.env.MYSQL_PASSWORD,
 });
 
-export const getMemberNumber = (): GetMemberNumber => {
-  return () =>
-    pipe(
-      TE.tryCatch(
-        () =>
-          new Promise((resolve, reject) => {
-            pool.query(
-              'SELECT Given_Member_Number FROM InductionFormResponse',
-              (error, elements) => {
-                if (error) {
-                  return reject(error);
-                }
-                return resolve(elements);
+const MemberNumberResponse = t.tuple([
+  t.type({
+    Given_Member_Number: t.Int,
+  }),
+]);
+
+export const getMemberNumber = (): GetMemberNumber => email =>
+  pipe(
+    TE.tryCatch(
+      () =>
+        new Promise((resolve, reject) => {
+          pool.query(
+            'SELECT Given_Member_Number FROM InductionFormResponse WHERE Member_Email = ?',
+            [email],
+            (error, elements) => {
+              if (error) {
+                return reject(error);
               }
-            );
-          }),
-        identity
-      ),
-      TE.bimap(String, () => 42)
-    );
-};
+              return resolve(elements);
+            }
+          );
+        }),
+      String
+    ),
+    TE.chainEitherK(
+      flow(
+        MemberNumberResponse.decode,
+        E.mapLeft(formatValidationErrors),
+        E.mapLeft(errors => errors.join('\n'))
+      )
+    ),
+    TE.map(([result]) => result.Given_Member_Number)
+  );
