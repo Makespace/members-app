@@ -5,13 +5,18 @@ import {Email} from '../src/email';
 import * as E from 'fp-ts/Either';
 
 describe('send-member-number-to-email', () => {
+  const email = faker.internet.email() as Email;
+  const memberNumber = faker.datatype.number();
+  const errorMsg = 'reason for failure';
+
+  const happyPathAdapters = {
+    sendMemberNumberEmail: jest.fn(() => TE.right(undefined)),
+    getMemberNumberForEmail: () => TE.right(memberNumber),
+  };
+
+  let result: E.Either<string, string>;
   describe('when the email can be uniquely linked to a member number', () => {
-    const email = faker.internet.email() as Email;
-    const memberNumber = faker.datatype.number();
-    const adapters = {
-      sendMemberNumberEmail: jest.fn(() => TE.right(undefined)),
-      getMemberNumberForEmail: () => TE.right(memberNumber),
-    };
+    const adapters = happyPathAdapters;
 
     beforeEach(async () => {
       await sendMemberNumberToEmail(adapters)(email)();
@@ -26,14 +31,10 @@ describe('send-member-number-to-email', () => {
   });
 
   describe('when database query fails', () => {
-    const email = faker.internet.email() as Email;
-    const errorMsg = 'reason for failure';
     const adapters = {
-      sendMemberNumberEmail: jest.fn(() => TE.right(undefined)),
+      ...happyPathAdapters,
       getMemberNumberForEmail: () => TE.left(errorMsg),
     };
-
-    let result: E.Either<string, string>;
 
     beforeEach(async () => {
       result = await sendMemberNumberToEmail(adapters)(email)();
@@ -49,14 +50,10 @@ describe('send-member-number-to-email', () => {
   });
 
   describe('when email fails to send', () => {
-    const email = faker.internet.email() as Email;
-    const errorMsg = 'reason for failure';
     const adapters = {
+      ...happyPathAdapters,
       sendMemberNumberEmail: () => TE.left(errorMsg),
-      getMemberNumberForEmail: () => TE.right(faker.datatype.number()),
     };
-
-    let result: E.Either<string, string>;
 
     beforeEach(async () => {
       result = await sendMemberNumberToEmail(adapters)(email)();
