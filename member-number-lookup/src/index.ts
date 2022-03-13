@@ -10,7 +10,7 @@ import createLogger from 'pino';
 
 const app: Application = express();
 const logger = createLogger();
-const port = 8080;
+const port = 80;
 app.use(express.urlencoded({extended: true}));
 
 // ROUTES
