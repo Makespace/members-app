@@ -49,7 +49,21 @@ describe('send-member-number-to-email', () => {
   });
 
   describe('when email fails to send', () => {
-    it.todo('does not send any emails');
-    it.todo('logs an error');
+    const email = faker.internet.email() as Email;
+    const errorMsg = 'reason for failure';
+    const adapters = {
+      sendMemberNumberEmail: () => TE.left(errorMsg),
+      getMemberNumberForEmail: () => TE.right(faker.datatype.number()),
+    };
+
+    let result: E.Either<string, string>;
+
+    beforeEach(async () => {
+      result = await sendMemberNumberToEmail(adapters)(email)();
+    });
+
+    it('returns Left with message from email adapter', () => {
+      expect(result).toStrictEqual(E.left(errorMsg));
+    });
   });
 });
