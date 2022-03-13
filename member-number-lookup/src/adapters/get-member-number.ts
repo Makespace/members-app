@@ -15,11 +15,11 @@ const pool = mysql.createPool({
   password: process.env.MYSQL_PASSWORD,
 });
 
-const MemberNumberResponse = t.tuple([
+const MemberNumberResponse = t.readonlyArray(
   t.type({
     Given_Member_Number: t.Int,
-  }),
-]);
+  })
+);
 
 export const getMemberNumber = (): GetMemberNumber => email =>
   pipe(
@@ -45,6 +45,13 @@ export const getMemberNumber = (): GetMemberNumber => email =>
         E.mapLeft(formatValidationErrors),
         E.mapLeft(errors => errors.join('\n'))
       )
+    ),
+    TE.filterOrElse(
+      memberNumbers => memberNumbers.length === 1,
+      memberNumbers =>
+        `${email} is associated with more than one member number: ${memberNumbers.map(
+          i => i.Given_Member_Number
+        )}`
     ),
     TE.map(([result]) => result.Given_Member_Number)
   );
