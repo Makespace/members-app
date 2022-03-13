@@ -24,10 +24,6 @@ describe('send-member-number-to-email', () => {
     });
   });
 
-  describe('when the submitted email has different capitalisation from one that can be uniquely linked to a member number', () => {
-    it.todo('tries to send an email with the number');
-  });
-
   describe('when the email has no matches in database', () => {
     it.todo('does not send any emails');
     it.todo('logs an info');
