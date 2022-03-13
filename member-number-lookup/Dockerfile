@@ -5,7 +5,6 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-COPY ./src ./src
 COPY ./tsconfig.json .
 
 CMD [ "npx", "ts-node-dev", "--transpile-only", "./src/index.ts" ]
