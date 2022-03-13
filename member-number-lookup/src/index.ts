@@ -3,43 +3,20 @@ import {pipe} from 'fp-ts/lib/function';
 import path from 'path';
 import * as E from 'fp-ts/Either';
 import {parseEmailAddressFromBody} from './parse-email-address-from-body';
-import PubSub from 'pubsub-js';
-import {sendMemberNumberToEmail} from './send-member-number-to-email';
-import * as TE from 'fp-ts/TaskEither';
 import {landingPage, invalidEmailPage, checkYourMailPage} from './pages';
+import {subscribeAll} from './pubsub-subscribers/subscribe-all';
+import PubSub from 'pubsub-js';
 
 const app: Application = express();
 const port = 8080;
-
-const adapters = {
-  sendMemberNumberEmail: () => TE.left('sendMemberNumberEmail not implemented'),
-  getMemberNumberForEmail: () =>
-    TE.left('getMemberNumberForEmail not implemented'),
-};
-
 app.use(express.urlencoded({extended: true}));
 
+// ROUTES
 app.get('/', (req: Request, res: Response) => {
   res.status(200).send(landingPage);
 });
 
 app.use('/static', express.static(path.resolve(__dirname, './static')));
-
-PubSub.subscribe(
-  'send-member-number-to-email',
-  async (msg, email) =>
-    await pipe(
-      sendMemberNumberToEmail(adapters)(email),
-      TE.match(
-        errMsg =>
-          console.log(
-            `Failed to process message. topic: ${msg} error: ${errMsg}`
-          ),
-        successMsg =>
-          console.log(`Processed message. topic: ${msg} result: ${successMsg}`)
-      )
-    )()
-);
 
 app.post(
   '/send-member-number-by-email',
@@ -57,6 +34,9 @@ app.post(
     );
   }
 );
+
+// START APPLICATION
+subscribeAll();
 
 app.listen(port, () =>
   process.stdout.write(`Server is listening on port ${port}!\n`)

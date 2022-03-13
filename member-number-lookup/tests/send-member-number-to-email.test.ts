@@ -1,5 +1,5 @@
 import {faker} from '@faker-js/faker';
-import {sendMemberNumberToEmail} from '../src/send-member-number-to-email';
+import {sendMemberNumberToEmail} from '../src/pubsub-subscribers/send-member-number-to-email';
 import * as TE from 'fp-ts/TaskEither';
 import {Email} from '../src/types/email';
 import * as E from 'fp-ts/Either';
