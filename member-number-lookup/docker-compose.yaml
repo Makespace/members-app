@@ -7,3 +7,8 @@ services:
       - 8080:80
     volumes:
       - ./src:/app/src
+
+  mailcatcher:
+    image: sj26/mailcatcher@sha256:1f02ff3bd4fd728837d7ddf768346eebd39e5e2232883c41378c02691378e986
+    ports:
+      - 1080:1080
