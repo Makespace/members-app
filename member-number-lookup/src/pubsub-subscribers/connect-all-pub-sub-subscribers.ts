@@ -10,7 +10,7 @@ const adapters = {
     TE.left('getMemberNumberForEmail not implemented'),
 };
 
-export const subscribeAll = (logger: Logger) => {
+export const connectAllPubSubSubscribers = (logger: Logger) => {
   PubSub.subscribe(
     'send-member-number-to-email',
     async (topic, email) =>

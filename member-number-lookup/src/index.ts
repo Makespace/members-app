@@ -4,7 +4,7 @@ import path from 'path';
 import * as E from 'fp-ts/Either';
 import {parseEmailAddressFromBody} from './parse-email-address-from-body';
 import {landingPage, invalidEmailPage, checkYourMailPage} from './pages';
-import {subscribeAll} from './pubsub-subscribers/subscribe-all';
+import {connectAllPubSubSubscribers} from './pubsub-subscribers/connect-all-pub-sub-subscribers';
 import PubSub from 'pubsub-js';
 import createLogger from 'pino';
 
@@ -38,6 +38,6 @@ app.post(
 );
 
 // START APPLICATION
-subscribeAll(logger);
+connectAllPubSubSubscribers(logger);
 
 app.listen(port, () => logger.info({port}, 'Server listening'));
