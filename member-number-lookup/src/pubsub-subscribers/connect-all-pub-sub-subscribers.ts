@@ -19,7 +19,7 @@ export const connectAllPubSubSubscribers = (logger: Logger) => {
         TE.match(
           errMsg =>
             logger.error({topic, error: errMsg}, 'Failed to process message'),
-          successMsg => logger.debug({topic, result: successMsg})
+          successMsg => logger.info({topic, result: successMsg})
         )
       )()
   );

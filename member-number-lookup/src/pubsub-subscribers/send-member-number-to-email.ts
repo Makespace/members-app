@@ -49,5 +49,5 @@ export const sendMemberNumberToEmail: SendMemberNumberToEmail =
       TE.chain(({message, validatedEmail}) =>
         ports.sendEmail(validatedEmail, message)
       ),
-      TE.map(() => `Successfully sent member number to ${email}`)
+      TE.map(() => `Sent member number to ${email}`)
     );
