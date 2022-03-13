@@ -7,41 +7,39 @@ import * as E from 'fp-ts/Either';
 describe('send-member-number-to-email', () => {
   const email = faker.internet.email() as Email;
   const memberNumber = faker.datatype.number();
-  const errorMsg = 'reason for failure';
 
-  const happyPathAdapters = {
-    sendMemberNumberEmail: jest.fn(() => TE.right(undefined)),
-    getMemberNumberForEmail: () => TE.right(memberNumber),
-  };
-
-  let result: E.Either<string, string>;
   describe('when the email can be uniquely linked to a member number', () => {
-    const adapters = happyPathAdapters;
+    const adapters = {
+      getMemberNumber: () => TE.right(memberNumber),
+      sendEmail: jest.fn(() => TE.right('success')),
+    };
 
     beforeEach(async () => {
       await sendMemberNumberToEmail(adapters)(email)();
     });
 
     it('tries to send an email with the number', () => {
-      expect(adapters.sendMemberNumberEmail).toHaveBeenCalledWith(
+      expect(adapters.sendEmail).toHaveBeenCalledWith(
         email,
-        memberNumber
+        expect.stringContaining(memberNumber.toString())
       );
     });
   });
 
   describe('when database query fails', () => {
+    const errorMsg = 'db query failed';
     const adapters = {
-      ...happyPathAdapters,
-      getMemberNumberForEmail: () => TE.left(errorMsg),
+      getMemberNumber: () => TE.left(errorMsg),
+      sendEmail: jest.fn(() => TE.right('success')),
     };
 
+    let result: E.Either<string, string>;
     beforeEach(async () => {
       result = await sendMemberNumberToEmail(adapters)(email)();
     });
 
     it('does not send any emails', () => {
-      expect(adapters.sendMemberNumberEmail).not.toHaveBeenCalled();
+      expect(adapters.sendEmail).not.toHaveBeenCalled();
     });
 
     it('return on Left with message from db adapter', () => {
@@ -50,11 +48,13 @@ describe('send-member-number-to-email', () => {
   });
 
   describe('when email fails to send', () => {
+    const errorMsg = 'sending of email failed';
     const adapters = {
-      ...happyPathAdapters,
-      sendMemberNumberEmail: () => TE.left(errorMsg),
+      getMemberNumber: () => TE.right(memberNumber),
+      sendEmail: () => TE.left(errorMsg),
     };
 
+    let result: E.Either<string, string>;
     beforeEach(async () => {
       result = await sendMemberNumberToEmail(adapters)(email)();
     });
