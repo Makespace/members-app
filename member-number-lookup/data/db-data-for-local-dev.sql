@@ -13,5 +13,6 @@ CREATE TABLE `InductionFormResponse` (
 INSERT INTO `InductionFormResponse` (`Given_Member_Number`, `Member_Email`) VALUES (42, 'douglas.adams@example.com');
 INSERT INTO `InductionFormResponse` (`Given_Member_Number`, `Member_Email`) VALUES (1337, 'foo@example.com');
 INSERT INTO `InductionFormResponse` (`Given_Member_Number`, `Member_Email`) VALUES (10, 'Uppercase@example.com');
+INSERT INTO `InductionFormResponse` (`Given_Member_Number`, `Member_Email`) VALUES (11, 'lowercase@example.com');
 INSERT INTO `InductionFormResponse` (`Given_Member_Number`, `Member_Email`) VALUES (90, 'duplicate@example.com');
 INSERT INTO `InductionFormResponse` (`Given_Member_Number`, `Member_Email`) VALUES (91, 'duplicate@example.com');
