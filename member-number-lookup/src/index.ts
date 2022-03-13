@@ -27,11 +27,6 @@ app.get('/', (req: Request, res: Response) => {
 
 app.use('/static', express.static(path.resolve(__dirname, './static')));
 
-const logData = (topic: PubSubJS.Message, data: string) => {
-  console.log(`Received message. topic: '${String(topic)}' payload: ${data}`);
-};
-
-PubSub.subscribe('send-member-number-to-email', logData);
 PubSub.subscribe(
   'send-member-number-to-email',
   async (msg, email) =>
