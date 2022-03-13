@@ -20,6 +20,9 @@ services:
 
   mariadb:
     image: mariadb:alpine@sha256:c1988f7cf41786b77bccd23891d1afa2f83c999f4b303bfcd5f333e934b51cc4
+    command: --init-file /data/application/init.sql
+    volumes:
+      - ./data/db-data-for-local-dev.sql:/data/application/init.sql
     environment:
       MYSQL_ROOT_USER: root
       MYSQL_ROOT_PASSWORD: secret
