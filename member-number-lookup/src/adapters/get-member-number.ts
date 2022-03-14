@@ -1,5 +1,5 @@
 import * as TE from 'fp-ts/TaskEither';
-import {Email} from '../types';
+import {EmailAddress} from '../types';
 import mysql from 'mysql';
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
@@ -7,7 +7,9 @@ import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
 import * as tt from 'io-ts-types';
 
-type GetMemberNumber = (email: Email) => TE.TaskEither<string, number>;
+type GetMemberNumber = (
+  emailAddress: EmailAddress
+) => TE.TaskEither<string, number>;
 
 const pool = mysql.createPool({
   host: process.env.MYSQL_HOST,

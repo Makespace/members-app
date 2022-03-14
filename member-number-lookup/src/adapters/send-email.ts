@@ -1,10 +1,10 @@
 import * as TE from 'fp-ts/TaskEither';
-import {Email} from '../types';
+import {EmailAddress} from '../types';
 import nodemailer from 'nodemailer';
 import {identity, pipe} from 'fp-ts/lib/function';
 
 type SendEmail = (
-  email: Email,
+  emailAddress: EmailAddress,
   message: string
 ) => TE.TaskEither<string, string>;
 

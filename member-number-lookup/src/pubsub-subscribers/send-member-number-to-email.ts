@@ -7,10 +7,12 @@ import * as E from 'fp-ts/Either';
 
 type Ports = {
   sendEmail: (
-    email: EmailAddress,
+    emailAddress: EmailAddress,
     message: string
   ) => TE.TaskEither<string, string>;
-  getMemberNumber: (email: EmailAddress) => TE.TaskEither<string, number>;
+  getMemberNumber: (
+    emailAddress: EmailAddress
+  ) => TE.TaskEither<string, number>;
 };
 
 const validateEmail = (input: string) =>
