@@ -26,12 +26,12 @@ app.post(
     pipe(
       req.body,
       parseEmailAddressFromBody,
+      E.chainFirst(emailAddress =>
+        E.right(PubSub.publish('send-member-number-to-email', emailAddress))
+      ),
       E.matchW(
         () => res.status(400).send(invalidEmailPage),
-        email => {
-          PubSub.publish('send-member-number-to-email', email);
-          res.status(200).send(checkYourMailPage(email));
-        }
+        email => res.status(200).send(checkYourMailPage(email))
       )
     );
   }
