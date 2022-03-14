@@ -7,10 +7,6 @@ import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
 import * as tt from 'io-ts-types';
 
-type GetMemberNumber = (
-  emailAddress: EmailAddress
-) => TE.TaskEither<string, number>;
-
 const pool = mysql.createPool({
   host: process.env.MYSQL_HOST,
   database: process.env.MYSQL_DATABASE,
@@ -37,6 +33,10 @@ const MemberNumberQueryResult = tt.readonlyNonEmptyArray(
     Given_Member_Number: t.Int,
   })
 );
+
+type GetMemberNumber = (
+  emailAddress: EmailAddress
+) => TE.TaskEither<string, number>;
 
 export const getMemberNumber = (): GetMemberNumber => email =>
   pipe(
