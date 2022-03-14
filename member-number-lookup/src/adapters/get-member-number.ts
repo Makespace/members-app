@@ -18,7 +18,7 @@ const pool = mysql.createPool({
   password: process.env.MYSQL_PASSWORD,
 });
 
-const MemberNumberResponse = tt.readonlyNonEmptyArray(
+const MemberNumberQueryResult = tt.readonlyNonEmptyArray(
   t.type({
     Given_Member_Number: t.Int,
   })
@@ -44,7 +44,7 @@ export const getMemberNumber = (): GetMemberNumber => email =>
     ),
     TE.chainEitherK(
       flow(
-        MemberNumberResponse.decode,
+        MemberNumberQueryResult.decode,
         E.mapLeft(formatValidationErrors),
         E.mapLeft(errors => errors.join('\n'))
       )
