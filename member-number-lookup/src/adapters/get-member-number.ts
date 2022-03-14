@@ -1,6 +1,6 @@
 import * as TE from 'fp-ts/TaskEither';
 import {EmailAddress} from '../types';
-import mysql from 'mysql';
+import mysql, {Pool} from 'mysql';
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
@@ -18,6 +18,20 @@ const pool = mysql.createPool({
   password: process.env.MYSQL_PASSWORD,
 });
 
+const selectMemberNumberWhereEmail =
+  'SELECT Given_Member_Number FROM InductionFormResponse WHERE Member_Email = ?';
+
+const queryDatabase = (pool: Pool, query: string, values?: unknown) => {
+  return new Promise((resolve, reject) => {
+    pool.query(query, values, (error, elements) => {
+      if (error) {
+        return reject(error);
+      }
+      return resolve(elements);
+    });
+  });
+};
+
 const MemberNumberQueryResult = tt.readonlyNonEmptyArray(
   t.type({
     Given_Member_Number: t.Int,
@@ -27,19 +41,7 @@ const MemberNumberQueryResult = tt.readonlyNonEmptyArray(
 export const getMemberNumber = (): GetMemberNumber => email =>
   pipe(
     TE.tryCatch(
-      () =>
-        new Promise((resolve, reject) => {
-          pool.query(
-            'SELECT Given_Member_Number FROM InductionFormResponse WHERE Member_Email = ?',
-            [email],
-            (error, elements) => {
-              if (error) {
-                return reject(error);
-              }
-              return resolve(elements);
-            }
-          );
-        }),
+      () => queryDatabase(pool, selectMemberNumberWhereEmail, [email]),
       String
     ),
     TE.chainEitherK(
