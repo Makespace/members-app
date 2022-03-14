@@ -17,8 +17,8 @@ export const connectAllPubSubSubscribers = (logger: Logger) => {
       await pipe(
         sendMemberNumberToEmail(adapters)(email),
         TE.match(
-          errMsg =>
-            logger.error({topic, error: errMsg}, 'Failed to process message'),
+          failure =>
+            logger.error({topic, failure}, 'Failed to process message'),
           successMsg => logger.info({topic, result: successMsg})
         )
       )()
