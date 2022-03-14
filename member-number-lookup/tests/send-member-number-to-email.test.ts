@@ -3,6 +3,7 @@ import {sendMemberNumberToEmail} from '../src/pubsub-subscribers/send-member-num
 import * as TE from 'fp-ts/TaskEither';
 import {EmailAddress} from '../src/types/email-address';
 import * as E from 'fp-ts/Either';
+import {Failure, failure} from '../src/types';
 
 describe('send-member-number-to-email', () => {
   const email = faker.internet.email() as EmailAddress;
@@ -29,11 +30,11 @@ describe('send-member-number-to-email', () => {
   describe('when database query fails', () => {
     const errorMsg = 'db query failed';
     const adapters = {
-      getMemberNumber: () => TE.left(errorMsg),
+      getMemberNumber: () => TE.left(failure(errorMsg)({})),
       sendEmail: jest.fn(() => TE.right('success')),
     };
 
-    let result: E.Either<string, string>;
+    let result: E.Either<Failure, string>;
     beforeEach(async () => {
       result = await sendMemberNumberToEmail(adapters)(email)();
     });
@@ -43,7 +44,9 @@ describe('send-member-number-to-email', () => {
     });
 
     it('return on Left with message from db adapter', () => {
-      expect(result).toStrictEqual(E.left(errorMsg));
+      expect(result).toStrictEqual(
+        E.left(expect.objectContaining({message: errorMsg}))
+      );
     });
   });
 
@@ -51,16 +54,18 @@ describe('send-member-number-to-email', () => {
     const errorMsg = 'sending of email failed';
     const adapters = {
       getMemberNumber: () => TE.right(memberNumber),
-      sendEmail: () => TE.left(errorMsg),
+      sendEmail: () => TE.left(failure(errorMsg)()),
     };
 
-    let result: E.Either<string, string>;
+    let result: E.Either<Failure, string>;
     beforeEach(async () => {
       result = await sendMemberNumberToEmail(adapters)(email)();
     });
 
     it('returns Left with message from email adapter', () => {
-      expect(result).toStrictEqual(E.left(errorMsg));
+      expect(result).toStrictEqual(
+        E.left(expect.objectContaining({message: errorMsg}))
+      );
     });
   });
 });

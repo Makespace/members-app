@@ -1,12 +1,12 @@
 import * as TE from 'fp-ts/TaskEither';
-import {EmailAddress} from '../types';
+import {EmailAddress, failure, Failure} from '../types';
 import nodemailer from 'nodemailer';
 import {identity, pipe} from 'fp-ts/lib/function';
 
 type SendEmail = (
   emailAddress: EmailAddress,
   message: string
-) => TE.TaskEither<string, string>;
+) => TE.TaskEither<Failure, string>;
 
 const transporter = nodemailer.createTransport({
   host: 'mailcatcher',
@@ -26,8 +26,5 @@ export const sendEmail = (): SendEmail => (email, message) =>
         }),
       identity
     ),
-    TE.bimap(
-      () => 'failed to send email',
-      () => 'sent email'
-    )
+    TE.bimap(failure('Failed to send email'), () => 'sent email')
   );

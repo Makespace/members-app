@@ -1,5 +1,5 @@
 import * as TE from 'fp-ts/TaskEither';
-import {EmailAddress} from '../types';
+import {EmailAddress, failure, Failure} from '../types';
 import mysql, {Pool} from 'mysql';
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
@@ -36,27 +36,28 @@ const MemberNumberQueryResult = tt.readonlyNonEmptyArray(
 
 type GetMemberNumber = (
   emailAddress: EmailAddress
-) => TE.TaskEither<string, number>;
+) => TE.TaskEither<Failure, number>;
 
 export const getMemberNumber = (): GetMemberNumber => email =>
   pipe(
     TE.tryCatch(
       () => queryDatabase(pool, selectMemberNumberWhereEmail, [email]),
-      String
+      failure('DB query failed')
     ),
     TE.chainEitherK(
       flow(
         MemberNumberQueryResult.decode,
         E.mapLeft(formatValidationErrors),
-        E.mapLeft(errors => errors.join('\n'))
+        E.mapLeft(failure('Failed to decode MemberNumber from DB result'))
       )
     ),
     TE.filterOrElse(
       memberNumbers => memberNumbers.length === 1,
       memberNumbers =>
-        `${email} is associated with more than one member number: ${memberNumbers.map(
-          i => i.Given_Member_Number
-        )}`
+        failure('No unique match of MemberNumber to EmailAddress')({
+          memberNumbers,
+          email,
+        })
     ),
     TE.map(([result]) => result.Given_Member_Number)
   );
