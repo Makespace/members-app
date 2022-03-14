@@ -1,1 +1,1 @@
-export {Email} from './email';
+export {EmailAddress as Email} from './email-address';

@@ -1,11 +1,11 @@
 import {faker} from '@faker-js/faker';
 import {sendMemberNumberToEmail} from '../src/pubsub-subscribers/send-member-number-to-email';
 import * as TE from 'fp-ts/TaskEither';
-import {Email} from '../src/types/email';
+import {EmailAddress} from '../src/types/email-address';
 import * as E from 'fp-ts/Either';
 
 describe('send-member-number-to-email', () => {
-  const email = faker.internet.email() as Email;
+  const email = faker.internet.email() as EmailAddress;
   const memberNumber = faker.datatype.number();
 
   describe('when the email can be uniquely linked to a member number', () => {

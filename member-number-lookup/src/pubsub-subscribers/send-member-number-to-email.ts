@@ -1,4 +1,4 @@
-import {Email, EmailCodec} from '../types/email';
+import {EmailAddress, EmailAddressCodec} from '../types/email-address';
 import * as TE from 'fp-ts/TaskEither';
 import {flow, pipe} from 'fp-ts/lib/function';
 import {sequenceS} from 'fp-ts/lib/Apply';
@@ -6,14 +6,17 @@ import {formatValidationErrors} from 'io-ts-reporters';
 import * as E from 'fp-ts/Either';
 
 type Ports = {
-  sendEmail: (email: Email, message: string) => TE.TaskEither<string, string>;
-  getMemberNumber: (email: Email) => TE.TaskEither<string, number>;
+  sendEmail: (
+    email: EmailAddress,
+    message: string
+  ) => TE.TaskEither<string, string>;
+  getMemberNumber: (email: EmailAddress) => TE.TaskEither<string, number>;
 };
 
 const validateEmail = (input: string) =>
   pipe(
     input,
-    EmailCodec.decode,
+    EmailAddressCodec.decode,
     E.mapLeft(flow(formatValidationErrors, errors => errors.join('\n')))
   );
 

@@ -2,15 +2,15 @@ import * as E from 'fp-ts/Either';
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import {formatValidationErrors} from 'io-ts-reporters';
-import {Email, EmailCodec} from './types/email';
+import {EmailAddress, EmailAddressCodec} from './types/email-address';
 
 const BodyCodec = t.type({
-  email: EmailCodec,
+  email: EmailAddressCodec,
 });
 
 export const parseEmailAddressFromBody = (
   body: unknown
-): E.Either<string, Email> =>
+): E.Either<string, EmailAddress> =>
   pipe(
     body,
     BodyCodec.decode,
