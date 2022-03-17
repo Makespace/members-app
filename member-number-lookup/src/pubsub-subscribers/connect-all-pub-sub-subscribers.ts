@@ -8,10 +8,11 @@ import {formatValidationErrors} from 'io-ts-reporters';
 import {EmailAddressCodec} from '../types/email-address';
 import * as E from 'fp-ts/Either';
 import {failure} from '../types/failure';
+import {rateLimitSendingOfEmails} from '../adapters/rate-limit-sending-of-emails';
 
 const adapters = {
   getMemberNumber: getMemberNumber(),
-  rateLimitSendingOfEmails: TE.right,
+  rateLimitSendingOfEmails: rateLimitSendingOfEmails(),
   sendEmail: sendEmail(),
 };
 
