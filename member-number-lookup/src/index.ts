@@ -20,22 +20,19 @@ app.get('/', (req: Request, res: Response) => {
 
 app.use('/static', express.static(path.resolve(__dirname, './static')));
 
-app.post(
-  '/send-member-number-by-email',
-  async (req: Request, res: Response) => {
-    pipe(
-      req.body,
-      parseEmailAddressFromBody,
-      E.matchW(
-        () => res.status(400).send(invalidEmailPage),
-        email => {
-          PubSub.publish('send-member-number-to-email', email);
-          res.status(200).send(checkYourMailPage(email));
-        }
-      )
-    );
-  }
-);
+app.post('/send-member-number-by-email', (req: Request, res: Response) => {
+  pipe(
+    req.body,
+    parseEmailAddressFromBody,
+    E.matchW(
+      () => res.status(400).send(invalidEmailPage),
+      email => {
+        PubSub.publish('send-member-number-to-email', email);
+        res.status(200).send(checkYourMailPage(email));
+      }
+    )
+  );
+});
 
 // START APPLICATION
 connectAllPubSubSubscribers(logger);

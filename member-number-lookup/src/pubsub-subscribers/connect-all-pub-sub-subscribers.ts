@@ -13,8 +13,10 @@ const adapters = {
 export const connectAllPubSubSubscribers = (logger: Logger) => {
   PubSub.subscribe(
     'send-member-number-to-email',
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     async (topic, email) =>
       await pipe(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         sendMemberNumberToEmail(adapters)(email),
         TE.match(
           failure =>
