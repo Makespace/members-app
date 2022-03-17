@@ -12,6 +12,7 @@ describe('send-member-number-to-email', () => {
   describe('when the email can be uniquely linked to a member number', () => {
     const adapters = {
       getMemberNumber: () => TE.right(memberNumber),
+      rateLimitSendingOfEmails: TE.right,
       sendEmail: jest.fn(() => TE.right('success')),
     };
 
@@ -33,6 +34,7 @@ describe('send-member-number-to-email', () => {
     const errorMsg = 'db query failed';
     const adapters = {
       getMemberNumber: () => TE.left(failure(errorMsg)({})),
+      rateLimitSendingOfEmails: TE.right,
       sendEmail: jest.fn(() => TE.right('success')),
     };
 
@@ -56,6 +58,7 @@ describe('send-member-number-to-email', () => {
     const errorMsg = 'sending of email failed';
     const adapters = {
       getMemberNumber: () => TE.right(memberNumber),
+      rateLimitSendingOfEmails: TE.right,
       sendEmail: () => TE.left(failure(errorMsg)()),
     };
 
@@ -69,5 +72,10 @@ describe('send-member-number-to-email', () => {
         E.left(expect.objectContaining({message: errorMsg}))
       );
     });
+  });
+
+  describe('when email rate limit has been reached for that email address', () => {
+    it.todo('does not send any emails');
+    it.todo('returns Left with message from rate limiter');
   });
 });

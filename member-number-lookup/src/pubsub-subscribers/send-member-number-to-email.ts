@@ -5,10 +5,11 @@ import {Failure} from '../types';
 import {Email} from '../types/email';
 
 type Ports = {
-  sendEmail: (email: Email) => TE.TaskEither<Failure, string>;
   getMemberNumber: (
     emailAddress: EmailAddress
   ) => TE.TaskEither<Failure, number>;
+  rateLimitSendingOfEmails: (email: Email) => TE.TaskEither<Failure, Email>;
+  sendEmail: (email: Email) => TE.TaskEither<Failure, string>;
 };
 
 const toEmail = (emailAddress: EmailAddress) => (memberNumber: number) => ({
@@ -31,6 +32,7 @@ export const sendMemberNumberToEmail: SendMemberNumberToEmail =
       emailAddress,
       ports.getMemberNumber,
       TE.map(toEmail(emailAddress)),
+      TE.chain(ports.rateLimitSendingOfEmails),
       TE.chain(ports.sendEmail),
       TE.map(() => `Sent member number to ${emailAddress}`)
     );

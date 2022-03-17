@@ -10,8 +10,9 @@ import * as E from 'fp-ts/Either';
 import {failure} from '../types/failure';
 
 const adapters = {
-  sendEmail: sendEmail(),
   getMemberNumber: getMemberNumber(),
+  rateLimitSendingOfEmails: TE.right,
+  sendEmail: sendEmail(),
 };
 
 const validateEmail = (input: unknown) =>
