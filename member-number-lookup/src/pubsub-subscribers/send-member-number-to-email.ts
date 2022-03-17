@@ -1,8 +1,6 @@
-import {EmailAddress} from '../types/email-address';
 import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
-import {Failure} from '../types';
-import {Email} from '../types/email';
+import {Email, EmailAddress, Failure} from '../types';
 
 type Ports = {
   getMemberNumber: (

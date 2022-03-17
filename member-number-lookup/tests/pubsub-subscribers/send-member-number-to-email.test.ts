@@ -1,9 +1,8 @@
 import {faker} from '@faker-js/faker';
 import {sendMemberNumberToEmail} from '../../src/pubsub-subscribers/send-member-number-to-email';
 import * as TE from 'fp-ts/TaskEither';
-import {EmailAddress} from '../../src/types/email-address';
 import * as E from 'fp-ts/Either';
-import {Failure, failure} from '../../src/types';
+import {EmailAddress, Failure, failure} from '../../src/types';
 
 describe('send-member-number-to-email', () => {
   const emailAddress = faker.internet.email() as EmailAddress;

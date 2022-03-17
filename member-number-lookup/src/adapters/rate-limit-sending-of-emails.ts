@@ -1,6 +1,5 @@
 import * as TE from 'fp-ts/TaskEither';
-import {EmailAddress, failure, Failure} from '../types';
-import {Email} from '../types/email';
+import {Email, EmailAddress, failure, Failure} from '../types';
 import * as A from 'fp-ts/Array';
 import {pipe} from 'fp-ts/lib/function';
 

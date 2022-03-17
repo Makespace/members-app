@@ -5,10 +5,9 @@ import * as TE from 'fp-ts/TaskEither';
 import {Logger} from 'pino';
 import {sendEmail, getMemberNumber} from '../adapters';
 import {formatValidationErrors} from 'io-ts-reporters';
-import {EmailAddressCodec} from '../types/email-address';
 import * as E from 'fp-ts/Either';
-import {failure} from '../types/failure';
 import {rateLimitSendingOfEmails} from '../adapters/rate-limit-sending-of-emails';
+import {EmailAddressCodec, failure} from '../types';
 
 const adapters = {
   getMemberNumber: getMemberNumber(),

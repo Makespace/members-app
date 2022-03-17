@@ -1,8 +1,7 @@
 import faker from '@faker-js/faker';
-import {EmailAddress, Failure} from '../../src/types';
+import {Email, EmailAddress, Failure} from '../../src/types';
 import * as E from 'fp-ts/Either';
 import {rateLimitSendingOfEmails} from '../../src/adapters/rate-limit-sending-of-emails';
-import {Email} from '../../src/types/email';
 
 describe('rate-limit-sending-of-emails', () => {
   const email = {
