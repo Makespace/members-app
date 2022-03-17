@@ -3,27 +3,32 @@ import {Email, EmailAddress, failure, Failure} from '../types';
 import * as A from 'fp-ts/Array';
 import {pipe} from 'fp-ts/lib/function';
 
+type PastActivity = Array<{emailAddress: EmailAddress; timestamp: number}>;
+
 type RateLimitSendingOfEmails = (email: Email) => TE.TaskEither<Failure, Email>;
 
-const pastActivity: Array<EmailAddress> = [];
+export const rateLimitSendingOfEmails = (
+  limit: number,
+  timeWindowInSeconds = 86400
+): RateLimitSendingOfEmails => {
+  const pastActivity: PastActivity = [];
 
-export const rateLimitSendingOfEmails =
-  (limitPerDay: number): RateLimitSendingOfEmails =>
-  email => {
+  return email => {
+    const startOfCurrentWindow = Date.now() - timeWindowInSeconds;
     const emailsSentToThisAddress = pipe(
       pastActivity,
-      A.filter(address => address === email.recipient),
+      A.filter(activity => activity.emailAddress === email.recipient),
+      A.filter(({timestamp}) => timestamp >= startOfCurrentWindow),
       A.size
     );
 
-    console.log(emailsSentToThisAddress);
-
-    if (emailsSentToThisAddress >= limitPerDay) {
+    if (emailsSentToThisAddress >= limit) {
       return TE.left(
-        failure('Email rate limit exceeded')({email, limitPerDay})
+        failure('Email rate limit exceeded')({email, limitPerDay: limit})
       );
     }
 
-    pastActivity.push(email.recipient);
+    pastActivity.push({emailAddress: email.recipient, timestamp: Date.now()});
     return TE.right(email);
   };
+};
