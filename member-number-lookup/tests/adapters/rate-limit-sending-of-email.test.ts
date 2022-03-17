@@ -1,7 +1,7 @@
 import faker from '@faker-js/faker';
 import {Email, EmailAddress, Failure} from '../../src/types';
 import * as E from 'fp-ts/Either';
-import {rateLimitSendingOfEmails} from '../../src/adapters/rate-limit-sending-of-emails';
+import {createRateLimiter} from '../../src/adapters/rate-limit-sending-of-emails';
 import * as T from 'fp-ts/Task';
 
 describe('rate-limit-sending-of-emails', () => {
@@ -14,7 +14,7 @@ describe('rate-limit-sending-of-emails', () => {
   describe('when the recipient has been sent less than the limit of emails in the current timewindow', () => {
     let result: E.Either<Failure, Email>;
     beforeEach(async () => {
-      result = await rateLimitSendingOfEmails(1, 10)(email)();
+      result = await createRateLimiter(1, 10)(email)();
     });
 
     it('returns the input email on the Right', () => {
@@ -23,7 +23,7 @@ describe('rate-limit-sending-of-emails', () => {
   });
 
   describe('when the recipient has already been sent the limit of emails in current timewindow', () => {
-    const rateLimiter = rateLimitSendingOfEmails(3, 10);
+    const rateLimiter = createRateLimiter(3, 10);
     let result: E.Either<Failure, Email>;
     beforeEach(async () => {
       await rateLimiter(email)();
@@ -38,7 +38,7 @@ describe('rate-limit-sending-of-emails', () => {
   });
 
   describe('when the recipient was sent the limit of emails in the past, but not in the current time window', () => {
-    const rateLimiter = rateLimitSendingOfEmails(1, 1);
+    const rateLimiter = createRateLimiter(1, 1);
     let result: E.Either<Failure, Email>;
     beforeEach(async () => {
       await rateLimiter(email)();

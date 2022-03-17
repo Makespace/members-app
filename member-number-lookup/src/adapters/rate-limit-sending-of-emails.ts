@@ -6,16 +6,28 @@ import * as B from 'fp-ts/boolean';
 
 type PastActivity = Array<{emailAddress: EmailAddress; timestamp: number}>;
 
-type RateLimitSendingOfEmails = (email: Email) => TE.TaskEither<Failure, Email>;
-
-export const rateLimitSendingOfEmails = (
+type CreateRateLimiter = (
   limit: number,
-  timeWindowInSeconds = 86400
-): RateLimitSendingOfEmails => {
+  timeWindowInSeconds: number
+) => (email: Email) => TE.TaskEither<Failure, Email>;
+
+export const createRateLimiter: CreateRateLimiter = (
+  limit,
+  timeWindowInSeconds
+) => {
   const pastActivity: PastActivity = [];
+
+  const recordActivityFor = (email: Email) => {
+    pastActivity.push({
+      emailAddress: email.recipient,
+      timestamp: Date.now(),
+    });
+  };
 
   return email => {
     const startOfCurrentWindow = Date.now() - timeWindowInSeconds;
+    const failureOf = (email: Email) =>
+      failure('Email rate limit exceeded')({email, limitPerDay: limit});
     return pipe(
       pastActivity,
       A.filter(activity => activity.emailAddress === email.recipient),
@@ -23,15 +35,9 @@ export const rateLimitSendingOfEmails = (
       A.size,
       sentInCurrentWindow => sentInCurrentWindow < limit,
       B.match(
-        () =>
-          TE.left(
-            failure('Email rate limit exceeded')({email, limitPerDay: limit})
-          ),
+        () => TE.left(failureOf(email)),
         () => {
-          pastActivity.push({
-            emailAddress: email.recipient,
-            timestamp: Date.now(),
-          });
+          recordActivityFor(email);
           return TE.right(email);
         }
       )

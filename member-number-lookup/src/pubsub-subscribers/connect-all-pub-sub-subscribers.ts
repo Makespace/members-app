@@ -6,12 +6,12 @@ import {Logger} from 'pino';
 import {sendEmail, getMemberNumber} from '../adapters';
 import {formatValidationErrors} from 'io-ts-reporters';
 import * as E from 'fp-ts/Either';
-import {rateLimitSendingOfEmails} from '../adapters/rate-limit-sending-of-emails';
+import {createRateLimiter} from '../adapters/rate-limit-sending-of-emails';
 import {EmailAddressCodec, failure} from '../types';
 
 const adapters = {
   getMemberNumber: getMemberNumber(),
-  rateLimitSendingOfEmails: rateLimitSendingOfEmails(5),
+  rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
   sendEmail: sendEmail(),
 };
 
