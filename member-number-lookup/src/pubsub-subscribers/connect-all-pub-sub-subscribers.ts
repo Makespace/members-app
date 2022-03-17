@@ -12,7 +12,7 @@ import {rateLimitSendingOfEmails} from '../adapters/rate-limit-sending-of-emails
 
 const adapters = {
   getMemberNumber: getMemberNumber(),
-  rateLimitSendingOfEmails: rateLimitSendingOfEmails(),
+  rateLimitSendingOfEmails: rateLimitSendingOfEmails(5),
   sendEmail: sendEmail(),
 };
 

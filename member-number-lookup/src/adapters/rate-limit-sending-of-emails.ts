@@ -1,8 +1,12 @@
 import * as TE from 'fp-ts/TaskEither';
-import {Failure} from '../types';
+import {failure, Failure} from '../types';
 import {Email} from '../types/email';
 
 type RateLimitSendingOfEmails = (email: Email) => TE.TaskEither<Failure, Email>;
 
-export const rateLimitSendingOfEmails = (): RateLimitSendingOfEmails => email =>
-  TE.right(email);
+export const rateLimitSendingOfEmails =
+  (limitPerDay: number): RateLimitSendingOfEmails =>
+  email =>
+    limitPerDay > 0
+      ? TE.right(email)
+      : TE.left(failure('Email rate limit exceeded')({email, limitPerDay}));
