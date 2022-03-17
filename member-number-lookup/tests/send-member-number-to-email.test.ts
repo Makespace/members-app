@@ -6,7 +6,7 @@ import * as E from 'fp-ts/Either';
 import {Failure, failure} from '../src/types';
 
 describe('send-member-number-to-email', () => {
-  const email = faker.internet.email() as EmailAddress;
+  const emailAddress = faker.internet.email() as EmailAddress;
   const memberNumber = faker.datatype.number();
 
   describe('when the email can be uniquely linked to a member number', () => {
@@ -16,13 +16,15 @@ describe('send-member-number-to-email', () => {
     };
 
     beforeEach(async () => {
-      await sendMemberNumberToEmail(adapters)(email)();
+      await sendMemberNumberToEmail(adapters)(emailAddress)();
     });
 
     it('tries to send an email with the number', () => {
       expect(adapters.sendEmail).toHaveBeenCalledWith(
-        email,
-        expect.stringContaining(memberNumber.toString())
+        expect.objectContaining({
+          recipient: emailAddress,
+          message: expect.stringContaining(memberNumber.toString()),
+        })
       );
     });
   });
@@ -36,7 +38,7 @@ describe('send-member-number-to-email', () => {
 
     let result: E.Either<Failure, string>;
     beforeEach(async () => {
-      result = await sendMemberNumberToEmail(adapters)(email)();
+      result = await sendMemberNumberToEmail(adapters)(emailAddress)();
     });
 
     it('does not send any emails', () => {
@@ -59,7 +61,7 @@ describe('send-member-number-to-email', () => {
 
     let result: E.Either<Failure, string>;
     beforeEach(async () => {
-      result = await sendMemberNumberToEmail(adapters)(email)();
+      result = await sendMemberNumberToEmail(adapters)(emailAddress)();
     });
 
     it('returns Left with message from email adapter', () => {

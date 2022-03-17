@@ -26,7 +26,7 @@ export const connectAllPubSubSubscribers = (logger: Logger) => {
   PubSub.subscribe(
     'send-member-number-to-email',
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    async (topic, payload: unknown) =>
+    async (topic, payload) =>
       await pipe(
         payload,
         validateEmail,
