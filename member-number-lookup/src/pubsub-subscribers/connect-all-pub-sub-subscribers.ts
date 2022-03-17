@@ -4,20 +4,34 @@ import PubSub from 'pubsub-js';
 import * as TE from 'fp-ts/TaskEither';
 import {Logger} from 'pino';
 import {sendEmail, getMemberNumber} from '../adapters';
+import {formatValidationErrors} from 'io-ts-reporters';
+import {EmailAddressCodec} from '../types/email-address';
+import * as E from 'fp-ts/Either';
+import {failure} from '../types/failure';
 
 const adapters = {
   sendEmail: sendEmail(),
   getMemberNumber: getMemberNumber(),
 };
 
+const validateEmail = (input: unknown) =>
+  pipe(
+    input,
+    EmailAddressCodec.decode,
+    E.mapLeft(formatValidationErrors),
+    E.mapLeft(failure('Invalid Email'))
+  );
+
 export const connectAllPubSubSubscribers = (logger: Logger) => {
   PubSub.subscribe(
     'send-member-number-to-email',
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    async (topic, email) =>
+    async (topic, payload: unknown) =>
       await pipe(
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        sendMemberNumberToEmail(adapters)(email),
+        payload,
+        validateEmail,
+        TE.fromEither,
+        TE.chain(sendMemberNumberToEmail(adapters)),
         TE.match(
           failure =>
             logger.error({topic, failure}, 'Failed to process message'),

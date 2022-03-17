@@ -1,10 +1,7 @@
-import {EmailAddress, EmailAddressCodec} from '../types/email-address';
+import {EmailAddress} from '../types/email-address';
 import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
-import {sequenceS} from 'fp-ts/lib/Apply';
-import {formatValidationErrors} from 'io-ts-reporters';
-import * as E from 'fp-ts/Either';
-import {failure, Failure} from '../types';
+import {Failure} from '../types';
 
 type Ports = {
   sendEmail: (
@@ -16,14 +13,6 @@ type Ports = {
   ) => TE.TaskEither<Failure, number>;
 };
 
-const validateEmail = (input: string) =>
-  pipe(
-    input,
-    EmailAddressCodec.decode,
-    E.mapLeft(formatValidationErrors),
-    E.mapLeft(failure('Invalid Email'))
-  );
-
 const renderMessage = (memberNumber: number) => `
   Hi,
 
@@ -32,29 +21,14 @@ const renderMessage = (memberNumber: number) => `
 
 type SendMemberNumberToEmail = (
   ports: Ports
-) => (email: string) => TE.TaskEither<Failure, string>;
+) => (emailAddress: EmailAddress) => TE.TaskEither<Failure, string>;
 
 export const sendMemberNumberToEmail: SendMemberNumberToEmail =
-  ports => email =>
+  ports => emailAddress =>
     pipe(
-      email,
-      validateEmail,
-      TE.fromEither,
-      TE.chain(validatedEmail =>
-        pipe(
-          {
-            memberNumber: ports.getMemberNumber(validatedEmail),
-            validatedEmail: TE.right(validatedEmail),
-          },
-          sequenceS(TE.ApplyPar)
-        )
-      ),
-      TE.map(({memberNumber, validatedEmail}) => ({
-        validatedEmail,
-        message: renderMessage(memberNumber),
-      })),
-      TE.chainW(({message, validatedEmail}) =>
-        ports.sendEmail(validatedEmail, message)
-      ),
-      TE.map(() => `Sent member number to ${email}`)
+      emailAddress,
+      ports.getMemberNumber,
+      TE.map(renderMessage),
+      TE.chain(msg => ports.sendEmail(emailAddress, msg)),
+      TE.map(() => `Sent member number to ${emailAddress}`)
     );
