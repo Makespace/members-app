@@ -1,7 +1,7 @@
 CREATE DATABASE IF NOT EXISTS makespace;
 USE makespace;
 
-DROP TABLE `InductionFormResponse`;
+DROP TABLE IF EXISTS `InductionFormResponse`;
 CREATE TABLE `InductionFormResponse` (
   `idInductionFormResponse` int(11) NOT NULL AUTO_INCREMENT,
   `Given_Member_Number` int(11) DEFAULT NULL COMMENT 'The member number given to the inductee, typically attached to the keyfob.',
