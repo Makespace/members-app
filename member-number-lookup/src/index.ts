@@ -3,11 +3,15 @@ import {pipe} from 'fp-ts/lib/function';
 import path from 'path';
 import * as E from 'fp-ts/Either';
 import {parseEmailAddressFromBody} from './parse-email-address-from-body';
-import {landingPage, invalidEmailPage, checkYourMailPage} from './pages';
-import {connectAllPubSubSubscribers} from './pubsub-subscribers/connect-all-pub-sub-subscribers';
+import {
+  landingPage,
+  invalidEmailPage,
+  checkYourMailPage,
+  notFoundPage,
+} from './pages';
 import PubSub from 'pubsub-js';
 import createLogger from 'pino';
-import {notFoundPage} from './pages/not-found';
+import {connectAllPubSubSubscribers} from './pubsub-subscribers';
 
 const app: Application = express();
 const logger = createLogger();

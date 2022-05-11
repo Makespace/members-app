@@ -3,10 +3,9 @@ import {sendMemberNumberToEmail} from './send-member-number-to-email';
 import PubSub from 'pubsub-js';
 import * as TE from 'fp-ts/TaskEither';
 import {Logger} from 'pino';
-import {sendEmail, getMemberNumber} from '../adapters';
+import {sendEmail, getMemberNumber, createRateLimiter} from '../adapters';
 import {formatValidationErrors} from 'io-ts-reporters';
 import * as E from 'fp-ts/Either';
-import {createRateLimiter} from '../adapters/rate-limit-sending-of-emails';
 import {EmailAddressCodec, failure} from '../types';
 
 const adapters = {
