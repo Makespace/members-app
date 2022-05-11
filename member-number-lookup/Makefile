@@ -1,4 +1,4 @@
-.phony: dev fix test
+.phony: dev fix prod test
 
 node_modules: package.json package-lock.json
 	npm install
@@ -8,6 +8,9 @@ dev:
 
 fix: node_modules
 	npm run fix
+
+prod: node_modules
+	npm run start
 
 test: node_modules
 	npm run test
