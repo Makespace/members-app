@@ -4,7 +4,7 @@ node_modules: package.json package-lock.json
 	npm install
 
 dev:
-	docker-compose up --build
+	docker-compose --file docker-compose.yaml up --build
 
 fix: node_modules
 	npm run fix

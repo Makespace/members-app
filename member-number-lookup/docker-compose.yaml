@@ -2,12 +2,15 @@ version: '3'
 
 services:
   app:
-    build: '.'
+    build:
+      target: dev
+      context: .
     ports:
-      - 8080:80
+      - 8080:8080
     volumes:
       - ./src:/app/src
     environment:
+      PORT: "8080"
       MYSQL_DATABASE: makespace
       MYSQL_USER: root
       MYSQL_PASSWORD: secret
