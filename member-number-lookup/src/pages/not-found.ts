@@ -6,5 +6,5 @@ export const notFoundPage = pipe(
 		<h1>Sorry, can't find that page</h1>
 		Please check the address you requested.
 	`,
-  pageTemplate
+  pageTemplate('Page not found')
 );

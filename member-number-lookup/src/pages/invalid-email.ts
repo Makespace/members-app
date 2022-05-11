@@ -6,5 +6,5 @@ export const invalidEmailPage = pipe(
 		<h1>Whoops...</h1>
 		<p>You entered something that isn't a valid email address.</p>
 	`,
-  pageTemplate
+  pageTemplate('Invalid entry')
 );

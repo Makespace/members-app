@@ -10,5 +10,5 @@ export const landingPage = pipe(
 			<input type="submit" value="Send Member Number">
 		</form>
 	`,
-  pageTemplate
+  pageTemplate('Member Number Lookup')
 );

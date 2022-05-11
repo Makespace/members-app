@@ -1,11 +1,12 @@
-export const pageTemplate = (body: string) => `
+export const pageTemplate = (title: string) => (body: string) =>
+  `
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
 			<meta charset="UTF-8">
 			<meta name="viewport" content="width=device-width, initial-scale=1.0">
 			<meta http-equiv="X-UA-Compatible" content="ie=edge">
-			<title>MS Member Number Lookup</title>
+			<title>${title} | Cambridge Makespace</title>
 			<link rel="stylesheet" href="static/vanilla.css">
 
 			<!-- Generated using https://realfavicongenerator.net -->
