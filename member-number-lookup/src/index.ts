@@ -15,7 +15,7 @@ import {connectAllPubSubSubscribers} from './pubsub-subscribers';
 
 const app: Application = express();
 const logger = createLogger();
-const port = 80;
+const port = 8080;
 app.use(express.urlencoded({extended: true}));
 
 // ROUTES
