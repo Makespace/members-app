@@ -7,6 +7,7 @@ import {landingPage, invalidEmailPage, checkYourMailPage} from './pages';
 import {connectAllPubSubSubscribers} from './pubsub-subscribers/connect-all-pub-sub-subscribers';
 import PubSub from 'pubsub-js';
 import createLogger from 'pino';
+import {notFoundPage} from './pages/not-found';
 
 const app: Application = express();
 const logger = createLogger();
@@ -32,6 +33,10 @@ app.post('/send-member-number-by-email', (req: Request, res: Response) => {
       }
     )
   );
+});
+
+app.use((req, res) => {
+  res.status(404).send(notFoundPage);
 });
 
 // START APPLICATION
