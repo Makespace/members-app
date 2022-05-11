@@ -12,13 +12,12 @@
   "scripts": {
     "start": "node build/src/index.js",
     "prestart": "npm run clean && npm run compile && npm run copy-static",
-    "copy-static": "copyfiles -u 1 src/static/**/* build/",
+    "copy-static": "copyfiles src/static/* build/ && copyfiles src/static/**/* build/",
     "test": "jest",
     "lint": "gts lint",
     "clean": "gts clean",
     "compile": "tsc",
     "fix": "gts fix",
-    "prepare": "npm run compile",
     "pretest": "npm run compile",
     "posttest": "npm run lint"
   },
