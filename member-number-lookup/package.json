@@ -10,9 +10,7 @@
   "license": "Apache-2.0",
   "keywords": [],
   "scripts": {
-    "start": "node build/src/index.js",
-    "prestart": "npm run clean && npm run compile && npm run copy-static",
-    "copy-static": "copyfiles src/static/* build/ && copyfiles src/static/**/* build/",
+    "start": "ts-node-dev --transpile-only ./src/index.ts",
     "test": "jest",
     "lint": "gts lint",
     "clean": "gts clean",
