@@ -6,9 +6,9 @@ import {identity, pipe} from 'fp-ts/lib/function';
 type SendEmail = (email: Email) => TE.TaskEither<Failure, string>;
 
 const transporter = nodemailer.createTransport({
-  host: 'mailcatcher',
-  port: 1025,
-  secure: false,
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT ?? '25'),
+  secure: process.env.SMTP_SECURE !== 'false',
 });
 
 export const sendEmail = (): SendEmail => email =>
