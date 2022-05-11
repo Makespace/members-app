@@ -14,8 +14,17 @@ import createLogger from 'pino';
 import {connectAllPubSubSubscribers} from './pubsub-subscribers';
 
 const app: Application = express();
-const logger = createLogger();
+
+const logger = createLogger({
+  formatters: {
+    level: label => {
+      return {severity: label};
+    },
+  },
+});
+
 const port = parseInt(process.env.PORT ?? '8080');
+
 app.use(express.urlencoded({extended: true}));
 
 // ROUTES
