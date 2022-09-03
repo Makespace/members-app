@@ -14,8 +14,16 @@ const pool = mysql.createPool({
   password: process.env.MYSQL_PASSWORD,
 });
 
-const selectMemberNumberWhereEmail =
-  'SELECT Given_Member_Number FROM InductionFormResponse WHERE Member_Email = ?';
+const selectMemberNumberWhereEmail = `
+SELECT Member_Number
+FROM RecurlyAccounts
+JOIN MemberRecurlyAccount
+JOIN Members
+ON MemberRecurlyAccount.Member = Members.idMembers
+AND RecurlyAccounts.idRecurlyAccounts = MemberRecurlyAccount.RecurlyAccount
+WHERE
+Email = ? OR Account_Code = ?
+;`;
 
 const queryDatabase = (pool: Pool, query: string, values?: unknown) => {
   return new Promise((resolve, reject) => {
@@ -30,7 +38,7 @@ const queryDatabase = (pool: Pool, query: string, values?: unknown) => {
 
 const MemberNumberQueryResult = tt.readonlyNonEmptyArray(
   t.type({
-    Given_Member_Number: t.Int,
+    Member_Number: t.Int,
   })
 );
 
@@ -41,7 +49,7 @@ type GetMemberNumber = (
 export const getMemberNumber = (): GetMemberNumber => email =>
   pipe(
     TE.tryCatch(
-      () => queryDatabase(pool, selectMemberNumberWhereEmail, [email]),
+      () => queryDatabase(pool, selectMemberNumberWhereEmail, [email, email]),
       failure('DB query failed')
     ),
     TE.chainEitherK(
