@@ -67,5 +67,5 @@ export const getMemberNumber = (): GetMemberNumber => email =>
           email,
         })
     ),
-    TE.map(([result]) => result.Given_Member_Number)
+    TE.map(([result]) => result.Member_Number)
   );
