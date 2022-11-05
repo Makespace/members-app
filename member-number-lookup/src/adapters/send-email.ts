@@ -20,7 +20,6 @@ export const sendEmail = (): SendEmail => email =>
     TE.tryCatch(
       () =>
         transporter.sendMail({
-          member-number-lookup@
           from: '"Member number lookup" <member-number-lookup@makespace.org>',
           to: email.recipient,
           subject: email.subject,
