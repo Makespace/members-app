@@ -6,6 +6,7 @@ import {formatValidationErrors} from 'io-ts-reporters';
 import * as E from 'fp-ts/Either';
 import {EmailAddressCodec, failure} from '../types';
 import {Dependencies} from '../dependencies';
+import {sendLogInLink} from './send-log-in-link';
 
 const validateEmail = (input: unknown) =>
   pipe(
@@ -25,6 +26,22 @@ export const connectAllPubSubSubscribers = (deps: Dependencies) => {
         validateEmail,
         TE.fromEither,
         TE.chain(sendMemberNumberToEmail(deps)),
+        TE.match(
+          failure =>
+            deps.logger.error({topic, failure}, 'Failed to process message'),
+          successMsg => deps.logger.info({topic, result: successMsg})
+        )
+      )()
+  );
+  PubSub.subscribe(
+    'send-log-in-link',
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    async (topic, payload) =>
+      await pipe(
+        payload,
+        validateEmail,
+        TE.fromEither,
+        TE.chain(sendLogInLink(deps)),
         TE.match(
           failure =>
             deps.logger.error({topic, failure}, 'Failed to process message'),

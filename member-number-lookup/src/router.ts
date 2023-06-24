@@ -48,10 +48,24 @@ export const createRouter = (): Router => {
     res.status(200).send(logInPage);
   });
 
-  router.post(
+  router.post('/auth', (req: Request, res: Response) => {
+    pipe(
+      req.body,
+      parseEmailAddressFromBody,
+      E.matchW(
+        () => res.status(400).send(invalidEmailPage),
+        email => {
+          PubSub.publish('send-log-in-link', email);
+          res.status(200).send(checkYourMailPage(email));
+        }
+      )
+    );
+  });
+
+  router.get(
     '/auth/callback',
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    passport.authenticate('magiclink'),
+    passport.authenticate('magiclink', {failureRedirect: '/log-in'}),
     (req: Request, res: Response) => {
       res.redirect('/profile');
     }
