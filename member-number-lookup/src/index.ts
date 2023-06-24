@@ -5,6 +5,9 @@ import {createAdapters} from './adapters';
 import passport from 'passport';
 import session from 'cookie-session';
 import {Strategy as CustomStrategy} from 'passport-custom';
+import {pipe} from 'fp-ts/lib/function';
+import {parseEmailAddressFromBody} from './parse-email-address-from-body';
+import * as E from 'fp-ts/Either';
 
 const port = parseInt(process.env.PORT ?? '8080');
 
@@ -17,7 +20,14 @@ app.use(express.urlencoded({extended: true}));
 passport.use(
   'magiclink',
   new CustomStrategy((req, done) => {
-    done(undefined, {email: 'foo@example.com'});
+    pipe(
+      req.body,
+      parseEmailAddressFromBody,
+      E.match(
+        error => done(error),
+        email => done(undefined, {email})
+      )
+    );
   })
 );
 

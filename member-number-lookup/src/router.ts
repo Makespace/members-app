@@ -6,12 +6,23 @@ import {
   landingPage,
   logInPage,
   notFoundPage,
+  profilePage,
 } from './pages';
 import {pipe} from 'fp-ts/lib/function';
 import {parseEmailAddressFromBody} from './parse-email-address-from-body';
 import * as E from 'fp-ts/Either';
 import PubSub from 'pubsub-js';
 import passport from 'passport';
+import * as t from 'io-ts';
+import {EmailAddressCodec} from './types';
+
+const SessionCodec = t.strict({
+  passport: t.strict({
+    user: t.strict({
+      email: EmailAddressCodec,
+    }),
+  }),
+});
 
 export const createRouter = (): Router => {
   const router = Router();
@@ -20,17 +31,29 @@ export const createRouter = (): Router => {
     res.status(200).send(landingPage);
   });
 
+  router.get('/profile', (req: Request, res: Response) => {
+    pipe(
+      req.session,
+      SessionCodec.decode,
+      E.map(session => session.passport.user.email),
+      E.map(emailAddress => profilePage({emailAddress})),
+      E.matchW(
+        () => res.status(400).send('Oops, something went wrong.'),
+        page => res.status(200).send(page)
+      )
+    );
+  });
+
   router.get('/log-in', (req: Request, res: Response) => {
     res.status(200).send(logInPage);
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   router.post(
     '/auth/callback',
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     passport.authenticate('magiclink'),
     (req: Request, res: Response) => {
-      res.redirect('/');
+      res.redirect('/profile');
     }
   );
 

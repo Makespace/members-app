@@ -298,6 +298,14 @@ table td:not(last-of-type) {
   border-right: 1px solid var(--primary-color);
 }
 
+dt {
+  font-weight: bold;
+}
+
+dd {
+  margin-bottom: 0.5em;
+}
+
 input {
   appearance: none;
   border: 1px solid var(--text-color);
