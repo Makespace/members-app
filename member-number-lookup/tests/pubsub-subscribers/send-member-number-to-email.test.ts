@@ -3,24 +3,25 @@ import {sendMemberNumberToEmail} from '../../src/pubsub-subscribers/send-member-
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import {EmailAddress, Failure, failure} from '../../src/types';
+import {happyPathAdapters} from '../adapters/happy-path-adapters.helper';
 
 describe('send-member-number-to-email', () => {
   const emailAddress = faker.internet.email() as EmailAddress;
   const memberNumber = faker.datatype.number();
 
   describe('when the email can be uniquely linked to a member number', () => {
-    const adapters = {
+    const deps = {
+      ...happyPathAdapters,
       getMemberNumber: () => TE.right(memberNumber),
-      rateLimitSendingOfEmails: TE.right,
       sendEmail: jest.fn(() => TE.right('success')),
     };
 
     beforeEach(async () => {
-      await sendMemberNumberToEmail(adapters)(emailAddress)();
+      await sendMemberNumberToEmail(deps)(emailAddress)();
     });
 
     it('tries to send an email with the number', () => {
-      expect(adapters.sendEmail).toHaveBeenCalledWith(
+      expect(deps.sendEmail).toHaveBeenCalledWith(
         expect.objectContaining({
           recipient: emailAddress,
           message: expect.stringContaining(memberNumber.toString()),
@@ -31,19 +32,19 @@ describe('send-member-number-to-email', () => {
 
   describe('when database query fails', () => {
     const errorMsg = 'db query failed';
-    const adapters = {
+    const deps = {
+      ...happyPathAdapters,
       getMemberNumber: () => TE.left(failure(errorMsg)({})),
-      rateLimitSendingOfEmails: TE.right,
       sendEmail: jest.fn(() => TE.right('success')),
     };
 
     let result: E.Either<Failure, string>;
     beforeEach(async () => {
-      result = await sendMemberNumberToEmail(adapters)(emailAddress)();
+      result = await sendMemberNumberToEmail(deps)(emailAddress)();
     });
 
     it('does not send any emails', () => {
-      expect(adapters.sendEmail).not.toHaveBeenCalled();
+      expect(deps.sendEmail).not.toHaveBeenCalled();
     });
 
     it('return on Left with message from db adapter', () => {
@@ -55,15 +56,14 @@ describe('send-member-number-to-email', () => {
 
   describe('when email fails to send', () => {
     const errorMsg = 'sending of email failed';
-    const adapters = {
-      getMemberNumber: () => TE.right(memberNumber),
-      rateLimitSendingOfEmails: TE.right,
+    const deps = {
+      ...happyPathAdapters,
       sendEmail: () => TE.left(failure(errorMsg)()),
     };
 
     let result: E.Either<Failure, string>;
     beforeEach(async () => {
-      result = await sendMemberNumberToEmail(adapters)(emailAddress)();
+      result = await sendMemberNumberToEmail(deps)(emailAddress)();
     });
 
     it('returns Left with message from email adapter', () => {
