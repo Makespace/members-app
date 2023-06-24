@@ -3,16 +3,28 @@ import {sendMemberNumberToEmail} from './send-member-number-to-email';
 import PubSub from 'pubsub-js';
 import * as TE from 'fp-ts/TaskEither';
 import {Logger} from 'pino';
-import {sendEmail, getMemberNumber, createRateLimiter} from '../adapters';
+import {
+  sendEmail,
+  getMemberNumber,
+  getMemberNumberStubbed,
+  createRateLimiter,
+} from '../adapters';
 import {formatValidationErrors} from 'io-ts-reporters';
 import * as E from 'fp-ts/Either';
 import {EmailAddressCodec, failure} from '../types';
 
-const adapters = {
+let adapters = {
   getMemberNumber: getMemberNumber(),
   rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
   sendEmail: sendEmail(),
 };
+
+if (process.env.USE_STUBBED_ADAPTERS === 'true') {
+  adapters = {
+    ...adapters,
+    getMemberNumber: getMemberNumberStubbed(),
+  };
+}
 
 const validateEmail = (input: unknown) =>
   pipe(

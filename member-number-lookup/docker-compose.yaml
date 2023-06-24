@@ -18,6 +18,7 @@ services:
       SMTP_SECURE: "false"
       SMTP_USER: ""
       SMTP_PASSWORD: ""
+      USE_STUBBED_ADAPTERS: "true"
 
   mailcatcher:
     image: sj26/mailcatcher@sha256:1f02ff3bd4fd728837d7ddf768346eebd39e5e2232883c41378c02691378e986
