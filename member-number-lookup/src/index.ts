@@ -7,6 +7,7 @@ import session from 'cookie-session';
 import {Strategy as CustomStrategy} from 'passport-custom';
 import {pipe} from 'fp-ts/lib/function';
 import {parseEmailAddressFromBody} from './parse-email-address-from-body';
+import httpLogger from 'pino-http';
 import * as E from 'fp-ts/Either';
 
 const port = parseInt(process.env.PORT ?? '8080');
@@ -14,6 +15,8 @@ const port = parseInt(process.env.PORT ?? '8080');
 const deps = createAdapters();
 
 const app: Application = express();
+
+app.use(httpLogger({logger: deps.logger}));
 
 app.use(express.urlencoded({extended: true}));
 
