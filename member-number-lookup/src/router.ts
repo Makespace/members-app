@@ -4,12 +4,14 @@ import {
   checkYourMailPage,
   invalidEmailPage,
   landingPage,
+  logInPage,
   notFoundPage,
 } from './pages';
 import {pipe} from 'fp-ts/lib/function';
 import {parseEmailAddressFromBody} from './parse-email-address-from-body';
 import * as E from 'fp-ts/Either';
 import PubSub from 'pubsub-js';
+import passport from 'passport';
 
 export const createRouter = (): Router => {
   const router = Router();
@@ -17,6 +19,20 @@ export const createRouter = (): Router => {
   router.get('/', (req: Request, res: Response) => {
     res.status(200).send(landingPage);
   });
+
+  router.get('/log-in', (req: Request, res: Response) => {
+    res.status(200).send(logInPage);
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+  router.post(
+    '/auth/callback',
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    passport.authenticate('magiclink'),
+    (req: Request, res: Response) => {
+      res.redirect('/');
+    }
+  );
 
   router.use('/static', express.static(path.resolve(__dirname, './static')));
 
