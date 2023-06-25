@@ -18,7 +18,7 @@ export const createRouter = (): Router => {
     pipe(
       req.session,
       authentication.getUserFromSession,
-      E.fromOption(() => 'No logged in user found'),
+      E.fromOption(() => 'You are not logged in.'),
       E.map(profilePage),
       E.matchW(
         msg => res.status(429).send(oopsPage(msg)),
@@ -31,7 +31,9 @@ export const createRouter = (): Router => {
     pipe(
       req.body,
       parseEmailAddressFromBody,
-      E.mapLeft(() => "You entered something that isn't a valid email address"),
+      E.mapLeft(
+        () => "You entered something that isn't a valid email address."
+      ),
       E.matchW(
         msg => res.status(400).send(oopsPage(msg)),
         email => {
@@ -49,7 +51,7 @@ export const createRouter = (): Router => {
   router.use((req, res) => {
     res
       .status(404)
-      .send(oopsPage('The page you have requested does not exist'));
+      .send(oopsPage('The page you have requested does not exist.'));
   });
   return router;
 };

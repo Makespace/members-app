@@ -76,6 +76,11 @@ export const configureRoutes = (router: Router) => {
     res.status(200).send(logInPage);
   });
 
+  router.get('/log-out', (req: Request, res: Response) => {
+    req.session = null;
+    res.redirect('/');
+  });
+
   router.post('/auth', (req: Request, res: Response) => {
     pipe(
       req.body,
