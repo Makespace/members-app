@@ -72,9 +72,4 @@ describe('send-member-number-to-email', () => {
       );
     });
   });
-
-  describe('when email rate limit has been reached for that email address', () => {
-    it.todo('does not send any emails');
-    it.todo('returns Left with message from rate limiter');
-  });
 });
