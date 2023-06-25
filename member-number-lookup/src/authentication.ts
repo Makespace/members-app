@@ -1,5 +1,5 @@
 import {Request, Response, Router} from 'express';
-import {checkYourMailPage, invalidEmailPage, logInPage} from './pages';
+import {checkYourMailPage, logInPage, oopsPage} from './pages';
 import {pipe} from 'fp-ts/lib/function';
 import {parseEmailAddressFromBody} from './parse-email-address-from-body';
 import * as E from 'fp-ts/Either';
@@ -80,8 +80,9 @@ export const configureRoutes = (router: Router) => {
     pipe(
       req.body,
       parseEmailAddressFromBody,
+      E.mapLeft(() => "You entered something that isn't a valid email address"),
       E.matchW(
-        () => res.status(400).send(invalidEmailPage),
+        msg => res.status(400).send(oopsPage(msg)),
         email => {
           PubSub.publish('send-log-in-link', email);
           res.status(200).send(checkYourMailPage(email));

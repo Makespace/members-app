@@ -1,13 +1,7 @@
 import express, {Request, Response, Router} from 'express';
 import * as authentication from './authentication';
 import path from 'path';
-import {
-  checkYourMailPage,
-  invalidEmailPage,
-  landingPage,
-  notFoundPage,
-  profilePage,
-} from './pages';
+import {checkYourMailPage, landingPage, oopsPage, profilePage} from './pages';
 import {pipe} from 'fp-ts/lib/function';
 import {parseEmailAddressFromBody} from './parse-email-address-from-body';
 import * as E from 'fp-ts/Either';
@@ -27,7 +21,7 @@ export const createRouter = (): Router => {
       E.fromOption(() => 'No logged in user found'),
       E.map(profilePage),
       E.matchW(
-        msg => res.status(429).send(msg),
+        msg => res.status(429).send(oopsPage(msg)),
         page => res.status(200).send(page)
       )
     );
@@ -37,8 +31,9 @@ export const createRouter = (): Router => {
     pipe(
       req.body,
       parseEmailAddressFromBody,
+      E.mapLeft(() => "You entered something that isn't a valid email address"),
       E.matchW(
-        () => res.status(400).send(invalidEmailPage),
+        msg => res.status(400).send(oopsPage(msg)),
         email => {
           PubSub.publish('send-member-number-to-email', email);
           res.status(200).send(checkYourMailPage(email));
@@ -52,7 +47,9 @@ export const createRouter = (): Router => {
   router.use('/static', express.static(path.resolve(__dirname, './static')));
 
   router.use((req, res) => {
-    res.status(404).send(notFoundPage);
+    res
+      .status(404)
+      .send(oopsPage('The page you have requested does not exist'));
   });
   return router;
 };
