@@ -35,7 +35,7 @@ app.use(
     secure: conf.PUBLIC_URL.startsWith('https://'),
   })
 );
-app.use(createRouter());
+app.use(createRouter(deps));
 connectAllPubSubSubscribers(deps, conf);
 
 // Start application

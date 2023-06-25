@@ -1,5 +1,4 @@
 import {Config} from '../configuration';
-import * as TE from 'fp-ts/TaskEither';
 import {Dependencies} from '../dependencies';
 import {getMemberNumber} from './get-member-number';
 import {getMemberNumberStubbed} from './get-member-number-stubbed';
@@ -9,6 +8,7 @@ import createLogger from 'pino';
 import mysql from 'mysql';
 import nodemailer from 'nodemailer';
 import smtp from 'nodemailer-smtp-transport';
+import {getTrainersStubbed} from './get-trainers-stubbed';
 
 export const createAdapters = (conf: Config): Dependencies => {
   const logger = createLogger({
@@ -41,7 +41,7 @@ export const createAdapters = (conf: Config): Dependencies => {
     getMemberNumber: conf.USE_STUBBED_ADAPTERS
       ? getMemberNumberStubbed()
       : getMemberNumber(pool),
-    getTrainers: () => TE.right([]),
+    getTrainers: getTrainersStubbed(),
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter),
     logger,

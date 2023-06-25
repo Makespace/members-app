@@ -28,7 +28,7 @@ const renderTrainers = (trainers: ViewModel['trainers']) =>
         <tr>
           <td>${trainer.name}</td>
           <td>${trainer.equipment}</td>
-          <td>${trainer.becameTrainerAt}</td>
+          <td>${trainer.becameTrainerAt.toDateString()}</td>
         </tr>
       `
     ),

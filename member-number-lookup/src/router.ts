@@ -7,31 +7,35 @@ import {parseEmailAddressFromBody} from './parse-email-address-from-body';
 import * as E from 'fp-ts/Either';
 import PubSub from 'pubsub-js';
 import {sequenceS} from 'fp-ts/lib/Apply';
+import {Dependencies} from './dependencies';
+import * as TE from 'fp-ts/TaskEither';
+import {failure} from './types';
 
-export const createRouter = (): Router => {
+export const createRouter = (deps: Dependencies): Router => {
   const router = Router();
 
   router.get('/', (req: Request, res: Response) => {
     res.status(200).send(landingPage);
   });
 
-  router.get('/dashboard', (req: Request, res: Response) => {
-    pipe(
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
+  router.get('/dashboard', async (req: Request, res: Response) => {
+    await pipe(
       {
         user: pipe(
           req.session,
           authentication.getUserFromSession,
-          E.fromOption(() => 'You are not logged in.')
+          TE.fromOption(() => failure('You are not logged in.')())
         ),
-        trainers: E.right([]),
+        trainers: deps.getTrainers(),
       },
-      sequenceS(E.Apply),
-      E.map(dashboardPage),
-      E.matchW(
-        msg => res.status(429).send(oopsPage(msg)),
+      sequenceS(TE.ApplySeq),
+      TE.map(dashboardPage),
+      TE.matchW(
+        failure => res.status(429).send(oopsPage(failure.message)),
         page => res.status(200).send(page)
       )
-    );
+    )();
   });
 
   router.post('/send-member-number-by-email', (req: Request, res: Response) => {
