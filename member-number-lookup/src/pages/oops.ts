@@ -1,6 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
-import {pageTemplate} from './page-template';
 import {html} from './html';
+import {pageTemplateNoNav} from './page-template-no-nav';
 
 export const oopsPage = (message: string) =>
   pipe(
@@ -12,5 +12,5 @@ export const oopsPage = (message: string) =>
         Database owners.
       </p>
     `,
-    pageTemplate('Member Number Lookup')
+    pageTemplateNoNav('Member Number Lookup')
   );

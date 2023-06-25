@@ -351,3 +351,16 @@ input:active {
     --tertiary-color: #2d2d2d;
   }
 }
+
+.page-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4rem;
+  margin-bottom: 4rem;
+}
+
+.page-nav__logo {
+  height: 4rem;
+  margin: 0;
+}

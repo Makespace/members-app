@@ -1,6 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
-import {pageTemplate} from './page-template';
 import {html} from './html';
+import {pageTemplateNoNav} from './page-template-no-nav';
 
 export const checkYourMailPage = (submittedEmailAddress: string) =>
   pipe(
@@ -12,5 +12,5 @@ export const checkYourMailPage = (submittedEmailAddress: string) =>
       </p>
       <p>If nothing happens please reach out to the Makespace Database Team.</p>
     `,
-    pageTemplate('Check your mail')
+    pageTemplateNoNav('Check your mail')
   );

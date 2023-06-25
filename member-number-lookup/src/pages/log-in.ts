@@ -1,6 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
-import {pageTemplate} from './page-template';
 import {html} from './html';
+import {pageTemplateNoNav} from './page-template-no-nav';
 
 export const logInPage = pipe(
   html`
@@ -12,5 +12,5 @@ export const logInPage = pipe(
       <input type="submit" value="Email me a link" />
     </form>
   `,
-  pageTemplate('Member Number Lookup')
+  pageTemplateNoNav('Member Number Lookup')
 );
