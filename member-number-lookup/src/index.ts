@@ -28,13 +28,13 @@ app.use(express.urlencoded({extended: true}));
 app.use(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   session({
-    secret: conf.sessionSecret,
+    secret: conf.SESSION_SECRET,
   })
 );
 app.use(createRouter());
 connectAllPubSubSubscribers(deps, conf);
 
 // Start application
-app.listen(conf.port, () =>
-  deps.logger.info({port: conf.port}, 'Server listening')
+app.listen(conf.PORT, () =>
+  deps.logger.info({port: conf.PORT}, 'Server listening')
 );

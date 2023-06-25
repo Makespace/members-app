@@ -19,25 +19,25 @@ export const createAdapters = (conf: Config): Dependencies => {
   });
 
   const pool = mysql.createPool({
-    host: conf.sql.host,
-    database: conf.sql.database,
-    user: conf.sql.user,
-    password: conf.sql.password,
+    host: conf.MYSQL_HOST,
+    database: conf.MYSQL_DATABASE,
+    user: conf.MYSQL_USER,
+    password: conf.MYSQL_PASSWORD,
   });
 
   const emailTransporter = nodemailer.createTransport(
     smtp({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '2525'),
+      host: conf.SMTP_HOST,
+      port: conf.SMTP_PORT,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
+        user: conf.SMTP_USER,
+        pass: conf.SMTP_PASSWORD,
       },
     })
   );
 
   return {
-    getMemberNumber: conf.useStubbedAdapters
+    getMemberNumber: conf.USE_STUBBED_ADAPTERS
       ? getMemberNumberStubbed()
       : getMemberNumber(pool),
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
