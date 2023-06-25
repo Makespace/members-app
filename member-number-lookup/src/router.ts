@@ -1,10 +1,10 @@
 import express, {Request, Response, Router} from 'express';
+import * as authentication from './authentication';
 import path from 'path';
 import {
   checkYourMailPage,
   invalidEmailPage,
   landingPage,
-  logInPage,
   notFoundPage,
   profilePage,
 } from './pages';
@@ -12,7 +12,6 @@ import {pipe} from 'fp-ts/lib/function';
 import {parseEmailAddressFromBody} from './parse-email-address-from-body';
 import * as E from 'fp-ts/Either';
 import PubSub from 'pubsub-js';
-import passport from 'passport';
 import * as t from 'io-ts';
 import {EmailAddressCodec} from './types';
 
@@ -44,35 +43,6 @@ export const createRouter = (): Router => {
     );
   });
 
-  router.get('/log-in', (req: Request, res: Response) => {
-    res.status(200).send(logInPage);
-  });
-
-  router.post('/auth', (req: Request, res: Response) => {
-    pipe(
-      req.body,
-      parseEmailAddressFromBody,
-      E.matchW(
-        () => res.status(400).send(invalidEmailPage),
-        email => {
-          PubSub.publish('send-log-in-link', email);
-          res.status(200).send(checkYourMailPage(email));
-        }
-      )
-    );
-  });
-
-  router.get(
-    '/auth/callback',
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    passport.authenticate('magiclink', {failureRedirect: '/log-in'}),
-    (req: Request, res: Response) => {
-      res.redirect('/profile');
-    }
-  );
-
-  router.use('/static', express.static(path.resolve(__dirname, './static')));
-
   router.post('/send-member-number-by-email', (req: Request, res: Response) => {
     pipe(
       req.body,
@@ -86,6 +56,10 @@ export const createRouter = (): Router => {
       )
     );
   });
+
+  authentication.configureRoutes(router);
+
+  router.use('/static', express.static(path.resolve(__dirname, './static')));
 
   router.use((req, res) => {
     res.status(404).send(notFoundPage);

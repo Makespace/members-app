@@ -2,7 +2,7 @@ import * as t from 'io-ts';
 import isEmail from 'validator/lib/isEmail';
 
 type EmailAddressBrand = {
-  readonly EmailAddress: unique symbol;
+  readonly EmailAddress: symbol;
 };
 
 export const EmailAddressCodec = t.brand(
