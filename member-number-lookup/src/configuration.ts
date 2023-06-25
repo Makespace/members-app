@@ -19,6 +19,7 @@ const Config = t.strict({
   MYSQL_PASSWORD: tt.NonEmptyString,
   MYSQL_USER: tt.NonEmptyString,
   PORT: withDefaultIfEmpty(tt.IntFromString, 8080 as t.Int),
+  PUBLIC_URL: tt.NonEmptyString,
   SESSION_SECRET: tt.NonEmptyString,
   SMTP_HOST: tt.NonEmptyString,
   SMTP_PASSWORD: t.string,

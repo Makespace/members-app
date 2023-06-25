@@ -13,6 +13,7 @@ services:
       MYSQL_PASSWORD: secret
       MYSQL_HOST: mariadb
       PORT: '8080'
+      PUBLIC_URL: 'http://localhost:8080'
       SESSION_SECRET: secret
       SMTP_HOST: mailcatcher
       SMTP_PORT: '1025'

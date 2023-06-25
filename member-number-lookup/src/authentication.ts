@@ -27,7 +27,7 @@ type MagicLinkToken = t.TypeOf<typeof MagicLinkTokenCodec>;
 export const createMagicLink = (conf: Config) => (payload: MagicLinkToken) =>
   pipe(
     jwt.sign(payload, conf.TOKEN_SECRET),
-    token => `http://localhost:8080/auth/callback?token=${token}`
+    token => `${conf.PUBLIC_URL}/auth/callback?token=${token}`
   );
 
 const decodeMagicLinkFromQuery = (conf: Config) => (input: unknown) =>
