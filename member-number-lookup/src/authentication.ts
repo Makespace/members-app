@@ -101,7 +101,7 @@ export const configureRoutes = (router: Router) => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     passport.authenticate(name, {failureRedirect: logInRoute}),
     (req: Request, res: Response) => {
-      res.redirect('/profile');
+      res.redirect('/dashboard');
     }
   );
 };

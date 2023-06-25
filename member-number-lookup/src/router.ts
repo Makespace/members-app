@@ -1,7 +1,7 @@
 import express, {Request, Response, Router} from 'express';
 import * as authentication from './authentication';
 import path from 'path';
-import {checkYourMailPage, landingPage, oopsPage, profilePage} from './pages';
+import {checkYourMailPage, landingPage, oopsPage, dashboardPage} from './pages';
 import {pipe} from 'fp-ts/lib/function';
 import {parseEmailAddressFromBody} from './parse-email-address-from-body';
 import * as E from 'fp-ts/Either';
@@ -14,12 +14,12 @@ export const createRouter = (): Router => {
     res.status(200).send(landingPage);
   });
 
-  router.get('/profile', (req: Request, res: Response) => {
+  router.get('/dashboard', (req: Request, res: Response) => {
     pipe(
       req.session,
       authentication.getUserFromSession,
       E.fromOption(() => 'You are not logged in.'),
-      E.map(profilePage),
+      E.map(dashboardPage),
       E.matchW(
         msg => res.status(429).send(oopsPage(msg)),
         page => res.status(200).send(page)
