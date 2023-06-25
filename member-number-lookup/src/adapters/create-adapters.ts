@@ -1,4 +1,5 @@
 import {Config} from '../configuration';
+import * as TE from 'fp-ts/TaskEither';
 import {Dependencies} from '../dependencies';
 import {getMemberNumber} from './get-member-number';
 import {getMemberNumberStubbed} from './get-member-number-stubbed';
@@ -40,6 +41,7 @@ export const createAdapters = (conf: Config): Dependencies => {
     getMemberNumber: conf.USE_STUBBED_ADAPTERS
       ? getMemberNumberStubbed()
       : getMemberNumber(pool),
+    getTrainers: () => TE.right([]),
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter),
     logger,

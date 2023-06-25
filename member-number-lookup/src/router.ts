@@ -6,6 +6,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {parseEmailAddressFromBody} from './parse-email-address-from-body';
 import * as E from 'fp-ts/Either';
 import PubSub from 'pubsub-js';
+import {sequenceS} from 'fp-ts/lib/Apply';
 
 export const createRouter = (): Router => {
   const router = Router();
@@ -16,9 +17,15 @@ export const createRouter = (): Router => {
 
   router.get('/dashboard', (req: Request, res: Response) => {
     pipe(
-      req.session,
-      authentication.getUserFromSession,
-      E.fromOption(() => 'You are not logged in.'),
+      {
+        user: pipe(
+          req.session,
+          authentication.getUserFromSession,
+          E.fromOption(() => 'You are not logged in.')
+        ),
+        trainers: E.right([]),
+      },
+      sequenceS(E.Apply),
       E.map(dashboardPage),
       E.matchW(
         msg => res.status(429).send(oopsPage(msg)),

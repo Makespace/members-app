@@ -5,6 +5,7 @@ import {Logger} from 'pino';
 
 export const happyPathAdapters: Dependencies = {
   getMemberNumber: () => TE.right(faker.datatype.number()),
+  getTrainers: () => TE.right([]),
   logger: (() => undefined) as never as Logger,
   rateLimitSendingOfEmails: TE.right,
   sendEmail: () => TE.right('success'),
