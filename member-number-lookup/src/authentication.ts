@@ -10,32 +10,50 @@ import {EmailAddressCodec} from './types';
 import {Strategy as CustomStrategy} from 'passport-custom';
 import jwt from 'jsonwebtoken';
 import {Config} from './configuration';
+import * as O from 'fp-ts/Option';
 
 export const name = 'magiclink';
 
-const MagicLinkQueryCodec = t.strict({
+const MagicLinkQuery = t.strict({
   token: t.string,
 });
 
-const MagicLinkTokenCodec = t.strict({
+const User = t.strict({
   emailAddress: EmailAddressCodec,
   memberNumber: t.number,
 });
 
-type MagicLinkToken = t.TypeOf<typeof MagicLinkTokenCodec>;
+export type User = t.TypeOf<typeof User>;
 
-export const createMagicLink = (conf: Config) => (payload: MagicLinkToken) =>
+const SessionCodec = t.strict({
+  passport: t.strict({
+    user: User,
+  }),
+});
+
+export const getUserFromSession = (session: unknown): O.Option<User> =>
   pipe(
-    jwt.sign(payload, conf.TOKEN_SECRET),
+    session,
+    SessionCodec.decode,
+    E.map(session => ({
+      emailAddress: session.passport.user.emailAddress,
+      memberNumber: session.passport.user.memberNumber,
+    })),
+    O.fromEither
+  );
+
+export const createMagicLink = (conf: Config) => (user: User) =>
+  pipe(
+    jwt.sign(user, conf.TOKEN_SECRET),
     token => `${conf.PUBLIC_URL}/auth/callback?token=${token}`
   );
 
 const decodeMagicLinkFromQuery = (conf: Config) => (input: unknown) =>
   pipe(
     input,
-    MagicLinkQueryCodec.decode,
+    MagicLinkQuery.decode,
     E.map(({token}) => jwt.verify(token, conf.TOKEN_SECRET)),
-    E.chain(MagicLinkTokenCodec.decode)
+    E.chain(User.decode)
   );
 
 export const strategy = (conf: Config) => {
@@ -45,7 +63,7 @@ export const strategy = (conf: Config) => {
       decodeMagicLinkFromQuery(conf),
       E.match(
         error => done(error),
-        user => done(undefined, {email: user.emailAddress})
+        user => done(undefined, user)
       )
     );
   });

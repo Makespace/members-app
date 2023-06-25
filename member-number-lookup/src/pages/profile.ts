@@ -1,18 +1,16 @@
 import {pipe} from 'fp-ts/lib/function';
 import {pageTemplate} from './page-template';
-import {EmailAddress} from '../types';
+import {User} from '../authentication';
 
-type Params = {
-  emailAddress: EmailAddress;
-};
-
-export const profilePage = (params: Params) =>
+export const profilePage = (user: User) =>
   pipe(
     `
     <h1>Your member profile</h1>
     <dl>
       <dt>Email</dt>
-      <dd>${params.emailAddress}</dd>
+      <dd>${user.emailAddress}</dd>
+      <dt>Member Number</dt>
+      <dd>${user.memberNumber}</dd>
     </dl>
   `,
     pageTemplate('Member Number Lookup')

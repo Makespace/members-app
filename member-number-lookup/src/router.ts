@@ -12,16 +12,6 @@ import {pipe} from 'fp-ts/lib/function';
 import {parseEmailAddressFromBody} from './parse-email-address-from-body';
 import * as E from 'fp-ts/Either';
 import PubSub from 'pubsub-js';
-import * as t from 'io-ts';
-import {EmailAddressCodec} from './types';
-
-const SessionCodec = t.strict({
-  passport: t.strict({
-    user: t.strict({
-      email: EmailAddressCodec,
-    }),
-  }),
-});
 
 export const createRouter = (): Router => {
   const router = Router();
@@ -33,11 +23,11 @@ export const createRouter = (): Router => {
   router.get('/profile', (req: Request, res: Response) => {
     pipe(
       req.session,
-      SessionCodec.decode,
-      E.map(session => session.passport.user.email),
-      E.map(emailAddress => profilePage({emailAddress})),
+      authentication.getUserFromSession,
+      E.fromOption(() => 'No logged in user found'),
+      E.map(profilePage),
       E.matchW(
-        () => res.status(400).send('Oops, something went wrong.'),
+        msg => res.status(429).send(msg),
         page => res.status(200).send(page)
       )
     );
