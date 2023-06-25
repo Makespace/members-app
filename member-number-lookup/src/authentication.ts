@@ -9,6 +9,7 @@ import * as t from 'io-ts';
 import {EmailAddressCodec} from './types';
 import {Strategy as CustomStrategy} from 'passport-custom';
 import jwt from 'jsonwebtoken';
+import {Config} from './configuration';
 
 export const name = 'magiclink';
 
@@ -23,25 +24,25 @@ const MagicLinkTokenCodec = t.strict({
 
 type MagicLinkToken = t.TypeOf<typeof MagicLinkTokenCodec>;
 
-export const createMagicLink = (payload: MagicLinkToken) =>
+export const createMagicLink = (conf: Config) => (payload: MagicLinkToken) =>
   pipe(
-    jwt.sign(payload, 'secret'),
+    jwt.sign(payload, conf.tokenSecret),
     token => `http://localhost:8080/auth/callback?token=${token}`
   );
 
-const decodeMagicLinkFromQuery = (tokenSecret: string) => (input: unknown) =>
+const decodeMagicLinkFromQuery = (conf: Config) => (input: unknown) =>
   pipe(
     input,
     MagicLinkQueryCodec.decode,
-    E.map(({token}) => jwt.verify(token, tokenSecret)),
+    E.map(({token}) => jwt.verify(token, conf.tokenSecret)),
     E.chain(MagicLinkTokenCodec.decode)
   );
 
-export const strategy = (tokenSecret: string) => {
+export const strategy = (conf: Config) => {
   return new CustomStrategy((req, done) => {
     pipe(
       req.query,
-      decodeMagicLinkFromQuery(tokenSecret),
+      decodeMagicLinkFromQuery(conf),
       E.match(
         error => done(error),
         user => done(undefined, {email: user.emailAddress})

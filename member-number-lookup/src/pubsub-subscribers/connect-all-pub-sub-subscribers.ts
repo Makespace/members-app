@@ -7,6 +7,7 @@ import * as E from 'fp-ts/Either';
 import {EmailAddressCodec, failure} from '../types';
 import {Dependencies} from '../dependencies';
 import {sendLogInLink} from './send-log-in-link';
+import {Config} from '../configuration';
 
 const validateEmail = (input: unknown) =>
   pipe(
@@ -16,7 +17,10 @@ const validateEmail = (input: unknown) =>
     E.mapLeft(failure('Invalid Email'))
   );
 
-export const connectAllPubSubSubscribers = (deps: Dependencies) => {
+export const connectAllPubSubSubscribers = (
+  deps: Dependencies,
+  conf: Config
+) => {
   PubSub.subscribe(
     'send-member-number-to-email',
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
@@ -41,7 +45,7 @@ export const connectAllPubSubSubscribers = (deps: Dependencies) => {
         payload,
         validateEmail,
         TE.fromEither,
-        TE.chain(sendLogInLink(deps)),
+        TE.chain(sendLogInLink(deps, conf)),
         TE.match(
           failure =>
             deps.logger.error({topic, failure}, 'Failed to process message'),

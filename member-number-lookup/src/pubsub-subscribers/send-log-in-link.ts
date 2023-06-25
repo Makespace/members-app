@@ -3,6 +3,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {Dependencies} from '../dependencies';
 import {EmailAddress, Failure} from '../types';
 import {createMagicLink} from '../authentication';
+import {Config} from '../configuration';
 
 const toEmail = (emailAddress: EmailAddress) => (magicLink: string) => ({
   recipient: emailAddress,
@@ -17,17 +18,18 @@ const toEmail = (emailAddress: EmailAddress) => (magicLink: string) => ({
 });
 
 type SedLogInLink = (
-  deps: Dependencies
+  deps: Dependencies,
+  conf: Config
 ) => (emailAddress: EmailAddress) => TE.TaskEither<Failure, string>;
 
-export const sendLogInLink: SedLogInLink = ports => emailAddress =>
+export const sendLogInLink: SedLogInLink = (deps, conf) => emailAddress =>
   pipe(
     emailAddress,
-    ports.getMemberNumber,
+    deps.getMemberNumber,
     TE.map(memberNumber => ({memberNumber, emailAddress})),
-    TE.map(createMagicLink),
+    TE.map(createMagicLink(conf)),
     TE.map(toEmail(emailAddress)),
-    TE.chain(ports.rateLimitSendingOfEmails),
-    TE.chain(ports.sendEmail),
+    TE.chain(deps.rateLimitSendingOfEmails),
+    TE.chain(deps.sendEmail),
     TE.map(() => `Sent log in link to ${emailAddress}`)
   );

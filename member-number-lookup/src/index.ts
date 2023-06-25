@@ -6,13 +6,14 @@ import passport from 'passport';
 import session from 'cookie-session';
 import httpLogger from 'pino-http';
 import * as magicLinkAuth from './authentication';
+import {loadConfig} from './configuration';
 
 // Dependencies and Config
-const port = parseInt(process.env.PORT ?? '8080');
-const deps = createAdapters();
+const conf = loadConfig();
+const deps = createAdapters(conf);
 
 // Authentication
-passport.use(magicLinkAuth.name, magicLinkAuth.strategy('secret'));
+passport.use(magicLinkAuth.name, magicLinkAuth.strategy(conf));
 passport.serializeUser((user, done) => {
   done(null, user);
 });
@@ -27,11 +28,13 @@ app.use(express.urlencoded({extended: true}));
 app.use(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   session({
-    secret: 'secret',
+    secret: conf.sessionSecret,
   })
 );
 app.use(createRouter());
-connectAllPubSubSubscribers(deps);
+connectAllPubSubSubscribers(deps, conf);
 
 // Start application
-app.listen(port, () => deps.logger.info({port}, 'Server listening'));
+app.listen(conf.port, () =>
+  deps.logger.info({port: conf.port}, 'Server listening')
+);
