@@ -11,7 +11,7 @@
   "keywords": [],
   "scripts": {},
   "devDependencies": {
-    "@faker-js/faker": "^6.0.0-beta.0",
+    "@faker-js/faker": "^8.0.2",
     "@types/cookie-session": "^2.0.44",
     "@types/express": "^4.17.13",
     "@types/jest": "^27.4.1",

@@ -7,7 +7,7 @@ import {happyPathAdapters} from '../adapters/happy-path-adapters.helper';
 
 describe('send-member-number-to-email', () => {
   const emailAddress = faker.internet.email() as EmailAddress;
-  const memberNumber = faker.datatype.number();
+  const memberNumber = faker.number.int();
 
   describe('when the email can be uniquely linked to a member number', () => {
     const deps = {
