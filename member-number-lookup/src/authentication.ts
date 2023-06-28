@@ -84,6 +84,7 @@ export const strategy = (deps: Dependencies, conf: Config) => {
 
 export const configureRoutes = (router: Router) => {
   const logInRoute = '/log-in';
+  const invalidLinkRoute = '/auth/invalid-magic-link';
 
   router.get(logInRoute, (req: Request, res: Response) => {
     res.status(200).send(logInPage);
@@ -112,9 +113,19 @@ export const configureRoutes = (router: Router) => {
   router.get(
     '/auth/callback',
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    passport.authenticate(name, {failureRedirect: logInRoute}),
+    passport.authenticate(name, {failureRedirect: invalidLinkRoute}),
     (req: Request, res: Response) => {
       res.redirect('/dashboard');
     }
   );
+
+  router.get(invalidLinkRoute, (req: Request, res: Response) => {
+    res
+      .status(401)
+      .send(
+        oopsPage(
+          `The link you have used is (no longer) valid. Go back to the <a href=${logInRoute}>log in</a>`
+        )
+      );
+  });
 };
