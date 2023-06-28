@@ -13,7 +13,7 @@ const conf = loadConfig();
 const deps = createAdapters(conf);
 
 // Authentication
-passport.use(magicLinkAuth.name, magicLinkAuth.strategy(conf));
+passport.use(magicLinkAuth.name, magicLinkAuth.strategy(deps, conf));
 passport.serializeUser((user, done) => {
   done(null, user);
 });

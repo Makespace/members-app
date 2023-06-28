@@ -6,11 +6,12 @@ import * as E from 'fp-ts/Either';
 import PubSub from 'pubsub-js';
 import passport from 'passport';
 import * as t from 'io-ts';
-import {EmailAddressCodec} from './types';
+import {EmailAddressCodec, failure} from './types';
 import {Strategy as CustomStrategy} from 'passport-custom';
 import jwt from 'jsonwebtoken';
 import {Config} from './configuration';
 import * as O from 'fp-ts/Option';
+import {Dependencies} from './dependencies';
 
 export const name = 'magiclink';
 
@@ -44,25 +45,37 @@ export const getUserFromSession = (session: unknown): O.Option<User> =>
 
 export const createMagicLink = (conf: Config) => (user: User) =>
   pipe(
-    jwt.sign(user, conf.TOKEN_SECRET),
+    jwt.sign(user, conf.TOKEN_SECRET, {expiresIn: '10m'}),
     token => `${conf.PUBLIC_URL}/auth/callback?token=${token}`
+  );
+
+const verifyToken = (token: string, secret: Config['TOKEN_SECRET']) =>
+  E.tryCatch(
+    () => jwt.verify(token, secret),
+    failure('Could not verify token')
   );
 
 const decodeMagicLinkFromQuery = (conf: Config) => (input: unknown) =>
   pipe(
     input,
     MagicLinkQuery.decode,
-    E.map(({token}) => jwt.verify(token, conf.TOKEN_SECRET)),
-    E.chain(User.decode)
+    E.chainW(({token}) => verifyToken(token, conf.TOKEN_SECRET)),
+    E.chainW(User.decode)
   );
 
-export const strategy = (conf: Config) => {
+export const strategy = (deps: Dependencies, conf: Config) => {
   return new CustomStrategy((req, done) => {
     pipe(
       req.query,
       decodeMagicLinkFromQuery(conf),
       E.match(
-        error => done(error),
+        error => {
+          deps.logger.info(
+            {error},
+            'Failed to authenticate user from magic link'
+          );
+          done(undefined, false);
+        },
         user => done(undefined, user)
       )
     );
