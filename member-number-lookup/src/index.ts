@@ -39,6 +39,18 @@ app.use(createRouter(deps));
 connectAllPubSubSubscribers(deps, conf);
 
 // Start application
+if (conf.PUBLIC_URL.includes('localhost')) {
+  process.stdout.write(`
+################################################################################
+
+Makespace member management app starting
+
+Visit ${conf.PUBLIC_URL} to see the application
+Visit http://localhost:1080 to see the emails it sends
+
+################################################################################
+`);
+}
 app.listen(conf.PORT, () =>
   deps.logger.info({port: conf.PORT}, 'Server listening')
 );
