@@ -5,15 +5,15 @@ import {createAdapters} from './adapters';
 import passport from 'passport';
 import session from 'cookie-session';
 import httpLogger from 'pino-http';
-import * as magicLinkAuth from './authentication';
 import {loadConfig} from './configuration';
+import {magicLink} from './authentication';
 
 // Dependencies and Config
 const conf = loadConfig();
 const deps = createAdapters(conf);
 
 // Authentication
-passport.use(magicLinkAuth.name, magicLinkAuth.strategy(deps, conf));
+passport.use(magicLink.name, magicLink.strategy(deps, conf));
 passport.serializeUser((user, done) => {
   done(null, user);
 });

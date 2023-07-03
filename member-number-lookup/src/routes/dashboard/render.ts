@@ -1,10 +1,10 @@
 import {pipe} from 'fp-ts/lib/function';
 import {pageTemplate} from '../../templates';
-import {User} from '../../authentication';
 import {html} from '../../types/html';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {Trainer} from '../../types/trainer';
+import {User} from '../../types';
 
 type ViewModel = {
   user: User;

@@ -1,5 +1,5 @@
 import {Request, Response} from 'express';
-import {oopsPage} from '../../pages';
+import {oopsPage} from '../../shared-pages';
 import {pipe} from 'fp-ts/lib/function';
 import {sequenceS} from 'fp-ts/lib/Apply';
 import * as TE from 'fp-ts/TaskEither';

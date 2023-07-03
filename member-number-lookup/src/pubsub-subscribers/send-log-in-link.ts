@@ -2,8 +2,8 @@ import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
 import {Dependencies} from '../dependencies';
 import {EmailAddress, Failure} from '../types';
-import {createMagicLink} from '../authentication';
 import {Config} from '../configuration';
+import {magicLink} from '../authentication';
 
 const toEmail = (emailAddress: EmailAddress) => (magicLink: string) => ({
   recipient: emailAddress,
@@ -27,7 +27,7 @@ export const sendLogInLink: SedLogInLink = (deps, conf) => emailAddress =>
     emailAddress,
     deps.getMemberNumber,
     TE.map(memberNumber => ({memberNumber, emailAddress})),
-    TE.map(createMagicLink(conf)),
+    TE.map(magicLink.create(conf)),
     TE.map(toEmail(emailAddress)),
     TE.chain(deps.rateLimitSendingOfEmails),
     TE.chain(deps.sendEmail),

@@ -1,8 +1,8 @@
 import {Request, Response} from 'express';
 import * as E from 'fp-ts/Either';
 import {pipe} from 'fp-ts/lib/function';
-import {oopsPage, checkYourMailPage} from '../pages';
-import {parseEmailAddressFromBody} from '../parse-email-address-from-body';
+import {oopsPage, checkYourMailPage} from '../shared-pages';
+import {parseEmailAddressFromBody} from '../authentication/parse-email-address-from-body';
 
 export const sendMemberNumberByEmail = (req: Request, res: Response) => {
   pipe(
