@@ -1,6 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
-import {html} from './html';
-import {pageTemplateNoNav} from './page-template-no-nav';
+import {html} from './shared/html';
+import {pageTemplateNoNav} from './shared/page-template-no-nav';
 
 export const oopsPage = (message: string) =>
   pipe(

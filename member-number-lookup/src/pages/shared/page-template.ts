@@ -1,4 +1,4 @@
-import {User} from '../authentication';
+import {User} from '../../authentication';
 import {html} from './html';
 import * as O from 'fp-ts/Option';
 import {navbar} from './navbar';

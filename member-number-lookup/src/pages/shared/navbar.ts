@@ -1,7 +1,7 @@
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import {html} from './html';
-import {User} from '../authentication';
+import {User} from '../../authentication';
 
 export const navbar = (user: O.Option<User>) =>
   pipe(

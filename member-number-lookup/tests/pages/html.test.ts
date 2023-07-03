@@ -1,4 +1,4 @@
-import {html} from '../../src/pages/html';
+import {html} from '../../src/pages/shared/html';
 
 describe('html', () => {
   const eggs = 'eggs';

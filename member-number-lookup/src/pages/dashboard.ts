@@ -1,7 +1,7 @@
 import {pipe} from 'fp-ts/lib/function';
-import {pageTemplate} from './page-template';
+import {pageTemplate} from './shared/page-template';
 import {User} from '../authentication';
-import {html} from './html';
+import {html} from './shared/html';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {Trainer} from '../types/trainer';
