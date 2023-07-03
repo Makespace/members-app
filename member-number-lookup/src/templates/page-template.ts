@@ -1,5 +1,5 @@
-import {User} from '../../authentication';
-import {html} from './html';
+import {User} from '../authentication';
+import {html} from '../types/html';
 import * as O from 'fp-ts/Option';
 import {navbar} from './navbar';
 import {head} from './head';

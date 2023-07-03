@@ -38,6 +38,7 @@
     "@typescript-eslint/parser": "^5.42.0",
     "cookie-session": "^2.0.0",
     "express": "^4.17.3",
+    "express-async-handler": "^1.2.0",
     "fp-ts": "^2.11.8",
     "io-ts": "^2.2.20",
     "io-ts-reporters": "^2.0.1",

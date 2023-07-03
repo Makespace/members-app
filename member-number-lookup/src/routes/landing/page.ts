@@ -1,8 +1,8 @@
 import {pipe} from 'fp-ts/lib/function';
-import {html} from './shared/html';
-import {pageTemplateNoNav} from './shared/page-template-no-nav';
+import {html} from '../../types/html';
+import {pageTemplateNoNav} from '../../templates';
 
-export const landingPage = pipe(
+export const page = pipe(
   html`
     <h1>Lookup Your Member Number</h1>
     <form action="/send-member-number-by-email" method="post">

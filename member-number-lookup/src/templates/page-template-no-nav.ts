@@ -1,5 +1,5 @@
 import {head} from './head';
-import {html} from './html';
+import {html} from '../types/html';
 
 export const pageTemplateNoNav = (title: string) => (body: string) =>
   html`

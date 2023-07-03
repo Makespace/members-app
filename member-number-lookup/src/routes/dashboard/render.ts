@@ -1,10 +1,10 @@
 import {pipe} from 'fp-ts/lib/function';
-import {pageTemplate} from './shared/page-template';
-import {User} from '../authentication';
-import {html} from './shared/html';
+import {pageTemplate} from '../../templates';
+import {User} from '../../authentication';
+import {html} from '../../types/html';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {Trainer} from '../types/trainer';
+import {Trainer} from '../../types/trainer';
 
 type ViewModel = {
   user: User;
@@ -47,7 +47,7 @@ const renderTrainers = (trainers: ViewModel['trainers']) =>
     )
   );
 
-export const dashboardPage = (viewModel: ViewModel) =>
+export const render = (viewModel: ViewModel) =>
   pipe(
     html`
       <h1>Makespace Member Dashboard</h1>

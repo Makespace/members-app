@@ -1,4 +1,4 @@
-import {html} from './html';
+import {html} from '../types/html';
 
 export const head = (title: string) => html`
   <head>
