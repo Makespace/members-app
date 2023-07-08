@@ -1,4 +1,4 @@
-.phony: check dev fix prod test typecheck lint
+.phony: check clear-containers dev fix lint prod release smoketest test typecheck
 
 check: test lint typecheck
 
@@ -29,3 +29,8 @@ typecheck: node_modules
 
 clear-containers:
 	docker-compose --file docker-compose.yaml --file docker-compose.dev.yaml down
+
+release: export TAG = latest/$(shell date +%Y%m%d%H%M)
+release:
+	git tag $$TAG
+	git push origin $$TAG
