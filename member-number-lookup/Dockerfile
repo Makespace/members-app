@@ -1,5 +1,5 @@
 # BASE
-FROM node:14-alpine@sha256:43ec2ba01c2a245e341489956258afd3535a9ebfdf87ade04b84299ca736607f as node
+FROM node:18-alpine@sha256:bf6c61feabc1a1bd565065016abe77fa378500ec75efa67f5b04e5e5c4d447cd as node
 WORKDIR /app
 COPY package*.json ./
 

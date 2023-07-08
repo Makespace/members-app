@@ -10,6 +10,10 @@
   "license": "Apache-2.0",
   "keywords": [],
   "scripts": {},
+  "engines": {
+    "node": "18",
+    "npm": "9"
+  },
   "devDependencies": {
     "@faker-js/faker": "^8.0.2",
     "@types/cookie-session": "^2.0.44",
