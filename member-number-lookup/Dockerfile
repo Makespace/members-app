@@ -15,7 +15,7 @@ RUN npm ci --production
 
 FROM dev as prod-build
 COPY ./src src/
-RUN npm run compile
+RUN npx tsc
 
 FROM prod-npm as prod
 COPY --from=prod-build /app/build/ build/
