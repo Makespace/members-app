@@ -3,7 +3,7 @@ import {checkYourMailPage, oopsPage} from '../shared-pages';
 import {pipe} from 'fp-ts/lib/function';
 import {parseEmailAddressFromBody} from './parse-email-address-from-body';
 import * as E from 'fp-ts/Either';
-import PubSub from 'pubsub-js';
+import {publish} from 'pubsub-js';
 import passport from 'passport';
 import {magicLink} from './magic-link';
 import {logInPage} from './log-in-page';
@@ -29,7 +29,7 @@ export const configureAuthRoutes = (router: Router) => {
       E.matchW(
         msg => res.status(400).send(oopsPage(msg)),
         email => {
-          PubSub.publish('send-log-in-link', email);
+          publish('send-log-in-link', email);
           res.status(200).send(checkYourMailPage(email));
         }
       )
