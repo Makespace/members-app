@@ -18,8 +18,14 @@ prod:
 test: node_modules
 	npx jest
 
+smoketest:
+	./smoketest.sh
+
 lint: node_modules
 	npx gts lint
 
 typecheck: node_modules
 	npx tsc --noEmit
+
+clear-containers:
+	docker-compose --file docker-compose.yaml --file docker-compose.dev.yaml down
