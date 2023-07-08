@@ -7,6 +7,8 @@ import session from 'cookie-session';
 import httpLogger from 'pino-http';
 import {loadConfig} from './configuration';
 import {magicLink} from './authentication';
+import {createTerminus} from '@godaddy/terminus';
+import http from 'http';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -51,6 +53,9 @@ Visit http://localhost:1080 to see the emails it sends
 ################################################################################
 `);
 }
-app.listen(conf.PORT, () =>
+
+const server = http.createServer(app);
+createTerminus(server);
+server.listen(conf.PORT, () =>
   deps.logger.info({port: conf.PORT}, 'Server listening')
 );
