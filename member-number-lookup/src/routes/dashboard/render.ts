@@ -28,6 +28,7 @@ const renderTrainers = (trainers: ViewModel['trainers']) =>
         <tr>
           <td>${trainer.name}</td>
           <td>${trainer.equipment}</td>
+          <td>${trainer.email}</td>
           <td>${trainer.becameTrainerAt.toDateString()}</td>
         </tr>
       `
@@ -39,6 +40,7 @@ const renderTrainers = (trainers: ViewModel['trainers']) =>
           <tr>
             <th>Name</th>
             <th>Equipment</th>
+            <th>Email</th>
             <th>Trainer since</th>
           </tr>
           ${rows.join('\n')}

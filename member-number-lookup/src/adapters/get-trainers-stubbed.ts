@@ -7,6 +7,7 @@ export const getTrainersStubbed = (): Dependencies['getTrainers'] => () =>
     faker.helpers.multiple(() => ({
       name: `${faker.person.firstName()} ${faker.person.lastName()}`,
       equipment: faker.commerce.product(),
+      email: faker.internet.email(),
       becameTrainerAt: faker.date.past(),
     }))
   );
