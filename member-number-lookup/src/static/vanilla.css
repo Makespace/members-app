@@ -298,6 +298,14 @@ table td:not(last-of-type) {
   border-right: 1px solid var(--primary-color);
 }
 
+dt {
+  font-weight: bold;
+}
+
+dd {
+  margin-bottom: 0.5em;
+}
+
 input {
   appearance: none;
   border: 1px solid var(--text-color);
@@ -342,4 +350,17 @@ input:active {
     --secondary-color: black;
     --tertiary-color: #2d2d2d;
   }
+}
+
+.page-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4rem;
+  margin-bottom: 4rem;
+}
+
+.page-nav__logo {
+  height: 4rem;
+  margin: 0;
 }

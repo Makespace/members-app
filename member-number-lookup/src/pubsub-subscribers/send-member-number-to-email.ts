@@ -1,14 +1,7 @@
 import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
-import {Email, EmailAddress, Failure} from '../types';
-
-type Ports = {
-  getMemberNumber: (
-    emailAddress: EmailAddress
-  ) => TE.TaskEither<Failure, number>;
-  rateLimitSendingOfEmails: (email: Email) => TE.TaskEither<Failure, Email>;
-  sendEmail: (email: Email) => TE.TaskEither<Failure, string>;
-};
+import {Dependencies} from '../dependencies';
+import {EmailAddress, Failure} from '../types';
 
 const toEmail = (emailAddress: EmailAddress) => (memberNumber: number) => ({
   recipient: emailAddress,
@@ -21,7 +14,7 @@ const toEmail = (emailAddress: EmailAddress) => (memberNumber: number) => ({
 });
 
 type SendMemberNumberToEmail = (
-  ports: Ports
+  deps: Dependencies
 ) => (emailAddress: EmailAddress) => TE.TaskEither<Failure, string>;
 
 export const sendMemberNumberToEmail: SendMemberNumberToEmail =

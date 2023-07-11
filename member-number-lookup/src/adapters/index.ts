@@ -1,3 +1,1 @@
-export {getMemberNumber} from './get-member-number';
-export {sendEmail} from './send-email';
-export {createRateLimiter} from './rate-limit-sending-of-emails';
+export {createAdapters} from './create-adapters';

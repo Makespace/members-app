@@ -2,17 +2,12 @@ import {pipe} from 'fp-ts/lib/function';
 import {sendMemberNumberToEmail} from './send-member-number-to-email';
 import PubSub from 'pubsub-js';
 import * as TE from 'fp-ts/TaskEither';
-import {Logger} from 'pino';
-import {sendEmail, getMemberNumber, createRateLimiter} from '../adapters';
 import {formatValidationErrors} from 'io-ts-reporters';
 import * as E from 'fp-ts/Either';
 import {EmailAddressCodec, failure} from '../types';
-
-const adapters = {
-  getMemberNumber: getMemberNumber(),
-  rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
-  sendEmail: sendEmail(),
-};
+import {Dependencies} from '../dependencies';
+import {sendLogInLink} from './send-log-in-link';
+import {Config} from '../configuration';
 
 const validateEmail = (input: unknown) =>
   pipe(
@@ -22,7 +17,10 @@ const validateEmail = (input: unknown) =>
     E.mapLeft(failure('Invalid Email'))
   );
 
-export const connectAllPubSubSubscribers = (logger: Logger) => {
+export const connectAllPubSubSubscribers = (
+  deps: Dependencies,
+  conf: Config
+) => {
   PubSub.subscribe(
     'send-member-number-to-email',
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
@@ -31,11 +29,27 @@ export const connectAllPubSubSubscribers = (logger: Logger) => {
         payload,
         validateEmail,
         TE.fromEither,
-        TE.chain(sendMemberNumberToEmail(adapters)),
+        TE.chain(sendMemberNumberToEmail(deps)),
         TE.match(
           failure =>
-            logger.error({topic, failure}, 'Failed to process message'),
-          successMsg => logger.info({topic, result: successMsg})
+            deps.logger.error({topic, failure}, 'Failed to process message'),
+          successMsg => deps.logger.info({topic, result: successMsg})
+        )
+      )()
+  );
+  PubSub.subscribe(
+    'send-log-in-link',
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    async (topic, payload) =>
+      await pipe(
+        payload,
+        validateEmail,
+        TE.fromEither,
+        TE.chain(sendLogInLink(deps, conf)),
+        TE.match(
+          failure =>
+            deps.logger.error({topic, failure}, 'Failed to process message'),
+          successMsg => deps.logger.info({topic, result: successMsg})
         )
       )()
   );

@@ -1,58 +1,61 @@
-import express, {Application, Request, Response} from 'express';
-import {pipe} from 'fp-ts/lib/function';
-import path from 'path';
-import * as E from 'fp-ts/Either';
-import {parseEmailAddressFromBody} from './parse-email-address-from-body';
-import {
-  landingPage,
-  invalidEmailPage,
-  checkYourMailPage,
-  notFoundPage,
-} from './pages';
-import PubSub from 'pubsub-js';
-import createLogger from 'pino';
+import express, {Application} from 'express';
 import {connectAllPubSubSubscribers} from './pubsub-subscribers';
+import {createRouter} from './router';
+import {createAdapters} from './adapters';
+import passport from 'passport';
+import session from 'cookie-session';
+import httpLogger from 'pino-http';
+import {loadConfig} from './configuration';
+import {magicLink} from './authentication';
+import {createTerminus} from '@godaddy/terminus';
+import http from 'http';
 
+// Dependencies and Config
+const conf = loadConfig();
+const deps = createAdapters(conf);
+
+// Authentication
+passport.use(magicLink.name, magicLink.strategy(deps, conf));
+passport.serializeUser((user, done) => {
+  done(null, user);
+});
+passport.deserializeUser((user: Express.User, done) => {
+  done(null, user);
+});
+
+// Application setup
 const app: Application = express();
-
-const logger = createLogger({
-  formatters: {
-    level: label => {
-      return {severity: label};
-    },
-  },
-});
-
-const port = parseInt(process.env.PORT ?? '8080');
-
+app.use(httpLogger({logger: deps.logger}));
 app.use(express.urlencoded({extended: true}));
+app.use(
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  session({
+    secret: conf.SESSION_SECRET,
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    sameSite: 'strict',
+    httpOnly: true,
+    secure: conf.PUBLIC_URL.startsWith('https://'),
+  })
+);
+app.use(createRouter(deps));
+connectAllPubSubSubscribers(deps, conf);
 
-// ROUTES
-app.get('/', (req: Request, res: Response) => {
-  res.status(200).send(landingPage);
-});
+// Start application
+if (conf.PUBLIC_URL.includes('localhost')) {
+  process.stdout.write(`
+################################################################################
 
-app.use('/static', express.static(path.resolve(__dirname, './static')));
+Makespace member management app starting
 
-app.post('/send-member-number-by-email', (req: Request, res: Response) => {
-  pipe(
-    req.body,
-    parseEmailAddressFromBody,
-    E.matchW(
-      () => res.status(400).send(invalidEmailPage),
-      email => {
-        PubSub.publish('send-member-number-to-email', email);
-        res.status(200).send(checkYourMailPage(email));
-      }
-    )
-  );
-});
+Visit ${conf.PUBLIC_URL} to see the application
+Visit http://localhost:1080 to see the emails it sends
 
-app.use((req, res) => {
-  res.status(404).send(notFoundPage);
-});
+################################################################################
+`);
+}
 
-// START APPLICATION
-connectAllPubSubSubscribers(logger);
-
-app.listen(port, () => logger.info({port}, 'Server listening'));
+const server = http.createServer(app);
+createTerminus(server);
+server.listen(conf.PORT, () =>
+  deps.logger.info({port: conf.PORT}, 'Server listening')
+);
