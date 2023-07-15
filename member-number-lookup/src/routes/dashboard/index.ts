@@ -22,7 +22,7 @@ export const dashboard =
       sequenceS(TE.ApplySeq),
       TE.map(render),
       TE.matchW(
-        failure => res.status(429).send(oopsPage(failure.message)),
+        failure => res.status(401).send(oopsPage(failure.message)),
         page => res.status(200).send(page)
       )
     )();
