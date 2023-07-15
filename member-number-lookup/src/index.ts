@@ -34,7 +34,6 @@ app.use(
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     sameSite: 'strict',
     httpOnly: true,
-    secure: conf.PUBLIC_URL.startsWith('https://'),
   })
 );
 app.use(createRouter(deps));
