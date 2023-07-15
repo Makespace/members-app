@@ -37,6 +37,7 @@ app.use(
     secure: conf.PUBLIC_URL.startsWith('https://'),
   })
 );
+app.set('trust proxy', true);
 app.use(createRouter(deps));
 connectAllPubSubSubscribers(deps, conf);
 
