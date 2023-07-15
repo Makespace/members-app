@@ -14,7 +14,7 @@ export const dashboard =
       {
         user: pipe(
           req.session,
-          getUserFromSession,
+          getUserFromSession(deps),
           TE.fromOption(() => failure('You are not logged in.')())
         ),
         trainers: deps.getTrainers(),
