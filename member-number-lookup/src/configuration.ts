@@ -14,6 +14,7 @@ const withDefaultIfEmpty = <C extends t.Any>(codec: C, ifEmpty: t.TypeOf<C>) =>
   );
 
 const Config = t.strict({
+  ADMIN_API_BEARER_TOKEN: tt.NonEmptyString,
   MYSQL_DATABASE: tt.NonEmptyString,
   MYSQL_HOST: tt.NonEmptyString,
   MYSQL_PASSWORD: tt.NonEmptyString,
