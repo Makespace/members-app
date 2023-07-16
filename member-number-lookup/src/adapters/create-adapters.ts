@@ -10,7 +10,6 @@ import mysql from 'mysql';
 import nodemailer from 'nodemailer';
 import smtp from 'nodemailer-smtp-transport';
 import {getTrainersStubbed} from './get-trainers-stubbed';
-import {failure} from '../types';
 
 export const createAdapters = (conf: Config): Dependencies => {
   const logger = createLogger({
@@ -40,7 +39,7 @@ export const createAdapters = (conf: Config): Dependencies => {
   );
 
   return {
-    getAllEvents: () => TE.left(failure('not implemented')()),
+    getAllEvents: () => TE.right([]),
     getMemberNumber: conf.USE_STUBBED_ADAPTERS
       ? getMemberNumberStubbed()
       : getMemberNumber(pool),
