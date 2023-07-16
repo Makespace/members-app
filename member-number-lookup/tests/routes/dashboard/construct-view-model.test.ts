@@ -43,7 +43,7 @@ describe('construct-view-model', () => {
 
     it.skip('sets the flag accordingly', async () => {
       const viewModel = await pipe(
-        arbitraryUser(),
+        user,
         constructViewModel(deps),
         TE.getOrElse(shouldNotBeCalled)
       )();
