@@ -5,20 +5,39 @@ import {faker} from '@faker-js/faker';
 import {Dependencies} from '../../../src/dependencies';
 import {EmailAddress, User, failure} from '../../../src/types';
 import {happyPathAdapters} from '../../adapters/happy-path-adapters.helper';
+import {pipe} from 'fp-ts/lib/function';
+
+const shouldNotBeCalled = (): never => {
+  throw new Error('should not be called');
+};
+
+const arbitraryUser = (): User => ({
+  emailAddress: faker.internet.email() as EmailAddress,
+  memberNumber: faker.number.int(),
+});
 
 describe('construct-view-model', () => {
   describe('when the trainers cannot be fetched', () => {
-    const user: User = {
-      emailAddress: faker.internet.email() as EmailAddress,
-      memberNumber: faker.number.int(),
-    };
     const deps: Dependencies = {
       ...happyPathAdapters,
       getTrainers: () => TE.left(failure('something failed')()),
     };
     it('returns on the left', async () => {
-      const viewModel = await constructViewModel(deps)(user)();
+      const viewModel = await constructViewModel(deps)(arbitraryUser())();
       expect(viewModel).toStrictEqual(E.left(expect.anything()));
+    });
+  });
+
+  describe('when the user has not been declared to be a super user', () => {
+    const deps: Dependencies = happyPathAdapters;
+
+    it('sets the flag accordingly', async () => {
+      const viewModel = await pipe(
+        arbitraryUser(),
+        constructViewModel(deps),
+        TE.getOrElse(shouldNotBeCalled)
+      )();
+      expect(viewModel.isSuperUser).toBe(false);
     });
   });
 });
