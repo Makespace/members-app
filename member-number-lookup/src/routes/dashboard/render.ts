@@ -9,6 +9,7 @@ import {User} from '../../types';
 type ViewModel = {
   user: User;
   trainers: ReadonlyArray<Trainer>;
+  isSuperUser: boolean;
 };
 
 const renderMemberDetails = (user: ViewModel['user']) => html`
@@ -49,12 +50,27 @@ const renderTrainers = (trainers: ViewModel['trainers']) =>
     )
   );
 
+const superUserNav = html`
+  <h2>Forms</h2>
+  <nav>
+    <ul>
+      <li>
+        <a href="/command/add-area-of-responsibility"
+          >Add area of responsibility</a
+        >
+      </li>
+    </ul>
+  </nav>
+`;
+
 export const render = (viewModel: ViewModel) =>
   pipe(
     html`
       <h1>Makespace Member Dashboard</h1>
       <h2>Your Details</h2>
       ${renderMemberDetails(viewModel.user)}
+      ${viewModel.isSuperUser ? superUserNav : ''}
+
       <h2>Trainers</h2>
       ${renderTrainers(viewModel.trainers)}
     `,

@@ -18,6 +18,7 @@ export const dashboard =
           TE.fromOption(() => failure('You are not logged in.')())
         ),
         trainers: deps.getTrainers(),
+        isSuperUser: TE.right(false),
       },
       sequenceS(TE.ApplySeq),
       TE.map(render),
