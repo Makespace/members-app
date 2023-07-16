@@ -8,8 +8,9 @@ import {landing} from './routes/landing';
 import {sendMemberNumberByEmail} from './routes/send-member-number-by-email';
 import {configureAuthRoutes} from './authentication';
 import {declareSuperUser} from './routes/api/declare-super-user';
+import {Config} from './configuration';
 
-export const createRouter = (deps: Dependencies): Router => {
+export const createRouter = (deps: Dependencies, conf: Config): Router => {
   const router = Router();
 
   router.get('/', landing);
@@ -18,7 +19,7 @@ export const createRouter = (deps: Dependencies): Router => {
 
   router.post('/send-member-number-by-email', sendMemberNumberByEmail);
 
-  router.post('/api/declare-super-user', declareSuperUser);
+  router.post('/api/declare-super-user', declareSuperUser(conf));
 
   configureAuthRoutes(router);
 

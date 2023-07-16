@@ -38,7 +38,7 @@ app.use(
   })
 );
 app.set('trust proxy', true);
-app.use(createRouter(deps));
+app.use(createRouter(deps, conf));
 connectAllPubSubSubscribers(deps, conf);
 
 // Start application
