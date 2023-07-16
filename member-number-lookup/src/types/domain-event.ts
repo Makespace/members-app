@@ -3,7 +3,7 @@ import * as tt from 'io-ts-types';
 
 export const DomainEvent = t.strict({
   type: t.literal('SuperUserDeclared'),
-  memberNumber: tt.IntFromString,
+  memberNumber: t.number,
   declaredAt: tt.DateFromISOString,
 });
 
@@ -24,7 +24,7 @@ type EventBase<T> = {type: T};
 
 export const constructEvent =
   <T extends EventName, A extends EventSpecificFields<T>>(type: T) =>
-  (args: A & Partial<{date: Date}>): EventBase<T> & A => ({
+  (args: A): EventBase<T> & A => ({
     type,
     ...args,
   });
