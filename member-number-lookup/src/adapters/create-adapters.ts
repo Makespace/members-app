@@ -1,4 +1,5 @@
 import {Config} from '../configuration';
+import * as TE from 'fp-ts/TaskEither';
 import {Dependencies} from '../dependencies';
 import {getMemberNumber} from './get-member-number';
 import {getMemberNumberStubbed} from './get-member-number-stubbed';
@@ -9,6 +10,7 @@ import mysql from 'mysql';
 import nodemailer from 'nodemailer';
 import smtp from 'nodemailer-smtp-transport';
 import {getTrainersStubbed} from './get-trainers-stubbed';
+import {failure} from '../types';
 
 export const createAdapters = (conf: Config): Dependencies => {
   const logger = createLogger({
@@ -38,6 +40,7 @@ export const createAdapters = (conf: Config): Dependencies => {
   );
 
   return {
+    getAllEvents: () => TE.left(failure('not implemented')()),
     getMemberNumber: conf.USE_STUBBED_ADAPTERS
       ? getMemberNumberStubbed()
       : getMemberNumber(pool),

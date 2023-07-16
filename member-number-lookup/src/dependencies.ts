@@ -1,9 +1,10 @@
 import {Logger} from 'pino';
-import {EmailAddress, Failure, Email} from './types';
+import {EmailAddress, Failure, Email, DomainEvent} from './types';
 import * as TE from 'fp-ts/TaskEither';
 import {Trainer} from './types/trainer';
 
 export type Dependencies = {
+  getAllEvents: () => TE.TaskEither<Failure, ReadonlyArray<DomainEvent>>;
   getMemberNumber: (
     emailAddress: EmailAddress
   ) => TE.TaskEither<Failure, number>;

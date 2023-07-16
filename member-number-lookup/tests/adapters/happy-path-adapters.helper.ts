@@ -4,6 +4,7 @@ import * as TE from 'fp-ts/TaskEither';
 import {Logger} from 'pino';
 
 export const happyPathAdapters: Dependencies = {
+  getAllEvents: () => TE.right([]),
   getMemberNumber: () => TE.right(faker.number.int()),
   getTrainers: () => TE.right([]),
   logger: (() => undefined) as never as Logger,
