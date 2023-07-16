@@ -3,7 +3,7 @@ import {constructViewModel} from '../../../src/routes/dashboard/construct-view-m
 import * as TE from 'fp-ts/TaskEither';
 import {faker} from '@faker-js/faker';
 import {Dependencies} from '../../../src/dependencies';
-import {EmailAddress, User, failure} from '../../../src/types';
+import {EmailAddress, User, constructEvent, failure} from '../../../src/types';
 import {happyPathAdapters} from '../../adapters/happy-path-adapters.helper';
 import {pipe} from 'fp-ts/lib/function';
 
@@ -25,6 +25,29 @@ describe('construct-view-model', () => {
     it('returns on the left', async () => {
       const viewModel = await constructViewModel(deps)(arbitraryUser())();
       expect(viewModel).toStrictEqual(E.left(expect.anything()));
+    });
+  });
+
+  describe('when the user has been declared to be a super user', () => {
+    const user = arbitraryUser();
+    const deps: Dependencies = {
+      ...happyPathAdapters,
+      getAllEvents: () =>
+        TE.right([
+          constructEvent('SuperUserDeclared')({
+            memberNumber: user.memberNumber,
+            declaredAt: faker.date.past(),
+          }),
+        ]),
+    };
+
+    it.skip('sets the flag accordingly', async () => {
+      const viewModel = await pipe(
+        arbitraryUser(),
+        constructViewModel(deps),
+        TE.getOrElse(shouldNotBeCalled)
+      )();
+      expect(viewModel.isSuperUser).toBe(true);
     });
   });
 
