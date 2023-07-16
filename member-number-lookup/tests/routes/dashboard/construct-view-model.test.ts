@@ -41,7 +41,7 @@ describe('construct-view-model', () => {
         ]),
     };
 
-    it.skip('sets the flag accordingly', async () => {
+    it('sets the flag accordingly', async () => {
       const viewModel = await pipe(
         user,
         constructViewModel(deps),
