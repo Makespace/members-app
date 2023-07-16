@@ -27,6 +27,7 @@ passport.deserializeUser((user: Express.User, done) => {
 const app: Application = express();
 app.use(httpLogger({logger: deps.logger}));
 app.use(express.urlencoded({extended: true}));
+app.use(express.json());
 app.use(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   session({
