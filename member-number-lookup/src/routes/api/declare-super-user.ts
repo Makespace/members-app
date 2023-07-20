@@ -10,6 +10,10 @@ import * as tt from 'io-ts-types';
 import {DomainEvent} from '../../types';
 import * as O from 'fp-ts/Option';
 import {StatusCodes} from 'http-status-codes';
+import {
+  FailureWithStatus,
+  failureWithStatus,
+} from '../../types/failureWithStatus';
 
 const DeclareSuperUserCommand = t.strict({
   memberNumber: tt.NumberFromString,
@@ -25,13 +29,15 @@ const declareSuperUser =
 const commitEvents = (
   event: DomainEvent
 ): TE.TaskEither<
-  {
-    msg: 'Failed to persist event';
-    status: StatusCodes.INTERNAL_SERVER_ERROR;
-    errors: unknown;
-  },
-  {status: StatusCodes.CREATED; msg: 'Persisted a new event'}
-> => TE.left({msg: 'Failed to persist event', status: 500, errors: {}});
+  FailureWithStatus,
+  {status: StatusCodes.CREATED; message: 'Persisted a new event'}
+> =>
+  TE.left(
+    failureWithStatus(
+      'Failed to persist event',
+      StatusCodes.INTERNAL_SERVER_ERROR
+    )()
+  );
 
 export const declareSuperUserCommandHandler =
   (conf: Config) => async (req: Request, res: Response) => {
@@ -42,11 +48,9 @@ export const declareSuperUserCommandHandler =
         req.body,
         DeclareSuperUserCommand.decode,
         E.mapLeft(formatValidationErrors),
-        E.mapLeft(validationErrors => ({
-          msg: 'Failed to decode command',
-          errors: validationErrors,
-          status: StatusCodes.BAD_REQUEST,
-        })),
+        E.mapLeft(
+          failureWithStatus('Could not decode command', StatusCodes.BAD_REQUEST)
+        ),
         TE.fromEither,
         TE.chainW(command =>
           pipe(
@@ -54,17 +58,18 @@ export const declareSuperUserCommandHandler =
             declareSuperUser(command),
             O.matchW(
               () =>
-                TE.right({status: StatusCodes.OK, msg: 'No new events raised'}),
+                TE.right({
+                  status: StatusCodes.OK,
+                  message: 'No new events raised',
+                }),
               event => commitEvents(event)
             )
           )
         ),
         TE.match(
-          left =>
-            res
-              .status(left.status)
-              .send({message: left.msg, errors: left.errors}),
-          right => res.status(right.status).send({message: right.msg})
+          ({status, message, payload}) =>
+            res.status(status).send({message, payload}),
+          ({status, message}) => res.status(status).send({message})
         )
       )();
     }
