@@ -7,13 +7,14 @@ import {publish} from 'pubsub-js';
 import passport from 'passport';
 import {magicLink} from './magic-link';
 import {logInPage} from './log-in-page';
+import {StatusCodes} from 'http-status-codes';
 
 export const configureAuthRoutes = (router: Router) => {
   const logInRoute = '/log-in';
   const invalidLinkRoute = '/auth/invalid-magic-link';
 
   router.get(logInRoute, (req: Request, res: Response) => {
-    res.status(200).send(logInPage);
+    res.status(StatusCodes.OK).send(logInPage);
   });
 
   router.get('/log-out', (req: Request, res: Response) => {
@@ -27,10 +28,10 @@ export const configureAuthRoutes = (router: Router) => {
       parseEmailAddressFromBody,
       E.mapLeft(() => "You entered something that isn't a valid email address"),
       E.matchW(
-        msg => res.status(400).send(oopsPage(msg)),
+        msg => res.status(StatusCodes.BAD_REQUEST).send(oopsPage(msg)),
         email => {
           publish('send-log-in-link', email);
-          res.status(200).send(checkYourMailPage(email));
+          res.status(StatusCodes.ACCEPTED).send(checkYourMailPage(email));
         }
       )
     );
@@ -47,7 +48,7 @@ export const configureAuthRoutes = (router: Router) => {
 
   router.get(invalidLinkRoute, (req: Request, res: Response) => {
     res
-      .status(401)
+      .status(StatusCodes.UNAUTHORIZED)
       .send(
         oopsPage(
           `The link you have used is (no longer) valid. Go back to the <a href=${logInRoute}>log in</a>`

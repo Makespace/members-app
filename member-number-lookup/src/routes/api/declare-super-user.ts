@@ -9,6 +9,7 @@ import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import {DomainEvent} from '../../types';
 import * as O from 'fp-ts/Option';
+import {StatusCodes} from 'http-status-codes';
 
 const DeclareSuperUserCommand = t.strict({
   memberNumber: tt.NumberFromString,
@@ -24,8 +25,12 @@ const declareSuperUser =
 const commitEvents = (
   event: DomainEvent
 ): TE.TaskEither<
-  {msg: 'Failed to persist event'; status: 500; errors: unknown},
-  {status: 201; msg: 'Persisted a new event'}
+  {
+    msg: 'Failed to persist event';
+    status: StatusCodes.INTERNAL_SERVER_ERROR;
+    errors: unknown;
+  },
+  {status: StatusCodes.CREATED; msg: 'Persisted a new event'}
 > => TE.left({msg: 'Failed to persist event', status: 500, errors: {}});
 
 export const declareSuperUserCommandHandler =
@@ -40,7 +45,7 @@ export const declareSuperUserCommandHandler =
         E.mapLeft(validationErrors => ({
           msg: 'Failed to decode command',
           errors: validationErrors,
-          status: 400,
+          status: StatusCodes.BAD_REQUEST,
         })),
         TE.fromEither,
         TE.chainW(command =>
@@ -48,7 +53,8 @@ export const declareSuperUserCommandHandler =
             [],
             declareSuperUser(command),
             O.matchW(
-              () => TE.right({status: 200, msg: 'No new events raised'}),
+              () =>
+                TE.right({status: StatusCodes.OK, msg: 'No new events raised'}),
               event => commitEvents(event)
             )
           )
