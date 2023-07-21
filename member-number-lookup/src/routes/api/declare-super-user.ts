@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {Request, Response} from 'express';
 import {Config} from '../../configuration';
-import {pipe} from 'fp-ts/lib/function';
+import {flow, pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
@@ -15,6 +15,7 @@ import {
   failureWithStatus,
 } from '../../types/failureWithStatus';
 import {Dependencies} from '../../dependencies';
+import {sequenceS} from 'fp-ts/lib/Apply';
 
 const DeclareSuperUserCommand = t.strict({
   memberNumber: tt.NumberFromString,
@@ -22,10 +23,10 @@ const DeclareSuperUserCommand = t.strict({
 
 type DeclareSuperUserCommand = t.TypeOf<typeof DeclareSuperUserCommand>;
 
-const declareSuperUser =
-  (command: DeclareSuperUserCommand) =>
-  (events: ReadonlyArray<DomainEvent>): O.Option<DomainEvent> =>
-    O.none;
+const declareSuperUser = (input: {
+  command: DeclareSuperUserCommand;
+  events: ReadonlyArray<DomainEvent>;
+}): O.Option<DomainEvent> => O.none;
 
 const commitEvents = (
   event: DomainEvent
@@ -40,42 +41,43 @@ const commitEvents = (
     )()
   );
 
+const getCommandFrom = (body: unknown) =>
+  pipe(
+    body,
+    DeclareSuperUserCommand.decode,
+    E.mapLeft(formatValidationErrors),
+    E.mapLeft(
+      failureWithStatus('Could not decode command', StatusCodes.BAD_REQUEST)
+    ),
+    TE.fromEither
+  );
+
+const persistOrNoOp = (toPersist: O.Option<DomainEvent>) =>
+  pipe(
+    toPersist,
+    O.matchW(
+      () =>
+        TE.right({
+          status: StatusCodes.OK,
+          message: 'No new events raised',
+        }),
+      event => commitEvents(event)
+    )
+  );
+
 export const declareSuperUserCommandHandler =
   (deps: Dependencies, conf: Config) => async (req: Request, res: Response) => {
     if (req.headers.authorization !== `Bearer ${conf.ADMIN_API_BEARER_TOKEN}`) {
       res.status(401).send('Unauthorized\n');
     } else {
       await pipe(
-        req.body,
-        DeclareSuperUserCommand.decode,
-        E.mapLeft(formatValidationErrors),
-        E.mapLeft(
-          failureWithStatus('Could not decode command', StatusCodes.BAD_REQUEST)
-        ),
-        TE.fromEither,
-        TE.chain(command =>
-          pipe(
-            deps.getAllEvents(),
-            TE.map(events => ({
-              command,
-              events,
-            }))
-          )
-        ),
-        TE.chainW(({events, command}) =>
-          pipe(
-            events,
-            declareSuperUser(command),
-            O.matchW(
-              () =>
-                TE.right({
-                  status: StatusCodes.OK,
-                  message: 'No new events raised',
-                }),
-              event => commitEvents(event)
-            )
-          )
-        ),
+        {
+          command: getCommandFrom(req.body),
+          events: deps.getAllEvents(),
+        },
+        sequenceS(TE.ApplyPar),
+        TE.map(declareSuperUser),
+        TE.chainW(persistOrNoOp),
         TE.match(
           ({status, message, payload}) =>
             res.status(status).send({message, payload}),
