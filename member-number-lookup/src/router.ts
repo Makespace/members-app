@@ -22,7 +22,7 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
 
   router.post(
     '/api/declare-super-user',
-    asyncHandler(declareSuperUserCommandHandler(conf))
+    asyncHandler(declareSuperUserCommandHandler(deps, conf))
   );
 
   configureAuthRoutes(router);

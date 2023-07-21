@@ -14,6 +14,7 @@ import {
   FailureWithStatus,
   failureWithStatus,
 } from '../../types/failureWithStatus';
+import {Dependencies} from '../../dependencies';
 
 const DeclareSuperUserCommand = t.strict({
   memberNumber: tt.NumberFromString,
@@ -40,7 +41,7 @@ const commitEvents = (
   );
 
 export const declareSuperUserCommandHandler =
-  (conf: Config) => async (req: Request, res: Response) => {
+  (deps: Dependencies, conf: Config) => async (req: Request, res: Response) => {
     if (req.headers.authorization !== `Bearer ${conf.ADMIN_API_BEARER_TOKEN}`) {
       res.status(401).send('Unauthorized\n');
     } else {
@@ -52,9 +53,18 @@ export const declareSuperUserCommandHandler =
           failureWithStatus('Could not decode command', StatusCodes.BAD_REQUEST)
         ),
         TE.fromEither,
-        TE.chainW(command =>
+        TE.chain(command =>
           pipe(
-            [],
+            deps.getAllEvents(),
+            TE.map(events => ({
+              command,
+              events,
+            }))
+          )
+        ),
+        TE.chainW(({events, command}) =>
+          pipe(
+            events,
             declareSuperUser(command),
             O.matchW(
               () =>
