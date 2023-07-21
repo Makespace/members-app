@@ -11,8 +11,7 @@ import {createTerminus} from '@godaddy/terminus';
 import http from 'http';
 import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
-import {Dependencies} from './dependencies';
-import {initQueryDatabase} from './adapters/query-database';
+import {QueryDatabase, initQueryDatabase} from './adapters/query-database';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -64,11 +63,23 @@ Visit http://localhost:1080 to see the emails it sends
 const server = http.createServer(app);
 createTerminus(server);
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const ensureEventTableExists = (deps: Dependencies) => TE.right('foo');
+const ensureEventTableExists = (queryDatabase: QueryDatabase) =>
+  queryDatabase(
+    `
+    CREATE TABLE IF NOT EXISTS events (
+      id varchar(255),
+      resource_id varchar(255),
+      resource_type varchar(255),
+      event_type varchar(255),
+      payload json
+    );
+  `,
+    []
+  );
 
 void pipe(
-  ensureEventTableExists(deps),
+  ensureEventTableExists(queryDatabase),
+  TE.mapLeft(e => deps.logger.error(e, 'Failed to start server')),
   TE.map(() =>
     server.listen(conf.PORT, () =>
       deps.logger.info({port: conf.PORT}, 'Server listening')

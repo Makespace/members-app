@@ -23,6 +23,18 @@ services:
       TOKEN_SECRET: secret
       USE_STUBBED_ADAPTERS: 'true'
 
+  mariadb:
+    image: mariadb
+    volumes:
+      - ./data/db-data-for-local-dev.sql:/data/application/init.sql
+    environment:
+      MYSQL_ROOT_USER: root
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: makespace
+      MYSQL_USER: root
+      MYSQL_PASSWORD: secret
+    restart: unless-stopped
+
   mailcatcher:
     image: sj26/mailcatcher@sha256:1f02ff3bd4fd728837d7ddf768346eebd39e5e2232883c41378c02691378e986
     ports:
