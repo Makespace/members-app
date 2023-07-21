@@ -18,6 +18,7 @@ import {DomainEvent} from '../types';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {failureWithStatus} from '../types/failureWithStatus';
 import {StatusCodes} from 'http-status-codes';
+import * as tt from 'io-ts-types';
 
 export const createAdapters = (
   conf: Config,
@@ -42,14 +43,38 @@ export const createAdapters = (
     })
   );
 
+  const EventsFromDb = t.readonlyArray(
+    t.strict({
+      id: t.string,
+      resource_id: t.string,
+      resource_type: t.string,
+      event_type: t.string,
+      payload: t.string,
+    })
+  );
+
   return {
-    commitEvent,
+    commitEvent: commitEvent(queryDatabase),
     getAllEvents: () =>
       pipe(
         queryDatabase('SELECT * FROM events;', []),
         TE.chainEitherK(
           flow(
-            t.readonlyArray(DomainEvent).decode,
+            EventsFromDb.decode,
+            E.chain(
+              E.traverseArray(raw =>
+                pipe(
+                  raw.payload,
+                  tt.JsonFromString.decode,
+                  E.chain(tt.JsonRecord.decode),
+                  E.map(payload => ({
+                    type: raw.event_type,
+                    ...payload,
+                  }))
+                )
+              )
+            ),
+            E.chain(t.readonlyArray(DomainEvent).decode),
             E.mapLeft(formatValidationErrors),
             E.mapLeft(
               failureWithStatus(
