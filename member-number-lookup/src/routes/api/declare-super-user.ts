@@ -28,19 +28,6 @@ const declareSuperUser = (input: {
   events: ReadonlyArray<DomainEvent>;
 }): O.Option<DomainEvent> => O.none;
 
-const commitEvents = (
-  event: DomainEvent
-): TE.TaskEither<
-  FailureWithStatus,
-  {status: StatusCodes.CREATED; message: 'Persisted a new event'}
-> =>
-  TE.left(
-    failureWithStatus(
-      'Failed to persist event',
-      StatusCodes.INTERNAL_SERVER_ERROR
-    )()
-  );
-
 const getCommandFrom = (body: unknown) =>
   pipe(
     body,
@@ -52,18 +39,19 @@ const getCommandFrom = (body: unknown) =>
     TE.fromEither
   );
 
-const persistOrNoOp = (toPersist: O.Option<DomainEvent>) =>
-  pipe(
-    toPersist,
-    O.matchW(
-      () =>
-        TE.right({
-          status: StatusCodes.OK,
-          message: 'No new events raised',
-        }),
-      event => commitEvents(event)
-    )
-  );
+const persistOrNoOp =
+  (deps: Dependencies) => (toPersist: O.Option<DomainEvent>) =>
+    pipe(
+      toPersist,
+      O.matchW(
+        () =>
+          TE.right({
+            status: StatusCodes.OK,
+            message: 'No new events raised',
+          }),
+        deps.commitEvent
+      )
+    );
 
 const checkBearerToken = (conf: Config) => (authorization: unknown) =>
   pipe(
@@ -92,7 +80,7 @@ export const declareSuperUserCommandHandler =
       },
       sequenceS(TE.ApplySeq),
       TE.map(declareSuperUser),
-      TE.chainW(persistOrNoOp),
+      TE.chainW(persistOrNoOp(deps)),
       TE.match(
         ({status, message, payload}) =>
           res.status(status).send({message, payload}),
