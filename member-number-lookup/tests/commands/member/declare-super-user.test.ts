@@ -9,10 +9,11 @@ describe('declare-super-user', () => {
     const result = declareSuperUser.process({
       command: {
         memberNumber,
+        declaredAt: faker.date.soon(),
       },
       events: [],
     });
-    it.skip('declares them to be super user', () => {
+    it('declares them to be super user', () => {
       expect(result).toStrictEqual(
         O.some(
           expect.objectContaining({type: 'SuperUserDeclared', memberNumber})
@@ -26,6 +27,7 @@ describe('declare-super-user', () => {
     const result = declareSuperUser.process({
       command: {
         memberNumber,
+        declaredAt: faker.date.soon(),
       },
       events: [
         constructEvent('SuperUserDeclared')({
