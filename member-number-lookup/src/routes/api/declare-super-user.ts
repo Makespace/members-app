@@ -16,22 +16,12 @@ import {
 } from '../../types/failureWithStatus';
 import {Dependencies} from '../../dependencies';
 import {sequenceS} from 'fp-ts/lib/Apply';
-
-const DeclareSuperUserCommand = t.strict({
-  memberNumber: tt.NumberFromString,
-});
-
-type DeclareSuperUserCommand = t.TypeOf<typeof DeclareSuperUserCommand>;
-
-const declareSuperUser = (input: {
-  command: DeclareSuperUserCommand;
-  events: ReadonlyArray<DomainEvent>;
-}): O.Option<DomainEvent> => O.none;
+import {declareSuperUser} from '../../commands/member/declare-super-user';
 
 const getCommandFrom = (body: unknown) =>
   pipe(
     body,
-    DeclareSuperUserCommand.decode,
+    declareSuperUser.decode,
     E.mapLeft(formatValidationErrors),
     E.mapLeft(
       failureWithStatus('Could not decode command', StatusCodes.BAD_REQUEST)
@@ -79,7 +69,7 @@ export const declareSuperUserCommandHandler =
         events: deps.getAllEvents(),
       },
       sequenceS(TE.ApplySeq),
-      TE.map(declareSuperUser),
+      TE.map(declareSuperUser.process),
       TE.chainW(persistOrNoOp(deps)),
       TE.match(
         ({status, message, payload}) =>
