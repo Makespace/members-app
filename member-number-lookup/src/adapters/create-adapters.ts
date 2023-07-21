@@ -6,14 +6,16 @@ import {getMemberNumberStubbed} from './get-member-number-stubbed';
 import {createRateLimiter} from './rate-limit-sending-of-emails';
 import {sendEmail} from './send-email';
 import createLogger from 'pino';
-import mysql from 'mysql';
 import nodemailer from 'nodemailer';
 import smtp from 'nodemailer-smtp-transport';
 import {getTrainersStubbed} from './get-trainers-stubbed';
 import {commitEvent} from './commit-event';
-import {initQueryDatabase} from './query-database';
+import {QueryDatabase} from './query-database';
 
-export const createAdapters = (conf: Config): Dependencies => {
+export const createAdapters = (
+  conf: Config,
+  queryDatabase: QueryDatabase
+): Dependencies => {
   const logger = createLogger({
     formatters: {
       level: label => {
@@ -21,15 +23,6 @@ export const createAdapters = (conf: Config): Dependencies => {
       },
     },
   });
-
-  const pool = mysql.createPool({
-    host: conf.MYSQL_HOST,
-    database: conf.MYSQL_DATABASE,
-    user: conf.MYSQL_USER,
-    password: conf.MYSQL_PASSWORD,
-  });
-
-  const queryDatabase = initQueryDatabase(pool);
 
   const emailTransporter = nodemailer.createTransport(
     smtp({

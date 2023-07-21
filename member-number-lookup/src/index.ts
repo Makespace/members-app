@@ -9,10 +9,15 @@ import {loadConfig} from './configuration';
 import {magicLink} from './authentication';
 import {createTerminus} from '@godaddy/terminus';
 import http from 'http';
+import {pipe} from 'fp-ts/lib/function';
+import * as TE from 'fp-ts/TaskEither';
+import {Dependencies} from './dependencies';
+import {initQueryDatabase} from './adapters/query-database';
 
 // Dependencies and Config
 const conf = loadConfig();
-const deps = createAdapters(conf);
+const queryDatabase = initQueryDatabase(conf);
+const deps = createAdapters(conf, queryDatabase);
 
 // Authentication
 passport.use(magicLink.name, magicLink.strategy(deps, conf));
@@ -58,6 +63,15 @@ Visit http://localhost:1080 to see the emails it sends
 
 const server = http.createServer(app);
 createTerminus(server);
-server.listen(conf.PORT, () =>
-  deps.logger.info({port: conf.PORT}, 'Server listening')
-);
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const ensureEventTableExists = (deps: Dependencies) => TE.right('foo');
+
+void pipe(
+  ensureEventTableExists(deps),
+  TE.map(() =>
+    server.listen(conf.PORT, () =>
+      deps.logger.info({port: conf.PORT}, 'Server listening')
+    )
+  )
+)();
