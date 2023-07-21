@@ -1,11 +1,11 @@
 import * as TE from 'fp-ts/TaskEither';
 import {EmailAddress, failure, Failure} from '../types';
-import mysql, {Pool} from 'mysql';
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
 import * as tt from 'io-ts-types';
+import {QueryDatabase} from './query-database';
 
 const selectMemberNumberWhereEmail = `
 SELECT Member_Number
@@ -18,17 +18,6 @@ WHERE
 Email = ? OR Account_Code = ?
 ;`;
 
-const queryDatabase = (pool: Pool, query: string, values?: unknown) => {
-  return new Promise((resolve, reject) => {
-    pool.query(query, values, (error, elements) => {
-      if (error) {
-        return reject(error);
-      }
-      return resolve(elements);
-    });
-  });
-};
-
 const MemberNumberQueryResult = tt.readonlyNonEmptyArray(
   t.type({
     Member_Number: t.Int,
@@ -40,13 +29,10 @@ type GetMemberNumber = (
 ) => TE.TaskEither<Failure, number>;
 
 export const getMemberNumber =
-  (pool: mysql.Pool): GetMemberNumber =>
+  (queryDatabase: QueryDatabase): GetMemberNumber =>
   email =>
     pipe(
-      TE.tryCatch(
-        () => queryDatabase(pool, selectMemberNumberWhereEmail, [email, email]),
-        failure('DB query failed')
-      ),
+      queryDatabase(selectMemberNumberWhereEmail, [email, email]),
       TE.chainEitherK(
         flow(
           MemberNumberQueryResult.decode,

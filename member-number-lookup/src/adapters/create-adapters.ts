@@ -11,6 +11,7 @@ import nodemailer from 'nodemailer';
 import smtp from 'nodemailer-smtp-transport';
 import {getTrainersStubbed} from './get-trainers-stubbed';
 import {commitEvent} from './commit-event';
+import {initQueryDatabase} from './query-database';
 
 export const createAdapters = (conf: Config): Dependencies => {
   const logger = createLogger({
@@ -28,6 +29,8 @@ export const createAdapters = (conf: Config): Dependencies => {
     password: conf.MYSQL_PASSWORD,
   });
 
+  const queryDatabase = initQueryDatabase(pool);
+
   const emailTransporter = nodemailer.createTransport(
     smtp({
       host: conf.SMTP_HOST,
@@ -44,7 +47,7 @@ export const createAdapters = (conf: Config): Dependencies => {
     getAllEvents: () => TE.right([]),
     getMemberNumber: conf.USE_STUBBED_ADAPTERS
       ? getMemberNumberStubbed()
-      : getMemberNumber(pool),
+      : getMemberNumber(queryDatabase),
     getTrainers: getTrainersStubbed(),
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter),
