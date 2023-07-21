@@ -65,24 +65,38 @@ const persistOrNoOp = (toPersist: O.Option<DomainEvent>) =>
     )
   );
 
+const checkBearerToken = (conf: Config) => (authorization: unknown) =>
+  pipe(
+    authorization,
+    t.string.decode,
+    E.mapLeft(
+      failureWithStatus(
+        'Missing authorization header',
+        StatusCodes.UNAUTHORIZED
+      )
+    ),
+    E.filterOrElse(
+      authString => authString === `Bearer ${conf.ADMIN_API_BEARER_TOKEN}`,
+      () => failureWithStatus('Bad authString', StatusCodes.UNAUTHORIZED)()
+    ),
+    TE.fromEither
+  );
+
 export const declareSuperUserCommandHandler =
   (deps: Dependencies, conf: Config) => async (req: Request, res: Response) => {
-    if (req.headers.authorization !== `Bearer ${conf.ADMIN_API_BEARER_TOKEN}`) {
-      res.status(401).send('Unauthorized\n');
-    } else {
-      await pipe(
-        {
-          command: getCommandFrom(req.body),
-          events: deps.getAllEvents(),
-        },
-        sequenceS(TE.ApplyPar),
-        TE.map(declareSuperUser),
-        TE.chainW(persistOrNoOp),
-        TE.match(
-          ({status, message, payload}) =>
-            res.status(status).send({message, payload}),
-          ({status, message}) => res.status(status).send({message})
-        )
-      )();
-    }
+    await pipe(
+      {
+        authorization: checkBearerToken(conf)(req.headers.authorization),
+        command: getCommandFrom(req.body),
+        events: deps.getAllEvents(),
+      },
+      sequenceS(TE.ApplySeq),
+      TE.map(declareSuperUser),
+      TE.chainW(persistOrNoOp),
+      TE.match(
+        ({status, message, payload}) =>
+          res.status(status).send({message, payload}),
+        ({status, message}) => res.status(status).send({message})
+      )
+    )();
   };
