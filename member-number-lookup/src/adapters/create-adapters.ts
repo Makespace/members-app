@@ -10,8 +10,7 @@ import mysql from 'mysql';
 import nodemailer from 'nodemailer';
 import smtp from 'nodemailer-smtp-transport';
 import {getTrainersStubbed} from './get-trainers-stubbed';
-import {FailureWithStatus, failureWithStatus} from '../types/failureWithStatus';
-import {StatusCodes} from 'http-status-codes';
+import {commitEvent} from './commit-event';
 
 export const createAdapters = (conf: Config): Dependencies => {
   const logger = createLogger({
@@ -39,17 +38,6 @@ export const createAdapters = (conf: Config): Dependencies => {
       },
     })
   );
-
-  const commitEvent = (): TE.TaskEither<
-    FailureWithStatus,
-    {status: StatusCodes.CREATED; message: 'Persisted a new event'}
-  > =>
-    TE.left(
-      failureWithStatus(
-        'commitEvent not implemented',
-        StatusCodes.NOT_IMPLEMENTED
-      )()
-    );
 
   return {
     commitEvent,
