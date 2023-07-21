@@ -1,7 +1,9 @@
 import {Config} from '../configuration';
+import * as t from 'io-ts';
 import * as TE from 'fp-ts/TaskEither';
 import {Dependencies} from '../dependencies';
 import {getMemberNumber} from './get-member-number';
+import * as E from 'fp-ts/Either';
 import {getMemberNumberStubbed} from './get-member-number-stubbed';
 import {createRateLimiter} from './rate-limit-sending-of-emails';
 import {sendEmail} from './send-email';
@@ -11,6 +13,11 @@ import smtp from 'nodemailer-smtp-transport';
 import {getTrainersStubbed} from './get-trainers-stubbed';
 import {commitEvent} from './commit-event';
 import {QueryDatabase} from './query-database';
+import {flow, pipe} from 'fp-ts/lib/function';
+import {DomainEvent} from '../types';
+import {formatValidationErrors} from 'io-ts-reporters';
+import {failureWithStatus} from '../types/failureWithStatus';
+import {StatusCodes} from 'http-status-codes';
 
 export const createAdapters = (
   conf: Config,
@@ -37,7 +44,22 @@ export const createAdapters = (
 
   return {
     commitEvent,
-    getAllEvents: () => TE.right([]),
+    getAllEvents: () =>
+      pipe(
+        queryDatabase('SELECT * FROM events;', []),
+        TE.chainEitherK(
+          flow(
+            t.readonlyArray(DomainEvent).decode,
+            E.mapLeft(formatValidationErrors),
+            E.mapLeft(
+              failureWithStatus(
+                'Failed to get events from DB',
+                StatusCodes.INTERNAL_SERVER_ERROR
+              )
+            )
+          )
+        )
+      ),
     getMemberNumber: conf.USE_STUBBED_ADAPTERS
       ? getMemberNumberStubbed()
       : getMemberNumber(queryDatabase),
