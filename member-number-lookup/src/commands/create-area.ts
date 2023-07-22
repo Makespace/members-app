@@ -17,7 +17,16 @@ type CreateArea = t.TypeOf<typeof codec>;
 const handle = (input: {
   command: CreateArea;
   events: ReadonlyArray<DomainEvent>;
-}): O.Option<DomainEvent> => O.none;
+}): O.Option<DomainEvent> =>
+  pipe(
+    input.events,
+    RA.filter(isEventOfType('AreaCreated')),
+    RA.filter(event => event.name === input.command.name),
+    RA.match(
+      () => O.some(constructEvent('AreaCreated')(input.command)),
+      () => O.none
+    )
+  );
 
 export const createArea: Command<CreateArea> = {
   process: handle,
