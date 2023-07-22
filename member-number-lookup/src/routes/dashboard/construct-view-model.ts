@@ -14,6 +14,16 @@ export const constructViewModel = (deps: Dependencies) => (user: User) =>
         deps.getAllEvents(),
         TE.map(RA.some(event => event.memberNumber === user.memberNumber))
       ),
+      areas: TE.right([
+        {
+          name: 'Woodshop',
+          description: 'A place for wood',
+        },
+        {
+          name: 'Metalshop',
+          description: 'A place for metal',
+        },
+      ]),
     },
     sequenceS(TE.ApplySeq)
   );

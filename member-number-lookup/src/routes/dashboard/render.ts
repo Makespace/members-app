@@ -6,10 +6,16 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {Trainer} from '../../types/trainer';
 import {User} from '../../types';
 
+type Area = {
+  name: string;
+  description: string;
+};
+
 type ViewModel = {
   user: User;
   trainers: ReadonlyArray<Trainer>;
   isSuperUser: boolean;
+  areas: ReadonlyArray<Area>;
 };
 
 const renderMemberDetails = (user: ViewModel['user']) => html`
@@ -20,6 +26,35 @@ const renderMemberDetails = (user: ViewModel['user']) => html`
     <dd>${user.memberNumber}</dd>
   </dl>
 `;
+
+const renderAreas = (areas: ViewModel['areas']) =>
+  pipe(
+    areas,
+    RA.map(
+      area => html`
+        <tr>
+          <td>${area.name}</td>
+          <td>${area.description}</td>
+        </tr>
+      `
+    ),
+    RA.match(
+      () => html` <p>Currently no Areas</p> `,
+      rows => html`
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.join('\n')}
+          </tbody>
+        </table>
+      `
+    )
+  );
 
 const renderTrainers = (trainers: ViewModel['trainers']) =>
   pipe(
@@ -72,20 +107,8 @@ export const render = (viewModel: ViewModel) =>
       ${viewModel.isSuperUser ? superUserNav : ''}
 
       <h2>Areas</h2>
-      <table>
-      <tr>  
-        <th> Name </th>
-        <th> Description </th>
-      </tr>
-      <tr>  
-        <td> Woodshop </td>
-        <td> Wood and more wood, but not bandsaw </td>
-      </tr>
-      <tr>  
-        <td> Lasercutter </td>
-        <td> Lasercutters in the main workspace https://docs.google.com/spreadsheets/d/1Z5Ue4_S1J_O2wMxlaD2Ln1CEM8C7b7EZloLrOmLCpPQ/edit#gid=0 </td>
-      </tr>
-      
+      ${renderAreas(viewModel.areas)}
+
       </table>
       <h2>Trainers</h2>
       ${renderTrainers(viewModel.trainers)}
