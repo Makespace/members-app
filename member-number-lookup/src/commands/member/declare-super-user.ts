@@ -4,6 +4,7 @@ import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
+import {Command} from '../../types/command';
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,
@@ -27,7 +28,7 @@ const handle = (input: {
     )
   );
 
-export const declareSuperUser = {
+export const declareSuperUser: Command<DeclareSuperUserCommand> = {
   process: handle,
   decode: codec.decode,
 };

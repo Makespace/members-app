@@ -17,11 +17,12 @@ import {
 import {Dependencies} from '../../dependencies';
 import {sequenceS} from 'fp-ts/lib/Apply';
 import {declareSuperUser} from '../../commands/member/declare-super-user';
+import {Command} from '../../types/command';
 
-const getCommandFrom = (body: unknown) =>
+const getCommandFrom = <T>(body: unknown, command: Command<T>) =>
   pipe(
     body,
-    declareSuperUser.decode,
+    command.decode,
     E.mapLeft(formatValidationErrors),
     E.mapLeft(
       failureWithStatus('Could not decode command', StatusCodes.BAD_REQUEST)
@@ -60,16 +61,17 @@ const checkBearerToken = (conf: Config) => (authorization: unknown) =>
     TE.fromEither
   );
 
-export const declareSuperUserCommandHandler =
-  (deps: Dependencies, conf: Config) => async (req: Request, res: Response) => {
+export const commandHandler =
+  <T>(deps: Dependencies, conf: Config, command: Command<T>) =>
+  async (req: Request, res: Response) => {
     await pipe(
       {
         authorization: checkBearerToken(conf)(req.headers.authorization),
-        command: getCommandFrom(req.body),
+        command: getCommandFrom(req.body, command),
         events: deps.getAllEvents(),
       },
       sequenceS(TE.ApplySeq),
-      TE.map(declareSuperUser.process),
+      TE.map(command.process),
       TE.chainW(persistOrNoOp(deps)),
       TE.match(
         ({status, message, payload}) =>

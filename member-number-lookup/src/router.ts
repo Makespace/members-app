@@ -7,9 +7,10 @@ import {dashboard} from './routes/dashboard';
 import {landing} from './routes/landing';
 import {sendMemberNumberByEmail} from './routes/send-member-number-by-email';
 import {configureAuthRoutes} from './authentication';
-import {declareSuperUserCommandHandler} from './routes/api/declare-super-user';
+import {commandHandler} from './routes/api/declare-super-user';
 import {Config} from './configuration';
 import {StatusCodes} from 'http-status-codes';
+import {declareSuperUser} from './commands/member/declare-super-user';
 
 export const createRouter = (deps: Dependencies, conf: Config): Router => {
   const router = Router();
@@ -22,7 +23,7 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
 
   router.post(
     '/api/declare-super-user',
-    asyncHandler(declareSuperUserCommandHandler(deps, conf))
+    asyncHandler(commandHandler(deps, conf, declareSuperUser))
   );
 
   configureAuthRoutes(router);
