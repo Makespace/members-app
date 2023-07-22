@@ -15,16 +15,10 @@ export const constructViewModel = (deps: Dependencies) => (user: User) =>
         TE.map(RA.filter(isEventOfType('SuperUserDeclared'))),
         TE.map(RA.some(event => event.memberNumber === user.memberNumber))
       ),
-      areas: TE.right([
-        {
-          name: 'Woodshop',
-          description: 'A place for wood',
-        },
-        {
-          name: 'Metalshop',
-          description: 'A place for metal',
-        },
-      ]),
+      areas: pipe(
+        deps.getAllEvents(),
+        TE.map(RA.filter(isEventOfType('AreaCreated')))
+      ),
     },
     sequenceS(TE.ApplySeq)
   );

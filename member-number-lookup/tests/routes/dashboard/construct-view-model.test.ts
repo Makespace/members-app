@@ -67,13 +67,13 @@ describe('construct-view-model', () => {
   describe('when area there are no areas', () => {
     const deps: Dependencies = happyPathAdapters;
 
-    it.skip('should return nothing', async () => {
+    it('should return nothing', async () => {
       const viewModel = await pipe(
         arbitraryUser(),
         constructViewModel(deps),
         TE.getOrElse(shouldNotBeCalled)
       )();
-      expect(viewModel.areas).toBe([]);
+      expect(viewModel.areas).toStrictEqual([]);
     });
   });
 
@@ -96,7 +96,7 @@ describe('construct-view-model', () => {
           }),
         ]),
     };
-    it.skip('should show up the areas', async () => {
+    it('should show up the areas', async () => {
       const viewModel = await pipe(
         arbitraryUser(),
         constructViewModel(deps),
