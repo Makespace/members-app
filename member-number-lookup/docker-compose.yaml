@@ -22,9 +22,7 @@ services:
       SMTP_PASSWORD: ''
       TOKEN_SECRET: secret
       USE_STUBBED_ADAPTERS: 'true'
-    depends_on:
-      mariadb:
-        condition: service_healthy
+    restart: unless-stopped
 
   mariadb:
     image: mariadb
@@ -37,8 +35,7 @@ services:
       MYSQL_USER: root
       MYSQL_PASSWORD: secret
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "/usr/local/bin/healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized"]
+      
 
   mailcatcher:
     image: sj26/mailcatcher@sha256:1f02ff3bd4fd728837d7ddf768346eebd39e5e2232883c41378c02691378e986
