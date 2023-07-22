@@ -3,6 +3,7 @@ set -euo pipefail
 
 function finish() {
   echo "Stopping all containers"
+	docker-compose logs
 	docker-compose stop
 }
 
