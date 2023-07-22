@@ -63,4 +63,17 @@ describe('construct-view-model', () => {
       expect(viewModel.isSuperUser).toBe(false);
     });
   });
+
+  describe('when area there are no areas', () => {
+    const deps: Dependencies = happyPathAdapters;
+
+    it.skip('should return nothing', async () => {
+      const viewModel = await pipe(
+        arbitraryUser(),
+        constructViewModel(deps),
+        TE.getOrElse(shouldNotBeCalled)
+      )();
+      expect(viewModel.areas).toBe([]);
+    });
+  });
 });
