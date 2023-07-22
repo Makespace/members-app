@@ -76,4 +76,33 @@ describe('construct-view-model', () => {
       expect(viewModel.areas).toBe([]);
     });
   });
+
+  describe('when an area is created', () => {
+    const deps: Dependencies = {
+      ...happyPathAdapters,
+      getAllEvents: () =>
+        TE.right([
+          constructEvent('AreaCreated')({
+            name: faker.commerce.productName(),
+            description: faker.commerce.productDescription(),
+          }),
+          constructEvent('AreaCreated')({
+            name: faker.commerce.productName(),
+            description: faker.commerce.productDescription(),
+          }),
+          constructEvent('AreaCreated')({
+            name: faker.commerce.productName(),
+            description: faker.commerce.productDescription(),
+          }),
+        ]),
+    };
+    it.skip('should show up the areas', async () => {
+      const viewModel = await pipe(
+        arbitraryUser(),
+        constructViewModel(deps),
+        TE.getOrElse(shouldNotBeCalled)
+      )();
+      expect(viewModel.areas).toHaveLength(3);
+    });
+  });
 });
