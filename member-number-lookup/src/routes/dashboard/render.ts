@@ -71,6 +71,22 @@ export const render = (viewModel: ViewModel) =>
       ${renderMemberDetails(viewModel.user)}
       ${viewModel.isSuperUser ? superUserNav : ''}
 
+      <h2>Areas</h2>
+      <table>
+      <tr>  
+        <th> Name </th>
+        <th> Description </th>
+      </tr>
+      <tr>  
+        <td> Woodshop </td>
+        <td> Wood and more wood, but not bandsaw </td>
+      </tr>
+      <tr>  
+        <td> Lasercutter </td>
+        <td> Lasercutters in the main workspace https://docs.google.com/spreadsheets/d/1Z5Ue4_S1J_O2wMxlaD2Ln1CEM8C7b7EZloLrOmLCpPQ/edit#gid=0 </td>
+      </tr>
+      
+      </table>
       <h2>Trainers</h2>
       ${renderTrainers(viewModel.trainers)}
     `,
