@@ -7,8 +7,11 @@ import {dashboard} from './routes/dashboard';
 import {landing} from './routes/landing';
 import {sendMemberNumberByEmail} from './routes/send-member-number-by-email';
 import {configureAuthRoutes} from './authentication';
+import {declareSuperUserCommandHandler} from './routes/api/declare-super-user';
+import {Config} from './configuration';
+import {StatusCodes} from 'http-status-codes';
 
-export const createRouter = (deps: Dependencies): Router => {
+export const createRouter = (deps: Dependencies, conf: Config): Router => {
   const router = Router();
 
   router.get('/', landing);
@@ -17,13 +20,18 @@ export const createRouter = (deps: Dependencies): Router => {
 
   router.post('/send-member-number-by-email', sendMemberNumberByEmail);
 
+  router.post(
+    '/api/declare-super-user',
+    asyncHandler(declareSuperUserCommandHandler(deps, conf))
+  );
+
   configureAuthRoutes(router);
 
   router.use('/static', express.static(path.resolve(__dirname, './static')));
 
   router.use((req, res) => {
     res
-      .status(404)
+      .status(StatusCodes.NOT_FOUND)
       .send(oopsPage('The page you have requested does not exist.'));
   });
   return router;

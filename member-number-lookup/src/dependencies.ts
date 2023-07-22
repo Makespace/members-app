@@ -1,9 +1,21 @@
 import {Logger} from 'pino';
-import {EmailAddress, Failure, Email} from './types';
+import {EmailAddress, Failure, Email, DomainEvent} from './types';
 import * as TE from 'fp-ts/TaskEither';
 import {Trainer} from './types/trainer';
+import {FailureWithStatus} from './types/failureWithStatus';
+import {StatusCodes} from 'http-status-codes';
 
 export type Dependencies = {
+  commitEvent: (
+    event: DomainEvent
+  ) => TE.TaskEither<
+    FailureWithStatus,
+    {status: StatusCodes.CREATED; message: string}
+  >;
+  getAllEvents: () => TE.TaskEither<
+    FailureWithStatus,
+    ReadonlyArray<DomainEvent>
+  >;
   getMemberNumber: (
     emailAddress: EmailAddress
   ) => TE.TaskEither<Failure, number>;

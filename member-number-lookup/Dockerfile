@@ -7,7 +7,7 @@ COPY package*.json ./
 FROM node as dev
 RUN npm ci
 COPY ./tsconfig.json .
-CMD [ "npx", "ts-node-dev", "--transpile-only", "./src/index.ts" ]
+CMD [ "npx", "ts-node-dev", "--transpile-only", "--respawn", "./src/index.ts" ]
 
 # PROD
 FROM node as prod-npm

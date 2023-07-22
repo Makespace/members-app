@@ -5,25 +5,23 @@ import {getMemberNumberStubbed} from './get-member-number-stubbed';
 import {createRateLimiter} from './rate-limit-sending-of-emails';
 import {sendEmail} from './send-email';
 import createLogger from 'pino';
-import mysql from 'mysql';
 import nodemailer from 'nodemailer';
 import smtp from 'nodemailer-smtp-transport';
 import {getTrainersStubbed} from './get-trainers-stubbed';
+import {commitEvent} from './commit-event';
+import {QueryDatabase} from './query-database';
+import {getAllEvents} from './get-all-events';
 
-export const createAdapters = (conf: Config): Dependencies => {
+export const createAdapters = (
+  conf: Config,
+  queryDatabase: QueryDatabase
+): Dependencies => {
   const logger = createLogger({
     formatters: {
       level: label => {
         return {severity: label};
       },
     },
-  });
-
-  const pool = mysql.createPool({
-    host: conf.MYSQL_HOST,
-    database: conf.MYSQL_DATABASE,
-    user: conf.MYSQL_USER,
-    password: conf.MYSQL_PASSWORD,
   });
 
   const emailTransporter = nodemailer.createTransport(
@@ -38,9 +36,11 @@ export const createAdapters = (conf: Config): Dependencies => {
   );
 
   return {
+    commitEvent: commitEvent(queryDatabase),
+    getAllEvents: getAllEvents(queryDatabase),
     getMemberNumber: conf.USE_STUBBED_ADAPTERS
       ? getMemberNumberStubbed()
-      : getMemberNumber(pool),
+      : getMemberNumber(queryDatabase),
     getTrainers: getTrainersStubbed(),
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter),

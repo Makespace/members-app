@@ -1,4 +1,4 @@
-.phony: check clear-containers dev fix lint prod release smoketest test typecheck
+.phony: check clear-containers dev fix lint prod release smoketest test typecheck watch-typecheck
 
 check: test lint typecheck
 
@@ -26,6 +26,9 @@ lint: node_modules
 
 typecheck: node_modules
 	npx tsc --noEmit
+
+watch-typecheck: node_modules
+	npx tsc --noEmit --watch
 
 clear-containers:
 	docker-compose --file docker-compose.yaml --file docker-compose.dev.yaml down

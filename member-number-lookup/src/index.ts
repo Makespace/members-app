@@ -9,10 +9,14 @@ import {loadConfig} from './configuration';
 import {magicLink} from './authentication';
 import {createTerminus} from '@godaddy/terminus';
 import http from 'http';
+import {pipe} from 'fp-ts/lib/function';
+import * as TE from 'fp-ts/TaskEither';
+import {QueryDatabase, initQueryDatabase} from './adapters/query-database';
 
 // Dependencies and Config
 const conf = loadConfig();
-const deps = createAdapters(conf);
+const queryDatabase = initQueryDatabase(conf);
+const deps = createAdapters(conf, queryDatabase);
 
 // Authentication
 passport.use(magicLink.name, magicLink.strategy(deps, conf));
@@ -27,6 +31,7 @@ passport.deserializeUser((user: Express.User, done) => {
 const app: Application = express();
 app.use(httpLogger({logger: deps.logger}));
 app.use(express.urlencoded({extended: true}));
+app.use(express.json());
 app.use(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   session({
@@ -38,7 +43,7 @@ app.use(
   })
 );
 app.set('trust proxy', true);
-app.use(createRouter(deps));
+app.use(createRouter(deps, conf));
 connectAllPubSubSubscribers(deps, conf);
 
 // Start application
@@ -57,6 +62,27 @@ Visit http://localhost:1080 to see the emails it sends
 
 const server = http.createServer(app);
 createTerminus(server);
-server.listen(conf.PORT, () =>
-  deps.logger.info({port: conf.PORT}, 'Server listening')
-);
+
+const ensureEventTableExists = (queryDatabase: QueryDatabase) =>
+  queryDatabase(
+    `
+    CREATE TABLE IF NOT EXISTS events (
+      id varchar(255),
+      resource_id varchar(255),
+      resource_type varchar(255),
+      event_type varchar(255),
+      payload json
+    );
+  `,
+    []
+  );
+
+void pipe(
+  ensureEventTableExists(queryDatabase),
+  TE.mapLeft(e => deps.logger.error(e, 'Failed to start server')),
+  TE.map(() =>
+    server.listen(conf.PORT, () =>
+      deps.logger.info({port: conf.PORT}, 'Server listening')
+    )
+  )
+)();
