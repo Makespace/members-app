@@ -1,11 +1,18 @@
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 
-export const DomainEvent = t.strict({
-  type: t.literal('SuperUserDeclared'),
-  memberNumber: t.number,
-  declaredAt: tt.DateFromISOString,
-});
+export const DomainEvent = t.union([
+  t.strict({
+    type: t.literal('SuperUserDeclared'),
+    memberNumber: t.number,
+    declaredAt: tt.DateFromISOString,
+  }),
+  t.strict({
+    type: t.literal('AreaCreated'),
+    name: t.string,
+    description: t.string,
+  }),
+]);
 
 export type DomainEvent = t.TypeOf<typeof DomainEvent>;
 
