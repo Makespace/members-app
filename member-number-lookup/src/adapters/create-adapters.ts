@@ -9,12 +9,13 @@ import nodemailer from 'nodemailer';
 import smtp from 'nodemailer-smtp-transport';
 import {getTrainersStubbed} from './get-trainers-stubbed';
 import {commitEvent} from './commit-event';
-import {QueryDatabase} from './query-database';
 import {getAllEvents} from './get-all-events';
+import {QueryDatabase} from './query-database';
 
 export const createAdapters = (
   conf: Config,
-  queryDatabase: QueryDatabase
+  queryMembersDatabase: QueryDatabase,
+  queryEventLogDatabase: QueryDatabase
 ): Dependencies => {
   const logger = createLogger({
     formatters: {
@@ -36,11 +37,11 @@ export const createAdapters = (
   );
 
   return {
-    commitEvent: commitEvent(queryDatabase),
-    getAllEvents: getAllEvents(queryDatabase),
+    commitEvent: commitEvent(queryEventLogDatabase),
+    getAllEvents: getAllEvents(queryEventLogDatabase),
     getMemberNumber: conf.USE_STUBBED_ADAPTERS
       ? getMemberNumberStubbed()
-      : getMemberNumber(queryDatabase),
+      : getMemberNumber(queryMembersDatabase),
     getTrainers: getTrainersStubbed(),
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter),

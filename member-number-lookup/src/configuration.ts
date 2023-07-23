@@ -15,10 +15,13 @@ const withDefaultIfEmpty = <C extends t.Any>(codec: C, ifEmpty: t.TypeOf<C>) =>
 
 const Config = t.strict({
   ADMIN_API_BEARER_TOKEN: tt.NonEmptyString,
-  MYSQL_DATABASE: tt.NonEmptyString,
-  MYSQL_HOST: tt.NonEmptyString,
-  MYSQL_PASSWORD: tt.NonEmptyString,
-  MYSQL_USER: tt.NonEmptyString,
+  EVENTS_DB_NAME: tt.NonEmptyString,
+  EVENTS_DB_PASSWORD: tt.NonEmptyString,
+  EVENTS_DB_USER: tt.NonEmptyString,
+  MAKESPACE_DB_HOST: tt.NonEmptyString,
+  MEMBERS_DB_NAME: tt.NonEmptyString,
+  MEMBERS_DB_PASSWORD: tt.NonEmptyString,
+  MEMBERS_DB_USER: tt.NonEmptyString,
   PORT: withDefaultIfEmpty(tt.IntFromString, 8080 as t.Int),
   PUBLIC_URL: tt.NonEmptyString,
   SESSION_SECRET: tt.NonEmptyString,

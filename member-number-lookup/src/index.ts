@@ -11,12 +11,15 @@ import {createTerminus} from '@godaddy/terminus';
 import http from 'http';
 import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
-import {QueryDatabase, initQueryDatabase} from './adapters/query-database';
+import {initQueryMemberDatabase} from './adapters/init-query-member-database';
+import {initQueryEventsDatabase} from './adapters/init-query-events-database';
+import {QueryDatabase} from './adapters/query-database';
 
 // Dependencies and Config
 const conf = loadConfig();
-const queryDatabase = initQueryDatabase(conf);
-const deps = createAdapters(conf, queryDatabase);
+const queryMembersDatabase = initQueryMemberDatabase(conf);
+const queryEventsDatabase = initQueryEventsDatabase(conf);
+const deps = createAdapters(conf, queryMembersDatabase, queryEventsDatabase);
 
 // Authentication
 passport.use(magicLink.name, magicLink.strategy(deps, conf));
@@ -78,7 +81,7 @@ const ensureEventTableExists = (queryDatabase: QueryDatabase) =>
   );
 
 void pipe(
-  ensureEventTableExists(queryDatabase),
+  ensureEventTableExists(queryEventsDatabase),
   TE.mapLeft(e => deps.logger.error(e, 'Failed to start server')),
   TE.map(() =>
     server.listen(conf.PORT, () =>

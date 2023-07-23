@@ -4,11 +4,11 @@ import {formatValidationErrors} from 'io-ts-reporters';
 import {Dependencies} from '../dependencies';
 import {DomainEvent} from '../types';
 import {failureWithStatus} from '../types/failureWithStatus';
-import {QueryDatabase} from './query-database';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import * as tt from 'io-ts-types';
 import * as t from 'io-ts';
+import {QueryDatabase} from './query-database';
 
 const EventsFromDb = t.readonlyArray(
   t.strict({
