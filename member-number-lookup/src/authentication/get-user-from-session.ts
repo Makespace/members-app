@@ -21,7 +21,7 @@ export const getUserFromSession =
         SessionCodec.decode,
         E.mapLeft(formatValidationErrors),
         E.mapLeft(errors =>
-          deps.logger.debug('Failed to get user from session', {errors})
+          deps.logger.debug({errors}, 'Failed to get user from session')
         )
       ),
       E.map(session => ({

@@ -23,6 +23,7 @@ export const createAdapters = (
         return {severity: label};
       },
     },
+    level: 'debug',
   });
 
   const emailTransporter = nodemailer.createTransport(
