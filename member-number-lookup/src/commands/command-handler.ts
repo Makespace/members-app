@@ -1,17 +1,17 @@
 import {Request, Response} from 'express';
-import {Config} from '../../configuration';
+import {Config} from '../configuration';
 import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
 import * as t from 'io-ts';
-import {DomainEvent} from '../../types';
+import {DomainEvent} from '../types';
 import * as O from 'fp-ts/Option';
 import {StatusCodes} from 'http-status-codes';
-import {failureWithStatus} from '../../types/failureWithStatus';
-import {Dependencies} from '../../dependencies';
+import {failureWithStatus} from '../types/failureWithStatus';
+import {Dependencies} from '../dependencies';
 import {sequenceS} from 'fp-ts/lib/Apply';
-import {Command} from '../../types/command';
+import {Command} from '../types/command';
 
 const getCommandFrom = <T>(body: unknown, command: Command<T>) =>
   pipe(

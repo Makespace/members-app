@@ -5,11 +5,9 @@ import {Dependencies} from './dependencies';
 import asyncHandler from 'express-async-handler';
 import {landing} from './routes/landing';
 import {configureAuthRoutes} from './authentication';
-import {commandHandler} from './routes/api/declare-super-user';
 import {Config} from './configuration';
 import {StatusCodes} from 'http-status-codes';
-import {declareSuperUser} from './commands/member/declare-super-user';
-import {createArea} from './commands/create-area';
+import {commandHandler, createArea, declareSuperUser} from './commands';
 
 export const createRouter = (deps: Dependencies, conf: Config): Router => {
   const router = Router();

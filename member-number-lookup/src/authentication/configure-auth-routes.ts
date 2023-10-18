@@ -1,5 +1,5 @@
 import {Request, Response, Router} from 'express';
-import {checkYourMailPage, oopsPage} from '../shared-pages';
+import {oopsPage} from '../shared-pages';
 import {pipe} from 'fp-ts/lib/function';
 import {parseEmailAddressFromBody} from './parse-email-address-from-body';
 import * as E from 'fp-ts/Either';
@@ -8,6 +8,7 @@ import passport from 'passport';
 import {magicLink} from './magic-link';
 import {logInPage} from './log-in-page';
 import {StatusCodes} from 'http-status-codes';
+import {checkYourMailPage} from './check-your-mail';
 
 export const logInRoute = '/log-in';
 const invalidLinkRoute = '/auth/invalid-magic-link';
