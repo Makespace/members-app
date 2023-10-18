@@ -15,13 +15,13 @@ docker-compose up --build -d
 timeout --foreground 20 bash << EOT
   while true; do
     sleep 1
-		status=\$(curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/)
+		status=\$(curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/ping)
 		if [ "\$status" != "200" ]; then
 			continue
 		fi
 
 		curl -s -o /dev/null \
-			"http://localhost:8080/send-member-number-by-email" \
+			"http://localhost:8080/auth" \
 			-X POST \
 			-H "Content-Type: application/x-www-form-urlencoded" \
 			-d "email=foo@example.com"
