@@ -1,12 +1,11 @@
 import express, {Application} from 'express';
-import {connectAllPubSubSubscribers} from './pubsub-subscribers';
 import {createRouter} from './router';
 import {createAdapters} from './adapters';
 import passport from 'passport';
 import session from 'cookie-session';
 import httpLogger from 'pino-http';
 import {loadConfig} from './configuration';
-import {magicLink} from './authentication';
+import {magicLink, startMagicLinkEmailPubSub} from './authentication';
 import {createTerminus} from '@godaddy/terminus';
 import http from 'http';
 import {pipe} from 'fp-ts/lib/function';
@@ -47,7 +46,7 @@ app.use(
 );
 app.set('trust proxy', true);
 app.use(createRouter(deps, conf));
-connectAllPubSubSubscribers(deps, conf);
+startMagicLinkEmailPubSub(deps, conf);
 
 // Start application
 if (conf.PUBLIC_URL.includes('localhost')) {

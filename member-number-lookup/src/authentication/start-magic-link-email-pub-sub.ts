@@ -16,10 +16,7 @@ const validateEmail = (input: unknown) =>
     E.mapLeft(failure('Invalid Email'))
   );
 
-export const connectAllPubSubSubscribers = (
-  deps: Dependencies,
-  conf: Config
-) => {
+export const startMagicLinkEmailPubSub = (deps: Dependencies, conf: Config) => {
   PubSub.subscribe(
     'send-log-in-link',
     // eslint-disable-next-line @typescript-eslint/no-misused-promises

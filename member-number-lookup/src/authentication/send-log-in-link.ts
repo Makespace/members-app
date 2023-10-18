@@ -3,7 +3,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {Dependencies} from '../dependencies';
 import {EmailAddress, Failure} from '../types';
 import {Config} from '../configuration';
-import {magicLink} from '../authentication';
+import {magicLink} from '.';
 
 const toEmail = (emailAddress: EmailAddress) => (magicLink: string) => ({
   recipient: emailAddress,

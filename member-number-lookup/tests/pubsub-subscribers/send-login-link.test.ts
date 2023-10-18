@@ -3,7 +3,7 @@ import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import {EmailAddress, Failure, failure} from '../../src/types';
 import {happyPathAdapters} from '../adapters/happy-path-adapters.helper';
-import {sendLogInLink} from '../../src/pubsub-subscribers/send-log-in-link';
+import {sendLogInLink} from '../../src/authentication/send-log-in-link';
 import {Config} from '../../src/configuration';
 
 describe('send-log-in-link', () => {
