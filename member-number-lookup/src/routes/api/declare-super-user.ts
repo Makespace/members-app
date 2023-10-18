@@ -1,22 +1,16 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {Request, Response} from 'express';
 import {Config} from '../../configuration';
-import {flow, pipe} from 'fp-ts/lib/function';
+import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
 import * as t from 'io-ts';
-import * as tt from 'io-ts-types';
 import {DomainEvent} from '../../types';
 import * as O from 'fp-ts/Option';
 import {StatusCodes} from 'http-status-codes';
-import {
-  FailureWithStatus,
-  failureWithStatus,
-} from '../../types/failureWithStatus';
+import {failureWithStatus} from '../../types/failureWithStatus';
 import {Dependencies} from '../../dependencies';
 import {sequenceS} from 'fp-ts/lib/Apply';
-import {declareSuperUser} from '../../commands/member/declare-super-user';
 import {Command} from '../../types/command';
 
 const getCommandFrom = <T>(body: unknown, command: Command<T>) =>

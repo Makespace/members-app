@@ -22,7 +22,7 @@ smoketest:
 	./smoketest.sh
 
 lint: node_modules
-	npx gts lint
+	npx gts lint --fix
 
 unused-exports: node_modules
 	npx ts-unused-exports ./tsconfig.json
