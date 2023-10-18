@@ -1,5 +1,4 @@
 import {pipe} from 'fp-ts/lib/function';
-import {sendMemberNumberToEmail} from './send-member-number-to-email';
 import PubSub from 'pubsub-js';
 import * as TE from 'fp-ts/TaskEither';
 import {formatValidationErrors} from 'io-ts-reporters';
@@ -21,22 +20,6 @@ export const connectAllPubSubSubscribers = (
   deps: Dependencies,
   conf: Config
 ) => {
-  PubSub.subscribe(
-    'send-member-number-to-email',
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    async (topic, payload) =>
-      await pipe(
-        payload,
-        validateEmail,
-        TE.fromEither,
-        TE.chain(sendMemberNumberToEmail(deps)),
-        TE.match(
-          failure =>
-            deps.logger.error({topic, failure}, 'Failed to process message'),
-          successMsg => deps.logger.info({topic, result: successMsg})
-        )
-      )()
-  );
   PubSub.subscribe(
     'send-log-in-link',
     // eslint-disable-next-line @typescript-eslint/no-misused-promises

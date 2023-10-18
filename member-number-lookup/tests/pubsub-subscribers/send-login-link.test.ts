@@ -1,13 +1,15 @@
 import {faker} from '@faker-js/faker';
-import {sendMemberNumberToEmail} from '../../src/pubsub-subscribers/send-member-number-to-email';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import {EmailAddress, Failure, failure} from '../../src/types';
 import {happyPathAdapters} from '../adapters/happy-path-adapters.helper';
+import {sendLogInLink} from '../../src/pubsub-subscribers/send-log-in-link';
+import {Config} from '../../src/configuration';
 
-describe('send-member-number-to-email', () => {
+describe('send-log-in-link', () => {
   const emailAddress = faker.internet.email() as EmailAddress;
   const memberNumber = faker.number.int();
+  const conf = {TOKEN_SECRET: 'secret'} as Config;
 
   describe('when the email can be uniquely linked to a member number', () => {
     const deps = {
@@ -17,14 +19,14 @@ describe('send-member-number-to-email', () => {
     };
 
     beforeEach(async () => {
-      await sendMemberNumberToEmail(deps)(emailAddress)();
+      await sendLogInLink(deps, conf)(emailAddress)();
     });
 
-    it('tries to send an email with the number', () => {
+    it('tries to send an email with a link', () => {
       expect(deps.sendEmail).toHaveBeenCalledWith(
         expect.objectContaining({
           recipient: emailAddress,
-          message: expect.stringContaining(memberNumber.toString()),
+          message: expect.stringContaining('token='),
         })
       );
     });
@@ -40,7 +42,7 @@ describe('send-member-number-to-email', () => {
 
     let result: E.Either<Failure, string>;
     beforeEach(async () => {
-      result = await sendMemberNumberToEmail(deps)(emailAddress)();
+      result = await sendLogInLink(deps, conf)(emailAddress)();
     });
 
     it('does not send any emails', () => {
@@ -63,7 +65,7 @@ describe('send-member-number-to-email', () => {
 
     let result: E.Either<Failure, string>;
     beforeEach(async () => {
-      result = await sendMemberNumberToEmail(deps)(emailAddress)();
+      result = await sendLogInLink(deps, conf)(emailAddress)();
     });
 
     it('returns Left with message from email adapter', () => {
