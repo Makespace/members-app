@@ -9,10 +9,10 @@ import {magicLink} from './magic-link';
 import {logInPage} from './log-in-page';
 import {StatusCodes} from 'http-status-codes';
 
-export const configureAuthRoutes = (router: Router) => {
-  const logInRoute = '/log-in';
-  const invalidLinkRoute = '/auth/invalid-magic-link';
+export const logInRoute = '/log-in';
+const invalidLinkRoute = '/auth/invalid-magic-link';
 
+export const configureAuthRoutes = (router: Router) => {
   router.get(logInRoute, (req: Request, res: Response) => {
     res.status(StatusCodes.OK).send(logInPage);
   });
@@ -42,7 +42,7 @@ export const configureAuthRoutes = (router: Router) => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     passport.authenticate(magicLink.name, {failureRedirect: invalidLinkRoute}),
     (req: Request, res: Response) => {
-      res.redirect('/dashboard');
+      res.redirect('/');
     }
   );
 

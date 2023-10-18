@@ -3,7 +3,6 @@ import path from 'path';
 import {oopsPage} from './shared-pages';
 import {Dependencies} from './dependencies';
 import asyncHandler from 'express-async-handler';
-import {dashboard} from './routes/dashboard';
 import {landing} from './routes/landing';
 import {sendMemberNumberByEmail} from './routes/send-member-number-by-email';
 import {configureAuthRoutes} from './authentication';
@@ -16,9 +15,7 @@ import {createArea} from './commands/create-area';
 export const createRouter = (deps: Dependencies, conf: Config): Router => {
   const router = Router();
 
-  router.get('/', landing);
-
-  router.get('/dashboard', asyncHandler(dashboard(deps)));
+  router.get('/', asyncHandler(landing(deps)));
 
   router.post('/send-member-number-by-email', sendMemberNumberByEmail);
 
