@@ -1,6 +1,6 @@
-.phony: check clear-containers dev fix lint prod release smoketest test typecheck watch-typecheck
+.phony: check clear-containers dev fix lint prod release smoketest test typecheck unused-exports watch-typecheck
 
-check: test lint typecheck
+check: test lint typecheck unused-exports
 
 node_modules: package.json package-lock.json
 	npm install
@@ -23,6 +23,9 @@ smoketest:
 
 lint: node_modules
 	npx gts lint
+
+unused-exports: node_modules
+	npx ts-unused-exports ./tsconfig.json
 
 typecheck: node_modules
 	npx tsc --noEmit

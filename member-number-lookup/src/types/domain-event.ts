@@ -18,7 +18,7 @@ export type DomainEvent = t.TypeOf<typeof DomainEvent>;
 
 type EventName = DomainEvent['type'];
 
-export type EventOfType<T extends EventName> = DomainEvent & {type: T};
+type EventOfType<T extends EventName> = DomainEvent & {type: T};
 
 export const isEventOfType =
   <T extends EventName>(name: T) =>
