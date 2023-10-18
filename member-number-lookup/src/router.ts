@@ -4,7 +4,6 @@ import {oopsPage} from './shared-pages';
 import {Dependencies} from './dependencies';
 import asyncHandler from 'express-async-handler';
 import {landing} from './routes/landing';
-import {sendMemberNumberByEmail} from './routes/send-member-number-by-email';
 import {configureAuthRoutes} from './authentication';
 import {commandHandler} from './routes/api/declare-super-user';
 import {Config} from './configuration';
@@ -18,8 +17,6 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
   router.get('/', asyncHandler(landing(deps)));
 
   router.get('/ping', (req, res) => res.status(StatusCodes.OK).send('pong\n'));
-
-  router.post('/send-member-number-by-email', sendMemberNumberByEmail);
 
   router.post(
     '/api/declare-super-user',

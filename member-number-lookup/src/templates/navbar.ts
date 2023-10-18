@@ -8,13 +8,9 @@ export const navbar = (user: O.Option<User>) =>
     user,
     O.match(
       () => html`<a href="/log-in">Log in</a>`,
-      loggedInUser =>
-        html`
-          <span>${loggedInUser.memberNumber}</span>
-          <a href="/log-out">Log out</a>
-        `
+      () => html` <a href="/log-out">Log out</a> `
     ),
-    navItems => html`
+    logInOut => html`
       <nav class="page-nav">
         <a href="/"
           ><img
@@ -22,7 +18,8 @@ export const navbar = (user: O.Option<User>) =>
             alt="Makespace"
             class="page-nav__logo"
         /></a>
-        ${navItems}
+        <a href="/areas">Areas</a>
+        ${logInOut}
       </nav>
     `
   );
