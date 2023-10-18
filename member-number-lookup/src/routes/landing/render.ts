@@ -86,7 +86,8 @@ const renderTrainers = (trainers: ViewModel['trainers']) =>
   );
 
 const superUserNav = html`
-  <h2>Forms</h2>
+  <h2>Admin</h2>
+  <p>You have super-user privileges. You can:</p>
   <nav>
     <ul>
       <li>
