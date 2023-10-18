@@ -3,20 +3,7 @@ import {pageTemplate} from '../../templates';
 import {html} from '../../types/html';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {Trainer} from '../../types/trainer';
-import {User} from '../../types';
-
-type Area = {
-  name: string;
-  description: string;
-};
-
-type ViewModel = {
-  user: User;
-  trainers: ReadonlyArray<Trainer>;
-  isSuperUser: boolean;
-  areas: ReadonlyArray<Area>;
-};
+import {ViewModel} from './view-model';
 
 const renderMemberDetails = (user: ViewModel['user']) => html`
   <dl>
@@ -26,35 +13,6 @@ const renderMemberDetails = (user: ViewModel['user']) => html`
     <dd>${user.memberNumber}</dd>
   </dl>
 `;
-
-const renderAreas = (areas: ViewModel['areas']) =>
-  pipe(
-    areas,
-    RA.map(
-      area => html`
-        <tr>
-          <td>${area.name}</td>
-          <td>${area.description}</td>
-        </tr>
-      `
-    ),
-    RA.match(
-      () => html` <p>Currently no Areas</p> `,
-      rows => html`
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.join('\n')}
-          </tbody>
-        </table>
-      `
-    )
-  );
 
 const renderTrainers = (trainers: ViewModel['trainers']) =>
   pipe(
@@ -106,9 +64,6 @@ export const render = (viewModel: ViewModel) =>
       <h2>Your Details</h2>
       ${renderMemberDetails(viewModel.user)}
       ${viewModel.isSuperUser ? superUserNav : ''}
-
-      <h2>Areas</h2>
-      ${renderAreas(viewModel.areas)}
 
       </table>
       <h2>Trainers</h2>

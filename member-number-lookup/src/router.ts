@@ -8,11 +8,14 @@ import {configureAuthRoutes} from './authentication';
 import {Config} from './configuration';
 import {StatusCodes} from 'http-status-codes';
 import {commandHandler, createArea, declareSuperUser} from './commands';
+import {areas} from './routes/areas';
 
 export const createRouter = (deps: Dependencies, conf: Config): Router => {
   const router = Router();
 
   router.get('/', asyncHandler(landing(deps)));
+
+  router.get('/areas', asyncHandler(areas(deps)));
 
   router.get('/ping', (req, res) => res.status(StatusCodes.OK).send('pong\n'));
 
