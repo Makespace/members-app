@@ -1,7 +1,7 @@
 import * as O from 'fp-ts/Option';
 import {declareSuperUser} from '../../src/commands/declare-super-user';
 import {faker} from '@faker-js/faker';
-import {constructEvent} from '../../src/types';
+import {EmailAddress, User, constructEvent} from '../../src/types';
 
 describe('declare-super-user', () => {
   describe('process', () => {
@@ -40,6 +40,20 @@ describe('declare-super-user', () => {
       it('does nothing', () => {
         expect(result).toStrictEqual(O.none);
       });
+    });
+  });
+
+  const arbitraryUser = (): User => ({
+    emailAddress: faker.internet.email() as EmailAddress,
+    memberNumber: faker.number.int(),
+  });
+
+  describe.skip('isAuthorized', () => {
+    it.each([
+      ['admin' as const, true],
+      [arbitraryUser(), true],
+    ])('%s returns %s', (actor, expected) => {
+      expect(declareSuperUser.isAuthorized({actor, events: []})).toBe(expected);
     });
   });
 });
