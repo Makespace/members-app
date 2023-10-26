@@ -35,7 +35,7 @@ const renderAreas = (areas: ViewModel['areas']) =>
   );
 
 const addAreaCallToAction = html`
-  <a href="/command/add-area-of-responsibility">Add area of responsibility</a>
+  <a href="/areas/create">Add area of responsibility</a>
 `;
 
 export const render = (viewModel: ViewModel) =>

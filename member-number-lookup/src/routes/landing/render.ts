@@ -49,9 +49,7 @@ const superUserNav = html`
   <nav>
     <ul>
       <li>
-        <a href="/command/add-area-of-responsibility"
-          >Add area of responsibility</a
-        >
+        <a href="/areas/create">Add area of responsibility</a>
       </li>
     </ul>
   </nav>
