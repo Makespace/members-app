@@ -29,6 +29,10 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
 
   router.get('/super-users', asyncHandler(superUsers(deps)));
   router.get('/super-users/declare', asyncHandler(declareSuperUserForm(deps)));
+  router.post(
+    '/super-users/declare',
+    asyncHandler(formHandler(deps, declareSuperUser))
+  );
 
   router.get('/ping', (req, res) => res.status(StatusCodes.OK).send('pong\n'));
 

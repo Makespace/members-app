@@ -12,7 +12,12 @@ export const render = (viewModel: ViewModel) =>
         <label for="number">
           Which member number would you like receive super user privileges?
         </label>
-        <input type="text" name="number" id="number" />
+        <input type="type" name="memberNumber" id="number" />
+        <input
+          type="hidden"
+          name="declaredAt"
+          value="${new Date().toISOString()}"
+        />
         <button type="submit">Confirm and send</button>
       </form>
     `,
