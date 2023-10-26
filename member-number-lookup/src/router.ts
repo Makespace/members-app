@@ -7,7 +7,12 @@ import {landing} from './routes/landing';
 import {configureAuthRoutes} from './authentication';
 import {Config} from './configuration';
 import {StatusCodes} from 'http-status-codes';
-import {commandHandler, createArea, declareSuperUser} from './commands';
+import {
+  commandHandler,
+  createArea,
+  declareSuperUser,
+  formHandler,
+} from './commands';
 import {areas} from './routes/areas';
 import {createAreaForm} from './commands/area';
 
@@ -19,6 +24,7 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
   router.get('/areas', asyncHandler(areas(deps)));
 
   router.get('/areas/create', asyncHandler(createAreaForm(deps)));
+  router.post('/areas/create', asyncHandler(formHandler(deps, createArea)));
 
   router.get('/ping', (req, res) => res.status(StatusCodes.OK).send('pong\n'));
 
