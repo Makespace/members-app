@@ -38,6 +38,7 @@ export const render = (viewModel: ViewModel) =>
   pipe(
     html`
       <h1>Super-users</h1>
+      <a href="/super-users/declare">Declare a member to be a super-user</a>
       </table>
       ${renderSuperUsers(viewModel.superUsers)}
     `,
