@@ -9,7 +9,7 @@ export const logInPage = pipe(
       <label for="email">E-Mail: </label>
       <input id="email" type="email" required name="email" value="" />
       <p>We will email you a magic log in link.</p>
-      <input type="submit" value="Email me a link" />
+      <button type="submit">Email me a link</button>
     </form>
   `,
   pageTemplateNoNav('Member Number Lookup')
