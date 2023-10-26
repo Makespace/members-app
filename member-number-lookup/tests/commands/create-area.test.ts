@@ -1,5 +1,5 @@
 import * as O from 'fp-ts/Option';
-import {createArea} from '../../src/commands/create-area';
+import {create} from '../../src/commands/area/create';
 import {faker} from '@faker-js/faker';
 import {constructEvent} from '../../src/types';
 import {NonEmptyString} from 'io-ts-types';
@@ -11,7 +11,7 @@ describe('create-area', () => {
     describe('when the area does not yet exist', () => {
       const areaName = faker.commerce.productName() as NonEmptyString;
       const areaDescription = faker.commerce.productDescription();
-      const result = createArea.process({
+      const result = create.process({
         command: {
           name: areaName,
           description: areaDescription,
@@ -34,7 +34,7 @@ describe('create-area', () => {
     describe('when the area already exists', () => {
       const areaName = faker.commerce.productName() as NonEmptyString;
       const areaDescription = faker.commerce.productDescription();
-      const result = createArea.process({
+      const result = create.process({
         command: {
           name: areaName,
           description: areaDescription,
@@ -78,7 +78,7 @@ describe('create-area', () => {
           [],
         ],
       ])('%s: %s', (_, expected, actor, events) => {
-        expect(createArea.isAuthorized({actor, events})).toBe(expected);
+        expect(create.isAuthorized({actor, events})).toBe(expected);
       });
     });
   });

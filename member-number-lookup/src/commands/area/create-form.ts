@@ -2,7 +2,11 @@ import {pipe} from 'fp-ts/lib/function';
 import {pageTemplate} from '../../templates';
 import {html} from '../../types/html';
 import * as O from 'fp-ts/Option';
-import {ViewModel} from './view-model';
+import {User} from '../../types';
+
+export type ViewModel = {
+  user: User;
+};
 
 export const render = (viewModel: ViewModel) =>
   pipe(
@@ -20,3 +24,8 @@ export const render = (viewModel: ViewModel) =>
     `,
     pageTemplate('Create Area', O.some(viewModel.user))
   );
+
+export const createForm = {
+  renderForm: render,
+  constructForm: () => (user: User) => ({user}),
+};
