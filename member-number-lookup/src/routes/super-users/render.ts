@@ -13,6 +13,9 @@ const renderSuperUsers = (superUsers: ViewModel['superUsers']) =>
         <tr>
           <td>${user.memberNumber}</td>
           <td>${user.since.toISOString()}</td>
+          <td>
+            <a href="/super-users/revoke?number=${user.memberNumber}">Revoke</a>
+          </td>
         </tr>
       `
     ),
@@ -23,6 +26,7 @@ const renderSuperUsers = (superUsers: ViewModel['superUsers']) =>
           <tr>
             <th>Member Number</th>
             <th>SU since</th>
+            <th></th>
           </tr>
           ${rows.join('\n')}
         </table>
