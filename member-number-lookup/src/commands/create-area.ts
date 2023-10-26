@@ -31,4 +31,5 @@ const handle = (input: {
 export const createArea: Command<CreateArea> = {
   process: handle,
   decode: codec.decode,
+  isAuthorized: () => false,
 };

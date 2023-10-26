@@ -31,4 +31,5 @@ const handle = (input: {
 export const declareSuperUser: Command<DeclareSuperUserCommand> = {
   process: handle,
   decode: codec.decode,
+  isAuthorized: () => false,
 };
