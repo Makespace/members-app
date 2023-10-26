@@ -2,6 +2,7 @@ import * as O from 'fp-ts/Option';
 import {declareSuperUser} from '../../src/commands/declare-super-user';
 import {faker} from '@faker-js/faker';
 import {EmailAddress, User, constructEvent} from '../../src/types';
+import {Actor} from '../../src/types/actor';
 
 describe('declare-super-user', () => {
   describe('process', () => {
@@ -50,8 +51,8 @@ describe('declare-super-user', () => {
 
   describe.skip('isAuthorized', () => {
     it.each([
-      ['admin' as const, true],
-      [arbitraryUser(), true],
+      [{tag: 'token', token: 'admin'} satisfies Actor, true],
+      [{tag: 'user', user: arbitraryUser()} satisfies Actor, true],
     ])('%s returns %s', (actor, expected) => {
       expect(declareSuperUser.isAuthorized({actor, events: []})).toBe(expected);
     });

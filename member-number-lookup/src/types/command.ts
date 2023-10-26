@@ -1,7 +1,7 @@
 import {Type} from 'io-ts';
 import {DomainEvent} from './domain-event';
 import * as O from 'fp-ts/Option';
-import {User} from './user';
+import {Actor} from './actor';
 
 export type Command<T> = {
   process: (input: {
@@ -10,7 +10,7 @@ export type Command<T> = {
   }) => O.Option<DomainEvent>;
   decode: Type<T, T, unknown>['decode'];
   isAuthorized: (input: {
-    actor: User | 'admin';
+    actor: Actor;
     events: ReadonlyArray<DomainEvent>;
   }) => boolean;
 };
