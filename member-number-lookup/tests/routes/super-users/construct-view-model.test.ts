@@ -26,7 +26,7 @@ describe('construct-view-model', () => {
     };
 
     const result = await pipe(
-      arbitraryUser(),
+      memberToBeSuperUser,
       constructViewModel(deps),
       TE.getOrElse(shouldNotBeCalled),
       T.map(viewModel => viewModel.superUsers),
@@ -36,10 +36,10 @@ describe('construct-view-model', () => {
     expect(result).toStrictEqual([memberToBeSuperUser.memberNumber]);
   });
 
-  it.skip('fails if the logged in user is not a super user', async () => {
+  it('fails if the logged in user is not a super user', async () => {
     const deps: Dependencies = happyPathAdapters;
     const result = await pipe(arbitraryUser(), constructViewModel(deps))();
 
-    expect(result).toStrictEqual(E.left(expect.anything));
+    expect(result).toStrictEqual(E.left(expect.anything()));
   });
 });

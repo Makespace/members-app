@@ -1,28 +1,46 @@
-import {sequenceS} from 'fp-ts/lib/Apply';
 import {pipe} from 'fp-ts/lib/function';
-import {User, isEventOfType} from '../../types';
+import {DomainEvent, User, isEventOfType} from '../../types';
 import {Dependencies} from '../../dependencies';
 import * as TE from 'fp-ts/TaskEither';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {ViewModel} from './view-model';
-import {FailureWithStatus} from '../../types/failureWithStatus';
+import {
+  FailureWithStatus,
+  failureWithStatus,
+} from '../../types/failureWithStatus';
+import {StatusCodes} from 'http-status-codes';
+
+const projectSuperUsers = (events: ReadonlyArray<DomainEvent>) =>
+  pipe(
+    events,
+    RA.filter(isEventOfType('SuperUserDeclared')),
+    RA.map(event => ({
+      memberNumber: event.memberNumber,
+      since: event.declaredAt,
+    }))
+  );
+
+const isSuperUser = (user: User) => (events: ReadonlyArray<DomainEvent>) =>
+  pipe(
+    events,
+    RA.filter(isEventOfType('SuperUserDeclared')),
+    RA.some(event => event.memberNumber === user.memberNumber)
+  );
 
 export const constructViewModel =
   (deps: Dependencies) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> =>
     pipe(
-      {
-        user: TE.right(user),
-        superUsers: pipe(
-          deps.getAllEvents(),
-          TE.map(RA.filter(isEventOfType('SuperUserDeclared'))),
-          TE.map(
-            RA.map(event => ({
-              memberNumber: event.memberNumber,
-              since: event.declaredAt,
-            }))
-          )
-        ),
-      },
-      sequenceS(TE.ApplySeq)
+      deps.getAllEvents(),
+      TE.filterOrElse(
+        isSuperUser(user),
+        failureWithStatus(
+          'Only super-users can see this page',
+          StatusCodes.UNAUTHORIZED
+        )
+      ),
+      TE.map(events => ({
+        user: user,
+        superUsers: projectSuperUsers(events),
+      }))
     );
