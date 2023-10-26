@@ -1,5 +1,5 @@
 import * as O from 'fp-ts/Option';
-import {declareSuperUser} from '../../src/commands/declare-super-user';
+import {declare} from '../../src/commands/super-user/declare';
 import {faker} from '@faker-js/faker';
 import {constructEvent} from '../../src/types';
 import {Actor} from '../../src/types/actor';
@@ -9,7 +9,7 @@ describe('declare-super-user', () => {
   describe('process', () => {
     describe('when the member is currently not a super user', () => {
       const memberNumber = faker.number.int();
-      const result = declareSuperUser.process({
+      const result = declare.process({
         command: {
           memberNumber,
           declaredAt: faker.date.soon(),
@@ -27,7 +27,7 @@ describe('declare-super-user', () => {
 
     describe('when the member is already a super user', () => {
       const memberNumber = faker.number.int();
-      const result = declareSuperUser.process({
+      const result = declare.process({
         command: {
           memberNumber,
           declaredAt: faker.date.soon(),
@@ -72,7 +72,7 @@ describe('declare-super-user', () => {
         [],
       ],
     ])('%s: %s', (_, expected, actor, events) => {
-      expect(declareSuperUser.isAuthorized({actor, events})).toBe(expected);
+      expect(declare.isAuthorized({actor, events})).toBe(expected);
     });
   });
 });

@@ -1,11 +1,11 @@
-import {DomainEvent, constructEvent, isEventOfType} from '../types';
+import {DomainEvent, constructEvent, isEventOfType} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
-import {Command} from '../types/command';
-import {Actor} from '../types/actor';
+import {Command} from '../../types/command';
+import {Actor} from '../../types/actor';
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,
@@ -46,7 +46,8 @@ const isAuthorized = (input: {
       return false;
   }
 };
-export const declareSuperUser: Command<DeclareSuperUserCommand> = {
+
+export const declare: Command<DeclareSuperUserCommand> = {
   process,
   decode: codec.decode,
   isAuthorized,

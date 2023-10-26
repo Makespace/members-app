@@ -7,16 +7,11 @@ import {landing} from './routes/landing';
 import {configureAuthRoutes} from './authentication';
 import {Config} from './configuration';
 import {StatusCodes} from 'http-status-codes';
-import {
-  commandHandler,
-  createArea,
-  declareSuperUser,
-  formHandler,
-} from './commands';
+import {commandHandler, createArea, formGet, formHandler} from './commands';
 import {areas} from './routes/areas';
 import {createAreaForm} from './commands/area';
 import {superUsers} from './routes/super-users';
-import {declareSuperUserForm} from './commands/super-user';
+import {superUser} from './commands/super-user';
 
 export const createRouter = (deps: Dependencies, conf: Config): Router => {
   const router = Router();
@@ -28,17 +23,20 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
   router.post('/areas/create', asyncHandler(formHandler(deps, createArea)));
 
   router.get('/super-users', asyncHandler(superUsers(deps)));
-  router.get('/super-users/declare', asyncHandler(declareSuperUserForm(deps)));
+  router.get(
+    '/super-users/declare',
+    asyncHandler(formGet(deps, superUser.declare))
+  );
   router.post(
     '/super-users/declare',
-    asyncHandler(formHandler(deps, declareSuperUser))
+    asyncHandler(formHandler(deps, superUser.declare))
   );
 
   router.get('/ping', (req, res) => res.status(StatusCodes.OK).send('pong\n'));
 
   router.post(
     '/api/declare-super-user',
-    asyncHandler(commandHandler(deps, conf, declareSuperUser))
+    asyncHandler(commandHandler(deps, conf, superUser.declare))
   );
 
   router.post(
