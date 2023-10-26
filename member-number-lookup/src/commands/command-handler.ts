@@ -12,6 +12,7 @@ import {failureWithStatus} from '../types/failureWithStatus';
 import {Dependencies} from '../dependencies';
 import {sequenceS} from 'fp-ts/lib/Apply';
 import {Command} from '../types/command';
+import {Actor} from '../types/actor';
 
 const getCommandFrom = <T>(body: unknown, command: Command<T>) =>
   pipe(
@@ -38,7 +39,7 @@ const persistOrNoOp =
       )
     );
 
-const checkBearerToken = (conf: Config) => (authorization: unknown) =>
+const getActorFrom = (authorization: unknown, conf: Config) =>
   pipe(
     authorization,
     t.string.decode,
@@ -48,9 +49,12 @@ const checkBearerToken = (conf: Config) => (authorization: unknown) =>
         StatusCodes.UNAUTHORIZED
       )
     ),
-    E.filterOrElse(
-      authString => authString === `Bearer ${conf.ADMIN_API_BEARER_TOKEN}`,
-      () => failureWithStatus('Bad authString', StatusCodes.UNAUTHORIZED)()
+    E.chain(authString =>
+      authString === `Bearer ${conf.ADMIN_API_BEARER_TOKEN}`
+        ? E.right({tag: 'token', token: 'admin'} satisfies Actor)
+        : E.left(
+            failureWithStatus('Bad Bearer Token', StatusCodes.UNAUTHORIZED)()
+          )
     ),
     TE.fromEither
   );
@@ -60,11 +64,17 @@ export const commandHandler =
   async (req: Request, res: Response) => {
     await pipe(
       {
-        authorization: checkBearerToken(conf)(req.headers.authorization),
+        actor: getActorFrom(req.headers.authorization, conf),
         command: getCommandFrom(req.body, command),
         events: deps.getAllEvents(),
       },
       sequenceS(TE.ApplySeq),
+      TE.filterOrElse(command.isAuthorized, () =>
+        failureWithStatus(
+          'You are not authorized to perform this action',
+          StatusCodes.UNAUTHORIZED
+        )()
+      ),
       TE.map(command.process),
       TE.chainW(persistOrNoOp(deps)),
       TE.match(
