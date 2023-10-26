@@ -3,6 +3,8 @@ import {createArea} from '../../src/commands/create-area';
 import {faker} from '@faker-js/faker';
 import {constructEvent} from '../../src/types';
 import {NonEmptyString} from 'io-ts-types';
+import {Actor} from '../../src/types/actor';
+import {arbitraryUser} from '../types/user.helper';
 
 describe('create-area', () => {
   describe('process', () => {
@@ -46,6 +48,37 @@ describe('create-area', () => {
       });
       it('does nothing', () => {
         expect(result).toStrictEqual(O.none);
+      });
+    });
+
+    describe.skip('isAuthorized', () => {
+      const userToBeSuperUser = arbitraryUser();
+      it.each([
+        [
+          'admin via token',
+          true,
+          {tag: 'token', token: 'admin'} satisfies Actor,
+          [],
+        ],
+        [
+          'super user',
+          true,
+          {tag: 'user', user: userToBeSuperUser} satisfies Actor,
+          [
+            constructEvent('SuperUserDeclared')({
+              memberNumber: userToBeSuperUser.memberNumber,
+              declaredAt: faker.date.anytime(),
+            }),
+          ],
+        ],
+        [
+          'other user',
+          false,
+          {tag: 'user', user: arbitraryUser()} satisfies Actor,
+          [],
+        ],
+      ])('%s: %s', (_, expected, actor, events) => {
+        expect(createArea.isAuthorized({actor, events})).toBe(expected);
       });
     });
   });
