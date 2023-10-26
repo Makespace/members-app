@@ -1,7 +1,7 @@
 import * as O from 'fp-ts/Option';
-import {declareSuperUser} from '../../../src/commands/declare-super-user';
+import {declareSuperUser} from '../../src/commands/declare-super-user';
 import {faker} from '@faker-js/faker';
-import {constructEvent} from '../../../src/types';
+import {constructEvent} from '../../src/types';
 
 describe('declare-super-user', () => {
   describe('when the member is currently not a super user', () => {
