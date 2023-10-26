@@ -1,19 +1,15 @@
 import * as TE from 'fp-ts/TaskEither';
 import {faker} from '@faker-js/faker';
 import {Dependencies} from '../../../src/dependencies';
-import {EmailAddress, User, constructEvent} from '../../../src/types';
+import {constructEvent} from '../../../src/types';
 import {happyPathAdapters} from '../../adapters/happy-path-adapters.helper';
 import {pipe} from 'fp-ts/lib/function';
 import {constructViewModel} from '../../../src/routes/areas/construct-view-model';
+import {arbitraryUser} from '../../types/user.helper';
 
 const shouldNotBeCalled = (): never => {
   throw new Error('should not be called');
 };
-
-const arbitraryUser = (): User => ({
-  emailAddress: faker.internet.email() as EmailAddress,
-  memberNumber: faker.number.int(),
-});
 
 describe('construct-view-model', () => {
   describe('when the user has been declared to be a super user', () => {

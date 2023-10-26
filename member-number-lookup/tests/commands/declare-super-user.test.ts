@@ -1,8 +1,9 @@
 import * as O from 'fp-ts/Option';
 import {declareSuperUser} from '../../src/commands/declare-super-user';
 import {faker} from '@faker-js/faker';
-import {EmailAddress, User, constructEvent} from '../../src/types';
+import {constructEvent} from '../../src/types';
 import {Actor} from '../../src/types/actor';
+import {arbitraryUser} from '../types/user.helper';
 
 describe('declare-super-user', () => {
   describe('process', () => {
@@ -42,11 +43,6 @@ describe('declare-super-user', () => {
         expect(result).toStrictEqual(O.none);
       });
     });
-  });
-
-  const arbitraryUser = (): User => ({
-    emailAddress: faker.internet.email() as EmailAddress,
-    memberNumber: faker.number.int(),
   });
 
   describe('isAuthorized', () => {

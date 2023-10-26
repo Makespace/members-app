@@ -3,18 +3,14 @@ import {constructViewModel} from '../../../src/routes/landing/construct-view-mod
 import * as TE from 'fp-ts/TaskEither';
 import {faker} from '@faker-js/faker';
 import {Dependencies} from '../../../src/dependencies';
-import {EmailAddress, User, constructEvent, failure} from '../../../src/types';
+import {constructEvent, failure} from '../../../src/types';
 import {happyPathAdapters} from '../../adapters/happy-path-adapters.helper';
 import {pipe} from 'fp-ts/lib/function';
+import {arbitraryUser} from '../../types/user.helper';
 
 const shouldNotBeCalled = (): never => {
   throw new Error('should not be called');
 };
-
-const arbitraryUser = (): User => ({
-  emailAddress: faker.internet.email() as EmailAddress,
-  memberNumber: faker.number.int(),
-});
 
 describe('construct-view-model', () => {
   describe('when the trainers cannot be fetched', () => {
