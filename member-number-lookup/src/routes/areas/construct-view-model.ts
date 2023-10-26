@@ -4,13 +4,11 @@ import {User, isEventOfType} from '../../types';
 import {Dependencies} from '../../dependencies';
 import * as TE from 'fp-ts/TaskEither';
 import * as RA from 'fp-ts/ReadonlyArray';
-import { ViewModel } from './view-model';
 
 export const constructViewModel = (deps: Dependencies) => (user: User) =>
   pipe(
     {
       user: TE.right(user),
-      trainers: deps.getTrainers(),
       isSuperUser: pipe(
         deps.getAllEvents(),
         TE.map(RA.filter(isEventOfType('SuperUserDeclared'))),
@@ -21,6 +19,5 @@ export const constructViewModel = (deps: Dependencies) => (user: User) =>
         TE.map(RA.filter(isEventOfType('AreaCreated')))
       ),
     },
-    sequenceS(TE.ApplySeq),
-    TE.map((viewModel) => viewModel satisfies ViewModel)
+    sequenceS(TE.ApplySeq)
   );

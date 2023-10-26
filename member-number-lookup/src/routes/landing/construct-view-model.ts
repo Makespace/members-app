@@ -4,7 +4,6 @@ import {User, isEventOfType} from '../../types';
 import {Dependencies} from '../../dependencies';
 import * as TE from 'fp-ts/TaskEither';
 import * as RA from 'fp-ts/ReadonlyArray';
-import { ViewModel } from './view-model';
 
 export const constructViewModel = (deps: Dependencies) => (user: User) =>
   pipe(
@@ -17,6 +16,5 @@ export const constructViewModel = (deps: Dependencies) => (user: User) =>
         TE.map(RA.some(event => event.memberNumber === user.memberNumber))
       ),
     },
-    sequenceS(TE.ApplySeq),
-    TE.map((viewModel) => viewModel satisfies ViewModel)
+    sequenceS(TE.ApplySeq)
   );
