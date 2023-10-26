@@ -16,6 +16,7 @@ import {
 import {areas} from './routes/areas';
 import {createAreaForm} from './commands/area';
 import {superUsers} from './routes/super-users';
+import {declareSuperUserForm} from './commands/super-user';
 
 export const createRouter = (deps: Dependencies, conf: Config): Router => {
   const router = Router();
@@ -23,11 +24,11 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
   router.get('/', asyncHandler(landing(deps)));
 
   router.get('/areas', asyncHandler(areas(deps)));
-
   router.get('/areas/create', asyncHandler(createAreaForm(deps)));
   router.post('/areas/create', asyncHandler(formHandler(deps, createArea)));
 
   router.get('/super-users', asyncHandler(superUsers(deps)));
+  router.get('/super-users/declare', asyncHandler(declareSuperUserForm(deps)));
 
   router.get('/ping', (req, res) => res.status(StatusCodes.OK).send('pong\n'));
 
