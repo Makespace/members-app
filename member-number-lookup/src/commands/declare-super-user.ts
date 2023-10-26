@@ -13,8 +13,7 @@ const codec = t.strict({
 
 type DeclareSuperUserCommand = t.TypeOf<typeof codec>;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const handle = (input: {
+const process = (input: {
   command: DeclareSuperUserCommand;
   events: ReadonlyArray<DomainEvent>;
 }): O.Option<DomainEvent> =>
@@ -28,8 +27,10 @@ const handle = (input: {
     )
   );
 
+const isAuthorized = () => false;
+
 export const declareSuperUser: Command<DeclareSuperUserCommand> = {
-  process: handle,
+  process,
   decode: codec.decode,
-  isAuthorized: () => false,
+  isAuthorized,
 };
