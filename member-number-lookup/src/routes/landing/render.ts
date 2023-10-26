@@ -51,6 +51,9 @@ const superUserNav = html`
       <li>
         <a href="/areas/create">Add area of responsibility</a>
       </li>
+      <li>
+        <a href="/super-users">View all super-users</a>
+      </li>
     </ul>
   </nav>
 `;
