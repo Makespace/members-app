@@ -9,10 +9,7 @@ import {constructEvent} from '../../../src/types';
 import * as T from 'fp-ts/Task';
 import {faker} from '@faker-js/faker';
 import * as RA from 'fp-ts/ReadonlyArray';
-
-const shouldNotBeCalled = (): never => {
-  throw new Error('should not be called');
-};
+import {shouldNotBeCalled} from '../../should-not-be-called.helper';
 
 describe('construct-view-model', () => {
   it('succeeds if the logged in user is not a super user', async () => {

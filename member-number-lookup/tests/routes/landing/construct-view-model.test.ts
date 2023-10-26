@@ -7,10 +7,7 @@ import {constructEvent, failure} from '../../../src/types';
 import {happyPathAdapters} from '../../adapters/happy-path-adapters.helper';
 import {pipe} from 'fp-ts/lib/function';
 import {arbitraryUser} from '../../types/user.helper';
-
-const shouldNotBeCalled = (): never => {
-  throw new Error('should not be called');
-};
+import {shouldNotBeCalled} from '../../should-not-be-called.helper';
 
 describe('construct-view-model', () => {
   describe('when the trainers cannot be fetched', () => {

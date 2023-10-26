@@ -6,10 +6,7 @@ import {happyPathAdapters} from '../../adapters/happy-path-adapters.helper';
 import {pipe} from 'fp-ts/lib/function';
 import {constructViewModel} from '../../../src/routes/areas/construct-view-model';
 import {arbitraryUser} from '../../types/user.helper';
-
-const shouldNotBeCalled = (): never => {
-  throw new Error('should not be called');
-};
+import {shouldNotBeCalled} from '../../should-not-be-called.helper';
 
 describe('construct-view-model', () => {
   describe('when the user has been declared to be a super user', () => {
