@@ -5,6 +5,7 @@ import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import {Command} from '../types/command';
+import {Actor} from '../types/actor';
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,
@@ -27,7 +28,8 @@ const process = (input: {
     )
   );
 
-const isAuthorized = () => false;
+const isAuthorized = (input: {actor: Actor}) =>
+  input.actor.tag === 'token' && input.actor.token === 'admin';
 
 export const declareSuperUser: Command<DeclareSuperUserCommand> = {
   process,

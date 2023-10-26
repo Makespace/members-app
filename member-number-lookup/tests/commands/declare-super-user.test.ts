@@ -49,10 +49,10 @@ describe('declare-super-user', () => {
     memberNumber: faker.number.int(),
   });
 
-  describe.skip('isAuthorized', () => {
+  describe('isAuthorized', () => {
     it.each([
       [{tag: 'token', token: 'admin'} satisfies Actor, true],
-      [{tag: 'user', user: arbitraryUser()} satisfies Actor, true],
+      [{tag: 'user', user: arbitraryUser()} satisfies Actor, false],
     ])('%s returns %s', (actor, expected) => {
       expect(declareSuperUser.isAuthorized({actor, events: []})).toBe(expected);
     });
