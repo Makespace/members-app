@@ -28,9 +28,24 @@ const process = (input: {
     )
   );
 
-const isAuthorized = (input: {actor: Actor}) =>
-  input.actor.tag === 'token' && input.actor.token === 'admin';
-
+const isAuthorized = (input: {
+  actor: Actor;
+  events: ReadonlyArray<DomainEvent>;
+}) => {
+  const {actor, events} = input;
+  switch (actor.tag) {
+    case 'token':
+      return actor.token === 'admin';
+    case 'user':
+      return pipe(
+        events,
+        RA.filter(isEventOfType('SuperUserDeclared')),
+        RA.some(event => event.memberNumber === actor.user.memberNumber)
+      );
+    default:
+      return false;
+  }
+};
 export const declareSuperUser: Command<DeclareSuperUserCommand> = {
   process,
   decode: codec.decode,

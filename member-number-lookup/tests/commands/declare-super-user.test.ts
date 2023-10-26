@@ -46,11 +46,33 @@ describe('declare-super-user', () => {
   });
 
   describe('isAuthorized', () => {
+    const userToBeSuperUser = arbitraryUser();
     it.each([
-      [{tag: 'token', token: 'admin'} satisfies Actor, true],
-      [{tag: 'user', user: arbitraryUser()} satisfies Actor, false],
-    ])('%s returns %s', (actor, expected) => {
-      expect(declareSuperUser.isAuthorized({actor, events: []})).toBe(expected);
+      [
+        'admin via token',
+        true,
+        {tag: 'token', token: 'admin'} satisfies Actor,
+        [],
+      ],
+      [
+        'super user',
+        true,
+        {tag: 'user', user: userToBeSuperUser} satisfies Actor,
+        [
+          constructEvent('SuperUserDeclared')({
+            memberNumber: userToBeSuperUser.memberNumber,
+            declaredAt: faker.date.anytime(),
+          }),
+        ],
+      ],
+      [
+        'other user',
+        false,
+        {tag: 'user', user: arbitraryUser()} satisfies Actor,
+        [],
+      ],
+    ])('%s: %s', (_, expected, actor, events) => {
+      expect(declareSuperUser.isAuthorized({actor, events})).toBe(expected);
     });
   });
 });
