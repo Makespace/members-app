@@ -44,6 +44,10 @@ a:active {
   background: var(--focus-color);
 }
 
+li {
+  margin-bottom: 5px;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
