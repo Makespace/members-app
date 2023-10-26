@@ -51,7 +51,7 @@ describe('create-area', () => {
       });
     });
 
-    describe.skip('isAuthorized', () => {
+    describe('isAuthorized', () => {
       const userToBeSuperUser = arbitraryUser();
       it.each([
         [
