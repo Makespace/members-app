@@ -49,7 +49,7 @@ const getActorFrom = (session: unknown, deps: Dependencies) =>
     TE.map(user => ({tag: 'user', user}) satisfies Actor)
   );
 
-export const formHandler =
+export const formPost =
   <T>(deps: Dependencies, command: Command<T>, successTarget: string) =>
   async (req: Request, res: Response) => {
     await pipe(

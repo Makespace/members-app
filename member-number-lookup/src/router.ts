@@ -7,7 +7,7 @@ import {landing} from './routes/landing';
 import {configureAuthRoutes} from './authentication';
 import {Config} from './configuration';
 import {StatusCodes} from 'http-status-codes';
-import {commandHandler, createArea, formGet, formHandler} from './commands';
+import {commandHandler, createArea, formGet, formPost} from './commands';
 import {areas} from './routes/areas';
 import {superUsers} from './routes/super-users';
 import {superUser} from './commands/super-user';
@@ -22,7 +22,7 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
   router.get('/areas/create', asyncHandler(formGet(deps, area.create)));
   router.post(
     '/areas/create',
-    asyncHandler(formHandler(deps, createArea, '/areas'))
+    asyncHandler(formPost(deps, createArea, '/areas'))
   );
   router.post(
     '/api/create-area',
@@ -36,7 +36,7 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
   );
   router.post(
     '/super-users/declare',
-    asyncHandler(formHandler(deps, superUser.declare, '/super-users'))
+    asyncHandler(formPost(deps, superUser.declare, '/super-users'))
   );
   router.post(
     '/api/declare-super-user',
@@ -48,7 +48,7 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
   );
   router.post(
     '/super-users/revoke',
-    asyncHandler(formHandler(deps, superUser.revoke, '/super-users'))
+    asyncHandler(formPost(deps, superUser.revoke, '/super-users'))
   );
   router.post(
     '/api/revoke-super-user',
