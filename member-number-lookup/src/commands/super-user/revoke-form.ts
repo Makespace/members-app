@@ -1,9 +1,14 @@
-import {pipe} from 'fp-ts/lib/function';
+import {flow, pipe} from 'fp-ts/lib/function';
+import * as tt from 'io-ts-types';
+import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
 import {html} from '../../types/html';
 import * as O from 'fp-ts/Option';
 import {User} from '../../types';
+import {failureWithStatus} from '../../types/failureWithStatus';
+import {StatusCodes} from 'http-status-codes';
+import {formatValidationErrors} from 'io-ts-reporters';
 
 type ViewModel = {
   user: User;
@@ -40,7 +45,30 @@ const renderForm = (viewModel: ViewModel) =>
     pageTemplate('Revoke super user', O.some(viewModel.user))
   );
 
+const paramsCodec = t.strict({
+  memberNumber: tt.IntFromString,
+});
+
+const constructForm = (input: unknown) => (user: User) =>
+  pipe(
+    input,
+    paramsCodec.decode,
+    E.mapLeft(
+      flow(
+        formatValidationErrors,
+        failureWithStatus(
+          'Parameters submitted to the form were invalid',
+          StatusCodes.BAD_REQUEST
+        )
+      )
+    ),
+    E.map(params => ({
+      user,
+      toBeRevoked: params.memberNumber,
+    }))
+  );
+
 export const revokeForm = {
   renderForm: renderForm,
-  constructForm: () => (user: User) => E.right({user, toBeRevoked: 1345}),
+  constructForm,
 };

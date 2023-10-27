@@ -3,11 +3,11 @@ import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
 import {StatusCodes} from 'http-status-codes';
 import {getUserFromSession} from '../authentication';
-import {logInRoute} from '../authentication/configure-auth-routes';
 import {Dependencies} from '../dependencies';
 import {User} from '../types';
 import {FailureWithStatus, failureWithStatus} from '../types/failureWithStatus';
 import * as E from 'fp-ts/Either';
+import {oopsPage} from '../shared-pages';
 
 type Form<T> = {
   renderForm: (viewModel: T) => string;
@@ -25,10 +25,17 @@ export const formGet =
       TE.fromOption(() =>
         failureWithStatus('You are not logged in.', StatusCodes.UNAUTHORIZED)()
       ),
-      TE.chainEitherK(form.constructForm({})),
+      TE.chainEitherK(form.constructForm(req.query)),
       TE.map(form.renderForm),
+      TE.mapLeft(failure => {
+        deps.logger.warn(
+          {...failure, url: req.originalUrl},
+          'Could not render form for a user'
+        );
+        return failure;
+      }),
       TE.matchW(
-        () => res.redirect(logInRoute),
+        failure => res.status(failure.status).send(oopsPage(failure.message)),
         page => res.status(200).send(page)
       )
     )();

@@ -47,6 +47,10 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
     asyncHandler(formGet(deps, superUser.revoke))
   );
   router.post(
+    '/super-users/revoke',
+    asyncHandler(formHandler(deps, superUser.revoke, '/super-users'))
+  );
+  router.post(
     '/api/revoke-super-user',
     asyncHandler(commandHandler(deps, conf, superUser.revoke))
   );
