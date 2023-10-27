@@ -13,6 +13,8 @@ const renderAreas = (areas: ViewModel['areas']) =>
         <tr>
           <td>${area.name}</td>
           <td>${area.description}</td>
+          <td>${area.owners.join(', ')}</td>
+          <td><a href="/areas/add-owner?area=${area.id}">Add owner</a></td>
         </tr>
       `
     ),
@@ -24,6 +26,8 @@ const renderAreas = (areas: ViewModel['areas']) =>
             <tr>
               <th>Name</th>
               <th>Description</th>
+              <th>Owners</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
