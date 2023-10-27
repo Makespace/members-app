@@ -1,30 +1,30 @@
 import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
-import {declare} from '../../../src/commands/super-user/declare';
 import {constructEvent} from '../../../src/types';
+import {revoke} from '../../../src/commands/super-user/revoke';
 
 describe('revoke-super-user', () => {
   describe('when the member is currently not a super user', () => {
     const memberNumber = faker.number.int();
-    const result = declare.process({
+    const result = revoke.process({
       command: {
         memberNumber,
-        declaredAt: faker.date.soon(),
+        revokedAt: faker.date.soon(),
       },
       events: [],
     });
 
-    it.failing('does nothing', () => {
+    it('does nothing', () => {
       expect(result).toStrictEqual(O.none);
     });
   });
 
   describe('when the member is already a super user', () => {
     const memberNumber = faker.number.int();
-    const result = declare.process({
+    const result = revoke.process({
       command: {
         memberNumber,
-        declaredAt: faker.date.soon(),
+        revokedAt: faker.date.soon(),
       },
       events: [
         constructEvent('SuperUserDeclared')({
@@ -34,7 +34,7 @@ describe('revoke-super-user', () => {
       ],
     });
 
-    it.failing('revokes their status', () => {
+    it('revokes their status', () => {
       expect(result).toStrictEqual(
         O.some(
           expect.objectContaining({type: 'SuperUserRevoked', memberNumber})
@@ -45,10 +45,10 @@ describe('revoke-super-user', () => {
 
   describe('when the member was re-declared as a super user', () => {
     const memberNumber = faker.number.int();
-    const result = declare.process({
+    const result = revoke.process({
       command: {
         memberNumber,
-        declaredAt: faker.date.soon(),
+        revokedAt: faker.date.soon(),
       },
       events: [
         constructEvent('SuperUserDeclared')({
@@ -66,7 +66,7 @@ describe('revoke-super-user', () => {
       ],
     });
 
-    it.failing('revokes their status', () => {
+    it('revokes their status', () => {
       expect(result).toStrictEqual(
         O.some(
           expect.objectContaining({type: 'SuperUserRevoked', memberNumber})
