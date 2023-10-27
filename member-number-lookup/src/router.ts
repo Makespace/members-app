@@ -20,7 +20,10 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
 
   router.get('/areas', asyncHandler(areas(deps)));
   router.get('/areas/create', asyncHandler(formGet(deps, area.create)));
-  router.post('/areas/create', asyncHandler(formHandler(deps, createArea)));
+  router.post(
+    '/areas/create',
+    asyncHandler(formHandler(deps, createArea, '/areas'))
+  );
   router.post(
     '/api/create-area',
     asyncHandler(commandHandler(deps, conf, area.create))
@@ -33,7 +36,7 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
   );
   router.post(
     '/super-users/declare',
-    asyncHandler(formHandler(deps, superUser.declare))
+    asyncHandler(formHandler(deps, superUser.declare, '/super-users'))
   );
   router.post(
     '/api/declare-super-user',

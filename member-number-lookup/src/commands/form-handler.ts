@@ -50,7 +50,7 @@ const getActorFrom = (session: unknown, deps: Dependencies) =>
   );
 
 export const formHandler =
-  <T>(deps: Dependencies, command: Command<T>) =>
+  <T>(deps: Dependencies, command: Command<T>, successTarget: string) =>
   async (req: Request, res: Response) => {
     await pipe(
       {
@@ -69,7 +69,7 @@ export const formHandler =
       TE.chainW(persistOrNoOp(deps)),
       TE.match(
         ({status, message}) => res.status(status).send(oopsPage(message)),
-        () => res.redirect('back')
+        () => res.redirect(successTarget)
       )
     )();
   };
