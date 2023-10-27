@@ -36,7 +36,7 @@ type EventSpecificFields<T extends EventName> = Omit<EventOfType<T>, 'type'>;
 
 type EventBase<T> = {type: T};
 
-type SubsetOfDomainEvent<Names extends Array<EventName>> = Extract<
+export type SubsetOfDomainEvent<Names extends Array<EventName>> = Extract<
   DomainEvent,
   {type: Names[number]}
 >;

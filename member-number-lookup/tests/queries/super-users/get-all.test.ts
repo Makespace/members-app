@@ -26,7 +26,7 @@ describe('get-all', () => {
       RA.map(superUser => superUser.memberNumber)
     );
 
-    it.failing('returns them', () => {
+    it('returns them', () => {
       expect(superUsers).toStrictEqual([user.memberNumber]);
     });
   });
@@ -52,7 +52,7 @@ describe('get-all', () => {
       getAll(),
       RA.map(superUser => superUser.memberNumber)
     );
-    it.failing('does not return that user', () => {
+    it('does not return that user', () => {
       expect(superUsers).toStrictEqual([nonRevokedUser.memberNumber]);
     });
   });
