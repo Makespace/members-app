@@ -9,16 +9,7 @@ import {
   failureWithStatus,
 } from '../../types/failureWithStatus';
 import {StatusCodes} from 'http-status-codes';
-
-const projectSuperUsers = (events: ReadonlyArray<DomainEvent>) =>
-  pipe(
-    events,
-    RA.filter(isEventOfType('SuperUserDeclared')),
-    RA.map(event => ({
-      memberNumber: event.memberNumber,
-      since: event.declaredAt,
-    }))
-  );
+import {queries} from '../../queries';
 
 const isSuperUser = (user: User) => (events: ReadonlyArray<DomainEvent>) =>
   pipe(
@@ -41,6 +32,6 @@ export const constructViewModel =
       ),
       TE.map(events => ({
         user: user,
-        superUsers: projectSuperUsers(events),
+        superUsers: queries.superUsers.getAll()(events),
       }))
     );
