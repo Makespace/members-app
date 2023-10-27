@@ -1,9 +1,9 @@
 import * as O from 'fp-ts/Option';
-import {declare} from '../../src/commands/super-user/declare';
 import {faker} from '@faker-js/faker';
-import {constructEvent} from '../../src/types';
-import {Actor} from '../../src/types/actor';
-import {arbitraryUser} from '../types/user.helper';
+import {declare} from '../../../src/commands/super-user/declare';
+import {constructEvent} from '../../../src/types';
+import {Actor} from '../../../src/types/actor';
+import {arbitraryUser} from '../../types/user.helper';
 
 describe('declare-super-user', () => {
   describe('process', () => {

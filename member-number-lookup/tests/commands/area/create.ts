@@ -1,10 +1,10 @@
 import * as O from 'fp-ts/Option';
-import {create} from '../../src/commands/area/create';
 import {faker} from '@faker-js/faker';
-import {constructEvent} from '../../src/types';
 import {NonEmptyString} from 'io-ts-types';
-import {Actor} from '../../src/types/actor';
-import {arbitraryUser} from '../types/user.helper';
+import {create} from '../../../src/commands/area/create';
+import {constructEvent} from '../../../src/types';
+import {Actor} from '../../../src/types/actor';
+import {arbitraryUser} from '../../types/user.helper';
 
 describe('create-area', () => {
   describe('process', () => {
