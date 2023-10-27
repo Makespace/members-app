@@ -1,8 +1,4 @@
 :root {
-  --font-sans-serif: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system,
-    'Segoe UI', 'Roboto', 'Helvetica Neue', 'Noto Sans', 'Liberation Sans',
-    'Arial', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-    'Segoe UI Symbol', 'Noto Color Emoji';
   --text-color: #0b0c0c;
   --border-color: #b1b4b6;
   --link-color: #1d70b8;
@@ -11,8 +7,8 @@
   --green-color: #00703c;
   --green-darkened-color: #005a30;
 
-  font-family: var(--font-sans-serif);
-  font-weight: 400;
+  font-family: Optima, Candara, 'Noto Sans', source-sans-pro, sans-serif;
+  font-weight: normal;
   line-height: 1.5;
   overflow-wrap: break-word;
 }
