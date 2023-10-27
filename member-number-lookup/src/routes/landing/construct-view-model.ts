@@ -1,20 +1,20 @@
 import {sequenceS} from 'fp-ts/lib/Apply';
 import {pipe} from 'fp-ts/lib/function';
-import {User, isEventOfType} from '../../types';
+import {User} from '../../types';
 import {Dependencies} from '../../dependencies';
 import * as TE from 'fp-ts/TaskEither';
-import * as RA from 'fp-ts/ReadonlyArray';
+import {queries} from '../../queries';
 
 export const constructViewModel = (deps: Dependencies) => (user: User) =>
   pipe(
     {
-      user: TE.right(user),
+      events: deps.getAllEvents(),
       trainers: deps.getTrainers(),
-      isSuperUser: pipe(
-        deps.getAllEvents(),
-        TE.map(RA.filter(isEventOfType('SuperUserDeclared'))),
-        TE.map(RA.some(event => event.memberNumber === user.memberNumber))
-      ),
     },
-    sequenceS(TE.ApplySeq)
+    sequenceS(TE.ApplySeq),
+    TE.map(partial => ({
+      user,
+      trainers: partial.trainers,
+      isSuperUser: queries.superUsers.is(user.memberNumber)(partial.events),
+    }))
   );
