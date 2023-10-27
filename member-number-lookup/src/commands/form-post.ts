@@ -67,6 +67,13 @@ export const formPost =
       ),
       TE.map(command.process),
       TE.chainW(persistOrNoOp(deps)),
+      TE.mapLeft(failure => {
+        deps.logger.warn(
+          {...failure, url: req.originalUrl},
+          'Could not handle form POST'
+        );
+        return failure;
+      }),
       TE.match(
         ({status, message}) => res.status(status).send(oopsPage(message)),
         () => res.redirect(successTarget)
