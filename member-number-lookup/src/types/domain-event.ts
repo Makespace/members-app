@@ -3,14 +3,19 @@ import * as tt from 'io-ts-types';
 
 export const DomainEvent = t.union([
   t.strict({
+    type: t.literal('AreaCreated'),
+    name: t.string,
+    description: t.string,
+  }),
+  t.strict({
     type: t.literal('SuperUserDeclared'),
     memberNumber: t.number,
     declaredAt: tt.DateFromISOString,
   }),
   t.strict({
-    type: t.literal('AreaCreated'),
-    name: t.string,
-    description: t.string,
+    type: t.literal('SuperUserRevoked'),
+    memberNumber: t.number,
+    revokedAt: tt.DateFromISOString,
   }),
 ]);
 
