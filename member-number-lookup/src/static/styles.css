@@ -20,7 +20,7 @@
 
 body {
   color: var(--text-color);
-  margin: 0 auto;
+  margin: 0 auto 5rem;
   max-width: 75ch;
   padding: 0 0.5rem;
 }
