@@ -7,6 +7,8 @@ import {pipe} from 'fp-ts/lib/function';
 import {constructViewModel} from '../../../src/routes/areas/construct-view-model';
 import {arbitraryUser} from '../../types/user.helper';
 import {shouldNotBeCalled} from '../../should-not-be-called.helper';
+import {v4} from 'uuid';
+import {UUID} from 'io-ts-types';
 
 describe('construct-view-model', () => {
   describe('when the user has been declared to be a super user', () => {
@@ -64,14 +66,17 @@ describe('construct-view-model', () => {
       getAllEvents: () =>
         TE.right([
           constructEvent('AreaCreated')({
+            id: v4() as UUID,
             name: faker.commerce.productName(),
             description: faker.commerce.productDescription(),
           }),
           constructEvent('AreaCreated')({
+            id: v4() as UUID,
             name: faker.commerce.productName(),
             description: faker.commerce.productDescription(),
           }),
           constructEvent('AreaCreated')({
+            id: v4() as UUID,
             name: faker.commerce.productName(),
             description: faker.commerce.productDescription(),
           }),

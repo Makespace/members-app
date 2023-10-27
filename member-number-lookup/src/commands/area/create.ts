@@ -8,6 +8,7 @@ import {Command} from '../../types/command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 
 const codec = t.strict({
+  id: tt.UUID,
   name: tt.NonEmptyString,
   description: t.string,
 });

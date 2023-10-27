@@ -4,6 +4,7 @@ import {pageTemplate} from '../../templates';
 import {html} from '../../types/html';
 import * as O from 'fp-ts/Option';
 import {User} from '../../types';
+import {v4} from 'uuid';
 
 type ViewModel = {
   user: User;
@@ -16,9 +17,10 @@ const renderForm = (viewModel: ViewModel) =>
       <form action="#" method="post">
         <label for="name">What is this area called</label>
         <input type="text" name="name" id="name" />
-        <label for="description"
-          >Describe this area, add notes and relevant links (optional)</label
-        >
+        <label for="description">
+          Describe this area, add notes and relevant links (optional)
+        </label>
+        <input type="hidden" name="id" value="${v4()}" />
         <textarea name="description" id="description" rows="10"></textarea>
         <button type="submit">Confirm and send</button>
       </form>

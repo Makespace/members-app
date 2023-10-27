@@ -8,6 +8,7 @@ export const DomainEvent = t.union([
     type: t.literal('AreaCreated'),
     name: t.string,
     description: t.string,
+    id: tt.UUID,
   }),
   t.strict({
     type: t.literal('SuperUserDeclared'),
