@@ -4,11 +4,11 @@ import {html} from '../../types/html';
 import * as O from 'fp-ts/Option';
 import {User} from '../../types';
 
-export type ViewModel = {
+type ViewModel = {
   user: User;
 };
 
-export const render = (viewModel: ViewModel) =>
+const renderForm = (viewModel: ViewModel) =>
   pipe(
     html`
       <h1>Create an area</h1>
@@ -26,6 +26,6 @@ export const render = (viewModel: ViewModel) =>
   );
 
 export const createForm = {
-  renderForm: render,
+  renderForm,
   constructForm: () => (user: User) => ({user}),
 };
