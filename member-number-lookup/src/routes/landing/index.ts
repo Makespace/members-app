@@ -16,6 +16,13 @@ export const landing =
       TE.fromOption(() => failure('You are not logged in.')()),
       TE.chain(constructViewModel(deps)),
       TE.map(render),
+      TE.mapLeft(failure => {
+        deps.logger.debug(
+          {...failure, url: req.originalUrl},
+          'Failed to load page'
+        );
+        return failure;
+      }),
       TE.matchW(
         () => res.redirect(logInRoute),
         page => res.status(200).send(page)
