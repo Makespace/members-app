@@ -6,11 +6,14 @@ import {getUserFromSession} from '../authentication';
 import {logInRoute} from '../authentication/configure-auth-routes';
 import {Dependencies} from '../dependencies';
 import {User} from '../types';
-import {failureWithStatus} from '../types/failureWithStatus';
+import {FailureWithStatus, failureWithStatus} from '../types/failureWithStatus';
+import * as E from 'fp-ts/Either';
 
 type Form<T> = {
   renderForm: (viewModel: T) => string;
-  constructForm: (input: unknown) => (user: User) => T;
+  constructForm: (
+    input: unknown
+  ) => (user: User) => E.Either<FailureWithStatus, T>;
 };
 
 export const formGet =
@@ -22,7 +25,7 @@ export const formGet =
       TE.fromOption(() =>
         failureWithStatus('You are not logged in.', StatusCodes.UNAUTHORIZED)()
       ),
-      TE.map(form.constructForm({})),
+      TE.chainEitherK(form.constructForm({})),
       TE.map(form.renderForm),
       TE.matchW(
         () => res.redirect(logInRoute),

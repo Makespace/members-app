@@ -1,4 +1,5 @@
 import {pipe} from 'fp-ts/lib/function';
+import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
 import {html} from '../../types/html';
 import * as O from 'fp-ts/Option';
@@ -41,5 +42,5 @@ const renderForm = (viewModel: ViewModel) =>
 
 export const revokeForm = {
   renderForm: renderForm,
-  constructForm: () => (user: User) => ({user, toBeRevoked: 1345}),
+  constructForm: () => (user: User) => E.right({user, toBeRevoked: 1345}),
 };

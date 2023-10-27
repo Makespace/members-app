@@ -1,4 +1,5 @@
 import {pipe} from 'fp-ts/lib/function';
+import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
 import {html} from '../../types/html';
 import * as O from 'fp-ts/Option';
@@ -30,5 +31,5 @@ const render = (viewModel: ViewModel) =>
 
 export const declareForm = {
   renderForm: render,
-  constructForm: () => (user: User) => ({user}),
+  constructForm: () => (user: User) => E.right({user}),
 };
