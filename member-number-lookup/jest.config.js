@@ -1,4 +1,3 @@
-/** @type {import('ts-jest/dist/types').InitialOptionsTsJest} */
 module.exports = {
   testEnvironment: 'node',
   cacheDirectory: './.cache/jest',
@@ -12,4 +11,6 @@ module.exports = {
       },
     ],
   },
+  verbose: false,
+  reporters: ['jest-wip-reporter'],
 };

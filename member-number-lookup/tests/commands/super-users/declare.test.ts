@@ -62,7 +62,7 @@ describe('declare-super-user', () => {
       ],
     });
 
-    it.skip('declares them to be super user', () => {
+    it.failing('declares them to be super user', () => {
       expect(result).toStrictEqual(
         O.some(
           expect.objectContaining({type: 'SuperUserDeclared', memberNumber})

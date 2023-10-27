@@ -14,7 +14,7 @@ describe('revoke-super-user', () => {
       events: [],
     });
 
-    it.skip('does nothing', () => {
+    it.failing('does nothing', () => {
       expect(result).toStrictEqual(O.none);
     });
   });
@@ -34,7 +34,7 @@ describe('revoke-super-user', () => {
       ],
     });
 
-    it.skip('revokes their status', () => {
+    it.failing('revokes their status', () => {
       expect(result).toStrictEqual(
         O.some(
           expect.objectContaining({type: 'SuperUserRevoked', memberNumber})
@@ -66,7 +66,7 @@ describe('revoke-super-user', () => {
       ],
     });
 
-    it.skip('revokes their status', () => {
+    it.failing('revokes their status', () => {
       expect(result).toStrictEqual(
         O.some(
           expect.objectContaining({type: 'SuperUserRevoked', memberNumber})
