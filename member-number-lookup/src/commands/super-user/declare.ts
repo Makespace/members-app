@@ -5,7 +5,7 @@ import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import {Command} from '../../types/command';
-import {Actor} from '../../types/actor';
+import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,
@@ -28,27 +28,8 @@ const process = (input: {
     )
   );
 
-const isAuthorized = (input: {
-  actor: Actor;
-  events: ReadonlyArray<DomainEvent>;
-}) => {
-  const {actor, events} = input;
-  switch (actor.tag) {
-    case 'token':
-      return actor.token === 'admin';
-    case 'user':
-      return pipe(
-        events,
-        RA.filter(isEventOfType('SuperUserDeclared')),
-        RA.some(event => event.memberNumber === actor.user.memberNumber)
-      );
-    default:
-      return false;
-  }
-};
-
 export const declare: Command<DeclareSuperUserCommand> = {
   process,
   decode: codec.decode,
-  isAuthorized,
+  isAuthorized: isAdminOrSuperUser,
 };
