@@ -1,4 +1,4 @@
-import {DomainEvent, constructEvent, isEventOfType} from '../../types';
+import {DomainEvent, constructEvent} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
@@ -6,6 +6,7 @@ import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import {Command} from '../../types/command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
+import {filterByName} from '../../types/domain-event';
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,
@@ -20,11 +21,15 @@ const process = (input: {
 }): O.Option<DomainEvent> =>
   pipe(
     input.events,
-    RA.filter(isEventOfType('SuperUserDeclared')),
+    filterByName(['SuperUserDeclared', 'SuperUserRevoked']),
     RA.filter(event => event.memberNumber === input.command.memberNumber),
-    RA.match(
+    RA.last,
+    O.match(
       () => O.some(constructEvent('SuperUserDeclared')(input.command)),
-      () => O.none
+      event =>
+        event.type === 'SuperUserRevoked'
+          ? O.some(constructEvent('SuperUserDeclared')(input.command))
+          : O.none
     )
   );
 
