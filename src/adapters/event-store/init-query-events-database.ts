@@ -5,7 +5,9 @@ import {StatusCodes} from 'http-status-codes';
 import {Config} from '../../configuration';
 import {QueryEventsDatabase} from './query-events-database';
 
-export const initQueryEventsDatabase = (conf: Config): QueryEventsDatabase => {
+export const initLegacyQueryEventsDatabase = (
+  conf: Config
+): QueryEventsDatabase => {
   const pool = mysql.createPool({
     host: conf.MAKESPACE_DB_HOST,
     database: conf.EVENTS_DB_NAME,
