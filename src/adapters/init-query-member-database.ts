@@ -3,9 +3,11 @@ import * as TE from 'fp-ts/TaskEither';
 import {failureWithStatus} from '../types/failureWithStatus';
 import {StatusCodes} from 'http-status-codes';
 import {Config} from '../configuration';
-import {QueryDatabase} from './query-database';
+import {QueryMakespaceDatabase} from './query-database';
 
-export const initQueryMemberDatabase = (conf: Config): QueryDatabase => {
+export const initQueryMemberDatabase = (
+  conf: Config
+): QueryMakespaceDatabase => {
   const pool = mysql.createPool({
     host: conf.MAKESPACE_DB_HOST,
     database: conf.MEMBERS_DB_NAME,

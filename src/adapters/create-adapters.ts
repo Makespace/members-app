@@ -10,12 +10,12 @@ import smtp from 'nodemailer-smtp-transport';
 import {getTrainersStubbed} from './get-trainers-stubbed';
 import {commitEvent} from './commit-event';
 import {getAllEvents} from './get-all-events';
-import {QueryDatabase} from './query-database';
+import {QueryEventsDatabase, QueryMakespaceDatabase} from './query-database';
 
 export const createAdapters = (
   conf: Config,
-  queryMembersDatabase: QueryDatabase,
-  queryEventLogDatabase: QueryDatabase
+  queryMembersDatabase: QueryMakespaceDatabase,
+  queryEventLogDatabase: QueryEventsDatabase
 ): Dependencies => {
   const logger = createLogger({
     formatters: {

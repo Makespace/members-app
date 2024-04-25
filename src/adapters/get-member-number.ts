@@ -5,7 +5,7 @@ import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
 import * as tt from 'io-ts-types';
-import {QueryDatabase} from './query-database';
+import {QueryMakespaceDatabase} from './query-database';
 
 const selectMemberNumberWhereEmail = `
 SELECT Member_Number
@@ -29,7 +29,7 @@ type GetMemberNumber = (
 ) => TE.TaskEither<Failure, number>;
 
 export const getMemberNumber =
-  (queryDatabase: QueryDatabase): GetMemberNumber =>
+  (queryDatabase: QueryMakespaceDatabase): GetMemberNumber =>
   email =>
     pipe(
       queryDatabase(selectMemberNumberWhereEmail, [email, email]),

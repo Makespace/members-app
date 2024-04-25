@@ -8,7 +8,7 @@ import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import * as tt from 'io-ts-types';
 import * as t from 'io-ts';
-import {QueryDatabase} from './query-database';
+import {QueryEventsDatabase} from './query-database';
 
 const EventsFromDb = t.readonlyArray(
   t.strict({
@@ -34,7 +34,7 @@ const reshapeRowToEvent = (row: EventsFromDb[number]) =>
   );
 
 export const getAllEvents =
-  (queryDatabase: QueryDatabase): Dependencies['getAllEvents'] =>
+  (queryDatabase: QueryEventsDatabase): Dependencies['getAllEvents'] =>
   () =>
     pipe(
       queryDatabase('SELECT * FROM events;', []),
