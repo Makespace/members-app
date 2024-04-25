@@ -1,14 +1,14 @@
 import {pipe, flow} from 'fp-ts/lib/function';
 import {StatusCodes} from 'http-status-codes';
 import {formatValidationErrors} from 'io-ts-reporters';
-import {Dependencies} from '../dependencies';
-import {DomainEvent} from '../types';
-import {failureWithStatus} from '../types/failureWithStatus';
+import {Dependencies} from '../../dependencies';
+import {DomainEvent} from '../../types';
+import {failureWithStatus} from '../../types/failureWithStatus';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import * as tt from 'io-ts-types';
 import * as t from 'io-ts';
-import {QueryEventsDatabase} from './query-database';
+import {QueryEventsDatabase} from './query-events-database';
 
 const EventsFromDb = t.readonlyArray(
   t.strict({

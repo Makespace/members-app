@@ -8,9 +8,10 @@ import createLogger from 'pino';
 import nodemailer from 'nodemailer';
 import smtp from 'nodemailer-smtp-transport';
 import {getTrainersStubbed} from './get-trainers-stubbed';
-import {commitEvent} from './commit-event';
-import {getAllEvents} from './get-all-events';
-import {QueryEventsDatabase, QueryMakespaceDatabase} from './query-database';
+import {commitEvent} from './event-store/commit-event';
+import {getAllEvents} from './event-store/get-all-events';
+import {QueryMakespaceDatabase} from './query-database';
+import {QueryEventsDatabase} from './event-store/query-events-database';
 
 export const createAdapters = (
   conf: Config,

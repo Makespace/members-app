@@ -11,8 +11,8 @@ import http from 'http';
 import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
 import {initQueryMemberDatabase} from './adapters/init-query-member-database';
-import {initQueryEventsDatabase} from './adapters/init-query-events-database';
-import {QueryEventsDatabase} from './adapters/query-database';
+import {initQueryEventsDatabase} from './adapters/event-store/init-query-events-database';
+import {ensureEventTableExists} from './adapters/event-store/ensure-event-table-exists';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -64,20 +64,6 @@ Visit http://localhost:1080 to see the emails it sends
 
 const server = http.createServer(app);
 createTerminus(server);
-
-const ensureEventTableExists = (queryDatabase: QueryEventsDatabase) =>
-  queryDatabase(
-    `
-    CREATE TABLE IF NOT EXISTS events (
-      id varchar(255),
-      resource_id varchar(255),
-      resource_type varchar(255),
-      event_type varchar(255),
-      payload json
-    );
-  `,
-    []
-  );
 
 void pipe(
   ensureEventTableExists(queryEventsDatabase),

@@ -1,11 +1,11 @@
 import {StatusCodes} from 'http-status-codes';
-import {FailureWithStatus} from '../types/failureWithStatus';
+import {FailureWithStatus} from '../../types/failureWithStatus';
 import * as TE from 'fp-ts/TaskEither';
-import {Dependencies} from '../dependencies';
+import {Dependencies} from '../../dependencies';
 import {pipe} from 'fp-ts/lib/function';
-import {DomainEvent} from '../types';
+import {DomainEvent} from '../../types';
 import {v4 as uuidv4} from 'uuid';
-import {QueryEventsDatabase} from './query-database';
+import {QueryEventsDatabase} from './query-events-database';
 
 export const commitEvent =
   (queryDatabase: QueryEventsDatabase): Dependencies['commitEvent'] =>

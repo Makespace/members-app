@@ -1,9 +1,9 @@
 import mysql from 'mysql';
 import * as TE from 'fp-ts/TaskEither';
-import {failureWithStatus} from '../types/failureWithStatus';
+import {failureWithStatus} from '../../types/failureWithStatus';
 import {StatusCodes} from 'http-status-codes';
-import {Config} from '../configuration';
-import {QueryEventsDatabase} from './query-database';
+import {Config} from '../../configuration';
+import {QueryEventsDatabase} from './query-events-database';
 
 export const initQueryEventsDatabase = (conf: Config): QueryEventsDatabase => {
   const pool = mysql.createPool({
