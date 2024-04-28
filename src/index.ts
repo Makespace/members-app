@@ -11,8 +11,8 @@ import http from 'http';
 import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
 import {initQueryMemberDatabase} from './adapters/init-query-member-database';
-import {initLegacyQueryEventsDatabase} from './adapters/event-store/init-query-events-database';
 import {ensureEventTableExists} from './adapters/event-store/ensure-event-table-exists';
+import {initLegacyQueryEventsDatabase} from './adapters/event-store/init-legacy-query-events-database';
 
 // Dependencies and Config
 const conf = loadConfig();
