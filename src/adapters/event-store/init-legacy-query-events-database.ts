@@ -3,11 +3,11 @@ import * as TE from 'fp-ts/TaskEither';
 import {failureWithStatus} from '../../types/failureWithStatus';
 import {StatusCodes} from 'http-status-codes';
 import {Config} from '../../configuration';
-import {QueryEventsDatabase} from './query-events-database';
+import {LegacyQueryEventsDatabase} from './legacy-query-events-database';
 
 export const initLegacyQueryEventsDatabase = (
   conf: Config
-): QueryEventsDatabase => {
+): LegacyQueryEventsDatabase => {
   const pool = mysql.createPool({
     host: conf.MAKESPACE_DB_HOST,
     database: conf.EVENTS_DB_NAME,

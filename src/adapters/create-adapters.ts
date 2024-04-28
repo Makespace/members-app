@@ -11,12 +11,12 @@ import {getTrainersStubbed} from './get-trainers-stubbed';
 import {commitEvent} from './event-store/commit-event';
 import {getAllEvents} from './event-store/get-all-events';
 import {QueryMakespaceDatabase} from './query-database';
-import {QueryEventsDatabase} from './event-store/query-events-database';
+import {LegacyQueryEventsDatabase} from './event-store/legacy-query-events-database';
 
 export const createAdapters = (
   conf: Config,
   queryMembersDatabase: QueryMakespaceDatabase,
-  queryEventLogDatabase: QueryEventsDatabase
+  queryEventLogDatabase: LegacyQueryEventsDatabase
 ): Dependencies => {
   const logger = createLogger({
     formatters: {

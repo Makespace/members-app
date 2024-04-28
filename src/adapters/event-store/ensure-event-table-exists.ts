@@ -1,6 +1,8 @@
-import {QueryEventsDatabase} from './query-events-database';
+import {LegacyQueryEventsDatabase} from './legacy-query-events-database';
 
-export const ensureEventTableExists = (queryDatabase: QueryEventsDatabase) =>
+export const ensureEventTableExists = (
+  queryDatabase: LegacyQueryEventsDatabase
+) =>
   queryDatabase(
     `
     CREATE TABLE IF NOT EXISTS events (
