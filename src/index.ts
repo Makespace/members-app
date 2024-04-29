@@ -65,12 +65,13 @@ Visit http://localhost:1080 to see the emails it sends
 const server = http.createServer(app);
 createTerminus(server);
 
-void pipe(
-  ensureEventTableExists(queryEventsDatabase),
-  TE.mapLeft(e => deps.logger.error(e, 'Failed to start server')),
-  TE.map(() =>
-    server.listen(conf.PORT, () =>
-      deps.logger.info({port: conf.PORT}, 'Server listening')
-    )
-  )
-)();
+void (async () => {
+  await pipe(
+    ensureEventTableExists(queryEventsDatabase),
+    TE.mapLeft(e => deps.logger.error(e, 'Failed to start server'))
+  )();
+
+  server.listen(conf.PORT, () =>
+    deps.logger.info({port: conf.PORT}, 'Server listening')
+  );
+})();
