@@ -43,6 +43,7 @@
   "dependencies": {
     "@faker-js/faker": "^8.0.2",
     "@godaddy/terminus": "^4.12.1",
+    "@libsql/client": "^0.6.0",
     "@types/nodemailer-smtp-transport": "^2.7.5",
     "@types/pubsub-js": "^1.8.3",
     "@typescript-eslint/parser": "^5.42.0",
