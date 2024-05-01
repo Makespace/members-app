@@ -1,13 +1,12 @@
 import * as TE from 'fp-ts/TaskEither';
 import {failureWithStatus} from '../../types/failureWithStatus';
 import {StatusCodes} from 'http-status-codes';
-import {InArgs, createClient} from '@libsql/client/.';
+import * as libsqlClient from '@libsql/client';
 import {QueryEventsDatabase} from './query-events-database';
 
-// ts-unused-exports:disable-next-line
 export const initQueryEventsDatabase = (): QueryEventsDatabase => {
-  const client = createClient({url: ':memory:'});
-  return (query: string, args: InArgs) =>
+  const client = libsqlClient.createClient({url: ':memory:'});
+  return (query: string, args: libsqlClient.InArgs) =>
     TE.tryCatch(
       () =>
         client.execute({

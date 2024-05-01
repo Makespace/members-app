@@ -13,12 +13,18 @@ import * as TE from 'fp-ts/TaskEither';
 import {initQueryMemberDatabase} from './adapters/init-query-member-database';
 import {ensureEventTableExists} from './adapters/event-store/ensure-event-table-exists';
 import {initLegacyQueryEventsDatabase} from './adapters/event-store/init-legacy-query-events-database';
+import {initQueryEventsDatabase} from './adapters/event-store/init-events-database';
 
 // Dependencies and Config
 const conf = loadConfig();
 const queryMembersDatabase = initQueryMemberDatabase(conf);
-const queryEventsDatabase = initLegacyQueryEventsDatabase(conf);
-const deps = createAdapters(conf, queryMembersDatabase, queryEventsDatabase);
+const legacyQueryEventsDatabase = initLegacyQueryEventsDatabase(conf);
+initQueryEventsDatabase();
+const deps = createAdapters(
+  conf,
+  queryMembersDatabase,
+  legacyQueryEventsDatabase
+);
 
 // Authentication
 passport.use(magicLink.name, magicLink.strategy(deps, conf));
@@ -67,7 +73,7 @@ createTerminus(server);
 
 void (async () => {
   await pipe(
-    ensureEventTableExists(queryEventsDatabase),
+    ensureEventTableExists(legacyQueryEventsDatabase),
     TE.mapLeft(e => deps.logger.error(e, 'Failed to start server'))
   )();
 
