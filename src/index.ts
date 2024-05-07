@@ -11,15 +11,16 @@ import http from 'http';
 import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
 import {initQueryMemberDatabase} from './adapters/init-query-member-database';
-import {ensureEventTableExists} from './adapters/event-store/ensure-event-table-exists';
+import {legacyEnsureEventTableExists} from './adapters/event-store/legacy-ensure-event-table-exists';
 import {initLegacyQueryEventsDatabase} from './adapters/event-store/init-legacy-query-events-database';
 import {initQueryEventsDatabase} from './adapters/event-store/init-events-database';
+import {ensureEventTableExists} from './adapters/event-store/ensure-event-table-exists';
 
 // Dependencies and Config
 const conf = loadConfig();
 const queryMembersDatabase = initQueryMemberDatabase(conf);
 const legacyQueryEventsDatabase = initLegacyQueryEventsDatabase(conf);
-initQueryEventsDatabase();
+const queryEventsDatabase = initQueryEventsDatabase();
 const deps = createAdapters(
   conf,
   queryMembersDatabase,
@@ -73,7 +74,12 @@ createTerminus(server);
 
 void (async () => {
   await pipe(
-    ensureEventTableExists(legacyQueryEventsDatabase),
+    legacyEnsureEventTableExists(legacyQueryEventsDatabase),
+    TE.mapLeft(e => deps.logger.error(e, 'Failed to start server'))
+  )();
+
+  await pipe(
+    ensureEventTableExists(queryEventsDatabase),
     TE.mapLeft(e => deps.logger.error(e, 'Failed to start server'))
   )();
 
