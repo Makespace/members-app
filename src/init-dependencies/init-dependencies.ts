@@ -8,8 +8,8 @@ import createLogger from 'pino';
 import nodemailer from 'nodemailer';
 import smtp from 'nodemailer-smtp-transport';
 import {getTrainersStubbed} from './get-trainers-stubbed';
-import {commitEvent} from './event-store/commit-event';
-import {getAllEvents} from './event-store/get-all-events';
+import {legacyCommitEvent} from './event-store/legacy-commit-event';
+import {legacyGetAllEvents} from './event-store/legacy-get-all-events';
 import {QueryMakespaceDatabase} from './query-database';
 import {LegacyQueryEventsDatabase} from './event-store/legacy-query-events-database';
 
@@ -39,8 +39,8 @@ export const initDependencies = (
   );
 
   return {
-    commitEvent: commitEvent(queryEventLogDatabase),
-    getAllEvents: getAllEvents(queryEventLogDatabase),
+    commitEvent: legacyCommitEvent(queryEventLogDatabase),
+    getAllEvents: legacyGetAllEvents(queryEventLogDatabase),
     getMemberNumber: conf.USE_STUBBED_ADAPTERS
       ? getMemberNumberStubbed()
       : getMemberNumber(queryMembersDatabase),

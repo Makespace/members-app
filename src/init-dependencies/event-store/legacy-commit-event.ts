@@ -5,10 +5,10 @@ import {Dependencies} from '../../dependencies';
 import {pipe} from 'fp-ts/lib/function';
 import {DomainEvent} from '../../types';
 import {v4 as uuidv4} from 'uuid';
-import {QueryEventsDatabase} from './query-events-database';
+import {LegacyQueryEventsDatabase} from './legacy-query-events-database';
 
-export const commitEvent =
-  (queryDatabase: QueryEventsDatabase): Dependencies['commitEvent'] =>
+export const legacyCommitEvent =
+  (queryDatabase: LegacyQueryEventsDatabase): Dependencies['commitEvent'] =>
   (
     event: DomainEvent
   ): TE.TaskEither<
