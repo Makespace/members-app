@@ -21,11 +21,7 @@ const conf = loadConfig();
 const queryMembersDatabase = initQueryMemberDatabase(conf);
 const legacyQueryEventsDatabase = initLegacyQueryEventsDatabase(conf);
 const queryEventsDatabase = initQueryEventsDatabase();
-const deps = initDependencies(
-  conf,
-  queryMembersDatabase,
-  legacyQueryEventsDatabase
-);
+const deps = initDependencies(conf, queryMembersDatabase, queryEventsDatabase);
 
 // Authentication
 passport.use(magicLink.name, magicLink.strategy(deps, conf));
