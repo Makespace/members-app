@@ -27,16 +27,6 @@ services:
       USE_STUBBED_ADAPTERS: 'true'
     restart: unless-stopped
 
-  mariadb:
-    image: mariadb
-    environment:
-      MYSQL_ROOT_USER: root
-      MYSQL_ROOT_PASSWORD: secret
-      MYSQL_DATABASE: event-log
-      MYSQL_USER: root
-      MYSQL_PASSWORD: secret
-    restart: unless-stopped
-
   mailcatcher:
     image: sj26/mailcatcher@sha256:1f02ff3bd4fd728837d7ddf768346eebd39e5e2232883c41378c02691378e986
     ports:
