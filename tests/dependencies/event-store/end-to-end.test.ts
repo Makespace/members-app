@@ -38,7 +38,7 @@ describe('event-store end-to-end', () => {
       )();
     });
 
-    it.failing('persists and returns the event', async () => {
+    it('persists and returns the event', async () => {
       expect(await deps.getAllEvents()()).toStrictEqual(E.right([event]));
     });
   });

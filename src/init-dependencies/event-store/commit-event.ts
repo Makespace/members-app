@@ -24,7 +24,11 @@ export const commitEvent =
         event_type: type,
         payload: JSON.stringify(payload),
       }),
-      row => queryDatabase('INSERT INTO events set ?; ', row),
+      row =>
+        queryDatabase(
+          'INSERT INTO events (id, resource_id, resource_type, event_type, payload) VALUES ($id, $resource_id, $resource_type, $event_type, $payload); ',
+          row
+        ),
       TE.map(() => ({
         status: StatusCodes.CREATED,
         message: 'Persisted a new event',
