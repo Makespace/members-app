@@ -2,7 +2,7 @@ import {faker} from '@faker-js/faker';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import {EmailAddress, Failure, failure} from '../../src/types';
-import {happyPathAdapters} from '../adapters/happy-path-adapters.helper';
+import {happyPathAdapters} from '../dependencies/happy-path-adapters.helper';
 import {sendLogInLink} from '../../src/authentication/send-log-in-link';
 import {Config} from '../../src/configuration';
 

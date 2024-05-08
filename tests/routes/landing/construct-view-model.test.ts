@@ -4,7 +4,7 @@ import * as TE from 'fp-ts/TaskEither';
 import {faker} from '@faker-js/faker';
 import {Dependencies} from '../../../src/dependencies';
 import {constructEvent, failure} from '../../../src/types';
-import {happyPathAdapters} from '../../adapters/happy-path-adapters.helper';
+import {happyPathAdapters} from '../../dependencies/happy-path-adapters.helper';
 import {pipe} from 'fp-ts/lib/function';
 import {arbitraryUser} from '../../types/user.helper';
 import {shouldNotBeCalled} from '../../should-not-be-called.helper';

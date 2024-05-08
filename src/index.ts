@@ -1,6 +1,5 @@
 import express, {Application} from 'express';
 import {createRouter} from './router';
-import {createAdapters} from './adapters';
 import passport from 'passport';
 import session from 'cookie-session';
 import httpLogger from 'pino-http';
@@ -10,18 +9,19 @@ import {createTerminus} from '@godaddy/terminus';
 import http from 'http';
 import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
-import {initQueryMemberDatabase} from './adapters/init-query-member-database';
-import {legacyEnsureEventTableExists} from './adapters/event-store/legacy-ensure-event-table-exists';
-import {initLegacyQueryEventsDatabase} from './adapters/event-store/init-legacy-query-events-database';
-import {initQueryEventsDatabase} from './adapters/event-store/init-events-database';
-import {ensureEventTableExists} from './adapters/event-store/ensure-event-table-exists';
+import {initQueryMemberDatabase} from './init-dependencies/init-query-member-database';
+import {legacyEnsureEventTableExists} from './init-dependencies/event-store/legacy-ensure-event-table-exists';
+import {initLegacyQueryEventsDatabase} from './init-dependencies/event-store/init-legacy-query-events-database';
+import {initQueryEventsDatabase} from './init-dependencies/event-store/init-events-database';
+import {ensureEventTableExists} from './init-dependencies/event-store/ensure-event-table-exists';
+import {initDependencies} from './init-dependencies';
 
 // Dependencies and Config
 const conf = loadConfig();
 const queryMembersDatabase = initQueryMemberDatabase(conf);
 const legacyQueryEventsDatabase = initLegacyQueryEventsDatabase(conf);
 const queryEventsDatabase = initQueryEventsDatabase();
-const deps = createAdapters(
+const deps = initDependencies(
   conf,
   queryMembersDatabase,
   legacyQueryEventsDatabase

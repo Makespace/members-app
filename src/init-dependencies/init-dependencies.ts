@@ -13,7 +13,7 @@ import {getAllEvents} from './event-store/get-all-events';
 import {QueryMakespaceDatabase} from './query-database';
 import {LegacyQueryEventsDatabase} from './event-store/legacy-query-events-database';
 
-export const createAdapters = (
+export const initDependencies = (
   conf: Config,
   queryMembersDatabase: QueryMakespaceDatabase,
   queryEventLogDatabase: LegacyQueryEventsDatabase

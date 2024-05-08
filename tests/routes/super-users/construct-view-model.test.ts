@@ -3,7 +3,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {arbitraryUser} from '../../types/user.helper';
 import {constructViewModel} from '../../../src/routes/super-users/construct-view-model';
 import {Dependencies} from '../../../src/dependencies';
-import {happyPathAdapters} from '../../adapters/happy-path-adapters.helper';
+import {happyPathAdapters} from '../../dependencies/happy-path-adapters.helper';
 import * as TE from 'fp-ts/TaskEither';
 import {constructEvent} from '../../../src/types';
 import * as T from 'fp-ts/Task';

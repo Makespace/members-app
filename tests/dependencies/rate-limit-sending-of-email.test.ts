@@ -1,6 +1,6 @@
 import {Email, EmailAddress, Failure} from '../../src/types';
 import * as E from 'fp-ts/Either';
-import {createRateLimiter} from '../../src/adapters/rate-limit-sending-of-emails';
+import {createRateLimiter} from '../../src/init-dependencies/rate-limit-sending-of-emails';
 import * as T from 'fp-ts/Task';
 import {faker} from '@faker-js/faker';
 
