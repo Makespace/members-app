@@ -28,7 +28,16 @@ describe('linkNumberToEmail', () => {
   });
 
   describe('when the email address is already in use', () => {
-    it.todo('returns none');
+    const events: ReadonlyArray<DomainEvent> = [
+      constructEvent('MemberNumberLinkedToEmail')({
+        memberNumber: faker.number.int(),
+        email: command.email,
+      }),
+    ];
+    const result = linkNumberToEmail.process({command, events});
+    it('returns none', () => {
+      expect(result).toStrictEqual(O.none);
+    });
   });
 
   describe('when both the email and member number are new', () => {
