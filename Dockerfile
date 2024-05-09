@@ -15,7 +15,7 @@ RUN bun install --frozen-lockfile
 FROM node as dev
 COPY --from=dev-deps /app/node_modules/ node_modules/
 COPY ./tsconfig.json .
-CMD [ "npx", "ts-node-dev", "--transpile-only", "--respawn", "./src/index.ts" ]
+CMD [ "npx", "tsx", "watch", "./src/index.ts" ]
 
 # PROD
 FROM bun as prod-deps
