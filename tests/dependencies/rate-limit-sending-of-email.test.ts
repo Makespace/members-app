@@ -8,7 +8,8 @@ describe('rate-limit-sending-of-emails', () => {
   const email = {
     recipient: faker.internet.email() as EmailAddress,
     subject: faker.lorem.lines(1),
-    message: faker.lorem.paragraph(),
+    text: faker.lorem.paragraph(),
+    html: faker.lorem.paragraph(),
   };
 
   describe('when the recipient has been sent less than the limit of emails in the current timewindow', () => {
