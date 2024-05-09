@@ -1,5 +1,5 @@
 # BASE
-FROM node:18-slim as node
+FROM node:18-slim@sha256:cbfb3c9830932b7b1c2738abf47c66568fc7b06cf782d803e7ddff52b2fc835d as node
 WORKDIR /app
 COPY package*.json ./
 
