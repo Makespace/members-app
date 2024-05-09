@@ -8,6 +8,7 @@ A [sandbox instance](https://member-number-lookup-sandbox-fnl2w3f7da-nw.a.run.ap
 
 ```
 make dev
+make populate-local-dev
 ```
 
 - visit [localhost:8080](http://localhost:8080) to see the application
@@ -15,12 +16,11 @@ make dev
 
 A mailcatcher is provided instead of a real mail server.
 
-The app is created with no data. To start interacting with it you will need to:
+Two users are created by `populate-local-dev`:
 
-- link some member numbers to email addresses to allow login
-- make one of them a super user
+- `foo@example.com` a regular member
+- `admin@example.com` a super user (can e.g. create areas)
 
-See 'Operations' on how to do this.
 
 ## Run tests and lint
 

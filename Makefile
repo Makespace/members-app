@@ -9,6 +9,10 @@ node_modules: package.json package-lock.json
 dev:
 	docker-compose --file docker-compose.yaml --file docker-compose.dev.yaml up --build
 
+.PHONY: populate-local-dev
+populate-local-dev:
+	bash ./scripts/populate-local-dev.sh
+
 fix: node_modules
 	npx gts fix
 
