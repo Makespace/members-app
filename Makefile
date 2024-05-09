@@ -2,7 +2,7 @@
 
 check: test lint typecheck unused-exports
 
-node_modules: package.json package-lock.json
+node_modules: package.json bun.lockb
 	bun install --frozen-lockfile
 	touch node_modules
 
