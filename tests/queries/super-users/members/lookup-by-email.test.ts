@@ -105,6 +105,18 @@ describe('lookupByEmail', () => {
   });
 
   describe('when no member with the given email exists', () => {
-    it.todo('returns none');
+    const command = {
+      memberNumber: faker.number.int(),
+      email: faker.internet.email() as EmailAddress,
+    };
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(command);
+      events = await framework.getAllEvents();
+    });
+
+    it('returns none', () => {
+      const result = lookupByEmail(faker.internet.email())(events);
+      expect(result).toStrictEqual(O.none);
+    });
   });
 });
