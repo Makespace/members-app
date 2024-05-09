@@ -47,19 +47,6 @@ app.use(createRouter(deps, conf));
 startMagicLinkEmailPubSub(deps, conf);
 
 // Start application
-if (conf.PUBLIC_URL.includes('localhost')) {
-  process.stdout.write(`
-################################################################################
-
-Makespace member management app starting
-
-Visit ${conf.PUBLIC_URL} to see the application
-Visit http://localhost:1080 to see the emails it sends
-
-################################################################################
-`);
-}
-
 const server = http.createServer(app);
 createTerminus(server);
 
@@ -69,7 +56,14 @@ void (async () => {
     TE.mapLeft(e => deps.logger.error(e, 'Failed to start server'))
   )();
 
-  server.listen(conf.PORT, () =>
-    deps.logger.info({port: conf.PORT}, 'Server listening')
-  );
+  server.listen(conf.PORT, () => {
+    deps.logger.info({port: conf.PORT}, 'Server listening');
+    if (conf.PUBLIC_URL.includes('localhost')) {
+      deps.logger.info({}, `Visit ${conf.PUBLIC_URL} to see the application`);
+      deps.logger.info(
+        {},
+        'Visit http://localhost:1080 to see the emails it sends'
+      );
+    }
+  });
 })();
