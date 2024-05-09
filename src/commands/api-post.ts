@@ -59,7 +59,7 @@ const getActorFrom = (authorization: unknown, conf: Config) =>
     TE.fromEither
   );
 
-export const commandHandler =
+export const apiPost =
   <T>(deps: Dependencies, conf: Config, command: Command<T>) =>
   async (req: Request, res: Response) => {
     await pipe(

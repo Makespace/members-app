@@ -1,7 +1,7 @@
 import * as E from 'fp-ts/Either';
 import {pipe} from 'fp-ts/lib/function';
 import {arbitraryUser} from '../../types/user.helper';
-import {constructViewModel} from '../../../src/routes/super-users/construct-view-model';
+import {constructViewModel} from '../../../src/pages/super-users/construct-view-model';
 import {Dependencies} from '../../../src/dependencies';
 import {happyPathAdapters} from '../../dependencies/happy-path-adapters.helper';
 import * as TE from 'fp-ts/TaskEither';

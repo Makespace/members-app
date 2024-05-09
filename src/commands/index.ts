@@ -1,4 +1,11 @@
-export {commandHandler} from './command-handler';
+import {area} from './area';
+import {superUser} from './super-user';
+
+export {apiPost} from './api-post';
 export {formPost} from './form-post';
 export {formGet} from './form-get';
-export {create as createArea} from './area/create';
+
+export const commands = {
+  area,
+  superUser,
+};

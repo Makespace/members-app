@@ -3,56 +3,55 @@ import path from 'path';
 import {oopsPage} from './shared-pages';
 import {Dependencies} from './dependencies';
 import asyncHandler from 'express-async-handler';
-import {landing} from './routes/landing';
+import * as pages from './pages';
 import {configureAuthRoutes} from './authentication';
 import {Config} from './configuration';
 import {StatusCodes} from 'http-status-codes';
-import {commandHandler, createArea, formGet, formPost} from './commands';
-import {areas} from './routes/areas';
-import {superUsers} from './routes/super-users';
-import {superUser} from './commands/super-user';
-import {area} from './commands/area';
+import {apiPost, commands, formGet, formPost} from './commands';
 
 export const createRouter = (deps: Dependencies, conf: Config): Router => {
   const router = Router();
 
-  router.get('/', asyncHandler(landing(deps)));
+  router.get('/', asyncHandler(pages.landing(deps)));
 
-  router.get('/areas', asyncHandler(areas(deps)));
-  router.get('/areas/create', asyncHandler(formGet(deps, area.create)));
+  router.get('/areas', asyncHandler(pages.areas(deps)));
+  router.get(
+    '/areas/create',
+    asyncHandler(formGet(deps, commands.area.create))
+  );
   router.post(
     '/areas/create',
-    asyncHandler(formPost(deps, createArea, '/areas'))
+    asyncHandler(formPost(deps, commands.area.create, '/areas'))
   );
   router.post(
     '/api/create-area',
-    asyncHandler(commandHandler(deps, conf, area.create))
+    asyncHandler(apiPost(deps, conf, commands.area.create))
   );
 
-  router.get('/super-users', asyncHandler(superUsers(deps)));
+  router.get('/super-users', asyncHandler(pages.superUsers(deps)));
   router.get(
     '/super-users/declare',
-    asyncHandler(formGet(deps, superUser.declare))
+    asyncHandler(formGet(deps, commands.superUser.declare))
   );
   router.post(
     '/super-users/declare',
-    asyncHandler(formPost(deps, superUser.declare, '/super-users'))
+    asyncHandler(formPost(deps, commands.superUser.declare, '/super-users'))
   );
   router.post(
     '/api/declare-super-user',
-    asyncHandler(commandHandler(deps, conf, superUser.declare))
+    asyncHandler(apiPost(deps, conf, commands.superUser.declare))
   );
   router.get(
     '/super-users/revoke',
-    asyncHandler(formGet(deps, superUser.revoke))
+    asyncHandler(formGet(deps, commands.superUser.revoke))
   );
   router.post(
     '/super-users/revoke',
-    asyncHandler(formPost(deps, superUser.revoke, '/super-users'))
+    asyncHandler(formPost(deps, commands.superUser.revoke, '/super-users'))
   );
   router.post(
     '/api/revoke-super-user',
-    asyncHandler(commandHandler(deps, conf, superUser.revoke))
+    asyncHandler(apiPost(deps, conf, commands.superUser.revoke))
   );
 
   configureAuthRoutes(router);

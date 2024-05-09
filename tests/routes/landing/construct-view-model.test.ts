@@ -1,5 +1,5 @@
 import * as E from 'fp-ts/Either';
-import {constructViewModel} from '../../../src/routes/landing/construct-view-model';
+import {constructViewModel} from '../../../src/pages/landing/construct-view-model';
 import * as TE from 'fp-ts/TaskEither';
 import {faker} from '@faker-js/faker';
 import {Dependencies} from '../../../src/dependencies';

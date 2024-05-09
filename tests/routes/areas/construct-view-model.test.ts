@@ -4,7 +4,7 @@ import {Dependencies} from '../../../src/dependencies';
 import {constructEvent} from '../../../src/types';
 import {happyPathAdapters} from '../../dependencies/happy-path-adapters.helper';
 import {pipe} from 'fp-ts/lib/function';
-import {constructViewModel} from '../../../src/routes/areas/construct-view-model';
+import {constructViewModel} from '../../../src/pages/areas/construct-view-model';
 import {arbitraryUser} from '../../types/user.helper';
 import {shouldNotBeCalled} from '../../should-not-be-called.helper';
 import {v4} from 'uuid';
