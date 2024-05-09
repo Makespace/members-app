@@ -2,7 +2,7 @@ import {Config} from '../configuration';
 import {Dependencies} from '../dependencies';
 import {createRateLimiter} from './rate-limit-sending-of-emails';
 import {sendEmail} from './send-email';
-import createLogger from 'pino';
+import createLogger, {LoggerOptions} from 'pino';
 import nodemailer from 'nodemailer';
 import smtp from 'nodemailer-smtp-transport';
 import {getTrainersStubbed} from './get-trainers-stubbed';
@@ -14,14 +14,32 @@ export const initDependencies = (
   conf: Config,
   queryEventLogDatabase: QueryEventsDatabase
 ): Dependencies => {
-  const logger = createLogger({
+  let loggerOptions: LoggerOptions;
+  loggerOptions = {
     formatters: {
       level: label => {
         return {severity: label};
       },
     },
     level: 'debug',
-  });
+  };
+
+  if (conf.PUBLIC_URL.includes('localhost')) {
+    loggerOptions = {
+      ...loggerOptions,
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          levelFirst: true,
+          singleLine: true,
+          levelKey: 'severity',
+        },
+      },
+    };
+  }
+
+  const logger = createLogger(loggerOptions);
 
   const emailTransporter = nodemailer.createTransport(
     smtp({
