@@ -3,7 +3,7 @@
 check: test lint typecheck unused-exports
 
 node_modules: package.json package-lock.json
-	npm install
+	bun install --frozen-lockfile
 	touch node_modules
 
 dev:
@@ -14,28 +14,28 @@ populate-local-dev:
 	bash ./scripts/populate-local-dev.sh
 
 fix: node_modules
-	npx gts fix
+	bun gts fix
 
 prod:
 	docker-compose --file docker-compose.yaml up --build
 
 test: node_modules
-	npx jest
+	bun jest
 
 smoketest:
 	./smoketest.sh
 
 lint: node_modules
-	npx gts lint --fix
+	bun gts lint --fix
 
 unused-exports: node_modules
-	npx ts-unused-exports ./tsconfig.json
+	bun ts-unused-exports ./tsconfig.json
 
 typecheck: node_modules
-	npx tsc --noEmit
+	bun tsc --noEmit
 
 watch-typecheck: node_modules
-	npx tsc --noEmit --watch
+	bun tsc --noEmit --watch
 
 clear-containers:
 	docker-compose --file docker-compose.yaml --file docker-compose.dev.yaml down
