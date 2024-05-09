@@ -15,7 +15,8 @@ export const sendEmail =
             from: 'member-number-lookup@makespace.org',
             to: email.recipient,
             subject: email.subject,
-            text: email.message,
+            text: email.text,
+            html: email.html,
           }),
         identity
       ),

@@ -42,7 +42,7 @@ describe('send-log-in-link', () => {
       expect(deps.sendEmail).toHaveBeenCalledWith(
         expect.objectContaining({
           recipient: emailAddress,
-          message: expect.stringContaining('token='),
+          text: expect.stringContaining('token='),
         })
       );
     });
