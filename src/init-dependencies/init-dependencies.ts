@@ -5,7 +5,6 @@ import {sendEmail} from './send-email';
 import createLogger, {LoggerOptions} from 'pino';
 import nodemailer from 'nodemailer';
 import smtp from 'nodemailer-smtp-transport';
-import {getTrainersStubbed} from './get-trainers-stubbed';
 import {QueryEventsDatabase} from './event-store/query-events-database';
 import {commitEvent} from './event-store/commit-event';
 import {getAllEvents} from './event-store/get-all-events';
@@ -55,7 +54,6 @@ export const initDependencies = (
   return {
     commitEvent: commitEvent(queryEventLogDatabase),
     getAllEvents: getAllEvents(queryEventLogDatabase),
-    getTrainers: getTrainersStubbed(),
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter),
     logger,
