@@ -1,7 +1,7 @@
 import express, {Application} from 'express';
 import {createRouter} from './router';
 import passport from 'passport';
-import session from 'cookie-session';
+import session from 'express-session';
 import httpLogger from 'pino-http';
 import {loadConfig} from './configuration';
 import {magicLink, startMagicLinkEmailPubSub} from './authentication';
@@ -36,10 +36,12 @@ app.use(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   session({
     secret: conf.SESSION_SECRET,
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    sameSite: 'strict',
-    httpOnly: true,
-    secure: conf.PUBLIC_URL.startsWith('https://'),
+    cookie: {
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: conf.PUBLIC_URL.startsWith('https://'),
+    },
   })
 );
 app.set('trust proxy', true);
