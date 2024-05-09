@@ -5,7 +5,7 @@ import {faker} from '@faker-js/faker';
 import {getAllEvents} from '../../../../src/init-dependencies/event-store/get-all-events';
 import {initQueryEventsDatabase} from '../../../../src/init-dependencies/event-store/init-events-database';
 import {ensureEventTableExists} from '../../../../src/init-dependencies/event-store/ensure-event-table-exists';
-import {DomainEvent} from '../../../../src/types';
+import {DomainEvent, EmailAddress} from '../../../../src/types';
 import {shouldNotBeCalled} from '../../../should-not-be-called.helper';
 import {pipe} from 'fp-ts/lib/function';
 import {commands} from '../../../../src/commands';
@@ -89,7 +89,19 @@ describe('lookupByEmail', () => {
   });
 
   describe('when a member with the given email exists', () => {
-    it.todo('returns their member number');
+    const command = {
+      memberNumber: faker.number.int(),
+      email: faker.internet.email() as EmailAddress,
+    };
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(command);
+      events = await framework.getAllEvents();
+    });
+    const result = lookupByEmail(command.email)(events);
+
+    it.failing('returns their member number', () => {
+      expect(result).toStrictEqual(O.some(command.memberNumber));
+    });
   });
 
   describe('when no member with the given email exists', () => {
