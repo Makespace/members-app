@@ -1,9 +1,14 @@
-/* eslint-disable unused-imports/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
-import {DomainEvent} from '../../types';
+import {DomainEvent, isEventOfType} from '../../types';
+import {pipe} from 'fp-ts/lib/function';
 
 export const lookupByEmail =
   (email: string) =>
   (events: ReadonlyArray<DomainEvent>): O.Option<number> =>
-    O.none;
+    pipe(
+      events,
+      RA.filter(isEventOfType('MemberNumberLinkedToEmail')),
+      RA.findFirst(event => event.email === email),
+      O.map(event => event.memberNumber)
+    );

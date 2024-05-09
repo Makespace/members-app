@@ -81,9 +81,9 @@ describe('lookupByEmail', () => {
     beforeEach(async () => {
       events = await framework.getAllEvents();
     });
-    const result = lookupByEmail(faker.internet.email())(events);
 
     it('returns none', () => {
+      const result = lookupByEmail(faker.internet.email())(events);
       expect(result).toStrictEqual(O.none);
     });
   });
@@ -97,9 +97,9 @@ describe('lookupByEmail', () => {
       await framework.commands.memberNumbers.linkNumberToEmail(command);
       events = await framework.getAllEvents();
     });
-    const result = lookupByEmail(command.email)(events);
 
-    it.failing('returns their member number', () => {
+    it('returns their member number', () => {
+      const result = lookupByEmail(command.email)(events);
       expect(result).toStrictEqual(O.some(command.memberNumber));
     });
   });
