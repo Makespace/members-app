@@ -1,4 +1,4 @@
-import {linkNumberToEmail} from './linkNumberToEmail';
+import {linkNumberToEmail} from './link-number-to-email';
 
 export const memberNumbers = {
   linkNumberToEmail: {
