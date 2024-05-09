@@ -61,7 +61,7 @@
     "passport": "^0.5.3",
     "passport-custom": "^1.1.1",
     "pino": "^9.0.0",
-    "pino-http": "^8.3.3",
+    "pino-http": "^10.0.0",
     "pino-pretty": "^11.0.0",
     "pubsub-js": "^1.9.4",
     "uuid": "^9.0.0",
