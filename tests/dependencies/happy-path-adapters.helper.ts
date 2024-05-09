@@ -7,7 +7,6 @@ export const happyPathAdapters: Dependencies = {
   commitEvent: () =>
     TE.right({status: StatusCodes.CREATED, message: 'dummy create event'}),
   getAllEvents: () => TE.right([]),
-  getTrainers: () => TE.right([]),
   logger: (() => undefined) as never as Logger,
   rateLimitSendingOfEmails: TE.right,
   sendEmail: () => TE.right('success'),
