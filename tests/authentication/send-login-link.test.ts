@@ -5,20 +5,36 @@ import {EmailAddress, Failure, failure} from '../../src/types';
 import {happyPathAdapters} from '../dependencies/happy-path-adapters.helper';
 import {sendLogInLink} from '../../src/authentication/send-log-in-link';
 import {Config} from '../../src/configuration';
+import {TestFramework, initTestFramework} from '../queries/test-framework';
+import {Dependencies} from '../../src/dependencies';
+import {failureWithStatus} from '../../src/types/failureWithStatus';
+import {StatusCodes} from 'http-status-codes';
 
 describe('send-log-in-link', () => {
   const emailAddress = faker.internet.email() as EmailAddress;
   const memberNumber = faker.number.int();
   const conf = {TOKEN_SECRET: 'secret'} as Config;
 
-  describe('when the email can be uniquely linked to a member number', () => {
+  let framework: TestFramework;
+  beforeEach(async () => {
+    framework = await initTestFramework();
+  });
+
+  const getAllEvents: Dependencies['getAllEvents'] = () => () =>
+    framework.getAllEvents().then(events => E.right(events));
+
+  describe('when the email is uniquely linked to a member number', () => {
     const deps = {
       ...happyPathAdapters,
-      getMemberNumber: () => TE.right(memberNumber),
+      getAllEvents,
       sendEmail: jest.fn(() => TE.right('success')),
     };
 
     beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        email: emailAddress,
+        memberNumber,
+      });
       await sendLogInLink(deps, conf)(emailAddress)();
     });
 
@@ -36,7 +52,10 @@ describe('send-log-in-link', () => {
     const errorMsg = 'db query failed';
     const deps = {
       ...happyPathAdapters,
-      getMemberNumber: () => TE.left(failure(errorMsg)({})),
+      getAllEvents: () =>
+        TE.left(
+          failureWithStatus(errorMsg, StatusCodes.INTERNAL_SERVER_ERROR)({})
+        ),
       sendEmail: jest.fn(() => TE.right('success')),
     };
 
@@ -60,11 +79,16 @@ describe('send-log-in-link', () => {
     const errorMsg = 'sending of email failed';
     const deps = {
       ...happyPathAdapters,
+      getAllEvents,
       sendEmail: () => TE.left(failure(errorMsg)()),
     };
 
     let result: E.Either<Failure, string>;
     beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        email: emailAddress,
+        memberNumber,
+      });
       result = await sendLogInLink(deps, conf)(emailAddress)();
     });
 
