@@ -1,21 +1,17 @@
 import {Config} from '../configuration';
 import {Dependencies} from '../dependencies';
-import {getMemberNumber} from './get-member-number';
-import {getMemberNumberStubbed} from './get-member-number-stubbed';
 import {createRateLimiter} from './rate-limit-sending-of-emails';
 import {sendEmail} from './send-email';
 import createLogger from 'pino';
 import nodemailer from 'nodemailer';
 import smtp from 'nodemailer-smtp-transport';
 import {getTrainersStubbed} from './get-trainers-stubbed';
-import {QueryMakespaceDatabase} from './query-database';
 import {QueryEventsDatabase} from './event-store/query-events-database';
 import {commitEvent} from './event-store/commit-event';
 import {getAllEvents} from './event-store/get-all-events';
 
 export const initDependencies = (
   conf: Config,
-  queryMembersDatabase: QueryMakespaceDatabase,
   queryEventLogDatabase: QueryEventsDatabase
 ): Dependencies => {
   const logger = createLogger({
@@ -41,9 +37,6 @@ export const initDependencies = (
   return {
     commitEvent: commitEvent(queryEventLogDatabase),
     getAllEvents: getAllEvents(queryEventLogDatabase),
-    getMemberNumber: conf.USE_STUBBED_ADAPTERS
-      ? getMemberNumberStubbed()
-      : getMemberNumber(queryMembersDatabase),
     getTrainers: getTrainersStubbed(),
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter),

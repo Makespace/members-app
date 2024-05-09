@@ -9,16 +9,14 @@ import {createTerminus} from '@godaddy/terminus';
 import http from 'http';
 import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
-import {initQueryMemberDatabase} from './init-dependencies/init-query-member-database';
 import {initQueryEventsDatabase} from './init-dependencies/event-store/init-events-database';
 import {ensureEventTableExists} from './init-dependencies/event-store/ensure-event-table-exists';
 import {initDependencies} from './init-dependencies';
 
 // Dependencies and Config
 const conf = loadConfig();
-const queryMembersDatabase = initQueryMemberDatabase(conf);
 const queryEventsDatabase = initQueryEventsDatabase();
-const deps = initDependencies(conf, queryMembersDatabase, queryEventsDatabase);
+const deps = initDependencies(conf, queryEventsDatabase);
 
 // Authentication
 passport.use(magicLink.name, magicLink.strategy(deps, conf));
