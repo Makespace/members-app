@@ -26,6 +26,6 @@ services:
     restart: unless-stopped
 
   mailcatcher:
-    image: sj26/mailcatcher@sha256:1f02ff3bd4fd728837d7ddf768346eebd39e5e2232883c41378c02691378e986
+    image: sj26/mailcatcher@sha256:3b7e234304a478032e8fc92548bfe5f9f05a8210203a4b7f89ee9985a8f7c21d
     ports:
       - 1080:1080
