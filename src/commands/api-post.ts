@@ -25,8 +25,9 @@ const getCommandFrom = <T>(body: unknown, command: Command<T>) =>
     TE.fromEither
   );
 
-const persistOrNoOp =
-  (deps: Dependencies) => (toPersist: O.Option<DomainEvent>) =>
+export const persistOrNoOp =
+  (commitEvent: Dependencies['commitEvent']) =>
+  (toPersist: O.Option<DomainEvent>) =>
     pipe(
       toPersist,
       O.matchW(
@@ -35,7 +36,7 @@ const persistOrNoOp =
             status: StatusCodes.OK,
             message: 'No new events raised',
           }),
-        deps.commitEvent
+        commitEvent
       )
     );
 
@@ -76,7 +77,7 @@ export const apiPost =
         )()
       ),
       TE.map(command.process),
-      TE.chainW(persistOrNoOp(deps)),
+      TE.chainW(persistOrNoOp(deps.commitEvent)),
       TE.match(
         ({status, message, payload}) =>
           res.status(status).send({message, payload}),
