@@ -54,6 +54,11 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
     asyncHandler(apiPost(deps, conf, commands.superUser.revoke))
   );
 
+  router.post(
+    '/api/link-number-to-email',
+    asyncHandler(apiPost(deps, conf, commands.memberNumbers.linkNumberToEmail))
+  );
+
   configureAuthRoutes(router);
 
   router.get('/ping', (req, res) => res.status(StatusCodes.OK).send('pong\n'));
