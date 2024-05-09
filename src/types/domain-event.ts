@@ -2,6 +2,7 @@ import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {pipe} from 'fp-ts/lib/function';
+import {EmailAddressCodec} from './email-address';
 
 export const DomainEvent = t.union([
   t.strict({
@@ -19,6 +20,11 @@ export const DomainEvent = t.union([
     type: t.literal('SuperUserRevoked'),
     memberNumber: t.number,
     revokedAt: tt.DateFromISOString,
+  }),
+  t.strict({
+    type: t.literal('MemberNumberLinkedToEmail'),
+    memberNumber: t.number,
+    email: EmailAddressCodec,
   }),
 ]);
 
