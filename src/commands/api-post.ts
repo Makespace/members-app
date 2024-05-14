@@ -5,14 +5,13 @@ import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
 import * as t from 'io-ts';
-import {DomainEvent} from '../types';
-import * as O from 'fp-ts/Option';
 import {StatusCodes} from 'http-status-codes';
 import {failureWithStatus} from '../types/failureWithStatus';
 import {Dependencies} from '../dependencies';
 import {sequenceS} from 'fp-ts/lib/Apply';
 import {Command} from '../types/command';
 import {Actor} from '../types/actor';
+import {persistOrNoOp} from './persist-or-no-op';
 
 const getCommandFrom = <T>(body: unknown, command: Command<T>) =>
   pipe(
@@ -24,21 +23,6 @@ const getCommandFrom = <T>(body: unknown, command: Command<T>) =>
     ),
     TE.fromEither
   );
-
-export const persistOrNoOp =
-  (commitEvent: Dependencies['commitEvent']) =>
-  (toPersist: O.Option<DomainEvent>) =>
-    pipe(
-      toPersist,
-      O.matchW(
-        () =>
-          TE.right({
-            status: StatusCodes.OK,
-            message: 'No new events raised',
-          }),
-        commitEvent
-      )
-    );
 
 const getActorFrom = (authorization: unknown, conf: Config) =>
   pipe(

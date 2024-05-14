@@ -3,8 +3,6 @@ import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
-import {DomainEvent} from '../types';
-import * as O from 'fp-ts/Option';
 import {StatusCodes} from 'http-status-codes';
 import {failureWithStatus} from '../types/failureWithStatus';
 import {Dependencies} from '../dependencies';
@@ -13,6 +11,7 @@ import {Command} from '../types/command';
 import {Actor} from '../types/actor';
 import {getUserFromSession} from '../authentication';
 import {oopsPage} from '../shared-pages';
+import {persistOrNoOp} from './persist-or-no-op';
 
 const getCommandFrom = <T>(body: unknown, command: Command<T>) =>
   pipe(
@@ -24,20 +23,6 @@ const getCommandFrom = <T>(body: unknown, command: Command<T>) =>
     ),
     TE.fromEither
   );
-
-const persistOrNoOp =
-  (deps: Dependencies) => (toPersist: O.Option<DomainEvent>) =>
-    pipe(
-      toPersist,
-      O.matchW(
-        () =>
-          TE.right({
-            status: StatusCodes.OK,
-            message: 'No new events raised',
-          }),
-        deps.commitEvent
-      )
-    );
 
 const getActorFrom = (session: unknown, deps: Dependencies) =>
   pipe(
@@ -66,7 +51,7 @@ export const formPost =
         )()
       ),
       TE.map(command.process),
-      TE.chainW(persistOrNoOp(deps)),
+      TE.chainW(persistOrNoOp(deps.commitEvent)),
       TE.mapLeft(failure => {
         deps.logger.warn(
           {...failure, url: req.originalUrl},
