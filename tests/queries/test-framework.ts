@@ -6,9 +6,9 @@ import {DomainEvent} from '../../src/types';
 import {shouldNotBeCalled} from '../should-not-be-called.helper';
 import {pipe} from 'fp-ts/lib/function';
 import {commands} from '../../src/commands';
-import {persistOrNoOp} from '../../src/commands/api-post';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
 import {Command} from '../../src/types/command';
+import {persistOrNoOp} from '../../src/commands/persist-or-no-op';
 
 type ToFrameworkCommands<T> = {
   [K in keyof T]: {
