@@ -23,7 +23,7 @@ test: node_modules
 	bun jest
 
 smoketest:
-	./smoketest.sh
+	./scripts/smoketest.sh
 
 lint: node_modules
 	bun gts lint --fix
