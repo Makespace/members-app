@@ -7,13 +7,14 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {pipe} from 'fp-ts/lib/function';
 import {filterByName} from '../../types/domain-event';
+import {resource} from './resource';
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,
   revokedAt: tt.DateFromISOString,
 });
 
-type RevokeSuperUser = t.TypeOf<typeof codec>;
+export type RevokeSuperUser = t.TypeOf<typeof codec>;
 
 const process = (input: {
   command: RevokeSuperUser;
@@ -35,6 +36,7 @@ const process = (input: {
 
 export const revoke: Command<RevokeSuperUser> = {
   process,
+  resource,
   decode: codec.decode,
   isAuthorized: isAdminOrSuperUser,
 };

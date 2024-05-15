@@ -37,8 +37,14 @@ const process = (input: {
     )
   );
 
+const resource = () => ({
+  type: 'MemberNumberEmailPairings',
+  id: 'MemberNumberEmailPairings',
+});
+
 export const linkNumberToEmail: Command<LinkNumberToEmail> = {
   process,
+  resource,
   decode: codec.decode,
   isAuthorized: isAdminOrSuperUser,
 };
