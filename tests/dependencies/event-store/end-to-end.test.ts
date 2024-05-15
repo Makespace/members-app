@@ -32,7 +32,7 @@ describe('event-store end-to-end', () => {
       await ensureEventTableExists(queryEventsDatabase)();
       await pipe(
         event,
-        deps.commitEvent,
+        deps.commitEvent('', 0),
         TE.mapLeft(left => error(left)),
         TE.getOrElse(shouldNotBeCalled)
       )();
