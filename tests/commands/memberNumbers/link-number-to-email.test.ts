@@ -8,7 +8,8 @@ import {
   isEventOfType,
 } from '../../../src/types';
 import {pipe} from 'fp-ts/lib/function';
-import {shouldNotBeCalled} from '../../should-not-be-called.helper';
+import {getSomeOrFail} from '../../helpers';
+
 describe('linkNumberToEmail', () => {
   const command = {
     email: faker.internet.email() as EmailAddress,
@@ -46,7 +47,7 @@ describe('linkNumberToEmail', () => {
       {command, events},
       linkNumberToEmail.process,
       O.filter(isEventOfType('MemberNumberLinkedToEmail')),
-      O.getOrElseW(shouldNotBeCalled)
+      getSomeOrFail
     );
 
     it('raises an event linking the number and email', () => {

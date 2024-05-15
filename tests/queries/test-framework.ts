@@ -1,14 +1,14 @@
-import * as TE from 'fp-ts/TaskEither';
+import * as T from 'fp-ts/Task';
 import {getAllEvents} from '../../src/init-dependencies/event-store/get-all-events';
 import {initQueryEventsDatabase} from '../../src/init-dependencies/event-store/init-events-database';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-event-table-exists';
 import {DomainEvent} from '../../src/types';
-import {shouldNotBeCalled} from '../should-not-be-called.helper';
 import {pipe} from 'fp-ts/lib/function';
 import {commands} from '../../src/commands';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
 import {Command} from '../../src/types/command';
 import {persistOrNoOp} from '../../src/commands/persist-or-no-op';
+import {getRightOrFail} from '../helpers';
 
 type ToFrameworkCommands<T> = {
   [K in keyof T]: {
@@ -31,10 +31,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   const frameworkCommitEvent = commitEvent(queryEventsDatabase);
   await ensureEventTableExists(queryEventsDatabase)();
   const frameworkGetAllEvents = () =>
-    pipe(
-      getAllEvents(queryEventsDatabase)(),
-      TE.getOrElse(shouldNotBeCalled)
-    )();
+    pipe(getAllEvents(queryEventsDatabase)(), T.map(getRightOrFail))();
 
   const frameworkify =
     <T>(command: Command<T>) =>

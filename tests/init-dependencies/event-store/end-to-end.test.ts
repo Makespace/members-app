@@ -1,5 +1,5 @@
 import * as E from 'fp-ts/Either';
-import * as TE from 'fp-ts/TaskEither';
+import * as T from 'fp-ts/Task';
 import {faker} from '@faker-js/faker';
 import {Dependencies} from '../../../src/dependencies';
 import {ensureEventTableExists} from '../../../src/init-dependencies/event-store/ensure-event-table-exists';
@@ -9,8 +9,7 @@ import {UUID} from 'io-ts-types';
 import {commitEvent} from '../../../src/init-dependencies/event-store/commit-event';
 import {getAllEvents} from '../../../src/init-dependencies/event-store/get-all-events';
 import {pipe} from 'fp-ts/lib/function';
-import {error} from 'console';
-import {shouldNotBeCalled} from '../../should-not-be-called.helper';
+import {getRightOrFail} from '../../helpers';
 
 describe('event-store end-to-end', () => {
   describe('commit event on an empty store', () => {
@@ -30,12 +29,7 @@ describe('event-store end-to-end', () => {
         getAllEvents: getAllEvents(queryEventsDatabase),
       };
       await ensureEventTableExists(queryEventsDatabase)();
-      await pipe(
-        event,
-        deps.commitEvent('', 0),
-        TE.mapLeft(left => error(left)),
-        TE.getOrElse(shouldNotBeCalled)
-      )();
+      await pipe(event, deps.commitEvent('', 0), T.map(getRightOrFail))();
     });
 
     it('persists and returns the event', async () => {

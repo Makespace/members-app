@@ -9,7 +9,7 @@ import {constructEvent} from '../../../src/types';
 import * as T from 'fp-ts/Task';
 import {faker} from '@faker-js/faker';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {shouldNotBeCalled} from '../../should-not-be-called.helper';
+import {getRightOrFail} from '../../helpers';
 
 describe('construct-view-model', () => {
   it('succeeds if the logged in user is not a super user', async () => {
@@ -28,7 +28,7 @@ describe('construct-view-model', () => {
     const result = await pipe(
       memberToBeSuperUser,
       constructViewModel(deps),
-      TE.getOrElse(shouldNotBeCalled),
+      T.map(getRightOrFail),
       T.map(viewModel => viewModel.superUsers),
       T.map(RA.map(superUser => superUser.memberNumber))
     )();
