@@ -2,7 +2,7 @@ import {DomainEvent, constructEvent} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
-import {Command} from '../../types/command';
+import {Command} from '../command';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {pipe} from 'fp-ts/lib/function';

@@ -7,7 +7,7 @@ import {StatusCodes} from 'http-status-codes';
 import {failureWithStatus} from '../types/failureWithStatus';
 import {Dependencies} from '../dependencies';
 import {sequenceS} from 'fp-ts/lib/Apply';
-import {Command} from '../types/command';
+import {Command} from './command';
 import {Actor} from '../types/actor';
 import {getUserFromSession} from '../authentication';
 import {oopsPage} from '../shared-pages';

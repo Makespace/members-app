@@ -4,7 +4,7 @@ import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
-import {Command} from '../../types/command';
+import {Command} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 
 const codec = t.strict({
