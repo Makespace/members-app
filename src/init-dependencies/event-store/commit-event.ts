@@ -10,7 +10,7 @@ import {QueryEventsDatabase} from './query-events-database';
 
 export const commitEvent =
   (queryDatabase: QueryEventsDatabase): Dependencies['commitEvent'] =>
-  (resource, newVersion) =>
+  (resource, lastKnownVersion) =>
   (
     event
   ): TE.TaskEither<

@@ -7,7 +7,7 @@ import {StatusCodes} from 'http-status-codes';
 export type Dependencies = {
   commitEvent: (
     resource: string,
-    newVersion: number
+    lastKnownVersion: number
   ) => (
     event: DomainEvent
   ) => TE.TaskEither<
