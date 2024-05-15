@@ -1,7 +1,7 @@
 import {Type} from 'io-ts';
-import {DomainEvent} from './domain-event';
+import {DomainEvent} from '../types/domain-event';
 import * as O from 'fp-ts/Option';
-import {Actor} from './actor';
+import {Actor} from '../types/actor';
 
 export type Command<T> = {
   process: (input: {
