@@ -4,6 +4,7 @@ import * as O from 'fp-ts/Option';
 import {Actor} from '../types/actor';
 
 export type Command<T> = {
+  resource: (command: T) => {type: string; id: string};
   process: (input: {
     command: T;
     events: ReadonlyArray<DomainEvent>;

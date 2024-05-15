@@ -29,8 +29,14 @@ const process = (input: {
     )
   );
 
+const resource = (command: CreateArea) => ({
+  type: 'Area',
+  id: command.id,
+});
+
 export const create: Command<CreateArea> = {
   process,
+  resource,
   decode: codec.decode,
   isAuthorized: isAdminOrSuperUser,
 };

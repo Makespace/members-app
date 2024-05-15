@@ -7,13 +7,14 @@ import {pipe} from 'fp-ts/lib/function';
 import {Command} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {filterByName} from '../../types/domain-event';
+import {resource} from './resource';
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,
   declaredAt: tt.DateFromISOString,
 });
 
-type DeclareSuperUserCommand = t.TypeOf<typeof codec>;
+export type DeclareSuperUserCommand = t.TypeOf<typeof codec>;
 
 const process = (input: {
   command: DeclareSuperUserCommand;
@@ -35,6 +36,7 @@ const process = (input: {
 
 export const declare: Command<DeclareSuperUserCommand> = {
   process,
+  resource,
   decode: codec.decode,
   isAuthorized: isAdminOrSuperUser,
 };
