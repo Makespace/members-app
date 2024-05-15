@@ -2,7 +2,7 @@ import * as TE from 'fp-ts/TaskEither';
 import {faker} from '@faker-js/faker';
 import {Dependencies} from '../../../src/dependencies';
 import {constructEvent} from '../../../src/types';
-import {happyPathAdapters} from '../../dependencies/happy-path-adapters.helper';
+import {happyPathAdapters} from '../../init-dependencies/happy-path-adapters.helper';
 import {pipe} from 'fp-ts/lib/function';
 import {constructViewModel} from '../../../src/pages/areas/construct-view-model';
 import {arbitraryUser} from '../../types/user.helper';
