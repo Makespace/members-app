@@ -8,58 +8,49 @@ import {pipe} from 'fp-ts/lib/function';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-event-table-exists';
 import {getRightOrFail} from '../helpers';
+import {QueryEventsDatabase} from '../../src/init-dependencies/event-store/query-events-database';
+
+const arbitraryMemberNumberLinkedToEmaiEvent = () =>
+  constructEvent('MemberNumberLinkedToEmail')({
+    memberNumber: faker.number.int(),
+    email: faker.internet.email() as EmailAddress,
+  });
 
 describe('commit-event', () => {
+  const event = arbitraryMemberNumberLinkedToEmaiEvent();
+  let queryDatabase: QueryEventsDatabase;
+  let getTestEvents: () => Promise<ReadonlyArray<DomainEvent>>;
+  beforeEach(async () => {
+    queryDatabase = initQueryEventsDatabase();
+    await ensureEventTableExists(queryDatabase)();
+    getTestEvents = () =>
+      pipe(getAllEvents(queryDatabase)(), T.map(getRightOrFail))();
+  });
+
   describe('when the last known version is the latest persisted version', () => {
-    const event = constructEvent('MemberNumberLinkedToEmail')({
-      memberNumber: faker.number.int(),
-      email: faker.internet.email() as EmailAddress,
-    });
-
-    let events: ReadonlyArray<DomainEvent>;
     beforeEach(async () => {
-      const queryDatabase = initQueryEventsDatabase();
-      await ensureEventTableExists(queryDatabase)();
       await commitEvent(queryDatabase)('MemberNumberEmailPairings', 1)(event)();
-      events = await pipe(
-        getAllEvents(queryDatabase)(),
-        T.map(getRightOrFail)
-      )();
     });
 
-    it('persists the event', () => {
-      expect(events).toStrictEqual([event]);
+    it('persists the event', async () => {
+      expect(await getTestEvents()).toStrictEqual([event]);
     });
   });
 
   describe('when the last known version is out of date', () => {
-    const event = constructEvent('MemberNumberLinkedToEmail')({
-      memberNumber: faker.number.int(),
-      email: faker.internet.email() as EmailAddress,
-    });
-    const competingEvent = constructEvent('MemberNumberLinkedToEmail')({
-      memberNumber: faker.number.int(),
-      email: faker.internet.email() as EmailAddress,
-    });
-    let events: ReadonlyArray<DomainEvent>;
+    const competingEvent = arbitraryMemberNumberLinkedToEmaiEvent();
     let result: E.Either<unknown, unknown>;
     beforeEach(async () => {
-      const queryDatabase = initQueryEventsDatabase();
-      await ensureEventTableExists(queryDatabase)();
       await commitEvent(queryDatabase)('MemberNumberEmailPairings', 1)(
         competingEvent
       )();
       result = await commitEvent(queryDatabase)('MemberNumberEmailPairings', 1)(
         event
       )();
-      events = await pipe(
-        getAllEvents(queryDatabase)(),
-        T.map(getRightOrFail)
-      )();
     });
 
-    it.failing('does not persist the event', () => {
-      expect(events).toStrictEqual([competingEvent]);
+    it.failing('does not persist the event', async () => {
+      expect(await getTestEvents()).toStrictEqual([competingEvent]);
     });
 
     it.failing('returns on left', () => {
