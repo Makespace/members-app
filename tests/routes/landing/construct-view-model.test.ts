@@ -1,4 +1,5 @@
 import {constructViewModel} from '../../../src/pages/landing/construct-view-model';
+import * as T from 'fp-ts/Task';
 import * as TE from 'fp-ts/TaskEither';
 import {faker} from '@faker-js/faker';
 import {Dependencies} from '../../../src/dependencies';
@@ -6,7 +7,7 @@ import {constructEvent} from '../../../src/types';
 import {happyPathAdapters} from '../../init-dependencies/happy-path-adapters.helper';
 import {pipe} from 'fp-ts/lib/function';
 import {arbitraryUser} from '../../types/user.helper';
-import {shouldNotBeCalled} from '../../should-not-be-called.helper';
+import {getRightOrFail} from '../../helpers';
 
 describe('construct-view-model', () => {
   describe('when the user has been declared to be a super user', () => {
@@ -26,7 +27,7 @@ describe('construct-view-model', () => {
       const viewModel = await pipe(
         user,
         constructViewModel(deps),
-        TE.getOrElse(shouldNotBeCalled)
+        T.map(getRightOrFail)
       )();
       expect(viewModel.isSuperUser).toBe(true);
     });
@@ -39,7 +40,7 @@ describe('construct-view-model', () => {
       const viewModel = await pipe(
         arbitraryUser(),
         constructViewModel(deps),
-        TE.getOrElse(shouldNotBeCalled)
+        T.map(getRightOrFail)
       )();
       expect(viewModel.isSuperUser).toBe(false);
     });
