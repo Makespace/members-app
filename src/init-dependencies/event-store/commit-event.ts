@@ -1,16 +1,18 @@
+/* eslint-disable unused-imports/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {StatusCodes} from 'http-status-codes';
 import {FailureWithStatus} from '../../types/failureWithStatus';
 import * as TE from 'fp-ts/TaskEither';
 import {Dependencies} from '../../dependencies';
 import {pipe} from 'fp-ts/lib/function';
-import {DomainEvent} from '../../types';
 import {v4 as uuidv4} from 'uuid';
 import {QueryEventsDatabase} from './query-events-database';
 
 export const commitEvent =
   (queryDatabase: QueryEventsDatabase): Dependencies['commitEvent'] =>
+  (resource, newVersion) =>
   (
-    event: DomainEvent
+    event
   ): TE.TaskEither<
     FailureWithStatus,
     {status: StatusCodes.CREATED; message: string}

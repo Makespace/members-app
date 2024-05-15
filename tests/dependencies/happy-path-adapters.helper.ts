@@ -4,7 +4,7 @@ import {Logger} from 'pino';
 import {StatusCodes} from 'http-status-codes';
 
 export const happyPathAdapters: Dependencies = {
-  commitEvent: () =>
+  commitEvent: () => () =>
     TE.right({status: StatusCodes.CREATED, message: 'dummy create event'}),
   getAllEvents: () => TE.right([]),
   logger: (() => undefined) as never as Logger,
