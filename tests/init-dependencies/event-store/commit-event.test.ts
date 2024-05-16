@@ -1,14 +1,14 @@
 import {faker} from '@faker-js/faker';
 import * as E from 'fp-ts/Either';
 import * as T from 'fp-ts/Task';
-import {DomainEvent, EmailAddress, constructEvent} from '../../src/types';
-import {getAllEvents} from '../../src/init-dependencies/event-store/get-all-events';
-import {initQueryEventsDatabase} from '../../src/init-dependencies/event-store/init-events-database';
+import {DomainEvent, EmailAddress, constructEvent} from '../../../src/types';
+import {getAllEvents} from '../../../src/init-dependencies/event-store/get-all-events';
+import {initQueryEventsDatabase} from '../../../src/init-dependencies/event-store/init-events-database';
 import {pipe} from 'fp-ts/lib/function';
-import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
-import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-event-table-exists';
-import {getRightOrFail} from '../helpers';
-import {QueryEventsDatabase} from '../../src/init-dependencies/event-store/query-events-database';
+import {commitEvent} from '../../../src/init-dependencies/event-store/commit-event';
+import {ensureEventTableExists} from '../../../src/init-dependencies/event-store/ensure-event-table-exists';
+import {getRightOrFail} from '../../helpers';
+import {QueryEventsDatabase} from '../../../src/init-dependencies/event-store/query-events-database';
 
 const arbitraryMemberNumberLinkedToEmaiEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
