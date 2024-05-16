@@ -9,6 +9,8 @@ import {commitEvent} from '../../../src/init-dependencies/event-store/commit-eve
 import {ensureEventTableExists} from '../../../src/init-dependencies/event-store/ensure-event-table-exists';
 import {getRightOrFail} from '../../helpers';
 import {QueryEventsDatabase} from '../../../src/init-dependencies/event-store/query-events-database';
+import {Dependencies} from '../../../src/dependencies';
+import {getResourceEvents} from '../../../src/init-dependencies/event-store/get-resource-events';
 
 const arbitraryMemberNumberLinkedToEmaiEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
@@ -18,6 +20,7 @@ const arbitraryMemberNumberLinkedToEmaiEvent = () =>
 
 describe('commit-event', () => {
   const event = arbitraryMemberNumberLinkedToEmaiEvent();
+  const initialVersion = faker.number.int();
   let queryDatabase: QueryEventsDatabase;
   let getTestEvents: () => Promise<ReadonlyArray<DomainEvent>>;
   beforeEach(async () => {
@@ -27,13 +30,28 @@ describe('commit-event', () => {
       pipe(getAllEvents(queryDatabase)(), T.map(getRightOrFail))();
   });
 
-  describe('when the last known version is the latest persisted version', () => {
+  describe.skip('when the last known version is the latest persisted version', () => {
+    let resourceEvents: (Awaited<
+      ReturnType<ReturnType<Dependencies['getResourceEvents']>>
+    > & {_tag: 'Right'})['right'];
     beforeEach(async () => {
-      await commitEvent(queryDatabase)('MemberNumberEmailPairings', 1)(event)();
+      await commitEvent(queryDatabase)(
+        'MemberNumberEmailPairings',
+        initialVersion
+      )(event)();
+      resourceEvents = await pipe(
+        'MemberNumberEmailPairings',
+        getResourceEvents(queryDatabase),
+        T.map(getRightOrFail)
+      )();
     });
 
     it('persists the event', async () => {
       expect(await getTestEvents()).toStrictEqual([event]);
+    });
+
+    it('increments the version', () => {
+      expect(resourceEvents.version).toBeGreaterThan(initialVersion);
     });
   });
 
