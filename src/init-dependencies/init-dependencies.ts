@@ -8,6 +8,7 @@ import smtp from 'nodemailer-smtp-transport';
 import {QueryEventsDatabase} from './event-store/query-events-database';
 import {commitEvent} from './event-store/commit-event';
 import {getAllEvents} from './event-store/get-all-events';
+import {getResourceEvents} from './event-store/get-resource-events';
 
 export const initDependencies = (
   conf: Config,
@@ -54,6 +55,7 @@ export const initDependencies = (
   return {
     commitEvent: commitEvent(queryEventLogDatabase),
     getAllEvents: getAllEvents(queryEventLogDatabase),
+    getResourceEvents: getResourceEvents(queryEventLogDatabase),
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter),
     logger,

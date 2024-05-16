@@ -18,6 +18,13 @@ export type Dependencies = {
     FailureWithStatus,
     ReadonlyArray<DomainEvent>
   >;
+  getResourceEvents: (resource: string) => TE.TaskEither<
+    FailureWithStatus,
+    {
+      events: ReadonlyArray<DomainEvent>;
+      version: number;
+    }
+  >;
   logger: Logger;
   rateLimitSendingOfEmails: (email: Email) => TE.TaskEither<Failure, Email>;
   sendEmail: (email: Email) => TE.TaskEither<Failure, string>;
