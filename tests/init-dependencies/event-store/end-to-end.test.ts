@@ -11,6 +11,7 @@ import {getRightOrFail} from '../../helpers';
 import {QueryEventsDatabase} from '../../../src/init-dependencies/event-store/query-events-database';
 import {Dependencies} from '../../../src/dependencies';
 import {getResourceEvents} from '../../../src/init-dependencies/event-store/get-resource-events';
+import {RightOfTaskEither} from '../../type-optics';
 
 const arbitraryMemberNumberLinkedToEmaiEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
@@ -37,9 +38,9 @@ describe('event-store end-to-end', () => {
     });
 
     describe.skip('committing when the last known version is the latest persisted version', () => {
-      let resourceEvents: (Awaited<
-        ReturnType<ReturnType<Dependencies['getResourceEvents']>>
-      > & {_tag: 'Right'})['right'];
+      let resourceEvents: RightOfTaskEither<
+        ReturnType<Dependencies['getResourceEvents']>
+      >;
       beforeEach(async () => {
         await commitEvent(queryDatabase)(
           'MemberNumberEmailPairings',
