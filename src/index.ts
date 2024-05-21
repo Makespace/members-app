@@ -9,7 +9,7 @@ import {createTerminus} from '@godaddy/terminus';
 import http from 'http';
 import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
-import {initQueryEventsDatabase} from './init-dependencies/event-store/init-events-database';
+import {initQueryEventsDatabase} from './init-dependencies/event-store/init-query-events-database';
 import {ensureEventTableExists} from './init-dependencies/event-store/ensure-event-table-exists';
 import {initDependencies} from './init-dependencies';
 
