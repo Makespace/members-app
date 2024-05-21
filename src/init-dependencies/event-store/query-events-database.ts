@@ -1,8 +1,7 @@
 import * as TE from 'fp-ts/TaskEither';
 import {FailureWithStatus} from '../../types/failureWithStatus';
-import {InArgs} from '@libsql/client/.';
+import {InStatement} from '@libsql/client/.';
 
 export type QueryEventsDatabase = (
-  query: string,
-  args: InArgs
+  statements: InStatement[]
 ) => TE.TaskEither<FailureWithStatus, unknown>;

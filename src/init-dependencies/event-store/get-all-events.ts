@@ -39,7 +39,7 @@ export const getAllEvents =
   (queryDatabase: QueryEventsDatabase): Dependencies['getAllEvents'] =>
   () =>
     pipe(
-      queryDatabase('SELECT * FROM events;', []),
+      queryDatabase([{sql: 'SELECT * FROM events;', args: {}}]),
       TE.chainEitherK(
         flow(
           EventsFromDb.decode,
