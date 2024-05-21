@@ -5,6 +5,7 @@ export const ensureEventTableExists = (queryDatabase: QueryEventsDatabase) =>
     `
     CREATE TABLE IF NOT EXISTS events (
       id TEXT,
+      resource_version number,
       resource_id TEXT,
       resource_type TEXT,
       event_type TEXT,
