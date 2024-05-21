@@ -1,6 +1,6 @@
 import * as T from 'fp-ts/Task';
 import {getAllEvents} from '../../src/init-dependencies/event-store/get-all-events';
-import {initQueryEventsDatabase} from '../../src/init-dependencies/event-store/init-events-database';
+import {initQueryEventsDatabase} from '../../src/init-dependencies/event-store/init-query-events-database';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-event-table-exists';
 import {DomainEvent} from '../../src/types';
 import {pipe} from 'fp-ts/lib/function';
