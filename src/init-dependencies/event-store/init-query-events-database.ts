@@ -7,16 +7,10 @@ import {pipe} from 'fp-ts/lib/function';
 
 export const initQueryEventsDatabase = (): QueryEventsDatabase => {
   const client = libsqlClient.createClient({url: ':memory:'});
-  return (query: string, args: libsqlClient.InArgs) =>
+  return statements =>
     pipe(
       TE.tryCatch(
-        () =>
-          client.batch([
-            {
-              sql: query,
-              args: args,
-            },
-          ]),
+        () => client.batch(statements),
         failureWithStatus('DB query failed', StatusCodes.INTERNAL_SERVER_ERROR)
       ),
       TE.map(results => results[0])

@@ -1,8 +1,9 @@
 import {QueryEventsDatabase} from './query-events-database';
 
 export const ensureEventTableExists = (queryDatabase: QueryEventsDatabase) =>
-  queryDatabase(
-    `
+  queryDatabase([
+    {
+      sql: `
     CREATE TABLE IF NOT EXISTS events (
       id TEXT,
       resource_version number,
@@ -12,5 +13,6 @@ export const ensureEventTableExists = (queryDatabase: QueryEventsDatabase) =>
       payload TEXT
     );
   `,
-    []
-  );
+      args: {},
+    },
+  ]);
