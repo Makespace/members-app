@@ -21,8 +21,8 @@ export const commitEvent =
       event,
       ({type, ...payload}) => ({
         id: uuidv4(),
-        resource_id: '2d6f5d4b-5f90-4894-867a-73c27d0e408e',
-        resource_type: 'CatchAll',
+        resource_id: resource.id,
+        resource_type: resource.type,
         event_type: type,
         payload: JSON.stringify(payload),
       }),
