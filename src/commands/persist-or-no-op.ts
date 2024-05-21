@@ -16,6 +16,6 @@ export const persistOrNoOp =
             status: StatusCodes.OK,
             message: 'No new events raised',
           }),
-        commitEvent('', 0)
+        commitEvent({id: '', type: ''}, 0)
       )
     );

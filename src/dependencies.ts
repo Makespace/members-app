@@ -3,10 +3,11 @@ import {Failure, Email, DomainEvent} from './types';
 import * as TE from 'fp-ts/TaskEither';
 import {FailureWithStatus} from './types/failureWithStatus';
 import {StatusCodes} from 'http-status-codes';
+import {Resource} from './types/resource';
 
 export type Dependencies = {
   commitEvent: (
-    resource: string,
+    resource: Resource,
     lastKnownVersion: number
   ) => (
     event: DomainEvent
@@ -18,7 +19,7 @@ export type Dependencies = {
     FailureWithStatus,
     ReadonlyArray<DomainEvent>
   >;
-  getResourceEvents: (resource: string) => TE.TaskEither<
+  getResourceEvents: (resource: Resource) => TE.TaskEither<
     FailureWithStatus,
     {
       events: ReadonlyArray<DomainEvent>;

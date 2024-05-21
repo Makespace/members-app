@@ -21,6 +21,7 @@ const arbitraryMemberNumberLinkedToEmaiEvent = () =>
 
 describe('event-store end-to-end', () => {
   describe('setup event store', () => {
+    const resource = {id: 'singleton', type: 'MemberNumberEmailPairings'};
     const event = arbitraryMemberNumberLinkedToEmaiEvent();
     const initialVersion = faker.number.int();
     let queryDatabase: QueryEventsDatabase;
@@ -42,12 +43,9 @@ describe('event-store end-to-end', () => {
         ReturnType<Dependencies['getResourceEvents']>
       >;
       beforeEach(async () => {
-        await commitEvent(queryDatabase)(
-          'MemberNumberEmailPairings',
-          initialVersion
-        )(event)();
+        await commitEvent(queryDatabase)(resource, initialVersion)(event)();
         resourceEvents = await pipe(
-          'MemberNumberEmailPairings',
+          resource,
           getResourceEvents(queryDatabase),
           T.map(getRightOrFail)
         )();
@@ -66,13 +64,8 @@ describe('event-store end-to-end', () => {
       const competingEvent = arbitraryMemberNumberLinkedToEmaiEvent();
       let result: E.Either<unknown, unknown>;
       beforeEach(async () => {
-        await commitEvent(queryDatabase)('MemberNumberEmailPairings', 1)(
-          competingEvent
-        )();
-        result = await commitEvent(queryDatabase)(
-          'MemberNumberEmailPairings',
-          1
-        )(event)();
+        await commitEvent(queryDatabase)(resource, 1)(competingEvent)();
+        result = await commitEvent(queryDatabase)(resource, 1)(event)();
       });
 
       it.failing('does not persist the event', async () => {
