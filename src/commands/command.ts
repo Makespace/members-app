@@ -2,9 +2,10 @@ import {Type} from 'io-ts';
 import {DomainEvent} from '../types/domain-event';
 import * as O from 'fp-ts/Option';
 import {Actor} from '../types/actor';
+import {Resource} from '../types/resource';
 
 export type Command<T> = {
-  resource: (command: T) => {type: string; id: string};
+  resource: (command: T) => Resource;
   process: (input: {
     command: T;
     events: ReadonlyArray<DomainEvent>;
