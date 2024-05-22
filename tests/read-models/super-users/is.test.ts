@@ -1,47 +1,40 @@
 import {faker} from '@faker-js/faker';
-import * as RA from 'fp-ts/ReadonlyArray';
 import {pipe} from 'fp-ts/lib/function';
 import {constructEvent} from '../../../src/types';
 import {arbitraryUser} from '../../types/user.helper';
-import {getAll} from '../../../src/queries/super-users/get-all';
+import {is} from '../../../src/read-models/super-users/is';
 
-describe('get-all', () => {
+describe('is', () => {
   describe('when there are no super-users', () => {
-    const superUsers = pipe([], getAll());
-    it('returns an empty array', () => {
-      expect(superUsers).toStrictEqual([]);
+    const isSuperUser = pipe([], is(arbitraryUser().memberNumber));
+    it('returns false', () => {
+      expect(isSuperUser).toBe(false);
     });
   });
 
-  describe('when there are super-users', () => {
+  describe('when the user is a super-user', () => {
     const user = arbitraryUser();
-    const superUsers = pipe(
+    const isSuperUser = pipe(
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: user.memberNumber,
           declaredAt: faker.date.past(),
         }),
       ],
-      getAll(),
-      RA.map(superUser => superUser.memberNumber)
+      is(user.memberNumber)
     );
 
-    it('returns them', () => {
-      expect(superUsers).toStrictEqual([user.memberNumber]);
+    it('returns true', () => {
+      expect(isSuperUser).toBe(true);
     });
   });
 
   describe('when a super-user status was revoked', () => {
     const revokedUser = arbitraryUser();
-    const nonRevokedUser = arbitraryUser();
-    const superUsers = pipe(
+    const isSuperUser = pipe(
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: revokedUser.memberNumber,
-          declaredAt: faker.date.past(),
-        }),
-        constructEvent('SuperUserDeclared')({
-          memberNumber: nonRevokedUser.memberNumber,
           declaredAt: faker.date.past(),
         }),
         constructEvent('SuperUserRevoked')({
@@ -49,11 +42,11 @@ describe('get-all', () => {
           revokedAt: faker.date.past(),
         }),
       ],
-      getAll(),
-      RA.map(superUser => superUser.memberNumber)
+      is(revokedUser.memberNumber)
     );
-    it('does not return that user', () => {
-      expect(superUsers).toStrictEqual([nonRevokedUser.memberNumber]);
+
+    it('returns false', () => {
+      expect(isSuperUser).toBe(false);
     });
   });
 });

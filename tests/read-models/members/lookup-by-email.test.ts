@@ -1,5 +1,5 @@
 import * as O from 'fp-ts/Option';
-import {lookupByEmail} from '../../../src/queries/members/lookup-by-email';
+import {lookupByEmail} from '../../../src/read-models/members/lookup-by-email';
 import {faker} from '@faker-js/faker';
 import {DomainEvent, EmailAddress} from '../../../src/types';
 import {TestFramework, initTestFramework} from '../test-framework';

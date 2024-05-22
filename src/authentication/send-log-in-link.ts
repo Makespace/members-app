@@ -5,7 +5,7 @@ import {Dependencies} from '../dependencies';
 import {Email, EmailAddress, Failure, failure} from '../types';
 import {Config} from '../configuration';
 import {magicLink} from '.';
-import {queries} from '../queries';
+import {readModels} from '../read-models';
 import mjml2html from 'mjml';
 
 const toEmail =
@@ -49,7 +49,7 @@ type SedLogInLink = (
 
 const lookupMemberNumber = (emailAddress: string) =>
   flow(
-    queries.members.lookupByEmail(emailAddress),
+    readModels.members.lookupByEmail(emailAddress),
     E.fromOption(() => failure('No member associated with that email')())
   );
 

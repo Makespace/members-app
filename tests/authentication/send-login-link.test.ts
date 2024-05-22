@@ -5,7 +5,7 @@ import {EmailAddress, Failure, failure} from '../../src/types';
 import {happyPathAdapters} from '../init-dependencies/happy-path-adapters.helper';
 import {sendLogInLink} from '../../src/authentication/send-log-in-link';
 import {Config} from '../../src/configuration';
-import {TestFramework, initTestFramework} from '../queries/test-framework';
+import {TestFramework, initTestFramework} from '../read-models/test-framework';
 import {Dependencies} from '../../src/dependencies';
 import {failureWithStatus} from '../../src/types/failureWithStatus';
 import {StatusCodes} from 'http-status-codes';
