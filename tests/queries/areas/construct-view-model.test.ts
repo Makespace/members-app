@@ -5,7 +5,7 @@ import {Dependencies} from '../../../src/dependencies';
 import {constructEvent} from '../../../src/types';
 import {happyPathAdapters} from '../../init-dependencies/happy-path-adapters.helper';
 import {pipe} from 'fp-ts/lib/function';
-import {constructViewModel} from '../../../src/pages/areas/construct-view-model';
+import {constructViewModel} from '../../../src/queries/areas/construct-view-model';
 import {arbitraryUser} from '../../types/user.helper';
 import {v4} from 'uuid';
 import {UUID} from 'io-ts-types';
