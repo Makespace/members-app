@@ -10,7 +10,7 @@ import {sequenceS} from 'fp-ts/lib/Apply';
 import {Command} from './command';
 import {Actor} from '../types/actor';
 import {getUserFromSession} from '../authentication';
-import {oopsPage} from '../shared-pages';
+import {oopsPage} from '../templates';
 import {persistOrNoOp} from './persist-or-no-op';
 
 const getCommandFrom = <T>(body: unknown, command: Command<T>) =>

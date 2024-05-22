@@ -1,6 +1,6 @@
 import express, {Router} from 'express';
 import path from 'path';
-import {oopsPage} from './shared-pages';
+import {oopsPage} from './templates';
 import {Dependencies} from './dependencies';
 import asyncHandler from 'express-async-handler';
 import * as pages from './pages';
