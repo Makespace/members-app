@@ -1,4 +1,4 @@
-import {constructViewModel} from '../../../src/pages/landing/construct-view-model';
+import {constructViewModel} from '../../../src/queries/landing/construct-view-model';
 import * as T from 'fp-ts/Task';
 import * as TE from 'fp-ts/TaskEither';
 import {faker} from '@faker-js/faker';

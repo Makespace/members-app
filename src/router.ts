@@ -3,18 +3,18 @@ import path from 'path';
 import {oopsPage} from './templates';
 import {Dependencies} from './dependencies';
 import asyncHandler from 'express-async-handler';
-import * as pages from './pages';
 import {configureAuthRoutes} from './authentication';
 import {Config} from './configuration';
 import {StatusCodes} from 'http-status-codes';
 import {apiPost, commands, formGet, formPost} from './commands';
+import {queries} from './queries';
 
 export const createRouter = (deps: Dependencies, conf: Config): Router => {
   const router = Router();
 
-  router.get('/', asyncHandler(pages.landing(deps)));
+  router.get('/', asyncHandler(queries.landing(deps)));
 
-  router.get('/areas', asyncHandler(pages.areas(deps)));
+  router.get('/areas', asyncHandler(queries.areas(deps)));
   router.get(
     '/areas/create',
     asyncHandler(formGet(deps, commands.area.create))
@@ -28,7 +28,7 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
     asyncHandler(apiPost(deps, conf, commands.area.create))
   );
 
-  router.get('/super-users', asyncHandler(pages.superUsers(deps)));
+  router.get('/super-users', asyncHandler(queries.superUsers(deps)));
   router.get(
     '/super-users/declare',
     asyncHandler(formGet(deps, commands.superUser.declare))
