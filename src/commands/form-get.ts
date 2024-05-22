@@ -7,7 +7,7 @@ import {Dependencies} from '../dependencies';
 import {User} from '../types';
 import {FailureWithStatus, failureWithStatus} from '../types/failureWithStatus';
 import * as E from 'fp-ts/Either';
-import {oopsPage} from '../shared-pages';
+import {oopsPage} from '../templates';
 
 type Form<T> = {
   renderForm: (viewModel: T) => string;
