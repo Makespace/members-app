@@ -4,7 +4,11 @@ import passport from 'passport';
 import session from 'express-session';
 import httpLogger from 'pino-http';
 import {loadConfig} from './configuration';
-import {magicLink, startMagicLinkEmailPubSub} from './authentication';
+import {
+  magicLink,
+  sessionConfig,
+  startMagicLinkEmailPubSub,
+} from './authentication';
 import {createTerminus} from '@godaddy/terminus';
 import http from 'http';
 import {pipe} from 'fp-ts/lib/function';
@@ -18,7 +22,7 @@ const conf = loadConfig();
 const queryEventsDatabase = initQueryEventsDatabase();
 const deps = initDependencies(conf, queryEventsDatabase);
 
-// Authentication
+// Passport Setup
 passport.use(magicLink.name, magicLink.strategy(deps, conf));
 passport.serializeUser((user, done) => {
   done(null, user);
@@ -32,23 +36,12 @@ const app: Application = express();
 app.use(httpLogger({logger: deps.logger}));
 app.use(express.urlencoded({extended: true}));
 app.use(express.json());
-app.use(
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  session({
-    secret: conf.SESSION_SECRET,
-    cookie: {
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      httpOnly: true,
-      sameSite: 'strict',
-      secure: conf.PUBLIC_URL.startsWith('https://'),
-    },
-  })
-);
+app.use(session(sessionConfig(conf)));
 app.set('trust proxy', true);
 app.use(createRouter(deps, conf));
-startMagicLinkEmailPubSub(deps, conf);
 
 // Start application
+startMagicLinkEmailPubSub(deps, conf);
 const server = http.createServer(app);
 createTerminus(server);
 
