@@ -4,9 +4,8 @@ import {initQueryEventsDatabase} from '../../src/init-dependencies/event-store/i
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-event-table-exists';
 import {DomainEvent} from '../../src/types';
 import {pipe} from 'fp-ts/lib/function';
-import {commands} from '../../src/commands';
+import {commands, Command} from '../../src/commands';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
-import {Command} from '../../src/commands/command';
 import {persistOrNoOp} from '../../src/commands/persist-or-no-op';
 import {getRightOrFail} from '../helpers';
 
