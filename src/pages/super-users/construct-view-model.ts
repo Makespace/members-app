@@ -8,7 +8,7 @@ import {
   failureWithStatus,
 } from '../../types/failureWithStatus';
 import {StatusCodes} from 'http-status-codes';
-import {queries} from '../../queries';
+import {readModels} from '../../read-models';
 
 export const constructViewModel =
   (deps: Dependencies) =>
@@ -16,7 +16,7 @@ export const constructViewModel =
     pipe(
       deps.getAllEvents(),
       TE.filterOrElse(
-        queries.superUsers.is(user.memberNumber),
+        readModels.superUsers.is(user.memberNumber),
         failureWithStatus(
           'Only super-users can see this page',
           StatusCodes.UNAUTHORIZED
@@ -24,6 +24,6 @@ export const constructViewModel =
       ),
       TE.map(events => ({
         user: user,
-        superUsers: queries.superUsers.getAll()(events),
+        superUsers: readModels.superUsers.getAll()(events),
       }))
     );
