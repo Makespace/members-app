@@ -117,5 +117,10 @@ describe('event-store end-to-end', () => {
         expect(result).toStrictEqual(E.left(expect.anything()));
       });
     });
+
+    describe('a resource', () => {
+      it.todo('has independant versions');
+      it.todo('has independant events');
+    });
   });
 });
