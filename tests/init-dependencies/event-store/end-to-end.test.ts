@@ -66,7 +66,7 @@ describe('event-store end-to-end', () => {
         expect(await getTestEvents()).toStrictEqual([event]);
       });
 
-      it.failing('uses the passed in version', () => {
+      it('uses the passed in version', () => {
         expect(resourceEvents.version).toStrictEqual(initialVersion);
       });
     });
