@@ -38,7 +38,7 @@ describe('event-store end-to-end', () => {
       expect(await getTestEvents()).toStrictEqual([]);
     });
 
-    describe.skip('committing when the last known version is the latest persisted version', () => {
+    describe('committing when the last known version is the latest persisted version', () => {
       let resourceEvents: RightOfTaskEither<
         ReturnType<Dependencies['getResourceEvents']>
       >;
