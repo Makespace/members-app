@@ -24,6 +24,10 @@ const Config = t.strict({
   SMTP_USER: t.string,
   TOKEN_SECRET: tt.NonEmptyString,
   USE_STUBBED_ADAPTERS: withDefaultIfEmpty(tt.BooleanFromString, false),
+  EVENT_DB_URL: withDefaultIfEmpty(
+    t.string,
+    'file:/tmp/makespace-member-app.db'
+  ),
 });
 
 export type Config = t.TypeOf<typeof Config>;

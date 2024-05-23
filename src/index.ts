@@ -16,13 +16,10 @@ import * as TE from 'fp-ts/TaskEither';
 import {ensureEventTableExists} from './init-dependencies/event-store/ensure-event-table-exists';
 import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
-import {randomUUID} from 'crypto';
 
 // Dependencies and Config
 const conf = loadConfig();
-const dbClient = libsqlClient.createClient({
-  url: `file:/tmp/${randomUUID()}.db`,
-});
+const dbClient = libsqlClient.createClient({url: conf.EVENT_DB_URL});
 const deps = initDependencies(dbClient, conf);
 
 // Passport Setup
