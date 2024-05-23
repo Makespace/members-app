@@ -1,6 +1,5 @@
 import * as T from 'fp-ts/Task';
 import {getAllEvents} from '../../src/init-dependencies/event-store/get-all-events';
-import {initQueryEventsDatabase} from '../../src/init-dependencies/event-store/init-query-events-database';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-event-table-exists';
 import {DomainEvent} from '../../src/types';
 import {pipe} from 'fp-ts/lib/function';
@@ -8,6 +7,7 @@ import {commands, Command} from '../../src/commands';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
 import {persistOrNoOp} from '../../src/commands/persist-or-no-op';
 import {getRightOrFail} from '../helpers';
+import * as libsqlClient from '@libsql/client';
 
 type ToFrameworkCommands<T> = {
   [K in keyof T]: {
@@ -26,11 +26,11 @@ export type TestFramework = {
   commands: ToFrameworkCommands<typeof commands>;
 };
 export const initTestFramework = async (): Promise<TestFramework> => {
-  const queryEventsDatabase = initQueryEventsDatabase();
-  const frameworkCommitEvent = commitEvent(queryEventsDatabase);
-  await ensureEventTableExists(queryEventsDatabase)();
+  const dbClient = libsqlClient.createClient({url: ':memory:'});
+  const frameworkCommitEvent = commitEvent(dbClient);
+  await ensureEventTableExists(dbClient)();
   const frameworkGetAllEvents = () =>
-    pipe(getAllEvents(queryEventsDatabase)(), T.map(getRightOrFail))();
+    pipe(getAllEvents(dbClient)(), T.map(getRightOrFail))();
 
   const frameworkify =
     <T>(command: Command<T>) =>
