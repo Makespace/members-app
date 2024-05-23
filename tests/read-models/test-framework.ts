@@ -8,6 +8,7 @@ import {commitEvent} from '../../src/init-dependencies/event-store/commit-event'
 import {persistOrNoOp} from '../../src/commands/persist-or-no-op';
 import {getRightOrFail} from '../helpers';
 import * as libsqlClient from '@libsql/client';
+import {randomUUID} from 'crypto';
 
 type ToFrameworkCommands<T> = {
   [K in keyof T]: {
@@ -26,7 +27,9 @@ export type TestFramework = {
   commands: ToFrameworkCommands<typeof commands>;
 };
 export const initTestFramework = async (): Promise<TestFramework> => {
-  const dbClient = libsqlClient.createClient({url: ':memory:'});
+  const dbClient = libsqlClient.createClient({
+    url: `file:/tmp/${randomUUID()}.db`,
+  });
   const frameworkCommitEvent = commitEvent(dbClient);
   await ensureEventTableExists(dbClient)();
   const frameworkGetAllEvents = () =>

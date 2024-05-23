@@ -11,6 +11,7 @@ import {getRightOrFail} from '../../helpers';
 import {Dependencies} from '../../../src/dependencies';
 import {getResourceEvents} from '../../../src/init-dependencies/event-store/get-resource-events';
 import {RightOfTaskEither} from '../../type-optics';
+import {randomUUID} from 'crypto';
 
 const arbitraryMemberNumberLinkedToEmaiEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
@@ -30,7 +31,9 @@ describe('event-store end-to-end', () => {
     >;
 
     beforeEach(async () => {
-      dbClient = libsqlClient.createClient({url: ':memory:'});
+      dbClient = libsqlClient.createClient({
+        url: `file:/tmp/${randomUUID()}.db`,
+      });
       await ensureEventTableExists(dbClient)();
       getTestEvents = () =>
         pipe(getAllEvents(dbClient)(), T.map(getRightOrFail))();
