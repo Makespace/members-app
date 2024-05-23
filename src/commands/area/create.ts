@@ -1,4 +1,4 @@
-import {DomainEvent, constructEvent, isEventOfType} from '../../types';
+import {DomainEvent, constructEvent} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
@@ -21,8 +21,6 @@ const process = (input: {
 }): O.Option<DomainEvent> =>
   pipe(
     input.events,
-    RA.filter(isEventOfType('AreaCreated')),
-    RA.filter(event => event.name === input.command.name),
     RA.match(
       () => O.some(constructEvent('AreaCreated')(input.command)),
       () => O.none
