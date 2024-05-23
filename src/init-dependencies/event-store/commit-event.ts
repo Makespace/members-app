@@ -23,13 +23,14 @@ export const commitEvent =
         id: uuidv4(),
         resource_id: resource.id,
         resource_type: resource.type,
+        resource_version: lastKnownVersion + 1,
         event_type: type,
         payload: JSON.stringify(payload),
       }),
       args =>
         queryDatabase([
           {
-            sql: 'INSERT INTO events (id, resource_id, resource_type, event_type, payload) VALUES ($id, $resource_id, $resource_type, $event_type, $payload); ',
+            sql: 'INSERT INTO events (id, resource_id, resource_type, resource_version, event_type, payload) VALUES ($id, $resource_id, $resource_type, $resource_version, $event_type, $payload); ',
             args,
           },
         ]),

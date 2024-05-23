@@ -7,6 +7,14 @@ import {internalCodecFailure} from '../../types/failureWithStatus';
 import {sequenceS} from 'fp-ts/lib/Apply';
 import {EventsTable} from './events-table';
 import {eventsFromRows} from './events-from-rows';
+import * as RA from 'fp-ts/ReadonlyArray';
+
+const getLatestVersion = (rows: EventsTable['rows']) =>
+  pipe(
+    rows,
+    RA.map(row => row.resource_version),
+    RA.reduce(0, (max, version) => (version > max ? version : max))
+  );
 
 export const getResourceEvents =
   (
@@ -26,7 +34,7 @@ export const getResourceEvents =
       TE.chainEitherK(rows =>
         pipe(
           {
-            version: E.right(0),
+            version: E.right(getLatestVersion(rows)),
             events: eventsFromRows(rows),
           },
           sequenceS(E.Apply)
