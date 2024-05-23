@@ -9,7 +9,14 @@ import * as TE from 'fp-ts/TaskEither';
 import {Dependencies} from '../../dependencies';
 import {pipe} from 'fp-ts/lib/function';
 import {v4 as uuidv4} from 'uuid';
-import {Client} from '@libsql/client/.';
+import {Client, InArgs} from '@libsql/client/.';
+
+const performTransaction = (dbClient: Client, args: InArgs) => {
+  return dbClient.execute({
+    sql: 'INSERT INTO events (id, resource_id, resource_type, resource_version, event_type, payload) VALUES ($id, $resource_id, $resource_type, $resource_version, $event_type, $payload); ',
+    args,
+  });
+};
 
 export const commitEvent =
   (dbClient: Client): Dependencies['commitEvent'] =>
@@ -30,11 +37,7 @@ export const commitEvent =
     }));
     return pipe(
       TE.tryCatch(
-        () =>
-          dbClient.execute({
-            sql: 'INSERT INTO events (id, resource_id, resource_type, resource_version, event_type, payload) VALUES ($id, $resource_id, $resource_type, $resource_version, $event_type, $payload); ',
-            args,
-          }),
+        () => performTransaction(dbClient, args),
         failureWithStatus('DB query failed', StatusCodes.INTERNAL_SERVER_ERROR)
       ),
       TE.map(() => ({
