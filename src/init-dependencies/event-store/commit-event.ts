@@ -19,16 +19,27 @@ const performTransaction = async (
   lastKnownVersion: number,
   dbClient: Client
 ) => {
-  const args = pipe(event, ({type, ...payload}) => ({
-    id: uuidv4(),
-    resource_id: resource.id,
-    resource_type: resource.type,
-    resource_version: lastKnownVersion + 1,
-    event_type: type,
-    payload: JSON.stringify(payload),
-  }));
   const transaction = await dbClient.transaction();
   try {
+    const currentResourceVersion = await transaction.execute({
+      sql: 'SELECT resource_version FROM events WHERE resource_id = ? AND resource_type = ?',
+      args: [resource.id, resource.type],
+    });
+    let newResourceVersion: number;
+
+    if (currentResourceVersion.rows.length === 0) {
+      newResourceVersion = lastKnownVersion;
+    } else {
+      newResourceVersion = lastKnownVersion + 1;
+    }
+    const args = pipe(event, ({type, ...payload}) => ({
+      id: uuidv4(),
+      resource_id: resource.id,
+      resource_type: resource.type,
+      resource_version: newResourceVersion,
+      event_type: type,
+      payload: JSON.stringify(payload),
+    }));
     await transaction.execute({
       sql: 'INSERT INTO events (id, resource_id, resource_type, resource_version, event_type, payload) VALUES ($id, $resource_id, $resource_type, $resource_version, $event_type, $payload); ',
       args,
