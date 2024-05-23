@@ -1,6 +1,6 @@
 import {pipe, flow} from 'fp-ts/lib/function';
 import {Dependencies} from '../../dependencies';
-import {toCodecFailure} from '../../types/failureWithStatus';
+import {internalCodecFailure} from '../../types/failureWithStatus';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import {QueryEventsDatabase} from './query-events-database';
@@ -15,7 +15,7 @@ export const getAllEvents =
       TE.chainEitherK(
         flow(
           EventsTable.decode,
-          E.mapLeft(toCodecFailure('Failed to decode DB table'))
+          E.mapLeft(internalCodecFailure('Failed to decode DB table'))
         )
       ),
       TE.map(table => table.rows),

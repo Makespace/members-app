@@ -16,7 +16,7 @@ export const failureWithStatus =
     payload,
   });
 
-export const toCodecFailure = (message: string) =>
+export const internalCodecFailure = (message: string) =>
   flow(
     formatValidationErrors,
     failureWithStatus(message, StatusCodes.INTERNAL_SERVER_ERROR)

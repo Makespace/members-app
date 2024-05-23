@@ -3,7 +3,7 @@ import {Dependencies} from '../../dependencies';
 import {QueryEventsDatabase} from './query-events-database';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
-import {toCodecFailure} from '../../types/failureWithStatus';
+import {internalCodecFailure} from '../../types/failureWithStatus';
 import {sequenceS} from 'fp-ts/lib/Apply';
 import {EventsTable} from './events-table';
 import {eventsFromRows} from './events-from-rows';
@@ -19,7 +19,7 @@ export const getResourceEvents =
       TE.chainEitherK(
         flow(
           EventsTable.decode,
-          E.mapLeft(toCodecFailure('failed to decode db response'))
+          E.mapLeft(internalCodecFailure('failed to decode db response'))
         )
       ),
       TE.map(response => response.rows),
