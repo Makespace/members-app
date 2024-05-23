@@ -72,9 +72,6 @@ describe('event-store end-to-end', () => {
     });
 
     describe('committing when then last known version is up to date', () => {
-      let resourceEvents: RightOfTaskEither<
-        ReturnType<Dependencies['getResourceEvents']>
-      >;
       const event2 = arbitraryMemberNumberLinkedToEmaiEvent();
 
       beforeEach(async () => {
