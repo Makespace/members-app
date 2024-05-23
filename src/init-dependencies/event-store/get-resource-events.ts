@@ -22,11 +22,14 @@ const getLatestVersion = (rows: EventsTable['rows']) =>
 
 export const getResourceEvents =
   (dbClient: Client): Dependencies['getResourceEvents'] =>
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, unused-imports/no-unused-vars
   resource =>
     pipe(
       TE.tryCatch(
-        () => dbClient.execute({sql: 'SELECT * FROM events;', args: {}}),
+        () =>
+          dbClient.execute({
+            sql: 'SELECT * FROM events WHERE resource_type = ? AND resource_id = ?;',
+            args: [resource.type, resource.id],
+          }),
         failureWithStatus(
           'Failed to query database',
           StatusCodes.INTERNAL_SERVER_ERROR

@@ -132,7 +132,7 @@ describe('event-store end-to-end', () => {
           arbitraryResourceOfSameType(),
           faker.number.int()
         )(arbitraryMemberNumberLinkedToEmaiEvent())();
-        await commitEvent(dbClient)(resource, faker.number.int())(event)();
+        await commitEvent(dbClient)(resource, initialVersion)(event)();
         resourceEvents = await pipe(
           resource,
           getResourceEvents(dbClient),
@@ -140,11 +140,11 @@ describe('event-store end-to-end', () => {
         )();
       });
 
-      it.failing('has independant versions', () => {
+      it('has independant versions', () => {
         expect(resourceEvents.version).toStrictEqual(initialVersion);
       });
 
-      it.failing('has independant events', async () => {
+      it('has independant events', async () => {
         expect(await getTestEvents()).toHaveLength(3);
         expect(resourceEvents.events).toStrictEqual([event]);
       });
