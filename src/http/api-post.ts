@@ -50,7 +50,7 @@ export const apiPost =
     await pipe(
       {
         actor: getActorFrom(req.headers.authorization, conf),
-        command: getCommandFrom(req.body, command),
+        formPayload: getCommandFrom(req.body, command),
         events: deps.getAllEvents(),
       },
       sequenceS(TE.ApplySeq),
@@ -60,8 +60,30 @@ export const apiPost =
           StatusCodes.UNAUTHORIZED
         )()
       ),
-      TE.map(command.process),
-      TE.chainW(persistOrNoOp(deps.commitEvent)),
+      TE.chain(({formPayload}) =>
+        pipe(
+          {
+            resource: TE.right(command.resource(formPayload)),
+            resourceState: deps.getResourceEvents(
+              command.resource(formPayload)
+            ),
+            formPayload: TE.right(formPayload),
+          },
+          sequenceS(TE.ApplyPar)
+        )
+      ),
+      TE.chainW(input =>
+        persistOrNoOp(
+          deps.commitEvent,
+          input.resource,
+          input.resourceState.version
+        )(
+          command.process({
+            events: input.resourceState.events,
+            command: input.formPayload,
+          })
+        )
+      ),
       TE.match(
         ({status, message, payload}) =>
           res.status(status).send({message, payload}),

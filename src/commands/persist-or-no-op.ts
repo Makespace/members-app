@@ -4,9 +4,14 @@ import {DomainEvent} from '../types';
 import * as O from 'fp-ts/Option';
 import {StatusCodes} from 'http-status-codes';
 import {Dependencies} from '../dependencies';
+import {Resource} from '../types/resource';
 
 export const persistOrNoOp =
-  (commitEvent: Dependencies['commitEvent']) =>
+  (
+    commitEvent: Dependencies['commitEvent'],
+    resource: Resource,
+    version: number
+  ) =>
   (toPersist: O.Option<DomainEvent>) =>
     pipe(
       toPersist,
@@ -16,6 +21,6 @@ export const persistOrNoOp =
             status: StatusCodes.OK,
             message: 'No new events raised',
           }),
-        commitEvent({id: '', type: ''}, 0)
+        commitEvent(resource, version)
       )
     );
