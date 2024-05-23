@@ -97,18 +97,26 @@ describe('event-store end-to-end', () => {
     });
 
     describe('committing when the last known version is out of date', () => {
+      const initialEvent = arbitraryMemberNumberLinkedToEmaiEvent();
       const competingEvent = arbitraryMemberNumberLinkedToEmaiEvent();
       let result: E.Either<unknown, unknown>;
       beforeEach(async () => {
-        await commitEvent(dbClient)(resource, 1)(competingEvent)();
-        result = await commitEvent(dbClient)(resource, 1)(event)();
+        await commitEvent(dbClient)(resource, initialVersion)(initialEvent)();
+        await pipe(
+          competingEvent,
+          commitEvent(dbClient)(resource, initialVersion),
+          T.map(getRightOrFail)
+        )();
+        result = await commitEvent(dbClient)(resource, initialVersion)(event)();
       });
 
-      it.failing('does not persist the event', async () => {
-        expect(await getTestEvents()).toStrictEqual([competingEvent]);
+      it('does not persist the event', async () => {
+        const events = await getTestEvents();
+        expect(events).toHaveLength(2);
+        expect(events).toStrictEqual([initialEvent, competingEvent]);
       });
 
-      it.failing('returns on left', () => {
+      it('returns on left', () => {
         expect(result).toStrictEqual(E.left(expect.anything()));
       });
     });
