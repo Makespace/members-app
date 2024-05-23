@@ -9,22 +9,9 @@ import * as E from 'fp-ts/Either';
 import * as tt from 'io-ts-types';
 import * as t from 'io-ts';
 import {QueryEventsDatabase} from './query-events-database';
+import {EventsTable} from './events-table';
 
-const EventsFromDb = t.strict({
-  rows: t.readonlyArray(
-    t.strict({
-      id: t.string,
-      resource_id: t.string,
-      resource_type: t.string,
-      event_type: t.string,
-      payload: t.string,
-    })
-  ),
-});
-
-type EventsFromDb = t.TypeOf<typeof EventsFromDb>;
-
-const reshapeRowToEvent = (row: EventsFromDb['rows'][number]) =>
+const reshapeRowToEvent = (row: EventsTable['rows'][number]) =>
   pipe(
     row.payload,
     tt.JsonFromString.decode,
@@ -42,7 +29,7 @@ export const getAllEvents =
       queryDatabase([{sql: 'SELECT * FROM events;', args: {}}]),
       TE.chainEitherK(
         flow(
-          EventsFromDb.decode,
+          EventsTable.decode,
           E.map(response => response.rows),
           E.chain(E.traverseArray(reshapeRowToEvent)),
           E.chain(t.readonlyArray(DomainEvent).decode),

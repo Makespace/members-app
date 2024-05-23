@@ -10,23 +10,9 @@ import {formatValidationErrors} from 'io-ts-reporters';
 import {DomainEvent} from '../../types';
 import {failureWithStatus} from '../../types/failureWithStatus';
 import {sequenceS} from 'fp-ts/lib/Apply';
+import {EventsTable} from './events-table';
 
-const EventsFromDb = t.strict({
-  rows: t.readonlyArray(
-    t.strict({
-      id: t.string,
-      resource_id: t.string,
-      resource_type: t.string,
-      resource_version: t.number,
-      event_type: t.string,
-      payload: t.string,
-    })
-  ),
-});
-
-type EventsFromDb = t.TypeOf<typeof EventsFromDb>;
-
-const reshapeRowToEvent = (row: EventsFromDb['rows'][number]) =>
+const reshapeRowToEvent = (row: EventsTable['rows'][number]) =>
   pipe(
     row.payload,
     tt.JsonFromString.decode,
@@ -47,7 +33,7 @@ export const getResourceEvents =
       queryEventsDatabase([{sql: 'SELECT * FROM events;', args: {}}]),
       TE.chainEitherK(
         flow(
-          EventsFromDb.decode,
+          EventsTable.decode,
           E.mapLeft(formatValidationErrors),
           E.mapLeft(
             failureWithStatus(
