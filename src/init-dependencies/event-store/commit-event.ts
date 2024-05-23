@@ -13,7 +13,7 @@ import {Client} from '@libsql/client/.';
 import {DomainEvent} from '../../types';
 import {Resource} from '../../types/resource';
 
-const performTransaction = (
+const performTransaction = async (
   event: DomainEvent,
   resource: Resource,
   lastKnownVersion: number,
@@ -27,10 +27,16 @@ const performTransaction = (
     event_type: type,
     payload: JSON.stringify(payload),
   }));
-  return dbClient.execute({
-    sql: 'INSERT INTO events (id, resource_id, resource_type, resource_version, event_type, payload) VALUES ($id, $resource_id, $resource_type, $resource_version, $event_type, $payload); ',
-    args,
-  });
+  const transaction = await dbClient.transaction();
+  try {
+    await transaction.execute({
+      sql: 'INSERT INTO events (id, resource_id, resource_type, resource_version, event_type, payload) VALUES ($id, $resource_id, $resource_type, $resource_version, $event_type, $payload); ',
+      args,
+    });
+    return await transaction.commit();
+  } finally {
+    transaction.close();
+  }
 };
 
 export const commitEvent =
@@ -45,7 +51,10 @@ export const commitEvent =
     return pipe(
       TE.tryCatch(
         () => performTransaction(event, resource, lastKnownVersion, dbClient),
-        failureWithStatus('DB query failed', StatusCodes.INTERNAL_SERVER_ERROR)
+        failureWithStatus(
+          'Failed to commit event',
+          StatusCodes.INTERNAL_SERVER_ERROR
+        )
       ),
       TE.map(() => ({
         status: StatusCodes.CREATED,
