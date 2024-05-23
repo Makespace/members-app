@@ -1,14 +1,13 @@
 import {faker} from '@faker-js/faker';
+import * as libsqlClient from '@libsql/client';
 import * as E from 'fp-ts/Either';
 import * as T from 'fp-ts/Task';
 import {DomainEvent, EmailAddress, constructEvent} from '../../../src/types';
 import {getAllEvents} from '../../../src/init-dependencies/event-store/get-all-events';
-import {initQueryEventsDatabase} from '../../../src/init-dependencies/event-store/init-query-events-database';
 import {pipe} from 'fp-ts/lib/function';
 import {commitEvent} from '../../../src/init-dependencies/event-store/commit-event';
 import {ensureEventTableExists} from '../../../src/init-dependencies/event-store/ensure-event-table-exists';
 import {getRightOrFail} from '../../helpers';
-import {QueryEventsDatabase} from '../../../src/init-dependencies/event-store/query-events-database';
 import {Dependencies} from '../../../src/dependencies';
 import {getResourceEvents} from '../../../src/init-dependencies/event-store/get-resource-events';
 import {RightOfTaskEither} from '../../type-optics';
@@ -24,20 +23,20 @@ describe('event-store end-to-end', () => {
     const resource = {id: 'singleton', type: 'MemberNumberEmailPairings'};
     const event = arbitraryMemberNumberLinkedToEmaiEvent();
     const initialVersion = faker.number.int();
-    let queryDatabase: QueryEventsDatabase;
+    let dbClient: libsqlClient.Client;
     let getTestEvents: () => Promise<ReadonlyArray<DomainEvent>>;
     let resourceEvents: RightOfTaskEither<
       ReturnType<Dependencies['getResourceEvents']>
     >;
 
     beforeEach(async () => {
-      queryDatabase = initQueryEventsDatabase();
-      await ensureEventTableExists(queryDatabase)();
+      dbClient = libsqlClient.createClient({url: ':memory:'});
+      await ensureEventTableExists(dbClient)();
       getTestEvents = () =>
-        pipe(getAllEvents(queryDatabase)(), T.map(getRightOrFail))();
+        pipe(getAllEvents(dbClient)(), T.map(getRightOrFail))();
       resourceEvents = await pipe(
         {id: faker.string.alphanumeric(), type: faker.string.alphanumeric()},
-        getResourceEvents(queryDatabase),
+        getResourceEvents(dbClient),
         T.map(getRightOrFail)
       )();
     });
@@ -52,10 +51,10 @@ describe('event-store end-to-end', () => {
 
     describe('committing when then resource does not exist', () => {
       beforeEach(async () => {
-        await commitEvent(queryDatabase)(resource, initialVersion)(event)();
+        await commitEvent(dbClient)(resource, initialVersion)(event)();
         resourceEvents = await pipe(
           resource,
-          getResourceEvents(queryDatabase),
+          getResourceEvents(dbClient),
           T.map(getRightOrFail)
         )();
       });
@@ -76,11 +75,11 @@ describe('event-store end-to-end', () => {
       const event2 = arbitraryMemberNumberLinkedToEmaiEvent();
 
       beforeEach(async () => {
-        await commitEvent(queryDatabase)(resource, initialVersion)(event)();
-        await commitEvent(queryDatabase)(resource, initialVersion)(event2)();
+        await commitEvent(dbClient)(resource, initialVersion)(event)();
+        await commitEvent(dbClient)(resource, initialVersion)(event2)();
         resourceEvents = await pipe(
           resource,
-          getResourceEvents(queryDatabase),
+          getResourceEvents(dbClient),
           T.map(getRightOrFail)
         )();
       });
@@ -98,8 +97,8 @@ describe('event-store end-to-end', () => {
       const competingEvent = arbitraryMemberNumberLinkedToEmaiEvent();
       let result: E.Either<unknown, unknown>;
       beforeEach(async () => {
-        await commitEvent(queryDatabase)(resource, 1)(competingEvent)();
-        result = await commitEvent(queryDatabase)(resource, 1)(event)();
+        await commitEvent(dbClient)(resource, 1)(competingEvent)();
+        result = await commitEvent(dbClient)(resource, 1)(event)();
       });
 
       it.failing('does not persist the event', async () => {

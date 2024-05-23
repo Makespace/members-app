@@ -5,14 +5,14 @@ import {sendEmail} from './send-email';
 import createLogger, {LoggerOptions} from 'pino';
 import nodemailer from 'nodemailer';
 import smtp from 'nodemailer-smtp-transport';
-import {QueryEventsDatabase} from './event-store/query-events-database';
 import {commitEvent} from './event-store/commit-event';
 import {getAllEvents} from './event-store/get-all-events';
 import {getResourceEvents} from './event-store/get-resource-events';
+import {Client} from '@libsql/client/.';
 
 export const initDependencies = (
-  conf: Config,
-  queryEventLogDatabase: QueryEventsDatabase
+  dbClient: Client,
+  conf: Config
 ): Dependencies => {
   let loggerOptions: LoggerOptions;
   loggerOptions = {
@@ -53,9 +53,9 @@ export const initDependencies = (
   );
 
   return {
-    commitEvent: commitEvent(queryEventLogDatabase),
-    getAllEvents: getAllEvents(queryEventLogDatabase),
-    getResourceEvents: getResourceEvents(queryEventLogDatabase),
+    commitEvent: commitEvent(dbClient),
+    getAllEvents: getAllEvents(dbClient),
+    getResourceEvents: getResourceEvents(dbClient),
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter),
     logger,

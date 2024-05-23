@@ -13,14 +13,14 @@ import {createTerminus} from '@godaddy/terminus';
 import http from 'http';
 import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
-import {initQueryEventsDatabase} from './init-dependencies/event-store/init-query-events-database';
 import {ensureEventTableExists} from './init-dependencies/event-store/ensure-event-table-exists';
 import {initDependencies} from './init-dependencies';
+import * as libsqlClient from '@libsql/client';
 
 // Dependencies and Config
 const conf = loadConfig();
-const queryEventsDatabase = initQueryEventsDatabase();
-const deps = initDependencies(conf, queryEventsDatabase);
+const dbClient = libsqlClient.createClient({url: ':memory:'});
+const deps = initDependencies(dbClient, conf);
 
 // Passport Setup
 passport.use(magicLink.name, magicLink.strategy(deps, conf));
@@ -47,7 +47,7 @@ createTerminus(server);
 
 void (async () => {
   await pipe(
-    ensureEventTableExists(queryEventsDatabase),
+    ensureEventTableExists(dbClient),
     TE.mapLeft(e => deps.logger.error(e, 'Failed to start server'))
   )();
 
