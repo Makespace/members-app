@@ -119,8 +119,35 @@ describe('event-store end-to-end', () => {
     });
 
     describe('a resource', () => {
-      it.todo('has independant versions');
-      it.todo('has independant events');
+      const arbitraryResourceOfSameType = () => ({
+        type: resource.type,
+        id: faker.string.alpha(),
+      });
+      beforeEach(async () => {
+        await commitEvent(dbClient)(
+          arbitraryResourceOfSameType(),
+          faker.number.int()
+        )(arbitraryMemberNumberLinkedToEmaiEvent())();
+        await commitEvent(dbClient)(
+          arbitraryResourceOfSameType(),
+          faker.number.int()
+        )(arbitraryMemberNumberLinkedToEmaiEvent())();
+        await commitEvent(dbClient)(resource, faker.number.int())(event)();
+        resourceEvents = await pipe(
+          resource,
+          getResourceEvents(dbClient),
+          T.map(getRightOrFail)
+        )();
+      });
+
+      it.failing('has independant versions', () => {
+        expect(resourceEvents.version).toStrictEqual(initialVersion);
+      });
+
+      it.failing('has independant events', async () => {
+        expect(await getTestEvents()).toHaveLength(3);
+        expect(resourceEvents.events).toStrictEqual([event]);
+      });
     });
   });
 });
