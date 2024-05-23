@@ -26,22 +26,31 @@ describe('event-store end-to-end', () => {
     const initialVersion = faker.number.int();
     let queryDatabase: QueryEventsDatabase;
     let getTestEvents: () => Promise<ReadonlyArray<DomainEvent>>;
+    let resourceEvents: RightOfTaskEither<
+      ReturnType<Dependencies['getResourceEvents']>
+    >;
 
     beforeEach(async () => {
       queryDatabase = initQueryEventsDatabase();
       await ensureEventTableExists(queryDatabase)();
       getTestEvents = () =>
         pipe(getAllEvents(queryDatabase)(), T.map(getRightOrFail))();
+      resourceEvents = await pipe(
+        {id: faker.string.alphanumeric(), type: faker.string.alphanumeric()},
+        getResourceEvents(queryDatabase),
+        T.map(getRightOrFail)
+      )();
     });
 
     it('is empty', async () => {
       expect(await getTestEvents()).toStrictEqual([]);
     });
 
-    describe('committing when the last known version is the latest persisted version', () => {
-      let resourceEvents: RightOfTaskEither<
-        ReturnType<Dependencies['getResourceEvents']>
-      >;
+    it('the version of any resource is 0', () => {
+      expect(resourceEvents.version).toStrictEqual(0);
+    });
+
+    describe('committing when then resource does not exist', () => {
       beforeEach(async () => {
         await commitEvent(queryDatabase)(resource, initialVersion)(event)();
         resourceEvents = await pipe(
@@ -55,8 +64,33 @@ describe('event-store end-to-end', () => {
         expect(await getTestEvents()).toStrictEqual([event]);
       });
 
+      it.failing('uses the passed in version', () => {
+        expect(resourceEvents.version).toStrictEqual(initialVersion);
+      });
+    });
+
+    describe('committing when then last known version is up to date', () => {
+      let resourceEvents: RightOfTaskEither<
+        ReturnType<Dependencies['getResourceEvents']>
+      >;
+      const event2 = arbitraryMemberNumberLinkedToEmaiEvent();
+
+      beforeEach(async () => {
+        await commitEvent(queryDatabase)(resource, initialVersion)(event)();
+        await commitEvent(queryDatabase)(resource, initialVersion)(event2)();
+        resourceEvents = await pipe(
+          resource,
+          getResourceEvents(queryDatabase),
+          T.map(getRightOrFail)
+        )();
+      });
+
+      it('persists the event', async () => {
+        expect(await getTestEvents()).toStrictEqual([event, event2]);
+      });
+
       it('increments the version', () => {
-        expect(resourceEvents.version).toBeGreaterThan(initialVersion);
+        expect(resourceEvents.version).toStrictEqual(initialVersion + 1);
       });
     });
 
