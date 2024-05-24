@@ -4,11 +4,10 @@ import {pipe} from 'fp-ts/lib/function';
 import {StatusCodes} from 'http-status-codes';
 import {getUserFromSession} from '../authentication';
 import {Dependencies} from '../dependencies';
-import {User} from '../types';
-import {FailureWithStatus, failureWithStatus} from '../types/failureWithStatus';
-import * as E from 'fp-ts/Either';
+import {failureWithStatus} from '../types/failureWithStatus';
 import {oopsPage} from '../templates';
 import {sequenceS} from 'fp-ts/lib/Apply';
+import {Form} from '../types/form';
 
 const getUser = (req: Request, deps: Dependencies) =>
   pipe(
@@ -18,13 +17,6 @@ const getUser = (req: Request, deps: Dependencies) =>
       failureWithStatus('You are not logged in.', StatusCodes.UNAUTHORIZED)()
     )
   );
-
-type Form<T> = {
-  renderForm: (viewModel: T) => string;
-  constructForm: (
-    input: unknown
-  ) => (user: User) => E.Either<FailureWithStatus, T>;
-};
 
 export const formGet =
   <T>(deps: Dependencies, form: Form<T>) =>

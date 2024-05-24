@@ -4,6 +4,7 @@ import {pageTemplate} from '../../templates';
 import {html} from '../../types/html';
 import * as O from 'fp-ts/Option';
 import {User} from '../../types';
+import {Form} from '../../types/form';
 
 type ViewModel = {
   user: User;
@@ -29,7 +30,7 @@ const render = (viewModel: ViewModel) =>
     pageTemplate('Declare super user', O.some(viewModel.user))
   );
 
-export const declareForm = {
+export const declareForm: Form<ViewModel> = {
   renderForm: render,
   constructForm: () => (user: User) => E.right({user}),
 };
