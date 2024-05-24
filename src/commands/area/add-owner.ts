@@ -1,4 +1,4 @@
-import {DomainEvent, constructEvent} from '../../types';
+import {DomainEvent, constructEvent, isEventOfType} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
@@ -20,6 +20,8 @@ const process = (input: {
 }): O.Option<DomainEvent> =>
   pipe(
     input.events,
+    RA.filter(isEventOfType('OwnerAdded')),
+    RA.filter(event => event.memberNumber === input.command.memberNumber),
     RA.match(
       () => O.some(constructEvent('OwnerAdded')(input.command)),
       () => O.none

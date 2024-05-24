@@ -1,11 +1,10 @@
-import {UUID} from 'io-ts-types';
 import {User} from '../../types';
 
 type Area = {
   name: string;
   description: string;
   owners: ReadonlyArray<number>;
-  id: UUID;
+  id: string;
 };
 
 export type ViewModel = {
