@@ -11,6 +11,7 @@ import {
   FailureWithStatus,
   failureWithStatus,
 } from '../../types/failureWithStatus';
+import {Form} from '../../types/form';
 
 type ViewModel = {
   user: User;
@@ -56,7 +57,7 @@ const constructForm =
       }))
     );
 
-export const addOwnerForm = {
+export const addOwnerForm: Form<ViewModel> = {
   renderForm,
   constructForm,
 };

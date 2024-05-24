@@ -9,6 +9,7 @@ import {User} from '../../types';
 import {failureWithStatus} from '../../types/failureWithStatus';
 import {StatusCodes} from 'http-status-codes';
 import {formatValidationErrors} from 'io-ts-reporters';
+import {Form} from '../../types/form';
 
 type ViewModel = {
   user: User;
@@ -68,7 +69,7 @@ const constructForm = (input: unknown) => (user: User) =>
     }))
   );
 
-export const revokeForm = {
+export const revokeForm: Form<ViewModel> = {
   renderForm: renderForm,
   constructForm,
 };

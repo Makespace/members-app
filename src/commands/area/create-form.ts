@@ -5,6 +5,7 @@ import {html} from '../../types/html';
 import * as O from 'fp-ts/Option';
 import {User} from '../../types';
 import {v4} from 'uuid';
+import {Form} from '../../types/form';
 
 type ViewModel = {
   user: User;
@@ -28,7 +29,7 @@ const renderForm = (viewModel: ViewModel) =>
     pageTemplate('Create Area', O.some(viewModel.user))
   );
 
-export const createForm = {
+export const createForm: Form<ViewModel> = {
   renderForm,
   constructForm: () => (user: User) => E.right({user}),
 };
