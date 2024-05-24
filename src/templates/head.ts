@@ -39,5 +39,10 @@ export const head = (title: string) => html`
       content="/static/favicons/browserconfig.xml"
     />
     <meta name="theme-color" content="#ffffff" />
+    <script src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css"
+      rel="stylesheet"
+    />
   </head>
 `;
