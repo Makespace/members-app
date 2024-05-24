@@ -47,14 +47,30 @@ const renderForm = (viewModel: ViewModel) =>
     ),
     tableRows => html`
       <h1>Add an owner</h1>
-      <table>
-        <tr>
-          <th>E-Mail</th>
-          <th>Member Number</th>
-          <th></th>
-        </tr>
-        ${tableRows.join('\n')}
+      <div id="wrapper"></div>
+      <table id="all-members">
+        <thead>
+          <tr>
+            <th>E-Mail</th>
+            <th>Member Number</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows.join('\n')}
+        </tbody>
       </table>
+      <script>
+        new gridjs.Grid({
+          from: document.getElementById('all-members'),
+          search: true,
+          language: {
+            search: {
+              placeholder: 'Search...',
+            },
+          },
+        }).render(document.getElementById('wrapper'));
+      </script>
     `,
     pageTemplate('Add Owner', O.some(viewModel.user))
   );
