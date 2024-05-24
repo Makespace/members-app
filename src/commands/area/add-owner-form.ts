@@ -36,9 +36,9 @@ const paramsCodec = t.strict({
   area: t.string,
 });
 
-const constructForm =
-  (input: unknown) =>
-  (user: User): E.Either<FailureWithStatus, ViewModel> =>
+const constructForm: Form<ViewModel>['constructForm'] =
+  input =>
+  ({user}): E.Either<FailureWithStatus, ViewModel> =>
     pipe(
       input,
       paramsCodec.decode,

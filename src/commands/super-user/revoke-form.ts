@@ -50,24 +50,26 @@ const paramsCodec = t.strict({
   memberNumber: tt.IntFromString,
 });
 
-const constructForm = (input: unknown) => (user: User) =>
-  pipe(
-    input,
-    paramsCodec.decode,
-    E.mapLeft(
-      flow(
-        formatValidationErrors,
-        failureWithStatus(
-          'Parameters submitted to the form were invalid',
-          StatusCodes.BAD_REQUEST
+const constructForm: Form<ViewModel>['constructForm'] =
+  input =>
+  ({user}) =>
+    pipe(
+      input,
+      paramsCodec.decode,
+      E.mapLeft(
+        flow(
+          formatValidationErrors,
+          failureWithStatus(
+            'Parameters submitted to the form were invalid',
+            StatusCodes.BAD_REQUEST
+          )
         )
-      )
-    ),
-    E.map(params => ({
-      user,
-      toBeRevoked: params.memberNumber,
-    }))
-  );
+      ),
+      E.map(params => ({
+        user,
+        toBeRevoked: params.memberNumber,
+      }))
+    );
 
 export const revokeForm: Form<ViewModel> = {
   renderForm: renderForm,

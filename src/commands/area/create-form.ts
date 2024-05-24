@@ -31,5 +31,8 @@ const renderForm = (viewModel: ViewModel) =>
 
 export const createForm: Form<ViewModel> = {
   renderForm,
-  constructForm: () => (user: User) => E.right({user}),
+  constructForm:
+    () =>
+    ({user}) =>
+      E.right({user}),
 };
