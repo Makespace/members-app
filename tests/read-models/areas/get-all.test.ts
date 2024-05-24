@@ -43,7 +43,7 @@ describe('get-all', () => {
       events = await framework.getAllEvents();
     });
 
-    it.failing('returns the owners', () => {
+    it('returns the owners', () => {
       const areas = getAll(events);
       expect(areas[0].owners).toStrictEqual([addOwner.memberNumber]);
     });
