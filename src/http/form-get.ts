@@ -24,9 +24,10 @@ export const formGet =
     await pipe(
       {
         user: getUser(req, deps),
+        events: deps.getAllEvents(),
       },
       sequenceS(TE.ApplyPar),
-      TE.chainEitherK(({user}) => form.constructForm(req.query)(user)),
+      TE.chainEitherK(form.constructForm(req.query)),
       TE.map(form.renderForm),
       TE.mapLeft(failure => {
         deps.logger.warn(
