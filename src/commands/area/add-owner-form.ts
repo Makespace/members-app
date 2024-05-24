@@ -16,6 +16,10 @@ import {Form} from '../../types/form';
 type ViewModel = {
   user: User;
   areaId: string;
+  members: ReadonlyArray<{
+    memberNumber: number;
+    email: string;
+  }>;
 };
 
 const renderForm = (viewModel: ViewModel) =>
@@ -54,6 +58,7 @@ const constructForm: Form<ViewModel>['constructForm'] =
       E.map(params => ({
         user,
         areaId: params.area,
+        members: [],
       }))
     );
 
