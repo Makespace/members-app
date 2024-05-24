@@ -20,6 +20,11 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
     '/areas/create',
     http.formPost(deps, commands.area.create, '/areas')
   );
+  router.get('/areas/add-owner', http.formGet(deps, commands.area.addOwner));
+  router.post(
+    '/areas/add-owner',
+    http.formPost(deps, commands.area.addOwner, '/areas')
+  );
   router.post(
     '/api/create-area',
     http.apiPost(deps, conf, commands.area.create)
