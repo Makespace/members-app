@@ -28,6 +28,24 @@ describe('get-all', () => {
   });
 
   describe('when owners have been added', () => {
-    it.todo('returns the owners');
+    const createArea = {
+      id: faker.string.uuid() as UUID,
+      name: faker.company.buzzNoun() as NonEmptyString,
+      description: faker.company.buzzPhrase(),
+    };
+    const addOwner = {
+      areaId: createArea.id,
+      memberNumber: faker.number.int(),
+    };
+    beforeEach(async () => {
+      await framework.commands.area.create(createArea);
+      await framework.commands.area.addOwner(addOwner);
+      events = await framework.getAllEvents();
+    });
+
+    it.failing('returns the owners', () => {
+      const areas = getAll(events);
+      expect(areas[0].owners).toStrictEqual([addOwner.memberNumber]);
+    });
   });
 });
