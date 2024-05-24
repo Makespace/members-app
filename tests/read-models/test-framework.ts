@@ -55,6 +55,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     commands: {
       area: {
         create: frameworkify(commands.area.create),
+        addOwner: frameworkify(commands.area.addOwner),
       },
       memberNumbers: {
         linkNumberToEmail: frameworkify(
