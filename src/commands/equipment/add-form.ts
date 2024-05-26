@@ -31,21 +31,23 @@ const renderForm = (viewModel: ViewModel) =>
     pageTemplate('Create Equipment', O.some(viewModel.user))
   );
 
+const constructForm: Form<ViewModel>['constructForm'] =
+  input =>
+  ({user}) =>
+    pipe(
+      input,
+      t.strict({area: t.string}).decode,
+      E.mapLeft(formatValidationErrors),
+      E.mapLeft(
+        failureWithStatus('Invalid parameters', StatusCodes.BAD_REQUEST)
+      ),
+      E.map(({area}) => ({
+        user,
+        areaId: area,
+      }))
+    );
+
 export const addForm: Form<ViewModel> = {
   renderForm,
-  constructForm:
-    input =>
-    ({user}) =>
-      pipe(
-        input,
-        t.strict({area: t.string}).decode,
-        E.mapLeft(formatValidationErrors),
-        E.mapLeft(
-          failureWithStatus('Invalid parameters', StatusCodes.BAD_REQUEST)
-        ),
-        E.map(({area}) => ({
-          user,
-          areaId: area,
-        }))
-      ),
+  constructForm,
 };
