@@ -4,4 +4,5 @@ import {User} from '../../types';
 export type ViewModel = {
   area: Area;
   user: User;
+  isSuperUser: boolean;
 };
