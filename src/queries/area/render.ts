@@ -6,6 +6,6 @@ import {ViewModel} from './view-model';
 
 export const render = (viewModel: ViewModel) =>
   pipe(
-    html` <h1>${viewModel.areaName}</h1> `,
-    pageTemplate(viewModel.areaName, O.some(viewModel.user))
+    html` <h1>${viewModel.area.name}</h1> `,
+    pageTemplate(viewModel.area.name, O.some(viewModel.user))
   );

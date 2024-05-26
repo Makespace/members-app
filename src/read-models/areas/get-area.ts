@@ -4,13 +4,7 @@ import * as RM from 'fp-ts/ReadonlyMap';
 import * as O from 'fp-ts/Option';
 import {DomainEvent, SubsetOfDomainEvent, filterByName} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
-
-type Area = {
-  id: string;
-  name: string;
-  description: string;
-  owners: number[];
-};
+import {Area} from './area';
 
 const pertinentEvents = ['AreaCreated' as const, 'OwnerAdded' as const];
 
