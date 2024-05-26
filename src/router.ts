@@ -15,6 +15,7 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
   router.get('/', queries.landing(deps));
 
   router.get('/areas', queries.areas(deps));
+  router.get('/areas/:area', queries.area(deps));
   router.get('/areas/create', http.formGet(deps, commands.area.create));
   router.post(
     '/areas/create',
