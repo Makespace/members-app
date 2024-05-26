@@ -1,6 +1,7 @@
+import {Area} from '../../read-models/areas';
 import {User} from '../../types';
 
 export type ViewModel = {
-  areaName: string;
+  area: Area;
   user: User;
 };

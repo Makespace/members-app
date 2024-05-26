@@ -1,13 +1,7 @@
 import {pipe} from 'fp-ts/lib/function';
 import {DomainEvent, SubsetOfDomainEvent, filterByName} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
-
-type Area = {
-  id: string;
-  name: string;
-  description: string;
-  owners: number[];
-};
+import {Area} from './area';
 
 const pertinentEvents = ['AreaCreated' as const, 'OwnerAdded' as const];
 
