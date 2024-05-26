@@ -17,7 +17,6 @@
   "devDependencies": {
     "@types/cookie-session": "^2.0.44",
     "@types/express": "^4.17.13",
-    "@types/express-session": "^1.18.0",
     "@types/jest": "^29.5.6",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/mjml": "^4.7.4",
@@ -47,9 +46,9 @@
     "@types/nodemailer-smtp-transport": "^2.7.5",
     "@types/pubsub-js": "^1.8.3",
     "@typescript-eslint/parser": "^7.0.0",
+    "cookie-session": "^2.1.0",
     "express": "^4.17.3",
     "express-async-handler": "^1.2.0",
-    "express-session": "^1.18.0",
     "fp-ts": "^2.11.8",
     "http-status-codes": "^2.2.0",
     "io-ts": "^2.2.20",

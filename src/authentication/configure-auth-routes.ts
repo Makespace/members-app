@@ -19,8 +19,7 @@ export const configureAuthRoutes = (router: Router) => {
   });
 
   router.get('/log-out', (req: Request, res: Response) => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    req.session.destroy(() => undefined);
+    req.session = null;
     res.redirect('/');
   });
 
