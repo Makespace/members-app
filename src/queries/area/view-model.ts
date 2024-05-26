@@ -5,4 +5,8 @@ export type ViewModel = {
   area: Area;
   user: User;
   isSuperUser: boolean;
+  equipment: ReadonlyArray<{
+    id: string;
+    name: string;
+  }>;
 };
