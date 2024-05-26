@@ -1,10 +1,10 @@
 import express, {Application} from 'express';
 import {createRouter} from './router';
 import passport from 'passport';
-import session from 'express-session';
 import httpLogger from 'pino-http';
 import {loadConfig} from './configuration';
 import {
+  cookieSessionPassportWorkaround,
   magicLink,
   sessionConfig,
   startMagicLinkEmailPubSub,
@@ -16,6 +16,7 @@ import * as TE from 'fp-ts/TaskEither';
 import {ensureEventTableExists} from './init-dependencies/event-store/ensure-event-table-exists';
 import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
+import cookieSession from 'cookie-session';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -36,7 +37,8 @@ const app: Application = express();
 app.use(httpLogger({logger: deps.logger}));
 app.use(express.urlencoded({extended: true}));
 app.use(express.json());
-app.use(session(sessionConfig(conf)));
+app.use(cookieSession(sessionConfig(conf)));
+app.use(cookieSessionPassportWorkaround);
 app.set('trust proxy', true);
 app.use(createRouter(deps, conf));
 
