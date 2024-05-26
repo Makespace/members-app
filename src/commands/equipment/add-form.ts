@@ -22,7 +22,7 @@ const renderForm = (viewModel: ViewModel) =>
   pipe(
     html`
       <h1>Add equipment to ${viewModel.areaName}</h1>
-      <form action="#" method="post">
+      <form action="/equipment/add" method="post">
         <label for="name">What is this Equipment called</label>
         <input type="text" name="name" id="name" />
         <input type="hidden" name="id" value="${v4()}" />

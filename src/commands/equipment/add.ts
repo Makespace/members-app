@@ -10,29 +10,29 @@ import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 const codec = t.strict({
   id: tt.UUID,
   name: tt.NonEmptyString,
-  description: t.string,
+  areaId: tt.UUID,
 });
 
-type CreateArea = t.TypeOf<typeof codec>;
+type AddEquipment = t.TypeOf<typeof codec>;
 
 const process = (input: {
-  command: CreateArea;
+  command: AddEquipment;
   events: ReadonlyArray<DomainEvent>;
 }): O.Option<DomainEvent> =>
   pipe(
     input.events,
     RA.match(
-      () => O.some(constructEvent('AreaCreated')(input.command)),
+      () => O.some(constructEvent('EquipmentAdded')(input.command)),
       () => O.none
     )
   );
 
-const resource = (command: CreateArea) => ({
-  type: 'Area',
+const resource = (command: AddEquipment) => ({
+  type: 'Equipment',
   id: command.id,
 });
 
-export const add: Command<CreateArea> = {
+export const add: Command<AddEquipment> = {
   process,
   resource,
   decode: codec.decode,

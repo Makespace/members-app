@@ -12,6 +12,12 @@ export const DomainEvent = t.union([
     id: tt.UUID,
   }),
   t.strict({
+    type: t.literal('EquipmentAdded'),
+    name: t.string,
+    id: tt.UUID,
+    areaId: tt.UUID,
+  }),
+  t.strict({
     type: t.literal('OwnerAdded'),
     areaId: tt.UUID,
     memberNumber: t.number,
