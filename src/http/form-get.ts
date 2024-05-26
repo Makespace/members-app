@@ -27,7 +27,7 @@ export const formGet =
         events: deps.getAllEvents(),
       },
       sequenceS(TE.ApplyPar),
-      TE.chainEitherK(form.constructForm(req.query)),
+      TE.chainEitherK(form.constructForm({...req.query, ...req.params})),
       TE.map(form.renderForm),
       TE.mapLeft(failure => {
         deps.logger.warn(
