@@ -38,7 +38,7 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
   router.get('/equipment', queries.allEquipment(deps));
   router.post(
     '/equipment/add',
-    http.formPost(deps, commands.equipment.add, '/areas')
+    http.formPost(deps, commands.equipment.add, '/equipment')
   );
 
   router.get('/super-users', queries.superUsers(deps));
