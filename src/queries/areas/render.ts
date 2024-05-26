@@ -11,7 +11,7 @@ const renderAreas = (areas: ViewModel['areas']) =>
     RA.map(
       area => html`
         <tr>
-          <td>${area.name}</td>
+          <td><a href="/areas/${area.id}">${area.name}</a></td>
           <td>${area.description}</td>
           <td>${area.owners.join(', ')}</td>
           <td><a href="/areas/add-owner?area=${area.id}">Add owner</a></td>
