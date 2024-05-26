@@ -31,6 +31,11 @@ export const constructViewModel =
             failureWithStatus('No such area', StatusCodes.NOT_FOUND)()
           )
         ),
+        equipment: pipe(
+          params.areaId,
+          readModels.equipment.getForArea(events),
+          E.right
+        ),
       })),
       TE.chainEitherK(sequenceS(E.Apply))
     );

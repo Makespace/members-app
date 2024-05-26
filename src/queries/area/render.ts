@@ -19,14 +19,31 @@ const addEquipmentCallToAction = (areaId: string) => html`
   <a href="/areas/${areaId}/add-equipment">Add piece of red equipment</a>
 `;
 
+const renderEquipment = (allEquipment: ViewModel['equipment']) =>
+  pipe(
+    allEquipment,
+    RA.map(
+      equipment => html`
+        <li><a href="/equipment/${equipment.id}">${equipment.name}</a></li>
+      `
+    ),
+    items => html`
+      <ul>
+        ${items.join('\n')}
+      </ul>
+    `
+  );
+
 export const render = (viewModel: ViewModel) =>
   pipe(
     html`<h1>${viewModel.area.name}</h1>
       <p>${viewModel.area.description}</p>
-      <p>Owners</p>
-      ${renderOwners(viewModel.area.owners)}
       ${viewModel.isSuperUser
         ? addEquipmentCallToAction(viewModel.area.id)
-        : ''} `,
+        : ''}
+      <h2>Owners</h2>
+      ${renderOwners(viewModel.area.owners)}
+      <h2>Equipment</h2>
+      ${renderEquipment(viewModel.equipment)} `,
     pageTemplate(viewModel.area.name, O.some(viewModel.user))
   );
