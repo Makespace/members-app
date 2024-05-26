@@ -15,8 +15,8 @@ const renderOwners = (owners: ViewModel['area']['owners']) =>
       </ul>`
   );
 
-const addEquipmentCallToAction = html`
-  <a href="/equipment/create">Add piece of red equipment</a>
+const addEquipmentCallToAction = (areaId: string) => html`
+  <a href="/areas/${areaId}/add-equipment">Add piece of red equipment</a>
 `;
 
 export const render = (viewModel: ViewModel) =>
@@ -25,6 +25,8 @@ export const render = (viewModel: ViewModel) =>
       <p>${viewModel.area.description}</p>
       <p>Owners</p>
       ${renderOwners(viewModel.area.owners)}
-      ${viewModel.isSuperUser ? addEquipmentCallToAction : ''} `,
+      ${viewModel.isSuperUser
+        ? addEquipmentCallToAction(viewModel.area.id)
+        : ''} `,
     pageTemplate(viewModel.area.name, O.some(viewModel.user))
   );
