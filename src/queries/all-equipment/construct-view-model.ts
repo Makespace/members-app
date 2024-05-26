@@ -14,6 +14,6 @@ export const constructViewModel =
       TE.map(events => ({
         user: user,
         isSuperUser: readModels.superUsers.is(user.memberNumber)(events),
-        equipment: [],
+        equipment: readModels.equipment.getAll(events),
       }))
     );
