@@ -35,6 +35,7 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
     '/areas/:area/add-equipment',
     http.formGet(deps, commands.equipment.add)
   );
+  router.get('/equipment', queries.allEquipment(deps));
   router.post(
     '/equipment/add',
     http.formPost(deps, commands.equipment.add, '/areas')

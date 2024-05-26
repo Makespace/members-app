@@ -18,6 +18,7 @@ export const navbar = (user: O.Option<User>) =>
             alt="Makespace"
             class="page-nav__logo"
         /></a>
+        <a href="/equipment">Equipment</a>
         <a href="/areas">Areas</a>
         ${logInOut}
       </nav>

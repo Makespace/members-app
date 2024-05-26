@@ -4,8 +4,10 @@ import {landing} from './landing';
 import {superUsers} from './super-users';
 import asyncHandler from 'express-async-handler';
 import {area} from './area';
+import {allEquipment} from './all-equipment';
 
 export const queries = {
+  allEquipment: flow(allEquipment, asyncHandler),
   areas: flow(areas, asyncHandler),
   area: flow(area, asyncHandler),
   superUsers: flow(superUsers, asyncHandler),
