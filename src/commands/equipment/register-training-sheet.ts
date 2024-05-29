@@ -12,26 +12,26 @@ const codec = t.strict({
   trainingSheetId: t.string,
 });
 
-type AddTrainingSheet = t.TypeOf<typeof codec>;
+type RegisterTrainingSheet = t.TypeOf<typeof codec>;
 
 const process = (input: {
-  command: AddTrainingSheet;
+  command: RegisterTrainingSheet;
   events: ReadonlyArray<DomainEvent>;
 }): O.Option<DomainEvent> =>
   pipe(
     input.events,
     RA.match(
-      () => O.some(constructEvent('EquipmentTrainingSheetAdded')(input.command)),
+      () => O.some(constructEvent('EquipmentTrainingSheetRegistered')(input.command)),
       () => O.none
     )
   );
 
-const resource = (command: AddTrainingSheet) => ({
+const resource = (command: RegisterTrainingSheet) => ({
   type: 'Equipment',
   id: command.equipmentId,
 });
 
-export const addTrainingSheet: Command<AddTrainingSheet> = {
+export const registerTrainingSheet: Command<RegisterTrainingSheet> = {
   process,
   resource,
   decode: codec.decode,
