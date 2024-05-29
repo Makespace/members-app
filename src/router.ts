@@ -40,6 +40,10 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
     '/equipment/add',
     http.formPost(deps, commands.equipment.add, '/equipment')
   );
+  router.post(
+    '/equipment/add-training-sheet',
+    http.formPost(deps, commands.equipment.training_sheet, '/equipment')
+  )
 
   router.get('/super-users', queries.superUsers(deps));
   router.get(
