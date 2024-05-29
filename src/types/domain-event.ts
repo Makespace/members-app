@@ -37,6 +37,11 @@ export const DomainEvent = t.union([
     memberNumber: t.number,
     email: EmailAddressCodec,
   }),
+  t.strict({
+    type: t.literal('EquipmentTrainingSheetAdded'),
+    equipmentId: tt.UUID,
+    trainingSheetId: t.string,
+  }),
 ]);
 
 export type DomainEvent = t.TypeOf<typeof DomainEvent>;
