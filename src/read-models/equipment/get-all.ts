@@ -4,7 +4,7 @@ import {DomainEvent, isEventOfType} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {readModels} from '..';
 
-type Equipment = {
+export type Equipment = {
   name: string;
   id: string;
   areaId: string;
