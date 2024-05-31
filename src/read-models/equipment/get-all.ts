@@ -9,6 +9,7 @@ type Equipment = {
   id: string;
   areaId: string;
   areaName: string;
+  trainingSheetId: O.Option<string>;
 };
 
 export const getAll = (
@@ -23,7 +24,11 @@ export const getAll = (
         O.map(area => ({
           ...equipment,
           areaName: area.name,
-        }))
+        })),
+        O.map(equipmentData => ({
+          ...equipmentData,
+          trainingSheetId: readModels.equipment.getTrainingSheetId(events)(equipmentData.id),
+        })),
       )
     ),
     RA.compact
