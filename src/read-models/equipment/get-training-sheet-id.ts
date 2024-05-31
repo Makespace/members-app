@@ -10,5 +10,9 @@ export const getTrainingSheetId =
       events,
       RA.filter(isEventOfType('EquipmentTrainingSheetRegistered')),
       RA.filter(event => event.equipmentId == equipmentId),
-      events => events.length > 0 ? O.some(events[-1].trainingSheetId) : O.none,
+      RA.last,
+      O.match(
+        () => O.none,
+        (mostRecentSheet) => O.some(mostRecentSheet.trainingSheetId)
+      )
     );
