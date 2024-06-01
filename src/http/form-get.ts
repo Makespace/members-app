@@ -18,6 +18,10 @@ const getUser = (req: Request, deps: Dependencies) =>
     )
   );
 
+// See formPost for a more indepth discussion about the design decisions around why this is how it is.
+// formGet is like formPost but rather than processing a command formGet handles calling a read model to
+// get a view of the current state of a resource. This should be completely pure because its read-only and
+// is where conflict resolution etc. is handled as described in form-post.
 export const formGet =
   <T>(deps: Dependencies, form: Form<T>) =>
   async (req: Request, res: Response) => {

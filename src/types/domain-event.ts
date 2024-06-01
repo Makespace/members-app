@@ -12,7 +12,7 @@ export const DomainEvent = t.union([
     id: tt.UUID,
   }),
   t.strict({
-    type: t.literal('EquipmentAdded'),
+    type: t.literal('EquipmentAddedV2'),
     name: t.string,
     id: tt.UUID,
     areaId: tt.UUID,
@@ -73,6 +73,12 @@ export const filterByName =
       RA.map(filtered => filtered as SubsetOfDomainEvent<T>)
     );
 
+// You must use this for constructing events because it means that if ever completely
+// remove an event its easy to find where it needs to be deleted from within the code.
+// 
+// We might remove an event if its not longer being produced and doesn't appear in the database
+// anymore but generally we wouldn't delete an event immediately after we stop producing it
+// so that read models can still use it for historical context.
 export const constructEvent =
   <T extends EventName, A extends EventSpecificFields<T>>(type: T) =>
   (args: A): EventBase<T> & A => ({
