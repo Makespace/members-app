@@ -80,6 +80,8 @@ export const formPost =
       //  1. To actually create the event
       //  2. To check if the event should be created.
       //
+      // Throughout this text 'user' refers to the consumer of this service. It doesn't necessarily mean a human.
+      //
       // The idea of this code base is to use the CQRS pattern and following this we want command.process to do as little checking of
       // business rules / other context as possible. Essentially all checking of buisness rules such as 'does this piece of equipment
       // I'm trying to edit exist' should be done on the read side (the read models). This means that practically command.process
@@ -113,8 +115,12 @@ export const formPost =
       // - While we actually only require write-side locking in rare cases for now we use it for all commands. The reason is that the
       //    performance overhead is expected to be sufficiently low that we might aswell just use it for everything to minimse the
       //    need to somehow specific which commands require it.
-      //
-      // 
+      // - There is currently no mechanism to immediately use a Failure type event and use this to affect the response sent back to
+      //    the user. For the time being this intentional as the point of this architecture is to avoid complicated handling on the
+      //    write side. If something does happen the user will get a generic error back and then the read-model side is responsible
+      //    for displaying the new state based on the failure events that have been stored. It is forseeable that we may decide to
+      //    relax this slightly in the future to allow certain failure events to trigger an immediate specific response back to the
+      //    user.
       TE.chainW(input =>
         persistOrNoOp(
           deps.commitEvent,
