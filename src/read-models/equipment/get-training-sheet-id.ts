@@ -9,10 +9,10 @@ export const getTrainingSheetId =
     pipe(
       events,
       RA.filter(isEventOfType('EquipmentTrainingSheetRegistered')),
-      RA.filter(event => event.equipmentId == equipmentId),
+      RA.filter(event => event.equipmentId === equipmentId),
       RA.last,
       O.match(
         () => O.none,
-        (mostRecentSheet) => O.some(mostRecentSheet.trainingSheetId)
+        mostRecentSheet => O.some(mostRecentSheet.trainingSheetId)
       )
     );

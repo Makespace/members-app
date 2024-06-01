@@ -21,7 +21,10 @@ const process = (input: {
   pipe(
     input.events,
     RA.match(
-      () => O.some(constructEvent('EquipmentTrainingSheetRegistered')(input.command)),
+      () =>
+        O.some(
+          constructEvent('EquipmentTrainingSheetRegistered')(input.command)
+        ),
       () => O.none
     )
   );
