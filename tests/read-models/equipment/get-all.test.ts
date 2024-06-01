@@ -76,4 +76,8 @@ describe('get-all', () => {
       );
     });
   });
+
+  describe('when equipment has had multiple sheets registered', () => {
+    it.todo('returns the latest training sheet');
+  });
 });
