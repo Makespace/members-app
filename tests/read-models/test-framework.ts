@@ -59,6 +59,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       },
       equipment: {
         add: frameworkify(commands.equipment.add),
+        training_sheet: frameworkify(commands.equipment.training_sheet),
       },
       memberNumbers: {
         linkNumberToEmail: frameworkify(

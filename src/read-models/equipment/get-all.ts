@@ -27,8 +27,10 @@ export const getAll = (
         })),
         O.map(equipmentData => ({
           ...equipmentData,
-          trainingSheetId: readModels.equipment.getTrainingSheetId(events)(equipmentData.id),
-        })),
+          trainingSheetId: readModels.equipment.getTrainingSheetId(events)(
+            equipmentData.id
+          ),
+        }))
       )
     ),
     RA.compact

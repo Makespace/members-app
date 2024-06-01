@@ -43,7 +43,7 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
   router.post(
     '/equipment/add-training-sheet',
     http.apiPost(deps, conf, commands.equipment.training_sheet)
-  )
+  );
 
   router.get('/super-users', queries.superUsers(deps));
   router.get(
