@@ -1,3 +1,12 @@
 import {User} from './user';
+import * as t from 'io-ts';
 
-export type Actor = {tag: 'user'; user: User} | {tag: 'token'; token: 'admin'};
+const Actor = t.union(
+  [
+    t.strict({tag: t.literal('user'), user: User}),
+    t.strict({tag: t.literal('token'), token: t.literal('admin')}),
+  ],
+  'tag'
+);
+
+export type Actor = t.TypeOf<typeof Actor>;
