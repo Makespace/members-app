@@ -12,17 +12,15 @@ import {User} from '../../types';
 import {StatusCodes} from 'http-status-codes';
 import {sequenceS} from 'fp-ts/lib/Apply';
 
-export type Params = {equipmentId: string; user: User};
-
 export const constructViewModel =
-  (deps: Dependencies) =>
-  (params: Params): TE.TaskEither<FailureWithStatus, ViewModel> =>
+  (deps: Dependencies, user: User) =>
+  (equipmentId: string): TE.TaskEither<FailureWithStatus, ViewModel> =>
     pipe(
       deps.getAllEvents(),
       TE.map(events => ({
-        user: E.right(params.user),
+        user: E.right(user),
         name: pipe(
-          params.equipmentId,
+          equipmentId,
           readModels.equipment.get(events),
           E.fromOption(() =>
             failureWithStatus('No such equipment', StatusCodes.NOT_FOUND)()
