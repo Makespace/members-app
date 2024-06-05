@@ -2,7 +2,6 @@ import express, {RequestHandler, Router} from 'express';
 import path from 'path';
 import {oopsPage} from './templates';
 import {Dependencies} from './dependencies';
-import {configureAuthRoutes} from './authentication';
 import {Config} from './configuration';
 import {StatusCodes} from 'http-status-codes';
 import {Command, commands} from './commands';
@@ -11,6 +10,11 @@ import {http} from './http';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {pipe} from 'fp-ts/lib/function';
 import {Form} from './types/form';
+import {get} from './types/route';
+import {authRoutes} from './authentication';
+
+const ping: RequestHandler = (req, res) =>
+  res.status(StatusCodes.OK).send('pong\n');
 
 export const createRouter = (deps: Dependencies, conf: Config): Router => {
   const query = (path: string, query: queries.Query) => ({
@@ -58,6 +62,8 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
     ...command('super-users', 'declare', commands.superUser.declare),
     ...command('super-users', 'revoke', commands.superUser.revoke),
     ...command('members', 'create', commands.memberNumbers.linkNumberToEmail),
+    get('/ping', ping),
+    ...authRoutes,
   ];
 
   const router = Router();
@@ -68,10 +74,6 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
       router[method](path, middleware)
     )
   );
-
-  configureAuthRoutes(router);
-
-  router.get('/ping', (req, res) => res.status(StatusCodes.OK).send('pong\n'));
 
   router.use('/static', express.static(path.resolve(__dirname, './static')));
 
