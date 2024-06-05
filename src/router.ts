@@ -48,20 +48,17 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
     query('/', queries.landing),
     query('/areas', queries.areas),
     ...command('areas', 'create', commands.area.create),
+    ...command('areas', 'add-owner', commands.area.addOwner),
     query('/areas/:area', queries.area),
     query('/equipment', queries.allEquipment),
     query('/equipment/:equipment', queries.equipment),
     query('/super-users', queries.superUsers),
+    ...command('super-users', 'declare', commands.superUser.declare),
+    ...command('super-users', 'revoke', commands.superUser.revoke),
     query('/event-log', queries.log),
   ];
 
   const router = Router();
-
-  router.get('/areas/add-owner', http.formGet(deps, commands.area.addOwner));
-  router.post(
-    '/areas/add-owner',
-    http.formPost(deps, commands.area.addOwner, '/areas')
-  );
 
   router.get(
     '/areas/:area/add-equipment',
@@ -70,31 +67,6 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
   router.post(
     '/equipment/add',
     http.formPost(deps, commands.equipment.add, '/equipment')
-  );
-
-  router.get(
-    '/super-users/declare',
-    http.formGet(deps, commands.superUser.declare)
-  );
-  router.post(
-    '/super-users/declare',
-    http.formPost(deps, commands.superUser.declare, '/super-users')
-  );
-  router.post(
-    '/api/declare-super-user',
-    http.apiPost(deps, conf, commands.superUser.declare)
-  );
-  router.get(
-    '/super-users/revoke',
-    http.formGet(deps, commands.superUser.revoke)
-  );
-  router.post(
-    '/super-users/revoke',
-    http.formPost(deps, commands.superUser.revoke, '/super-users')
-  );
-  router.post(
-    '/api/revoke-super-user',
-    http.apiPost(deps, conf, commands.superUser.revoke)
   );
 
   router.post(
