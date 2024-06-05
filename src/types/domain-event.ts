@@ -4,36 +4,36 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {pipe} from 'fp-ts/lib/function';
 import {EmailAddressCodec} from './email-address';
 
+const eventCodec = <A extends string, T extends t.Props>(
+  type: A,
+  payload: T
+): t.ExactC<t.TypeC<T & {type: t.LiteralC<A>}>> =>
+  t.strict({...payload, type: t.literal(type)});
+
 export const DomainEvent = t.union([
-  t.strict({
-    type: t.literal('AreaCreated'),
+  eventCodec('AreaCreated', {
     name: t.string,
     description: t.string,
     id: tt.UUID,
   }),
-  t.strict({
-    type: t.literal('EquipmentAdded'),
+  eventCodec('EquipmentAdded', {
     name: t.string,
     id: tt.UUID,
     areaId: tt.UUID,
   }),
-  t.strict({
-    type: t.literal('OwnerAdded'),
+  eventCodec('OwnerAdded', {
     areaId: tt.UUID,
     memberNumber: t.number,
   }),
-  t.strict({
-    type: t.literal('SuperUserDeclared'),
+  eventCodec('SuperUserDeclared', {
     memberNumber: t.number,
     declaredAt: tt.DateFromISOString,
   }),
-  t.strict({
-    type: t.literal('SuperUserRevoked'),
+  eventCodec('SuperUserRevoked', {
     memberNumber: t.number,
     revokedAt: tt.DateFromISOString,
   }),
-  t.strict({
-    type: t.literal('MemberNumberLinkedToEmail'),
+  eventCodec('MemberNumberLinkedToEmail', {
     memberNumber: t.number,
     email: EmailAddressCodec,
   }),
