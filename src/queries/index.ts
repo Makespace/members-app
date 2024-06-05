@@ -14,6 +14,6 @@ export const queries = {
   area: area,
   equipment: flow(equipment, asyncHandler),
   superUsers: flow(superUsers, asyncHandler),
-  landing: flow(landing, asyncHandler),
+  landing: landing,
   log: flow(log, asyncHandler),
 };

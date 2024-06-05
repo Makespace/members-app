@@ -1,7 +1,5 @@
 import {pipe} from 'fp-ts/lib/function';
-import {pageTemplate} from '../../templates';
 import {html} from '../../types/html';
-import * as O from 'fp-ts/Option';
 import {ViewModel} from './view-model';
 
 const renderMemberDetails = (user: ViewModel['user']) => html`
@@ -40,6 +38,5 @@ export const render = (viewModel: ViewModel) =>
       ${viewModel.isSuperUser ? superUserNav : ''}
 
       </table>
-    `,
-    pageTemplate('Dashboard', O.some(viewModel.user))
+    `
   );

@@ -12,7 +12,7 @@ import {http} from './http';
 export const createRouter = (deps: Dependencies, conf: Config): Router => {
   const router = Router();
 
-  router.get('/', queries.landing(deps));
+  router.get('/', http.queryGet(deps, queries.landing));
 
   router.get('/areas', queries.areas(deps));
   router.get('/areas/create', http.formGet(deps, commands.area.create));
