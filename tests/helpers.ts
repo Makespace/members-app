@@ -1,7 +1,7 @@
 import {error} from 'console';
 import * as O from 'fp-ts/Option';
 import * as E from 'fp-ts/Either';
-import {pipe} from 'fp-ts/lib/function';
+import {identity, pipe} from 'fp-ts/lib/function';
 import {Actor} from '../src/types/actor';
 
 export const getRightOrFail = <A>(input: E.Either<unknown, A>): A =>
@@ -10,6 +10,14 @@ export const getRightOrFail = <A>(input: E.Either<unknown, A>): A =>
     E.getOrElseW(left => {
       error(left);
       throw new Error('unexpected Left');
+    })
+  );
+
+export const getLeftOrFail = <E>(input: E.Either<E, unknown>): E =>
+  pipe(
+    input,
+    E.match(identity, () => {
+      throw new Error('unexpected Right');
     })
   );
 
