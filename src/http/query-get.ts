@@ -6,9 +6,8 @@ import {Request, Response} from 'express';
 import {getUserFromSession} from '../authentication';
 import {failureWithStatus} from '../types/failureWithStatus';
 import {StatusCodes} from 'http-status-codes';
-import {logInPath} from '../authentication/auth-routes';
 import {User} from '../types';
-import {pageTemplate} from '../templates';
+import {oopsPage, pageTemplate} from '../templates';
 import {Params, Query} from '../queries/query';
 
 const buildPage =
@@ -28,7 +27,7 @@ export const queryGet =
       ),
       TE.chain(buildPage(deps, req.params, query)),
       TE.matchW(
-        () => res.redirect(logInPath),
+        failure => res.status(failure.status).send(oopsPage(failure.message)),
         page => res.status(200).send(page)
       )
     )();
