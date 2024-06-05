@@ -12,7 +12,6 @@ const renderAreas = (areas: ViewModel['areas']) =>
       area => html`
         <tr>
           <td><a href="/areas/${area.id}">${area.name}</a></td>
-          <td>${area.description}</td>
           <td>${area.owners.join(', ')}</td>
           <td><a href="/areas/add-owner?area=${area.id}">Add owner</a></td>
         </tr>
@@ -25,7 +24,6 @@ const renderAreas = (areas: ViewModel['areas']) =>
           <thead>
             <tr>
               <th>Name</th>
-              <th>Description</th>
               <th>Owners</th>
               <th>Actions</th>
             </tr>

@@ -18,7 +18,6 @@ describe('get-area', () => {
     const createArea = {
       id: faker.string.uuid() as UUID,
       name: faker.company.buzzNoun() as NonEmptyString,
-      description: faker.company.buzzPhrase(),
     };
     beforeEach(async () => {
       await framework.commands.area.create(createArea);
