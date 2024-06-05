@@ -1,18 +1,8 @@
-import {areas} from './areas';
-import {landing} from './landing';
-import {superUsers} from './super-users';
-import {area} from './area';
-import {allEquipment} from './all-equipment';
-import {equipment} from './equipment';
-import {log} from './log';
-import {Query} from './query';
-
-export const queries: Record<string, Query> = {
-  allEquipment,
-  areas,
-  area,
-  equipment,
-  superUsers,
-  landing,
-  log,
-};
+export {areas} from './areas';
+export {landing} from './landing';
+export {superUsers} from './super-users';
+export {area} from './area';
+export {allEquipment} from './all-equipment';
+export {equipment} from './equipment';
+export {log} from './log';
+export {Query} from './query';
