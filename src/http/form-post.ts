@@ -50,7 +50,7 @@ export const formPost =
           StatusCodes.UNAUTHORIZED
         )()
       ),
-      TE.chain(({formPayload}) =>
+      TE.chain(({formPayload, actor}) =>
         pipe(
           {
             resource: TE.right(command.resource(formPayload)),
@@ -58,6 +58,7 @@ export const formPost =
               command.resource(formPayload)
             ),
             formPayload: TE.right(formPayload),
+            actor: TE.right(actor),
           },
           sequenceS(TE.ApplyPar)
         )
@@ -70,7 +71,7 @@ export const formPost =
         )(
           command.process({
             events: input.resourceState.events,
-            command: input.formPayload,
+            command: {...input.formPayload, actor: input.actor},
           })
         )
       ),

@@ -8,12 +8,13 @@ import {
   isEventOfType,
 } from '../../../src/types';
 import {pipe} from 'fp-ts/lib/function';
-import {getSomeOrFail} from '../../helpers';
+import {arbitraryActor, getSomeOrFail} from '../../helpers';
 
 describe('linkNumberToEmail', () => {
   const command = {
     email: faker.internet.email() as EmailAddress,
     memberNumber: faker.number.int(),
+    actor: arbitraryActor(),
   };
   describe('when the member number already exists', () => {
     const events: ReadonlyArray<DomainEvent> = [
