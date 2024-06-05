@@ -19,9 +19,7 @@ const buildPage =
     );
 
 export const queryGet =
-  (deps: Dependencies) =>
-  (query: Query) =>
-  async (req: Request, res: Response) => {
+  (deps: Dependencies, query: Query) => async (req: Request, res: Response) => {
     await pipe(
       req.session,
       getUserFromSession(deps),
