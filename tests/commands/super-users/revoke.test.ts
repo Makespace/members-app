@@ -2,6 +2,7 @@ import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
 import {constructEvent} from '../../../src/types';
 import {revoke} from '../../../src/commands/super-user/revoke';
+import {arbitraryActor} from '../../helpers';
 
 describe('revoke-super-user', () => {
   describe('when the member is currently not a super user', () => {
@@ -10,6 +11,7 @@ describe('revoke-super-user', () => {
       command: {
         memberNumber,
         revokedAt: faker.date.soon(),
+        actor: arbitraryActor(),
       },
       events: [],
     });
@@ -25,6 +27,7 @@ describe('revoke-super-user', () => {
       command: {
         memberNumber,
         revokedAt: faker.date.soon(),
+        actor: arbitraryActor(),
       },
       events: [
         constructEvent('SuperUserDeclared')({
@@ -49,6 +52,7 @@ describe('revoke-super-user', () => {
       command: {
         memberNumber,
         revokedAt: faker.date.soon(),
+        actor: arbitraryActor(),
       },
       events: [
         constructEvent('SuperUserDeclared')({

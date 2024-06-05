@@ -4,6 +4,7 @@ import {NonEmptyString, UUID} from 'io-ts-types';
 import {create} from '../../../src/commands/area/create';
 import {constructEvent} from '../../../src/types';
 import {v4} from 'uuid';
+import {arbitraryActor} from '../../helpers';
 
 describe('create-area', () => {
   describe('when the area does not yet exist', () => {
@@ -14,6 +15,7 @@ describe('create-area', () => {
         id: v4() as UUID,
         name: areaName,
         description: areaDescription,
+        actor: arbitraryActor(),
       },
       events: [],
     });
@@ -38,6 +40,7 @@ describe('create-area', () => {
         id: v4() as UUID,
         name: areaName,
         description: areaDescription,
+        actor: arbitraryActor(),
       },
       events: [
         constructEvent('AreaCreated')({

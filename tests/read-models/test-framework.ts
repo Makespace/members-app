@@ -6,7 +6,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {commands, Command} from '../../src/commands';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
 import {persistOrNoOp} from '../../src/commands/persist-or-no-op';
-import {getRightOrFail} from '../helpers';
+import {arbitraryActor, getRightOrFail} from '../helpers';
 import * as libsqlClient from '@libsql/client';
 import {randomUUID} from 'crypto';
 import {Resource} from '../../src/types/resource';
@@ -20,14 +20,16 @@ type ToFrameworkCommands<T> = {
         events: ReadonlyArray<DomainEvent>;
       }) => unknown;
     }
-      ? (c: C) => Promise<void>
+      ? (c: Omit<C, 'actor'>) => Promise<void>
       : never;
   };
 };
+
 export type TestFramework = {
   getAllEvents: () => Promise<ReadonlyArray<DomainEvent>>;
   commands: ToFrameworkCommands<typeof commands>;
 };
+
 export const initTestFramework = async (): Promise<TestFramework> => {
   const dbClient = libsqlClient.createClient({
     url: `file:/tmp/${randomUUID()}.db`,
@@ -45,7 +47,13 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       const resource = command.resource(commandPayload);
       const {events, version} = await frameworkGetResourceEvents(resource);
       await pipe(
-        command.process({command: commandPayload, events}),
+        command.process({
+          command: {
+            ...commandPayload,
+            actor: arbitraryActor(),
+          },
+          events,
+        }),
         persistOrNoOp(frameworkCommitEvent, resource, version)
       )();
     };
