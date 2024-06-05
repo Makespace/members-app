@@ -12,27 +12,25 @@ import {User} from '../../types';
 import {StatusCodes} from 'http-status-codes';
 import {sequenceS} from 'fp-ts/lib/Apply';
 
-export type Params = {areaId: string; user: User};
-
 export const constructViewModel =
   (deps: Dependencies) =>
-  (params: Params): TE.TaskEither<FailureWithStatus, ViewModel> =>
+  (areaId: string, user: User): TE.TaskEither<FailureWithStatus, ViewModel> =>
     pipe(
       deps.getAllEvents(),
       TE.map(events => ({
-        user: E.right(params.user),
+        user: E.right(user),
         isSuperUser: E.right(
-          readModels.superUsers.is(params.user.memberNumber)(events)
+          readModels.superUsers.is(user.memberNumber)(events)
         ),
         area: pipe(
-          params.areaId,
+          areaId,
           readModels.areas.getArea(events),
           E.fromOption(() =>
             failureWithStatus('No such area', StatusCodes.NOT_FOUND)()
           )
         ),
         equipment: pipe(
-          params.areaId,
+          areaId,
           readModels.equipment.getForArea(events),
           E.right
         ),

@@ -11,7 +11,7 @@ import {log} from './log';
 export const queries = {
   allEquipment: flow(allEquipment, asyncHandler),
   areas: flow(areas, asyncHandler),
-  area: flow(area, asyncHandler),
+  area: area,
   equipment: flow(equipment, asyncHandler),
   superUsers: flow(superUsers, asyncHandler),
   landing: flow(landing, asyncHandler),
