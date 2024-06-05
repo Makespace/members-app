@@ -69,17 +69,14 @@ describe('construct-view-model', () => {
           constructEvent('AreaCreated')({
             id: v4() as UUID,
             name: faker.commerce.productName(),
-            description: faker.commerce.productDescription(),
           }),
           constructEvent('AreaCreated')({
             id: v4() as UUID,
             name: faker.commerce.productName(),
-            description: faker.commerce.productDescription(),
           }),
           constructEvent('AreaCreated')({
             id: v4() as UUID,
             name: faker.commerce.productName(),
-            description: faker.commerce.productDescription(),
           }),
         ]),
     };

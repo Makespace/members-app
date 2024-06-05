@@ -10,7 +10,6 @@ import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 const codec = t.strict({
   id: tt.UUID,
   name: tt.NonEmptyString,
-  description: t.string,
 });
 
 type CreateArea = t.TypeOf<typeof codec>;

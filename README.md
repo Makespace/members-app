@@ -72,5 +72,5 @@ curl -X POST -H 'Authorization: Bearer secret' -H 'Content-Type: application/jso
 
 ```
 curl -X POST -H 'Authorization: Bearer secret' -H 'Content-Type: application/json' \
---data '{"name": "Woodspace", "description": "A place for wood"}' http://localhost:8080/api/create-area
+--data '{"name": "Woodspace"}' http://localhost:8080/api/create-area
 ```

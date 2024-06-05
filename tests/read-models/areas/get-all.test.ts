@@ -16,7 +16,6 @@ describe('get-all', () => {
       await framework.commands.area.create({
         id: faker.string.uuid() as UUID,
         name: faker.company.buzzNoun() as NonEmptyString,
-        description: faker.company.buzzPhrase(),
       });
       events = await framework.getAllEvents();
     });
@@ -31,7 +30,6 @@ describe('get-all', () => {
     const createArea = {
       id: faker.string.uuid() as UUID,
       name: faker.company.buzzNoun() as NonEmptyString,
-      description: faker.company.buzzPhrase(),
     };
     const addOwner = {
       areaId: createArea.id,

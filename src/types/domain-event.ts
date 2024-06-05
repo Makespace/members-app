@@ -18,7 +18,6 @@ const eventCodec = <A extends string, T extends t.Props>(
 export const DomainEvent = t.union([
   eventCodec('AreaCreated', {
     name: t.string,
-    description: t.string,
     id: tt.UUID,
   }),
   eventCodec('EquipmentAdded', {

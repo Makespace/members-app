@@ -37,7 +37,6 @@ const renderEquipment = (allEquipment: ViewModel['equipment']) =>
 export const render = (viewModel: ViewModel) =>
   pipe(
     html`<h1>${viewModel.area.name}</h1>
-      <p>${viewModel.area.description}</p>
       ${viewModel.isSuperUser
         ? addEquipmentCallToAction(viewModel.area.id)
         : ''}
