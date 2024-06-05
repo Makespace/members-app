@@ -6,7 +6,7 @@ import {Request, Response} from 'express';
 import {getUserFromSession} from '../authentication';
 import {failureWithStatus} from '../types/failureWithStatus';
 import {StatusCodes} from 'http-status-codes';
-import {logInRoute} from '../authentication/configure-auth-routes';
+import {logInPath} from '../authentication/auth-routes';
 import {User} from '../types';
 import {pageTemplate} from '../templates';
 import {Params, Query} from '../queries/query';
@@ -28,7 +28,7 @@ export const queryGet =
       ),
       TE.chain(buildPage(deps, req.params, query)),
       TE.matchW(
-        () => res.redirect(logInRoute),
+        () => res.redirect(logInPath),
         page => res.status(200).send(page)
       )
     )();
