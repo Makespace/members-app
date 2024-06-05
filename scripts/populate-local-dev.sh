@@ -10,4 +10,4 @@ curl -X POST -H 'Authorization: Bearer secret' -H 'Content-Type: application/jso
 
 curl -X POST -H 'Authorization: Bearer secret' -H 'Content-Type: application/json' \
 	--data '{"memberNumber": "1337", "declaredAt": "2023-01-20"}' \
-	http://localhost:8080/api/declare-super-user
+	http://localhost:8080/api/super-users/declare
