@@ -73,6 +73,8 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
     http.apiPost(deps, conf, commands.memberNumbers.linkNumberToEmail)
   );
 
+  router.get('/event-log', queries.log(deps));
+
   configureAuthRoutes(router);
 
   router.get('/ping', (req, res) => res.status(StatusCodes.OK).send('pong\n'));

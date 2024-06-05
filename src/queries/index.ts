@@ -6,6 +6,7 @@ import asyncHandler from 'express-async-handler';
 import {area} from './area';
 import {allEquipment} from './all-equipment';
 import {equipment} from './equipment';
+import {log} from './log';
 
 export const queries = {
   allEquipment: flow(allEquipment, asyncHandler),
@@ -14,4 +15,5 @@ export const queries = {
   equipment: flow(equipment, asyncHandler),
   superUsers: flow(superUsers, asyncHandler),
   landing: flow(landing, asyncHandler),
+  log: flow(log, asyncHandler),
 };
