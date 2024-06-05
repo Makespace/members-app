@@ -14,7 +14,7 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
 
   router.get('/', http.queryGet(deps, queries.landing));
 
-  router.get('/areas', queries.areas(deps));
+  router.get('/areas', http.queryGet(deps, queries.areas));
   router.get('/areas/create', http.formGet(deps, commands.area.create));
   router.post(
     '/areas/create',
@@ -35,14 +35,14 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
     '/areas/:area/add-equipment',
     http.formGet(deps, commands.equipment.add)
   );
-  router.get('/equipment', queries.allEquipment(deps));
+  router.get('/equipment', http.queryGet(deps, queries.allEquipment));
   router.post(
     '/equipment/add',
     http.formPost(deps, commands.equipment.add, '/equipment')
   );
-  router.get('/equipment/:equipment', queries.equipment(deps));
+  router.get('/equipment/:equipment', http.queryGet(deps, queries.equipment));
 
-  router.get('/super-users', queries.superUsers(deps));
+  router.get('/super-users', http.queryGet(deps, queries.superUsers));
   router.get(
     '/super-users/declare',
     http.formGet(deps, commands.superUser.declare)
@@ -73,7 +73,7 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
     http.apiPost(deps, conf, commands.memberNumbers.linkNumberToEmail)
   );
 
-  router.get('/event-log', queries.log(deps));
+  router.get('/event-log', http.queryGet(deps, queries.log));
 
   configureAuthRoutes(router);
 

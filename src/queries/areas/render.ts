@@ -1,7 +1,5 @@
 import {pipe} from 'fp-ts/lib/function';
-import {pageTemplate} from '../../templates';
 import {html} from '../../types/html';
-import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {ViewModel} from './view-model';
 
@@ -40,12 +38,8 @@ const addAreaCallToAction = html`
   <a href="/areas/create">Add area of responsibility</a>
 `;
 
-export const render = (viewModel: ViewModel) =>
-  pipe(
-    html`
-      <h1>Areas of Makespace</h1>
-      ${viewModel.isSuperUser ? addAreaCallToAction : ''}
-      ${renderAreas(viewModel.areas)}
-    `,
-    pageTemplate('Areas', O.some(viewModel.user))
-  );
+export const render = (viewModel: ViewModel) => html`
+  <h1>Areas of Makespace</h1>
+  ${viewModel.isSuperUser ? addAreaCallToAction : ''}
+  ${renderAreas(viewModel.areas)}
+`;
