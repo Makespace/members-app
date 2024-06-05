@@ -9,5 +9,5 @@ export const http = {
   apiPost: flow(apiPost, asyncHandler),
   formGet: flow(formGet, asyncHandler),
   formPost: flow(formPost, asyncHandler),
-  queryGet,
+  queryGet: flow(queryGet, asyncHandler),
 };
