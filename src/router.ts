@@ -46,6 +46,7 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
     handler: RequestHandler;
   }> = [
     query('/', queries.landing),
+    query('/event-log', queries.log),
     query('/areas', queries.areas),
     ...command('areas', 'create', commands.area.create),
     ...command('areas', 'add-owner', commands.area.addOwner),
@@ -56,15 +57,10 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
     query('/super-users', queries.superUsers),
     ...command('super-users', 'declare', commands.superUser.declare),
     ...command('super-users', 'revoke', commands.superUser.revoke),
-    query('/event-log', queries.log),
+    ...command('members', 'create', commands.memberNumbers.linkNumberToEmail),
   ];
 
   const router = Router();
-
-  router.post(
-    '/api/link-number-to-email',
-    http.apiPost(deps, conf, commands.memberNumbers.linkNumberToEmail)
-  );
 
   pipe(
     routes,

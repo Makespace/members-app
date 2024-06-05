@@ -17,6 +17,9 @@ const superUserNav = html`
   <nav>
     <ul>
       <li>
+        <a href="/members/create">Link a member number to an e-mail address</a>
+      </li>
+      <li>
         <a href="/areas/create">Add area of responsibility</a>
       </li>
       <li>
