@@ -51,6 +51,7 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
     ...command('areas', 'add-owner', commands.area.addOwner),
     query('/areas/:area', queries.area),
     query('/equipment', queries.allEquipment),
+    ...command('equipment', 'add', commands.equipment.add),
     query('/equipment/:equipment', queries.equipment),
     query('/super-users', queries.superUsers),
     ...command('super-users', 'declare', commands.superUser.declare),
@@ -59,15 +60,6 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
   ];
 
   const router = Router();
-
-  router.get(
-    '/areas/:area/add-equipment',
-    http.formGet(deps, commands.equipment.add)
-  );
-  router.post(
-    '/equipment/add',
-    http.formPost(deps, commands.equipment.add, '/equipment')
-  );
 
   router.post(
     '/api/link-number-to-email',
