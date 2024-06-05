@@ -1,4 +1,4 @@
-import {DomainEvent, constructEvent} from '../../types';
+import {constructEvent} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
@@ -15,10 +15,7 @@ const codec = t.strict({
 
 type AddEquipment = t.TypeOf<typeof codec>;
 
-const process = (input: {
-  command: AddEquipment;
-  events: ReadonlyArray<DomainEvent>;
-}): O.Option<DomainEvent> =>
+const process: Command<AddEquipment>['process'] = input =>
   pipe(
     input.events,
     RA.match(
@@ -27,7 +24,7 @@ const process = (input: {
     )
   );
 
-const resource = (command: AddEquipment) => ({
+const resource: Command<AddEquipment>['resource'] = command => ({
   type: 'Equipment',
   id: command.id,
 });
