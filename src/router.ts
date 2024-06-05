@@ -10,16 +10,18 @@ import * as queries from './queries';
 import {http} from './http';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {pipe} from 'fp-ts/lib/function';
+import expressAsyncHandler from 'express-async-handler';
 
 export const createRouter = (deps: Dependencies, conf: Config): Router => {
-  const queryRoutes: ReadonlyArray<[string, queries.Query]> = [
-    ['/', queries.landing],
-    ['/areas', queries.areas],
-    ['/areas/:area', queries.area],
-    ['/equipment', queries.allEquipment],
-    ['/equipment/:equipment', queries.equipment],
-    ['/super-users', queries.superUsers],
-    ['/event-log', queries.log],
+  const query = http.queryGet(deps);
+  const routes: ReadonlyArray<[string, ReturnType<typeof query>]> = [
+    ['/', query(queries.landing)],
+    ['/areas', query(queries.areas)],
+    ['/areas/:area', query(queries.area)],
+    ['/equipment', query(queries.allEquipment)],
+    ['/equipment/:equipment', query(queries.equipment)],
+    ['/super-users', query(queries.superUsers)],
+    ['/event-log', query(queries.log)],
   ];
 
   const router = Router();
@@ -79,8 +81,8 @@ export const createRouter = (deps: Dependencies, conf: Config): Router => {
   );
 
   pipe(
-    queryRoutes,
-    RA.map(([path, query]) => router.get(path, http.queryGet(deps, query)))
+    routes,
+    RA.map(([path, query]) => router.get(path, expressAsyncHandler(query)))
   );
 
   configureAuthRoutes(router);
