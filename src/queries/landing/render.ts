@@ -24,6 +24,9 @@ const superUserNav = html`
       <li>
         <a href="/super-users">View all super-users</a>
       </li>
+      <li>
+        <a href="/event-log">View log of all actions taken</a>
+      </li>
     </ul>
   </nav>
 `;
