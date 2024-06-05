@@ -1,4 +1,4 @@
-import {DomainEvent, constructEvent} from '../../types';
+import {constructEvent} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
@@ -16,10 +16,7 @@ const codec = t.strict({
 
 export type RevokeSuperUser = t.TypeOf<typeof codec>;
 
-const process = (input: {
-  command: RevokeSuperUser;
-  events: ReadonlyArray<DomainEvent>;
-}): O.Option<DomainEvent> =>
+const process: Command<RevokeSuperUser>['process'] = input =>
   pipe(
     input.events,
     filterByName(['SuperUserDeclared', 'SuperUserRevoked']),
