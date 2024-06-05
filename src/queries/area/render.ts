@@ -14,7 +14,7 @@ const renderOwners = (owners: ViewModel['area']['owners']) =>
   );
 
 const addEquipmentCallToAction = (areaId: string) => html`
-  <a href="/areas/${areaId}/add-equipment">Add piece of red equipment</a>
+  <a href="/equipment/add?area=${areaId}">Add piece of red equipment</a>
 `;
 
 const renderEquipment = (allEquipment: ViewModel['equipment']) =>
