@@ -3,26 +3,10 @@ services:
     build:
       target: prod
       context: .
+    env_file:
+      - .env
     ports:
       - 8080:8080
-    environment:
-      ADMIN_API_BEARER_TOKEN: secret
-      EVENTS_DB_NAME: event-log
-      EVENTS_DB_PASSWORD: secret
-      EVENTS_DB_USER: root
-      MAKESPACE_DB_HOST: mariadb
-      MEMBERS_DB_NAME: not-used
-      MEMBERS_DB_PASSWORD: not-used
-      MEMBERS_DB_USER: not-used
-      PORT: '8080'
-      PUBLIC_URL: 'http://localhost:8080'
-      SESSION_SECRET: secret
-      SMTP_HOST: mailcatcher
-      SMTP_PORT: '1025'
-      SMTP_USER: ''
-      SMTP_PASSWORD: ''
-      TOKEN_SECRET: secret
-      USE_STUBBED_ADAPTERS: 'true'
     restart: unless-stopped
 
   mailcatcher:
