@@ -41,7 +41,7 @@ Two users are created by `populate-local-dev`:
 make check
 ```
 
-## The following is run in CI (see `.github/workflows/ci.yml`)
+The following is run in CI (see `.github/workflows/ci.yml`)
 
 ```
 make typecheck lint unused-exports test smoketest
