@@ -5,5 +5,6 @@ export {area} from './area';
 export {allEquipment} from './all-equipment';
 export {equipment} from './equipment';
 export {members} from './members';
+export {member} from './member';
 export {log} from './log';
 export {Query} from './query';
