@@ -36,7 +36,7 @@ passport.deserializeUser((user: Express.User, done) => {
 
 // Application setup
 const app: Application = express();
-app.use(httpLogger({logger: deps.logger}));
+app.use(httpLogger({logger: deps.logger, useLevel: 'debug'}));
 app.use(express.urlencoded({extended: true}));
 app.use(express.json());
 app.use(cookieSession(sessionConfig(conf)));

@@ -34,6 +34,7 @@ export const initDependencies = (
           levelFirst: true,
           singleLine: true,
           levelKey: 'severity',
+          colorizeObjects: false,
         },
       },
     };
