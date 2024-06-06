@@ -1,8 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {pageTemplate} from '../../templates';
 import {html} from '../../types/html';
-import * as O from 'fp-ts/Option';
 import {ViewModel} from './view-model';
 import {Actor} from '../../types/actor';
 import {DomainEvent} from '../../types';
@@ -44,12 +42,8 @@ const renderLog = (log: ViewModel['events']) =>
     `
   );
 
-export const render = (viewModel: ViewModel) =>
-  pipe(
-    html`
-      <h1>Event log</h1>
-      <p>From most recent to oldest</p>
-      ${renderLog(viewModel.events)}
-    `,
-    pageTemplate('Dashboard', O.some(viewModel.user))
-  );
+export const render = (viewModel: ViewModel) => html`
+  <h1>Event log</h1>
+  <p>From most recent to oldest</p>
+  ${renderLog(viewModel.events)}
+`;
