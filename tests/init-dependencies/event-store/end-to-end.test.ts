@@ -20,7 +20,7 @@ const arbitraryMemberNumberLinkedToEmaiEvent = () =>
     email: faker.internet.email() as EmailAddress,
   });
 
-const testLogger = createLogger();
+const testLogger = createLogger({level: 'silent'});
 
 describe('event-store end-to-end', () => {
   describe('setup event store', () => {
