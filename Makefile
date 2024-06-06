@@ -4,7 +4,6 @@ check: test lint typecheck unused-exports
 
 node_modules: package.json bun.lockb
 	bun install --frozen-lockfile
-	touch node_modules
 
 .env:
 	cp .env.example .env

@@ -73,4 +73,12 @@ curl -X POST -H 'Authorization: Bearer secret' -H 'Content-Type: application/jso
 ```
 curl -X POST -H 'Authorization: Bearer secret' -H 'Content-Type: application/json' \
 --data '{"name": "Woodspace"}' http://localhost:8080/api/create-area
-```
+
+# Testing
+When writing tests conceptionally the code can be split into 2 sections. The code responsible for writing events
+(commands) and the code for reading events (read models). When testing generally it should be split so that
+any testing that involves reading is done by providing the events to a read-model and any testing that involves
+writing should be done by asserting the resulting events. In theory this would mean that we never call a
+command.process from within the read-models part of the tests and we never call a read-model from the commands
+part of the tests. In reality we do still call command.process within the read-model tests just so that we can use
+it to generate the required events we need without having to do that manually.

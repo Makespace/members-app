@@ -44,6 +44,7 @@ const getActorFrom = (authorization: unknown, conf: Config) =>
     TE.fromEither
   );
 
+// See formPost for a more indepth discussion about the design decisions around why this is how it is.
 export const apiPost =
   <T>(deps: Dependencies, conf: Config, command: Command<T>) =>
   async (req: Request, res: Response) => {
