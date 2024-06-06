@@ -48,8 +48,7 @@ export const DomainEvent = t.union([
     memberNumber: t.number,
     email: EmailAddressCodec,
   }),
-  t.strict({
-    type: t.literal('EquipmentTrainingSheetRegistered'),
+  eventCodec('EquipmentTrainingSheetRegistered', {
     equipmentId: tt.UUID,
     trainingSheetId: t.string,
   }),
