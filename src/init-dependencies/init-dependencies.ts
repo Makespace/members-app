@@ -53,7 +53,7 @@ export const initDependencies = (
   );
 
   return {
-    commitEvent: commitEvent(dbClient),
+    commitEvent: commitEvent(dbClient, logger),
     getAllEvents: getAllEvents(dbClient),
     getResourceEvents: getResourceEvents(dbClient),
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),

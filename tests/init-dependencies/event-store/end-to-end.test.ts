@@ -1,3 +1,4 @@
+import createLogger from 'pino';
 import {faker} from '@faker-js/faker';
 import * as libsqlClient from '@libsql/client';
 import * as E from 'fp-ts/Either';
@@ -18,6 +19,8 @@ const arbitraryMemberNumberLinkedToEmaiEvent = () =>
     memberNumber: faker.number.int(),
     email: faker.internet.email() as EmailAddress,
   });
+
+const testLogger = createLogger();
 
 describe('event-store end-to-end', () => {
   describe('setup event store', () => {
@@ -54,7 +57,7 @@ describe('event-store end-to-end', () => {
 
     describe('committing when then resource does not exist', () => {
       beforeEach(async () => {
-        await commitEvent(dbClient)(resource, initialVersion)(event)();
+        await commitEvent(dbClient, testLogger)(resource, initialVersion)(event)();
         resourceEvents = await pipe(
           resource,
           getResourceEvents(dbClient),
@@ -75,8 +78,8 @@ describe('event-store end-to-end', () => {
       const event2 = arbitraryMemberNumberLinkedToEmaiEvent();
 
       beforeEach(async () => {
-        await commitEvent(dbClient)(resource, initialVersion)(event)();
-        await commitEvent(dbClient)(resource, initialVersion)(event2)();
+        await commitEvent(dbClient, testLogger)(resource, initialVersion)(event)();
+        await commitEvent(dbClient, testLogger)(resource, initialVersion)(event2)();
         resourceEvents = await pipe(
           resource,
           getResourceEvents(dbClient),
@@ -98,13 +101,13 @@ describe('event-store end-to-end', () => {
       const competingEvent = arbitraryMemberNumberLinkedToEmaiEvent();
       let result: E.Either<unknown, unknown>;
       beforeEach(async () => {
-        await commitEvent(dbClient)(resource, initialVersion)(initialEvent)();
+        await commitEvent(dbClient, testLogger)(resource, initialVersion)(initialEvent)();
         await pipe(
           competingEvent,
-          commitEvent(dbClient)(resource, initialVersion),
+          commitEvent(dbClient, testLogger)(resource, initialVersion),
           T.map(getRightOrFail)
         )();
-        result = await commitEvent(dbClient)(resource, initialVersion)(event)();
+        result = await commitEvent(dbClient, testLogger)(resource, initialVersion)(event)();
       });
 
       it('does not persist the event', async () => {
@@ -124,15 +127,15 @@ describe('event-store end-to-end', () => {
         id: faker.string.alpha(),
       });
       beforeEach(async () => {
-        await commitEvent(dbClient)(
+        await commitEvent(dbClient, testLogger)(
           arbitraryResourceOfSameType(),
           faker.number.int()
         )(arbitraryMemberNumberLinkedToEmaiEvent())();
-        await commitEvent(dbClient)(
+        await commitEvent(dbClient, testLogger)(
           arbitraryResourceOfSameType(),
           faker.number.int()
         )(arbitraryMemberNumberLinkedToEmaiEvent())();
-        await commitEvent(dbClient)(resource, initialVersion)(event)();
+        await commitEvent(dbClient, testLogger)(resource, initialVersion)(event)();
         resourceEvents = await pipe(
           resource,
           getResourceEvents(dbClient),
