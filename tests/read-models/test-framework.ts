@@ -1,3 +1,4 @@
+import createLogger from 'pino';
 import * as T from 'fp-ts/Task';
 import {getAllEvents} from '../../src/init-dependencies/event-store/get-all-events';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-event-table-exists';
@@ -34,7 +35,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   const dbClient = libsqlClient.createClient({
     url: `file:/tmp/${randomUUID()}.db`,
   });
-  const frameworkCommitEvent = commitEvent(dbClient);
+  const frameworkCommitEvent = commitEvent(dbClient, createLogger());
   await ensureEventTableExists(dbClient)();
   const frameworkGetAllEvents = () =>
     pipe(getAllEvents(dbClient)(), T.map(getRightOrFail))();

@@ -1,3 +1,4 @@
+import {Logger} from 'pino';
 import * as E from 'fp-ts/Either';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {StatusCodes} from 'http-status-codes';
@@ -67,7 +68,7 @@ const performTransaction = async (
 };
 
 export const commitEvent =
-  (dbClient: Client): Dependencies['commitEvent'] =>
+  (dbClient: Client, logger: Logger): Dependencies['commitEvent'] =>
   (resource, lastKnownVersion) =>
   (
     event
@@ -83,6 +84,7 @@ export const commitEvent =
       TE.chainEitherK(result => {
         switch (result) {
           case 'raised-event':
+            logger.info(event, 'Event committed');
             return E.right({
               message: 'Raised event',
               status: StatusCodes.CREATED,
