@@ -21,7 +21,7 @@ export const initDependencies = (
         return {severity: label};
       },
     },
-    level: 'debug',
+    level: conf.LOG_LEVEL,
   };
 
   if (conf.PUBLIC_URL.includes('localhost')) {
