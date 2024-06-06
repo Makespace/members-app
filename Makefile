@@ -6,7 +6,10 @@ node_modules: package.json bun.lockb
 	bun install --frozen-lockfile
 	touch node_modules
 
-dev:
+.env:
+	cp .env.example .env
+
+dev: .env
 	docker-compose --file docker-compose.yaml --file docker-compose.dev.yaml up --build
 
 .PHONY: populate-local-dev
