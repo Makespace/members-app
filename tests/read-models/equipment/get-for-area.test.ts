@@ -15,7 +15,6 @@ describe('get-for-area', () => {
     const createArea = {
       id: faker.string.uuid() as UUID,
       name: faker.company.buzzNoun() as NonEmptyString,
-      description: faker.company.buzzPhrase(),
     };
     const addEquipment = {
       id: faker.string.uuid() as UUID,

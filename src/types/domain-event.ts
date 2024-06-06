@@ -3,37 +3,48 @@ import * as tt from 'io-ts-types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {pipe} from 'fp-ts/lib/function';
 import {EmailAddressCodec} from './email-address';
+import {Actor} from './actor';
+
+const eventCodec = <A extends string, T extends t.Props>(
+  type: A,
+  payload: T
+): t.ExactC<
+  t.TypeC<
+    T & {
+      type: t.LiteralC<A>;
+      actor: typeof Actor;
+      recordedAt: tt.DateFromISOStringC;
+    }
+  >
+> =>
+  t.strict({
+    ...payload,
+    type: t.literal(type),
+    actor: Actor,
+    recordedAt: tt.DateFromISOString,
+  });
 
 export const DomainEvent = t.union([
-  t.strict({
-    type: t.literal('AreaCreated'),
+  eventCodec('AreaCreated', {
     name: t.string,
-    description: t.string,
     id: tt.UUID,
   }),
-  t.strict({
-    type: t.literal('EquipmentAddedV2'),
+  eventCodec('EquipmentAdded', {
     name: t.string,
     id: tt.UUID,
     areaId: tt.UUID,
   }),
-  t.strict({
-    type: t.literal('OwnerAdded'),
+  eventCodec('OwnerAdded', {
     areaId: tt.UUID,
     memberNumber: t.number,
   }),
-  t.strict({
-    type: t.literal('SuperUserDeclared'),
+  eventCodec('SuperUserDeclared', {
     memberNumber: t.number,
-    declaredAt: tt.DateFromISOString,
   }),
-  t.strict({
-    type: t.literal('SuperUserRevoked'),
+  eventCodec('SuperUserRevoked', {
     memberNumber: t.number,
-    revokedAt: tt.DateFromISOString,
   }),
-  t.strict({
-    type: t.literal('MemberNumberLinkedToEmail'),
+  eventCodec('MemberNumberLinkedToEmail', {
     memberNumber: t.number,
     email: EmailAddressCodec,
   }),
@@ -55,10 +66,6 @@ export const isEventOfType =
   (event: DomainEvent): event is EventOfType<T> =>
     event.type === name;
 
-type EventSpecificFields<T extends EventName> = Omit<EventOfType<T>, 'type'>;
-
-type EventBase<T> = {type: T};
-
 export type SubsetOfDomainEvent<Names extends Array<EventName>> = Extract<
   DomainEvent,
   {type: Names[number]}
@@ -73,6 +80,13 @@ export const filterByName =
       RA.map(filtered => filtered as SubsetOfDomainEvent<T>)
     );
 
+type EventBase<T> = {type: T; actor: Actor; recordedAt: Date};
+
+type EventSpecificFields<T extends EventName> = Omit<
+  EventOfType<T>,
+  'type' | 'actor' | 'recordedAt'
+>;
+
 // You must use this for constructing events because it means that if ever completely
 // remove an event its easy to find where it needs to be deleted from within the code.
 // 
@@ -80,8 +94,12 @@ export const filterByName =
 // anymore but generally we wouldn't delete an event immediately after we stop producing it
 // so that read models can still use it for historical context.
 export const constructEvent =
-  <T extends EventName, A extends EventSpecificFields<T>>(type: T) =>
+  <T extends EventName, A extends EventSpecificFields<T> & {actor?: Actor}>(
+    type: T
+  ) =>
   (args: A): EventBase<T> & A => ({
     type,
+    actor: args.actor ?? ({tag: 'system'} satisfies Actor),
+    recordedAt: new Date(),
     ...args,
   });

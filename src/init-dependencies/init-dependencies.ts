@@ -21,7 +21,7 @@ export const initDependencies = (
         return {severity: label};
       },
     },
-    level: 'debug',
+    level: conf.LOG_LEVEL,
   };
 
   if (conf.PUBLIC_URL.includes('localhost')) {
@@ -32,8 +32,8 @@ export const initDependencies = (
         options: {
           colorize: true,
           levelFirst: true,
-          singleLine: true,
           levelKey: 'severity',
+          colorizeObjects: false,
         },
       },
     };

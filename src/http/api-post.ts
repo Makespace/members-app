@@ -61,7 +61,7 @@ export const apiPost =
           StatusCodes.UNAUTHORIZED
         )()
       ),
-      TE.chain(({formPayload}) =>
+      TE.chain(({formPayload, actor}) =>
         pipe(
           {
             resource: TE.right(command.resource(formPayload)),
@@ -69,6 +69,7 @@ export const apiPost =
               command.resource(formPayload)
             ),
             formPayload: TE.right(formPayload),
+            actor: TE.right(actor),
           },
           sequenceS(TE.ApplyPar)
         )
@@ -81,13 +82,15 @@ export const apiPost =
         )(
           command.process({
             events: input.resourceState.events,
-            command: input.formPayload,
+            command: {...input.formPayload, actor: input.actor},
           })
         )
       ),
       TE.match(
-        ({status, message, payload}) =>
-          res.status(status).send({message, payload}),
+        failure => {
+          deps.logger.error(failure, 'API call failed');
+          res.status(failure.status).send(failure);
+        },
         ({status, message}) => res.status(status).send({message})
       )
     )();

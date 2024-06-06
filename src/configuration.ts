@@ -13,6 +13,16 @@ const withDefaultIfEmpty = <C extends t.Any>(codec: C, ifEmpty: t.TypeOf<C>) =>
     )
   );
 
+const LogLevel = t.keyof({
+  trace: null,
+  debug: null,
+  info: null,
+  warn: null,
+  error: null,
+  fatal: null,
+  silent: null,
+});
+
 const Config = t.strict({
   ADMIN_API_BEARER_TOKEN: tt.NonEmptyString,
   PORT: withDefaultIfEmpty(tt.IntFromString, 8080 as t.Int),
@@ -28,6 +38,7 @@ const Config = t.strict({
     t.string,
     'file:/tmp/makespace-member-app.db'
   ),
+  LOG_LEVEL: withDefaultIfEmpty(LogLevel, 'debug'),
 });
 
 export type Config = t.TypeOf<typeof Config>;

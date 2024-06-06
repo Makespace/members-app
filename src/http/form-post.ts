@@ -64,7 +64,7 @@ export const formPost =
           StatusCodes.UNAUTHORIZED
         )()
       ),
-      TE.chain(({formPayload}) =>
+      TE.chain(({formPayload, actor}) =>
         pipe(
           {
             resource: TE.right(command.resource(formPayload)),
@@ -72,6 +72,7 @@ export const formPost =
               command.resource(formPayload)
             ),
             formPayload: TE.right(formPayload),
+            actor: TE.right(actor),
           },
           sequenceS(TE.ApplyPar)
         )
@@ -129,19 +130,15 @@ export const formPost =
         )(
           command.process({
             events: input.resourceState.events,
-            command: input.formPayload,
+            command: {...input.formPayload, actor: input.actor},
           })
         )
       ),
-      TE.mapLeft(failure => {
-        deps.logger.warn(
-          {...failure, url: req.originalUrl},
-          'Could not handle form POST'
-        );
-        return failure;
-      }),
       TE.match(
-        ({status, message}) => res.status(status).send(oopsPage(message)),
+        failure => {
+          deps.logger.error(failure, 'Failed to handle form submission');
+          res.status(failure.status).send(oopsPage(failure.message));
+        },
         () => res.redirect(successTarget)
       )
     )();

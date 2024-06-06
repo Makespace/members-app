@@ -1,7 +1,5 @@
 import {pipe} from 'fp-ts/lib/function';
-import {pageTemplate} from '../../templates';
 import {html} from '../../types/html';
-import * as O from 'fp-ts/Option';
 import {ViewModel} from './view-model';
 
 const renderMemberDetails = (user: ViewModel['user']) => html`
@@ -19,10 +17,16 @@ const superUserNav = html`
   <nav>
     <ul>
       <li>
+        <a href="/members/create">Link a member number to an e-mail address</a>
+      </li>
+      <li>
         <a href="/areas/create">Add area of responsibility</a>
       </li>
       <li>
         <a href="/super-users">View all super-users</a>
+      </li>
+      <li>
+        <a href="/event-log">View log of all actions taken</a>
       </li>
     </ul>
   </nav>
@@ -37,6 +41,5 @@ export const render = (viewModel: ViewModel) =>
       ${viewModel.isSuperUser ? superUserNav : ''}
 
       </table>
-    `,
-    pageTemplate('Dashboard', O.some(viewModel.user))
+    `
   );

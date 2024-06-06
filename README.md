@@ -1,8 +1,21 @@
-# Member Number Service
+# Member App
 
-This service is deployed at [membership.makespace.org](https://membership.makespace.org)
+A place for us to keep track of:
 
-A [sandbox instance](https://member-number-lookup-sandbox-fnl2w3f7da-nw.a.run.app) is also available.
+- which areas contain which red equipment
+- who is an owner
+- who is a trainer
+- who is trained
+- who needs training
+
+Architecture:
+
+- login via magic link for anyone with a member number linked to an email address
+- only store in this app the information that we can't delegate to third parties
+  - member number, email, areas, equipment, owners, trainers, trained is tracked using this applications event store
+  - training needed, recurly status, paxton etc. lives in the respective services, this app reads from them on demand and relies on caching where needed
+- event store lives in a sqlite database using the `libsql` library so that persistence can be delegated to Turso if need be
+- pages are rendered server side with sprinklings of JS for interactivity as needed e.g. GridJS to filter tables
 
 ## Try it locally
 
@@ -28,34 +41,38 @@ Two users are created by `populate-local-dev`:
 make check
 ```
 
-## Run tests and lint
+The following is run in CI (see `.github/workflows/ci.yml`)
 
 ```
-make check
-make smoketest
+make typecheck lint unused-exports test smoketest
 ```
 
 ## Operations
 
-- every commit on `main` gets tested in CI and automatically deployed to a sandbox environment
-- to release to prod run `make release`
+- every commit on `main` gets tested in CI
+- continuous deployment will come soon
 
 ## Calling commands via API
 
 ### Link a member number with an email
 
+```
 curl -X POST -H 'Authorization: Bearer secret' -H 'Content-Type: application/json' \
 --data '{"memberNumber": "1234", "email": "foo@example.com"}' http://localhost:8080/api/link-number-to-email
+```
 
 ### DeclareSuperUser
 
+```
 curl -X POST -H 'Authorization: Bearer secret' -H 'Content-Type: application/json' \
 --data '{"memberNumber": "1234", "declaredAt": "2023-01-20"}' http://localhost:8080/api/declare-super-user
+```
 
 ### CreateArea
 
+```
 curl -X POST -H 'Authorization: Bearer secret' -H 'Content-Type: application/json' \
---data '{"name": "Woodspace", "description": "A place for wood"}' http://localhost:8080/api/create-area
+--data '{"name": "Woodspace"}' http://localhost:8080/api/create-area
 
 # Testing
 When writing tests conceptionally the code can be split into 2 sections. The code responsible for writing events

@@ -1,10 +1,5 @@
 import * as RA from 'fp-ts/ReadonlyArray';
-import {
-  DomainEvent,
-  EmailAddressCodec,
-  constructEvent,
-  isEventOfType,
-} from '../../types';
+import {EmailAddressCodec, constructEvent, isEventOfType} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
@@ -19,10 +14,7 @@ const codec = t.strict({
 
 type LinkNumberToEmail = t.TypeOf<typeof codec>;
 
-const process = (input: {
-  command: LinkNumberToEmail;
-  events: ReadonlyArray<DomainEvent>;
-}): O.Option<DomainEvent> =>
+const process: Command<LinkNumberToEmail>['process'] = input =>
   pipe(
     input.events,
     RA.filter(isEventOfType('MemberNumberLinkedToEmail')),
