@@ -29,15 +29,11 @@ export const formGet =
       sequenceS(TE.ApplyPar),
       TE.chainEitherK(form.constructForm({...req.query, ...req.params})),
       TE.map(form.renderForm),
-      TE.mapLeft(failure => {
-        deps.logger.warn(
-          {...failure, url: req.originalUrl},
-          'Could not render form for a user'
-        );
-        return failure;
-      }),
       TE.matchW(
-        failure => res.status(failure.status).send(oopsPage(failure.message)),
+        failure => {
+          deps.logger.error(failure, 'Failed to show form to a user');
+          res.status(failure.status).send(oopsPage(failure.message));
+        },
         page => res.status(200).send(page)
       )
     )();

@@ -75,15 +75,11 @@ export const formPost =
           })
         )
       ),
-      TE.mapLeft(failure => {
-        deps.logger.warn(
-          {...failure, url: req.originalUrl},
-          'Could not handle form POST'
-        );
-        return failure;
-      }),
       TE.match(
-        ({status, message}) => res.status(status).send(oopsPage(message)),
+        failure => {
+          deps.logger.error(failure, 'Failed to handle form submission');
+          res.status(failure.status).send(oopsPage(failure.message));
+        },
         () => res.redirect(successTarget)
       )
     )();

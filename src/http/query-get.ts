@@ -28,10 +28,12 @@ export const queryGet =
       ),
       TE.chain(buildPage(deps, req.params, query)),
       TE.matchW(
-        failure =>
+        failure => {
+          deps.logger.error(failure, 'Failed respond to a query');
           failure.status === StatusCodes.UNAUTHORIZED
             ? res.redirect(logInPath)
-            : res.status(failure.status).send(oopsPage(failure.message)),
+            : res.status(failure.status).send(oopsPage(failure.message));
+        },
         page => res.status(200).send(page)
       )
     )();

@@ -86,8 +86,10 @@ export const apiPost =
         )
       ),
       TE.match(
-        ({status, message, payload}) =>
-          res.status(status).send({message, payload}),
+        failure => {
+          deps.logger.error(failure, 'API call failed');
+          res.status(failure.status).send(failure);
+        },
         ({status, message}) => res.status(status).send({message})
       )
     )();
