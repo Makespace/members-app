@@ -57,7 +57,9 @@ describe('event-store end-to-end', () => {
 
     describe('committing when then resource does not exist', () => {
       beforeEach(async () => {
-        await commitEvent(dbClient, testLogger)(resource, initialVersion)(event)();
+        await commitEvent(dbClient, testLogger)(resource, initialVersion)(
+          event
+        )();
         resourceEvents = await pipe(
           resource,
           getResourceEvents(dbClient),
@@ -78,8 +80,12 @@ describe('event-store end-to-end', () => {
       const event2 = arbitraryMemberNumberLinkedToEmaiEvent();
 
       beforeEach(async () => {
-        await commitEvent(dbClient, testLogger)(resource, initialVersion)(event)();
-        await commitEvent(dbClient, testLogger)(resource, initialVersion)(event2)();
+        await commitEvent(dbClient, testLogger)(resource, initialVersion)(
+          event
+        )();
+        await commitEvent(dbClient, testLogger)(resource, initialVersion)(
+          event2
+        )();
         resourceEvents = await pipe(
           resource,
           getResourceEvents(dbClient),
@@ -101,13 +107,18 @@ describe('event-store end-to-end', () => {
       const competingEvent = arbitraryMemberNumberLinkedToEmaiEvent();
       let result: E.Either<unknown, unknown>;
       beforeEach(async () => {
-        await commitEvent(dbClient, testLogger)(resource, initialVersion)(initialEvent)();
+        await commitEvent(dbClient, testLogger)(resource, initialVersion)(
+          initialEvent
+        )();
         await pipe(
           competingEvent,
           commitEvent(dbClient, testLogger)(resource, initialVersion),
           T.map(getRightOrFail)
         )();
-        result = await commitEvent(dbClient, testLogger)(resource, initialVersion)(event)();
+        result = await commitEvent(dbClient, testLogger)(
+          resource,
+          initialVersion
+        )(event)();
       });
 
       it('does not persist the event', async () => {
@@ -135,7 +146,9 @@ describe('event-store end-to-end', () => {
           arbitraryResourceOfSameType(),
           faker.number.int()
         )(arbitraryMemberNumberLinkedToEmaiEvent())();
-        await commitEvent(dbClient, testLogger)(resource, initialVersion)(event)();
+        await commitEvent(dbClient, testLogger)(resource, initialVersion)(
+          event
+        )();
         resourceEvents = await pipe(
           resource,
           getResourceEvents(dbClient),
