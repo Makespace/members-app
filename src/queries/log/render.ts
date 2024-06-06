@@ -18,7 +18,7 @@ const renderActor = (actor: Actor) => {
 
 const renderPayload = (event: DomainEvent) =>
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, unused-imports/no-unused-vars
-  pipe(event, ({type, actor, ...payload}) => {
+  pipe(event, ({type, actor, recordedAt, ...payload}) => {
     return Object.entries(payload)
       .map(([key, value]) => `${key}: ${value}`)
       .join(', ');
@@ -26,7 +26,8 @@ const renderPayload = (event: DomainEvent) =>
 
 const renderEntry = (event: ViewModel['events'][number]) => html`
   <li>
-    <b>${event.type}</b> by ${renderActor(event.actor)}<br />
+    <b>${event.type}</b> by ${renderActor(event.actor)} at
+    ${event.recordedAt.toLocaleString()}<br />
     ${renderPayload(event)}
   </li>
 `;
@@ -44,6 +45,6 @@ const renderLog = (log: ViewModel['events']) =>
 
 export const render = (viewModel: ViewModel) => html`
   <h1>Event log</h1>
-  <p>From most recent to oldest</p>
+  <p>Most recent at top</p>
   ${renderLog(viewModel.events)}
 `;
