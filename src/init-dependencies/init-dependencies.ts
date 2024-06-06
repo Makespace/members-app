@@ -32,7 +32,6 @@ export const initDependencies = (
         options: {
           colorize: true,
           levelFirst: true,
-          singleLine: true,
           levelKey: 'severity',
           colorizeObjects: false,
         },
