@@ -49,6 +49,15 @@ startMagicLinkEmailPubSub(deps, conf);
 const server = http.createServer(app);
 createTerminus(server);
 
+// Background processing can be kicked off here.
+// Background processes should write events with their results.
+// Background processes can call commands as needed.
+// Readmodels are used to get the current status of the background tasks via the
+// events that have been written.
+// There is no 'direct' communication between front-end and background tasks except
+// via the events. This makes things much easier to test and allows changes to happen
+// to the front/backend without having to update both.
+
 void (async () => {
   await pipe(
     ensureEventTableExists(dbClient),

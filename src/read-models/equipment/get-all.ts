@@ -4,11 +4,12 @@ import {DomainEvent, isEventOfType} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {readModels} from '..';
 
-type Equipment = {
+export type Equipment = {
   name: string;
   id: string;
   areaId: string;
   areaName: string;
+  trainingSheetId: O.Option<string>;
 };
 
 export const getAll = (
@@ -23,6 +24,12 @@ export const getAll = (
         O.map(area => ({
           ...equipment,
           areaName: area.name,
+        })),
+        O.map(equipmentData => ({
+          ...equipmentData,
+          trainingSheetId: readModels.equipment.getTrainingSheetId(events)(
+            equipmentData.id
+          ),
         }))
       )
     ),
