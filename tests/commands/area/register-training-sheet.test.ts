@@ -1,13 +1,13 @@
 import {faker} from '@faker-js/faker';
 import {UUID} from 'io-ts-types';
 import {pipe} from 'fp-ts/lib/function';
+import * as RA from 'fp-ts/ReadonlyArray';
+
 import {registerTrainingSheet} from '../../../src/commands/equipment/register-training-sheet';
-import {DomainEvent} from '../../../src/types';
 import {arbitraryActor, getSomeOrFail} from '../../helpers';
 
 describe('register-training-sheet', () => {
   describe('No training sheet registered', () => {
-    const events: ReadonlyArray<DomainEvent> = [];
     const command = {
       equipmentId: faker.string.uuid() as UUID,
       trainingSheetId: faker.string.alphanumeric(8),
@@ -15,7 +15,7 @@ describe('register-training-sheet', () => {
     };
 
     const result = pipe(
-      registerTrainingSheet.process({command, events}),
+      registerTrainingSheet.process({command, events: RA.empty}),
       getSomeOrFail
     );
 
@@ -31,10 +31,69 @@ describe('register-training-sheet', () => {
   });
 
   describe('Same training sheet registered', () => {
-    it.todo('Does nothing');
+    const command = {
+      equipmentId: faker.string.uuid() as UUID,
+      trainingSheetId: faker.string.alphanumeric(8),
+      actor: arbitraryActor(),
+    };
+    const events = RA.fromArray([
+      pipe(
+        registerTrainingSheet.process({command, events: RA.empty}),
+        getSomeOrFail
+      ),
+    ]);
+
+    const result = pipe(
+      registerTrainingSheet.process({command, events}),
+      getSomeOrFail
+    );
+
+    it('A duplicate event is registered', () => {
+      expect(result).toStrictEqual(
+        expect.objectContaining({
+          type: 'EquipmentTrainingSheetRegistered',
+          equipmentId: command.equipmentId,
+          trainingSheetId: command.trainingSheetId,
+        })
+      );
+    });
   });
 
   describe('Different training sheet registered', () => {
-    it.todo('Registers the sheet');
+    const command = {
+      equipmentId: faker.string.uuid() as UUID,
+      trainingSheetId: faker.string.alphanumeric(8),
+      actor: arbitraryActor(),
+    };
+    const events = RA.fromArray([
+      pipe(
+        registerTrainingSheet.process({command, events: RA.empty}),
+        getSomeOrFail
+      ),
+    ]);
+
+    const diffTrainingSheet = {
+      ...command,
+      trainingSheetId: faker.string.alphanumeric(8),
+    };
+
+    expect(command.trainingSheetId).not.toEqual(
+      diffTrainingSheet.trainingSheetId
+    );
+
+    const result = pipe(
+      registerTrainingSheet.process({command: diffTrainingSheet, events}),
+      getSomeOrFail
+    );
+
+    it('It keeps the same training sheet registered', () => {
+      expect(result).toStrictEqual(
+        expect.objectContaining({
+          type: 'EquipmentTrainingSheetRegistered',
+          equipmentId: diffTrainingSheet.equipmentId,
+          trainingSheetId: diffTrainingSheet.trainingSheetId,
+        })
+      );
+    });
   });
 });

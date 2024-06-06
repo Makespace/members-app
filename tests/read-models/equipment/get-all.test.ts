@@ -78,7 +78,7 @@ describe('get-all', () => {
       events = await framework.getAllEvents();
     });
 
-    it.failing('returns the sheet id', () => {
+    it('returns the sheet id', () => {
       const allEquipment = getAll(events);
       expect(allEquipment[0].trainingSheetId).toStrictEqual(
         O.some(registerSheet.trainingSheetId)
