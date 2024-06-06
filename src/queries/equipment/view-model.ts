@@ -2,5 +2,8 @@ import {User} from '../../types';
 
 export type ViewModel = {
   user: User;
-  name: string;
+  equipment: {
+    name: string;
+    id: string;
+  };
 };

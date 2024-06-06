@@ -22,5 +22,8 @@ export const equipment: Query = deps => (user, params) =>
     E.map(params => params.equipment),
     TE.fromEither,
     TE.chain(constructViewModel(deps, user)),
-    TE.map(viewModel => ({title: viewModel.name, body: render(viewModel)}))
+    TE.map(viewModel => ({
+      title: viewModel.equipment.name,
+      body: render(viewModel),
+    }))
   );

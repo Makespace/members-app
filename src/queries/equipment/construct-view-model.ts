@@ -19,13 +19,12 @@ export const constructViewModel =
       deps.getAllEvents(),
       TE.map(events => ({
         user: E.right(user),
-        name: pipe(
+        equipment: pipe(
           equipmentId,
           readModels.equipment.get(events),
           E.fromOption(() =>
             failureWithStatus('No such equipment', StatusCodes.NOT_FOUND)()
-          ),
-          E.map(equipment => equipment.name)
+          )
         ),
       })),
       TE.chainEitherK(sequenceS(E.Apply))
