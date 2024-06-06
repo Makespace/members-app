@@ -25,7 +25,7 @@ prod:
 test: node_modules
 	bun jest
 
-smoketest:
+smoketest: .env
 	./scripts/smoketest.sh
 
 lint: node_modules
