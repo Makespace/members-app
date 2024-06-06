@@ -1,11 +1,4 @@
-import {flow} from 'fp-ts/lib/function';
-import {apiPost} from './api-post';
-import {formGet} from './form-get';
-import {formPost} from './form-post';
-import asyncHandler from 'express-async-handler';
-
-export const http = {
-  apiPost: flow(apiPost, asyncHandler),
-  formGet: flow(formGet, asyncHandler),
-  formPost: flow(formPost, asyncHandler),
-};
+export {queryToHandler} from './query-to-handler';
+export {commandToHandlers} from './command-to-handlers';
+export {ping} from './ping';
+export {createRouter} from './router';

@@ -23,6 +23,15 @@ describe('get-all', () => {
     areaId: createArea.id,
   };
   describe('when equipment is added to existing area', () => {
+    const createArea = {
+      id: faker.string.uuid() as UUID,
+      name: faker.company.buzzNoun() as NonEmptyString,
+    };
+    const addEquipment = {
+      id: faker.string.uuid() as UUID,
+      name: faker.company.buzzNoun() as NonEmptyString,
+      areaId: createArea.id,
+    };
     beforeEach(async () => {
       await framework.commands.area.create(createArea);
       await framework.commands.equipment.add(addEquipment);

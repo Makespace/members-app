@@ -4,10 +4,12 @@ import * as O from 'fp-ts/Option';
 import {Actor} from '../types/actor';
 import {Resource} from '../types/resource';
 
+type WithActor<T> = T & {actor: Actor};
+
 export type Command<T> = {
   resource: (command: T) => Resource;
   process: (input: {
-    command: T;
+    command: WithActor<T>;
     events: ReadonlyArray<DomainEvent>;
   }) => O.Option<DomainEvent>;
   decode: Type<T, T, unknown>['decode'];

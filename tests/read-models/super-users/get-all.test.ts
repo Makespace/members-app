@@ -1,4 +1,3 @@
-import {faker} from '@faker-js/faker';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {pipe} from 'fp-ts/lib/function';
 import {constructEvent} from '../../../src/types';
@@ -19,7 +18,6 @@ describe('get-all', () => {
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: user.memberNumber,
-          declaredAt: faker.date.past(),
         }),
       ],
       getAll(),
@@ -38,15 +36,12 @@ describe('get-all', () => {
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: revokedUser.memberNumber,
-          declaredAt: faker.date.past(),
         }),
         constructEvent('SuperUserDeclared')({
           memberNumber: nonRevokedUser.memberNumber,
-          declaredAt: faker.date.past(),
         }),
         constructEvent('SuperUserRevoked')({
           memberNumber: revokedUser.memberNumber,
-          revokedAt: faker.date.past(),
         }),
       ],
       getAll(),

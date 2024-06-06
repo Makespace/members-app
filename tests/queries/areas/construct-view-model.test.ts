@@ -20,7 +20,6 @@ describe('construct-view-model', () => {
         TE.right([
           constructEvent('SuperUserDeclared')({
             memberNumber: user.memberNumber,
-            declaredAt: faker.date.past(),
           }),
         ]),
     };
@@ -69,17 +68,14 @@ describe('construct-view-model', () => {
           constructEvent('AreaCreated')({
             id: v4() as UUID,
             name: faker.commerce.productName(),
-            description: faker.commerce.productDescription(),
           }),
           constructEvent('AreaCreated')({
             id: v4() as UUID,
             name: faker.commerce.productName(),
-            description: faker.commerce.productDescription(),
           }),
           constructEvent('AreaCreated')({
             id: v4() as UUID,
             name: faker.commerce.productName(),
-            description: faker.commerce.productDescription(),
           }),
         ]),
     };

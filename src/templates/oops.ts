@@ -8,9 +8,9 @@ export const oopsPage = (message: string) =>
       <h1>Sorry, we have encountered a problem</h1>
       <p>${message}</p>
       <p>
-        Please try again. If the problem persists please contact the Makespace
-        Database owners.
+        Please try again. If the problem persists please reach out in the google
+        group.
       </p>
     `,
-    pageTemplateNoNav('Member Number Lookup')
+    pageTemplateNoNav('MakeSpace Members App')
   );

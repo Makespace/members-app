@@ -1,4 +1,4 @@
-import {DomainEvent, constructEvent, isEventOfType} from '../../types';
+import {constructEvent, isEventOfType} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
@@ -14,10 +14,7 @@ const codec = t.strict({
 
 type AddOwner = t.TypeOf<typeof codec>;
 
-const process = (input: {
-  command: AddOwner;
-  events: ReadonlyArray<DomainEvent>;
-}): O.Option<DomainEvent> =>
+const process: Command<AddOwner>['process'] = input =>
   pipe(
     input.events,
     RA.filter(isEventOfType('OwnerAdded')),
@@ -28,7 +25,7 @@ const process = (input: {
     )
   );
 
-const resource = (command: AddOwner) => ({
+const resource: Command<AddOwner>['resource'] = (command: AddOwner) => ({
   type: 'Area',
   id: command.areaId,
 });

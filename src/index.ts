@@ -1,5 +1,5 @@
 import express, {Application} from 'express';
-import {createRouter} from './router';
+import {createRouter} from './http';
 import passport from 'passport';
 import httpLogger from 'pino-http';
 import {loadConfig} from './configuration';
@@ -17,11 +17,13 @@ import {ensureEventTableExists} from './init-dependencies/event-store/ensure-eve
 import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
 import cookieSession from 'cookie-session';
+import {initRoutes} from './routes';
 
 // Dependencies and Config
 const conf = loadConfig();
 const dbClient = libsqlClient.createClient({url: conf.EVENT_DB_URL});
 const deps = initDependencies(dbClient, conf);
+const routes = initRoutes(deps, conf);
 
 // Passport Setup
 passport.use(magicLink.name, magicLink.strategy(deps, conf));
@@ -34,13 +36,13 @@ passport.deserializeUser((user: Express.User, done) => {
 
 // Application setup
 const app: Application = express();
-app.use(httpLogger({logger: deps.logger}));
+app.use(httpLogger({logger: deps.logger, useLevel: 'debug'}));
 app.use(express.urlencoded({extended: true}));
 app.use(express.json());
 app.use(cookieSession(sessionConfig(conf)));
 app.use(cookieSessionPassportWorkaround);
 app.set('trust proxy', true);
-app.use(createRouter(deps, conf));
+app.use(createRouter(routes));
 
 // Start application
 startMagicLinkEmailPubSub(deps, conf);

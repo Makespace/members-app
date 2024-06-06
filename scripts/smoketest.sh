@@ -25,7 +25,7 @@ timeout --foreground 20 bash << EOT
 			-H 'Authorization: Bearer secret' \
 			-H 'Content-Type: application/json' \
 			--data '{"memberNumber": "1234", "email": "foo@example.com"}' \
-			http://localhost:8080/api/link-number-to-email
+			http://localhost:8080/api/members/create
 
 		curl -s -o /dev/null \
 			"http://localhost:8080/auth" \
