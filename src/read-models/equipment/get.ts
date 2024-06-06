@@ -5,6 +5,7 @@ import * as RA from 'fp-ts/ReadonlyArray';
 
 type Equipment = {
   name: string;
+  id: string;
 };
 
 export const get =
