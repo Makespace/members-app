@@ -63,7 +63,15 @@ describe('get-all', () => {
   });
 
   describe('when equipment has no training sheet registered', () => {
-    it.todo('returns no training sheet');
+    beforeEach(async () => {
+      await framework.commands.area.create(createArea);
+      await framework.commands.equipment.add(addEquipment);
+      events = await framework.getAllEvents();
+    });
+    it('returns no training sheet', () => {
+      const allEquipment = getAll(events);
+      expect(allEquipment[0].trainingSheetId).toStrictEqual(O.none);
+    });
   });
 
   describe('when equipment has a training sheet registered', () => {
@@ -87,6 +95,32 @@ describe('get-all', () => {
   });
 
   describe('when equipment has had multiple sheets registered', () => {
-    it.todo('returns the latest training sheet');
+    const registerSheet = {
+      equipmentId: addEquipment.id,
+      trainingSheetId: faker.string.alpha(8),
+    };
+    const registerSheet2 = {
+      ...registerSheet,
+      trainingSheetId: faker.string.alpha(8),
+    };
+    expect(registerSheet.trainingSheetId).not.toEqual(
+      registerSheet2.trainingSheetId
+    );
+    beforeEach(async () => {
+      await framework.commands.area.create(createArea);
+      await framework.commands.equipment.add(addEquipment);
+      await framework.commands.equipment.training_sheet(registerSheet);
+      await framework.commands.equipment.training_sheet(registerSheet2);
+      events = await framework.getAllEvents();
+    });
+
+    it('returns the latest sheet id', () => {
+      // For the purposes of the system currently we take 'latest' to mean last sorted within the events
+      // which should be latest chronologically.
+      const allEquipment = getAll(events);
+      expect(allEquipment[0].trainingSheetId).toStrictEqual(
+        O.some(registerSheet2.trainingSheetId)
+      );
+    });
   });
 });
