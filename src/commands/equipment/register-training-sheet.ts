@@ -1,9 +1,7 @@
 import {DomainEvent, constructEvent} from '../../types';
-import * as RA from 'fp-ts/ReadonlyArray';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
-import {pipe} from 'fp-ts/lib/function';
 import {Command} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 
@@ -18,16 +16,8 @@ const process = (input: {
   command: RegisterTrainingSheet;
   events: ReadonlyArray<DomainEvent>;
 }): O.Option<DomainEvent> =>
-  pipe(
-    input.events,
-    RA.match(
-      () =>
-        O.some(
-          constructEvent('EquipmentTrainingSheetRegistered')(input.command)
-        ),
-      () => O.none
-    )
-  );
+  // No idempotency check required here currently. If the training sheet already matches the current then we still record the duplicate event.
+  O.some(constructEvent('EquipmentTrainingSheetRegistered')(input.command));
 
 const resource = (command: RegisterTrainingSheet) => ({
   type: 'Equipment',
