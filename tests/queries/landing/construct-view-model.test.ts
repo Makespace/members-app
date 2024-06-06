@@ -1,7 +1,6 @@
 import {constructViewModel} from '../../../src/queries/landing/construct-view-model';
 import * as T from 'fp-ts/Task';
 import * as TE from 'fp-ts/TaskEither';
-import {faker} from '@faker-js/faker';
 import {Dependencies} from '../../../src/dependencies';
 import {constructEvent} from '../../../src/types';
 import {happyPathAdapters} from '../../init-dependencies/happy-path-adapters.helper';
@@ -18,7 +17,6 @@ describe('construct-view-model', () => {
         TE.right([
           constructEvent('SuperUserDeclared')({
             memberNumber: user.memberNumber,
-            declaredAt: faker.date.past(),
           }),
         ]),
     };

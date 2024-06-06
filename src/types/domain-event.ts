@@ -40,11 +40,9 @@ export const DomainEvent = t.union([
   }),
   eventCodec('SuperUserDeclared', {
     memberNumber: t.number,
-    declaredAt: tt.DateFromISOString,
   }),
   eventCodec('SuperUserRevoked', {
     memberNumber: t.number,
-    revokedAt: tt.DateFromISOString,
   }),
   eventCodec('MemberNumberLinkedToEmail', {
     memberNumber: t.number,
