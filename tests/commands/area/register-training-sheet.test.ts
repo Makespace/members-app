@@ -3,7 +3,7 @@ import {UUID} from 'io-ts-types';
 import {pipe} from 'fp-ts/lib/function';
 import {registerTrainingSheet} from '../../../src/commands/equipment/register-training-sheet';
 import {DomainEvent} from '../../../src/types';
-import {getSomeOrFail} from '../../helpers';
+import {arbitraryActor, getSomeOrFail} from '../../helpers';
 
 describe('register-training-sheet', () => {
   describe('No training sheet registered', () => {
@@ -11,6 +11,7 @@ describe('register-training-sheet', () => {
     const command = {
       equipmentId: faker.string.uuid() as UUID,
       trainingSheetId: faker.string.alphanumeric(8),
+      actor: arbitraryActor(),
     };
 
     const result = pipe(
