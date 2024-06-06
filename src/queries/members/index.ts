@@ -4,8 +4,9 @@ import {render} from './render';
 import {constructViewModel} from './construct-view-model';
 import {Query} from '../query';
 
-export const members: Query = deps => () =>
+export const members: Query = deps => user =>
   pipe(
+    user,
     constructViewModel(deps),
     TE.map(render),
     TE.map(body => ({
