@@ -9,6 +9,7 @@ import {StatusCodes} from 'http-status-codes';
 import {User} from '../types';
 import {oopsPage, pageTemplate} from '../templates';
 import {Params, Query} from '../queries/query';
+import {logInPath} from '../authentication/auth-routes';
 
 const buildPage =
   (deps: Dependencies, params: Params, query: Query) => (user: User) =>
@@ -27,7 +28,10 @@ export const queryGet =
       ),
       TE.chain(buildPage(deps, req.params, query)),
       TE.matchW(
-        failure => res.status(failure.status).send(oopsPage(failure.message)),
+        failure =>
+          failure.status === StatusCodes.UNAUTHORIZED
+            ? res.redirect(logInPath)
+            : res.status(failure.status).send(oopsPage(failure.message)),
         page => res.status(200).send(page)
       )
     )();
