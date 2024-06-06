@@ -88,7 +88,7 @@ type EventSpecificFields<T extends EventName> = Omit<
 
 // You must use this for constructing events because it means that if ever completely
 // remove an event its easy to find where it needs to be deleted from within the code.
-// 
+//
 // We might remove an event if its not longer being produced and doesn't appear in the database
 // anymore but generally we wouldn't delete an event immediately after we stop producing it
 // so that read models can still use it for historical context.

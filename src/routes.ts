@@ -21,7 +21,11 @@ export const initRoutes = (
     query('/areas/:area', queries.area),
     query('/equipment', queries.allEquipment),
     ...command('equipment', 'add', commands.equipment.add),
-    ...command('equipment', 'add-training-sheet', commands.equipment.training_sheet),
+    ...command(
+      'equipment',
+      'add-training-sheet',
+      commands.equipment.training_sheet
+    ),
     query('/equipment/:equipment', queries.equipment),
     query('/super-users', queries.superUsers),
     ...command('super-users', 'declare', commands.superUser.declare),
