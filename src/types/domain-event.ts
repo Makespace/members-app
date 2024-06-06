@@ -8,11 +8,20 @@ import {Actor} from './actor';
 const eventCodec = <A extends string, T extends t.Props>(
   type: A,
   payload: T
-): t.ExactC<t.TypeC<T & {type: t.LiteralC<A>; actor: typeof Actor}>> =>
+): t.ExactC<
+  t.TypeC<
+    T & {
+      type: t.LiteralC<A>;
+      actor: typeof Actor;
+      recordedAt: tt.DateFromISOStringC;
+    }
+  >
+> =>
   t.strict({
     ...payload,
     type: t.literal(type),
     actor: Actor,
+    recordedAt: tt.DateFromISOString,
   });
 
 export const DomainEvent = t.union([
@@ -68,11 +77,11 @@ export const filterByName =
       RA.map(filtered => filtered as SubsetOfDomainEvent<T>)
     );
 
-type EventBase<T> = {type: T; actor: Actor};
+type EventBase<T> = {type: T; actor: Actor; recordedAt: Date};
 
 type EventSpecificFields<T extends EventName> = Omit<
   EventOfType<T>,
-  'type' | 'actor'
+  'type' | 'actor' | 'recordedAt'
 >;
 
 export const constructEvent =
@@ -82,5 +91,6 @@ export const constructEvent =
   (args: A): EventBase<T> & A => ({
     type,
     actor: args.actor ?? ({tag: 'system'} satisfies Actor),
+    recordedAt: new Date(),
     ...args,
   });
