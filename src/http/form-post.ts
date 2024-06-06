@@ -55,7 +55,7 @@ export const formPost =
         //    would minimise the DDOS potential of a malicious or malformed component spamming the service with crap.
         // 2. We actually only need some events and if we only got those events there would be significantly less data
         //    to process.
-        events: deps.getAllEvents(), 
+        events: deps.getAllEvents(),
       },
       sequenceS(TE.ApplySeq),
       TE.filterOrElse(command.isAuthorized, () =>
@@ -94,7 +94,7 @@ export const formPost =
       // optionally be done on the write side in a cheap 'best effort' approach. This is an example of when command.process might not
       // actually return an event but this can be thought of as it still being 'successful' because no-event is actually correct.
       //
-      // Command.process failures 
+      // Command.process failures
       // There are certain cases however where this level of always-succeed 'purity' isn't practical or could cause issues for example
       // during user setup we don't want 2 users to be created with same user id and this is important enough that we want to strictly
       // enforce this on the write side aswell. In this case command.process can actually 'fail' but we stil do this by emitting an
