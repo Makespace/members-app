@@ -1,4 +1,3 @@
-import {faker} from '@faker-js/faker';
 import {pipe} from 'fp-ts/lib/function';
 import {constructEvent} from '../../../src/types';
 import {arbitraryUser} from '../../types/user.helper';
@@ -18,7 +17,6 @@ describe('is', () => {
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: user.memberNumber,
-          declaredAt: faker.date.past(),
         }),
       ],
       is(user.memberNumber)
@@ -35,11 +33,9 @@ describe('is', () => {
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: revokedUser.memberNumber,
-          declaredAt: faker.date.past(),
         }),
         constructEvent('SuperUserRevoked')({
           memberNumber: revokedUser.memberNumber,
-          revokedAt: faker.date.past(),
         }),
       ],
       is(revokedUser.memberNumber)

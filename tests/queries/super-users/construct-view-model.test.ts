@@ -7,7 +7,6 @@ import {happyPathAdapters} from '../../init-dependencies/happy-path-adapters.hel
 import * as TE from 'fp-ts/TaskEither';
 import {constructEvent} from '../../../src/types';
 import * as T from 'fp-ts/Task';
-import {faker} from '@faker-js/faker';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {getRightOrFail} from '../../helpers';
 
@@ -20,7 +19,6 @@ describe('construct-view-model', () => {
         TE.right([
           constructEvent('SuperUserDeclared')({
             memberNumber: memberToBeSuperUser.memberNumber,
-            declaredAt: faker.date.anytime(),
           }),
         ]),
     };

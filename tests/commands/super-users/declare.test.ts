@@ -36,7 +36,6 @@ describe('declare-super-user', () => {
       events: [
         constructEvent('SuperUserDeclared')({
           memberNumber,
-          declaredAt: faker.date.past(),
         }),
       ],
     });
@@ -57,11 +56,9 @@ describe('declare-super-user', () => {
       events: [
         constructEvent('SuperUserDeclared')({
           memberNumber,
-          declaredAt: faker.date.past(),
         }),
         constructEvent('SuperUserRevoked')({
           memberNumber,
-          revokedAt: faker.date.past(),
         }),
       ],
     });

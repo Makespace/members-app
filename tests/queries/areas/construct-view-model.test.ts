@@ -20,7 +20,6 @@ describe('construct-view-model', () => {
         TE.right([
           constructEvent('SuperUserDeclared')({
             memberNumber: user.memberNumber,
-            declaredAt: faker.date.past(),
           }),
         ]),
     };

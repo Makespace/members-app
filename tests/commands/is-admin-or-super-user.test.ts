@@ -1,4 +1,3 @@
-import {faker} from '@faker-js/faker';
 import {constructEvent} from '../../src/types';
 import {Actor} from '../../src/types/actor';
 import {arbitraryUser} from '../types/user.helper';
@@ -20,7 +19,6 @@ describe('isAdminOrSuperUser', () => {
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: userToBeSuperUser.memberNumber,
-          declaredAt: faker.date.anytime(),
         }),
       ],
     ],

@@ -12,7 +12,7 @@ const updateSuperUsers = (
     case 'SuperUserDeclared':
       state.set(event.memberNumber, {
         memberNumber: event.memberNumber,
-        since: event.declaredAt,
+        since: event.recordedAt,
       });
       break;
     case 'SuperUserRevoked':
