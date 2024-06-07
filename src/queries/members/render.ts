@@ -10,7 +10,9 @@ const renderMembers = (members: ViewModel['members']) =>
       member => html`
         <tr>
           <td>${member.email}</td>
-          <td>${member.memberNumber}</td>
+          <td>
+            <a href="/member/${member.memberNumber}">${member.memberNumber}</a>
+          </td>
         </tr>
       `
     ),
