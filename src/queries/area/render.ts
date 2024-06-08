@@ -17,6 +17,10 @@ const addEquipmentCallToAction = (areaId: string) => html`
   <a href="/equipment/add?area=${areaId}">Add piece of red equipment</a>
 `;
 
+const addOwnerCallToAction = (areaId: string) => html`
+  <a href="/areas/add-owner?area=${areaId}">Add owner</a>
+`;
+
 const renderEquipment = (allEquipment: ViewModel['equipment']) =>
   pipe(
     allEquipment,
@@ -36,6 +40,7 @@ export const render = (viewModel: ViewModel) =>
   html`<h1>${viewModel.area.name}</h1>
     ${viewModel.isSuperUser ? addEquipmentCallToAction(viewModel.area.id) : ''}
     <h2>Owners</h2>
+    ${viewModel.isSuperUser ? addOwnerCallToAction(viewModel.area.id) : ''}
     ${renderOwners(viewModel.area.owners)}
     <h2>Equipment</h2>
     ${renderEquipment(viewModel.equipment)} `;
