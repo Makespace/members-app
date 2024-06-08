@@ -14,7 +14,7 @@ export const equipment = {
     ...addTrainer,
     ...addTrainerForm,
   },
-  training_sheet: {
+  trainingSheet: {
     ...registerTrainingSheet,
     ...registerTrainingSheetForm,
   },

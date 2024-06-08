@@ -24,7 +24,7 @@ export const initRoutes = (
     ...command(
       'equipment',
       'add-training-sheet',
-      commands.equipment.training_sheet
+      commands.equipment.trainingSheet
     ),
     query('/equipment/:equipment', queries.equipment),
     query('/super-users', queries.superUsers),
