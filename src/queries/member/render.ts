@@ -3,7 +3,9 @@ import {ViewModel} from './view-model';
 
 export const render = (viewModel: ViewModel) => html`
   <table>
-    <caption>Details</caption>
+    <caption>
+      Details
+    </caption>
     <tbody>
       <tr>
         <th scope="row">Member number</th>
