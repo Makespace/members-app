@@ -3,16 +3,16 @@ import {html} from '../../types/html';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {ViewModel} from './view-model';
 
-const renderMembers = (members: ViewModel['members']) =>
+const renderMembers = (viewModel: ViewModel) =>
   pipe(
-    members,
+    viewModel.members,
     RA.map(
       member => html`
         <tr>
-          <td>${member.email}</td>
           <td>
             <a href="/member/${member.memberNumber}">${member.memberNumber}</a>
           </td>
+          <td>${viewModel.viewerIsSuperUser ? member.email : '*****'}</td>
         </tr>
       `
     ),
@@ -22,8 +22,8 @@ const renderMembers = (members: ViewModel['members']) =>
         <table>
           <thead>
             <tr>
-              <th>Email</th>
               <th>Member number</th>
+              <th>Email</th>
             </tr>
           </thead>
           <tbody>
@@ -36,5 +36,5 @@ const renderMembers = (members: ViewModel['members']) =>
 
 export const render = (viewModel: ViewModel) => html`
   <h1>Members of Makespace</h1>
-  ${renderMembers(viewModel.members)}
+  ${renderMembers(viewModel)}
 `;

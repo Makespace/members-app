@@ -4,5 +4,6 @@ type Member = {
 };
 
 export type ViewModel = {
+  viewerIsSuperUser: boolean;
   members: ReadonlyArray<Member>;
 };
