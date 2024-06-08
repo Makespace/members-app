@@ -82,7 +82,7 @@ describe('get-all', () => {
     beforeEach(async () => {
       await framework.commands.area.create(createArea);
       await framework.commands.equipment.add(addEquipment);
-      await framework.commands.equipment.training_sheet(registerSheet);
+      await framework.commands.equipment.trainingSheet(registerSheet);
       events = await framework.getAllEvents();
     });
 
@@ -109,8 +109,8 @@ describe('get-all', () => {
     beforeEach(async () => {
       await framework.commands.area.create(createArea);
       await framework.commands.equipment.add(addEquipment);
-      await framework.commands.equipment.training_sheet(registerSheet);
-      await framework.commands.equipment.training_sheet(registerSheet2);
+      await framework.commands.equipment.trainingSheet(registerSheet);
+      await framework.commands.equipment.trainingSheet(registerSheet2);
       events = await framework.getAllEvents();
     });
 

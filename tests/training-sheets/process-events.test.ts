@@ -74,7 +74,7 @@ describe('Training sheets worker', () => {
         };
         let deps: TrainingSheetWorkerDependencies;
         beforeEach(async () => {
-          await framework.commands.equipment.training_sheet(
+          await framework.commands.equipment.trainingSheet(
             registerTrainingSheet
           );
           deps = dependenciesForTrainingSheetsWorker(
