@@ -8,6 +8,7 @@ import {failureWithStatus} from '../types/failureWithStatus';
 import {oopsPage} from '../templates';
 import {sequenceS} from 'fp-ts/lib/Apply';
 import {Form} from '../types/form';
+import {pageTemplate} from '../templates';
 
 const getUser = (req: Request, deps: Dependencies) =>
   pipe(
@@ -27,12 +28,16 @@ export const formGet =
   async (req: Request, res: Response) => {
     await pipe(
       {
+        // chromy: User was computed here already:
         user: getUser(req, deps),
         events: deps.getAllEvents(),
       },
       sequenceS(TE.ApplyPar),
       TE.chainEitherK(form.constructForm({...req.query, ...req.params})),
       TE.map(form.renderForm),
+      //                              V How to pass it here?
+      TE.map(pageTemplate("thetitle", user)),
+      //
       TE.matchW(
         failure => {
           deps.logger.error(failure, 'Failed to show form to a user');
