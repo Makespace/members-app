@@ -113,6 +113,12 @@ button:active {
   top: 3px;
 }
 
+caption {
+  font-weight: 700;
+  display: table-caption;
+  text-align: left;
+}
+
 .page-nav {
   display: flex;
   align-items: center;
