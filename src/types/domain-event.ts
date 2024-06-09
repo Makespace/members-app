@@ -60,6 +60,11 @@ export const DomainEvent = t.union([
     pass: t.boolean,
     id: tt.UUID,
   }),
+  eventCodec('MemberDetailsUpdated', {
+    memberNumber: t.number,
+    name: t.union([t.string, t.undefined]),
+    pronouns: t.union([t.string, t.undefined]),
+  }),
 ]);
 
 export type DomainEvent = t.TypeOf<typeof DomainEvent>;
