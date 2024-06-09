@@ -7,7 +7,7 @@ import nodemailer from 'nodemailer';
 import smtp from 'nodemailer-smtp-transport';
 import {commitEvent} from './event-store/commit-event';
 import {getAllEvents} from './event-store/get-all-events';
-import {getResourceEvents} from './event-store/get-resource-events';
+import {getAllResourceEvents, getResourceEvents} from './event-store/get-resource-events';
 import {Client} from '@libsql/client/.';
 
 export const initDependencies = (
@@ -55,6 +55,7 @@ export const initDependencies = (
   return {
     commitEvent: commitEvent(dbClient, logger),
     getAllEvents: getAllEvents(dbClient),
+    getAllResourceEvents: getAllResourceEvents(dbClient),
     getResourceEvents: getResourceEvents(dbClient),
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter),

@@ -22,7 +22,7 @@ prod:
 	docker-compose --file docker-compose.yaml up --build
 
 test: node_modules
-	bun jest
+	bun jest tests/training-sheets/process-events.test.ts
 
 smoketest: .env
 	./scripts/smoketest.sh

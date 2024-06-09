@@ -4,6 +4,7 @@ import * as TE from 'fp-ts/TaskEither';
 import {FailureWithStatus} from './types/failureWithStatus';
 import {StatusCodes} from 'http-status-codes';
 import {Resource} from './types/resource';
+import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
 
 export type Dependencies = {
   commitEvent: (
@@ -24,6 +25,13 @@ export type Dependencies = {
     {
       events: ReadonlyArray<DomainEvent>;
       version: number;
+    }
+  >;
+  getAllResourceEvents: (resource_type: Resource['type']) => TE.TaskEither<
+    FailureWithStatus,
+    {
+      events: ReadonlyArray<DomainEvent>;
+      versions: ReadonlyRecord<string, number>;
     }
   >;
   logger: Logger;

@@ -13,6 +13,13 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {Client} from '@libsql/client/.';
 import {StatusCodes} from 'http-status-codes';
 
+const getVersions = RA.reduce<EventsTable['rows'][0], Record<string, number>>(
+  {}, (acc, row) => {
+    acc[row.resource_id] = row.resource_version;
+    return acc;
+  },
+);
+
 const getLatestVersion = (rows: EventsTable['rows']) =>
   pipe(
     rows,
@@ -52,3 +59,37 @@ export const getResourceEvents =
         )
       )
     );
+
+export const getAllResourceEvents = 
+    (dbClient: Client): Dependencies['getAllResourceEvents'] => 
+      resource_type => 
+        pipe(
+          TE.tryCatch(
+            () =>
+              dbClient.execute({
+                // Stick a timestamp (dtime) index on this to drastically reduce the number of events we need to fetch.
+                sql: 'SELECT * FROM events WHERE resource_type = ?;',
+                args: [resource_type],
+              }),
+            failureWithStatus(
+              `Failed to query database for events of resource type '${resource_type}'`,
+              StatusCodes.INTERNAL_SERVER_ERROR
+            )
+          ),
+          TE.chainEitherK(
+            flow(
+              EventsTable.decode,
+              E.mapLeft(internalCodecFailure(`Failed to decode db response for events of resource type ${resource_type}`))
+            )
+          ),
+          TE.map(response => response.rows),
+          TE.chainEitherK(rows =>
+            pipe(
+              {
+                versions: E.right(getVersions(rows)),
+                events: eventsFromRows(rows),
+              },
+              sequenceS(E.Apply)
+            )
+          )
+        );
