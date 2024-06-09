@@ -10,6 +10,8 @@ import {EventsTable} from './events-table';
 import {eventsFromRows} from './events-from-rows';
 import {Client} from '@libsql/client/.';
 import {StatusCodes} from 'http-status-codes';
+import {DomainEvent} from '../../types';
+import {EventName, EventOfType} from '../../types/domain-event';
 
 export const getAllEvents =
   (dbClient: Client): Dependencies['getAllEvents'] =>
@@ -30,4 +32,39 @@ export const getAllEvents =
       ),
       TE.map(table => table.rows),
       TE.chainEitherK(eventsFromRows)
+    );
+
+export const getAllEventsByType =
+  (dbClient: Client): Dependencies['getAllEventsByType'] =>
+  <T extends EventName>(eventType: T) =>
+    pipe(
+      TE.tryCatch(
+        () =>
+          dbClient.execute({
+            sql: 'SELECT * FROM events WHERE event_type = ?;',
+            args: [eventType],
+          }),
+        failureWithStatus(
+          `Failed to query database for events of type '${eventType}'`,
+          StatusCodes.INTERNAL_SERVER_ERROR
+        )
+      ),
+      TE.chainEitherK(
+        flow(
+          EventsTable.decode,
+          E.mapLeft(
+            internalCodecFailure(
+              `Failed to decode db rows for event type '${eventType}'`
+            )
+          )
+        )
+      ),
+      TE.map(table => table.rows),
+      TE.chainEitherK(eventsFromRows),
+      // This assumes that the DB has only returned events of the correct type.
+      // This assumption avoids the need to do extra validation.
+      // TODO - Pass codec to validate straight to eventsFromRows and get best of both.
+      TE.map<ReadonlyArray<DomainEvent>, ReadonlyArray<EventOfType<T>>>(
+        es => es as ReadonlyArray<EventOfType<T>>
+      )
     );

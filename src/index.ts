@@ -18,6 +18,7 @@ import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
 import cookieSession from 'cookie-session';
 import {initRoutes} from './routes';
+import {runForever} from './training-sheets/training-sheets-worker';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -49,9 +50,18 @@ startMagicLinkEmailPubSub(deps, conf);
 const server = http.createServer(app);
 createTerminus(server);
 
-// Background processing can be kicked off here.
 // Background processes should write events with their results.
 // Background processes can call commands as needed.
+
+if (conf.BACKGROUND_PROCESSING_ENABLED) {
+  const backgroundProcess = runForever(deps);
+  server.on('close', () => {
+    // TODO - Use a background worker event instead so it can stop long running IO processes.
+    deps.logger.fatal('Server closing, stopping background process');
+    clearInterval(backgroundProcess);
+  });
+}
+
 // Readmodels are used to get the current status of the background tasks via the
 // events that have been written.
 // There is no 'direct' communication between front-end and background tasks except

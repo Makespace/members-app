@@ -6,7 +6,8 @@ type ApplicationStatusCode =
   | StatusCodes.INTERNAL_SERVER_ERROR
   | StatusCodes.BAD_REQUEST
   | StatusCodes.UNAUTHORIZED
-  | StatusCodes.NOT_FOUND;
+  | StatusCodes.NOT_FOUND
+  | StatusCodes.NOT_IMPLEMENTED;
 
 export type FailureWithStatus = {
   status: ApplicationStatusCode;
