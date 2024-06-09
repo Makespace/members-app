@@ -4,6 +4,8 @@ import * as TE from 'fp-ts/TaskEither';
 import {FailureWithStatus} from './types/failureWithStatus';
 import {StatusCodes} from 'http-status-codes';
 import {Resource} from './types/resource';
+import {EventName, EventOfType} from './types/domain-event';
+import {GoogleSheetData} from './types/google';
 
 export type Dependencies = {
   commitEvent: (
@@ -19,6 +21,9 @@ export type Dependencies = {
     FailureWithStatus,
     ReadonlyArray<DomainEvent>
   >;
+  getAllEventsByType: <T extends EventName>(
+    eventType: T
+  ) => TE.TaskEither<FailureWithStatus, ReadonlyArray<EventOfType<T>>>;
   getResourceEvents: (resource: Resource) => TE.TaskEither<
     FailureWithStatus,
     {
@@ -29,4 +34,8 @@ export type Dependencies = {
   logger: Logger;
   rateLimitSendingOfEmails: (email: Email) => TE.TaskEither<Failure, Email>;
   sendEmail: (email: Email) => TE.TaskEither<Failure, string>;
+  pullGoogleSheetData: (
+    logger: Logger,
+    trainingSheetId: string
+  ) => TE.TaskEither<Failure, GoogleSheetData>;
 };

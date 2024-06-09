@@ -11,6 +11,6 @@ module.exports = {
       },
     ],
   },
-  verbose: false,
+  verbose: true,
   reporters: ['jest-wip-reporter'],
 };

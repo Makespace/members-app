@@ -1,6 +1,9 @@
 import createLogger from 'pino';
 import * as T from 'fp-ts/Task';
-import {getAllEvents} from '../../src/init-dependencies/event-store/get-all-events';
+import {
+  getAllEvents,
+  getAllEventsByType,
+} from '../../src/init-dependencies/event-store/get-all-events';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-event-table-exists';
 import {DomainEvent} from '../../src/types';
 import {pipe} from 'fp-ts/lib/function';
@@ -12,6 +15,7 @@ import * as libsqlClient from '@libsql/client';
 import {randomUUID} from 'crypto';
 import {Resource} from '../../src/types/resource';
 import {getResourceEvents} from '../../src/init-dependencies/event-store/get-resource-events';
+import {EventName, EventOfType} from '../../src/types/domain-event';
 
 type ToFrameworkCommands<T> = {
   [K in keyof T]: {
@@ -28,6 +32,9 @@ type ToFrameworkCommands<T> = {
 
 export type TestFramework = {
   getAllEvents: () => Promise<ReadonlyArray<DomainEvent>>;
+  getAllEventsByType: <T extends EventName>(
+    eventType: T
+  ) => Promise<ReadonlyArray<EventOfType<T>>>;
   commands: ToFrameworkCommands<typeof commands>;
 };
 
@@ -42,6 +49,8 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   await ensureEventTableExists(dbClient)();
   const frameworkGetAllEvents = () =>
     pipe(getAllEvents(dbClient)(), T.map(getRightOrFail))();
+  const frameworkGetAllEventsByType = <EN extends EventName>(eventType: EN) =>
+    pipe(getAllEventsByType(dbClient)(eventType), T.map(getRightOrFail))();
   const frameworkGetResourceEvents = (resource: Resource) =>
     pipe(getResourceEvents(dbClient)(resource), T.map(getRightOrFail))();
 
@@ -64,6 +73,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
 
   return {
     getAllEvents: frameworkGetAllEvents,
+    getAllEventsByType: frameworkGetAllEventsByType,
     commands: {
       area: {
         create: frameworkify(commands.area.create),

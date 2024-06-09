@@ -52,13 +52,21 @@ export const DomainEvent = t.union([
     equipmentId: tt.UUID,
     trainingSheetId: t.string,
   }),
+  eventCodec('EquipmentTrainingQuizResult', {
+    equipmentId: tt.UUID,
+    trainingSheetId: t.string,
+    email: t.string,
+    score: t.number,
+    pass: t.boolean,
+    id: tt.UUID,
+  }),
 ]);
 
 export type DomainEvent = t.TypeOf<typeof DomainEvent>;
 
-type EventName = DomainEvent['type'];
+export type EventName = DomainEvent['type'];
 
-type EventOfType<T extends EventName> = DomainEvent & {type: T};
+export type EventOfType<T extends EventName> = DomainEvent & {type: T};
 
 export const isEventOfType =
   <T extends EventName>(name: T) =>
