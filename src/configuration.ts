@@ -39,7 +39,10 @@ const Config = t.strict({
     'file:/tmp/makespace-member-app.db'
   ),
   LOG_LEVEL: withDefaultIfEmpty(LogLevel, 'debug'),
-  BACKGROUND_PROCESSING_ENABLED: withDefaultIfEmpty(tt.BooleanFromString, false),
+  BACKGROUND_PROCESSING_ENABLED: withDefaultIfEmpty(
+    tt.BooleanFromString,
+    false
+  ),
 });
 
 export type Config = t.TypeOf<typeof Config>;
