@@ -5,8 +5,8 @@ import {StatusCodes} from 'http-status-codes';
 import {faker} from '@faker-js/faker';
 import {Failure} from '../../src/types';
 import {EventName} from '../../src/types/domain-event';
-import {GoogleSheetData} from '../../src/types/google';
 import {notImplemented} from '../../src/not_implemented';
+import {sheets_v4} from 'googleapis';
 
 export const happyPathAdapters: Dependencies = {
   commitEvent: () => () =>
@@ -21,7 +21,7 @@ export const happyPathAdapters: Dependencies = {
   pullGoogleSheetData: function (
     logger: Logger,
     trainingSheetId: string
-  ): TE.TaskEither<Failure, GoogleSheetData> {
+  ): TE.TaskEither<Failure, sheets_v4.Schema$Spreadsheet> {
     return notImplemented([logger, trainingSheetId]);
   },
 };
