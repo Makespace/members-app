@@ -9,8 +9,8 @@ import {commitEvent} from './event-store/commit-event';
 import {getAllEvents, getAllEventsByType} from './event-store/get-all-events';
 import {getResourceEvents} from './event-store/get-resource-events';
 import {Client} from '@libsql/client/.';
-import {Axios} from 'axios';
 import {pullGoogleSheetData} from './google/pull_sheet_data';
+import {google} from 'googleapis';
 
 export const initDependencies = (
   dbClient: Client,
@@ -54,7 +54,12 @@ export const initDependencies = (
     })
   );
 
-  const axios = new Axios();
+  const auth = conf.GOOGLE_CONNECTIVITY_ENABLED
+    ? new google.auth.GoogleAuth({
+        keyFile: conf.GOOGLE_SERVICE_ACCOUNT_KEY_FILE_PATH,
+        scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+      })
+    : null;
 
   return {
     commitEvent: commitEvent(dbClient, logger),
@@ -63,7 +68,7 @@ export const initDependencies = (
     getResourceEvents: getResourceEvents(dbClient),
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter),
-    pullGoogleSheetData: pullGoogleSheetData(axios),
+    pullGoogleSheetData: pullGoogleSheetData(auth),
     logger,
   };
 };
