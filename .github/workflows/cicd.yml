@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD
 
 on:
   push:
@@ -31,3 +31,16 @@ jobs:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
       - run: make smoketest
+
+  deploy:
+    name: Deploy to fly.io
+    if: github.ref == 'refs/heads/main'
+    needs: [typecheck, lint, test, smoketest]
+    runs-on: ubuntu-latest
+    concurrency: deploy-group
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
