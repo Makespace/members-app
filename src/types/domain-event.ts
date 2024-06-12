@@ -44,6 +44,10 @@ export const DomainEvent = t.union([
   eventCodec('SuperUserRevoked', {
     memberNumber: t.number,
   }),
+  eventCodec('TrainerAdded', {
+    memberNumber: t.number,
+    equipmentId: tt.UUID,
+  }),
   eventCodec('MemberNumberLinkedToEmail', {
     memberNumber: t.number,
     email: EmailAddressCodec,
