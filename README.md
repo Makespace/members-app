@@ -84,3 +84,22 @@ writing should be done by asserting the resulting events. In theory this would m
 command.process from within the read-models part of the tests and we never call a read-model from the commands
 part of the tests. In reality we do still call command.process within the read-model tests just so that we can use
 it to generate the required events we need without having to do that manually.
+
+## Import from legacy DB
+
+To import members, use GCP console to export a CSV using the following query:
+
+```sql
+SELECT Member_Number, Account_Code
+FROM members.RecurlyAccounts
+JOIN members.MemberRecurlyAccount
+JOIN members.Members
+ON MemberRecurlyAccount.Member = Members.idMembers
+AND RecurlyAccounts.idRecurlyAccounts = MemberRecurlyAccount.RecurlyAccount;
+```
+
+Set `ADMIN_API_BEARER_TOKEN` and `PUBLIC_URL` to match the instance you want to import into.
+
+```sh
+cat /tmp/members.csv | cut -d ',' -f 1,3 | sed 's/,"/ /' | sed 's/"//' | xargs -n 2 ./scripts/import-member.sh
+```
