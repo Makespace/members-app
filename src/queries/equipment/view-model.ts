@@ -5,5 +5,6 @@ export type ViewModel = {
   equipment: {
     name: string;
     id: string;
+    trainers: ReadonlyArray<number>;
   };
 };
