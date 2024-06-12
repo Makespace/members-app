@@ -24,7 +24,8 @@ export const constructViewModel =
           readModels.equipment.get(events),
           E.fromOption(() =>
             failureWithStatus('No such equipment', StatusCodes.NOT_FOUND)()
-          )
+          ),
+          E.map(partial => ({...partial, trainers: []}))
         ),
       })),
       TE.chainEitherK(sequenceS(E.Apply))
