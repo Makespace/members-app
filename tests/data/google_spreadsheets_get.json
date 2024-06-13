@@ -1,0 +1,1908 @@
+{
+    "spreadsheetId": "1Yu8TeG9RTqSEu3dxL5wj8uXfeP3xbIgxQZ1ZB9kyFUE",
+    "properties": {
+        "title": "Metal Lathe Quiz (Responses)",
+        "locale": "en_GB",
+        "autoRecalc": "ON_CHANGE",
+        "timeZone": "Atlantic/Canary",
+        "defaultFormat": {
+            "backgroundColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+            },
+            "padding": {
+                "top": 2,
+                "right": 3,
+                "bottom": 2,
+                "left": 3
+            },
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+                "foregroundColor": {},
+                "fontFamily": "arial,sans,sans-serif",
+                "fontSize": 10,
+                "bold": false,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "foregroundColorStyle": {
+                    "rgbColor": {}
+                }
+            },
+            "backgroundColorStyle": {
+                "rgbColor": {
+                    "red": 1,
+                    "green": 1,
+                    "blue": 1
+                }
+            }
+        },
+        "spreadsheetTheme": {
+            "primaryFontFamily": "Arial",
+            "themeColors": [
+                {
+                    "colorType": "TEXT",
+                    "color": {
+                        "rgbColor": {}
+                    }
+                },
+                {
+                    "colorType": "BACKGROUND",
+                    "color": {
+                        "rgbColor": {
+                            "red": 1,
+                            "green": 1,
+                            "blue": 1
+                        }
+                    }
+                },
+                {
+                    "colorType": "ACCENT1",
+                    "color": {
+                        "rgbColor": {
+                            "red": 0.25882354,
+                            "green": 0.52156866,
+                            "blue": 0.95686275
+                        }
+                    }
+                },
+                {
+                    "colorType": "ACCENT2",
+                    "color": {
+                        "rgbColor": {
+                            "red": 0.91764706,
+                            "green": 0.2627451,
+                            "blue": 0.20784314
+                        }
+                    }
+                },
+                {
+                    "colorType": "ACCENT3",
+                    "color": {
+                        "rgbColor": {
+                            "red": 0.9843137,
+                            "green": 0.7372549,
+                            "blue": 0.015686275
+                        }
+                    }
+                },
+                {
+                    "colorType": "ACCENT4",
+                    "color": {
+                        "rgbColor": {
+                            "red": 0.20392157,
+                            "green": 0.65882355,
+                            "blue": 0.3254902
+                        }
+                    }
+                },
+                {
+                    "colorType": "ACCENT5",
+                    "color": {
+                        "rgbColor": {
+                            "red": 1,
+                            "green": 0.42745098,
+                            "blue": 0.003921569
+                        }
+                    }
+                },
+                {
+                    "colorType": "ACCENT6",
+                    "color": {
+                        "rgbColor": {
+                            "red": 0.27450982,
+                            "green": 0.7411765,
+                            "blue": 0.7764706
+                        }
+                    }
+                },
+                {
+                    "colorType": "LINK",
+                    "color": {
+                        "rgbColor": {
+                            "red": 0.06666667,
+                            "green": 0.33333334,
+                            "blue": 0.8
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "sheets": [
+        {
+            "properties": {
+                "sheetId": 1847896397,
+                "title": "Form Responses 1",
+                "index": 0,
+                "sheetType": "GRID",
+                "gridProperties": {
+                    "rowCount": 190,
+                    "columnCount": 25,
+                    "frozenRowCount": 1
+                }
+            },
+            "data": [
+                {
+                    "rowData": [
+                        {
+                            "values": [
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "Timestamp"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "Timestamp"
+                                    },
+                                    "formattedValue": "Timestamp",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "Email"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "Email"
+                                    },
+                                    "formattedValue": "Email",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "Score"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "Score"
+                                    },
+                                    "formattedValue": "Score",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "Name"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "Name"
+                                    },
+                                    "formattedValue": "Name",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "Membership number"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "Membership number"
+                                    },
+                                    "formattedValue": "Membership number",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "The end of the lathe that holds the gearboxes and chuck is called"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "The end of the lathe that holds the gearboxes and chuck is called"
+                                    },
+                                    "formattedValue": "The end of the lathe that holds the gearboxes and chuck is called",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "The part of the lathe that moves along the bed is called"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "The part of the lathe that moves along the bed is called"
+                                    },
+                                    "formattedValue": "The part of the lathe that moves along the bed is called",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "The lower gearbox is used to drive"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "The lower gearbox is used to drive"
+                                    },
+                                    "formattedValue": "The lower gearbox is used to drive",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "How many oil level check glasses are there on the Makespace metal lathe?"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "How many oil level check glasses are there on the Makespace metal lathe?"
+                                    },
+                                    "formattedValue": "How many oil level check glasses are there on the Makespace metal lathe?",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "When is the lathe completely safe to put your hands into whilst powered?"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "When is the lathe completely safe to put your hands into whilst powered?"
+                                    },
+                                    "formattedValue": "When is the lathe completely safe to put your hands into whilst powered?",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "What are the TWO main cuts you can do on a lathe?"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "What are the TWO main cuts you can do on a lathe?"
+                                    },
+                                    "formattedValue": "What are the TWO main cuts you can do on a lathe?",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "The tail stock is mainly used for:"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "The tail stock is mainly used for:"
+                                    },
+                                    "formattedValue": "The tail stock is mainly used for:",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "What are the 3 positions that the power-drive lever can be set to?"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "What are the 3 positions that the power-drive lever can be set to?"
+                                    },
+                                    "formattedValue": "What are the 3 positions that the power-drive lever can be set to?",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "Why should you never drive the tail stock beyond the zero position whilst the lathe is running?"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "Why should you never drive the tail stock beyond the zero position whilst the lathe is running?"
+                                    },
+                                    "formattedValue": "Why should you never drive the tail stock beyond the zero position whilst the lathe is running?",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "What do you need to check to ensure that the chuck is on correctly and safe to use?"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "What do you need to check to ensure that the chuck is on correctly and safe to use?"
+                                    },
+                                    "formattedValue": "What do you need to check to ensure that the chuck is on correctly and safe to use?",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "What is the most common accident on lathes?"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "What is the most common accident on lathes?"
+                                    },
+                                    "formattedValue": "What is the most common accident on lathes?",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "The emergency brake is used:"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "The emergency brake is used:"
+                                    },
+                                    "formattedValue": "The emergency brake is used:",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "When do you need to use the buddy system when using the lathe?"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "When do you need to use the buddy system when using the lathe?"
+                                    },
+                                    "formattedValue": "When do you need to use the buddy system when using the lathe?",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "What are the 6 absolute No Nos whilst using the lathe?"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "What are the 6 absolute No Nos whilst using the lathe?"
+                                    },
+                                    "formattedValue": "What are the 6 absolute No Nos whilst using the lathe?",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "values": [
+                                {
+                                    "userEnteredValue": {
+                                        "numberValue": 45311.719445925926
+                                    },
+                                    "effectiveValue": {
+                                        "numberValue": 45311.719445925926
+                                    },
+                                    "formattedValue": "20/01/2024 17:16:00",
+                                    "userEnteredFormat": {
+                                        "numberFormat": {
+                                            "type": "DATE_TIME"
+                                        }
+                                    },
+                                    "effectiveFormat": {
+                                        "numberFormat": {
+                                            "type": "DATE_TIME"
+                                        },
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "RIGHT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "test@makespace.com"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "test@makespace.com"
+                                    },
+                                    "formattedValue": "test@makespace.com",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "numberValue": 13
+                                    },
+                                    "effectiveValue": {
+                                        "numberValue": 13
+                                    },
+                                    "formattedValue": "13 / 14",
+                                    "userEnteredFormat": {
+                                        "numberFormat": {
+                                            "type": "NUMBER",
+                                            "pattern": "0\" / 14\""
+                                        }
+                                    },
+                                    "effectiveFormat": {
+                                        "numberFormat": {
+                                            "type": "NUMBER",
+                                            "pattern": "0\" / 14\""
+                                        },
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "RIGHT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "Test User"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "Test User"
+                                    },
+                                    "formattedValue": "Test User",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "numberValue": 1234
+                                    },
+                                    "effectiveValue": {
+                                        "numberValue": 1234
+                                    },
+                                    "formattedValue": "1234",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "RIGHT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "Head stock"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "Head stock"
+                                    },
+                                    "formattedValue": "Head stock",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "Carriage"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "Carriage"
+                                    },
+                                    "formattedValue": "Carriage",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "the thread drive, the power drive"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "the thread drive, the power drive"
+                                    },
+                                    "formattedValue": "the thread drive, the power drive",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "numberValue": 3
+                                    },
+                                    "effectiveValue": {
+                                        "numberValue": 3
+                                    },
+                                    "formattedValue": "3",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "RIGHT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "When the yellow safety cover is fully up"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "When the yellow safety cover is fully up"
+                                    },
+                                    "formattedValue": "When the yellow safety cover is fully up",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "Long cut or end cut, Turn or cross cut"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "Long cut or end cut, Turn or cross cut"
+                                    },
+                                    "formattedValue": "Long cut or end cut, Turn or cross cut",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "Drilling and stabilising your work"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "Drilling and stabilising your work"
+                                    },
+                                    "formattedValue": "Drilling and stabilising your work",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "Safe, carriage drive, cross-slide drive"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "Safe, carriage drive, cross-slide drive"
+                                    },
+                                    "formattedValue": "Safe, carriage drive, cross-slide drive",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "It will eject the tool it is holding"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "It will eject the tool it is holding"
+                                    },
+                                    "formattedValue": "It will eject the tool it is holding",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "All three of the cam-lock arrows are between their 'V' marks"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "All three of the cam-lock arrows are between their 'V' marks"
+                                    },
+                                    "formattedValue": "All three of the cam-lock arrows are between their 'V' marks",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "The cutting tool colliding with the chuck"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "The cutting tool colliding with the chuck"
+                                    },
+                                    "formattedValue": "The cutting tool colliding with the chuck",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "to stop the lathe if a potential or serious situation develops"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "to stop the lathe if a potential or serious situation develops"
+                                    },
+                                    "formattedValue": "to stop the lathe if a potential or serious situation develops",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "When you are alone in the secure workshop"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "When you are alone in the secure workshop"
+                                    },
+                                    "formattedValue": "When you are alone in the secure workshop",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "userEnteredValue": {
+                                        "stringValue": "your job coming loose, reversing the tail-stock shaft out past the zero mark, hitting the dead stop under power drive, leaving the key in the chuck, your chuck coming loose, allowing your tool to hit the chuck"
+                                    },
+                                    "effectiveValue": {
+                                        "stringValue": "your job coming loose, reversing the tail-stock shaft out past the zero mark, hitting the dead stop under power drive, leaving the key in the chuck, your chuck coming loose, allowing your tool to hit the chuck"
+                                    },
+                                    "formattedValue": "your job coming loose, reversing the tail-stock shaft out past the zero mark, hitting the dead stop under power drive, leaving the key in the chuck, your chuck coming loose, allowing your tool to hit the chuck",
+                                    "effectiveFormat": {
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 1,
+                                            "blue": 1
+                                        },
+                                        "padding": {
+                                            "top": 2,
+                                            "right": 3,
+                                            "bottom": 2,
+                                            "left": 3
+                                        },
+                                        "horizontalAlignment": "LEFT",
+                                        "verticalAlignment": "BOTTOM",
+                                        "wrapStrategy": "OVERFLOW_CELL",
+                                        "textFormat": {
+                                            "foregroundColor": {},
+                                            "fontFamily": "Arial",
+                                            "fontSize": 10,
+                                            "bold": false,
+                                            "italic": false,
+                                            "strikethrough": false,
+                                            "underline": false,
+                                            "foregroundColorStyle": {
+                                                "rgbColor": {}
+                                            }
+                                        },
+                                        "hyperlinkDisplayType": "PLAIN_TEXT",
+                                        "backgroundColorStyle": {
+                                            "rgbColor": {
+                                                "red": 1,
+                                                "green": 1,
+                                                "blue": 1
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "rowMetadata": [
+                        {
+                            "pixelSize": 21
+                        },
+                        {
+                            "pixelSize": 21
+                        }
+                    ],
+                    "columnMetadata": [
+                        {
+                            "pixelSize": 150
+                        },
+                        {
+                            "pixelSize": 150
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1Yu8TeG9RTqSEu3dxL5wj8uXfeP3xbIgxQZ1ZB9kyFUE/edit"
+}
