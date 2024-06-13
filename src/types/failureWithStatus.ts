@@ -3,6 +3,7 @@ import {StatusCodes} from 'http-status-codes';
 import {formatValidationErrors} from 'io-ts-reporters';
 
 type ApplicationStatusCode =
+  | StatusCodes.OK
   | StatusCodes.INTERNAL_SERVER_ERROR
   | StatusCodes.BAD_REQUEST
   | StatusCodes.UNAUTHORIZED
