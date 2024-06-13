@@ -11,7 +11,7 @@ import {Dependencies} from '../dependencies';
 import {sequenceS} from 'fp-ts/lib/Apply';
 import {Command} from '../commands';
 import {Actor} from '../types/actor';
-import {persistOrNoOp} from '../commands/persist-or-no-op';
+import {applyToResource} from '../commands/apply-command-to-resource';
 
 const getCommandFrom = <T>(body: unknown, command: Command<T>) =>
   pipe(
@@ -51,7 +51,7 @@ export const apiPost =
     await pipe(
       {
         actor: getActorFrom(req.headers.authorization, conf),
-        formPayload: getCommandFrom(req.body, command),
+        input: getCommandFrom(req.body, command),
         events: deps.getAllEvents(),
       },
       sequenceS(TE.ApplySeq),
@@ -61,30 +61,8 @@ export const apiPost =
           StatusCodes.UNAUTHORIZED
         )()
       ),
-      TE.chain(({formPayload, actor}) =>
-        pipe(
-          {
-            resource: TE.right(command.resource(formPayload)),
-            resourceState: deps.getResourceEvents(
-              command.resource(formPayload)
-            ),
-            formPayload: TE.right(formPayload),
-            actor: TE.right(actor),
-          },
-          sequenceS(TE.ApplyPar)
-        )
-      ),
-      TE.chainW(input =>
-        persistOrNoOp(
-          deps.commitEvent,
-          input.resource,
-          input.resourceState.version
-        )(
-          command.process({
-            events: input.resourceState.events,
-            command: {...input.formPayload, actor: input.actor},
-          })
-        )
+      TE.chain(({input, actor}) =>
+        applyToResource(deps, command)(input, actor)
       ),
       TE.match(
         failure => {
