@@ -4,6 +4,7 @@ import {html} from '../../types/html';
 import {ViewModel} from './view-model';
 import {Actor} from '../../types/actor';
 import {DomainEvent} from '../../types';
+import {inspect} from 'node:util';
 
 const renderActor = (actor: Actor) => {
   switch (actor.tag) {
@@ -20,7 +21,7 @@ const renderPayload = (event: DomainEvent) =>
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, unused-imports/no-unused-vars
   pipe(event, ({type, actor, recordedAt, ...payload}) => {
     return Object.entries(payload)
-      .map(([key, value]) => `${key}: ${value}`)
+      .map(([key, value]) => `${key}: ${inspect(value)}`)
       .join(', ');
   });
 
