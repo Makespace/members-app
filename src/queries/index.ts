@@ -4,7 +4,6 @@ export {superUsers} from './super-users';
 export {area} from './area';
 export {allEquipment} from './all-equipment';
 export {equipment} from './equipment';
-export {trainingQuizResults} from './equipment/training-quiz';
 export {members} from './members';
 export {member} from './member';
 export {log} from './log';
