@@ -1,6 +1,7 @@
 import {pipe} from 'fp-ts/lib/function';
 import {html} from '../../types/html';
 import {ViewModel} from './view-model';
+import {render as renderTrainingQuizResults} from './training-quiz/render';
 import * as RA from 'fp-ts/ReadonlyArray';
 
 const renderTrainers = (trainers: ViewModel['equipment']['trainers']) =>
@@ -23,4 +24,5 @@ export const render = (viewModel: ViewModel) => html`
   <a href="/equipment/add-training-sheet?equipmentId=${viewModel.equipment.id}"
     >Register training sheet</a
   >
+  ${renderTrainingQuizResults(viewModel)}
 `;

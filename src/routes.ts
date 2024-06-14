@@ -33,6 +33,10 @@ export const initRoutes = (
       'add-training-quiz-result',
       commands.equipment.trainingSheetQuizResult
     ),
+    query(
+      '/equipment/:equipment/training-quiz-results',
+      queries.trainingQuizResults
+    ),
     query('/equipment/:equipment', queries.equipment),
     query('/super-users', queries.superUsers),
     ...command('super-users', 'declare', commands.superUser.declare),
