@@ -5,6 +5,7 @@ import * as queries from './queries';
 import {Route, get} from './types/route';
 import {authRoutes} from './authentication';
 import {queryToHandler, commandToHandlers, ping} from './http';
+import {apiToHandlers} from './http/api-to-handlers';
 
 export const initRoutes = (
   deps: Dependencies,
@@ -12,6 +13,7 @@ export const initRoutes = (
 ): ReadonlyArray<Route> => {
   const query = queryToHandler(deps);
   const command = commandToHandlers(deps, conf);
+  const api = apiToHandlers(deps, conf);
   return [
     query('/', queries.landing),
     query('/event-log', queries.log),
@@ -25,6 +27,11 @@ export const initRoutes = (
       'equipment',
       'add-training-sheet',
       commands.equipment.trainingSheet
+    ),
+    ...api(
+      'equipment',
+      'add-training-quiz-result',
+      commands.equipment.trainingSheetQuizResult
     ),
     query('/equipment/:equipment', queries.equipment),
     query('/super-users', queries.superUsers),
