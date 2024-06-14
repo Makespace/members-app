@@ -27,8 +27,8 @@ const getTrainingSheets = (events: ReadonlyArray<RegEvent>) =>
     lastBy(event => event.equipmentId)
   );
 
-const getPreviousQuizResultsByEquipment = accumBy<string, QzEvent>(
-  e => e.equipmentId
+const getPreviousQuizResultsByTrainingSheet = accumBy<string, QzEvent>(
+  e => e.trainingSheetId
 );
 
 const processForEquipment = (
@@ -105,7 +105,7 @@ const process =
       existingQuizResultEvents.length
     );
     const trainingSheets = getTrainingSheets(sheetRegEvents);
-    const previousQuizResults = getPreviousQuizResultsByEquipment(
+    const previousQuizResults = getPreviousQuizResultsByTrainingSheet(
       existingQuizResultEvents
     );
     logger.info(
