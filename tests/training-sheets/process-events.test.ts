@@ -1,23 +1,52 @@
 import {faker} from '@faker-js/faker';
-import {process} from '../../src/training-sheets/training-sheets-worker';
+import * as TE from 'fp-ts/TaskEither';
 import {TestFramework, initTestFramework} from '../read-models/test-framework';
 import {NonEmptyString, UUID} from 'io-ts-types';
-import {EventOfType} from '../../src/types/domain-event';
+import {DomainEvent, EventName} from '../../src/types/domain-event';
 import {happyPathAdapters} from '../init-dependencies/happy-path-adapters.helper';
+import {run} from '../../src/training-sheets/training-sheets-worker';
+import {Dependencies} from '../../src/dependencies';
+import {Resource} from '../../src/types/resource';
+import {sheets_v4} from 'googleapis';
+import {Logger} from 'pino';
+import {failureWithStatus} from '../../src/types/failureWithStatus';
+import {StatusCodes} from 'http-status-codes';
+import * as gsheetData from '../data/google_sheet_data';
+
+type TrainingSheetWorkerDependencies = Dependencies & {
+  commitedEvents: DomainEvent[];
+};
+
+const dependenciesForTrainingSheetsWorker = (
+  framework: TestFramework,
+  googleSheetData: sheets_v4.Schema$Spreadsheet
+): TrainingSheetWorkerDependencies => {
+  const commitedEvents: DomainEvent[] = [];
+  return {
+    ...happyPathAdapters,
+    commitedEvents,
+    commitEvent:
+      (resource: Resource, lastKnownVersion: number) =>
+      (event: DomainEvent) => {
+        commitedEvents.push(event);
+        return happyPathAdapters.commitEvent(resource, lastKnownVersion)(event);
+      },
+    getAllEventsByType: <T extends EventName>(eventType: T) =>
+      TE.tryCatch(
+        () => framework.getAllEventsByType(eventType),
+        failureWithStatus(
+          'Failed to get events from test framework',
+          StatusCodes.INTERNAL_SERVER_ERROR
+        )
+      ),
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    pullGoogleSheetData: (_logger: Logger, _trainingSheetId: string) =>
+      TE.right(googleSheetData),
+  };
+};
 
 describe('Training sheets worker', () => {
-  describe('Run whole', () => {
-    it.todo('Test the run function');
-  });
-
   describe('Process results', () => {
-    let sheetRegEvents: ReadonlyArray<
-      EventOfType<'EquipmentTrainingSheetRegistered'>
-    >;
-    let existingQuizResultEvents: ReadonlyArray<
-      EventOfType<'EquipmentTrainingQuizResult'>
-    >;
-
     let framework: TestFramework;
     beforeEach(async () => {
       framework = await initTestFramework();
@@ -43,27 +72,20 @@ describe('Training sheets worker', () => {
           equipmentId: addEquipment.id,
           trainingSheetId: faker.string.uuid(),
         };
+        let deps: TrainingSheetWorkerDependencies;
         beforeEach(async () => {
           await framework.commands.equipment.training_sheet(
             registerTrainingSheet
           );
-          sheetRegEvents = await framework.getAllEventsByType(
-            'EquipmentTrainingSheetRegistered'
-          );
-          existingQuizResultEvents = await framework.getAllEventsByType(
-            'EquipmentTrainingQuizResult'
+          deps = dependenciesForTrainingSheetsWorker(
+            framework,
+            gsheetData.EMPTY
           );
         });
 
         it.skip('generates equipment events', async () => {
-          const result = process(
-            happyPathAdapters.logger,
-            happyPathAdapters,
-            sheetRegEvents,
-            existingQuizResultEvents
-          );
-          const newEvents = Object.values(await result);
-          expect(newEvents).toHaveLength(1);
+          await run(deps, deps.logger);
+          expect(deps.commitedEvents).toHaveLength(1);
         });
         it.todo('Handle already registered quiz results');
       });
