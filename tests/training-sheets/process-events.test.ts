@@ -7,8 +7,7 @@ import {happyPathAdapters} from '../init-dependencies/happy-path-adapters.helper
 import {run} from '../../src/training-sheets/training-sheets-worker';
 import {Dependencies} from '../../src/dependencies';
 import {Resource} from '../../src/types/resource';
-import {sheets_v4} from 'googleapis';
-import {Logger} from 'pino';
+import pino, {Logger} from 'pino';
 import {failureWithStatus} from '../../src/types/failureWithStatus';
 import {StatusCodes} from 'http-status-codes';
 import * as gsheetData from '../data/google_sheet_data';
@@ -18,12 +17,15 @@ type TrainingSheetWorkerDependencies = Dependencies & {
 };
 
 const dependenciesForTrainingSheetsWorker = (
-  framework: TestFramework,
-  googleSheetData: sheets_v4.Schema$Spreadsheet
+  framework: TestFramework
 ): TrainingSheetWorkerDependencies => {
   const commitedEvents: DomainEvent[] = [];
   return {
     ...happyPathAdapters,
+    logger: pino({
+      level: 'error',
+      timestamp: pino.stdTimeFunctions.isoTime,
+    }),
     commitedEvents,
     commitEvent:
       (resource: Resource, lastKnownVersion: number) =>
@@ -40,8 +42,14 @@ const dependenciesForTrainingSheetsWorker = (
         )
       ),
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    pullGoogleSheetData: (_logger: Logger, _trainingSheetId: string) =>
-      TE.right(googleSheetData),
+    pullGoogleSheetData: (_logger: Logger, trainingSheetId: string) => {
+      const sheet = gsheetData.TRAINING_SHEETS[trainingSheetId];
+      return sheet
+        ? TE.right(sheet)
+        : TE.left({
+            message: 'Sheet not found',
+          });
+    },
   };
 };
 
@@ -68,22 +76,24 @@ describe('Training sheets worker', () => {
       });
 
       describe('Processes a registered training sheet', () => {
-        const registerTrainingSheet = {
-          equipmentId: addEquipment.id,
-          trainingSheetId: faker.string.uuid(),
-        };
         let deps: TrainingSheetWorkerDependencies;
-        beforeEach(async () => {
-          await framework.commands.equipment.trainingSheet(
-            registerTrainingSheet
-          );
-          deps = dependenciesForTrainingSheetsWorker(
-            framework,
-            gsheetData.EMPTY
-          );
-        });
+        it('empty sheet produces no events', async () => {
+          await framework.commands.equipment.trainingSheet({
+            equipmentId: addEquipment.id,
+            trainingSheetId: gsheetData.EMPTY.spreadsheetId!,
+          });
 
-        it.skip('generates equipment events', async () => {
+          deps = dependenciesForTrainingSheetsWorker(framework);
+          await run(deps, deps.logger);
+          expect(deps.commitedEvents).toHaveLength(0);
+        });
+        it('metal lathe training sheet', async () => {
+          await framework.commands.equipment.trainingSheet({
+            equipmentId: addEquipment.id,
+            trainingSheetId: gsheetData.METAL_LATHE.spreadsheetId!,
+          });
+
+          deps = dependenciesForTrainingSheetsWorker(framework);
           await run(deps, deps.logger);
           expect(deps.commitedEvents).toHaveLength(1);
         });
