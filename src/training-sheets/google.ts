@@ -8,7 +8,7 @@ import {sheets_v4} from 'googleapis';
 import {v4} from 'uuid';
 import {UUID} from 'io-ts-types';
 import {DateTime} from 'luxon';
-import {QzEvent, QzEventDuplicate} from './events';
+import {QzEvent} from './events';
 
 const extractRowFormattedValues = (
   row: sheets_v4.Schema$RowData
@@ -84,12 +84,7 @@ const extractTimestamp = (
 };
 
 export const extractGoogleSheetData =
-  (
-    logger: Logger,
-    existingQuizResults: ReadonlyArray<QzEvent>,
-    equipmentId: UUID,
-    trainingSheetId: string
-  ) =>
+  (logger: Logger, equipmentId: UUID, trainingSheetId: string) =>
   (
     spreadsheet: sheets_v4.Schema$Spreadsheet
   ): O.Option<ReadonlyArray<QzEvent>> => {
@@ -123,79 +118,70 @@ export const extractGoogleSheetData =
       score: columnNames.value.findIndex(val => val.toLowerCase() === 'score'),
     };
 
-    const events = pipe(
-      sheetData.rowData.slice(1),
-      RA.map<sheets_v4.Schema$RowData, O.Option<QzEvent>>(row => {
-        if (!row.values) {
-          return O.none;
-        }
+    return O.some(
+      pipe(
+        sheetData.rowData.slice(1),
+        RA.map<sheets_v4.Schema$RowData, O.Option<QzEvent>>(row => {
+          if (!row.values) {
+            return O.none;
+          }
 
-        const email = extractEmail(
-          row.values[columnIndexes.email].formattedValue
-        );
-        const score = extractScore(
-          row.values[columnIndexes.score].formattedValue
-        );
-        const timestampEpochS = extractTimestamp(
-          row.values[columnIndexes.timestamp].formattedValue
-        );
-
-        if (O.isNone(email)) {
-          logger.warn(
-            `Failed to extract email from '${
-              row.values[columnIndexes.email].formattedValue
-            }', skipped row`
+          const email = extractEmail(
+            row.values[columnIndexes.email].formattedValue
           );
-          return O.none;
-        }
-        if (O.isNone(score)) {
-          logger.warn(
-            `Failed to extract score from '${
-              row.values[columnIndexes.score].formattedValue
-            }', skipped row`
+          const score = extractScore(
+            row.values[columnIndexes.score].formattedValue
           );
-          return O.none;
-        }
-        if (O.isNone(timestampEpochS)) {
-          logger.warn(
-            `Failed to extract timestamp from '${
-              row.values[columnIndexes.score].formattedValue
-            }', skipped row`
+          const timestampEpochS = extractTimestamp(
+            row.values[columnIndexes.timestamp].formattedValue
           );
-          return O.none;
-        }
 
-        const quizAnswers = RA.zip(columnNames.value, row.values).reduce(
-          (accum, [columnName, columnValue]) => {
-            accum[columnName] = columnValue.formattedValue ?? null;
-            return accum;
-          },
-          {} as Record<string, string | null>
-        );
+          if (O.isNone(email)) {
+            logger.warn(
+              `Failed to extract email from '${
+                row.values[columnIndexes.email].formattedValue
+              }', skipped row`
+            );
+            return O.none;
+          }
+          if (O.isNone(score)) {
+            logger.warn(
+              `Failed to extract score from '${
+                row.values[columnIndexes.score].formattedValue
+              }', skipped row`
+            );
+            return O.none;
+          }
+          if (O.isNone(timestampEpochS)) {
+            logger.warn(
+              `Failed to extract timestamp from '${
+                row.values[columnIndexes.score].formattedValue
+              }', skipped row`
+            );
+            return O.none;
+          }
 
-        return O.some(
-          constructEvent('EquipmentTrainingQuizResult')({
-            id: v4() as UUID,
-            equipmentId,
-            email: email.value,
-            trainingSheetId,
-            timestampEpochS: timestampEpochS.value,
-            ...score.value,
-            quizAnswers: quizAnswers,
-          })
-        );
-      }),
-      RA.filterMap(e => e)
+          const quizAnswers = RA.zip(columnNames.value, row.values).reduce(
+            (accum, [columnName, columnValue]) => {
+              accum[columnName] = columnValue.formattedValue ?? null;
+              return accum;
+            },
+            {} as Record<string, string | null>
+          );
+
+          return O.some(
+            constructEvent('EquipmentTrainingQuizResult')({
+              id: v4() as UUID,
+              equipmentId,
+              email: email.value,
+              trainingSheetId,
+              timestampEpochS: timestampEpochS.value,
+              ...score.value,
+              quizAnswers: quizAnswers,
+            })
+          );
+        }),
+        RA.filterMap(e => e)
+      )
     );
-
-    // We could check for duplicate quiz results earlier but I doubt the performance difference will be
-    // measurable.
-    logger.info(
-      `Found ${events.length} quiz result events, checking for ones we have already seen...`
-    );
-
-    const newQuizResults =
-      RA.difference(QzEventDuplicate)(existingQuizResults)(events);
-    logger.info(`${newQuizResults.length} new quiz results after filtering`);
-    return O.some(newQuizResults);
   };
