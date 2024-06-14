@@ -12,7 +12,7 @@ import {Ord, contramap} from 'fp-ts/lib/Ord';
 import {FailureWithStatus, failureWithStatus} from '../types/failureWithStatus';
 import {StatusCodes} from 'http-status-codes';
 import {accumBy, lastBy} from '../util';
-import {QzEvent, RegEvent} from './events';
+import {QzEvent, QzEventDuplicate, RegEvent} from './events';
 import {extractGoogleSheetData} from './google';
 
 const byEquipmentId: Ord<RegEvent> = pipe(
@@ -62,10 +62,22 @@ const processForEquipment = (
         spreadsheet,
         extractGoogleSheetData(
           logger.child({trainingSheetId: regEvent.trainingSheetId}),
-          existingQuizResults,
           regEvent.equipmentId,
           regEvent.trainingSheetId
         ),
+        O.map(events => {
+          // We could check for duplicate quiz results earlier but I doubt the performance difference will be
+          // measurable.
+          logger.info(
+            `Found ${events.length} quiz result events, checking for ones we have already seen...`
+          );
+          const newQuizResults =
+            RA.difference(QzEventDuplicate)(existingQuizResults)(events);
+          logger.info(
+            `${newQuizResults.length} new quiz results after filtering`
+          );
+          return newQuizResults;
+        }),
         O.match(
           () =>
             TE.left(
