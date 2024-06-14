@@ -27,7 +27,7 @@ const dependenciesForTrainingSheetsWorker = (
   return {
     ...happyPathAdapters,
     logger: pino({
-      level: 'error',
+      level: 'info',
       timestamp: pino.stdTimeFunctions.isoTime,
     }),
     commitedEvents,
@@ -47,7 +47,7 @@ const dependenciesForTrainingSheetsWorker = (
       ),
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     pullGoogleSheetData: (_logger: Logger, trainingSheetId: string) => {
-      const sheet = gsheetData.TRAINING_SHEETS[trainingSheetId];
+      const sheet = gsheetData.TRAINING_SHEETS[trainingSheetId].data;
       return sheet
         ? TE.right(sheet)
         : TE.left({
@@ -84,7 +84,7 @@ describe('Training sheets worker', () => {
         it('empty sheet produces no events', async () => {
           await framework.commands.equipment.trainingSheet({
             equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.EMPTY.spreadsheetId!,
+            trainingSheetId: gsheetData.EMPTY.data.spreadsheetId!,
           });
 
           deps = dependenciesForTrainingSheetsWorker(framework);
@@ -94,7 +94,7 @@ describe('Training sheets worker', () => {
         it('metal lathe training sheet', async () => {
           await framework.commands.equipment.trainingSheet({
             equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.METAL_LATHE.spreadsheetId!,
+            trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
           });
 
           deps = dependenciesForTrainingSheetsWorker(framework);
@@ -106,16 +106,37 @@ describe('Training sheets worker', () => {
           >({
             type: 'EquipmentTrainingQuizResult',
             equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.METAL_LATHE.spreadsheetId!,
-            email: 'test@makespace.com',
-            score: 13,
-            maxScore: 14,
-            percentage: 93,
-            fullMarks: false,
-            timestampEpochS: 1705770960,
+            trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
+            email: gsheetData.METAL_LATHE.email,
+            score: gsheetData.METAL_LATHE.score,
+            maxScore: gsheetData.METAL_LATHE.maxScore,
+            percentage: gsheetData.METAL_LATHE.percentage,
+            fullMarks: gsheetData.METAL_LATHE.fullMarks,
+            timestampEpochS: gsheetData.METAL_LATHE.timestampEpochS,
+            quizAnswers: gsheetData.METAL_LATHE.quizAnswers,
           });
         });
-        it('Handle already registered quiz results', async () => {});
+        it('Handle already registered quiz results', async () => {
+          await framework.commands.equipment.trainingSheet({
+            equipmentId: addEquipment.id,
+            trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
+          });
+          await framework.commands.equipment.trainingSheetQuizResult({
+            id: faker.string.uuid() as UUID,
+            equipmentId: addEquipment.id,
+            email: gsheetData.METAL_LATHE.email,
+            trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
+            score: gsheetData.METAL_LATHE.score,
+            maxScore: gsheetData.METAL_LATHE.maxScore,
+            percentage: gsheetData.METAL_LATHE.percentage,
+            fullMarks: gsheetData.METAL_LATHE.fullMarks,
+            timestampEpochS: gsheetData.METAL_LATHE.timestampEpochS,
+            quizAnswers: gsheetData.METAL_LATHE.quizAnswers,
+          });
+          deps = dependenciesForTrainingSheetsWorker(framework);
+          await run(deps, deps.logger);
+          expect(deps.commitedEvents).toHaveLength(0);
+        });
       });
     });
   });

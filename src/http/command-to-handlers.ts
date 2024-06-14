@@ -6,7 +6,7 @@ import expressAsyncHandler from 'express-async-handler';
 import {flow} from 'fp-ts/lib/function';
 import {formPost} from './form-post';
 import {formGet} from './form-get';
-import {apiPost} from './api-post';
+import {apiToHandlers} from './api-to-handlers';
 
 export const commandToHandlers =
   (deps: Dependencies, conf: Config) =>
@@ -21,9 +21,5 @@ export const commandToHandlers =
       handler: flow(formGet, expressAsyncHandler)(deps, cmd),
       method: 'get' as const,
     },
-    {
-      path: `/api/${noun}/${verb}`,
-      handler: flow(apiPost, expressAsyncHandler)(deps, conf, cmd),
-      method: 'post' as const,
-    },
+    ...apiToHandlers(deps, conf)(noun, verb, cmd),
   ];
