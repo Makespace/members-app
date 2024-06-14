@@ -249,14 +249,14 @@ const extractGoogleSheetData =
       `Found ${events.length} quiz result events, checking for ones we have already seen...`
     );
 
-    return O.some(
-      RA.difference({
-        equals: (a: QzEvent, b: QzEvent) =>
-          a.email === b.email &&
-          a.timestampEpochS === b.timestampEpochS &&
-          a.score === b.score,
-      })(events)(existingQuizResults)
-    );
+    const newQuizResults = RA.difference({
+      equals: (a: QzEvent, b: QzEvent) =>
+        a.email === b.email &&
+        a.timestampEpochS === b.timestampEpochS &&
+        a.score === b.score,
+    })(existingQuizResults)(events);
+    logger.info(`${newQuizResults.length} new quiz results after filtering`);
+    return O.some(newQuizResults);
   };
 
 const processForEquipment = (
