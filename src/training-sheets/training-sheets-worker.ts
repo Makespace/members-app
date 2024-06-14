@@ -17,7 +17,7 @@ import {sheets_v4} from 'googleapis';
 import {StatusCodes} from 'http-status-codes';
 import {v4} from 'uuid';
 import {UUID} from 'io-ts-types';
-import { DateTime } from 'luxon';
+import {DateTime} from 'luxon';
 
 type QzEvent = EventOfType<'EquipmentTrainingQuizResult'>;
 type RegEvent = EventOfType<'EquipmentTrainingSheetRegistered'>;
@@ -125,25 +125,25 @@ const extractEmail = (
 
 const extractTimestamp = (
   rowValue: string | undefined | null
-): O.Option<DateTime> => {
+): O.Option<number> => {
   if (!rowValue) {
     return O.none;
   }
   try {
-    return O.some(DateTime.fromFormat(
-      rowValue, 'dd/MM/yyyy HH:mm:ss',
-    ));
+    return O.some(
+      DateTime.fromFormat(rowValue, 'dd/MM/yyyy HH:mm:ss').toUnixInteger()
+    );
   } catch {
     return O.none;
   }
-}
+};
 
 const extractGoogleSheetData =
   (
     logger: Logger,
     existingQuizResults: ReadonlyArray<QzEvent>,
     equipmentId: UUID,
-    trainingSheetId: UUID
+    trainingSheetId: string
   ) =>
   (
     spreadsheet: sheets_v4.Schema$Spreadsheet
@@ -191,9 +191,9 @@ const extractGoogleSheetData =
         const score = extractScore(
           row.values[columnIndexes.score].formattedValue
         );
-        const timestamp = extractTimestamp(
+        const timestamp_epoch_s = extractTimestamp(
           row.values[columnIndexes.timestamp].formattedValue
-        )
+        );
 
         if (O.isNone(email)) {
           logger.warn(
@@ -211,7 +211,7 @@ const extractGoogleSheetData =
           );
           return O.none;
         }
-        if (O.isNone(timestamp)) {
+        if (O.isNone(timestamp_epoch_s)) {
           logger.warn(
             `Failed to extract timestamp from '${
               row.values[columnIndexes.score].formattedValue
@@ -226,7 +226,7 @@ const extractGoogleSheetData =
             equipmentId,
             email: email.value,
             trainingSheetId,
-            timestamp,
+            timestamp_epoch_s: timestamp_epoch_s.value,
             ...score.value,
           })
         );
@@ -242,7 +242,10 @@ const extractGoogleSheetData =
 
     return O.some(
       RA.difference({
-        equals: (a: QzEvent, b: QzEvent) => a.email === b.email && a.,
+        equals: (a: QzEvent, b: QzEvent) =>
+          a.email === b.email &&
+          a.timestamp_epoch_s === b.timestamp_epoch_s &&
+          a.score === b.score,
       })(events)(existingQuizResults)
     );
   };
@@ -278,7 +281,9 @@ const processForEquipment = (
         spreadsheet,
         extractGoogleSheetData(
           logger.child({trainingSheetId: regEvent.trainingSheetId}),
-          existingQuizResults
+          existingQuizResults,
+          regEvent.equipmentId,
+          regEvent.trainingSheetId
         ),
         O.match(
           () =>
