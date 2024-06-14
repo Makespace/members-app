@@ -2,7 +2,11 @@ import {faker} from '@faker-js/faker';
 import * as TE from 'fp-ts/TaskEither';
 import {TestFramework, initTestFramework} from '../read-models/test-framework';
 import {NonEmptyString, UUID} from 'io-ts-types';
-import {DomainEvent, EventName} from '../../src/types/domain-event';
+import {
+  DomainEvent,
+  EventName,
+  EventOfType,
+} from '../../src/types/domain-event';
 import {happyPathAdapters} from '../init-dependencies/happy-path-adapters.helper';
 import {run} from '../../src/training-sheets/training-sheets-worker';
 import {Dependencies} from '../../src/dependencies';
@@ -96,8 +100,22 @@ describe('Training sheets worker', () => {
           deps = dependenciesForTrainingSheetsWorker(framework);
           await run(deps, deps.logger);
           expect(deps.commitedEvents).toHaveLength(1);
+          const commitedEvent = deps.commitedEvents[0];
+          expect(commitedEvent).toMatchObject<
+            Partial<EventOfType<'EquipmentTrainingQuizResult'>>
+          >({
+            type: 'EquipmentTrainingQuizResult',
+            equipmentId: addEquipment.id,
+            trainingSheetId: gsheetData.METAL_LATHE.spreadsheetId!,
+            email: 'test@makespace.com',
+            score: 13,
+            maxScore: 14,
+            percentage: 93,
+            fullMarks: false,
+            timestampEpochS: 1705770960,
+          });
         });
-        it.todo('Handle already registered quiz results');
+        it('Handle already registered quiz results', async () => {});
       });
     });
   });
