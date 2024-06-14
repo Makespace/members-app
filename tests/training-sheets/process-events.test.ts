@@ -23,7 +23,7 @@ const dependenciesForTrainingSheetsWorker = (
   return {
     ...happyPathAdapters,
     logger: pino({
-      level: 'trace',
+      level: 'error',
       timestamp: pino.stdTimeFunctions.isoTime,
     }),
     commitedEvents,
