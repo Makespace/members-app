@@ -4,16 +4,20 @@ import * as RR from 'fp-ts/ReadonlyRecord';
 import * as S from 'fp-ts/string';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
+import * as O from 'fp-ts/Option';
 import {sequenceS} from 'fp-ts/lib/Apply';
 
 import {Dependencies} from '../dependencies';
 import {Logger} from 'pino';
-import {EventOfType} from '../types/domain-event';
+import {EventOfType, constructEvent} from '../types/domain-event';
 import {Ord, contramap} from 'fp-ts/lib/Ord';
 import {record} from 'fp-ts';
 import {FailureWithStatus, failureWithStatus} from '../types/failureWithStatus';
 import {sheets_v4} from 'googleapis';
 import {StatusCodes} from 'http-status-codes';
+import {v4} from 'uuid';
+import {UUID} from 'io-ts-types';
+import { DateTime } from 'luxon';
 
 type QzEvent = EventOfType<'EquipmentTrainingQuizResult'>;
 type RegEvent = EventOfType<'EquipmentTrainingSheetRegistered'>;
@@ -61,41 +65,186 @@ const getPreviousQuizResultsByEquipment = accumBy<string, QzEvent>(
   e => e.equipmentId
 );
 
-// const extractColumnNames = (
-//   sheet: sheets_v4.Schema$Sheet
-// ): O.Option<string[]> => {
-//   if (!sheet.data || sheet.data.length < 1) {
-//     return O.none;
-//   }
-//   if (!sheet.data[0].rowData || sheet.data[0].rowData.length < 1) {
-//     return O.none;
-//   }
-//   if (
-//     !sheet.data[0].rowData[0].values ||
-//     sheet.data[0].rowData[0].values.length < 1
-//   ) {
-//     return O.none;
-//   }
-//   return O.some(
-//     sheet.data[0].rowData[0].values.map(cd => cd.formattedValue ?? '')
-//   );
-// };
+const extractRowFormattedValues = (
+  row: sheets_v4.Schema$RowData
+): O.Option<string[]> => {
+  if (row.values) {
+    return O.some(row.values.map(cd => cd.formattedValue ?? ''));
+  }
+  return O.none;
+};
+
+const extractScore = (
+  rowValue: string | undefined | null
+): O.Option<{
+  score: number;
+  maxScore: number;
+  percentage: number;
+  fullMarks: boolean;
+}> => {
+  if (!rowValue) {
+    return O.none;
+  }
+  const parts = rowValue.split(' / ');
+  if (parts.length !== 2) {
+    return O.none;
+  }
+
+  const score = parseInt(parts[0], 10);
+  if (isNaN(score) || score < 0 || score > 100) {
+    return O.none;
+  }
+
+  const maxScore = parseInt(parts[1], 10);
+  if (isNaN(maxScore) || maxScore < 1 || maxScore > 100 || maxScore < score) {
+    return O.none;
+  }
+
+  const percentage = Math.round((score / maxScore) * 100);
+
+  // We don't say 'passed' incase the pass-rate is different for some reason.
+  const fullMarks = score === maxScore;
+  return O.some({
+    score,
+    maxScore,
+    percentage,
+    fullMarks,
+  });
+};
+
+const extractEmail = (
+  rowValue: string | undefined | null
+): O.Option<string> => {
+  if (!rowValue) {
+    return O.none;
+  }
+  // We may want to add further normalisation to user emails such as making them
+  // all lowercase (when used as a id) to prevent user confusion.
+  return O.some(rowValue.trim());
+};
+
+const extractTimestamp = (
+  rowValue: string | undefined | null
+): O.Option<DateTime> => {
+  if (!rowValue) {
+    return O.none;
+  }
+  try {
+    return O.some(DateTime.fromFormat(
+      rowValue, 'dd/MM/yyyy HH:mm:ss',
+    ));
+  } catch {
+    return O.none;
+  }
+}
 
 const extractGoogleSheetData =
   (
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _existingQuizResults: ReadonlyArray<QzEvent>
+    logger: Logger,
+    existingQuizResults: ReadonlyArray<QzEvent>,
+    equipmentId: UUID,
+    trainingSheetId: UUID
   ) =>
   (
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _spreadsheet: sheets_v4.Schema$Spreadsheet
-  ): TE.TaskEither<FailureWithStatus, ReadonlyArray<QzEvent>> => {
+    spreadsheet: sheets_v4.Schema$Spreadsheet
+  ): O.Option<ReadonlyArray<QzEvent>> => {
+    logger.info('Processing google sheet data');
     // Initially
     // - Only handle a single sheet per-page.
     // - Assume the column names are the first row.
+    if (!spreadsheet.sheets || spreadsheet.sheets.length < 1) {
+      return O.none;
+    }
+    const sheet = spreadsheet.sheets[0];
+    if (!sheet.data || sheet.data.length < 1) {
+      return O.none;
+    }
+    const sheetData = sheet.data[0];
+    if (!sheetData.rowData || sheetData.rowData.length < 1) {
+      return O.none;
+    }
+    const columnNames = extractRowFormattedValues(sheetData.rowData[0]);
+    if (O.isNone(columnNames)) {
+      logger.debug('Failed to find column names');
+      return O.none;
+    }
+    logger.trace('Found column names for sheet %o', columnNames.value);
 
-    // TODO
-    return TE.right(RA.empty);
+    const columnIndexes = {
+      timestamp: columnNames.value.findIndex(
+        val => val.toLowerCase() === 'timestamp'
+      ),
+      email: columnNames.value.findIndex(val => val.toLowerCase() === 'email'),
+      score: columnNames.value.findIndex(val => val.toLowerCase() === 'score'),
+    };
+
+    const events = pipe(
+      sheetData.rowData.slice(1),
+      RA.map<sheets_v4.Schema$RowData, O.Option<QzEvent>>(row => {
+        if (!row.values) {
+          return O.none;
+        }
+
+        const email = extractEmail(
+          row.values[columnIndexes.email].formattedValue
+        );
+        const score = extractScore(
+          row.values[columnIndexes.score].formattedValue
+        );
+        const timestamp = extractTimestamp(
+          row.values[columnIndexes.timestamp].formattedValue
+        )
+
+        if (O.isNone(email)) {
+          logger.warn(
+            `Failed to extract email from '${
+              row.values[columnIndexes.email].formattedValue
+            }', skipped row`
+          );
+          return O.none;
+        }
+        if (O.isNone(score)) {
+          logger.warn(
+            `Failed to extract score from '${
+              row.values[columnIndexes.score].formattedValue
+            }', skipped row`
+          );
+          return O.none;
+        }
+        if (O.isNone(timestamp)) {
+          logger.warn(
+            `Failed to extract timestamp from '${
+              row.values[columnIndexes.score].formattedValue
+            }', skipped row`
+          );
+          return O.none;
+        }
+
+        return O.some(
+          constructEvent('EquipmentTrainingQuizResult')({
+            id: v4() as UUID,
+            equipmentId,
+            email: email.value,
+            trainingSheetId,
+            timestamp,
+            ...score.value,
+          })
+        );
+      }),
+      RA.filterMap(e => e)
+    );
+
+    // We could check for duplicate quiz results earlier but I doubt the performance difference will be
+    // measurable.
+    logger.info(
+      `Found ${events.length} quiz result events, checking for ones we have already seen...`
+    );
+
+    return O.some(
+      RA.difference({
+        equals: (a: QzEvent, b: QzEvent) => a.email === b.email && a.,
+      })(events)(existingQuizResults)
+    );
   };
 
 const processForEquipment = (
@@ -104,30 +253,62 @@ const processForEquipment = (
   regEvent: RegEvent,
   existingQuizResults: ReadonlyArray<QzEvent>
 ): TE.TaskEither<FailureWithStatus, ReadonlyArray<QzEvent>> => {
-  logger.info(`Scanning training sheet ${regEvent.trainingSheetId}...`);
+  logger.info(
+    `Scanning training sheet ${regEvent.trainingSheetId}. Pulling google sheet data...`
+  );
   // TODO - Check global rate limit. -> Maybe this should also be an event?
 
   return pipe(
     deps.pullGoogleSheetData(logger, regEvent.trainingSheetId),
+    TE.flatMap(data => {
+      logger.trace(
+        "Received data from google sheets for training sheet '{regEvent.trainingSheetId}': '%o'",
+        data
+      );
+      return TE.right(data);
+    }),
     TE.mapLeft(
       failureWithStatus(
         'Failed to pull google sheet data',
         StatusCodes.INTERNAL_SERVER_ERROR
       )
     ),
-    TE.chain(extractGoogleSheetData(existingQuizResults))
+    TE.chain(spreadsheet =>
+      pipe(
+        spreadsheet,
+        extractGoogleSheetData(
+          logger.child({trainingSheetId: regEvent.trainingSheetId}),
+          existingQuizResults
+        ),
+        O.match(
+          () =>
+            TE.left(
+              failureWithStatus(
+                'Failed to extract google sheet data',
+                StatusCodes.INTERNAL_SERVER_ERROR
+              )()
+            ),
+          val => TE.right(val)
+        )
+      )
+    )
   );
 };
 
+// FailureWithStatus probably isn't the type to be using as the 'error'.
 const process =
   (logger: Logger, deps: Dependencies) =>
   (
     sheetRegEvents: ReadonlyArray<RegEvent>,
     existingQuizResultEvents: ReadonlyArray<QzEvent>
   ): TE.TaskEither<FailureWithStatus, ReadonlyArray<QzEvent>> => {
+    logger.info('Got existing events, getting training sheets...');
     const trainingSheets = getTrainingSheets(sheetRegEvents);
     const previousQuizResults = getPreviousQuizResultsByEquipment(
       existingQuizResultEvents
+    );
+    logger.info(
+      `Got ${Object.keys(trainingSheets).length} training sheets to scan...`
     );
     return pipe(
       Object.entries(trainingSheets),
@@ -148,6 +329,7 @@ export const run = async (
   deps: Dependencies,
   logger: Logger
 ): Promise<void> => {
+  logger.info('Running training sheets worker job. Getting existing events...');
   const newEvents = await pipe(
     {
       equipmentEvents:
@@ -169,6 +351,9 @@ export const run = async (
     logger.error(newEvents.left, 'Failed to get training quiz results');
     return;
   }
+  logger.info(
+    `Finished getting training sheet quiz results, gathered: ${newEvents.right.length} results. Committing...`
+  );
 
   for (const newEvent of newEvents.right) {
     pipe(
@@ -185,6 +370,7 @@ export const run = async (
       )
     );
   }
+  logger.info('Finished commiting training sheet quiz results');
 };
 
 const runLogged = async (deps: Dependencies, logger: Logger) => {

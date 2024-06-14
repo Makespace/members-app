@@ -61,8 +61,10 @@ export const DomainEvent = t.union([
     trainingSheetId: t.string,
     email: t.string,
     score: t.number,
-    pass: t.boolean,
     id: tt.UUID,
+    maxScore: t.number,
+    percentage: t.number,
+    fullMarks: t.boolean,
   }),
   eventCodec('MemberDetailsUpdated', {
     memberNumber: t.number,
