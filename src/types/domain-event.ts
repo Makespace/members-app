@@ -65,7 +65,8 @@ export const DomainEvent = t.union([
     maxScore: t.number,
     percentage: t.number,
     fullMarks: t.boolean,
-    timestamp_epoch_s: t.number, // January 1st 1970.
+    timestampEpochS: t.number, // Unix Epoch January 1st 1970.
+    quizAnswers: t.record(t.string, t.union([t.string, t.null])),
   }),
   eventCodec('MemberDetailsUpdated', {
     memberNumber: t.number,

@@ -191,7 +191,7 @@ const extractGoogleSheetData =
         const score = extractScore(
           row.values[columnIndexes.score].formattedValue
         );
-        const timestamp_epoch_s = extractTimestamp(
+        const timestampEpochS = extractTimestamp(
           row.values[columnIndexes.timestamp].formattedValue
         );
 
@@ -211,7 +211,7 @@ const extractGoogleSheetData =
           );
           return O.none;
         }
-        if (O.isNone(timestamp_epoch_s)) {
+        if (O.isNone(timestampEpochS)) {
           logger.warn(
             `Failed to extract timestamp from '${
               row.values[columnIndexes.score].formattedValue
@@ -220,14 +220,23 @@ const extractGoogleSheetData =
           return O.none;
         }
 
+        const quizAnswers = RA.zip(columnNames.value, row.values).reduce(
+          (accum, [columnName, columnValue]) => {
+            accum[columnName] = columnValue.formattedValue ?? null;
+            return accum;
+          },
+          {} as Record<string, string | null>
+        );
+
         return O.some(
           constructEvent('EquipmentTrainingQuizResult')({
             id: v4() as UUID,
             equipmentId,
             email: email.value,
             trainingSheetId,
-            timestamp_epoch_s: timestamp_epoch_s.value,
+            timestampEpochS: timestampEpochS.value,
             ...score.value,
+            quizAnswers: quizAnswers,
           })
         );
       }),
@@ -244,7 +253,7 @@ const extractGoogleSheetData =
       RA.difference({
         equals: (a: QzEvent, b: QzEvent) =>
           a.email === b.email &&
-          a.timestamp_epoch_s === b.timestamp_epoch_s &&
+          a.timestampEpochS === b.timestampEpochS &&
           a.score === b.score,
       })(events)(existingQuizResults)
     );
