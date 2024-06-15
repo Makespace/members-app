@@ -1,17 +1,18 @@
 import {Logger} from 'pino';
 import * as TE from 'fp-ts/TaskEither';
+import * as O from 'fp-ts/Option';
 import {Failure} from '../../types';
 
 import {Auth, google, sheets_v4} from 'googleapis';
 import {pipe} from 'fp-ts/lib/function';
 
 export const pullGoogleSheetData =
-  (auth: Auth.GoogleAuth | null) =>
+  (auth: O.Option<Auth.GoogleAuth>) =>
   (
     logger: Logger,
     trainingSheetId: string
   ): TE.TaskEither<Failure, sheets_v4.Schema$Spreadsheet> => {
-    if (auth === null) {
+    if (O.isNone(auth)) {
       return TE.left({
         message: 'Google connectivity disabled - failed to get spreadsheet',
       });
@@ -22,7 +23,7 @@ export const pullGoogleSheetData =
           google
             .sheets({
               version: 'v4',
-              auth,
+              auth: auth.value,
             })
             .spreadsheets.get({
               spreadsheetId: trainingSheetId,

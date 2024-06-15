@@ -1,4 +1,5 @@
-import {Config} from '../configuration';
+import * as O from 'fp-ts/Option';
+import {Config, ConfigWithGoogle} from '../configuration';
 import {Dependencies} from '../dependencies';
 import {createRateLimiter} from './rate-limit-sending-of-emails';
 import {sendEmail} from './send-email';
@@ -11,6 +12,18 @@ import {getResourceEvents} from './event-store/get-resource-events';
 import {Client} from '@libsql/client/.';
 import {pullGoogleSheetData} from './google/pull_sheet_data';
 import {google} from 'googleapis';
+
+export const setupGoogleAuth = (conf: ConfigWithGoogle) => {
+  return O.some(
+    new google.auth.GoogleAuth({
+      credentials: {
+        client_email: conf.GOOGLE_SERVICE_ACCOUNT_KEY_CLIENT_EMAIL,
+        private_key: conf.GOOGLE_SERVICE_ACCOUNT_KEY_PRIVATE_KEY,
+      },
+      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+    })
+  );
+};
 
 export const initDependencies = (
   dbClient: Client,
@@ -54,12 +67,13 @@ export const initDependencies = (
     })
   );
 
+  if (conf.GOOGLE_CONNECTIVITY_ENABLED) {
+    conf = conf as ConfigWithGoogle;
+  }
+
   const auth = conf.GOOGLE_CONNECTIVITY_ENABLED
-    ? new google.auth.GoogleAuth({
-        keyFile: conf.GOOGLE_SERVICE_ACCOUNT_KEY_FILE_PATH,
-        scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-      })
-    : null;
+    ? setupGoogleAuth(conf as ConfigWithGoogle)
+    : O.none;
 
   return {
     commitEvent: commitEvent(dbClient, logger),
