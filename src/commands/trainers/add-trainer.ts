@@ -1,4 +1,4 @@
-import {constructEvent} from '../../types';
+import {constructEvent, isEventOfType} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
@@ -17,6 +17,8 @@ export type AddTrainer = t.TypeOf<typeof codec>;
 const process: Command<AddTrainer>['process'] = input =>
   pipe(
     input.events,
+    RA.filter(isEventOfType('TrainerAdded')),
+    RA.filter(event => event.memberNumber === input.command.memberNumber),
     RA.match(
       () => O.some(constructEvent('TrainerAdded')(input.command)),
       () => O.none
