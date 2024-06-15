@@ -22,10 +22,28 @@ describe('addTrainer', () => {
       addTrainer
     );
   });
+  const equipmentId = faker.string.uuid() as UUID;
+
+  describe('when multiple trainers are added', () => {
+    beforeEach(async () => {
+      await applyAddTrainer(
+        {equipmentId, memberNumber: faker.number.int()},
+        arbitraryActor()
+      )();
+      await applyAddTrainer(
+        {equipmentId, memberNumber: faker.number.int()},
+        arbitraryActor()
+      )();
+    });
+    it('records all of them', async () => {
+      const events = await framework.getAllEventsByType('TrainerAdded');
+      expect(events).toHaveLength(2);
+    });
+  });
 
   describe('when a command is repeatedly called', () => {
     const input = {
-      equipmentId: faker.string.uuid() as UUID,
+      equipmentId,
       memberNumber: faker.number.int(),
     };
     beforeEach(async () => {
