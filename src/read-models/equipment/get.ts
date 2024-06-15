@@ -10,11 +10,13 @@ type Equipment = {
   name: string;
   id: string;
   trainers: ReadonlyArray<number>;
+  areaId: string;
 };
 
 type EquipmentState = {
   name: string;
   id: string;
+  areaId: string;
   trainers: Set<number>;
 };
 
