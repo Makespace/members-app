@@ -39,7 +39,7 @@ describe('get', () => {
       expect(equipment.id).toStrictEqual(addEquipment.id);
     });
 
-    it.failing('returns the trainer', () => {
+    it('returns the trainer', () => {
       const equipment = pipe(addEquipment.id, get(events), getSomeOrFail);
       expect(equipment.trainers[0]).toStrictEqual(addTrainer.memberNumber);
     });
