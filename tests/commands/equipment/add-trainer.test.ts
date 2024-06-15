@@ -7,7 +7,7 @@ import {
 import {
   AddTrainer,
   addTrainer,
-} from '../../../src/commands/equipment-trainers/add-trainer';
+} from '../../../src/commands/trainers/add-trainer';
 import {faker} from '@faker-js/faker';
 import {arbitraryActor} from '../../helpers';
 import {UUID} from 'io-ts-types';

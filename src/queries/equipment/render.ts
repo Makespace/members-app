@@ -19,7 +19,7 @@ const renderTrainers = (trainers: ViewModel['equipment']['trainers']) =>
 const renderEquipmentActions = (viewModel: ViewModel) => html`
   <ul>
     <li>
-      <a href="/equipment-trainers/add?equipmentId=${viewModel.equipment.id}"
+      <a href="/equipment/add-trainer?equipment=${viewModel.equipment.id}"
         >Add a trainer</a
       >
     </li>
@@ -35,9 +35,9 @@ const renderEquipmentActions = (viewModel: ViewModel) => html`
 
 export const render = (viewModel: ViewModel) => html`
   <h1>${viewModel.equipment.name}</h1>
+  ${viewModel.isSuperUserOrOwnerOfArea ? renderEquipmentActions(viewModel) : ''}
   <h2>Trainers</h2>
   ${renderTrainers(viewModel.equipment.trainers)}
-  ${viewModel.isSuperUserOrOwnerOfArea ? renderEquipmentActions(viewModel) : ''}
   ${renderTrainingQuizResults(viewModel)}
 `;
 

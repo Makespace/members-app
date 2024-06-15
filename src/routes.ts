@@ -23,6 +23,7 @@ export const initRoutes = (
     query('/areas/:area', queries.area),
     query('/equipment', queries.allEquipment),
     ...command('equipment', 'add', commands.equipment.add),
+    ...command('equipment', 'add-trainer', commands.trainers.add),
     ...command(
       'equipment',
       'add-training-sheet',

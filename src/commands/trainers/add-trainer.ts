@@ -9,7 +9,7 @@ import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 
 const codec = t.strict({
   equipmentId: tt.UUID,
-  memberNumber: t.number,
+  memberNumber: tt.NumberFromString,
 });
 
 export type AddTrainer = t.TypeOf<typeof codec>;
@@ -24,7 +24,7 @@ const process: Command<AddTrainer>['process'] = input =>
   );
 
 const resource: Command<AddTrainer>['resource'] = command => ({
-  type: 'EquipmentTrainers',
+  type: 'Trainers',
   id: command.equipmentId,
 });
 

@@ -1,13 +1,13 @@
 import {area} from './area';
 import {equipment} from './equipment';
-import {equipmentTrainers} from './equipment-trainers';
+import {trainers} from './trainers';
 import {memberNumbers} from './member-numbers';
 import {superUser} from './super-user';
 
 export const commands = {
   area,
   equipment,
-  equipmentTrainers,
+  trainers,
   superUser,
   memberNumbers,
 };
