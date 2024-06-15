@@ -12,7 +12,7 @@ const codec = t.strict({
   memberNumber: t.number,
 });
 
-type AddTrainer = t.TypeOf<typeof codec>;
+export type AddTrainer = t.TypeOf<typeof codec>;
 
 const process: Command<AddTrainer>['process'] = input =>
   pipe(

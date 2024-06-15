@@ -16,6 +16,7 @@ import {randomUUID} from 'crypto';
 import {Resource} from '../../src/types/resource';
 import {getResourceEvents} from '../../src/init-dependencies/event-store/get-resource-events';
 import {EventName, EventOfType} from '../../src/types/domain-event';
+import {Dependencies} from '../../src/dependencies';
 
 type ToFrameworkCommands<T> = {
   [K in keyof T]: {
@@ -36,6 +37,10 @@ export type TestFramework = {
     eventType: T
   ) => Promise<ReadonlyArray<EventOfType<T>>>;
   commands: ToFrameworkCommands<typeof commands>;
+  depsForApplyToResource: {
+    commitEvent: Dependencies['commitEvent'];
+    getResourceEvents: Dependencies['getResourceEvents'];
+  };
 };
 
 export const initTestFramework = async (): Promise<TestFramework> => {
@@ -74,6 +79,10 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   return {
     getAllEvents: frameworkGetAllEvents,
     getAllEventsByType: frameworkGetAllEventsByType,
+    depsForApplyToResource: {
+      commitEvent: frameworkCommitEvent,
+      getResourceEvents: getResourceEvents(dbClient),
+    },
     commands: {
       area: {
         create: frameworkify(commands.area.create),
