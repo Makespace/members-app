@@ -30,7 +30,7 @@ describe('get', () => {
     beforeEach(async () => {
       await framework.commands.area.create(createArea);
       await framework.commands.equipment.add(addEquipment);
-      await framework.commands.equipmentTrainers.add(addTrainer);
+      await framework.commands.trainers.add(addTrainer);
       events = await framework.getAllEvents();
     });
 

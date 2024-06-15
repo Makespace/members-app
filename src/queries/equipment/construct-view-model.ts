@@ -45,10 +45,7 @@ export const constructViewModel =
         return {
           user: E.right(user),
           isSuperUserOrOwnerOfArea: E.right(true),
-          equipment: pipe(
-            equipmentOption,
-            E.map(partial => ({...partial, trainers: []}))
-          ),
+          equipment: equipmentOption,
           trainingQuizResults: pipe(
             equipmentOption,
             E.map(equipment =>
