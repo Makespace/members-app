@@ -11,7 +11,7 @@ import {Command} from '../commands';
 import {Actor} from '../types/actor';
 import {getUserFromSession} from '../authentication';
 import {oopsPage} from '../templates';
-import {persistOrNoOp} from '../commands/persist-or-no-op';
+import {applyToResource} from '../commands/apply-command-to-resource';
 
 const getCommandFrom = <T>(body: unknown, command: Command<T>) =>
   pipe(
@@ -47,7 +47,7 @@ export const formPost =
         actor: getActorFrom(req.session, deps),
         // First we use getCommandFrom to statelessly check the input is sensical and in a sense this can be thought of
         // as a fast path to minimise processing for garbage.
-        formPayload: getCommandFrom(req.body, command),
+        input: getCommandFrom(req.body, command),
         // Second we get all the events. This is because we need all the events to get the authorisation of the command
         // since there are addOwner events we need to read.
         // There are 2 optimisations here we could take if required (but we haven't yet because they aren't needed):
@@ -64,14 +64,12 @@ export const formPost =
           StatusCodes.UNAUTHORIZED
         )()
       ),
-      TE.chain(({formPayload, actor}) =>
+      TE.chain(({input, actor}) =>
         pipe(
           {
-            resource: TE.right(command.resource(formPayload)),
-            resourceState: deps.getResourceEvents(
-              command.resource(formPayload)
-            ),
-            formPayload: TE.right(formPayload),
+            resource: TE.right(command.resource(input)),
+            resourceState: deps.getResourceEvents(command.resource(input)),
+            input: TE.right(input),
             actor: TE.right(actor),
           },
           sequenceS(TE.ApplyPar)
@@ -122,17 +120,8 @@ export const formPost =
       //    for displaying the new state based on the failure events that have been stored. It is forseeable that we may decide to
       //    relax this slightly in the future to allow certain failure events to trigger an immediate specific response back to the
       //    user.
-      TE.chainW(input =>
-        persistOrNoOp(
-          deps.commitEvent,
-          input.resource,
-          input.resourceState.version
-        )(
-          command.process({
-            events: input.resourceState.events,
-            command: {...input.formPayload, actor: input.actor},
-          })
-        )
+      TE.chain(({input, actor}) =>
+        applyToResource(deps, command)(input, actor)
       ),
       TE.match(
         failure => {
