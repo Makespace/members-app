@@ -61,7 +61,7 @@ const renderTrainingQuizResultsTable = (
   </table>
 `;
 
-export const renderTrainingQuizResults = (viewModel: ViewModel) => html`
+const renderTrainingQuizResults = (viewModel: ViewModel) => html`
   <h1>${viewModel.equipment.name} Training Quiz Results</h1>
   <h2>Passed</h2>
   ${renderTrainingQuizResultsTable(viewModel.trainingQuizResults.passed)}
