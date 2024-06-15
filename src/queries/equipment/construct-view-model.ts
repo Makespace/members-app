@@ -16,7 +16,7 @@ import {sequenceS} from 'fp-ts/lib/Apply';
 import {EventOfType} from '../../types/domain-event';
 import {DateTime} from 'luxon';
 
-export const constructQuizResultViewModel =
+const constructQuizResultViewModel =
   (passed: boolean) =>
   (event: EventOfType<'EquipmentTrainingQuizResult'>): QuizResultViewModel => {
     return {
