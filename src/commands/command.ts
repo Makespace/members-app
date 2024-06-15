@@ -16,5 +16,6 @@ export type Command<T> = {
   isAuthorized: (input: {
     actor: Actor;
     events: ReadonlyArray<DomainEvent>;
+    input: T;
   }) => boolean;
 };
