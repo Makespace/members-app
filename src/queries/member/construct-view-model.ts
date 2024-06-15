@@ -21,6 +21,7 @@ export const constructViewModel =
       deps.getAllEvents(),
       TE.map(events => ({
         user: E.right(user),
+        isSelf: E.right(memberNumber === user.memberNumber),
         member: pipe(
           events,
           RA.filter(isEventOfType('MemberNumberLinkedToEmail')),
