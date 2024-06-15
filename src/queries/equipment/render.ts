@@ -35,10 +35,9 @@ const renderTrainingQuizResultsTable = (
 ) => html`
   <table>
     <tr>
+      <th>Timestamp</th>
       <th>Email</th>
-      <th></th>
-      <th></th>
-      <th></th>
+      <th>Score</th>
     </tr>
 
     ${pipe(
@@ -50,7 +49,7 @@ const renderTrainingQuizResultsTable = (
               ? 'passed_training_quiz_row'
               : 'failed_training_quiz_row'}
           >
-            <td>${result.timestamp.toISO() ?? ''}</td>
+            <td>${result.timestamp.toFormat('yyyy-mm-dd HH:mm') ?? ''}</td>
             <td>${result.email}</td>
             <td>
               ${result.score} / ${result.maxScore} (${result.percentage}%)

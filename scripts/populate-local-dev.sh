@@ -24,3 +24,10 @@ curl -X POST -H 'Authorization: Bearer secret' -H 'Content-Type: application/jso
 	--data '{"equipmentId": "4224ee94-09b0-47d4-ae60-fac46b8ca93e", "trainingSheetId": "fakeTrainingSheetId"}' \
 	http://localhost:8080/api/equipment/add-training-sheet
 
+curl -X POST -H 'Authorization: Bearer secret' -H 'Content-Type: application/json' \
+	--data '{"equipmentId": "4224ee94-09b0-47d4-ae60-fac46b8ca93e","trainingSheetId": "fakeTrainingSheetId","id": "2d0e6174-a827-4331-9dc2-ffb05ea863c3","email": "finn.flatcoat@dog.co.uk","score": 13,"maxScore": 20,"percentage": 65,"fullMarks": false,"timestampEpochS": 1718411504,"quizAnswers": {}}' \
+	http://localhost:8080/api/equipment/add-training-quiz-result
+
+curl -X POST -H 'Authorization: Bearer secret' -H 'Content-Type: application/json' \
+	--data '{"equipmentId": "4224ee94-09b0-47d4-ae60-fac46b8ca93e","trainingSheetId": "fakeTrainingSheetId","id": "2d0e6174-a827-4331-9dc2-ffb05ea863c3","email": "finn.flatcoat@dog.co.uk","score": 20,"maxScore": 20,"percentage": 100,"fullMarks": true,"timestampEpochS": 1718413504,"quizAnswers": {}}' \
+	http://localhost:8080/api/equipment/add-training-quiz-result
