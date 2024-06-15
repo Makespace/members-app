@@ -16,13 +16,28 @@ const renderTrainers = (trainers: ViewModel['equipment']['trainers']) =>
     )
   );
 
+const renderEquipmentActions = (viewModel: ViewModel) => html`
+  <ul>
+    <li>
+      <a href="/equipment-trainers/add?equipmentId=${viewModel.equipment.id}"
+        >Add a trainer</a
+      >
+    </li>
+    <li>
+      <a
+        href="/equipment/add-training-sheet?equipmentId=${viewModel.equipment
+          .id}"
+        >Register training sheet</a
+      >
+    </li>
+  </ul>
+`;
+
 export const render = (viewModel: ViewModel) => html`
   <h1>${viewModel.equipment.name}</h1>
   <h2>Trainers</h2>
   ${renderTrainers(viewModel.equipment.trainers)}
-  <a href="/equipment/add-training-sheet?equipmentId=${viewModel.equipment.id}"
-    >Register training sheet</a
-  >
+  ${viewModel.isSuperUserOrOwnerOfArea ? renderEquipmentActions(viewModel) : ''}
   ${renderTrainingQuizResults(viewModel)}
 `;
 

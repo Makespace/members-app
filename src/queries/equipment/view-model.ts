@@ -12,6 +12,7 @@ export type QuizResultViewModel = {
 
 export type ViewModel = {
   user: User;
+  isSuperUserOrOwnerOfArea: boolean;
   equipment: {
     name: string;
     id: string;
