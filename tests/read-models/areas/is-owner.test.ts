@@ -27,7 +27,7 @@ describe('isOwner', () => {
   });
 
   describe('when user is not an owner of the area', () => {
-    it.failing('returns false', () => {
+    it('returns false', () => {
       expect(isOwner(events)(createArea.id, faker.number.int())).toBe(false);
     });
   });
