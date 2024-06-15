@@ -10,9 +10,10 @@ const renderTrainers = (trainers: ViewModel['equipment']['trainers']) =>
     RA.match(
       () => html`<p>This equipment needs trainers.</p>`,
       items =>
-        html`<ul>
-          ${items.join('\n')}
-        </ul>`
+        html`<h2>Trainers</h2>
+          <ul>
+            ${items.join('\n')}
+          </ul>`
     )
   );
 
@@ -36,7 +37,6 @@ const renderEquipmentActions = (viewModel: ViewModel) => html`
 export const render = (viewModel: ViewModel) => html`
   <h1>${viewModel.equipment.name}</h1>
   ${viewModel.isSuperUserOrOwnerOfArea ? renderEquipmentActions(viewModel) : ''}
-  <h2>Trainers</h2>
   ${renderTrainers(viewModel.equipment.trainers)}
   ${renderTrainingQuizResults(viewModel)}
 `;
@@ -76,9 +76,9 @@ const renderTrainingQuizResultsTable = (
 `;
 
 const renderTrainingQuizResults = (viewModel: ViewModel) => html`
-  <h1>${viewModel.equipment.name} Training Quiz Results</h1>
-  <h2>Passed</h2>
+  <h2>Training Quiz Results</h1>
+  <h3>Passed</h3>
   ${renderTrainingQuizResultsTable(viewModel.trainingQuizResults.passed)}
-  <h2>All Results</h2>
+  <h3>All Results</h3>
   ${renderTrainingQuizResultsTable(viewModel.trainingQuizResults.all)}
 `;
