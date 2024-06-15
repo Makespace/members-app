@@ -3,6 +3,7 @@ import * as E from 'fp-ts/Either';
 import {Dependencies} from '../../dependencies';
 import * as TE from 'fp-ts/TaskEither';
 import * as O from 'fp-ts/Option';
+import * as RA from 'fp-ts/ReadonlyArray';
 import {readModels} from '../../read-models';
 import {
   FailureWithStatus,
@@ -34,7 +35,7 @@ export const constructViewModel =
     pipe(
       deps.getAllEvents(),
       TE.map(events => {
-        const equipment = pipe(
+        const equipmentOption = pipe(
           equipmentId,
           readModels.equipment.get(events),
           E.fromOption(() =>
@@ -44,29 +45,27 @@ export const constructViewModel =
         return {
           user: E.right(user),
           equipment: pipe(
-            equipment,
+            equipmentOption,
             E.map(partial => ({...partial, trainers: []}))
           ),
           trainingQuizResults: pipe(
-            readModels.equipment.getTrainingQuizResults(events)(
-              equipmentId,
-              O.none
-            ),
-            trainingQuizResults => ({
-              user,
-              equipment: {
-                id: equipmentId,
-                name: 'todo',
-              },
-              trainingQuizResults: {
-                passed: trainingQuizResults.passed.map(
-                  constructQuizResultViewModel(true)
+            equipmentOption,
+            E.map(equipment =>
+              pipe(
+                readModels.equipment.getTrainingQuizResults(events)(
+                  equipment.id,
+                  O.none
                 ),
-                all: trainingQuizResults.all.map(
-                  constructQuizResultViewModel(false)
-                ),
-              },
-            })
+                trainingQuizResults => ({
+                  passed: RA.map(constructQuizResultViewModel(true))(
+                    trainingQuizResults.passed
+                  ),
+                  all: RA.map(constructQuizResultViewModel(false))(
+                    trainingQuizResults.all
+                  ),
+                })
+              )
+            )
           ),
         };
       }),
