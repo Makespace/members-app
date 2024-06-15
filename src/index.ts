@@ -53,7 +53,7 @@ createTerminus(server);
 // Background processes should write events with their results.
 // Background processes can call commands as needed.
 
-if (conf.BACKGROUND_PROCESSING_ENABLED) {
+if (conf.BACKGROUND_PROCESSING_ENABLED && conf.GOOGLE_CONNECTIVITY_ENABLED) {
   const backgroundProcess = runForever(deps);
   server.on('close', () => {
     // TODO - Use a background worker event instead so it can stop long running IO processes.
