@@ -52,6 +52,16 @@ const getQuizResults = (
     TE.right
   );
 
+const isSuperUserOrOwnerOfArea = (
+  events: ReadonlyArray<DomainEvent>,
+  areaId: string,
+  memberNumber: number
+) =>
+  TE.right(
+    readModels.superUsers.is(memberNumber)(events) ||
+      readModels.areas.isOwner(events)(areaId, memberNumber)
+  );
+
 export const constructViewModel =
   (deps: Dependencies, user: User) =>
   (equipmentId: string): TE.TaskEither<FailureWithStatus, ViewModel> =>
@@ -63,5 +73,7 @@ export const constructViewModel =
       TE.bindW('trainingQuizResults', ({events}) =>
         getQuizResults(events, equipmentId)
       ),
-      TE.bind('isSuperUserOrOwnerOfArea', () => TE.right(true))
+      TE.bindW('isSuperUserOrOwnerOfArea', ({events, equipment}) =>
+        isSuperUserOrOwnerOfArea(events, equipment.areaId, user.memberNumber)
+      )
     );
