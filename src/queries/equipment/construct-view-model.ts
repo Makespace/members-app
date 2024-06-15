@@ -16,18 +16,18 @@ import {sequenceS} from 'fp-ts/lib/Apply';
 import {EventOfType} from '../../types/domain-event';
 import {DateTime} from 'luxon';
 
-const constructQuizResultViewModel =
-  (passed: boolean) =>
-  (event: EventOfType<'EquipmentTrainingQuizResult'>): QuizResultViewModel => {
-    return {
-      email: event.email,
-      score: event.score,
-      maxScore: event.maxScore,
-      percentage: event.percentage,
-      passed,
-      timestamp: DateTime.fromSeconds(event.timestampEpochS),
-    };
+const constructQuizResultViewModel = (
+  event: EventOfType<'EquipmentTrainingQuizResult'>
+): QuizResultViewModel => {
+  return {
+    email: event.email,
+    score: event.score,
+    maxScore: event.maxScore,
+    percentage: event.percentage,
+    passed: event.fullMarks,
+    timestamp: DateTime.fromSeconds(event.timestampEpochS),
   };
+};
 
 export const constructViewModel =
   (deps: Dependencies, user: User) =>
@@ -57,10 +57,10 @@ export const constructViewModel =
                   O.none
                 ),
                 trainingQuizResults => ({
-                  passed: RA.map(constructQuizResultViewModel(true))(
+                  passed: RA.map(constructQuizResultViewModel)(
                     trainingQuizResults.passed
                   ),
-                  all: RA.map(constructQuizResultViewModel(false))(
+                  all: RA.map(constructQuizResultViewModel)(
                     trainingQuizResults.all
                   ),
                 })
