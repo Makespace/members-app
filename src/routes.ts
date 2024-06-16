@@ -41,6 +41,8 @@ export const initRoutes = (
     query('/member/:member', queries.member),
     query('/members', queries.members),
     ...command('members', 'create', commands.memberNumbers.linkNumberToEmail),
+    ...command('members', 'edit-name', commands.members.editName),
+    ...command('members', 'edit-pronouns', commands.members.editPronouns),
     get('/ping', ping),
     ...authRoutes,
   ];
