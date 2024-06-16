@@ -21,9 +21,9 @@ const process: Command<EditName>['process'] = input =>
     })
   );
 
-const resource: Command<EditName>['resource'] = () => ({
-  type: 'MemberNumberEmailPairings',
-  id: 'MemberNumberEmailPairings',
+const resource: Command<EditName>['resource'] = input => ({
+  type: 'MemberDetails',
+  id: input.memberNumber.toString(),
 });
 
 export const editPronouns: Command<EditName> = {
