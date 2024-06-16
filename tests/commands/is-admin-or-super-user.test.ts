@@ -23,6 +23,35 @@ describe('isAdminOrSuperUser', () => {
       ],
     ],
     [
+      'revoked super user',
+      false,
+      {tag: 'user', user: userToBeSuperUser} satisfies Actor,
+      [
+        constructEvent('SuperUserDeclared')({
+          memberNumber: userToBeSuperUser.memberNumber,
+        }),
+        constructEvent('SuperUserRevoked')({
+          memberNumber: userToBeSuperUser.memberNumber,
+        }),
+      ],
+    ],
+    [
+      'reinstated super user',
+      true,
+      {tag: 'user', user: userToBeSuperUser} satisfies Actor,
+      [
+        constructEvent('SuperUserDeclared')({
+          memberNumber: userToBeSuperUser.memberNumber,
+        }),
+        constructEvent('SuperUserRevoked')({
+          memberNumber: userToBeSuperUser.memberNumber,
+        }),
+        constructEvent('SuperUserDeclared')({
+          memberNumber: userToBeSuperUser.memberNumber,
+        }),
+      ],
+    ],
+    [
       'other user',
       false,
       {tag: 'user', user: arbitraryUser()} satisfies Actor,
