@@ -1,9 +1,6 @@
-type Member = {
-  email: string;
-  memberNumber: number;
-};
+import {MemberDetails} from '../../types';
 
 export type ViewModel = {
-  member: Readonly<Member>;
+  member: Readonly<MemberDetails>;
   isSelf: boolean;
 };

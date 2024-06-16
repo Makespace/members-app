@@ -1,0 +1,66 @@
+import {flow, pipe} from 'fp-ts/lib/function';
+import * as E from 'fp-ts/Either';
+import {pageTemplate} from '../../templates';
+import {html} from '../../types/html';
+import * as O from 'fp-ts/Option';
+import {User} from '../../types';
+import {Form} from '../../types/form';
+import * as t from 'io-ts';
+import * as tt from 'io-ts-types';
+import {formatValidationErrors} from 'io-ts-reporters';
+import {failureWithStatus} from '../../types/failureWithStatus';
+import {StatusCodes} from 'http-status-codes';
+
+type ViewModel = {
+  user: User;
+  memberNumber: number;
+};
+
+const renderForm = (viewModel: ViewModel) =>
+  pipe(
+    html`
+      <h1>Edit pronouns</h1>
+      <form action="#" method="post">
+        <label for="name">New pronouns</label>
+        <input type="text" name="pronouns" id="pronouns" />
+        <input
+          type="hidden"
+          name="memberNumber"
+          value="${viewModel.memberNumber}"
+        />
+        <button type="submit">Confirm</button>
+      </form>
+    `,
+    pageTemplate('Edit pronouns', O.some(viewModel.user))
+  );
+
+const paramsCodec = t.strict({
+  member: tt.NumberFromString,
+});
+
+const constructForm: Form<ViewModel>['constructForm'] =
+  input =>
+  ({user}) =>
+    pipe(
+      input,
+      paramsCodec.decode,
+      E.mapLeft(
+        flow(
+          formatValidationErrors,
+          failureWithStatus(
+            'Parameters submitted to the form were invalid',
+            StatusCodes.BAD_REQUEST
+          )
+        )
+      ),
+      E.map(params => params.member),
+      E.map(memberNumber => ({
+        user,
+        memberNumber,
+      }))
+    );
+
+export const editPronounsForm: Form<ViewModel> = {
+  renderForm,
+  constructForm,
+};
