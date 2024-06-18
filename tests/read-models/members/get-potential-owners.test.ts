@@ -31,10 +31,6 @@ describe('getPotentialOwners', () => {
     });
   });
 
-  describe('when a member is an owner of another area', () => {
-    it.todo('includes the area name');
-  });
-
   describe('when a member has signed the owner agreement', () => {
     it.todo('includes the date they signed');
   });
