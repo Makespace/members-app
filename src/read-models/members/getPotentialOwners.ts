@@ -1,11 +1,23 @@
 import * as O from 'fp-ts/Option';
+import {Email} from '../../types';
 
-type PotentialOwner = {
+type Member = {
   number: number;
-  email: string;
+  email: Email;
   name: O.Option<string>;
   pronouns: O.Option<string>;
+};
+
+type PotentialOwner = Member & {
   agreementSigned: O.Option<Date>;
 };
 
-export const getPotentialOwners = (): ReadonlyArray<PotentialOwner> => [];
+type AreaOwners = {
+  existing: ReadonlyArray<Member>;
+  potential: ReadonlyArray<PotentialOwner>;
+};
+
+export const getPotentialOwners = (): AreaOwners => ({
+  existing: [],
+  potential: [],
+});
