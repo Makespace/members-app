@@ -1,3 +1,5 @@
+/* eslint-disable unused-imports/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {
@@ -53,15 +55,16 @@ const handleEvent = (
   return state;
 };
 
-export const getPotentialOwners = (
-  events: ReadonlyArray<DomainEvent>
-): AreaOwners =>
-  pipe(
-    events,
-    filterByName(pertinentEventTypes),
-    RA.reduce(new Map(), handleEvent),
-    existing => ({
-      existing: Array.from(existing.values()),
-      potential: [],
-    })
-  );
+export const getPotentialOwners =
+  (areaId: string) =>
+  (events: ReadonlyArray<DomainEvent>): O.Option<AreaOwners> =>
+    pipe(
+      events,
+      filterByName(pertinentEventTypes),
+      RA.reduce(new Map(), handleEvent),
+      existing => ({
+        existing: Array.from(existing.values()),
+        potential: [],
+      }),
+      O.some
+    );
