@@ -30,14 +30,25 @@ type AreaOwners = {
 const pertinentEventTypes: Array<EventName> = [
   'MemberNumberLinkedToEmail',
   'MemberDetailsUpdated',
+  'AreaCreated',
 ];
 
+type State = {
+  members: Map<Member['number'], Member>;
+  areas: Map<string, unknown>;
+};
+
+const emptyState = (): State => ({
+  members: new Map(),
+  areas: new Map(),
+});
+
 const handleEvent = (
-  state: Map<Member['number'], Member>,
+  state: State,
   event: SubsetOfDomainEvent<typeof pertinentEventTypes>
 ) => {
   if (isEventOfType('MemberNumberLinkedToEmail')(event)) {
-    state.set(event.memberNumber, {
+    state.members.set(event.memberNumber, {
       number: event.memberNumber,
       email: event.email,
       name: O.none,
@@ -45,12 +56,15 @@ const handleEvent = (
     });
   }
   if (isEventOfType('MemberDetailsUpdated')(event)) {
-    const current = state.get(event.memberNumber);
+    const current = state.members.get(event.memberNumber);
     const name = O.fromNullable(event.name);
     const pronouns = O.fromNullable(event.pronouns);
     if (current) {
-      state.set(event.memberNumber, {...current, name, pronouns});
+      state.members.set(event.memberNumber, {...current, name, pronouns});
     }
+  }
+  if (isEventOfType('AreaCreated')(event)) {
+    state.areas.set(event.id, {});
   }
   return state;
 };
@@ -61,10 +75,10 @@ export const getPotentialOwners =
     pipe(
       events,
       filterByName(pertinentEventTypes),
-      RA.reduce(new Map(), handleEvent),
-      existing => ({
-        existing: Array.from(existing.values()),
+      RA.reduce(emptyState(), handleEvent),
+      O.fromPredicate(({areas}) => areas.has(areaId)),
+      O.map(({members}) => ({
+        existing: Array.from(members.values()),
         potential: [],
-      }),
-      O.some
+      }))
     );

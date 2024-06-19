@@ -23,7 +23,11 @@ describe('getPotentialOwners', () => {
   let result: Awaited<ReturnType<typeof callQuery>>;
 
   describe('when the area does not exist', () => {
-    it.todo('returns None');
+    it('returns None', async () => {
+      expect(
+        getPotentialOwners(faker.string.uuid())(await framework.getAllEvents())
+      ).toStrictEqual(O.none);
+    });
   });
 
   const linkNumber = {
