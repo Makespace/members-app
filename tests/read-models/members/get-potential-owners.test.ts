@@ -80,6 +80,22 @@ describe('getPotentialOwners', () => {
   });
 
   describe('when a member has signed the owner agreement', () => {
-    it.todo('includes the date they signed');
+    const signAgreement = {
+      signedAt: faker.date.soon(),
+      memberNumber: linkNumber.memberNumber,
+    };
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(linkNumber);
+      await framework.commands.members.editName(addName);
+      await framework.commands.members.signOwnerAgreement(signAgreement);
+      await framework.commands.area.create(createArea);
+      result = await callQuery(createArea.id);
+    });
+
+    it.failing('includes the date they signed', () => {
+      expect(result.potential[0].agreementSigned).toStrictEqual(
+        O.some(signAgreement)
+      );
+    });
   });
 });
