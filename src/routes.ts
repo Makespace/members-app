@@ -43,6 +43,11 @@ export const initRoutes = (
     ...command('members', 'create', commands.memberNumbers.linkNumberToEmail),
     ...command('members', 'edit-name', commands.members.editName),
     ...command('members', 'edit-pronouns', commands.members.editPronouns),
+    ...command(
+      'members',
+      'sign-owner-agreement',
+      commands.members.signOwnerAgreement
+    ),
     get('/ping', ping),
     ...authRoutes,
   ];
