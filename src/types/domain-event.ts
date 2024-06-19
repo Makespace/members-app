@@ -73,6 +73,10 @@ export const DomainEvent = t.union([
     name: t.union([t.string, t.undefined]),
     pronouns: t.union([t.string, t.undefined]),
   }),
+  eventCodec('OwnerAgreementSigned', {
+    memberNumber: t.number,
+    signedAt: tt.DateFromISOString,
+  }),
 ]);
 
 export type DomainEvent = t.TypeOf<typeof DomainEvent>;

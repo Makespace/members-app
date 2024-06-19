@@ -5,14 +5,18 @@ import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import {Command} from '../command';
 import {isSelfOrPrivileged} from '../is-self-or-privileged';
+import {constructEvent} from '../../types';
+import {pipe} from 'fp-ts/lib/function';
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,
+  signedAt: tt.DateFromISOString,
 });
 
 type SignOwnerAgreement = t.TypeOf<typeof codec>;
 
-const process: Command<SignOwnerAgreement>['process'] = input => O.none;
+const process: Command<SignOwnerAgreement>['process'] = input =>
+  pipe(input.command, constructEvent('OwnerAgreementSigned'), O.some);
 
 const resource: Command<SignOwnerAgreement>['resource'] = input => ({
   type: 'OwnerAgreementSigning',

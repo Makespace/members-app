@@ -16,15 +16,12 @@ type Member = {
   email: EmailAddress;
   name: O.Option<string>;
   pronouns: O.Option<string>;
-};
-
-type PotentialOwner = Member & {
   agreementSigned: O.Option<Date>;
 };
 
 type AreaOwners = {
   existing: ReadonlyArray<Member>;
-  potential: ReadonlyArray<PotentialOwner>;
+  potential: ReadonlyArray<Member>;
 };
 
 type Area = {
@@ -47,6 +44,7 @@ const pertinentEventTypes: Array<EventName> = [
   'MemberDetailsUpdated',
   'AreaCreated',
   'OwnerAdded',
+  'OwnerAgreementSigned',
 ];
 
 const handleEvent = (
@@ -59,6 +57,7 @@ const handleEvent = (
       email: event.email,
       name: O.none,
       pronouns: O.none,
+      agreementSigned: O.none,
     });
   }
   if (isEventOfType('MemberDetailsUpdated')(event)) {
@@ -67,6 +66,15 @@ const handleEvent = (
     const pronouns = O.fromNullable(event.pronouns);
     if (current) {
       state.members.set(event.memberNumber, {...current, name, pronouns});
+    }
+  }
+  if (isEventOfType('OwnerAgreementSigned')(event)) {
+    const current = state.members.get(event.memberNumber);
+    if (current) {
+      state.members.set(event.memberNumber, {
+        ...current,
+        agreementSigned: O.some(event.signedAt),
+      });
     }
   }
   if (isEventOfType('AreaCreated')(event)) {
@@ -106,7 +114,6 @@ export const getPotentialOwners =
         pipe(
           Array.from(members.values()),
           RA.filter(({number}) => !requestedArea.owners.has(number)),
-          RA.map(member => ({...member, agreementSigned: O.none})),
           O.some
         )
       )
