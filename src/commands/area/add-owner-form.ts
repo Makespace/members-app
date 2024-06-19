@@ -13,25 +13,47 @@ import {
   failureWithStatus,
 } from '../../types/failureWithStatus';
 import {Form} from '../../types/form';
+import {AreaOwners} from '../../read-models/members/getPotentialOwners';
 import {readModels} from '../../read-models';
 
 type ViewModel = {
   user: User;
   areaId: string;
-  members: ReadonlyArray<{
-    number: number;
-    email: string;
-  }>;
+  areaOwners: AreaOwners;
 };
+
+const renderSignedStatus = (
+  status: ViewModel['areaOwners']['potential'][number]['agreementSigned']
+) =>
+  pipe(
+    status,
+    O.match(
+      () => 'Ask to sign',
+      date => `Signed: ${date.toLocaleDateString()}`
+    )
+  );
+
+const renderCurrent = (owners: ViewModel['areaOwners']['existing']) =>
+  pipe(
+    owners,
+    RA.map(owner =>
+      O.isSome(owner.name) ? owner.name.value : `${owner.number} ${owner.email}`
+    ),
+    RA.match(
+      () => 'No current owners',
+      identifiers => `Current owners: ${identifiers.join(', ')}`
+    )
+  );
 
 const renderForm = (viewModel: ViewModel) =>
   pipe(
-    viewModel.members,
+    viewModel.areaOwners.potential,
     RA.map(
       member =>
         html`<tr>
-          <td>${member.email}</td>
           <td>${member.number}</td>
+          <td>${member.email}</td>
+          <td>${renderSignedStatus(member.agreementSigned)}</td>
           <td>
             <form action="#" method="post">
               <input
@@ -47,12 +69,14 @@ const renderForm = (viewModel: ViewModel) =>
     ),
     tableRows => html`
       <h1>Add an owner</h1>
+      <p>${renderCurrent(viewModel.areaOwners.existing)}</p>
       <div id="wrapper"></div>
       <table id="all-members">
         <thead>
           <tr>
-            <th>E-Mail</th>
             <th>Member Number</th>
+            <th>E-Mail</th>
+            <th>Owner Agreement</th>
             <th></th>
           </tr>
         </thead>
@@ -83,23 +107,31 @@ const constructForm: Form<ViewModel>['constructForm'] =
   input =>
   ({user, events}): E.Either<FailureWithStatus, ViewModel> =>
     pipe(
-      input,
-      paramsCodec.decode,
-      E.mapLeft(
-        flow(
-          formatValidationErrors,
-          failureWithStatus(
-            'Parameters submitted to the form were invalid',
-            StatusCodes.BAD_REQUEST
+      {user},
+      E.right,
+      E.bind('areaId', () =>
+        pipe(
+          input,
+          paramsCodec.decode,
+          E.map(params => params.area),
+          E.mapLeft(
+            flow(
+              formatValidationErrors,
+              failureWithStatus(
+                'Parameters submitted to the form were invalid',
+                StatusCodes.BAD_REQUEST
+              )
+            )
           )
         )
       ),
-      E.map(params => params.area),
-      E.map(areaId => ({
-        user,
-        areaId,
-        members: readModels.members.getAll(events),
-      }))
+      E.bind('areaOwners', ({areaId}) =>
+        pipe(
+          events,
+          readModels.members.getPotentialOwners(areaId),
+          E.fromOption(failureWithStatus('No such area', StatusCodes.NOT_FOUND))
+        )
+      )
     );
 
 export const addOwnerForm: Form<ViewModel> = {
