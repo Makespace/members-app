@@ -19,7 +19,7 @@ type Member = {
   agreementSigned: O.Option<Date>;
 };
 
-type AreaOwners = {
+export type AreaOwners = {
   existing: ReadonlyArray<Member>;
   potential: ReadonlyArray<Member>;
 };
