@@ -71,7 +71,7 @@ describe('getPotentialOwners', () => {
       result = await callQuery(createArea.id);
     });
 
-    it.failing('includes them in the potential owners', () => {
+    it('includes them in the potential owners', () => {
       expect(result.existing).toHaveLength(0);
       expect(result.potential).toHaveLength(1);
       expect(result.potential[0].number).toStrictEqual(linkNumber.memberNumber);
