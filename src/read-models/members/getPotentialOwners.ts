@@ -91,9 +91,23 @@ export const getPotentialOwners =
       events,
       filterByName(pertinentEventTypes),
       RA.reduce(emptyState(), handleEvent),
-      O.fromPredicate(({areas}) => areas.has(areaId)),
-      O.map(({members}) => ({
-        existing: Array.from(members.values()),
-        potential: [],
-      }))
+      O.some,
+      O.bind('requestedArea', ({areas}) => O.fromNullable(areas.get(areaId))),
+      O.bind('existing', ({members, requestedArea}) =>
+        pipe(
+          requestedArea.owners,
+          owners => Array.from(owners.values()),
+          O.traverseArray(memberNumber =>
+            O.fromNullable(members.get(memberNumber))
+          )
+        )
+      ),
+      O.bind('potential', ({requestedArea, members}) =>
+        pipe(
+          Array.from(members.values()),
+          RA.filter(({number}) => !requestedArea.owners.has(number)),
+          RA.map(member => ({...member, agreementSigned: O.none})),
+          O.some
+        )
+      )
     );
