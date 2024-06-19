@@ -27,21 +27,27 @@ type AreaOwners = {
   potential: ReadonlyArray<PotentialOwner>;
 };
 
-const pertinentEventTypes: Array<EventName> = [
-  'MemberNumberLinkedToEmail',
-  'MemberDetailsUpdated',
-  'AreaCreated',
-];
+type Area = {
+  id: string;
+  owners: Set<number>;
+};
 
 type State = {
   members: Map<Member['number'], Member>;
-  areas: Map<string, unknown>;
+  areas: Map<Area['id'], Area>;
 };
 
 const emptyState = (): State => ({
   members: new Map(),
   areas: new Map(),
 });
+
+const pertinentEventTypes: Array<EventName> = [
+  'MemberNumberLinkedToEmail',
+  'MemberDetailsUpdated',
+  'AreaCreated',
+  'OwnerAdded',
+];
 
 const handleEvent = (
   state: State,
@@ -64,7 +70,16 @@ const handleEvent = (
     }
   }
   if (isEventOfType('AreaCreated')(event)) {
-    state.areas.set(event.id, {});
+    state.areas.set(event.id, {id: event.id, owners: new Set()});
+  }
+  if (isEventOfType('OwnerAdded')(event)) {
+    const current = state.areas.get(event.areaId);
+    if (current) {
+      state.areas.set(event.areaId, {
+        ...current,
+        owners: current.owners.add(event.memberNumber),
+      });
+    }
   }
   return state;
 };
