@@ -92,9 +92,9 @@ describe('getPotentialOwners', () => {
       result = await callQuery(createArea.id);
     });
 
-    it.failing('includes the date they signed', () => {
+    it('includes the date they signed', () => {
       expect(result.potential[0].agreementSigned).toStrictEqual(
-        O.some(signAgreement)
+        O.some(signAgreement.signedAt)
       );
     });
   });
