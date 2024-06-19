@@ -23,9 +23,10 @@ describe('getPotentialOwners', () => {
     beforeEach(async () => {
       await framework.commands.memberNumbers.linkNumberToEmail(linkNumber);
       await framework.commands.members.editName(addName);
+      result = getPotentialOwners(await framework.getAllEvents());
     });
 
-    it.failing('includes them in the existing owners', () => {
+    it('includes them in the existing owners', () => {
       expect(result.existing[0].number).toStrictEqual(linkNumber.memberNumber);
       expect(result.existing[0].name).toStrictEqual(O.some(addName.name));
     });
