@@ -1,7 +1,7 @@
 import {Logger} from 'pino';
 import {Failure, Email, DomainEvent} from './types';
 import * as TE from 'fp-ts/TaskEither';
-import {FailureWithStatus} from './types/failureWithStatus';
+import {FailureWithStatus} from './types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 
 import {Resource} from './types/resource';

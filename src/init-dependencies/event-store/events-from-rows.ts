@@ -4,7 +4,7 @@ import * as tt from 'io-ts-types';
 import {EventsTable} from './events-table';
 import * as t from 'io-ts';
 import {DomainEvent} from '../../types';
-import {internalCodecFailure} from '../../types/failureWithStatus';
+import {internalCodecFailure} from '../../types/failure-with-status';
 
 const reshapeRowToEvent = (row: EventsTable['rows'][number]) =>
   pipe(

@@ -7,7 +7,7 @@ import {sendLogInLink} from '../../src/authentication/send-log-in-link';
 import {Config} from '../../src/configuration';
 import {TestFramework, initTestFramework} from '../read-models/test-framework';
 import {Dependencies} from '../../src/dependencies';
-import {failureWithStatus} from '../../src/types/failureWithStatus';
+import {failureWithStatus} from '../../src/types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 
 describe('send-log-in-link', () => {

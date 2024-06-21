@@ -5,7 +5,7 @@ import {StatusCodes} from 'http-status-codes';
 import {
   FailureWithStatus,
   failureWithStatus,
-} from '../../types/failureWithStatus';
+} from '../../types/failure-with-status';
 import * as TE from 'fp-ts/TaskEither';
 import {Dependencies} from '../../dependencies';
 import {pipe} from 'fp-ts/lib/function';

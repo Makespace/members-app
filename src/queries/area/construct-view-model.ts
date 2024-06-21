@@ -6,7 +6,7 @@ import {readModels} from '../../read-models';
 import {
   FailureWithStatus,
   failureWithStatus,
-} from '../../types/failureWithStatus';
+} from '../../types/failure-with-status';
 import {ViewModel} from './view-model';
 import {User} from '../../types';
 import {StatusCodes} from 'http-status-codes';

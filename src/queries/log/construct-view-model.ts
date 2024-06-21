@@ -5,7 +5,7 @@ import * as TE from 'fp-ts/TaskEither';
 import {ViewModel} from './view-model';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {readModels} from '../../read-models';
-import {failureWithStatus} from '../../types/failureWithStatus';
+import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 
 export const constructViewModel = (deps: Dependencies) => (user: User) =>

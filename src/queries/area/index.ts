@@ -1,7 +1,7 @@
 import * as t from 'io-ts';
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
-import {failureWithStatus} from '../../types/failureWithStatus';
+import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {constructViewModel} from './construct-view-model';
 import {render} from './render';

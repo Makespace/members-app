@@ -5,7 +5,7 @@ import * as TE from 'fp-ts/TaskEither';
 import {
   failureWithStatus,
   FailureWithStatus,
-} from '../../types/failureWithStatus';
+} from '../../types/failure-with-status';
 import {User} from '../../types/user';
 import {ViewModel} from './view-model';
 import {StatusCodes} from 'http-status-codes';
