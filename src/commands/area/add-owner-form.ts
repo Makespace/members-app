@@ -4,7 +4,7 @@ import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
 import {html} from '../../types/html';
 import * as O from 'fp-ts/Option';
-import {User} from '../../types';
+import {DomainEvent, User} from '../../types';
 import * as t from 'io-ts';
 import {StatusCodes} from 'http-status-codes';
 import {formatValidationErrors} from 'io-ts-reporters';
@@ -103,35 +103,40 @@ const paramsCodec = t.strict({
   area: t.string,
 });
 
+const getAreaId = (input: unknown) =>
+  pipe(
+    input,
+    paramsCodec.decode,
+    E.map(params => params.area),
+    E.mapLeft(
+      flow(
+        formatValidationErrors,
+        failureWithStatus(
+          'Parameters submitted to the form were invalid',
+          StatusCodes.BAD_REQUEST
+        )
+      )
+    )
+  );
+
+const getPotentialOwners = (
+  events: ReadonlyArray<DomainEvent>,
+  areaId: string
+) =>
+  pipe(
+    events,
+    readModels.members.getPotentialOwners(areaId),
+    E.fromOption(failureWithStatus('No such area', StatusCodes.NOT_FOUND))
+  );
+
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
   ({user, events}): E.Either<FailureWithStatus, ViewModel> =>
     pipe(
       {user},
       E.right,
-      E.bind('areaId', () =>
-        pipe(
-          input,
-          paramsCodec.decode,
-          E.map(params => params.area),
-          E.mapLeft(
-            flow(
-              formatValidationErrors,
-              failureWithStatus(
-                'Parameters submitted to the form were invalid',
-                StatusCodes.BAD_REQUEST
-              )
-            )
-          )
-        )
-      ),
-      E.bind('areaOwners', ({areaId}) =>
-        pipe(
-          events,
-          readModels.members.getPotentialOwners(areaId),
-          E.fromOption(failureWithStatus('No such area', StatusCodes.NOT_FOUND))
-        )
-      )
+      E.bind('areaId', () => getAreaId(input)),
+      E.bind('areaOwners', ({areaId}) => getPotentialOwners(events, areaId))
     );
 
 export const addOwnerForm: Form<ViewModel> = {
