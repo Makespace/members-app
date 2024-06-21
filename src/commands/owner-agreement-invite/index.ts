@@ -8,6 +8,7 @@ import {readModels} from '../../read-models';
 import {failureWithStatus} from '../../types/failureWithStatus';
 import {StatusCodes} from 'http-status-codes';
 import {Email, EmailAddress} from '../../types';
+import {htmlEmailTemplate, textEmailTemplate} from './email-template';
 
 const codec = t.strict({
   recipient: tt.NumberFromString,
@@ -33,9 +34,9 @@ const constructEmail: SendEmail<OwnerAgreementInvite>['constructEmail'] = (
     E.map(
       (member): Email => ({
         recipient: member.email as EmailAddress,
-        text: `You've been invited to sign the MakeSpace Owner Agreement. Please log in to the Members App (${conf.PUBLIC_URL}) and visit ${conf.PUBLIC_URL}/members/sign-owner-agreement to sign the agreement.`,
+        text: textEmailTemplate(conf.PUBLIC_URL),
         subject: 'Sign the MS Owner Agreement',
-        html: `You've been invited to sign the MakeSpace Owner Agreement. Please log in to the Members App (${conf.PUBLIC_URL}) and visit ${conf.PUBLIC_URL}/members/sign-owner-agreement`,
+        html: htmlEmailTemplate(conf.PUBLIC_URL),
       })
     )
   );

@@ -1,13 +1,12 @@
 import {Dependencies} from './dependencies';
 import {Config} from './configuration';
-import {commands} from './commands';
+import {commands, sendEmailCommands} from './commands';
 import * as queries from './queries';
 import {Route, get} from './types/route';
 import {authRoutes} from './authentication';
 import {queryToHandler, commandToHandlers, ping} from './http';
 import {apiToHandlers} from './http/api-to-handlers';
 import {emailHandler} from './http/email-handler';
-import {ownerAgreementInvite} from './commands/owner-agreement-invite';
 
 export const initRoutes = (
   deps: Dependencies,
@@ -51,7 +50,7 @@ export const initRoutes = (
       'sign-owner-agreement',
       commands.members.signOwnerAgreement
     ),
-    email('owner-agreement-invite', ownerAgreementInvite),
+    email('owner-agreement-invite', sendEmailCommands.ownerAgreementInvite),
     get('/ping', ping),
     ...authRoutes,
   ];
