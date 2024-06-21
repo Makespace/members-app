@@ -15,3 +15,4 @@ export const commands = {
 };
 
 export {Command} from './command';
+export {SendEmail} from './send-email';

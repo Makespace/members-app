@@ -23,20 +23,14 @@ type ViewModel = {
 };
 
 const renderSignedStatus = (
-  member: ViewModel['areaOwners']['potential'][number],
-  actor: User
+  member: ViewModel['areaOwners']['potential'][number]
 ) =>
   pipe(
     member.agreementSigned,
     O.match(
       () => html`
-        <form action="/send-email/owner-agreement" method="post">
-          <input type="hidden" name="recipientEmail" value="${member.email}" />
-          <input
-            type="hidden"
-            name="senderEmail"
-            value="${actor.emailAddress}"
-          />
+        <form action="/send-email/sign-owner-agreement" method="post">
+          <input type="hidden" name="recipient" value="${member.number}" />
           <button type="submit">Ask to sign</button>
         </form>
       `,
@@ -64,7 +58,7 @@ const renderForm = (viewModel: ViewModel) =>
         html`<tr>
           <td>${member.number}</td>
           <td>${member.email}</td>
-          <td>${renderSignedStatus(member, viewModel.user)}</td>
+          <td>${renderSignedStatus(member)}</td>
           <td>
             <form action="#" method="post">
               <input
