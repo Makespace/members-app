@@ -14,7 +14,7 @@ import {getResourceEvents} from '../../../src/init-dependencies/event-store/get-
 import {RightOfTaskEither} from '../../type-optics';
 import {randomUUID} from 'crypto';
 
-const arbitraryMemberNumberLinkedToEmaiEvent = () =>
+const arbitraryMemberNumberLinkedToEmailEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
     memberNumber: faker.number.int(),
     email: faker.internet.email() as EmailAddress,
@@ -25,7 +25,7 @@ const testLogger = createLogger({level: 'silent'});
 describe('event-store end-to-end', () => {
   describe('setup event store', () => {
     const resource = {id: 'singleton', type: 'MemberNumberEmailPairings'};
-    const event = arbitraryMemberNumberLinkedToEmaiEvent();
+    const event = arbitraryMemberNumberLinkedToEmailEvent();
     const initialVersion = faker.number.int();
     let dbClient: libsqlClient.Client;
     let getTestEvents: () => Promise<ReadonlyArray<DomainEvent>>;
@@ -77,7 +77,7 @@ describe('event-store end-to-end', () => {
     });
 
     describe('committing when then last known version is up to date', () => {
-      const event2 = arbitraryMemberNumberLinkedToEmaiEvent();
+      const event2 = arbitraryMemberNumberLinkedToEmailEvent();
 
       beforeEach(async () => {
         await commitEvent(dbClient, testLogger)(resource, initialVersion)(
@@ -103,8 +103,8 @@ describe('event-store end-to-end', () => {
     });
 
     describe('committing when the last known version is out of date', () => {
-      const initialEvent = arbitraryMemberNumberLinkedToEmaiEvent();
-      const competingEvent = arbitraryMemberNumberLinkedToEmaiEvent();
+      const initialEvent = arbitraryMemberNumberLinkedToEmailEvent();
+      const competingEvent = arbitraryMemberNumberLinkedToEmailEvent();
       let result: E.Either<unknown, unknown>;
       beforeEach(async () => {
         await commitEvent(dbClient, testLogger)(resource, initialVersion)(
@@ -141,11 +141,11 @@ describe('event-store end-to-end', () => {
         await commitEvent(dbClient, testLogger)(
           arbitraryResourceOfSameType(),
           faker.number.int()
-        )(arbitraryMemberNumberLinkedToEmaiEvent())();
+        )(arbitraryMemberNumberLinkedToEmailEvent())();
         await commitEvent(dbClient, testLogger)(
           arbitraryResourceOfSameType(),
           faker.number.int()
-        )(arbitraryMemberNumberLinkedToEmaiEvent())();
+        )(arbitraryMemberNumberLinkedToEmailEvent())();
         await commitEvent(dbClient, testLogger)(resource, initialVersion)(
           event
         )();
