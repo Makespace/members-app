@@ -14,8 +14,8 @@ export const navbar = (user: O.Option<User>) =>
       <nav class="page-nav">
         <a href="/"
           ><img
-            width=64
-            height=64
+            width="64"
+            height="64"
             src="/static/MS-LOGO-txpt-512.png"
             alt="Makespace"
             class="page-nav__logo"
