@@ -5,7 +5,7 @@ import {SendEmail} from '../send-email';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {pipe} from 'fp-ts/lib/function';
 import {readModels} from '../../read-models';
-import {failureWithStatus} from '../../types/failureWithStatus';
+import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {Email, EmailAddress} from '../../types';
 import {htmlEmailTemplate, textEmailTemplate} from './email-template';

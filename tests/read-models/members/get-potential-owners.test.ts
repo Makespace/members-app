@@ -1,6 +1,6 @@
 import {faker} from '@faker-js/faker';
 import * as O from 'fp-ts/Option';
-import {getPotentialOwners} from '../../../src/read-models/members/getPotentialOwners';
+import {getPotentialOwners} from '../../../src/read-models/members/get-potential-owners';
 import {TestFramework, initTestFramework} from '../test-framework';
 import {EmailAddress} from '../../../src/types';
 import {NonEmptyString, UUID} from 'io-ts-types';

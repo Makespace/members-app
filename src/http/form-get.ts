@@ -4,10 +4,10 @@ import {pipe} from 'fp-ts/lib/function';
 import {StatusCodes} from 'http-status-codes';
 import {getUserFromSession} from '../authentication';
 import {Dependencies} from '../dependencies';
-import {failureWithStatus} from '../types/failureWithStatus';
 import {oopsPage} from '../templates';
 import {sequenceS} from 'fp-ts/lib/Apply';
 import {Form} from '../types/form';
+import {failureWithStatus} from '../types/failure-with-status';
 
 const getUser = (req: Request, deps: Dependencies) =>
   pipe(

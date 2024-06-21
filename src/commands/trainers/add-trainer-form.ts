@@ -7,7 +7,7 @@ import * as O from 'fp-ts/Option';
 import {DomainEvent, User} from '../../types';
 import {Form} from '../../types/form';
 import {formatValidationErrors} from 'io-ts-reporters';
-import {failureWithStatus} from '../../types/failureWithStatus';
+import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {readModels} from '../../read-models';
 import * as RA from 'fp-ts/ReadonlyArray';
