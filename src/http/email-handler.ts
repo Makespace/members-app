@@ -13,6 +13,7 @@ import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {html} from '../types/html';
 import {SendEmail} from '../commands';
+import {Config} from '../configuration';
 
 const getActorFrom = (session: unknown, deps: Dependencies) =>
   pipe(
@@ -36,7 +37,7 @@ const getInput = <T>(body: unknown, command: SendEmail<T>) =>
   );
 
 const emailPost =
-  <T>(deps: Dependencies, command: SendEmail<T>) =>
+  <T>(conf: Config, deps: Dependencies, command: SendEmail<T>) =>
   async (req: Request, res: Response) => {
     await pipe(
       {
@@ -52,7 +53,7 @@ const emailPost =
         )()
       ),
       TE.chainEitherK(({input, actor, events}) =>
-        command.constructEmail(events, actor, input)
+        command.constructEmail(conf, events, actor, input)
       ),
       TE.chain(
         flow(
@@ -84,9 +85,9 @@ const emailPost =
 
 // ts-unused-exports:disable-next-line
 export const emailHandler =
-  (deps: Dependencies) =>
+  (conf: Config, deps: Dependencies) =>
   <T>(path: string, command: SendEmail<T>) => ({
-    path,
-    handler: flow(emailPost, expressAsyncHandler)(deps, command),
+    path: `/send-email/${path}`,
+    handler: flow(emailPost, expressAsyncHandler)(conf, deps, command),
     method: 'post' as const,
   });
