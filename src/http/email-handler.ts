@@ -1,0 +1,92 @@
+import expressAsyncHandler from 'express-async-handler';
+import {Dependencies} from '../dependencies';
+import {flow, pipe} from 'fp-ts/lib/function';
+import {sequenceS} from 'fp-ts/lib/Apply';
+import {StatusCodes} from 'http-status-codes';
+import {oopsPage, pageTemplateNoNav} from '../templates';
+import {failureWithStatus} from '../types/failureWithStatus';
+import * as TE from 'fp-ts/TaskEither';
+import {getUserFromSession} from '../authentication';
+import {Actor} from '../types';
+import {Request, Response} from 'express';
+import * as E from 'fp-ts/Either';
+import {formatValidationErrors} from 'io-ts-reporters';
+import {html} from '../types/html';
+import {SendEmail} from '../commands';
+
+const getActorFrom = (session: unknown, deps: Dependencies) =>
+  pipe(
+    session,
+    getUserFromSession(deps),
+    TE.fromOption(() =>
+      failureWithStatus('You are not logged in', StatusCodes.UNAUTHORIZED)()
+    ),
+    TE.map(user => ({tag: 'user', user}) satisfies Actor)
+  );
+
+const getInput = <T>(body: unknown, command: SendEmail<T>) =>
+  pipe(
+    body,
+    command.decode,
+    E.mapLeft(formatValidationErrors),
+    E.mapLeft(
+      failureWithStatus('Could not decode command', StatusCodes.BAD_REQUEST)
+    ),
+    TE.fromEither
+  );
+
+const emailPost =
+  <T>(deps: Dependencies, command: SendEmail<T>) =>
+  async (req: Request, res: Response) => {
+    await pipe(
+      {
+        actor: getActorFrom(req.session, deps),
+        input: getInput(req.body, command),
+        events: deps.getAllEvents(),
+      },
+      sequenceS(TE.ApplySeq),
+      TE.filterOrElse(command.isAuthorized, () =>
+        failureWithStatus(
+          'You are not authorized to perform this action',
+          StatusCodes.UNAUTHORIZED
+        )()
+      ),
+      TE.chainEitherK(({input, actor, events}) =>
+        command.constructEmail(events, actor, input)
+      ),
+      TE.chain(
+        flow(
+          deps.sendEmail,
+          TE.mapLeft(
+            failureWithStatus(
+              'Failed to send email',
+              StatusCodes.INTERNAL_SERVER_ERROR
+            )
+          )
+        )
+      ),
+      TE.match(
+        failure => {
+          deps.logger.error(
+            failure,
+            'Failed to handle request to send an email'
+          );
+          res.status(failure.status).send(oopsPage(failure.message));
+        },
+        () => {
+          res
+            .status(200)
+            .send(pageTemplateNoNav('Email sent')(html`Email sent`));
+        }
+      )
+    )();
+  };
+
+// ts-unused-exports:disable-next-line
+export const emailHandler =
+  (deps: Dependencies) =>
+  <T>(path: string, command: SendEmail<T>) => ({
+    path,
+    handler: flow(emailPost, expressAsyncHandler)(deps, command),
+    method: 'post' as const,
+  });
