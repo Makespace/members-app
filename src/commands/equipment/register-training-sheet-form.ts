@@ -6,7 +6,7 @@ import {html} from '../../types/html';
 import {DomainEvent, User} from '../../types';
 import {Form} from '../../types/form';
 import {formatValidationErrors} from 'io-ts-reporters';
-import {failureWithStatus} from '../../types/failureWithStatus';
+import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {readModels} from '../../read-models';
 import {pageTemplate} from '../../templates';

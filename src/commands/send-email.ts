@@ -1,4 +1,4 @@
-import {FailureWithStatus} from '../types/failureWithStatus';
+import {FailureWithStatus} from '../types/failure-with-status';
 import {Actor, DomainEvent, Email} from '../types';
 import {Type} from 'io-ts';
 import * as E from 'fp-ts/Either';

@@ -5,7 +5,7 @@ import * as E from 'fp-ts/Either';
 import {
   failureWithStatus,
   internalCodecFailure,
-} from '../../types/failureWithStatus';
+} from '../../types/failure-with-status';
 import {sequenceS} from 'fp-ts/lib/Apply';
 import {EventsTable} from './events-table';
 import {eventsFromRows} from './events-from-rows';

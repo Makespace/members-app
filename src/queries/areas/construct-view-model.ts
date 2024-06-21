@@ -3,7 +3,7 @@ import {User} from '../../types';
 import {Dependencies} from '../../dependencies';
 import * as TE from 'fp-ts/TaskEither';
 import {readModels} from '../../read-models';
-import {FailureWithStatus} from '../../types/failureWithStatus';
+import {FailureWithStatus} from '../../types/failure-with-status';
 import {ViewModel} from './view-model';
 
 export const constructViewModel =

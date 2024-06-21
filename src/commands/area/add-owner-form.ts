@@ -11,9 +11,9 @@ import {formatValidationErrors} from 'io-ts-reporters';
 import {
   FailureWithStatus,
   failureWithStatus,
-} from '../../types/failureWithStatus';
+} from '../../types/failure-with-status';
 import {Form} from '../../types/form';
-import {AreaOwners} from '../../read-models/members/getPotentialOwners';
+import {AreaOwners} from '../../read-models/members/get-potential-owners';
 import {readModels} from '../../read-models';
 
 type ViewModel = {

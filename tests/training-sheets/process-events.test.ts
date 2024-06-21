@@ -12,7 +12,7 @@ import {run} from '../../src/training-sheets/training-sheets-worker';
 import {Dependencies} from '../../src/dependencies';
 import {Resource} from '../../src/types/resource';
 import pino, {Logger} from 'pino';
-import {failureWithStatus} from '../../src/types/failureWithStatus';
+import {failureWithStatus} from '../../src/types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import * as gsheetData from '../data/google_sheet_data';
 

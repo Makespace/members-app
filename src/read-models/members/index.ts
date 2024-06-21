@@ -1,7 +1,7 @@
-import {getAll} from './getAll';
+import {getAll} from './get-all';
 import {getDetails} from './get-details';
 import {lookupByEmail} from './lookup-by-email';
-import {getPotentialOwners} from './getPotentialOwners';
+import {getPotentialOwners} from './get-potential-owners';
 
 export const members = {
   lookupByEmail,

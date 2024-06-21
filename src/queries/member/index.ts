@@ -5,7 +5,7 @@ import * as TE from 'fp-ts/TaskEither';
 import {render} from './render';
 import {constructViewModel} from './construct-view-model';
 import {Query} from '../query';
-import {failureWithStatus} from '../../types/failureWithStatus';
+import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {formatValidationErrors} from 'io-ts-reporters';
 import * as tt from 'io-ts-types';

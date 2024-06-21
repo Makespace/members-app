@@ -4,7 +4,7 @@ import {flow, pipe} from 'fp-ts/lib/function';
 import {sequenceS} from 'fp-ts/lib/Apply';
 import {StatusCodes} from 'http-status-codes';
 import {oopsPage, pageTemplateNoNav} from '../templates';
-import {failureWithStatus} from '../types/failureWithStatus';
+import {failureWithStatus} from '../types/failure-with-status';
 import * as TE from 'fp-ts/TaskEither';
 import {getUserFromSession} from '../authentication';
 import {Actor} from '../types';

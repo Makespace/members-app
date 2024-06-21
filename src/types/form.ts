@@ -1,5 +1,5 @@
 import {DomainEvent, User} from '.';
-import {FailureWithStatus} from './failureWithStatus';
+import {FailureWithStatus} from './failure-with-status';
 import * as E from 'fp-ts/Either';
 
 export type Form<T> = {

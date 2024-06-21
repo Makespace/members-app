@@ -9,7 +9,10 @@ import {sequenceS} from 'fp-ts/lib/Apply';
 import {Dependencies} from '../dependencies';
 import {Logger} from 'pino';
 import {Ord, contramap} from 'fp-ts/lib/Ord';
-import {FailureWithStatus, failureWithStatus} from '../types/failureWithStatus';
+import {
+  FailureWithStatus,
+  failureWithStatus,
+} from '../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {accumBy, lastBy} from '../util';
 import {QzEvent, QzEventDuplicate, RegEvent} from './events';

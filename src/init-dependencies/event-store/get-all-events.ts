@@ -3,7 +3,7 @@ import {Dependencies} from '../../dependencies';
 import {
   failureWithStatus,
   internalCodecFailure,
-} from '../../types/failureWithStatus';
+} from '../../types/failure-with-status';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import {EventsTable} from './events-table';

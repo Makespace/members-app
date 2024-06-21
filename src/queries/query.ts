@@ -1,6 +1,6 @@
 import {Dependencies} from '../dependencies';
 import {User, HttpResponse} from '../types';
-import {FailureWithStatus} from '../types/failureWithStatus';
+import {FailureWithStatus} from '../types/failure-with-status';
 import * as TE from 'fp-ts/TaskEither';
 
 export type Params = Record<string, string>;

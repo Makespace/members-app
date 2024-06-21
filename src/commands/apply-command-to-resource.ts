@@ -3,7 +3,10 @@ import * as TE from 'fp-ts/TaskEither';
 import {Command} from '.';
 import {Dependencies} from '../dependencies';
 import {Actor} from '../types/actor';
-import {FailureWithStatus, failureWithStatus} from '../types/failureWithStatus';
+import {
+  FailureWithStatus,
+  failureWithStatus,
+} from '../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 
 type Deps = Pick<Dependencies, 'commitEvent' | 'getResourceEvents'>;

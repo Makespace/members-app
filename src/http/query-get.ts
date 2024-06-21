@@ -4,7 +4,7 @@ import {Dependencies} from '../dependencies';
 import {pipe} from 'fp-ts/lib/function';
 import {Request, Response} from 'express';
 import {getUserFromSession} from '../authentication';
-import {failureWithStatus} from '../types/failureWithStatus';
+import {failureWithStatus} from '../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {User, HttpResponse} from '../types';
 import {oopsPage, templatePage} from '../templates';
