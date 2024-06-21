@@ -165,5 +165,64 @@ describe('event-store end-to-end', () => {
         expect(resourceEvents.events).toStrictEqual([event]);
       });
     });
+
   });
 });
+
+describe('a stressed resource', () => {
+  it('has independant events', async () => {
+    for (let i = 0; ; ++i) {
+      const resource = {id: 'singleton', type: 'MemberNumberEmailPairings'};
+      const event = arbitraryMemberNumberLinkedToEmailEvent();
+      const initialVersion = faker.number.int();
+      let dbClient: libsqlClient.Client;
+      let getTestEvents: () => Promise<ReadonlyArray<DomainEvent>>;
+      let resourceEvents: RightOfTaskEither<
+        ReturnType<Dependencies['getResourceEvents']>
+      >;
+
+      dbClient = libsqlClient.createClient({
+        url: `file:/tmp/${randomUUID()}.db`,
+      });
+      await ensureEventTableExists(dbClient)();
+      getTestEvents = () =>
+        pipe(getAllEvents(dbClient)(), T.map(getRightOrFail))();
+      resourceEvents = await pipe(
+        {id: faker.string.alphanumeric(), type: faker.string.alphanumeric()},
+        getResourceEvents(dbClient),
+        T.map(getRightOrFail)
+      )();
+
+      const arbitraryResourceOfSameType = () => ({
+        type: resource.type,
+        id: faker.string.alpha(),
+      });
+
+      await commitEvent(dbClient, testLogger)(
+        arbitraryResourceOfSameType(),
+        faker.number.int()
+      )(arbitraryMemberNumberLinkedToEmailEvent())();
+      await commitEvent(dbClient, testLogger)(
+        arbitraryResourceOfSameType(),
+        faker.number.int()
+      )(arbitraryMemberNumberLinkedToEmailEvent())();
+      await commitEvent(dbClient, testLogger)(resource, initialVersion)(
+        event
+      )();
+      resourceEvents = await pipe(
+        resource,
+        getResourceEvents(dbClient),
+        T.map(getRightOrFail)
+      )();
+
+      const testEvents = await getTestEvents();
+      if (testEvents.length !== 3) {
+        console.log(`Failed after ${i} iterations`);
+        expect(testEvents).toHaveLength(3);
+        expect(resourceEvents.events).toStrictEqual([event]);
+      }
+    }
+  });
+});
+
+
