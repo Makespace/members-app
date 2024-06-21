@@ -29,7 +29,7 @@ const renderSignedStatus = (
     member.agreementSigned,
     O.match(
       () => html`
-        <form action="/send-email/sign-owner-agreement" method="post">
+        <form action="/send-email/owner-agreement-invite" method="post">
           <input type="hidden" name="recipient" value="${member.number}" />
           <button type="submit">Ask to sign</button>
         </form>

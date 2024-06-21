@@ -4,6 +4,7 @@ import {trainers} from './trainers';
 import {members} from './members';
 import {memberNumbers} from './member-numbers';
 import {superUser} from './super-user';
+import {ownerAgreementInvite} from './owner-agreement-invite';
 
 export const commands = {
   area,
@@ -12,6 +13,10 @@ export const commands = {
   superUser,
   memberNumbers,
   members,
+};
+
+export const sendEmailCommands = {
+  ownerAgreementInvite,
 };
 
 export {Command} from './command';
