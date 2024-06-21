@@ -6,6 +6,8 @@ import {Route, get} from './types/route';
 import {authRoutes} from './authentication';
 import {queryToHandler, commandToHandlers, ping} from './http';
 import {apiToHandlers} from './http/api-to-handlers';
+import {emailHandler} from './http/email-handler';
+import {ownerAgreementInvite} from './commands/owner-agreement-invite';
 
 export const initRoutes = (
   deps: Dependencies,
@@ -14,6 +16,7 @@ export const initRoutes = (
   const query = queryToHandler(deps);
   const command = commandToHandlers(deps, conf);
   const api = apiToHandlers(deps, conf);
+  const email = emailHandler(conf, deps);
   return [
     query('/', queries.landing),
     query('/event-log', queries.log),
@@ -48,6 +51,7 @@ export const initRoutes = (
       'sign-owner-agreement',
       commands.members.signOwnerAgreement
     ),
+    email('owner-agreement-invite', ownerAgreementInvite),
     get('/ping', ping),
     ...authRoutes,
   ];
