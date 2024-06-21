@@ -3,14 +3,17 @@ import * as TE from 'fp-ts/TaskEither';
 import {render} from './render';
 import {constructViewModel} from './construct-view-model';
 import {Query} from '../query';
+import {HttpResponse} from '../../types';
 
 export const allEquipment: Query = deps => user =>
   pipe(
     user,
     constructViewModel(deps),
     TE.map(render),
-    TE.map(body => ({
-      title: 'Equipment',
-      body,
-    }))
+    TE.map(body =>
+      HttpResponse.mk.Page({
+        title: 'Equipment',
+        body,
+      })
+    )
   );
