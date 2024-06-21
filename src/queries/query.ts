@@ -1,5 +1,5 @@
 import {Dependencies} from '../dependencies';
-import {User} from '../types';
+import {User, HttpResponse} from '../types';
 import {FailureWithStatus} from '../types/failureWithStatus';
 import * as TE from 'fp-ts/TaskEither';
 
@@ -10,4 +10,4 @@ export type Query = (
 ) => (
   user: User,
   params: Params
-) => TE.TaskEither<FailureWithStatus, {body: string; title: string}>;
+) => TE.TaskEither<FailureWithStatus, HttpResponse>;
