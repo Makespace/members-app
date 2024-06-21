@@ -40,6 +40,7 @@ export const initRoutes = (
     query('/super-users', queries.superUsers),
     ...command('super-users', 'declare', commands.superUser.declare),
     ...command('super-users', 'revoke', commands.superUser.revoke),
+    query('/me', queries.me),
     query('/member/:member', queries.member),
     query('/members', queries.members),
     ...command('members', 'create', commands.memberNumbers.linkNumberToEmail),

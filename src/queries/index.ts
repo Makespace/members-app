@@ -7,4 +7,5 @@ export {equipment} from './equipment';
 export {members} from './members';
 export {member} from './member';
 export {log} from './log';
+export {me} from './me';
 export {Query} from './query';
