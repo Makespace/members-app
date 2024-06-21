@@ -3,6 +3,7 @@ export {Failure, failure} from './failure';
 export {Email} from './email';
 export {User} from './user';
 export {Actor} from './actor';
+export {HttpResponse} from './html';
 export {
   MemberDetails,
   OptionalMemberDetails,
