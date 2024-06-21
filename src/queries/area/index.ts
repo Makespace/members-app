@@ -8,6 +8,7 @@ import {render} from './render';
 import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {Query} from '../query';
+import {HttpResponse} from '../../types';
 
 const invalidParams = flow(
   formatValidationErrors,
@@ -22,8 +23,10 @@ export const area: Query = deps => (user, params) =>
     E.map(params => params.area),
     TE.fromEither,
     TE.chain(areaId => constructViewModel(deps)(areaId, user)),
-    TE.map(viewModel => ({
-      title: viewModel.area.name,
-      body: render(viewModel),
-    }))
+    TE.map(viewModel =>
+      HttpResponse.mk.Page({
+        title: viewModel.area.name,
+        body: render(viewModel),
+      })
+    )
   );

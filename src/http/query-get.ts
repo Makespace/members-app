@@ -6,17 +6,14 @@ import {Request, Response} from 'express';
 import {getUserFromSession} from '../authentication';
 import {failureWithStatus} from '../types/failureWithStatus';
 import {StatusCodes} from 'http-status-codes';
-import {User} from '../types';
-import {oopsPage, pageTemplate} from '../templates';
+import {User, HttpResponse} from '../types';
+import {oopsPage, templatePage} from '../templates';
 import {Params, Query} from '../queries/query';
 import {logInPath} from '../authentication/auth-routes';
 
 const buildPage =
   (deps: Dependencies, params: Params, query: Query) => (user: User) =>
-    pipe(
-      query(deps)(user, params),
-      TE.map(({title, body}) => pageTemplate(title, O.some(user))(body))
-    );
+    pipe(query(deps)(user, params), TE.map(templatePage(O.some(user))));
 
 export const queryGet =
   (deps: Dependencies, query: Query) => async (req: Request, res: Response) => {
@@ -34,7 +31,10 @@ export const queryGet =
             ? res.redirect(logInPath)
             : res.status(failure.status).send(oopsPage(failure.message));
         },
-        page => res.status(200).send(page)
+        HttpResponse.match({
+          Page: ({body}) => res.status(200).send(body),
+          Redirect: ({url}) => res.redirect(url),
+        })
       )
     )();
   };

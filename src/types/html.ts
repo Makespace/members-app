@@ -1,3 +1,5 @@
+import * as Sum from '@unsplash/sum-types';
+
 export const html = (
   literals: TemplateStringsArray,
   ...substitutions: ReadonlyArray<string | number>
@@ -13,3 +15,17 @@ export const html = (
   result += literals[substitutions.length];
   return result;
 };
+
+interface Page {
+  body: string;
+  title: string;
+}
+
+interface Redirect {
+  url: string;
+}
+
+export type HttpResponse =
+  | Sum.Member<'Redirect', Redirect>
+  | Sum.Member<'Page', Page>;
+export const HttpResponse = Sum.create<HttpResponse>();
