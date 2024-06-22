@@ -1,3 +1,4 @@
+import * as t from 'io-ts';
 import {Request, Response} from 'express';
 import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
@@ -37,6 +38,22 @@ const getActorFrom = (session: unknown, deps: Dependencies) =>
     ),
     TE.map(user => ({tag: 'user', user}) satisfies Actor)
   );
+
+class PathType extends t.Type<string> {
+  readonly _tag = 'PathType' as const;
+
+  constructor() {
+    super(
+      'string',
+      (m): m is string => typeof m === 'string' && m.startsWith('/'),
+      (m, c) => (this.is(m) ? t.success(m) : t.failure(m, c)),
+      t.identity
+    );
+  }
+}
+const path = new PathType();
+
+const nextCodec = t.strict({next: path});
 
 export const formPost =
   <T>(deps: Dependencies, command: Command<T>, successTarget: string) =>
@@ -128,7 +145,15 @@ export const formPost =
           deps.logger.error(failure, 'Failed to handle form submission');
           res.status(failure.status).send(oopsPage(failure.message));
         },
-        () => res.redirect(successTarget)
+        () =>
+          res.redirect(
+            pipe(
+              req.query,
+              nextCodec.decode,
+              E.map(q => q.next),
+              E.getOrElse(() => successTarget)
+            )
+          )
       )
     )();
   };
