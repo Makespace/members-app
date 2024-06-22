@@ -1,5 +1,5 @@
 import * as O from 'fp-ts/Option';
-import {getDetails} from '../../../src/read-models/members/get-details';
+import {getDetails} from '../../../src/read-models/members/get';
 import {EmailAddress} from '../../../src/types';
 import {TestFramework, initTestFramework} from '../test-framework';
 
@@ -24,10 +24,11 @@ describe('getDetails', () => {
     const result = getDetails(42)(events);
     expect(result).toEqual(
       O.some({
-        memberNumber: 42,
+        number: 42,
         email: 'foo@example.com' as EmailAddress,
         name: O.none,
         pronouns: O.none,
+        isSuperUser: false,
       })
     );
   });
@@ -46,10 +47,11 @@ describe('getDetails', () => {
     const result = getDetails(42)(events);
     expect(result).toEqual(
       O.some({
-        memberNumber: 42,
+        number: 42,
         email: 'foo@example.com',
         name: O.some('Ford Prefect'),
         pronouns: O.none,
+        isSuperUser: false,
       })
     );
   });
@@ -76,10 +78,11 @@ describe('getDetails', () => {
     const result = getDetails(42)(events);
     expect(result).toEqual(
       O.some({
-        memberNumber: 42,
+        number: 42,
         email: 'foo@example.com',
         name: O.some('Ford Prefect'),
         pronouns: O.some('he/him'),
+        isSuperUser: false,
       })
     );
   });
