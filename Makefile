@@ -32,7 +32,7 @@ smoketest: .env
 	./scripts/smoketest.sh
 
 lint: node_modules
-	bun gts lint --fix
+	bun gts lint
 
 unused-exports: node_modules
 	bun ts-unused-exports ./tsconfig.json
