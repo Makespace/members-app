@@ -20,7 +20,7 @@ const renderForm = (viewModel: ViewModel) =>
   pipe(
     html`
       <h1>Edit name</h1>
-      <form action="#" method="post">
+      <form action="?next=/member/${viewModel.user.memberNumber}" method="post">
         <label for="name">New name</label>
         <input type="text" name="name" id="name" />
         <input
