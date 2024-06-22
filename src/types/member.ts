@@ -1,13 +1,14 @@
 import * as O from 'fp-ts/Option';
 
-export type MemberDetails = RequiredMemberDetails & OptionalMemberDetails;
+export type MemberDetails = Member & Details;
 
-export type RequiredMemberDetails = {
+export type Member = {
+  number: number;
   email: string;
-  memberNumber: number;
 };
 
-export type OptionalMemberDetails = {
+type Details = {
   name: O.Option<string>;
   pronouns: O.Option<string>;
+  isSuperUser: boolean;
 };
