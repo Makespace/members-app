@@ -1,9 +1,6 @@
-type Member = {
-  email: string;
-  memberNumber: number;
-};
+import {MemberDetails} from '../../types';
 
 export type ViewModel = {
   viewerIsSuperUser: boolean;
-  members: ReadonlyArray<Member>;
+  members: ReadonlyArray<MemberDetails>;
 };
