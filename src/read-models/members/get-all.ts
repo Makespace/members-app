@@ -12,18 +12,16 @@ import {pipe} from 'fp-ts/lib/function';
 
 type AllMemberDetails = Map<number, MemberDetails>;
 
-type MemberEvents = SubsetOfDomainEvent<
-  [
-    'MemberNumberLinkedToEmail',
-    'SuperUserRevoked',
-    'SuperUserDeclared',
-    'MemberDetailsUpdated',
-  ]
->;
+export const pertinentEvents = [
+  'MemberNumberLinkedToEmail' as const,
+  'SuperUserRevoked' as const,
+  'SuperUserDeclared' as const,
+  'MemberDetailsUpdated' as const,
+];
 
 const update = (
   state: AllMemberDetails,
-  event: MemberEvents
+  event: SubsetOfDomainEvent<typeof pertinentEvents>
 ): AllMemberDetails => {
   const memberNumber = event.memberNumber;
   const details = state.get(memberNumber);
@@ -71,13 +69,4 @@ export const getAll = (
 export const getAllDetails = (
   events: ReadonlyArray<DomainEvent>
 ): AllMemberDetails =>
-  pipe(
-    events,
-    filterByName([
-      'MemberNumberLinkedToEmail',
-      'SuperUserRevoked',
-      'SuperUserDeclared',
-      'MemberDetailsUpdated',
-    ]),
-    RA.reduce(new Map(), update)
-  );
+  pipe(events, filterByName(pertinentEvents), RA.reduce(new Map(), update));
