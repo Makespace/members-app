@@ -11,7 +11,6 @@ import {resource} from './resource';
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,
-  revokedAt: tt.DateFromISOString,
 });
 
 export type RevokeSuperUser = t.TypeOf<typeof codec>;

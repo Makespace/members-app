@@ -9,7 +9,7 @@ curl -X POST -H 'Authorization: Bearer secret' -H 'Content-Type: application/jso
 	http://localhost:8080/api/members/create
 
 curl -X POST -H 'Authorization: Bearer secret' -H 'Content-Type: application/json' \
-	--data '{"memberNumber": "1337", "declaredAt": "2023-01-20"}' \
+	--data '{"memberNumber": "1337"}' \
 	http://localhost:8080/api/super-users/declare
 
 curl -X POST -H 'Authorization: Bearer secret' -H 'Content-Type: application/json' \

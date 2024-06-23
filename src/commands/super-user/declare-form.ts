@@ -19,11 +19,6 @@ const render = (viewModel: ViewModel) =>
           Which member number would you like receive super user privileges?
         </label>
         <input type="type" name="memberNumber" id="number" />
-        <input
-          type="hidden"
-          name="declaredAt"
-          value="${new Date().toISOString()}"
-        />
         <button type="submit">Confirm and send</button>
       </form>
     `,

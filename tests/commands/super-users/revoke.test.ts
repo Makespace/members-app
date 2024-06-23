@@ -10,7 +10,6 @@ describe('revoke-super-user', () => {
     const result = revoke.process({
       command: {
         memberNumber,
-        revokedAt: faker.date.soon(),
         actor: arbitraryActor(),
       },
       events: [],
@@ -26,7 +25,6 @@ describe('revoke-super-user', () => {
     const result = revoke.process({
       command: {
         memberNumber,
-        revokedAt: faker.date.soon(),
         actor: arbitraryActor(),
       },
       events: [
@@ -50,7 +48,6 @@ describe('revoke-super-user', () => {
     const result = revoke.process({
       command: {
         memberNumber,
-        revokedAt: faker.date.soon(),
         actor: arbitraryActor(),
       },
       events: [
