@@ -33,7 +33,6 @@ const renderForm = (viewModel: ViewModel) =>
           type="hidden"
           name="memberNumber"
           value="${viewModel.toBeRevoked}"
-          Declare
         />
         <button type="submit">Confirm and send</button>
       </form>
