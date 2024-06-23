@@ -35,11 +35,6 @@ const renderForm = (viewModel: ViewModel) =>
           value="${viewModel.toBeRevoked}"
           Declare
         />
-        <input
-          type="hidden"
-          name="revokedAt"
-          value="${new Date().toISOString()}"
-        />
         <button type="submit">Confirm and send</button>
       </form>
     `,

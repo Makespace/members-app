@@ -67,7 +67,7 @@ curl -X POST -H 'Authorization: Bearer secret' -H 'Content-Type: application/jso
 
 ```
 curl -X POST -H 'Authorization: Bearer secret' -H 'Content-Type: application/json' \
---data '{"memberNumber": "1234", "declaredAt": "2023-01-20"}' http://localhost:8080/api/declare-super-user
+--data '{"memberNumber": "1234"}' http://localhost:8080/api/declare-super-user
 ```
 
 ### CreateArea
