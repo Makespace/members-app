@@ -10,7 +10,6 @@ describe('declare-super-user', () => {
     const result = declare.process({
       command: {
         memberNumber,
-        declaredAt: faker.date.soon(),
         actor: arbitraryActor(),
       },
       events: [],
@@ -30,7 +29,6 @@ describe('declare-super-user', () => {
     const result = declare.process({
       command: {
         memberNumber,
-        declaredAt: faker.date.soon(),
         actor: arbitraryActor(),
       },
       events: [
@@ -50,7 +48,6 @@ describe('declare-super-user', () => {
     const result = declare.process({
       command: {
         memberNumber,
-        declaredAt: faker.date.soon(),
         actor: arbitraryActor(),
       },
       events: [

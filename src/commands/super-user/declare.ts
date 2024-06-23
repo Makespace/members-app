@@ -11,7 +11,6 @@ import {resource} from './resource';
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,
-  declaredAt: tt.DateFromISOString,
 });
 
 export type DeclareSuperUserCommand = t.TypeOf<typeof codec>;
