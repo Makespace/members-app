@@ -14,22 +14,24 @@ type ViewModel = {
   equipmentName: string;
 };
 
+// TODO - Drop down suggestion list of users.
+
 const renderForm = (viewModel: ViewModel) =>
   pipe(
     html`
-      <h1>Register training sheet for ${viewModel.equipmentName}</h1>
-      <form action="/equipment/add-training-sheet" method="post">
-        <label for="trainingSheetId">What is the sheet id?</label>
-        <input type="text" name="trainingSheetId" id="trainingSheetId" />
+      <h1>Mark a member as trained on ${viewModel.equipmentName}</h1>
+      <form action="/equipment/user-trained" method="post">
+        <label for="memberEmail">What is the members email?</label>
+        <input type="text" name="memberEmail" id="memberEmail" />
         <input
           type="hidden"
           name="equipmentId"
           value="${viewModel.equipmentId}"
         />
-        <button type="submit">Confirm and send</button>
+        <button type="submit">Confirm</button>
       </form>
     `,
-    pageTemplate('Register training sheet', O.some(viewModel.user))
+    pageTemplate('Member Training Complete', O.some(viewModel.user))
   );
 
 const constructForm: Form<ViewModel>['constructForm'] =
