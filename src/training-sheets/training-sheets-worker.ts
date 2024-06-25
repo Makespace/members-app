@@ -6,6 +6,7 @@ import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
 import {sequenceS} from 'fp-ts/lib/Apply';
 
+import {Config} from '../configuration';
 import {Dependencies} from '../dependencies';
 import {Logger} from 'pino';
 import {Ord, contramap} from 'fp-ts/lib/Ord';
@@ -193,12 +194,16 @@ const runLogged = async (deps: Dependencies, logger: Logger) => {
 
 // I generally don't like this way of doing things and prefer an await loop
 // but trying a different approach.
-export const runForever = (deps: Dependencies) => {
+// TODO - Switch this to use an event-emitter so we can trigger background processing of specific training sheets at will.
+export const runForever = (deps: Dependencies, conf: Config) => {
   const logger = deps.logger.child({section: 'training-sheets-worker'});
   void runLogged(deps, logger);
+  logger.info(
+    `Running forever with interval ${conf.BACKGROUND_PROCESSING_RUN_INTERVAL_MS}ms`
+  );
   return setInterval(
     // TODO - Handle run still going when next run scheduled.
     () => void runLogged(deps, logger),
-    30 * 60 * 1000
+    conf.BACKGROUND_PROCESSING_RUN_INTERVAL_MS
   );
 };

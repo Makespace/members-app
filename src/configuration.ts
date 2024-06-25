@@ -43,6 +43,10 @@ const Config = t.strict({
     tt.BooleanFromString,
     false
   ),
+  BACKGROUND_PROCESSING_RUN_INTERVAL_MS: withDefaultIfEmpty(
+    tt.IntFromString,
+    (30 * 60 * 1000) as t.Int
+  ),
   GOOGLE_SERVICE_ACCOUNT_KEY_JSON: withDefaultIfEmpty(t.string, '{}')
     .pipe(tt.JsonFromString)
     .pipe(tt.JsonRecord),
