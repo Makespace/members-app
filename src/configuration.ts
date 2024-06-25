@@ -47,9 +47,7 @@ const Config = t.strict({
     tt.IntFromString,
     (30 * 60 * 1000) as t.Int
   ),
-  GOOGLE_SERVICE_ACCOUNT_KEY_JSON: withDefaultIfEmpty(t.string, '{}')
-    .pipe(tt.JsonFromString)
-    .pipe(tt.JsonRecord),
+  GOOGLE_SERVICE_ACCOUNT_KEY_JSON: t.union([t.null, t.undefined, t.string]),
 });
 
 export type Config = t.TypeOf<typeof Config>;
