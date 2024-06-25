@@ -43,27 +43,13 @@ const Config = t.strict({
     tt.BooleanFromString,
     false
   ),
-  GOOGLE_CONNECTIVITY_ENABLED: withDefaultIfEmpty(tt.BooleanFromString, false),
+  GOOGLE_SERVICE_ACCOUNT_KEY_JSON: t.union([
+    t.null,
+    t.undefined,
+    tt.NonEmptyString,
+  ]),
 });
 export type Config = t.TypeOf<typeof Config>;
-
-const ConfigWithGoogle = t.intersection([
-  Config,
-  t.strict({
-    GOOGLE_CONNECTIVITY_ENABLED: t.literal(true),
-    GOOGLE_SERVICE_ACCOUNT_KEY_PROJECT_ID: t.string,
-    GOOGLE_SERVICE_ACCOUNT_KEY_PRIVATE_KEY_ID: t.string,
-    GOOGLE_SERVICE_ACCOUNT_KEY_PRIVATE_KEY: t.string,
-    GOOGLE_SERVICE_ACCOUNT_KEY_CLIENT_EMAIL: t.string,
-    GOOGLE_SERVICE_ACCOUNT_KEY_CLIENT_ID: t.string,
-    GOOGLE_SERVICE_ACCOUNT_KEY_AUTH_URI: t.string,
-    GOOGLE_SERVICE_ACCOUNT_KEY_TOKEN_URI: t.string,
-    GOOGLE_SERVICE_ACCOUNT_KEY_AUTH_PROVIDER_X509_CERT_URL: t.string,
-    GOOGLE_SERVICE_ACCOUNT_KEY_CLIENT_X509_CERT_URL: t.string,
-    GOOGLE_SERVICE_ACCOUNT_KEY_UNIVERSE_DOMAIN: t.string,
-  }),
-]);
-export type ConfigWithGoogle = t.TypeOf<typeof ConfigWithGoogle>;
 
 const readCfg =
   <I, T>(codec: t.Decoder<I, T>) =>
@@ -82,7 +68,7 @@ const readCfg =
       })
     );
 
-export const loadConfig = (): Config | ConfigWithGoogle =>
+export const loadConfig = (): Config  =>
   pipe(readCfg(Config)(process.env), baseCfg =>
     baseCfg.GOOGLE_CONNECTIVITY_ENABLED
       ? readCfg(ConfigWithGoogle)({
