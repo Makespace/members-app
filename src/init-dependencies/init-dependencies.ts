@@ -8,7 +8,7 @@ import smtp from 'nodemailer-smtp-transport';
 import {commitEvent} from './event-store/commit-event';
 import {getAllEvents, getAllEventsByType} from './event-store/get-all-events';
 import {getResourceEvents} from './event-store/get-resource-events';
-import {Client} from '@libsql/client/.';
+import {Client} from '@libsql/client';
 import {pullGoogleSheetData} from './google/pull_sheet_data';
 import {google} from 'googleapis';
 
@@ -54,13 +54,14 @@ export const initDependencies = (
     })
   );
 
-  const auth =
-    Object.keys(conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON).length > 0
-      ? new google.auth.GoogleAuth({
-          credentials: conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON,
-          scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-        })
-      : null;
+  const auth = conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON
+    ? new google.auth.GoogleAuth({
+        // Google issues the credentials file and validates it.
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        credentials: JSON.parse(conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON),
+        scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+      })
+    : null;
 
   return {
     commitEvent: commitEvent(dbClient, logger),
