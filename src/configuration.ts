@@ -43,7 +43,9 @@ const Config = t.strict({
     tt.BooleanFromString,
     false
   ),
-  GOOGLE_SERVICE_ACCOUNT_KEY_JSON: withDefaultIfEmpty(tt.JsonRecord, {}),
+  GOOGLE_SERVICE_ACCOUNT_KEY_JSON: withDefaultIfEmpty(t.string, '{}')
+    .pipe(tt.JsonFromString)
+    .pipe(tt.JsonRecord),
 });
 
 export type Config = t.TypeOf<typeof Config>;
