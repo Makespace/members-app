@@ -54,7 +54,7 @@ createTerminus(server);
 // Background processes can call commands as needed.
 
 if (conf.BACKGROUND_PROCESSING_ENABLED) {
-  const backgroundProcess = runForever(deps);
+  const backgroundProcess = runForever(deps, conf);
   server.on('close', () => {
     // TODO - Use a background worker event instead so it can stop long running IO processes.
     deps.logger.fatal('Server closing, stopping background process');
