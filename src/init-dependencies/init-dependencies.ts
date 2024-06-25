@@ -54,12 +54,13 @@ export const initDependencies = (
     })
   );
 
-  const auth = conf.GOOGLE_CONNECTIVITY_ENABLED
-    ? new google.auth.GoogleAuth({
-        keyFile: conf.GOOGLE_SERVICE_ACCOUNT_KEY_FILE_PATH,
-        scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-      })
-    : null;
+  const auth =
+    Object.keys(conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON).length > 0
+      ? new google.auth.GoogleAuth({
+          credentials: conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON,
+          scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+        })
+      : null;
 
   return {
     commitEvent: commitEvent(dbClient, logger),

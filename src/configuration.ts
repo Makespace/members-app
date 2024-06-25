@@ -43,11 +43,7 @@ const Config = t.strict({
     tt.BooleanFromString,
     false
   ),
-  GOOGLE_CONNECTIVITY_ENABLED: withDefaultIfEmpty(tt.BooleanFromString, false),
-  GOOGLE_SERVICE_ACCOUNT_KEY_FILE_PATH: withDefaultIfEmpty(
-    t.string,
-    '/etc/makespace/google_serviceaccount_key.json'
-  ),
+  GOOGLE_SERVICE_ACCOUNT_KEY_JSON: withDefaultIfEmpty(tt.JsonRecord, {}),
 });
 
 export type Config = t.TypeOf<typeof Config>;
