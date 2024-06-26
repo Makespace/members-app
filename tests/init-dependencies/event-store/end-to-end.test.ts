@@ -135,7 +135,7 @@ describe('event-store end-to-end', () => {
     describe('a resource', () => {
       const arbitraryResourceOfSameType = () => ({
         type: resource.type,
-        id: faker.string.alpha(),
+        id: randomUUID(),
       });
       beforeEach(async () => {
         await commitEvent(dbClient, testLogger)(
