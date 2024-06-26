@@ -6,6 +6,9 @@ primary_region = 'lhr'
 
 [build]
 
+[env]
+  PUBLIC_URL = "https://makespace-members-app.fly.dev"
+
 [http_service]
   internal_port = 8080
   force_https = true
