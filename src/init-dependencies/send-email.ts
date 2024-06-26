@@ -6,13 +6,13 @@ import {identity, pipe} from 'fp-ts/lib/function';
 type SendEmail = (email: Email) => TE.TaskEither<Failure, string>;
 
 export const sendEmail =
-  (transporter: nodemailer.Transporter): SendEmail =>
+  (transporter: nodemailer.Transporter, from: string): SendEmail =>
   email =>
     pipe(
       TE.tryCatch(
         () =>
           transporter.sendMail({
-            from: 'do-not-reply@makespace.org',
+            from,
             to: email.recipient,
             subject: email.subject,
             text: email.text,
