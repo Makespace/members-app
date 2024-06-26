@@ -102,5 +102,5 @@ AND RecurlyAccounts.idRecurlyAccounts = MemberRecurlyAccount.RecurlyAccount;
 Set `ADMIN_API_BEARER_TOKEN` and `PUBLIC_URL` to match the instance you want to import into.
 
 ```sh
-cat /tmp/members.csv | cut -d ',' -f 1,3 | sed 's/,"/ /' | sed 's/"//' | xargs -n 2 ./scripts/import-member.sh
+cat /tmp/members.csv | sed 's/,"/ /' | sed 's/"//' | xargs -n 2 ./scripts/import-member.sh
 ```

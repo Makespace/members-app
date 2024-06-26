@@ -32,7 +32,7 @@ const Config = t.strict({
   SMTP_HOST: tt.NonEmptyString,
   SMTP_PASSWORD: t.string,
   SMTP_PORT: withDefaultIfEmpty(tt.IntFromString, 2525 as t.Int),
-  SMTP_SSL_TLS: withDefaultIfEmpty(tt.BooleanFromString, true),
+  SMTP_TLS: withDefaultIfEmpty(tt.BooleanFromString, true),
   SMTP_USER: t.string,
   TOKEN_SECRET: tt.NonEmptyString,
   EVENT_DB_URL: withDefaultIfEmpty(
