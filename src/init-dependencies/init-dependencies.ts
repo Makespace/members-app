@@ -51,6 +51,8 @@ export const initDependencies = (
         user: conf.SMTP_USER,
         pass: conf.SMTP_PASSWORD,
       },
+      secure: conf.SMTP_SSL_TLS,
+      requireTLS: conf.SMTP_SSL_TLS,
     })
   );
 
