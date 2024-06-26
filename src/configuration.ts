@@ -28,6 +28,7 @@ const Config = t.strict({
   PORT: withDefaultIfEmpty(tt.IntFromString, 8080 as t.Int),
   PUBLIC_URL: tt.NonEmptyString,
   SESSION_SECRET: tt.NonEmptyString,
+  SMTP_FROM: withDefaultIfEmpty(t.string, 'do-not-reply@makespace.org'),
   SMTP_HOST: tt.NonEmptyString,
   SMTP_PASSWORD: t.string,
   SMTP_PORT: withDefaultIfEmpty(tt.IntFromString, 2525 as t.Int),

@@ -71,7 +71,7 @@ export const initDependencies = (
     getAllEventsByType: getAllEventsByType(dbClient),
     getResourceEvents: getResourceEvents(dbClient),
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
-    sendEmail: sendEmail(emailTransporter),
+    sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
     pullGoogleSheetData: pullGoogleSheetData(auth),
     logger,
   };
