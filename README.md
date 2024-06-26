@@ -75,8 +75,9 @@ curl -X POST -H 'Authorization: Bearer secret' -H 'Content-Type: application/jso
 ```
 curl -X POST -H 'Authorization: Bearer secret' -H 'Content-Type: application/json' \
 --data '{"name": "Woodspace"}' http://localhost:8080/api/create-area
+```
 
-# Testing
+## Testing
 When writing tests conceptionally the code can be split into 2 sections. The code responsible for writing events
 (commands) and the code for reading events (read models). When testing generally it should be split so that
 any testing that involves reading is done by providing the events to a read-model and any testing that involves
