@@ -36,6 +36,11 @@ export const initRoutes = (
       'add-training-quiz-result',
       commands.equipment.trainingSheetQuizResult
     ),
+    ...command(
+      'equipment',
+      'mark-member-trained',
+      commands.trainers.markTrained
+    ),
     query('/equipment/:equipment', queries.equipment),
     query('/super-users', queries.superUsers),
     ...command('super-users', 'declare', commands.superUser.declare),
