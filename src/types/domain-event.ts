@@ -79,8 +79,8 @@ export const DomainEvent = t.union([
   }),
   eventCodec('MemberTrainedOnEquipment', {
     equipmentId: tt.UUID,
-    memberEmail: t.string,
-    trainedByEmail: t.string,
+    memberNumber: t.number,
+    trainedByMemberNumber: t.union([t.number, t.null]), // Null to indicate system.
   }),
 ]);
 
