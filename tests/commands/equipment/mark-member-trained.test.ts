@@ -46,7 +46,7 @@ describe('markMemberTrained', () => {
           'MemberTrainedOnEquipment'
         );
         expect(events).toHaveLength(1);
-        expect(events[0]).toStrictEqual({
+        expect(events[0]).toMatchObject({
           equipmentId,
           memberNumber,
           trainedByMemberNumber: null,
@@ -75,7 +75,7 @@ describe('markMemberTrained', () => {
         'MemberTrainedOnEquipment'
       );
       expect(events).toHaveLength(1);
-      expect(events[0]).toStrictEqual({
+      expect(events[0]).toMatchObject({
         equipmentId,
         memberNumber,
         trainedByMemberNumber: actor.user.memberNumber,

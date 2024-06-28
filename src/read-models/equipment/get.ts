@@ -6,7 +6,7 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {EventName, isEventOfType} from '../../types/domain-event';
 import {Eq as stringEq} from 'fp-ts/string';
 
-type Equipment = {
+export type Equipment = {
   name: string;
   id: string;
   trainers: ReadonlyArray<number>;

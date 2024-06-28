@@ -18,7 +18,7 @@ export type ViewModel = {
     name: string;
     id: string;
     trainers: ReadonlyArray<number>;
-    trainedUsers: ReadonlyArray<number>;
+    trainedMembers: ReadonlyArray<number>;
   };
   trainingQuizResults: {
     passed: ReadonlyArray<QuizResultViewModel>;
