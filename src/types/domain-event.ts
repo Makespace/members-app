@@ -77,6 +77,11 @@ export const DomainEvent = t.union([
     memberNumber: t.number,
     signedAt: tt.DateFromISOString,
   }),
+  eventCodec('MemberTrainedOnEquipment', {
+    equipmentId: tt.UUID,
+    memberNumber: t.number,
+    trainedByMemberNumber: t.union([t.number, t.null]), // Null to indicate system.
+  }),
 ]);
 
 export type DomainEvent = t.TypeOf<typeof DomainEvent>;

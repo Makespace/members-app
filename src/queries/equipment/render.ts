@@ -17,27 +17,46 @@ const renderTrainers = (trainers: ViewModel['equipment']['trainers']) =>
     )
   );
 
+const renderEquipmentTrainerActions = (viewModel: ViewModel) => html`
+  <li>
+    <a
+      href="/equipment/mark-member-trained?equipmentId=${viewModel.equipment
+        .id}"
+      >Mark member as trained</a
+    >
+  </li>
+`;
+
+const renderOwnerEquipmentActions = (viewModel: ViewModel) => html`
+  <li>
+    <a href="/equipment/add-trainer?equipment=${viewModel.equipment.id}"
+      >Add a trainer</a
+    >
+  </li>
+  <li>
+    <a
+      href="/equipment/add-training-sheet?equipmentId=${viewModel.equipment.id}"
+      >Register training sheet</a
+    >
+  </li>
+`;
+
 const renderEquipmentActions = (viewModel: ViewModel) => html`
   <ul>
-    <li>
-      <a href="/equipment/add-trainer?equipment=${viewModel.equipment.id}"
-        >Add a trainer</a
-      >
-    </li>
-    <li>
-      <a
-        href="/equipment/add-training-sheet?equipmentId=${viewModel.equipment
-          .id}"
-        >Register training sheet</a
-      >
-    </li>
+    ${viewModel.isSuperUserOrOwnerOfArea
+      ? renderOwnerEquipmentActions(viewModel)
+      : ''}
+    ${viewModel.isSuperUserOrTrainerOfArea
+      ? renderEquipmentTrainerActions(viewModel)
+      : ''}
   </ul>
 `;
 
 export const render = (viewModel: ViewModel) => html`
   <h1>${viewModel.equipment.name}</h1>
-  ${viewModel.isSuperUserOrOwnerOfArea ? renderEquipmentActions(viewModel) : ''}
+  ${renderEquipmentActions(viewModel)}
   ${renderTrainers(viewModel.equipment.trainers)}
+  ${renderCurrentlyTrainedUsersTable(viewModel)}
   ${renderTrainingQuizResults(viewModel)}
 `;
 
@@ -76,9 +95,27 @@ const renderTrainingQuizResultsTable = (
 `;
 
 const renderTrainingQuizResults = (viewModel: ViewModel) => html`
-  <h2>Training Quiz Results</h1>
+  <h2>Training Quiz Results</h2>
   <h3>Passed</h3>
   ${renderTrainingQuizResultsTable(viewModel.trainingQuizResults.passed)}
   <h3>All Results</h3>
   ${renderTrainingQuizResultsTable(viewModel.trainingQuizResults.all)}
+`;
+
+const renderCurrentlyTrainedUsersTable = (viewModel: ViewModel) => html`
+  <h2>Currently Trained Users</h2>
+  <table>
+    <tr>
+      <th>Member Number</th>
+    </tr>
+    ${pipe(
+      viewModel.equipment.trainedMembers,
+      RA.map(
+        trainedMember =>
+          html`<tr>
+            <td>${trainedMember}</td>
+          </tr>`
+      )
+    ).join('\n')}
+  </table>
 `;
