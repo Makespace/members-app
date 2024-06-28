@@ -26,7 +26,6 @@ const dbClient = libsqlClient.createClient({
   url: conf.EVENT_DB_URL,
   authToken: conf.TURSO_TOKEN,
 });
-console.log(conf);
 const deps = initDependencies(dbClient, conf);
 const routes = initRoutes(deps, conf);
 
