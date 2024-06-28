@@ -6,7 +6,7 @@ const initHelpers = () => {
     // This may not be strictly needed as memberNumber should always be a number but following the approach of escaping everything going to end users.
     const escapedMemberNumber = Handlebars.escapeExpression(memberNumber);
     return new Handlebars.SafeString(
-      '<a class=memberNumberLink href=/member' +
+      '<a class=memberNumberLink href=/member/' +
         escapedMemberNumber +
         '/><b>' +
         escapedMemberNumber +
