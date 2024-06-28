@@ -11,6 +11,7 @@ import {faker} from '@faker-js/faker';
 import {systemActor, tokenActor, userActor} from '../../helpers';
 import {UUID} from 'io-ts-types';
 import {UserActor} from '../../../src/types/actor';
+import {Int} from 'io-ts';
 
 describe('markMemberTrained', () => {
   let framework: TestFramework;
@@ -28,7 +29,7 @@ describe('markMemberTrained', () => {
   [tokenActor(), systemActor()].forEach(actor => {
     describe(`${actor.tag} mark member trained`, () => {
       const equipmentId = faker.string.uuid() as UUID;
-      const memberNumber = faker.number.int();
+      const memberNumber = faker.number.int() as Int;
       beforeEach(async () => {
         await applyMarkMemberTrained(
           {
@@ -57,7 +58,7 @@ describe('markMemberTrained', () => {
 
   describe('user mark member trained', () => {
     const equipmentId = faker.string.uuid() as UUID;
-    const memberNumber = faker.number.int();
+    const memberNumber = faker.number.int() as Int;
     let actor: UserActor;
     beforeEach(async () => {
       actor = userActor();
