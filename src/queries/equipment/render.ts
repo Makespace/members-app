@@ -19,7 +19,9 @@ const renderTrainers = (trainers: ViewModel['equipment']['trainers']) =>
 
 const renderEquipmentTrainerActions = (viewModel: ViewModel) => html`
   <li>
-    <a href="/equipment/mark-member-trained?equipmentId=${viewModel.equipment.id}"
+    <a
+      href="/equipment/mark-member-trained?equipmentId=${viewModel.equipment
+        .id}"
       >Mark member as trained</a
     >
   </li>
