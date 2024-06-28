@@ -2,24 +2,21 @@ import {pipe} from 'fp-ts/lib/function';
 import {QuizResultViewModel, ViewModel} from './view-model';
 import * as RA from 'fp-ts/ReadonlyArray';
 
-const TRAINERS_TEMPLATE = `
+const TRAINERS_TEMPLATE = Handlebars.compile(`
+<h2>Trainers</h2>
 <ul>
+{{#if trainers}}
+{{#each trainers}}
+<li>{{this}}</li>
+{{/each}}
+{{else}}
+<p>This equipment needs trainers.</p>
+{{/if}}
 </ul>
-`;
+`);
 
 const renderTrainers = (trainers: ViewModel['equipment']['trainers']) =>
-  pipe(
-    trainers,
-    RA.map(trainer => html`<li>${trainer}</li>`),
-    RA.match(
-      () => html`<p>This equipment needs trainers.</p>`,
-      items =>
-        html`<h2>Trainers</h2>
-          <ul>
-            ${items.join('\n')}
-          </ul>`
-    )
-  );
+  TRAINERS_TEMPLATE({trainers});
 
 const renderEquipmentTrainerActions = (viewModel: ViewModel) => html`
   <li>
