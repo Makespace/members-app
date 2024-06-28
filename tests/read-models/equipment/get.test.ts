@@ -5,6 +5,7 @@ import {NonEmptyString, UUID} from 'io-ts-types';
 import {get} from '../../../src/read-models/equipment/get';
 import {pipe} from 'fp-ts/lib/function';
 import {getSomeOrFail} from '../../helpers';
+import {Int} from 'io-ts';
 
 describe('get', () => {
   let events: ReadonlyArray<DomainEvent>;
@@ -29,7 +30,7 @@ describe('get', () => {
     };
     const markTrained = {
       equipmentId: addEquipment.id,
-      memberNumber: faker.number.int(),
+      memberNumber: faker.number.int() as Int,
     };
     beforeEach(async () => {
       await framework.commands.area.create(createArea);
