@@ -4,7 +4,7 @@ import * as O from 'fp-ts/Option';
 import {Actor} from '../types/actor';
 import {Resource} from '../types/resource';
 
-type WithActor<T> = T & {actor: Actor};
+export type WithActor<T> = T & {actor: Actor};
 
 export type Command<T> = {
   resource: (command: T) => Resource;

@@ -2,7 +2,8 @@ import {error} from 'console';
 import * as O from 'fp-ts/Option';
 import * as E from 'fp-ts/Either';
 import {identity, pipe} from 'fp-ts/lib/function';
-import {Actor} from '../src/types/actor';
+import {Actor, UserActor} from '../src/types/actor';
+import {EmailAddressCodec} from '../src/types/email-address';
 
 export const getRightOrFail = <A>(input: E.Either<unknown, A>): A =>
   pipe(
@@ -31,3 +32,15 @@ export const getSomeOrFail = <A>(input: O.Option<A>): A =>
 
 export const arbitraryActor = (): Actor =>
   ({tag: 'token', token: 'admin'}) satisfies Actor;
+
+export const tokenActor = arbitraryActor;
+
+export const systemActor = (): Actor => ({tag: 'system'}) satisfies Actor;
+
+export const userActor = (): UserActor => ({
+  tag: 'user',
+  user: {
+    emailAddress: getRightOrFail(EmailAddressCodec.decode('test@test.com')),
+    memberNumber: 12,
+  },
+});
