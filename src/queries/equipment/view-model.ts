@@ -13,10 +13,12 @@ export type QuizResultViewModel = {
 export type ViewModel = {
   user: User;
   isSuperUserOrOwnerOfArea: boolean;
+  isSuperUserOrTrainerOfArea: boolean;
   equipment: {
     name: string;
     id: string;
     trainers: ReadonlyArray<number>;
+    trainedUsers: ReadonlyArray<number>;
   };
   trainingQuizResults: {
     passed: ReadonlyArray<QuizResultViewModel>;
