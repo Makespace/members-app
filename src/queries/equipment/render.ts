@@ -1,7 +1,11 @@
 import {pipe} from 'fp-ts/lib/function';
-import {html} from '../../types/html';
 import {QuizResultViewModel, ViewModel} from './view-model';
 import * as RA from 'fp-ts/ReadonlyArray';
+
+const TRAINERS_TEMPLATE = `
+<ul>
+</ul>
+`;
 
 const renderTrainers = (trainers: ViewModel['equipment']['trainers']) =>
   pipe(

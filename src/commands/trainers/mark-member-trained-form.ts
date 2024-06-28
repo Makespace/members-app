@@ -1,7 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
 import * as E from 'fp-ts/Either';
-import {html} from '../../types/html';
 import {User} from '../../types';
 import {Form} from '../../types/form';
 import {pageTemplate} from '../../templates';
