@@ -56,6 +56,7 @@ export const render = (viewModel: ViewModel) => html`
   <h1>${viewModel.equipment.name}</h1>
   ${renderEquipmentActions(viewModel)}
   ${renderTrainers(viewModel.equipment.trainers)}
+  ${renderCurrentlyTrainedUsersTable(viewModel)}
   ${renderTrainingQuizResults(viewModel)}
 `;
 
@@ -94,9 +95,27 @@ const renderTrainingQuizResultsTable = (
 `;
 
 const renderTrainingQuizResults = (viewModel: ViewModel) => html`
-  <h2>Training Quiz Results</h1>
+  <h2>Training Quiz Results</h2>
   <h3>Passed</h3>
   ${renderTrainingQuizResultsTable(viewModel.trainingQuizResults.passed)}
   <h3>All Results</h3>
   ${renderTrainingQuizResultsTable(viewModel.trainingQuizResults.all)}
+`;
+
+const renderCurrentlyTrainedUsersTable = (viewModel: ViewModel) => html`
+  <h2>Currently Trained Users</h2>
+  <table>
+    <tr>
+      <th>Member Number</th>
+    </tr>
+    ${pipe(
+      viewModel.equipment.trainedMembers,
+      RA.map(
+        trainedMember =>
+          html`<tr>
+            <td>${trainedMember}</td>
+          </tr>`
+      )
+    ).join('\n')}
+  </table>
 `;
