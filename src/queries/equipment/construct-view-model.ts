@@ -13,6 +13,7 @@ import {User} from '../../types';
 import {StatusCodes} from 'http-status-codes';
 import {DomainEvent, EventOfType} from '../../types/domain-event';
 import {DateTime} from 'luxon';
+import {Equipment} from '../../read-models/equipment/get';
 
 const constructQuizResultViewModel = (
   event: EventOfType<'EquipmentTrainingQuizResult'>
@@ -62,6 +63,16 @@ const isSuperUserOrOwnerOfArea = (
       readModels.areas.isOwner(events)(areaId, memberNumber)
   );
 
+const isSuperUserOrTrainerOfEquipment = (
+  events: ReadonlyArray<DomainEvent>,
+  equipment: Equipment,
+  memberNumber: number
+) =>
+  TE.right(
+    readModels.superUsers.is(memberNumber)(events) ||
+      equipment.trainers.includes(memberNumber)
+  );
+
 export const constructViewModel =
   (deps: Dependencies, user: User) =>
   (equipmentId: string): TE.TaskEither<FailureWithStatus, ViewModel> =>
@@ -75,5 +86,8 @@ export const constructViewModel =
       ),
       TE.bindW('isSuperUserOrOwnerOfArea', ({events, equipment}) =>
         isSuperUserOrOwnerOfArea(events, equipment.areaId, user.memberNumber)
+      ),
+      TE.bindW('isSuperUserOrTrainerOfArea', ({events, equipment}) =>
+        isSuperUserOrTrainerOfEquipment(events, equipment, user.memberNumber)
       )
     );
