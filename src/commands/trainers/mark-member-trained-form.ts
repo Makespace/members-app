@@ -6,6 +6,7 @@ import {Form} from '../../types/form';
 import {pageTemplate} from '../../templates';
 import {getEquipmentName} from '../equipment/get-equipment-name';
 import {getEquipmentIdFromForm} from '../equipment/get-equipment-id-from-form';
+import { html } from '../../types/html';
 
 type ViewModel = {
   user: User;
