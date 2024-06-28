@@ -1,4 +1,5 @@
 import {ViewModel} from './view-model';
+import Handlebars from 'handlebars';
 
 Handlebars.registerPartial(
   'trainers_list',
