@@ -8,7 +8,7 @@ import {isEquipmentTrainer} from '../is-equipment-trainer';
 
 const codec = t.strict({
   equipmentId: tt.UUID,
-  memberNumber: t.number,
+  memberNumber: t.union([t.Int, tt.IntFromString]),
 });
 
 export type MarkMemberTrained = t.TypeOf<typeof codec>;
