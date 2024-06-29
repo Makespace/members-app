@@ -43,7 +43,7 @@ const AVATAR_PROFILE_TEMPLATE = Handlebars.compile(
   `
 );
 
-export function renderAvatarProfile(member: MemberDetails) {
+Handlebars.registerHelper('avatar_large', (member: MemberDetails) => {
   const email = member.email;
   return new Handlebars.SafeString(
     AVATAR_PROFILE_TEMPLATE({
@@ -52,4 +52,4 @@ export function renderAvatarProfile(member: MemberDetails) {
       url4x: getGravatarUrl(email, 1280),
     })
   );
-}
+});
