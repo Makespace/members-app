@@ -10,5 +10,5 @@ export const landing: Query = deps => user =>
     user,
     constructViewModel(deps),
     TE.map(render),
-    TE.map(body => HttpResponse.mk.Page({title: 'Dashboard', body}))
+    TE.map(html => HttpResponse.mk.Page({html}))
   );
