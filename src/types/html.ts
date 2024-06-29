@@ -4,7 +4,9 @@ import Handlebars from 'handlebars';
 const initHelpers = () => {
   Handlebars.registerHelper('member_number', memberNumber => {
     // This may not be strictly needed as memberNumber should always be a number but following the approach of escaping everything going to end users.
-    const escapedMemberNumber = Handlebars.escapeExpression(memberNumber);
+    const escapedMemberNumber = Handlebars.escapeExpression(
+      memberNumber as string
+    );
     return new Handlebars.SafeString(
       '<a class=memberNumberLink href=/member/' +
         escapedMemberNumber +
@@ -18,8 +20,7 @@ const initHelpers = () => {
 initHelpers();
 
 interface Page {
-  body: string;
-  title: string;
+  html: string;
 }
 
 interface Redirect {

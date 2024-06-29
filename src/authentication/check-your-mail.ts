@@ -1,16 +1,25 @@
-import {pipe} from 'fp-ts/lib/function';
-import {html} from '../types/html';
-import {pageTemplateNoNav} from '../templates';
+import * as O from 'fp-ts/Option';
+import {pageTemplate} from '../templates';
 
-export const checkYourMailPage = (submittedEmailAddress: string) =>
-  pipe(
-    html`
+const CHECK_YOUR_MAIL_TEMPLATE = Handlebars.compile(
+  `
       <h1>Check your mail</h1>
       <p>
-        If <b>${submittedEmailAddress}</b> is linked to a Makespace number you
+        If <b>{{submittedEmailAddress}}</b> is linked to a Makespace number you
         should receive an email with that number.
       </p>
       <p>If nothing happens please reach out to the Makespace Database Team.</p>
-    `,
-    pageTemplateNoNav('Check your mail')
+    `
+);
+
+export const checkYourMailPage = (submittedEmailAddress: string) =>
+  pageTemplate(
+    'Check your mail',
+    O.none
+  )(
+    new Handlebars.SafeString(
+      CHECK_YOUR_MAIL_TEMPLATE({
+        submittedEmailAddress,
+      })
+    )
   );
