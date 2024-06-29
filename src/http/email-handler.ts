@@ -3,7 +3,7 @@ import {Dependencies} from '../dependencies';
 import {flow, pipe} from 'fp-ts/lib/function';
 import {sequenceS} from 'fp-ts/lib/Apply';
 import {StatusCodes} from 'http-status-codes';
-import {oopsPage, pageTemplateNoNav} from '../templates';
+import {oopsPage, pageTemplate} from '../templates';
 import {failureWithStatus} from '../types/failure-with-status';
 import * as TE from 'fp-ts/TaskEither';
 import {getUserFromSession} from '../authentication';
@@ -11,9 +11,9 @@ import {Actor} from '../types';
 import {Request, Response} from 'express';
 import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
-import {html} from '../types/html';
 import {SendEmail} from '../commands';
 import {Config} from '../configuration';
+import * as O from 'fp-ts/Option';
 
 const getActorFrom = (session: unknown, deps: Dependencies) =>
   pipe(
@@ -35,6 +35,8 @@ const getInput = <T>(body: unknown, command: SendEmail<T>) =>
     ),
     TE.fromEither
   );
+
+const EMAIL_SENT_TEMPLATE = Handlebars.compile('Email sent');
 
 const emailPost =
   <T>(conf: Config, deps: Dependencies, command: SendEmail<T>) =>
@@ -77,7 +79,7 @@ const emailPost =
         () => {
           res
             .status(200)
-            .send(pageTemplateNoNav('Email sent')(html`Email sent`));
+            .send(pageTemplate('Email sent', O.none)(EMAIL_SENT_TEMPLATE));
         }
       )
     )();
