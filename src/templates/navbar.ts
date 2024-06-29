@@ -1,16 +1,6 @@
-import * as O from 'fp-ts/Option';
-import {pipe} from 'fp-ts/lib/function';
-import {html} from '../types/html';
-import {User} from '../types';
-
-export const navbar = (user: O.Option<User>) =>
-  pipe(
-    user,
-    O.match(
-      () => html`<a href="/log-in">Log in</a>`,
-      () => html` <a href="/log-out">Log out</a> `
-    ),
-    logInOut => html`
+Handlebars.registerPartial(
+  'navbar',
+  `
       <nav class="page-nav">
         <a href="/"
           ><img
@@ -23,7 +13,11 @@ export const navbar = (user: O.Option<User>) =>
         <a href="/members">Members</a>
         <a href="/equipment">Equipment</a>
         <a href="/areas">Areas</a>
-        ${logInOut}
+        {{#if loggedIn}}
+          <a href="/log-in">Log in</a>
+        {{else}}
+          <a href="/log-out">Log out</a>
+        {{/if}}
       </nav>
     `
-  );
+);

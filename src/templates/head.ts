@@ -1,11 +1,11 @@
-import {html} from '../types/html';
-
-export const head = (title: string) => html`
+Handlebars.registerPartial(
+  'head',
+  `
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>${title} | Cambridge Makespace</title>
+    <title>{{title}} | Cambridge Makespace</title>
     <link rel="stylesheet" href="/static/styles.css" />
 
     <!-- Generated using https://realfavicongenerator.net -->
@@ -45,4 +45,5 @@ export const head = (title: string) => html`
       rel="stylesheet"
     />
   </head>
-`;
+`
+);
