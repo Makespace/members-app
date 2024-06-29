@@ -1,28 +1,15 @@
-import {html} from '../../types/html';
+import {SafeString} from 'handlebars';
+import {pageTemplate} from '../../templates';
+import {User} from '../../types';
 import {ViewModel} from './view-model';
-import {
-  renderOptionalDetail,
-  renderAvatarProfile,
-  renderAvatarThumbnail,
-} from '../../templates';
+import * as O from 'fp-ts/Option';
 
-const ownPageBanner = '<h1>This is your profile!</h1>';
-
-const editName = (viewModel: ViewModel) =>
-  `<a href="/members/edit-name?member=${viewModel.member.number}">Edit</a>`;
-
-const editPronouns = (viewModel: ViewModel) =>
-  `<a href="/members/edit-pronouns?member=${viewModel.member.number}">Edit</a>`;
-
-const editAvatar = () =>
-  '<a href="https://gravatar.com/profile">Edit via Gravatar</a>';
-
-const ifSelf = (viewModel: ViewModel, fragment: string) =>
-  viewModel.isSelf ? fragment : '';
-
-export const render = (viewModel: ViewModel) => html`
-  ${ifSelf(viewModel, ownPageBanner)}
-  <div class="profile">${renderAvatarProfile(viewModel.member)}</div>
+const RENDER_TEMPLATE = Handlebars.compile(
+  `
+  {{#if isSelf}}
+    <h1 class=ownPageBanner>This is your profile!</h1>
+  {{/if}}
+  <div class="profile">{{avatar_large member}}</div>
   <table>
     <caption>
       Details
@@ -30,33 +17,46 @@ export const render = (viewModel: ViewModel) => html`
     <tbody>
       <tr>
         <th scope="row">Member number</th>
-        <td>${viewModel.member.number}</td>
+        <td> {{member_number member.number}}</td>
       </tr>
       <tr>
         <th scope="row">Email</th>
-        <td>${viewModel.member.email}</td>
+        <td> {{member.email}}</td>
       </tr>
       <tr>
         <th scope="row">Name</th>
         <td>
-          ${renderOptionalDetail(viewModel.member.name)}
-          ${ifSelf(viewModel, editName(viewModel))}
+          {{optional_detail member.name}}
+          {{#if isSelf}}
+            <a href="/members/edit-name?member={{member.number}}">Edit</a>
+          {{/if}}
         </td>
       </tr>
       <tr>
         <th scope="row">Pronouns</th>
         <td>
-          ${renderOptionalDetail(viewModel.member.pronouns)}
-          ${ifSelf(viewModel, editPronouns(viewModel))}
+          {{optional_detail member.pronouns}}
+          {{#if isSelf}}
+            <a href="/members/edit-pronouns?member={{member.number}}">Edit</a>
+          {{/if}}
         </td>
       </tr>
       <tr>
         <th scope="row">Avatar</th>
         <td>
-          ${renderAvatarThumbnail(viewModel.member)}
-          ${ifSelf(viewModel, editAvatar())}
+          {{avatar_thumbnail member}}
+          {{#if isSelf}}
+            <a class=externalRedirect href="https://gravatar.com/profile">Edit via Gravatar</a>
+          {{/if}}
         </td>
       </tr>
     </tbody>
   </table>
-`;
+`
+);
+
+export const render = (viewModel: ViewModel, user: User) =>
+  pageTemplate(
+    'Member',
+    O.some(user)
+  )(new SafeString(RENDER_TEMPLATE(viewModel)));
