@@ -1,6 +1,5 @@
 import {createHash} from 'crypto';
 import {MemberDetails} from '../types';
-import {SafeString} from 'handlebars';
 
 function getGravatarUrl(email: string, size: number = 160) {
   const trimmedEmail = email.trim().toLowerCase();
@@ -20,7 +19,7 @@ const AVATAR_THUMBNAIL_TEMPLATE = Handlebars.compile(
   `
 );
 
-export function renderAvatarThumbnail(member: MemberDetails): SafeString {
+Handlebars.registerHelper('avatar_thumbnail', (member: MemberDetails) => {
   const email = member.email;
   return new Handlebars.SafeString(
     AVATAR_THUMBNAIL_TEMPLATE({
@@ -30,7 +29,7 @@ export function renderAvatarThumbnail(member: MemberDetails): SafeString {
       memberNumber: member.number,
     })
   );
-}
+});
 
 const AVATAR_PROFILE_TEMPLATE = Handlebars.compile(
   `
