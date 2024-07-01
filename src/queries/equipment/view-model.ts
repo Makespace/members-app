@@ -1,3 +1,4 @@
+import {DateTime} from 'luxon';
 import {User} from '../../types';
 
 export type QuizResultViewModel = {
@@ -6,7 +7,7 @@ export type QuizResultViewModel = {
   maxScore: number;
   percentage: number;
   passed: boolean;
-  timestamp_str: string;
+  timestamp: DateTime;
 };
 
 export type ViewModel = {
