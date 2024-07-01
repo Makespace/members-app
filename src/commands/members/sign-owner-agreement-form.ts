@@ -1,40 +1,43 @@
-import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
-import {html} from '../../types/html';
 import * as O from 'fp-ts/Option';
 import {Form} from '../../types/form';
 import {User} from '../../types';
-import {ownerAgreement} from './owner-agreement';
+import {SafeString} from 'handlebars';
 
-type ViewModel = {user: User};
+type ViewModel = {
+  user: User;
+  agreementGenerationTimestampIso: string;
+};
 
-const renderForm = (viewModel: ViewModel) =>
-  pipe(
-    html`
+const SIGN_OWNER_AGREEMENT_FORM_TEMPLATE = Handlebars.compile(`
       <h1>Sign the Owner Agreement</h1>
-      ${ownerAgreement}
+      {{> owner_agreement}}
       <form action="#" method="post">
         <input
           type="hidden"
           name="memberNumber"
-          value="${viewModel.user.memberNumber}"
+          value="{{user.memberNumber}}"
         />
         <input
           type="hidden"
           name="signedAt"
-          value="${new Date().toISOString()}"
+          value="{{agreementGenerationTimestampIso}}"
         />
         <button type="submit">Sign Agreement</button>
       </form>
-    `,
-    pageTemplate('Sign Owner Agreement', O.some(viewModel.user))
-  );
+    `);
+
+const renderForm = (viewModel: ViewModel) =>
+  pageTemplate(
+    'Sign Owner Agreement',
+    O.some(viewModel.user)
+  )(new SafeString(SIGN_OWNER_AGREEMENT_FORM_TEMPLATE(viewModel)));
 
 const constructForm: Form<ViewModel>['constructForm'] =
   () =>
   ({user}) =>
-    E.right({user});
+    E.right({user, agreementGenerationTimestampIso: new Date().toISOString()});
 
 export const signOwnerAgreementForm: Form<ViewModel> = {
   renderForm,
