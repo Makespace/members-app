@@ -99,7 +99,7 @@ Handlebars.registerPartial(
     {{else}}
       <tr class=failed_training_quiz_row>
     {{/if}}
-      <td>{{this.timestamp_str}}</td>
+      <td>{{display_date this.timestamp}}</td>
       <td>{{this.email}}</td>
       <td>
         {{this.score}} / {{this.maxScore}} ({{this.percentage}}%)

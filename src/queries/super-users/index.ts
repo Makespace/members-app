@@ -10,5 +10,5 @@ export const superUsers: Query = deps => user =>
     user,
     constructViewModel(deps),
     TE.map(render),
-    TE.map(body => HttpResponse.mk.Page({title: 'Super Users', body}))
+    TE.map(html => HttpResponse.mk.Page({html}))
   );
