@@ -15,18 +15,16 @@ Handlebars.registerPartial(
       </tr>
     </thead>
     <tbody>
-      {{#if equipment}}
-        {{#each equipment}}
-          <tr>
-            <td><a href="/equipment/{{this.id}}">{{this.name}}</a></td>
-            <td>
-              <a href="/areas/{{this.areaId}}">{{this.areaName}}</a>
-            </td>
-          </tr>
-        {{/each}}
+      {{#each equipment}}
+        <tr>
+          <td><a href="/equipment/{{this.id}}">{{this.name}}</a></td>
+          <td>
+            <a href="/areas/{{this.areaId}}">{{this.areaName}}</a>
+          </td>
+        </tr>
       {{else}}
         <p>Currently no Equipment</p>
-      {{/if}}
+      {{/each}}
     </tbody>
   </table>
   `
