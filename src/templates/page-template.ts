@@ -1,7 +1,7 @@
 import * as O from 'fp-ts/Option';
 import {User, HttpResponse} from '../types';
 import Handlebars, {SafeString} from 'handlebars';
-import { register } from './head';
+import {register} from './head';
 
 register();
 
