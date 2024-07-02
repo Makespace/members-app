@@ -1,5 +1,6 @@
 import * as O from 'fp-ts/Option';
 import {pageTemplate} from '../templates';
+import Handlebars from 'handlebars';
 
 const CHECK_YOUR_MAIL_TEMPLATE = Handlebars.compile(
   `
