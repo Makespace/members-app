@@ -1,45 +1,54 @@
-import {pipe} from 'fp-ts/lib/function';
-import {html} from '../../types/html';
-import * as RA from 'fp-ts/ReadonlyArray';
+import * as O from 'fp-ts/Option';
+
 import {ViewModel} from './view-model';
+import {pageTemplate} from '../../templates';
+import {SafeString} from 'handlebars';
 
-const renderEquipment = (allEquipment: ViewModel['equipment']) =>
-  pipe(
-    allEquipment,
-    RA.map(
-      equipment => html`
-        <tr>
-          <td><a href="/equipment/${equipment.id}">${equipment.name}</a></td>
-          <td>
-            <a href="/areas/${equipment.areaId}">${equipment.areaName}</a>
-          </td>
-        </tr>
-      `
-    ),
-    RA.match(
-      () => html` <p>Currently no Equipment</p> `,
-      rows => html`
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Area</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.join('\n')}
-          </tbody>
-        </table>
-      `
-    )
-  );
+Handlebars.registerPartial(
+  'render_equipment_table',
+  `
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Area</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#if equipment}}
+        {{#each equipment}}
+          <tr>
+            <td><a href="/equipment/{{this.id}}">{{this.name}}</a></td>
+            <td>
+              <a href="/areas/{{this.areaId}}">{{this.areaName}}</a>
+            </td>
+          </tr>
+        {{/each}}
+      {{else}}
+        <p>Currently no Equipment</p>
+      {{/if}}
+    </tbody>
+  </table>
+  `
+);
 
-const addAreaCallToAction = html`
-  <a href="/areas/create">Add area of responsibility</a>
-`;
+Handlebars.registerPartial(
+  'add_area_link',
+  '<a href="/areas/create">Add area of responsibility</a>'
+);
 
-export const render = (viewModel: ViewModel) => html`
+const RENDER_ALL_EQUIPMENT_TEMPLATE = Handlebars.compile(
+  `
   <h1>Equipment of Makespace</h1>
-  ${viewModel.isSuperUser ? addAreaCallToAction : ''}
-  ${renderEquipment(viewModel.equipment)}
-`;
+  {{#if isSuperUser}}
+    {{> add_area_link }}
+  {{/if}}
+  {{> render_equipment_table }}
+`
+);
+
+export const render = (viewModel: ViewModel) =>
+  pageTemplate(
+    'Equipment',
+    O.some(viewModel.user)
+  )(new SafeString(RENDER_ALL_EQUIPMENT_TEMPLATE(viewModel)));

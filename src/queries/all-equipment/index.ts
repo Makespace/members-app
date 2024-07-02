@@ -10,10 +10,5 @@ export const allEquipment: Query = deps => user =>
     user,
     constructViewModel(deps),
     TE.map(render),
-    TE.map(body =>
-      HttpResponse.mk.Page({
-        title: 'Equipment',
-        body,
-      })
-    )
+    TE.map(html => HttpResponse.mk.Page({html}))
   );
