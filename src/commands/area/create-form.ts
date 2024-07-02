@@ -4,7 +4,7 @@ import * as O from 'fp-ts/Option';
 import {User} from '../../types';
 import {v4} from 'uuid';
 import {Form} from '../../types/form';
-import {SafeString} from 'handlebars';
+import Handlebars, {SafeString} from 'handlebars';
 
 type ViewModel = {
   user: User;

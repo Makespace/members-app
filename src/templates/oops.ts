@@ -1,4 +1,4 @@
-import {SafeString} from 'handlebars';
+import Handlebars, {SafeString} from 'handlebars';
 
 const OOPS_PAGE_TEMPLATE = Handlebars.compile(
   `

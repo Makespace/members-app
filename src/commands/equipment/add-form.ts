@@ -10,7 +10,7 @@ import {formatValidationErrors} from 'io-ts-reporters';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {readModels} from '../../read-models';
-import {SafeString} from 'handlebars';
+import Handlebars, {SafeString} from 'handlebars';
 
 type ViewModel = {
   user: User;

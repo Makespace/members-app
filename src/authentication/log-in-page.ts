@@ -1,5 +1,6 @@
 import * as O from 'fp-ts/Option';
 import {pageTemplate} from '../templates';
+import Handlebars from 'handlebars';
 
 const LOGIN_PAGE_TEMPLATE = Handlebars.compile(
   `

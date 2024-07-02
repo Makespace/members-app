@@ -13,7 +13,7 @@ import {
 import {Form} from '../../types/form';
 import {AreaOwners} from '../../read-models/members/get-potential-owners';
 import {readModels} from '../../read-models';
-import {SafeString} from 'handlebars';
+import Handlebars, {SafeString} from 'handlebars';
 
 type ViewModel = {
   user: User;
