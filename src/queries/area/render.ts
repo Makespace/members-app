@@ -1,46 +1,60 @@
-import {pipe} from 'fp-ts/lib/function';
-import {html} from '../../types/html';
 import {ViewModel} from './view-model';
-import * as RA from 'fp-ts/ReadonlyArray';
+import * as O from 'fp-ts/Option';
+import {pageTemplate} from '../../templates';
+import {SafeString} from 'handlebars';
 
-const renderOwners = (owners: ViewModel['area']['owners']) =>
-  pipe(
-    owners,
-    RA.map(owner => html`<li>${owner}</li>`),
-    items =>
-      html`<ul>
-        ${items.join('\n')}
-      </ul>`
-  );
+Handlebars.registerPartial(
+  'owners_list',
+  `
+    <ul>
+      {{#each area.owners}}
+        <li>{{this}}</li>
+      {{/each}}
+    </ul>
+  `
+);
 
-const addEquipmentCallToAction = (areaId: string) => html`
-  <a href="/equipment/add?area=${areaId}">Add piece of red equipment</a>
-`;
+Handlebars.registerPartial(
+  'add_red_equipment_link',
+  `
+    <a href="/equipment/add?area={{area.id}}">Add piece of red equipment</a>
+  `
+);
 
-const addOwnerCallToAction = (areaId: string) => html`
-  <a href="/areas/add-owner?area=${areaId}">Add owner</a>
-`;
+Handlebars.registerPartial(
+  'add_owner_link',
+  `
+    <a href="/areas/add-owner?area={{area.id}}">Add owner</a>
+  `
+);
 
-const renderEquipment = (allEquipment: ViewModel['equipment']) =>
-  pipe(
-    allEquipment,
-    RA.map(
-      equipment => html`
-        <li><a href="/equipment/${equipment.id}">${equipment.name}</a></li>
-      `
-    ),
-    items => html`
-      <ul>
-        ${items.join('\n')}
-      </ul>
-    `
-  );
+Handlebars.registerPartial(
+  'equipment_list',
+  `
+    <ul>
+      {{#each equipment}}
+        <li><a href="/equipment/{{this.id}}">{{this.name}}</a></li>
+      {{/each}}
+    </ul>
+  `
+);
+
+const RENDER_AREA_TEMPLATE = Handlebars.compile(`
+  <h1>{{area.name}}</h1>
+  {{#if isSuperUser}}
+    {{> add_red_equipment_link }}
+  {{/if}}
+  <h2>Owners</h2>
+  {{#if isSuperUser}}
+    {{> add_owner_link }}
+  {{/if}}
+  {{> owners_list }}
+  <h2>Equipment</h2>
+  {{> equipment_list }}
+`);
 
 export const render = (viewModel: ViewModel) =>
-  html`<h1>${viewModel.area.name}</h1>
-    ${viewModel.isSuperUser ? addEquipmentCallToAction(viewModel.area.id) : ''}
-    <h2>Owners</h2>
-    ${viewModel.isSuperUser ? addOwnerCallToAction(viewModel.area.id) : ''}
-    ${renderOwners(viewModel.area.owners)}
-    <h2>Equipment</h2>
-    ${renderEquipment(viewModel.equipment)} `;
+  pageTemplate(
+    viewModel.area.name,
+    O.some(viewModel.user)
+  )(new SafeString(RENDER_AREA_TEMPLATE(viewModel)));
