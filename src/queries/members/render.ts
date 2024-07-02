@@ -1,4 +1,6 @@
+import {pageTemplate} from '../../templates';
 import {ViewModel} from './view-model';
+import * as O from 'fp-ts/Option';
 import {SafeString} from 'handlebars';
 
 Handlebars.registerPartial(
@@ -47,4 +49,7 @@ const RENDER_MEMBERS_TEMPLATE = Handlebars.compile(
 );
 
 export const render = (viewModel: ViewModel) =>
-  new SafeString(RENDER_MEMBERS_TEMPLATE(viewModel));
+  pageTemplate(
+    'Members',
+    O.some(viewModel.user)
+  )(new SafeString(RENDER_MEMBERS_TEMPLATE(viewModel)));

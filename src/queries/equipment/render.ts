@@ -1,5 +1,7 @@
+import {pageTemplate} from '../../templates';
 import {ViewModel} from './view-model';
-import Handlebars from 'handlebars';
+import * as O from 'fp-ts/Option';
+import Handlebars, {SafeString} from 'handlebars';
 
 Handlebars.registerPartial(
   'trainers_list',
@@ -134,4 +136,7 @@ const RENDER_EQUIPMENT_TEMPLATE = Handlebars.compile(
 );
 
 export const render = (viewModel: ViewModel) =>
-  RENDER_EQUIPMENT_TEMPLATE(viewModel);
+  pageTemplate(
+    viewModel.equipment.name,
+    O.some(viewModel.user)
+  )(new SafeString(RENDER_EQUIPMENT_TEMPLATE(viewModel)));
