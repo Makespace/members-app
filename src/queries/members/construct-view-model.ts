@@ -14,5 +14,6 @@ export const constructViewModel =
       TE.map(events => ({
         viewerIsSuperUser: readModels.superUsers.is(user.memberNumber)(events),
         members: [...readModels.members.getAllDetails(events).values()],
+        user,
       }))
     );

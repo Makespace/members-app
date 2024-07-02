@@ -24,10 +24,7 @@ const constructQuizResultViewModel = (
     maxScore: event.maxScore,
     percentage: event.percentage,
     passed: event.fullMarks,
-    timestamp_str:
-      DateTime.fromSeconds(event.timestampEpochS).toFormat(
-        'yyyy-mm-dd HH:mm'
-      ) ?? '', // TODO - This needs to be properly localised. Suggest epoch_ms instead with frontend javascript to render based on browser settings.
+    timestamp: DateTime.fromSeconds(event.timestampEpochS),
   };
 };
 
