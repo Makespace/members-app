@@ -3,7 +3,7 @@ import {pageTemplate} from '../../templates';
 import * as O from 'fp-ts/Option';
 import {Form} from '../../types/form';
 import {User} from '../../types';
-import {SafeString} from 'handlebars';
+import Handlebars, {SafeString} from 'handlebars';
 
 type ViewModel = {
   user: User;

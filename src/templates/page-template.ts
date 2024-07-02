@@ -1,6 +1,6 @@
 import * as O from 'fp-ts/Option';
 import {User, HttpResponse} from '../types';
-import {SafeString} from 'handlebars';
+import Handlebars, {SafeString} from 'handlebars';
 
 const PAGE_TEMPLATE = Handlebars.compile(`
     <!doctype html>

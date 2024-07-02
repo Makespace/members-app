@@ -6,7 +6,7 @@ import {Form} from '../../types/form';
 import {pageTemplate} from '../../templates';
 import {getEquipmentName} from './get-equipment-name';
 import {getEquipmentIdFromForm} from './get-equipment-id-from-form';
-import {SafeString} from 'handlebars';
+import Handlebars, {SafeString} from 'handlebars';
 
 type ViewModel = {
   user: User;
