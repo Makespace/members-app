@@ -16,7 +16,7 @@ type Member = {
   email: EmailAddress;
   name: O.Option<string>;
   pronouns: O.Option<string>;
-  agreementSignedDate: string | null;
+  agreementSigned: O.Option<Date>;
 };
 
 export type AreaOwners = {
@@ -57,7 +57,7 @@ const handleEvent = (
       email: event.email,
       name: O.none,
       pronouns: O.none,
-      agreementSignedDate: null,
+      agreementSigned: O.none,
     });
   }
   if (isEventOfType('MemberDetailsUpdated')(event)) {
@@ -73,7 +73,7 @@ const handleEvent = (
     if (current) {
       state.members.set(event.memberNumber, {
         ...current,
-        agreementSignedDate: event.signedAt.toISOString(),
+        agreementSigned: O.some(event.signedAt),
       });
     }
   }
