@@ -52,6 +52,10 @@ export const DomainEvent = t.union([
     memberNumber: t.number,
     email: EmailAddressCodec,
   }),
+  eventCodec('LinkingMemberNumberToAnAlreadyUsedEmailAttempted', {
+    memberNumber: t.number,
+    email: EmailAddressCodec,
+  }),
   eventCodec('EquipmentTrainingSheetRegistered', {
     equipmentId: tt.UUID,
     trainingSheetId: t.string,
