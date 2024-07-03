@@ -1,11 +1,9 @@
+import {pipe} from 'fp-ts/lib/function';
 import {DomainEvent} from '../../types';
-
-type FailedLinking = {
-  memberNumber: number;
-  email: string;
-};
+import {replayState} from './shared-state';
+import {FailedLinking} from './failed-linking';
 
 export const getFailedImports = (
-  // eslint-disable-next-line unused-imports/no-unused-vars
   events: ReadonlyArray<DomainEvent>
-): ReadonlyArray<FailedLinking> => [];
+): ReadonlyArray<FailedLinking> =>
+  pipe(events, replayState, state => state.failedImports);
