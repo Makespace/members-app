@@ -1,5 +1,3 @@
-/* eslint-disable unused-imports/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {DomainEvent} from '../../types';
 
 type FailedLinking = {
@@ -8,5 +6,6 @@ type FailedLinking = {
 };
 
 export const getFailedImports = (
+  // eslint-disable-next-line unused-imports/no-unused-vars
   events: ReadonlyArray<DomainEvent>
 ): ReadonlyArray<FailedLinking> => [];
