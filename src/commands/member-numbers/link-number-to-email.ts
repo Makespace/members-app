@@ -6,13 +6,25 @@ import * as O from 'fp-ts/Option';
 import {Command} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {pipe} from 'fp-ts/lib/function';
+import {EventOfType} from '../../types/domain-event';
 
 const codec = t.strict({
   email: EmailAddressCodec,
   memberNumber: tt.NumberFromString,
 });
 
-type LinkNumberToEmail = t.TypeOf<typeof codec>;
+export type LinkNumberToEmail = t.TypeOf<typeof codec>;
+
+const isUsingAlreadyUsedEmail = (
+  event: EventOfType<'MemberNumberLinkedToEmail'>,
+  command: LinkNumberToEmail
+) => event.email === command.email;
+
+const isDuplicateOfPreviousCommand = (
+  event: EventOfType<'MemberNumberLinkedToEmail'>,
+  command: LinkNumberToEmail
+) =>
+  event.email === command.email && event.memberNumber === command.memberNumber;
 
 const process: Command<LinkNumberToEmail>['process'] = input =>
   pipe(
@@ -25,14 +37,19 @@ const process: Command<LinkNumberToEmail>['process'] = input =>
     ),
     RA.matchW(
       () => O.some(constructEvent('MemberNumberLinkedToEmail')(input.command)),
-      event =>
-        event[0].email === input.command.email
-          ? O.some(
-              constructEvent(
-                'LinkingMemberNumberToAnAlreadyUsedEmailAttempted'
-              )(input.command)
+      events => {
+        if (isDuplicateOfPreviousCommand(events[0], input.command)) {
+          return O.none;
+        }
+        if (isUsingAlreadyUsedEmail(events[0], input.command)) {
+          return O.some(
+            constructEvent('LinkingMemberNumberToAnAlreadyUsedEmailAttempted')(
+              input.command
             )
-          : O.none
+          );
+        }
+        return O.none;
+      }
     )
   );
 
