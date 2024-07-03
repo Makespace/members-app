@@ -36,9 +36,16 @@ describe('linkNumberToEmail', () => {
         email: command.email,
       }),
     ];
-    const result = linkNumberToEmail.process({command, events});
-    it('returns none', () => {
-      expect(result).toStrictEqual(O.none);
+    const result = pipe(
+      {command, events},
+      linkNumberToEmail.process,
+      O.filter(
+        isEventOfType('LinkingMemberNumberToAnAlreadyUsedEmailAttempted')
+      ),
+      getSomeOrFail
+    );
+    it('raises an event documenting the attempt', () => {
+      expect(result.email).toStrictEqual(command.email);
     });
   });
 

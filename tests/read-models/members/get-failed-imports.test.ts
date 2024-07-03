@@ -19,7 +19,7 @@ describe('getFailedImports', () => {
       email: previousLinking.email,
     };
 
-    it.failing('returns the attempted linking', async () => {
+    it('returns the attempted linking', async () => {
       await framework.commands.memberNumbers.linkNumberToEmail(previousLinking);
       await framework.commands.memberNumbers.linkNumberToEmail(attempt);
       const events = await framework.getAllEvents();
