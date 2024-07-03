@@ -1,6 +1,6 @@
 import {EmailAddress} from '../../../src/types';
 import {TestFramework, initTestFramework} from '../test-framework';
-import {getFailedImports} from '../../../src/read-models/members/get-potential-owners';
+import {getFailedImports} from '../../../src/read-models/members/get-failed-imports';
 import {faker} from '@faker-js/faker';
 
 describe('getFailedImports', () => {
