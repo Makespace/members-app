@@ -18,7 +18,7 @@ const renderActor = (actor: Actor) => {
 };
 
 const renderPayload = (event: DomainEvent) =>
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, unused-imports/no-unused-vars
+  // eslint-disable-next-line unused-imports/no-unused-vars
   pipe(event, ({type, actor, recordedAt, ...payload}) => {
     return Object.entries(payload)
       .map(([key, value]) => `${key}: ${inspect(value)}`)
