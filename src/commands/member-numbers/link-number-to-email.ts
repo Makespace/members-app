@@ -25,7 +25,14 @@ const process: Command<LinkNumberToEmail>['process'] = input =>
     ),
     RA.matchW(
       () => O.some(constructEvent('MemberNumberLinkedToEmail')(input.command)),
-      () => O.none
+      event =>
+        event[0].email === input.command.email
+          ? O.some(
+              constructEvent(
+                'LinkingMemberNumberToAnAlreadyUsedEmailAttempted'
+              )(input.command)
+            )
+          : O.none
     )
   );
 

@@ -14,13 +14,13 @@ type Area = {
 type State = {
   members: Map<Member['number'], Member>;
   areas: Map<Area['id'], Area>;
-  failedImports: ReadonlyArray<FailedLinking>;
+  failedImports: Set<FailedLinking>;
 };
 
 const emptyState = (): State => ({
   members: new Map(),
   areas: new Map(),
-  failedImports: [],
+  failedImports: new Set(),
 });
 
 const pertinentEventTypes: Array<EventName> = [
@@ -29,6 +29,7 @@ const pertinentEventTypes: Array<EventName> = [
   'AreaCreated',
   'OwnerAdded',
   'OwnerAgreementSigned',
+  'LinkingMemberNumberToAnAlreadyUsedEmailAttempted',
 ];
 
 const handleEvent = (
@@ -72,6 +73,14 @@ const handleEvent = (
         owners: current.owners.add(event.memberNumber),
       });
     }
+  }
+  if (
+    isEventOfType('LinkingMemberNumberToAnAlreadyUsedEmailAttempted')(event)
+  ) {
+    state.failedImports.add({
+      memberNumber: event.memberNumber,
+      email: event.email,
+    });
   }
   return state;
 };

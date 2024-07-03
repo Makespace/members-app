@@ -6,4 +6,9 @@ import {FailedLinking} from './failed-linking';
 export const getFailedImports = (
   events: ReadonlyArray<DomainEvent>
 ): ReadonlyArray<FailedLinking> =>
-  pipe(events, replayState, state => state.failedImports);
+  pipe(
+    events,
+    replayState,
+    state => state.failedImports,
+    failedImports => Array.from(failedImports.values())
+  );
