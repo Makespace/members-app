@@ -1,6 +1,6 @@
-import {MemberDetails} from '../../types';
+import {FailedLinking} from '../../read-models/members';
 
 export type ViewModel = {
   viewerIsSuperUser: boolean;
-  members: ReadonlyArray<MemberDetails>;
+  failedImports: ReadonlyArray<FailedLinking>;
 };

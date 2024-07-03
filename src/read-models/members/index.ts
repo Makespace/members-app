@@ -12,3 +12,5 @@ export const members = {
   getFailedImports,
   getPotentialOwners,
 };
+
+export {FailedLinking} from './failed-linking';
