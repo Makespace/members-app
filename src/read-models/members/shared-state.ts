@@ -4,6 +4,7 @@ import {DomainEvent, EventName, isEventOfType} from '../../types/domain-event';
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
 import {Member} from './member';
+import {FailedLinking} from './failed-linking';
 
 type Area = {
   id: string;
@@ -13,11 +14,13 @@ type Area = {
 type State = {
   members: Map<Member['number'], Member>;
   areas: Map<Area['id'], Area>;
+  failedImports: ReadonlyArray<FailedLinking>;
 };
 
 const emptyState = (): State => ({
   members: new Map(),
   areas: new Map(),
+  failedImports: [],
 });
 
 const pertinentEventTypes: Array<EventName> = [
