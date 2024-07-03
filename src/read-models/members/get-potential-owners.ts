@@ -118,3 +118,12 @@ export const getPotentialOwners =
         )
       )
     );
+
+type FailedLinking = {
+  memberNumber: number;
+  email: string;
+};
+
+export const getFailedImports = (
+  events: ReadonlyArray<DomainEvent>
+): ReadonlyArray<FailedLinking> => [];
