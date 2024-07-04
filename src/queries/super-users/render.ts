@@ -1,7 +1,7 @@
 import * as O from 'fp-ts/Option';
 import {ViewModel} from './view-model';
 import {pageTemplate} from '../../templates';
-import {SafeString} from 'handlebars';
+import Handlebars, {SafeString} from 'handlebars';
 
 Handlebars.registerPartial(
   'super_users_table',

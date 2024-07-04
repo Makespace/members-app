@@ -1,7 +1,7 @@
 import {ViewModel} from './view-model';
 import {pageTemplate} from '../../templates';
 import * as O from 'fp-ts/Option';
-import {SafeString} from 'handlebars';
+import Handlebars, {SafeString} from 'handlebars';
 
 Handlebars.registerPartial(
   'landing_page_member_details',
