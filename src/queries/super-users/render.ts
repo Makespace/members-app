@@ -15,8 +15,8 @@ Handlebars.registerPartial(
         </tr>
         {{#each superUsers}}
           <tr>
-            <td>{{this.memberNumber}}</td>
-            <td>{{display_date this.since}}</td>
+            <td>{{#member_number this.memberNumber}}</td>
+            <td>{{#display_date this.since}}</td>
             <td>
               <a href="/super-users/revoke?memberNumber={{this.memberNumber}}">
                 Revoke
