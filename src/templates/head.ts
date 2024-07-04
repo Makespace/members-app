@@ -1,6 +1,6 @@
 import Handlebars from 'handlebars';
 
-export const register = () => {
+export const registerHead = () => {
   Handlebars.registerPartial(
     'head',
     `
