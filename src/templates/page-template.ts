@@ -5,11 +5,15 @@ import {registerHead} from './head';
 import {registerNavBar} from './navbar';
 import {registerAvatarHelpers} from './avatar';
 import {registerOptionalDetailHelper} from './detail';
+import {registerMemberNumberHelper} from '../types/member-number';
+import {registerDisplayDateHelper} from '../types/display-date';
 
 registerNavBar();
 registerHead();
 registerAvatarHelpers();
 registerOptionalDetailHelper();
+registerMemberNumberHelper();
+registerDisplayDateHelper();
 
 const PAGE_TEMPLATE = Handlebars.compile(`
     <!doctype html>
