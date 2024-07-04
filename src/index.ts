@@ -22,7 +22,10 @@ import {runForever} from './training-sheets/training-sheets-worker';
 
 // Dependencies and Config
 const conf = loadConfig();
-const dbClient = libsqlClient.createClient({url: conf.EVENT_DB_URL});
+const dbClient = libsqlClient.createClient({
+  url: conf.EVENT_DB_URL,
+  authToken: conf.TURSO_TOKEN,
+});
 const deps = initDependencies(dbClient, conf);
 const routes = initRoutes(deps, conf);
 

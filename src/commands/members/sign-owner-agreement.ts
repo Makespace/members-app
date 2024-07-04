@@ -1,5 +1,3 @@
-/* eslint-disable unused-imports/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';

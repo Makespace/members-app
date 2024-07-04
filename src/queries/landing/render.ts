@@ -26,6 +26,11 @@ Handlebars.registerPartial(
         <a href="/members/create">Link a member number to an e-mail address</a>
       </li>
       <li>
+        <a href="/members/failed-imports"
+          >See member number imports that need fixing</a
+        >
+      </li>
+      <li>
         <a href="/areas/create">Add area of responsibility</a>
       </li>
       <li>

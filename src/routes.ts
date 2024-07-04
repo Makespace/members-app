@@ -47,6 +47,7 @@ export const initRoutes = (
     ...command('super-users', 'revoke', commands.superUser.revoke),
     query('/me', queries.me),
     query('/member/:member', queries.member),
+    query('/members/failed-imports', queries.failedImports),
     query('/members', queries.members),
     ...command('members', 'create', commands.memberNumbers.linkNumberToEmail),
     ...command('members', 'edit-name', commands.members.editName),

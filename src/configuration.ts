@@ -39,6 +39,7 @@ const Config = t.strict({
     t.string,
     'file:/tmp/makespace-member-app.db'
   ),
+  TURSO_TOKEN: t.union([t.undefined, t.string]),
   LOG_LEVEL: withDefaultIfEmpty(LogLevel, 'debug'),
   BACKGROUND_PROCESSING_ENABLED: withDefaultIfEmpty(
     tt.BooleanFromString,
@@ -57,13 +58,16 @@ export const loadConfig = (): Config =>
   pipe(
     process.env,
     Config.decode,
+    E.mapLeft(formatValidationErrors),
+    E.mapLeft(formattedErrors => formattedErrors.join('\n')),
+    E.filterOrElse(
+      conf =>
+        (conf.EVENT_DB_URL.startsWith('libsql') &&
+          conf.TURSO_TOKEN !== undefined) ||
+        !conf.EVENT_DB_URL.startsWith('libsql'),
+      () => 'TURSO_TOKEN is required if EVENT_DB_URL is a libsql url'
+    ),
     E.getOrElseW(errors => {
-      pipe(
-        errors,
-        formatValidationErrors,
-        formattedErrors => formattedErrors.join('\n'),
-        message => process.stderr.write(message)
-      );
-      throw new Error('Failed to parse configuration from ENV');
+      throw new Error(`Failed to parse configuration from ENV:\n${errors}`);
     })
   );
