@@ -14,6 +14,7 @@ import {formatValidationErrors} from 'io-ts-reporters';
 import {SendEmail} from '../commands';
 import {Config} from '../configuration';
 import * as O from 'fp-ts/Option';
+import Handlebars from 'handlebars';
 
 const getActorFrom = (session: unknown, deps: Dependencies) =>
   pipe(
