@@ -76,7 +76,7 @@ Handlebars.registerPartial(
   </tr>
   {{#with equipment}}
     {{#each trainedMembers}}
-      <tr><td>{{member_number this}}</td></tr>
+      <tr><td>{{#member_number this}}</td></tr>
     {{/each}}
   {{/with}}
 </table>
