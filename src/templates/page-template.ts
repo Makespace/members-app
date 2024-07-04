@@ -1,9 +1,11 @@
 import * as O from 'fp-ts/Option';
 import {User, HttpResponse} from '../types';
 import Handlebars, {SafeString} from 'handlebars';
-import {register} from './head';
+import {registerHead} from './head';
+import {registerNavBar} from './navbar';
 
-register();
+registerNavBar();
+registerHead();
 
 const PAGE_TEMPLATE = Handlebars.compile(`
     <!doctype html>
