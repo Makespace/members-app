@@ -3,9 +3,13 @@ import {User, HttpResponse} from '../types';
 import Handlebars, {SafeString} from 'handlebars';
 import {registerHead} from './head';
 import {registerNavBar} from './navbar';
+import {registerAvatarHelpers} from './avatar';
+import {registerOptionalDetailHelper} from './detail';
 
 registerNavBar();
 registerHead();
+registerAvatarHelpers();
+registerOptionalDetailHelper();
 
 const PAGE_TEMPLATE = Handlebars.compile(`
     <!doctype html>
