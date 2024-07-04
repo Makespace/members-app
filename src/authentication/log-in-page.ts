@@ -1,6 +1,6 @@
 import * as O from 'fp-ts/Option';
 import {pageTemplate} from '../templates';
-import Handlebars from 'handlebars';
+import Handlebars, {SafeString} from 'handlebars';
 
 const LOGIN_PAGE_TEMPLATE = Handlebars.compile(
   `
@@ -17,4 +17,4 @@ const LOGIN_PAGE_TEMPLATE = Handlebars.compile(
 export const logInPage = pageTemplate(
   'MakeSpace Members App',
   O.none
-)(LOGIN_PAGE_TEMPLATE);
+)(new SafeString(LOGIN_PAGE_TEMPLATE({})));

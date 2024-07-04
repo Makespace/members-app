@@ -14,7 +14,7 @@ import {formatValidationErrors} from 'io-ts-reporters';
 import {SendEmail} from '../commands';
 import {Config} from '../configuration';
 import * as O from 'fp-ts/Option';
-import Handlebars from 'handlebars';
+import Handlebars, {SafeString} from 'handlebars';
 
 const getActorFrom = (session: unknown, deps: Dependencies) =>
   pipe(
@@ -80,7 +80,12 @@ const emailPost =
         () => {
           res
             .status(200)
-            .send(pageTemplate('Email sent', O.none)(EMAIL_SENT_TEMPLATE));
+            .send(
+              pageTemplate(
+                'Email sent',
+                O.none
+              )(new SafeString(EMAIL_SENT_TEMPLATE({})))
+            );
         }
       )
     )();
