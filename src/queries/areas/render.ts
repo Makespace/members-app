@@ -21,7 +21,7 @@ Handlebars.registerPartial(
             <td><a href="/areas/{{this.id}}">{{this.name}}</a></td>
             <td>
               {{#each owners}}
-                {{member_number this}}
+                {{#member_number this}}
               {{/each}}
             </td>
             <td><a href="/areas/add-owner?area={{this.id}}">Add owner</a></td>
