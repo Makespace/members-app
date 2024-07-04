@@ -9,6 +9,7 @@ primary_region = 'lhr'
 [env]
   PUBLIC_URL = "https://makespace-members-app.fly.dev"
   SMTP_FROM = "it-maintainers@makespace.org"
+  BACKGROUND_PROCESSING_ENABLED = "true"
 
 [http_service]
   internal_port = 8080

@@ -1,5 +1,3 @@
-/* eslint-disable unused-imports/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {pipe} from 'fp-ts/lib/function';
 import {DomainEvent, isEventOfType} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
