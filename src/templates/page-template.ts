@@ -23,8 +23,7 @@ const PAGE_TEMPLATE = Handlebars.compile(`
   `);
 
 export const pageTemplate =
-  (title: string, user: O.Option<User>) =>
-  (body: HandlebarsTemplateDelegate | SafeString) =>
+  (title: string, user: O.Option<User>) => (body: SafeString) =>
     PAGE_TEMPLATE({
       title,
       loggedIn: O.isSome(user),
