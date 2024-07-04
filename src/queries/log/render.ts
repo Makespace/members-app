@@ -5,7 +5,7 @@ import {DomainEvent} from '../../types';
 import {inspect} from 'node:util';
 import {pageTemplate} from '../../templates';
 import * as O from 'fp-ts/Option';
-import {SafeString} from 'handlebars';
+import Handlebars, {SafeString} from 'handlebars';
 
 Handlebars.registerHelper('render_actor', (actor: Actor) => {
   switch (actor.tag) {
