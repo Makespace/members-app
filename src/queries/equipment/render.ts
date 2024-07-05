@@ -8,13 +8,11 @@ Handlebars.registerPartial(
   `
 <h2>Trainers</h2>
 <ul>
-  {{#if trainers}}
-    {{#each trainers}}
-      <li>{{this}}</li>
-    {{/each}}
+  {{#each equipment.trainers}}
+    <li>{{member_number this}}</li>
   {{else}}
     <p>This equipment needs trainers.</p>
-  {{/if}}
+  {{/each}}
 </ul>
 `
 );

@@ -43,7 +43,7 @@ const RENDER_ADD_TRAINER_FORM_TEMPLATE = Handlebars.compile(`
               <input
                 type="hidden"
                 name="equipmentId"
-                value="{{equipmentId}}"
+                value="{{@root.equipmentId}}"
               />
               <button type="submit">Add</button>
             </form>
