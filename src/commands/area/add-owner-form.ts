@@ -53,7 +53,7 @@ Handlebars.registerPartial(
   'render_signed_status',
   `
   {{#if this.agreementSigned}}
-    Signed: {{#display_date this.agreementSigned}}
+    Signed: {{display_date this.agreementSigned}}
   {{else}}
     {{> owner_agreement_invite_button}}
   {{/if}}

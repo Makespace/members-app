@@ -24,7 +24,7 @@ const RENDER_REVOKE_SUPER_USER_TEMPLATE = Handlebars.compile(`
   </p>
   <dl>
     <dt>Member number</dt>
-    <dd>{{#member_number toBeRevoked}}</dd>
+    <dd>{{member_number toBeRevoked}}</dd>
   </dl>
   <form action="#" method="post">
     <input

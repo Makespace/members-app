@@ -34,8 +34,8 @@ const RENDER_LOG_TEMPLATE = Handlebars.compile(`
     {{#each events}}
       <li>
         <b>{{this.type}}</b> by {{render_actor this.actor}} at
-        {{#display_date this.recordedAt}}<br />
-        {{#render_event_payload this}}
+        {{display_date this.recordedAt}}<br />
+        {{render_event_payload this}}
       </li>
     {{/each}}
   </ul>
