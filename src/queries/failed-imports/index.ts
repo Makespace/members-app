@@ -10,10 +10,5 @@ export const failedImports: Query = deps => user =>
     user,
     constructViewModel(deps),
     TE.map(render),
-    TE.map(body =>
-      HttpResponse.mk.Page({
-        title: 'Failed member imports',
-        body,
-      })
-    )
+    TE.map(html => HttpResponse.mk.Page({html}))
   );

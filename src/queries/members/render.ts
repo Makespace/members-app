@@ -1,47 +1,55 @@
-import {pipe} from 'fp-ts/lib/function';
-import {html} from '../../types/html';
-import * as RA from 'fp-ts/ReadonlyArray';
+import {pageTemplate} from '../../templates';
 import {ViewModel} from './view-model';
-import {renderOptionalDetail, renderAvatarThumbnail} from '../../templates';
+import * as O from 'fp-ts/Option';
+import Handlebars, {SafeString} from 'handlebars';
 
-const renderMembers = (viewModel: ViewModel) =>
-  pipe(
-    viewModel.members,
-    RA.map(
-      member => html`
+Handlebars.registerPartial(
+  'render_members',
+  `
+    <table>
+      <thead>
         <tr>
-          <td>${renderAvatarThumbnail(member)}</td>
-          <td>
-            <a href="/member/${member.number}">${member.number}</a>
-          </td>
-          <td>${renderOptionalDetail(member.name)}</td>
-          <td>${renderOptionalDetail(member.pronouns)}</td>
-          <td>${viewModel.viewerIsSuperUser ? member.email : '*****'}</td>
+          <th></th>
+          <th>Member number</th>
+          <th>Name</th>
+          <th>Pronouns</th>
+          <th>Email</th>
         </tr>
-      `
-    ),
-    RA.match(
-      () => html` <p>Currently no members</p> `,
-      rows => html`
-        <table>
-          <thead>
-            <tr>
-              <th></th>
-              <th>Member number</th>
-              <th>Name</th>
-              <th>Pronouns</th>
-              <th>Email</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.join('\n')}
-          </tbody>
-        </table>
-      `
-    )
-  );
+      </thead>
+      <tbody>
+      {{#each members}}
+        <tr>
+          <td>{{avatar_thumbnail this}}</td>
+          <td>
+            {{member_number this.number}}
+          </td>
+          <td>{{optional_detail this.name}}</td>
+          <td>{{optional_detail this.pronouns}}</td>
+          {{#if viewerIsSuperUser}}
+            <td>{{member.email}}</td>
+          {{else}}
+            <td>'*****'</td>
+          {{/if}}
+        </tr>
+      {{/each}}
+      </tbody>
+    </table>
+  `
+);
 
-export const render = (viewModel: ViewModel) => html`
+const RENDER_MEMBERS_TEMPLATE = Handlebars.compile(
+  `
   <h1>Members of Makespace</h1>
-  ${renderMembers(viewModel)}
-`;
+  {{#if members}}
+    {{> render_members}}
+  {{else}}
+    <p>Currently no members</p>
+  {{/if}}
+`
+);
+
+export const render = (viewModel: ViewModel) =>
+  pageTemplate(
+    'Members',
+    O.some(viewModel.user)
+  )(new SafeString(RENDER_MEMBERS_TEMPLATE(viewModel)));

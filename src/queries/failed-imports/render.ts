@@ -1,24 +1,30 @@
-import {pipe} from 'fp-ts/lib/function';
-import {html} from '../../types/html';
 import {ViewModel} from './view-model';
-import * as RA from 'fp-ts/ReadonlyArray';
+import * as O from 'fp-ts/Option';
+import {pageTemplate} from '../../templates';
+import Handlebars, {SafeString} from 'handlebars';
 
-const renderFailedLinkings = (failedImports: ViewModel['failedImports']) =>
-  pipe(
-    failedImports,
-    RA.map(item => html`<li><b>${item.memberNumber}</b> -- ${item.email}</li>`),
-    items => items.join('\n'),
-    joined =>
-      html`<ul>
-        ${joined}
-      </ul>`
-  );
+Handlebars.registerPartial(
+  'failed_imports_list',
+  `
+  <ul>
+    {{#each failedImports}}
+      <li><b>{{member_number this.memberNumber}}</b> -- {{this.email}}</li>
+    {{/each}}
+  </ul>
+  `
+);
 
-export const render = (viewModel: ViewModel) => html`
+const RENDER_FAILED_IMPORTS_TEMPLATE = Handlebars.compile(`
   <h1>Failed member imports</h1>
   <p>
     During import from the legacy database the following members could not be
     imported because the email address is already used by another member.
   </p>
-  ${renderFailedLinkings(viewModel.failedImports)}
-`;
+  {{> failed_imports_list }}
+`);
+
+export const render = (viewModel: ViewModel) =>
+  pageTemplate(
+    'Failed member imports',
+    O.some(viewModel.user)
+  )(new SafeString(RENDER_FAILED_IMPORTS_TEMPLATE(viewModel)));

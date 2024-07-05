@@ -1,43 +1,45 @@
-import {pipe} from 'fp-ts/lib/function';
-import {html} from '../../types/html';
-import * as RA from 'fp-ts/ReadonlyArray';
+import * as O from 'fp-ts/Option';
 import {ViewModel} from './view-model';
+import {pageTemplate} from '../../templates';
+import Handlebars, {SafeString} from 'handlebars';
 
-const renderSuperUsers = (superUsers: ViewModel['superUsers']) =>
-  pipe(
-    superUsers,
-    RA.map(
-      user => html`
+Handlebars.registerPartial(
+  'super_users_table',
+  `
+    {{#if superUsers}}
+      <table>
         <tr>
-          <td>${user.memberNumber}</td>
-          <td>${user.since.toISOString()}</td>
-          <td>
-            <a href="/super-users/revoke?memberNumber=${user.memberNumber}">
-              Revoke
-            </a>
-          </td>
+          <th>Member Number</th>
+          <th>SU since</th>
+          <th></th>
         </tr>
-      `
-    ),
-    RA.match(
-      () => html` <p>Currently no super-users</p> `,
-      rows => html`
-        <table>
+        {{#each superUsers}}
           <tr>
-            <th>Member Number</th>
-            <th>SU since</th>
-            <th></th>
+            <td>{{member_number this.memberNumber}}</td>
+            <td>{{display_date this.since}}</td>
+            <td>
+              <a href="/super-users/revoke?memberNumber={{this.memberNumber}}">
+                Revoke
+              </a>
+            </td>
           </tr>
-          ${rows.join('\n')}
-        </table>
-      `
-    )
-  );
+        {{/each}}
+      </table>
+    {{else}}
+      <p>Currently no super-users</p>
+    {{/if}}
+  `
+);
+
+const SUPER_USERS_TEMPLATE = Handlebars.compile(`
+  <h1>Super-users</h1>
+  <a href="/super-users/declare">Declare a member to be a super-user</a>
+  </table>
+  {{> super_users_table}}
+`);
 
 export const render = (viewModel: ViewModel) =>
-  html`
-      <h1>Super-users</h1>
-      <a href="/super-users/declare">Declare a member to be a super-user</a>
-      </table>
-      ${renderSuperUsers(viewModel.superUsers)}
-    `;
+  pageTemplate(
+    'Super Users',
+    O.some(viewModel.user)
+  )(new SafeString(SUPER_USERS_TEMPLATE(viewModel)));

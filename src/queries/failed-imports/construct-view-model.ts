@@ -22,7 +22,7 @@ export const constructViewModel =
         )()
       ),
       TE.map(events => ({
-        viewerIsSuperUser: readModels.superUsers.is(user.memberNumber)(events),
         failedImports: readModels.members.getFailedImports(events),
+        user,
       }))
     );

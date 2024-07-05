@@ -24,11 +24,10 @@ export const member: Query = deps => (user, params) =>
     E.map(params => params.member),
     TE.fromEither,
     TE.chain(constructViewModel(deps, user)),
-    TE.map(render),
-    TE.map(body =>
+    TE.map(viewModel => render(viewModel, user)),
+    TE.map(html =>
       HttpResponse.mk.Page({
-        title: 'Member',
-        body,
+        html,
       })
     )
   );

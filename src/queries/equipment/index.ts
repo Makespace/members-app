@@ -25,8 +25,7 @@ export const equipment: Query = deps => (user, params) =>
     TE.chain(constructViewModel(deps, user)),
     TE.map(viewModel =>
       HttpResponse.mk.Page({
-        title: viewModel.equipment.name,
-        body: render(viewModel),
+        html: render(viewModel),
       })
     )
   );

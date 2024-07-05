@@ -1,17 +1,23 @@
-import {pipe} from 'fp-ts/lib/function';
-import {html} from '../../types/html';
 import {ViewModel} from './view-model';
+import {pageTemplate} from '../../templates';
+import * as O from 'fp-ts/Option';
+import Handlebars, {SafeString} from 'handlebars';
 
-const renderMemberDetails = (user: ViewModel['user']) => html`
+Handlebars.registerPartial(
+  'landing_page_member_details',
+  `
   <dl>
     <dt>Email</dt>
-    <dd>${user.emailAddress}</dd>
+    <dd>{{user.emailAddress}}</dd>
     <dt>Member Number</dt>
-    <dd>${user.memberNumber}</dd>
+    <dd>{{user.memberNumber}}</dd>
   </dl>
-`;
+`
+);
 
-const superUserNav = html`
+Handlebars.registerPartial(
+  'super_user_nav',
+  `
   <h2>Admin</h2>
   <p>You have super-user privileges. You can:</p>
   <nav>
@@ -35,16 +41,20 @@ const superUserNav = html`
       </li>
     </ul>
   </nav>
-`;
+`
+);
 
+const LANDING_PAGE_TEMPLATE = Handlebars.compile(`
+  <h1>Makespace Member Dashboard</h1>
+  <h2>Your Details</h2>
+  {{> landing_page_member_details}}
+  {{#if isSuperUser}}
+    {{> super_user_nav}}
+  {{/if}}
+  </table>
+`);
 export const render = (viewModel: ViewModel) =>
-  pipe(
-    html`
-      <h1>Makespace Member Dashboard</h1>
-      <h2>Your Details</h2>
-      ${renderMemberDetails(viewModel.user)}
-      ${viewModel.isSuperUser ? superUserNav : ''}
-
-      </table>
-    `
-  );
+  pageTemplate(
+    'Dashboard',
+    O.some(viewModel.user)
+  )(new SafeString(LANDING_PAGE_TEMPLATE(viewModel)));

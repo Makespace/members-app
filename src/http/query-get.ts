@@ -1,5 +1,4 @@
 import * as TE from 'fp-ts/TaskEither';
-import * as O from 'fp-ts/Option';
 import {Dependencies} from '../dependencies';
 import {pipe} from 'fp-ts/lib/function';
 import {Request, Response} from 'express';
@@ -13,7 +12,7 @@ import {logInPath} from '../authentication/auth-routes';
 
 const buildPage =
   (deps: Dependencies, params: Params, query: Query) => (user: User) =>
-    pipe(query(deps)(user, params), TE.map(templatePage(O.some(user))));
+    pipe(query(deps)(user, params), TE.map(templatePage));
 
 export const queryGet =
   (deps: Dependencies, query: Query) => async (req: Request, res: Response) => {
@@ -32,7 +31,7 @@ export const queryGet =
             : res.status(failure.status).send(oopsPage(failure.message));
         },
         HttpResponse.match({
-          Page: ({body}) => res.status(200).send(body),
+          Page: ({html}) => res.status(200).send(html),
           Redirect: ({url}) => res.redirect(url),
         })
       )

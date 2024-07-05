@@ -1,6 +1,6 @@
-import {html} from '../../types/html';
-
-export const ownerAgreement = html`
+Handlebars.registerPartial(
+  'owner_agreement',
+  `
 <p>Owners are positioned such that they can make decisions about how their area operates and evolves, and are a key part of driving and expanding capabilities at Makespace.</p>
 
 <p>
@@ -32,4 +32,5 @@ Owner Teams:
 
 <p>The intent is that members benefit from enthusiastic, experienced and proactive Owners.</p>
 <p>By signing this agreement you are agreeing to be an Owner with the responsibilities and authorities stated above for this Owner Team.</p>
-`;
+`
+);
