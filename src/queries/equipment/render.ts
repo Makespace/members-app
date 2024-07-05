@@ -1,121 +1,140 @@
-import {pipe} from 'fp-ts/lib/function';
-import {html} from '../../types/html';
-import {QuizResultViewModel, ViewModel} from './view-model';
-import * as RA from 'fp-ts/ReadonlyArray';
+import {pageTemplate} from '../../templates';
+import {ViewModel} from './view-model';
+import * as O from 'fp-ts/Option';
+import Handlebars, {SafeString} from 'handlebars';
 
-const renderTrainers = (trainers: ViewModel['equipment']['trainers']) =>
-  pipe(
-    trainers,
-    RA.map(trainer => html`<li>${trainer}</li>`),
-    RA.match(
-      () => html`<p>This equipment needs trainers.</p>`,
-      items =>
-        html`<h2>Trainers</h2>
-          <ul>
-            ${items.join('\n')}
-          </ul>`
-    )
-  );
+Handlebars.registerPartial(
+  'trainers_list',
+  `
+<h2>Trainers</h2>
+<ul>
+  {{#each equipment.trainers}}
+    <li>{{member_number this}}</li>
+  {{else}}
+    <p>This equipment needs trainers.</p>
+  {{/each}}
+</ul>
+`
+);
 
-const renderEquipmentTrainerActions = (viewModel: ViewModel) => html`
-  <li>
-    <a
-      href="/equipment/mark-member-trained?equipmentId=${viewModel.equipment
-        .id}"
-      >Mark member as trained</a
-    >
-  </li>
-`;
+Handlebars.registerPartial(
+  'trainer_equipment_actions',
+  `
+{{#with equipment}}
+<li>
+  <a
+    href="/equipment/mark-member-trained?equipmentId={{id}}"
+    >Mark member as trained</a
+  >
+</li>
+{{/with}}
+`
+);
 
-const renderOwnerEquipmentActions = (viewModel: ViewModel) => html`
-  <li>
-    <a href="/equipment/add-trainer?equipment=${viewModel.equipment.id}"
-      >Add a trainer</a
-    >
-  </li>
-  <li>
-    <a
-      href="/equipment/add-training-sheet?equipmentId=${viewModel.equipment.id}"
-      >Register training sheet</a
-    >
-  </li>
-`;
+Handlebars.registerPartial(
+  'owner_equipment_actions',
+  `
+{{#with equipment}}
+<li>
+  <a href="/equipment/add-trainer?equipment={{id}}"
+    >Add a trainer</a
+  >
+</li>
+<li>
+  <a
+    href="/equipment/add-training-sheet?equipmentId={{id}}"
+    >Register training sheet</a
+  >
+</li>
+{{/with}}
+`
+);
 
-const renderEquipmentActions = (viewModel: ViewModel) => html`
-  <ul>
-    ${viewModel.isSuperUserOrOwnerOfArea
-      ? renderOwnerEquipmentActions(viewModel)
-      : ''}
-    ${viewModel.isSuperUserOrTrainerOfArea
-      ? renderEquipmentTrainerActions(viewModel)
-      : ''}
-  </ul>
-`;
+Handlebars.registerPartial(
+  'equipment_actions',
+  `
+<ul>
+{{#if isSuperUserOrOwnerOfArea}}
+  {{> owner_equipment_actions }}
+{{/if}}
+{{#if isSuperUserOrTrainerOfArea}}
+  {{> trainer_equipment_actions }}
+{{/if}}
+</ul>
+`
+);
 
-export const render = (viewModel: ViewModel) => html`
-  <h1>${viewModel.equipment.name}</h1>
-  ${renderEquipmentActions(viewModel)}
-  ${renderTrainers(viewModel.equipment.trainers)}
-  ${renderCurrentlyTrainedUsersTable(viewModel)}
-  ${renderTrainingQuizResults(viewModel)}
-`;
+Handlebars.registerPartial(
+  'currently_trained_users_table',
+  `
+<h2>Currently Trained Users</h2>
+<table>
+  <tr>
+    <th>Member Number</th>
+  </tr>
+  {{#with equipment}}
+    {{#each trainedMembers}}
+      <tr><td>{{member_number this}}</td></tr>
+    {{/each}}
+  {{/with}}
+</table>
+`
+);
 
 // TODO
 // 1. Realistically people only care about training quiz results for people who have passed the quiz and aren't already signed off.
 // 2. Dates aren't displayed using the users locale.
-
-const renderTrainingQuizResultsTable = (
-  trainingQuizResults: ReadonlyArray<QuizResultViewModel>
-) => html`
-  <table>
-    <tr>
-      <th>Timestamp</th>
-      <th>Email</th>
-      <th>Score</th>
+Handlebars.registerPartial(
+  'training_quiz_results_table',
+  `
+<table>
+  <tr>
+    <th>Timestamp</th>
+    <th>Email</th>
+    <th>Score</th>
+  </tr>
+  {{#each results}}
+    {{#if this.passed}}
+      <tr class=passed_training_quiz_row>
+    {{else}}
+      <tr class=failed_training_quiz_row>
+    {{/if}}
+      <td>{{display_date this.timestamp}}</td>
+      <td>{{this.email}}</td>
+      <td>
+        {{this.score}} / {{this.maxScore}} ({{this.percentage}}%)
+      </td>
     </tr>
+  {{/each}}
+</table>
+`
+);
 
-    ${pipe(
-      trainingQuizResults,
-      RA.map(
-        result =>
-          html`<tr
-            class=${result.passed
-              ? 'passed_training_quiz_row'
-              : 'failed_training_quiz_row'}
-          >
-            <td>${result.timestamp.toFormat('yyyy-mm-dd HH:mm') ?? ''}</td>
-            <td>${result.email}</td>
-            <td>
-              ${result.score} / ${result.maxScore} (${result.percentage}%)
-            </td>
-          </tr>`
-      )
-    ).join('\n')}
-  </table>
-`;
+Handlebars.registerPartial(
+  'training_quiz_results',
+  `
+<h2>Training Quiz Results</h2>
+<h3>Passed</h3>
+{{#with trainingQuizResults}}
+  {{> training_quiz_results_table results=passed }}
+<h3>All Results</h3>
+  {{> training_quiz_results_table results=all }}
+{{/with}}
+`
+);
 
-const renderTrainingQuizResults = (viewModel: ViewModel) => html`
-  <h2>Training Quiz Results</h2>
-  <h3>Passed</h3>
-  ${renderTrainingQuizResultsTable(viewModel.trainingQuizResults.passed)}
-  <h3>All Results</h3>
-  ${renderTrainingQuizResultsTable(viewModel.trainingQuizResults.all)}
-`;
+const RENDER_EQUIPMENT_TEMPLATE = Handlebars.compile(
+  `
+  <h1>{{equipment_name}}</h1>
+  {{> equipment_actions }}
+  {{> trainers_list }}
+  {{> currently_trained_users_table }}
+  {{> training_quiz_results }}
+  `
+);
 
-const renderCurrentlyTrainedUsersTable = (viewModel: ViewModel) => html`
-  <h2>Currently Trained Users</h2>
-  <table>
-    <tr>
-      <th>Member Number</th>
-    </tr>
-    ${pipe(
-      viewModel.equipment.trainedMembers,
-      RA.map(
-        trainedMember =>
-          html`<tr>
-            <td>${trainedMember}</td>
-          </tr>`
-      )
-    ).join('\n')}
-  </table>
-`;
+export const render = (viewModel: ViewModel) =>
+  pageTemplate(
+    viewModel.equipment.name,
+    O.some(viewModel.user)
+  )(new SafeString(RENDER_EQUIPMENT_TEMPLATE(viewModel)));

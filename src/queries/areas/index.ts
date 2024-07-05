@@ -10,5 +10,5 @@ export const areas: Query = deps => user =>
     user,
     constructViewModel(deps),
     TE.map(render),
-    TE.map(body => HttpResponse.mk.Page({title: 'Areas', body}))
+    TE.map(html => HttpResponse.mk.Page({html}))
   );

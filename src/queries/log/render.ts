@@ -1,12 +1,13 @@
 import {pipe} from 'fp-ts/lib/function';
-import * as RA from 'fp-ts/ReadonlyArray';
-import {html} from '../../types/html';
 import {ViewModel} from './view-model';
 import {Actor} from '../../types/actor';
 import {DomainEvent} from '../../types';
 import {inspect} from 'node:util';
+import {pageTemplate} from '../../templates';
+import * as O from 'fp-ts/Option';
+import Handlebars, {SafeString} from 'handlebars';
 
-const renderActor = (actor: Actor) => {
+Handlebars.registerHelper('render_actor', (actor: Actor) => {
   switch (actor.tag) {
     case 'system':
       return 'System';
@@ -15,37 +16,33 @@ const renderActor = (actor: Actor) => {
     case 'user':
       return actor.user.emailAddress;
   }
-};
+});
 
-const renderPayload = (event: DomainEvent) =>
-  // eslint-disable-next-line unused-imports/no-unused-vars
+Handlebars.registerHelper('render_event_payload', (event: DomainEvent) =>
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, unused-imports/no-unused-vars
   pipe(event, ({type, actor, recordedAt, ...payload}) => {
     return Object.entries(payload)
       .map(([key, value]) => `${key}: ${inspect(value)}`)
       .join(', ');
-  });
+  })
+);
 
-const renderEntry = (event: ViewModel['events'][number]) => html`
-  <li>
-    <b>${event.type}</b> by ${renderActor(event.actor)} at
-    ${event.recordedAt.toLocaleString()}<br />
-    ${renderPayload(event)}
-  </li>
-`;
-
-const renderLog = (log: ViewModel['events']) =>
-  pipe(
-    log,
-    RA.map(renderEntry),
-    items => html`
-      <ul>
-        ${items.join('\n')}
-      </ul>
-    `
-  );
-
-export const render = (viewModel: ViewModel) => html`
+const RENDER_LOG_TEMPLATE = Handlebars.compile(`
   <h1>Event log</h1>
   <p>Most recent at top</p>
-  ${renderLog(viewModel.events)}
-`;
+  <ul>
+    {{#each events}}
+      <li>
+        <b>{{this.type}}</b> by {{render_actor this.actor}} at
+        {{display_date this.recordedAt}}<br />
+        {{render_event_payload this}}
+      </li>
+    {{/each}}
+  </ul>
+`);
+
+export const render = (viewModel: ViewModel) =>
+  pageTemplate(
+    'Event Log',
+    O.some(viewModel.user)
+  )(new SafeString(RENDER_LOG_TEMPLATE(viewModel)));

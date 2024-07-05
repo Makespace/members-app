@@ -1,16 +1,15 @@
-import {pipe} from 'fp-ts/lib/function';
-import {html} from '../types/html';
-import {pageTemplateNoNav} from '.';
+import Handlebars, {SafeString} from 'handlebars';
 
-export const oopsPage = (message: string) =>
-  pipe(
-    html`
-      <h1>Sorry, we have encountered a problem</h1>
-      <p>${message}</p>
-      <p>
-        Please try again. If the problem persists please reach out in the google
-        group.
-      </p>
-    `,
-    pageTemplateNoNav('MakeSpace Members App')
-  );
+const OOPS_PAGE_TEMPLATE = Handlebars.compile(
+  `
+  <h1>Sorry, we have encountered a problem</h1>
+  <p>{{message}}</p>
+  <p>
+    Please try again. If the problem persists please reach out in the google
+    group.
+  </p>
+  `
+);
+
+export const oopsPage = (message: string | SafeString) =>
+  OOPS_PAGE_TEMPLATE({message});

@@ -104,3 +104,27 @@ Set `ADMIN_API_BEARER_TOKEN` and `PUBLIC_URL` to match the instance you want to 
 ```sh
 cat /tmp/members.csv | sed 's/,"/ /' | sed 's/"//' | xargs -n 2 ./scripts/import-member.sh
 ```
+
+## Training Sheet IDS
+Verified
+'Metal Lathe': '1Yu8TeG9RTqSEu3dxL5wj8uXfeP3xbIgxQZ1ZB9kyFUE',
+
+Not verified
+'3D_Printer': '1jqzbGuf5m2_cTO3VQv4W5lTurNUeBt0SUMEIPMmhWi0',
+'Markforged_Mark_2': '15Ed7mkMud74UV0bNu2jKB8W1MrH_8pUeNIGdrtZqCoo',
+'Domino_Joiner': '1tWznV2GQls1a6sopw_lm7Iy58kM3kOCVtG2VDKL6SD4',
+'CNC_Router': '1af3nNXVXjYMTuH6F9vAg2CKRIewU3M8-nhUjiRIf8Q0',
+'Band_Saw': '11S81Gb-QyFNaI_-RH3Xcrwqtyfd47z7l-lXUAB9SzEY',
+'Mitre Saw': '1e9Vgxuh7k01QNrrxGiF6jGUkbFcRK8S2if1FINbCWwY',
+'Tormek': '1_40_3xSjgDgLBiccQ7N2KNQvPIo51oPOYkvHo3aF3mY',
+'Laser_Cutter': '1481VwMyXeqZDZBkgxn8O-R0oM4mt4mbkN2wzmSNvvBs',
+'Wood_Lathe': '1fyEWGyGOYTvMmlMdl58nErFDjubVQBXNRsmQb1td3_c',
+'Plunge_Saw': '1fGw4IdAJoGOGZ3hsOo_wEQB0KIQA1PRFDW6XfgY-xmQ',
+'CNC_Model_Mill': '1pIhiQY9B1J_kB6azrACeSed1XdGyHPt8z_TLcD-EEQs',
+'Plunge_Router': '1G0mvZTuVrvL7GR92wbr15YtRdsDR1IpZFta8AtIJL5I',
+'Festool OF1010 Router': '16CvHlJlUt2bOkITgnFd2gwbLN0weTV1u7CuOb2bhyxk',
+'Embroidery Machine': '1Krto0mc2clINQJrM8ZJJh0P5hISjt1C3vnK2xQaBATM',
+'Planer Thicknesser': '1TVuM9GtSyE8Cq3_p3R3GZOmZE47Au-gSM1B9vXl2JOA',
+'Woodworking Handtools': '1CD_Va0th0dJmOSCjVGVCimrzkN7gKGjmMhifv7S9hY0',
+'Metal_Mill': '1yulN3ewYS2XpT22joP5HteZ9H9qebvSEcFXQhxPwXlk',
+'Form 3 Resin Printer': '1rnG8qvYXL5CucsS7swr9ajGYvHndBG1TKIbyG3KioHc'

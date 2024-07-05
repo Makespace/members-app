@@ -1,9 +1,33 @@
-import {pipe} from 'fp-ts/lib/function';
+import Handlebars from 'handlebars';
 import * as O from 'fp-ts/Option';
-import {html} from '../types/html';
 
-export const renderOptionalDetail = (o: O.Option<string>) =>
-  pipe(
-    o,
-    O.getOrElse(() => html`—`)
-  );
+export const registerOptionalDetailHelper = () => {
+  Handlebars.registerHelper('optional_detail', (data: unknown) => {
+    if (data !== null) {
+      switch (typeof data) {
+        case 'string':
+        case 'bigint':
+        case 'boolean':
+          return data;
+        case 'number':
+          if (!isNaN(data)) {
+            return data;
+          }
+          break;
+        case 'symbol':
+        case 'undefined':
+        case 'function':
+          break;
+        case 'object':
+          // Assume its an optional.
+          if (
+            'value' in data &&
+            O.isSome(data as unknown as O.Option<unknown>)
+          ) {
+            return data.value;
+          }
+      }
+    }
+    return '—';
+  });
+};
