@@ -107,9 +107,12 @@ cat /tmp/members.csv | sed 's/,"/ /' | sed 's/"//' | xargs -n 2 ./scripts/import
 
 ## Training Sheet IDS
 Verified
+```
 'Metal Lathe': '1Yu8TeG9RTqSEu3dxL5wj8uXfeP3xbIgxQZ1ZB9kyFUE',
+```
 
 Not verified
+```
 '3D_Printer': '1jqzbGuf5m2_cTO3VQv4W5lTurNUeBt0SUMEIPMmhWi0',
 'Markforged_Mark_2': '15Ed7mkMud74UV0bNu2jKB8W1MrH_8pUeNIGdrtZqCoo',
 'Domino_Joiner': '1tWznV2GQls1a6sopw_lm7Iy58kM3kOCVtG2VDKL6SD4',
@@ -128,3 +131,4 @@ Not verified
 'Woodworking Handtools': '1CD_Va0th0dJmOSCjVGVCimrzkN7gKGjmMhifv7S9hY0',
 'Metal_Mill': '1yulN3ewYS2XpT22joP5HteZ9H9qebvSEcFXQhxPwXlk',
 'Form 3 Resin Printer': '1rnG8qvYXL5CucsS7swr9ajGYvHndBG1TKIbyG3KioHc'
+```
