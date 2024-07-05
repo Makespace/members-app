@@ -18,13 +18,13 @@ type ViewModel = {
 
 const RENDER_EDIT_PRONOUNS_TEMPLATE = Handlebars.compile(`
   <h1>Edit pronouns</h1>
-  <form action="?next=/member/{{viewModel.user.memberNumber}}" method="post">
+  <form action="?next=/member/{{user.memberNumber}}" method="post">
     <label for="name">New pronouns</label>
     <input type="text" name="pronouns" id="pronouns" />
     <input
       type="hidden"
       name="memberNumber"
-      value="{{viewModel.memberNumber}}"
+      value="{{memberNumber}}"
     />
     <button type="submit">Confirm</button>
   </form>

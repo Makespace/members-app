@@ -24,7 +24,7 @@ const RENDER_EDIT_NAME_FORM_TEMPLATE = Handlebars.compile(`
     <input
       type="hidden"
       name="memberNumber"
-      value="{{viewModel.memberNumber}}"
+      value="{{memberNumber}}"
     />
     <button type="submit">Confirm</button>
   </form>

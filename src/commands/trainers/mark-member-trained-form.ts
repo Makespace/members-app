@@ -26,7 +26,7 @@ const RENDER_MARK_MEMBER_TRAINED_TEMPLATE = Handlebars.compile(
       <input
         type="hidden"
         name="equipmentId"
-        value="{{viewModel.equipmentId}}"
+        value="{{equipmentId}}"
       />
       <button type="submit">Confirm</button>
     </form>
