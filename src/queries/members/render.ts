@@ -21,7 +21,7 @@ Handlebars.registerPartial(
         <tr>
           <td>{{avatar_thumbnail this}}</td>
           <td>
-            {{#member_number this.number}}
+            {{member_number this.number}}
           </td>
           <td>{{optional_detail this.name}}</td>
           <td>{{optional_detail this.pronouns}}</td>

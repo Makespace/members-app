@@ -17,7 +17,7 @@ const RENDER_TEMPLATE = Handlebars.compile(
     <tbody>
       <tr>
         <th scope="row">Member number</th>
-        <td> {{#member_number member.number}}</td>
+        <td> {{member_number member.number}}</td>
       </tr>
       <tr>
         <th scope="row">Email</th>
