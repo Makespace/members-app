@@ -6,9 +6,7 @@ export type RegEvent = EventOfType<'EquipmentTrainingSheetRegistered'>;
 
 export const QzEventDuplicate: Eq<QzEvent> = {
   equals: (a: QzEvent, b: QzEvent) =>
-    a.email === b.email &&
+    a.quizAnswers === b.quizAnswers &&
     a.timestampEpochS === b.timestampEpochS &&
-    a.score === b.score &&
-    a.equipmentId === b.equipmentId &&
     a.trainingSheetId === b.trainingSheetId,
 };

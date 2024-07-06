@@ -64,7 +64,7 @@ export const DomainEvent = t.union([
     equipmentId: tt.UUID,
     trainingSheetId: t.string,
     memberNumberProvided: t.number,
-    emailProvided: t.string,
+    emailProvided: t.union([t.string, t.null]),
     score: t.number,
     id: tt.UUID,
     maxScore: t.number,
