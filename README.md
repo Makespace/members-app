@@ -130,5 +130,6 @@ Not verified
 'Planer Thicknesser': '1TVuM9GtSyE8Cq3_p3R3GZOmZE47Au-gSM1B9vXl2JOA',
 'Woodworking Handtools': '1CD_Va0th0dJmOSCjVGVCimrzkN7gKGjmMhifv7S9hY0',
 'Metal_Mill': '1yulN3ewYS2XpT22joP5HteZ9H9qebvSEcFXQhxPwXlk',
-'Form 3 Resin Printer': '1rnG8qvYXL5CucsS7swr9ajGYvHndBG1TKIbyG3KioHc'
+'Form 3 Resin Printer': '1rnG8qvYXL5CucsS7swr9ajGYvHndBG1TKIbyG3KioHc',
+'Bambu': '1i1vJmCO8_Dkpbv-izOSkffoAeJTNrJsmAV5hD0w2ADw'
 ```
