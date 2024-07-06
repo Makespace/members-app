@@ -27,7 +27,7 @@ const insertEventRow = `
     );
   `;
 
-const performTransaction = async (
+const insertEventWithOptimisticConcurrencyControl = async (
   event: DomainEvent,
   resource: Resource,
   lastKnownVersion: ResourceVersion,
@@ -54,7 +54,13 @@ export const commitEvent =
   ): TE.TaskEither<FailureWithStatus, {status: number; message: string}> => {
     return pipe(
       TE.tryCatch(
-        () => performTransaction(event, resource, lastKnownVersion, dbClient),
+        () =>
+          insertEventWithOptimisticConcurrencyControl(
+            event,
+            resource,
+            lastKnownVersion,
+            dbClient
+          ),
         failureWithStatus(
           'Failed to commit event',
           StatusCodes.INTERNAL_SERVER_ERROR
