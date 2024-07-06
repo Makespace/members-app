@@ -11,24 +11,8 @@ import {
 import {QuizResultViewModel, ViewModel} from './view-model';
 import {User} from '../../types';
 import {StatusCodes} from 'http-status-codes';
-import {DomainEvent, EventOfType} from '../../types/domain-event';
-import {DateTime} from 'luxon';
+import {DomainEvent} from '../../types/domain-event';
 import {Equipment} from '../../read-models/equipment/get';
-
-const constructQuizResultViewModel = (
-  event: EventOfType<'EquipmentTrainingQuizResult'>
-): QuizResultViewModel => {
-  return {
-    id: event.id,
-    score: event.score,
-    maxScore: event.maxScore,
-    percentage: event.percentage,
-    passed: event.fullMarks,
-    timestamp: DateTime.fromSeconds(event.timestampEpochS),
-
-    email: event.email,
-  };
-};
 
 const getEquipment = (
   events: ReadonlyArray<DomainEvent>,
@@ -55,21 +39,15 @@ const getQuizResults = (
   // Get quiz results for member + email where it matches.
   // Get quiz results that don't match.
   // Allow dismissing a quiz result.
-  
 
   const quizResultEvents = readModels.equipment.getTrainingQuizResults(events)(
     equipment.id
   );
   const members = readModels.members.getAllDetails(events);
 
+  const member_training_events = {};
 
-  let member_training_events = {
-
-  }
-
-  let per_s
-
-
+  let per_s;
 };
 pipe(
   readModels.equipment.getTrainingQuizResults(events)(equipmentId, O.none),
