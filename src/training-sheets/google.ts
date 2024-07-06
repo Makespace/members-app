@@ -110,48 +110,68 @@ const extractTimestamp = (
 
 const EMAIL_COLUMN_NAMES = ['email address', 'email'];
 
+type SheetInfo = {
+  columnIndexes: {
+    timestamp: number;
+    email: number;
+    score: number;
+    memberNumber: number;
+  };
+  columnNames: string[];
+};
+
 const extractQuizSheetInformation = (
   logger: Logger,
-  sheetData: sheets_v4.Schema$GridData
-) => {
-  const columnNames = extractRowFormattedValues(sheetData.rowData[0]);
+  firstRow: sheets_v4.Schema$RowData
+): O.Option<SheetInfo> => {
+  const columnNames = extractRowFormattedValues(firstRow);
   if (O.isNone(columnNames)) {
     logger.debug('Failed to find column names');
     return O.none;
   }
   logger.trace('Found column names for sheet %o', columnNames.value);
 
-  return {
-    timestamp: columnNames.value.findIndex(
-      val => val.toLowerCase() === 'timestamp'
-    ),
-    email: columnNames.value.findIndex(val =>
-      EMAIL_COLUMN_NAMES.includes(val.toLowerCase())
-    ),
-    score: columnNames.value.findIndex(val => val.toLowerCase() === 'score'),
-    memberNumber: columnNames.value.findIndex(
-      val => val.toLowerCase() === 'membership number'
-    ),
-  };
+  return O.some({
+    columnIndexes: {
+      timestamp: columnNames.value.findIndex(
+        val => val.toLowerCase() === 'timestamp'
+      ),
+      email: columnNames.value.findIndex(val =>
+        EMAIL_COLUMN_NAMES.includes(val.toLowerCase())
+      ),
+      score: columnNames.value.findIndex(val => val.toLowerCase() === 'score'),
+      memberNumber: columnNames.value.findIndex(
+        val => val.toLowerCase() === 'membership number'
+      ),
+    },
+    columnNames: columnNames.value,
+  });
 };
 
 const extractFromRow =
-  (logger: Logger, sheetInfo: ReturnType<typeof extractQuizSheetInformation>) =>
+  (
+    logger: Logger,
+    sheetInfo: SheetInfo,
+    equipmentId: UUID,
+    trainingSheetId: string
+  ) =>
   (row: sheets_v4.Schema$RowData): O.Option<QzEvent> => {
     if (!row.values) {
       return O.none;
     }
 
     const email =
-      columnIndexes.email >= 0
-        ? extractEmail(row.values[columnIndexes.email].formattedValue)
+      sheetInfo.columnIndexes.email >= 0
+        ? extractEmail(row.values[sheetInfo.columnIndexes.email].formattedValue)
         : O.none;
     const memberNumber = extractMemberNumber(
-      row.values[columnIndexes.memberNumber].formattedValue
+      row.values[sheetInfo.columnIndexes.memberNumber].formattedValue
     );
-    const score = extractScore(row.values[columnIndexes.score].formattedValue);
+    const score = extractScore(
+      row.values[sheetInfo.columnIndexes.score].formattedValue
+    );
     const timestampEpochS = extractTimestamp(
-      row.values[columnIndexes.timestamp].formattedValue
+      row.values[sheetInfo.columnIndexes.timestamp].formattedValue
     );
 
     if (O.isNone(email) && O.isNone(memberNumber)) {
@@ -173,7 +193,7 @@ const extractFromRow =
       return O.none;
     }
 
-    const quizAnswers = RA.zip(columnNames.value, row.values).reduce(
+    const quizAnswers = RA.zip(sheetInfo.columnNames, row.values).reduce(
       (accum, [columnName, columnValue]) => {
         accum[columnName] = columnValue.formattedValue ?? null;
         return accum;
@@ -185,8 +205,11 @@ const extractFromRow =
       constructEvent('EquipmentTrainingQuizResult')({
         id: v4() as UUID,
         equipmentId,
-        emailProvided: email.value,
-        memberNumberProvided: trainingSheetId,
+        memberNumberProvided: O.isSome(memberNumber)
+          ? memberNumber.value
+          : null,
+        emailProvided: O.isSome(email) ? email.value : null,
+        trainingSheetId,
         timestampEpochS: timestampEpochS.value,
         ...score.value,
         quizAnswers: quizAnswers,
@@ -210,8 +233,18 @@ export const extractGoogleSheetData =
     if (!sheet.data || sheet.data.length < 1) {
       return O.none;
     }
+
     const sheetData = sheet.data[0];
     if (!sheetData.rowData || sheetData.rowData.length < 1) {
+      return O.none;
+    }
+
+    const sheetInfo = extractQuizSheetInformation(logger, sheetData.rowData[0]);
+
+    if (O.isNone(sheetInfo)) {
+      logger.warn(
+        `Failed to extract sheet info '${trainingSheetId}' for equipment '${equipmentId}'`
+      );
       return O.none;
     }
 
@@ -219,7 +252,7 @@ export const extractGoogleSheetData =
       pipe(
         sheetData.rowData.slice(1),
         RA.map(
-          extractFromRow(logger, extractQuizSheetInformation(logger, sheetData))
+          extractFromRow(logger, sheetInfo.value, equipmentId, trainingSheetId)
         ),
         RA.filterMap(e => e)
       )
