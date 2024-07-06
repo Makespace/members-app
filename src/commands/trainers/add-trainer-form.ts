@@ -29,7 +29,7 @@ const RENDER_ADD_TRAINER_FORM_TEMPLATE = Handlebars.compile(`
       <tr>
         <th>E-Mail</th>
         <th>Member Number</th>
-        <th></th>
+        <th>Action</th>
       </tr>
     </thead>
     <tbody>
