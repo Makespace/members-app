@@ -13,7 +13,7 @@ import {createTerminus} from '@godaddy/terminus';
 import http from 'http';
 import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
-import {ensureEventTableExists} from './init-dependencies/event-store/ensure-event-table-exists';
+import {ensureEventTableExists} from './init-dependencies/event-store/ensure-events-table-exists';
 import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
 import cookieSession from 'cookie-session';

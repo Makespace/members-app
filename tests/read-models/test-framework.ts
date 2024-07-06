@@ -4,19 +4,18 @@ import {
   getAllEvents,
   getAllEventsByType,
 } from '../../src/init-dependencies/event-store/get-all-events';
-import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-event-table-exists';
+import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
 import {DomainEvent} from '../../src/types';
 import {pipe} from 'fp-ts/lib/function';
 import {commands, Command} from '../../src/commands';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
-import {persistOrNoOp} from '../../src/commands/persist-or-no-op';
 import {arbitraryActor, getRightOrFail} from '../helpers';
 import * as libsqlClient from '@libsql/client';
 import {randomUUID} from 'crypto';
-import {Resource} from '../../src/types/resource';
 import {getResourceEvents} from '../../src/init-dependencies/event-store/get-resource-events';
 import {EventName, EventOfType} from '../../src/types/domain-event';
 import {Dependencies} from '../../src/dependencies';
+import {applyToResource} from '../../src/commands/apply-command-to-resource';
 
 type ToFrameworkCommands<T> = {
   [K in keyof T]: {
@@ -56,23 +55,18 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     pipe(getAllEvents(dbClient)(), T.map(getRightOrFail))();
   const frameworkGetAllEventsByType = <EN extends EventName>(eventType: EN) =>
     pipe(getAllEventsByType(dbClient)(eventType), T.map(getRightOrFail))();
-  const frameworkGetResourceEvents = (resource: Resource) =>
-    pipe(getResourceEvents(dbClient)(resource), T.map(getRightOrFail))();
 
   const frameworkify =
     <T>(command: Command<T>) =>
     async (commandPayload: T) => {
-      const resource = command.resource(commandPayload);
-      const {events, version} = await frameworkGetResourceEvents(resource);
       await pipe(
-        command.process({
-          command: {
-            ...commandPayload,
-            actor: arbitraryActor(),
+        applyToResource(
+          {
+            commitEvent: frameworkCommitEvent,
+            getResourceEvents: getResourceEvents(dbClient),
           },
-          events,
-        }),
-        persistOrNoOp(frameworkCommitEvent, resource, version)
+          command
+        )(commandPayload, arbitraryActor())
       )();
     };
 

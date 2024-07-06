@@ -64,7 +64,7 @@ export const DomainEvent = t.union([
     equipmentId: tt.UUID,
     trainingSheetId: t.string,
     memberNumberProvided: t.union([t.number, t.null]),
-    emailProvided: t.union([t.string, t.null]),
+    emailProvided: t.union([t.string, t.null]), // Note this is a free-form text entry without validation so it might not be a valid email hence no use of EmailAddressCodec.
     score: t.number,
     id: tt.UUID,
     maxScore: t.number,
@@ -86,6 +86,10 @@ export const DomainEvent = t.union([
     equipmentId: tt.UUID,
     memberNumber: t.number,
     trainedByMemberNumber: t.union([t.number, t.null]), // Null to indicate system.
+  }),
+  eventCodec('MemberEmailChanged', {
+    memberNumber: t.number,
+    newEmail: EmailAddressCodec,
   }),
 ]);
 

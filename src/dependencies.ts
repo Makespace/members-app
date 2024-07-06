@@ -1,5 +1,5 @@
 import {Logger} from 'pino';
-import {Failure, Email, DomainEvent} from './types';
+import {Failure, Email, DomainEvent, ResourceVersion} from './types';
 import * as TE from 'fp-ts/TaskEither';
 import {FailureWithStatus} from './types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
@@ -11,7 +11,7 @@ import {sheets_v4} from 'googleapis';
 export type Dependencies = {
   commitEvent: (
     resource: Resource,
-    lastKnownVersion: number
+    lastKnownVersion: ResourceVersion
   ) => (
     event: DomainEvent
   ) => TE.TaskEither<
@@ -29,7 +29,7 @@ export type Dependencies = {
     FailureWithStatus,
     {
       events: ReadonlyArray<DomainEvent>;
-      version: number;
+      version: ResourceVersion;
     }
   >;
   logger: Logger;

@@ -6,8 +6,11 @@ import * as T from 'fp-ts/Task';
 import {DomainEvent, EmailAddress, constructEvent} from '../../../src/types';
 import {getAllEvents} from '../../../src/init-dependencies/event-store/get-all-events';
 import {pipe} from 'fp-ts/lib/function';
-import {commitEvent} from '../../../src/init-dependencies/event-store/commit-event';
-import {ensureEventTableExists} from '../../../src/init-dependencies/event-store/ensure-event-table-exists';
+import {
+  commitEvent,
+  initialVersionNumber,
+} from '../../../src/init-dependencies/event-store/commit-event';
+import {ensureEventTableExists} from '../../../src/init-dependencies/event-store/ensure-events-table-exists';
 import {getRightOrFail} from '../../helpers';
 import {Dependencies} from '../../../src/dependencies';
 import {getResourceEvents} from '../../../src/init-dependencies/event-store/get-resource-events';
@@ -26,7 +29,6 @@ describe('event-store end-to-end', () => {
   describe('setup event store', () => {
     const resource = {id: 'singleton', type: 'MemberNumberEmailPairings'};
     const event = arbitraryMemberNumberLinkedToEmailEvent();
-    const initialVersion = faker.number.int();
     let dbClient: libsqlClient.Client;
     let getTestEvents: () => Promise<ReadonlyArray<DomainEvent>>;
     let resourceEvents: RightOfTaskEither<
@@ -57,7 +59,7 @@ describe('event-store end-to-end', () => {
 
     describe('committing when then resource does not exist', () => {
       beforeEach(async () => {
-        await commitEvent(dbClient, testLogger)(resource, initialVersion)(
+        await commitEvent(dbClient, testLogger)(resource, 'no-such-resource')(
           event
         )();
         resourceEvents = await pipe(
@@ -71,8 +73,8 @@ describe('event-store end-to-end', () => {
         expect(await getTestEvents()).toStrictEqual([event]);
       });
 
-      it('uses the passed in version', () => {
-        expect(resourceEvents.version).toStrictEqual(initialVersion);
+      it('uses the initial version number', () => {
+        expect(resourceEvents.version).toStrictEqual(initialVersionNumber);
       });
     });
 
@@ -80,10 +82,10 @@ describe('event-store end-to-end', () => {
       const event2 = arbitraryMemberNumberLinkedToEmailEvent();
 
       beforeEach(async () => {
-        await commitEvent(dbClient, testLogger)(resource, initialVersion)(
+        await commitEvent(dbClient, testLogger)(resource, 'no-such-resource')(
           event
         )();
-        await commitEvent(dbClient, testLogger)(resource, initialVersion)(
+        await commitEvent(dbClient, testLogger)(resource, initialVersionNumber)(
           event2
         )();
         resourceEvents = await pipe(
@@ -98,7 +100,7 @@ describe('event-store end-to-end', () => {
       });
 
       it('increments the version', () => {
-        expect(resourceEvents.version).toStrictEqual(initialVersion + 1);
+        expect(resourceEvents.version).toStrictEqual(initialVersionNumber + 1);
       });
     });
 
@@ -107,17 +109,17 @@ describe('event-store end-to-end', () => {
       const competingEvent = arbitraryMemberNumberLinkedToEmailEvent();
       let result: E.Either<unknown, unknown>;
       beforeEach(async () => {
-        await commitEvent(dbClient, testLogger)(resource, initialVersion)(
+        await commitEvent(dbClient, testLogger)(resource, 'no-such-resource')(
           initialEvent
         )();
         await pipe(
           competingEvent,
-          commitEvent(dbClient, testLogger)(resource, initialVersion),
+          commitEvent(dbClient, testLogger)(resource, initialVersionNumber),
           T.map(getRightOrFail)
         )();
         result = await commitEvent(dbClient, testLogger)(
           resource,
-          initialVersion
+          initialVersionNumber
         )(event)();
       });
 
@@ -140,13 +142,13 @@ describe('event-store end-to-end', () => {
       beforeEach(async () => {
         await commitEvent(dbClient, testLogger)(
           arbitraryResourceOfSameType(),
-          faker.number.int()
+          'no-such-resource'
         )(arbitraryMemberNumberLinkedToEmailEvent())();
         await commitEvent(dbClient, testLogger)(
           arbitraryResourceOfSameType(),
-          faker.number.int()
+          'no-such-resource'
         )(arbitraryMemberNumberLinkedToEmailEvent())();
-        await commitEvent(dbClient, testLogger)(resource, initialVersion)(
+        await commitEvent(dbClient, testLogger)(resource, 'no-such-resource')(
           event
         )();
         resourceEvents = await pipe(
@@ -157,7 +159,7 @@ describe('event-store end-to-end', () => {
       });
 
       it('has independant versions', () => {
-        expect(resourceEvents.version).toStrictEqual(initialVersion);
+        expect(resourceEvents.version).toStrictEqual(initialVersionNumber);
       });
 
       it('has independant events', async () => {
