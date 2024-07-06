@@ -104,6 +104,7 @@ Handlebars.registerPartial(
       <td>
         {{this.score}} / {{this.maxScore}} ({{this.percentage}}%)
       </td>
+      <td><button>Mark as trained</button></td>
     </tr>
     {{else}}
       <p>No one is waiting for training</p>
