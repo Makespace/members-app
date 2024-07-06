@@ -63,7 +63,8 @@ export const DomainEvent = t.union([
   eventCodec('EquipmentTrainingQuizResult', {
     equipmentId: tt.UUID,
     trainingSheetId: t.string,
-    email: t.string,
+    memberNumberProvided: t.number,
+    emailProvided: t.string,
     score: t.number,
     id: tt.UUID,
     maxScore: t.number,
