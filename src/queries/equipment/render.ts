@@ -105,6 +105,8 @@ Handlebars.registerPartial(
         {{this.score}} / {{this.maxScore}} ({{this.percentage}}%)
       </td>
     </tr>
+    {{else}}
+      <p>No one is waiting for training</p>
   {{/each}}
 </table>
 `
@@ -114,7 +116,7 @@ Handlebars.registerPartial(
   'training_quiz_results',
   `
 <h2>Training Quiz Results</h2>
-<h3>Passed</h3>
+<h3>Waiting for Training</h3>
 {{#with trainingQuizResults}}
   {{> training_quiz_results_table results=passed }}
 <h3>All Results</h3>
