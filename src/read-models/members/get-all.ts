@@ -10,7 +10,7 @@ import {
 } from '../../types';
 import {pipe} from 'fp-ts/lib/function';
 
-type AllMemberDetails = Map<number, MemberDetails>;
+export type AllMemberDetails = Map<number, MemberDetails>;
 
 export const pertinentEvents = [
   'MemberNumberLinkedToEmail' as const,
