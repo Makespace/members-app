@@ -19,12 +19,14 @@ const constructQuizResultViewModel = (
   event: EventOfType<'EquipmentTrainingQuizResult'>
 ): QuizResultViewModel => {
   return {
-    email: event.email,
+    id: event.id,
     score: event.score,
     maxScore: event.maxScore,
     percentage: event.percentage,
     passed: event.fullMarks,
     timestamp: DateTime.fromSeconds(event.timestampEpochS),
+
+    email: event.email,
   };
 };
 
@@ -42,16 +44,41 @@ const getEquipment = (
 
 const getQuizResults = (
   events: ReadonlyArray<DomainEvent>,
-  equipmentId: string
-) =>
-  pipe(
-    readModels.equipment.getTrainingQuizResults(events)(equipmentId, O.none),
-    trainingQuizResults => ({
-      passed: RA.map(constructQuizResultViewModel)(trainingQuizResults.passed),
-      all: RA.map(constructQuizResultViewModel)(trainingQuizResults.all),
-    }),
-    TE.right
+  equipment: Equipment
+): TE.TaskEither<
+  FailureWithStatus,
+  {
+    quiz_passed_not_trained: ReadonlyArray<QuizResultViewModel>;
+    failed_quiz_not_passed: ReadonlyArray<QuizResultViewModel>;
+  }
+> => {
+  // Get quiz results for member + email where it matches.
+  // Get quiz results that don't match.
+  // Allow dismissing a quiz result.
+  
+
+  const quizResultEvents = readModels.equipment.getTrainingQuizResults(events)(
+    equipment.id
   );
+  const members = readModels.members.getAllDetails(events);
+
+
+  let member_training_events = {
+
+  }
+
+  let per_s
+
+
+};
+pipe(
+  readModels.equipment.getTrainingQuizResults(events)(equipmentId, O.none),
+  trainingQuizResults => ({
+    passed: RA.map(constructQuizResultViewModel)(trainingQuizResults.passed),
+    all: RA.map(constructQuizResultViewModel)(trainingQuizResults.all),
+  }),
+  TE.right
+);
 
 const isSuperUserOrOwnerOfArea = (
   events: ReadonlyArray<DomainEvent>,
@@ -81,13 +108,13 @@ export const constructViewModel =
       TE.right,
       TE.bind('events', () => deps.getAllEvents()),
       TE.bind('equipment', ({events}) => getEquipment(events, equipmentId)),
-      TE.bindW('trainingQuizResults', ({events}) =>
-        getQuizResults(events, equipmentId)
-      ),
       TE.bindW('isSuperUserOrOwnerOfArea', ({events, equipment}) =>
         isSuperUserOrOwnerOfArea(events, equipment.areaId, user.memberNumber)
       ),
       TE.bindW('isSuperUserOrTrainerOfArea', ({events, equipment}) =>
         isSuperUserOrTrainerOfEquipment(events, equipment, user.memberNumber)
+      ),
+      TE.bindW('trainingQuizResults', ({events, equipment}) =>
+        getQuizResults(events, equipment)
       )
     );
