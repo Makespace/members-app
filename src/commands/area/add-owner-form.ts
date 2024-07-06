@@ -63,7 +63,7 @@ Handlebars.registerPartial(
 Handlebars.registerPartial(
   'render_potential_owner',
   `<tr>
-        <td>{{this.number}]</td>
+        <td>{{member_number this.number}}</td>
         <td>{{this.email}}</td>
         <td>{{> render_signed_status}}</td>
         <td>
