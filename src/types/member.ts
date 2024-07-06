@@ -11,4 +11,5 @@ type Details = {
   name: O.Option<string>;
   pronouns: O.Option<string>;
   isSuperUser: boolean;
+  prevEmails: string[];
 };
