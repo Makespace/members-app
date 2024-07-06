@@ -12,3 +12,4 @@ export {
   SubsetOfDomainEvent,
   filterByName,
 } from './domain-event';
+export {ResourceVersion} from './resource-version';

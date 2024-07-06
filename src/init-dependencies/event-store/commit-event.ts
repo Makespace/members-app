@@ -11,13 +11,15 @@ import {Dependencies} from '../../dependencies';
 import {pipe} from 'fp-ts/lib/function';
 import {v4 as uuidv4} from 'uuid';
 import {Client} from '@libsql/client/.';
-import {DomainEvent} from '../../types';
+import {DomainEvent, ResourceVersion} from '../../types';
 import {Resource} from '../../types/resource';
+
+export const initialVersionNumber = 0;
 
 const performTransaction = async (
   event: DomainEvent,
   resource: Resource,
-  lastKnownVersion: number,
+  lastKnownVersion: ResourceVersion,
   dbClient: Client
 ): Promise<'raised-event' | 'last-known-version-out-of-date'> => {
   const transaction = await dbClient.transaction();
@@ -40,7 +42,7 @@ const performTransaction = async (
     let newResourceVersion: number;
 
     if (resourceVersions.rows.length === 0) {
-      newResourceVersion = lastKnownVersion;
+      newResourceVersion = initialVersionNumber;
     } else {
       if (currentResourceVersion === lastKnownVersion) {
         newResourceVersion = lastKnownVersion + 1;
