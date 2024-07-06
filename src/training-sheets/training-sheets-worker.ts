@@ -167,7 +167,7 @@ export const run = async (
           type: 'EquipmentTrainingQuizResult',
           id: newEvent.id,
         },
-        -1
+        'no-such-resource'
       )(newEvent)(),
       E.fold(
         (err: FailureWithStatus) => logger.error(err),

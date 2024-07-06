@@ -15,6 +15,7 @@ import pino, {Logger} from 'pino';
 import {failureWithStatus} from '../../src/types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import * as gsheetData from '../data/google_sheet_data';
+import {ResourceVersion} from '../../src/types';
 
 type TrainingSheetWorkerDependencies = Dependencies & {
   commitedEvents: DomainEvent[];
@@ -32,7 +33,7 @@ const dependenciesForTrainingSheetsWorker = (
     }),
     commitedEvents,
     commitEvent:
-      (resource: Resource, lastKnownVersion: number) =>
+      (resource: Resource, lastKnownVersion: ResourceVersion) =>
       (event: DomainEvent) => {
         commitedEvents.push(event);
         return happyPathAdapters.commitEvent(resource, lastKnownVersion)(event);
