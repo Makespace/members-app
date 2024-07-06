@@ -10,7 +10,6 @@ export type QuizResultViewModel = {
   percentage: number;
   passed: boolean;
   timestamp: DateTime;
-  previousAttempts: QuizID[];
 
   emailProvided: string;
   memberNumberProvided: number;
