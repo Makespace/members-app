@@ -7,12 +7,13 @@ import {DomainEvent, EmailAddress, constructEvent} from '../../../src/types';
 import {getAllEvents} from '../../../src/init-dependencies/event-store/get-all-events';
 import {pipe} from 'fp-ts/lib/function';
 import {commitEvent} from '../../../src/init-dependencies/event-store/commit-event';
-import {ensureEventTableExists} from '../../../src/init-dependencies/event-store/ensure-event-table-exists';
+import {ensureEventTableExists} from '../../../src/init-dependencies/event-store/ensure-events-table-exists';
 import {getRightOrFail} from '../../helpers';
 import {Dependencies} from '../../../src/dependencies';
 import {getResourceEvents} from '../../../src/init-dependencies/event-store/get-resource-events';
 import {RightOfTaskEither} from '../../type-optics';
 import {randomUUID} from 'crypto';
+import {ensureVersionsTableExists} from '../../../src/init-dependencies/event-store/ensure-versions-table-exists';
 
 const arbitraryMemberNumberLinkedToEmailEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
@@ -38,6 +39,7 @@ describe('event-store end-to-end', () => {
         url: `file:/tmp/${randomUUID()}.db`,
       });
       await ensureEventTableExists(dbClient)();
+      await ensureVersionsTableExists(dbClient)();
       getTestEvents = () =>
         pipe(getAllEvents(dbClient)(), T.map(getRightOrFail))();
       resourceEvents = await pipe(
