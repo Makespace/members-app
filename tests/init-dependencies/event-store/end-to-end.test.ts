@@ -61,7 +61,7 @@ describe('event-store end-to-end', () => {
 
     describe('committing when then resource does not exist', () => {
       beforeEach(async () => {
-        await commitEvent(dbClient, testLogger)(resource, initialVersionNumber)(
+        await commitEvent(dbClient, testLogger)(resource, 'no-such-resource')(
           event
         )();
         resourceEvents = await pipe(
@@ -75,7 +75,7 @@ describe('event-store end-to-end', () => {
         expect(await getTestEvents()).toStrictEqual([event]);
       });
 
-      it('uses the passed in version', () => {
+      it('uses the initial version number', () => {
         expect(resourceEvents.version).toStrictEqual(initialVersionNumber);
       });
     });
@@ -84,7 +84,7 @@ describe('event-store end-to-end', () => {
       const event2 = arbitraryMemberNumberLinkedToEmailEvent();
 
       beforeEach(async () => {
-        await commitEvent(dbClient, testLogger)(resource, initialVersionNumber)(
+        await commitEvent(dbClient, testLogger)(resource, 'no-such-resource')(
           event
         )();
         await commitEvent(dbClient, testLogger)(resource, initialVersionNumber)(
@@ -111,7 +111,7 @@ describe('event-store end-to-end', () => {
       const competingEvent = arbitraryMemberNumberLinkedToEmailEvent();
       let result: E.Either<unknown, unknown>;
       beforeEach(async () => {
-        await commitEvent(dbClient, testLogger)(resource, initialVersionNumber)(
+        await commitEvent(dbClient, testLogger)(resource, 'no-such-resource')(
           initialEvent
         )();
         await pipe(
@@ -144,13 +144,13 @@ describe('event-store end-to-end', () => {
       beforeEach(async () => {
         await commitEvent(dbClient, testLogger)(
           arbitraryResourceOfSameType(),
-          faker.number.int()
+          'no-such-resource'
         )(arbitraryMemberNumberLinkedToEmailEvent())();
         await commitEvent(dbClient, testLogger)(
           arbitraryResourceOfSameType(),
-          faker.number.int()
+          'no-such-resource'
         )(arbitraryMemberNumberLinkedToEmailEvent())();
-        await commitEvent(dbClient, testLogger)(resource, initialVersionNumber)(
+        await commitEvent(dbClient, testLogger)(resource, 'no-such-resource')(
           event
         )();
         resourceEvents = await pipe(
