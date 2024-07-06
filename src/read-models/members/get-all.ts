@@ -17,6 +17,7 @@ export const pertinentEvents = [
   'SuperUserRevoked' as const,
   'SuperUserDeclared' as const,
   'MemberDetailsUpdated' as const,
+  'MemberEmailChanged' as const,
 ];
 
 const update = (
@@ -33,6 +34,7 @@ const update = (
         name: O.none,
         pronouns: O.none,
         isSuperUser: false,
+        prevEmails: [],
       });
       break;
     case 'SuperUserDeclared':
@@ -51,6 +53,13 @@ const update = (
       }
       if (details && event.pronouns !== undefined) {
         details.pronouns = O.some(event.pronouns);
+      }
+      break;
+    case 'MemberEmailChanged':
+      // Assumes events are in chronological order.
+      if (details) {
+        details.prevEmails.push(details.email);
+        details.email = event.newEmail;
       }
       break;
   }

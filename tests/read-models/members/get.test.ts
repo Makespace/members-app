@@ -29,6 +29,7 @@ describe('getDetails', () => {
         name: O.none,
         pronouns: O.none,
         isSuperUser: false,
+        prevEmails: [],
       })
     );
   });
@@ -52,6 +53,7 @@ describe('getDetails', () => {
         name: O.some('Ford Prefect'),
         pronouns: O.none,
         isSuperUser: false,
+        prevEmails: [],
       })
     );
   });
@@ -83,6 +85,30 @@ describe('getDetails', () => {
         name: O.some('Ford Prefect'),
         pronouns: O.some('he/him'),
         isSuperUser: false,
+        prevEmails: [],
+      })
+    );
+  });
+
+  it('returns latest email', async () => {
+    await framework.commands.memberNumbers.linkNumberToEmail({
+      memberNumber: 42,
+      email: 'foo@example.com' as EmailAddress,
+    });
+    await framework.commands.members.editEmail({
+      memberNumber: 42,
+      email: 'updated@example.com' as EmailAddress,
+    });
+    const events = await framework.getAllEvents();
+    const result = getDetails(42)(events);
+    expect(result).toEqual(
+      O.some({
+        number: 42,
+        email: 'updated@example.com',
+        name: O.none,
+        pronouns: O.none,
+        isSuperUser: false,
+        prevEmails: ['foo@example.com'],
       })
     );
   });
