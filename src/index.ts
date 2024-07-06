@@ -19,7 +19,6 @@ import * as libsqlClient from '@libsql/client';
 import cookieSession from 'cookie-session';
 import {initRoutes} from './routes';
 import {runForever} from './training-sheets/training-sheets-worker';
-import {ensureVersionsTableExists} from './init-dependencies/event-store/ensure-versions-table-exists';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -75,7 +74,6 @@ if (conf.BACKGROUND_PROCESSING_ENABLED) {
 void (async () => {
   await pipe(
     ensureEventTableExists(dbClient),
-    TE.chainW(() => ensureVersionsTableExists(dbClient)),
     TE.mapLeft(e => deps.logger.error(e, 'Failed to start server'))
   )();
 
