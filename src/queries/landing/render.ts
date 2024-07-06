@@ -10,7 +10,7 @@ Handlebars.registerPartial(
     <dt>Email</dt>
     <dd>{{user.emailAddress}}</dd>
     <dt>Member Number</dt>
-    <dd>{{user.memberNumber}}</dd>
+    <dd>{{member_number user.memberNumber}}</dd>
   </dl>
 `
 );
