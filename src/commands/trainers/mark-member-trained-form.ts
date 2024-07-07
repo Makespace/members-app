@@ -1,33 +1,50 @@
+import Handlebars, {SafeString} from 'handlebars';
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
 import * as E from 'fp-ts/Either';
-import {User} from '../../types';
+import {User, MemberDetails} from '../../types';
 import {Form} from '../../types/form';
 import {pageTemplate} from '../../templates';
 import {getEquipmentName} from '../equipment/get-equipment-name';
 import {getEquipmentIdFromForm} from '../equipment/get-equipment-id-from-form';
-import Handlebars, {SafeString} from 'handlebars';
+import {readModels} from '../../read-models';
 
 type ViewModel = {
   user: User;
   equipmentId: string;
   equipmentName: string;
+  members: ReadonlyArray<MemberDetails>;
 };
 
-// TODO - Drop down suggestion list of users.
 // TODO - Warning if you try and mark a member as trained who hasn't done the quiz (for now we allow this for flexibility).
 
 const RENDER_MARK_MEMBER_TRAINED_TEMPLATE = Handlebars.compile(
   `
     <h1>Mark a member as trained on {{equipmentName}}</h1>
     <form action="/equipment/mark-member-trained" method="post">
-      <label for="memberNumber">What is the members' number?</label>
-      <input type="text" name="memberNumber" id="memberNumber" />
       <input
         type="hidden"
         name="equipmentId"
         value="{{equipmentId}}"
       />
+
+      <fieldset>
+        <legend>Select a member:</legend>
+        {{#filterList members "Members"}}
+          <div class="fieldset-item">
+           <input type="radio" id="member-{{number}}" name="memberNumber" value="{{number}}"/>
+           <label for="member-{{number}}">
+           {{avatar_thumbnail this}}
+            <span>
+              {{optional_detail name}}
+              ({{optional_detail pronouns}})
+              ({{email}})
+            </span>
+           </label>
+         </div>
+        {{/filterList}}
+      </fieldset>
+
       <button type="submit">Confirm</button>
     </form>
   `
@@ -48,7 +65,11 @@ const constructForm: Form<ViewModel>['constructForm'] =
       E.bind('equipmentId', () => getEquipmentIdFromForm(input)),
       E.bind('equipmentName', ({equipmentId}) =>
         getEquipmentName(events, equipmentId)
-      )
+      ),
+      E.let('members', () => {
+        const memberDetails = readModels.members.getAllDetails(events);
+        return [...memberDetails.values()];
+      })
     );
 
 export const markMemberTrainedForm: Form<ViewModel> = {
