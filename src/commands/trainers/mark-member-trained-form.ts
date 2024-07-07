@@ -28,22 +28,7 @@ const RENDER_MARK_MEMBER_TRAINED_TEMPLATE = Handlebars.compile(
         value="{{equipmentId}}"
       />
 
-      <fieldset>
-        <legend>Select a member:</legend>
-        {{#filterList members "Members"}}
-          <div class="fieldset-item">
-           <input type="radio" id="member-{{number}}" name="memberNumber" value="{{number}}"/>
-           <label for="member-{{number}}">
-           {{avatar_thumbnail this}}
-            <span>
-              {{optional_detail name}}
-              ({{optional_detail pronouns}})
-              ({{email}})
-            </span>
-           </label>
-         </div>
-        {{/filterList}}
-      </fieldset>
+      {{> memberInput members }}
 
       <button type="submit">Confirm</button>
     </form>

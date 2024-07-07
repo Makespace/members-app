@@ -6,6 +6,7 @@ import {registerNavBar} from './navbar';
 import {registerAvatarHelpers} from './avatar';
 import {registerGridJs} from './grid-js';
 import {registerFilterListHelper} from './filter-list';
+import {registerMemberInput} from './member-input';
 import {registerOptionalDetailHelper} from './detail';
 import {registerMemberNumberHelper} from '../types/member-number';
 import {registerDisplayDateHelper} from '../types/display-date';
@@ -18,6 +19,7 @@ registerMemberNumberHelper();
 registerDisplayDateHelper();
 registerGridJs();
 registerFilterListHelper();
+registerMemberInput();
 
 const PAGE_TEMPLATE = Handlebars.compile(`
     <!doctype html>
