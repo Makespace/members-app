@@ -13,3 +13,5 @@ type Details = {
   isSuperUser: boolean;
   prevEmails: string[];
 };
+
+export type MultipleMemberDetails = Map<number, MemberDetails>;

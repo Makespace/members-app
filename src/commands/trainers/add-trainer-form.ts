@@ -23,8 +23,7 @@ type ViewModel = {
 
 const RENDER_ADD_TRAINER_FORM_TEMPLATE = Handlebars.compile(`
   <h1>Add a trainer</h1>
-  <div id="wrapper"></div>
-  <table id="all-members">
+  <table data-gridjs>
     <thead>
       <tr>
         <th>E-Mail</th>
@@ -52,17 +51,6 @@ const RENDER_ADD_TRAINER_FORM_TEMPLATE = Handlebars.compile(`
       {{/each}}
     </tbody>
   </table>
-  <script>
-    new gridjs.Grid({
-      from: document.getElementById('all-members'),
-      search: true,
-      language: {
-        search: {
-          placeholder: 'Search...',
-        },
-      },
-    }).render(document.getElementById('wrapper'));
-  </script>
 `);
 
 const renderForm = (viewModel: ViewModel) =>
