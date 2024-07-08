@@ -11,13 +11,7 @@ export type QuizResultViewModel = {
   passed: boolean;
   timestamp: DateTime;
 
-  emailProvided: string;
-  memberNumberProvided: number;
-
-  memberNumberFound: boolean;
-  emailMemberNumber: number | null;
-
-  memberDetailsMatch: boolean;
+  memberNumber: number;
 
   otherAttempts: ReadonlyArray<QuizID>;
 };
@@ -33,8 +27,12 @@ export type ViewModel = {
     trainedMembers: ReadonlyArray<number>;
   };
   trainingQuizResults: {
-    // Each member should only appear in one of these to avoid confusion.
-    quiz_passed_not_trained: ReadonlyArray<QuizResultViewModel>;
-    failed_quiz_not_passed: ReadonlyArray<QuizResultViewModel>;
+    quizPassedNotTrained: {
+      knownMember: ReadonlyArray<QuizResultViewModel>;
+      unknownMember: ReadonlyArray<QuizResultViewModel>;
+    };
+    failedQuizNotTrained: {
+      knownMember: ReadonlyArray<QuizResultViewModel>;
+    };
   };
 };
