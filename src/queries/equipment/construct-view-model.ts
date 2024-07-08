@@ -14,6 +14,8 @@ import {DomainEvent, EventOfType} from '../../types/domain-event';
 import {Equipment} from '../../read-models/equipment/get';
 import {AllMemberDetails} from '../../read-models/members/get-all';
 import {Logger} from 'pino';
+import {getMembersTrainedOn} from '../../read-models/equipment/get-trained-on';
+import {DateTime} from 'luxon';
 
 const getEquipment = (
   events: ReadonlyArray<DomainEvent>,
@@ -81,75 +83,82 @@ const reduceToLatestQuizResultByMember = (
   membersByEmail: Record<string, MemberDetails>,
   quizResults: ReturnType<typeof getQuizEvents>
 ) => {
-  const memberQuizResults: Record<number, TrainingEvents[]> = {};
-  const orphanedQuizResults: TrainingEvents[] = [];
+  const memberQuizResults: Record<number, QuizResultViewModel> = {};
+  const unknownMemberQuizResults: QuizResultViewModel[] = [];
   for (const quizResult of quizResults) {
     const memberFoundByNumber = quizResult.memberNumberProvided
       ? members.get(quizResult.memberNumberProvided)
       : undefined;
     const memberFoundByEmail =
-      quizResult.emailProvided !== null &&
-      quizResult.emailProvided !== undefined
+      quizResult.emailProvided !== null
         ? membersByEmail[quizResult.emailProvided]
         : undefined;
 
-    if (!memberFoundByNumber && !memberFoundByEmail) {
-      logger.warn(`Filtering quiz event ${quizResult.id} as member unknown`);
-      continue;
-    }
-
-    if (memberFoundByNumber === memberFoundByEmail) {
-      if (!memberTrainingEvents[memberFoundByNumber!.number]) {
-        memberTrainingEvents[memberFoundByNumber!.number] = [];
+    if (
+      memberFoundByNumber === memberFoundByEmail &&
+      memberFoundByNumber !== undefined
+    ) {
+      const existing = memberQuizResults[memberFoundByNumber.number];
+      if (!existing) {
+        memberQuizResults[memberFoundByNumber.number] = {
+          id: quizResult.id,
+          score: quizResult.score,
+          maxScore: quizResult.maxScore,
+          percentage: quizResult.percentage,
+          passed: quizResult.fullMarks,
+          timestamp: DateTime.fromSeconds(quizResult.timestampEpochS),
+          memberNumber: memberFoundByNumber.number,
+          otherAttempts: [],
+        };
+        continue;
       }
-      memberTrainingEvents[memberFoundByNumber!.number].push(quizResult);
-    } else {
-      orphanedTrainingEvents.push(quizResult);
-    }
-  }
-};
-
-const getMembersCurrentlyTrained = (
-  events: ReadonlyArray<DomainEvent>,
-  equipment: Equipment
-) => {
-  const trained: Record<number, > = {};
-  for (const event of events) {
-    if (event.type !== 'MemberTrainedOnEquipment' || event.equipmentId !== equipment.id) {
+      if (existing.passed) {
+        if (quizResult.fullMarks) {
+          // Overwrite.
+          memberQuizResults[memberFoundByNumber.number] = {
+            id: quizResult.id,
+            score: quizResult.score,
+            maxScore: quizResult.maxScore,
+            percentage: quizResult.percentage,
+            passed: quizResult.fullMarks,
+            timestamp: DateTime.fromSeconds(quizResult.timestampEpochS),
+            memberNumber: memberFoundByNumber.number,
+            otherAttempts: [existing.id].concat(existing.otherAttempts),
+          };
+        } else {
+          memberQuizResults[memberFoundByNumber.number].otherAttempts =
+            memberQuizResults[memberFoundByNumber.number].otherAttempts.concat([
+              quizResult.id,
+            ]);
+        }
+      } else {
+        memberQuizResults[memberFoundByNumber.number] = {
+          id: quizResult.id,
+          score: quizResult.score,
+          maxScore: quizResult.maxScore,
+          percentage: quizResult.percentage,
+          passed: quizResult.fullMarks,
+          timestamp: DateTime.fromSeconds(quizResult.timestampEpochS),
+          memberNumber: memberFoundByNumber.number,
+          otherAttempts: [existing.id].concat(existing.otherAttempts),
+        };
+      }
       continue;
     }
-    trained.add(event.)
+    unknownMemberQuizResults.push({
+      id: quizResult.id,
+      score: quizResult.score,
+      maxScore: quizResult.maxScore,
+      percentage: quizResult.percentage,
+      passed: quizResult.fullMarks,
+      timestamp: DateTime.fromSeconds(quizResult.timestampEpochS),
+      memberNumber: memberFoundByNumber!.number,
+      otherAttempts: [],
+    });
   }
-}
-
-const getMemberTrainingEvents = (
-  logger: Logger,
-  events: ReadonlyArray<DomainEvent>,
-  equipment: Equipment
-) => {
-  const members = readModels.members.getAllDetails(events);
-  const membersByEmail = indexMembersByEmail(members);
-
-  type TrainingEvents =
-    | EventOfType<'EquipmentTrainingQuizResult'>
-    | EventOfType<'MemberTrainedOnEquipment'>
-    | EventOfType<'EquipmentTrainingQuizEmailUpdated'>
-    | EventOfType<'EquipmentTrainingQuizMemberNumberUpdated'>;
-
-  
-
-  const quizEvents = getQuizEvents(events, equipment);
-  const trainedMembers = getTRai
-  const memberResults = reduceToLatestQuizResultByMember(
-    logger,
-    members,
-    membersByEmail,
-    quizEvents
-  );
-
   return {
-    memberTrainingEvents,
-    orphanedTrainingEvents,
+    memberQuizResults,
+    unknownMemberQuizResults,
   };
 };
 
@@ -161,20 +170,40 @@ const getQuizResults = (
   FailureWithStatus,
   {
     quizPassedNotTrained: {
-      matched: ReadonlyArray<QuizResultViewModel>;
-      orphaned: ReadonlyArray<QuizResultViewModel>;
+      knownMember: ReadonlyArray<QuizResultViewModel>;
+      unknownMember: ReadonlyArray<QuizResultViewModel>;
     };
-    failedQuizNotPassed: {
-      matched: ReadonlyArray<QuizResultViewModel>;
-      orphaned: ReadonlyArray<QuizResultViewModel>;
+    failedQuizNotTrained: {
+      knownMember: ReadonlyArray<QuizResultViewModel>;
     };
   }
 > => {
-  // Get quiz results for member + email where it matches.
-  // Get quiz results that don't match.
-  // Allow dismissing a quiz result.
-  const {memberTrainingEvents, orphanedTrainingEvents} =
-    getMemberTrainingEvents(logger, events, equipment);
+  const members = readModels.members.getAllDetails(events);
+  const membersByEmail = indexMembersByEmail(members);
+  const quizEvents = getQuizEvents(events, equipment);
+  const trainedMembers = getMembersTrainedOn(equipment.id)(events);
+  const memberResults = reduceToLatestQuizResultByMember(
+    logger,
+    members,
+    membersByEmail,
+    quizEvents
+  );
+
+  return TE.right({
+    quizPassedNotTrained: {
+      knownMember: Object.values(memberResults.memberQuizResults).filter(
+        r => r.passed && !trainedMembers.has(r.memberNumber)
+      ),
+      unknownMember: memberResults.unknownMemberQuizResults.filter(
+        r => r.passed
+      ),
+    },
+    failedQuizNotTrained: {
+      knownMember: Object.values(memberResults.memberQuizResults).filter(
+        r => !r.passed && !trainedMembers.has(r.memberNumber)
+      ),
+    },
+  });
 };
 
 const isSuperUserOrOwnerOfArea = (
@@ -212,6 +241,6 @@ export const constructViewModel =
         isSuperUserOrTrainerOfEquipment(events, equipment, user.memberNumber)
       ),
       TE.bindW('trainingQuizResults', ({events, equipment}) =>
-        getQuizResults(events, equipment)
+        getQuizResults(deps.logger, events, equipment)
       )
     );
