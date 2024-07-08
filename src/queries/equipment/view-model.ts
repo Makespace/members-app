@@ -18,6 +18,8 @@ export type QuizResultViewModel = {
   emailMemberNumber: number | null;
 
   memberDetailsMatch: boolean;
+
+  otherAttempts: ReadonlyArray<QuizID>;
 };
 
 export type ViewModel = {

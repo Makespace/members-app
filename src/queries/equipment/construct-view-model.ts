@@ -51,6 +51,7 @@ const getQuizEvents = (
     ]: EventOfType<'EquipmentTrainingQuizResult'>;
   } = {};
   events.forEach(event => {
+    // Requires events to be provided in order.
     switch (event.type) {
       case 'EquipmentTrainingQuizResult':
         if (event.equipmentId === equipment.id) {
@@ -74,6 +75,53 @@ const getQuizEvents = (
   return Object.values(results);
 };
 
+const reduceToLatestQuizResultByMember = (
+  logger: Logger,
+  members: AllMemberDetails,
+  membersByEmail: Record<string, MemberDetails>,
+  quizResults: ReturnType<typeof getQuizEvents>
+) => {
+  const memberQuizResults: Record<number, TrainingEvents[]> = {};
+  const orphanedQuizResults: TrainingEvents[] = [];
+  for (const quizResult of quizResults) {
+    const memberFoundByNumber = quizResult.memberNumberProvided
+      ? members.get(quizResult.memberNumberProvided)
+      : undefined;
+    const memberFoundByEmail =
+      quizResult.emailProvided !== null &&
+      quizResult.emailProvided !== undefined
+        ? membersByEmail[quizResult.emailProvided]
+        : undefined;
+
+    if (!memberFoundByNumber && !memberFoundByEmail) {
+      logger.warn(`Filtering quiz event ${quizResult.id} as member unknown`);
+      continue;
+    }
+
+    if (memberFoundByNumber === memberFoundByEmail) {
+      if (!memberTrainingEvents[memberFoundByNumber!.number]) {
+        memberTrainingEvents[memberFoundByNumber!.number] = [];
+      }
+      memberTrainingEvents[memberFoundByNumber!.number].push(quizResult);
+    } else {
+      orphanedTrainingEvents.push(quizResult);
+    }
+  }
+};
+
+const getMembersCurrentlyTrained = (
+  events: ReadonlyArray<DomainEvent>,
+  equipment: Equipment
+) => {
+  const trained: Record<number, > = {};
+  for (const event of events) {
+    if (event.type !== 'MemberTrainedOnEquipment' || event.equipmentId !== equipment.id) {
+      continue;
+    }
+    trained.add(event.)
+  }
+}
+
 const getMemberTrainingEvents = (
   logger: Logger,
   events: ReadonlyArray<DomainEvent>,
@@ -88,48 +136,17 @@ const getMemberTrainingEvents = (
     | EventOfType<'EquipmentTrainingQuizEmailUpdated'>
     | EventOfType<'EquipmentTrainingQuizMemberNumberUpdated'>;
 
-  const memberTrainingEvents: Record<number, TrainingEvents[]> = {};
-  const orphanedTrainingEvents: TrainingEvents[] = [];
+  
 
   const quizEvents = getQuizEvents(events, equipment);
+  const trainedMembers = getTRai
+  const memberResults = reduceToLatestQuizResultByMember(
+    logger,
+    members,
+    membersByEmail,
+    quizEvents
+  );
 
-  for (const event of events) {
-    if (
-      event.type === 'EquipmentTrainingQuizResult' &&
-      event.equipmentId === equipment.id
-    ) {
-      const memberFoundByNumber = event.memberNumberProvided
-        ? members.get(event.memberNumberProvided)
-        : undefined;
-      const memberFoundByEmail =
-        event.emailProvided !== null && event.emailProvided !== undefined
-          ? membersByEmail[event.emailProvided]
-          : undefined;
-
-      if (!memberFoundByNumber && !memberFoundByEmail) {
-        logger.warn(`Filtering quiz event ${event.id} as member unknown`);
-        continue;
-      }
-
-      if (memberFoundByNumber === memberFoundByEmail) {
-        if (!memberTrainingEvents[memberFoundByNumber!.number]) {
-          memberTrainingEvents[memberFoundByNumber!.number] = [];
-        }
-        memberTrainingEvents[memberFoundByNumber!.number].push(event);
-      } else {
-        orphanedTrainingEvents.push(event);
-      }
-    }
-    if (
-      event.type === 'MemberTrainedOnEquipment' &&
-      event.equipmentId === equipment.id
-    ) {
-      if (!memberTrainingEvents[event.memberNumber]) {
-        memberTrainingEvents[event.memberNumber] = [];
-      }
-      memberTrainingEvents[event.memberNumber].push(event);
-    }
-  }
   return {
     memberTrainingEvents,
     orphanedTrainingEvents,
