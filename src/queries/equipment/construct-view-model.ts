@@ -1,7 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import {Dependencies} from '../../dependencies';
 import * as TE from 'fp-ts/TaskEither';
-import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {readModels} from '../../read-models';
 import {
@@ -42,6 +41,101 @@ const indexMembersByEmail = (byId: AllMemberDetails) => {
   );
 };
 
+const getQuizEvents = (
+  events: ReadonlyArray<DomainEvent>,
+  equipment: Equipment
+) => {
+  const results: {
+    [
+      index: EventOfType<'EquipmentTrainingQuizResult'>['id']
+    ]: EventOfType<'EquipmentTrainingQuizResult'>;
+  } = {};
+  events.forEach(event => {
+    switch (event.type) {
+      case 'EquipmentTrainingQuizResult':
+        if (event.equipmentId === equipment.id) {
+          results[event.id] = event;
+        }
+        break;
+      case 'EquipmentTrainingQuizEmailUpdated':
+        if (results[event.quizId]) {
+          results[event.quizId].emailProvided = event.newEmail;
+        }
+        break;
+      case 'EquipmentTrainingQuizMemberNumberUpdated':
+        if (results[event.quizId]) {
+          results[event.quizId].memberNumberProvided = event.newMemberNumber;
+        }
+        break;
+      default:
+        break;
+    }
+  });
+  return Object.values(results);
+};
+
+const getMemberTrainingEvents = (
+  logger: Logger,
+  events: ReadonlyArray<DomainEvent>,
+  equipment: Equipment
+) => {
+  const members = readModels.members.getAllDetails(events);
+  const membersByEmail = indexMembersByEmail(members);
+
+  type TrainingEvents =
+    | EventOfType<'EquipmentTrainingQuizResult'>
+    | EventOfType<'MemberTrainedOnEquipment'>
+    | EventOfType<'EquipmentTrainingQuizEmailUpdated'>
+    | EventOfType<'EquipmentTrainingQuizMemberNumberUpdated'>;
+
+  const memberTrainingEvents: Record<number, TrainingEvents[]> = {};
+  const orphanedTrainingEvents: TrainingEvents[] = [];
+
+  const quizEvents = getQuizEvents(events, equipment);
+
+  for (const event of events) {
+    if (
+      event.type === 'EquipmentTrainingQuizResult' &&
+      event.equipmentId === equipment.id
+    ) {
+      const memberFoundByNumber = event.memberNumberProvided
+        ? members.get(event.memberNumberProvided)
+        : undefined;
+      const memberFoundByEmail =
+        event.emailProvided !== null && event.emailProvided !== undefined
+          ? membersByEmail[event.emailProvided]
+          : undefined;
+
+      if (!memberFoundByNumber && !memberFoundByEmail) {
+        logger.warn(`Filtering quiz event ${event.id} as member unknown`);
+        continue;
+      }
+
+      if (memberFoundByNumber === memberFoundByEmail) {
+        if (!memberTrainingEvents[memberFoundByNumber!.number]) {
+          memberTrainingEvents[memberFoundByNumber!.number] = [];
+        }
+        memberTrainingEvents[memberFoundByNumber!.number].push(event);
+      } else {
+        orphanedTrainingEvents.push(event);
+      }
+    }
+    if (
+      event.type === 'MemberTrainedOnEquipment' &&
+      event.equipmentId === equipment.id
+    ) {
+      if (!memberTrainingEvents[event.memberNumber]) {
+        memberTrainingEvents[event.memberNumber] = [];
+      }
+      memberTrainingEvents[event.memberNumber].push(event);
+    }
+  }
+  return {
+    memberTrainingEvents,
+    orphanedTrainingEvents,
+  };
+};
+
 const getQuizResults = (
   logger: Logger,
   events: ReadonlyArray<DomainEvent>,
@@ -49,63 +143,22 @@ const getQuizResults = (
 ): TE.TaskEither<
   FailureWithStatus,
   {
-    quiz_passed_not_trained: ReadonlyArray<QuizResultViewModel>;
-    failed_quiz_not_passed: ReadonlyArray<QuizResultViewModel>;
+    quizPassedNotTrained: {
+      matched: ReadonlyArray<QuizResultViewModel>;
+      orphaned: ReadonlyArray<QuizResultViewModel>;
+    };
+    failedQuizNotPassed: {
+      matched: ReadonlyArray<QuizResultViewModel>;
+      orphaned: ReadonlyArray<QuizResultViewModel>;
+    };
   }
 > => {
   // Get quiz results for member + email where it matches.
   // Get quiz results that don't match.
   // Allow dismissing a quiz result.
-
-  const quizResultEvents = readModels.equipment.getTrainingQuizResults(events)(
-    equipment.id
-  );
-  const members = readModels.members.getAllDetails(events);
-  const membersByEmail = indexMembersByEmail(members);
-
-  const member_training_events: Record<
-    number,
-    EventOfType<'EquipmentTrainingQuizResult'>[]
-  > = {};
-  const not_matching_member_training_events: EventOfType<'EquipmentTrainingQuizResult'>[] =
-    [];
-
-  for (const quizEntry of events) {
-    if (quizEntry.type !== 'EquipmentTrainingQuizResult') {
-      continue;
-    }
-
-    const memberFoundByNumber = quizEntry.memberNumberProvided
-      ? members.get(quizEntry.memberNumberProvided)
-      : undefined;
-    const memberFoundByEmail =
-      quizEntry.emailProvided !== null && quizEntry.emailProvided !== undefined
-        ? membersByEmail[quizEntry.emailProvided]
-        : undefined;
-
-    if (!memberFoundByNumber && !memberFoundByEmail) {
-      logger.warn(`Filtering quiz event ${quizEntry.id} as member unknown`);
-      continue;
-    }
-
-    if (memberFoundByNumber === memberFoundByEmail) {
-      if (!member_training_events[memberFoundByNumber!.number]) {
-        member_training_events[memberFoundByNumber!.number] = [];
-      }
-      member_training_events[memberFoundByNumber!.number].push(quizEntry);
-    } else {
-      not_matching_member_training_events.push(quizEntry);
-    }
-  }
+  const {memberTrainingEvents, orphanedTrainingEvents} =
+    getMemberTrainingEvents(logger, events, equipment);
 };
-pipe(
-  readModels.equipment.getTrainingQuizResults(events)(equipmentId, O.none),
-  trainingQuizResults => ({
-    passed: RA.map(constructQuizResultViewModel)(trainingQuizResults.passed),
-    all: RA.map(constructQuizResultViewModel)(trainingQuizResults.all),
-  }),
-  TE.right
-);
 
 const isSuperUserOrOwnerOfArea = (
   events: ReadonlyArray<DomainEvent>,
