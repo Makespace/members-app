@@ -91,6 +91,14 @@ export const DomainEvent = t.union([
     memberNumber: t.number,
     newEmail: EmailAddressCodec,
   }),
+  eventCodec('EquipmentTrainingQuizMemberNumberUpdated', {
+    quizId: tt.UUID,
+    newMemberNumber: t.number,
+  }),
+  eventCodec('EquipmentTrainingQuizEmailUpdated', {
+    quizId: tt.UUID,
+    newEmail: t.string,
+  }),
 ]);
 
 export type DomainEvent = t.TypeOf<typeof DomainEvent>;
