@@ -7,7 +7,11 @@ import {
   FailureWithStatus,
   failureWithStatus,
 } from '../../types/failure-with-status';
-import {QuizResultViewModel, ViewModel} from './view-model';
+import {
+  QuizResultUnknownMemberViewModel,
+  QuizResultViewModel,
+  ViewModel,
+} from './view-model';
 import {MemberDetails, User} from '../../types';
 import {StatusCodes} from 'http-status-codes';
 import {DomainEvent, EventOfType} from '../../types/domain-event';
@@ -84,7 +88,7 @@ const reduceToLatestQuizResultByMember = (
   quizResults: ReturnType<typeof getQuizEvents>
 ) => {
   const memberQuizResults: Record<number, QuizResultViewModel> = {};
-  const unknownMemberQuizResults: QuizResultViewModel[] = [];
+  const unknownMemberQuizResults: QuizResultUnknownMemberViewModel[] = [];
   for (const quizResult of quizResults) {
     const memberFoundByNumber = quizResult.memberNumberProvided
       ? members.get(quizResult.memberNumberProvided)
@@ -152,8 +156,8 @@ const reduceToLatestQuizResultByMember = (
       percentage: quizResult.percentage,
       passed: quizResult.fullMarks,
       timestamp: DateTime.fromSeconds(quizResult.timestampEpochS),
-      memberNumber: memberFoundByNumber!.number,
-      otherAttempts: [],
+      memberNumberProvided: quizResult.memberNumberProvided,
+      emailProvided: quizResult.emailProvided,
     });
   }
   return {
@@ -171,7 +175,7 @@ const getQuizResults = (
   {
     quizPassedNotTrained: {
       knownMember: ReadonlyArray<QuizResultViewModel>;
-      unknownMember: ReadonlyArray<QuizResultViewModel>;
+      unknownMember: ReadonlyArray<QuizResultUnknownMemberViewModel>;
     };
     failedQuizNotTrained: {
       knownMember: ReadonlyArray<QuizResultViewModel>;

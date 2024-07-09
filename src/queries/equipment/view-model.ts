@@ -24,8 +24,8 @@ export type QuizResultUnknownMemberViewModel = {
   passed: boolean;
   timestamp: DateTime;
 
-  memberNumberProvided: number;
-  emailProvided: string;
+  memberNumberProvided: number | null;
+  emailProvided: string | null;
 };
 
 export type ViewModel = {
