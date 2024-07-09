@@ -2,6 +2,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {Dependencies} from '../../dependencies';
 import * as TE from 'fp-ts/TaskEither';
 import * as RA from 'fp-ts/ReadonlyArray';
+import * as O from 'fp-ts/Option';
 import {readModels} from '../../read-models';
 import {
   FailureWithStatus,
@@ -81,6 +82,30 @@ const getQuizEvents = (
   return Object.values(results);
 };
 
+const updateQuizResults = (
+  memberQuizResults: Record<number, QuizResultViewModel>,
+  member: MemberDetails,
+  quizResult: EventOfType<'EquipmentTrainingQuizResult'>
+) => {
+  const existing = memberQuizResults[member.number];
+  if (quizResult.fullMarks || !existing || !existing.passed) {
+    memberQuizResults[member.number] = {
+      id: quizResult.id,
+      score: quizResult.score,
+      maxScore: quizResult.maxScore,
+      percentage: quizResult.percentage,
+      passed: quizResult.fullMarks,
+      timestamp: DateTime.fromSeconds(quizResult.timestampEpochS),
+      memberNumber: member.number,
+      otherAttempts: existing
+        ? [existing.id].concat(existing.otherAttempts)
+        : [],
+    };
+    return;
+  }
+  existing.otherAttempts = existing.otherAttempts.concat([quizResult.id]);
+};
+
 const reduceToLatestQuizResultByMember = (
   logger: Logger,
   members: AllMemberDetails,
@@ -90,63 +115,24 @@ const reduceToLatestQuizResultByMember = (
   const memberQuizResults: Record<number, QuizResultViewModel> = {};
   const unknownMemberQuizResults: QuizResultUnknownMemberViewModel[] = [];
   for (const quizResult of quizResults) {
-    const memberFoundByNumber = quizResult.memberNumberProvided
-      ? members.get(quizResult.memberNumberProvided)
-      : undefined;
-    const memberFoundByEmail =
-      quizResult.emailProvided !== null
-        ? membersByEmail[quizResult.emailProvided]
-        : undefined;
+    const memberNumber = O.fromNullable(quizResult.memberNumberProvided);
+    const email = O.fromNullable(quizResult.emailProvided);
+
+    const needToMatch: O.Option<MemberDetails>[] = [];
+    if (O.isSome(memberNumber)) {
+      needToMatch.push(O.fromNullable(members.get(memberNumber.value)));
+    }
+    if (O.isSome(email)) {
+      needToMatch.push(O.fromNullable(membersByEmail[email.value]));
+    }
 
     if (
-      memberFoundByNumber === memberFoundByEmail &&
-      memberFoundByNumber !== undefined
+      (needToMatch.length === 1 && O.isSome(needToMatch[0])) ||
+      (needToMatch.length === 2 &&
+        O.isSome(needToMatch[0]) &&
+        needToMatch[0] === needToMatch[1])
     ) {
-      const existing = memberQuizResults[memberFoundByNumber.number];
-      if (!existing) {
-        memberQuizResults[memberFoundByNumber.number] = {
-          id: quizResult.id,
-          score: quizResult.score,
-          maxScore: quizResult.maxScore,
-          percentage: quizResult.percentage,
-          passed: quizResult.fullMarks,
-          timestamp: DateTime.fromSeconds(quizResult.timestampEpochS),
-          memberNumber: memberFoundByNumber.number,
-          otherAttempts: [],
-        };
-        continue;
-      }
-      if (existing.passed) {
-        if (quizResult.fullMarks) {
-          // Overwrite.
-          memberQuizResults[memberFoundByNumber.number] = {
-            id: quizResult.id,
-            score: quizResult.score,
-            maxScore: quizResult.maxScore,
-            percentage: quizResult.percentage,
-            passed: quizResult.fullMarks,
-            timestamp: DateTime.fromSeconds(quizResult.timestampEpochS),
-            memberNumber: memberFoundByNumber.number,
-            otherAttempts: [existing.id].concat(existing.otherAttempts),
-          };
-        } else {
-          memberQuizResults[memberFoundByNumber.number].otherAttempts =
-            memberQuizResults[memberFoundByNumber.number].otherAttempts.concat([
-              quizResult.id,
-            ]);
-        }
-      } else {
-        memberQuizResults[memberFoundByNumber.number] = {
-          id: quizResult.id,
-          score: quizResult.score,
-          maxScore: quizResult.maxScore,
-          percentage: quizResult.percentage,
-          passed: quizResult.fullMarks,
-          timestamp: DateTime.fromSeconds(quizResult.timestampEpochS),
-          memberNumber: memberFoundByNumber.number,
-          otherAttempts: [existing.id].concat(existing.otherAttempts),
-        };
-      }
+      updateQuizResults(memberQuizResults, needToMatch[0].value, quizResult);
       continue;
     }
     unknownMemberQuizResults.push({
