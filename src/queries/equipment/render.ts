@@ -160,8 +160,12 @@ Handlebars.registerPartial(
       <tr class=passed_training_quiz_row>
         <td hidden>{{this.id}}</td>
         <td>{{display_date this.timestamp}}</td>
-        <td>{{member_number this.memberNumberProvided}}</td>
-        <td>{{this.emailProvided}}</td>
+        {{#if this.memberNumberProvided}}
+          <td>{{member_number this.memberNumberProvided}}</td>
+        {{else}}
+          <td>{{optional_detail this.memberNumberProvided}}</td>
+        {{/if}}
+        <td>{{optional_detail this.emailProvided}}</td>
         <td>
           {{this.score}} / {{this.maxScore}} ({{this.percentage}}%)
         </td>
