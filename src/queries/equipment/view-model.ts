@@ -16,6 +16,18 @@ export type QuizResultViewModel = {
   otherAttempts: ReadonlyArray<QuizID>;
 };
 
+export type QuizResultUnknownMemberViewModel = {
+  id: QuizID;
+  score: number;
+  maxScore: number;
+  percentage: number;
+  passed: boolean;
+  timestamp: DateTime;
+
+  memberNumberProvided: number;
+  emailProvided: string;
+};
+
 export type ViewModel = {
   user: User;
   isSuperUserOrOwnerOfArea: boolean;
@@ -29,7 +41,7 @@ export type ViewModel = {
   trainingQuizResults: {
     quizPassedNotTrained: {
       knownMember: ReadonlyArray<QuizResultViewModel>;
-      unknownMember: ReadonlyArray<QuizResultViewModel>;
+      unknownMember: ReadonlyArray<QuizResultUnknownMemberViewModel>;
     };
     failedQuizNotTrained: {
       knownMember: ReadonlyArray<QuizResultViewModel>;
