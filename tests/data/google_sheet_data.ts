@@ -13,6 +13,7 @@ export const METAL_LATHE = {
   ) as sheets_v4.Schema$Spreadsheet,
   // Manually parsed data for testing:
   email: 'test@makespace.com',
+  memberNumber: 1234,
   score: 13,
   maxScore: 14,
   percentage: 93,
