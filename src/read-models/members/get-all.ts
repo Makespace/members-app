@@ -6,11 +6,9 @@ import {
   DomainEvent,
   isEventOfType,
   Member,
-  MemberDetails,
+  MultipleMemberDetails,
 } from '../../types';
 import {pipe} from 'fp-ts/lib/function';
-
-export type AllMemberDetails = Map<number, MemberDetails>;
 
 export const pertinentEvents = [
   'MemberNumberLinkedToEmail' as const,
@@ -21,9 +19,9 @@ export const pertinentEvents = [
 ];
 
 const update = (
-  state: AllMemberDetails,
+  state: MultipleMemberDetails,
   event: SubsetOfDomainEvent<typeof pertinentEvents>
-): AllMemberDetails => {
+): MultipleMemberDetails => {
   const memberNumber = event.memberNumber;
   const details = state.get(memberNumber);
   switch (event.type) {
@@ -77,5 +75,5 @@ export const getAll = (
 
 export const getAllDetails = (
   events: ReadonlyArray<DomainEvent>
-): AllMemberDetails =>
+): MultipleMemberDetails =>
   pipe(events, filterByName(pertinentEvents), RA.reduce(new Map(), update));
