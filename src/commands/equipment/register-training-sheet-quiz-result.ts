@@ -6,7 +6,7 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {Command} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {pipe} from 'fp-ts/lib/function';
-import {QzEventDuplicate} from '../../training-sheets/events';
+import {QzEventDuplicate} from '../../types/qz-event';
 
 const codec = t.strict({
   equipmentId: tt.UUID,

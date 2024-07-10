@@ -1,6 +1,6 @@
 import {DomainEvent} from '../../types';
 
-export type TrainedInfo = {
+type TrainedInfo = {
   when: Date;
   by: number | null;
   prev: ReadonlyArray<{
