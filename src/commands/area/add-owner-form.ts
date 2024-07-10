@@ -80,8 +80,7 @@ const ADD_OWNER_FORM_TEMPLATE = Handlebars.compile(
   `
       <h1>Add an owner</h1>
       <p>{{render_current_owners}}</p>
-      <div id="wrapper"></div>
-      <table id="all-members">
+      <table data-gridjs>
         <thead>
           <tr>
             <th>Member Number</th>
@@ -96,17 +95,6 @@ const ADD_OWNER_FORM_TEMPLATE = Handlebars.compile(
           {{/each}}
         </tbody>
       </table>
-      <script>
-        new gridjs.Grid({
-          from: document.getElementById('all-members'),
-          search: true,
-          language: {
-            search: {
-              placeholder: 'Search...',
-            },
-          },
-        }).render(document.getElementById('wrapper'));
-      </script>
     `
 );
 

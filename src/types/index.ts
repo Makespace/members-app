@@ -4,7 +4,7 @@ export {Email} from './email';
 export {User} from './user';
 export {Actor} from './actor';
 export {HttpResponse} from './html';
-export {Member, MemberDetails} from './member';
+export {Member, MemberDetails, MultipleMemberDetails} from './member';
 export {
   DomainEvent,
   isEventOfType,
