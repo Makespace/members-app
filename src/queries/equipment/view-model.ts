@@ -1,7 +1,7 @@
 import {DateTime} from 'luxon';
 import {User} from '../../types';
 
-export type QuizID = string;
+type QuizID = string;
 
 export type QuizResultViewModel = {
   id: QuizID;

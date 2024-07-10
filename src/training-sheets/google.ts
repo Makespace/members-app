@@ -8,7 +8,7 @@ import {sheets_v4} from 'googleapis';
 import {v4} from 'uuid';
 import {UUID} from 'io-ts-types';
 import {DateTime} from 'luxon';
-import {QzEvent} from './events';
+import {QzEvent} from '../types/qz-event';
 
 // Bounds to prevent clearly broken parsing.
 const MIN_RECOGNISED_MEMBER_NUMBER = 0;
