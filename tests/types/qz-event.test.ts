@@ -52,7 +52,7 @@ const EVENT_2: QzEvent = {
 
 describe('QzEvent', () => {
   it('Check simple duplicate', () => {
-    expect(QzEventDuplicate.equals(EVENT_1, EVENT_1));
+    expect(QzEventDuplicate.equals(EVENT_1, EVENT_1)).toBeTruthy();
   });
   it('Check different object simple duplicate', () => {
     expect(
@@ -64,9 +64,9 @@ describe('QzEvent', () => {
           DomainEvent.decode(DomainEvent.encode(EVENT_1))
         ) as QzEvent
       )
-    );
+    ).toBeTruthy();
   });
   it('Check distinct', () => {
-    expect(!QzEventDuplicate.equals(EVENT_1, EVENT_2));
+    expect(QzEventDuplicate.equals(EVENT_1, EVENT_2)).toBeFalsy();
   });
 });

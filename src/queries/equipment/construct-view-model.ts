@@ -13,11 +13,10 @@ import {
   QuizResultViewModel,
   ViewModel,
 } from './view-model';
-import {MemberDetails, User} from '../../types';
+import {MemberDetails, MultipleMemberDetails, User} from '../../types';
 import {StatusCodes} from 'http-status-codes';
 import {DomainEvent, EventOfType} from '../../types/domain-event';
 import {Equipment} from '../../read-models/equipment/get';
-import {AllMemberDetails} from '../../read-models/members/get-all';
 import {Logger} from 'pino';
 import {getMembersTrainedOn} from '../../read-models/equipment/get-trained-on';
 import {DateTime} from 'luxon';
@@ -34,7 +33,7 @@ const getEquipment = (
     )
   );
 
-const indexMembersByEmail = (byId: AllMemberDetails) => {
+const indexMembersByEmail = (byId: MultipleMemberDetails) => {
   return pipe(
     Object.values(byId),
     RA.reduce(
@@ -108,7 +107,7 @@ const updateQuizResults = (
 
 const reduceToLatestQuizResultByMember = (
   logger: Logger,
-  members: AllMemberDetails,
+  members: MultipleMemberDetails,
   membersByEmail: Record<string, MemberDetails>,
   quizResults: ReturnType<typeof getQuizEvents>
 ) => {
