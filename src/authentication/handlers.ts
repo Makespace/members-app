@@ -10,6 +10,7 @@ import {logInPage} from './log-in-page';
 import {checkYourMailPage} from './check-your-mail';
 import {oopsPage} from '../templates';
 import {StatusCodes} from 'http-status-codes';
+import { SafeString } from 'handlebars';
 
 export const logIn = (req: Request, res: Response) => {
   res.status(StatusCodes.OK).send(logInPage);
@@ -41,7 +42,9 @@ export const invalidLink =
       .status(StatusCodes.UNAUTHORIZED)
       .send(
         oopsPage(
-          `The link you have used is (no longer) valid. Go back to the <a href=${logInPath}>log in</a>`
+          new SafeString(
+            `The link you have used is (no longer) valid. Go back to the <a href=${logInPath}>log in</a>`
+          )
         )
       );
   };
