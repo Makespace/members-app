@@ -44,5 +44,5 @@ const RENDER_LOG_TEMPLATE = Handlebars.compile(`
 export const render = (viewModel: ViewModel) =>
   pageTemplate(
     'Event Log',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_LOG_TEMPLATE(viewModel)));

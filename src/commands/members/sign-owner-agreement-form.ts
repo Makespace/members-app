@@ -31,7 +31,7 @@ const SIGN_OWNER_AGREEMENT_FORM_TEMPLATE = Handlebars.compile(`
 const renderForm = (viewModel: ViewModel) =>
   pageTemplate(
     'Sign Owner Agreement',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(SIGN_OWNER_AGREEMENT_FORM_TEMPLATE(viewModel)));
 
 const constructForm: Form<ViewModel>['constructForm'] =

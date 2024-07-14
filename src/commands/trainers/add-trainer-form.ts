@@ -56,7 +56,7 @@ const RENDER_ADD_TRAINER_FORM_TEMPLATE = Handlebars.compile(`
 const renderForm = (viewModel: ViewModel) =>
   pageTemplate(
     'Add Trainer',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_ADD_TRAINER_FORM_TEMPLATE(viewModel)));
 
 const getEquipmentId = (input: unknown) =>

@@ -39,7 +39,7 @@ const RENDER_REVOKE_SUPER_USER_TEMPLATE = Handlebars.compile(`
 const renderForm = (viewModel: ViewModel) =>
   pageTemplate(
     'Revoke super user',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_REVOKE_SUPER_USER_TEMPLATE(viewModel)));
 
 const paramsCodec = t.strict({

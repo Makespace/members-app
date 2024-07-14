@@ -101,7 +101,7 @@ const ADD_OWNER_FORM_TEMPLATE = Handlebars.compile(
 const renderForm = (viewModel: ViewModel) =>
   pageTemplate(
     'Add Owner',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(ADD_OWNER_FORM_TEMPLATE(viewModel)));
 
 const paramsCodec = t.strict({

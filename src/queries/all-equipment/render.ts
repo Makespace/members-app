@@ -48,5 +48,5 @@ const RENDER_ALL_EQUIPMENT_TEMPLATE = Handlebars.compile(
 export const render = (viewModel: ViewModel) =>
   pageTemplate(
     'Equipment',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_ALL_EQUIPMENT_TEMPLATE(viewModel)));

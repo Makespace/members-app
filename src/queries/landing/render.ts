@@ -56,5 +56,5 @@ const LANDING_PAGE_TEMPLATE = Handlebars.compile(`
 export const render = (viewModel: ViewModel) =>
   pageTemplate(
     'Dashboard',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(LANDING_PAGE_TEMPLATE(viewModel)));

@@ -33,7 +33,7 @@ const RENDER_EDIT_NAME_FORM_TEMPLATE = Handlebars.compile(`
 const renderForm = (viewModel: ViewModel) =>
   pageTemplate(
     'Edit name',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_EDIT_NAME_FORM_TEMPLATE(viewModel)));
 
 const paramsCodec = t.strict({

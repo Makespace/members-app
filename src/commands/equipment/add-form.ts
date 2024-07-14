@@ -33,7 +33,7 @@ const RENDER_ADD_EQUIPMENT_FORM_TEMPLATE = Handlebars.compile(`
 const renderForm = (viewModel: ViewModel) =>
   pageTemplate(
     'Create Equipment',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_ADD_EQUIPMENT_FORM_TEMPLATE(viewModel)));
 
 const getAreaId = (input: unknown) =>
