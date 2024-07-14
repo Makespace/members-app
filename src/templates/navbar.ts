@@ -17,6 +17,7 @@ export const registerNavBar = () => {
           <a href="/equipment">Equipment</a>
           <a href="/areas">Areas</a>
           <a href="/log-out">Log out</a>
+          {{loggedInUserSquare loggedInMember}}
         </nav>
       `
   );
