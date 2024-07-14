@@ -10,7 +10,7 @@ import {logInPage} from './log-in-page';
 import {checkYourMailPage} from './check-your-mail';
 import {oopsPage} from '../templates';
 import {StatusCodes} from 'http-status-codes';
-import { SafeString } from 'handlebars';
+import {SafeString} from 'handlebars';
 
 export const logIn = (req: Request, res: Response) => {
   res.status(StatusCodes.OK).send(logInPage);
