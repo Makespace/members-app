@@ -3,6 +3,7 @@ import {Request, Response} from 'express';
 import {pipe} from 'fp-ts/lib/function';
 import {parseEmailAddressFromBody} from './parse-email-address-from-body';
 import * as E from 'fp-ts/Either';
+import * as O from 'fp-ts/Option';
 import {publish} from 'pubsub-js';
 import passport from 'passport';
 import {magicLink} from './magic-link';
@@ -11,9 +12,20 @@ import {checkYourMailPage} from './check-your-mail';
 import {oopsPage} from '../templates';
 import {StatusCodes} from 'http-status-codes';
 import {SafeString} from 'handlebars';
+import {getUserFromSession} from './get-user-from-session';
+import {Dependencies} from '../dependencies';
 
-export const logIn = (req: Request, res: Response) => {
-  res.status(StatusCodes.OK).send(logInPage);
+export const logIn = (deps: Dependencies) => (req: Request, res: Response) => {
+  pipe(
+    req.session,
+    getUserFromSession(deps),
+    O.match(
+      () => {
+        res.status(StatusCodes.OK).send(logInPage);
+      },
+      _user => res.redirect('/')
+    )
+  );
 };
 
 export const logOut = (req: Request, res: Response) => {
