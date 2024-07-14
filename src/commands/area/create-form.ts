@@ -25,7 +25,7 @@ const CREATE_FORM_TEMPLATE = Handlebars.compile(
 const renderForm = (viewModel: ViewModel) =>
   pageTemplate(
     'Create Area',
-    O.some(viewModel.user)
+    viewModel.user
   )(
     new SafeString(
       CREATE_FORM_TEMPLATE({

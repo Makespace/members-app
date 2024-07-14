@@ -51,5 +51,5 @@ const RENDER_MEMBERS_TEMPLATE = Handlebars.compile(
 export const render = (viewModel: ViewModel) =>
   pageTemplate(
     'Members',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_MEMBERS_TEMPLATE(viewModel)));

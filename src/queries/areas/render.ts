@@ -50,5 +50,5 @@ const RENDER_AREAS_TEMPLATE = Handlebars.compile(`
 export const render = (viewModel: ViewModel) =>
   pageTemplate(
     'Areas',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_AREAS_TEMPLATE(viewModel)));

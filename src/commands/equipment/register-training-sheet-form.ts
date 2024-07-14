@@ -33,7 +33,7 @@ const RENDER_REGISTER_TRAINING_SHEET_TEMPLATE = Handlebars.compile(
 const renderForm = (viewModel: ViewModel) =>
   pageTemplate(
     'Register training sheet',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_REGISTER_TRAINING_SHEET_TEMPLATE(viewModel)));
 
 const constructForm: Form<ViewModel>['constructForm'] =

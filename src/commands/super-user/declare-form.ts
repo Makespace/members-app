@@ -28,7 +28,7 @@ const RENDER_DECLARE_SUPER_USER_TEMPLATE = Handlebars.compile(
 const renderForm = (viewModel: ViewModel) =>
   pageTemplate(
     'Declare super user',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_DECLARE_SUPER_USER_TEMPLATE(viewModel)));
 
 const constructForm: Form<ViewModel>['constructForm'] =

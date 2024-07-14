@@ -26,7 +26,7 @@ const RENDER_LINK_NUMBER_TO_EMAIL_TEMPLATE = Handlebars.compile(`
 const renderForm = (viewModel: ViewModel) =>
   pageTemplate(
     'Link a member number to an e-mail address',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_LINK_NUMBER_TO_EMAIL_TEMPLATE(viewModel)));
 
 const constructForm: Form<ViewModel>['constructForm'] =
