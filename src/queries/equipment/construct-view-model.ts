@@ -17,7 +17,6 @@ import {MemberDetails, MultipleMemberDetails, User} from '../../types';
 import {StatusCodes} from 'http-status-codes';
 import {DomainEvent, EventOfType} from '../../types/domain-event';
 import {Equipment} from '../../read-models/equipment/get';
-import {Logger} from 'pino';
 import {getMembersTrainedOn} from '../../read-models/equipment/get-trained-on';
 import {DateTime} from 'luxon';
 
@@ -47,16 +46,14 @@ const indexMembersByEmail = (byId: MultipleMemberDetails) => {
   );
 };
 
-const getQuizEvents = (
-  events: ReadonlyArray<DomainEvent>,
-  equipment: Equipment
-) => {
-  const results: {
-    [
-      index: EventOfType<'EquipmentTrainingQuizResult'>['id']
-    ]: EventOfType<'EquipmentTrainingQuizResult'>;
-  } = {};
-  events.forEach(event => {
+type QuizResultsMap = {
+  [
+    index: EventOfType<'EquipmentTrainingQuizResult'>['id']
+  ]: EventOfType<'EquipmentTrainingQuizResult'>;
+};
+
+const applyQuizResultUpdate =
+  (equipment: Equipment) => (results: QuizResultsMap, event: DomainEvent) => {
     // Requires events to be provided in order.
     switch (event.type) {
       case 'EquipmentTrainingQuizResult':
@@ -77,9 +74,17 @@ const getQuizEvents = (
       default:
         break;
     }
-  });
-  return Object.values(results);
-};
+    return results;
+  };
+
+const getQuizEvents =
+  (equipment: Equipment) =>
+  (
+    events: ReadonlyArray<DomainEvent>
+  ): ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>> =>
+    pipe(events, RA.reduce({}, applyQuizResultUpdate(equipment)), results => {
+      return Object.values(results);
+    });
 
 const updateQuizResults = (
   memberQuizResults: Record<number, QuizResultViewModel>,
@@ -105,54 +110,64 @@ const updateQuizResults = (
   existing.otherAttempts = existing.otherAttempts.concat([quizResult.id]);
 };
 
-const reduceToLatestQuizResultByMember = (
-  logger: Logger,
+const quizResultsMatch = (
   members: MultipleMemberDetails,
   membersByEmail: Record<string, MemberDetails>,
-  quizResults: ReturnType<typeof getQuizEvents>
-) => {
-  const memberQuizResults: Record<number, QuizResultViewModel> = {};
-  const unknownMemberQuizResults: QuizResultUnknownMemberViewModel[] = [];
-  for (const quizResult of quizResults) {
-    const memberNumber = O.fromNullable(quizResult.memberNumberProvided);
-    const email = O.fromNullable(quizResult.emailProvided);
+  quizResult: EventOfType<'EquipmentTrainingQuizResult'>
+): O.Option<MemberDetails> => {
+  const memberNumber = O.fromNullable(quizResult.memberNumberProvided);
+  const email = O.fromNullable(quizResult.emailProvided);
 
-    const needToMatch: O.Option<MemberDetails>[] = [];
-    if (O.isSome(memberNumber)) {
-      needToMatch.push(O.fromNullable(members.get(memberNumber.value)));
-    }
-    if (O.isSome(email)) {
-      needToMatch.push(O.fromNullable(membersByEmail[email.value]));
-    }
-
-    if (
-      (needToMatch.length === 1 && O.isSome(needToMatch[0])) ||
-      (needToMatch.length === 2 &&
-        O.isSome(needToMatch[0]) &&
-        needToMatch[0] === needToMatch[1])
-    ) {
-      updateQuizResults(memberQuizResults, needToMatch[0].value, quizResult);
-      continue;
-    }
-    unknownMemberQuizResults.push({
-      id: quizResult.id,
-      score: quizResult.score,
-      maxScore: quizResult.maxScore,
-      percentage: quizResult.percentage,
-      passed: quizResult.fullMarks,
-      timestamp: DateTime.fromSeconds(quizResult.timestampEpochS),
-      memberNumberProvided: quizResult.memberNumberProvided,
-      emailProvided: quizResult.emailProvided,
-    });
+  const needToMatch: O.Option<MemberDetails>[] = [];
+  if (O.isSome(memberNumber)) {
+    needToMatch.push(O.fromNullable(members.get(memberNumber.value)));
   }
-  return {
-    memberQuizResults,
-    unknownMemberQuizResults,
-  };
+  if (O.isSome(email)) {
+    needToMatch.push(O.fromNullable(membersByEmail[email.value]));
+  }
+
+  return (needToMatch.length === 1 && O.isSome(needToMatch[0])) ||
+    (needToMatch.length === 2 &&
+      O.isSome(needToMatch[0]) &&
+      needToMatch[0] === needToMatch[1])
+    ? needToMatch[0]
+    : O.none;
 };
 
+const reduceToLatestQuizResultByMember = (
+  members: MultipleMemberDetails,
+  membersByEmail: Record<string, MemberDetails>,
+  quizResults: ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>>
+) =>
+  pipe(
+    quizResults,
+    RA.reduce(
+      {
+        memberQuizResults: {} as Record<number, QuizResultViewModel>,
+        unknownMemberQuizResults: [] as QuizResultUnknownMemberViewModel[],
+      },
+      (result, quizResult) => {
+        const member = quizResultsMatch(members, membersByEmail, quizResult);
+        if (O.isSome(member)) {
+          updateQuizResults(result.memberQuizResults, member.value, quizResult);
+        } else {
+          result.unknownMemberQuizResults.push({
+            id: quizResult.id,
+            score: quizResult.score,
+            maxScore: quizResult.maxScore,
+            percentage: quizResult.percentage,
+            passed: quizResult.fullMarks,
+            timestamp: DateTime.fromSeconds(quizResult.timestampEpochS),
+            memberNumberProvided: quizResult.memberNumberProvided,
+            emailProvided: quizResult.emailProvided,
+          });
+        }
+        return result;
+      }
+    )
+  );
+
 const getQuizResults = (
-  logger: Logger,
   events: ReadonlyArray<DomainEvent>,
   equipment: Equipment
 ): TE.TaskEither<
@@ -169,10 +184,9 @@ const getQuizResults = (
 > => {
   const members = readModels.members.getAllDetails(events);
   const membersByEmail = indexMembersByEmail(members);
-  const quizEvents = getQuizEvents(events, equipment);
+  const quizEvents = getQuizEvents(equipment)(events);
   const trainedMembers = getMembersTrainedOn(equipment.id)(events);
   const memberResults = reduceToLatestQuizResultByMember(
-    logger,
     members,
     membersByEmail,
     quizEvents
@@ -230,6 +244,6 @@ export const constructViewModel =
         isSuperUserOrTrainerOfEquipment(events, equipment, user.memberNumber)
       ),
       TE.bindW('trainingQuizResults', ({events, equipment}) =>
-        getQuizResults(deps.logger, events, equipment)
+        getQuizResults(events, equipment)
       )
     );
