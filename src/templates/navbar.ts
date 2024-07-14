@@ -16,11 +16,7 @@ export const registerNavBar = () => {
           <a href="/members">Members</a>
           <a href="/equipment">Equipment</a>
           <a href="/areas">Areas</a>
-          {{#if loggedIn}}
-            <a href="/log-in">Log in</a>
-          {{else}}
-            <a href="/log-out">Log out</a>
-          {{/if}}
+          <a href="/log-out">Log out</a>
         </nav>
       `
   );

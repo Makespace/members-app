@@ -2,7 +2,6 @@ import Handlebars, {SafeString} from 'handlebars';
 import {pageTemplate} from '../../templates';
 import {User} from '../../types';
 import {ViewModel} from './view-model';
-import * as O from 'fp-ts/Option';
 
 const RENDER_TEMPLATE = Handlebars.compile(
   `
@@ -56,7 +55,4 @@ const RENDER_TEMPLATE = Handlebars.compile(
 );
 
 export const render = (viewModel: ViewModel, user: User) =>
-  pageTemplate(
-    'Member',
-    O.some(user)
-  )(new SafeString(RENDER_TEMPLATE(viewModel)));
+  pageTemplate('Member', user)(new SafeString(RENDER_TEMPLATE(viewModel)));

@@ -41,5 +41,5 @@ const SUPER_USERS_TEMPLATE = Handlebars.compile(`
 export const render = (viewModel: ViewModel) =>
   pageTemplate(
     'Super Users',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(SUPER_USERS_TEMPLATE(viewModel)));
