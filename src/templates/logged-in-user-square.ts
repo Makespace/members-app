@@ -3,7 +3,7 @@ export const registerLoggedInUserSquare = () => {
     'loggedInUserSquare',
     `
         <a href="/me">
-            {{avatar_thumbnail member=loggedInMember}}
+            {{avatar_thumbnail member=user}}
         </a>
       `
   );
