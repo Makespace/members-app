@@ -2,8 +2,7 @@ import {pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
-import * as O from 'fp-ts/Option';
-import {DomainEvent, User} from '../../types';
+import {DomainEvent, Member, User} from '../../types';
 import {Form} from '../../types/form';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {failureWithStatus} from '../../types/failure-with-status';
@@ -13,10 +12,7 @@ import Handlebars, {SafeString} from 'handlebars';
 
 type ViewModel = {
   user: User;
-  members: ReadonlyArray<{
-    number: number;
-    email: string;
-  }>;
+  members: ReadonlyArray<Member>;
   equipmentId: string;
   equipmentName: string;
 };
