@@ -1,4 +1,4 @@
-import {HttpResponse, MemberDetails} from '../types';
+import {HttpResponse, Member} from '../types';
 import Handlebars, {SafeString} from 'handlebars';
 import {registerHead} from './head';
 import {registerNavBar} from './navbar';
@@ -47,7 +47,7 @@ const ISOLATED_PAGE_TEMPLATE = Handlebars.compile(`
 `);
 
 export const pageTemplate =
-  (title: string, loggedInMember: MemberDetails) => (body: SafeString) =>
+  (title: string, loggedInMember: Member) => (body: SafeString) =>
     PAGE_TEMPLATE({
       title,
       loggedInMember,
