@@ -30,11 +30,11 @@ const RENDER_ADD_TRAINER_FORM_TEMPLATE = Handlebars.compile(`
     <tbody>
       {{#each members}}
         <tr>
-          <td>{{this.email}}</td>
-          <td>{{this.number}}</td>
+          <td>{{this.emailAddress}}</td>
+          <td>{{this.memberNumber}}</td>
           <td>
             <form action="#" method="post">
-              <input type="hidden" name="memberNumber" value="{{this.number}}" />
+              <input type="hidden" name="memberNumber" value="{{this.memberNumber}}" />
               <input
                 type="hidden"
                 name="equipmentId"
