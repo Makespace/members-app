@@ -9,6 +9,7 @@ import {registerMemberInput} from './member-input';
 import {registerOptionalDetailHelper} from './detail';
 import {registerMemberNumberHelper} from '../types/member-number';
 import {registerDisplayDateHelper} from '../types/display-date';
+import {registerLoggedInUserSquare} from './logged-in-user-square';
 
 registerNavBar();
 registerHead();
@@ -19,6 +20,7 @@ registerDisplayDateHelper();
 registerGridJs();
 registerFilterListHelper();
 registerMemberInput();
+registerLoggedInUserSquare();
 
 const PAGE_TEMPLATE = Handlebars.compile(`
   <!doctype html>

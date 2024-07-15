@@ -3,7 +3,6 @@ import * as tt from 'io-ts-types';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
-import * as O from 'fp-ts/Option';
 import {User} from '../../types';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
