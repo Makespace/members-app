@@ -7,7 +7,7 @@ const RENDER_TEMPLATE = Handlebars.compile(
   {{#if isSelf}}
     <h1 class=ownPageBanner>This is your profile!</h1>
   {{/if}}
-  <div class="profile">{{avatar_large member}}</div>
+  <div class="profile">{{avatar_large member.emailAddress member.memberNumber}}</div>
   <table>
     <caption>
       Details
@@ -42,7 +42,7 @@ const RENDER_TEMPLATE = Handlebars.compile(
       <tr>
         <th scope="row">Avatar</th>
         <td>
-          {{avatar_thumbnail member}}
+          {{avatar_thumbnail member.emailAddress member.memberNumber}}
           {{#if isSelf}}
             <a class=externalRedirect href="https://gravatar.com/profile">Edit via Gravatar</a>
           {{/if}}

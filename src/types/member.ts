@@ -3,8 +3,8 @@ import * as O from 'fp-ts/Option';
 export type MemberDetails = Member & Details;
 
 export type Member = {
-  number: number;
-  email: string;
+  memberNumber: number;
+  emailAddress: string;
 };
 
 type Details = {

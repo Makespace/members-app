@@ -19,7 +19,7 @@ Handlebars.registerPartial(
       <tbody>
       {{#each members}}
         <tr>
-          <td>{{avatar_thumbnail this}}</td>
+          <td>{{avatar_thumbnail this.emailAddress this.memberNumber}}</td>
           <td>
             {{member_number this.number}}
           </td>
