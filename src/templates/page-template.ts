@@ -47,10 +47,10 @@ const ISOLATED_PAGE_TEMPLATE = Handlebars.compile(`
 `);
 
 export const pageTemplate =
-  (title: string, loggedInMember: Member) => (body: SafeString) =>
+  (title: string, user: Member) => (body: SafeString) =>
     PAGE_TEMPLATE({
       title,
-      loggedInMember,
+      user,
       body,
       navbarRequired: true,
     });

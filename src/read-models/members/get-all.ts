@@ -27,8 +27,8 @@ const update = (
   switch (event.type) {
     case 'MemberNumberLinkedToEmail':
       state.set(memberNumber, {
-        email: event.email,
-        number: memberNumber,
+        emailAddress: event.email,
+        memberNumber,
         name: O.none,
         pronouns: O.none,
         isSuperUser: false,
@@ -56,8 +56,8 @@ const update = (
     case 'MemberEmailChanged':
       // Assumes events are in chronological order.
       if (details) {
-        details.prevEmails.push(details.email);
-        details.email = event.newEmail;
+        details.prevEmails.push(details.emailAddress);
+        details.emailAddress = event.newEmail;
       }
       break;
   }
@@ -70,7 +70,10 @@ export const getAll = (
   pipe(
     events,
     RA.filter(isEventOfType('MemberNumberLinkedToEmail')),
-    RA.map(event => ({number: event.memberNumber, email: event.email}))
+    RA.map(event => ({
+      memberNumber: event.memberNumber,
+      emailAddress: event.email,
+    }))
   );
 
 export const getAllDetails = (
