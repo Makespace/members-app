@@ -1,6 +1,5 @@
 import {pageTemplate} from '../../templates';
 import {ViewModel} from './view-model';
-import * as O from 'fp-ts/Option';
 import Handlebars, {SafeString} from 'handlebars';
 
 Handlebars.registerPartial(

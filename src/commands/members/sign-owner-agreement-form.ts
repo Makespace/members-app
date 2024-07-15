@@ -1,6 +1,5 @@
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
-import * as O from 'fp-ts/Option';
 import {Form} from '../../types/form';
 import {User} from '../../types';
 import Handlebars, {SafeString} from 'handlebars';

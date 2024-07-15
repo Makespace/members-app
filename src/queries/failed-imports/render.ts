@@ -1,5 +1,4 @@
 import {ViewModel} from './view-model';
-import * as O from 'fp-ts/Option';
 import {pageTemplate} from '../../templates';
 import Handlebars, {SafeString} from 'handlebars';
 
