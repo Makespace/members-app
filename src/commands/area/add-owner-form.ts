@@ -32,7 +32,9 @@ Handlebars.registerPartial(
 );
 
 Handlebars.registerHelper('member_name_or_contact', (member: MemberDetails) =>
-  O.isSome(member.name) ? member.name : `${member.number} ${member.email}`
+  O.isSome(member.name)
+    ? member.name
+    : `${member.memberNumber} ${member.emailAddress}`
 );
 
 Handlebars.registerPartial(
