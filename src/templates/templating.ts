@@ -45,4 +45,6 @@ class TemplateContext {
 
 // Wrap global stuff away in a single Global object which makes isolating context between tests easier while
 // still giving the benefits of a global object.
+// Slightly concerned this could venture into over-complicating things by adding this layer of abstraction - candidate
+// for simplification if it turns out to not be needed.
 export const ctx = new TemplateContext();
