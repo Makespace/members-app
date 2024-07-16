@@ -13,7 +13,7 @@ import {
   QuizResultViewModel,
   ViewModel,
 } from './view-model';
-import {MemberDetails, MultipleMemberDetails, User} from '../../types';
+import {Member, MemberDetails, MultipleMemberDetails, User} from '../../types';
 import {StatusCodes} from 'http-status-codes';
 import {DomainEvent, EventOfType} from '../../types/domain-event';
 import {Equipment} from '../../read-models/equipment/get';
@@ -38,7 +38,7 @@ const indexMembersByEmail = (byId: MultipleMemberDetails) => {
     RA.reduce(
       {} as Record<string, MemberDetails>,
       (acc, member: MemberDetails) => {
-        acc[member.email] = member;
+        acc[member.emailAddress] = member;
         member.prevEmails.forEach(email => (acc[email] = member));
         return acc;
       }
@@ -88,19 +88,19 @@ const getQuizEvents =
 
 const updateQuizResults = (
   memberQuizResults: Record<number, QuizResultViewModel>,
-  member: MemberDetails,
+  member: Member,
   quizResult: EventOfType<'EquipmentTrainingQuizResult'>
 ) => {
-  const existing = memberQuizResults[member.number];
+  const existing = memberQuizResults[member.memberNumber];
   if (quizResult.fullMarks || !existing || !existing.passed) {
-    memberQuizResults[member.number] = {
+    memberQuizResults[member.memberNumber] = {
       id: quizResult.id,
       score: quizResult.score,
       maxScore: quizResult.maxScore,
       percentage: quizResult.percentage,
       passed: quizResult.fullMarks,
       timestamp: DateTime.fromSeconds(quizResult.timestampEpochS),
-      memberNumber: member.number,
+      memberNumber: member.memberNumber,
       otherAttempts: existing
         ? [existing.id].concat(existing.otherAttempts)
         : [],

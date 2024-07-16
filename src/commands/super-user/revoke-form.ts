@@ -3,7 +3,6 @@ import * as tt from 'io-ts-types';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
-import * as O from 'fp-ts/Option';
 import {User} from '../../types';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
@@ -39,7 +38,7 @@ const RENDER_REVOKE_SUPER_USER_TEMPLATE = Handlebars.compile(`
 const renderForm = (viewModel: ViewModel) =>
   pageTemplate(
     'Revoke super user',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_REVOKE_SUPER_USER_TEMPLATE(viewModel)));
 
 const paramsCodec = t.strict({

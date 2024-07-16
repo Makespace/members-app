@@ -32,7 +32,9 @@ Handlebars.registerPartial(
 );
 
 Handlebars.registerHelper('member_name_or_contact', (member: MemberDetails) =>
-  O.isSome(member.name) ? member.name : `${member.number} ${member.email}`
+  O.isSome(member.name)
+    ? member.name
+    : `${member.memberNumber} ${member.emailAddress}`
 );
 
 Handlebars.registerPartial(
@@ -101,7 +103,7 @@ const ADD_OWNER_FORM_TEMPLATE = Handlebars.compile(
 const renderForm = (viewModel: ViewModel) =>
   pageTemplate(
     'Add Owner',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(ADD_OWNER_FORM_TEMPLATE(viewModel)));
 
 const paramsCodec = t.strict({

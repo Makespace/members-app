@@ -1,5 +1,4 @@
 import {ViewModel} from './view-model';
-import * as O from 'fp-ts/Option';
 import {pageTemplate} from '../../templates';
 import Handlebars, {SafeString} from 'handlebars';
 
@@ -26,5 +25,5 @@ const RENDER_FAILED_IMPORTS_TEMPLATE = Handlebars.compile(`
 export const render = (viewModel: ViewModel) =>
   pageTemplate(
     'Failed member imports',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_FAILED_IMPORTS_TEMPLATE(viewModel)));

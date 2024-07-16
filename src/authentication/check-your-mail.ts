@@ -1,6 +1,5 @@
-import * as O from 'fp-ts/Option';
-import {pageTemplate} from '../templates';
 import Handlebars from 'handlebars';
+import {isolatedPageTemplate} from '../templates/page-template';
 
 const CHECK_YOUR_MAIL_TEMPLATE = Handlebars.compile(
   `
@@ -14,10 +13,7 @@ const CHECK_YOUR_MAIL_TEMPLATE = Handlebars.compile(
 );
 
 export const checkYourMailPage = (submittedEmailAddress: string) =>
-  pageTemplate(
-    'Check your mail',
-    O.none
-  )(
+  isolatedPageTemplate('Check your mail')(
     new Handlebars.SafeString(
       CHECK_YOUR_MAIL_TEMPLATE({
         submittedEmailAddress,

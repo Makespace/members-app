@@ -59,6 +59,6 @@ export const initRoutes = (
     ),
     email('owner-agreement-invite', sendEmailCommands.ownerAgreementInvite),
     get('/ping', ping),
-    ...authRoutes,
+    ...authRoutes(deps),
   ];
 };

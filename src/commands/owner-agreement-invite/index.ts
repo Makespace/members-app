@@ -33,7 +33,7 @@ const constructEmail: SendEmail<OwnerAgreementInvite>['constructEmail'] = (
     ),
     E.map(
       (member): Email => ({
-        recipient: member.email as EmailAddress,
+        recipient: member.emailAddress as EmailAddress,
         text: textEmailTemplate(conf.PUBLIC_URL),
         subject: 'Sign the MS Owner Agreement',
         html: htmlEmailTemplate(conf.PUBLIC_URL),

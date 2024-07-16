@@ -1,6 +1,5 @@
 import Handlebars, {SafeString} from 'handlebars';
 import {pipe} from 'fp-ts/lib/function';
-import * as O from 'fp-ts/Option';
 import * as E from 'fp-ts/Either';
 import {User, MemberDetails} from '../../types';
 import {Form} from '../../types/form';
@@ -38,7 +37,7 @@ const RENDER_MARK_MEMBER_TRAINED_TEMPLATE = Handlebars.compile(
 const renderForm = (viewModel: ViewModel) =>
   pageTemplate(
     'Member Training Complete',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_MARK_MEMBER_TRAINED_TEMPLATE(viewModel)));
 
 const constructForm: Form<ViewModel>['constructForm'] =

@@ -1,15 +1,13 @@
 import Handlebars, {SafeString} from 'handlebars';
 import {pageTemplate} from '../../templates';
-import {User} from '../../types';
 import {ViewModel} from './view-model';
-import * as O from 'fp-ts/Option';
 
 const RENDER_TEMPLATE = Handlebars.compile(
   `
   {{#if isSelf}}
     <h1 class=ownPageBanner>This is your profile!</h1>
   {{/if}}
-  <div class="profile">{{avatar_large member}}</div>
+  <div class="profile">{{avatar_large member.emailAddress member.memberNumber}}</div>
   <table>
     <caption>
       Details
@@ -44,7 +42,7 @@ const RENDER_TEMPLATE = Handlebars.compile(
       <tr>
         <th scope="row">Avatar</th>
         <td>
-          {{avatar_thumbnail member}}
+          {{avatar_thumbnail member.emailAddress member.memberNumber}}
           {{#if isSelf}}
             <a class=externalRedirect href="https://gravatar.com/profile">Edit via Gravatar</a>
           {{/if}}
@@ -55,8 +53,8 @@ const RENDER_TEMPLATE = Handlebars.compile(
 `
 );
 
-export const render = (viewModel: ViewModel, user: User) =>
+export const render = (viewModel: ViewModel) =>
   pageTemplate(
     'Member',
-    O.some(user)
+    viewModel.user
   )(new SafeString(RENDER_TEMPLATE(viewModel)));

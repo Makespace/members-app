@@ -1,5 +1,4 @@
 import {createHash} from 'crypto';
-import {MemberDetails} from '../types';
 import Handlebars from 'handlebars';
 
 function getGravatarUrl(email: string, size: number = 160) {
@@ -33,25 +32,30 @@ const AVATAR_PROFILE_TEMPLATE = Handlebars.compile(
 );
 
 export const registerAvatarHelpers = () => {
-  Handlebars.registerHelper('avatar_thumbnail', (member: MemberDetails) => {
-    const email = member.email;
-    return new Handlebars.SafeString(
-      AVATAR_THUMBNAIL_TEMPLATE({
-        url1x: getGravatarUrl(email, 40),
-        url2x: getGravatarUrl(email, 80),
-        url4x: getGravatarUrl(email, 160),
-        memberNumber: member.number,
-      })
-    );
-  });
-  Handlebars.registerHelper('avatar_large', (member: MemberDetails) => {
-    const email = member.email;
-    return new Handlebars.SafeString(
-      AVATAR_PROFILE_TEMPLATE({
-        url1x: getGravatarUrl(email, 320),
-        url2x: getGravatarUrl(email, 640),
-        url4x: getGravatarUrl(email, 1280),
-      })
-    );
-  });
+  Handlebars.registerHelper(
+    'avatar_thumbnail',
+    (email: string, memberNumber: number) => {
+      return new Handlebars.SafeString(
+        AVATAR_THUMBNAIL_TEMPLATE({
+          url1x: getGravatarUrl(email, 40),
+          url2x: getGravatarUrl(email, 80),
+          url4x: getGravatarUrl(email, 160),
+          memberNumber,
+        })
+      );
+    }
+  );
+  Handlebars.registerHelper(
+    'avatar_large',
+    (email: string, memberNumber: number) => {
+      return new Handlebars.SafeString(
+        AVATAR_PROFILE_TEMPLATE({
+          url1x: getGravatarUrl(email, 320),
+          url2x: getGravatarUrl(email, 640),
+          url4x: getGravatarUrl(email, 1280),
+          memberNumber,
+        })
+      );
+    }
+  );
 };

@@ -1,5 +1,4 @@
-import * as O from 'fp-ts/Option';
-import {User, HttpResponse} from '../types';
+import {HttpResponse, Member} from '../types';
 import Handlebars, {SafeString} from 'handlebars';
 import {registerHead} from './head';
 import {registerNavBar} from './navbar';
@@ -10,6 +9,7 @@ import {registerMemberInput} from './member-input';
 import {registerOptionalDetailHelper} from './detail';
 import {registerMemberNumberHelper} from '../types/member-number';
 import {registerDisplayDateHelper} from '../types/display-date';
+import {registerLoggedInUserSquare} from './logged-in-user-square';
 
 registerNavBar();
 registerHead();
@@ -20,34 +20,48 @@ registerDisplayDateHelper();
 registerGridJs();
 registerFilterListHelper();
 registerMemberInput();
+registerLoggedInUserSquare();
 
 const PAGE_TEMPLATE = Handlebars.compile(`
-    <!doctype html>
-    <html lang="en">
-      {{> head }}
-      <header>
-      {{#if navbarRequired}}
-      {{> navbar }}
-      {{/if}}
-      </header>
-      <body>
-        {{body}}
-        {{> gridjs }}
-      </body>
-    </html>
-  `);
+  <!doctype html>
+  <html lang="en">
+    {{> head }}
+    <header>
+    {{> navbar }}
+    </header>
+    <body>
+      {{body}}
+      {{> gridjs }}
+    </body>
+  </html>
+`);
+
+// For pages not part of the normal flow.
+const ISOLATED_PAGE_TEMPLATE = Handlebars.compile(`
+  <!doctype html>
+  <html lang="en">
+    {{> head }}
+    <body>
+      {{body}}
+      {{> gridjs }}
+    </body>
+  </html>
+`);
 
 export const pageTemplate =
-  (title: string, user: O.Option<User>) => (body: SafeString) =>
+  (title: string, user: Member) => (body: SafeString) =>
     PAGE_TEMPLATE({
       title,
-      loggedIn: O.isSome(user),
-      body: body,
-
-      // For simplicity the navbar is always present if the user is logged in but
-      // we may want to separate these conditions.
-      navbarRequired: O.isSome(user),
+      user,
+      body,
+      navbarRequired: true,
     });
+
+export const isolatedPageTemplate = (title: string) => (body: SafeString) =>
+  ISOLATED_PAGE_TEMPLATE({
+    title,
+    body,
+  });
 
 export const templatePage: (r: HttpResponse) => HttpResponse =
   HttpResponse.match({

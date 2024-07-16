@@ -1,7 +1,6 @@
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
-import * as O from 'fp-ts/Option';
 import {User} from '../../types';
 import {Form} from '../../types/form';
 import * as t from 'io-ts';
@@ -33,7 +32,7 @@ const RENDER_EDIT_PRONOUNS_TEMPLATE = Handlebars.compile(`
 const renderForm = (viewModel: ViewModel) =>
   pageTemplate(
     'Edit pronouns',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_EDIT_PRONOUNS_TEMPLATE(viewModel)));
 
 const paramsCodec = t.strict({

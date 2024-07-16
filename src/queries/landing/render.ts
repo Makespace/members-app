@@ -1,6 +1,5 @@
 import {ViewModel} from './view-model';
 import {pageTemplate} from '../../templates';
-import * as O from 'fp-ts/Option';
 import Handlebars, {SafeString} from 'handlebars';
 
 Handlebars.registerPartial(
@@ -56,5 +55,5 @@ const LANDING_PAGE_TEMPLATE = Handlebars.compile(`
 export const render = (viewModel: ViewModel) =>
   pageTemplate(
     'Dashboard',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(LANDING_PAGE_TEMPLATE(viewModel)));
