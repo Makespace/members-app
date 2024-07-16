@@ -81,7 +81,7 @@ Handlebars.registerPartial(
 const ADD_OWNER_FORM_TEMPLATE = Handlebars.compile(
   `
       <h1>Add an owner</h1>
-      <p>{{render_current_owners}}</p>
+      <p>{{> render_current_owners}}</p>
       <table data-gridjs>
         <thead>
           <tr>
@@ -97,7 +97,11 @@ const ADD_OWNER_FORM_TEMPLATE = Handlebars.compile(
           {{/each}}
         </tbody>
       </table>
-    `
+    `,
+  {
+    strict: true,
+    explicitPartialContext: true,
+  }
 );
 
 const renderForm = (viewModel: ViewModel) =>
