@@ -24,7 +24,7 @@ export const member: Query = deps => (user, params) =>
     E.map(params => params.member),
     TE.fromEither,
     TE.chain(constructViewModel(deps, user)),
-    TE.map(viewModel => render(viewModel, user)),
+    TE.map(viewModel => render(viewModel)),
     TE.map(html =>
       HttpResponse.mk.Page({
         html,

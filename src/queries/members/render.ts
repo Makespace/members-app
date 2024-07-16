@@ -1,6 +1,5 @@
 import {pageTemplate} from '../../templates';
 import {ViewModel} from './view-model';
-import * as O from 'fp-ts/Option';
 import Handlebars, {SafeString} from 'handlebars';
 
 Handlebars.registerPartial(
@@ -19,7 +18,7 @@ Handlebars.registerPartial(
       <tbody>
       {{#each members}}
         <tr>
-          <td>{{avatar_thumbnail this}}</td>
+          <td>{{avatar_thumbnail this.emailAddress this.memberNumber}}</td>
           <td>
             {{member_number this.number}}
           </td>
@@ -51,5 +50,5 @@ const RENDER_MEMBERS_TEMPLATE = Handlebars.compile(
 export const render = (viewModel: ViewModel) =>
   pageTemplate(
     'Members',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_MEMBERS_TEMPLATE(viewModel)));

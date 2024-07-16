@@ -4,7 +4,6 @@ import {Actor} from '../../types/actor';
 import {DomainEvent} from '../../types';
 import {inspect} from 'node:util';
 import {pageTemplate} from '../../templates';
-import * as O from 'fp-ts/Option';
 import Handlebars, {SafeString} from 'handlebars';
 
 Handlebars.registerHelper('render_actor', (actor: Actor) => {
@@ -44,5 +43,5 @@ const RENDER_LOG_TEMPLATE = Handlebars.compile(`
 export const render = (viewModel: ViewModel) =>
   pageTemplate(
     'Event Log',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_LOG_TEMPLATE(viewModel)));

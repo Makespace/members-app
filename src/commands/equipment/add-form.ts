@@ -2,7 +2,6 @@ import {pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
-import * as O from 'fp-ts/Option';
 import {DomainEvent, User} from '../../types';
 import {v4} from 'uuid';
 import {Form} from '../../types/form';
@@ -33,7 +32,7 @@ const RENDER_ADD_EQUIPMENT_FORM_TEMPLATE = Handlebars.compile(`
 const renderForm = (viewModel: ViewModel) =>
   pageTemplate(
     'Create Equipment',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_ADD_EQUIPMENT_FORM_TEMPLATE(viewModel)));
 
 const getAreaId = (input: unknown) =>
