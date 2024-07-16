@@ -15,18 +15,18 @@ const RENDER_TEMPLATE = Handlebars.compile(
     <tbody>
       <tr>
         <th scope="row">Member number</th>
-        <td> {{member_number member.number}}</td>
+        <td> {{member_number member.memberNumber}}</td>
       </tr>
       <tr>
         <th scope="row">Email</th>
-        <td> {{member.email}}</td>
+        <td> {{member.emailAddress}}</td>
       </tr>
       <tr>
         <th scope="row">Name</th>
         <td>
           {{optional_detail member.name}}
           {{#if isSelf}}
-            <a href="/members/edit-name?member={{member.number}}">Edit</a>
+            <a href="/members/edit-name?member={{member.memberNumber}}">Edit</a>
           {{/if}}
         </td>
       </tr>
@@ -35,7 +35,7 @@ const RENDER_TEMPLATE = Handlebars.compile(
         <td>
           {{optional_detail member.pronouns}}
           {{#if isSelf}}
-            <a href="/members/edit-pronouns?member={{member.number}}">Edit</a>
+            <a href="/members/edit-pronouns?member={{member.memberNumber}}">Edit</a>
           {{/if}}
         </td>
       </tr>

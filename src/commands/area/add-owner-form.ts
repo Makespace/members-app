@@ -25,7 +25,7 @@ Handlebars.registerPartial(
   'owner_agreement_invite_button',
   `
     <form action="/send-email/owner-agreement-invite" method="post">
-      <input type="hidden" name="recipient" value="{{this.number}}" />
+      <input type="hidden" name="recipient" value="{{this.memberNumber}}" />
       <button type="submit">Ask to sign</button>
     </form>
 `
@@ -65,12 +65,12 @@ Handlebars.registerPartial(
 Handlebars.registerPartial(
   'render_potential_owner',
   `<tr>
-        <td>{{member_number this.number}}</td>
-        <td>{{this.email}}</td>
+        <td>{{member_number member.memberNumber}}</td>
+        <td>{{member.emailAddress}}</td>
         <td>{{> render_signed_status}}</td>
         <td>
           <form action="#" method="post">
-            <input type="hidden" name="memberNumber" value="{{this.number}}" />
+            <input type="hidden" name="memberNumber" value="{{member.memberNumber}}" />
             <input type="hidden" name="areaId" value="{{areaId}}" />
             <button type="submit">Add</button>
           </form>
@@ -93,7 +93,7 @@ const ADD_OWNER_FORM_TEMPLATE = Handlebars.compile(
         </thead>
         <tbody>
           {{#each areaOwners.potential}}
-            {{> render_potential_owner this areaId=areaId}}
+            {{> render_potential_owner member=this areaId=areaId}}
           {{/each}}
         </tbody>
       </table>
