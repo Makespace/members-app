@@ -7,7 +7,7 @@ Handlebars.registerPartial(
   `
   <ul>
     {{#each failedImports}}
-      <li><b>{{member_number this.memberNumber}}</b> -- {{this.email}}</li>
+      <li><b>{{member_number this.memberNumber}}</b> -- {{this.emailAddress}}</li>
     {{/each}}
   </ul>
   `
