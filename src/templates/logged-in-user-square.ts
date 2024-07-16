@@ -5,7 +5,7 @@ export const registerLoggedInUserSquare = () => {
     'loggedInUserSquare',
     `
         <a href="/me">
-            {{avatar_thumbnail member=user}}
+            {{avatar_thumbnail this.emailAddress this.memberNumber}}
         </a>
       `
   );
