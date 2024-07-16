@@ -1,6 +1,5 @@
 import {pageTemplate} from '../../templates';
 import {ViewModel} from './view-model';
-import * as O from 'fp-ts/Option';
 import Handlebars, {SafeString} from 'handlebars';
 
 Handlebars.registerPartial(
@@ -82,32 +81,35 @@ Handlebars.registerPartial(
 );
 
 // TODO
-// 1. Realistically people only care about training quiz results for people who have passed the quiz and aren't already signed off.
 // 2. Dates aren't displayed using the users locale.
 Handlebars.registerPartial(
   'training_quiz_results_table',
   `
 <table>
   <tr>
+    <th hidden>Quiz ID</th>
     <th>Timestamp</th>
     <th>Email</th>
     <th>Score</th>
+    <th hidden>Other Attempts</th>
   </tr>
-  {{#each results}}
+  {{#each results.knownMember}}
     {{#if this.passed}}
       <tr class=passed_training_quiz_row>
     {{else}}
       <tr class=failed_training_quiz_row>
     {{/if}}
+      <td hidden>{{this.id}}</td>
       <td>{{display_date this.timestamp}}</td>
-      <td>{{this.email}}</td>
+      <td>{{member_number this.memberNumber}}</td>
       <td>
         {{this.score}} / {{this.maxScore}} ({{this.percentage}}%)
       </td>
       <td><button>Mark as trained</button></td>
+      <td hidden>{{this.otherAttempts}}</td>
     </tr>
     {{else}}
-      <p>No one is waiting for training</p>
+      <p>{{empty_msg}}</p>
   {{/each}}
 </table>
 `
@@ -118,11 +120,82 @@ Handlebars.registerPartial(
   `
 <h2>Training Quiz Results</h2>
 <h3>Waiting for Training</h3>
-{{#with trainingQuizResults}}
-  {{> training_quiz_results_table results=passed }}
-<h3>All Results</h3>
-  {{> training_quiz_results_table results=all }}
-{{/with}}
+  <table>
+    <tr>
+      <th hidden>Quiz ID</th>
+      <th>Timestamp</th>
+      <th>Member Number</th>
+      <th>Score</th>
+      <th>Actions</th>
+      <th hidden>Other Attempts</th>
+    </tr>
+    {{#each trainingQuizResults.quizPassedNotTrained.knownMember}}
+      <tr class=passed_training_quiz_row>
+        <td hidden>{{this.id}}</td>
+        <td>{{display_date this.timestamp}}</td>
+        <td>{{member_number this.memberNumber}}</td>
+        <td>
+          {{this.score}} / {{this.maxScore}} ({{this.percentage}}%)
+        </td>
+        <td><button>Mark as trained</button></td>
+        <td hidden>{{this.otherAttempts}}</td>
+      </tr>
+      {{else}}
+        <p>No one is waiting for training</p>
+    {{/each}}
+  </table>
+{{#if trainingQuizResults.quizPassedNotTrained.unknownMember}}
+  <h3>Waiting for Training - Unknown Member</h3>
+  <p>Quizes completed by members without matching email and member numbers</p>
+  <table>
+    <tr>
+      <th hidden>Quiz ID</th>
+      <th>Timestamp</th>
+      <th>Member Number Provided</th>
+      <th>Email Provided</th>
+      <th>Score</th>
+    </tr>
+    {{#each trainingQuizResults.quizPassedNotTrained.unknownMember}}
+      <tr class=passed_training_quiz_row>
+        <td hidden>{{this.id}}</td>
+        <td>{{display_date this.timestamp}}</td>
+        {{#if this.memberNumberProvided}}
+          <td>{{member_number this.memberNumberProvided}}</td>
+        {{else}}
+          <td>{{optional_detail this.memberNumberProvided}}</td>
+        {{/if}}
+        <td>{{optional_detail this.emailProvided}}</td>
+        <td>
+          {{this.score}} / {{this.maxScore}} ({{this.percentage}}%)
+        </td>
+      </tr>
+    {{/each}}
+  </table>
+{{/if}}
+<h3>Failed quizes</h3>
+<p>Members who haven't passed (but have attempted) the quiz</p>
+<table>
+  <tr>
+    <th hidden>Quiz ID</th>
+    <th>Timestamp</th>
+    <th>Member Number</th>
+    <th>Score</th>
+    <th hidden>Other Attempts</th>
+  </tr>
+  {{#each trainingQuizResults.failedQuizNotTrained.knownMember}}
+    <tr class=failed_training_quiz_row>
+      <td hidden>{{this.id}}</td>
+      <td>{{display_date this.timestamp}}</td>
+      <td>{{member_number this.memberNumber}}</td>
+      <td>
+        {{this.score}} / {{this.maxScore}} ({{this.percentage}}%)
+      </td>
+      <td hidden>{{this.otherAttempts}}</td>
+    </tr>
+    {{else}}
+      <p>No failed quiz attempts</p>
+  {{/each}}
+</table>
 `
 );
 
@@ -139,5 +212,5 @@ const RENDER_EQUIPMENT_TEMPLATE = Handlebars.compile(
 export const render = (viewModel: ViewModel) =>
   pageTemplate(
     viewModel.equipment.name,
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_EQUIPMENT_TEMPLATE(viewModel)));

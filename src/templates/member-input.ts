@@ -10,7 +10,7 @@ export const registerMemberInput = () => {
           <div class="fieldset-item">
            <input type="radio" id="member-{{number}}" name="memberNumber" value="{{number}}"/>
            <label for="member-{{number}}">
-           {{avatar_thumbnail this}}
+           {{avatar_thumbnail this.emailAddress this.memberNumber}}
             <span>
               {{optional_detail name}}
               ({{optional_detail pronouns}})

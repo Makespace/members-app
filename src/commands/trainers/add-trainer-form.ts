@@ -2,8 +2,7 @@ import {pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
-import * as O from 'fp-ts/Option';
-import {DomainEvent, User} from '../../types';
+import {DomainEvent, Member, User} from '../../types';
 import {Form} from '../../types/form';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {failureWithStatus} from '../../types/failure-with-status';
@@ -13,10 +12,7 @@ import Handlebars, {SafeString} from 'handlebars';
 
 type ViewModel = {
   user: User;
-  members: ReadonlyArray<{
-    number: number;
-    email: string;
-  }>;
+  members: ReadonlyArray<Member>;
   equipmentId: string;
   equipmentName: string;
 };
@@ -34,11 +30,11 @@ const RENDER_ADD_TRAINER_FORM_TEMPLATE = Handlebars.compile(`
     <tbody>
       {{#each members}}
         <tr>
-          <td>{{this.email}}</td>
-          <td>{{this.number}}</td>
+          <td>{{this.emailAddress}}</td>
+          <td>{{this.memberNumber}}</td>
           <td>
             <form action="#" method="post">
-              <input type="hidden" name="memberNumber" value="{{this.number}}" />
+              <input type="hidden" name="memberNumber" value="{{this.memberNumber}}" />
               <input
                 type="hidden"
                 name="equipmentId"
@@ -56,7 +52,7 @@ const RENDER_ADD_TRAINER_FORM_TEMPLATE = Handlebars.compile(`
 const renderForm = (viewModel: ViewModel) =>
   pageTemplate(
     'Add Trainer',
-    O.some(viewModel.user)
+    viewModel.user
   )(new SafeString(RENDER_ADD_TRAINER_FORM_TEMPLATE(viewModel)));
 
 const getEquipmentId = (input: unknown) =>

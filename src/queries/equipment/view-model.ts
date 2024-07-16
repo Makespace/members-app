@@ -1,13 +1,31 @@
 import {DateTime} from 'luxon';
 import {User} from '../../types';
 
+type QuizID = string;
+
 export type QuizResultViewModel = {
-  email: string;
+  id: QuizID;
   score: number;
   maxScore: number;
   percentage: number;
   passed: boolean;
   timestamp: DateTime;
+
+  memberNumber: number;
+
+  otherAttempts: ReadonlyArray<QuizID>;
+};
+
+export type QuizResultUnknownMemberViewModel = {
+  id: QuizID;
+  score: number;
+  maxScore: number;
+  percentage: number;
+  passed: boolean;
+  timestamp: DateTime;
+
+  memberNumberProvided: number | null;
+  emailProvided: string | null;
 };
 
 export type ViewModel = {
@@ -21,7 +39,12 @@ export type ViewModel = {
     trainedMembers: ReadonlyArray<number>;
   };
   trainingQuizResults: {
-    passed: ReadonlyArray<QuizResultViewModel>;
-    all: ReadonlyArray<QuizResultViewModel>;
+    quizPassedNotTrained: {
+      knownMember: ReadonlyArray<QuizResultViewModel>;
+      unknownMember: ReadonlyArray<QuizResultUnknownMemberViewModel>;
+    };
+    failedQuizNotTrained: {
+      knownMember: ReadonlyArray<QuizResultViewModel>;
+    };
   };
 };

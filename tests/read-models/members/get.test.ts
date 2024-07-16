@@ -24,8 +24,8 @@ describe('getDetails', () => {
     const result = getDetails(42)(events);
     expect(result).toEqual(
       O.some({
-        number: 42,
-        email: 'foo@example.com' as EmailAddress,
+        memberNumber: 42,
+        emailAddress: 'foo@example.com' as EmailAddress,
         name: O.none,
         pronouns: O.none,
         isSuperUser: false,
@@ -48,8 +48,8 @@ describe('getDetails', () => {
     const result = getDetails(42)(events);
     expect(result).toEqual(
       O.some({
-        number: 42,
-        email: 'foo@example.com',
+        memberNumber: 42,
+        emailAddress: 'foo@example.com',
         name: O.some('Ford Prefect'),
         pronouns: O.none,
         isSuperUser: false,
@@ -80,8 +80,8 @@ describe('getDetails', () => {
     const result = getDetails(42)(events);
     expect(result).toEqual(
       O.some({
-        number: 42,
-        email: 'foo@example.com',
+        memberNumber: 42,
+        emailAddress: 'foo@example.com',
         name: O.some('Ford Prefect'),
         pronouns: O.some('he/him'),
         isSuperUser: false,
@@ -103,8 +103,8 @@ describe('getDetails', () => {
     const result = getDetails(42)(events);
     expect(result).toEqual(
       O.some({
-        number: 42,
-        email: 'updated@example.com',
+        memberNumber: 42,
+        emailAddress: 'updated@example.com',
         name: O.none,
         pronouns: O.none,
         isSuperUser: false,
