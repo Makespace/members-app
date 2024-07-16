@@ -20,12 +20,12 @@ Handlebars.registerPartial(
         <tr>
           <td>{{avatar_thumbnail this.emailAddress this.memberNumber}}</td>
           <td>
-            {{member_number this.number}}
+            {{member_number this.memberNumber}}
           </td>
           <td>{{optional_detail this.name}}</td>
           <td>{{optional_detail this.pronouns}}</td>
           {{#if viewerIsSuperUser}}
-            <td>{{member.email}}</td>
+            <td>{{this.emailAddress}}</td>
           {{else}}
             <td>'*****'</td>
           {{/if}}
