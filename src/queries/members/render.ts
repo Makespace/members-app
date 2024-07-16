@@ -24,7 +24,7 @@ Handlebars.registerPartial(
           </td>
           <td>{{optional_detail this.name}}</td>
           <td>{{optional_detail this.pronouns}}</td>
-          {{#if viewerIsSuperUser}}
+          {{#if @root.viewerIsSuperUser}}
             <td>{{this.emailAddress}}</td>
           {{else}}
             <td>'*****'</td>
