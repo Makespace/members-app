@@ -10,6 +10,7 @@ export const authRoutes = (deps: Dependencies): ReadonlyArray<Route> => {
     get(logInPath, logIn(deps)),
     get('/log-out', logOut),
     post('/auth', auth),
+    get('/auth', (_req, res) => res.redirect(logInPath)),
     get('/auth/callback', callback(invalidLinkPath)),
     get(invalidLinkPath, invalidLink(logInPath)),
   ];
