@@ -3,7 +3,7 @@ import {Dependencies} from '../dependencies';
 import {flow, pipe} from 'fp-ts/lib/function';
 import {sequenceS} from 'fp-ts/lib/Apply';
 import {StatusCodes} from 'http-status-codes';
-import {oopsPage, pageTemplate} from '../templates';
+import {oopsPage} from '../templates';
 import {failureWithStatus} from '../types/failure-with-status';
 import * as TE from 'fp-ts/TaskEither';
 import {getUserFromSession} from '../authentication';
@@ -13,8 +13,8 @@ import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {SendEmail} from '../commands';
 import {Config} from '../configuration';
-import * as O from 'fp-ts/Option';
 import Handlebars, {SafeString} from 'handlebars';
+import {isolatedPageTemplate} from '../templates/page-template';
 
 const getActorFrom = (session: unknown, deps: Dependencies) =>
   pipe(
@@ -81,10 +81,9 @@ const emailPost =
           res
             .status(200)
             .send(
-              pageTemplate(
-                'Email sent',
-                O.none
-              )(new SafeString(EMAIL_SENT_TEMPLATE({})))
+              isolatedPageTemplate('Email sent')(
+                new SafeString(EMAIL_SENT_TEMPLATE({}))
+              )
             );
         }
       )

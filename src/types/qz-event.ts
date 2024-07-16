@@ -1,14 +1,14 @@
 import {Eq} from 'fp-ts/lib/Eq';
-import {EventOfType} from '../types/domain-event';
+import {EventOfType} from './domain-event';
+import {getEq} from 'fp-ts/lib/ReadonlyRecord';
+import {NullableStringEq} from './nullable-string';
 
 export type QzEvent = EventOfType<'EquipmentTrainingQuizResult'>;
 export type RegEvent = EventOfType<'EquipmentTrainingSheetRegistered'>;
 
 export const QzEventDuplicate: Eq<QzEvent> = {
   equals: (a: QzEvent, b: QzEvent) =>
-    a.email === b.email &&
+    getEq(NullableStringEq).equals(a.quizAnswers, b.quizAnswers) &&
     a.timestampEpochS === b.timestampEpochS &&
-    a.score === b.score &&
-    a.equipmentId === b.equipmentId &&
     a.trainingSheetId === b.trainingSheetId,
 };

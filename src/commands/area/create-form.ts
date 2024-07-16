@@ -1,6 +1,5 @@
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
-import * as O from 'fp-ts/Option';
 import {User} from '../../types';
 import {v4} from 'uuid';
 import {Form} from '../../types/form';
@@ -25,7 +24,7 @@ const CREATE_FORM_TEMPLATE = Handlebars.compile(
 const renderForm = (viewModel: ViewModel) =>
   pageTemplate(
     'Create Area',
-    O.some(viewModel.user)
+    viewModel.user
   )(
     new SafeString(
       CREATE_FORM_TEMPLATE({

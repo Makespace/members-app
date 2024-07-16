@@ -16,7 +16,7 @@ import {
 } from '../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {accumBy, lastBy} from '../util';
-import {QzEvent, QzEventDuplicate, RegEvent} from './events';
+import {QzEvent, QzEventDuplicate, RegEvent} from '../types/qz-event';
 import {extractGoogleSheetData} from './google';
 
 const byEquipmentId: Ord<RegEvent> = pipe(
