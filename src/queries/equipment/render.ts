@@ -121,32 +121,36 @@ Handlebars.registerPartial(
 <h2>Training Quiz Results</h2>
 <h3>Waiting for Training</h3>
   <table>
-    <tr>
-      <th hidden>Quiz ID</th>
-      <th>Timestamp</th>
-      <th>Member Number</th>
-      <th>Score</th>
-      <th>Actions</th>
-      <th hidden>Other Attempts</th>
-    </tr>
-    {{#each trainingQuizResults.quizPassedNotTrained.knownMember}}
-      <tr class=passed_training_quiz_row>
-        <td hidden>{{this.id}}</td>
-        <td>{{display_date this.timestamp}}</td>
-        <td>{{member_number this.memberNumber}}</td>
-        <td>
-          {{this.score}} / {{this.maxScore}} ({{this.percentage}}%)
-        </td>
-        <td><button>Mark as trained</button></td>
-        <td hidden>{{this.otherAttempts}}</td>
+    {{#if trainingQuizResults.quizPassedNotTrained.knownMember}}
+      <tr>
+        <th hidden>Quiz ID</th>
+        <th>Timestamp</th>
+        <th>Member Number</th>
+        <th>Score</th>
+        <th>Actions</th>
+        <th hidden>Other Attempts</th>
       </tr>
-      {{else}}
-        <p>No one is waiting for training</p>
-    {{/each}}
+      {{#each trainingQuizResults.quizPassedNotTrained.knownMember}}
+        <tr class=passed_training_quiz_row>
+          <td hidden>{{this.id}}</td>
+          <td>{{display_date this.timestamp}}</td>
+          <td>{{member_number this.memberNumber}}</td>
+          <td>
+            {{this.score}} / {{this.maxScore}} ({{this.percentage}}%)
+          </td>
+          <td><button>Mark as trained</button></td>
+          <td hidden>{{this.otherAttempts}}</td>
+        </tr>
+      {{/each}}
+    {{else}}
+      <p>No one is waiting for training</p>
+    {{/if}}
   </table>
 {{#if trainingQuizResults.quizPassedNotTrained.unknownMember}}
   <h3>Waiting for Training - Unknown Member</h3>
-  <p>Quizes completed by members without matching email and member numbers</p>
+  <p>
+    Quizes completed by members without matching email and member numbers.
+  </p>
   <table>
     <tr>
       <th hidden>Quiz ID</th>
@@ -172,30 +176,30 @@ Handlebars.registerPartial(
     {{/each}}
   </table>
 {{/if}}
-<h3>Failed quizes</h3>
-<p>Members who haven't passed (but have attempted) the quiz</p>
-<table>
-  <tr>
-    <th hidden>Quiz ID</th>
-    <th>Timestamp</th>
-    <th>Member Number</th>
-    <th>Score</th>
-    <th hidden>Other Attempts</th>
-  </tr>
-  {{#each trainingQuizResults.failedQuizNotTrained.knownMember}}
-    <tr class=failed_training_quiz_row>
-      <td hidden>{{this.id}}</td>
-      <td>{{display_date this.timestamp}}</td>
-      <td>{{member_number this.memberNumber}}</td>
-      <td>
-        {{this.score}} / {{this.maxScore}} ({{this.percentage}}%)
-      </td>
-      <td hidden>{{this.otherAttempts}}</td>
+{{#if trainingQuizResults.failedQuizNotTrained.knownMember}}
+  <h3>Failed quizes</h3>
+  <p>Members who haven't passed (but have attempted) the quiz</p>
+  <table>
+    <tr>
+      <th hidden>Quiz ID</th>
+      <th>Timestamp</th>
+      <th>Member Number</th>
+      <th>Score</th>
+      <th hidden>Other Attempts</th>
     </tr>
-    {{else}}
-      <p>No failed quiz attempts</p>
-  {{/each}}
-</table>
+    {{#each trainingQuizResults.failedQuizNotTrained.knownMember}}
+      <tr class=failed_training_quiz_row>
+        <td hidden>{{this.id}}</td>
+        <td>{{display_date this.timestamp}}</td>
+        <td>{{member_number this.memberNumber}}</td>
+        <td>
+          {{this.score}} / {{this.maxScore}} ({{this.percentage}}%)
+        </td>
+        <td hidden>{{this.otherAttempts}}</td>
+      </tr>
+    {{/each}}
+  </table>
+{{/if}}
 `
 );
 
