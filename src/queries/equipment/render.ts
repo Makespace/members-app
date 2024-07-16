@@ -158,6 +158,7 @@ Handlebars.registerPartial(
       <th>Member Number Provided</th>
       <th>Email Provided</th>
       <th>Score</th>
+      <th>Actions</th>
     </tr>
     {{#each trainingQuizResults.quizPassedNotTrained.unknownMember}}
       <tr class=passed_training_quiz_row>
@@ -172,6 +173,7 @@ Handlebars.registerPartial(
         <td>
           {{this.score}} / {{this.maxScore}} ({{this.percentage}}%)
         </td>
+        <td><button class=hamburger_dropdown>Update</button></td>
       </tr>
     {{/each}}
   </table>
