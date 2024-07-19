@@ -1,30 +1,25 @@
-import Handlebars, {HelperOptions} from 'handlebars';
+import {html, Html, joinHtml, sanitizeString} from '../types/html';
 
-export const registerFilterListHelper = () => {
-  Handlebars.registerHelper(
-    'filterList',
-    (context: ReadonlyArray<unknown>, name: string, options: HelperOptions) => {
-      const prefix = `
-    <table data-gridjs>
-      <thead>
-        <tr>
-          <th>${name}</th>
-        </tr>
-      </thead>
-      <tbody>
-    `;
-
-      const suffix = `
-      </tbody>
-    </table>
-    `;
-
-      const rows = [];
-      for (const item of context) {
-        rows.push(`<tr><td>${options.fn(item)}</td></tr>`);
-      }
-
-      return prefix + rows.join('') + suffix;
-    }
-  );
-};
+export const filterList = <T>(
+  context: ReadonlyArray<T>,
+  name: string,
+  elementTemplate: (element: T) => Html
+): Html => html`
+  <table data-gridjs>
+    <thead>
+      <tr>
+        <th>${sanitizeString(name)}</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${joinHtml(
+        context.map(
+          item =>
+            html`<tr>
+              <td>${elementTemplate(item)}</td>
+            </tr>`
+        )
+      )}
+    </tbody>
+  </table>
+`;
