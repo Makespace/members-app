@@ -1,18 +1,18 @@
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'makespace-members-app'
+app = 'makespace-app'
 primary_region = 'lhr'
 
 [build]
 
 [env]
-  PUBLIC_URL = "https://makespace-members-app.fly.dev"
-  SMTP_FROM = "it-maintainers@makespace.org"
-  BACKGROUND_PROCESSING_ENABLED = "true"
+  BACKGROUND_PROCESSING_ENABLED = 'true'
+  PUBLIC_URL = 'https://makespace-app.fly.dev'
+  SMTP_FROM = 'it-maintainers@makespace.org'
 
 [http_service]
-  internal_port = 8080
+  internal_port = 3000
   force_https = true
   auto_stop_machines = true
   auto_start_machines = true
