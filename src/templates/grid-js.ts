@@ -1,4 +1,4 @@
-import Handlebars from 'handlebars';
+
 
 export const registerGridJs = () => {
   Handlebars.registerPartial(

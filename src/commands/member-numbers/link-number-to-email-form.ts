@@ -2,7 +2,7 @@ import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
 import {User} from '../../types';
 import {Form} from '../../types/form';
-import Handlebars, {SafeString} from 'handlebars';
+
 
 type ViewModel = {
   user: User;

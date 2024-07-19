@@ -1,4 +1,4 @@
-import Handlebars, {SafeString} from 'handlebars';
+
 import {pageTemplate} from '../../templates';
 import {ViewModel} from './view-model';
 

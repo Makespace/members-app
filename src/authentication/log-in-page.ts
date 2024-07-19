@@ -1,4 +1,4 @@
-import Handlebars, {SafeString} from 'handlebars';
+
 import {isolatedPageTemplate} from '../templates/page-template';
 
 const LOGIN_PAGE_TEMPLATE = Handlebars.compile(

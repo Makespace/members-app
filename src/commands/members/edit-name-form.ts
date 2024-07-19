@@ -8,7 +8,7 @@ import * as tt from 'io-ts-types';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
-import Handlebars, {SafeString} from 'handlebars';
+
 
 type ViewModel = {
   user: User;

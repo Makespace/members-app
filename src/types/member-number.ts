@@ -1,4 +1,4 @@
-import Handlebars from 'handlebars';
+
 
 export const registerMemberNumberHelper = () => {
   Handlebars.registerHelper('member_number', memberNumber => {

@@ -1,4 +1,4 @@
-import Handlebars from 'handlebars';
+
 import {DateTime} from 'luxon';
 
 export const registerDisplayDateHelper = () => {

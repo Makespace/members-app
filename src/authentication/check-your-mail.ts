@@ -1,8 +1,7 @@
-import Handlebars from 'handlebars';
 import {isolatedPageTemplate} from '../templates/page-template';
+import { html } from '../types/html';
 
-const CHECK_YOUR_MAIL_TEMPLATE = Handlebars.compile(
-  `
+const CHECK_YOUR_MAIL_TEMPLATE = html`
       <h1>Check your mail</h1>
       <p>
         If <b>{{submittedEmailAddress}}</b> is linked to a Makespace number you

@@ -3,7 +3,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {pageTemplate} from '../../templates';
 import {User, MemberDetails} from '../../types';
 import {Form} from '../../types/form';
-import Handlebars, {SafeString} from 'handlebars';
+
 import {readModels} from '../../read-models';
 
 type ViewModel = {

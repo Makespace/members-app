@@ -32,7 +32,7 @@ export const html = (
 };
 
 interface Page {
-  html: string;
+  html: Html;
 }
 
 interface Redirect {

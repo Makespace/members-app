@@ -3,7 +3,7 @@ import {pageTemplate} from '../../templates';
 import {User} from '../../types';
 import {v4} from 'uuid';
 import {Form} from '../../types/form';
-import Handlebars, {SafeString} from 'handlebars';
+
 
 type ViewModel = {
   user: User;
