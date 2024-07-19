@@ -8,7 +8,9 @@ primary_region = 'lhr'
 
 [env]
   BACKGROUND_PROCESSING_ENABLED = 'true'
+  SMTP_PORT = '587'
   PUBLIC_URL = 'https://makespace-app.fly.dev'
+  SMTP_HOST = 'in-v3.mailjet.com'
   SMTP_FROM = 'it-maintainers@makespace.org'
 
 [http_service]
