@@ -1,4 +1,5 @@
 import * as Sum from '@unsplash/sum-types';
+import * as O from 'fp-ts/Option';
 import sanitize from 'sanitize-html';
 
 export type Html = string & {readonly Html: unique symbol};
@@ -30,6 +31,15 @@ export const html = (
   result += literals[substitutions.length];
   return result as Html;
 };
+
+export const optionalSafe = (
+  data: O.Option<string | number>
+): Safe | SanitizedString | number =>
+  O.isSome(data)
+    ? typeof data.value === 'string'
+      ? sanitizeString(data.value)
+      : data.value
+    : safe('-');
 
 interface Page {
   html: Html;
