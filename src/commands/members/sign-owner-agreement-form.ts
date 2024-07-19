@@ -23,7 +23,7 @@ const renderBody = (viewModel: ViewModel) => html`
     <input
       type="hidden"
       name="signedAt"
-      value="${safe`${viewModel.agreementGenerationTimestampIso}`}"
+      value="${safe(viewModel.agreementGenerationTimestampIso)}"
     />
     <button type="submit">Sign Agreement</button>
   </form>

@@ -63,25 +63,21 @@ const renderExisting = (existing: ViewModel['areaOwners']['existing']) =>
 const render_signed_status = (member: Member) =>
   pipe(
     member.agreementSigned,
-    O.matchW(
+    O.match(
       () => renderOwnerAgreementInviteButton(member.number),
-      date => safe`Signed: ${date.toLocaleDateString()}`
+      date => html`Signed: ${safe(date.toLocaleDateString())}`
     )
   );
 
-const renderPotentialOwner = (owner: Member) =>
+const renderPotentialOwner = (areaId: string) => (owner: Member) =>
   html`<tr>
     <td>${owner.number}</td>
     <td>${sanitizeString(owner.email)}</td>
     <td>${render_signed_status(owner)}</td>
     <td>
       <form action="#" method="post">
-        <input
-          type="hidden"
-          name="memberNumber"
-          value="{{member.memberNumber}}"
-        />
-        <input type="hidden" name="areaId" value="{{areaId}}" />
+        <input type="hidden" name="memberNumber" value="${owner.number}" />
+        <input type="hidden" name="areaId" value="${safe(areaId)}" />
         <button type="submit">Add</button>
       </form>
     </td>
@@ -104,7 +100,7 @@ const renderBody = (viewModel: ViewModel) => html`
     <tbody>
       ${pipe(
         viewModel.areaOwners.potential,
-        RA.map(renderPotentialOwner),
+        RA.map(renderPotentialOwner(viewModel.areaId)),
         joinHtml
       )}
     </tbody>
