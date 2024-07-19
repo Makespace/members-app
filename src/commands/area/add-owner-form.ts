@@ -1,8 +1,8 @@
 import {flow, pipe} from 'fp-ts/lib/function';
+import * as RA from 'fp-ts/ReadonlyArray';
 import * as E from 'fp-ts/Either';
-import {pageTemplate} from '../../templates';
 import * as O from 'fp-ts/Option';
-import {DomainEvent, MemberDetails, User} from '../../types';
+import {DomainEvent, User} from '../../types';
 import * as t from 'io-ts';
 import {StatusCodes} from 'http-status-codes';
 import {formatValidationErrors} from 'io-ts-reporters';
@@ -13,7 +13,9 @@ import {
 import {Form} from '../../types/form';
 import {AreaOwners} from '../../read-models/members/get-potential-owners';
 import {readModels} from '../../read-models';
-import Handlebars, {SafeString} from 'handlebars';
+import {pageTemplateHandlebarlessBody} from '../../templates/page-template';
+import {html, joinHtml, safe, sanitizeString} from '../../types/html';
+import {Member} from '../../read-models/members/member';
 
 type ViewModel = {
   user: User;
@@ -21,90 +23,100 @@ type ViewModel = {
   areaOwners: AreaOwners;
 };
 
-Handlebars.registerPartial(
-  'owner_agreement_invite_button',
-  `
-    <form action="/send-email/owner-agreement-invite" method="post">
-      <input type="hidden" name="recipient" value="{{this.memberNumber}}" />
-      <button type="submit">Ask to sign</button>
-    </form>
-`
-);
+const renderOwnerAgreementInviteButton = (
+  memberNumber: Member['number']
+) => html`
+  <form action="/send-email/owner-agreement-invite" method="post">
+    <input type="hidden" name="recipient" value="${memberNumber}" />
+    <button type="submit">Ask to sign</button>
+  </form>
+`;
 
-Handlebars.registerHelper('member_name_or_contact', (member: MemberDetails) =>
+const renderMember = (member: Member) =>
   O.isSome(member.name)
-    ? member.name
-    : `${member.memberNumber} ${member.emailAddress}`
-);
+    ? html`<a href="/member/${member.number}"
+        >${sanitizeString(member.name.value)}<a></a
+      ></a>`
+    : html`<a href="/member/${member.number}"
+        >${sanitizeString(member.email)}<a></a
+      ></a>`;
 
-Handlebars.registerPartial(
-  'render_current_owners',
-  `
-  {{#if areaOwners.existing}}
-    Current owners:
-    {{#each areaOwners.existing}}
-      {{member_name_or_contact this}}
-    {{/each}}
-  {{else}}
-    'No current owners'
-  {{/if}}
-`
-);
-
-Handlebars.registerPartial(
-  'render_signed_status',
-  `
-  {{#if this.agreementSigned}}
-    Signed: {{display_date this.agreementSigned}}
-  {{else}}
-    {{> owner_agreement_invite_button}}
-  {{/if}}
-  `
-);
-
-Handlebars.registerPartial(
-  'render_potential_owner',
-  `<tr>
-        <td>{{member_number member.memberNumber}}</td>
-        <td>{{member.emailAddress}}</td>
-        <td>{{> render_signed_status}}</td>
-        <td>
-          <form action="#" method="post">
-            <input type="hidden" name="memberNumber" value="{{member.memberNumber}}" />
-            <input type="hidden" name="areaId" value="{{areaId}}" />
-            <button type="submit">Add</button>
-          </form>
-        </td>
-      </tr>`
-);
-
-const ADD_OWNER_FORM_TEMPLATE = Handlebars.compile(
-  `
-      <h1>Add an owner</h1>
-      <p>{{render_current_owners}}</p>
-      <table data-gridjs>
-        <thead>
-          <tr>
-            <th>Member Number</th>
-            <th>E-Mail</th>
-            <th>Owner Agreement</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {{#each areaOwners.potential}}
-            {{> render_potential_owner member=this areaId=areaId}}
-          {{/each}}
-        </tbody>
-      </table>
+const renderMembersAsList = (members: ReadonlyArray<Member>) =>
+  pipe(
+    members,
+    RA.map(renderMember),
+    RA.map(item => html` <li>${item}</li> `),
+    joinHtml,
+    items => html`
+      <ul>
+        ${items}
+      </ul>
     `
-);
+  );
+
+const renderExisting = (existing: ViewModel['areaOwners']['existing']) =>
+  pipe(
+    existing,
+    RA.match(() => html`<p>No current owners</p>`, renderMembersAsList)
+  );
+
+const render_signed_status = (member: Member) =>
+  pipe(
+    member.agreementSigned,
+    O.matchW(
+      () => renderOwnerAgreementInviteButton(member.number),
+      date => safe`Signed: ${date.toLocaleDateString()}`
+    )
+  );
+
+const renderPotentialOwner = (owner: Member) =>
+  html`<tr>
+    <td>${owner.number}</td>
+    <td>${sanitizeString(owner.email)}</td>
+    <td>${render_signed_status(owner)}</td>
+    <td>
+      <form action="#" method="post">
+        <input
+          type="hidden"
+          name="memberNumber"
+          value="{{member.memberNumber}}"
+        />
+        <input type="hidden" name="areaId" value="{{areaId}}" />
+        <button type="submit">Add</button>
+      </form>
+    </td>
+  </tr>`;
+
+const renderBody = (viewModel: ViewModel) => html`
+  <h1>Add an owner</h1>
+  <h2>Existing owners</h2>
+  <p>${renderExisting(viewModel.areaOwners.existing)}</p>
+  <h2>Potential owners</h2>
+  <table data-gridjs>
+    <thead>
+      <tr>
+        <th>Member Number</th>
+        <th>E-Mail</th>
+        <th>Owner Agreement</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      ${pipe(
+        viewModel.areaOwners.potential,
+        RA.map(renderPotentialOwner),
+        joinHtml
+      )}
+    </tbody>
+  </table>
+`;
 
 const renderForm = (viewModel: ViewModel) =>
-  pageTemplate(
-    'Add Owner',
-    viewModel.user
-  )(new SafeString(ADD_OWNER_FORM_TEMPLATE(viewModel)));
+  pipe(
+    viewModel,
+    renderBody,
+    pageTemplateHandlebarlessBody('Add Owner', viewModel.user)
+  );
 
 const paramsCodec = t.strict({
   area: t.string,

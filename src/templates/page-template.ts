@@ -10,6 +10,7 @@ import {registerOptionalDetailHelper} from './detail';
 import {registerMemberNumberHelper} from '../types/member-number';
 import {registerDisplayDateHelper} from '../types/display-date';
 import {registerLoggedInUserSquare} from './logged-in-user-square';
+import {Html} from '../types/html';
 
 registerNavBar();
 registerHead();
@@ -54,6 +55,15 @@ export const pageTemplate =
       title,
       user,
       body,
+      navbarRequired: true,
+    });
+
+export const pageTemplateHandlebarlessBody =
+  (title: string, user: Member) => (body: Html) =>
+    PAGE_TEMPLATE({
+      title,
+      user,
+      body: new SafeString(body),
       navbarRequired: true,
     });
 
