@@ -1,4 +1,4 @@
-import Handlebars from 'handlebars';
+
 import * as O from 'fp-ts/Option';
 
 export const registerOptionalDetailHelper = () => {

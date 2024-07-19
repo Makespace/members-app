@@ -1,4 +1,4 @@
-import Handlebars, {SafeString} from 'handlebars';
+
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
 import {User, MemberDetails} from '../../types';

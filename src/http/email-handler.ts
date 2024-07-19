@@ -13,7 +13,7 @@ import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {SendEmail} from '../commands';
 import {Config} from '../configuration';
-import Handlebars, {SafeString} from 'handlebars';
+
 import {isolatedPageTemplate} from '../templates/page-template';
 
 const getActorFrom = (session: unknown, deps: Dependencies) =>
