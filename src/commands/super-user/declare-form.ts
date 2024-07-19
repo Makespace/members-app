@@ -5,30 +5,28 @@ import {User, MemberDetails} from '../../types';
 import {Form} from '../../types/form';
 
 import {readModels} from '../../read-models';
+import {html} from '../../types/html';
+import {memberInput} from '../../templates/member-input';
 
 type ViewModel = {
   user: User;
   members: ReadonlyArray<MemberDetails>;
 };
 
-const RENDER_DECLARE_SUPER_USER_TEMPLATE = Handlebars.compile(
-  `
-      <h1>Declare super user</h1>
-      <form action="#" method="post">
-        <label for="number">
-          Which member number would you like receive super user privileges?
-        </label>
-        {{> memberInput members }}
-        <button type="submit">Confirm and send</button>
-      </form>
-    `
-);
-
 const renderForm = (viewModel: ViewModel) =>
   pageTemplate(
     'Declare super user',
     viewModel.user
-  )(new SafeString(RENDER_DECLARE_SUPER_USER_TEMPLATE(viewModel)));
+  )(html`
+    <h1>Declare super user</h1>
+    <form action="#" method="post">
+      <label for="number">
+        Which member number would you like receive super user privileges?
+      </label>
+      ${memberInput(viewModel.members)}
+      <button type="submit">Confirm and send</button>
+    </form>
+  `);
 
 const constructForm: Form<ViewModel>['constructForm'] =
   () =>

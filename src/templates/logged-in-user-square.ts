@@ -1,12 +1,9 @@
+import {Member} from '../types';
+import {html} from '../types/html';
+import {getGravatarThumbnail} from './avatar';
 
-
-export const registerLoggedInUserSquare = () => {
-  Handlebars.registerPartial(
-    'loggedInUserSquare',
-    `
-        <a href="/me">
-            {{avatar_thumbnail this.emailAddress this.memberNumber}}
-        </a>
-      `
-  );
-};
+export const loggedInUserSquare = (member: Member) => html`
+  <a href="/me">
+    ${getGravatarThumbnail(member.emailAddress, member.memberNumber)}
+  </a>
+`;

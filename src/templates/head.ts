@@ -1,11 +1,11 @@
 import {html, sanitizeString} from '../types/html';
 
-export const renderHead = (viewModel: {title: string}) => html`
+export const head = (title: string) => html`
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>${sanitizeString(viewModel.title)} | Cambridge Makespace</title>
+    <title>${sanitizeString(title)} | Cambridge Makespace</title>
     <link rel="stylesheet" href="/static/styles.css" />
 
     <!-- Generated using https://realfavicongenerator.net -->
