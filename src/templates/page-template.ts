@@ -1,59 +1,32 @@
 import {HttpResponse, Member} from '../types';
 
 import {html, Html} from '../types/html';
-
-
-
-
-const PAGE_TEMPLATE = html`
-  <!doctype html>
-  <html lang="en">
-    {{> head }}
-    <header>
-    {{> navbar }}
-    </header>
-    <body>
-      {{body}}
-      {{> gridjs }}
-    </body>
-  </html>
-`;
-
-// For pages not part of the normal flow.
-const ISOLATED_PAGE_TEMPLATE = html`
-  <!doctype html>
-  <html lang="en">
-    {{> head }}
-    <body>
-      {{body}}
-      {{> gridjs }}
-    </body>
-  </html>
-`;
+import {gridJs} from './grid-js';
+import {head} from './head';
+import {navBar} from './navbar';
 
 export const pageTemplate =
-  (title: string, user: Member) => (body: SafeString) =>
-    PAGE_TEMPLATE({
-      title,
-      user,
-      body,
-      navbarRequired: true,
-    });
+  (title: string, user: Member) => (body: Html) => html`
+    <!doctype html>
+    <html lang="en">
+      ${head(title)}
+      <header>${navBar(user)}</header>
+      <body>
+        ${body} ${gridJs()}
+      </body>
+    </html>
+  `;
 
-export const pageTemplateHandlebarlessBody =
-  (title: string, user: Member) => (body: Html) =>
-    PAGE_TEMPLATE({
-      title,
-      user,
-      body: new SafeString(body),
-      navbarRequired: true,
-    });
-
-export const isolatedPageTemplate = (title: string) => (body: Html) =>
-  ISOLATED_PAGE_TEMPLATE({
-    title,
-    body,
-  });
+// For pages not part of the normal flow.
+export const isolatedPageTemplate = (title: string) => (body: Html) => html`
+  <!doctype html>
+  <html lang="en">
+    ${head(title)}
+    <body>
+      ${body} ${gridJs()}
+    </body>
+  </html>
+`;
 
 export const templatePage: (r: HttpResponse) => HttpResponse =
   HttpResponse.match({

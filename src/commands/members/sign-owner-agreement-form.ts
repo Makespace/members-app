@@ -1,7 +1,7 @@
 import * as E from 'fp-ts/Either';
 import {Form} from '../../types/form';
 import {User} from '../../types';
-import {pageTemplateHandlebarlessBody} from '../../templates/page-template';
+import {pageTemplate} from '../../templates/page-template';
 import {pipe} from 'fp-ts/lib/function';
 import {html, safe} from '../../types/html';
 import {ownerAgreement} from './owner-agreement';
@@ -33,7 +33,7 @@ const renderForm = (viewModel: ViewModel) =>
   pipe(
     viewModel,
     renderBody,
-    pageTemplateHandlebarlessBody('Sign Owner Agreement', viewModel.user)
+    pageTemplate('Sign Owner Agreement', viewModel.user)
   );
 
 const constructForm: Form<ViewModel>['constructForm'] =
