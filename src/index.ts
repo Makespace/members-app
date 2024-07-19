@@ -24,6 +24,7 @@ import {runForever} from './training-sheets/training-sheets-worker';
 const conf = loadConfig();
 const dbClient = libsqlClient.createClient({
   url: conf.EVENT_DB_URL,
+  syncUrl: conf.TURSO_SYNC_URL,
   authToken: conf.TURSO_TOKEN,
 });
 const deps = initDependencies(dbClient, conf);

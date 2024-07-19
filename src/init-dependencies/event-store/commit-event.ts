@@ -15,15 +15,32 @@ import {Resource} from '../../types/resource';
 
 export const initialVersionNumber = 0;
 
+const constructArgsForNewEventRow = (
+  event: DomainEvent,
+  resource: Resource,
+  version: number
+) =>
+  pipe(event, ({type, ...payload}) => [
+    uuidv4(),
+    resource.id,
+    resource.type,
+    version,
+    type,
+    JSON.stringify(payload),
+    resource.id,
+    resource.type,
+    version,
+  ]);
+
 const insertEventRow = `
     INSERT INTO events
     (id, resource_id, resource_type, resource_version, event_type, payload)
-    SELECT $id, $resource_id, $resource_type, $resource_version, $event_type, $payload
+    SELECT ?, ?, ?, ?, ?, ?
     WHERE NOT EXISTS (
       SELECT * FROM events
-      WHERE resource_id = $resource_id
-        AND resource_type = $resource_type
-        AND resource_version = $resource_version
+      WHERE resource_id = ?
+        AND resource_type = ?
+        AND resource_version = ?
     );
   `;
 
@@ -85,17 +102,3 @@ export const commitEvent =
       })
     );
   };
-
-const constructArgsForNewEventRow = (
-  event: DomainEvent,
-  resource: Resource,
-  version: number
-) =>
-  pipe(event, ({type, ...payload}) => ({
-    id: uuidv4(),
-    resource_id: resource.id,
-    resource_type: resource.type,
-    resource_version: version,
-    event_type: type,
-    payload: JSON.stringify(payload),
-  }));
