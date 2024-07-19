@@ -47,6 +47,7 @@
     "@types/html-escaper": "^3.0.2",
     "@types/nodemailer-smtp-transport": "^2.7.5",
     "@types/pubsub-js": "^1.8.3",
+    "@types/sanitize-html": "^2.11.0",
     "@typescript-eslint/parser": "^7.0.0",
     "@unsplash/sum-types": "^0.4.1",
     "cookie-session": "^2.1.0",
@@ -72,6 +73,7 @@
     "pino-http": "^10.0.0",
     "pino-pretty": "^11.0.0",
     "pubsub-js": "^1.9.4",
+    "sanitize-html": "^2.13.0",
     "uuid": "^9.0.0",
     "validator": "^13.7.0"
   }
