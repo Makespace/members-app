@@ -13,21 +13,7 @@ export const sanitizeString = (input: string): SanitizedString =>
 export const joinHtml = (input: ReadonlyArray<Html>) =>
   input.join('\n') as Html;
 
-export const safe = (
-  literals: TemplateStringsArray,
-  ...substitutions: ReadonlyArray<string | Html | SanitizedString>
-): Safe => {
-  if (literals.length === 1 && substitutions.length === 0) {
-    return literals[0] as Safe;
-  }
-  let result = '';
-  for (let index = 0; index < substitutions.length; index++) {
-    result += literals[index];
-    result += substitutions[index];
-  }
-  result += literals[substitutions.length];
-  return result as Safe;
-};
+export const safe = (input: string): Safe => input as Safe;
 
 export const html = (
   literals: TemplateStringsArray,
