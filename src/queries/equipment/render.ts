@@ -1,220 +1,192 @@
 import {pageTemplate} from '../../templates';
+import {displayDate} from '../../templates/display-date';
+import {renderMemberNumber} from '../../templates/member-number';
+import {html, joinHtml, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
 
+const trainersList = (trainers: ViewModel['equipment']['trainers']) => html`
+  <h2>Trainers</h2>
+  <ul>
+    ${trainers.length > 0
+      ? joinHtml(
+          trainers.map(
+            memberNumber => html`<li>${renderMemberNumber(memberNumber)}</li>`
+          )
+        )
+      : html`<p>This equipment needs trainers.</p>`}
+  </ul>
+`;
 
-Handlebars.registerPartial(
-  'trainers_list',
-  `
-<h2>Trainers</h2>
-<ul>
-  {{#each equipment.trainers}}
-    <li>{{member_number this}}</li>
-  {{else}}
-    <p>This equipment needs trainers.</p>
-  {{/each}}
-</ul>
-`
-);
+const trainerEquipmentActions = (equipment: ViewModel['equipment']) => html`
+  <li>
+    <a
+      href="/equipment/mark-member-trained?equipmentId=${sanitizeString(
+        equipment.id
+      )}"
+      >Mark member as trained</a
+    >
+  </li>
+`;
 
-Handlebars.registerPartial(
-  'trainer_equipment_actions',
-  `
-{{#with equipment}}
-<li>
-  <a
-    href="/equipment/mark-member-trained?equipmentId={{id}}"
-    >Mark member as trained</a
-  >
-</li>
-{{/with}}
-`
-);
+const ownerEquipmentActions = (equipment: ViewModel['equipment']) => html`
+  <li>
+    <a href="/equipment/add-trainer?equipment=${sanitizeString(equipment.id)}">
+      Add a trainer
+    </a>
+  </li>
+  <li>
+    <a
+      href="/equipment/add-training-sheet?equipmentId=${sanitizeString(
+        equipment.id
+      )}"
+    >
+      Register training sheet
+    </a>
+  </li>
+`;
 
-Handlebars.registerPartial(
-  'owner_equipment_actions',
-  `
-{{#with equipment}}
-<li>
-  <a href="/equipment/add-trainer?equipment={{id}}"
-    >Add a trainer</a
-  >
-</li>
-<li>
-  <a
-    href="/equipment/add-training-sheet?equipmentId={{id}}"
-    >Register training sheet</a
-  >
-</li>
-{{/with}}
-`
-);
+const equipmentActions = (viewModel: ViewModel) => html`
+  <ul>
+    ${viewModel.isSuperUserOrOwnerOfArea
+      ? ownerEquipmentActions(viewModel.equipment)
+      : html``}
+    ${viewModel.isSuperUserOrTrainerOfArea
+      ? trainerEquipmentActions(viewModel.equipment)
+      : html``}
+  </ul>
+`;
 
-Handlebars.registerPartial(
-  'equipment_actions',
-  `
-<ul>
-{{#if isSuperUserOrOwnerOfArea}}
-  {{> owner_equipment_actions }}
-{{/if}}
-{{#if isSuperUserOrTrainerOfArea}}
-  {{> trainer_equipment_actions }}
-{{/if}}
-</ul>
-`
-);
-
-Handlebars.registerPartial(
-  'currently_trained_users_table',
-  `
-<h2>Currently Trained Users</h2>
-<table>
-  <tr>
-    <th>Member Number</th>
-  </tr>
-  {{#with equipment}}
-    {{#each trainedMembers}}
-      <tr><td>{{member_number this}}</td></tr>
-    {{/each}}
-  {{/with}}
-</table>
-`
-);
-
-// TODO
-// 2. Dates aren't displayed using the users locale.
-Handlebars.registerPartial(
-  'training_quiz_results_table',
-  `
-<table>
-  <tr>
-    <th hidden>Quiz ID</th>
-    <th>Timestamp</th>
-    <th>Email</th>
-    <th>Score</th>
-    <th hidden>Other Attempts</th>
-  </tr>
-  {{#each results.knownMember}}
-    {{#if this.passed}}
-      <tr class=passed_training_quiz_row>
-    {{else}}
-      <tr class=failed_training_quiz_row>
-    {{/if}}
-      <td hidden>{{this.id}}</td>
-      <td>{{display_date this.timestamp}}</td>
-      <td>{{member_number this.memberNumber}}</td>
-      <td>
-        {{this.score}} / {{this.maxScore}} ({{this.percentage}}%)
-      </td>
-      <td><button>Mark as trained</button></td>
-      <td hidden>{{this.otherAttempts}}</td>
-    </tr>
-    {{else}}
-      <p>{{empty_msg}}</p>
-  {{/each}}
-</table>
-`
-);
-
-Handlebars.registerPartial(
-  'training_quiz_results',
-  `
-<h2>Training Quiz Results</h2>
-<h3>Waiting for Training</h3>
-  <table>
-    {{#if trainingQuizResults.quizPassedNotTrained.knownMember}}
-      <tr>
-        <th hidden>Quiz ID</th>
-        <th>Timestamp</th>
-        <th>Member Number</th>
-        <th>Score</th>
-        <th>Actions</th>
-        <th hidden>Other Attempts</th>
-      </tr>
-      {{#each trainingQuizResults.quizPassedNotTrained.knownMember}}
-        <tr class=passed_training_quiz_row>
-          <td hidden>{{this.id}}</td>
-          <td>{{display_date this.timestamp}}</td>
-          <td>{{member_number this.memberNumber}}</td>
-          <td>
-            {{this.score}} / {{this.maxScore}} ({{this.percentage}}%)
-          </td>
-          <td><button>Mark as trained</button></td>
-          <td hidden>{{this.otherAttempts}}</td>
-        </tr>
-      {{/each}}
-    {{else}}
-      <p>No one is waiting for training</p>
-    {{/if}}
-  </table>
-{{#if trainingQuizResults.quizPassedNotTrained.unknownMember}}
-  <h3>Waiting for Training - Unknown Member</h3>
-  <p>
-    Quizes completed by members without matching email and member numbers.
-  </p>
+const currentlyTrainedUsersTable = (viewModel: ViewModel) => html`
+  <h2>Currently Trained Users</h2>
   <table>
     <tr>
-      <th hidden>Quiz ID</th>
-      <th>Timestamp</th>
-      <th>Member Number Provided</th>
-      <th>Email Provided</th>
-      <th>Score</th>
-    </tr>
-    {{#each trainingQuizResults.quizPassedNotTrained.unknownMember}}
-      <tr class=passed_training_quiz_row>
-        <td hidden>{{this.id}}</td>
-        <td>{{display_date this.timestamp}}</td>
-        {{#if this.memberNumberProvided}}
-          <td>{{member_number this.memberNumberProvided}}</td>
-        {{else}}
-          <td>{{optional_detail this.memberNumberProvided}}</td>
-        {{/if}}
-        <td>{{optional_detail this.emailProvided}}</td>
-        <td>
-          {{this.score}} / {{this.maxScore}} ({{this.percentage}}%)
-        </td>
-      </tr>
-    {{/each}}
-  </table>
-{{/if}}
-{{#if trainingQuizResults.failedQuizNotTrained.knownMember}}
-  <h3>Failed quizes</h3>
-  <p>Members who haven't passed (but have attempted) the quiz</p>
-  <table>
-    <tr>
-      <th hidden>Quiz ID</th>
-      <th>Timestamp</th>
       <th>Member Number</th>
-      <th>Score</th>
-      <th hidden>Other Attempts</th>
     </tr>
-    {{#each trainingQuizResults.failedQuizNotTrained.knownMember}}
-      <tr class=failed_training_quiz_row>
-        <td hidden>{{this.id}}</td>
-        <td>{{display_date this.timestamp}}</td>
-        <td>{{member_number this.memberNumber}}</td>
-        <td>
-          {{this.score}} / {{this.maxScore}} ({{this.percentage}}%)
-        </td>
-        <td hidden>{{this.otherAttempts}}</td>
-      </tr>
-    {{/each}}
+    ${joinHtml(
+      viewModel.equipment.trainedMembers.map(
+        memberNumber =>
+          html`<tr>
+            <td>${renderMemberNumber(memberNumber)}</td>
+          </tr>`
+      )
+    )}
   </table>
-{{/if}}
-`
-);
+`;
 
-const RENDER_EQUIPMENT_TEMPLATE = Handlebars.compile(
-  `
-  <h1>{{equipment_name}}</h1>
-  {{> equipment_actions }}
-  {{> trainers_list }}
-  {{> currently_trained_users_table }}
-  {{> training_quiz_results }}
-  `
-);
+const waitingForTrainingTable = (viewModel: ViewModel) => html`
+  <table>
+    ${viewModel.trainingQuizResults.quizPassedNotTrained.knownMember.length > 0
+      ? html`
+          <tr>
+            <th hidden>Quiz ID</th>
+            <th>Timestamp</th>
+            <th>Member Number</th>
+            <th>Score</th>
+            <th>Actions</th>
+            <th hidden>Other Attempts</th>
+          </tr>
+          ${joinHtml(
+            viewModel.trainingQuizResults.quizPassedNotTrained.knownMember.map(
+              member => html`
+                <tr class="passed_training_quiz_row">
+                  <td hidden>${sanitizeString(member.id)}</td>
+                  <td>${displayDate(member.timestamp)}</td>
+                  <td>${renderMemberNumber(member.memberNumber)}</td>
+                  <td>
+                    ${member.score} / ${member.maxScore}}
+                    (${member.percentage}%)
+                  </td>
+                  <td><button>Mark as trained</button></td>
+                  <td hidden>
+                    ${joinHtml(
+                      member.otherAttempts
+                        .map(sanitizeString)
+                        .map(v => html`${v}`)
+                    )}
+                  </td>
+                </tr>
+              `
+            )
+          )}
+        `
+      : html`<p>No one is waiting for training</p>`}
+  </table>
+`;
+
+const unknownMemberWaitingForTrainingTable = (viewModel: ViewModel) => html`
+  ${viewModel.trainingQuizResults.quizPassedNotTrained.unknownMember.length > 0
+    ? html`
+        <h3>Waiting for Training - Unknown Member</h3>
+        <p>
+          Quizes completed by members without matching email and member numbers.
+        </p>
+        <table>
+          <tr>
+            <th hidden>Quiz ID</th>
+            <th>Timestamp</th>
+            <th>Member Number Provided</th>
+            <th>Email Provided</th>
+            <th>Score</th>
+          </tr>
+          {{#each trainingQuizResults.quizPassedNotTrained.unknownMember}}
+          <tr class="passed_training_quiz_row">
+            <td hidden>{{this.id}}</td>
+            <td>{{display_date this.timestamp}}</td>
+            {{#if this.memberNumberProvided}}
+            <td>{{member_number this.memberNumberProvided}}</td>
+            {{else}}
+            <td>{{optional_detail this.memberNumberProvided}}</td>
+            {{/if}}
+            <td>{{optional_detail this.emailProvided}}</td>
+            <td>{{this.score}} / {{this.maxScore}} ({{this.percentage}}%)</td>
+          </tr>
+          {{/each}}
+        </table>
+      `
+    : html``}
+`;
+
+const failedQuizTrainingTable = (viewModel: ViewModel) => html`
+  ${viewModel.trainingQuizResults.failedQuizNotTrained.knownMember.length > 0
+    ? html`
+        <h3>Failed quizes</h3>
+        <p>Members who haven't passed (but have attempted) the quiz</p>
+        <table>
+          <tr>
+            <th hidden>Quiz ID</th>
+            <th>Timestamp</th>
+            <th>Member Number</th>
+            <th>Score</th>
+            <th hidden>Other Attempts</th>
+          </tr>
+          {{#each trainingQuizResults.failedQuizNotTrained.knownMember}}
+          <tr class="failed_training_quiz_row">
+            <td hidden>{{this.id}}</td>
+            <td>{{display_date this.timestamp}}</td>
+            <td>{{member_number this.memberNumber}}</td>
+            <td>{{this.score}} / {{this.maxScore}} ({{this.percentage}}%)</td>
+            <td hidden>{{this.otherAttempts}}</td>
+          </tr>
+          {{/each}}
+        </table>
+      `
+    : html``}
+`;
+
+const trainingQuizResults = (viewModel: ViewModel) => html`
+  <h2>Training Quiz Results</h2>
+  <h3>Waiting for Training</h3>
+  ${waitingForTrainingTable(viewModel)}
+  ${unknownMemberWaitingForTrainingTable(viewModel)}
+  ${failedQuizTrainingTable(viewModel)}
+`;
 
 export const render = (viewModel: ViewModel) =>
   pageTemplate(
     viewModel.equipment.name,
     viewModel.user
-  )(new SafeString(RENDER_EQUIPMENT_TEMPLATE(viewModel)));
+  )(html`
+    <h1>${sanitizeString(viewModel.equipment.name)}</h1>
+    ${equipmentActions(viewModel)} ${trainersList(viewModel.equipment.trainers)}
+    ${currentlyTrainedUsersTable(viewModel)} ${trainingQuizResults(viewModel)}
+  `);
