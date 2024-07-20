@@ -13,27 +13,33 @@ import {oopsPage} from '../templates';
 import {StatusCodes} from 'http-status-codes';
 import {getUserFromSession} from './get-user-from-session';
 import {Dependencies} from '../dependencies';
-import {html, HtmlSubstitution, sanitizeString} from '../types/html';
+import {
+  html,
+  HtmlSubstitution,
+  RenderedHtml,
+  sanitizeString,
+} from '../types/html';
 
-export const logIn = (deps: Dependencies) => (req: Request, res: Response) => {
-  pipe(
-    req.session,
-    getUserFromSession(deps),
-    O.match(
-      () => {
-        res.status(StatusCodes.OK).send(logInPage);
-      },
-      _user => res.redirect('/')
-    )
-  );
-};
+export const logIn =
+  (deps: Dependencies) => (req: Request, res: Response<RenderedHtml>) => {
+    pipe(
+      req.session,
+      getUserFromSession(deps),
+      O.match(
+        () => {
+          res.status(StatusCodes.OK).send(logInPage);
+        },
+        _user => res.redirect('/')
+      )
+    );
+  };
 
-export const logOut = (req: Request, res: Response) => {
+export const logOut = (req: Request, res: Response<RenderedHtml>) => {
   req.session = null;
   res.redirect('/');
 };
 
-export const auth = (req: Request, res: Response) => {
+export const auth = (req: Request, res: Response<RenderedHtml>) => {
   pipe(
     req.body,
     parseEmailAddressFromBody,
@@ -52,7 +58,8 @@ export const auth = (req: Request, res: Response) => {
 };
 
 export const invalidLink =
-  (logInPath: HtmlSubstitution) => (req: Request, res: Response) => {
+  (logInPath: HtmlSubstitution) =>
+  (req: Request, res: Response<RenderedHtml>) => {
     res
       .status(StatusCodes.UNAUTHORIZED)
       .send(

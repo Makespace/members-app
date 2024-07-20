@@ -14,6 +14,8 @@ export type Safe = string & {readonly Safe: unique symbol};
 export const sanitizeString = (input: string): SanitizedString =>
   sanitize(input) as SanitizedString;
 
+export type RenderedHtml = Html & {readonly RenderedHtml: unique symbol};
+
 export type HtmlSubstitution =
   | Html
   | number
@@ -56,7 +58,7 @@ export const optionalSafe = (
     : safe('-');
 
 interface Page {
-  html: Html;
+  rendered: RenderedHtml;
 }
 
 interface Redirect {

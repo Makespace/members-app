@@ -11,7 +11,7 @@ import {Actor} from '../types';
 import {Request, Response} from 'express';
 import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
-import {html, sanitizeString} from '../types/html';
+import {html, RenderedHtml, sanitizeString} from '../types/html';
 import {SendEmail} from '../commands';
 import {Config} from '../configuration';
 import {isolatedPageTemplate} from '../templates/page-template';
@@ -39,7 +39,7 @@ const getInput = <T>(body: unknown, command: SendEmail<T>) =>
 
 const emailPost =
   <T>(conf: Config, deps: Dependencies, command: SendEmail<T>) =>
-  async (req: Request, res: Response) => {
+  async (req: Request, res: Response<RenderedHtml>) => {
     await pipe(
       {
         actor: getActorFrom(req.session, deps),
