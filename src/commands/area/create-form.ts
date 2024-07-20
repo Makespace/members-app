@@ -1,36 +1,28 @@
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
 import {User} from '../../types';
-import {v4} from 'uuid';
 import {Form} from '../../types/form';
-
+import {pipe} from 'fp-ts/lib/function';
+import {html, safe} from '../../types/html';
+import {v4} from 'uuid';
 
 type ViewModel = {
   user: User;
 };
 
-const CREATE_FORM_TEMPLATE = Handlebars.compile(
-  `
+const renderForm = (viewModel: ViewModel) =>
+  pipe(
+    viewModel,
+    () => html`
       <h1>Create an area</h1>
       <form action="#" method="post">
         <label for="name">What is this area called</label>
         <input type="text" name="name" id="name" />
-        <input type="hidden" name="id" value="{{areaId}}" />
+        <input type="hidden" name="id" value="${safe(v4())}" />
         <button type="submit">Confirm and send</button>
       </form>
-    `
-);
-
-const renderForm = (viewModel: ViewModel) =>
-  pageTemplate(
-    'Create Area',
-    viewModel.user
-  )(
-    new SafeString(
-      CREATE_FORM_TEMPLATE({
-        areaId: v4(),
-      })
-    )
+    `,
+    pageTemplate('Create Area', viewModel.user)
   );
 
 export const createForm: Form<ViewModel> = {
