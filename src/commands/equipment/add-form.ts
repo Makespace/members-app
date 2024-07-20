@@ -42,7 +42,7 @@ const getAreaId = (input: unknown) =>
     E.map(({area}) => area)
   );
 
-const getAreaName = (events: ReadonlyArray<DomainEvent>, areaId: string) =>
+const getAreaName = (events: ReadonlyArray<DomainEvent>, areaId: UUID) =>
   pipe(
     areaId,
     readModels.areas.getArea(events),

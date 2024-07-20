@@ -32,7 +32,9 @@ describe('get-area', () => {
 
   describe('when the area does not exist', () => {
     it('returns none', () => {
-      expect(getArea(events)(faker.string.uuid())).toStrictEqual(O.none);
+      expect(getArea(events)(faker.string.uuid() as UUID)).toStrictEqual(
+        O.none
+      );
     });
   });
 });
