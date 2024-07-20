@@ -3,8 +3,9 @@ import {pageTemplate} from '../../templates';
 import {User} from '../../types';
 import {Form} from '../../types/form';
 import {pipe} from 'fp-ts/lib/function';
-import {html, safe} from '../../types/html';
+import {html} from '../../types/html';
 import {v4} from 'uuid';
+import {UUID} from 'io-ts-types';
 
 type ViewModel = {
   user: User;
@@ -18,7 +19,7 @@ const renderForm = (viewModel: ViewModel) =>
       <form action="#" method="post">
         <label for="name">What is this area called</label>
         <input type="text" name="name" id="name" />
-        <input type="hidden" name="id" value="${safe(v4())}" />
+        <input type="hidden" name="id" value="${v4() as UUID}" />
         <button type="submit">Confirm and send</button>
       </form>
     `,

@@ -11,11 +11,12 @@ import {StatusCodes} from 'http-status-codes';
 import {readModels} from '../../read-models';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {renderMemberNumber} from '../../templates/member-number';
+import {UUID} from 'io-ts-types';
 
 type ViewModel = {
   user: User;
   members: ReadonlyArray<Member>;
-  equipmentId: string;
+  equipmentId: UUID;
   equipmentName: string;
 };
 
@@ -37,7 +38,7 @@ const renderForm = (viewModel: ViewModel) =>
               <input
                 type="hidden"
                 name="equipmentId"
-                value="${sanitizeString(viewModel.equipmentId)}"
+                value="${viewModel.equipmentId}"
               />
               <button type="submit">Add</button>
             </form>
@@ -78,7 +79,7 @@ const renderForm = (viewModel: ViewModel) =>
 const getEquipmentId = (input: unknown) =>
   pipe(
     input,
-    t.strict({equipment: t.string}).decode,
+    t.strict({equipment: UUID}).decode,
     E.mapLeft(formatValidationErrors),
     E.mapLeft(failureWithStatus('Invalid parameters', StatusCodes.BAD_REQUEST)),
     E.map(({equipment}) => equipment)

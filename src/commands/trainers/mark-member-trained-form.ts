@@ -6,10 +6,11 @@ import {Form} from '../../types/form';
 import {pageTemplate} from '../../templates';
 import {getEquipmentName} from '../equipment/get-equipment-name';
 import {getEquipmentIdFromForm} from '../equipment/get-equipment-id-from-form';
+import {UUID} from 'io-ts-types';
 
 type ViewModel = {
   user: User;
-  equipmentId: string;
+  equipmentId: UUID;
   equipmentName: string;
 };
 
@@ -28,7 +29,7 @@ const renderForm = (viewModel: ViewModel) =>
         <input
           type="hidden"
           name="equipmentId"
-          value="${sanitizeString(viewModel.equipmentId)}"
+          value="${viewModel.equipmentId}"
         />
         <button type="submit">Confirm</button>
       </form>
