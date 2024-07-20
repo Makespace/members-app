@@ -11,7 +11,7 @@ import {Actor} from '../types';
 import {Request, Response} from 'express';
 import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
-import {html} from '../types/html';
+import {html, sanitizeString} from '../types/html';
 import {SendEmail} from '../commands';
 import {Config} from '../configuration';
 import {isolatedPageTemplate} from '../templates/page-template';
@@ -73,7 +73,9 @@ const emailPost =
             failure,
             'Failed to handle request to send an email'
           );
-          res.status(failure.status).send(oopsPage(failure.message));
+          res
+            .status(failure.status)
+            .send(oopsPage(sanitizeString(failure.message)));
         },
         () => {
           res

@@ -5,19 +5,20 @@ import {DomainEvent, SubsetOfDomainEvent, filterByName} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {EventName, isEventOfType} from '../../types/domain-event';
 import {Eq as stringEq} from 'fp-ts/string';
+import {UUID} from 'io-ts-types';
 
 export type Equipment = {
   name: string;
-  id: string;
+  id: UUID;
   trainers: ReadonlyArray<number>;
-  areaId: string;
+  areaId: UUID;
   trainedMembers: ReadonlyArray<number>;
 };
 
 type EquipmentState = {
   name: string;
-  id: string;
-  areaId: string;
+  id: UUID;
+  areaId: UUID;
   trainers: Set<number>;
   trainedMembers: Set<number>;
 };

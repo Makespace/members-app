@@ -19,11 +19,9 @@ import {DomainEvent, EventOfType} from '../../types/domain-event';
 import {Equipment} from '../../read-models/equipment/get';
 import {getMembersTrainedOn} from '../../read-models/equipment/get-trained-on';
 import {DateTime} from 'luxon';
+import {UUID} from 'io-ts-types';
 
-const getEquipment = (
-  events: ReadonlyArray<DomainEvent>,
-  equipmentId: string
-) =>
+const getEquipment = (events: ReadonlyArray<DomainEvent>, equipmentId: UUID) =>
   pipe(
     equipmentId,
     readModels.equipment.get(events),
@@ -213,7 +211,7 @@ const getQuizResults = (
 
 const isSuperUserOrOwnerOfArea = (
   events: ReadonlyArray<DomainEvent>,
-  areaId: string,
+  areaId: UUID,
   memberNumber: number
 ) =>
   TE.right(
@@ -233,7 +231,7 @@ const isSuperUserOrTrainerOfEquipment = (
 
 export const constructViewModel =
   (deps: Dependencies, user: User) =>
-  (equipmentId: string): TE.TaskEither<FailureWithStatus, ViewModel> =>
+  (equipmentId: UUID): TE.TaskEither<FailureWithStatus, ViewModel> =>
     pipe(
       {user},
       TE.right,

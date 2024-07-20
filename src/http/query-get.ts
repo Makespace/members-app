@@ -9,6 +9,7 @@ import {User, HttpResponse} from '../types';
 import {oopsPage, templatePage} from '../templates';
 import {Params, Query} from '../queries/query';
 import {logInPath} from '../authentication/auth-routes';
+import {sanitizeString} from '../types/html';
 
 const buildPage =
   (deps: Dependencies, params: Params, query: Query) => (user: User) =>
@@ -28,7 +29,9 @@ export const queryGet =
           deps.logger.error(failure, 'Failed respond to a query');
           failure.status === StatusCodes.UNAUTHORIZED
             ? res.redirect(logInPath)
-            : res.status(failure.status).send(oopsPage(failure.message));
+            : res
+                .status(failure.status)
+                .send(oopsPage(sanitizeString(failure.message)));
         },
         HttpResponse.match({
           Page: ({html}) => res.status(200).send(html),

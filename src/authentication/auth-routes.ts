@@ -1,8 +1,9 @@
 import {Dependencies} from '../dependencies';
+import {safe} from '../types/html';
 import {Route, get, post} from '../types/route';
 import {auth, callback, invalidLink, logIn, logOut} from './handlers';
 
-export const logInPath = '/log-in';
+export const logInPath = safe('/log-in');
 const invalidLinkPath = '/auth/invalid-magic-link';
 
 export const authRoutes = (deps: Dependencies): ReadonlyArray<Route> => {

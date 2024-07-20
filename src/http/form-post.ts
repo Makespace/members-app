@@ -13,6 +13,7 @@ import {Actor} from '../types/actor';
 import {getUserFromSession} from '../authentication';
 import {oopsPage} from '../templates';
 import {applyToResource} from '../commands/apply-command-to-resource';
+import {sanitizeString} from '../types/html';
 
 const getCommandFrom = <T>(body: unknown, command: Command<T>) =>
   pipe(
@@ -143,7 +144,9 @@ export const formPost =
       TE.match(
         failure => {
           deps.logger.error(failure, 'Failed to handle form submission');
-          res.status(failure.status).send(oopsPage(failure.message));
+          res
+            .status(failure.status)
+            .send(oopsPage(sanitizeString(failure.message)));
         },
         () =>
           res.redirect(

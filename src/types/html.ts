@@ -5,28 +5,34 @@ import sanitize from 'sanitize-html';
 
 export type Html = string & {readonly Html: unique symbol};
 
-type SanitizedString = string & {readonly SanitizedString: unique symbol};
+type SanitizedString = string & {
+  readonly SanitizedString: unique symbol;
+};
 
 export type Safe = string & {readonly Safe: unique symbol};
 
 export const sanitizeString = (input: string): SanitizedString =>
   sanitize(input) as SanitizedString;
 
-export const joinHtml = (
-  input: ReadonlyArray<Html | Safe | number | SanitizedString>
-) => input.join('\n') as Html;
+export type HtmlSubstitution =
+  | Html
+  | number
+  | SanitizedString
+  | Safe
+  | UUID
+  | '';
 
-export const commaHtml = (
-  input: ReadonlyArray<Html | Safe | number | SanitizedString>
-) => input.join(', ') as Html;
+export const joinHtml = (input: ReadonlyArray<HtmlSubstitution>) =>
+  input.join('\n') as Html;
+
+export const commaHtml = (input: ReadonlyArray<HtmlSubstitution>) =>
+  input.join(', ') as Html;
 
 export const safe = (input: string): Safe => input as Safe;
 
 export const html = (
   literals: TemplateStringsArray,
-  ...substitutions: ReadonlyArray<
-    Html | number | SanitizedString | Safe | UUID | ''
-  >
+  ...substitutions: ReadonlyArray<HtmlSubstitution>
 ): Html => {
   if (literals.length === 1 && substitutions.length === 0) {
     return literals[0] as Html;
