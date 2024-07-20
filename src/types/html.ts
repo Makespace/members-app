@@ -41,14 +41,6 @@ export const optionalSafe = (
       : data.value
     : safe('-');
 
-export const displayIfEmpty =
-  (ifEmpty: Html) =>
-  <T>(fn: (a: ReadonlyArray<T>) => Html) =>
-  (input: ReadonlyArray<T>) =>
-    input.length > 0 ? fn(input) : ifEmpty;
-
-export const blankIfEmpty = displayIfEmpty(html``);
-
 interface Page {
   html: Html;
 }
