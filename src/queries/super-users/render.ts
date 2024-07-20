@@ -4,6 +4,7 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {ViewModel} from './view-model';
 import {displayDate} from '../../templates/display-date';
 import {pageTemplate} from '../../templates';
+import {renderMemberNumber} from '../../templates/member-number';
 
 const renderSuperUsers = (superUsers: ViewModel['superUsers']) =>
   pipe(

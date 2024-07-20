@@ -9,6 +9,7 @@ import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {Form} from '../../types/form';
+import {renderMemberNumber} from '../../templates/member-number';
 
 type ViewModel = {
   user: User;

@@ -3,6 +3,7 @@ import {getGravatarProfile, getGravatarThumbnail} from '../../templates/avatar';
 import {Html, html, optionalSafe, safe, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
 import {pageTemplate} from '../../templates';
+import {renderMemberNumber} from '../../templates/member-number';
 
 const ownPageBanner = html`<h1>This is your profile!</h1>`;
 
