@@ -30,7 +30,7 @@ const render = (viewModel: ViewModel) =>
 const renderForm = (viewModel: ViewModel) =>
   pipe(viewModel, render, pageTemplate('Declare super user', viewModel.user));
 
-export const constructForm: Form<ViewModel>['constructForm'] =
+const constructForm: Form<ViewModel>['constructForm'] =
   () =>
   ({events, user}) =>
     pipe(
