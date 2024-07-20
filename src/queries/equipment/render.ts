@@ -52,10 +52,10 @@ const equipmentActions = (viewModel: ViewModel) => html`
   <ul>
     ${viewModel.isSuperUserOrOwnerOfArea
       ? ownerEquipmentActions(viewModel.equipment)
-      : html``}
+      : ''}
     ${viewModel.isSuperUserOrTrainerOfArea
       ? trainerEquipmentActions(viewModel.equipment)
-      : html``}
+      : ''}
   </ul>
 `;
 

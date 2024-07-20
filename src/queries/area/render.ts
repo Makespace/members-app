@@ -45,11 +45,9 @@ const renderEquipment = (allEquipment: ViewModel['equipment']) =>
 
 export const render = (viewModel: ViewModel) =>
   html`<h1>${sanitizeString(viewModel.area.name)}</h1>
-    ${viewModel.isSuperUser
-      ? addEquipmentCallToAction(viewModel.area.id)
-      : html``}
+    ${viewModel.isSuperUser ? addEquipmentCallToAction(viewModel.area.id) : ''}
     <h2>Owners</h2>
-    ${viewModel.isSuperUser ? addOwnerCallToAction(viewModel.area.id) : html``}
+    ${viewModel.isSuperUser ? addOwnerCallToAction(viewModel.area.id) : ''}
     ${renderOwners(viewModel.area.owners)}
     <h2>Equipment</h2>
     ${renderEquipment(viewModel.equipment)} `;
