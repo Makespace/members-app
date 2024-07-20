@@ -1,8 +1,9 @@
 import {DateTime} from 'luxon';
 import {User} from '../../types';
 import * as O from 'fp-ts/Option';
+import {UUID} from 'io-ts-types';
 
-type QuizID = string;
+type QuizID = UUID;
 
 export type QuizResultViewModel = {
   id: QuizID;
@@ -35,7 +36,7 @@ export type ViewModel = {
   isSuperUserOrTrainerOfArea: boolean;
   equipment: {
     name: string;
-    id: string;
+    id: UUID;
     trainers: ReadonlyArray<number>;
     trainedMembers: ReadonlyArray<number>;
   };

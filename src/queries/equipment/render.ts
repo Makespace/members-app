@@ -10,6 +10,7 @@ import {
 } from './view-model';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
+import {UUID} from 'io-ts-types';
 
 const trainersList = (trainers: ViewModel['equipment']['trainers']) =>
   pipe(
@@ -28,10 +29,7 @@ const trainersList = (trainers: ViewModel['equipment']['trainers']) =>
 
 const trainerEquipmentActions = (equipment: ViewModel['equipment']) => html`
   <li>
-    <a
-      href="/equipment/mark-member-trained?equipmentId=${sanitizeString(
-        equipment.id
-      )}"
+    <a href="/equipment/mark-member-trained?equipmentId=${equipment.id}"
       >Mark member as trained</a
     >
   </li>
@@ -39,16 +37,12 @@ const trainerEquipmentActions = (equipment: ViewModel['equipment']) => html`
 
 const ownerEquipmentActions = (equipment: ViewModel['equipment']) => html`
   <li>
-    <a href="/equipment/add-trainer?equipment=${sanitizeString(equipment.id)}">
+    <a href="/equipment/add-trainer?equipment=${equipment.id}">
       Add a trainer
     </a>
   </li>
   <li>
-    <a
-      href="/equipment/add-training-sheet?equipmentId=${sanitizeString(
-        equipment.id
-      )}"
-    >
+    <a href="/equipment/add-training-sheet?equipmentId=${equipment.id}">
       Register training sheet
     </a>
   </li>
@@ -88,10 +82,9 @@ const currentlyTrainedUsersTable = (viewModel: ViewModel) =>
   );
 
 // Hidden by default behind a visibility toggle.
-const renderOtherAttempts = (otherAttempts: ReadonlyArray<string>) =>
+const renderOtherAttempts = (otherAttempts: ReadonlyArray<UUID>) =>
   pipe(
     otherAttempts,
-    RA.map(sanitizeString),
     RA.map(v => html`${v}`),
     joinHtml
   );
