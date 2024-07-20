@@ -1,5 +1,6 @@
 import * as Sum from '@unsplash/sum-types';
 import * as O from 'fp-ts/Option';
+import {UUID} from 'io-ts-types';
 import sanitize from 'sanitize-html';
 
 export type Html = string & {readonly Html: unique symbol};
@@ -22,7 +23,7 @@ export const safe = (input: string): Safe => input as Safe;
 
 export const html = (
   literals: TemplateStringsArray,
-  ...substitutions: ReadonlyArray<Html | number | SanitizedString | Safe>
+  ...substitutions: ReadonlyArray<Html | number | SanitizedString | Safe | UUID>
 ): Html => {
   if (literals.length === 1 && substitutions.length === 0) {
     return literals[0] as Html;
