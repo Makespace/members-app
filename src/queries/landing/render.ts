@@ -2,6 +2,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {html, safe, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
 import {pageTemplate} from '../../templates';
+import {renderMemberNumber} from '../../templates/member-number';
 
 const renderMemberDetails = (user: ViewModel['user']) => html`
   <dl>
