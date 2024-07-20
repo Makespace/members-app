@@ -1,11 +1,11 @@
-import {html, sanitizeString} from '../types/html';
+import {html, HtmlSubstitution} from '../types/html';
 
-export const head = (title: string) => html`
+export const head = (title: HtmlSubstitution) => html`
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>${sanitizeString(title)} | Cambridge Makespace</title>
+    <title>${title} | Cambridge Makespace</title>
     <link rel="stylesheet" href="/static/styles.css" />
 
     <!-- Generated using https://realfavicongenerator.net -->
