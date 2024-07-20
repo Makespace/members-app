@@ -14,6 +14,10 @@ export const sanitizeString = (input: string): SanitizedString =>
 export const joinHtml = (input: ReadonlyArray<Html>) =>
   input.join('\n') as Html;
 
+export const commaHtml = (
+  input: ReadonlyArray<Html | Safe | number | SanitizedString>
+) => input.join(', ') as Html;
+
 export const safe = (input: string): Safe => input as Safe;
 
 export const html = (
