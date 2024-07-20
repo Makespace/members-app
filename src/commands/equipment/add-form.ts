@@ -2,7 +2,7 @@ import {pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
-import {html, sanitizeString} from '../../types/html';
+import {html, safe, sanitizeString} from '../../types/html';
 import {DomainEvent, User} from '../../types';
 import {v4} from 'uuid';
 import {Form} from '../../types/form';
@@ -30,7 +30,7 @@ const renderForm = (viewModel: ViewModel) =>
         <button type="submit">Confirm and send</button>
       </form>
     `,
-    pageTemplate('Create Equipment', viewModel.user)
+    pageTemplate(safe('Create Equipment'), viewModel.user)
   );
 
 const getAreaId = (input: unknown) =>

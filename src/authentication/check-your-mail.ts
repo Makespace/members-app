@@ -1,6 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import {isolatedPageTemplate} from '../templates/page-template';
-import {html, sanitizeString} from '../types/html';
+import {html, safe, sanitizeString} from '../types/html';
 
 export const checkYourMailPage = (submittedEmailAddress: string) =>
   pipe(
@@ -12,5 +12,5 @@ export const checkYourMailPage = (submittedEmailAddress: string) =>
       </p>
       <p>If nothing happens please reach out to the Makespace Database Team.</p>
     `,
-    isolatedPageTemplate('Check your mail')
+    isolatedPageTemplate(safe('Check your mail'))
   );

@@ -3,7 +3,7 @@ import {pageTemplate} from '../../templates';
 import {User} from '../../types';
 import {Form} from '../../types/form';
 import {pipe} from 'fp-ts/lib/function';
-import {html} from '../../types/html';
+import {html, safe} from '../../types/html';
 import {v4} from 'uuid';
 import {UUID} from 'io-ts-types';
 
@@ -23,7 +23,7 @@ const renderForm = (viewModel: ViewModel) =>
         <button type="submit">Confirm and send</button>
       </form>
     `,
-    pageTemplate('Create Area', viewModel.user)
+    pageTemplate(safe('Create Area'), viewModel.user)
   );
 
 export const createForm: Form<ViewModel> = {

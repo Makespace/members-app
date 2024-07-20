@@ -1,6 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
-import {html, sanitizeString} from '../../types/html';
+import {html, safe, sanitizeString} from '../../types/html';
 import {MemberDetails, User} from '../../types';
 import {Form} from '../../types/form';
 import {pageTemplate} from '../../templates';
@@ -36,7 +36,7 @@ const renderForm = (viewModel: ViewModel) =>
         <button type="submit">Confirm</button>
       </form>
     `,
-    pageTemplate('Member Training Complete', viewModel.user)
+    pageTemplate(safe('Member Training Complete'), viewModel.user)
   );
 
 const constructForm: Form<ViewModel>['constructForm'] =

@@ -1,5 +1,5 @@
 import {pipe} from 'fp-ts/lib/function';
-import {html} from '../types/html';
+import {html, safe} from '../types/html';
 import {isolatedPageTemplate} from '../templates/page-template';
 
 export const logInPage = pipe(
@@ -12,5 +12,5 @@ export const logInPage = pipe(
       <button type="submit">Email me a link</button>
     </form>
   `,
-  isolatedPageTemplate('Login')
+  isolatedPageTemplate(safe('Login'))
 );

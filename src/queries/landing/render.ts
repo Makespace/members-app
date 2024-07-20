@@ -1,5 +1,5 @@
 import {pipe} from 'fp-ts/lib/function';
-import {html, sanitizeString} from '../../types/html';
+import {html, safe, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
 import {pageTemplate} from '../../templates';
 
@@ -42,5 +42,5 @@ export const render = (viewModel: ViewModel) =>
       ${viewModel.isSuperUser ? superUserNav : ''}
       </table>
     `,
-    pageTemplate('Makespace Member Dashboard', viewModel.user)
+    pageTemplate(safe('Makespace Member Dashboard'), viewModel.user)
   );

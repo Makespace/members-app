@@ -1,5 +1,5 @@
 import {pipe} from 'fp-ts/lib/function';
-import {html, HtmlSubstitution} from '../types/html';
+import {html, HtmlSubstitution, safe} from '../types/html';
 import {isolatedPageTemplate} from './page-template';
 
 export const oopsPage = (message: HtmlSubstitution) =>
@@ -12,5 +12,5 @@ export const oopsPage = (message: HtmlSubstitution) =>
         group.
       </p>
     `,
-    isolatedPageTemplate('Oops')
+    isolatedPageTemplate(safe('Oops'))
   );

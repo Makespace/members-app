@@ -1,7 +1,7 @@
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
-import {html} from '../../types/html';
+import {html, safe} from '../../types/html';
 import {User} from '../../types';
 import {Form} from '../../types/form';
 import * as t from 'io-ts';
@@ -30,7 +30,7 @@ const renderForm = (viewModel: ViewModel) =>
         <button type="submit">Confirm</button>
       </form>
     `,
-    pageTemplate('Edit pronouns', viewModel.user)
+    pageTemplate(safe('Edit pronouns'), viewModel.user)
   );
 
 const paramsCodec = t.strict({

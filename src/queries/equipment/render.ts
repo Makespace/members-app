@@ -226,5 +226,5 @@ export const render = (viewModel: ViewModel) =>
       ${trainersList(viewModel.equipment.trainers)}
       ${currentlyTrainedUsersTable(viewModel)} ${trainingQuizResults(viewModel)}
     `,
-    pageTemplate(viewModel.equipment.name, viewModel.user)
+    pageTemplate(sanitizeString(viewModel.equipment.name), viewModel.user)
   );
