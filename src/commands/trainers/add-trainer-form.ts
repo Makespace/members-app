@@ -49,7 +49,7 @@ const renderForm = (viewModel: ViewModel) =>
     tableRows => html`
       <h1>Add a trainer</h1>
       <div id="wrapper"></div>
-      <table id="all-members">
+      <table id="all-members" data-gridjs>
         <thead>
           <tr>
             <th>E-Mail</th>
@@ -61,17 +61,6 @@ const renderForm = (viewModel: ViewModel) =>
           ${tableRows}
         </tbody>
       </table>
-      <script>
-        new gridjs.Grid({
-          from: document.getElementById('all-members'),
-          search: true,
-          language: {
-            search: {
-              placeholder: 'Search...',
-            },
-          },
-        }).render(document.getElementById('wrapper'));
-      </script>
     `,
     pageTemplate(safe('Add Trainer'), viewModel.user)
   );
