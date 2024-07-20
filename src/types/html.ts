@@ -23,7 +23,9 @@ export const safe = (input: string): Safe => input as Safe;
 
 export const html = (
   literals: TemplateStringsArray,
-  ...substitutions: ReadonlyArray<Html | number | SanitizedString | Safe | UUID>
+  ...substitutions: ReadonlyArray<
+    Html | number | SanitizedString | Safe | UUID | ''
+  >
 ): Html => {
   if (literals.length === 1 && substitutions.length === 0) {
     return literals[0] as Html;

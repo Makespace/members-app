@@ -44,6 +44,6 @@ const addAreaCallToAction = html`
 
 export const render = (viewModel: ViewModel) => html`
   <h1>Areas of Makespace</h1>
-  ${viewModel.isSuperUser ? addAreaCallToAction : html``}
+  ${viewModel.isSuperUser ? addAreaCallToAction : ''}
   ${renderAreas(viewModel.areas)}
 `;
