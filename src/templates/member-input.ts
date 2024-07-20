@@ -3,7 +3,7 @@ import {html, Html, optionalSafe, sanitizeString} from '../types/html';
 import {getGravatarThumbnail} from './avatar';
 import {filterList} from './filter-list';
 
-export const memberInputSelector = (member: MemberDetails): Html => html`
+const memberInputSelector = (member: MemberDetails): Html => html`
   <div class="fieldset-item">
     <input
       type="radio"
