@@ -1,5 +1,6 @@
 import {DateTime} from 'luxon';
 import {User} from '../../types';
+import * as O from 'fp-ts/Option';
 
 type QuizID = string;
 
@@ -24,8 +25,8 @@ export type QuizResultUnknownMemberViewModel = {
   passed: boolean;
   timestamp: DateTime;
 
-  memberNumberProvided: number | null;
-  emailProvided: string | null;
+  memberNumberProvided: O.Option<number>;
+  emailProvided: O.Option<string>;
 };
 
 export type ViewModel = {

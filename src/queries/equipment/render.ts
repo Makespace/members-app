@@ -1,8 +1,9 @@
 import {pageTemplate} from '../../templates';
 import {displayDate} from '../../templates/display-date';
 import {renderMemberNumber} from '../../templates/member-number';
-import {html, joinHtml, sanitizeString} from '../../types/html';
+import {html, joinHtml, optionalSafe, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
+import * as O from 'fp-ts/Option';
 
 const trainersList = (trainers: ViewModel['equipment']['trainers']) => html`
   <h2>Trainers</h2>
@@ -87,19 +88,18 @@ const waitingForTrainingTable = (viewModel: ViewModel) => html`
           </tr>
           ${joinHtml(
             viewModel.trainingQuizResults.quizPassedNotTrained.knownMember.map(
-              member => html`
+              quiz => html`
                 <tr class="passed_training_quiz_row">
-                  <td hidden>${sanitizeString(member.id)}</td>
-                  <td>${displayDate(member.timestamp)}</td>
-                  <td>${renderMemberNumber(member.memberNumber)}</td>
+                  <td hidden>${sanitizeString(quiz.id)}</td>
+                  <td>${displayDate(quiz.timestamp)}</td>
+                  <td>${renderMemberNumber(quiz.memberNumber)}</td>
                   <td>
-                    ${member.score} / ${member.maxScore}}
-                    (${member.percentage}%)
+                    ${quiz.score} / ${quiz.maxScore} (${quiz.percentage}%)
                   </td>
                   <td><button>Mark as trained</button></td>
                   <td hidden>
                     ${joinHtml(
-                      member.otherAttempts
+                      quiz.otherAttempts
                         .map(sanitizeString)
                         .map(v => html`${v}`)
                     )}
@@ -128,19 +128,30 @@ const unknownMemberWaitingForTrainingTable = (viewModel: ViewModel) => html`
             <th>Email Provided</th>
             <th>Score</th>
           </tr>
-          {{#each trainingQuizResults.quizPassedNotTrained.unknownMember}}
-          <tr class="passed_training_quiz_row">
-            <td hidden>{{this.id}}</td>
-            <td>{{display_date this.timestamp}}</td>
-            {{#if this.memberNumberProvided}}
-            <td>{{member_number this.memberNumberProvided}}</td>
-            {{else}}
-            <td>{{optional_detail this.memberNumberProvided}}</td>
-            {{/if}}
-            <td>{{optional_detail this.emailProvided}}</td>
-            <td>{{this.score}} / {{this.maxScore}} ({{this.percentage}}%)</td>
-          </tr>
-          {{/each}}
+          ${joinHtml(
+            viewModel.trainingQuizResults.quizPassedNotTrained.unknownMember.map(
+              unknownQuiz => html`
+                <tr class="passed_training_quiz_row">
+                  <td hidden>${sanitizeString(unknownQuiz.id)}</td>
+                  <td>${displayDate(unknownQuiz.timestamp)}</td>
+                  ${O.isSome(unknownQuiz.memberNumberProvided)
+                    ? html`<td>
+                        ${renderMemberNumber(
+                          unknownQuiz.memberNumberProvided.value
+                        )}
+                      </td>`
+                    : html`<td>
+                        ${optionalSafe(unknownQuiz.memberNumberProvided)}
+                      </td>`}
+                  <td>${optionalSafe(unknownQuiz.emailProvided)}</td>
+                  <td>
+                    ${unknownQuiz.score} / ${unknownQuiz.maxScore}
+                    (${unknownQuiz.percentage}%)
+                  </td>
+                </tr>
+              `
+            )
+          )}
         </table>
       `
     : html``}
@@ -159,15 +170,27 @@ const failedQuizTrainingTable = (viewModel: ViewModel) => html`
             <th>Score</th>
             <th hidden>Other Attempts</th>
           </tr>
-          {{#each trainingQuizResults.failedQuizNotTrained.knownMember}}
-          <tr class="failed_training_quiz_row">
-            <td hidden>{{this.id}}</td>
-            <td>{{display_date this.timestamp}}</td>
-            <td>{{member_number this.memberNumber}}</td>
-            <td>{{this.score}} / {{this.maxScore}} ({{this.percentage}}%)</td>
-            <td hidden>{{this.otherAttempts}}</td>
-          </tr>
-          {{/each}}
+          ${joinHtml(
+            viewModel.trainingQuizResults.failedQuizNotTrained.knownMember.map(
+              member => html`
+                <tr class="failed_training_quiz_row">
+                  <td hidden>${sanitizeString(member.id)}</td>
+                  <td>${displayDate(member.timestamp)}</td>
+                  <td>${renderMemberNumber(member.memberNumber)}</td>
+                  <td>
+                    ${member.score} / ${member.maxScore} (${member.percentage}%)
+                  </td>
+                  <td hidden>
+                    ${joinHtml(
+                      member.otherAttempts
+                        .map(sanitizeString)
+                        .map(v => html`${v}`)
+                    )}
+                  </td>
+                </tr>
+              `
+            )
+          )}
         </table>
       `
     : html``}
