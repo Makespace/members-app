@@ -11,9 +11,9 @@ import {Actor} from '../types';
 import {Request, Response} from 'express';
 import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
+import {html} from '../types/html';
 import {SendEmail} from '../commands';
 import {Config} from '../configuration';
-
 import {isolatedPageTemplate} from '../templates/page-template';
 
 const getActorFrom = (session: unknown, deps: Dependencies) =>
@@ -36,8 +36,6 @@ const getInput = <T>(body: unknown, command: SendEmail<T>) =>
     ),
     TE.fromEither
   );
-
-const EMAIL_SENT_TEMPLATE = Handlebars.compile('Email sent');
 
 const emailPost =
   <T>(conf: Config, deps: Dependencies, command: SendEmail<T>) =>
@@ -80,17 +78,12 @@ const emailPost =
         () => {
           res
             .status(200)
-            .send(
-              isolatedPageTemplate('Email sent')(
-                new SafeString(EMAIL_SENT_TEMPLATE({}))
-              )
-            );
+            .send(isolatedPageTemplate('Email sent')(html`Email sent`));
         }
       )
     )();
   };
 
-// ts-unused-exports:disable-next-line
 export const emailHandler =
   (conf: Config, deps: Dependencies) =>
   <T>(path: string, command: SendEmail<T>) => ({
