@@ -2,13 +2,15 @@ import {pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
+import {html, joinHtml, sanitizeString} from '../../types/html';
 import {DomainEvent, Member, User} from '../../types';
 import {Form} from '../../types/form';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {readModels} from '../../read-models';
-
+import * as RA from 'fp-ts/ReadonlyArray';
+import {renderMemberNumber} from '../../templates/member-number';
 
 type ViewModel = {
   user: User;
@@ -17,43 +19,61 @@ type ViewModel = {
   equipmentName: string;
 };
 
-const RENDER_ADD_TRAINER_FORM_TEMPLATE = Handlebars.compile(`
-  <h1>Add a trainer</h1>
-  <table data-gridjs>
-    <thead>
-      <tr>
-        <th>E-Mail</th>
-        <th>Member Number</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{#each members}}
-        <tr>
-          <td>{{this.emailAddress}}</td>
-          <td>{{this.memberNumber}}</td>
+const renderForm = (viewModel: ViewModel) =>
+  pipe(
+    viewModel.members,
+    RA.map(
+      member =>
+        html`<tr>
+          <td>${sanitizeString(member.emailAddress)}</td>
+          <td>${renderMemberNumber(member.memberNumber)}</td>
           <td>
             <form action="#" method="post">
-              <input type="hidden" name="memberNumber" value="{{this.memberNumber}}" />
+              <input
+                type="hidden"
+                name="memberNumber"
+                value="${member.memberNumber}"
+              />
               <input
                 type="hidden"
                 name="equipmentId"
-                value="{{@root.equipmentId}}"
+                value="${sanitizeString(viewModel.equipmentId)}"
               />
               <button type="submit">Add</button>
             </form>
           </td>
-        </tr>
-      {{/each}}
-    </tbody>
-  </table>
-`);
-
-const renderForm = (viewModel: ViewModel) =>
-  pageTemplate(
-    'Add Trainer',
-    viewModel.user
-  )(new SafeString(RENDER_ADD_TRAINER_FORM_TEMPLATE(viewModel)));
+        </tr>`
+    ),
+    joinHtml,
+    tableRows => html`
+      <h1>Add a trainer</h1>
+      <div id="wrapper"></div>
+      <table id="all-members">
+        <thead>
+          <tr>
+            <th>E-Mail</th>
+            <th>Member Number</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+        </tbody>
+      </table>
+      <script>
+        new gridjs.Grid({
+          from: document.getElementById('all-members'),
+          search: true,
+          language: {
+            search: {
+              placeholder: 'Search...',
+            },
+          },
+        }).render(document.getElementById('wrapper'));
+      </script>
+    `,
+    pageTemplate('Add Trainer', viewModel.user)
+  );
 
 const getEquipmentId = (input: unknown) =>
   pipe(
