@@ -12,8 +12,9 @@ export type Safe = string & {readonly Safe: unique symbol};
 export const sanitizeString = (input: string): SanitizedString =>
   sanitize(input) as SanitizedString;
 
-export const joinHtml = (input: ReadonlyArray<Html>) =>
-  input.join('\n') as Html;
+export const joinHtml = (
+  input: ReadonlyArray<Html | Safe | number | SanitizedString>
+) => input.join('\n') as Html;
 
 export const commaHtml = (
   input: ReadonlyArray<Html | Safe | number | SanitizedString>

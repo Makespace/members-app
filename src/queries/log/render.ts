@@ -1,47 +1,57 @@
 import {pipe} from 'fp-ts/lib/function';
+import * as RA from 'fp-ts/ReadonlyArray';
+import {html, joinHtml, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
 import {Actor} from '../../types/actor';
 import {DomainEvent} from '../../types';
 import {inspect} from 'node:util';
-import {pageTemplate} from '../../templates';
+import {displayDate} from '../../templates/display-date';
 
-
-Handlebars.registerHelper('render_actor', (actor: Actor) => {
+const renderActor = (actor: Actor) => {
   switch (actor.tag) {
     case 'system':
-      return 'System';
+      return html`System`;
     case 'token':
-      return 'Admin via API';
+      return html`Admin via API`;
     case 'user':
-      return actor.user.emailAddress;
+      return sanitizeString(actor.user.emailAddress);
   }
-});
+};
 
-Handlebars.registerHelper('render_event_payload', (event: DomainEvent) =>
+const renderPayload = (event: DomainEvent) =>
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, unused-imports/no-unused-vars
-  pipe(event, ({type, actor, recordedAt, ...payload}) => {
-    return Object.entries(payload)
-      .map(([key, value]) => `${key}: ${inspect(value)}`)
-      .join(', ');
-  })
-);
+  pipe(event, ({type, actor, recordedAt, ...payload}) =>
+    pipe(
+      payload,
+      Object.entries,
+      RA.map(([key, value]) => `${key}: ${inspect(value)}`),
+      RA.map(sanitizeString),
+      joinHtml
+    )
+  );
 
-const RENDER_LOG_TEMPLATE = Handlebars.compile(`
+const renderEntry = (event: ViewModel['events'][number]) => html`
+  <li>
+    <b>${sanitizeString(event.type)}</b> by ${renderActor(event.actor)} at
+    ${displayDate(event.recordedAt)}<br />
+    ${renderPayload(event)}
+  </li>
+`;
+
+const renderLog = (log: ViewModel['events']) =>
+  pipe(
+    log,
+    RA.map(renderEntry),
+    joinHtml,
+    items => html`
+      <ul>
+        ${items}
+      </ul>
+    `
+  );
+
+export const render = (viewModel: ViewModel) => html`
   <h1>Event log</h1>
   <p>Most recent at top</p>
-  <ul>
-    {{#each events}}
-      <li>
-        <b>{{this.type}}</b> by {{render_actor this.actor}} at
-        {{display_date this.recordedAt}}<br />
-        {{render_event_payload this}}
-      </li>
-    {{/each}}
-  </ul>
-`);
-
-export const render = (viewModel: ViewModel) =>
-  pageTemplate(
-    'Event Log',
-    viewModel.user
-  )(new SafeString(RENDER_LOG_TEMPLATE(viewModel)));
+  ${renderLog(viewModel.events)}
+`;
