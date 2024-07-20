@@ -12,5 +12,5 @@ export const logInPage = pipe(
       <button type="submit">Email me a link</button>
     </form>
   `,
-  isolatedPageTemplate(safe('Login'))
+  isolatedPageTemplate(safe('MakeSpace Members App'))
 );
