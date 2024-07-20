@@ -9,6 +9,7 @@ import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {Query} from '../query';
 import {HttpResponse} from '../../types';
+import {UUID} from 'io-ts-types';
 
 const invalidParams = flow(
   formatValidationErrors,
@@ -18,7 +19,7 @@ const invalidParams = flow(
 export const equipment: Query = deps => (user, params) =>
   pipe(
     params,
-    t.strict({equipment: t.string}).decode,
+    t.strict({equipment: UUID}).decode,
     E.mapLeft(invalidParams),
     E.map(params => params.equipment),
     TE.fromEither,

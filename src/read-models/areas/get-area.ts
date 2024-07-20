@@ -5,6 +5,7 @@ import * as O from 'fp-ts/Option';
 import {DomainEvent, SubsetOfDomainEvent, filterByName} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {Area} from './area';
+import {UUID} from 'io-ts-types';
 
 const pertinentEvents = ['AreaCreated' as const, 'OwnerAdded' as const];
 
@@ -32,7 +33,7 @@ const updateAreas = (
 
 export const getArea =
   (events: ReadonlyArray<DomainEvent>) =>
-  (areaId: string): O.Option<Area> =>
+  (areaId: UUID): O.Option<Area> =>
     pipe(
       events,
       filterByName(pertinentEvents),
