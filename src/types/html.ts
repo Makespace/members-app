@@ -9,6 +9,7 @@ type SanitizedString = string & {
   readonly SanitizedString: unique symbol;
 };
 
+// Export required as we want to re-export the output of stuff like `export const loginLink = safe('/login')`
 export type Safe = string & {readonly Safe: unique symbol};
 
 export const sanitizeString = (input: string): SanitizedString =>

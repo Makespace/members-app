@@ -95,7 +95,7 @@ const waitingForTrainingRow = (quiz: QuizResultViewModel) =>
     renderOtherAttempts,
     otherAttempts => html`
       <tr class="passed_training_quiz_row">
-        <td hidden>${sanitizeString(quiz.id)}</td>
+        <td hidden>${quiz.id}</td>
         <td>${displayDate(quiz.timestamp)}</td>
         <td>${renderMemberNumber(quiz.memberNumber)}</td>
         <td>${quiz.score} / ${quiz.maxScore} (${quiz.percentage}%)</td>
@@ -175,7 +175,7 @@ const failedKnownQuizRow = (knownQuiz: QuizResultViewModel) =>
     renderOtherAttempts,
     otherAttempts => html`
       <tr class="failed_training_quiz_row">
-        <td hidden>${sanitizeString(knownQuiz.id)}</td>
+        <td hidden>${knownQuiz.id}</td>
         <td>${displayDate(knownQuiz.timestamp)}</td>
         <td>${renderMemberNumber(knownQuiz.memberNumber)}</td>
         <td>

@@ -39,7 +39,7 @@ export const render = (viewModel: ViewModel) =>
         <tbody>
           <tr>
             <th scope="row">Member number</th>
-            <td>${viewModel.member.memberNumber}</td>
+            <td>${renderMemberNumber(viewModel.member.memberNumber)}</td>
           </tr>
           <tr>
             <th scope="row">Email</th>

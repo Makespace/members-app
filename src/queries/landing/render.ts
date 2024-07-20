@@ -8,7 +8,7 @@ const renderMemberDetails = (user: ViewModel['user']) => html`
     <dt>Email</dt>
     <dd>${sanitizeString(user.emailAddress)}</dd>
     <dt>Member Number</dt>
-    <dd>${user.memberNumber}</dd>
+    <dd>${renderMemberNumber(user.memberNumber)}</dd>
   </dl>
 `;
 
@@ -19,6 +19,11 @@ const superUserNav = html`
     <ul>
       <li>
         <a href="/members/create">Link a member number to an e-mail address</a>
+      </li>
+      <li>
+        <a href="/members/failed-imports"
+          >See member number imports that need fixing</a
+        >
       </li>
       <li>
         <a href="/areas/create">Add area of responsibility</a>

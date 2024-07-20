@@ -11,7 +11,7 @@ const renderSuperUsers = (superUsers: ViewModel['superUsers']) =>
     RA.map(
       user => html`
         <tr>
-          <td>${user.memberNumber}</td>
+          <td>${renderMemberNumber(user.memberNumber)}</td>
           <td>${displayDate(user.since)}</td>
           <td>
             <a href="/super-users/revoke?memberNumber=${user.memberNumber}">
