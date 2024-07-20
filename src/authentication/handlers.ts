@@ -11,9 +11,9 @@ import {logInPage} from './log-in-page';
 import {checkYourMailPage} from './check-your-mail';
 import {oopsPage} from '../templates';
 import {StatusCodes} from 'http-status-codes';
-import {SafeString} from 'handlebars';
 import {getUserFromSession} from './get-user-from-session';
 import {Dependencies} from '../dependencies';
+import {html, HtmlSubstitution, sanitizeString} from '../types/html';
 
 export const logIn = (deps: Dependencies) => (req: Request, res: Response) => {
   pipe(
@@ -39,7 +39,10 @@ export const auth = (req: Request, res: Response) => {
     parseEmailAddressFromBody,
     E.mapLeft(() => "You entered something that isn't a valid email address"),
     E.matchW(
-      msg => res.status(StatusCodes.BAD_REQUEST).send(oopsPage(msg)),
+      msg =>
+        res
+          .status(StatusCodes.BAD_REQUEST)
+          .send(oopsPage(html`${sanitizeString(msg)}`)),
       email => {
         publish('send-log-in-link', email);
         res.status(StatusCodes.ACCEPTED).send(checkYourMailPage(email));
@@ -49,14 +52,13 @@ export const auth = (req: Request, res: Response) => {
 };
 
 export const invalidLink =
-  (logInPath: string) => (req: Request, res: Response) => {
+  (logInPath: HtmlSubstitution) => (req: Request, res: Response) => {
     res
       .status(StatusCodes.UNAUTHORIZED)
       .send(
         oopsPage(
-          new SafeString(
-            `The link you have used is (no longer) valid. Go back to the <a href=${logInPath}>log in</a>`
-          )
+          html`The link you have used is (no longer) valid. Go back to the
+            <a href=${logInPath}>log in</a>`
         )
       );
   };
