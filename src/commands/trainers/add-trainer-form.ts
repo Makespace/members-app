@@ -54,7 +54,7 @@ const renderForm = (viewModel: ViewModel) =>
           <tr>
             <th>E-Mail</th>
             <th>Member Number</th>
-            <th></th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>

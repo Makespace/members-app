@@ -25,7 +25,7 @@ const renderForm = (viewModel: ViewModel) =>
       </p>
       <dl>
         <dt>Member number</dt>
-        <dd>${viewModel.toBeRevoked}</dd>
+        <dd>${renderMemberNumber(viewModel.toBeRevoked)}</dd>
       </dl>
       <form action="#" method="post">
         <input
