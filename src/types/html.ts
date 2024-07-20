@@ -9,7 +9,7 @@ type SanitizedString = string & {
   readonly SanitizedString: unique symbol;
 };
 
-export type Safe = string & {readonly Safe: unique symbol};
+type Safe = string & {readonly Safe: unique symbol};
 
 export const sanitizeString = (input: string): SanitizedString =>
   sanitize(input) as SanitizedString;
