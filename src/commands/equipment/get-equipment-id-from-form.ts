@@ -1,12 +1,13 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
+import * as tt from 'io-ts-types';
 import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 
 const getEquipmentIdCodec = t.strict({
-  equipmentId: t.string,
+  equipmentId: tt.UUID,
 });
 
 export const getEquipmentIdFromForm = (input: unknown) =>

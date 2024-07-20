@@ -2,6 +2,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {html, joinHtml, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
 import * as RA from 'fp-ts/ReadonlyArray';
+import {UUID} from 'io-ts-types';
 
 const renderOwners = (owners: ViewModel['area']['owners']) =>
   pipe(
@@ -14,14 +15,12 @@ const renderOwners = (owners: ViewModel['area']['owners']) =>
       </ul>`
   );
 
-const addEquipmentCallToAction = (areaId: string) => html`
-  <a href="/equipment/add?area=${sanitizeString(areaId)}"
-    >Add piece of red equipment</a
-  >
+const addEquipmentCallToAction = (areaId: UUID) => html`
+  <a href="/equipment/add?area=${areaId}">Add piece of red equipment</a>
 `;
 
-const addOwnerCallToAction = (areaId: string) => html`
-  <a href="/areas/add-owner?area=${sanitizeString(areaId)}">Add owner</a>
+const addOwnerCallToAction = (areaId: UUID) => html`
+  <a href="/areas/add-owner?area=${areaId}">Add owner</a>
 `;
 
 const renderEquipment = (allEquipment: ViewModel['equipment']) =>
@@ -30,7 +29,7 @@ const renderEquipment = (allEquipment: ViewModel['equipment']) =>
     RA.map(
       equipment => html`
         <li>
-          <a href="/equipment/${sanitizeString(equipment.id)}"
+          <a href="/equipment/${equipment.id}"
             >${sanitizeString(equipment.name)}</a
           >
         </li>

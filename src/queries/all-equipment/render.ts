@@ -10,12 +10,12 @@ const renderEquipment = (allEquipment: ViewModel['equipment']) =>
       equipment => html`
         <tr>
           <td>
-            <a href="/equipment/${sanitizeString(equipment.id)}"
+            <a href="/equipment/${equipment.id}"
               >${sanitizeString(equipment.name)}</a
             >
           </td>
           <td>
-            <a href="/areas/${sanitizeString(equipment.areaId)}"
+            <a href="/areas/${equipment.areaId}"
               >${sanitizeString(equipment.areaName)}</a
             >
           </td>
