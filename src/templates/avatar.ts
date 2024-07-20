@@ -1,16 +1,16 @@
 import {createHash} from 'crypto';
-import {html, safe} from '../types/html';
+import {html, Safe, safe} from '../types/html';
 
 function getGravatarUrl(email: string, size: number = 160) {
   const trimmedEmail = email.trim().toLowerCase();
   const hash = createHash('sha256').update(trimmedEmail).digest('hex');
-  return `https://www.gravatar.com/avatar/${hash}?s=${size}&d=identicon`;
+  return safe(`https://www.gravatar.com/avatar/${hash}?s=${size}&d=identicon`);
 }
 
 type GravatarViewModel = {
-  url1x: string;
-  url2x: string;
-  url4x: string;
+  url1x: Safe;
+  url2x: Safe;
+  url4x: Safe;
   memberNumber: number;
 };
 
@@ -29,11 +29,11 @@ const gravatar =
     />
   `;
 
-const avatarThumbnail = gravatar(40, 40);
-const avatarProfile = gravatar(320, 320);
-
 export const getGravatarThumbnail = (email: string, memberNumber: number) =>
-  avatarThumbnail({
+  gravatar(
+    40,
+    40
+  )({
     url1x: getGravatarUrl(email, 40),
     url2x: getGravatarUrl(email, 80),
     url4x: getGravatarUrl(email, 160),
@@ -41,7 +41,10 @@ export const getGravatarThumbnail = (email: string, memberNumber: number) =>
   });
 
 export const getGravatarProfile = (email: string, memberNumber: number) =>
-  avatarProfile({
+  gravatar(
+    320,
+    320
+  )({
     url1x: getGravatarUrl(email, 320),
     url2x: getGravatarUrl(email, 640),
     url4x: getGravatarUrl(email, 1280),
