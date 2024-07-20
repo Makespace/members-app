@@ -2,7 +2,13 @@ import {pipe} from 'fp-ts/lib/function';
 import {pageTemplate} from '../../templates';
 import {displayDate} from '../../templates/display-date';
 import {renderMemberNumber} from '../../templates/member-number';
-import {html, joinHtml, optionalSafe, sanitizeString} from '../../types/html';
+import {
+  commaHtml,
+  html,
+  joinHtml,
+  optionalSafe,
+  sanitizeString,
+} from '../../types/html';
 import {
   QuizResultUnknownMemberViewModel,
   QuizResultViewModel,
@@ -10,7 +16,6 @@ import {
 } from './view-model';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {UUID} from 'io-ts-types';
 
 const trainersList = (trainers: ViewModel['equipment']['trainers']) =>
   pipe(
@@ -82,12 +87,7 @@ const currentlyTrainedUsersTable = (viewModel: ViewModel) =>
   );
 
 // Hidden by default behind a visibility toggle.
-const renderOtherAttempts = (otherAttempts: ReadonlyArray<UUID>) =>
-  pipe(
-    otherAttempts,
-    RA.map(v => html`${v}`),
-    joinHtml
-  );
+const renderOtherAttempts = commaHtml;
 
 const waitingForTrainingRow = (quiz: QuizResultViewModel) =>
   pipe(

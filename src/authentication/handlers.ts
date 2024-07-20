@@ -46,9 +46,7 @@ export const auth = (req: Request, res: Response<RenderedHtml>) => {
     E.mapLeft(() => "You entered something that isn't a valid email address"),
     E.matchW(
       msg =>
-        res
-          .status(StatusCodes.BAD_REQUEST)
-          .send(oopsPage(html`${sanitizeString(msg)}`)),
+        res.status(StatusCodes.BAD_REQUEST).send(oopsPage(sanitizeString(msg))),
       email => {
         publish('send-log-in-link', email);
         res.status(StatusCodes.ACCEPTED).send(checkYourMailPage(email));
