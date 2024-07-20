@@ -9,6 +9,7 @@ import {
 import * as RA from 'fp-ts/ReadonlyArray';
 import {ViewModel} from './view-model';
 import {pageTemplate} from '../../templates';
+import {renderMemberNumber} from '../../templates/member-number';
 
 const renderAreas = (areas: ViewModel['areas']) =>
   pipe(
@@ -19,7 +20,7 @@ const renderAreas = (areas: ViewModel['areas']) =>
           <td>
             <a href="/areas/${area.id}">${sanitizeString(area.name)}</a>
           </td>
-          <td>${commaHtml(area.owners)}</td>
+          <td>${commaHtml(area.owners.map(renderMemberNumber))}</td>
           <td>
             <a href="/areas/add-owner?area=${area.id}">Add owner</a>
           </td>
