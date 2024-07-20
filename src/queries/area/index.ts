@@ -26,7 +26,7 @@ export const area: Query = deps => (user, params) =>
     TE.chain(areaId => constructViewModel(deps)(areaId, user)),
     TE.map(viewModel =>
       HttpResponse.mk.Page({
-        html: render(viewModel),
+        rendered: render(viewModel),
       })
     )
   );
