@@ -2,14 +2,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {pageTemplate} from '../../templates';
 import {displayDate} from '../../templates/display-date';
 import {renderMemberNumber} from '../../templates/member-number';
-import {
-  blankIfEmpty,
-  displayIfEmpty,
-  html,
-  joinHtml,
-  optionalSafe,
-  sanitizeString,
-} from '../../types/html';
+import {html, joinHtml, optionalSafe, sanitizeString} from '../../types/html';
 import {
   QuizResultUnknownMemberViewModel,
   QuizResultViewModel,
@@ -18,23 +11,20 @@ import {
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 
-const trainersList = (trainers: ViewModel['equipment']['trainers']) => html`
-  <h2>Trainers</h2>
-  <ul>
-    ${pipe(
-      trainers,
-      displayIfEmpty(html`<p>This equipment needs trainers.</p>`)(arr =>
-        pipe(
-          arr,
-          RA.map(
-            memberNumber => html`<li>${renderMemberNumber(memberNumber)}</li>`
-          ),
-          joinHtml
-        )
-      )
-    )}
-  </ul>
-`;
+const trainersList = (trainers: ViewModel['equipment']['trainers']) =>
+  pipe(
+    trainers,
+    RA.map(memberNumber => html`<li>${renderMemberNumber(memberNumber)}</li>`),
+    RA.match(
+      () => html`<p>This equipment needs trainers.</p>`,
+      items => html`
+        <h2>Trainers</h2>
+        <ul>
+          ${joinHtml(items)}
+        </ul>
+      `
+    )
+  );
 
 const trainerEquipmentActions = (equipment: ViewModel['equipment']) => html`
   <li>
@@ -75,43 +65,60 @@ const equipmentActions = (viewModel: ViewModel) => html`
   </ul>
 `;
 
-const currentlyTrainedUsersTable = (viewModel: ViewModel) => html`
-  <h2>Currently Trained Users</h2>
-  <table>
-    <tr>
-      <th>Member Number</th>
-    </tr>
-    ${pipe(
-      viewModel.equipment.trainedMembers,
-      RA.map(
-        memberNumber =>
-          html`<tr>
-            <td>${renderMemberNumber(memberNumber)}</td>
-          </tr>`
-      ),
-      joinHtml
-    )}
-  </table>
-`;
+const currentlyTrainedUsersTable = (viewModel: ViewModel) =>
+  pipe(
+    viewModel.equipment.trainedMembers,
+    RA.map(renderMemberNumber),
+    RA.map(
+      memberNumberHtml =>
+        html`<tr>
+          <td>${memberNumberHtml}</td>
+        </tr>`
+    ),
+    joinHtml,
+    rows => html`
+      <h2>Currently Trained Users</h2>
+      <table>
+        <tr>
+          <th>Member Number</th>
+        </tr>
+        ${rows}
+      </table>
+    `
+  );
 
-const waitingForTrainingRow = (quiz: QuizResultViewModel) => html`
-  <tr class="passed_training_quiz_row">
-    <td hidden>${sanitizeString(quiz.id)}</td>
-    <td>${displayDate(quiz.timestamp)}</td>
-    <td>${renderMemberNumber(quiz.memberNumber)}</td>
-    <td>${quiz.score} / ${quiz.maxScore} (${quiz.percentage}%)</td>
-    <td><button>Mark as trained</button></td>
-    <td hidden>
-      ${joinHtml(quiz.otherAttempts.map(sanitizeString).map(v => html`${v}`))}
-    </td>
-  </tr>
-`;
+// Hidden by default behind a visibility toggle.
+const renderOtherAttempts = (otherAttempts: ReadonlyArray<string>) =>
+  pipe(
+    otherAttempts,
+    RA.map(sanitizeString),
+    RA.map(v => html`${v}`),
+    joinHtml
+  );
+
+const waitingForTrainingRow = (quiz: QuizResultViewModel) =>
+  pipe(
+    quiz.otherAttempts,
+    renderOtherAttempts,
+    otherAttempts => html`
+      <tr class="passed_training_quiz_row">
+        <td hidden>${sanitizeString(quiz.id)}</td>
+        <td>${displayDate(quiz.timestamp)}</td>
+        <td>${renderMemberNumber(quiz.memberNumber)}</td>
+        <td>${quiz.score} / ${quiz.maxScore} (${quiz.percentage}%)</td>
+        <td><button>Mark as trained</button></td>
+        <td hidden>${otherAttempts}</td>
+      </tr>
+    `
+  );
 
 const waitingForTrainingTable = (viewModel: ViewModel) =>
   pipe(
     viewModel.trainingQuizResults.quizPassedNotTrained.knownMember,
-    displayIfEmpty(html`<p>No one is waiting for training</p>`)(
-      passedQuizes => html`
+    RA.map(waitingForTrainingRow),
+    RA.match(
+      () => html`<p>No one is waiting for training</p>`,
+      rows => html`
         <tr>
           <th hidden>Quiz ID</th>
           <th>Timestamp</th>
@@ -120,7 +127,7 @@ const waitingForTrainingTable = (viewModel: ViewModel) =>
           <th>Actions</th>
           <th hidden>Other Attempts</th>
         </tr>
-        ${pipe(passedQuizes, RA.map(waitingForTrainingRow), joinHtml)}
+        ${joinHtml(rows)}
       `
     )
   );
@@ -147,8 +154,10 @@ const passedUnknownQuizRow = (
 const unknownMemberWaitingForTrainingTable = (viewModel: ViewModel) =>
   pipe(
     viewModel.trainingQuizResults.quizPassedNotTrained.unknownMember,
-    blankIfEmpty(
-      unknownQuizes => html`
+    RA.map(passedUnknownQuizRow),
+    RA.match(
+      () => html``,
+      rows => html`
         <h3>Waiting for Training - Unknown Member</h3>
         <p>
           Quizes completed by members without matching email and member numbers.
@@ -161,48 +170,49 @@ const unknownMemberWaitingForTrainingTable = (viewModel: ViewModel) =>
             <th>Email Provided</th>
             <th>Score</th>
           </tr>
-          ${pipe(unknownQuizes, RA.map(passedUnknownQuizRow), joinHtml)}
+          ${joinHtml(rows)}
         </table>
       `
     )
   );
 
-const failedKnownQuizRow = (knownQuiz: QuizResultViewModel) => html`
-  <tr class="failed_training_quiz_row">
-    <td hidden>${sanitizeString(knownQuiz.id)}</td>
-    <td>${displayDate(knownQuiz.timestamp)}</td>
-    <td>${renderMemberNumber(knownQuiz.memberNumber)}</td>
-    <td>
-      ${knownQuiz.score} / ${knownQuiz.maxScore} (${knownQuiz.percentage}%)
-    </td>
-    <td hidden>
-      ${joinHtml(
-        knownQuiz.otherAttempts.map(sanitizeString).map(v => html`${v}`)
-      )}
-    </td>
-  </tr>
-`;
+const failedKnownQuizRow = (knownQuiz: QuizResultViewModel) =>
+  pipe(
+    knownQuiz.otherAttempts,
+    renderOtherAttempts,
+    otherAttempts => html`
+      <tr class="failed_training_quiz_row">
+        <td hidden>${sanitizeString(knownQuiz.id)}</td>
+        <td>${displayDate(knownQuiz.timestamp)}</td>
+        <td>${renderMemberNumber(knownQuiz.memberNumber)}</td>
+        <td>
+          ${knownQuiz.score} / ${knownQuiz.maxScore} (${knownQuiz.percentage}%)
+        </td>
+        <td hidden>${otherAttempts}</td>
+      </tr>
+    `
+  );
 
 const failedQuizTrainingTable = (viewModel: ViewModel) =>
   pipe(
     viewModel.trainingQuizResults.failedQuizNotTrained.knownMember,
-    blankIfEmpty(
-      pipe(
-        knownQuizes => html`
-          <h3>Failed quizes</h3>
-          <p>Members who haven't passed (but have attempted) the quiz</p>
-          <table>
-            <tr>
-              <th hidden>Quiz ID</th>
-              <th>Timestamp</th>
-              <th>Member Number</th>
-              <th>Score</th>
-              <th hidden>Other Attempts</th>
-            </tr>
-            ${pipe(knownQuizes, RA.map(failedKnownQuizRow), joinHtml)}
-          </table>
-        `
-      )
+    RA.map(failedKnownQuizRow),
+    RA.match(
+      () => html``,
+      rows => html`
+        <h3>Failed quizes</h3>
+        <p>Members who haven't passed (but have attempted) the quiz</p>
+        <table>
+          <tr>
+            <th hidden>Quiz ID</th>
+            <th>Timestamp</th>
+            <th>Member Number</th>
+            <th>Score</th>
+            <th hidden>Other Attempts</th>
+          </tr>
+          ${joinHtml(rows)}
+        </table>
+      `
     )
   );
 
