@@ -158,8 +158,10 @@ const reduceToLatestQuizResultByMember = (
             percentage: quizResult.percentage,
             passed: quizResult.fullMarks,
             timestamp: DateTime.fromSeconds(quizResult.timestampEpochS),
-            memberNumberProvided: quizResult.memberNumberProvided,
-            emailProvided: quizResult.emailProvided,
+            memberNumberProvided: O.fromNullable(
+              quizResult.memberNumberProvided
+            ),
+            emailProvided: O.fromNullable(quizResult.emailProvided),
           });
         }
         return result;
