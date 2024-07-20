@@ -3,7 +3,7 @@ import * as tt from 'io-ts-types';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
-import {html} from '../../types/html';
+import {html, safe} from '../../types/html';
 import {User} from '../../types';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
@@ -36,7 +36,7 @@ const renderForm = (viewModel: ViewModel) =>
         <button type="submit">Confirm and send</button>
       </form>
     `,
-    pageTemplate('Revoke super user', viewModel.user)
+    pageTemplate(safe('Revoke super user'), viewModel.user)
   );
 
 const paramsCodec = t.strict({

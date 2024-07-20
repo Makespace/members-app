@@ -27,7 +27,7 @@ const renderForm = (viewModel: ViewModel) =>
         <button type="submit">Sign Agreement</button>
       </form>
     `,
-    pageTemplate('Sign Owner Agreement', viewModel.user)
+    pageTemplate(safe('Sign Owner Agreement'), viewModel.user)
   );
 
 const constructForm: Form<ViewModel>['constructForm'] =

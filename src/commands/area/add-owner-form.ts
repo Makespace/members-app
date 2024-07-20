@@ -108,7 +108,7 @@ const renderBody = (viewModel: ViewModel) => html`
 `;
 
 const renderForm = (viewModel: ViewModel) =>
-  pipe(viewModel, renderBody, pageTemplate('Add Owner', viewModel.user));
+  pipe(viewModel, renderBody, pageTemplate(safe('Add Owner'), viewModel.user));
 
 const paramsCodec = t.strict({
   area: t.string,

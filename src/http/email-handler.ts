@@ -11,7 +11,7 @@ import {Actor} from '../types';
 import {Request, Response} from 'express';
 import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
-import {html, RenderedHtml, sanitizeString} from '../types/html';
+import {html, RenderedHtml, safe, sanitizeString} from '../types/html';
 import {SendEmail} from '../commands';
 import {Config} from '../configuration';
 import {isolatedPageTemplate} from '../templates/page-template';
@@ -80,7 +80,7 @@ const emailPost =
         () => {
           res
             .status(200)
-            .send(isolatedPageTemplate('Email sent')(html`Email sent`));
+            .send(isolatedPageTemplate(safe('Email sent'))(html`Email sent`));
         }
       )
     )();

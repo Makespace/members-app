@@ -2,7 +2,7 @@ import {pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
-import {html, joinHtml, sanitizeString} from '../../types/html';
+import {html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {DomainEvent, Member, User} from '../../types';
 import {Form} from '../../types/form';
 import {formatValidationErrors} from 'io-ts-reporters';
@@ -73,7 +73,7 @@ const renderForm = (viewModel: ViewModel) =>
         }).render(document.getElementById('wrapper'));
       </script>
     `,
-    pageTemplate('Add Trainer', viewModel.user)
+    pageTemplate(safe('Add Trainer'), viewModel.user)
   );
 
 const getEquipmentId = (input: unknown) =>

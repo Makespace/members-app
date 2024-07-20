@@ -1,7 +1,7 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
-import {html} from '../../types/html';
+import {html, safe} from '../../types/html';
 import {MemberDetails, User} from '../../types';
 import {Form} from '../../types/form';
 import {memberInput} from '../../templates/member-input';
@@ -24,11 +24,15 @@ const render = (viewModel: ViewModel) =>
         <button type="submit">Confirm and send</button>
       </form>
     `,
-    pageTemplate('Declare super user', viewModel.user)
+    pageTemplate(safe('Declare super user'), viewModel.user)
   );
 
 const renderForm = (viewModel: ViewModel) =>
-  pipe(viewModel, render, pageTemplate('Declare super user', viewModel.user));
+  pipe(
+    viewModel,
+    render,
+    pageTemplate(safe('Declare super user'), viewModel.user)
+  );
 
 const constructForm: Form<ViewModel>['constructForm'] =
   () =>
