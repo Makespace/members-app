@@ -9,7 +9,7 @@ import passport from 'passport';
 import {magicLink} from './magic-link';
 import {logInPage} from './log-in-page';
 import {checkYourMailPage} from './check-your-mail';
-import {oopsPage} from '../templates';
+import {oopsPage, isolatedPageTemplate} from '../templates';
 import {StatusCodes} from 'http-status-codes';
 import {getUserFromSession} from './get-user-from-session';
 import {Dependencies} from '../dependencies';
@@ -18,6 +18,7 @@ import {
   HtmlSubstitution,
   RenderedHtml,
   sanitizeString,
+  safe,
 } from '../types/html';
 
 export const logIn =
@@ -67,6 +68,23 @@ export const invalidLink =
         )
       );
   };
+
+export const landing = (req: Request, res: Response<RenderedHtml>) => {
+  const index = req.originalUrl.indexOf('?');
+  const suffix = index === -1 ? '' : req.originalUrl.slice(index);
+  const url = '/auth/callback' + suffix;
+  res.status(StatusCodes.OK).send(
+    isolatedPageTemplate(sanitizeString('Redirecting...'))(html`
+      <!doctype html>
+      <html>
+        <head>
+          <meta http-equiv="refresh" content="0; url='${safe(url)}'" />
+        </head>
+        <body></body>
+      </html>
+    `)
+  );
+};
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 export const callback = (invalidLinkPath: string) =>
