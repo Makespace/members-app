@@ -7,25 +7,36 @@ import axios from 'axios';
 
 const ENDPOINT = 'http://localhost:8080';
 
-const ADMIN = {
+type USER = {
+  memberNumber: string;
+  email: string;
+  name: string | undefined;
+};
+
+const ADMIN: USER = {
   memberNumber: '1337',
   email: 'admin@example.com',
+  name: 'Admin <b>HELLO<\\b>',
 };
 const CONSUMER: typeof ADMIN = {
   memberNumber: '6781',
   email: 'consumer@example.com',
+  name: undefined,
 };
 const FOO: typeof ADMIN = {
   memberNumber: '1234',
   email: 'foo@example.com',
+  name: undefined,
 };
 const FINN: typeof ADMIN = {
   memberNumber: '3222',
   email: 'finn@example.com',
+  name: undefined,
 };
 const SPARKY: typeof ADMIN = {
   memberNumber: '4444',
   email: 'sparky@example.com',
+  name: undefined,
 };
 
 const WOOD_AREA = {
@@ -74,11 +85,19 @@ const sendPost = (path: string) => (data: unknown) =>
     },
   });
 
-const createUser = (user: typeof ADMIN) =>
-  sendPost('api/members/create')({
+const createUser = async (user: typeof ADMIN) => {
+  await sendPost('api/members/create')({
     memberNumber: user.memberNumber,
     email: user.email,
   });
+  if (user.name) {
+    await sendPost('api/members/edit-name')({
+      memberNumber: user.memberNumber,
+      name: user.name,
+    });
+  }
+};
+
 const createArea = async (area: typeof WOOD_AREA) => {
   await sendPost('api/areas/create')({
     id: area.id,
