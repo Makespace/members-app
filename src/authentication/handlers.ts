@@ -68,6 +68,21 @@ export const invalidLink =
       );
   };
 
+export const landing = (req: Request, res: Response<RenderedHtml>) => {
+  const index = req.originalUrl.indexOf('?');
+  const suffix = index === -1 ? '' : req.originalUrl.slice(index);
+  const url = `/auth/callback` + suffix;
+  res
+    .status(StatusCodes.OK)
+    .send(html`
+    <!doctype html>
+    <html>
+    <head><meta http-equiv="refresh" content="0; url='${url}'"></head>
+    <body></body>
+    </html>
+    `);
+};
+
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 export const callback = (invalidLinkPath: string) =>
   passport.authenticate(magicLink.name, {
