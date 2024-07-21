@@ -1,4 +1,4 @@
-.phony: check clear-containers dev fix lint prod release smoketest test typecheck unused-exports watch-typecheck
+.phony: check clear-containers dev fix lint prod release smoketest test typecheck unused-exports watch-typecheck populate-local-dev populate-full
 
 check: test lint typecheck unused-exports
 
@@ -11,9 +11,11 @@ node_modules: package.json bun.lockb
 dev: .env
 	docker-compose --file docker-compose.yaml --file docker-compose.dev.yaml up --build
 
-.PHONY: populate-local-dev
 populate-local-dev:
 	bash ./scripts/populate-local-dev.sh
+
+populate-full:
+	bash ./scripts/populate-full.sh
 
 fix: node_modules
 	bun gts fix

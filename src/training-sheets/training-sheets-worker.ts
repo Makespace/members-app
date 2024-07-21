@@ -3,7 +3,6 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import * as S from 'fp-ts/string';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
-import * as O from 'fp-ts/Option';
 import {sequenceS} from 'fp-ts/lib/Apply';
 
 import {Config} from '../configuration';
@@ -11,13 +10,13 @@ import {Dependencies} from '../dependencies';
 import {Logger} from 'pino';
 import {Ord, contramap} from 'fp-ts/lib/Ord';
 import {
-  FailureWithStatus,
   failureWithStatus,
+  FailureWithStatus,
 } from '../types/failure-with-status';
-import {StatusCodes} from 'http-status-codes';
 import {accumBy, lastBy} from '../util';
 import {QzEvent, QzEventDuplicate, RegEvent} from '../types/qz-event';
 import {extractGoogleSheetData} from './google';
+import {StatusCodes} from 'http-status-codes';
 
 const byEquipmentId: Ord<RegEvent> = pipe(
   S.Ord,
@@ -48,20 +47,20 @@ const processForEquipment = (
 
   return pipe(
     deps.pullGoogleSheetData(logger, regEvent.trainingSheetId),
-    TE.flatMap(data => {
-      logger.trace(
-        "Received data from google sheets for training sheet '{regEvent.trainingSheetId}': '%o'",
-        data
-      );
-      return TE.right(data);
-    }),
-    TE.mapLeft(
+    TE.mapBoth(
       failureWithStatus(
         'Failed to pull google sheet data',
         StatusCodes.INTERNAL_SERVER_ERROR
-      )
+      ),
+      data => {
+        logger.trace(
+          "Received data from google sheets for training sheet '{regEvent.trainingSheetId}': '%o'",
+          data
+        );
+        return data;
+      }
     ),
-    TE.chain(spreadsheet =>
+    TE.chainW(spreadsheet =>
       pipe(
         spreadsheet,
         extractGoogleSheetData(
@@ -69,12 +68,7 @@ const processForEquipment = (
           regEvent.equipmentId,
           regEvent.trainingSheetId
         ),
-        O.map(events => {
-          // We could check for duplicate quiz results earlier but I doubt the performance difference will be
-          // measurable.
-          logger.info(
-            `Found ${events.length} quiz result events, checking for ones we have already seen...`
-          );
+        RA.map(events => {
           const newQuizResults =
             RA.difference(QzEventDuplicate)(existingQuizResults)(events);
           logger.info(
@@ -82,16 +76,8 @@ const processForEquipment = (
           );
           return newQuizResults;
         }),
-        O.match(
-          () =>
-            TE.left(
-              failureWithStatus(
-                'Failed to extract google sheet data',
-                StatusCodes.INTERNAL_SERVER_ERROR
-              )()
-            ),
-          val => TE.right(val)
-        )
+        RA.flatten,
+        TE.right
       )
     )
   );
