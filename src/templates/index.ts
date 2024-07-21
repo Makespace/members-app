@@ -1,2 +1,6 @@
-export {pageTemplate, templatePage} from './page-template';
+export {
+  pageTemplate,
+  templatePage,
+  isolatedPageTemplate,
+} from './page-template';
 export {oopsPage} from './oops';
