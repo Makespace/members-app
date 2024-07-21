@@ -1,54 +1,63 @@
-import {pageTemplate} from '../../templates';
+import {pipe} from 'fp-ts/lib/function';
+import {
+  html,
+  joinHtml,
+  optionalSafe,
+  safe,
+  sanitizeString,
+} from '../../types/html';
+import * as RA from 'fp-ts/ReadonlyArray';
 import {ViewModel} from './view-model';
-import Handlebars, {SafeString} from 'handlebars';
+import {getGravatarThumbnail} from '../../templates/avatar';
+import {renderMemberNumber} from '../../templates/member-number';
+import {pageTemplate} from '../../templates';
 
-Handlebars.registerPartial(
-  'render_members',
-  `
-    <table>
-      <thead>
+const renderMembers = (viewModel: ViewModel) =>
+  pipe(
+    viewModel.members,
+    RA.map(
+      member => html`
         <tr>
-          <th></th>
-          <th>Member number</th>
-          <th>Name</th>
-          <th>Pronouns</th>
-          <th>Email</th>
-        </tr>
-      </thead>
-      <tbody>
-      {{#each members}}
-        <tr>
-          <td>{{avatar_thumbnail this.emailAddress this.memberNumber}}</td>
           <td>
-            {{member_number this.memberNumber}}
+            ${getGravatarThumbnail(member.emailAddress, member.memberNumber)}
           </td>
-          <td>{{optional_detail this.name}}</td>
-          <td>{{optional_detail this.pronouns}}</td>
-          {{#if @root.viewerIsSuperUser}}
-            <td>{{this.emailAddress}}</td>
-          {{else}}
-            <td>'*****'</td>
-          {{/if}}
+          <td>${renderMemberNumber(member.memberNumber)}</td>
+          <td>${optionalSafe(member.name)}</td>
+          <td>${optionalSafe(member.pronouns)}</td>
+          <td>
+            ${viewModel.viewerIsSuperUser
+              ? sanitizeString(member.emailAddress)
+              : html`*****`}
+          </td>
         </tr>
-      {{/each}}
-      </tbody>
-    </table>
-  `
-);
-
-const RENDER_MEMBERS_TEMPLATE = Handlebars.compile(
-  `
-  <h1>Members of Makespace</h1>
-  {{#if members}}
-    {{> render_members}}
-  {{else}}
-    <p>Currently no members</p>
-  {{/if}}
-`
-);
+      `
+    ),
+    RA.match(
+      () => html` <p>Currently no members</p> `,
+      rows => html`
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>Member number</th>
+              <th>Name</th>
+              <th>Pronouns</th>
+              <th>Email</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${joinHtml(rows)}
+          </tbody>
+        </table>
+      `
+    )
+  );
 
 export const render = (viewModel: ViewModel) =>
-  pageTemplate(
-    'Members',
-    viewModel.user
-  )(new SafeString(RENDER_MEMBERS_TEMPLATE(viewModel)));
+  pipe(
+    html`
+      <h1>Members of Makespace</h1>
+      ${renderMembers(viewModel)}
+    `,
+    pageTemplate(safe('Members'), viewModel.user)
+  );

@@ -1,59 +1,59 @@
+import {pipe} from 'fp-ts/lib/function';
+import {html, joinHtml, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
+import * as RA from 'fp-ts/ReadonlyArray';
+import {UUID} from 'io-ts-types';
 import {pageTemplate} from '../../templates';
-import Handlebars, {SafeString} from 'handlebars';
 
-Handlebars.registerPartial(
-  'owners_list',
-  `
-    <ul>
-      {{#each area.owners}}
-        <li>{{this}}</li>
-      {{/each}}
-    </ul>
-  `
-);
+const renderOwners = (owners: ViewModel['area']['owners']) =>
+  pipe(
+    owners,
+    RA.map(owner => html`<li>${owner}</li>`),
+    joinHtml,
+    items =>
+      html`<ul>
+        ${items}
+      </ul>`
+  );
 
-Handlebars.registerPartial(
-  'add_red_equipment_link',
-  `
-    <a href="/equipment/add?area={{area.id}}">Add piece of red equipment</a>
-  `
-);
+const addEquipmentCallToAction = (areaId: UUID) => html`
+  <a href="/equipment/add?area=${areaId}">Add piece of red equipment</a>
+`;
 
-Handlebars.registerPartial(
-  'add_owner_link',
-  `
-    <a href="/areas/add-owner?area={{area.id}}">Add owner</a>
-  `
-);
+const addOwnerCallToAction = (areaId: UUID) => html`
+  <a href="/areas/add-owner?area=${areaId}">Add owner</a>
+`;
 
-Handlebars.registerPartial(
-  'equipment_list',
-  `
-    <ul>
-      {{#each equipment}}
-        <li><a href="/equipment/{{this.id}}">{{this.name}}</a></li>
-      {{/each}}
-    </ul>
-  `
-);
-
-const RENDER_AREA_TEMPLATE = Handlebars.compile(`
-  <h1>{{area.name}}</h1>
-  {{#if isSuperUser}}
-    {{> add_red_equipment_link }}
-  {{/if}}
-  <h2>Owners</h2>
-  {{#if isSuperUser}}
-    {{> add_owner_link }}
-  {{/if}}
-  {{> owners_list }}
-  <h2>Equipment</h2>
-  {{> equipment_list }}
-`);
+const renderEquipment = (allEquipment: ViewModel['equipment']) =>
+  pipe(
+    allEquipment,
+    RA.map(
+      equipment => html`
+        <li>
+          <a href="/equipment/${equipment.id}"
+            >${sanitizeString(equipment.name)}</a
+          >
+        </li>
+      `
+    ),
+    joinHtml,
+    items => html`
+      <ul>
+        ${items}
+      </ul>
+    `
+  );
 
 export const render = (viewModel: ViewModel) =>
-  pageTemplate(
-    viewModel.area.name,
-    viewModel.user
-  )(new SafeString(RENDER_AREA_TEMPLATE(viewModel)));
+  pipe(
+    html`<h1>${sanitizeString(viewModel.area.name)}</h1>
+      ${viewModel.isSuperUser
+        ? addEquipmentCallToAction(viewModel.area.id)
+        : ''}
+      <h2>Owners</h2>
+      ${viewModel.isSuperUser ? addOwnerCallToAction(viewModel.area.id) : ''}
+      ${renderOwners(viewModel.area.owners)}
+      <h2>Equipment</h2>
+      ${renderEquipment(viewModel.equipment)} `,
+    pageTemplate(sanitizeString(viewModel.area.name), viewModel.user)
+  );

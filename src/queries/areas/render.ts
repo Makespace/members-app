@@ -1,53 +1,61 @@
+import {pipe} from 'fp-ts/lib/function';
+import {
+  commaHtml,
+  html,
+  joinHtml,
+  safe,
+  sanitizeString,
+} from '../../types/html';
+import * as RA from 'fp-ts/ReadonlyArray';
 import {ViewModel} from './view-model';
 import {pageTemplate} from '../../templates';
-import Handlebars, {SafeString} from 'handlebars';
+import {renderMemberNumber} from '../../templates/member-number';
 
-Handlebars.registerPartial(
-  'areas_table',
-  `
-  {{#if areas}}
-    <table>
-      <thead>
+const renderAreas = (areas: ViewModel['areas']) =>
+  pipe(
+    areas,
+    RA.map(
+      area => html`
         <tr>
-          <th>Name</th>
-          <th>Owners</th>
-          <th>Actions</th>
+          <td>
+            <a href="/areas/${area.id}">${sanitizeString(area.name)}</a>
+          </td>
+          <td>${commaHtml(area.owners.map(renderMemberNumber))}</td>
+          <td>
+            <a href="/areas/add-owner?area=${area.id}">Add owner</a>
+          </td>
         </tr>
-      </thead>
-      <tbody>
-        {{#each areas}}
-          <tr>
-            <td><a href="/areas/{{this.id}}">{{this.name}}</a></td>
-            <td>
-              {{#each owners}}
-                {{member_number this}}
-              {{/each}}
-            </td>
-            <td><a href="/areas/add-owner?area={{this.id}}">Add owner</a></td>
-          </tr>
-        {{/each}}
-      </tbody>
-    </table>
-  {{else}}
-    <p>Currently no Areas</p>
-  {{/if}}
-  `
-);
+      `
+    ),
+    RA.match(
+      () => html` <p>Currently no Areas</p> `,
+      rows => html`
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Owners</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${joinHtml(rows)}
+          </tbody>
+        </table>
+      `
+    )
+  );
 
-Handlebars.registerPartial(
-  'add_area_link',
-  '<a href="/areas/create">Add area of responsibility</a>'
-);
+const addAreaCallToAction = html`
+  <a href="/areas/create">Add area of responsibility</a>
+`;
 
-const RENDER_AREAS_TEMPLATE = Handlebars.compile(`
-  <h1>Areas of Makespace</h1>
-  {{#if isSuperUser }}
-    {{> add_area_link}}
-  {{/if}}
-  {{> areas_table}}
-`);
 export const render = (viewModel: ViewModel) =>
-  pageTemplate(
-    'Areas',
-    viewModel.user
-  )(new SafeString(RENDER_AREAS_TEMPLATE(viewModel)));
+  pipe(
+    html`
+      <h1>Areas of Makespace</h1>
+      ${viewModel.isSuperUser ? addAreaCallToAction : ''}
+      ${renderAreas(viewModel.areas)}
+    `,
+    pageTemplate(safe('Areas'), viewModel.user)
+  );

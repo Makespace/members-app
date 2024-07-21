@@ -1,9 +1,10 @@
+import {UUID} from 'io-ts-types';
 import {User} from '../../types';
 
 type Equipment = {
   name: string;
-  id: string;
-  areaId: string;
+  id: UUID;
+  areaId: UUID;
   areaName: string;
 };
 

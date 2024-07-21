@@ -11,9 +11,9 @@ import {Actor} from '../types';
 import {Request, Response} from 'express';
 import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
+import {html, RenderedHtml, safe, sanitizeString} from '../types/html';
 import {SendEmail} from '../commands';
 import {Config} from '../configuration';
-import Handlebars, {SafeString} from 'handlebars';
 import {isolatedPageTemplate} from '../templates/page-template';
 
 const getActorFrom = (session: unknown, deps: Dependencies) =>
@@ -37,11 +37,9 @@ const getInput = <T>(body: unknown, command: SendEmail<T>) =>
     TE.fromEither
   );
 
-const EMAIL_SENT_TEMPLATE = Handlebars.compile('Email sent');
-
 const emailPost =
   <T>(conf: Config, deps: Dependencies, command: SendEmail<T>) =>
-  async (req: Request, res: Response) => {
+  async (req: Request, res: Response<RenderedHtml>) => {
     await pipe(
       {
         actor: getActorFrom(req.session, deps),
@@ -75,22 +73,19 @@ const emailPost =
             failure,
             'Failed to handle request to send an email'
           );
-          res.status(failure.status).send(oopsPage(failure.message));
+          res
+            .status(failure.status)
+            .send(oopsPage(sanitizeString(failure.message)));
         },
         () => {
           res
             .status(200)
-            .send(
-              isolatedPageTemplate('Email sent')(
-                new SafeString(EMAIL_SENT_TEMPLATE({}))
-              )
-            );
+            .send(isolatedPageTemplate(safe('Email sent'))(html`Email sent`));
         }
       )
     )();
   };
 
-// ts-unused-exports:disable-next-line
 export const emailHandler =
   (conf: Config, deps: Dependencies) =>
   <T>(path: string, command: SendEmail<T>) => ({

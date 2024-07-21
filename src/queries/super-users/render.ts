@@ -1,44 +1,49 @@
+import {pipe} from 'fp-ts/lib/function';
+import {html, joinHtml, safe} from '../../types/html';
+import * as RA from 'fp-ts/ReadonlyArray';
 import {ViewModel} from './view-model';
+import {displayDate} from '../../templates/display-date';
 import {pageTemplate} from '../../templates';
-import Handlebars, {SafeString} from 'handlebars';
+import {renderMemberNumber} from '../../templates/member-number';
 
-Handlebars.registerPartial(
-  'super_users_table',
-  `
-    {{#if superUsers}}
-      <table>
+const renderSuperUsers = (superUsers: ViewModel['superUsers']) =>
+  pipe(
+    superUsers,
+    RA.map(
+      user => html`
         <tr>
-          <th>Member Number</th>
-          <th>SU since</th>
-          <th></th>
+          <td>${renderMemberNumber(user.memberNumber)}</td>
+          <td>${displayDate(user.since)}</td>
+          <td>
+            <a href="/super-users/revoke?memberNumber=${user.memberNumber}">
+              Revoke
+            </a>
+          </td>
         </tr>
-        {{#each superUsers}}
+      `
+    ),
+    RA.match(
+      () => html` <p>Currently no super-users</p> `,
+      rows => html`
+        <table>
           <tr>
-            <td>{{member_number this.memberNumber}}</td>
-            <td>{{display_date this.since}}</td>
-            <td>
-              <a href="/super-users/revoke?memberNumber={{this.memberNumber}}">
-                Revoke
-              </a>
-            </td>
+            <th>Member Number</th>
+            <th>SU since</th>
+            <th></th>
           </tr>
-        {{/each}}
-      </table>
-    {{else}}
-      <p>Currently no super-users</p>
-    {{/if}}
-  `
-);
-
-const SUPER_USERS_TEMPLATE = Handlebars.compile(`
-  <h1>Super-users</h1>
-  <a href="/super-users/declare">Declare a member to be a super-user</a>
-  </table>
-  {{> super_users_table}}
-`);
+          ${joinHtml(rows)}
+        </table>
+      `
+    )
+  );
 
 export const render = (viewModel: ViewModel) =>
-  pageTemplate(
-    'Super Users',
-    viewModel.user
-  )(new SafeString(SUPER_USERS_TEMPLATE(viewModel)));
+  pipe(
+    html`
+    <h1>Super-users</h1>
+    <a href="/super-users/declare">Declare a member to be a super-user</a>
+    </table>
+    ${renderSuperUsers(viewModel.superUsers)}
+  `,
+    pageTemplate(safe('Super users'), viewModel.user)
+  );

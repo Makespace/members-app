@@ -9,13 +9,15 @@ import {User, HttpResponse} from '../types';
 import {oopsPage, templatePage} from '../templates';
 import {Params, Query} from '../queries/query';
 import {logInPath} from '../authentication/auth-routes';
+import {RenderedHtml, sanitizeString} from '../types/html';
 
 const buildPage =
   (deps: Dependencies, params: Params, query: Query) => (user: User) =>
     pipe(query(deps)(user, params), TE.map(templatePage));
 
 export const queryGet =
-  (deps: Dependencies, query: Query) => async (req: Request, res: Response) => {
+  (deps: Dependencies, query: Query) =>
+  async (req: Request, res: Response<RenderedHtml>) => {
     await pipe(
       req.session,
       getUserFromSession(deps),
@@ -28,10 +30,12 @@ export const queryGet =
           deps.logger.error(failure, 'Failed respond to a query');
           failure.status === StatusCodes.UNAUTHORIZED
             ? res.redirect(logInPath)
-            : res.status(failure.status).send(oopsPage(failure.message));
+            : res
+                .status(failure.status)
+                .send(oopsPage(sanitizeString(failure.message)));
         },
         HttpResponse.match({
-          Page: ({html}) => res.status(200).send(html),
+          Page: ({rendered}) => res.status(200).send(rendered),
           Redirect: ({url}) => res.redirect(url),
         })
       )

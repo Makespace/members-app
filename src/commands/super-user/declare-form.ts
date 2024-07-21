@@ -1,9 +1,10 @@
-import * as E from 'fp-ts/Either';
 import {pipe} from 'fp-ts/lib/function';
+import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
-import {User, MemberDetails} from '../../types';
+import {html, safe} from '../../types/html';
+import {MemberDetails, User} from '../../types';
 import {Form} from '../../types/form';
-import Handlebars, {SafeString} from 'handlebars';
+import {memberInput} from '../../templates/member-input';
 import {readModels} from '../../read-models';
 
 type ViewModel = {
@@ -11,24 +12,27 @@ type ViewModel = {
   members: ReadonlyArray<MemberDetails>;
 };
 
-const RENDER_DECLARE_SUPER_USER_TEMPLATE = Handlebars.compile(
-  `
+const render = (viewModel: ViewModel) =>
+  pipe(
+    html`
       <h1>Declare super user</h1>
       <form action="#" method="post">
         <label for="number">
           Which member number would you like receive super user privileges?
         </label>
-        {{> memberInput members }}
+        ${memberInput(viewModel.members)}
         <button type="submit">Confirm and send</button>
       </form>
-    `
-);
+    `,
+    pageTemplate(safe('Declare super user'), viewModel.user)
+  );
 
 const renderForm = (viewModel: ViewModel) =>
-  pageTemplate(
-    'Declare super user',
-    viewModel.user
-  )(new SafeString(RENDER_DECLARE_SUPER_USER_TEMPLATE(viewModel)));
+  pipe(
+    viewModel,
+    render,
+    pageTemplate(safe('Declare super user'), viewModel.user)
+  );
 
 const constructForm: Form<ViewModel>['constructForm'] =
   () =>

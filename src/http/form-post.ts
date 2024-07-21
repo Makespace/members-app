@@ -13,6 +13,7 @@ import {Actor} from '../types/actor';
 import {getUserFromSession} from '../authentication';
 import {oopsPage} from '../templates';
 import {applyToResource} from '../commands/apply-command-to-resource';
+import {RenderedHtml, sanitizeString} from '../types/html';
 
 const getCommandFrom = <T>(body: unknown, command: Command<T>) =>
   pipe(
@@ -57,7 +58,7 @@ const nextCodec = t.strict({next: path});
 
 export const formPost =
   <T>(deps: Dependencies, command: Command<T>, successTarget: string) =>
-  async (req: Request, res: Response) => {
+  async (req: Request, res: Response<RenderedHtml>) => {
     // Look at comments to see the core ideas of this pipe / how this works.
     await pipe(
       {
@@ -143,7 +144,9 @@ export const formPost =
       TE.match(
         failure => {
           deps.logger.error(failure, 'Failed to handle form submission');
-          res.status(failure.status).send(oopsPage(failure.message));
+          res
+            .status(failure.status)
+            .send(oopsPage(sanitizeString(failure.message)));
         },
         () =>
           res.redirect(
