@@ -63,7 +63,7 @@ export const invalidLink =
       .send(
         oopsPage(
           html`The link you have used is (no longer) valid. Go back to the
-            <a href=${logInPath}>log in</a>`
+            <a href=${logInPath}>log in</a> page.`
         )
       );
   };
