@@ -1,50 +1,56 @@
+import {pipe} from 'fp-ts/lib/function';
+import {html, joinHtml, safe, sanitizeString} from '../../types/html';
+import * as RA from 'fp-ts/ReadonlyArray';
 import {ViewModel} from './view-model';
 import {pageTemplate} from '../../templates';
-import Handlebars, {SafeString} from 'handlebars';
 
-Handlebars.registerPartial(
-  'render_equipment_table',
-  `
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Area</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{#each equipment}}
+const renderEquipment = (allEquipment: ViewModel['equipment']) =>
+  pipe(
+    allEquipment,
+    RA.map(
+      equipment => html`
         <tr>
-          <td><a href="/equipment/{{this.id}}">{{this.name}}</a></td>
           <td>
-            <a href="/areas/{{this.areaId}}">{{this.areaName}}</a>
+            <a href="/equipment/${equipment.id}"
+              >${sanitizeString(equipment.name)}</a
+            >
+          </td>
+          <td>
+            <a href="/areas/${equipment.areaId}"
+              >${sanitizeString(equipment.areaName)}</a
+            >
           </td>
         </tr>
-      {{else}}
-        <p>Currently no Equipment</p>
-      {{/each}}
-    </tbody>
-  </table>
-  `
-);
+      `
+    ),
+    RA.match(
+      () => html` <p>Currently no Equipment</p> `,
+      rows => html`
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Area</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${joinHtml(rows)}
+          </tbody>
+        </table>
+      `
+    )
+  );
 
-Handlebars.registerPartial(
-  'add_area_link',
-  '<a href="/areas/create">Add area of responsibility</a>'
-);
-
-const RENDER_ALL_EQUIPMENT_TEMPLATE = Handlebars.compile(
-  `
-  <h1>Equipment of Makespace</h1>
-  {{#if isSuperUser}}
-    {{> add_area_link }}
-  {{/if}}
-  {{> render_equipment_table }}
-`
-);
+const addAreaCallToAction = html`
+  <a href="/areas/create">Add area of responsibility</a>
+`;
 
 export const render = (viewModel: ViewModel) =>
-  pageTemplate(
-    'Equipment',
-    viewModel.user
-  )(new SafeString(RENDER_ALL_EQUIPMENT_TEMPLATE(viewModel)));
+  pipe(
+    html`
+      <h1>Equipment of Makespace</h1>
+      ${viewModel.isSuperUser ? addAreaCallToAction : ''}
+      ${renderEquipment(viewModel.equipment)}
+    `,
+    pageTemplate(safe('Equipment'), viewModel.user)
+  );

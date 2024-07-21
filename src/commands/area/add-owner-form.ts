@@ -13,9 +13,9 @@ import {
 import {Form} from '../../types/form';
 import {AreaOwners} from '../../read-models/members/get-potential-owners';
 import {readModels} from '../../read-models';
-import {pageTemplateHandlebarlessBody} from '../../templates/page-template';
 import {html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {Member} from '../../read-models/members/member';
+import {pageTemplate} from '../../templates';
 
 type ViewModel = {
   user: User;
@@ -108,11 +108,7 @@ const renderBody = (viewModel: ViewModel) => html`
 `;
 
 const renderForm = (viewModel: ViewModel) =>
-  pipe(
-    viewModel,
-    renderBody,
-    pageTemplateHandlebarlessBody('Add Owner', viewModel.user)
-  );
+  pipe(viewModel, renderBody, pageTemplate(safe('Add Owner'), viewModel.user));
 
 const paramsCodec = t.strict({
   area: t.string,

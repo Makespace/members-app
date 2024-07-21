@@ -5,6 +5,7 @@ import {StatusCodes} from 'http-status-codes';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {pipe} from 'fp-ts/lib/function';
 import {Route} from '../types/route';
+import {html} from '../types/html';
 
 export const createRouter = (routes: ReadonlyArray<Route>): Router => {
   const router = Router();
@@ -21,7 +22,7 @@ export const createRouter = (routes: ReadonlyArray<Route>): Router => {
   router.use((req, res) => {
     res
       .status(StatusCodes.NOT_FOUND)
-      .send(oopsPage('The page you have requested does not exist.'));
+      .send(oopsPage(html`The page you have requested does not exist.`));
   });
   return router;
 };

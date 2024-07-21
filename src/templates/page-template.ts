@@ -1,83 +1,40 @@
 import {HttpResponse, Member} from '../types';
-import Handlebars, {SafeString} from 'handlebars';
-import {registerHead} from './head';
-import {registerNavBar} from './navbar';
-import {registerAvatarHelpers} from './avatar';
-import {registerGridJs} from './grid-js';
-import {registerFilterListHelper} from './filter-list';
-import {registerMemberInput} from './member-input';
-import {registerOptionalDetailHelper} from './detail';
-import {registerMemberNumberHelper} from '../types/member-number';
-import {registerDisplayDateHelper} from '../types/display-date';
-import {registerLoggedInUserSquare} from './logged-in-user-square';
-import {Html} from '../types/html';
 
-registerNavBar();
-registerHead();
-registerAvatarHelpers();
-registerOptionalDetailHelper();
-registerMemberNumberHelper();
-registerDisplayDateHelper();
-registerGridJs();
-registerFilterListHelper();
-registerMemberInput();
-registerLoggedInUserSquare();
-
-const PAGE_TEMPLATE = Handlebars.compile(`
-  <!doctype html>
-  <html lang="en">
-    {{> head }}
-    <header>
-    {{> navbar }}
-    </header>
-    <body>
-      {{body}}
-      {{> gridjs }}
-    </body>
-  </html>
-`);
-
-// For pages not part of the normal flow.
-const ISOLATED_PAGE_TEMPLATE = Handlebars.compile(`
-  <!doctype html>
-  <html lang="en">
-    {{> head }}
-    <body>
-      {{body}}
-      {{> gridjs }}
-    </body>
-  </html>
-`);
+import {html, Html, HtmlSubstitution, RenderedHtml} from '../types/html';
+import {gridJs} from './grid-js';
+import {head} from './head';
+import {navBar} from './navbar';
 
 export const pageTemplate =
-  (title: string, user: Member) => (body: SafeString) =>
-    PAGE_TEMPLATE({
-      title,
-      user,
-      body,
-      navbarRequired: true,
-    });
+  (title: HtmlSubstitution, user: Member) => (body: Html) =>
+    html`
+      <!doctype html>
+      <html lang="en">
+        ${head(title)}
+        <header>${navBar(user)}</header>
+        <body>
+          ${body} ${gridJs()}
+        </body>
+      </html>
+    ` as RenderedHtml;
 
-export const pageTemplateHandlebarlessBody =
-  (title: string, user: Member) => (body: Html) =>
-    PAGE_TEMPLATE({
-      title,
-      user,
-      body: new SafeString(body),
-      navbarRequired: true,
-    });
-
-export const isolatedPageTemplate = (title: string) => (body: SafeString) =>
-  ISOLATED_PAGE_TEMPLATE({
-    title,
-    body,
-  });
+// For pages not part of the normal flow.
+export const isolatedPageTemplate = (title: HtmlSubstitution) => (body: Html) =>
+  html`
+    <!doctype html>
+    <html lang="en">
+      ${head(title)}
+      <body>
+        ${body} ${gridJs()}
+      </body>
+    </html>
+  ` as RenderedHtml;
 
 export const templatePage: (r: HttpResponse) => HttpResponse =
   HttpResponse.match({
     Redirect: HttpResponse.mk.Redirect,
-    Page: ({html}) =>
+    Page: ({rendered}) =>
       HttpResponse.mk.Page({
-        html,
+        rendered,
       }),
   });

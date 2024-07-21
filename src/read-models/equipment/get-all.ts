@@ -3,11 +3,12 @@ import * as O from 'fp-ts/Option';
 import {DomainEvent, isEventOfType} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {readModels} from '..';
+import {UUID} from 'io-ts-types';
 
 type Equipment = {
   name: string;
-  id: string;
-  areaId: string;
+  id: UUID;
+  areaId: UUID;
   areaName: string;
   trainingSheetId: O.Option<string>;
 };

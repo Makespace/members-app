@@ -1,23 +1,41 @@
 import * as Sum from '@unsplash/sum-types';
+import * as O from 'fp-ts/Option';
+import {UUID} from 'io-ts-types';
 import sanitize from 'sanitize-html';
 
 export type Html = string & {readonly Html: unique symbol};
 
-type SanitizedString = string & {readonly SanitizedString: unique symbol};
+type SanitizedString = string & {
+  readonly SanitizedString: unique symbol;
+};
 
-type Safe = string & {readonly Safe: unique symbol};
+// Export required as we want to re-export the output of stuff like `export const loginLink = safe('/login')`
+export type Safe = string & {readonly Safe: unique symbol};
 
 export const sanitizeString = (input: string): SanitizedString =>
   sanitize(input) as SanitizedString;
 
-export const joinHtml = (input: ReadonlyArray<Html>) =>
+export type RenderedHtml = Html & {readonly RenderedHtml: unique symbol};
+
+export type HtmlSubstitution =
+  | Html
+  | number
+  | SanitizedString
+  | Safe
+  | UUID
+  | '';
+
+export const joinHtml = (input: ReadonlyArray<HtmlSubstitution>) =>
   input.join('\n') as Html;
+
+export const commaHtml = (input: ReadonlyArray<HtmlSubstitution>) =>
+  input.join(', ') as Html;
 
 export const safe = (input: string): Safe => input as Safe;
 
 export const html = (
   literals: TemplateStringsArray,
-  ...substitutions: ReadonlyArray<Html | number | SanitizedString | Safe>
+  ...substitutions: ReadonlyArray<HtmlSubstitution>
 ): Html => {
   if (literals.length === 1 && substitutions.length === 0) {
     return literals[0] as Html;
@@ -31,8 +49,17 @@ export const html = (
   return result as Html;
 };
 
+export const optionalSafe = (
+  data: O.Option<string | number>
+): Safe | SanitizedString | number =>
+  O.isSome(data)
+    ? typeof data.value === 'string'
+      ? sanitizeString(data.value)
+      : data.value
+    : safe('-');
+
 interface Page {
-  html: string;
+  rendered: RenderedHtml;
 }
 
 interface Redirect {

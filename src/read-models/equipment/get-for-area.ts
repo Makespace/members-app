@@ -1,11 +1,12 @@
 import {pipe} from 'fp-ts/lib/function';
 import {DomainEvent, isEventOfType} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
+import {UUID} from 'io-ts-types';
 
 type Equipment = {
   name: string;
-  id: string;
-  areaId: string;
+  id: UUID;
+  areaId: UUID;
 };
 
 export const getForArea =

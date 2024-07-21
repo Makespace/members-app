@@ -8,6 +8,7 @@ import {oopsPage} from '../templates';
 import {sequenceS} from 'fp-ts/lib/Apply';
 import {Form} from '../types/form';
 import {failureWithStatus} from '../types/failure-with-status';
+import {RenderedHtml, sanitizeString} from '../types/html';
 
 const getUser = (req: Request, deps: Dependencies) =>
   pipe(
@@ -24,7 +25,7 @@ const getUser = (req: Request, deps: Dependencies) =>
 // is where conflict resolution etc. is handled as described in form-post.
 export const formGet =
   <T>(deps: Dependencies, form: Form<T>) =>
-  async (req: Request, res: Response) => {
+  async (req: Request, res: Response<RenderedHtml>) => {
     await pipe(
       {
         user: getUser(req, deps),
@@ -36,7 +37,9 @@ export const formGet =
       TE.matchW(
         failure => {
           deps.logger.error(failure, 'Failed to show form to a user');
-          res.status(failure.status).send(oopsPage(failure.message));
+          res
+            .status(failure.status)
+            .send(oopsPage(sanitizeString(failure.message)));
         },
         page => res.status(200).send(page)
       )
