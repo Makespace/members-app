@@ -18,7 +18,10 @@ import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
 import cookieSession from 'cookie-session';
 import {initRoutes} from './routes';
-import {runForever} from './training-sheets/training-sheets-worker';
+import {
+  setup as setupTrainingSheetWorker,
+  triggerOnInterval,
+} from './training-sheets/training-sheets-worker';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -39,6 +42,16 @@ passport.deserializeUser((user: Express.User, done) => {
   done(null, user);
 });
 
+if (conf.BACKGROUND_PROCESSING_ENABLED) {
+  // Background processes should write events with their results.
+  // Background processes can call commands as needed.
+  deps.trainingSheetWorker = setupTrainingSheetWorker(deps);
+  triggerOnInterval(
+    deps.trainingSheetWorker,
+    conf.BACKGROUND_PROCESSING_RUN_INTERVAL_MS
+  );
+}
+
 // Application setup
 const app: Application = express();
 app.use(httpLogger({logger: deps.logger, useLevel: 'debug'}));
@@ -54,17 +67,7 @@ startMagicLinkEmailPubSub(deps, conf);
 const server = http.createServer(app);
 createTerminus(server);
 
-// Background processes should write events with their results.
-// Background processes can call commands as needed.
-
-if (conf.BACKGROUND_PROCESSING_ENABLED) {
-  const backgroundProcess = runForever(deps, conf);
-  server.on('close', () => {
-    // TODO - Use a background worker event instead so it can stop long running IO processes.
-    deps.logger.fatal('Server closing, stopping background process');
-    clearInterval(backgroundProcess);
-  });
-}
+server.on('close', () => deps.trainingSheetWorker?.emit('should_stop'));
 
 // Readmodels are used to get the current status of the background tasks via the
 // events that have been written.

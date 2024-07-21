@@ -73,5 +73,6 @@ export const initDependencies = (
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
     pullGoogleSheetData: pullGoogleSheetData(auth),
     logger,
+    trainingSheetWorker: undefined,
   };
 };

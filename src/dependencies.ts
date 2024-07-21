@@ -7,6 +7,7 @@ import {StatusCodes} from 'http-status-codes';
 import {Resource} from './types/resource';
 import {EventName, EventOfType} from './types/domain-event';
 import {sheets_v4} from 'googleapis';
+import {TrainingWorkerEvents} from './training-sheets/training-sheets-worker';
 
 export type Dependencies = {
   commitEvent: (
@@ -39,4 +40,5 @@ export type Dependencies = {
     logger: Logger,
     trainingSheetId: string
   ) => TE.TaskEither<Failure, sheets_v4.Schema$Spreadsheet>;
+  trainingSheetWorker: TrainingWorkerEvents | undefined;
 };
