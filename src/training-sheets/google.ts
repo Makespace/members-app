@@ -14,6 +14,8 @@ import {QzEvent} from '../types/qz-event';
 const MIN_RECOGNISED_MEMBER_NUMBER = 0;
 const MAX_RECOGNISED_MEMBER_NUMBER = 1_000_000;
 
+const FORM_RESPONSES_SHEET_REGEX = /^Form Responses [0-9]*/i;
+
 const extractRowFormattedValues = (
   row: sheets_v4.Schema$RowData
 ): O.Option<string[]> => {
@@ -120,33 +122,34 @@ type SheetInfo = {
   columnNames: string[];
 };
 
-const extractQuizSheetInformation = (
-  logger: Logger,
-  firstRow: sheets_v4.Schema$RowData
-): O.Option<SheetInfo> => {
-  const columnNames = extractRowFormattedValues(firstRow);
-  if (O.isNone(columnNames)) {
-    logger.debug('Failed to find column names');
-    return O.none;
-  }
-  logger.trace('Found column names for sheet %o', columnNames.value);
+const extractQuizSheetInformation =
+  (logger: Logger) =>
+  (firstRow: sheets_v4.Schema$RowData): O.Option<SheetInfo> => {
+    const columnNames = extractRowFormattedValues(firstRow);
+    if (O.isNone(columnNames)) {
+      logger.debug('Failed to find column names');
+      return O.none;
+    }
+    logger.trace('Found column names for sheet %o', columnNames.value);
 
-  return O.some({
-    columnIndexes: {
-      timestamp: columnNames.value.findIndex(
-        val => val.toLowerCase() === 'timestamp'
-      ),
-      email: columnNames.value.findIndex(val =>
-        EMAIL_COLUMN_NAMES.includes(val.toLowerCase())
-      ),
-      score: columnNames.value.findIndex(val => val.toLowerCase() === 'score'),
-      memberNumber: columnNames.value.findIndex(
-        val => val.toLowerCase() === 'membership number'
-      ),
-    },
-    columnNames: columnNames.value,
-  });
-};
+    return O.some({
+      columnIndexes: {
+        timestamp: columnNames.value.findIndex(
+          val => val.toLowerCase() === 'timestamp'
+        ),
+        email: columnNames.value.findIndex(val =>
+          EMAIL_COLUMN_NAMES.includes(val.toLowerCase())
+        ),
+        score: columnNames.value.findIndex(
+          val => val.toLowerCase() === 'score'
+        ),
+        memberNumber: columnNames.value.findIndex(
+          val => val.toLowerCase() === 'membership number'
+        ),
+      },
+      columnNames: columnNames.value,
+    });
+  };
 
 const extractFromRow =
   (
@@ -221,40 +224,56 @@ export const extractGoogleSheetData =
   (logger: Logger, equipmentId: UUID, trainingSheetId: string) =>
   (
     spreadsheet: sheets_v4.Schema$Spreadsheet
-  ): O.Option<ReadonlyArray<QzEvent>> => {
-    logger.info('Processing google sheet data');
-    // Initially
-    // - Only handle a single sheet per-page.
-    // - Assume the column names are the first row.
-    if (!spreadsheet.sheets || spreadsheet.sheets.length < 1) {
-      return O.none;
-    }
-    const sheet = spreadsheet.sheets[0];
-    if (!sheet.data || sheet.data.length < 1) {
-      return O.none;
-    }
+  ): ReadonlyArray<ReadonlyArray<QzEvent>> =>
+    !spreadsheet.sheets || spreadsheet.sheets.length < 1
+      ? []
+      : spreadsheet.sheets.map(sheet => {
+          const title = sheet.properties?.title;
+          if (!title) {
+            logger.warn('Skipping sheet due to missing title');
+            return [];
+          }
+          if (!FORM_RESPONSES_SHEET_REGEX.test(title)) {
+            logger.warn(
+              `Skipping sheet '${title}' as title doesn't match expected for form responses`
+            );
+          }
 
-    const sheetData = sheet.data[0];
-    if (!sheetData.rowData || sheetData.rowData.length < 1) {
-      return O.none;
-    }
+          if (
+            !sheet.data ||
+            sheet.data.length < 1 ||
+            !sheet.data[0].rowData ||
+            sheet.data[0].rowData.length < 1
+          ) {
+            logger.warn(`Skipping sheet '${title}' as missing data`);
+            return [];
+          }
 
-    const sheetInfo = extractQuizSheetInformation(logger, sheetData.rowData[0]);
+          const [headers, ...data] = sheet.data[0].rowData;
 
-    if (O.isNone(sheetInfo)) {
-      logger.warn(
-        `Failed to extract sheet info '${trainingSheetId}' for equipment '${equipmentId}'`
-      );
-      return O.none;
-    }
-
-    return O.some(
-      pipe(
-        sheetData.rowData.slice(1),
-        RA.map(
-          extractFromRow(logger, sheetInfo.value, equipmentId, trainingSheetId)
-        ),
-        RA.filterMap(e => e)
-      )
-    );
-  };
+          return pipe(
+            headers,
+            extractQuizSheetInformation(logger),
+            O.match(
+              () => {
+                logger.warn(
+                  `Failed to extract sheet info '${trainingSheetId}' for equipment '${equipmentId}'`
+                );
+                return [];
+              },
+              sheetInfo =>
+                pipe(
+                  data,
+                  RA.map(
+                    extractFromRow(
+                      logger,
+                      sheetInfo,
+                      equipmentId,
+                      trainingSheetId
+                    )
+                  ),
+                  RA.filterMap(e => e)
+                )
+            )
+          );
+        });
