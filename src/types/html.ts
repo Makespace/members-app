@@ -13,7 +13,12 @@ type SanitizedString = string & {
 export type Safe = string & {readonly Safe: unique symbol};
 
 export const sanitizeString = (input: string): SanitizedString =>
-  sanitize(input) as SanitizedString;
+  sanitize(input, {
+    // Given our usage of the library we want to escape everything.
+    allowedTags: [],
+    allowedAttributes: {},
+    disallowedTagsMode: 'recursiveEscape',
+  }) as SanitizedString;
 
 export type RenderedHtml = Html & {readonly RenderedHtml: unique symbol};
 
