@@ -6,6 +6,9 @@ primary_region = 'lhr'
 
 [build]
 
+[deploy]
+  strategy = "bluegreen"
+
 [env]
   BACKGROUND_PROCESSING_ENABLED = 'true'
   SMTP_PORT = '587'
