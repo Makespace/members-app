@@ -13,7 +13,7 @@ import {Logger} from 'pino';
 const createMagicLink = (conf: Config) => (user: User) =>
   pipe(
     jwt.sign(user, conf.TOKEN_SECRET, {expiresIn: '10m'}),
-    token => `${conf.PUBLIC_URL}/auth/landing?token=${token}`
+    token => `${conf.PUBLIC_URL}/auth/callback?token=${token}`
   );
 
 const MagicLinkQuery = t.strict({
