@@ -3,6 +3,7 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import * as S from 'fp-ts/string';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
+import * as R from 'fp-ts/Record';
 import {sequenceS} from 'fp-ts/lib/Apply';
 
 import {Config} from '../configuration';
@@ -17,7 +18,6 @@ import {accumBy, lastBy} from '../util';
 import {QzEvent, QzEventDuplicate, RegEvent} from '../types/qz-event';
 import {extractGoogleSheetData} from './google';
 import {StatusCodes} from 'http-status-codes';
-import { record } from 'fp-ts';
 
 const byEquipmentId: Ord<RegEvent> = pipe(
   S.Ord,
@@ -100,7 +100,7 @@ const process =
     );
     return pipe(
       getTrainingSheets(sheetRegEvents),
-      record.toEntries,
+      R.toEntries,
       sheets => {
         logger.info(`Got ${sheets.length} training sheets to scan...`);
         return sheets;
