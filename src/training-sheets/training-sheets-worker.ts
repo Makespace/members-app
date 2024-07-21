@@ -17,6 +17,7 @@ import {accumBy, lastBy} from '../util';
 import {QzEvent, QzEventDuplicate, RegEvent} from '../types/qz-event';
 import {extractGoogleSheetData} from './google';
 import {StatusCodes} from 'http-status-codes';
+import { record } from 'fp-ts';
 
 const byEquipmentId: Ord<RegEvent> = pipe(
   S.Ord,
@@ -94,15 +95,16 @@ const process =
       'Got %d existing events, getting training sheets...',
       existingQuizResultEvents.length
     );
-    const trainingSheets = getTrainingSheets(sheetRegEvents);
     const previousQuizResults = getPreviousQuizResultsByTrainingSheet(
       existingQuizResultEvents
     );
-    logger.info(
-      `Got ${Object.keys(trainingSheets).length} training sheets to scan...`
-    );
     return pipe(
-      Object.entries(trainingSheets),
+      getTrainingSheets(sheetRegEvents),
+      record.toEntries,
+      sheets => {
+        logger.info(`Got ${sheets.length} training sheets to scan...`);
+        return sheets;
+      },
       RA.map(([equipmentId, sheet]) =>
         processForEquipment(
           logger.child({equipment: equipmentId}),
