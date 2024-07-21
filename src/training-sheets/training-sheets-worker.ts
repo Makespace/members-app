@@ -6,7 +6,6 @@ import * as E from 'fp-ts/Either';
 import * as R from 'fp-ts/Record';
 import {sequenceS} from 'fp-ts/lib/Apply';
 
-import {Config} from '../configuration';
 import {Dependencies} from '../dependencies';
 import {Logger} from 'pino';
 import {Ord, contramap} from 'fp-ts/lib/Ord';
@@ -18,6 +17,7 @@ import {accumBy, lastBy} from '../util';
 import {QzEvent, QzEventDuplicate, RegEvent} from '../types/qz-event';
 import {extractGoogleSheetData} from './google';
 import {StatusCodes} from 'http-status-codes';
+import {EventEmitter} from 'stream';
 
 const byEquipmentId: Ord<RegEvent> = pipe(
   S.Ord,
@@ -166,32 +166,30 @@ export const run = async (
   logger.info('Finished commiting training sheet quiz results');
 };
 
-const runLogged = async (deps: Dependencies, logger: Logger) => {
-  const start = performance.now();
-  try {
-    await run(deps, logger);
-    logger.info(
-      `Took ${Math.round(
-        performance.now() - start
-      )}ms to run training sheets worker job`
-    );
-  } catch (err) {
-    logger.error(err, 'Unhandled error in training sheets worker');
-  }
+export type TrainingWorkerEvents = EventEmitter;
+
+export const setup = (deps: Dependencies) => {
+  const logger = deps.logger.child({section: 'training-sheets-worker'});
+
+  const eventWorkerTrigger = new EventEmitter();
+  eventWorkerTrigger.addListener('periodic_trigger', () => async () => {
+    try {
+      const start = performance.now();
+      await run(deps, logger);
+      logger.info(
+        `Took ${Math.round(
+          performance.now() - start
+        )}ms to run training sheets worker job`
+      );
+    } catch (err) {
+      logger.error(err, 'Unhandled error in training sheets worker');
+    }
+  });
+
+  return eventWorkerTrigger;
 };
 
-// I generally don't like this way of doing things and prefer an await loop
-// but trying a different approach.
-// TODO - Switch this to use an event-emitter so we can trigger background processing of specific training sheets at will.
-export const runForever = (deps: Dependencies, conf: Config) => {
-  const logger = deps.logger.child({section: 'training-sheets-worker'});
-  void runLogged(deps, logger);
-  logger.info(
-    `Running forever with interval ${conf.BACKGROUND_PROCESSING_RUN_INTERVAL_MS}ms`
-  );
-  return setInterval(
-    // TODO - Handle run still going when next run scheduled.
-    () => void runLogged(deps, logger),
-    conf.BACKGROUND_PROCESSING_RUN_INTERVAL_MS
-  );
-};
+export const triggerOnInterval = (
+  twe: TrainingWorkerEvents,
+  intervalMs: number
+) => setInterval(() => twe.emit('periodic_trigger'), intervalMs);
