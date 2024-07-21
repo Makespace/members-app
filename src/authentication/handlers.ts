@@ -55,7 +55,7 @@ export const invalidLink =
       .send(
         oopsPage(
           new SafeString(
-            `The link you have used is (no longer) valid. Go back to the <a href=${logInPath}>log in</a>`
+            `The link you have used is (no longer) valid. Go back to the <a href=${logInPath}>log in</a> page.`
           )
         )
       );
