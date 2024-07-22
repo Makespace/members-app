@@ -1,4 +1,4 @@
-import {getAll, getAllDetails} from './get-all';
+import {getAll, getAllDetails, getAllDetailsAsActor} from './get-all';
 import {getDetails} from './get';
 import {lookupByEmail} from './lookup-by-email';
 import {getPotentialOwners} from './get-potential-owners';
@@ -8,6 +8,7 @@ export const members = {
   lookupByEmail,
   getAll,
   getAllDetails,
+  getAllDetailsAsActor,
   getDetails,
   getFailedImports,
   getPotentialOwners,

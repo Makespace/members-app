@@ -6,7 +6,10 @@ import {
   DomainEvent,
   isEventOfType,
   Member,
+  MemberDetails,
   MultipleMemberDetails,
+  Actor,
+  User,
 } from '../../types';
 import {pipe} from 'fp-ts/lib/function';
 
@@ -80,3 +83,51 @@ export const getAllDetails = (
   events: ReadonlyArray<DomainEvent>
 ): MultipleMemberDetails =>
   pipe(events, filterByName(pertinentEvents), RA.reduce(new Map(), update));
+
+export const liftActorOrUser = (actorOrUser: Actor | User) =>
+  Actor.is(actorOrUser)
+    ? actorOrUser
+    : {
+        tag: 'user' as const,
+        user: actorOrUser,
+      };
+
+const redactEmail = (member: MemberDetails): MemberDetails =>
+  Object.assign({}, member, {emailAddress: '******'});
+
+const redactEmails = (details: MultipleMemberDetails) => {
+  const redactedDetails = new Map();
+  for (const [k, v] of details.entries()) {
+    redactedDetails.set(k, redactEmail(v));
+  }
+  return redactedDetails;
+};
+
+const redactDetailsForActor =
+  (actor: Actor) => (details: MultipleMemberDetails) => {
+    switch (actor.tag) {
+      case 'token':
+        return details;
+      case 'system':
+        return details;
+      case 'user': {
+        for (const member of details.values()) {
+          if (
+            member.emailAddress === actor.user.emailAddress &&
+            member.isSuperUser
+          ) {
+            return details;
+          }
+        }
+        return redactEmails(details);
+      }
+    }
+  };
+
+export const getAllDetailsAsActor =
+  (actorOrUser: Actor | User) => (events: ReadonlyArray<DomainEvent>) =>
+    pipe(
+      events,
+      getAllDetails,
+      redactDetailsForActor(liftActorOrUser(actorOrUser))
+    );

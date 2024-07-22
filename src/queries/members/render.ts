@@ -24,11 +24,7 @@ const renderMembers = (viewModel: ViewModel) =>
           <td>${renderMemberNumber(member.memberNumber)}</td>
           <td>${sanitizeOption(member.name)}</td>
           <td>${sanitizeOption(member.pronouns)}</td>
-          <td>
-            ${viewModel.viewerIsSuperUser
-              ? sanitizeString(member.emailAddress)
-              : html`*****`}
-          </td>
+          <td>${sanitizeString(member.emailAddress)}</td>
         </tr>
       `
     ),
