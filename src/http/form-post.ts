@@ -13,7 +13,7 @@ import {Actor} from '../types/actor';
 import {getUserFromSession} from '../authentication';
 import {oopsPage} from '../templates';
 import {applyToResource} from '../commands/apply-command-to-resource';
-import {RenderedHtml, sanitizeString} from '../types/html';
+import {CompleteHtmlDocument, sanitizeString} from '../types/html';
 
 const getCommandFrom = <T>(body: unknown, command: Command<T>) =>
   pipe(
@@ -58,7 +58,7 @@ const nextCodec = t.strict({next: path});
 
 export const formPost =
   <T>(deps: Dependencies, command: Command<T>, successTarget: string) =>
-  async (req: Request, res: Response<RenderedHtml>) => {
+  async (req: Request, res: Response<CompleteHtmlDocument>) => {
     // Look at comments to see the core ideas of this pipe / how this works.
     await pipe(
       {

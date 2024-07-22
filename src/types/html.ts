@@ -29,8 +29,6 @@ export const sanitizeOption = (
       : data.value
     : safe('-');
 
-export type RenderedHtml = Html & {readonly RenderedHtml: unique symbol};
-
 export type HtmlSubstitution =
   | Html
   | number
@@ -63,8 +61,12 @@ export const html = (
   return result as Html;
 };
 
+export type CompleteHtmlDocument = Html & {
+  readonly CompleteHtmlDocument: unique symbol;
+};
+
 interface Page {
-  rendered: RenderedHtml;
+  rendered: CompleteHtmlDocument;
 }
 
 interface Redirect {
@@ -74,4 +76,5 @@ interface Redirect {
 export type HttpResponse =
   | Sum.Member<'Redirect', Redirect>
   | Sum.Member<'Page', Page>;
+
 export const HttpResponse = Sum.create<HttpResponse>();
