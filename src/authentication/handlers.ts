@@ -16,13 +16,14 @@ import {Dependencies} from '../dependencies';
 import {
   html,
   HtmlSubstitution,
-  RenderedHtml,
+  CompleteHtmlDocument,
   sanitizeString,
   safe,
 } from '../types/html';
 
 export const logIn =
-  (deps: Dependencies) => (req: Request, res: Response<RenderedHtml>) => {
+  (deps: Dependencies) =>
+  (req: Request, res: Response<CompleteHtmlDocument>) => {
     pipe(
       req.session,
       getUserFromSession(deps),
@@ -35,12 +36,12 @@ export const logIn =
     );
   };
 
-export const logOut = (req: Request, res: Response<RenderedHtml>) => {
+export const logOut = (req: Request, res: Response<CompleteHtmlDocument>) => {
   req.session = null;
   res.redirect('/');
 };
 
-export const auth = (req: Request, res: Response<RenderedHtml>) => {
+export const auth = (req: Request, res: Response<CompleteHtmlDocument>) => {
   pipe(
     req.body,
     parseEmailAddressFromBody,
@@ -58,7 +59,7 @@ export const auth = (req: Request, res: Response<RenderedHtml>) => {
 
 export const invalidLink =
   (logInPath: HtmlSubstitution) =>
-  (req: Request, res: Response<RenderedHtml>) => {
+  (req: Request, res: Response<CompleteHtmlDocument>) => {
     res
       .status(StatusCodes.UNAUTHORIZED)
       .send(
@@ -69,7 +70,7 @@ export const invalidLink =
       );
   };
 
-export const landing = (req: Request, res: Response<RenderedHtml>) => {
+export const landing = (req: Request, res: Response<CompleteHtmlDocument>) => {
   const index = req.originalUrl.indexOf('?');
   const suffix = index === -1 ? '' : req.originalUrl.slice(index);
   const url = '/auth/callback' + suffix;
