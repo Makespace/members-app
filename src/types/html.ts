@@ -20,6 +20,15 @@ export const sanitizeString = (input: string): SanitizedString =>
     disallowedTagsMode: 'recursiveEscape',
   }) as SanitizedString;
 
+export const sanitizeOption = (
+  data: O.Option<string | number>
+): Safe | SanitizedString | number =>
+  O.isSome(data)
+    ? typeof data.value === 'string'
+      ? sanitizeString(data.value)
+      : data.value
+    : safe('-');
+
 export type RenderedHtml = Html & {readonly RenderedHtml: unique symbol};
 
 export type HtmlSubstitution =
@@ -53,15 +62,6 @@ export const html = (
   result += literals[substitutions.length];
   return result as Html;
 };
-
-export const optionalSafe = (
-  data: O.Option<string | number>
-): Safe | SanitizedString | number =>
-  O.isSome(data)
-    ? typeof data.value === 'string'
-      ? sanitizeString(data.value)
-      : data.value
-    : safe('-');
 
 interface Page {
   rendered: RenderedHtml;

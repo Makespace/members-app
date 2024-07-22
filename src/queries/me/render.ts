@@ -1,6 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import {getGravatarThumbnail} from '../../templates/avatar';
-import {html, optionalSafe, safe, sanitizeString} from '../../types/html';
+import {html, sanitizeOption, safe, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
 import {pageTemplate} from '../../templates';
 import {renderMemberNumber} from '../../templates/member-number';
@@ -36,13 +36,13 @@ export const render = (viewModel: ViewModel) =>
           <tr>
             <th scope="row">Name</th>
             <td>
-              ${optionalSafe(viewModel.member.name)} ${editName(viewModel)}
+              ${sanitizeOption(viewModel.member.name)} ${editName(viewModel)}
             </td>
           </tr>
           <tr>
             <th scope="row">Pronouns</th>
             <td>
-              ${optionalSafe(viewModel.member.pronouns)}
+              ${sanitizeOption(viewModel.member.pronouns)}
               ${editPronouns(viewModel)}
             </td>
           </tr>
