@@ -95,33 +95,43 @@ export const liftActorOrUser = (actorOrUser: Actor | User) =>
 const redactEmail = (member: MemberDetails): MemberDetails =>
   Object.assign({}, member, {emailAddress: '******'});
 
-const redactEmails = (details: MultipleMemberDetails) => {
-  const redactedDetails = new Map();
-  for (const [k, v] of details.entries()) {
-    redactedDetails.set(k, redactEmail(v));
-  }
-  return redactedDetails;
-};
+// If a given |actor|, with the context of |details| is viewing |member|
+// should sensitive details (email) about that member be redacted.
+const shouldRedact =
+  (actor: Actor) =>
+  (details: MultipleMemberDetails) =>
+  (member: MemberDetails) => {
+    switch (actor.tag) {
+      case 'token':
+        return false;
+      case 'system':
+        return false;
+      case 'user': {
+        const viewingUser = actor.user;
+        const viewingMember = details.get(viewingUser.memberNumber);
+        if (viewingMember !== undefined && viewingMember.isSuperUser) {
+          return false;
+        }
+        if (viewingUser.memberNumber === member.memberNumber) {
+          return false;
+        }
+        return true;
+      }
+    }
+  };
 
 const redactDetailsForActor =
   (actor: Actor) => (details: MultipleMemberDetails) => {
-    switch (actor.tag) {
-      case 'token':
-        return details;
-      case 'system':
-        return details;
-      case 'user': {
-        for (const member of details.values()) {
-          if (
-            member.emailAddress === actor.user.emailAddress &&
-            member.isSuperUser
-          ) {
-            return details;
-          }
-        }
-        return redactEmails(details);
+    const needsRedaction = shouldRedact(actor)(details);
+    const redactedDetails = new Map();
+    for (const [memberNumber, member] of details.entries()) {
+      if (needsRedaction(member)) {
+        redactedDetails.set(memberNumber, redactEmail(member));
+      } else {
+        redactedDetails.set(memberNumber, member);
       }
     }
+    return redactedDetails;
   };
 
 export const getAllDetailsAsActor =
