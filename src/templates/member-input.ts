@@ -1,5 +1,5 @@
 import {MemberDetails} from '../types';
-import {html, Html, optionalSafe, sanitizeString} from '../types/html';
+import {html, Html, sanitizeOption, sanitizeString} from '../types/html';
 import {getGravatarThumbnail} from './avatar';
 import {filterList} from './filter-list';
 
@@ -14,7 +14,7 @@ const memberInputSelector = (member: MemberDetails): Html => html`
     <label for="member-${member.memberNumber}">
       ${getGravatarThumbnail(member.emailAddress, member.memberNumber)}
       <span>
-        ${optionalSafe(member.name)} (${optionalSafe(member.pronouns)})
+        ${sanitizeOption(member.name)} (${sanitizeOption(member.pronouns)})
         (${sanitizeString(member.emailAddress)})
       </span>
     </label>
