@@ -168,13 +168,11 @@ export const run = async (
 
 export type TrainingWorkerEvents = EventEmitter;
 
-export const setup = (deps: Dependencies) => {
-  const logger = deps.logger.child({section: 'training-sheets-worker'});
-
-  const eventWorkerTrigger = new EventEmitter();
-  eventWorkerTrigger.addListener('periodic_trigger', () => async () => {
+const handleTrigger =
+  (deps: Dependencies, logger: Logger) => () => async () => {
     try {
       const start = performance.now();
+      logger.info('Training sheets worker job triggered');
       await run(deps, logger);
       logger.info(
         `Took ${Math.round(
@@ -184,7 +182,17 @@ export const setup = (deps: Dependencies) => {
     } catch (err) {
       logger.error(err, 'Unhandled error in training sheets worker');
     }
-  });
+  };
+
+export const setup = (deps: Dependencies) => {
+  const logger = deps.logger.child({section: 'training-sheets-worker'});
+
+  const eventWorkerTrigger = new EventEmitter();
+  eventWorkerTrigger.addListener(
+    'periodic_trigger',
+    handleTrigger(deps, logger)
+  );
+  eventWorkerTrigger.addListener('manual_trigger', handleTrigger(deps, logger));
 
   return eventWorkerTrigger;
 };
