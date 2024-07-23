@@ -67,7 +67,7 @@ startMagicLinkEmailPubSub(deps, conf);
 const server = http.createServer(app);
 createTerminus(server);
 
-server.on('close', () => deps.trainingSheetWorker?.emit('should_stop'));
+server.on('close', () => deps.trainingSheetWorker?.removeAllListeners());
 
 // Readmodels are used to get the current status of the background tasks via the
 // events that have been written.
