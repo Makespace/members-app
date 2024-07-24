@@ -159,6 +159,38 @@ describe('Training sheets worker', () => {
           );
           expect(deps.commitedEvents).toHaveLength(0);
         });
+        it('Rate limit prevent double update', async () => {
+          await framework.commands.equipment.trainingSheet({
+            equipmentId: addEquipment.id,
+            trainingSheetId: gsheetData.EMPTY.data.spreadsheetId!,
+          });
+          deps = dependenciesForTrainingSheetsWorker(framework);
+
+          let timesCalled = 0;
+          const callCountWrapper = (
+            logger: Logger,
+            trainingSheetId: string
+          ) => {
+            timesCalled++;
+            return localPullGoogleSheetData(logger, trainingSheetId);
+          };
+
+          await updateTrainingQuizResults(
+            callCountWrapper,
+            deps,
+            deps.logger,
+            0 as T.Int
+          );
+
+          await updateTrainingQuizResults(
+            callCountWrapper,
+            deps,
+            deps.logger,
+            (60 * 1000) as T.Int // Period won't has elapsed since last call.
+          );
+
+          expect(timesCalled).toEqual(1);
+        });
       });
     });
   });
