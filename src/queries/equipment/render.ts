@@ -233,7 +233,11 @@ export const render = (viewModel: ViewModel) =>
       <h1>${sanitizeString(viewModel.equipment.name)}</h1>
       ${equipmentActions(viewModel)}
       ${trainersList(viewModel.equipment.trainers)}
-      ${currentlyTrainedUsersTable(viewModel)} ${trainingQuizResults(viewModel)}
+      ${currentlyTrainedUsersTable(viewModel)}
+      ${viewModel.isSuperUserOrOwnerOfArea ||
+      viewModel.isSuperUserOrTrainerOfArea
+        ? trainingQuizResults(viewModel)
+        : html``}
     `,
     pageTemplate(sanitizeString(viewModel.equipment.name), viewModel.user)
   );
