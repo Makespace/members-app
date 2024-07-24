@@ -18,46 +18,49 @@ const editPronouns = (viewModel: ViewModel) =>
 const editAvatar = () =>
   html`<a href="https://gravatar.com/profile">Edit via Gravatar</a>`;
 
+const renderMemberDetails = (viewModel: ViewModel) => html`
+  <table>
+    <tbody>
+      <tr>
+        <th scope="row">Member number</th>
+        <td>${renderMemberNumber(viewModel.member.memberNumber)}</td>
+      </tr>
+      <tr>
+        <th scope="row">Email</th>
+        <td>${sanitizeString(viewModel.member.emailAddress)}</td>
+      </tr>
+      <tr>
+        <th scope="row">Name</th>
+        <td>${sanitizeOption(viewModel.member.name)} ${editName(viewModel)}</td>
+      </tr>
+      <tr>
+        <th scope="row">Pronouns</th>
+        <td>
+          ${sanitizeOption(viewModel.member.pronouns)}
+          ${editPronouns(viewModel)}
+        </td>
+      </tr>
+      <tr>
+        <th scope="row">Avatar</th>
+        <td>
+          ${getGravatarThumbnail(
+            viewModel.member.emailAddress,
+            viewModel.member.memberNumber
+          )}
+          ${editAvatar()}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+`;
 export const render = (viewModel: ViewModel) =>
   pipe(
     html`
       <h1>Your Makespace profile</h1>
       <h2>Your details</h2>
-      <table>
-        <tbody>
-          <tr>
-            <th scope="row">Member number</th>
-            <td>${renderMemberNumber(viewModel.member.memberNumber)}</td>
-          </tr>
-          <tr>
-            <th scope="row">Email</th>
-            <td>${sanitizeString(viewModel.member.emailAddress)}</td>
-          </tr>
-          <tr>
-            <th scope="row">Name</th>
-            <td>
-              ${sanitizeOption(viewModel.member.name)} ${editName(viewModel)}
-            </td>
-          </tr>
-          <tr>
-            <th scope="row">Pronouns</th>
-            <td>
-              ${sanitizeOption(viewModel.member.pronouns)}
-              ${editPronouns(viewModel)}
-            </td>
-          </tr>
-          <tr>
-            <th scope="row">Avatar</th>
-            <td>
-              ${getGravatarThumbnail(
-                viewModel.member.emailAddress,
-                viewModel.member.memberNumber
-              )}
-              ${editAvatar()}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      ${renderMemberDetails(viewModel)}
+      <h2>Training status</h2>
+      <p>You are currently not allowed to use any RED equipment.</p>
     `,
     pageTemplate(safe('Member'), viewModel.user)
   );
