@@ -9,7 +9,7 @@ import {User, HttpResponse} from '../types';
 import {oopsPage, templatePage} from '../templates';
 import {Params, Query} from '../queries/query';
 import {logInPath} from '../authentication/auth-routes';
-import {RenderedHtml, sanitizeString} from '../types/html';
+import {CompleteHtmlDocument, sanitizeString} from '../types/html';
 
 const buildPage =
   (deps: Dependencies, params: Params, query: Query) => (user: User) =>
@@ -17,7 +17,7 @@ const buildPage =
 
 export const queryGet =
   (deps: Dependencies, query: Query) =>
-  async (req: Request, res: Response<RenderedHtml>) => {
+  async (req: Request, res: Response<CompleteHtmlDocument>) => {
     await pipe(
       req.session,
       getUserFromSession(deps),

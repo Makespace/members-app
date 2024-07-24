@@ -22,7 +22,7 @@ export const constructViewModel =
         isSelf: E.right(memberNumber === user.memberNumber),
         member: pipe(
           events,
-          readModels.members.getDetailsAsActor(user)(memberNumber),
+          readModels.members.getDetails(memberNumber),
           E.fromOption(() =>
             failureWithStatus('No such member', StatusCodes.NOT_FOUND)()
           )
