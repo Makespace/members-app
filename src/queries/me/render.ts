@@ -53,6 +53,11 @@ const renderMemberDetails = (viewModel: ViewModel) => html`
     </tbody>
   </table>
 `;
+
+const renderTrainingStatus = () => html`
+  <p>You are currently not allowed to use any RED equipment.</p>
+`;
+
 export const render = (viewModel: ViewModel) =>
   pipe(
     html`
@@ -60,7 +65,7 @@ export const render = (viewModel: ViewModel) =>
       <h2>Your details</h2>
       ${renderMemberDetails(viewModel)}
       <h2>Training status</h2>
-      <p>You are currently not allowed to use any RED equipment.</p>
+      ${renderTrainingStatus()}
     `,
     pageTemplate(safe('Member'), viewModel.user)
   );
