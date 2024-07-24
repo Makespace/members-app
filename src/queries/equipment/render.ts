@@ -4,6 +4,7 @@ import {displayDate} from '../../templates/display-date';
 import {renderMemberNumber} from '../../templates/member-number';
 import {
   commaHtml,
+  Html,
   html,
   joinHtml,
   optionalSafe,
@@ -209,8 +210,16 @@ const failedQuizTrainingTable = (viewModel: ViewModel) =>
     )
   );
 
+const renderLastRefresh = (
+  lastRefresh: ViewModel['trainingQuizResults']['lastRefresh']
+): Html =>
+  O.isSome(lastRefresh)
+    ? html`${displayDate(lastRefresh.value)}`
+    : html`Last refresh date unknown`;
+
 const trainingQuizResults = (viewModel: ViewModel) => html`
   <h2>Training Quiz Results</h2>
+  ${renderLastRefresh(viewModel.trainingQuizResults.lastRefresh)}
   <h3>Waiting for Training</h3>
   ${waitingForTrainingTable(viewModel)}
   ${unknownMemberWaitingForTrainingTable(viewModel)}
