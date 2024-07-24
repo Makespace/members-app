@@ -18,10 +18,7 @@ import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
 import cookieSession from 'cookie-session';
 import {initRoutes} from './routes';
-import {
-  setup as setupTrainingSheetWorker,
-  triggerOnInterval,
-} from './training-sheets/training-sheets-worker';
+import * as O from 'fp-ts/Option';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -42,16 +39,6 @@ passport.deserializeUser((user: Express.User, done) => {
   done(null, user);
 });
 
-if (conf.BACKGROUND_PROCESSING_ENABLED) {
-  // Background processes should write events with their results.
-  // Background processes can call commands as needed.
-  deps.trainingSheetWorker = setupTrainingSheetWorker(deps);
-  triggerOnInterval(
-    deps.trainingSheetWorker,
-    conf.BACKGROUND_PROCESSING_RUN_INTERVAL_MS
-  );
-}
-
 // Application setup
 const app: Application = express();
 app.use(httpLogger({logger: deps.logger, useLevel: 'debug'}));
@@ -67,7 +54,16 @@ startMagicLinkEmailPubSub(deps, conf);
 const server = http.createServer(app);
 createTerminus(server);
 
-server.on('close', () => deps.trainingSheetWorker?.removeAllListeners());
+const backgroundTask = setInterval(() => {
+  if (O.isNone(deps.updateTrainingQuizResults)) {
+    return;
+  }
+  deps.updateTrainingQuizResults
+    .value()
+    .then(() => deps.logger.info('Background update of quiz results finished'))
+    .catch(err => deps.logger.error(err, 'Background update unexpected error'));
+});
+server.on('close', () => clearInterval(backgroundTask));
 
 // Readmodels are used to get the current status of the background tasks via the
 // events that have been written.
