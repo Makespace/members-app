@@ -4,6 +4,8 @@ import * as S from 'fp-ts/string';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import * as R from 'fp-ts/Record';
+import * as O from 'fp-ts/Option';
+import * as T from 'io-ts';
 import {sequenceS} from 'fp-ts/lib/Apply';
 
 import {Dependencies} from '../dependencies';
@@ -19,6 +21,7 @@ import {extractGoogleSheetData} from './google';
 import {StatusCodes} from 'http-status-codes';
 import {sheets_v4} from 'googleapis';
 import {Failure} from '../types';
+import {DateTime} from 'luxon';
 
 const byEquipmentId: Ord<RegEvent> = pipe(
   S.Ord,
@@ -50,8 +53,6 @@ const processForEquipment = (
   logger.info(
     `Scanning training sheet ${regEvent.trainingSheetId}. Pulling google sheet data...`
   );
-  // TODO - Check global rate limit. -> Maybe this should also be an event?
-
   return pipe(
     pullGoogleSheetData(logger, regEvent.trainingSheetId),
     TE.mapBoth(
@@ -127,54 +128,82 @@ const process =
 export const updateTrainingQuizResults = async (
   pullGoogleSheetData: PullSheetData,
   deps: Dependencies,
-  logger: Logger
+  logger: Logger,
+  refreshCooldownMs: T.Int
 ): Promise<void> => {
-  const start = performance.now();
-  logger.info('Running training sheets worker job. Getting existing events...');
-  const newEvents = await pipe(
-    {
-      equipmentEvents:
-        deps.getAllEventsByType<'EquipmentTrainingSheetRegistered'>(
-          'EquipmentTrainingSheetRegistered'
-        ),
-      equipmentQuizEvents:
-        deps.getAllEventsByType<'EquipmentTrainingQuizResult'>(
-          'EquipmentTrainingQuizResult'
-        ),
-    },
-    sequenceS(TE.ApplySeq),
-    TE.chain(({equipmentEvents, equipmentQuizEvents}) =>
-      process(logger, pullGoogleSheetData)(equipmentEvents, equipmentQuizEvents)
-    )
-  )();
+  try {
+    if (deps.trainingQuizRefreshRunning) {
+      logger.info(
+        'Skipping running training quiz refresh as a job is already running'
+      );
+      return;
+    }
+    if (
+      O.isSome(deps.lastTrainingQuizResultRefresh) &&
+      deps.lastTrainingQuizResultRefresh.value.diffNow().negate().toMillis() <
+        refreshCooldownMs
+    ) {
+      logger.info(
+        `Skipping running training quiz refresh as a job was recently run '${deps.lastTrainingQuizResultRefresh.value.toString()}'`
+      );
+      return;
+    }
 
-  if (E.isLeft(newEvents)) {
-    logger.error(newEvents.left, 'Failed to get training quiz results');
-    return;
-  }
-  logger.info(
-    `Finished getting training sheet quiz results, gathered: ${newEvents.right.length} results. Committing...`
-  );
-
-  for (const newEvent of newEvents.right) {
-    pipe(
-      await deps.commitEvent(
-        {
-          type: 'EquipmentTrainingQuizResult',
-          id: newEvent.id,
-        },
-        'no-such-resource'
-      )(newEvent)(),
-      E.fold(
-        (err: FailureWithStatus) => logger.error(err),
-        success => logger.debug(success)
-      )
+    const start = performance.now();
+    logger.info(
+      'Running training sheets worker job. Getting existing events...'
     );
+    const newEvents = await pipe(
+      {
+        equipmentEvents:
+          deps.getAllEventsByType<'EquipmentTrainingSheetRegistered'>(
+            'EquipmentTrainingSheetRegistered'
+          ),
+        equipmentQuizEvents:
+          deps.getAllEventsByType<'EquipmentTrainingQuizResult'>(
+            'EquipmentTrainingQuizResult'
+          ),
+      },
+      sequenceS(TE.ApplySeq),
+      TE.chain(({equipmentEvents, equipmentQuizEvents}) =>
+        process(logger, pullGoogleSheetData)(
+          equipmentEvents,
+          equipmentQuizEvents
+        )
+      )
+    )();
+
+    if (E.isLeft(newEvents)) {
+      logger.error(newEvents.left, 'Failed to get training quiz results');
+      return;
+    }
+    logger.info(
+      `Finished getting training sheet quiz results, gathered: ${newEvents.right.length} results. Committing...`
+    );
+
+    for (const newEvent of newEvents.right) {
+      pipe(
+        await deps.commitEvent(
+          {
+            type: 'EquipmentTrainingQuizResult',
+            id: newEvent.id,
+          },
+          'no-such-resource'
+        )(newEvent)(),
+        E.fold(
+          (err: FailureWithStatus) => logger.error(err),
+          success => logger.debug(success)
+        )
+      );
+    }
+    logger.info('Finished commiting training sheet quiz results');
+    logger.info(
+      `Took ${Math.round(
+        performance.now() - start
+      )}ms to run training sheets worker job`
+    );
+  } finally {
+    deps.trainingQuizRefreshRunning = false;
+    deps.lastTrainingQuizResultRefresh = O.some(DateTime.utc());
   }
-  logger.info('Finished commiting training sheet quiz results');
-  logger.info(
-    `Took ${Math.round(
-      performance.now() - start
-    )}ms to run training sheets worker job`
-  );
 };

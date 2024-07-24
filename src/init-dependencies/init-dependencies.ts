@@ -66,6 +66,8 @@ export const initDependencies = (
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
     logger,
     updateTrainingQuizResults: O.none,
+    lastTrainingQuizResultRefresh: O.none,
+    trainingQuizRefreshRunning: false,
   };
 
   if (conf.BACKGROUND_PROCESSING_ENABLED) {
@@ -81,7 +83,12 @@ export const initDependencies = (
       scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
     });
     deps.updateTrainingQuizResults = O.some(() =>
-      updateTrainingQuizResults(pullGoogleSheetData(auth), deps, logger)
+      updateTrainingQuizResults(
+        pullGoogleSheetData(auth),
+        deps,
+        logger,
+        conf.QUIZ_RESULT_REFRESH_COOLDOWN_MS
+      )
     );
   }
 

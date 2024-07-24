@@ -17,6 +17,7 @@ import {StatusCodes} from 'http-status-codes';
 import * as gsheetData from '../data/google_sheet_data';
 import {ResourceVersion} from '../../src/types';
 import * as O from 'fp-ts/Option';
+import * as T from 'io-ts';
 
 type TrainingSheetWorkerDependencies = Dependencies & {
   commitedEvents: DomainEvent[];
@@ -95,7 +96,8 @@ describe('Training sheets worker', () => {
           await updateTrainingQuizResults(
             localPullGoogleSheetData,
             deps,
-            deps.logger
+            deps.logger,
+            0 as T.Int
           );
           expect(deps.commitedEvents).toHaveLength(0);
         });
@@ -109,7 +111,8 @@ describe('Training sheets worker', () => {
           await updateTrainingQuizResults(
             localPullGoogleSheetData,
             deps,
-            deps.logger
+            deps.logger,
+            0 as T.Int
           );
           expect(deps.commitedEvents).toHaveLength(1);
           const commitedEvent = deps.commitedEvents[0];
@@ -151,7 +154,8 @@ describe('Training sheets worker', () => {
           await updateTrainingQuizResults(
             localPullGoogleSheetData,
             deps,
-            deps.logger
+            deps.logger,
+            0 as T.Int
           );
           expect(deps.commitedEvents).toHaveLength(0);
         });

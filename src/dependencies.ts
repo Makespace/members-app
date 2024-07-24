@@ -7,6 +7,7 @@ import {StatusCodes} from 'http-status-codes';
 
 import {Resource} from './types/resource';
 import {EventName, EventOfType} from './types/domain-event';
+import {DateTime} from 'luxon';
 
 export type Dependencies = {
   commitEvent: (
@@ -36,4 +37,6 @@ export type Dependencies = {
   rateLimitSendingOfEmails: (email: Email) => TE.TaskEither<Failure, Email>;
   sendEmail: (email: Email) => TE.TaskEither<Failure, string>;
   updateTrainingQuizResults: O.Option<() => Promise<void>>;
+  lastTrainingQuizResultRefresh: O.Option<DateTime>;
+  trainingQuizRefreshRunning: boolean;
 };
