@@ -41,6 +41,7 @@ export type ViewModel = {
     trainedMembers: ReadonlyArray<number>;
   };
   trainingQuizResults: {
+    lastRefresh: O.Option<DateTime>;
     quizPassedNotTrained: {
       knownMember: ReadonlyArray<QuizResultViewModel>;
       unknownMember: ReadonlyArray<QuizResultUnknownMemberViewModel>;

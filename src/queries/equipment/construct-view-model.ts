@@ -169,10 +169,12 @@ const reduceToLatestQuizResultByMember = (
 
 const getQuizResults = (
   events: ReadonlyArray<DomainEvent>,
-  equipment: Equipment
+  equipment: Equipment,
+  deps: Dependencies
 ): TE.TaskEither<
   FailureWithStatus,
   {
+    lastRefresh: O.Option<DateTime>;
     quizPassedNotTrained: {
       knownMember: ReadonlyArray<QuizResultViewModel>;
       unknownMember: ReadonlyArray<QuizResultUnknownMemberViewModel>;
@@ -193,6 +195,7 @@ const getQuizResults = (
   );
 
   return TE.right({
+    lastRefresh: deps.lastTrainingQuizResultRefresh,
     quizPassedNotTrained: {
       knownMember: Object.values(memberResults.memberQuizResults).filter(
         r => r.passed && !trainedMembers.has(r.memberNumber)
@@ -244,6 +247,6 @@ export const constructViewModel =
         isSuperUserOrTrainerOfEquipment(events, equipment, user.memberNumber)
       ),
       TE.bindW('trainingQuizResults', ({events, equipment}) =>
-        getQuizResults(events, equipment)
+        getQuizResults(events, equipment, deps)
       )
     );
