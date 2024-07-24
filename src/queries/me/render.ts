@@ -44,7 +44,7 @@ const renderMemberDetails = (viewModel: ViewModel) => html`
         <th scope="row">Avatar</th>
         <td>
           ${getGravatarThumbnail(
-            viewModel.member.emailAddress,
+            viewModel.member.gravatarHash,
             viewModel.member.memberNumber
           )}
           ${editAvatar()}

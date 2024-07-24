@@ -1,4 +1,10 @@
 import * as O from 'fp-ts/Option';
+import {Newtype, iso} from 'newtype-ts';
+
+export interface GravatarHash
+  extends Newtype<{readonly GravatarHash: unique symbol}, string> {}
+
+export const isoGravatarHash = iso<GravatarHash>();
 
 export type MemberDetails = Member & Details;
 
@@ -12,6 +18,7 @@ type Details = {
   pronouns: O.Option<string>;
   isSuperUser: boolean;
   prevEmails: string[];
+  gravatarHash: GravatarHash;
 };
 
 export type MultipleMemberDetails = Map<number, MemberDetails>;

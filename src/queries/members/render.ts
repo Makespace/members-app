@@ -19,7 +19,7 @@ const renderMembers = (viewModel: ViewModel) =>
       member => html`
         <tr>
           <td>
-            ${getGravatarThumbnail(member.emailAddress, member.memberNumber)}
+            ${getGravatarThumbnail(member.gravatarHash, member.memberNumber)}
           </td>
           <td>${renderMemberNumber(member.memberNumber)}</td>
           <td>${sanitizeOption(member.name)}</td>
