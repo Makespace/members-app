@@ -35,7 +35,7 @@ export const render = (viewModel: ViewModel) =>
       ${ifSelf(viewModel, ownPageBanner)}
       <div class="profile">
         ${getGravatarProfile(
-          viewModel.member.emailAddress,
+          viewModel.member.gravatarHash,
           viewModel.member.memberNumber
         )}
       </div>
@@ -70,7 +70,7 @@ export const render = (viewModel: ViewModel) =>
             <th scope="row">Avatar</th>
             <td>
               ${getGravatarThumbnail(
-                viewModel.member.emailAddress,
+                viewModel.member.gravatarHash,
                 viewModel.member.memberNumber
               )}
               ${ifSelf(viewModel, editAvatar())}

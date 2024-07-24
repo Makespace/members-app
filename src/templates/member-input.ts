@@ -12,7 +12,7 @@ const memberInputSelector = (member: MemberDetails): Html => html`
       value="${member.memberNumber}"
     />
     <label for="member-${member.memberNumber}">
-      ${getGravatarThumbnail(member.emailAddress, member.memberNumber)}
+      ${getGravatarThumbnail(member.gravatarHash, member.memberNumber)}
       <span>
         ${sanitizeOption(member.name)} (${sanitizeOption(member.pronouns)})
         (${sanitizeString(member.emailAddress)})

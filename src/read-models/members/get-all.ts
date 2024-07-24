@@ -1,5 +1,6 @@
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
+import {gravatarHashFromEmail} from './avatar';
 import {
   filterByName,
   SubsetOfDomainEvent,
@@ -31,6 +32,7 @@ const update = (
     case 'MemberNumberLinkedToEmail':
       state.set(memberNumber, {
         emailAddress: event.email,
+        gravatarHash: gravatarHashFromEmail(event.email),
         memberNumber,
         name: O.none,
         pronouns: O.none,
@@ -61,6 +63,7 @@ const update = (
       if (details) {
         details.prevEmails.push(details.emailAddress);
         details.emailAddress = event.newEmail;
+        details.gravatarHash = gravatarHashFromEmail(event.newEmail);
       }
       break;
   }
