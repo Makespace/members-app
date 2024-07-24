@@ -18,4 +18,6 @@ export const happyPathAdapters: Dependencies = {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getAllEventsByType: <T extends EventName>(_eventType: T) => TE.right([]),
   updateTrainingQuizResults: O.none,
+  lastTrainingQuizResultRefresh: O.none,
+  trainingQuizRefreshRunning: false,
 };
