@@ -1,6 +1,12 @@
 import {pipe} from 'fp-ts/lib/function';
 import {getGravatarProfile, getGravatarThumbnail} from '../../templates/avatar';
-import {Html, html, optionalSafe, safe, sanitizeString} from '../../types/html';
+import {
+  Html,
+  html,
+  sanitizeOption,
+  safe,
+  sanitizeString,
+} from '../../types/html';
 import {ViewModel} from './view-model';
 import {pageTemplate} from '../../templates';
 import {renderMemberNumber} from '../../templates/member-number';
@@ -29,7 +35,7 @@ export const render = (viewModel: ViewModel) =>
       ${ifSelf(viewModel, ownPageBanner)}
       <div class="profile">
         ${getGravatarProfile(
-          viewModel.member.emailAddress,
+          viewModel.member.gravatarHash,
           viewModel.member.memberNumber
         )}
       </div>
@@ -49,14 +55,14 @@ export const render = (viewModel: ViewModel) =>
           <tr>
             <th scope="row">Name</th>
             <td>
-              ${optionalSafe(viewModel.member.name)}
+              ${sanitizeOption(viewModel.member.name)}
               ${ifSelf(viewModel, editName(viewModel))}
             </td>
           </tr>
           <tr>
             <th scope="row">Pronouns</th>
             <td>
-              ${optionalSafe(viewModel.member.pronouns)}
+              ${sanitizeOption(viewModel.member.pronouns)}
               ${ifSelf(viewModel, editPronouns(viewModel))}
             </td>
           </tr>
@@ -64,7 +70,7 @@ export const render = (viewModel: ViewModel) =>
             <th scope="row">Avatar</th>
             <td>
               ${getGravatarThumbnail(
-                viewModel.member.emailAddress,
+                viewModel.member.gravatarHash,
                 viewModel.member.memberNumber
               )}
               ${ifSelf(viewModel, editAvatar())}

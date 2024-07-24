@@ -7,29 +7,29 @@ RUN apt-get -y update &&  \
     -y ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-FROM oven/bun:1 as bun
+FROM oven/bun:1 AS bun
 WORKDIR /app
 COPY package.json ./
 COPY bun.lockb ./
 
 # DEV
-FROM bun as dev-deps
+FROM bun AS dev-deps
 RUN bun install --frozen-lockfile
 
-FROM node as dev
+FROM node AS dev
 COPY --from=dev-deps /app/node_modules/ node_modules/
 COPY ./tsconfig.json .
 CMD [ "npx", "tsx", "watch", "./src/index.ts" ]
 
 # PROD
-FROM bun as prod-deps
+FROM bun AS prod-deps
 RUN bun install --frozen-lockfile --production
 
-FROM dev as prod-build
+FROM dev AS prod-build
 COPY ./src src/
 RUN npx tsc
 
-FROM node as prod
+FROM node AS prod
 COPY --from=prod-deps /app/node_modules node_modules/
 COPY --from=prod-build /app/build/ build/
 COPY ./src/static build/src/static/

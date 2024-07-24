@@ -26,6 +26,8 @@ describe('getDetails', () => {
       O.some({
         memberNumber: 42,
         emailAddress: 'foo@example.com' as EmailAddress,
+        gravatarHash:
+          '321ba197033e81286fedb719d60d4ed5cecaed170733cb4a92013811afc0e3b6',
         name: O.none,
         pronouns: O.none,
         isSuperUser: false,
@@ -50,6 +52,8 @@ describe('getDetails', () => {
       O.some({
         memberNumber: 42,
         emailAddress: 'foo@example.com',
+        gravatarHash:
+          '321ba197033e81286fedb719d60d4ed5cecaed170733cb4a92013811afc0e3b6',
         name: O.some('Ford Prefect'),
         pronouns: O.none,
         isSuperUser: false,
@@ -82,6 +86,8 @@ describe('getDetails', () => {
       O.some({
         memberNumber: 42,
         emailAddress: 'foo@example.com',
+        gravatarHash:
+          '321ba197033e81286fedb719d60d4ed5cecaed170733cb4a92013811afc0e3b6',
         name: O.some('Ford Prefect'),
         pronouns: O.some('he/him'),
         isSuperUser: false,
@@ -105,6 +111,8 @@ describe('getDetails', () => {
       O.some({
         memberNumber: 42,
         emailAddress: 'updated@example.com',
+        gravatarHash:
+          '916262ca7e4ee8a558858ea1c2d7674f7d2c8f3a06a0dfd1c5a68ef25e415022',
         name: O.none,
         pronouns: O.none,
         isSuperUser: false,

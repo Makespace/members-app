@@ -1,8 +1,14 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
-import {MemberDetails, DomainEvent, filterByName} from '../../types';
-import {getAllDetails, pertinentEvents} from './get-all';
+import {
+  MemberDetails,
+  DomainEvent,
+  filterByName,
+  Actor,
+  User,
+} from '../../types';
+import {getAllDetails, getAllDetailsAsActor, pertinentEvents} from './get-all';
 
 export const getDetails =
   (memberNumber: number) =>
@@ -13,4 +19,12 @@ export const getDetails =
       RA.filter(e => e.memberNumber === memberNumber),
       getAllDetails,
       allDetails => O.fromNullable(allDetails.get(memberNumber))
+    );
+
+export const getDetailsAsActor =
+  (actorOrUser: Actor | User) =>
+  (memberNumber: number) =>
+  (events: ReadonlyArray<DomainEvent>) =>
+    pipe(events, getAllDetailsAsActor(actorOrUser), allDetails =>
+      O.fromNullable(allDetails.get(memberNumber))
     );

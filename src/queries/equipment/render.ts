@@ -7,7 +7,7 @@ import {
   Html,
   html,
   joinHtml,
-  optionalSafe,
+  sanitizeOption,
   sanitizeString,
 } from '../../types/html';
 import {
@@ -136,8 +136,8 @@ const passedUnknownQuizRow = (
       ? html`<td>
           ${renderMemberNumber(unknownQuiz.memberNumberProvided.value)}
         </td>`
-      : html`<td>${optionalSafe(unknownQuiz.memberNumberProvided)}</td>`}
-    <td>${optionalSafe(unknownQuiz.emailProvided)}</td>
+      : html`<td>${sanitizeOption(unknownQuiz.memberNumberProvided)}</td>`}
+    <td>${sanitizeOption(unknownQuiz.emailProvided)}</td>
     <td>
       ${unknownQuiz.score} / ${unknownQuiz.maxScore}
       (${unknownQuiz.percentage}%)

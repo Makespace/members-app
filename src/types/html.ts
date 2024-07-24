@@ -20,7 +20,14 @@ export const sanitizeString = (input: string): SanitizedString =>
     disallowedTagsMode: 'recursiveEscape',
   }) as SanitizedString;
 
-export type RenderedHtml = Html & {readonly RenderedHtml: unique symbol};
+export const sanitizeOption = (
+  data: O.Option<string | number>
+): Safe | SanitizedString | number =>
+  O.isSome(data)
+    ? typeof data.value === 'string'
+      ? sanitizeString(data.value)
+      : data.value
+    : safe('-');
 
 export type HtmlSubstitution =
   | Html
@@ -54,17 +61,12 @@ export const html = (
   return result as Html;
 };
 
-export const optionalSafe = (
-  data: O.Option<string | number>
-): Safe | SanitizedString | number =>
-  O.isSome(data)
-    ? typeof data.value === 'string'
-      ? sanitizeString(data.value)
-      : data.value
-    : safe('-');
+export type CompleteHtmlDocument = Html & {
+  readonly CompleteHtmlDocument: unique symbol;
+};
 
 interface Page {
-  rendered: RenderedHtml;
+  rendered: CompleteHtmlDocument;
 }
 
 interface Redirect {
@@ -74,4 +76,5 @@ interface Redirect {
 export type HttpResponse =
   | Sum.Member<'Redirect', Redirect>
   | Sum.Member<'Page', Page>;
+
 export const HttpResponse = Sum.create<HttpResponse>();

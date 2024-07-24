@@ -2,7 +2,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {
   html,
   joinHtml,
-  optionalSafe,
+  sanitizeOption,
   safe,
   sanitizeString,
 } from '../../types/html';
@@ -19,16 +19,12 @@ const renderMembers = (viewModel: ViewModel) =>
       member => html`
         <tr>
           <td>
-            ${getGravatarThumbnail(member.emailAddress, member.memberNumber)}
+            ${getGravatarThumbnail(member.gravatarHash, member.memberNumber)}
           </td>
           <td>${renderMemberNumber(member.memberNumber)}</td>
-          <td>${optionalSafe(member.name)}</td>
-          <td>${optionalSafe(member.pronouns)}</td>
-          <td>
-            ${viewModel.viewerIsSuperUser
-              ? sanitizeString(member.emailAddress)
-              : html`*****`}
-          </td>
+          <td>${sanitizeOption(member.name)}</td>
+          <td>${sanitizeOption(member.pronouns)}</td>
+          <td>${sanitizeString(member.emailAddress)}</td>
         </tr>
       `
     ),
