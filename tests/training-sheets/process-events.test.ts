@@ -8,7 +8,7 @@ import {
   EventOfType,
 } from '../../src/types/domain-event';
 import {happyPathAdapters} from '../init-dependencies/happy-path-adapters.helper';
-import {run} from '../../src/training-sheets/training-sheets-worker';
+import {updateTrainingQuizResults} from '../../src/training-sheets/training-sheets-worker';
 import {Dependencies} from '../../src/dependencies';
 import {Resource} from '../../src/types/resource';
 import pino, {Logger} from 'pino';
@@ -16,6 +16,7 @@ import {failureWithStatus} from '../../src/types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import * as gsheetData from '../data/google_sheet_data';
 import {ResourceVersion} from '../../src/types';
+import * as O from 'fp-ts/Option';
 
 type TrainingSheetWorkerDependencies = Dependencies & {
   commitedEvents: DomainEvent[];
@@ -46,16 +47,18 @@ const dependenciesForTrainingSheetsWorker = (
           StatusCodes.INTERNAL_SERVER_ERROR
         )
       ),
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    pullGoogleSheetData: (_logger: Logger, trainingSheetId: string) => {
-      const sheet = gsheetData.TRAINING_SHEETS[trainingSheetId].data;
-      return sheet
-        ? TE.right(sheet)
-        : TE.left({
-            message: 'Sheet not found',
-          });
-    },
+    updateTrainingQuizResults: O.none,
   };
+};
+
+const localPullGoogleSheetData = (logger: Logger, trainingSheetId: string) => {
+  logger.debug(`Pulling local google sheet '${trainingSheetId}'`);
+  const sheet = gsheetData.TRAINING_SHEETS[trainingSheetId].data;
+  return sheet
+    ? TE.right(sheet)
+    : TE.left({
+        message: 'Sheet not found',
+      });
 };
 
 describe('Training sheets worker', () => {
@@ -89,7 +92,11 @@ describe('Training sheets worker', () => {
           });
 
           deps = dependenciesForTrainingSheetsWorker(framework);
-          await run(deps, deps.logger);
+          await updateTrainingQuizResults(
+            localPullGoogleSheetData,
+            deps,
+            deps.logger
+          );
           expect(deps.commitedEvents).toHaveLength(0);
         });
         it('metal lathe training sheet', async () => {
@@ -99,7 +106,11 @@ describe('Training sheets worker', () => {
           });
 
           deps = dependenciesForTrainingSheetsWorker(framework);
-          await run(deps, deps.logger);
+          await updateTrainingQuizResults(
+            localPullGoogleSheetData,
+            deps,
+            deps.logger
+          );
           expect(deps.commitedEvents).toHaveLength(1);
           const commitedEvent = deps.commitedEvents[0];
           expect(commitedEvent).toMatchObject<
@@ -137,7 +148,11 @@ describe('Training sheets worker', () => {
             quizAnswers: gsheetData.METAL_LATHE.quizAnswers,
           });
           deps = dependenciesForTrainingSheetsWorker(framework);
-          await run(deps, deps.logger);
+          await updateTrainingQuizResults(
+            localPullGoogleSheetData,
+            deps,
+            deps.logger
+          );
           expect(deps.commitedEvents).toHaveLength(0);
         });
       });

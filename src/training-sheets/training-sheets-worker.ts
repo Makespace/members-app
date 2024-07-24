@@ -17,12 +17,18 @@ import {accumBy, lastBy} from '../util';
 import {QzEvent, QzEventDuplicate, RegEvent} from '../types/qz-event';
 import {extractGoogleSheetData} from './google';
 import {StatusCodes} from 'http-status-codes';
-import {EventEmitter} from 'stream';
+import {sheets_v4} from 'googleapis';
+import {Failure} from '../types';
 
 const byEquipmentId: Ord<RegEvent> = pipe(
   S.Ord,
   contramap((e: RegEvent) => e.equipmentId)
 );
+
+type PullSheetData = (
+  logger: Logger,
+  trainingSheetId: string
+) => TE.TaskEither<Failure, sheets_v4.Schema$Spreadsheet>;
 
 const getTrainingSheets = (events: ReadonlyArray<RegEvent>) =>
   pipe(
@@ -37,7 +43,7 @@ const getPreviousQuizResultsByTrainingSheet = accumBy<string, QzEvent>(
 
 const processForEquipment = (
   logger: Logger,
-  deps: Dependencies,
+  pullGoogleSheetData: PullSheetData,
   regEvent: RegEvent,
   existingQuizResults: ReadonlyArray<QzEvent>
 ): TE.TaskEither<FailureWithStatus, ReadonlyArray<QzEvent>> => {
@@ -47,7 +53,7 @@ const processForEquipment = (
   // TODO - Check global rate limit. -> Maybe this should also be an event?
 
   return pipe(
-    deps.pullGoogleSheetData(logger, regEvent.trainingSheetId),
+    pullGoogleSheetData(logger, regEvent.trainingSheetId),
     TE.mapBoth(
       failureWithStatus(
         'Failed to pull google sheet data',
@@ -86,7 +92,7 @@ const processForEquipment = (
 
 // FailureWithStatus probably isn't the type to be using as the 'error'.
 const process =
-  (logger: Logger, deps: Dependencies) =>
+  (logger: Logger, pullGoogleSheetData: PullSheetData) =>
   (
     sheetRegEvents: ReadonlyArray<RegEvent>,
     existingQuizResultEvents: ReadonlyArray<QzEvent>
@@ -108,7 +114,7 @@ const process =
       RA.map(([equipmentId, sheet]) =>
         processForEquipment(
           logger.child({equipment: equipmentId}),
-          deps,
+          pullGoogleSheetData,
           sheet,
           previousQuizResults[sheet.trainingSheetId] ?? RA.empty
         )
@@ -118,10 +124,12 @@ const process =
     );
   };
 
-export const run = async (
+export const updateTrainingQuizResults = async (
+  pullGoogleSheetData: PullSheetData,
   deps: Dependencies,
   logger: Logger
 ): Promise<void> => {
+  const start = performance.now();
   logger.info('Running training sheets worker job. Getting existing events...');
   const newEvents = await pipe(
     {
@@ -136,7 +144,7 @@ export const run = async (
     },
     sequenceS(TE.ApplySeq),
     TE.chain(({equipmentEvents, equipmentQuizEvents}) =>
-      process(logger, deps)(equipmentEvents, equipmentQuizEvents)
+      process(logger, pullGoogleSheetData)(equipmentEvents, equipmentQuizEvents)
     )
   )();
 
@@ -164,40 +172,9 @@ export const run = async (
     );
   }
   logger.info('Finished commiting training sheet quiz results');
-};
-
-export type TrainingWorkerEvents = EventEmitter;
-
-const handleTrigger =
-  (deps: Dependencies, logger: Logger) => () => async () => {
-    try {
-      const start = performance.now();
-      logger.info('Training sheets worker job triggered');
-      await run(deps, logger);
-      logger.info(
-        `Took ${Math.round(
-          performance.now() - start
-        )}ms to run training sheets worker job`
-      );
-    } catch (err) {
-      logger.error(err, 'Unhandled error in training sheets worker');
-    }
-  };
-
-export const setup = (deps: Dependencies) => {
-  const logger = deps.logger.child({section: 'training-sheets-worker'});
-
-  const eventWorkerTrigger = new EventEmitter();
-  eventWorkerTrigger.addListener(
-    'periodic_trigger',
-    handleTrigger(deps, logger)
+  logger.info(
+    `Took ${Math.round(
+      performance.now() - start
+    )}ms to run training sheets worker job`
   );
-  eventWorkerTrigger.addListener('manual_trigger', handleTrigger(deps, logger));
-
-  return eventWorkerTrigger;
 };
-
-export const triggerOnInterval = (
-  twe: TrainingWorkerEvents,
-  intervalMs: number
-) => setInterval(() => twe.emit('periodic_trigger'), intervalMs);
