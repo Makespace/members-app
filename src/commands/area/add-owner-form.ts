@@ -76,7 +76,11 @@ const renderPotentialOwner = (areaId: string) => (owner: Member) =>
     <td>${render_signed_status(owner)}</td>
     <td>
       <form action="#" method="post">
-        <input type="hidden" name="memberNumber" value="${owner.memberNumber}" />
+        <input
+          type="hidden"
+          name="memberNumber"
+          value="${owner.memberNumber}"
+        />
         <input type="hidden" name="areaId" value="${safe(areaId)}" />
         <button type="submit">Add</button>
       </form>
