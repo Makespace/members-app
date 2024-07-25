@@ -12,7 +12,7 @@ type Area = {
 };
 
 type State = {
-  members: Map<Member['number'], Member>;
+  members: Map<Member['memberNumber'], Member>;
   areas: Map<Area['id'], Area>;
   failedImports: Set<FailedLinking>;
 };
@@ -38,8 +38,8 @@ const handleEvent = (
 ) => {
   if (isEventOfType('MemberNumberLinkedToEmail')(event)) {
     state.members.set(event.memberNumber, {
-      number: event.memberNumber,
-      email: event.email,
+      memberNumber: event.memberNumber,
+      emailAddress: event.email,
       name: O.none,
       pronouns: O.none,
       agreementSigned: O.none,
