@@ -1,4 +1,5 @@
 import {pipe} from 'fp-ts/lib/function';
+import {Member} from '../../types';
 import {
   html,
   joinHtml,
@@ -6,15 +7,23 @@ import {
   safe,
   sanitizeString,
 } from '../../types/html';
+import * as N from 'fp-ts/number';
+import {contramap, Ord} from 'fp-ts/Ord';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {ViewModel} from './view-model';
 import {getGravatarThumbnail} from '../../templates/avatar';
 import {renderMemberNumber} from '../../templates/member-number';
 import {pageTemplate} from '../../templates';
 
+const ordByMemberNumber: Ord<Member> = pipe(
+  N.Ord,
+  contramap(member => member.memberNumber)
+);
+
 const renderMembers = (viewModel: ViewModel) =>
   pipe(
     viewModel.members,
+    RA.sort(ordByMemberNumber),
     RA.map(
       member => html`
         <tr>
