@@ -46,15 +46,16 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   const dbClient = libsqlClient.createClient({
     url: `file:/tmp/${randomUUID()}.db`,
   });
-  const frameworkCommitEvent = commitEvent(
-    dbClient,
-    createLogger({level: 'silent'})
-  );
+  const logger = createLogger({level: 'silent'});
+  const frameworkCommitEvent = commitEvent(dbClient, logger);
   await ensureEventTableExists(dbClient)();
   const frameworkGetAllEvents = () =>
-    pipe(getAllEvents(dbClient)(), T.map(getRightOrFail))();
+    pipe(getAllEvents(dbClient, logger)(), T.map(getRightOrFail))();
   const frameworkGetAllEventsByType = <EN extends EventName>(eventType: EN) =>
-    pipe(getAllEventsByType(dbClient)(eventType), T.map(getRightOrFail))();
+    pipe(
+      getAllEventsByType(dbClient, logger)(eventType),
+      T.map(getRightOrFail)
+    )();
 
   const frameworkify =
     <T>(command: Command<T>) =>
