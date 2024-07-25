@@ -24,7 +24,7 @@ type ViewModel = {
 };
 
 const renderOwnerAgreementInviteButton = (
-  memberNumber: Member['number']
+  memberNumber: Member['memberNumber']
 ) => html`
   <form action="/send-email/owner-agreement-invite" method="post">
     <input type="hidden" name="recipient" value="${memberNumber}" />
@@ -34,11 +34,11 @@ const renderOwnerAgreementInviteButton = (
 
 const renderMember = (member: Member) =>
   O.isSome(member.name)
-    ? html`<a href="/member/${member.number}"
+    ? html`<a href="/member/${member.memberNumber}"
         >${sanitizeString(member.name.value)}<a></a
       ></a>`
-    : html`<a href="/member/${member.number}"
-        >${sanitizeString(member.email)}<a></a
+    : html`<a href="/member/${member.memberNumber}"
+        >${sanitizeString(member.emailAddress)}<a></a
       ></a>`;
 
 const renderMembersAsList = (members: ReadonlyArray<Member>) =>
@@ -64,19 +64,19 @@ const render_signed_status = (member: Member) =>
   pipe(
     member.agreementSigned,
     O.match(
-      () => renderOwnerAgreementInviteButton(member.number),
+      () => renderOwnerAgreementInviteButton(member.memberNumber),
       date => html`Signed: ${safe(date.toLocaleDateString())}`
     )
   );
 
 const renderPotentialOwner = (areaId: string) => (owner: Member) =>
   html`<tr>
-    <td>${owner.number}</td>
-    <td>${sanitizeString(owner.email)}</td>
+    <td>${owner.memberNumber}</td>
+    <td>${sanitizeString(owner.emailAddress)}</td>
     <td>${render_signed_status(owner)}</td>
     <td>
       <form action="#" method="post">
-        <input type="hidden" name="memberNumber" value="${owner.number}" />
+        <input type="hidden" name="memberNumber" value="${owner.memberNumber}" />
         <input type="hidden" name="areaId" value="${safe(areaId)}" />
         <button type="submit">Add</button>
       </form>

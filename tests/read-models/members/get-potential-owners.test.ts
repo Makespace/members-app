@@ -58,7 +58,7 @@ describe('getPotentialOwners', () => {
     it('includes them in the existing owners', () => {
       expect(result.existing).toHaveLength(1);
       expect(result.potential).toHaveLength(0);
-      expect(result.existing[0].number).toStrictEqual(linkNumber.memberNumber);
+      expect(result.existing[0].memberNumber).toStrictEqual(linkNumber.memberNumber);
       expect(result.existing[0].name).toStrictEqual(O.some(addName.name));
     });
   });
@@ -74,7 +74,7 @@ describe('getPotentialOwners', () => {
     it('includes them in the potential owners', () => {
       expect(result.existing).toHaveLength(0);
       expect(result.potential).toHaveLength(1);
-      expect(result.potential[0].number).toStrictEqual(linkNumber.memberNumber);
+      expect(result.potential[0].memberNumber).toStrictEqual(linkNumber.memberNumber);
       expect(result.potential[0].name).toStrictEqual(O.some(addName.name));
     });
   });
