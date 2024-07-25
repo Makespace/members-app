@@ -18,10 +18,25 @@ import * as gsheetData from '../data/google_sheet_data';
 import {ResourceVersion} from '../../src/types';
 import * as O from 'fp-ts/Option';
 import * as T from 'io-ts';
+import * as RA from 'fp-ts/lib/ReadonlyArray';
+import * as N from 'fp-ts/number';
 
 type TrainingSheetWorkerDependencies = Dependencies & {
   commitedEvents: DomainEvent[];
 };
+
+const sortQuizResults = RA.sort({
+  compare: (a, b) =>
+    N.Ord.compare(
+      (a as EventOfType<'EquipmentTrainingQuizResult'>).timestampEpochS,
+      (b as EventOfType<'EquipmentTrainingQuizResult'>).timestampEpochS
+    ),
+  equals: (a, b) =>
+    N.Ord.equals(
+      (a as EventOfType<'EquipmentTrainingQuizResult'>).timestampEpochS,
+      (b as EventOfType<'EquipmentTrainingQuizResult'>).timestampEpochS
+    ),
+});
 
 const dependenciesForTrainingSheetsWorker = (
   framework: TestFramework
@@ -190,6 +205,80 @@ describe('Training sheets worker', () => {
           );
 
           expect(timesCalled).toEqual(1);
+        });
+        it('training sheet with a summary page', async () => {
+          await framework.commands.equipment.trainingSheet({
+            equipmentId: addEquipment.id,
+            trainingSheetId: gsheetData.LASER_CUTTER.data.spreadsheetId!,
+          });
+
+          deps = dependenciesForTrainingSheetsWorker(framework);
+          await updateTrainingQuizResults(
+            localPullGoogleSheetData,
+            deps,
+            deps.logger,
+            0 as T.Int
+          );
+          expect(deps.commitedEvents).toHaveLength(2);
+          deps.commitedEvents.sort(
+            (a, b) =>
+              (a as EventOfType<'EquipmentTrainingQuizResult'>)
+                .timestampEpochS -
+              (b as EventOfType<'EquipmentTrainingQuizResult'>).timestampEpochS
+          );
+
+          const expected = gsheetData.LASER_CUTTER.entries.map(e => ({
+            type: 'EquipmentTrainingQuizResult',
+            equipmentId: addEquipment.id,
+            trainingSheetId: gsheetData.LASER_CUTTER.data.spreadsheetId!,
+            actor: {
+              tag: 'system',
+            },
+            ...e,
+          }));
+
+          for (const [actualEvent, expectedEvent] of RA.zip(
+            sortQuizResults(deps.commitedEvents),
+            sortQuizResults(expected)
+          )) {
+            expect(actualEvent).toMatchObject<
+              Partial<EventOfType<'EquipmentTrainingQuizResult'>>
+            >(expectedEvent as any);
+          }
+        });
+        it('training sheet with multiple response pages (different quiz questions)', async () => {
+          await framework.commands.equipment.trainingSheet({
+            equipmentId: addEquipment.id,
+            trainingSheetId: gsheetData.BAMBU.data.spreadsheetId!,
+          });
+
+          deps = dependenciesForTrainingSheetsWorker(framework);
+          await updateTrainingQuizResults(
+            localPullGoogleSheetData,
+            deps,
+            deps.logger,
+            0 as T.Int
+          );
+          expect(deps.commitedEvents).toHaveLength(4);
+
+          const expected = gsheetData.BAMBU.entries.map(e => ({
+            type: 'EquipmentTrainingQuizResult',
+            equipmentId: addEquipment.id,
+            trainingSheetId: gsheetData.BAMBU.data.spreadsheetId!,
+            actor: {
+              tag: 'system',
+            },
+            ...e,
+          }));
+
+          for (const [actualEvent, expectedEvent] of RA.zip(
+            sortQuizResults(deps.commitedEvents),
+            sortQuizResults(expected)
+          )) {
+            expect(actualEvent).toMatchObject<
+              Partial<EventOfType<'EquipmentTrainingQuizResult'>>
+            >(expectedEvent as any);
+          }
         });
       });
     });

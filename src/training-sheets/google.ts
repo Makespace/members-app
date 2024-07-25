@@ -114,10 +114,10 @@ const EMAIL_COLUMN_NAMES = ['email address', 'email'];
 
 type SheetInfo = {
   columnIndexes: {
-    timestamp: number;
-    email: number;
-    score: number;
-    memberNumber: number;
+    timestamp: O.Option<number>;
+    email: O.Option<number>;
+    score: O.Option<number>;
+    memberNumber: O.Option<number>;
   };
   columnNames: string[];
 };
@@ -134,18 +134,18 @@ const extractQuizSheetInformation =
 
     return O.some({
       columnIndexes: {
-        timestamp: columnNames.value.findIndex(
+        timestamp: RA.findIndex<string>(
           val => val.toLowerCase() === 'timestamp'
-        ),
-        email: columnNames.value.findIndex(val =>
+        )(columnNames.value),
+        email: RA.findIndex<string>(val =>
           EMAIL_COLUMN_NAMES.includes(val.toLowerCase())
+        )(columnNames.value),
+        score: RA.findIndex<string>(val => val.toLowerCase() === 'score')(
+          columnNames.value
         ),
-        score: columnNames.value.findIndex(
-          val => val.toLowerCase() === 'score'
-        ),
-        memberNumber: columnNames.value.findIndex(
+        memberNumber: RA.findIndex<string>(
           val => val.toLowerCase() === 'membership number'
-        ),
+        )(columnNames.value),
       },
       columnNames: columnNames.value,
     });
@@ -163,19 +163,26 @@ const extractFromRow =
       return O.none;
     }
 
-    const email =
-      sheetInfo.columnIndexes.email >= 0
-        ? extractEmail(row.values[sheetInfo.columnIndexes.email].formattedValue)
-        : O.none;
-    const memberNumber = extractMemberNumber(
-      row.values[sheetInfo.columnIndexes.memberNumber].formattedValue
-    );
-    const score = extractScore(
-      row.values[sheetInfo.columnIndexes.score].formattedValue
-    );
-    const timestampEpochS = extractTimestamp(
-      row.values[sheetInfo.columnIndexes.timestamp].formattedValue
-    );
+    const email = O.isSome(sheetInfo.columnIndexes.email)
+      ? extractEmail(
+          row.values[sheetInfo.columnIndexes.email.value].formattedValue
+        )
+      : O.none;
+    const memberNumber = O.isSome(sheetInfo.columnIndexes.memberNumber)
+      ? extractMemberNumber(
+          row.values[sheetInfo.columnIndexes.memberNumber.value].formattedValue
+        )
+      : O.none;
+    const score = O.isSome(sheetInfo.columnIndexes.score)
+      ? extractScore(
+          row.values[sheetInfo.columnIndexes.score.value].formattedValue
+        )
+      : O.none;
+    const timestampEpochS = O.isSome(sheetInfo.columnIndexes.timestamp)
+      ? extractTimestamp(
+          row.values[sheetInfo.columnIndexes.timestamp.value].formattedValue
+        )
+      : O.none;
 
     if (O.isNone(email) && O.isNone(memberNumber)) {
       // Note that some quizes only require the member number.
@@ -196,13 +203,19 @@ const extractFromRow =
       return O.none;
     }
 
+    console.log('Getting quiz answers');
+    console.log(sheetInfo.columnNames);
+    console.log(row.values.map(v => v.formattedValue));
+
     const quizAnswers = RA.zip(sheetInfo.columnNames, row.values).reduce(
       (accum, [columnName, columnValue]) => {
-        accum[columnName] = columnValue.formattedValue ?? null;
+        accum[columnName] = columnValue?.formattedValue ?? '';
         return accum;
       },
       {} as Record<string, string | null>
     );
+
+    console.log(quizAnswers);
 
     return O.some(
       constructEvent('EquipmentTrainingQuizResult')({
