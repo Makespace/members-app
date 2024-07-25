@@ -137,14 +137,7 @@ describe('Training sheets worker', () => {
             type: 'EquipmentTrainingQuizResult',
             equipmentId: addEquipment.id,
             trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
-            emailProvided: gsheetData.METAL_LATHE.email,
-            memberNumberProvided: gsheetData.METAL_LATHE.memberNumber,
-            score: gsheetData.METAL_LATHE.score,
-            maxScore: gsheetData.METAL_LATHE.maxScore,
-            percentage: gsheetData.METAL_LATHE.percentage,
-            fullMarks: gsheetData.METAL_LATHE.fullMarks,
-            timestampEpochS: gsheetData.METAL_LATHE.timestampEpochS,
-            quizAnswers: gsheetData.METAL_LATHE.quizAnswers,
+            ...gsheetData.METAL_LATHE.entries[0],
           });
         });
         it('Handle already registered quiz results', async () => {
@@ -155,15 +148,8 @@ describe('Training sheets worker', () => {
           await framework.commands.equipment.trainingSheetQuizResult({
             id: faker.string.uuid() as UUID,
             equipmentId: addEquipment.id,
-            emailProvided: gsheetData.METAL_LATHE.email,
-            memberNumberProvided: gsheetData.METAL_LATHE.memberNumber,
             trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
-            score: gsheetData.METAL_LATHE.score,
-            maxScore: gsheetData.METAL_LATHE.maxScore,
-            percentage: gsheetData.METAL_LATHE.percentage,
-            fullMarks: gsheetData.METAL_LATHE.fullMarks,
-            timestampEpochS: gsheetData.METAL_LATHE.timestampEpochS,
-            quizAnswers: gsheetData.METAL_LATHE.quizAnswers,
+            ...gsheetData.METAL_LATHE.entries[0],
           });
           deps = dependenciesForTrainingSheetsWorker(framework);
           await updateTrainingQuizResults(
@@ -219,15 +205,9 @@ describe('Training sheets worker', () => {
             deps.logger,
             0 as T.Int
           );
-          expect(deps.commitedEvents).toHaveLength(2);
-          deps.commitedEvents.sort(
-            (a, b) =>
-              (a as EventOfType<'EquipmentTrainingQuizResult'>)
-                .timestampEpochS -
-              (b as EventOfType<'EquipmentTrainingQuizResult'>).timestampEpochS
-          );
-
-          const expected = gsheetData.LASER_CUTTER.entries.map(e => ({
+          const expected: readonly Partial<
+            EventOfType<'EquipmentTrainingQuizResult'>
+          >[] = gsheetData.LASER_CUTTER.entries.map(e => ({
             type: 'EquipmentTrainingQuizResult',
             equipmentId: addEquipment.id,
             trainingSheetId: gsheetData.LASER_CUTTER.data.spreadsheetId!,
@@ -236,6 +216,7 @@ describe('Training sheets worker', () => {
             },
             ...e,
           }));
+          expect(deps.commitedEvents).toHaveLength(expected.length);
 
           for (const [actualEvent, expectedEvent] of RA.zip(
             sortQuizResults(deps.commitedEvents),
@@ -243,7 +224,7 @@ describe('Training sheets worker', () => {
           )) {
             expect(actualEvent).toMatchObject<
               Partial<EventOfType<'EquipmentTrainingQuizResult'>>
-            >(expectedEvent as any);
+            >(expectedEvent);
           }
         });
         it('training sheet with multiple response pages (different quiz questions)', async () => {
@@ -259,9 +240,10 @@ describe('Training sheets worker', () => {
             deps.logger,
             0 as T.Int
           );
-          expect(deps.commitedEvents).toHaveLength(4);
 
-          const expected = gsheetData.BAMBU.entries.map(e => ({
+          const expected: readonly Partial<
+            EventOfType<'EquipmentTrainingQuizResult'>
+          >[] = gsheetData.BAMBU.entries.map(e => ({
             type: 'EquipmentTrainingQuizResult',
             equipmentId: addEquipment.id,
             trainingSheetId: gsheetData.BAMBU.data.spreadsheetId!,
@@ -270,6 +252,7 @@ describe('Training sheets worker', () => {
             },
             ...e,
           }));
+          expect(deps.commitedEvents).toHaveLength(expected.length);
 
           for (const [actualEvent, expectedEvent] of RA.zip(
             sortQuizResults(deps.commitedEvents),
@@ -277,7 +260,7 @@ describe('Training sheets worker', () => {
           )) {
             expect(actualEvent).toMatchObject<
               Partial<EventOfType<'EquipmentTrainingQuizResult'>>
-            >(expectedEvent as any);
+            >(expectedEvent);
           }
         });
       });
