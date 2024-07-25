@@ -4,11 +4,13 @@ import {ViewModel} from './view-model';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {UUID} from 'io-ts-types';
 import {pageTemplate} from '../../templates';
+import {renderMemberNumber} from '../../templates/member-number';
 
 const renderOwners = (owners: ViewModel['area']['owners']) =>
   pipe(
     owners,
-    RA.map(owner => html`<li>${owner}</li>`),
+    RA.map(owner => renderMemberNumber(owner)),
+    RA.map(link => html`<li>${link}</li>`),
     joinHtml,
     items =>
       html`<ul>
