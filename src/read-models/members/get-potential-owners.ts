@@ -30,7 +30,9 @@ export const getPotentialOwners =
       O.bind('potential', ({requestedArea, members}) =>
         pipe(
           Array.from(members.values()),
-          RA.filter(({memberNumber: number}) => !requestedArea.owners.has(number)),
+          RA.filter(
+            ({memberNumber: number}) => !requestedArea.owners.has(number)
+          ),
           O.some
         )
       )
