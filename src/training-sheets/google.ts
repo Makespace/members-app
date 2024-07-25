@@ -203,10 +203,6 @@ const extractFromRow =
       return O.none;
     }
 
-    console.log('Getting quiz answers');
-    console.log(sheetInfo.columnNames);
-    console.log(row.values.map(v => v.formattedValue));
-
     const quizAnswers = RA.zip(sheetInfo.columnNames, row.values).reduce(
       (accum, [columnName, columnValue]) => {
         accum[columnName] = columnValue?.formattedValue ?? '';
@@ -214,8 +210,6 @@ const extractFromRow =
       },
       {} as Record<string, string | null>
     );
-
-    console.log(quizAnswers);
 
     return O.some(
       constructEvent('EquipmentTrainingQuizResult')({
