@@ -28,7 +28,7 @@ test: node_modules
 
 # Add your own! _<name> commands are liable to change / be removed with no notice (but ask the person!)
 test_paul: node_modules
-	bun jest tests/training-sheets/process-events.test.ts
+	bun jest tests/training-sheets/process-events.test.ts -t 'training sheet with a summary page'
 
 smoketest: .env
 	./scripts/smoketest.sh
