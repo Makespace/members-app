@@ -7,4 +7,5 @@ export type Member = {
   name: O.Option<string>;
   pronouns: O.Option<string>;
   agreementSigned: O.Option<Date>;
+  isSuperUser: boolean;
 };

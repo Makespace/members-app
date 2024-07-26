@@ -120,4 +120,11 @@ describe('get', () => {
       })
     );
   });
+
+  describe('when the member has been made a superuser', () => {
+    it.todo('they are a superuser');
+    describe('when their superuser status has been revoked', () => {
+      it.todo('they are no longer a superuser');
+    });
+  });
 });
