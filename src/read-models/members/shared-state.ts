@@ -48,9 +48,13 @@ const handleEvent = (
   }
   if (isEventOfType('MemberDetailsUpdated')(event)) {
     const current = state.members.get(event.memberNumber);
-    const name = O.fromNullable(event.name);
-    const pronouns = O.fromNullable(event.pronouns);
     if (current) {
+      const name =
+        event.name !== undefined ? O.fromNullable(event.name) : current.name;
+      const pronouns =
+        event.pronouns !== undefined
+          ? O.fromNullable(event.pronouns)
+          : current.pronouns;
       state.members.set(event.memberNumber, {...current, name, pronouns});
     }
   }
