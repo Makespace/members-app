@@ -1,4 +1,4 @@
-.phony: check clear-containers dev fix lint prod release smoketest test typecheck unused-exports watch-typecheck
+.phony: check clear-containers dev fix lint prod release smoketest test typecheck unused-exports watch-typecheck populate-local-dev populate-full
 
 check: test lint typecheck unused-exports
 
@@ -11,9 +11,11 @@ node_modules: package.json bun.lockb
 dev: .env
 	docker-compose --file docker-compose.yaml --file docker-compose.dev.yaml up --build
 
-.PHONY: populate-local-dev
 populate-local-dev:
 	bash ./scripts/populate-local-dev.sh
+
+populate-full:
+	bun ./scripts/populate-full.ts
 
 fix: node_modules
 	bun gts fix
@@ -26,7 +28,7 @@ test: node_modules
 
 # Add your own! _<name> commands are liable to change / be removed with no notice (but ask the person!)
 test_paul: node_modules
-	bun jest tests/training-sheets/process-events.test.ts
+	bun jest tests/training-sheets/process-events.test.ts -t 'training sheet with a summary page'
 
 smoketest: .env
 	./scripts/smoketest.sh

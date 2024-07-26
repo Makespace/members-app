@@ -11,6 +11,8 @@ import {getResourceEvents} from './event-store/get-resource-events';
 import {Client} from '@libsql/client';
 import {pullGoogleSheetData} from './google/pull_sheet_data';
 import {google} from 'googleapis';
+import * as O from 'fp-ts/Option';
+import {updateTrainingQuizResults} from '../training-sheets/training-sheets-worker';
 
 export const initDependencies = (
   dbClient: Client,
@@ -55,23 +57,40 @@ export const initDependencies = (
     })
   );
 
-  const auth = conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON
-    ? new google.auth.GoogleAuth({
-        // Google issues the credentials file and validates it.
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        credentials: JSON.parse(conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON),
-        scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-      })
-    : null;
-
-  return {
+  const deps: Dependencies = {
     commitEvent: commitEvent(dbClient, logger),
     getAllEvents: getAllEvents(dbClient),
     getAllEventsByType: getAllEventsByType(dbClient),
     getResourceEvents: getResourceEvents(dbClient),
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
-    pullGoogleSheetData: pullGoogleSheetData(auth),
     logger,
+    updateTrainingQuizResults: O.none,
+    lastTrainingQuizResultRefresh: O.none,
+    trainingQuizRefreshRunning: false,
   };
+
+  if (conf.BACKGROUND_PROCESSING_ENABLED) {
+    if (!conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON) {
+      throw new Error(
+        'Background processing is enabled but google service account key not provided'
+      );
+    }
+    const auth = new google.auth.GoogleAuth({
+      // Google issues the credentials file and validates it.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      credentials: JSON.parse(conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON),
+      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+    });
+    deps.updateTrainingQuizResults = O.some(() =>
+      updateTrainingQuizResults(
+        pullGoogleSheetData(auth),
+        deps,
+        logger,
+        conf.QUIZ_RESULT_REFRESH_COOLDOWN_MS
+      )
+    );
+  }
+
+  return deps;
 };
