@@ -293,7 +293,7 @@ export const extractGoogleSheetData =
                       sheetInfo,
                       equipmentId,
                       trainingSheetId,
-                      timezone,
+                      timezone
                     )
                   ),
                   RA.filterMap(e => e)
