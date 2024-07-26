@@ -62,7 +62,7 @@ const backgroundTask = setInterval(() => {
     .value()
     .then(() => deps.logger.info('Background update of quiz results finished'))
     .catch(err => deps.logger.error(err, 'Background update unexpected error'));
-});
+}, conf.BACKGROUND_PROCESSING_RUN_INTERVAL_MS);
 server.on('close', () => clearInterval(backgroundTask));
 
 // Readmodels are used to get the current status of the background tasks via the
