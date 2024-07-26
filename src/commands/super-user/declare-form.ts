@@ -36,10 +36,11 @@ const constructForm: Form<ViewModel>['constructForm'] =
     pipe(
       {user},
       E.right,
-      E.let('members', () => {
-        const memberDetails = readModels.members.getAllDetails(events);
-        return [...memberDetails.values()];
-      })
+      E.let('members', () =>
+        [...readModels.members.getAllDetails(events).values()].filter(
+          member => !member.isSuperUser
+        )
+      )
     );
 
 export const declareForm: Form<ViewModel> = {
