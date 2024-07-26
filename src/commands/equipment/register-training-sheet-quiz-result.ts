@@ -19,7 +19,7 @@ const codec = t.strict({
   percentage: t.number,
   fullMarks: t.boolean,
   timestampEpochS: t.number,
-  quizAnswers: t.record(t.string, t.union([t.string, t.null])),
+  quizAnswers: t.record(t.string, t.string),
 });
 
 type RegisterTrainingSheetQuizResult = t.TypeOf<typeof codec>;
