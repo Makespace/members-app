@@ -33,37 +33,69 @@ const trainersList = (trainers: ViewModel['equipment']['trainers']) =>
     )
   );
 
-const trainerEquipmentActions = (equipment: ViewModel['equipment']) => html`
-  <li>
-    <a href="/equipment/mark-member-trained?equipmentId=${equipment.id}"
-      >Mark member as trained</a
-    >
-  </li>
-`;
+const isOwner = (viewModel: ViewModel) => viewModel.isSuperUserOrOwnerOfArea;
+const isTrainerOrOwner = (viewModel: ViewModel) =>
+  viewModel.isSuperUserOrTrainerOfArea || viewModel.isSuperUserOrOwnerOfArea;
 
-const ownerEquipmentActions = (equipment: ViewModel['equipment']) => html`
-  <li>
-    <a href="/equipment/add-trainer?equipment=${equipment.id}">
-      Add a trainer
-    </a>
-  </li>
-  <li>
-    <a href="/equipment/add-training-sheet?equipmentId=${equipment.id}">
-      Register training sheet
-    </a>
-  </li>
-`;
-
-const trainerOrOwnerEquipmentActions = (equipment: ViewModel['equipment']) =>
+const trainMember = (viewModel: ViewModel) =>
   pipe(
-    equipment.trainingSheetId,
+    viewModel,
+    O.of,
+    O.filter(isOwner),
+    O.map(viewModel => viewModel.equipment.id),
+    O.map(
+      id =>
+        html` <li>
+          <a href="/equipment/mark-member-trained?equipmentId=${id}"
+            >Mark member as trained</a
+          >
+        </li>`
+    ),
+    O.getOrElse(() => html``)
+  );
+
+const addTrainer = (viewModel: ViewModel) =>
+  pipe(
+    viewModel,
+    O.of,
+    O.filter(isOwner),
+    O.map(viewModel => viewModel.equipment.id),
+    O.map(
+      id =>
+        html` <li>
+          <a href="/equipment/add-trainer?equipment=${id}"> Add a trainer </a>
+        </li>`
+    ),
+    O.getOrElse(() => html``)
+  );
+
+const registerSheet = (viewModel: ViewModel) =>
+  pipe(
+    viewModel,
+    O.of,
+    O.filter(isTrainerOrOwner),
+    O.map(viewModel => viewModel.equipment.id),
+    O.map(
+      id =>
+        html` <li>
+          <a href="/equipment/add-training-sheet?equipmentId=${id}">
+            Register training sheet
+          </a>
+        </li>`
+    ),
+    O.getOrElse(() => html``)
+  );
+
+const currentSheet = (viewModel: ViewModel) =>
+  pipe(
+    viewModel,
+    O.of,
+    O.filter(isTrainerOrOwner),
+    O.flatMap(viewModel => viewModel.equipment.trainingSheetId),
+    O.map(trainingSheetId => sanitizeString(trainingSheetId)),
     O.map(trainingSheetId => {
       return html`<li>
-        <a
-          href="https://docs.google.com/spreadsheets/d/${sanitizeString(
-            trainingSheetId
-          )}"
-        >
+        <a href="https://docs.google.com/spreadsheets/d/${trainingSheetId}">
           Current training sheet
         </a>
       </li>`;
@@ -73,15 +105,8 @@ const trainerOrOwnerEquipmentActions = (equipment: ViewModel['equipment']) =>
 
 const equipmentActions = (viewModel: ViewModel) => html`
   <ul>
-    ${viewModel.isSuperUserOrOwnerOfArea
-      ? ownerEquipmentActions(viewModel.equipment)
-      : ''}
-    ${viewModel.isSuperUserOrTrainerOfArea
-      ? trainerEquipmentActions(viewModel.equipment)
-      : ''}
-    ${viewModel.isSuperUserOrTrainerOfArea || viewModel.isSuperUserOrOwnerOfArea
-      ? trainerOrOwnerEquipmentActions(viewModel.equipment)
-      : ''}
+    ${trainMember(viewModel)} ${addTrainer(viewModel)}
+    ${registerSheet(viewModel)} ${currentSheet(viewModel)}
   </ul>
 `;
 
