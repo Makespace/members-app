@@ -12,20 +12,16 @@ type ViewModel = {
   members: ReadonlyArray<MemberDetails>;
 };
 
-const render = (viewModel: ViewModel) =>
-  pipe(
-    html`
-      <h1>Declare super user</h1>
-      <form action="#" method="post">
-        <label for="number">
-          Which member number would you like receive super user privileges?
-        </label>
-        ${memberInput(viewModel.members)}
-        <button type="submit">Confirm and send</button>
-      </form>
-    `,
-    pageTemplate(safe('Declare super user'), viewModel.user)
-  );
+const render = (viewModel: ViewModel) => html`
+  <h1>Declare super user</h1>
+  <form action="#" method="post">
+    <label for="number">
+      Which member number would you like receive super user privileges?
+    </label>
+    ${memberInput(viewModel.members)}
+    <button type="submit">Confirm and send</button>
+  </form>
+`;
 
 const renderForm = (viewModel: ViewModel) =>
   pipe(
