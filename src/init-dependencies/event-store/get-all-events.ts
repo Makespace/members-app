@@ -12,9 +12,10 @@ import {Client} from '@libsql/client/.';
 import {StatusCodes} from 'http-status-codes';
 import {DomainEvent} from '../../types';
 import {EventName, EventOfType} from '../../types/domain-event';
+import {Logger} from 'pino';
 
 export const getAllEvents =
-  (dbClient: Client): Dependencies['getAllEvents'] =>
+  (dbClient: Client, logger: Logger): Dependencies['getAllEvents'] =>
   () =>
     pipe(
       TE.tryCatch(
@@ -31,11 +32,11 @@ export const getAllEvents =
         )
       ),
       TE.map(table => table.rows),
-      TE.chainEitherK(eventsFromRows)
+      TE.map(eventsFromRows(logger))
     );
 
 export const getAllEventsByType =
-  (dbClient: Client): Dependencies['getAllEventsByType'] =>
+  (dbClient: Client, logger: Logger): Dependencies['getAllEventsByType'] =>
   <T extends EventName>(eventType: T) =>
     pipe(
       TE.tryCatch(
@@ -60,7 +61,7 @@ export const getAllEventsByType =
         )
       ),
       TE.map(table => table.rows),
-      TE.chainEitherK(eventsFromRows),
+      TE.map(eventsFromRows(logger)),
       // This assumes that the DB has only returned events of the correct type.
       // This assumption avoids the need to do extra validation.
       // TODO - Pass codec to validate straight to eventsFromRows and get best of both.

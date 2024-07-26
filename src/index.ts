@@ -54,6 +54,9 @@ startMagicLinkEmailPubSub(deps, conf);
 const server = http.createServer(app);
 createTerminus(server);
 
+deps.logger.info(
+  `Scheduling background task to run every ${conf.BACKGROUND_PROCESSING_RUN_INTERVAL_MS}ms`
+);
 const backgroundTask = setInterval(() => {
   if (O.isNone(deps.updateTrainingQuizResults)) {
     return;

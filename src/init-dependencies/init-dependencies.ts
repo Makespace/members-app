@@ -59,8 +59,8 @@ export const initDependencies = (
 
   const deps: Dependencies = {
     commitEvent: commitEvent(dbClient, logger),
-    getAllEvents: getAllEvents(dbClient),
-    getAllEventsByType: getAllEventsByType(dbClient),
+    getAllEvents: getAllEvents(dbClient, logger),
+    getAllEventsByType: getAllEventsByType(dbClient, logger),
     getResourceEvents: getResourceEvents(dbClient),
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),

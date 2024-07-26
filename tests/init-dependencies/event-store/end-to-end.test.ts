@@ -41,7 +41,10 @@ describe('event-store end-to-end', () => {
       });
       await ensureEventTableExists(dbClient)();
       getTestEvents = () =>
-        pipe(getAllEvents(dbClient)(), T.map(getRightOrFail))();
+        pipe(
+          getAllEvents(dbClient, createLogger({level: 'silent'}))(),
+          T.map(getRightOrFail)
+        )();
       resourceEvents = await pipe(
         {id: faker.string.alphanumeric(), type: faker.string.alphanumeric()},
         getResourceEvents(dbClient),
