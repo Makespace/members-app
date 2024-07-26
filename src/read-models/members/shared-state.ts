@@ -43,6 +43,7 @@ const handleEvent = (
       name: O.none,
       pronouns: O.none,
       agreementSigned: O.none,
+      isSuperUser: false,
     });
   }
   if (isEventOfType('MemberDetailsUpdated')(event)) {
