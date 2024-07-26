@@ -13,6 +13,10 @@ describe('get', () => {
   });
 
   const memberNumber = faker.number.int();
+  const runQuery = async () => {
+    const events = await framework.getAllEvents();
+    return pipe(events, getDetails(memberNumber), getSomeOrFail);
+  };
 
   describe('when the member does not exist', () => {
     it('returns none', async () => {
@@ -30,21 +34,10 @@ describe('get', () => {
       });
     });
 
-    it.failing('returns member number and email', async () => {
-      const events = await framework.getAllEvents();
-      const result = getDetails(memberNumber)(events);
-      expect(result).toEqual(
-        O.some({
-          memberNumber: 42,
-          emailAddress: 'foo@example.com' as EmailAddress,
-          gravatarHash:
-            '321ba197033e81286fedb719d60d4ed5cecaed170733cb4a92013811afc0e3b6',
-          name: O.none,
-          pronouns: O.none,
-          isSuperUser: false,
-          prevEmails: [],
-        })
-      );
+    it('returns member number and email', async () => {
+      const result = await runQuery();
+      expect(result.memberNumber).toEqual(memberNumber);
+      expect(result.emailAddress).toEqual('foo@example.com');
     });
 
     describe('and their name has been recorded', () => {
@@ -57,8 +50,7 @@ describe('get', () => {
       });
 
       it.failing('returns their name', async () => {
-        const events = await framework.getAllEvents();
-        const result = pipe(events, getDetails(memberNumber), getSomeOrFail);
+        const result = await runQuery();
         expect(result.name).toBe(name);
       });
     });
@@ -80,8 +72,7 @@ describe('get', () => {
       });
 
       it.failing('returns latest details', async () => {
-        const events = await framework.getAllEvents();
-        const result = pipe(events, getDetails(memberNumber), getSomeOrFail);
+        const result = await runQuery();
         expect(result.name).toStrictEqual(O.some('Ford Prefect'));
         expect(result.pronouns).toStrictEqual(O.some('he/him'));
       });
@@ -96,8 +87,7 @@ describe('get', () => {
       });
 
       it.failing('returns the latest email', async () => {
-        const events = await framework.getAllEvents();
-        const result = pipe(events, getDetails(42), getSomeOrFail);
+        const result = await runQuery();
         expect(result.emailAddress).toBe('updated@example.com');
       });
 
