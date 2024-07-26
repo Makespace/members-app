@@ -2,6 +2,7 @@ import {DateTime} from 'luxon';
 import {User} from '../../types';
 import * as O from 'fp-ts/Option';
 import {UUID} from 'io-ts-types';
+import {Equipment} from '../../read-models/equipment/get';
 
 type QuizID = UUID;
 
@@ -34,12 +35,7 @@ export type ViewModel = {
   user: User;
   isSuperUserOrOwnerOfArea: boolean;
   isSuperUserOrTrainerOfArea: boolean;
-  equipment: {
-    name: string;
-    id: UUID;
-    trainers: ReadonlyArray<number>;
-    trainedMembers: ReadonlyArray<number>;
-  };
+  equipment: Equipment;
   trainingQuizResults: {
     lastRefresh: O.Option<DateTime>;
     quizPassedNotTrained: {

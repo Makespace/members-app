@@ -13,6 +13,7 @@ export type Equipment = {
   trainers: ReadonlyArray<number>;
   areaId: UUID;
   trainedMembers: ReadonlyArray<number>;
+  trainingSheetId: O.Option<string>;
 };
 
 type EquipmentState = {
@@ -21,12 +22,14 @@ type EquipmentState = {
   areaId: UUID;
   trainers: Set<number>;
   trainedMembers: Set<number>;
+  trainingSheetId?: string;
 };
 
 const pertinentEvents: Array<EventName> = [
   'EquipmentAdded',
   'TrainerAdded',
   'MemberTrainedOnEquipment',
+  'EquipmentTrainingSheetRegistered',
 ];
 
 const updateState = (
@@ -58,6 +61,15 @@ const updateState = (
       });
     }
   }
+  if (isEventOfType('EquipmentTrainingSheetRegistered')(event)) {
+    const equipment = state.get(event.equipmentId);
+    if (equipment) {
+      state.set(event.equipmentId, {
+        ...equipment,
+        trainingSheetId: event.trainingSheetId,
+      });
+    }
+  }
   return state;
 };
 
@@ -71,6 +83,7 @@ export const get =
       RM.lookup(stringEq)(equipmentId), // TODO - Do updateState lazily based on what is looked up.
       O.map(state => ({
         ...state,
+        trainingSheetId: O.fromNullable(state.trainingSheetId),
         trainers: Array.from(state.trainers.values()),
         trainedMembers: Array.from(state.trainedMembers.values()),
       }))

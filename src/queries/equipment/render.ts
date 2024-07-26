@@ -54,6 +54,23 @@ const ownerEquipmentActions = (equipment: ViewModel['equipment']) => html`
   </li>
 `;
 
+const trainerOrOwnerEquipmentActions = (equipment: ViewModel['equipment']) =>
+  pipe(
+    equipment.trainingSheetId,
+    O.map(trainingSheetId => {
+      return html`<li>
+        <a
+          href="https://docs.google.com/spreadsheets/d/${sanitizeString(
+            trainingSheetId
+          )}"
+        >
+          Current training sheet
+        </a>
+      </li>`;
+    }),
+    O.getOrElse(() => html``)
+  );
+
 const equipmentActions = (viewModel: ViewModel) => html`
   <ul>
     ${viewModel.isSuperUserOrOwnerOfArea
@@ -61,6 +78,9 @@ const equipmentActions = (viewModel: ViewModel) => html`
       : ''}
     ${viewModel.isSuperUserOrTrainerOfArea
       ? trainerEquipmentActions(viewModel.equipment)
+      : ''}
+    ${viewModel.isSuperUserOrTrainerOfArea || viewModel.isSuperUserOrOwnerOfArea
+      ? trainerOrOwnerEquipmentActions(viewModel.equipment)
       : ''}
   </ul>
 `;
