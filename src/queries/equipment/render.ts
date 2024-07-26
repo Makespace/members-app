@@ -214,7 +214,7 @@ const renderLastRefresh = (
   lastRefresh: ViewModel['trainingQuizResults']['lastRefresh']
 ): Html =>
   O.isSome(lastRefresh)
-    ? html`${displayDate(lastRefresh.value)}`
+    ? html`Last refresh: ${displayDate(lastRefresh.value)}`
     : html`Last refresh date unknown`;
 
 const trainingQuizResults = (viewModel: ViewModel) => html`
