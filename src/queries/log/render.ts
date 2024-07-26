@@ -7,6 +7,7 @@ import {DomainEvent} from '../../types';
 import {inspect} from 'node:util';
 import {displayDate} from '../../templates/display-date';
 import {pageTemplate} from '../../templates';
+import {DateTime} from 'luxon';
 
 const renderActor = (actor: Actor) => {
   switch (actor.tag) {
@@ -34,7 +35,7 @@ const renderPayload = (event: DomainEvent) =>
 const renderEntry = (event: ViewModel['events'][number]) => html`
   <li>
     <b>${sanitizeString(event.type)}</b> by ${renderActor(event.actor)} at
-    ${displayDate(event.recordedAt)}<br />
+    ${displayDate(DateTime.fromJSDate(event.recordedAt))}<br />
     ${renderPayload(event)}
   </li>
 `;
