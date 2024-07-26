@@ -5,6 +5,7 @@ import {ViewModel} from './view-model';
 import {displayDate} from '../../templates/display-date';
 import {pageTemplate} from '../../templates';
 import {renderMemberNumber} from '../../templates/member-number';
+import {DateTime} from 'luxon';
 
 const renderSuperUsers = (superUsers: ViewModel['superUsers']) =>
   pipe(
@@ -13,7 +14,7 @@ const renderSuperUsers = (superUsers: ViewModel['superUsers']) =>
       user => html`
         <tr>
           <td>${renderMemberNumber(user.memberNumber)}</td>
-          <td>${displayDate(user.since)}</td>
+          <td>${displayDate(DateTime.fromJSDate(user.since))}</td>
           <td>
             <a href="/super-users/revoke?memberNumber=${user.memberNumber}">
               Revoke
