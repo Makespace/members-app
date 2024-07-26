@@ -96,6 +96,7 @@ const extractMemberNumber = (
 };
 
 const extractTimestamp = (
+  timezone: string,
   rowValue: string | undefined | null
 ): O.Option<number> => {
   if (!rowValue) {
@@ -103,7 +104,10 @@ const extractTimestamp = (
   }
   try {
     return O.some(
-      DateTime.fromFormat(rowValue, 'dd/MM/yyyy HH:mm:ss').toUnixInteger()
+      DateTime.fromFormat(rowValue, 'dd/MM/yyyy HH:mm:ss', {
+        setZone: true,
+        zone: timezone,
+      }).toUnixInteger()
     );
   } catch {
     return O.none;
@@ -156,7 +160,8 @@ const extractFromRow =
     logger: Logger,
     sheetInfo: SheetInfo,
     equipmentId: UUID,
-    trainingSheetId: string
+    trainingSheetId: string,
+    timezone: string
   ) =>
   (row: sheets_v4.Schema$RowData): O.Option<QzEvent> => {
     if (!row.values) {
@@ -180,6 +185,7 @@ const extractFromRow =
       : O.none;
     const timestampEpochS = O.isSome(sheetInfo.columnIndexes.timestamp)
       ? extractTimestamp(
+          timezone,
           row.values[sheetInfo.columnIndexes.timestamp.value].formattedValue
         )
       : O.none;
@@ -256,6 +262,16 @@ export const extractGoogleSheetData =
             return [];
           }
 
+          let timezone = spreadsheet.properties?.timeZone;
+          if (!timezone || !DateTime.local().setZone(timezone).isValid) {
+            // Not all the google form sheets are actually in Europe/London.
+            // Issue first noticed because CI is in a different zone (UTC) than local test machine (BST).
+            logger.info(
+              `Unable to determine timezone for google sheet '${spreadsheet.properties?.title}', '${timezone}' - defaulting to Europe/London`
+            );
+            timezone = 'Europe/London';
+          }
+
           const [headers, ...data] = sheet.data[0].rowData;
 
           return pipe(
@@ -276,7 +292,8 @@ export const extractGoogleSheetData =
                       logger,
                       sheetInfo,
                       equipmentId,
-                      trainingSheetId
+                      trainingSheetId,
+                      timezone,
                     )
                   ),
                   RA.filterMap(e => e)
