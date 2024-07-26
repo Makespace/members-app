@@ -15,7 +15,7 @@ populate-local-dev:
 	bash ./scripts/populate-local-dev.sh
 
 populate-full:
-	bash ./scripts/populate-full.sh
+	bun ./scripts/populate-full.ts
 
 fix: node_modules
 	bun gts fix
