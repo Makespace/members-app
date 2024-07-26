@@ -71,7 +71,7 @@ describe('get', () => {
         });
       });
 
-      it.failing('returns latest details', async () => {
+      it('returns latest details', async () => {
         const result = await runQuery();
         expect(result.name).toStrictEqual(O.some('Ford Prefect'));
         expect(result.pronouns).toStrictEqual(O.some('he/him'));
