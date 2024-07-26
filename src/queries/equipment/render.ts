@@ -4,6 +4,7 @@ import {displayDate} from '../../templates/display-date';
 import {renderMemberNumber} from '../../templates/member-number';
 import {
   commaHtml,
+  Html,
   html,
   joinHtml,
   sanitizeOption,
@@ -209,8 +210,16 @@ const failedQuizTrainingTable = (viewModel: ViewModel) =>
     )
   );
 
+const renderLastRefresh = (
+  lastRefresh: ViewModel['trainingQuizResults']['lastRefresh']
+): Html =>
+  O.isSome(lastRefresh)
+    ? html`Last refresh: ${displayDate(lastRefresh.value)}`
+    : html`Last refresh date unknown`;
+
 const trainingQuizResults = (viewModel: ViewModel) => html`
   <h2>Training Quiz Results</h2>
+  ${renderLastRefresh(viewModel.trainingQuizResults.lastRefresh)}
   <h3>Waiting for Training</h3>
   ${waitingForTrainingTable(viewModel)}
   ${unknownMemberWaitingForTrainingTable(viewModel)}
@@ -224,7 +233,11 @@ export const render = (viewModel: ViewModel) =>
       <h1>${sanitizeString(viewModel.equipment.name)}</h1>
       ${equipmentActions(viewModel)}
       ${trainersList(viewModel.equipment.trainers)}
-      ${currentlyTrainedUsersTable(viewModel)} ${trainingQuizResults(viewModel)}
+      ${currentlyTrainedUsersTable(viewModel)}
+      ${viewModel.isSuperUserOrOwnerOfArea ||
+      viewModel.isSuperUserOrTrainerOfArea
+        ? trainingQuizResults(viewModel)
+        : html``}
     `,
     pageTemplate(sanitizeString(viewModel.equipment.name), viewModel.user)
   );

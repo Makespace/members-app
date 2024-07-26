@@ -71,7 +71,7 @@ export const DomainEvent = t.union([
     percentage: t.number,
     fullMarks: t.boolean, // Allow quick index/search for the events owners care about most.
     timestampEpochS: t.number, // Unix Epoch January 1st 1970.
-    quizAnswers: t.record(t.string, t.union([t.string, t.null])),
+    quizAnswers: t.record(t.string, t.string),
   }),
   eventCodec('MemberDetailsUpdated', {
     memberNumber: t.number,

@@ -3,26 +3,35 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import * as S from 'fp-ts/string';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
+import * as R from 'fp-ts/Record';
 import * as O from 'fp-ts/Option';
+import * as T from 'io-ts';
 import {sequenceS} from 'fp-ts/lib/Apply';
 
-import {Config} from '../configuration';
 import {Dependencies} from '../dependencies';
 import {Logger} from 'pino';
 import {Ord, contramap} from 'fp-ts/lib/Ord';
 import {
-  FailureWithStatus,
   failureWithStatus,
+  FailureWithStatus,
 } from '../types/failure-with-status';
-import {StatusCodes} from 'http-status-codes';
 import {accumBy, lastBy} from '../util';
 import {QzEvent, QzEventDuplicate, RegEvent} from '../types/qz-event';
 import {extractGoogleSheetData} from './google';
+import {StatusCodes} from 'http-status-codes';
+import {sheets_v4} from 'googleapis';
+import {Failure} from '../types';
+import {DateTime} from 'luxon';
 
 const byEquipmentId: Ord<RegEvent> = pipe(
   S.Ord,
   contramap((e: RegEvent) => e.equipmentId)
 );
+
+type PullSheetData = (
+  logger: Logger,
+  trainingSheetId: string
+) => TE.TaskEither<Failure, sheets_v4.Schema$Spreadsheet>;
 
 const getTrainingSheets = (events: ReadonlyArray<RegEvent>) =>
   pipe(
@@ -37,31 +46,29 @@ const getPreviousQuizResultsByTrainingSheet = accumBy<string, QzEvent>(
 
 const processForEquipment = (
   logger: Logger,
-  deps: Dependencies,
+  pullGoogleSheetData: PullSheetData,
   regEvent: RegEvent,
   existingQuizResults: ReadonlyArray<QzEvent>
 ): TE.TaskEither<FailureWithStatus, ReadonlyArray<QzEvent>> => {
   logger.info(
     `Scanning training sheet ${regEvent.trainingSheetId}. Pulling google sheet data...`
   );
-  // TODO - Check global rate limit. -> Maybe this should also be an event?
-
   return pipe(
-    deps.pullGoogleSheetData(logger, regEvent.trainingSheetId),
-    TE.flatMap(data => {
-      logger.trace(
-        "Received data from google sheets for training sheet '{regEvent.trainingSheetId}': '%o'",
-        data
-      );
-      return TE.right(data);
-    }),
-    TE.mapLeft(
+    pullGoogleSheetData(logger, regEvent.trainingSheetId),
+    TE.mapBoth(
       failureWithStatus(
         'Failed to pull google sheet data',
         StatusCodes.INTERNAL_SERVER_ERROR
-      )
+      ),
+      data => {
+        logger.trace(
+          "Received data from google sheets for training sheet '{regEvent.trainingSheetId}': '%o'",
+          data
+        );
+        return data;
+      }
     ),
-    TE.chain(spreadsheet =>
+    TE.chainW(spreadsheet =>
       pipe(
         spreadsheet,
         extractGoogleSheetData(
@@ -69,12 +76,7 @@ const processForEquipment = (
           regEvent.equipmentId,
           regEvent.trainingSheetId
         ),
-        O.map(events => {
-          // We could check for duplicate quiz results earlier but I doubt the performance difference will be
-          // measurable.
-          logger.info(
-            `Found ${events.length} quiz result events, checking for ones we have already seen...`
-          );
+        RA.map(events => {
           const newQuizResults =
             RA.difference(QzEventDuplicate)(existingQuizResults)(events);
           logger.info(
@@ -82,16 +84,8 @@ const processForEquipment = (
           );
           return newQuizResults;
         }),
-        O.match(
-          () =>
-            TE.left(
-              failureWithStatus(
-                'Failed to extract google sheet data',
-                StatusCodes.INTERNAL_SERVER_ERROR
-              )()
-            ),
-          val => TE.right(val)
-        )
+        RA.flatten,
+        TE.right
       )
     )
   );
@@ -99,7 +93,7 @@ const processForEquipment = (
 
 // FailureWithStatus probably isn't the type to be using as the 'error'.
 const process =
-  (logger: Logger, deps: Dependencies) =>
+  (logger: Logger, pullGoogleSheetData: PullSheetData) =>
   (
     sheetRegEvents: ReadonlyArray<RegEvent>,
     existingQuizResultEvents: ReadonlyArray<QzEvent>
@@ -108,19 +102,20 @@ const process =
       'Got %d existing events, getting training sheets...',
       existingQuizResultEvents.length
     );
-    const trainingSheets = getTrainingSheets(sheetRegEvents);
     const previousQuizResults = getPreviousQuizResultsByTrainingSheet(
       existingQuizResultEvents
     );
-    logger.info(
-      `Got ${Object.keys(trainingSheets).length} training sheets to scan...`
-    );
     return pipe(
-      Object.entries(trainingSheets),
+      getTrainingSheets(sheetRegEvents),
+      R.toEntries,
+      sheets => {
+        logger.info(`Got ${sheets.length} training sheets to scan...`);
+        return sheets;
+      },
       RA.map(([equipmentId, sheet]) =>
         processForEquipment(
           logger.child({equipment: equipmentId}),
-          deps,
+          pullGoogleSheetData,
           sheet,
           previousQuizResults[sheet.trainingSheetId] ?? RA.empty
         )
@@ -130,80 +125,85 @@ const process =
     );
   };
 
-export const run = async (
+export const updateTrainingQuizResults = async (
+  pullGoogleSheetData: PullSheetData,
   deps: Dependencies,
-  logger: Logger
+  logger: Logger,
+  refreshCooldownMs: T.Int
 ): Promise<void> => {
-  logger.info('Running training sheets worker job. Getting existing events...');
-  const newEvents = await pipe(
-    {
-      equipmentEvents:
-        deps.getAllEventsByType<'EquipmentTrainingSheetRegistered'>(
-          'EquipmentTrainingSheetRegistered'
-        ),
-      equipmentQuizEvents:
-        deps.getAllEventsByType<'EquipmentTrainingQuizResult'>(
-          'EquipmentTrainingQuizResult'
-        ),
-    },
-    sequenceS(TE.ApplySeq),
-    TE.chain(({equipmentEvents, equipmentQuizEvents}) =>
-      process(logger, deps)(equipmentEvents, equipmentQuizEvents)
-    )
-  )();
-
-  if (E.isLeft(newEvents)) {
-    logger.error(newEvents.left, 'Failed to get training quiz results');
-    return;
-  }
-  logger.info(
-    `Finished getting training sheet quiz results, gathered: ${newEvents.right.length} results. Committing...`
-  );
-
-  for (const newEvent of newEvents.right) {
-    pipe(
-      await deps.commitEvent(
-        {
-          type: 'EquipmentTrainingQuizResult',
-          id: newEvent.id,
-        },
-        'no-such-resource'
-      )(newEvent)(),
-      E.fold(
-        (err: FailureWithStatus) => logger.error(err),
-        success => logger.debug(success)
-      )
-    );
-  }
-  logger.info('Finished commiting training sheet quiz results');
-};
-
-const runLogged = async (deps: Dependencies, logger: Logger) => {
-  const start = performance.now();
   try {
-    await run(deps, logger);
+    if (deps.trainingQuizRefreshRunning) {
+      logger.info(
+        'Skipping running training quiz refresh as a job is already running'
+      );
+      return;
+    }
+    if (
+      O.isSome(deps.lastTrainingQuizResultRefresh) &&
+      deps.lastTrainingQuizResultRefresh.value.diffNow().negate().toMillis() <
+        refreshCooldownMs
+    ) {
+      logger.info(
+        `Skipping running training quiz refresh as a job was recently run '${deps.lastTrainingQuizResultRefresh.value.toString()}'`
+      );
+      return;
+    }
+
+    const start = performance.now();
+    logger.info(
+      'Running training sheets worker job. Getting existing events...'
+    );
+    const newEvents = await pipe(
+      {
+        equipmentEvents:
+          deps.getAllEventsByType<'EquipmentTrainingSheetRegistered'>(
+            'EquipmentTrainingSheetRegistered'
+          ),
+        equipmentQuizEvents:
+          deps.getAllEventsByType<'EquipmentTrainingQuizResult'>(
+            'EquipmentTrainingQuizResult'
+          ),
+      },
+      sequenceS(TE.ApplySeq),
+      TE.chain(({equipmentEvents, equipmentQuizEvents}) =>
+        process(logger, pullGoogleSheetData)(
+          equipmentEvents,
+          equipmentQuizEvents
+        )
+      )
+    )();
+
+    if (E.isLeft(newEvents)) {
+      logger.error(newEvents.left, 'Failed to get training quiz results');
+      return;
+    }
+    logger.info(
+      `Finished getting training sheet quiz results, gathered: ${newEvents.right.length} results. Committing...`
+    );
+
+    for (const newEvent of newEvents.right) {
+      pipe(
+        await deps.commitEvent(
+          {
+            type: 'EquipmentTrainingQuizResult',
+            id: newEvent.id,
+          },
+          'no-such-resource'
+        )(newEvent)(),
+        E.fold(
+          (err: FailureWithStatus) => logger.error(err),
+          success => logger.debug(success)
+        )
+      );
+    }
+    logger.info('Finished commiting training sheet quiz results');
     logger.info(
       `Took ${Math.round(
         performance.now() - start
       )}ms to run training sheets worker job`
     );
-  } catch (err) {
-    logger.error(err, 'Unhandled error in training sheets worker');
+  } finally {
+    deps.trainingQuizRefreshRunning = false;
+    deps.lastTrainingQuizResultRefresh = O.some(DateTime.utc());
   }
-};
-
-// I generally don't like this way of doing things and prefer an await loop
-// but trying a different approach.
-// TODO - Switch this to use an event-emitter so we can trigger background processing of specific training sheets at will.
-export const runForever = (deps: Dependencies, conf: Config) => {
-  const logger = deps.logger.child({section: 'training-sheets-worker'});
-  void runLogged(deps, logger);
-  logger.info(
-    `Running forever with interval ${conf.BACKGROUND_PROCESSING_RUN_INTERVAL_MS}ms`
-  );
-  return setInterval(
-    // TODO - Handle run still going when next run scheduled.
-    () => void runLogged(deps, logger),
-    conf.BACKGROUND_PROCESSING_RUN_INTERVAL_MS
-  );
 };

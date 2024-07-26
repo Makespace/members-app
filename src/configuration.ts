@@ -50,7 +50,11 @@ const Config = t.strict({
     tt.IntFromString,
     (30 * 60 * 1000) as t.Int
   ),
-  GOOGLE_SERVICE_ACCOUNT_KEY_JSON: t.union([t.null, t.undefined, t.string]),
+  QUIZ_RESULT_REFRESH_COOLDOWN_MS: withDefaultIfEmpty(
+    tt.IntFromString,
+    (5 * 60 * 1000) as t.Int
+  ),
+  GOOGLE_SERVICE_ACCOUNT_KEY_JSON: t.union([t.undefined, t.string]),
 });
 
 export type Config = t.TypeOf<typeof Config>;
