@@ -49,9 +49,9 @@ describe('get', () => {
         });
       });
 
-      it.failing('returns their name', async () => {
+      it('returns their name', async () => {
         const result = await runQuery();
-        expect(result.name).toBe(name);
+        expect(result.name).toStrictEqual(O.some(name));
       });
     });
 
