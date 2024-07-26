@@ -14,6 +14,9 @@ import {QzEvent} from '../types/qz-event';
 const MIN_RECOGNISED_MEMBER_NUMBER = 0;
 const MAX_RECOGNISED_MEMBER_NUMBER = 1_000_000;
 
+const MIN_VALID_TIMESTAMP_EPOCH_S = 1262304000; // Year 2010
+const MAX_VALID_TIMESTAMP_EPOCH_S = 4102444800; // Year 2100
+
 const FORM_RESPONSES_SHEET_REGEX = /^Form Responses [0-9]*/i;
 
 const extractRowFormattedValues = (
@@ -103,12 +106,23 @@ const extractTimestamp = (
     return O.none;
   }
   try {
-    return O.some(
-      DateTime.fromFormat(rowValue, 'dd/MM/yyyy HH:mm:ss', {
+    const timestampEpochS = DateTime.fromFormat(
+      rowValue,
+      'dd/MM/yyyy HH:mm:ss',
+      {
         setZone: true,
         zone: timezone,
-      }).toUnixInteger()
-    );
+      }
+    ).toUnixInteger();
+    if (
+      isNaN(timestampEpochS) ||
+      !isFinite(timestampEpochS) ||
+      timestampEpochS < MIN_VALID_TIMESTAMP_EPOCH_S ||
+      timestampEpochS > MAX_VALID_TIMESTAMP_EPOCH_S
+    ) {
+      return O.none;
+    }
+    return O.some(timestampEpochS);
   } catch {
     return O.none;
   }
@@ -214,8 +228,13 @@ const extractFromRow =
         accum[columnName] = columnValue?.formattedValue ?? '';
         return accum;
       },
-      {} as Record<string, string | null>
+      {} as Record<string, string>
     );
+
+    if (timestampEpochS.value === null) {
+      console.log('FOUND NULL TIMESTAMP VALUE');
+      console.log(quizAnswers);
+    }
 
     return O.some(
       constructEvent('EquipmentTrainingQuizResult')({
