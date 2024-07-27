@@ -279,10 +279,7 @@ export const render = (viewModel: ViewModel) =>
       ${equipmentActions(viewModel)}
       ${trainersList(viewModel.equipment.trainers)}
       ${currentlyTrainedUsersTable(viewModel)}
-      ${viewModel.isSuperUserOrOwnerOfArea ||
-      viewModel.isSuperUserOrTrainerOfArea
-        ? trainingQuizResults(viewModel)
-        : html``}
+      ${isTrainerOrOwner(viewModel) ? trainingQuizResults(viewModel) : html``}
     `,
     pageTemplate(sanitizeString(viewModel.equipment.name), viewModel.user)
   );
