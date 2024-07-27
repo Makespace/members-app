@@ -216,21 +216,17 @@ const isSuperUserOrOwnerOfArea = (
   events: ReadonlyArray<DomainEvent>,
   areaId: UUID,
   memberNumber: number
-) =>
-  TE.right(
-    readModels.superUsers.is(memberNumber)(events) ||
-      readModels.areas.isOwner(events)(areaId, memberNumber)
-  );
+): boolean =>
+  readModels.superUsers.is(memberNumber)(events) ||
+  readModels.areas.isOwner(events)(areaId, memberNumber);
 
 const isSuperUserOrTrainerOfEquipment = (
   events: ReadonlyArray<DomainEvent>,
   equipment: Equipment,
   memberNumber: number
-) =>
-  TE.right(
-    readModels.superUsers.is(memberNumber)(events) ||
-      equipment.trainers.includes(memberNumber)
-  );
+): boolean =>
+  readModels.superUsers.is(memberNumber)(events) ||
+  equipment.trainers.includes(memberNumber);
 
 export const constructViewModel =
   (deps: Dependencies, user: User) =>
@@ -240,10 +236,10 @@ export const constructViewModel =
       TE.right,
       TE.bind('events', () => deps.getAllEvents()),
       TE.bind('equipment', ({events}) => getEquipment(events, equipmentId)),
-      TE.bindW('isSuperUserOrOwnerOfArea', ({events, equipment}) =>
+      TE.let('isSuperUserOrOwnerOfArea', ({events, equipment}) =>
         isSuperUserOrOwnerOfArea(events, equipment.areaId, user.memberNumber)
       ),
-      TE.bindW('isSuperUserOrTrainerOfArea', ({events, equipment}) =>
+      TE.let('isSuperUserOrTrainerOfArea', ({events, equipment}) =>
         isSuperUserOrTrainerOfEquipment(events, equipment, user.memberNumber)
       ),
       TE.bindW('trainingQuizResults', ({events, equipment}) =>

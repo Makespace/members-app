@@ -48,7 +48,7 @@ event 'api/equipment/add-training-quiz-result' '{"equipmentId": "4224ee94-09b0-4
 event 'api/equipment/add-training-quiz-result' '{"equipmentId": "4224ee94-09b0-47d4-ae60-fac46b8ca93e","trainingSheetId": "fakeTrainingSheetId","id": "2c3fce39-68f5-4845-b520-1528374405d6","emailProvided": "new@example.com","memberNumberProvided": 9999,"score": 20,"maxScore": 20,"percentage": 100,"fullMarks": true,"timestampEpochS": 1718411504,"quizAnswers": {}}'
 
 # foo@example.com
-event 'api/members/create' '{"memberNumber": "1337", "email": "foo@example.com"}'
+event 'api/members/create' '{"memberNumber": "1234", "email": "foo@example.com"}'
 
 # Training
 event 'api/equipment/add-training-quiz-result' '{"equipmentId": "4224ee94-09b0-47d4-ae60-fac46b8ca93e","trainingSheetId": "fakeTrainingSheetId","id": "2d0e6174-a827-4331-9dc2-ffb05ea863c3","emailProvided": "finn.flatcoat@dog.co.uk","memberNumberProvided":1234,"score": 13,"maxScore": 20,"percentage": 65,"fullMarks": false,"timestampEpochS": 1718411504,"quizAnswers": {}}'
