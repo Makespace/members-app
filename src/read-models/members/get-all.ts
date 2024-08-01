@@ -61,7 +61,7 @@ const update = (
     case 'MemberEmailChanged':
       // Assumes events are in chronological order.
       if (details) {
-        details.prevEmails.push(details.emailAddress);
+        details.prevEmails = [...details.prevEmails, details.emailAddress];
         details.emailAddress = event.newEmail;
         details.gravatarHash = gravatarHashFromEmail(event.newEmail);
       }
