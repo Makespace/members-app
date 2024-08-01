@@ -1,11 +1,5 @@
 import * as RA from 'fp-ts/ReadonlyArray';
-import {
-  DomainEvent,
-  isEventOfType,
-  MultipleMemberDetails,
-  Actor,
-  User,
-} from '../../types';
+import {DomainEvent, isEventOfType, Actor, User} from '../../types';
 import {pipe} from 'fp-ts/lib/function';
 import {Member, MultipleMembers} from './member';
 import {replayState} from './shared-state';
@@ -40,7 +34,7 @@ const redactEmail = (member: Member): Member =>
 // If a given |actor|, with the context of |details| is viewing |member|
 // should sensitive details (email) about that member be redacted.
 const shouldRedact =
-  (actor: Actor) => (details: MultipleMemberDetails) => (member: Member) => {
+  (actor: Actor) => (members: MultipleMembers) => (member: Member) => {
     switch (actor.tag) {
       case 'token':
         return false;
@@ -48,7 +42,7 @@ const shouldRedact =
         return false;
       case 'user': {
         const viewingUser = actor.user;
-        const viewingMember = details.get(viewingUser.memberNumber);
+        const viewingMember = members.get(viewingUser.memberNumber);
         if (viewingMember !== undefined && viewingMember.isSuperUser) {
           return false;
         }
@@ -60,10 +54,10 @@ const shouldRedact =
     }
   };
 
-const redactDetailsForActor = (actor: Actor) => (details: MultipleMembers) => {
-  const needsRedaction = shouldRedact(actor)(details);
+const redactDetailsForActor = (actor: Actor) => (members: MultipleMembers) => {
+  const needsRedaction = shouldRedact(actor)(members);
   const redactedDetails = new Map();
-  for (const [memberNumber, member] of details.entries()) {
+  for (const [memberNumber, member] of members.entries()) {
     if (needsRedaction(member)) {
       redactedDetails.set(memberNumber, redactEmail(member));
     } else {
