@@ -1,5 +1,5 @@
 import * as O from 'fp-ts/Option';
-import {EmailAddress} from '../../types';
+import {EmailAddress, GravatarHash} from '../../types';
 
 export type Member = {
   memberNumber: number;
@@ -9,4 +9,5 @@ export type Member = {
   pronouns: O.Option<string>;
   agreementSigned: O.Option<Date>;
   isSuperUser: boolean;
+  gravatarHash: GravatarHash;
 };

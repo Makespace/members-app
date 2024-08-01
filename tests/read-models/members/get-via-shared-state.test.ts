@@ -5,6 +5,7 @@ import {TestFramework, initTestFramework} from '../test-framework';
 import {faker} from '@faker-js/faker';
 import {getSomeOrFail} from '../../helpers';
 import {pipe} from 'fp-ts/lib/function';
+import {gravatarHashFromEmail} from '../../../src/read-models/members/avatar';
 
 describe('get', () => {
   let framework: TestFramework;
@@ -34,10 +35,13 @@ describe('get', () => {
       });
     });
 
-    it('returns member number and email', async () => {
+    it('returns member number, email and gravatar hash', async () => {
       const result = await runQuery();
       expect(result.memberNumber).toEqual(memberNumber);
       expect(result.emailAddress).toEqual('foo@example.com');
+      expect(result.gravatarHash).toStrictEqual(
+        gravatarHashFromEmail('foo@example.com')
+      );
     });
 
     describe('and their name has been recorded', () => {
@@ -95,6 +99,13 @@ describe('get', () => {
         const result = await runQuery();
         expect(result.prevEmails).toHaveLength(1);
         expect(result.prevEmails[0]).toStrictEqual('foo@example.com');
+      });
+
+      it('returns gravatar hash based on latest email', async () => {
+        const result = await runQuery();
+        expect(result.gravatarHash).toStrictEqual(
+          gravatarHashFromEmail('updated@example.com')
+        );
       });
     });
 
