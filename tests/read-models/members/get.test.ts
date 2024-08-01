@@ -6,6 +6,8 @@ import {faker} from '@faker-js/faker';
 import {getSomeOrFail} from '../../helpers';
 import {pipe} from 'fp-ts/lib/function';
 import {gravatarHashFromEmail} from '../../../src/read-models/members/avatar';
+import {NonEmptyString, UUID} from 'io-ts-types';
+import {Int} from 'io-ts';
 
 describe('get', () => {
   let framework: TestFramework;
@@ -133,6 +135,35 @@ describe('get', () => {
           expect(result.isSuperUser).toBe(false);
         });
       });
+    });
+
+    describe('and they have been trained', () => {
+      const createArea = {
+        name: faker.company.buzzNoun() as NonEmptyString,
+        id: faker.string.uuid() as UUID,
+      };
+      const createEquipment = {
+        name: faker.company.buzzNoun() as NonEmptyString,
+        id: faker.string.uuid() as UUID,
+        areaId: createArea.id,
+      };
+      beforeEach(async () => {
+        await framework.commands.area.create(createArea);
+        await framework.commands.equipment.add(createEquipment);
+        await framework.commands.trainers.markTrained({
+          memberNumber: memberNumber as Int,
+          equipmentId: createEquipment.id,
+        });
+      });
+
+      it.failing('returns the equipment name and id', async () => {
+        const result = await runQuery();
+        expect(result.trainedOn).toHaveLength(1);
+        expect(result.trainedOn[0].name).toStrictEqual(createEquipment.name);
+        expect(result.trainedOn[0].id).toStrictEqual(createEquipment.id);
+      });
+
+      it.todo('returns date they were marked as trained');
     });
   });
 });

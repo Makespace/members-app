@@ -1,7 +1,15 @@
 import * as O from 'fp-ts/Option';
 import {EmailAddress, GravatarHash} from '../../types';
+import {UUID} from 'io-ts-types';
+
+type TrainedOn = ReadonlyArray<{
+  name: string;
+  id: UUID;
+  trainedAt: Date;
+}>;
 
 export type Member = {
+  trainedOn: TrainedOn;
   memberNumber: number;
   emailAddress: EmailAddress;
   prevEmails: ReadonlyArray<EmailAddress>;
