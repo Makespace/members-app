@@ -26,6 +26,7 @@ const emptyState = (): State => ({
 const pertinentEventTypes: Array<EventName> = [
   'MemberNumberLinkedToEmail',
   'MemberDetailsUpdated',
+  'MemberEmailChanged',
   'AreaCreated',
   'OwnerAdded',
   'OwnerAgreementSigned',
@@ -56,6 +57,12 @@ const handleEvent = (
           ? O.fromNullable(event.pronouns)
           : current.pronouns;
       state.members.set(event.memberNumber, {...current, name, pronouns});
+    }
+  }
+  if (isEventOfType('MemberEmailChanged')(event)) {
+    const current = state.members.get(event.memberNumber);
+    if (current) {
+      current.emailAddress = event.newEmail;
     }
   }
   if (isEventOfType('OwnerAgreementSigned')(event)) {
