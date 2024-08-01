@@ -3,7 +3,7 @@ import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
 import {html, joinHtml, safe, sanitizeString} from '../../types/html';
-import {DomainEvent, Member, User} from '../../types';
+import {DomainEvent, User} from '../../types';
 import {Form} from '../../types/form';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {failureWithStatus} from '../../types/failure-with-status';
@@ -15,7 +15,7 @@ import {UUID} from 'io-ts-types';
 
 type ViewModel = {
   user: User;
-  members: ReadonlyArray<Member>;
+  members: ReadonlyArray<User>;
   equipmentId: UUID;
   equipmentName: string;
 };

@@ -5,7 +5,6 @@ export {User} from './user';
 export {Actor} from './actor';
 export {HttpResponse} from './html';
 export {
-  Member,
   MemberDetails,
   MultipleMemberDetails,
   GravatarHash,

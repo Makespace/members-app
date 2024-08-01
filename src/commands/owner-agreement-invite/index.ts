@@ -7,7 +7,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {readModels} from '../../read-models';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
-import {Email, EmailAddress} from '../../types';
+import {Email} from '../../types';
 import {htmlEmailTemplate, textEmailTemplate} from './email-template';
 
 const codec = t.strict({
@@ -33,7 +33,7 @@ const constructEmail: SendEmail<OwnerAgreementInvite>['constructEmail'] = (
     ),
     E.map(
       (member): Email => ({
-        recipient: member.emailAddress as EmailAddress,
+        recipient: member.emailAddress,
         text: textEmailTemplate(conf.PUBLIC_URL),
         subject: 'Sign the MS Owner Agreement',
         html: htmlEmailTemplate(conf.PUBLIC_URL),

@@ -1,5 +1,4 @@
 import {pipe} from 'fp-ts/lib/function';
-import {Member} from '../../types';
 import {
   html,
   joinHtml,
@@ -14,6 +13,7 @@ import {ViewModel} from './view-model';
 import {getGravatarThumbnail} from '../../templates/avatar';
 import {renderMemberNumber} from '../../templates/member-number';
 import {pageTemplate} from '../../templates';
+import {Member} from '../../read-models/members';
 
 const ordByMemberNumber: Ord<Member> = pipe(
   N.Ord,

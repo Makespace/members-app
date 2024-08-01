@@ -1,6 +1,7 @@
-import {MemberDetails, User} from '../../types';
+import {Member} from '../../read-models/members';
+import {User} from '../../types';
 
 export type ViewModel = {
   user: User;
-  members: ReadonlyArray<MemberDetails>;
+  members: ReadonlyArray<Member>;
 };

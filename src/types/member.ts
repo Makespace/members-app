@@ -10,7 +10,7 @@ export const isoGravatarHash = iso<GravatarHash>();
 export type MemberDetails = Member & Details;
 
 /** @deprecated use User type instead */
-export type Member = {
+type Member = {
   memberNumber: number;
   emailAddress: string;
 };

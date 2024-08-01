@@ -1,8 +1,8 @@
-import {Member} from '../types';
+import {User} from '../types';
 import {html} from '../types/html';
 import {loggedInUserSquare} from './logged-in-user-square';
 
-export const navBar = (member: Member) => html`
+export const navBar = (user: User) => html`
   <nav class="page-nav">
     <a href="/"
       ><img
@@ -16,6 +16,6 @@ export const navBar = (member: Member) => html`
     <a href="/equipment">Equipment</a>
     <a href="/areas">Areas</a>
     <a href="/log-out">Log out</a>
-    ${loggedInUserSquare(member)}
+    ${loggedInUserSquare(user)}
   </nav>
 `;

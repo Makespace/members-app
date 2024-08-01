@@ -1,4 +1,4 @@
-import {HttpResponse, Member} from '../types';
+import {HttpResponse, User} from '../types';
 import {
   html,
   Html,
@@ -10,12 +10,12 @@ import {head} from './head';
 import {navBar} from './navbar';
 
 export const pageTemplate =
-  (title: HtmlSubstitution, member: Member) => (body: Html) =>
+  (title: HtmlSubstitution, user: User) => (body: Html) =>
     html`
       <!doctype html>
       <html lang="en">
         ${head(title)}
-        <header>${navBar(member)}</header>
+        <header>${navBar(user)}</header>
         <body>
           ${body} ${gridJs()}
         </body>
