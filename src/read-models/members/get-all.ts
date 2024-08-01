@@ -2,7 +2,6 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {
   DomainEvent,
   isEventOfType,
-  Member,
   MemberDetails,
   MultipleMemberDetails,
   Actor,
@@ -14,7 +13,7 @@ import {replayState} from './shared-state';
 
 export const getAll = (
   events: ReadonlyArray<DomainEvent>
-): ReadonlyArray<Member> =>
+): ReadonlyArray<User> =>
   pipe(
     events,
     RA.filter(isEventOfType('MemberNumberLinkedToEmail')),

@@ -13,13 +13,14 @@ import {
   QuizResultViewModel,
   ViewModel,
 } from './view-model';
-import {Member, MemberDetails, MultipleMemberDetails, User} from '../../types';
+import {User} from '../../types';
 import {StatusCodes} from 'http-status-codes';
 import {DomainEvent, EventOfType} from '../../types/domain-event';
 import {Equipment} from '../../read-models/equipment/get';
 import {getMembersTrainedOn} from '../../read-models/equipment/get-trained-on';
 import {DateTime} from 'luxon';
 import {UUID} from 'io-ts-types';
+import {Member, MultipleMembers} from '../../read-models/members';
 
 const getEquipment = (events: ReadonlyArray<DomainEvent>, equipmentId: UUID) =>
   pipe(
@@ -30,17 +31,14 @@ const getEquipment = (events: ReadonlyArray<DomainEvent>, equipmentId: UUID) =>
     )
   );
 
-const indexMembersByEmail = (byId: MultipleMemberDetails) => {
+const indexMembersByEmail = (byId: MultipleMembers) => {
   return pipe(
     Object.values(byId),
-    RA.reduce(
-      {} as Record<string, MemberDetails>,
-      (acc, member: MemberDetails) => {
-        acc[member.emailAddress] = member;
-        member.prevEmails.forEach(email => (acc[email] = member));
-        return acc;
-      }
-    )
+    RA.reduce({} as Record<string, Member>, (acc, member: Member) => {
+      acc[member.emailAddress] = member;
+      member.prevEmails.forEach(email => (acc[email] = member));
+      return acc;
+    })
   );
 };
 
@@ -109,14 +107,14 @@ const updateQuizResults = (
 };
 
 const quizResultsMatch = (
-  members: MultipleMemberDetails,
-  membersByEmail: Record<string, MemberDetails>,
+  members: MultipleMembers,
+  membersByEmail: Record<string, Member>,
   quizResult: EventOfType<'EquipmentTrainingQuizResult'>
-): O.Option<MemberDetails> => {
+): O.Option<Member> => {
   const memberNumber = O.fromNullable(quizResult.memberNumberProvided);
   const email = O.fromNullable(quizResult.emailProvided);
 
-  const needToMatch: O.Option<MemberDetails>[] = [];
+  const needToMatch: O.Option<Member>[] = [];
   if (O.isSome(memberNumber)) {
     needToMatch.push(O.fromNullable(members.get(memberNumber.value)));
   }
@@ -133,8 +131,8 @@ const quizResultsMatch = (
 };
 
 const reduceToLatestQuizResultByMember = (
-  members: MultipleMemberDetails,
-  membersByEmail: Record<string, MemberDetails>,
+  members: MultipleMembers,
+  membersByEmail: Record<string, Member>,
   quizResults: ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>>
 ) =>
   pipe(
