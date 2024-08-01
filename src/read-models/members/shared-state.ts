@@ -5,6 +5,7 @@ import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
 import {Member} from './member';
 import {FailedLinking} from './failed-linking';
+import {gravatarHashFromEmail} from './avatar';
 
 type Area = {
   id: string;
@@ -48,6 +49,7 @@ const handleEvent = (
       agreementSigned: O.none,
       isSuperUser: false,
       prevEmails: [],
+      gravatarHash: gravatarHashFromEmail(event.email),
     });
   }
   if (isEventOfType('MemberDetailsUpdated')(event)) {
@@ -67,6 +69,7 @@ const handleEvent = (
     if (current) {
       current.prevEmails = [...current.prevEmails, current.emailAddress];
       current.emailAddress = event.newEmail;
+      current.gravatarHash = gravatarHashFromEmail(event.newEmail);
     }
   }
   if (isEventOfType('OwnerAgreementSigned')(event)) {
