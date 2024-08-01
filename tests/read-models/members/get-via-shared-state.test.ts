@@ -86,7 +86,7 @@ describe('get', () => {
         });
       });
 
-      it.failing('returns the latest email', async () => {
+      it('returns the latest email', async () => {
         const result = await runQuery();
         expect(result.emailAddress).toBe('updated@example.com');
       });
