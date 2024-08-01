@@ -50,6 +50,7 @@ const handleEvent = (
       isSuperUser: false,
       prevEmails: [],
       gravatarHash: gravatarHashFromEmail(event.email),
+      trainedOn: [],
     });
   }
   if (isEventOfType('MemberDetailsUpdated')(event)) {
