@@ -31,6 +31,8 @@ const pertinentEventTypes: Array<EventName> = [
   'OwnerAdded',
   'OwnerAgreementSigned',
   'LinkingMemberNumberToAnAlreadyUsedEmailAttempted',
+  'SuperUserDeclared',
+  'SuperUserRevoked',
 ];
 
 const handleEvent = (
@@ -86,6 +88,18 @@ const handleEvent = (
         ...current,
         owners: current.owners.add(event.memberNumber),
       });
+    }
+  }
+  if (isEventOfType('SuperUserDeclared')(event)) {
+    const current = state.members.get(event.memberNumber);
+    if (current) {
+      current.isSuperUser = true;
+    }
+  }
+  if (isEventOfType('SuperUserRevoked')(event)) {
+    const current = state.members.get(event.memberNumber);
+    if (current) {
+      current.isSuperUser = false;
     }
   }
   if (

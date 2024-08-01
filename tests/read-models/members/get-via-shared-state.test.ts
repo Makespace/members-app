@@ -105,7 +105,7 @@ describe('get', () => {
         });
       });
 
-      it.failing('they are a superuser', async () => {
+      it('they are a superuser', async () => {
         const result = await runQuery();
         expect(result.isSuperUser).toBe(true);
       });
