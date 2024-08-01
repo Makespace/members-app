@@ -99,9 +99,28 @@ describe('get', () => {
     });
 
     describe('and they have been declared a super user', () => {
-      it.todo('they are a superuser');
+      beforeEach(async () => {
+        await framework.commands.superUser.declare({
+          memberNumber,
+        });
+      });
+
+      it.failing('they are a superuser', async () => {
+        const result = await runQuery();
+        expect(result.isSuperUser).toBe(true);
+      });
+
       describe('and when their superuser status has been revoked', () => {
-        it.todo('they are no longer a superuser');
+        beforeEach(async () => {
+          await framework.commands.superUser.revoke({
+            memberNumber,
+          });
+        });
+
+        it('they are no longer a superuser', async () => {
+          const result = await runQuery();
+          expect(result.isSuperUser).toBe(false);
+        });
       });
     });
   });
