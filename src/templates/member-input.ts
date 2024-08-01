@@ -1,9 +1,9 @@
-import {MemberDetails} from '../types';
+import {Member} from '../read-models/members';
 import {html, Html, sanitizeOption, sanitizeString} from '../types/html';
 import {getGravatarThumbnail} from './avatar';
 import {filterList} from './filter-list';
 
-const memberInputSelector = (member: MemberDetails): Html => html`
+const memberInputSelector = (member: Member): Html => html`
   <div class="fieldset-item">
     <input
       type="radio"
@@ -21,9 +21,7 @@ const memberInputSelector = (member: MemberDetails): Html => html`
   </div>
 `;
 
-export const memberInput = (
-  members: ReadonlyArray<MemberDetails>
-): Html => html`
+export const memberInput = (members: ReadonlyArray<Member>): Html => html`
   <fieldset>
     <legend>Select a member:</legend>
     ${filterList(members, 'Members', memberInputSelector)}

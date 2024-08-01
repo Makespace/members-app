@@ -2,14 +2,15 @@ import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
 import {html, safe} from '../../types/html';
-import {MemberDetails, User} from '../../types';
+import {User} from '../../types';
 import {Form} from '../../types/form';
 import {memberInput} from '../../templates/member-input';
 import {readModels} from '../../read-models';
+import {Member} from '../../read-models/members';
 
 type ViewModel = {
   user: User;
-  members: ReadonlyArray<MemberDetails>;
+  members: ReadonlyArray<Member>;
 };
 
 const render = (viewModel: ViewModel) => html`

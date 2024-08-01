@@ -1,7 +1,7 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
 import {html, safe, sanitizeString} from '../../types/html';
-import {MemberDetails, User} from '../../types';
+import {User} from '../../types';
 import {Form} from '../../types/form';
 import {pageTemplate} from '../../templates';
 import {getEquipmentName} from '../equipment/get-equipment-name';
@@ -9,12 +9,13 @@ import {getEquipmentIdFromForm} from '../equipment/get-equipment-id-from-form';
 import {UUID} from 'io-ts-types';
 import {memberInput} from '../../templates/member-input';
 import {readModels} from '../../read-models';
+import {Member} from '../../read-models/members';
 
 type ViewModel = {
   user: User;
   equipmentId: UUID;
   equipmentName: string;
-  members: ReadonlyArray<MemberDetails>;
+  members: ReadonlyArray<Member>;
 };
 
 // TODO - Drop down suggestion list of users.
