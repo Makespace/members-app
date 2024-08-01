@@ -45,6 +45,7 @@ const handleEvent = (
       pronouns: O.none,
       agreementSigned: O.none,
       isSuperUser: false,
+      prevEmails: [],
     });
   }
   if (isEventOfType('MemberDetailsUpdated')(event)) {
@@ -62,6 +63,7 @@ const handleEvent = (
   if (isEventOfType('MemberEmailChanged')(event)) {
     const current = state.members.get(event.memberNumber);
     if (current) {
+      current.prevEmails = [...current.prevEmails, current.emailAddress];
       current.emailAddress = event.newEmail;
     }
   }

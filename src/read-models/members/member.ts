@@ -4,6 +4,7 @@ import {EmailAddress} from '../../types';
 export type Member = {
   memberNumber: number;
   emailAddress: EmailAddress;
+  prevEmails: ReadonlyArray<EmailAddress>;
   name: O.Option<string>;
   pronouns: O.Option<string>;
   agreementSigned: O.Option<Date>;

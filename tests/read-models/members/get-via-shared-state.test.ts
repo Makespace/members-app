@@ -91,7 +91,11 @@ describe('get', () => {
         expect(result.emailAddress).toBe('updated@example.com');
       });
 
-      it.todo('returns a record of previous emails');
+      it('returns a record of previous emails', async () => {
+        const result = await runQuery();
+        expect(result.prevEmails).toHaveLength(1);
+        expect(result.prevEmails[0]).toStrictEqual('foo@example.com');
+      });
     });
 
     describe('and they have been declared a super user', () => {
