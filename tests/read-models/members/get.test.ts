@@ -2,122 +2,137 @@ import * as O from 'fp-ts/Option';
 import {getDetails} from '../../../src/read-models/members/get';
 import {EmailAddress} from '../../../src/types';
 import {TestFramework, initTestFramework} from '../test-framework';
+import {faker} from '@faker-js/faker';
+import {getSomeOrFail} from '../../helpers';
+import {pipe} from 'fp-ts/lib/function';
+import {gravatarHashFromEmail} from '../../../src/read-models/members/avatar';
 
-describe('getDetails', () => {
+describe('get', () => {
   let framework: TestFramework;
   beforeEach(async () => {
     framework = await initTestFramework();
   });
 
-  it('returns none for non-existant members', async () => {
+  const memberNumber = faker.number.int();
+  const runQuery = async () => {
     const events = await framework.getAllEvents();
-    const result = getDetails(9999)(events);
-    expect(result).toStrictEqual(O.none);
+    return pipe(events, getDetails(memberNumber), getSomeOrFail);
+  };
+
+  describe('when the member does not exist', () => {
+    it('returns none', async () => {
+      const events = await framework.getAllEvents();
+      const result = getDetails(memberNumber)(events);
+      expect(result).toStrictEqual(O.none);
+    });
   });
 
-  it('returns member number and email', async () => {
-    await framework.commands.memberNumbers.linkNumberToEmail({
-      memberNumber: 42,
-      email: 'foo@example.com' as EmailAddress,
-    });
-    const events = await framework.getAllEvents();
-    const result = getDetails(42)(events);
-    expect(result).toEqual(
-      O.some({
-        memberNumber: 42,
-        emailAddress: 'foo@example.com' as EmailAddress,
-        gravatarHash:
-          '321ba197033e81286fedb719d60d4ed5cecaed170733cb4a92013811afc0e3b6',
-        name: O.none,
-        pronouns: O.none,
-        isSuperUser: false,
-        prevEmails: [],
-      })
-    );
-  });
-
-  it('returns details', async () => {
-    await framework.commands.memberNumbers.linkNumberToEmail({
-      memberNumber: 42,
-      email: 'foo@example.com' as EmailAddress,
-    });
-    await framework.commands.members.editName({
-      memberNumber: 42,
-      name: 'Ford Prefect',
+  describe('when the member exists', () => {
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        memberNumber,
+        email: 'foo@example.com' as EmailAddress,
+      });
     });
 
-    const events = await framework.getAllEvents();
-    const result = getDetails(42)(events);
-    expect(result).toEqual(
-      O.some({
-        memberNumber: 42,
-        emailAddress: 'foo@example.com',
-        gravatarHash:
-          '321ba197033e81286fedb719d60d4ed5cecaed170733cb4a92013811afc0e3b6',
-        name: O.some('Ford Prefect'),
-        pronouns: O.none,
-        isSuperUser: false,
-        prevEmails: [],
-      })
-    );
-  });
-
-  it('returns latest details', async () => {
-    await framework.commands.memberNumbers.linkNumberToEmail({
-      memberNumber: 42,
-      email: 'foo@example.com' as EmailAddress,
-    });
-    await framework.commands.members.editName({
-      memberNumber: 42,
-      name: 'Ix',
-    });
-    await framework.commands.members.editPronouns({
-      memberNumber: 42,
-      pronouns: 'he/him',
-    });
-    await framework.commands.members.editName({
-      memberNumber: 42,
-      name: 'Ford Prefect',
+    it('returns member number, email and gravatar hash', async () => {
+      const result = await runQuery();
+      expect(result.memberNumber).toEqual(memberNumber);
+      expect(result.emailAddress).toEqual('foo@example.com');
+      expect(result.gravatarHash).toStrictEqual(
+        gravatarHashFromEmail('foo@example.com')
+      );
     });
 
-    const events = await framework.getAllEvents();
-    const result = getDetails(42)(events);
-    expect(result).toEqual(
-      O.some({
-        memberNumber: 42,
-        emailAddress: 'foo@example.com',
-        gravatarHash:
-          '321ba197033e81286fedb719d60d4ed5cecaed170733cb4a92013811afc0e3b6',
-        name: O.some('Ford Prefect'),
-        pronouns: O.some('he/him'),
-        isSuperUser: false,
-        prevEmails: [],
-      })
-    );
-  });
+    describe('and their name has been recorded', () => {
+      const name = faker.person.fullName();
+      beforeEach(async () => {
+        await framework.commands.members.editName({
+          memberNumber,
+          name,
+        });
+      });
 
-  it('returns latest email', async () => {
-    await framework.commands.memberNumbers.linkNumberToEmail({
-      memberNumber: 42,
-      email: 'foo@example.com' as EmailAddress,
+      it('returns their name', async () => {
+        const result = await runQuery();
+        expect(result.name).toStrictEqual(O.some(name));
+      });
     });
-    await framework.commands.members.editEmail({
-      memberNumber: 42,
-      email: 'updated@example.com' as EmailAddress,
+
+    describe('and their details have changed multiple times', () => {
+      beforeEach(async () => {
+        await framework.commands.members.editName({
+          memberNumber,
+          name: 'Ix',
+        });
+        await framework.commands.members.editPronouns({
+          memberNumber,
+          pronouns: 'he/him',
+        });
+        await framework.commands.members.editName({
+          memberNumber,
+          name: 'Ford Prefect',
+        });
+      });
+
+      it('returns latest details', async () => {
+        const result = await runQuery();
+        expect(result.name).toStrictEqual(O.some('Ford Prefect'));
+        expect(result.pronouns).toStrictEqual(O.some('he/him'));
+      });
     });
-    const events = await framework.getAllEvents();
-    const result = getDetails(42)(events);
-    expect(result).toEqual(
-      O.some({
-        memberNumber: 42,
-        emailAddress: 'updated@example.com',
-        gravatarHash:
-          '916262ca7e4ee8a558858ea1c2d7674f7d2c8f3a06a0dfd1c5a68ef25e415022',
-        name: O.none,
-        pronouns: O.none,
-        isSuperUser: false,
-        prevEmails: ['foo@example.com'],
-      })
-    );
+
+    describe('and their email has changed', () => {
+      beforeEach(async () => {
+        await framework.commands.members.editEmail({
+          memberNumber,
+          email: 'updated@example.com' as EmailAddress,
+        });
+      });
+
+      it('returns the latest email', async () => {
+        const result = await runQuery();
+        expect(result.emailAddress).toBe('updated@example.com');
+      });
+
+      it('returns a record of previous emails', async () => {
+        const result = await runQuery();
+        expect(result.prevEmails).toHaveLength(1);
+        expect(result.prevEmails[0]).toStrictEqual('foo@example.com');
+      });
+
+      it('returns gravatar hash based on latest email', async () => {
+        const result = await runQuery();
+        expect(result.gravatarHash).toStrictEqual(
+          gravatarHashFromEmail('updated@example.com')
+        );
+      });
+    });
+
+    describe('and they have been declared a super user', () => {
+      beforeEach(async () => {
+        await framework.commands.superUser.declare({
+          memberNumber,
+        });
+      });
+
+      it('they are a superuser', async () => {
+        const result = await runQuery();
+        expect(result.isSuperUser).toBe(true);
+      });
+
+      describe('and when their superuser status has been revoked', () => {
+        beforeEach(async () => {
+          await framework.commands.superUser.revoke({
+            memberNumber,
+          });
+        });
+
+        it('they are no longer a superuser', async () => {
+          const result = await runQuery();
+          expect(result.isSuperUser).toBe(false);
+        });
+      });
+    });
   });
 });
