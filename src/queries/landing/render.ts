@@ -13,7 +13,7 @@ const renderMemberDetails = (user: ViewModel['user']) => html`
   </dl>
 `;
 
-const superUserNav = html`
+export const superUserNav = html`
   <h2>Admin</h2>
   <p>You have super-user privileges. You can:</p>
   <nav>

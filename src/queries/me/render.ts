@@ -4,6 +4,7 @@ import {html, sanitizeOption, safe, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
 import {pageTemplate} from '../../templates';
 import {renderMemberNumber} from '../../templates/member-number';
+import {superUserNav} from '../landing/render';
 
 const editName = (viewModel: ViewModel) =>
   html`<a href="/members/edit-name?member=${viewModel.member.memberNumber}"
@@ -66,6 +67,7 @@ export const render = (viewModel: ViewModel) =>
       ${renderMemberDetails(viewModel)}
       <h2>Training status</h2>
       ${renderTrainingStatus()}
+      ${viewModel.member.isSuperUser ? superUserNav : ''}
     `,
     pageTemplate(safe('Member'), viewModel.user)
   );
