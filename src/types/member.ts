@@ -7,7 +7,7 @@ export interface GravatarHash
 export const isoGravatarHash = iso<GravatarHash>();
 
 /** @deprecated use Member type from readmodel instead */
-export type MemberDetails = Member & Details;
+type MemberDetails = Member & Details;
 
 /** @deprecated use User type instead */
 type Member = {

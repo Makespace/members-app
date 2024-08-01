@@ -2,13 +2,12 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {
   DomainEvent,
   isEventOfType,
-  MemberDetails,
   MultipleMemberDetails,
   Actor,
   User,
 } from '../../types';
 import {pipe} from 'fp-ts/lib/function';
-import {MultipleMembers} from './member';
+import {Member, MultipleMembers} from './member';
 import {replayState} from './shared-state';
 
 export const getAll = (
@@ -35,15 +34,13 @@ export const liftActorOrUser = (actorOrUser: Actor | User) =>
         user: actorOrUser,
       };
 
-const redactEmail = (member: MemberDetails): MemberDetails =>
+const redactEmail = (member: Member): Member =>
   Object.assign({}, member, {emailAddress: '******'});
 
 // If a given |actor|, with the context of |details| is viewing |member|
 // should sensitive details (email) about that member be redacted.
 const shouldRedact =
-  (actor: Actor) =>
-  (details: MultipleMemberDetails) =>
-  (member: MemberDetails) => {
+  (actor: Actor) => (details: MultipleMemberDetails) => (member: Member) => {
     switch (actor.tag) {
       case 'token':
         return false;
@@ -63,19 +60,18 @@ const shouldRedact =
     }
   };
 
-const redactDetailsForActor =
-  (actor: Actor) => (details: MultipleMemberDetails) => {
-    const needsRedaction = shouldRedact(actor)(details);
-    const redactedDetails = new Map();
-    for (const [memberNumber, member] of details.entries()) {
-      if (needsRedaction(member)) {
-        redactedDetails.set(memberNumber, redactEmail(member));
-      } else {
-        redactedDetails.set(memberNumber, member);
-      }
+const redactDetailsForActor = (actor: Actor) => (details: MultipleMembers) => {
+  const needsRedaction = shouldRedact(actor)(details);
+  const redactedDetails = new Map();
+  for (const [memberNumber, member] of details.entries()) {
+    if (needsRedaction(member)) {
+      redactedDetails.set(memberNumber, redactEmail(member));
+    } else {
+      redactedDetails.set(memberNumber, member);
     }
-    return redactedDetails;
-  };
+  }
+  return redactedDetails;
+};
 
 export const getAllDetailsAsActor =
   (actorOrUser: Actor | User) => (events: ReadonlyArray<DomainEvent>) =>

@@ -4,12 +4,7 @@ export {Email} from './email';
 export {User} from './user';
 export {Actor} from './actor';
 export {HttpResponse} from './html';
-export {
-  MemberDetails,
-  MultipleMemberDetails,
-  GravatarHash,
-  isoGravatarHash,
-} from './member';
+export {MultipleMemberDetails, GravatarHash, isoGravatarHash} from './member';
 export {
   DomainEvent,
   isEventOfType,
