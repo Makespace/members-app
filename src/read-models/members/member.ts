@@ -11,3 +11,5 @@ export type Member = {
   isSuperUser: boolean;
   gravatarHash: GravatarHash;
 };
+
+export type MultipleMembers = Map<number, Member>;

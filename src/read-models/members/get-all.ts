@@ -1,9 +1,5 @@
-import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {gravatarHashFromEmail} from './avatar';
 import {
-  filterByName,
-  SubsetOfDomainEvent,
   DomainEvent,
   isEventOfType,
   Member,
@@ -13,62 +9,8 @@ import {
   User,
 } from '../../types';
 import {pipe} from 'fp-ts/lib/function';
-
-export const pertinentEvents = [
-  'MemberNumberLinkedToEmail' as const,
-  'SuperUserRevoked' as const,
-  'SuperUserDeclared' as const,
-  'MemberDetailsUpdated' as const,
-  'MemberEmailChanged' as const,
-];
-
-const update = (
-  state: MultipleMemberDetails,
-  event: SubsetOfDomainEvent<typeof pertinentEvents>
-): MultipleMemberDetails => {
-  const memberNumber = event.memberNumber;
-  const details = state.get(memberNumber);
-  switch (event.type) {
-    case 'MemberNumberLinkedToEmail':
-      state.set(memberNumber, {
-        emailAddress: event.email,
-        gravatarHash: gravatarHashFromEmail(event.email),
-        memberNumber,
-        name: O.none,
-        pronouns: O.none,
-        isSuperUser: false,
-        prevEmails: [],
-      });
-      break;
-    case 'SuperUserDeclared':
-      if (details) {
-        details.isSuperUser = true;
-      }
-      break;
-    case 'SuperUserRevoked':
-      if (details) {
-        details.isSuperUser = false;
-      }
-      break;
-    case 'MemberDetailsUpdated':
-      if (details && event.name !== undefined) {
-        details.name = O.some(event.name);
-      }
-      if (details && event.pronouns !== undefined) {
-        details.pronouns = O.some(event.pronouns);
-      }
-      break;
-    case 'MemberEmailChanged':
-      // Assumes events are in chronological order.
-      if (details) {
-        details.prevEmails = [...details.prevEmails, details.emailAddress];
-        details.emailAddress = event.newEmail;
-        details.gravatarHash = gravatarHashFromEmail(event.newEmail);
-      }
-      break;
-  }
-  return state;
-};
+import {MultipleMembers} from './member';
+import {replayState} from './shared-state';
 
 export const getAll = (
   events: ReadonlyArray<DomainEvent>
@@ -84,8 +26,7 @@ export const getAll = (
 
 export const getAllDetails = (
   events: ReadonlyArray<DomainEvent>
-): MultipleMemberDetails =>
-  pipe(events, filterByName(pertinentEvents), RA.reduce(new Map(), update));
+): MultipleMembers => pipe(events, replayState, state => state.members);
 
 export const liftActorOrUser = (actorOrUser: Actor | User) =>
   Actor.is(actorOrUser)

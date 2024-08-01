@@ -23,4 +23,5 @@ type Details = {
   gravatarHash: GravatarHash;
 };
 
+/** @deprecated use MultipleMembers type from readmodel instead */
 export type MultipleMemberDetails = Map<number, MemberDetails>;

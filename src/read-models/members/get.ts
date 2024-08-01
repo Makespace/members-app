@@ -1,24 +1,19 @@
 import {pipe} from 'fp-ts/lib/function';
-import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
-import {
-  MemberDetails,
-  DomainEvent,
-  filterByName,
-  Actor,
-  User,
-} from '../../types';
-import {getAllDetails, getAllDetailsAsActor, pertinentEvents} from './get-all';
+import {MemberDetails, DomainEvent, Actor, User} from '../../types';
+import {getAllDetailsAsActor} from './get-all';
+import {replayState} from './shared-state';
+import * as RM from 'fp-ts/ReadonlyMap';
+import {Eq as NumberEq} from 'fp-ts/number';
 
 export const getDetails =
   (memberNumber: number) =>
   (events: ReadonlyArray<DomainEvent>): O.Option<MemberDetails> =>
     pipe(
       events,
-      filterByName(pertinentEvents),
-      RA.filter(e => e.memberNumber === memberNumber),
-      getAllDetails,
-      allDetails => O.fromNullable(allDetails.get(memberNumber))
+      replayState,
+      state => state.members,
+      RM.lookup(NumberEq)(memberNumber)
     );
 
 export const getDetailsAsActor =
