@@ -1,8 +1,8 @@
 import * as RA from 'fp-ts/ReadonlyArray';
 import {DomainEvent, isEventOfType, Actor, User} from '../../types';
 import {pipe} from 'fp-ts/lib/function';
-import {Member, MultipleMembers} from './member';
-import {replayState} from './shared-state';
+import {Member, MultipleMembers} from './return-types';
+import {replayState} from '../shared-state';
 
 export const getAll = (
   events: ReadonlyArray<DomainEvent>

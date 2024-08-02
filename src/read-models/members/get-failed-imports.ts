@@ -1,6 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import {DomainEvent} from '../../types';
-import {replayState} from './shared-state';
+import {replayState} from '../shared-state';
 import {FailedLinking} from './failed-linking';
 
 export const getFailedImports = (

@@ -3,26 +3,8 @@ import {SubsetOfDomainEvent, filterByName} from '../../types';
 import {DomainEvent, EventName, isEventOfType} from '../../types/domain-event';
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
-import {Member} from './member';
-import {FailedLinking} from './failed-linking';
-import {gravatarHashFromEmail} from './avatar';
-
-type Area = {
-  id: string;
-  owners: Set<number>;
-};
-
-type State = {
-  members: Map<Member['memberNumber'], Member>;
-  areas: Map<Area['id'], Area>;
-  failedImports: Set<FailedLinking>;
-};
-
-const emptyState = (): State => ({
-  members: new Map(),
-  areas: new Map(),
-  failedImports: new Set(),
-});
+import {gravatarHashFromEmail} from '../members/avatar';
+import {State, emptyState} from './state';
 
 const pertinentEventTypes: Array<EventName> = [
   'MemberNumberLinkedToEmail',

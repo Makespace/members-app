@@ -16,4 +16,4 @@ export const members = {
 };
 
 export {FailedLinking} from './failed-linking';
-export {Member, MultipleMembers} from './member';
+export {Member, MultipleMembers} from './return-types';
