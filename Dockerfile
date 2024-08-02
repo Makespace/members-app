@@ -7,8 +7,15 @@ RUN apt-get -y update &&  \
     -y ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-FROM oven/bun:1 AS bun
+FROM node AS bun
 WORKDIR /app
+RUN apt-get -y update &&  \ 
+    apt-get install --no-install-recommends -y \
+    python3 \
+    curl \
+    unzip \
+    &&  rm -rf /var/lib/apt/lists/*
+RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr bash
 COPY package.json ./
 COPY bun.lockb ./
 
