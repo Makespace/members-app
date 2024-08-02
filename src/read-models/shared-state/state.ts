@@ -1,15 +1,13 @@
-import {UUID} from 'io-ts-types';
 import {EmailAddress, GravatarHash} from '../../types';
 import * as O from 'fp-ts/Option';
 
-type TrainedOn = ReadonlyArray<{
-  name: string;
-  id: UUID;
+type TrainedOn = {
+  id: Equipment['id'];
   trainedAt: Date;
-}>;
+};
 
 type Member = {
-  trainedOn: TrainedOn;
+  trainedOn: ReadonlyArray<TrainedOn>;
   memberNumber: number;
   emailAddress: EmailAddress;
   prevEmails: ReadonlyArray<EmailAddress>;
@@ -25,6 +23,12 @@ type Area = {
   owners: Set<number>;
 };
 
+type Equipment = {
+  id: string;
+  name: string;
+  areaId: Area['id'];
+};
+
 type FailedLinking = {
   memberNumber: number;
   email: string;
@@ -33,11 +37,13 @@ type FailedLinking = {
 export type State = {
   members: Map<Member['memberNumber'], Member>;
   areas: Map<Area['id'], Area>;
+  equipment: Map<Equipment['id'], Equipment>;
   failedImports: Set<FailedLinking>;
 };
 
 export const emptyState = (): State => ({
   members: new Map(),
   areas: new Map(),
+  equipment: new Map(),
   failedImports: new Set(),
 });
