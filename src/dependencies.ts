@@ -1,4 +1,5 @@
 import {Logger} from 'pino';
+import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {Failure, Email, DomainEvent, ResourceVersion} from './types';
 import * as TE from 'fp-ts/TaskEither';
 import * as O from 'fp-ts/Option';
@@ -33,6 +34,7 @@ export type Dependencies = {
       version: ResourceVersion;
     }
   >;
+  sharedReadModel: BetterSQLite3Database;
   logger: Logger;
   rateLimitSendingOfEmails: (email: Email) => TE.TaskEither<Failure, Email>;
   sendEmail: (email: Email) => TE.TaskEither<Failure, string>;
