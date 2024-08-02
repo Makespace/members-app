@@ -14,7 +14,7 @@ import {Form} from '../../types/form';
 import {AreaOwners} from '../../read-models/members/get-potential-owners';
 import {readModels} from '../../read-models';
 import {html, joinHtml, safe, sanitizeString} from '../../types/html';
-import {Member} from '../../read-models/members/member';
+import {Member} from '../../read-models/members/return-types';
 import {pageTemplate} from '../../templates';
 
 type ViewModel = {

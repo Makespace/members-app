@@ -2,8 +2,8 @@ import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {DomainEvent} from '../../types';
 import {pipe} from 'fp-ts/lib/function';
-import {replayState} from './shared-state';
-import {Member} from './member';
+import {replayState} from '../shared-state';
+import {Member} from './return-types';
 
 export type AreaOwners = {
   existing: ReadonlyArray<Member>;
