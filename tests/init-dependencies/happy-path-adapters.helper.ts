@@ -5,15 +5,14 @@ import {Logger} from 'pino';
 import {StatusCodes} from 'http-status-codes';
 import {faker} from '@faker-js/faker';
 import {EventName} from '../../src/types/domain-event';
-import Database from 'better-sqlite3';
-import {drizzle} from 'drizzle-orm/better-sqlite3';
+import {initSharedReadModel} from '../../src/read-models/shared-state';
 
 export const happyPathAdapters: Dependencies = {
   commitEvent: () => () =>
     TE.right({status: StatusCodes.CREATED, message: 'dummy create event'}),
   getAllEvents: () => TE.right([]),
   getResourceEvents: () => TE.right({events: [], version: faker.number.int()}),
-  sharedReadModel: drizzle(new Database(':memory:')),
+  sharedReadModel: initSharedReadModel(),
   logger: (() => undefined) as never as Logger,
   rateLimitSendingOfEmails: TE.right,
   sendEmail: () => TE.right('success'),

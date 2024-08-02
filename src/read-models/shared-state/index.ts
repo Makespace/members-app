@@ -5,6 +5,9 @@ import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
 import {gravatarHashFromEmail} from '../members/avatar';
 import {State, emptyState} from './state';
+import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
+import Database from 'better-sqlite3';
+import {sql} from 'drizzle-orm';
 
 const pertinentEventTypes: Array<EventName> = [
   'MemberNumberLinkedToEmail',
@@ -105,3 +108,27 @@ export const replayState = (events: ReadonlyArray<DomainEvent>) =>
     filterByName(pertinentEventTypes),
     RA.reduce(emptyState(), handleEvent)
   );
+
+export type SharedReadModel = {
+  db: BetterSQLite3Database;
+  refresh: (events: ReadonlyArray<DomainEvent>) => void;
+};
+
+export const initSharedReadModel = (): SharedReadModel => {
+  let knownEvents = 0;
+  const db = drizzle(new Database());
+  return {
+    db,
+    refresh: events => {
+      if (knownEvents === events.length) {
+        return;
+      }
+      if (knownEvents === 0) {
+        db.run(sql`CREATE TABLE members (id TEXT);`);
+        knownEvents = events.length;
+        return;
+      }
+      knownEvents = events.length;
+    },
+  };
+};

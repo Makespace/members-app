@@ -1,5 +1,4 @@
 import {Logger} from 'pino';
-import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {Failure, Email, DomainEvent, ResourceVersion} from './types';
 import * as TE from 'fp-ts/TaskEither';
 import * as O from 'fp-ts/Option';
@@ -9,6 +8,7 @@ import {StatusCodes} from 'http-status-codes';
 import {Resource} from './types/resource';
 import {EventName, EventOfType} from './types/domain-event';
 import {DateTime} from 'luxon';
+import {SharedReadModel} from './read-models/shared-state';
 
 export type Dependencies = {
   commitEvent: (
@@ -34,7 +34,7 @@ export type Dependencies = {
       version: ResourceVersion;
     }
   >;
-  sharedReadModel: BetterSQLite3Database;
+  sharedReadModel: SharedReadModel;
   logger: Logger;
   rateLimitSendingOfEmails: (email: Email) => TE.TaskEither<Failure, Email>;
   sendEmail: (email: Email) => TE.TaskEither<Failure, string>;

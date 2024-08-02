@@ -13,8 +13,7 @@ import {pullGoogleSheetData} from './google/pull_sheet_data';
 import {google} from 'googleapis';
 import * as O from 'fp-ts/Option';
 import {updateTrainingQuizResults} from '../training-sheets/training-sheets-worker';
-import {drizzle} from 'drizzle-orm/better-sqlite3';
-import Database from 'better-sqlite3';
+import {initSharedReadModel} from '../read-models/shared-state';
 
 export const initDependencies = (
   dbClient: Client,
@@ -64,7 +63,7 @@ export const initDependencies = (
     getAllEvents: getAllEvents(dbClient),
     getAllEventsByType: getAllEventsByType(dbClient),
     getResourceEvents: getResourceEvents(dbClient),
-    sharedReadModel: drizzle(new Database(':memory:')),
+    sharedReadModel: initSharedReadModel(),
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
     logger,
