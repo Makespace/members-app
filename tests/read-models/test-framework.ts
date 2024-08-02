@@ -16,6 +16,7 @@ import {getResourceEvents} from '../../src/init-dependencies/event-store/get-res
 import {EventName, EventOfType} from '../../src/types/domain-event';
 import {Dependencies} from '../../src/dependencies';
 import {applyToResource} from '../../src/commands/apply-command-to-resource';
+import {initSharedReadModel} from '../../src/read-models/shared-state';
 
 type ToFrameworkCommands<T> = {
   [K in keyof T]: {
@@ -36,6 +37,7 @@ export type TestFramework = {
     eventType: T
   ) => Promise<ReadonlyArray<EventOfType<T>>>;
   commands: ToFrameworkCommands<typeof commands>;
+  sharedReadModel: Dependencies['sharedReadModel'];
   depsForApplyToResource: {
     commitEvent: Dependencies['commitEvent'];
     getResourceEvents: Dependencies['getResourceEvents'];
@@ -73,6 +75,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   return {
     getAllEvents: frameworkGetAllEvents,
     getAllEventsByType: frameworkGetAllEventsByType,
+    sharedReadModel: initSharedReadModel(),
     depsForApplyToResource: {
       commitEvent: frameworkCommitEvent,
       getResourceEvents: getResourceEvents(dbClient),

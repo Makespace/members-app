@@ -1,3 +1,4 @@
+/* eslint-disable unused-imports/no-unused-vars */
 import * as RA from 'fp-ts/ReadonlyArray';
 import {SubsetOfDomainEvent, filterByName} from '../../types';
 import {DomainEvent, EventName, isEventOfType} from '../../types/domain-event';
@@ -8,6 +9,7 @@ import {State, emptyState} from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import {sql} from 'drizzle-orm';
+import {Member} from '../members';
 
 const pertinentEventTypes: Array<EventName> = [
   'MemberNumberLinkedToEmail',
@@ -109,9 +111,17 @@ export const replayState = (events: ReadonlyArray<DomainEvent>) =>
     RA.reduce(emptyState(), handleEvent)
   );
 
+const getDetails =
+  (db: BetterSQLite3Database): SharedReadModel['members']['getDetails'] =>
+  (memberNumber): O.Option<Member> =>
+    O.none;
+
 export type SharedReadModel = {
   db: BetterSQLite3Database;
   refresh: (events: ReadonlyArray<DomainEvent>) => void;
+  members: {
+    getDetails: (memberNumber: number) => O.Option<Member>;
+  };
 };
 
 export const initSharedReadModel = (): SharedReadModel => {
@@ -129,6 +139,9 @@ export const initSharedReadModel = (): SharedReadModel => {
         return;
       }
       knownEvents = events.length;
+    },
+    members: {
+      getDetails: getDetails(db),
     },
   };
 };
