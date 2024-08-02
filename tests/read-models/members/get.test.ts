@@ -159,7 +159,6 @@ describe('get', () => {
       it.failing('returns the equipment name and id', async () => {
         const result = await runQuery();
         expect(result.trainedOn).toHaveLength(1);
-        expect(result.trainedOn[0].name).toStrictEqual(createEquipment.name);
         expect(result.trainedOn[0].id).toStrictEqual(createEquipment.id);
       });
 
