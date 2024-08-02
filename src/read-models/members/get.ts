@@ -9,13 +9,14 @@ import {Member} from './return-types';
 
 export const getDetails =
   (memberNumber: number) =>
-  (events: ReadonlyArray<DomainEvent>): O.Option<Member> =>
-    pipe(
+  (events: ReadonlyArray<DomainEvent>): O.Option<Member> => {
+    return pipe(
       events,
       replayState,
       state => state.members,
       RM.lookup(NumberEq)(memberNumber)
     );
+  };
 
 export const getDetailsAsActor =
   (actorOrUser: Actor | User) =>
