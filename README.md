@@ -49,6 +49,19 @@ The following is run in CI (see `.github/workflows/ci.yml`)
 make typecheck lint unused-exports test smoketest
 ```
 
+## Logging into the dev server
+
+To login to the dev server navigate to http://localhost:8080 enter a
+user email (for example `admin@example.com`) then navigate to
+http://localhost:1080 find the email and click login.
+
+This process is automated via helper script. The above flow is
+equivalent to:
+
+```
+./scripts/login.ts admin
+```
+
 ## Operations
 
 - every commit on `main` gets tested in CI
