@@ -9,7 +9,7 @@ type TrainedOn = {
 };
 
 export const membersTable = sqliteTable('members', {
-  memberNumber: integer('memberNumber').notNull(),
+  memberNumber: integer('memberNumber').notNull().primaryKey(),
   emailAddress: text('emailAddress').notNull().$type<EmailAddress>(),
   gravatarHash: text('gravatarHash').notNull().$type<GravatarHash>(),
   name: blob('name', {mode: 'json'}).notNull().$type<O.Option<string>>(),
@@ -34,7 +34,7 @@ const createMembersTable = sql`
   );`;
 
 export const equipmentTable = sqliteTable('equipment', {
-  id: text('id').notNull(),
+  id: text('id').notNull().primaryKey(),
   name: text('id').notNull(),
 });
 
@@ -45,7 +45,27 @@ const createEquipmentTable = sql`
   );
 `;
 
-export const createTables = [createMembersTable, createEquipmentTable];
+export const trainersTable = sqliteTable('trainers', {
+  memberNumber: integer('memberNumber')
+    .notNull()
+    .references(() => membersTable.memberNumber),
+  equipmentId: text('equipmentId')
+    .notNull()
+    .references(() => equipmentTable.id),
+});
+
+const createTrainersTable = sql`
+  CREATE TABLE trainers (
+    memberNumber INTEGER,
+    equipmentID TEXT
+  )
+`;
+
+export const createTables = [
+  createMembersTable,
+  createEquipmentTable,
+  createTrainersTable,
+];
 
 type Member = {
   trainedOn: ReadonlyArray<TrainedOn>;
