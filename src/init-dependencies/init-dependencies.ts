@@ -10,10 +10,10 @@ import {getAllEvents, getAllEventsByType} from './event-store/get-all-events';
 import {getResourceEvents} from './event-store/get-resource-events';
 import {Client} from '@libsql/client';
 import {pullGoogleSheetData} from './google/pull_sheet_data';
-import {google} from 'googleapis';
 import * as O from 'fp-ts/Option';
 import {updateTrainingQuizResults} from '../training-sheets/training-sheets-worker';
 import {initSharedReadModel} from '../read-models/shared-state';
+import {GoogleAuth} from 'google-auth-library';
 
 export const initDependencies = (
   dbClient: Client,
@@ -78,7 +78,7 @@ export const initDependencies = (
         'Background processing is enabled but google service account key not provided'
       );
     }
-    const auth = new google.auth.GoogleAuth({
+    const auth = new GoogleAuth({
       // Google issues the credentials file and validates it.
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       credentials: JSON.parse(conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON),

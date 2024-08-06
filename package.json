@@ -45,6 +45,7 @@
   "dependencies": {
     "@faker-js/faker": "^8.0.2",
     "@godaddy/terminus": "^4.12.1",
+    "@googleapis/sheets": "^9.0.0",
     "@libsql/client": "^0.6.0",
     "@types/html-escaper": "^3.0.2",
     "@types/nodemailer-smtp-transport": "^2.7.5",
@@ -58,7 +59,7 @@
     "express": "^4.17.3",
     "express-async-handler": "^1.2.0",
     "fp-ts": "^2.11.8",
-    "googleapis": "^140.0.0",
+    "google-auth-library": "^9.13.0",
     "http-status-codes": "^2.2.0",
     "io-ts": "^2.2.20",
     "io-ts-reporters": "^2.0.1",

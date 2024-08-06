@@ -1,6 +1,5 @@
+import {sheets_v4} from '@googleapis/sheets';
 import {readFileSync} from 'node:fs';
-
-import {sheets_v4} from 'googleapis/build/src/apis/sheets/v4';
 
 type ManualParsedEntry = {
   emailProvided: string;

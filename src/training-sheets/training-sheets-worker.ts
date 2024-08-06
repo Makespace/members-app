@@ -19,9 +19,9 @@ import {accumBy, lastBy} from '../util';
 import {QzEvent, QzEventDuplicate, RegEvent} from '../types/qz-event';
 import {extractGoogleSheetData} from './google';
 import {StatusCodes} from 'http-status-codes';
-import {sheets_v4} from 'googleapis';
 import {Failure} from '../types';
 import {DateTime} from 'luxon';
+import {sheets_v4} from '@googleapis/sheets';
 
 const byEquipmentId: Ord<RegEvent> = pipe(
   S.Ord,

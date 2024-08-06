@@ -4,11 +4,11 @@ import * as O from 'fp-ts/Option';
 
 import {Logger} from 'pino';
 import {constructEvent} from '../types/domain-event';
-import {sheets_v4} from 'googleapis';
 import {v4} from 'uuid';
 import {UUID} from 'io-ts-types';
 import {DateTime} from 'luxon';
 import {QzEvent} from '../types/qz-event';
+import {sheets_v4} from '@googleapis/sheets';
 
 // Bounds to prevent clearly broken parsing.
 const MIN_RECOGNISED_MEMBER_NUMBER = 0;
