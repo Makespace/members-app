@@ -1,139 +1,13 @@
-/* eslint-disable unused-imports/no-unused-vars */
-import * as RA from 'fp-ts/ReadonlyArray';
-import {SubsetOfDomainEvent, filterByName} from '../../types';
-import {DomainEvent, EventName, isEventOfType} from '../../types/domain-event';
-import {pipe} from 'fp-ts/lib/function';
+import {DomainEvent} from '../../types/domain-event';
 import * as O from 'fp-ts/Option';
 import {gravatarHashFromEmail} from '../members/avatar';
-import {State, createTables, emptyState, membersTable} from './state';
+import {createTables, membersTable} from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import {Member} from '../members';
-import {eq} from 'drizzle-orm';
+import {getMember} from './get-member';
 
-const pertinentEventTypes: Array<EventName> = [
-  'MemberNumberLinkedToEmail',
-  'MemberDetailsUpdated',
-  'MemberEmailChanged',
-  'AreaCreated',
-  'OwnerAdded',
-  'OwnerAgreementSigned',
-  'LinkingMemberNumberToAnAlreadyUsedEmailAttempted',
-  'SuperUserDeclared',
-  'SuperUserRevoked',
-];
-
-const handleEvent = (
-  state: State,
-  event: SubsetOfDomainEvent<typeof pertinentEventTypes>
-) => {
-  if (isEventOfType('MemberNumberLinkedToEmail')(event)) {
-    state.members.set(event.memberNumber, {
-      memberNumber: event.memberNumber,
-      emailAddress: event.email,
-      name: O.none,
-      pronouns: O.none,
-      agreementSigned: O.none,
-      isSuperUser: false,
-      prevEmails: [],
-      gravatarHash: gravatarHashFromEmail(event.email),
-      trainedOn: [],
-    });
-  }
-  if (isEventOfType('MemberDetailsUpdated')(event)) {
-    const current = state.members.get(event.memberNumber);
-    if (current) {
-      const name =
-        event.name !== undefined ? O.fromNullable(event.name) : current.name;
-      const pronouns =
-        event.pronouns !== undefined
-          ? O.fromNullable(event.pronouns)
-          : current.pronouns;
-      state.members.set(event.memberNumber, {...current, name, pronouns});
-    }
-  }
-  if (isEventOfType('MemberEmailChanged')(event)) {
-    const current = state.members.get(event.memberNumber);
-    if (current) {
-      current.prevEmails = [...current.prevEmails, current.emailAddress];
-      current.emailAddress = event.newEmail;
-      current.gravatarHash = gravatarHashFromEmail(event.newEmail);
-    }
-  }
-  if (isEventOfType('OwnerAgreementSigned')(event)) {
-    const current = state.members.get(event.memberNumber);
-    if (current) {
-      state.members.set(event.memberNumber, {
-        ...current,
-        agreementSigned: O.some(event.signedAt),
-      });
-    }
-  }
-  if (isEventOfType('AreaCreated')(event)) {
-    state.areas.set(event.id, {id: event.id, owners: new Set()});
-  }
-  if (isEventOfType('OwnerAdded')(event)) {
-    const current = state.areas.get(event.areaId);
-    if (current) {
-      state.areas.set(event.areaId, {
-        ...current,
-        owners: current.owners.add(event.memberNumber),
-      });
-    }
-  }
-  if (isEventOfType('SuperUserDeclared')(event)) {
-    const current = state.members.get(event.memberNumber);
-    if (current) {
-      current.isSuperUser = true;
-    }
-  }
-  if (isEventOfType('SuperUserRevoked')(event)) {
-    const current = state.members.get(event.memberNumber);
-    if (current) {
-      current.isSuperUser = false;
-    }
-  }
-  if (
-    isEventOfType('LinkingMemberNumberToAnAlreadyUsedEmailAttempted')(event)
-  ) {
-    state.failedImports.add({
-      memberNumber: event.memberNumber,
-      email: event.email,
-    });
-  }
-  return state;
-};
-
-export const replayState = (events: ReadonlyArray<DomainEvent>) =>
-  pipe(
-    events,
-    filterByName(pertinentEventTypes),
-    RA.reduce(emptyState(), handleEvent)
-  );
-
-const getDetails =
-  (db: BetterSQLite3Database): SharedReadModel['members']['getDetails'] =>
-  (memberNumber): O.Option<Member> =>
-    pipe(
-      db
-        .select()
-        .from(membersTable)
-        .where(eq(membersTable.memberNumber, memberNumber))
-        .all(),
-      RA.head,
-      O.map(
-        partial =>
-          ({
-            ...partial,
-            trainedOn: [],
-            prevEmails: [],
-            name: O.none,
-            pronouns: O.none,
-            agreementSigned: O.none,
-            isSuperUser: false,
-          }) satisfies Member
-      )
-    );
+export {replayState} from './deprecated-replay';
 
 const updateState = (db: BetterSQLite3Database) => (event: DomainEvent) => {
   switch (event.type) {
@@ -156,7 +30,7 @@ export type SharedReadModel = {
   db: BetterSQLite3Database;
   refresh: (events: ReadonlyArray<DomainEvent>) => void;
   members: {
-    getDetails: (memberNumber: number) => O.Option<Member>;
+    get: (memberNumber: number) => O.Option<Member>;
   };
 };
 
@@ -178,7 +52,7 @@ export const initSharedReadModel = (): SharedReadModel => {
       knownEvents = events.length;
     },
     members: {
-      getDetails: getDetails(db),
+      get: getMember(db),
     },
   };
 };
