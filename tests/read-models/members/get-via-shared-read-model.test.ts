@@ -21,7 +21,7 @@ describe('get-via-shared-read-model', () => {
     framework.sharedReadModel.refresh(events);
     return pipe(
       memberNumber,
-      framework.sharedReadModel.members.getDetails,
+      framework.sharedReadModel.members.get,
       getSomeOrFail
     );
   };
