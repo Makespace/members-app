@@ -1,4 +1,3 @@
-import * as RA from 'fp-ts/ReadonlyArray';
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
 import {membersTable} from './state';
@@ -15,14 +14,13 @@ export const getMember =
         .select()
         .from(membersTable)
         .where(eq(membersTable.memberNumber, memberNumber))
-        .all(),
-      RA.head,
+        .get(),
+      O.fromNullable,
       O.map(
         partial =>
           ({
             ...partial,
             trainedOn: [],
-            prevEmails: [],
             agreementSigned: O.none,
             isSuperUser: false,
           }) satisfies Member

@@ -97,18 +97,18 @@ describe('get-via-shared-read-model', () => {
         });
       });
 
-      it.failing('returns the latest email', async () => {
+      it('returns the latest email', async () => {
         const result = await runQuery();
         expect(result.emailAddress).toBe('updated@example.com');
       });
 
-      it.failing('returns a record of previous emails', async () => {
+      it('returns a record of previous emails', async () => {
         const result = await runQuery();
         expect(result.prevEmails).toHaveLength(1);
         expect(result.prevEmails[0]).toStrictEqual('foo@example.com');
       });
 
-      it.failing('returns gravatar hash based on latest email', async () => {
+      it('returns gravatar hash based on latest email', async () => {
         const result = await runQuery();
         expect(result.gravatarHash).toStrictEqual(
           gravatarHashFromEmail('updated@example.com')
