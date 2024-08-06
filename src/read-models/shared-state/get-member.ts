@@ -23,8 +23,6 @@ export const getMember =
             ...partial,
             trainedOn: [],
             prevEmails: [],
-            name: O.none,
-            pronouns: O.none,
             agreementSigned: O.none,
             isSuperUser: false,
           }) satisfies Member

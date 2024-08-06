@@ -17,8 +17,22 @@ const updateState = (db: BetterSQLite3Database) => (event: DomainEvent) => {
           memberNumber: event.memberNumber,
           emailAddress: event.email,
           gravatarHash: gravatarHashFromEmail(event.email),
+          name: O.none,
+          pronouns: O.none,
         })
         .run();
+      break;
+    case 'MemberDetailsUpdated':
+      if (event.name) {
+        db.update(membersTable)
+          .set({name: O.some(event.name)})
+          .run();
+      }
+      if (event.pronouns) {
+        db.update(membersTable)
+          .set({pronouns: O.some(event.pronouns)})
+          .run();
+      }
       break;
 
     default:
