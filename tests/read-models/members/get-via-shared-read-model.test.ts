@@ -60,7 +60,7 @@ describe('get-via-shared-read-model', () => {
         });
       });
 
-      it.failing('returns their name', async () => {
+      it('returns their name', async () => {
         const result = await runQuery();
         expect(result.name).toStrictEqual(O.some(name));
       });
@@ -82,7 +82,7 @@ describe('get-via-shared-read-model', () => {
         });
       });
 
-      it.failing('returns latest details', async () => {
+      it('returns latest details', async () => {
         const result = await runQuery();
         expect(result.name).toStrictEqual(O.some('Ford Prefect'));
         expect(result.pronouns).toStrictEqual(O.some('he/him'));

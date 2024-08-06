@@ -1,7 +1,7 @@
 import {sql} from 'drizzle-orm';
 import {EmailAddress, GravatarHash} from '../../types';
 import * as O from 'fp-ts/Option';
-import {integer, sqliteTable, text} from 'drizzle-orm/sqlite-core';
+import {blob, integer, sqliteTable, text} from 'drizzle-orm/sqlite-core';
 
 type TrainedOn = {
   id: Equipment['id'];
@@ -12,13 +12,19 @@ export const membersTable = sqliteTable('members', {
   memberNumber: integer('memberNumber').notNull(),
   emailAddress: text('emailAddress').notNull().$type<EmailAddress>(),
   gravatarHash: text('gravatarHash').notNull().$type<GravatarHash>(),
+  name: blob('name', {mode: 'json'}).notNull().$type<O.Option<string>>(),
+  pronouns: blob('pronouns', {mode: 'json'})
+    .notNull()
+    .$type<O.Option<string>>(),
 });
 
 const createMembersTable = sql`
   CREATE TABLE members (
     memberNumber INTEGER,
     emailAddress TEXT,
-    gravatarHash TEXT
+    gravatarHash TEXT,
+    name BLOB,
+    pronouns BLOB
   );`;
 
 export const createTables = sql`
