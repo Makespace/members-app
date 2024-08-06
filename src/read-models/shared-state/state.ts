@@ -1,10 +1,29 @@
+import {sql} from 'drizzle-orm';
 import {EmailAddress, GravatarHash} from '../../types';
 import * as O from 'fp-ts/Option';
+import {integer, sqliteTable, text} from 'drizzle-orm/sqlite-core';
 
 type TrainedOn = {
   id: Equipment['id'];
   trainedAt: Date;
 };
+
+export const membersTable = sqliteTable('members', {
+  memberNumber: integer('memberNumber').notNull(),
+  emailAddress: text('emailAddress').notNull().$type<EmailAddress>(),
+  gravatarHash: text('gravatarHash').notNull().$type<GravatarHash>(),
+});
+
+const createMembersTable = sql`
+  CREATE TABLE members (
+    memberNumber INTEGER,
+    emailAddress TEXT,
+    gravatarHash TEXT
+  );`;
+
+export const createTables = sql`
+  ${createMembersTable}
+`;
 
 type Member = {
   trainedOn: ReadonlyArray<TrainedOn>;

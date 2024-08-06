@@ -5,11 +5,11 @@ import {DomainEvent, EventName, isEventOfType} from '../../types/domain-event';
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
 import {gravatarHashFromEmail} from '../members/avatar';
-import {State, emptyState} from './state';
+import {State, createTables, emptyState, membersTable} from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
-import {sql} from 'drizzle-orm';
 import {Member} from '../members';
+import {eq} from 'drizzle-orm';
 
 const pertinentEventTypes: Array<EventName> = [
   'MemberNumberLinkedToEmail',
@@ -114,7 +114,43 @@ export const replayState = (events: ReadonlyArray<DomainEvent>) =>
 const getDetails =
   (db: BetterSQLite3Database): SharedReadModel['members']['getDetails'] =>
   (memberNumber): O.Option<Member> =>
-    O.none;
+    pipe(
+      db
+        .select()
+        .from(membersTable)
+        .where(eq(membersTable.memberNumber, memberNumber))
+        .all(),
+      RA.head,
+      O.map(
+        partial =>
+          ({
+            ...partial,
+            trainedOn: [],
+            prevEmails: [],
+            name: O.none,
+            pronouns: O.none,
+            agreementSigned: O.none,
+            isSuperUser: false,
+          }) satisfies Member
+      )
+    );
+
+const updateState = (db: BetterSQLite3Database) => (event: DomainEvent) => {
+  switch (event.type) {
+    case 'MemberNumberLinkedToEmail':
+      db.insert(membersTable)
+        .values({
+          memberNumber: event.memberNumber,
+          emailAddress: event.email,
+          gravatarHash: gravatarHashFromEmail(event.email),
+        })
+        .run();
+      break;
+
+    default:
+      break;
+  }
+};
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
@@ -134,8 +170,9 @@ export const initSharedReadModel = (): SharedReadModel => {
         return;
       }
       if (knownEvents === 0) {
-        db.run(sql`CREATE TABLE members (id TEXT);`);
+        db.run(createTables);
         knownEvents = events.length;
+        events.forEach(updateState(db));
         return;
       }
       knownEvents = events.length;
