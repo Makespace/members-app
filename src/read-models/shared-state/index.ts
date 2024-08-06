@@ -28,11 +28,13 @@ const updateState = (db: BetterSQLite3Database) => (event: DomainEvent) => {
       if (event.name) {
         db.update(membersTable)
           .set({name: O.some(event.name)})
+          .where(eq(membersTable.memberNumber, event.memberNumber))
           .run();
       }
       if (event.pronouns) {
         db.update(membersTable)
           .set({pronouns: O.some(event.pronouns)})
+          .where(eq(membersTable.memberNumber, event.memberNumber))
           .run();
       }
       break;
