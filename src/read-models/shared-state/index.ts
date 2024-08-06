@@ -1,7 +1,7 @@
 import {DomainEvent} from '../../types/domain-event';
 import * as O from 'fp-ts/Option';
 import {gravatarHashFromEmail} from '../members/avatar';
-import {createTables, membersTable} from './state';
+import {createTables, equipmentTable, membersTable} from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import {Member} from '../members';
@@ -70,6 +70,9 @@ const updateState = (db: BetterSQLite3Database) => (event: DomainEvent) => {
         .set({isSuperUser: false})
         .where(eq(membersTable.memberNumber, event.memberNumber))
         .run();
+      break;
+    case 'EquipmentAdded':
+      db.insert(equipmentTable).values({id: event.id, name: event.name}).run();
       break;
 
     default:

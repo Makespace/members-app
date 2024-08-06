@@ -46,7 +46,7 @@ describe('get', () => {
       await framework.commands.trainers.markTrained(markTrained);
     });
 
-    it.failing('returns the equipment', async () => {
+    it('returns the equipment', async () => {
       const equipment = await runQuery();
       expect(equipment.id).toStrictEqual(addEquipment.id);
     });
