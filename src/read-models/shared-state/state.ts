@@ -16,6 +16,9 @@ export const membersTable = sqliteTable('members', {
   pronouns: blob('pronouns', {mode: 'json'})
     .notNull()
     .$type<O.Option<string>>(),
+  prevEmails: blob('prevEmails', {mode: 'json'})
+    .notNull()
+    .$type<ReadonlyArray<EmailAddress>>(),
 });
 
 const createMembersTable = sql`
@@ -24,7 +27,8 @@ const createMembersTable = sql`
     emailAddress TEXT,
     gravatarHash TEXT,
     name BLOB,
-    pronouns BLOB
+    pronouns BLOB,
+    prevEmails BLOB
   );`;
 
 export const createTables = sql`

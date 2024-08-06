@@ -6,6 +6,7 @@ import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import {Member} from '../members';
 import {getMember} from './get-member';
+import {eq} from 'drizzle-orm';
 
 export {replayState} from './deprecated-replay';
 
@@ -19,6 +20,7 @@ const updateState = (db: BetterSQLite3Database) => (event: DomainEvent) => {
           gravatarHash: gravatarHashFromEmail(event.email),
           name: O.none,
           pronouns: O.none,
+          prevEmails: [],
         })
         .run();
       break;
@@ -34,6 +36,24 @@ const updateState = (db: BetterSQLite3Database) => (event: DomainEvent) => {
           .run();
       }
       break;
+    case 'MemberEmailChanged': {
+      const current = db
+        .select()
+        .from(membersTable)
+        .where(eq(membersTable.memberNumber, event.memberNumber))
+        .get();
+      if (current) {
+        db.update(membersTable)
+          .set({
+            emailAddress: event.newEmail,
+            prevEmails: [...current.prevEmails, current.emailAddress],
+            gravatarHash: gravatarHashFromEmail(event.newEmail),
+          })
+          .where(eq(membersTable.memberNumber, event.memberNumber))
+          .run();
+      }
+      break;
+    }
 
     default:
       break;
