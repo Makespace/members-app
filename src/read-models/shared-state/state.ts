@@ -33,9 +33,19 @@ const createMembersTable = sql`
     isSuperUser INTEGER
   );`;
 
-export const createTables = sql`
-  ${createMembersTable}
+export const equipmentTable = sqliteTable('equipment', {
+  id: text('id').notNull(),
+  name: text('id').notNull(),
+});
+
+const createEquipmentTable = sql`
+  CREATE TABLE equipment (
+  id TEXT,
+  name TEXT
+  );
 `;
+
+export const createTables = [createMembersTable, createEquipmentTable];
 
 type Member = {
   trainedOn: ReadonlyArray<TrainedOn>;
