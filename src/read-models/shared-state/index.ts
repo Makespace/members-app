@@ -7,6 +7,8 @@ import Database from 'better-sqlite3';
 import {Member} from '../members';
 import {getMember} from './get-member';
 import {eq} from 'drizzle-orm';
+import {Equipment} from './return-types';
+import {getEquipment} from './get-equipment';
 
 export {replayState} from './deprecated-replay';
 
@@ -81,6 +83,9 @@ export type SharedReadModel = {
   members: {
     get: (memberNumber: number) => O.Option<Member>;
   };
+  equipment: {
+    get: (id: string) => O.Option<Equipment>;
+  };
 };
 
 export const initSharedReadModel = (): SharedReadModel => {
@@ -93,7 +98,7 @@ export const initSharedReadModel = (): SharedReadModel => {
         return;
       }
       if (knownEvents === 0) {
-        db.run(createTables);
+        createTables.forEach(statement => db.run(statement));
         knownEvents = events.length;
         events.forEach(updateState(db));
         return;
@@ -102,6 +107,9 @@ export const initSharedReadModel = (): SharedReadModel => {
     },
     members: {
       get: getMember(db),
+    },
+    equipment: {
+      get: getEquipment(db),
     },
   };
 };
