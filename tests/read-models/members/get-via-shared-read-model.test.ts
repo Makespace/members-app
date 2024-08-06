@@ -16,14 +16,11 @@ describe('get-via-shared-read-model', () => {
   });
 
   const memberNumber = faker.number.int();
-  const runQuery = async () => {
+  const otherMemberNumber = faker.number.int();
+  const runQuery = async (id = memberNumber) => {
     const events = await framework.getAllEvents();
     framework.sharedReadModel.refresh(events);
-    return pipe(
-      memberNumber,
-      framework.sharedReadModel.members.get,
-      getSomeOrFail
-    );
+    return pipe(id, framework.sharedReadModel.members.get, getSomeOrFail);
   };
 
   describe('when the member does not exist', () => {
@@ -39,6 +36,10 @@ describe('get-via-shared-read-model', () => {
       await framework.commands.memberNumbers.linkNumberToEmail({
         memberNumber,
         email: 'foo@example.com' as EmailAddress,
+      });
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        memberNumber: otherMemberNumber,
+        email: faker.internet.email() as EmailAddress,
       });
     });
 
@@ -63,6 +64,11 @@ describe('get-via-shared-read-model', () => {
       it('returns their name', async () => {
         const result = await runQuery();
         expect(result.name).toStrictEqual(O.some(name));
+      });
+
+      it('does not alter other member records', async () => {
+        const result = await runQuery(otherMemberNumber);
+        expect(result.name).toStrictEqual(O.none);
       });
     });
 
