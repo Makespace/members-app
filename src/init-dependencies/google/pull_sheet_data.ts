@@ -2,11 +2,12 @@ import {Logger} from 'pino';
 import * as TE from 'fp-ts/TaskEither';
 import {Failure} from '../../types';
 
-import {Auth, google, sheets_v4} from 'googleapis';
 import {pipe} from 'fp-ts/lib/function';
+import {sheets, sheets_v4} from '@googleapis/sheets';
+import {GoogleAuth} from 'google-auth-library';
 
 export const pullGoogleSheetData =
-  (auth: Auth.GoogleAuth | null) =>
+  (auth: GoogleAuth | null) =>
   (
     logger: Logger,
     trainingSheetId: string
@@ -19,15 +20,13 @@ export const pullGoogleSheetData =
     return pipe(
       TE.tryCatch(
         () =>
-          google
-            .sheets({
-              version: 'v4',
-              auth,
-            })
-            .spreadsheets.get({
-              spreadsheetId: trainingSheetId,
-              includeGridData: true,
-            }),
+          sheets({
+            version: 'v4',
+            auth,
+          }).spreadsheets.get({
+            spreadsheetId: trainingSheetId,
+            includeGridData: true,
+          }),
         reason => {
           logger.error(reason, 'Failed to get spreadsheet');
           return {
