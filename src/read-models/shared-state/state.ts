@@ -19,6 +19,7 @@ export const membersTable = sqliteTable('members', {
   prevEmails: blob('prevEmails', {mode: 'json'})
     .notNull()
     .$type<ReadonlyArray<EmailAddress>>(),
+  isSuperUser: integer('isSuperUser', {mode: 'boolean'}).notNull(),
 });
 
 const createMembersTable = sql`
@@ -28,7 +29,8 @@ const createMembersTable = sql`
     gravatarHash TEXT,
     name BLOB,
     pronouns BLOB,
-    prevEmails BLOB
+    prevEmails BLOB,
+    isSuperUser INTEGER
   );`;
 
 export const createTables = sql`

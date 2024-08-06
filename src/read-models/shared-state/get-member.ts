@@ -22,7 +22,6 @@ export const getMember =
             ...partial,
             trainedOn: [],
             agreementSigned: O.none,
-            isSuperUser: false,
           }) satisfies Member
       )
     );
