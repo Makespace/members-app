@@ -42,7 +42,7 @@ describe('get-via-shared-read-model', () => {
       });
     });
 
-    it.failing('returns member number, email and gravatar hash', async () => {
+    it('returns member number, email and gravatar hash', async () => {
       const result = await runQuery();
       expect(result.memberNumber).toEqual(memberNumber);
       expect(result.emailAddress).toEqual('foo@example.com');
@@ -135,7 +135,7 @@ describe('get-via-shared-read-model', () => {
           });
         });
 
-        it.failing('they are no longer a superuser', async () => {
+        it('they are no longer a superuser', async () => {
           const result = await runQuery();
           expect(result.isSuperUser).toBe(false);
         });
