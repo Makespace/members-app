@@ -21,6 +21,7 @@ const updateState = (db: BetterSQLite3Database) => (event: DomainEvent) => {
           name: O.none,
           pronouns: O.none,
           prevEmails: [],
+          isSuperUser: false,
         })
         .run();
       break;
@@ -56,6 +57,18 @@ const updateState = (db: BetterSQLite3Database) => (event: DomainEvent) => {
       }
       break;
     }
+    case 'SuperUserDeclared':
+      db.update(membersTable)
+        .set({isSuperUser: true})
+        .where(eq(membersTable.memberNumber, event.memberNumber))
+        .run();
+      break;
+    case 'SuperUserRevoked':
+      db.update(membersTable)
+        .set({isSuperUser: false})
+        .where(eq(membersTable.memberNumber, event.memberNumber))
+        .run();
+      break;
 
     default:
       break;
