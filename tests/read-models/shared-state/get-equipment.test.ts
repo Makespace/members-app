@@ -51,10 +51,11 @@ describe('get', () => {
       expect(equipment.id).toStrictEqual(addEquipment.id);
     });
 
-    // it('returns the trainer', async () => {
-    //   const equipment = await runQuery();
-    //   expect(equipment.trainers[0]).toStrictEqual(addTrainer.memberNumber);
-    // });
+    it.failing('returns the trainer', async () => {
+      const equipment = await runQuery();
+      expect(equipment.trainers).toHaveLength(1);
+      expect(equipment.trainers[0]).toStrictEqual(addTrainer.memberNumber);
+    });
 
     // it('returns the trained users', () => {
     //   const equipment = await runQuery();
