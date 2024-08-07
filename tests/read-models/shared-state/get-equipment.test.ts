@@ -5,6 +5,8 @@ import {pipe} from 'fp-ts/lib/function';
 import {getSomeOrFail} from '../../helpers';
 import {Int} from 'io-ts';
 
+import {EmailAddress} from '../../../src/types';
+
 describe('get', () => {
   let framework: TestFramework;
   const equipmentId = faker.string.uuid() as UUID;
@@ -22,6 +24,10 @@ describe('get', () => {
   });
 
   describe('when equipment has a trainer and trained users', () => {
+    const addTrainerMember = {
+      memberNumber: faker.number.int(),
+      email: faker.internet.email() as EmailAddress,
+    };
     const createArea = {
       id: faker.string.uuid() as UUID,
       name: faker.company.buzzNoun() as NonEmptyString,
@@ -32,14 +38,18 @@ describe('get', () => {
       areaId: createArea.id,
     };
     const addTrainer = {
-      memberNumber: faker.number.int(),
+      memberNumber: addTrainerMember.memberNumber,
       equipmentId: equipmentId,
     };
     const markTrained = {
       equipmentId: equipmentId,
       memberNumber: faker.number.int() as Int,
     };
+
     beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(
+        addTrainerMember
+      );
       await framework.commands.area.create(createArea);
       await framework.commands.equipment.add(addEquipment);
       await framework.commands.trainers.add(addTrainer);
@@ -51,10 +61,13 @@ describe('get', () => {
       expect(equipment.id).toStrictEqual(addEquipment.id);
     });
 
-    it.failing('returns the trainer', async () => {
+    it('returns the trainer', async () => {
       const equipment = await runQuery();
+
       expect(equipment.trainers).toHaveLength(1);
-      expect(equipment.trainers[0]).toStrictEqual(addTrainer.memberNumber);
+      expect(equipment.trainers[0].memberNumber).toStrictEqual(
+        addTrainer.memberNumber
+      );
     });
 
     // it('returns the trained users', () => {
