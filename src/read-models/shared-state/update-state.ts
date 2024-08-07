@@ -23,6 +23,7 @@ export const updateState =
             pronouns: O.none,
             prevEmails: [],
             isSuperUser: false,
+            agreementSigned: O.none,
           })
           .run();
         break;
@@ -89,6 +90,11 @@ export const updateState =
             memberNumber: event.memberNumber,
             equipmentId: event.equipmentId,
           })
+          .run();
+        break;
+      case 'OwnerAgreementSigned':
+        db.update(membersTable)
+          .set({agreementSigned: O.some(event.signedAt)})
           .run();
         break;
 

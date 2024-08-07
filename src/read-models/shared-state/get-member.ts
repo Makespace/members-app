@@ -21,7 +21,6 @@ export const getMember =
           ({
             ...partial,
             trainedOn: [],
-            agreementSigned: O.none,
           }) satisfies Member
       )
     );
