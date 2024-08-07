@@ -125,19 +125,15 @@ export const initSharedReadModel = (
 ): SharedReadModel => {
   let knownEvents = 0;
   const readModelDb = drizzle(new Database());
+  createTables.forEach(statement => readModelDb.run(statement));
   return {
     db: readModelDb,
-    asyncRefresh: asyncRefresh(
-      eventStoreClient,
-      readModelDb,
-      updateState(readModelDb)
-    ),
+    asyncRefresh: asyncRefresh(eventStoreClient, updateState(readModelDb)),
     refresh: events => {
       if (knownEvents === events.length) {
         return;
       }
       if (knownEvents === 0) {
-        createTables.forEach(statement => readModelDb.run(statement));
         knownEvents = events.length;
         events.forEach(updateState(readModelDb));
         return;
