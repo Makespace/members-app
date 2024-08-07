@@ -24,6 +24,7 @@ const arbitraryMemberNumberLinkedToEmailEvent = () =>
   });
 
 const testLogger = createLogger({level: 'silent'});
+const dummyRefreshReadModel = () => T.of(undefined);
 
 describe('event-store end-to-end', () => {
   describe('setup event store', () => {
@@ -34,6 +35,7 @@ describe('event-store end-to-end', () => {
     let resourceEvents: RightOfTaskEither<
       ReturnType<Dependencies['getResourceEvents']>
     >;
+    let initialisedCommitEvent: ReturnType<typeof commitEvent>;
 
     beforeEach(async () => {
       dbClient = libsqlClient.createClient({
@@ -47,6 +49,11 @@ describe('event-store end-to-end', () => {
         getResourceEvents(dbClient),
         T.map(getRightOrFail)
       )();
+      initialisedCommitEvent = commitEvent(
+        dbClient,
+        testLogger,
+        dummyRefreshReadModel
+      );
     });
 
     it('is empty', async () => {
@@ -59,9 +66,7 @@ describe('event-store end-to-end', () => {
 
     describe('committing when then resource does not exist', () => {
       beforeEach(async () => {
-        await commitEvent(dbClient, testLogger)(resource, 'no-such-resource')(
-          event
-        )();
+        await initialisedCommitEvent(resource, 'no-such-resource')(event)();
         resourceEvents = await pipe(
           resource,
           getResourceEvents(dbClient),
@@ -82,12 +87,8 @@ describe('event-store end-to-end', () => {
       const event2 = arbitraryMemberNumberLinkedToEmailEvent();
 
       beforeEach(async () => {
-        await commitEvent(dbClient, testLogger)(resource, 'no-such-resource')(
-          event
-        )();
-        await commitEvent(dbClient, testLogger)(resource, initialVersionNumber)(
-          event2
-        )();
+        await initialisedCommitEvent(resource, 'no-such-resource')(event)();
+        await initialisedCommitEvent(resource, initialVersionNumber)(event2)();
         resourceEvents = await pipe(
           resource,
           getResourceEvents(dbClient),
@@ -109,15 +110,16 @@ describe('event-store end-to-end', () => {
       const competingEvent = arbitraryMemberNumberLinkedToEmailEvent();
       let result: E.Either<unknown, unknown>;
       beforeEach(async () => {
-        await commitEvent(dbClient, testLogger)(resource, 'no-such-resource')(
-          initialEvent
-        )();
+        await initialisedCommitEvent(
+          resource,
+          'no-such-resource'
+        )(initialEvent)();
         await pipe(
           competingEvent,
-          commitEvent(dbClient, testLogger)(resource, initialVersionNumber),
+          initialisedCommitEvent(resource, initialVersionNumber),
           T.map(getRightOrFail)
         )();
-        result = await commitEvent(dbClient, testLogger)(
+        result = await initialisedCommitEvent(
           resource,
           initialVersionNumber
         )(event)();
@@ -140,17 +142,15 @@ describe('event-store end-to-end', () => {
         id: randomUUID(),
       });
       beforeEach(async () => {
-        await commitEvent(dbClient, testLogger)(
+        await initialisedCommitEvent(
           arbitraryResourceOfSameType(),
           'no-such-resource'
         )(arbitraryMemberNumberLinkedToEmailEvent())();
-        await commitEvent(dbClient, testLogger)(
+        await initialisedCommitEvent(
           arbitraryResourceOfSameType(),
           'no-such-resource'
         )(arbitraryMemberNumberLinkedToEmailEvent())();
-        await commitEvent(dbClient, testLogger)(resource, 'no-such-resource')(
-          event
-        )();
+        await initialisedCommitEvent(resource, 'no-such-resource')(event)();
         resourceEvents = await pipe(
           resource,
           getResourceEvents(dbClient),

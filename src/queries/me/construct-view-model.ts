@@ -17,7 +17,6 @@ export const constructViewModel =
   (memberNumber: number): TE.TaskEither<FailureWithStatus, ViewModel> =>
     pipe(
       deps.getAllEvents(),
-      TE.tapTask(() => deps.sharedReadModel.asyncRefresh()),
       TE.map(events => ({
         user: E.right(user),
         isSelf: E.right(memberNumber === user.memberNumber),

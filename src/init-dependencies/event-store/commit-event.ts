@@ -64,7 +64,11 @@ const insertEventWithOptimisticConcurrencyControl = async (
 };
 
 export const commitEvent =
-  (dbClient: Client, logger: Logger): Dependencies['commitEvent'] =>
+  (
+    dbClient: Client,
+    logger: Logger,
+    refreshReadModel: Dependencies['sharedReadModel']['asyncRefresh']
+  ): Dependencies['commitEvent'] =>
   (resource, lastKnownVersion) =>
   (
     event
@@ -99,6 +103,7 @@ export const commitEvent =
               )()
             );
         }
-      })
+      }),
+      TE.tapTask(() => refreshReadModel())
     );
   };

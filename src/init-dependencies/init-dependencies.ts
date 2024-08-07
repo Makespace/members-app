@@ -58,12 +58,14 @@ export const initDependencies = (
     })
   );
 
+  const sharedReadModel = initSharedReadModel(dbClient);
+
   const deps: Dependencies = {
-    commitEvent: commitEvent(dbClient, logger),
+    commitEvent: commitEvent(dbClient, logger, sharedReadModel.asyncRefresh),
     getAllEvents: getAllEvents(dbClient),
     getAllEventsByType: getAllEventsByType(dbClient),
     getResourceEvents: getResourceEvents(dbClient),
-    sharedReadModel: initSharedReadModel(dbClient),
+    sharedReadModel,
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
     logger,
