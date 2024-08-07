@@ -39,7 +39,7 @@ const createMembersTable = sql`
 
 export const equipmentTable = sqliteTable('equipment', {
   id: text('id').notNull().primaryKey(),
-  name: text('id').notNull(),
+  name: text('name').notNull(),
 });
 
 const createEquipmentTable = sql`
@@ -72,12 +72,14 @@ export const trainedMemberstable = sqliteTable('trainedMembers', {
   equipmentId: text('equipmentId')
     .notNull()
     .references(() => equipmentTable.id),
+  trainedAt: blob('trainedAt', {mode: 'json'}).notNull().$type<Date>(),
 });
 
 const createTrainedMembersTable = sql`
   CREATE TABLE IF NOT EXISTS trainedMembers (
     memberNumber INTEGER,
-    equipmentID TEXT
+    equipmentID TEXT,
+    trainedAt BLOB
   )
 `;
 

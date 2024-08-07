@@ -89,6 +89,7 @@ export const updateState =
           .values({
             memberNumber: event.memberNumber,
             equipmentId: event.equipmentId,
+            trainedAt: event.recordedAt,
           })
           .run();
         break;

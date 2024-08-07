@@ -182,10 +182,11 @@ describe('get-via-shared-read-model', () => {
         });
       });
 
-      it.failing('returns the equipment name and id', () => {
+      it('returns the equipment name and id', () => {
         const result = runQuery();
         expect(result.trainedOn).toHaveLength(1);
         expect(result.trainedOn[0].id).toStrictEqual(createEquipment.id);
+        expect(result.trainedOn[0].name).toStrictEqual(createEquipment.name);
       });
 
       it.todo('returns date they were marked as trained');
