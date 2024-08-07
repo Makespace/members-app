@@ -1,9 +1,9 @@
 import {faker} from '@faker-js/faker';
-import {updateState} from '../../../src/read-models/shared-state';
 import {asyncRefresh} from '../../../src/read-models/shared-state/async-refresh';
 import {initTestFramework, TestFramework} from '../test-framework';
 import {EmailAddress} from '../../../src/types';
 import {sql} from 'drizzle-orm';
+import {updateState} from '../../../src/read-models/shared-state/update-state';
 
 const arbitraryLinkNumberCommand = () => ({
   memberNumber: faker.number.int(),
