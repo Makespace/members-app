@@ -12,17 +12,21 @@ const arbitraryLinkNumberCommand = () => ({
 
 describe('async-refresh', () => {
   let framework: TestFramework;
+  let refresh: ReturnType<typeof asyncRefresh>;
+  let updateStateSpy: jest.Mock;
 
   beforeEach(async () => {
     framework = await initTestFramework();
+    updateStateSpy = jest.fn(updateState(framework.sharedReadModel.db));
+    refresh = asyncRefresh(
+      framework.eventStoreDb,
+      framework.sharedReadModel.db,
+      updateStateSpy
+    );
   });
 
   it('creates the necessary tables', async () => {
-    await asyncRefresh(
-      framework.eventStoreDb,
-      framework.sharedReadModel.db,
-      updateState(framework.sharedReadModel.db)
-    )()();
+    await refresh()();
     const tables = framework.sharedReadModel.db.all(
       sql`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';`
     );
@@ -40,12 +44,7 @@ describe('async-refresh', () => {
     });
 
     it('processes all events', async () => {
-      const updateStateSpy = jest.fn(updateState(framework.sharedReadModel.db));
-      await asyncRefresh(
-        framework.eventStoreDb,
-        framework.sharedReadModel.db,
-        updateStateSpy
-      )()();
+      await refresh()();
       expect(updateStateSpy).toHaveBeenCalledTimes(2);
     });
   });
@@ -58,22 +57,23 @@ describe('async-refresh', () => {
     });
 
     it('does nothing', async () => {
-      const updateStateSpy = jest.fn(updateState(framework.sharedReadModel.db));
-      await asyncRefresh(
-        framework.eventStoreDb,
-        framework.sharedReadModel.db,
-        updateState(framework.sharedReadModel.db)
-      )()();
-      await asyncRefresh(
-        framework.eventStoreDb,
-        framework.sharedReadModel.db,
-        updateStateSpy
-      )()();
+      await refresh()();
+      await refresh()();
       expect(updateStateSpy).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("when new events exist that haven't been processed by the read model", () => {
-    it.todo('only processes the new events');
+    it('only processes the new events', async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(
+        arbitraryLinkNumberCommand()
+      );
+      await refresh()();
+      await framework.commands.memberNumbers.linkNumberToEmail(
+        arbitraryLinkNumberCommand()
+      );
+      await refresh()();
+      expect(updateStateSpy).toHaveBeenCalledTimes(2);
+    });
   });
 });
