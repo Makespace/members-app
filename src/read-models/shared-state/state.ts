@@ -23,7 +23,7 @@ export const membersTable = sqliteTable('members', {
 });
 
 const createMembersTable = sql`
-  CREATE TABLE members (
+  CREATE TABLE IF NOT EXISTS members (
     memberNumber INTEGER,
     emailAddress TEXT,
     gravatarHash TEXT,
@@ -39,7 +39,7 @@ export const equipmentTable = sqliteTable('equipment', {
 });
 
 const createEquipmentTable = sql`
-  CREATE TABLE equipment (
+  CREATE TABLE IF NOT EXISTS equipment (
   id TEXT,
   name TEXT
   );
@@ -55,7 +55,7 @@ export const trainersTable = sqliteTable('trainers', {
 });
 
 const createTrainersTable = sql`
-  CREATE TABLE trainers (
+  CREATE TABLE IF NOT EXISTS trainers (
     memberNumber INTEGER,
     equipmentID TEXT
   )
@@ -71,7 +71,7 @@ export const trainedMemberstable = sqliteTable('trainedMembers', {
 });
 
 const createTrainedMembersTable = sql`
-  CREATE TABLE trainedMembers (
+  CREATE TABLE IF NOT EXISTS trainedMembers (
     memberNumber INTEGER,
     equipmentID TEXT
   )

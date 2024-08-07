@@ -127,7 +127,11 @@ export const initSharedReadModel = (
   const readModelDb = drizzle(new Database());
   return {
     db: readModelDb,
-    asyncRefresh: asyncRefresh(eventStoreClient, readModelDb),
+    asyncRefresh: asyncRefresh(
+      eventStoreClient,
+      readModelDb,
+      updateState(readModelDb)
+    ),
     refresh: events => {
       if (knownEvents === events.length) {
         return;
