@@ -18,8 +18,7 @@ describe('get-via-shared-read-model', () => {
   const memberNumber = faker.number.int();
   const otherMemberNumber = faker.number.int();
   const runQuery = async (id = memberNumber) => {
-    const events = await framework.getAllEvents();
-    framework.sharedReadModel.refresh(events);
+    await framework.sharedReadModel.asyncRefresh()();
     return pipe(id, framework.sharedReadModel.members.get, getSomeOrFail);
   };
 

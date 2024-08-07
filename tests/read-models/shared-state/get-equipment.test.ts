@@ -11,8 +11,7 @@ describe('get', () => {
   let framework: TestFramework;
   const equipmentId = faker.string.uuid() as UUID;
   const runQuery = async () => {
-    const events = await framework.getAllEvents();
-    framework.sharedReadModel.refresh(events);
+    await framework.sharedReadModel.asyncRefresh()();
     return pipe(
       equipmentId,
       framework.sharedReadModel.equipment.get,

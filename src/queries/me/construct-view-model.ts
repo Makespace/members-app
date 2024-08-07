@@ -11,14 +11,13 @@ import {ViewModel} from './view-model';
 import {StatusCodes} from 'http-status-codes';
 import {sequenceS} from 'fp-ts/lib/Apply';
 import {readModels} from '../../read-models';
-import * as IO from 'fp-ts/IO';
 
 export const constructViewModel =
   (deps: Dependencies, user: User) =>
   (memberNumber: number): TE.TaskEither<FailureWithStatus, ViewModel> =>
     pipe(
       deps.getAllEvents(),
-      TE.tapIO(events => IO.of(deps.sharedReadModel.refresh(events))),
+      TE.tapTask(() => deps.sharedReadModel.asyncRefresh()),
       TE.map(events => ({
         user: E.right(user),
         isSelf: E.right(memberNumber === user.memberNumber),
