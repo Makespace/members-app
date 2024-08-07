@@ -4,7 +4,12 @@ import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {eq} from 'drizzle-orm';
 import {SharedReadModel} from '.';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {equipmentTable, membersTable, trainersTable} from './state';
+import {
+  equipmentTable,
+  membersTable,
+  trainedMemberstable,
+  trainersTable,
+} from './state';
 
 export const getEquipment =
   (db: BetterSQLite3Database): SharedReadModel['equipment']['get'] =>
@@ -27,9 +32,28 @@ export const getEquipment =
         }))
       );
 
+    const getTrainedMembers = () =>
+      pipe(
+        db
+          .select()
+          .from(membersTable)
+          .leftJoin(
+            trainedMemberstable,
+            eq(membersTable.memberNumber, trainedMemberstable.memberNumber)
+          )
+          .where(eq(trainedMemberstable.equipmentId, id))
+          .all(),
+        RA.map(result => ({
+          ...result.members,
+          trainedOn: [],
+          agreementSigned: O.none,
+        }))
+      );
+
     return pipe(
       db.select().from(equipmentTable).where(eq(equipmentTable.id, id)).get(),
       O.fromNullable,
-      O.let('trainers', getTrainers)
+      O.let('trainers', getTrainers),
+      O.let('trainedMembers', getTrainedMembers)
     );
   };
