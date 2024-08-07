@@ -1,7 +1,12 @@
 import {DomainEvent} from '../../types/domain-event';
 import * as O from 'fp-ts/Option';
 import {gravatarHashFromEmail} from '../members/avatar';
-import {createTables, equipmentTable, membersTable} from './state';
+import {
+  createTables,
+  equipmentTable,
+  membersTable,
+  trainersTable,
+} from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import {Member} from '../members';
@@ -73,6 +78,14 @@ const updateState = (db: BetterSQLite3Database) => (event: DomainEvent) => {
       break;
     case 'EquipmentAdded':
       db.insert(equipmentTable).values({id: event.id, name: event.name}).run();
+      break;
+    case 'TrainerAdded':
+      db.insert(trainersTable)
+        .values({
+          memberNumber: event.memberNumber,
+          equipmentId: event.equipmentId,
+        })
+        .run();
       break;
 
     default:
