@@ -18,11 +18,7 @@ describe('async-refresh', () => {
   beforeEach(async () => {
     framework = await initTestFramework();
     updateStateSpy = jest.fn(updateState(framework.sharedReadModel.db));
-    refresh = asyncRefresh(
-      framework.eventStoreDb,
-      framework.sharedReadModel.db,
-      updateStateSpy
-    );
+    refresh = asyncRefresh(framework.eventStoreDb, updateStateSpy);
   });
 
   it('creates the necessary tables', async () => {
