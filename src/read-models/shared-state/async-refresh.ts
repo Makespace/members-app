@@ -1,10 +1,9 @@
 /* eslint-disable unused-imports/no-unused-vars */
 import {Client} from '@libsql/client/.';
 import {getAllEvents} from '../../init-dependencies/event-store/get-all-events';
-import {getRightOrFail} from '../../../tests/helpers';
 import {pipe} from 'fp-ts/lib/function';
-import * as T from 'fp-ts/Task';
 import {DomainEvent} from '../../types';
+import * as TE from 'fp-ts/TaskEither';
 
 export const asyncRefresh = (
   eventStoreDb: Client,
@@ -14,8 +13,11 @@ export const asyncRefresh = (
   return () => async () => {
     const events = await pipe(
       getAllEvents(eventStoreDb)(),
-      T.map(getRightOrFail)
+      TE.getOrElse(() => {
+        throw new Error('unexpected Left');
+      })
     )();
+
     if (events.length > knownEvents) {
       events.slice(knownEvents - events.length).forEach(updateState);
       knownEvents = events.length;
