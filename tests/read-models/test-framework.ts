@@ -42,6 +42,7 @@ export type TestFramework = {
     commitEvent: Dependencies['commitEvent'];
     getResourceEvents: Dependencies['getResourceEvents'];
   };
+  eventStoreDb: libsqlClient.Client;
 };
 
 export const initTestFramework = async (): Promise<TestFramework> => {
@@ -75,9 +76,8 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   return {
     getAllEvents: frameworkGetAllEvents,
     getAllEventsByType: frameworkGetAllEventsByType,
-    sharedReadModel: initSharedReadModel(
-      libsqlClient.createClient({url: ':memory:'})
-    ),
+    eventStoreDb: dbClient,
+    sharedReadModel: initSharedReadModel(dbClient),
     depsForApplyToResource: {
       commitEvent: frameworkCommitEvent,
       getResourceEvents: getResourceEvents(dbClient),
