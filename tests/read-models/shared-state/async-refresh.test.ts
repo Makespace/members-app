@@ -68,7 +68,7 @@ describe('async-refresh', () => {
         framework.eventStoreDb,
         framework.sharedReadModel.db,
         updateStateSpy
-      )()()/*  */;
+      )()();
       expect(updateStateSpy).toHaveBeenCalledTimes(1);
     });
   });
