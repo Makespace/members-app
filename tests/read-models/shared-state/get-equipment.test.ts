@@ -3,9 +3,9 @@ import {TestFramework, initTestFramework} from '../test-framework';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {pipe} from 'fp-ts/lib/function';
 import {getSomeOrFail} from '../../helpers';
-import {Int} from 'io-ts';
 
 import {EmailAddress} from '../../../src/types';
+import {Int} from 'io-ts';
 
 describe('get', () => {
   let framework: TestFramework;
@@ -28,6 +28,10 @@ describe('get', () => {
       memberNumber: faker.number.int(),
       email: faker.internet.email() as EmailAddress,
     };
+    const addTrainedMember = {
+      memberNumber: faker.number.int() as Int,
+      email: faker.internet.email() as EmailAddress,
+    };
     const createArea = {
       id: faker.string.uuid() as UUID,
       name: faker.company.buzzNoun() as NonEmptyString,
@@ -43,12 +47,15 @@ describe('get', () => {
     };
     const markTrained = {
       equipmentId: equipmentId,
-      memberNumber: faker.number.int() as Int,
+      memberNumber: addTrainedMember.memberNumber,
     };
 
     beforeEach(async () => {
       await framework.commands.memberNumbers.linkNumberToEmail(
         addTrainerMember
+      );
+      await framework.commands.memberNumbers.linkNumberToEmail(
+        addTrainedMember
       );
       await framework.commands.area.create(createArea);
       await framework.commands.equipment.add(addEquipment);
@@ -63,19 +70,18 @@ describe('get', () => {
 
     it('returns the trainer', async () => {
       const equipment = await runQuery();
-
       expect(equipment.trainers).toHaveLength(1);
       expect(equipment.trainers[0].memberNumber).toStrictEqual(
         addTrainer.memberNumber
       );
     });
 
-    // it('returns the trained users', () => {
-    //   const equipment = await runQuery();
-    //   expect(equipment.trainedMembers).toHaveLength(1);
-    //   expect(equipment.trainedMembers[0]).toStrictEqual(
-    //     markTrained.memberNumber
-    //   );
-    // });
+    it('returns the trained users', async () => {
+      const equipment = await runQuery();
+      expect(equipment.trainedMembers).toHaveLength(1);
+      expect(equipment.trainedMembers[0].memberNumber).toStrictEqual(
+        markTrained.memberNumber
+      );
+    });
   });
 });

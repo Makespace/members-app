@@ -5,6 +5,7 @@ import {
   createTables,
   equipmentTable,
   membersTable,
+  trainedMemberstable,
   trainersTable,
 } from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
@@ -81,6 +82,14 @@ const updateState = (db: BetterSQLite3Database) => (event: DomainEvent) => {
       break;
     case 'TrainerAdded':
       db.insert(trainersTable)
+        .values({
+          memberNumber: event.memberNumber,
+          equipmentId: event.equipmentId,
+        })
+        .run();
+      break;
+    case 'MemberTrainedOnEquipment':
+      db.insert(trainedMemberstable)
         .values({
           memberNumber: event.memberNumber,
           equipmentId: event.equipmentId,

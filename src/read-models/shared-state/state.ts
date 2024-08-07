@@ -61,10 +61,27 @@ const createTrainersTable = sql`
   )
 `;
 
+export const trainedMemberstable = sqliteTable('trainedMembers', {
+  memberNumber: integer('memberNumber')
+    .notNull()
+    .references(() => membersTable.memberNumber),
+  equipmentId: text('equipmentId')
+    .notNull()
+    .references(() => equipmentTable.id),
+});
+
+const createTrainedMembersTable = sql`
+  CREATE TABLE trainedMembers (
+    memberNumber INTEGER,
+    equipmentID TEXT
+  )
+`;
+
 export const createTables = [
   createMembersTable,
   createEquipmentTable,
   createTrainersTable,
+  createTrainedMembersTable,
 ];
 
 type Member = {

@@ -4,4 +4,5 @@ export type Equipment = {
   id: string;
   name: string;
   trainers: ReadonlyArray<Member>;
+  trainedMembers: ReadonlyArray<Member>;
 };
