@@ -49,9 +49,11 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   const dbClient = libsqlClient.createClient({
     url: `file:/tmp/${randomUUID()}.db`,
   });
+  const sharedReadModel = initSharedReadModel(dbClient);
   const frameworkCommitEvent = commitEvent(
     dbClient,
-    createLogger({level: 'silent'})
+    createLogger({level: 'silent'}),
+    sharedReadModel.asyncRefresh
   );
   await ensureEventTableExists(dbClient)();
   const frameworkGetAllEvents = () =>
@@ -77,7 +79,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     getAllEvents: frameworkGetAllEvents,
     getAllEventsByType: frameworkGetAllEventsByType,
     eventStoreDb: dbClient,
-    sharedReadModel: initSharedReadModel(dbClient),
+    sharedReadModel,
     depsForApplyToResource: {
       commitEvent: frameworkCommitEvent,
       getResourceEvents: getResourceEvents(dbClient),

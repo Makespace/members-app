@@ -17,10 +17,8 @@ describe('get-via-shared-read-model', () => {
 
   const memberNumber = faker.number.int();
   const otherMemberNumber = faker.number.int();
-  const runQuery = async (id = memberNumber) => {
-    await framework.sharedReadModel.asyncRefresh()();
-    return pipe(id, framework.sharedReadModel.members.get, getSomeOrFail);
-  };
+  const runQuery = (id = memberNumber) =>
+    pipe(id, framework.sharedReadModel.members.get, getSomeOrFail);
 
   describe('when the member does not exist', () => {
     it('returns none', async () => {
@@ -42,8 +40,8 @@ describe('get-via-shared-read-model', () => {
       });
     });
 
-    it('returns member number, email and gravatar hash', async () => {
-      const result = await runQuery();
+    it('returns member number, email and gravatar hash', () => {
+      const result = runQuery();
       expect(result.memberNumber).toEqual(memberNumber);
       expect(result.emailAddress).toEqual('foo@example.com');
       expect(result.gravatarHash).toStrictEqual(
@@ -60,13 +58,13 @@ describe('get-via-shared-read-model', () => {
         });
       });
 
-      it('returns their name', async () => {
-        const result = await runQuery();
+      it('returns their name', () => {
+        const result = runQuery();
         expect(result.name).toStrictEqual(O.some(name));
       });
 
-      it('does not alter other member records', async () => {
-        const result = await runQuery(otherMemberNumber);
+      it('does not alter other member records', () => {
+        const result = runQuery(otherMemberNumber);
         expect(result.name).toStrictEqual(O.none);
       });
     });
@@ -87,8 +85,8 @@ describe('get-via-shared-read-model', () => {
         });
       });
 
-      it('returns latest details', async () => {
-        const result = await runQuery();
+      it('returns latest details', () => {
+        const result = runQuery();
         expect(result.name).toStrictEqual(O.some('Ford Prefect'));
         expect(result.pronouns).toStrictEqual(O.some('he/him'));
       });
@@ -102,19 +100,19 @@ describe('get-via-shared-read-model', () => {
         });
       });
 
-      it('returns the latest email', async () => {
-        const result = await runQuery();
+      it('returns the latest email', () => {
+        const result = runQuery();
         expect(result.emailAddress).toBe('updated@example.com');
       });
 
-      it('returns a record of previous emails', async () => {
-        const result = await runQuery();
+      it('returns a record of previous emails', () => {
+        const result = runQuery();
         expect(result.prevEmails).toHaveLength(1);
         expect(result.prevEmails[0]).toStrictEqual('foo@example.com');
       });
 
-      it('returns gravatar hash based on latest email', async () => {
-        const result = await runQuery();
+      it('returns gravatar hash based on latest email', () => {
+        const result = runQuery();
         expect(result.gravatarHash).toStrictEqual(
           gravatarHashFromEmail('updated@example.com')
         );
@@ -128,8 +126,8 @@ describe('get-via-shared-read-model', () => {
         });
       });
 
-      it('they are a superuser', async () => {
-        const result = await runQuery();
+      it('they are a superuser', () => {
+        const result = runQuery();
         expect(result.isSuperUser).toBe(true);
       });
 
@@ -140,8 +138,8 @@ describe('get-via-shared-read-model', () => {
           });
         });
 
-        it('they are no longer a superuser', async () => {
-          const result = await runQuery();
+        it('they are no longer a superuser', () => {
+          const result = runQuery();
           expect(result.isSuperUser).toBe(false);
         });
       });
@@ -166,8 +164,8 @@ describe('get-via-shared-read-model', () => {
         });
       });
 
-      it.failing('returns the equipment name and id', async () => {
-        const result = await runQuery();
+      it.failing('returns the equipment name and id', () => {
+        const result = runQuery();
         expect(result.trainedOn).toHaveLength(1);
         expect(result.trainedOn[0].id).toStrictEqual(createEquipment.id);
       });

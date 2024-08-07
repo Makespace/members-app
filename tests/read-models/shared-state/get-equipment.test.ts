@@ -10,14 +10,9 @@ import {Int} from 'io-ts';
 describe('get', () => {
   let framework: TestFramework;
   const equipmentId = faker.string.uuid() as UUID;
-  const runQuery = async () => {
-    await framework.sharedReadModel.asyncRefresh()();
-    return pipe(
-      equipmentId,
-      framework.sharedReadModel.equipment.get,
-      getSomeOrFail
-    );
-  };
+  const runQuery = () =>
+    pipe(equipmentId, framework.sharedReadModel.equipment.get, getSomeOrFail);
+
   beforeEach(async () => {
     framework = await initTestFramework();
   });
@@ -62,21 +57,21 @@ describe('get', () => {
       await framework.commands.trainers.markTrained(markTrained);
     });
 
-    it('returns the equipment', async () => {
-      const equipment = await runQuery();
+    it('returns the equipment', () => {
+      const equipment = runQuery();
       expect(equipment.id).toStrictEqual(addEquipment.id);
     });
 
-    it('returns the trainer', async () => {
-      const equipment = await runQuery();
+    it('returns the trainer', () => {
+      const equipment = runQuery();
       expect(equipment.trainers).toHaveLength(1);
       expect(equipment.trainers[0].memberNumber).toStrictEqual(
         addTrainer.memberNumber
       );
     });
 
-    it('returns the trained users', async () => {
-      const equipment = await runQuery();
+    it('returns the trained users', () => {
+      const equipment = runQuery();
       expect(equipment.trainedMembers).toHaveLength(1);
       expect(equipment.trainedMembers[0].memberNumber).toStrictEqual(
         markTrained.memberNumber
