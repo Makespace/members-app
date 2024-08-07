@@ -88,6 +88,8 @@ void (async () => {
     TE.mapLeft(e => deps.logger.error(e, 'Failed to start server'))
   )();
 
+  await deps.sharedReadModel.asyncRefresh()();
+
   server.listen(conf.PORT, () => {
     deps.logger.info({port: conf.PORT}, 'Server listening');
     if (conf.PUBLIC_URL.includes('localhost')) {
