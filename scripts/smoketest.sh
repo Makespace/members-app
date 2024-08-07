@@ -3,8 +3,8 @@ set -euo pipefail
 
 function finish() {
   echo "Stopping all containers"
-	docker-compose logs
-	docker-compose stop
+	docker compose logs
+	docker compose stop
 }
 
 trap finish EXIT
@@ -32,7 +32,7 @@ timeout --foreground 20 bash << EOT
 			-X POST \
 			-H "Content-Type: application/x-www-form-urlencoded" \
 			-d "email=foo@example.com"
-		docker-compose logs | grep 'Received message from'
+		docker compose logs | grep 'Received message from'
 		if [ "\$?" != "0" ]; then
 			continue
 		fi
