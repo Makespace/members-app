@@ -23,7 +23,7 @@ export const asyncRefresh = (
       createTables.forEach(statement => readModelDb.run(statement));
     }
     if (events.length > knownEvents) {
-      events.forEach(updateState);
+      events.slice(knownEvents - events.length).forEach(updateState);
       knownEvents = events.length;
     }
   };
