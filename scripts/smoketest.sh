@@ -9,8 +9,8 @@ function finish() {
 
 trap finish EXIT
 
-docker-compose down
-docker-compose up --build -d
+docker compose down
+docker compose up --build -d
 
 timeout --foreground 20 bash << EOT
   while true; do
