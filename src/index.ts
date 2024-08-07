@@ -63,7 +63,18 @@ const backgroundTask = setInterval(() => {
     .then(() => deps.logger.info('Background update of quiz results finished'))
     .catch(err => deps.logger.error(err, 'Background update unexpected error'));
 }, conf.BACKGROUND_PROCESSING_RUN_INTERVAL_MS);
-server.on('close', () => clearInterval(backgroundTask));
+const periodicReadModelRefresh = setInterval(() => {
+  deps.sharedReadModel
+    .asyncRefresh()()
+    .then(() => deps.logger.debug('Refreshed read model'))
+    .catch(err =>
+      deps.logger.error(err, 'Unexpected error when refreshing read model')
+    );
+}, 5000);
+server.on('close', () => {
+  clearInterval(backgroundTask);
+  clearInterval(periodicReadModelRefresh);
+});
 
 // Readmodels are used to get the current status of the background tasks via the
 // events that have been written.
