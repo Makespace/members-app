@@ -111,7 +111,6 @@ export const updateState =
 export type SharedReadModel = {
   db: BetterSQLite3Database;
   asyncRefresh: () => T.Task<void>;
-  refresh: (events: ReadonlyArray<DomainEvent>) => void;
   members: {
     get: (memberNumber: number) => O.Option<Member>;
   };
@@ -123,23 +122,11 @@ export type SharedReadModel = {
 export const initSharedReadModel = (
   eventStoreClient: Client
 ): SharedReadModel => {
-  let knownEvents = 0;
   const readModelDb = drizzle(new Database());
   createTables.forEach(statement => readModelDb.run(statement));
   return {
     db: readModelDb,
     asyncRefresh: asyncRefresh(eventStoreClient, updateState(readModelDb)),
-    refresh: events => {
-      if (knownEvents === events.length) {
-        return;
-      }
-      if (knownEvents === 0) {
-        knownEvents = events.length;
-        events.forEach(updateState(readModelDb));
-        return;
-      }
-      knownEvents = events.length;
-    },
     members: {
       get: getMember(readModelDb),
     },
