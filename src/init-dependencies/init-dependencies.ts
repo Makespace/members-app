@@ -63,7 +63,7 @@ export const initDependencies = (
     getAllEvents: getAllEvents(dbClient),
     getAllEventsByType: getAllEventsByType(dbClient),
     getResourceEvents: getResourceEvents(dbClient),
-    sharedReadModel: initSharedReadModel(),
+    sharedReadModel: initSharedReadModel(dbClient),
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
     logger,
