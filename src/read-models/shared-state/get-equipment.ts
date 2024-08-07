@@ -46,7 +46,6 @@ export const getEquipment =
         RA.map(result => ({
           ...result.members,
           trainedOn: [],
-          agreementSigned: O.none,
         }))
       );
 
