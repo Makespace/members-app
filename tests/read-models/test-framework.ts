@@ -75,7 +75,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   return {
     getAllEvents: frameworkGetAllEvents,
     getAllEventsByType: frameworkGetAllEventsByType,
-    sharedReadModel: initSharedReadModel(),
+    sharedReadModel: initSharedReadModel(
+      libsqlClient.createClient({url: ':memory:'})
+    ),
     depsForApplyToResource: {
       commitEvent: frameworkCommitEvent,
       getResourceEvents: getResourceEvents(dbClient),

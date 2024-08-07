@@ -1,4 +1,5 @@
 import {DomainEvent} from '../../types/domain-event';
+import * as T from 'fp-ts/Task';
 import * as O from 'fp-ts/Option';
 import {gravatarHashFromEmail} from '../members/avatar';
 import {
@@ -15,6 +16,8 @@ import {getMember} from './get-member';
 import {eq} from 'drizzle-orm';
 import {Equipment} from './return-types';
 import {getEquipment} from './get-equipment';
+import {Client} from '@libsql/client/.';
+import {asyncRefresh} from './async-refresh';
 
 export {replayState} from './deprecated-replay';
 
@@ -104,6 +107,7 @@ const updateState = (db: BetterSQLite3Database) => (event: DomainEvent) => {
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
+  asyncRefresh: () => T.Task<void>;
   refresh: (events: ReadonlyArray<DomainEvent>) => void;
   members: {
     get: (memberNumber: number) => O.Option<Member>;
@@ -113,28 +117,31 @@ export type SharedReadModel = {
   };
 };
 
-export const initSharedReadModel = (): SharedReadModel => {
+export const initSharedReadModel = (
+  eventStoreClient: Client
+): SharedReadModel => {
   let knownEvents = 0;
-  const db = drizzle(new Database());
+  const readModelDb = drizzle(new Database());
   return {
-    db,
+    db: readModelDb,
+    asyncRefresh: asyncRefresh(eventStoreClient, readModelDb),
     refresh: events => {
       if (knownEvents === events.length) {
         return;
       }
       if (knownEvents === 0) {
-        createTables.forEach(statement => db.run(statement));
+        createTables.forEach(statement => readModelDb.run(statement));
         knownEvents = events.length;
-        events.forEach(updateState(db));
+        events.forEach(updateState(readModelDb));
         return;
       }
       knownEvents = events.length;
     },
     members: {
-      get: getMember(db),
+      get: getMember(readModelDb),
     },
     equipment: {
-      get: getEquipment(db),
+      get: getEquipment(readModelDb),
     },
   };
 };
