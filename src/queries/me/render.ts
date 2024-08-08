@@ -1,10 +1,19 @@
 import {pipe} from 'fp-ts/lib/function';
+import * as RA from 'fp-ts/ReadonlyArray';
 import {getGravatarThumbnail} from '../../templates/avatar';
-import {html, sanitizeOption, safe, sanitizeString} from '../../types/html';
+import {
+  html,
+  sanitizeOption,
+  safe,
+  sanitizeString,
+  joinHtml,
+} from '../../types/html';
 import {ViewModel} from './view-model';
 import {pageTemplate} from '../../templates';
 import {renderMemberNumber} from '../../templates/member-number';
 import {superUserNav} from '../landing/render';
+import {displayDate} from '../../templates/display-date';
+import {DateTime} from 'luxon';
 
 const editName = (viewModel: ViewModel) =>
   html`<a href="/members/edit-name?member=${viewModel.member.memberNumber}"
@@ -55,9 +64,30 @@ const renderMemberDetails = (viewModel: ViewModel) => html`
   </table>
 `;
 
-const renderTrainingStatus = () => html`
-  <p>You are currently not allowed to use any RED equipment.</p>
-`;
+const renderTrainingStatus = (trainedOn: ViewModel['member']['trainedOn']) =>
+  pipe(
+    trainedOn,
+    RA.map(
+      equipment =>
+        html`<li>
+          <a href="/equipment/${safe(equipment.id)}"
+            >${sanitizeString(equipment.name)}</a
+          >
+          (since ${displayDate(DateTime.fromJSDate(equipment.trainedAt))})
+        </li>`
+    ),
+    RA.match(
+      () => html`
+        <p>You are currently not allowed to use any RED equipment.</p>
+      `,
+      listItems => html`
+        <p>You are permitted to use the following RED equipment:</p>
+        <ul>
+          ${joinHtml(listItems)}
+        </ul>
+      `
+    )
+  );
 
 export const render = (viewModel: ViewModel) =>
   pipe(
@@ -66,7 +96,7 @@ export const render = (viewModel: ViewModel) =>
       <h2>Your details</h2>
       ${renderMemberDetails(viewModel)}
       <h2>Training status</h2>
-      ${renderTrainingStatus()}
+      ${renderTrainingStatus(viewModel.member.trainedOn)}
       ${viewModel.member.isSuperUser ? superUserNav : ''}
     `,
     pageTemplate(safe('Member'), viewModel.user)

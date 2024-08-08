@@ -173,6 +173,7 @@ describe('get-via-shared-read-model', () => {
         areaId: createArea.id,
       };
       const trainedAt = faker.date.future();
+      trainedAt.setMilliseconds(0);
       beforeEach(async () => {
         advanceTo(faker.date.past());
         await framework.commands.area.create(createArea);
@@ -193,9 +194,7 @@ describe('get-via-shared-read-model', () => {
 
       it('returns date they were marked as trained', () => {
         const result = runQuery();
-        expect(result.trainedOn[0].trainedAt).toStrictEqual(
-          trainedAt.toISOString()
-        );
+        expect(result.trainedOn[0].trainedAt).toStrictEqual(trainedAt);
       });
     });
   });

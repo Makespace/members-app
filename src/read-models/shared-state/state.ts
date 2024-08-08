@@ -72,14 +72,14 @@ export const trainedMemberstable = sqliteTable('trainedMembers', {
   equipmentId: text('equipmentId')
     .notNull()
     .references(() => equipmentTable.id),
-  trainedAt: blob('trainedAt', {mode: 'json'}).notNull().$type<Date>(),
+  trainedAt: integer('trainedAt', {mode: 'timestamp'}).notNull(),
 });
 
 const createTrainedMembersTable = sql`
   CREATE TABLE IF NOT EXISTS trainedMembers (
     memberNumber INTEGER,
     equipmentID TEXT,
-    trainedAt BLOB
+    trainedAt INTEGER
   )
 `;
 
