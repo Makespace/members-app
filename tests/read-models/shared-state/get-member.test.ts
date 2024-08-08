@@ -1,4 +1,5 @@
 import * as O from 'fp-ts/Option';
+import {advanceTo} from 'jest-date-mock';
 import {getDetails} from '../../../src/read-models/members/get';
 import {EmailAddress} from '../../../src/types';
 import {TestFramework, initTestFramework} from '../test-framework';
@@ -173,9 +174,12 @@ describe('get-via-shared-read-model', () => {
         id: faker.string.uuid() as UUID,
         areaId: createArea.id,
       };
+      const trainedAt = faker.date.future();
       beforeEach(async () => {
+        advanceTo(faker.date.past());
         await framework.commands.area.create(createArea);
         await framework.commands.equipment.add(createEquipment);
+        advanceTo(trainedAt);
         await framework.commands.trainers.markTrained({
           memberNumber: memberNumber as Int,
           equipmentId: createEquipment.id,
@@ -189,7 +193,12 @@ describe('get-via-shared-read-model', () => {
         expect(result.trainedOn[0].name).toStrictEqual(createEquipment.name);
       });
 
-      it.todo('returns date they were marked as trained');
+      it('returns date they were marked as trained', () => {
+        const result = runQuery();
+        expect(result.trainedOn[0].trainedAt).toStrictEqual(
+          trainedAt.toISOString()
+        );
+      });
     });
   });
 });
