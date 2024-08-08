@@ -1,5 +1,5 @@
 import {getAll, getAllDetails, getAllDetailsAsActor} from './get-all';
-import {getDetails, getDetailsAsActor} from './get';
+import {getDetailsAsActor} from './get';
 import {lookupByEmail} from './lookup-by-email';
 import {getPotentialOwners} from './get-potential-owners';
 import {getFailedImports} from './get-failed-imports';
@@ -9,7 +9,6 @@ export const members = {
   getAll,
   getAllDetails,
   getAllDetailsAsActor,
-  getDetails,
   getDetailsAsActor,
   getFailedImports,
   getPotentialOwners,

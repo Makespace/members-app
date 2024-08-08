@@ -1,6 +1,5 @@
 import * as O from 'fp-ts/Option';
 import {advanceTo} from 'jest-date-mock';
-import {getDetails} from '../../../src/read-models/members/get';
 import {EmailAddress} from '../../../src/types';
 import {TestFramework, initTestFramework} from '../test-framework';
 import {faker} from '@faker-js/faker';
@@ -22,9 +21,8 @@ describe('get-via-shared-read-model', () => {
     pipe(id, framework.sharedReadModel.members.get, getSomeOrFail);
 
   describe('when the member does not exist', () => {
-    it('returns none', async () => {
-      const events = await framework.getAllEvents();
-      const result = getDetails(memberNumber)(events);
+    it('returns none', () => {
+      const result = framework.sharedReadModel.members.get(memberNumber);
       expect(result).toStrictEqual(O.none);
     });
   });
