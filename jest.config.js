@@ -13,4 +13,5 @@ module.exports = {
   },
   verbose: true,
   reporters: ['jest-wip-reporter'],
+  setupFiles: ['jest-date-mock'],
 };
