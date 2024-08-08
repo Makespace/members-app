@@ -4,7 +4,6 @@ import * as tt from 'io-ts-types';
 import {SendEmail} from '../send-email';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {pipe} from 'fp-ts/lib/function';
-import {readModels} from '../../read-models';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {Email} from '../../types';
@@ -18,13 +17,13 @@ type OwnerAgreementInvite = t.TypeOf<typeof codec>;
 
 const constructEmail: SendEmail<OwnerAgreementInvite>['constructEmail'] = (
   conf,
-  events,
+  deps,
   actor,
   input
 ) =>
   pipe(
-    events,
-    readModels.members.getDetails(input.recipient),
+    input.recipient,
+    deps.sharedReadModel.members.get,
     E.fromOption(() =>
       failureWithStatus(
         'Recipient is not a known member',
