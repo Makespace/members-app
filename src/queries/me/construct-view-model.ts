@@ -9,24 +9,20 @@ import {
 import {User} from '../../types/user';
 import {ViewModel} from './view-model';
 import {StatusCodes} from 'http-status-codes';
-import {sequenceS} from 'fp-ts/lib/Apply';
-import {readModels} from '../../read-models';
 
 export const constructViewModel =
   (deps: Dependencies, user: User) =>
   (memberNumber: number): TE.TaskEither<FailureWithStatus, ViewModel> =>
     pipe(
-      deps.getAllEvents(),
-      TE.map(events => ({
-        user: E.right(user),
-        isSelf: E.right(memberNumber === user.memberNumber),
-        member: pipe(
-          events,
-          readModels.members.getDetails(memberNumber),
-          E.fromOption(() =>
-            failureWithStatus('No such member', StatusCodes.NOT_FOUND)()
-          )
+      pipe(
+        memberNumber,
+        deps.sharedReadModel.members.get,
+        E.fromOption(() =>
+          failureWithStatus('No such member', StatusCodes.NOT_FOUND)()
         ),
-      })),
-      TE.chainEitherK(sequenceS(E.Apply))
+        E.bindTo('member'),
+        E.let('user', () => user),
+        E.let('isSelf', () => memberNumber === user.memberNumber),
+        TE.fromEither
+      )
     );
