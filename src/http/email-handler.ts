@@ -53,8 +53,8 @@ const emailPost =
           StatusCodes.UNAUTHORIZED
         )()
       ),
-      TE.chainEitherK(({input, actor, events}) =>
-        command.constructEmail(conf, events, actor, input)
+      TE.chainEitherK(({input, actor}) =>
+        command.constructEmail(conf, deps, actor, input)
       ),
       TE.chain(
         flow(
