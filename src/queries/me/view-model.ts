@@ -1,4 +1,4 @@
-import {Member} from '../../read-models/members';
+import {Member} from '../../read-models/shared-state/return-types';
 import {User} from '../../types';
 
 export type ViewModel = {
