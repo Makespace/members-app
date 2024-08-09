@@ -15,6 +15,7 @@ primary_region = 'lhr'
   PUBLIC_URL = 'https://makespace-app.fly.dev'
   SMTP_HOST = 'in-v3.mailjet.com'
   SMTP_FROM = 'it-maintainers@makespace.org'
+  LOG_LEVEL = 'debug'
 
 [http_service]
   internal_port = 8080

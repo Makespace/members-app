@@ -10,7 +10,10 @@ export const checkYourMailPage = (submittedEmailAddress: string) =>
         If <b>${sanitizeString(submittedEmailAddress)}</b> is linked to a
         Makespace number you should receive an email with that number.
       </p>
-      <p>If nothing happens please reach out to the Makespace Database Team.</p>
+      <p>
+        If nothing happens within 10 minutes please reach out to the Makespace
+        Database Team.
+      </p>
     `,
     isolatedPageTemplate(safe('Check your mail'))
   );
