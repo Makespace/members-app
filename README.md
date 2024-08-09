@@ -8,7 +8,7 @@ A place for us to keep track of:
 - who is trained
 - who needs training
 
-Currently deployed to: [makespace-members-app.fly.dev](https://makespace-members-app.fly.dev/) with no persistence across deployments.
+Currently deployed to: [makespace-app.fly.dev](https://makespace-app.fly.dev/) with no persistence across deployments.
 
 Architecture:
 
