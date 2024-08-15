@@ -29,6 +29,7 @@ export const getEquipment =
           ...result.members,
           trainedOn: [],
           agreementSigned: O.none,
+          ownerOf: [],
         }))
       );
 
@@ -46,6 +47,7 @@ export const getEquipment =
         RA.map(result => ({
           ...result.members,
           trainedOn: [],
+          ownerOf: [],
         }))
       );
 

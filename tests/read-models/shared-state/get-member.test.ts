@@ -217,7 +217,25 @@ describe('get-via-shared-read-model', () => {
     });
 
     describe('and they are an owner of an area', () => {
-      it.todo('returns the area name and id');
+      const createArea = {
+        name: faker.company.buzzNoun() as NonEmptyString,
+        id: faker.string.uuid() as UUID,
+      };
+      beforeEach(async () => {
+        await framework.commands.area.create(createArea);
+        await framework.commands.area.addOwner({
+          memberNumber: memberNumber,
+          areaId: createArea.id,
+        });
+      });
+
+      it.failing('returns the area name and id', () => {
+        const result = runQuery();
+        expect(result.ownerOf).toHaveLength(1);
+        expect(result.ownerOf[0].id).toStrictEqual(createArea.id);
+        expect(result.ownerOf[0].name).toStrictEqual(createArea.name);
+      });
+
       it.todo('returns when they became an owner');
     });
   });

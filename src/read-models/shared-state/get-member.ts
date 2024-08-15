@@ -37,6 +37,7 @@ export const getMember =
         .where(eq(membersTable.memberNumber, memberNumber))
         .get(),
       O.fromNullable,
-      O.let('trainedOn', () => getTrainedOn)
+      O.let('trainedOn', () => getTrainedOn),
+      O.let('ownerOf', () => [])
     );
   };
