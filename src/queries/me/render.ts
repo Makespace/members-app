@@ -15,6 +15,34 @@ import {superUserNav} from '../landing/render';
 import {displayDate} from '../../templates/display-date';
 import {DateTime} from 'luxon';
 
+const howToGetTrained = html`<h3>To get trained</h3>
+  <ol>
+    <li>
+      Do
+      <a href="https://equipment.makespace.org/">the online training</a>
+    </li>
+    <li>
+      Sign up for practical training session on
+      <a href="https://www.meetup.com/makespace">Meetup</a>
+    </li>
+  </ol>
+  <p>Remember:</p>
+  <ul>
+    <li>All trainers are members volunteering their time.</li>
+    <li>
+      Trainings are often only scheduled on demand after people have passed the
+      online quiz.
+    </li>
+    <li>
+      If you are struggling to join a practical training, reach out to the
+      relevant owners via email.
+    </li>
+    <li>
+      We always need more trainers. If you'd like to help others please let the
+      owners know.
+    </li>
+  </ul> `;
+
 const editName = (viewModel: ViewModel) =>
   html`<a href="/members/edit-name?member=${viewModel.member.memberNumber}"
     >Edit</a
@@ -79,12 +107,14 @@ const renderTrainingStatus = (trainedOn: ViewModel['member']['trainedOn']) =>
     RA.match(
       () => html`
         <p>You are currently not allowed to use any RED equipment.</p>
+        ${howToGetTrained}
       `,
       listItems => html`
         <p>You are permitted to use the following RED equipment:</p>
         <ul>
           ${joinHtml(listItems)}
         </ul>
+        ${howToGetTrained}
       `
     )
   );
