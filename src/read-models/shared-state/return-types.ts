@@ -14,8 +14,14 @@ type TrainedOn = {
   trainedAt: Date;
 };
 
+type OwnerOf = {
+  id: string;
+  name: string;
+};
+
 export type Member = {
   trainedOn: ReadonlyArray<TrainedOn>;
+  ownerOf: ReadonlyArray<OwnerOf>;
   memberNumber: number;
   emailAddress: EmailAddress;
   prevEmails: ReadonlyArray<EmailAddress>;
