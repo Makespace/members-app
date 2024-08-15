@@ -197,5 +197,28 @@ describe('get-via-shared-read-model', () => {
         expect(result.trainedOn[0].trainedAt).toStrictEqual(trainedAt);
       });
     });
+
+    describe('and they have signed the owner agreement', () => {
+      const signedAt = faker.date.past();
+      beforeEach(async () => {
+        advanceTo(signedAt);
+        await framework.commands.members.signOwnerAgreement({
+          memberNumber: memberNumber as Int,
+          signedAt,
+        });
+      });
+
+      it('returns the date they signed it', () => {
+        const result = runQuery();
+        expect(result.agreementSigned).toStrictEqual(
+          O.some(signedAt.toISOString())
+        );
+      });
+    });
+
+    describe('and they are an owner of an area', () => {
+      it.todo('returns the area name and id');
+      it.todo('returns when they became an owner');
+    });
   });
 });
