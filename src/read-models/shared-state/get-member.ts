@@ -59,6 +59,10 @@ export const getMember =
         .where(eq(membersTable.memberNumber, memberNumber))
         .get(),
       O.fromNullable,
+      O.map(member => ({
+        ...member,
+        agreementSigned: O.fromNullable(member.agreementSigned),
+      })),
       O.let('trainedOn', () => getTrainedOn),
       O.let('ownerOf', () => getOwnerOf)
     );

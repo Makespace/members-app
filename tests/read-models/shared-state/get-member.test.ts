@@ -156,9 +156,7 @@ describe('get-via-shared-read-model', () => {
 
       it('returns the date they signed it', () => {
         const result = runQuery();
-        expect(result.agreementSigned).toStrictEqual(
-          O.some(signedAt.toISOString())
-        );
+        expect(result.agreementSigned).toStrictEqual(O.some(signedAt));
       });
     });
 
@@ -210,9 +208,7 @@ describe('get-via-shared-read-model', () => {
 
       it('returns the date they signed it', () => {
         const result = runQuery();
-        expect(result.agreementSigned).toStrictEqual(
-          O.some(signedAt.toISOString())
-        );
+        expect(result.agreementSigned).toStrictEqual(O.some(signedAt));
       });
     });
 

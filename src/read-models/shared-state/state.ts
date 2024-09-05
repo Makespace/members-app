@@ -20,9 +20,7 @@ export const membersTable = sqliteTable('members', {
     .notNull()
     .$type<ReadonlyArray<EmailAddress>>(),
   isSuperUser: integer('isSuperUser', {mode: 'boolean'}).notNull(),
-  agreementSigned: blob('agreementSigned', {mode: 'json'})
-    .notNull()
-    .$type<O.Option<Date>>(),
+  agreementSigned: integer('agreementSigned', {mode: 'timestamp_ms'}),
 });
 
 const createMembersTable = sql`
@@ -34,7 +32,7 @@ const createMembersTable = sql`
     pronouns BLOB,
     prevEmails BLOB,
     isSuperUser INTEGER,
-    agreementSigned BLOB
+    agreementSigned INTEGER
   );`;
 
 export const equipmentTable = sqliteTable('equipment', {

@@ -25,7 +25,7 @@ export const updateState =
             pronouns: O.none,
             prevEmails: [],
             isSuperUser: false,
-            agreementSigned: O.none,
+            agreementSigned: undefined,
           })
           .run();
         break;
@@ -96,9 +96,7 @@ export const updateState =
           .run();
         break;
       case 'OwnerAgreementSigned':
-        db.update(membersTable)
-          .set({agreementSigned: O.some(event.signedAt)})
-          .run();
+        db.update(membersTable).set({agreementSigned: event.signedAt}).run();
         break;
       case 'AreaCreated':
         db.insert(areasTable).values({id: event.id, name: event.name}).run();
