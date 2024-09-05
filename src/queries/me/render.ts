@@ -171,19 +171,10 @@ const superUserNav = html`
   <p>You have super-user privileges. You can:</p>
   <nav>
     <ul>
+      <li><a href="/areas">Manage areas and owners</a></li>
+      <li><a href="/super-users">Manage super-users</a></li>
       <li>
-        <a href="/members/create">Link a member number to an e-mail address</a>
-      </li>
-      <li>
-        <a href="/members/failed-imports"
-          >See member number imports that need fixing</a
-        >
-      </li>
-      <li>
-        <a href="/areas/create">Add area of responsibility</a>
-      </li>
-      <li>
-        <a href="/super-users">View all super-users</a>
+        <a href="/members/failed-imports">View failed member number imports</a>
       </li>
       <li>
         <a href="/event-log">View log of all actions taken</a>
