@@ -12,7 +12,6 @@ import {
 import {ViewModel} from './view-model';
 import {pageTemplate} from '../../templates';
 import {renderMemberNumber} from '../../templates/member-number';
-import {superUserNav} from '../landing/render';
 import {displayDate} from '../../templates/display-date';
 import {DateTime} from 'luxon';
 
@@ -167,6 +166,31 @@ const renderOwnerAgreementStatus = (
     )
   );
 
+const superUserNav = html`
+  <h2>Admin</h2>
+  <p>You have super-user privileges. You can:</p>
+  <nav>
+    <ul>
+      <li>
+        <a href="/members/create">Link a member number to an e-mail address</a>
+      </li>
+      <li>
+        <a href="/members/failed-imports"
+          >See member number imports that need fixing</a
+        >
+      </li>
+      <li>
+        <a href="/areas/create">Add area of responsibility</a>
+      </li>
+      <li>
+        <a href="/super-users">View all super-users</a>
+      </li>
+      <li>
+        <a href="/event-log">View log of all actions taken</a>
+      </li>
+    </ul>
+  </nav>
+`;
 export const render = (viewModel: ViewModel) =>
   pipe(
     html`

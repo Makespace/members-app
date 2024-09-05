@@ -22,7 +22,6 @@ export const constructViewModel =
         ),
         E.bindTo('member'),
         E.let('user', () => user),
-        E.let('isSelf', () => memberNumber === user.memberNumber),
         TE.fromEither
       )
     );

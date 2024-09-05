@@ -17,7 +17,7 @@ export const initRoutes = (
   const api = apiToHandlers(deps, conf);
   const email = emailHandler(conf, deps);
   return [
-    query('/', queries.landing),
+    query('/', queries.me),
     query('/event-log', queries.log),
     query('/areas', queries.areas),
     ...command('areas', 'create', commands.area.create),
