@@ -2,8 +2,10 @@ import {DomainEvent} from '../../types/domain-event';
 import * as O from 'fp-ts/Option';
 import {gravatarHashFromEmail} from '../members/avatar';
 import {
+  areasTable,
   equipmentTable,
   membersTable,
+  ownersTable,
   trainedMemberstable,
   trainersTable,
 } from './state';
@@ -96,6 +98,14 @@ export const updateState =
       case 'OwnerAgreementSigned':
         db.update(membersTable)
           .set({agreementSigned: O.some(event.signedAt)})
+          .run();
+        break;
+      case 'AreaCreated':
+        db.insert(areasTable).values({id: event.id, name: event.name}).run();
+        break;
+      case 'OwnerAdded':
+        db.insert(ownersTable)
+          .values({memberNumber: event.memberNumber, areaId: event.areaId})
           .run();
         break;
 
