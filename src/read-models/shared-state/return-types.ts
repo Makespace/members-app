@@ -17,6 +17,7 @@ type TrainedOn = {
 type OwnerOf = {
   id: string;
   name: string;
+  ownershipRecordedAt: Date;
 };
 
 export type Member = {

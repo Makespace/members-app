@@ -105,7 +105,11 @@ export const updateState =
         break;
       case 'OwnerAdded':
         db.insert(ownersTable)
-          .values({memberNumber: event.memberNumber, areaId: event.areaId})
+          .values({
+            memberNumber: event.memberNumber,
+            areaId: event.areaId,
+            ownershipRecordedAt: event.recordedAt,
+          })
           .run();
         break;
 

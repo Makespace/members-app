@@ -43,6 +43,7 @@ export const getMember =
         .select({
           id: ownersTable.areaId,
           name: areasTable.name,
+          ownershipRecordedAt: ownersTable.ownershipRecordedAt,
         })
         .from(ownersTable)
         .leftJoin(areasTable, eq(areasTable.id, ownersTable.areaId))
