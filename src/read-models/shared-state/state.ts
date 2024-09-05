@@ -102,12 +102,16 @@ export const ownersTable = sqliteTable('owners', {
   areaId: text('areaId')
     .notNull()
     .references(() => areasTable.id),
+  ownershipRecordedAt: blob('ownershipRecordedAt', {mode: 'json'})
+    .notNull()
+    .$type<Date>(),
 });
 
 const createOwnersTable = sql`
   CREATE TABLE IF NOT EXISTS owners (
     memberNumber INTEGER,
-    areaId TEXT
+    areaId TEXT,
+    ownershipRecordedAt BLOB
   )
 `;
 

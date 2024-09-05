@@ -221,8 +221,11 @@ describe('get-via-shared-read-model', () => {
         name: faker.company.buzzNoun() as NonEmptyString,
         id: faker.string.uuid() as UUID,
       };
+      const recordedAt = faker.date.future();
+      recordedAt.setMilliseconds(0);
       beforeEach(async () => {
         await framework.commands.area.create(createArea);
+        advanceTo(recordedAt);
         await framework.commands.area.addOwner({
           memberNumber: memberNumber,
           areaId: createArea.id,
@@ -236,7 +239,12 @@ describe('get-via-shared-read-model', () => {
         expect(result.ownerOf[0].name).toStrictEqual(createArea.name);
       });
 
-      it.todo('returns when they became an owner');
+      it('returns when they became an owner', () => {
+        const result = runQuery();
+        expect(result.ownerOf[0].ownershipRecordedAt).toStrictEqual(
+          recordedAt.toISOString()
+        );
+      });
     });
   });
 });
