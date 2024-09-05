@@ -54,8 +54,7 @@ export const render = (viewModel: ViewModel) =>
   pipe(
     html`
       <h1>Areas of Makespace</h1>
-      ${viewModel.isSuperUser ? addAreaCallToAction : ''}
-      ${renderAreas(viewModel.areas)}
+      ${addAreaCallToAction} ${renderAreas(viewModel.areas)}
     `,
     pageTemplate(safe('Areas'), viewModel.user)
   );
