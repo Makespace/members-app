@@ -96,7 +96,10 @@ export const updateState =
           .run();
         break;
       case 'OwnerAgreementSigned':
-        db.update(membersTable).set({agreementSigned: event.signedAt}).run();
+        db.update(membersTable)
+          .set({agreementSigned: event.signedAt})
+          .where(eq(membersTable.memberNumber, event.memberNumber))
+          .run();
         break;
       case 'AreaCreated':
         db.insert(areasTable).values({id: event.id, name: event.name}).run();
