@@ -1,4 +1,5 @@
 import {pipe} from 'fp-ts/lib/function';
+import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {getGravatarThumbnail} from '../../templates/avatar';
 import {
@@ -96,9 +97,8 @@ const renderMemberDetails = (viewModel: ViewModel) => html`
   </table>
 `;
 
-const renderOwnerStatus = (ownerOf: ViewModel['member']['ownerOf']) => {
-  console.log(ownerOf[0].ownershipRecordedAt);
-  return pipe(
+const renderOwnerStatus = (ownerOf: ViewModel['member']['ownerOf']) =>
+  pipe(
     ownerOf,
     RA.map(
       area =>
@@ -123,7 +123,6 @@ const renderOwnerStatus = (ownerOf: ViewModel['member']['ownerOf']) => {
       `
     )
   );
-};
 
 const renderTrainingStatus = (trainedOn: ViewModel['member']['trainedOn']) =>
   pipe(
@@ -152,6 +151,22 @@ const renderTrainingStatus = (trainedOn: ViewModel['member']['trainedOn']) =>
     )
   );
 
+const renderOwnerAgreementStatus = (
+  status: ViewModel['member']['agreementSigned']
+) =>
+  pipe(
+    status,
+    O.matchW(
+      () => safe(''),
+      date => html`
+        <p>
+          You have signed the Owners Agreement
+          (${displayDate(DateTime.fromJSDate(date))})
+        </p>
+      `
+    )
+  );
+
 export const render = (viewModel: ViewModel) =>
   pipe(
     html`
@@ -159,6 +174,7 @@ export const render = (viewModel: ViewModel) =>
       <h2>Your details</h2>
       ${renderMemberDetails(viewModel)}
       <h2>Owner status</h2>
+      ${renderOwnerAgreementStatus(viewModel.member.agreementSigned)}
       ${renderOwnerStatus(viewModel.member.ownerOf)}
       <h2>Training status</h2>
       ${renderTrainingStatus(viewModel.member.trainedOn)}

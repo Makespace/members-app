@@ -25,11 +25,10 @@ export const getEquipment =
           )
           .where(eq(trainersTable.equipmentId, id))
           .all(),
-        RA.map(result => ({
-          ...result.members,
-          trainedOn: [],
-          agreementSigned: O.none,
-          ownerOf: [],
+        RA.map(result => result.members),
+        RA.map(member => ({
+          ...member,
+          agreementSigned: O.fromNullable(member.agreementSigned),
         }))
       );
 
@@ -44,10 +43,10 @@ export const getEquipment =
           )
           .where(eq(trainedMemberstable.equipmentId, id))
           .all(),
-        RA.map(result => ({
-          ...result.members,
-          trainedOn: [],
-          ownerOf: [],
+        RA.map(result => result.members),
+        RA.map(member => ({
+          ...member,
+          agreementSigned: O.fromNullable(member.agreementSigned),
         }))
       );
 

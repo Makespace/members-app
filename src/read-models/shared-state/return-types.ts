@@ -4,8 +4,8 @@ import {EmailAddress, GravatarHash} from '../../types';
 export type Equipment = {
   id: string;
   name: string;
-  trainers: ReadonlyArray<Member>;
-  trainedMembers: ReadonlyArray<Member>;
+  trainers: ReadonlyArray<MemberCoreInfo>;
+  trainedMembers: ReadonlyArray<MemberCoreInfo>;
 };
 
 type TrainedOn = {
@@ -20,9 +20,7 @@ type OwnerOf = {
   ownershipRecordedAt: Date;
 };
 
-export type Member = {
-  trainedOn: ReadonlyArray<TrainedOn>;
-  ownerOf: ReadonlyArray<OwnerOf>;
+type MemberCoreInfo = {
   memberNumber: number;
   emailAddress: EmailAddress;
   prevEmails: ReadonlyArray<EmailAddress>;
@@ -31,4 +29,9 @@ export type Member = {
   agreementSigned: O.Option<Date>;
   isSuperUser: boolean;
   gravatarHash: GravatarHash;
+};
+
+export type Member = MemberCoreInfo & {
+  trainedOn: ReadonlyArray<TrainedOn>;
+  ownerOf: ReadonlyArray<OwnerOf>;
 };
