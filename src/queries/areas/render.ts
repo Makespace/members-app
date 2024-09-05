@@ -1,47 +1,27 @@
 import {pipe} from 'fp-ts/lib/function';
-import {
-  commaHtml,
-  html,
-  joinHtml,
-  safe,
-  sanitizeString,
-} from '../../types/html';
+import {html, joinHtml, safe, sanitizeString} from '../../types/html';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {ViewModel} from './view-model';
 import {pageTemplate} from '../../templates';
 import {renderMemberNumber} from '../../templates/member-number';
 
-const renderAreas = (areas: ViewModel['areas']) =>
+const renderOwnerTable = (owners: ViewModel['areas'][number]['owners']) =>
   pipe(
-    areas,
+    owners,
     RA.map(
-      area => html`
+      owner => html`
         <tr>
-          <td>
-            <a href="/areas/${safe(area.id)}">${sanitizeString(area.name)}</a>
-          </td>
-          <td>
-            ${commaHtml(
-              area.owners.map(({memberNumber}) =>
-                renderMemberNumber(memberNumber)
-              )
-            )}
-          </td>
-          <td>
-            <a href="/areas/add-owner?area=${safe(area.id)}">Add owner</a>
-          </td>
+          <td>${renderMemberNumber(owner.memberNumber)}</td>
         </tr>
       `
     ),
     RA.match(
-      () => html` <p>Currently no Areas</p> `,
+      () => html` <p>No owners!</p> `,
       rows => html`
         <table>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Owners</th>
-              <th>Actions</th>
+              <th>MemberNumber</th>
             </tr>
           </thead>
           <tbody>
@@ -51,6 +31,18 @@ const renderAreas = (areas: ViewModel['areas']) =>
       `
     )
   );
+
+const renderArea = (area: ViewModel['areas'][number]) => html`
+  <a href="/areas/${safe(area.id)}"><h2>${sanitizeString(area.name)}</h2></a>
+  ${renderOwnerTable(area.owners)}
+`;
+
+const renderAreas = (areas: ViewModel['areas']) => {
+  if (areas.length === 0) {
+    return html`<p>Currently no Areas</p> `;
+  }
+  return pipe(areas, RA.map(renderArea), joinHtml);
+};
 
 const addAreaCallToAction = html`
   <a href="/areas/create">Add area of responsibility</a>
