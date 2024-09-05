@@ -13,6 +13,11 @@ import {SharedReadModel} from '.';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {Member} from './return-types';
 
+const fieldIsNotNull =
+  <K extends string>(key: K) =>
+  <T extends Record<K, string | null>>(obj: T): obj is T & {[P in K]: string} =>
+    obj[key] !== null;
+
 export const getMember =
   (db: BetterSQLite3Database): SharedReadModel['members']['get'] =>
   (memberNumber): O.Option<Member> => {
@@ -30,10 +35,7 @@ export const getMember =
         )
         .where(eq(trainedMemberstable.memberNumber, memberNumber))
         .all(),
-      RA.filter(
-        (trainedOnEntry): trainedOnEntry is Member['trainedOn'][number] =>
-          trainedOnEntry.name !== undefined
-      )
+      RA.filter(fieldIsNotNull('name'))
     );
 
     const getOwnerOf = pipe(
@@ -46,10 +48,7 @@ export const getMember =
         .leftJoin(areasTable, eq(areasTable.id, ownersTable.areaId))
         .where(eq(ownersTable.memberNumber, memberNumber))
         .all(),
-      RA.filter(
-        (trainedOnEntry): trainedOnEntry is Member['ownerOf'][number] =>
-          trainedOnEntry.name !== undefined
-      )
+      RA.filter(fieldIsNotNull('name'))
     );
 
     return pipe(
