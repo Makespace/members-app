@@ -1,6 +1,12 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
-import {equipmentTable, membersTable, trainedMemberstable} from './state';
+import {
+  areasTable,
+  equipmentTable,
+  membersTable,
+  ownersTable,
+  trainedMemberstable,
+} from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {eq} from 'drizzle-orm';
 import {SharedReadModel} from '.';
@@ -30,6 +36,22 @@ export const getMember =
       )
     );
 
+    const getOwnerOf = pipe(
+      db
+        .select({
+          id: ownersTable.areaId,
+          name: areasTable.name,
+        })
+        .from(ownersTable)
+        .leftJoin(areasTable, eq(areasTable.id, ownersTable.areaId))
+        .where(eq(ownersTable.memberNumber, memberNumber))
+        .all(),
+      RA.filter(
+        (trainedOnEntry): trainedOnEntry is Member['ownerOf'][number] =>
+          trainedOnEntry.name !== undefined
+      )
+    );
+
     return pipe(
       db
         .select()
@@ -38,6 +60,6 @@ export const getMember =
         .get(),
       O.fromNullable,
       O.let('trainedOn', () => getTrainedOn),
-      O.let('ownerOf', () => [])
+      O.let('ownerOf', () => getOwnerOf)
     );
   };

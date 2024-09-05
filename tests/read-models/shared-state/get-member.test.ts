@@ -229,7 +229,7 @@ describe('get-via-shared-read-model', () => {
         });
       });
 
-      it.failing('returns the area name and id', () => {
+      it('returns the area name and id', () => {
         const result = runQuery();
         expect(result.ownerOf).toHaveLength(1);
         expect(result.ownerOf[0].id).toStrictEqual(createArea.id);

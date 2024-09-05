@@ -83,11 +83,41 @@ const createTrainedMembersTable = sql`
   )
 `;
 
+export const areasTable = sqliteTable('areas', {
+  id: text('id').notNull().primaryKey(),
+  name: text('name').notNull(),
+});
+
+const createAreasTable = sql`
+  CREATE TABLE IF NOT EXISTS areas (
+    id TEXT,
+    name TEXT
+  )
+`;
+
+export const ownersTable = sqliteTable('owners', {
+  memberNumber: integer('memberNumber')
+    .notNull()
+    .references(() => membersTable.memberNumber),
+  areaId: text('areaId')
+    .notNull()
+    .references(() => areasTable.id),
+});
+
+const createOwnersTable = sql`
+  CREATE TABLE IF NOT EXISTS owners (
+    memberNumber INTEGER,
+    areaId TEXT
+  )
+`;
+
 export const createTables = [
   createMembersTable,
   createEquipmentTable,
   createTrainersTable,
   createTrainedMembersTable,
+  createAreasTable,
+  createOwnersTable,
 ];
 
 type Member = {
