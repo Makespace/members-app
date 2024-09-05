@@ -241,9 +241,7 @@ describe('get-via-shared-read-model', () => {
 
       it('returns when they became an owner', () => {
         const result = runQuery();
-        expect(result.ownerOf[0].ownershipRecordedAt).toStrictEqual(
-          recordedAt.toISOString()
-        );
+        expect(result.ownerOf[0].ownershipRecordedAt).toStrictEqual(recordedAt);
       });
     });
   });
