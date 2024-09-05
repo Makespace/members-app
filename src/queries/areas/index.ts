@@ -5,7 +5,11 @@ import {Query} from '../query';
 import {HttpResponse} from '../../types';
 import {SharedReadModel} from '../../read-models/shared-state';
 import {ViewModel} from './view-model';
-import {areasTable, ownersTable} from '../../read-models/shared-state/state';
+import {
+  areasTable,
+  membersTable,
+  ownersTable,
+} from '../../read-models/shared-state/state';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {eq} from 'drizzle-orm';
 
@@ -14,9 +18,19 @@ const getAreas = (db: SharedReadModel['db']): ViewModel['areas'] => {
     db.select().from(areasTable).all(),
     RA.map(area => ({
       ...area,
+      equipment: [],
       owners: db
-        .select()
+        .select({
+          name: membersTable.name,
+          memberNumber: membersTable.memberNumber,
+          email: membersTable.emailAddress,
+          agreementSignedAt: membersTable.agreementSigned,
+        })
         .from(ownersTable)
+        .innerJoin(
+          membersTable,
+          eq(membersTable.memberNumber, ownersTable.memberNumber)
+        )
         .where(eq(ownersTable.areaId, area.id))
         .all(),
     }))
