@@ -18,11 +18,17 @@ const renderAreas = (areas: ViewModel['areas']) =>
       area => html`
         <tr>
           <td>
-            <a href="/areas/${area.id}">${sanitizeString(area.name)}</a>
+            <a href="/areas/${safe(area.id)}">${sanitizeString(area.name)}</a>
           </td>
-          <td>${commaHtml(area.owners.map(renderMemberNumber))}</td>
           <td>
-            <a href="/areas/add-owner?area=${area.id}">Add owner</a>
+            ${commaHtml(
+              area.owners.map(({memberNumber}) =>
+                renderMemberNumber(memberNumber)
+              )
+            )}
+          </td>
+          <td>
+            <a href="/areas/add-owner?area=${safe(area.id)}">Add owner</a>
           </td>
         </tr>
       `
