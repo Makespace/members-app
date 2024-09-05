@@ -14,7 +14,6 @@ export const navBar = (user: User) => html`
     /></a>
     <a href="/members">Members</a>
     <a href="/equipment">Equipment</a>
-    <a href="/areas">Areas</a>
     <a href="/log-out">Log out</a>
     ${loggedInUserSquare(user)}
   </nav>
