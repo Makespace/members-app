@@ -185,15 +185,17 @@ const superUserNav = html`
 export const render = (viewModel: ViewModel) =>
   pipe(
     html`
-      <h1>Your Makespace profile</h1>
-      <h2>Your details</h2>
-      ${renderMemberDetails(viewModel)}
-      <h2>Owner status</h2>
-      ${renderOwnerAgreementStatus(viewModel.member.agreementSigned)}
-      ${renderOwnerStatus(viewModel.member.ownerOf)}
-      <h2>Training status</h2>
-      ${renderTrainingStatus(viewModel.member.trainedOn)}
-      ${viewModel.member.isSuperUser ? superUserNav : ''}
+      <div class="stack">
+        <h1>Your Makespace profile</h1>
+        <h2>Your details</h2>
+        ${renderMemberDetails(viewModel)}
+        <h2>Owner status</h2>
+        ${renderOwnerAgreementStatus(viewModel.member.agreementSigned)}
+        ${renderOwnerStatus(viewModel.member.ownerOf)}
+        <h2>Training status</h2>
+        ${renderTrainingStatus(viewModel.member.trainedOn)}
+        ${viewModel.member.isSuperUser ? superUserNav : ''}
+      </div>
     `,
     pageTemplate(safe('Member'), viewModel.user)
   );
