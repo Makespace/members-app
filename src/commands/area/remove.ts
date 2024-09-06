@@ -13,8 +13,11 @@ const codec = t.strict({
 
 type RemoveArea = t.TypeOf<typeof codec>;
 
-const process: Command<RemoveArea>['process'] = input =>
-  pipe(
+const process: Command<RemoveArea>['process'] = input => {
+  if (input.events.length === 0) {
+    return O.none;
+  }
+  return pipe(
     input.events,
     RA.filter(isEventOfType('AreaRemoved')),
     RA.match(
@@ -22,6 +25,7 @@ const process: Command<RemoveArea>['process'] = input =>
       () => O.none
     )
   );
+};
 
 const resource: Command<RemoveArea>['resource'] = command => ({
   type: 'Area',
