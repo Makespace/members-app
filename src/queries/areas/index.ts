@@ -7,6 +7,7 @@ import {SharedReadModel} from '../../read-models/shared-state';
 import {ViewModel} from './view-model';
 import {
   areasTable,
+  equipmentTable,
   membersTable,
   ownersTable,
 } from '../../read-models/shared-state/state';
@@ -18,7 +19,11 @@ const getAreas = (db: SharedReadModel['db']): ViewModel['areas'] => {
     db.select().from(areasTable).all(),
     RA.map(area => ({
       ...area,
-      equipment: [],
+      equipment: db
+        .select()
+        .from(equipmentTable)
+        .where(eq(equipmentTable.areaId, area.id))
+        .all(),
       owners: db
         .select({
           name: membersTable.name,

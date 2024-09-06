@@ -42,7 +42,7 @@ const renderOwnerTable = (owners: ViewModel['areas'][number]['owners']) =>
       `
     ),
     RA.match(
-      () => html` <p>No owners!</p> `,
+      () => html` <p>Owners needed!</p> `,
       rows => html`
         <table>
           <thead>
@@ -74,11 +74,15 @@ const renderEquipment = (equipment: ViewModel['areas'][number]['equipment']) =>
 
 const renderArea = (area: ViewModel['areas'][number]) => html`
   <article>
-    <a href="/areas/${safe(area.id)}"><h2>${sanitizeString(area.name)}</h2></a>
-    ${renderEquipment(area.equipment)} ${renderOwnerTable(area.owners)}
+    <h2>${sanitizeString(area.name)}</h2>
+    <div>RED equipment: ${renderEquipment(area.equipment)}</div>
+    ${renderOwnerTable(area.owners)}
     <div class="wrap">
       <a class="button" href="/areas/add-owner?area=${safe(area.id)}"
         >Add owner</a
+      >
+      <a class="button" href="/equipment/add?area=${safe(area.id)}"
+        >Add RED equipment</a
       >
       <a class="button" href="/areas/remove?area=${safe(area.id)}"
         >Remove area</a
