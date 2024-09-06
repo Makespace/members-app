@@ -17,11 +17,15 @@ import {html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {Member} from '../../read-models/members/return-types';
 import {pageTemplate} from '../../templates';
 import {renderMemberNumber} from '../../templates/member-number';
+import {SharedReadModel} from '../../read-models/shared-state';
+import {areasTable} from '../../read-models/shared-state/state';
+import {eq} from 'drizzle-orm';
 
 type ViewModel = {
   user: User;
   areaId: string;
   areaOwners: AreaOwners;
+  areaName: string;
 };
 
 const renderOwnerAgreementInviteButton = (
@@ -95,7 +99,7 @@ const renderPotentialOwner = (areaId: string) => (owner: Member) =>
   </tr>`;
 
 const renderBody = (viewModel: ViewModel) => html`
-  <h1>Add an owner</h1>
+  <h1>Add an owner for '${sanitizeString(viewModel.areaName)}'</h1>
   <h2>Existing owners</h2>
   <p>${renderExisting(viewModel.areaOwners.existing)}</p>
   <h2>Potential owners</h2>
@@ -150,14 +154,31 @@ const getPotentialOwners = (
     E.fromOption(failureWithStatus('No such area', StatusCodes.NOT_FOUND))
   );
 
+const getAreaName = (db: SharedReadModel['db'], areaId: string) =>
+  pipe(
+    db
+      .select({areaName: areasTable.name})
+      .from(areasTable)
+      .where(eq(areasTable.id, areaId))
+      .get(),
+    result => result?.areaName,
+    E.fromNullable(
+      failureWithStatus(
+        'The requested area does not exist',
+        StatusCodes.NOT_FOUND
+      )()
+    )
+  );
+
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({user, events}): E.Either<FailureWithStatus, ViewModel> =>
+  ({user, events, readModelDb}): E.Either<FailureWithStatus, ViewModel> =>
     pipe(
       {user},
       E.right,
       E.bind('areaId', () => getAreaId(input)),
-      E.bind('areaOwners', ({areaId}) => getPotentialOwners(events, areaId))
+      E.bind('areaOwners', ({areaId}) => getPotentialOwners(events, areaId)),
+      E.bind('areaName', ({areaId}) => getAreaName(readModelDb, areaId))
     );
 
 export const addOwnerForm: Form<ViewModel> = {
