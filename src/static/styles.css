@@ -81,7 +81,7 @@ picture {
 
 /* Natural flow and rhythm in articles by default */
 article > * + * {
-  margin-top: 1em;
+  margin-block-start: 1rem;
 }
 
 /* Inherit fonts for inputs and buttons */
@@ -333,10 +333,6 @@ label img {
 
 .fieldset-item input:checked + label:after {
   opacity: 1;
-}
-
-article > * + * {
-  margin-block-start: 1rem;
 }
 
 .stack > * + * {

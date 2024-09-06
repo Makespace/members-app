@@ -1,15 +1,17 @@
-import {UUID} from 'io-ts-types';
 import {User} from '../../types';
 
 type Equipment = {
+  id: string;
   name: string;
-  id: UUID;
-  areaId: UUID;
-  areaName: string;
+};
+
+type Area = {
+  name: string;
+  id: string;
+  equipment: ReadonlyArray<Equipment>;
 };
 
 export type ViewModel = {
   user: User;
-  isSuperUser: boolean;
-  equipment: ReadonlyArray<Equipment>;
+  areas: ReadonlyArray<Area>;
 };
