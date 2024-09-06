@@ -32,6 +32,7 @@ export const formGet =
         events: deps.getAllEvents(),
       },
       sequenceS(TE.ApplyPar),
+      TE.let('readModelDb', () => deps.sharedReadModel.db),
       TE.chainEitherK(form.constructForm({...req.query, ...req.params})),
       TE.map(form.renderForm),
       TE.matchW(
