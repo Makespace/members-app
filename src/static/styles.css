@@ -348,3 +348,8 @@ label img {
   flex-wrap: wrap;
   gap: 1rem;
 }
+
+*:target{
+  z-index: 1;
+  outline: var(--border-color) solid 3px;
+}

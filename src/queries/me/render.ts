@@ -102,7 +102,7 @@ const renderOwnerStatus = (ownerOf: ViewModel['member']['ownerOf']) =>
     RA.map(
       area =>
         html`<li>
-          <a href="/areas/${safe(area.id)}">${sanitizeString(area.name)}</a>
+          <a href="/equipment#${safe(area.id)}">${sanitizeString(area.name)}</a>
           (since ${displayDate(DateTime.fromJSDate(area.ownershipRecordedAt))})
         </li>`
     ),
