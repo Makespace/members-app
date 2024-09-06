@@ -76,9 +76,14 @@ const renderArea = (area: ViewModel['areas'][number]) => html`
   <article>
     <a href="/areas/${safe(area.id)}"><h2>${sanitizeString(area.name)}</h2></a>
     ${renderEquipment(area.equipment)} ${renderOwnerTable(area.owners)}
-    <a class="button" href="/areas/add-owner?area=${safe(area.id)}"
-      >Add owner</a
-    >
+    <div class="wrap">
+      <a class="button" href="/areas/add-owner?area=${safe(area.id)}"
+        >Add owner</a
+      >
+      <a class="button" href="/areas/remove?area=${safe(area.id)}"
+        >Remove area</a
+      >
+    </div>
   </article>
 `;
 
