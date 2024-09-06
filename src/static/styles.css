@@ -339,10 +339,16 @@ article > * + * {
   margin-block-start: 1rem;
 }
 
-.stack> * + * {
+.stack > * + * {
   margin-block-start: 1rem;
 }
 
 .stack-large > * + * {
   margin-block-start: 3rem;
+}
+
+.wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
 }

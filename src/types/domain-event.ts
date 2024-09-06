@@ -29,6 +29,9 @@ export const DomainEvent = t.union([
     name: t.string,
     id: tt.UUID,
   }),
+  eventCodec('AreaRemoved', {
+    id: tt.UUID,
+  }),
   eventCodec('EquipmentAdded', {
     name: t.string,
     id: tt.UUID,

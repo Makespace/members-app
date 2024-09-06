@@ -22,6 +22,7 @@ export const initRoutes = (
     query('/areas', queries.areas),
     ...command('areas', 'create', commands.area.create),
     ...command('areas', 'add-owner', commands.area.addOwner),
+    ...command('areas', 'remove', commands.area.remove),
     query('/areas/:area', queries.area),
     query('/equipment', queries.allEquipment),
     ...command('equipment', 'add', commands.equipment.add),

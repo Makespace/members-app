@@ -87,6 +87,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     commands: {
       area: {
         create: frameworkify(commands.area.create),
+        remove: frameworkify(commands.area.remove),
         addOwner: frameworkify(commands.area.addOwner),
       },
       equipment: {
