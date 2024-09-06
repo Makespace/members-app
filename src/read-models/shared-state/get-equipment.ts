@@ -5,6 +5,7 @@ import {eq} from 'drizzle-orm';
 import {SharedReadModel} from '.';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {
+  areasTable,
   equipmentTable,
   membersTable,
   trainedMemberstable,
@@ -14,6 +15,12 @@ import {
 export const getEquipment =
   (db: BetterSQLite3Database): SharedReadModel['equipment']['get'] =>
   id => {
+    const getArea = (areaId: string) =>
+      pipe(
+        db.select().from(areasTable).where(eq(areasTable.id, areaId)).get(),
+        O.fromNullable
+      );
+
     const getTrainers = () =>
       pipe(
         db
@@ -54,6 +61,8 @@ export const getEquipment =
       db.select().from(equipmentTable).where(eq(equipmentTable.id, id)).get(),
       O.fromNullable,
       O.let('trainers', getTrainers),
-      O.let('trainedMembers', getTrainedMembers)
+      O.let('trainedMembers', getTrainedMembers),
+      O.bind('area', ({areaId}) => getArea(areaId)),
+      foo => foo
     );
   };

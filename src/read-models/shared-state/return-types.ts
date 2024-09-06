@@ -6,6 +6,10 @@ export type Equipment = {
   name: string;
   trainers: ReadonlyArray<MemberCoreInfo>;
   trainedMembers: ReadonlyArray<MemberCoreInfo>;
+  area: {
+    id: string;
+    name: string;
+  };
 };
 
 type TrainedOn = {
