@@ -275,11 +275,13 @@ export const render = (viewModel: ViewModel) =>
   pipe(
     viewModel,
     (viewModel: ViewModel) => html`
-      <h1>${sanitizeString(viewModel.equipment.name)}</h1>
-      ${equipmentActions(viewModel)}
-      ${trainersList(viewModel.equipment.trainers)}
-      ${currentlyTrainedUsersTable(viewModel)}
-      ${isTrainerOrOwner(viewModel) ? trainingQuizResults(viewModel) : html``}
+      <div class="stack">
+        <h1>${sanitizeString(viewModel.equipment.name)}</h1>
+        ${equipmentActions(viewModel)}
+        ${trainersList(viewModel.equipment.trainers)}
+        ${currentlyTrainedUsersTable(viewModel)}
+        ${isTrainerOrOwner(viewModel) ? trainingQuizResults(viewModel) : html``}
+      </div>
     `,
     pageTemplate(sanitizeString(viewModel.equipment.name), viewModel.user)
   );
