@@ -23,7 +23,7 @@ const renderEquipment = (equipment: ViewModel['areas'][number]['equipment']) =>
 
 const renderArea = (area: ViewModel['areas'][number]) => html`
   <article>
-    <h2>${sanitizeString(area.name)}</h2>
+    <h2 id="${safe(area.id)}">${sanitizeString(area.name)}</h2>
     <div>
       ${pipe(
         area.equipment,

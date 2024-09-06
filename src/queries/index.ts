@@ -1,6 +1,5 @@
 export {areas} from './areas';
 export {superUsers} from './super-users';
-export {area} from './area';
 export {allEquipment} from './all-equipment';
 export {equipment} from './equipment';
 export {members} from './members';
