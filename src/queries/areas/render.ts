@@ -69,13 +69,13 @@ const renderEquipment = (equipment: ViewModel['areas'][number]['equipment']) =>
         <a href="/equipment/${safe(item.id)}">${sanitizeString(item.name)}</a>
       `
     ),
-    commaHtml
+    items => html`RED equipment: ${commaHtml(items)}`
   );
 
 const renderArea = (area: ViewModel['areas'][number]) => html`
   <article>
     <h2>${sanitizeString(area.name)}</h2>
-    <div>RED equipment: ${renderEquipment(area.equipment)}</div>
+    <div>${renderEquipment(area.equipment)}</div>
     ${renderOwnerTable(area.owners)}
     <div class="wrap">
       <a class="button" href="/areas/add-owner?area=${safe(area.id)}"
@@ -106,10 +106,10 @@ export const render = (viewModel: ViewModel) =>
   pipe(
     html`
       <div class="stack-large">
-        <h1>Areas of Makespace</h1>
+        <h1>Manage Areas and Owners</h1>
         <div>${addAreaCallToAction}</div>
         <section class="stack-large">${renderAreas(viewModel.areas)}</section>
       </div>
     `,
-    pageTemplate(safe('Areas'), viewModel.user)
+    pageTemplate(safe('Manage Areas and Owners'), viewModel.user)
   );
