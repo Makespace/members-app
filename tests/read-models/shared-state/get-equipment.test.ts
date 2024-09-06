@@ -77,5 +77,11 @@ describe('get', () => {
         markTrained.memberNumber
       );
     });
+
+    it('returns the area it belongs to', () => {
+      const equipment = runQuery();
+      expect(equipment.area.id).toStrictEqual(createArea.id);
+      expect(equipment.area.name).toStrictEqual(createArea.name);
+    });
   });
 });

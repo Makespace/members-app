@@ -38,12 +38,16 @@ const createMembersTable = sql`
 export const equipmentTable = sqliteTable('equipment', {
   id: text('id').notNull().primaryKey(),
   name: text('name').notNull(),
+  areaId: text('areaId')
+    .notNull()
+    .references(() => areasTable.id),
 });
 
 const createEquipmentTable = sql`
   CREATE TABLE IF NOT EXISTS equipment (
   id TEXT,
-  name TEXT
+  name TEXT,
+  areaId TEXT
   );
 `;
 

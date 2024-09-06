@@ -75,7 +75,7 @@ export const updateState =
         break;
       case 'EquipmentAdded':
         db.insert(equipmentTable)
-          .values({id: event.id, name: event.name})
+          .values({id: event.id, name: event.name, areaId: event.areaId})
           .run();
         break;
       case 'TrainerAdded':
