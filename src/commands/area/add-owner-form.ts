@@ -16,6 +16,7 @@ import {readModels} from '../../read-models';
 import {html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {Member} from '../../read-models/members/return-types';
 import {pageTemplate} from '../../templates';
+import {renderMemberNumber} from '../../templates/member-number';
 
 type ViewModel = {
   user: User;
@@ -69,22 +70,28 @@ const render_signed_status = (member: Member) =>
     )
   );
 
+const renderMemberCell = (member: Member) => {
+  const name = pipe(
+    member.name,
+    O.map(sanitizeString),
+    O.getOrElseW(() => safe(member.emailAddress))
+  );
+  return html` ${name} ${renderMemberNumber(member.memberNumber)} `;
+};
+
+const renderAddOwner = (memberNumber: number, areaId: string) => html`
+  <form action="#" method="post">
+    <input type="hidden" name="memberNumber" value="${memberNumber}" />
+    <input type="hidden" name="areaId" value="${safe(areaId)}" />
+    <button type="submit">Add</button>
+  </form>
+`;
+
 const renderPotentialOwner = (areaId: string) => (owner: Member) =>
   html`<tr>
-    <td>${owner.memberNumber}</td>
-    <td>${sanitizeString(owner.emailAddress)}</td>
+    <td>${renderMemberCell(owner)}</td>
+    <td>${renderAddOwner(owner.memberNumber, areaId)}</td>
     <td>${render_signed_status(owner)}</td>
-    <td>
-      <form action="#" method="post">
-        <input
-          type="hidden"
-          name="memberNumber"
-          value="${owner.memberNumber}"
-        />
-        <input type="hidden" name="areaId" value="${safe(areaId)}" />
-        <button type="submit">Add</button>
-      </form>
-    </td>
   </tr>`;
 
 const renderBody = (viewModel: ViewModel) => html`
@@ -95,10 +102,9 @@ const renderBody = (viewModel: ViewModel) => html`
   <table data-gridjs>
     <thead>
       <tr>
-        <th>Member Number</th>
-        <th>E-Mail</th>
+        <th>Member</th>
+        <th>Action</th>
         <th>Owner Agreement</th>
-        <th></th>
       </tr>
     </thead>
     <tbody>
