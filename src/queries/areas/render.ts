@@ -73,9 +73,13 @@ const renderEquipment = (equipment: ViewModel['areas'][number]['equipment']) =>
   );
 
 const renderArea = (area: ViewModel['areas'][number]) => html`
-  <a href="/areas/${safe(area.id)}"><h2>${sanitizeString(area.name)}</h2></a>
-  ${renderEquipment(area.equipment)} ${renderOwnerTable(area.owners)}
-  <a href="/areas/add-owner?area=${safe(area.id)}">Add owner</a>
+  <article>
+    <a href="/areas/${safe(area.id)}"><h2>${sanitizeString(area.name)}</h2></a>
+    ${renderEquipment(area.equipment)} ${renderOwnerTable(area.owners)}
+    <a class="button" href="/areas/add-owner?area=${safe(area.id)}"
+      >Add owner</a
+    >
+  </article>
 `;
 
 const renderAreas = (areas: ViewModel['areas']) => {
@@ -86,14 +90,17 @@ const renderAreas = (areas: ViewModel['areas']) => {
 };
 
 const addAreaCallToAction = html`
-  <a href="/areas/create">Add area of responsibility</a>
+  <a class="button" href="/areas/create">Add area of responsibility</a>
 `;
 
 export const render = (viewModel: ViewModel) =>
   pipe(
     html`
-      <h1>Areas of Makespace</h1>
-      ${addAreaCallToAction} ${renderAreas(viewModel.areas)}
+      <div class="stack-large">
+        <h1>Areas of Makespace</h1>
+        <div>${addAreaCallToAction}</div>
+        <section class="stack-large">${renderAreas(viewModel.areas)}</section>
+      </div>
     `,
     pageTemplate(safe('Areas'), viewModel.user)
   );

@@ -18,6 +18,92 @@
   outline: var(--focus-color) solid 3px;
 }
 
+/* Modern CSS reset: https://github.com/hankchizljaw/modern-css-reset */
+
+/* Box sizing rules */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Remove default padding */
+ul[class],
+ol[class] {
+  padding: 0;
+}
+
+/* Remove default margin */
+body,
+h1,
+h2,
+h3,
+h4,
+p,
+ul[class],
+ol[class],
+figure,
+blockquote,
+dl,
+dd {
+  margin: 0;
+}
+
+/* Set core root defaults */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Set core body defaults */
+body {
+  min-height: 100vh;
+  text-rendering: optimizeSpeed;
+  line-height: 1.5;
+}
+
+/* Remove list styles on ul, ol elements with a class attribute */
+ul[class],
+ol[class] {
+  list-style: none;
+}
+
+/* A elements that don't have a class get default styles */
+a:not([class]) {
+  text-decoration-skip-ink: auto;
+}
+
+/* Make images easier to work with */
+img,
+picture {
+  max-width: 100%;
+  display: block;
+}
+
+/* Natural flow and rhythm in articles by default */
+article > * + * {
+  margin-top: 1em;
+}
+
+/* Inherit fonts for inputs and buttons */
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}
+
+/* Remove all animations and transitions for people that prefer not to see them */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* End of reset */
+
 body {
   color: var(--text-color);
   margin: 0 auto 5rem;
@@ -113,6 +199,30 @@ button:active {
   top: 3px;
 }
 
+a.button {
+  color: white;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.button {
+  color: white;
+  font-size: 120%;
+  background: var(--green-color);
+  padding: 10px 20px;
+  border: 0;
+  border-bottom: 3px solid black;
+}
+
+.button:hover {
+  background: var(--green-darkened-color);
+}
+
+.button:active {
+  position: relative;
+  top: 3px;
+}
+
 caption {
   font-weight: 700;
   display: table-caption;
@@ -135,7 +245,6 @@ details > *:not(summary) {
   padding-left: 1rem;
   padding-bottom: 0.5rem;
 }
-
 
 .page-nav {
   display: flex;
@@ -224,4 +333,16 @@ label img {
 
 .fieldset-item input:checked + label:after {
   opacity: 1;
+}
+
+article > * + * {
+  margin-block-start: 1rem;
+}
+
+.stack> * + * {
+  margin-block-start: 1rem;
+}
+
+.stack-large > * + * {
+  margin-block-start: 3rem;
 }
