@@ -104,6 +104,9 @@ export const updateState =
       case 'AreaCreated':
         db.insert(areasTable).values({id: event.id, name: event.name}).run();
         break;
+      case 'AreaRemoved':
+        db.delete(areasTable).where(eq(areasTable.id, event.id)).run();
+        break;
       case 'OwnerAdded':
         db.insert(ownersTable)
           .values({

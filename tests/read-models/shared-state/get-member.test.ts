@@ -240,5 +240,25 @@ describe('get-via-shared-read-model', () => {
         expect(result.ownerOf[0].ownershipRecordedAt).toStrictEqual(recordedAt);
       });
     });
+
+    describe('and they are an owner of a removed area', () => {
+      const createArea = {
+        name: faker.company.buzzNoun() as NonEmptyString,
+        id: faker.string.uuid() as UUID,
+      };
+      beforeEach(async () => {
+        await framework.commands.area.create(createArea);
+        await framework.commands.area.addOwner({
+          memberNumber: memberNumber,
+          areaId: createArea.id,
+        });
+        await framework.commands.area.remove({id: createArea.id});
+      });
+
+      it('returns that they are no longer an owner', () => {
+        const result = runQuery();
+        expect(result.ownerOf).toHaveLength(0);
+      });
+    });
   });
 });
