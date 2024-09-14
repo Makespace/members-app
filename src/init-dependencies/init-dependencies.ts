@@ -94,6 +94,8 @@ export const initDependencies = (
         conf.QUIZ_RESULT_REFRESH_COOLDOWN_MS
       )
     );
+  } else {
+    logger.warn("Background processing is disabled - training results won't be gathered");
   }
 
   return deps;
