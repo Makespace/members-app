@@ -56,8 +56,10 @@ createTerminus(server);
 
 const backgroundTask = setInterval(() => {
   if (O.isNone(deps.updateTrainingQuizResults)) {
+    deps.logger.info('Background task skipped as disabled');
     return;
   }
+  deps.logger.info('Background task running...');
   deps.updateTrainingQuizResults
     .value()
     .then(() => deps.logger.info('Background update of quiz results finished'))
