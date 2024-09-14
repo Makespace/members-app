@@ -95,7 +95,9 @@ export const initDependencies = (
       )
     );
   } else {
-    logger.warn("Background processing is disabled - training results won't be gathered");
+    logger.warn(
+      "Background processing is disabled - training results won't be gathered"
+    );
   }
 
   return deps;
