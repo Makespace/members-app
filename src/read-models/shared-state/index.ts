@@ -21,7 +21,6 @@ export type SharedReadModel = {
   };
   equipment: {
     get: (id: string) => O.Option<Equipment>;
-    getTrainingQuizResults: (equipmentId: string) => TrainingQuizResults;
   };
 };
 
@@ -39,7 +38,6 @@ export const initSharedReadModel = (
     },
     equipment: {
       get: getEquipment(readModelDb),
-      getTrainingQuizResults: getTrainingQuizResults(readModelDb),
     },
   };
 };

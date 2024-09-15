@@ -7,7 +7,6 @@ type OrphanedPassedQuiz = {
   score: number;
   maxScore: number;
   percentage: number;
-  passed: boolean;
   timestamp: DateTime;
 
   memberNumberProvided: O.Option<number>;

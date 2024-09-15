@@ -59,24 +59,48 @@ export const getEquipment =
         }))
       );
 
+    const trainingQuizes = pipe(
+      db
+        .select()
+        .from(trainingQuizTable)
+        .leftJoin( // If member info is null then this is an orphaned result.
+          membersTable,
+          eq(trainingQuizTable.memberNumber, membersTable.memberNumber)
+        )
+        .where(eq(trainingQuizTable.equipmentId, id))
+        .all(),
+    );
     const getTrainingQuizResults = () => 
       pipe(
-        db
-          .select()
-          .from(trainingQuizTable)
-          .leftJoin( // If member info is null then this is an orphaned result.
-
-          )
-          .where(eq(trainingQuizTable.equipmentId, id))
-          .all(),
+        trainingQuizes,
+        RA.filter(
+          q => q.members !== null
+        ),
+        RA.map(
+          q => ({
+            ...q.trainingQuizResults,
+            ...q.members,
+          })
+        )
       );
 
     const getOrphanedTrainingQuizes = () => 
       pipe(
-        db
-          .select().from(trainingQuizTable)
-          .where(isNull(trainingQuizTable.memberNumber))
-          .all(),
+        trainingQuizes,
+        RA.filter(
+          q => q.members === null
+        ),
+        RA.map(
+          q => ({
+            id: q.trainingQuizResults.quizId,
+            score: q.trainingQuizResults.score,
+            maxScore: q.trainingQuizResults.maxScore,
+            percentage: q.trainingQuizResults.percentage,
+            timestamp: q.trainingQuizResults.timestamp,
+            memberNumberProvided: q.trainingQuizResults.memberNumberProvided,
+            emailProvided: q.trainingQuizResults.emailProvided,
+          })
+        )
       );
 
     return pipe(
