@@ -1,7 +1,7 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {eq, isNull, and, isNotNull, lt} from 'drizzle-orm';
+import {eq, isNull, and, isNotNull, not} from 'drizzle-orm';
 import {SharedReadModel} from '.';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {
@@ -59,6 +59,10 @@ export const getEquipment =
       }))
     );
 
+    const quizPassed = eq(trainingQuizTable.score, trainingQuizTable.maxScore);
+    const alreadyTrained = isNull(trainedMemberstable.memberNumber);
+    const isKnownMember = isNotNull(membersTable.memberNumber);
+
     // Doing all the filtering in the where statements rather than doing a multi-step
     // thing where we get all the trained members then get the quiz results and then filter.
     // Since the db is local / in memory this should be pretty fast.
@@ -78,11 +82,11 @@ export const getEquipment =
             and(
               and(
                 eq(trainingQuizTable.equipmentId, id),
-                eq(trainingQuizTable.score, trainingQuizTable.maxScore), // Passed
+                quizPassed
               ),
-              isNull(trainedMemberstable.memberNumber) // Not already trained.
+              not(alreadyTrained)
             ),
-            isNotNull(membersTable.memberNumber) // Is a valid member.
+            isKnownMember
           )
         )
         .all(),
@@ -111,11 +115,11 @@ export const getEquipment =
             and(
               and(
                 eq(trainingQuizTable.equipmentId, id),
-                lt(trainingQuizTable.score, trainingQuizTable.maxScore), // Not passed.
+                not(quizPassed),
               ),
-              isNull(trainedMemberstable.memberNumber) // Not already trained
+              not(alreadyTrained)
             ),
-            isNotNull(membersTable.memberNumber) // Is a valid member
+            isKnownMember
           )
         )
         .all(),
@@ -131,18 +135,22 @@ export const getEquipment =
 
     const getOrphanedTrainingQuizes = () => 
       pipe(
-        db
-        .select()
+        db.select()
         .from(trainingQuizTable)
         .leftJoin( // If member info is null then this is an orphaned result.
           membersTable,
           eq(trainingQuizTable.memberNumberProvided, membersTable.memberNumber)
         )
-        .where(eq(trainingQuizTable.equipmentId, id))
+        .where(
+          and(
+            and(
+              eq(trainingQuizTable.equipmentId, id),
+              quizPassed
+            ),
+            not(isKnownMember)
+          )
+        )
         .all(),
-        RA.filter(
-          q => q.members === null
-        ),
         RA.map(
           q => ({
             id: q.trainingQuizResults.quizId,
@@ -155,8 +163,6 @@ export const getEquipment =
           })
         )
       );
-
-
 
     return pipe(
       db.select().from(equipmentTable).where(eq(equipmentTable.id, id)).get(),
