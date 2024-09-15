@@ -10,8 +10,6 @@ import {getAllEvents, getAllEventsByType} from './event-store/get-all-events';
 import {getResourceEvents} from './event-store/get-resource-events';
 import {Client} from '@libsql/client';
 import {pullGoogleSheetData} from './google/pull_sheet_data';
-import * as O from 'fp-ts/Option';
-import {updateTrainingQuizResults} from '../training-sheets/training-sheets-worker';
 import {initSharedReadModel} from '../read-models/shared-state';
 import {GoogleAuth} from 'google-auth-library';
 
@@ -58,13 +56,18 @@ export const initDependencies = (
     })
   );
 
-  const sharedReadModel = initSharedReadModel(dbClient);
+  const googleAuth = new GoogleAuth({
+    // Google issues the credentials file and validates it.
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    credentials: JSON.parse(conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON),
+    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+  });
 
-  if (!conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON) {
-    throw new Error(
-      'Google service account key not provided'
-    );
-  }
+  const sharedReadModel = initSharedReadModel(
+    dbClient,
+    logger,
+    pullGoogleSheetData(googleAuth)
+  );
 
   const deps: Dependencies = {
     commitEvent: commitEvent(dbClient, logger, sharedReadModel.asyncRefresh),
@@ -75,13 +78,6 @@ export const initDependencies = (
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
     logger,
-    pullGoogleSheetData: pullGoogleSheetData(
-      new GoogleAuth({
-      // Google issues the credentials file and validates it.
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      credentials: JSON.parse(conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON),
-      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-    })),
   };
   return deps;
 };

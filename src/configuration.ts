@@ -46,8 +46,11 @@ const Config = t.strict({
     tt.IntFromString,
     (5 * 60 * 1000) as t.Int
   ),
-  GOOGLE_SERVICE_ACCOUNT_KEY_JSON: t.union([t.undefined, t.string]),
-  LEGACY_TRAINING_COMPLETE_SHEET: withDefaultIfEmpty(t.string, '1Do4CbGZ7ndvK0955nBOi1psn7jVxgvRZHhlsQbZR3_Y'),
+  GOOGLE_SERVICE_ACCOUNT_KEY_JSON: tt.NonEmptyString,
+  LEGACY_TRAINING_COMPLETE_SHEET: withDefaultIfEmpty(
+    t.string,
+    '1Do4CbGZ7ndvK0955nBOi1psn7jVxgvRZHhlsQbZR3_Y'
+  ),
 });
 
 export type Config = t.TypeOf<typeof Config>;

@@ -7,7 +7,6 @@ import {StatusCodes} from 'http-status-codes';
 import {Resource} from './types/resource';
 import {EventName, EventOfType} from './types/domain-event';
 import {SharedReadModel} from './read-models/shared-state';
-import { sheets_v4 } from '@googleapis/sheets';
 
 export type Dependencies = {
   commitEvent: (
@@ -37,5 +36,4 @@ export type Dependencies = {
   logger: Logger;
   rateLimitSendingOfEmails: (email: Email) => TE.TaskEither<Failure, Email>;
   sendEmail: (email: Email) => TE.TaskEither<Failure, string>;
-  pullGoogleSheetData: (logger: Logger, trainingSheetId: string) => TE.TaskEither<Failure, sheets_v4.Schema$Spreadsheet>;
 };

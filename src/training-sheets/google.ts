@@ -9,6 +9,7 @@ import {UUID} from 'io-ts-types';
 import {DateTime} from 'luxon';
 import {QzEvent} from '../types/qz-event';
 import {sheets_v4} from '@googleapis/sheets';
+import { Equipment } from '../read-models/shared-state/return-types';
 
 // Bounds to prevent clearly broken parsing.
 const MIN_RECOGNISED_MEMBER_NUMBER = 0;
@@ -253,7 +254,7 @@ const extractFromRow =
   };
 
 export const extractGoogleSheetData =
-  (logger: Logger, equipmentId: UUID, trainingSheetId: string) =>
+  (logger: Logger, trainingSheetId: string) =>
   (
     spreadsheet: sheets_v4.Schema$Spreadsheet
   ): ReadonlyArray<ReadonlyArray<QzEvent>> =>
