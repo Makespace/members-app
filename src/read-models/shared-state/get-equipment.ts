@@ -42,26 +42,26 @@ export const getEquipment =
         }))
       );
 
+    const quizPassed = eq(trainingQuizTable.score, trainingQuizTable.maxScore);
+    const alreadyTrained = isNull(trainedMemberstable.memberNumber);
+    const isKnownMember = isNotNull(membersTable.memberNumber);
     const getTrainedMembers = () => pipe(
       db
         .select()
         .from(membersTable)
-        .leftJoin(
+        .innerJoin(
           trainedMemberstable,
           eq(membersTable.memberNumber, trainedMemberstable.memberNumber)
         )
         .where(eq(trainedMemberstable.equipmentId, id))
         .all(),
-      RA.map(result => result.members),
-      RA.map(member => ({
-        ...member,
-        agreementSigned: O.fromNullable(member.agreementSigned),
+      RA.map(result => ({
+        ...result.members,
+        trainedBy: result.trainedMembers.trainedBy,
+        trainedAt: result.trainedMembers.trainedAt,
+        agreementSigned: O.fromNullable(result.members.agreementSigned),
       }))
     );
-
-    const quizPassed = eq(trainingQuizTable.score, trainingQuizTable.maxScore);
-    const alreadyTrained = isNull(trainedMemberstable.memberNumber);
-    const isKnownMember = isNotNull(membersTable.memberNumber);
 
     // Doing all the filtering in the where statements rather than doing a multi-step
     // thing where we get all the trained members then get the quiz results and then filter.
