@@ -1,13 +1,12 @@
 import * as O from 'fp-ts/Option';
 import {EmailAddress, GravatarHash} from '../../types';
-import { DateTime } from 'luxon';
 
 type OrphanedPassedQuiz = {
   id: string;
   score: number;
   maxScore: number;
   percentage: number;
-  timestamp: DateTime;
+  timestamp: Date;
 
   memberNumberProvided: O.Option<number>;
   emailProvided: O.Option<string>;
@@ -18,14 +17,14 @@ type FailedQuizAttempt = MemberCoreInfo & {
   score: number;
   maxScore: number;
   percentage: number;
-  timestamp: DateTime;
-  quizAnswers: Record<string, string>;
-}
+  timestamp: Date;
+  quizAnswers: unknown;
+};
 
 type TrainedMember = MemberCoreInfo & {
-  trainedBy: number;
-  trainedSince: DateTime;
-}
+  trainedBy: number | null;
+  trainedAt: Date;
+};
 
 export type Equipment = {
   id: string;
@@ -39,7 +38,7 @@ export type Equipment = {
   membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>;
   orphanedPassedQuizes: ReadonlyArray<OrphanedPassedQuiz>;
   failedQuizAttempts: ReadonlyArray<FailedQuizAttempt>;
-  trainingSheetId: O.Option<string>;
+  trainingSheetId: string | null;
 };
 
 type TrainedOn = {
@@ -68,7 +67,7 @@ type MemberCoreInfo = {
 type MemberAwaitingTraining = MemberCoreInfo & {
   quizId: string;
   memberNumber: number;
-  waitingSince: DateTime;
+  waitingSince: Date;
 };
 
 export type Member = MemberCoreInfo & {
