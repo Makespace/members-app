@@ -60,6 +60,12 @@ export const initDependencies = (
 
   const sharedReadModel = initSharedReadModel(dbClient);
 
+  if (!conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON) {
+    throw new Error(
+      'Google service account key not provided'
+    );
+  }
+
   const deps: Dependencies = {
     commitEvent: commitEvent(dbClient, logger, sharedReadModel.asyncRefresh),
     getAllEvents: getAllEvents(dbClient),
@@ -69,37 +75,13 @@ export const initDependencies = (
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
     logger,
-    updateTrainingQuizResults: O.none,
-    lastTrainingQuizResultRefresh: O.none,
-    trainingQuizRefreshRunning: false,
-  };
-
-  if (conf.BACKGROUND_PROCESSING_ENABLED) {
-    if (!conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON) {
-      throw new Error(
-        'Background processing is enabled but google service account key not provided'
-      );
-    }
-    const auth = new GoogleAuth({
+    pullGoogleSheetData: pullGoogleSheetData(
+      new GoogleAuth({
       // Google issues the credentials file and validates it.
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       credentials: JSON.parse(conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON),
       scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-    });
-    deps.updateTrainingQuizResults = O.some(() =>
-      updateTrainingQuizResults(
-        pullGoogleSheetData(auth),
-        deps,
-        logger,
-        conf.QUIZ_RESULT_REFRESH_COOLDOWN_MS,
-        conf.LEGACY_TRAINING_COMPLETE_SHEET,
-      )
-    );
-  } else {
-    logger.warn(
-      "Background processing is disabled - training results won't be gathered"
-    );
-  }
-
+    })),
+  };
   return deps;
 };

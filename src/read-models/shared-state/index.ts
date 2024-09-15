@@ -3,12 +3,14 @@ import * as O from 'fp-ts/Option';
 import {createTables} from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
+import { GoogleAuth } from 'google-auth-library';
 import {getMember} from './get-member';
 import {Equipment, Member} from './return-types';
 import {getEquipment} from './get-equipment';
 import {Client} from '@libsql/client/.';
 import {asyncRefresh} from './async-refresh';
 import {updateState} from './update-state';
+import { TrainingQuizResults, getTrainingQuizResults } from './training-results';
 
 export {replayState} from './deprecated-replay';
 
@@ -20,11 +22,13 @@ export type SharedReadModel = {
   };
   equipment: {
     get: (id: string) => O.Option<Equipment>;
+    getTrainingQuizResults: (equipmentId: string) => TrainingQuizResults;
   };
 };
 
 export const initSharedReadModel = (
-  eventStoreClient: Client
+  eventStoreClient: Client,
+  googleAuth: GoogleAuth,
 ): SharedReadModel => {
   const readModelDb = drizzle(new Database());
   createTables.forEach(statement => readModelDb.run(statement));
@@ -36,6 +40,7 @@ export const initSharedReadModel = (
     },
     equipment: {
       get: getEquipment(readModelDb),
+      getTrainingQuizResults: getTrainingQuizResults(readModelDb),
     },
   };
 };

@@ -42,14 +42,6 @@ const Config = t.strict({
   TURSO_TOKEN: t.union([t.undefined, t.string]),
   TURSO_SYNC_URL: t.union([t.undefined, t.string]),
   LOG_LEVEL: withDefaultIfEmpty(LogLevel, 'debug'),
-  BACKGROUND_PROCESSING_ENABLED: withDefaultIfEmpty(
-    tt.BooleanFromString,
-    false
-  ),
-  BACKGROUND_PROCESSING_RUN_INTERVAL_MS: withDefaultIfEmpty(
-    tt.IntFromString,
-    (30 * 60 * 1000) as t.Int
-  ),
   QUIZ_RESULT_REFRESH_COOLDOWN_MS: withDefaultIfEmpty(
     tt.IntFromString,
     (5 * 60 * 1000) as t.Int
