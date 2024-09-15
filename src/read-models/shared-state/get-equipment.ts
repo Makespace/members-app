@@ -1,7 +1,7 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {eq, isNull} from 'drizzle-orm';
+import {eq, isNull, and, isNotNull, lt} from 'drizzle-orm';
 import {SharedReadModel} from '.';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {
@@ -13,6 +13,7 @@ import {
   trainingQuizTable,
 } from './state';
 import { P } from 'pino';
+import { DateTime } from 'luxon';
 
 export const getEquipment =
   (db: BetterSQLite3Database): SharedReadModel['equipment']['get'] =>
@@ -41,52 +42,104 @@ export const getEquipment =
         }))
       );
 
-    const getTrainedMembers = () =>
-      pipe(
-        db
-          .select()
-          .from(membersTable)
-          .leftJoin(
-            trainedMemberstable,
-            eq(membersTable.memberNumber, trainedMemberstable.memberNumber)
-          )
-          .where(eq(trainedMemberstable.equipmentId, id))
-          .all(),
-        RA.map(result => result.members),
-        RA.map(member => ({
-          ...member,
-          agreementSigned: O.fromNullable(member.agreementSigned),
-        }))
-      );
-
-    const trainingQuizes = pipe(
+    const getTrainedMembers = () => pipe(
       db
         .select()
+        .from(membersTable)
+        .leftJoin(
+          trainedMemberstable,
+          eq(membersTable.memberNumber, trainedMemberstable.memberNumber)
+        )
+        .where(eq(trainedMemberstable.equipmentId, id))
+        .all(),
+      RA.map(result => result.members),
+      RA.map(member => ({
+        ...member,
+        agreementSigned: O.fromNullable(member.agreementSigned),
+      }))
+    );
+
+    // Doing all the filtering in the where statements rather than doing a multi-step
+    // thing where we get all the trained members then get the quiz results and then filter.
+    // Since the db is local / in memory this should be pretty fast.
+    const getMembersAwaitingTraining = () => pipe(
+      db.select()
         .from(trainingQuizTable)
         .leftJoin( // If member info is null then this is an orphaned result.
           membersTable,
-          eq(trainingQuizTable.memberNumber, membersTable.memberNumber)
+          eq(trainingQuizTable.memberNumberProvided, membersTable.memberNumber)
         )
-        .where(eq(trainingQuizTable.equipmentId, id))
+        .leftJoin(
+          trainedMemberstable,
+          eq(membersTable.memberNumber, trainedMemberstable.memberNumber)
+        )
+        .where(
+          and(
+            and(
+              and(
+                eq(trainingQuizTable.equipmentId, id),
+                eq(trainingQuizTable.score, trainingQuizTable.maxScore), // Passed
+              ),
+              isNull(trainedMemberstable.memberNumber) // Not already trained.
+            ),
+            isNotNull(membersTable.memberNumber) // Is a valid member.
+          )
+        )
         .all(),
+      RA.map(
+        q => ({
+          ...q.trainingQuizResults,
+          ...q.members,
+        })
+      )
     );
-    const getTrainingQuizResults = () => 
+
+    const getFailedQuizAttempts = () =>
       pipe(
-        trainingQuizes,
-        RA.filter(
-          q => q.members !== null
-        ),
-        RA.map(
-          q => ({
-            ...q.trainingQuizResults,
-            ...q.members,
-          })
+        db.select()
+        .from(trainingQuizTable)
+        .leftJoin( // If member info is null then this is an orphaned result.
+          membersTable,
+          eq(trainingQuizTable.memberNumberProvided, membersTable.memberNumber)
         )
+        .leftJoin(
+          trainedMemberstable,
+          eq(membersTable.memberNumber, trainedMemberstable.memberNumber)
+        )
+        .where(
+          and(
+            and(
+              and(
+                eq(trainingQuizTable.equipmentId, id),
+                lt(trainingQuizTable.score, trainingQuizTable.maxScore), // Not passed.
+              ),
+              isNull(trainedMemberstable.memberNumber) // Not already trained
+            ),
+            isNotNull(membersTable.memberNumber) // Is a valid member
+          )
+        )
+        .all(),
+        RA.map(q => ({
+          quizId: q.trainingQuizResults.quizId,
+          score: q.trainingQuizResults.score,
+          maxScore: q.trainingQuizResults.maxScore,
+          percentage: Math.ceil(q.trainingQuizResults.score / q.trainingQuizResults.maxScore),
+          timestamp: DateTime.fromJSDate(q.trainingQuizResults.timestamp),
+          quizAnswers: q.trainingQuizResults.quizAnswers,
+        }))
       );
 
     const getOrphanedTrainingQuizes = () => 
       pipe(
-        trainingQuizes,
+        db
+        .select()
+        .from(trainingQuizTable)
+        .leftJoin( // If member info is null then this is an orphaned result.
+          membersTable,
+          eq(trainingQuizTable.memberNumberProvided, membersTable.memberNumber)
+        )
+        .where(eq(trainingQuizTable.equipmentId, id))
+        .all(),
         RA.filter(
           q => q.members === null
         ),
@@ -95,7 +148,7 @@ export const getEquipment =
             id: q.trainingQuizResults.quizId,
             score: q.trainingQuizResults.score,
             maxScore: q.trainingQuizResults.maxScore,
-            percentage: q.trainingQuizResults.percentage,
+            percentage: Math.ceil(q.trainingQuizResults.score / q.trainingQuizResults.maxScore),
             timestamp: q.trainingQuizResults.timestamp,
             memberNumberProvided: q.trainingQuizResults.memberNumberProvided,
             emailProvided: q.trainingQuizResults.emailProvided,
@@ -103,13 +156,16 @@ export const getEquipment =
         )
       );
 
+
+
     return pipe(
       db.select().from(equipmentTable).where(eq(equipmentTable.id, id)).get(),
       O.fromNullable,
       O.let('trainers', getTrainers),
-      O.let('trainedMembers', getTrainedMembers),
-      O.let('membersAwaitingTraining', getTrainingQuizResults),
+      O.let('trainedMembers', () => getTrainedMembers),
+      O.let('membersAwaitingTraining', () => getMembersAwaitingTraining),
       O.let('orphanedPassedQuizes', getOrphanedTrainingQuizes),
+      O.let('failedQuizAttempts', getFailedQuizAttempts),
       O.bind('area', ({areaId}) => getArea(areaId)),
       foo => foo
     );

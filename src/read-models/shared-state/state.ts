@@ -78,6 +78,7 @@ export const trainedMemberstable = sqliteTable('trainedMembers', {
     .notNull()
     .references(() => equipmentTable.id),
   trainedAt: integer('trainedAt', {mode: 'timestamp'}).notNull(),
+  trainedBy: integer('trainedBy').references(() => membersTable.memberNumber),
 });
 
 const createTrainedMembersTable = sql`
