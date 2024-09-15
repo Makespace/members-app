@@ -135,7 +135,16 @@ export const updateState =
           .run();
         break;
       case 'EquipmentTrainingQuizEmailUpdated':
+        db.update(trainingQuizTable)
+          .set({emailProvided: event.newEmail})
+          .where(eq(trainingQuizTable.quizId, event.quizId))
+          .run();
+        break;
       case 'EquipmentTrainingQuizMemberNumberUpdated':
+        db.update(trainingQuizTable)
+          .set({memberNumberProvided: event.newMemberNumber})
+          .where(eq(trainingQuizTable.quizId, event.quizId))
+          .run();
         break;
       case 'EquipmentTrainingSheetRegistered':
         db.update(equipmentTable)
