@@ -91,7 +91,8 @@ export const initDependencies = (
         pullGoogleSheetData(auth),
         deps,
         logger,
-        conf.QUIZ_RESULT_REFRESH_COOLDOWN_MS
+        conf.QUIZ_RESULT_REFRESH_COOLDOWN_MS,
+        conf.LEGACY_TRAINING_COMPLETE_SHEET,
       )
     );
   } else {
