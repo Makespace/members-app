@@ -2,6 +2,7 @@ import {sql} from 'drizzle-orm';
 import {EmailAddress, GravatarHash} from '../../types';
 import * as O from 'fp-ts/Option';
 import {blob, integer, sqliteTable, text} from 'drizzle-orm/sqlite-core';
+import { DateTime } from 'luxon';
 
 type TrainedOn = {
   id: Equipment['id'];
@@ -117,6 +118,39 @@ const createOwnersTable = sql`
   )
 `;
 
+export const trainingQuizTable = sqliteTable('trainingQuizResults', {
+  quizId: text('quizId').notNull().primaryKey(),
+  equipmentId: text('equipmentId').notNull().references(() => equipmentTable.id),
+  sheetId: text('sheetId').notNull(),
+  // Member number is the confirmed member number for the quiz.
+  // If its null then we haven't successfully linked this quiz result to a member.
+  memberNumber: integer('memberNumber').references(() => membersTable.memberNumber),
+  memberNumberProvided: integer('memberNumberProvided'),
+  emailProvided: text('email'),
+  score: integer('score').notNull(),
+  maxScore: integer('maxScore').notNull(),
+  // Rounded up.
+  percentage: integer('percentage').notNull(),
+  passed: integer('passed', {'mode': 'boolean'}).notNull().default(false),
+  timestamp: integer('timestamp', {'mode': 'timestamp'}).notNull(),
+});
+
+const createTrainingQuizTable = sql`
+  CREATE TABLE IF NOT EXISTS trainingQuizResults (
+    quizId TEXT,
+    equipmentId TEXT,
+    sheetId: TEXT,
+    memberNumber INTEGER,
+    memberNumberProvided INTEGER,
+    emailProvided TEXT,
+    score INTEGER,
+    maxScore INTEGER,
+    percentage INTEGER,
+    passed BOOLEAN,
+    timestamp INTEGER
+  )
+`;
+
 export const createTables = [
   createMembersTable,
   createEquipmentTable,
@@ -124,6 +158,7 @@ export const createTables = [
   createTrainedMembersTable,
   createAreasTable,
   createOwnersTable,
+  createTrainingQuizTable,
 ];
 
 type Member = {
@@ -143,10 +178,26 @@ type Area = {
   owners: Set<number>;
 };
 
+type UserAwaitingTraining = {
+  // Implies the user has passed the quiz.
+  quizId: string;
+  memberNumber: number;
+  waitingSince: DateTime;
+}
+
+type TrainedUser = {
+  memberNumber: number,
+  trainedSince: DateTime,
+  trainedByMemberNumber: number;
+}
+
 type Equipment = {
   id: string;
   name: string;
   areaId: Area['id'];
+  trainedUsers: ReadonlyArray<TrainedUser>;
+  usersAwaitingTraining: ReadonlyArray<UserAwaitingTraining>;
+  orphanedPassedQuizes: ReadonlyArray<UserAwaitingTraining>;
 };
 
 type FailedLinking = {

@@ -18,7 +18,6 @@ import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
 import cookieSession from 'cookie-session';
 import {initRoutes} from './routes';
-import * as O from 'fp-ts/Option';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -54,17 +53,6 @@ startMagicLinkEmailPubSub(deps, conf);
 const server = http.createServer(app);
 createTerminus(server);
 
-const backgroundTask = setInterval(() => {
-  if (O.isNone(deps.updateTrainingQuizResults)) {
-    deps.logger.info('Background task skipped as disabled');
-    return;
-  }
-  deps.logger.info('Background task running...');
-  deps.updateTrainingQuizResults
-    .value()
-    .then(() => deps.logger.info('Background update of quiz results finished'))
-    .catch(err => deps.logger.error(err, 'Background update unexpected error'));
-}, conf.BACKGROUND_PROCESSING_RUN_INTERVAL_MS);
 const periodicReadModelRefresh = setInterval(() => {
   deps.sharedReadModel
     .asyncRefresh()()
@@ -74,7 +62,6 @@ const periodicReadModelRefresh = setInterval(() => {
     );
 }, 5000);
 server.on('close', () => {
-  clearInterval(backgroundTask);
   clearInterval(periodicReadModelRefresh);
 });
 
