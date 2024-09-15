@@ -112,7 +112,8 @@ describe('Training sheets worker', () => {
             localPullGoogleSheetData,
             deps,
             deps.logger,
-            0 as T.Int
+            0 as T.Int,
+            
           );
           expect(deps.commitedEvents).toHaveLength(0);
         });

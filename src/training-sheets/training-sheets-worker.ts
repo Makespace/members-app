@@ -22,6 +22,7 @@ import {StatusCodes} from 'http-status-codes';
 import {Failure} from '../types';
 import {DateTime} from 'luxon';
 import {sheets_v4} from '@googleapis/sheets';
+import { Config } from '../configuration';
 
 const byEquipmentId: Ord<RegEvent> = pipe(
   S.Ord,
@@ -125,11 +126,23 @@ const process =
     );
   };
 
+const processLegacyTrainingCompleteSheet= async (
+  pullGoogleSheetData: PullSheetData,
+  deps: Dependencies,
+  logger: Logger,
+): Promise<void> => {
+  logger.info('Checking legacy training complete sheet for results...');
+  const data = await pullGoogleSheetData(logger, deps)
+
+    LEGACY_TRAINING_COMPLETE_SHEET
+}
+
 export const updateTrainingQuizResults = async (
   pullGoogleSheetData: PullSheetData,
   deps: Dependencies,
   logger: Logger,
-  refreshCooldownMs: T.Int
+  refreshCooldownMs: T.Int,
+  legacyTrainingSheetId: string,
 ): Promise<void> => {
   try {
     if (deps.trainingQuizRefreshRunning) {
@@ -151,7 +164,7 @@ export const updateTrainingQuizResults = async (
 
     const start = performance.now();
     logger.info(
-      'Running training sheets worker job. Getting existing events...'
+      'Running training sheets worker job...'
     );
     const newEvents = await pipe(
       {
@@ -197,6 +210,10 @@ export const updateTrainingQuizResults = async (
       );
     }
     logger.info('Finished commiting training sheet quiz results');
+    await processLegacyTrainingCompleteSheet(
+      pullGoogleSheetData, deps, logger
+    );
+    logger.info('Finished processing legacy training complete sheet')
     logger.info(
       `Took ${Math.round(
         performance.now() - start
