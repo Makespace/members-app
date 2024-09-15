@@ -8,6 +8,7 @@ import {
   ownersTable,
   trainedMemberstable,
   trainersTable,
+  trainingQuizTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {eq} from 'drizzle-orm';
@@ -116,7 +117,23 @@ export const updateState =
           })
           .run();
         break;
+      case 'EquipmentTrainingQuizResult':
+        db.insert(trainingQuizTable)
+          .values({
+            memberNumberProvided: event.memberNumberProvided,
 
+
+          })
+          .run();
+      case 'EquipmentTrainingQuizEmailUpdated':
+      case 'EquipmentTrainingQuizMemberNumberUpdated':
+        break;
+      case 'EquipmentTrainingSheetRegistered':
+        db.update(equipmentTable)
+          .set({trainingSheetId: event.trainingSheetId})
+          .where(eq(equipmentTable.id, event.equipmentId))
+          .run();
+        break;
       default:
         break;
     }

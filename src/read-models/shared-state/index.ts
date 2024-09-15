@@ -10,7 +10,6 @@ import {getEquipment} from './get-equipment';
 import {Client} from '@libsql/client/.';
 import {asyncRefresh} from './async-refresh';
 import {updateState} from './update-state';
-import { TrainingQuizResults, getTrainingQuizResults } from './training-results';
 
 export {replayState} from './deprecated-replay';
 

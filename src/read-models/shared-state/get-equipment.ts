@@ -1,7 +1,7 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {eq} from 'drizzle-orm';
+import {eq, isNull} from 'drizzle-orm';
 import {SharedReadModel} from '.';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {
@@ -10,7 +10,9 @@ import {
   membersTable,
   trainedMemberstable,
   trainersTable,
+  trainingQuizTable,
 } from './state';
+import { P } from 'pino';
 
 export const getEquipment =
   (db: BetterSQLite3Database): SharedReadModel['equipment']['get'] =>
@@ -57,11 +59,33 @@ export const getEquipment =
         }))
       );
 
+    const getTrainingQuizResults = () => 
+      pipe(
+        db
+          .select()
+          .from(trainingQuizTable)
+          .leftJoin( // If member info is null then this is an orphaned result.
+
+          )
+          .where(eq(trainingQuizTable.equipmentId, id))
+          .all(),
+      );
+
+    const getOrphanedTrainingQuizes = () => 
+      pipe(
+        db
+          .select().from(trainingQuizTable)
+          .where(isNull(trainingQuizTable.memberNumber))
+          .all(),
+      );
+
     return pipe(
       db.select().from(equipmentTable).where(eq(equipmentTable.id, id)).get(),
       O.fromNullable,
       O.let('trainers', getTrainers),
       O.let('trainedMembers', getTrainedMembers),
+      O.let('membersAwaitingTraining', getTrainingQuizResults),
+      O.let('orphanedPassedQuizes', getOrphanedTrainingQuizes),
       O.bind('area', ({areaId}) => getArea(areaId)),
       foo => foo
     );
