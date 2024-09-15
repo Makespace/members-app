@@ -42,13 +42,15 @@ export const equipmentTable = sqliteTable('equipment', {
   areaId: text('areaId')
     .notNull()
     .references(() => areasTable.id),
+  trainingSheetId: text('trainingSheetId'),
 });
 
 const createEquipmentTable = sql`
   CREATE TABLE IF NOT EXISTS equipment (
   id TEXT,
   name TEXT,
-  areaId TEXT
+  areaId TEXT,
+  trainingSheetId TEXT
   );
 `;
 
@@ -178,26 +180,10 @@ type Area = {
   owners: Set<number>;
 };
 
-type UserAwaitingTraining = {
-  // Implies the user has passed the quiz.
-  quizId: string;
-  memberNumber: number;
-  waitingSince: DateTime;
-}
-
-type TrainedUser = {
-  memberNumber: number,
-  trainedSince: DateTime,
-  trainedByMemberNumber: number;
-}
-
 type Equipment = {
   id: string;
   name: string;
   areaId: Area['id'];
-  trainedUsers: ReadonlyArray<TrainedUser>;
-  usersAwaitingTraining: ReadonlyArray<UserAwaitingTraining>;
-  orphanedPassedQuizes: ReadonlyArray<UserAwaitingTraining>;
 };
 
 type FailedLinking = {

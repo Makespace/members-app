@@ -1,15 +1,46 @@
 import * as O from 'fp-ts/Option';
 import {EmailAddress, GravatarHash} from '../../types';
+import { DateTime } from 'luxon';
+
+type OrphanedPassedQuiz = {
+  id: string;
+  score: number;
+  maxScore: number;
+  percentage: number;
+  passed: boolean;
+  timestamp: DateTime;
+
+  memberNumberProvided: O.Option<number>;
+  emailProvided: O.Option<string>;
+};
+
+type FailedQuizAttempt = MemberCoreInfo & {
+  quizId: string;
+  score: number;
+  maxScore: number;
+  percentage: number;
+  timestamp: DateTime;
+  quizAnswers: Record<string, string>;
+}
+
+type TrainedMember = MemberCoreInfo & {
+  trainedBy: number;
+  trainedSince: DateTime;
+}
 
 export type Equipment = {
   id: string;
   name: string;
   trainers: ReadonlyArray<MemberCoreInfo>;
-  trainedMembers: ReadonlyArray<MemberCoreInfo>;
+  trainedMembers: ReadonlyArray<TrainedMember>;
   area: {
     id: string;
     name: string;
   };
+  membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>;
+  orphanedPassedQuizes: ReadonlyArray<OrphanedPassedQuiz>;
+  failedQuizAttempts: ReadonlyArray<FailedQuizAttempt>;
+  trainingSheetId: O.Option<string>;
 };
 
 type TrainedOn = {
@@ -33,6 +64,12 @@ type MemberCoreInfo = {
   agreementSigned: O.Option<Date>;
   isSuperUser: boolean;
   gravatarHash: GravatarHash;
+};
+
+type MemberAwaitingTraining = MemberCoreInfo & {
+  quizId: string;
+  memberNumber: number;
+  waitingSince: DateTime;
 };
 
 export type Member = MemberCoreInfo & {
