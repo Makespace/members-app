@@ -124,17 +124,13 @@ export const trainingQuizTable = sqliteTable('trainingQuizResults', {
   quizId: text('quizId').notNull().primaryKey(),
   equipmentId: text('equipmentId').notNull().references(() => equipmentTable.id),
   sheetId: text('sheetId').notNull(),
-  // Member number is the confirmed member number for the quiz.
-  // If its null then we haven't successfully linked this quiz result to a member.
-  memberNumber: integer('memberNumber').references(() => membersTable.memberNumber),
+  // Member number might not be linked to a member if it is entered incorrectly.
   memberNumberProvided: integer('memberNumberProvided'),
   emailProvided: text('email'),
   score: integer('score').notNull(),
   maxScore: integer('maxScore').notNull(),
-  // Rounded up.
-  percentage: integer('percentage').notNull(),
-  passed: integer('passed', {'mode': 'boolean'}).notNull().default(false),
   timestamp: integer('timestamp', {'mode': 'timestamp'}).notNull(),
+  quizAnswers: text('quizAnswers', {'mode': 'json'}).notNull(),
 });
 
 const createTrainingQuizTable = sql`
@@ -142,14 +138,12 @@ const createTrainingQuizTable = sql`
     quizId TEXT,
     equipmentId TEXT,
     sheetId: TEXT,
-    memberNumber INTEGER,
     memberNumberProvided INTEGER,
     emailProvided TEXT,
     score INTEGER,
     maxScore INTEGER,
-    percentage INTEGER,
-    passed BOOLEAN,
-    timestamp INTEGER
+    timestamp INTEGER,
+    quizAnswers TEXT
   )
 `;
 
