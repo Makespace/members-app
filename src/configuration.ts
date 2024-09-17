@@ -44,7 +44,7 @@ const Config = t.strict({
   LOG_LEVEL: withDefaultIfEmpty(LogLevel, 'debug'),
   QUIZ_RESULT_REFRESH_COOLDOWN_MS: withDefaultIfEmpty(
     tt.IntFromString,
-    (5 * 60 * 1000) as t.Int
+    (20 * 60 * 1000) as t.Int
   ),
   GOOGLE_SERVICE_ACCOUNT_KEY_JSON: tt.NonEmptyString,
   LEGACY_TRAINING_COMPLETE_SHEET: withDefaultIfEmpty(

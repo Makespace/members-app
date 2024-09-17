@@ -37,16 +37,16 @@ export const initSharedReadModel = (
 ): SharedReadModel => {
   const readModelDb = drizzle(new Database());
   createTables.forEach(statement => readModelDb.run(statement));
-  const updateStateC = updateState(readModelDb);
+  const updateState_ = updateState(readModelDb);
 
   return {
     db: readModelDb,
-    asyncRefresh: asyncRefresh(eventStoreClient, updateStateC),
+    asyncRefresh: asyncRefresh(eventStoreClient, updateState_),
     asyncApplyExternalEventSources: asyncApplyExternalEventSources(
       logger,
       readModelDb,
       pullGoogleSheetData,
-      updateStateC
+      updateState_
     ),
     members: {
       get: getMember(readModelDb),

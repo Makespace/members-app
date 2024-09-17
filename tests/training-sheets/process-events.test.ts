@@ -8,7 +8,6 @@ import {
   EventOfType,
 } from '../../src/types/domain-event';
 import {happyPathAdapters} from '../init-dependencies/happy-path-adapters.helper';
-import {updateTrainingQuizResults} from '../../src/training-sheets/training-sheets-worker';
 import {Dependencies} from '../../src/dependencies';
 import {Resource} from '../../src/types/resource';
 import pino, {Logger} from 'pino';
