@@ -11,13 +11,14 @@ import {sheets_v4} from '@googleapis/sheets';
 import {Equipment} from './return-types';
 import {QzEvent} from '../../types/qz-event';
 import {extractGoogleSheetData} from '../../training-sheets/google';
+import {DateTime} from 'luxon';
 
 const GOOGLE_UPDATE_INTERVAL_MS = 5 * 60 * 1000;
 
 export type PullSheetData = (
   logger: Logger,
   trainingSheetId: string,
-  rowsSince: O.Option<Date>
+  rowsSince: O.Option<DateTime>
 ) => TE.TaskEither<Failure, sheets_v4.Schema$Spreadsheet>;
 
 const pullNewEquipmentQuizResults = (
@@ -81,6 +82,7 @@ export const asyncApplyExternalEventSources = (
             equipment
           )()
         );
+        equipment.lastQuizSync = O.some(DateTime.utc());
       }
     }
     logger.info('Finished applying external event sources');
