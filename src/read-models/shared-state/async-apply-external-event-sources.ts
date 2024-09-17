@@ -11,52 +11,53 @@ import {sheets_v4} from '@googleapis/sheets';
 import {Equipment} from './return-types';
 import {QzEvent} from '../../types/qz-event';
 import {extractGoogleSheetData} from '../../training-sheets/google';
-import {isNewQuizEvents} from './is-new-quiz-events';
 
 const GOOGLE_UPDATE_INTERVAL_MS = 5 * 60 * 1000;
 
 export type PullSheetData = (
   logger: Logger,
-  trainingSheetId: string
+  trainingSheetId: string,
+  rowsSince: O.Option<Date>
 ) => TE.TaskEither<Failure, sheets_v4.Schema$Spreadsheet>;
 
-const pullNewEquipmentQuizResults =
-  (logger: Logger, pullGoogleSheetData: PullSheetData) =>
-  (equipment: Equipment): T.Task<ReadonlyArray<QzEvent>> => {
-    if (O.isNone(equipment.trainingSheetId)) {
-      logger.warn(
-        'No training sheet registered for equipment %s, skipping training data ingestion',
-        equipment.name
+const pullNewEquipmentQuizResults = (
+  logger: Logger,
+  pullGoogleSheetData: PullSheetData,
+  equipment: Equipment
+): T.Task<ReadonlyArray<QzEvent>> => {
+  if (O.isNone(equipment.trainingSheetId)) {
+    logger.warn(
+      'No training sheet registered for equipment %s, skipping training data ingestion',
+      equipment.name
+    );
+    // eslint-disable-next-line @typescript-eslint/require-await
+    return async () => [] as ReadonlyArray<QzEvent>;
+  }
+  const trainingSheetId = equipment.trainingSheetId.value;
+  logger.info(
+    `Scanning training sheet ${trainingSheetId}. Pulling google sheet data...`
+  );
+  return pipe(
+    pullGoogleSheetData(logger, trainingSheetId, equipment.lastQuizResult),
+    TE.map(
+      extractGoogleSheetData(
+        logger.child({trainingSheetId: trainingSheetId}),
+        trainingSheetId
+      )
+    ),
+    TE.map(RA.flatten),
+    // eslint-disable-next-line @typescript-eslint/require-await
+    TE.getOrElse(err => async () => {
+      logger.error(
+        'Failed to receive data from google sheets for equipment %s training sheet %o: %s',
+        equipment.name,
+        equipment.trainingSheetId,
+        err.message
       );
-      // eslint-disable-next-line @typescript-eslint/require-await
-      return async () => [] as ReadonlyArray<QzEvent>;
-    }
-    const trainingSheetId = equipment.trainingSheetId.value;
-    logger.info(
-      `Scanning training sheet ${trainingSheetId}. Pulling google sheet data...`
-    );
-    return pipe(
-      pullGoogleSheetData(logger, trainingSheetId),
-      TE.map(
-        extractGoogleSheetData(
-          logger.child({trainingSheetId: trainingSheetId}),
-          trainingSheetId
-        )
-      ),
-      TE.map(RA.flatten),
-      // eslint-disable-next-line @typescript-eslint/require-await
-      TE.getOrElse(err => async () => {
-        logger.error(
-          'Failed to receive data from google sheets for equipment %s training sheet %o: %s',
-          equipment.name,
-          equipment.trainingSheetId,
-          err.message
-        );
-        return [] as ReadonlyArray<QzEvent>;
-      }),
-      T.map(RA.filter(isNewQuizEvents(equipment)))
-    );
-  };
+      return [] as ReadonlyArray<QzEvent>;
+    })
+  );
+};
 
 export const asyncApplyExternalEventSources = (
   logger: Logger,
@@ -65,7 +66,6 @@ export const asyncApplyExternalEventSources = (
   updateState: (event: DomainEvent) => void
 ) => {
   let lastGoogleUpdate: number | null;
-
   return () => async () => {
     logger.info('Applying external event sources...');
     if (
@@ -77,8 +77,9 @@ export const asyncApplyExternalEventSources = (
         RA.map(updateState)(
           await pullNewEquipmentQuizResults(
             logger,
-            pullGoogleSheetData
-          )(equipment)()
+            pullGoogleSheetData,
+            equipment
+          )()
         );
       }
     }
