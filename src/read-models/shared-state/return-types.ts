@@ -38,7 +38,7 @@ export type Equipment = {
   membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>;
   orphanedPassedQuizes: ReadonlyArray<OrphanedPassedQuiz>;
   failedQuizAttempts: ReadonlyArray<FailedQuizAttempt>;
-  trainingSheetId: string | null;
+  trainingSheetId: O.Option<string>;
 };
 
 type TrainedOn = {

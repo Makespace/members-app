@@ -172,6 +172,10 @@ export const getEquipment =
     return pipe(
       db.select().from(equipmentTable).where(eq(equipmentTable.id, id)).get(),
       O.fromNullable,
+      O.map(data => ({
+        ...data,
+        trainingSheetId: O.fromNullable(data.trainingSheetId),
+      })),
       O.let('trainers', getTrainers),
       O.let('trainedMembers', getTrainedMembers),
       O.let('membersAwaitingTraining', getMembersAwaitingTraining),
