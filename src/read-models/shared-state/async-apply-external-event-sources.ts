@@ -11,6 +11,7 @@ import {sheets_v4} from '@googleapis/sheets';
 import {Equipment} from './return-types';
 import {QzEvent} from '../../types/qz-event';
 import {extractGoogleSheetData} from '../../training-sheets/google';
+import {isNewQuizEvents} from './is-new-quiz-events';
 
 const GOOGLE_UPDATE_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -18,12 +19,6 @@ export type PullSheetData = (
   logger: Logger,
   trainingSheetId: string
 ) => TE.TaskEither<Failure, sheets_v4.Schema$Spreadsheet>;
-
-export const isNewQuizEvents =
-  (current: Equipment) =>
-  (event: QzEvent): boolean => {
-    return false;
-  };
 
 const pullNewEquipmentQuizResults =
   (logger: Logger, pullGoogleSheetData: PullSheetData) =>
@@ -86,7 +81,7 @@ export const asyncApplyExternalEventSources = (
           )(equipment)()
         );
       }
-      logger.info('Finished applying external event sources');
     }
+    logger.info('Finished applying external event sources');
   };
 };
