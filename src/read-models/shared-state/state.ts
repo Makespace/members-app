@@ -2,7 +2,6 @@ import {sql} from 'drizzle-orm';
 import {EmailAddress, GravatarHash} from '../../types';
 import * as O from 'fp-ts/Option';
 import {blob, integer, sqliteTable, text} from 'drizzle-orm/sqlite-core';
-import { DateTime } from 'luxon';
 
 type TrainedOn = {
   id: Equipment['id'];
@@ -85,7 +84,8 @@ const createTrainedMembersTable = sql`
   CREATE TABLE IF NOT EXISTS trainedMembers (
     memberNumber INTEGER,
     equipmentID TEXT,
-    trainedAt INTEGER
+    trainedAt INTEGER,
+    trainedBy INTEGER
   )
 `;
 
@@ -123,22 +123,24 @@ const createOwnersTable = sql`
 
 export const trainingQuizTable = sqliteTable('trainingQuizResults', {
   quizId: text('quizId').notNull().primaryKey(),
-  equipmentId: text('equipmentId').notNull().references(() => equipmentTable.id),
+  equipmentId: text('equipmentId')
+    .notNull()
+    .references(() => equipmentTable.id),
   sheetId: text('sheetId').notNull(),
   // Member number might not be linked to a member if it is entered incorrectly.
   memberNumberProvided: integer('memberNumberProvided'),
-  emailProvided: text('email'),
+  emailProvided: text('emailProvided'),
   score: integer('score').notNull(),
   maxScore: integer('maxScore').notNull(),
-  timestamp: integer('timestamp', {'mode': 'timestamp'}).notNull(),
-  quizAnswers: text('quizAnswers', {'mode': 'json'}).notNull(),
+  timestamp: integer('timestamp', {mode: 'timestamp'}).notNull(),
+  quizAnswers: text('quizAnswers', {mode: 'json'}).notNull(),
 });
 
 const createTrainingQuizTable = sql`
   CREATE TABLE IF NOT EXISTS trainingQuizResults (
     quizId TEXT,
     equipmentId TEXT,
-    sheetId: TEXT,
+    sheetId TEXT,
     memberNumberProvided INTEGER,
     emailProvided TEXT,
     score INTEGER,
