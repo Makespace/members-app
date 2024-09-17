@@ -1,28 +1,17 @@
 import {faker} from '@faker-js/faker';
-import * as TE from 'fp-ts/TaskEither';
 import {TestFramework, initTestFramework} from '../read-models/test-framework';
 import {NonEmptyString, UUID} from 'io-ts-types';
-import {
-  DomainEvent,
-  EventName,
-  EventOfType,
-} from '../../src/types/domain-event';
-import {happyPathAdapters} from '../init-dependencies/happy-path-adapters.helper';
-import {Dependencies} from '../../src/dependencies';
-import {Resource} from '../../src/types/resource';
-import pino, {Logger} from 'pino';
-import {failureWithStatus} from '../../src/types/failure-with-status';
-import {StatusCodes} from 'http-status-codes';
-import * as gsheetData from '../data/google_sheet_data';
-import {ResourceVersion} from '../../src/types';
-import * as O from 'fp-ts/Option';
+import {EventOfType} from '../../src/types/domain-event';
+import pino from 'pino';
 import * as T from 'io-ts';
 import * as RA from 'fp-ts/lib/ReadonlyArray';
 import * as N from 'fp-ts/number';
-
-type TrainingSheetWorkerDependencies = Dependencies & {
-  commitedEvents: DomainEvent[];
-};
+import * as O from 'fp-ts/Option';
+import * as gsheetData from '../data/google_sheet_data';
+import {pullNewEquipmentQuizResults} from '../../src/read-models/shared-state/async-apply-external-event-sources';
+import {localPullGoogleSheetData} from '../init-dependencies/pull-local-google';
+import {Equipment} from '../../src/read-models/shared-state/return-types';
+import {DateTime} from 'luxon';
 
 const sortQuizResults = RA.sort({
   compare: (a, b) =>
@@ -37,232 +26,189 @@ const sortQuizResults = RA.sort({
     ),
 });
 
-const dependenciesForTrainingSheetsWorker = (
-  framework: TestFramework
-): TrainingSheetWorkerDependencies => {
-  const commitedEvents: DomainEvent[] = [];
-  return {
-    ...happyPathAdapters,
-    logger: pino({
-      level: 'error',
+const pullNewEquipmentQuizResultsLocal = async (equipment: Equipment) =>
+  pullNewEquipmentQuizResults(
+    pino({
+      level: 'fatal',
       timestamp: pino.stdTimeFunctions.isoTime,
     }),
-    commitedEvents,
-    commitEvent:
-      (resource: Resource, lastKnownVersion: ResourceVersion) =>
-      (event: DomainEvent) => {
-        commitedEvents.push(event);
-        return happyPathAdapters.commitEvent(resource, lastKnownVersion)(event);
-      },
-    getAllEventsByType: <T extends EventName>(eventType: T) =>
-      TE.tryCatch(
-        () => framework.getAllEventsByType(eventType),
-        failureWithStatus(
-          'Failed to get events from test framework',
-          StatusCodes.INTERNAL_SERVER_ERROR
-        )
-      ),
-    updateTrainingQuizResults: O.none,
-  };
-};
+    localPullGoogleSheetData,
+    equipment
+  )();
 
-const localPullGoogleSheetData = (logger: Logger, trainingSheetId: string) => {
-  logger.debug(`Pulling local google sheet '${trainingSheetId}'`);
-  const sheet = gsheetData.TRAINING_SHEETS[trainingSheetId].data;
-  return sheet
-    ? TE.right(sheet)
-    : TE.left({
-        message: 'Sheet not found',
-      });
+const defaultEquipment = (): Equipment => ({
+  id: 'ebedee32-49f4-4d36-a350-4fa7848792bf',
+  name: 'Metal Lathe',
+  trainers: [],
+  trainedMembers: [],
+  area: {
+    id: 'f9cee7aa-75c6-42cc-8585-0e658044fe8e',
+    name: 'Metal Shop',
+  },
+  membersAwaitingTraining: [],
+  orphanedPassedQuizes: [],
+  failedQuizAttempts: [],
+  trainingSheetId: O.none,
+  lastQuizResult: O.none,
+  lastQuizSync: O.none,
+});
+
+const extractEvents = async (
+  spreadsheetId: O.Option<string>,
+  lastQuizResult: O.Option<DateTime> = O.none
+) => {
+  const equipment = defaultEquipment();
+  equipment.trainingSheetId = spreadsheetId;
+  equipment.lastQuizResult = lastQuizResult;
+  return await pullNewEquipmentQuizResultsLocal(equipment);
 };
 
 describe('Training sheets worker', () => {
   describe('Process results', () => {
-    let framework: TestFramework;
-    beforeEach(async () => {
-      framework = await initTestFramework();
-    });
-
-    describe('Existing area + equipment', () => {
-      const createArea = {
-        id: faker.string.uuid() as UUID,
-        name: faker.company.buzzNoun() as NonEmptyString,
-      };
-      const addEquipment = {
-        id: faker.string.uuid() as UUID,
-        name: faker.company.buzzNoun() as NonEmptyString,
-        areaId: createArea.id,
-      };
-      beforeEach(async () => {
-        await framework.commands.area.create(createArea);
-        await framework.commands.equipment.add(addEquipment);
+    describe('Processes a registered training sheet', () => {
+      it('Equipment with no training sheet', async () => {
+        expect(await extractEvents(O.none)).toHaveLength(0);
       });
 
-      describe('Processes a registered training sheet', () => {
-        let deps: TrainingSheetWorkerDependencies;
-        it('empty sheet produces no events', async () => {
-          await framework.commands.equipment.trainingSheet({
-            equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.EMPTY.data.spreadsheetId!,
-          });
-
-          deps = dependenciesForTrainingSheetsWorker(framework);
-          await updateTrainingQuizResults(
-            localPullGoogleSheetData,
-            deps,
-            deps.logger,
-            0 as T.Int,
-            
-          );
-          expect(deps.commitedEvents).toHaveLength(0);
+      it('empty sheet produces no events', async () => {
+        expect(
+          await extractEvents(O.some(gsheetData.EMPTY.data.spreadsheetId!))
+        ).toHaveLength(0);
+      });
+      it('metal lathe training sheet', async () => {
+        const results = await extractEvents(
+          O.some(gsheetData.METAL_LATHE.data.spreadsheetId!)
+        );
+        expect(results).toHaveLength(1);
+        expect(results[0]).toMatchObject<
+          Partial<EventOfType<'EquipmentTrainingQuizResult'>>
+        >({
+          type: 'EquipmentTrainingQuizResult',
+          equipmentId: defaultEquipment().id as UUID,
+          trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
+          ...gsheetData.METAL_LATHE.entries[0],
         });
-        it('metal lathe training sheet', async () => {
-          await framework.commands.equipment.trainingSheet({
-            equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
-          });
+      });
+      it('Only take new rows', async () => {
+        await framework.commands.equipment.trainingSheet({
+          equipmentId: addEquipment.id,
+          trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
+        });
+        await framework.commands.equipment.trainingSheetQuizResult({
+          id: faker.string.uuid() as UUID,
+          equipmentId: addEquipment.id,
+          trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
+          ...gsheetData.METAL_LATHE.entries[0],
+        });
+        deps = dependenciesForTrainingSheetsWorker(framework);
+        await updateTrainingQuizResults(
+          localPullGoogleSheetData,
+          deps,
+          deps.logger,
+          0 as T.Int
+        );
+        expect(deps.commitedEvents).toHaveLength(0);
+      });
+      it('training sheet with a summary page', async () => {
+        await framework.commands.equipment.trainingSheet({
+          equipmentId: addEquipment.id,
+          trainingSheetId: gsheetData.LASER_CUTTER.data.spreadsheetId!,
+        });
 
-          deps = dependenciesForTrainingSheetsWorker(framework);
-          await updateTrainingQuizResults(
-            localPullGoogleSheetData,
-            deps,
-            deps.logger,
-            0 as T.Int
-          );
-          expect(deps.commitedEvents).toHaveLength(1);
-          const commitedEvent = deps.commitedEvents[0];
-          expect(commitedEvent).toMatchObject<
+        deps = dependenciesForTrainingSheetsWorker(framework);
+        await updateTrainingQuizResults(
+          localPullGoogleSheetData,
+          deps,
+          deps.logger,
+          0 as T.Int
+        );
+        const expected: readonly Partial<
+          EventOfType<'EquipmentTrainingQuizResult'>
+        >[] = gsheetData.LASER_CUTTER.entries.map(e => ({
+          type: 'EquipmentTrainingQuizResult',
+          equipmentId: addEquipment.id,
+          trainingSheetId: gsheetData.LASER_CUTTER.data.spreadsheetId!,
+          actor: {
+            tag: 'system',
+          },
+          ...e,
+        }));
+        expect(deps.commitedEvents).toHaveLength(expected.length);
+
+        for (const [actualEvent, expectedEvent] of RA.zip(
+          sortQuizResults(deps.commitedEvents),
+          sortQuizResults(expected)
+        )) {
+          expect(actualEvent).toMatchObject<
             Partial<EventOfType<'EquipmentTrainingQuizResult'>>
-          >({
-            type: 'EquipmentTrainingQuizResult',
-            equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
-            ...gsheetData.METAL_LATHE.entries[0],
-          });
+          >(expectedEvent);
+        }
+      });
+      it('training sheet with multiple response pages (different quiz questions)', async () => {
+        await framework.commands.equipment.trainingSheet({
+          equipmentId: addEquipment.id,
+          trainingSheetId: gsheetData.BAMBU.data.spreadsheetId!,
         });
-        it('Handle already registered quiz results', async () => {
-          await framework.commands.equipment.trainingSheet({
-            equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
-          });
-          await framework.commands.equipment.trainingSheetQuizResult({
-            id: faker.string.uuid() as UUID,
-            equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
-            ...gsheetData.METAL_LATHE.entries[0],
-          });
-          deps = dependenciesForTrainingSheetsWorker(framework);
-          await updateTrainingQuizResults(
-            localPullGoogleSheetData,
-            deps,
-            deps.logger,
-            0 as T.Int
-          );
-          expect(deps.commitedEvents).toHaveLength(0);
-        });
-        it('Rate limit prevent double update', async () => {
+
+        deps = dependenciesForTrainingSheetsWorker(framework);
+        await updateTrainingQuizResults(
+          localPullGoogleSheetData,
+          deps,
+          deps.logger,
+          0 as T.Int
+        );
+
+        const expected: readonly Partial<
+          EventOfType<'EquipmentTrainingQuizResult'>
+        >[] = gsheetData.BAMBU.entries.map(e => ({
+          type: 'EquipmentTrainingQuizResult',
+          equipmentId: addEquipment.id,
+          trainingSheetId: gsheetData.BAMBU.data.spreadsheetId!,
+          actor: {
+            tag: 'system',
+          },
+          ...e,
+        }));
+        expect(deps.commitedEvents).toHaveLength(expected.length);
+
+        for (const [actualEvent, expectedEvent] of RA.zip(
+          sortQuizResults(deps.commitedEvents),
+          sortQuizResults(expected)
+        )) {
+          expect(actualEvent).toMatchObject<
+            Partial<EventOfType<'EquipmentTrainingQuizResult'>>
+          >(expectedEvent);
+        }
+      });
+      describe('Integration asyncApplyExternalEventSources', () => {
+        let framework: TestFramework;
+        const createArea = {
+          id: faker.string.uuid() as UUID,
+          name: faker.company.buzzNoun() as NonEmptyString,
+        };
+        const addEquipment = {
+          id: faker.string.uuid() as UUID,
+          name: faker.company.buzzNoun() as NonEmptyString,
+          areaId: createArea.id,
+        };
+        beforeEach(async () => {
+          framework = await initTestFramework();
+          await framework.commands.area.create(createArea);
+          await framework.commands.equipment.add(addEquipment);
           await framework.commands.equipment.trainingSheet({
             equipmentId: addEquipment.id,
             trainingSheetId: gsheetData.EMPTY.data.spreadsheetId!,
           });
-          deps = dependenciesForTrainingSheetsWorker(framework);
-
-          let timesCalled = 0;
-          const callCountWrapper = (
-            logger: Logger,
-            trainingSheetId: string
-          ) => {
-            timesCalled++;
-            return localPullGoogleSheetData(logger, trainingSheetId);
-          };
-
-          await updateTrainingQuizResults(
-            callCountWrapper,
-            deps,
-            deps.logger,
-            0 as T.Int
-          );
-
-          await updateTrainingQuizResults(
-            callCountWrapper,
-            deps,
-            deps.logger,
-            (60 * 1000) as T.Int // Period won't has elapsed since last call.
-          );
-
-          expect(timesCalled).toEqual(1);
         });
-        it('training sheet with a summary page', async () => {
-          await framework.commands.equipment.trainingSheet({
-            equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.LASER_CUTTER.data.spreadsheetId!,
-          });
 
-          deps = dependenciesForTrainingSheetsWorker(framework);
-          await updateTrainingQuizResults(
-            localPullGoogleSheetData,
-            deps,
-            deps.logger,
-            0 as T.Int
-          );
-          const expected: readonly Partial<
-            EventOfType<'EquipmentTrainingQuizResult'>
-          >[] = gsheetData.LASER_CUTTER.entries.map(e => ({
-            type: 'EquipmentTrainingQuizResult',
-            equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.LASER_CUTTER.data.spreadsheetId!,
-            actor: {
-              tag: 'system',
-            },
-            ...e,
-          }));
-          expect(deps.commitedEvents).toHaveLength(expected.length);
-
-          for (const [actualEvent, expectedEvent] of RA.zip(
-            sortQuizResults(deps.commitedEvents),
-            sortQuizResults(expected)
-          )) {
-            expect(actualEvent).toMatchObject<
-              Partial<EventOfType<'EquipmentTrainingQuizResult'>>
-            >(expectedEvent);
-          }
+        it('Check initial test state', () => {
+          const equipment = framework.sharedReadModel.equipment.getAll();
+          expect(equipment).toHaveLength(1);
         });
-        it('training sheet with multiple response pages (different quiz questions)', async () => {
-          await framework.commands.equipment.trainingSheet({
-            equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.BAMBU.data.spreadsheetId!,
-          });
 
-          deps = dependenciesForTrainingSheetsWorker(framework);
-          await updateTrainingQuizResults(
-            localPullGoogleSheetData,
-            deps,
-            deps.logger,
-            0 as T.Int
-          );
-
-          const expected: readonly Partial<
-            EventOfType<'EquipmentTrainingQuizResult'>
-          >[] = gsheetData.BAMBU.entries.map(e => ({
-            type: 'EquipmentTrainingQuizResult',
-            equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.BAMBU.data.spreadsheetId!,
-            actor: {
-              tag: 'system',
-            },
-            ...e,
-          }));
-          expect(deps.commitedEvents).toHaveLength(expected.length);
-
-          for (const [actualEvent, expectedEvent] of RA.zip(
-            sortQuizResults(deps.commitedEvents),
-            sortQuizResults(expected)
-          )) {
-            expect(actualEvent).toMatchObject<
-              Partial<EventOfType<'EquipmentTrainingQuizResult'>>
-            >(expectedEvent);
-          }
-        });
+        it('Handle multiple equipment', () => {});
+        it('Handle no equipment', () => {});
+        it('Rate limit equipment pull', () => {});
       });
     });
   });

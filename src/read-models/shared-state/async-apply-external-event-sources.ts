@@ -17,11 +17,10 @@ const GOOGLE_UPDATE_INTERVAL_MS = 5 * 60 * 1000;
 
 export type PullSheetData = (
   logger: Logger,
-  trainingSheetId: string,
-  rowsSince: O.Option<DateTime>
+  trainingSheetId: string
 ) => TE.TaskEither<Failure, sheets_v4.Schema$Spreadsheet>;
 
-const pullNewEquipmentQuizResults = (
+export const pullNewEquipmentQuizResults = (
   logger: Logger,
   pullGoogleSheetData: PullSheetData,
   equipment: Equipment
@@ -39,11 +38,12 @@ const pullNewEquipmentQuizResults = (
     `Scanning training sheet ${trainingSheetId}. Pulling google sheet data...`
   );
   return pipe(
-    pullGoogleSheetData(logger, trainingSheetId, equipment.lastQuizResult),
+    pullGoogleSheetData(logger, trainingSheetId),
     TE.map(
       extractGoogleSheetData(
         logger.child({trainingSheetId: trainingSheetId}),
-        trainingSheetId
+        trainingSheetId,
+        equipment.lastQuizResult,
       )
     ),
     TE.map(RA.flatten),
