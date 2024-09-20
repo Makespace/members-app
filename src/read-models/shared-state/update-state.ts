@@ -129,7 +129,7 @@ export const updateState =
             emailProvided: event.emailProvided,
             score: event.score,
             maxScore: event.maxScore,
-            timestamp: new Date(event.timestampEpochS),
+            timestamp: new Date(event.timestampEpochMS),
             quizAnswers: event.quizAnswers,
           })
           .run();

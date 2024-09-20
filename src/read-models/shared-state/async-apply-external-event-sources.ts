@@ -8,10 +8,9 @@ import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {getAllEquipment} from './get-equipment';
 import {pipe} from 'fp-ts/lib/function';
 import {sheets_v4} from '@googleapis/sheets';
-import {Equipment} from './return-types';
+import {EpochTimestampMilliseconds, Equipment} from './return-types';
 import {QzEvent} from '../../types/qz-event';
 import {extractGoogleSheetData} from '../../training-sheets/google';
-import {DateTime} from 'luxon';
 import {UUID} from 'io-ts-types';
 
 const GOOGLE_UPDATE_INTERVAL_MS = 5 * 60 * 1000;
@@ -66,15 +65,19 @@ export const asyncApplyExternalEventSources = (
   pullGoogleSheetData: PullSheetData,
   updateState: (event: DomainEvent) => void
 ) => {
-  let lastGoogleUpdate: number | null;
   return () => async () => {
     logger.info('Applying external event sources...');
-    if (
-      lastGoogleUpdate === null ||
-      Date.now() - lastGoogleUpdate > GOOGLE_UPDATE_INTERVAL_MS
-    ) {
-      logger.info('Triggering event update from google training sheets...');
-      for (const equipment of getAllEquipment(currentState)()) {
+    for (const equipment of getAllEquipment(currentState)()) {
+      if (
+        O.isNone(equipment.lastQuizSync) ||
+        (Date.now() as EpochTimestampMilliseconds) -
+          equipment.lastQuizSync.value >
+          GOOGLE_UPDATE_INTERVAL_MS
+      ) {
+        logger.info(
+          'Triggering event update from google training sheets for %s...',
+          equipment.name
+        );
         RA.map(updateState)(
           await pullNewEquipmentQuizResults(
             logger,
@@ -82,7 +85,9 @@ export const asyncApplyExternalEventSources = (
             equipment
           )()
         );
-        equipment.lastQuizSync = O.some(DateTime.utc());
+        equipment.lastQuizSync = O.some(
+          Date.now() as EpochTimestampMilliseconds
+        );
       }
     }
     logger.info('Finished applying external event sources');
