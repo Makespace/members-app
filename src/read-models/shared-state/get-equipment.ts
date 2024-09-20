@@ -12,6 +12,7 @@ import {
   trainersTable,
   trainingQuizTable,
 } from './state';
+import {EpochTimestampMilliseconds} from './return-types';
 
 export const getEquipment =
   (db: BetterSQLite3Database): SharedReadModel['equipment']['get'] =>
@@ -175,6 +176,12 @@ export const getEquipment =
       O.map(data => ({
         ...data,
         trainingSheetId: O.fromNullable(data.trainingSheetId),
+        lastQuizResult: O.fromNullable(
+          data.lastQuizResult
+        ) as O.Option<EpochTimestampMilliseconds>,
+        lastQuizSync: O.fromNullable(
+          data.lastQuizSync
+        ) as O.Option<EpochTimestampMilliseconds>,
       })),
       O.let('trainers', getTrainers),
       O.let('trainedMembers', getTrainedMembers),
