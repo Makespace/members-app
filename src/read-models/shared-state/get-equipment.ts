@@ -93,7 +93,7 @@ export const getEquipment =
           .all(),
         RA.map(q => ({
           ...q.members,
-          quizId: q.trainingQuizResults.quizId,
+          quizId: q.trainingQuizResults.quizId as UUID,
           agreementSigned: O.fromNullable(q.members.agreementSigned),
           waitingSince: q.trainingQuizResults.timestamp,
         }))
@@ -125,7 +125,7 @@ export const getEquipment =
         RA.map(q => ({
           ...q.members,
           agreementSigned: O.fromNullable(q.members.agreementSigned),
-          quizId: q.trainingQuizResults.quizId,
+          quizId: q.trainingQuizResults.quizId as UUID,
           score: q.trainingQuizResults.score,
           maxScore: q.trainingQuizResults.maxScore,
           percentage: Math.ceil(
@@ -157,7 +157,7 @@ export const getEquipment =
           )
           .all(),
         RA.map(q => ({
-          id: q.trainingQuizResults.quizId,
+          id: q.trainingQuizResults.quizId as UUID,
           score: q.trainingQuizResults.score,
           maxScore: q.trainingQuizResults.maxScore,
           percentage: Math.ceil(
