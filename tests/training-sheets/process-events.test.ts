@@ -390,7 +390,6 @@ describe('Training sheets worker', () => {
         expect(results1.newEvents.length).toBeGreaterThan(0);
         expect(results2.newEvents).toHaveLength(0);
       });
-      it('Handle equipment in different areas', () => {});
     });
   });
 });
