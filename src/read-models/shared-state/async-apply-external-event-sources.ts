@@ -12,6 +12,7 @@ import {Equipment} from './return-types';
 import {QzEvent} from '../../types/qz-event';
 import {extractGoogleSheetData} from '../../training-sheets/google';
 import {DateTime} from 'luxon';
+import {UUID} from 'io-ts-types';
 
 const GOOGLE_UPDATE_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -39,7 +40,12 @@ export const pullNewEquipmentQuizResults = (
   return pipe(
     pullGoogleSheetData(logger, trainingSheetId),
     TE.map(
-      extractGoogleSheetData(logger, trainingSheetId, equipment.lastQuizResult)
+      extractGoogleSheetData(
+        logger,
+        trainingSheetId,
+        equipment.id as UUID,
+        equipment.lastQuizResult
+      )
     ),
     TE.map(RA.flatten),
     // eslint-disable-next-line @typescript-eslint/require-await
