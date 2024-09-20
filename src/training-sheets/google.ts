@@ -9,11 +9,10 @@ import {UUID} from 'io-ts-types';
 import {DateTime} from 'luxon';
 import {QzEvent} from '../types/qz-event';
 import {sheets_v4} from '@googleapis/sheets';
-import { Equipment } from '../read-models/shared-state/return-types';
 
 // Bounds to prevent clearly broken parsing.
 const MIN_RECOGNISED_MEMBER_NUMBER = 0;
-const MAX_RECOGNISED_MEMBER_NUMBER = 1_000_000;
+const MAX_RECOGNISED_MEMBER_NUMBER = 10_000;
 
 const MIN_VALID_TIMESTAMP_EPOCH_S = 1262304000; // Year 2010
 const MAX_VALID_TIMESTAMP_EPOCH_S = 4102444800; // Year 2100
@@ -254,7 +253,12 @@ const extractFromRow =
   };
 
 export const extractGoogleSheetData =
-  (logger: Logger, trainingSheetId: string) =>
+  (
+    logger: Logger,
+    trainingSheetId: string,
+    equipmentId: UUID,
+    eventsFromExclusive: O.Option<DateTime>
+  ) =>
   (
     spreadsheet: sheets_v4.Schema$Spreadsheet
   ): ReadonlyArray<ReadonlyArray<QzEvent>> =>
@@ -299,9 +303,7 @@ export const extractGoogleSheetData =
             extractQuizSheetInformation(logger),
             O.match(
               () => {
-                logger.warn(
-                  `Failed to extract sheet info '${trainingSheetId}' for equipment '${equipmentId}'`
-                );
+                logger.warn('Failed to extract sheet info');
                 return [];
               },
               sheetInfo =>
@@ -316,7 +318,12 @@ export const extractGoogleSheetData =
                       timezone
                     )
                   ),
-                  RA.filterMap(e => e)
+                  RA.filterMap(e => e),
+                  RA.filter(
+                    e =>
+                      O.isNone(eventsFromExclusive) ||
+                      e.timestampEpochS > eventsFromExclusive.value.toSeconds()
+                  )
                 )
             )
           );

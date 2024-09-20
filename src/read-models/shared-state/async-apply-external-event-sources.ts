@@ -34,25 +34,19 @@ export const pullNewEquipmentQuizResults = (
     return async () => [] as ReadonlyArray<QzEvent>;
   }
   const trainingSheetId = equipment.trainingSheetId.value;
-  logger.info(
-    `Scanning training sheet ${trainingSheetId}. Pulling google sheet data...`
-  );
+  logger = logger.child({trainingSheetId});
+  logger.info('Scanning training sheet. Pulling google sheet data...');
   return pipe(
     pullGoogleSheetData(logger, trainingSheetId),
     TE.map(
-      extractGoogleSheetData(
-        logger.child({trainingSheetId: trainingSheetId}),
-        trainingSheetId,
-        equipment.lastQuizResult,
-      )
+      extractGoogleSheetData(logger, trainingSheetId, equipment.lastQuizResult)
     ),
     TE.map(RA.flatten),
     // eslint-disable-next-line @typescript-eslint/require-await
     TE.getOrElse(err => async () => {
       logger.error(
-        'Failed to receive data from google sheets for equipment %s training sheet %o: %s',
+        'Failed to receive data from google sheets for equipment %s: %s',
         equipment.name,
-        equipment.trainingSheetId,
         err.message
       );
       return [] as ReadonlyArray<QzEvent>;
