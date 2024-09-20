@@ -13,10 +13,11 @@ import {
   trainingQuizTable,
 } from './state';
 import {EpochTimestampMilliseconds} from './return-types';
+import {UUID} from 'io-ts-types';
 
 export const getEquipment =
   (db: BetterSQLite3Database): SharedReadModel['equipment']['get'] =>
-  id => {
+  (id: UUID) => {
     const getArea = (areaId: string) =>
       pipe(
         db.select().from(areasTable).where(eq(areasTable.id, areaId)).get(),
@@ -175,6 +176,7 @@ export const getEquipment =
       O.fromNullable,
       O.map(data => ({
         ...data,
+        id,
         trainingSheetId: O.fromNullable(data.trainingSheetId),
         lastQuizResult: O.fromNullable(
           data.lastQuizResult
@@ -199,7 +201,7 @@ export const getAllEquipment =
     pipe(
       db.select().from(equipmentTable).all(),
       RA.map(e => {
-        const opt = getEquipment(db)(e.id);
+        const opt = getEquipment(db)(e.id as UUID);
         if (O.isNone(opt)) {
           throw new Error('');
         }

@@ -11,6 +11,7 @@ export type Equipment = {
   name: string;
   id: UUID;
   trainers: ReadonlyArray<number>;
+  owners: ReadonlyArray<number>;
   areaId: UUID;
   trainedMembers: ReadonlyArray<number>;
   trainingSheetId: O.Option<string>;
