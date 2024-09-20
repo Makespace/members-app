@@ -18,7 +18,7 @@ const codec = t.strict({
   maxScore: t.number,
   percentage: t.number,
   fullMarks: t.boolean,
-  timestampEpochS: t.number,
+  timestampEpochMS: t.number,
   quizAnswers: t.record(t.string, t.string),
 });
 

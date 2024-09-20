@@ -3,6 +3,7 @@ import {QzEvent, QzEventDuplicate} from '../../src/types/qz-event';
 import {UUID} from 'io-ts-types';
 import {DomainEvent} from '../../src/types';
 import {getRightOrFail} from '../helpers';
+import { EpochTimestampMilliseconds } from '../../src/read-models/shared-state/return-types';
 
 const EVENT_1: QzEvent = {
   equipmentId: v4() as UUID,
@@ -15,7 +16,7 @@ const EVENT_1: QzEvent = {
   maxScore: 10,
   percentage: 20,
   fullMarks: false,
-  timestampEpochS: 1520652364,
+  timestampEpochMS: 1520652364_000 as EpochTimestampMilliseconds,
   quizAnswers: {
     q1: 'a1',
     q2: 'a2',
@@ -38,7 +39,7 @@ const EVENT_2: QzEvent = {
   maxScore: 10,
   percentage: 70,
   fullMarks: false,
-  timestampEpochS: 1520652999,
+  timestampEpochMS: 1520652999_000 as EpochTimestampMilliseconds,
   quizAnswers: {
     q1: 'a1',
     q2: 'a7',

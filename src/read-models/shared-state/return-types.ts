@@ -1,6 +1,5 @@
 import * as O from 'fp-ts/Option';
 import {EmailAddress, GravatarHash} from '../../types';
-import {DateTime} from 'luxon';
 
 type OrphanedPassedQuiz = {
   id: string;
@@ -27,6 +26,10 @@ type TrainedMember = MemberCoreInfo & {
   trainedAt: Date;
 };
 
+export type EpochTimestampMilliseconds = number & {
+  readonly EpochTimestampMilliseconds: unique symbol;
+};
+
 export type Equipment = {
   id: string;
   name: string;
@@ -43,9 +46,9 @@ export type Equipment = {
 
   // Uses the actual spreadsheet timestamp rather than our local timestamp which could be
   // different due to clock drift or eventual consistency issues on the google side.
-  lastQuizResult: O.Option<DateTime>;
+  lastQuizResult: O.Option<EpochTimestampMilliseconds>;
   // Uses local timestamp.
-  lastQuizSync: O.Option<DateTime>;
+  lastQuizSync: O.Option<EpochTimestampMilliseconds>;
 };
 
 type TrainedOn = {

@@ -17,6 +17,7 @@ import {EventName, EventOfType} from '../../src/types/domain-event';
 import {Dependencies} from '../../src/dependencies';
 import {applyToResource} from '../../src/commands/apply-command-to-resource';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
+import {localPullGoogleSheetData} from '../init-dependencies/pull-local-google';
 
 type ToFrameworkCommands<T> = {
   [K in keyof T]: {
@@ -46,13 +47,18 @@ export type TestFramework = {
 };
 
 export const initTestFramework = async (): Promise<TestFramework> => {
+  const logger = createLogger({level: 'silent'});
   const dbClient = libsqlClient.createClient({
     url: `file:/tmp/${randomUUID()}.db`,
   });
-  const sharedReadModel = initSharedReadModel(dbClient);
+  const sharedReadModel = initSharedReadModel(
+    dbClient,
+    logger,
+    localPullGoogleSheetData
+  );
   const frameworkCommitEvent = commitEvent(
     dbClient,
-    createLogger({level: 'silent'}),
+    logger,
     sharedReadModel.asyncRefresh
   );
   await ensureEventTableExists(dbClient)();

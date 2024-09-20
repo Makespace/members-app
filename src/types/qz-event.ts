@@ -9,6 +9,6 @@ export type RegEvent = EventOfType<'EquipmentTrainingSheetRegistered'>;
 export const QzEventDuplicate: Eq<QzEvent> = {
   equals: (a: QzEvent, b: QzEvent) =>
     getEq(NullableStringEq).equals(a.quizAnswers, b.quizAnswers) &&
-    a.timestampEpochS === b.timestampEpochS &&
+    a.timestampEpochMS === b.timestampEpochMS &&
     a.trainingSheetId === b.trainingSheetId,
 };

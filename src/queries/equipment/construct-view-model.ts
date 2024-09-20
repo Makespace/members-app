@@ -95,7 +95,7 @@ const updateQuizResults = (
       maxScore: quizResult.maxScore,
       percentage: quizResult.percentage,
       passed: quizResult.fullMarks,
-      timestamp: DateTime.fromSeconds(quizResult.timestampEpochS),
+      timestamp: DateTime.fromSeconds(quizResult.timestampEpochMS),
       memberNumber: member.memberNumber,
       otherAttempts: existing
         ? [existing.id].concat(existing.otherAttempts)
@@ -153,7 +153,7 @@ const reduceToLatestQuizResultByMember = (
             maxScore: quizResult.maxScore,
             percentage: quizResult.percentage,
             passed: quizResult.fullMarks,
-            timestamp: DateTime.fromSeconds(quizResult.timestampEpochS),
+            timestamp: DateTime.fromSeconds(quizResult.timestampEpochMS),
             memberNumberProvided: O.fromNullable(
               quizResult.memberNumberProvided
             ),
