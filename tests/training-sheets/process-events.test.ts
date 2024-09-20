@@ -326,7 +326,7 @@ describe('Training sheets worker', () => {
           10_000
         );
         checkLastQuizSync(results);
-        expect(results.equipmentAfter).toHaveLength(0);
+        expect(results.equipmentAfter.size).toStrictEqual(0);
       });
       it('Handle equipment with no training sheet', async () => {
         const bambu = await addWithSheet('bambu', createArea.id, O.none);
