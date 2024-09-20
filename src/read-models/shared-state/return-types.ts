@@ -1,8 +1,9 @@
 import * as O from 'fp-ts/Option';
 import {EmailAddress, GravatarHash} from '../../types';
+import {UUID} from 'io-ts-types';
 
 type OrphanedPassedQuiz = {
-  id: string;
+  id: UUID;
   score: number;
   maxScore: number;
   percentage: number;
@@ -13,7 +14,7 @@ type OrphanedPassedQuiz = {
 };
 
 type FailedQuizAttempt = MemberCoreInfo & {
-  quizId: string;
+  quizId: UUID;
   score: number;
   maxScore: number;
   percentage: number;
@@ -31,7 +32,7 @@ export type EpochTimestampMilliseconds = number & {
 };
 
 export type Equipment = {
-  id: string;
+  id: UUID;
   name: string;
   trainers: ReadonlyArray<MemberCoreInfo>;
   trainedMembers: ReadonlyArray<TrainedMember>;
@@ -74,8 +75,8 @@ type MemberCoreInfo = {
   gravatarHash: GravatarHash;
 };
 
-type MemberAwaitingTraining = MemberCoreInfo & {
-  quizId: string;
+export type MemberAwaitingTraining = MemberCoreInfo & {
+  quizId: UUID;
   memberNumber: number;
   waitingSince: Date;
 };

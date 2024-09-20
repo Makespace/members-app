@@ -14,6 +14,7 @@ import {
   asyncApplyExternalEventSources,
   PullSheetData,
 } from './async-apply-external-event-sources';
+import {UUID} from 'io-ts-types';
 
 export {replayState} from './deprecated-replay';
 
@@ -25,7 +26,7 @@ export type SharedReadModel = {
     get: (memberNumber: number) => O.Option<Member>;
   };
   equipment: {
-    get: (id: string) => O.Option<Equipment>;
+    get: (id: UUID) => O.Option<Equipment>;
     getAll: () => ReadonlyArray<Equipment>;
   };
 };
