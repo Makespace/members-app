@@ -16,7 +16,6 @@ import {
   EpochTimestampMilliseconds,
   Equipment,
 } from '../../src/read-models/shared-state/return-types';
-import {DateTime} from 'luxon';
 import {getSomeOrFail} from '../helpers';
 
 const sortQuizResults = RA.sort({
@@ -69,34 +68,46 @@ const extractEvents = async (
   return await pullNewEquipmentQuizResultsLocal(equipment);
 };
 
+type ApplyExternalEventsResults = {
+  startTime: EpochTimestampMilliseconds;
+  newEvents: DomainEvent[];
+  endTime: EpochTimestampMilliseconds;
+  equipmentAfter: Map<string, Equipment>;
+};
+
 const runAsyncApplyExternalEventSources = async (
   logger: Logger,
-  framework: TestFramework
-) => {
-  const startTime = DateTime.utc().toSeconds();
+  framework: TestFramework,
+  googleRateLimitMs: number
+): Promise<ApplyExternalEventsResults> => {
+  const startTime = Date.now() as EpochTimestampMilliseconds;
   const newEvents: DomainEvent[] = [];
   await asyncApplyExternalEventSources(
     logger,
     framework.sharedReadModel.db,
     localPullGoogleSheetData,
-    newEvents.push
+    newEvents.push,
+    googleRateLimitMs
   )()();
-  const endTime = DateTime.utc().toSeconds();
+  const endTime = Date.now() as EpochTimestampMilliseconds;
   const equipmentAfter = new Map(
     framework.sharedReadModel.equipment.getAll().map(e => [e.id, e])
   );
-  // Check that the last quiz sync property is updated to reflect
-  // that a quiz sync was preformed.
-  for (const equipment of equipmentAfter.values()) {
-    expect(equipment.lastQuizSync).toBeGreaterThan(startTime);
-    expect(equipment.lastQuizSync).toBeLessThan(endTime);
-  }
   return {
     startTime,
     newEvents,
     endTime,
     equipmentAfter,
   };
+};
+
+const checkLastQuizSync = (results: ApplyExternalEventsResults) => {
+  // Check that the last quiz sync property is updated to reflect
+  // that a quiz sync was preformed.
+  for (const equipment of results.equipmentAfter.values()) {
+    expect(equipment.lastQuizSync).toBeGreaterThan(results.startTime);
+    expect(equipment.lastQuizSync).toBeLessThan(results.endTime);
+  }
 };
 
 const checkLastQuizEventTimestamp = (
@@ -258,7 +269,7 @@ describe('Training sheets worker', () => {
       const addWithSheet = async (
         name: string,
         areaId: UUID,
-        trainingSheetId: string
+        trainingSheetId: O.Option<string>
       ) => {
         const equipment = {
           id: faker.string.uuid() as UUID,
@@ -266,10 +277,12 @@ describe('Training sheets worker', () => {
           areaId,
         };
         await framework.commands.equipment.add(equipment);
-        await framework.commands.equipment.trainingSheet({
-          equipmentId: equipment.id,
-          trainingSheetId,
-        });
+        if (O.isSome(trainingSheetId)) {
+          await framework.commands.equipment.trainingSheet({
+            equipmentId: equipment.id,
+            trainingSheetId: trainingSheetId.value,
+          });
+        }
         return {
           ...equipment,
           trainingSheetId,
@@ -280,17 +293,19 @@ describe('Training sheets worker', () => {
         const bambu = await addWithSheet(
           'bambu',
           createArea.id,
-          gsheetData.BAMBU.data.spreadsheetId!
+          O.some(gsheetData.BAMBU.data.spreadsheetId!)
         );
         const lathe = await addWithSheet(
           'Metal Lathe',
           createArea.id,
-          gsheetData.METAL_LATHE.data.spreadsheetId!
+          O.some(gsheetData.METAL_LATHE.data.spreadsheetId!)
         );
         const results = await runAsyncApplyExternalEventSources(
           logger,
-          framework
+          framework,
+          10_000
         );
+        checkLastQuizSync(results);
         checkLastQuizEventTimestamp(
           gsheetData.BAMBU,
           results.equipmentAfter.get(bambu.id)!
@@ -299,7 +314,7 @@ describe('Training sheets worker', () => {
           gsheetData.METAL_LATHE,
           results.equipmentAfter.get(lathe.id)!
         );
-        expect(results['newEvents']).toHaveLength(
+        expect(results.newEvents).toHaveLength(
           gsheetData.BAMBU.entries.length +
             gsheetData.METAL_LATHE.entries.length
         );
@@ -307,11 +322,74 @@ describe('Training sheets worker', () => {
       it('Handle no equipment', async () => {
         const results = await runAsyncApplyExternalEventSources(
           logger,
-          framework
+          framework,
+          10_000
         );
+        checkLastQuizSync(results);
         expect(results.equipmentAfter).toHaveLength(0);
       });
-      it('Rate limit equipment pull', () => {});
+      it('Handle equipment with no training sheet', async () => {
+        const bambu = await addWithSheet('bambu', createArea.id, O.none);
+        const results = await runAsyncApplyExternalEventSources(
+          logger,
+          framework,
+          10_000
+        );
+        checkLastQuizSync(results);
+        expect(
+          results.equipmentAfter.get(bambu.id)!.lastQuizResult
+        ).toStrictEqual(O.none);
+        expect(results.newEvents).toHaveLength(0);
+      });
+      it('Rate limit equipment pull', async () => {
+        const bambu = await addWithSheet(
+          'bambu',
+          createArea.id,
+          O.some(gsheetData.BAMBU.data.spreadsheetId!)
+        );
+        const results1 = await runAsyncApplyExternalEventSources(
+          logger,
+          framework,
+          10_000
+        );
+        checkLastQuizSync(results1);
+        const results2 = await runAsyncApplyExternalEventSources(
+          logger,
+          framework,
+          10_000
+        );
+        expect(
+          results1.equipmentAfter.get(bambu.id)!.lastQuizSync
+        ).toStrictEqual(results2.equipmentAfter.get(bambu.id)!.lastQuizSync);
+        expect(results1.newEvents.length).toBeGreaterThan(0);
+        expect(results2.newEvents).toHaveLength(0);
+      });
+      it('Repeat equipment pull no rate limit', async () => {
+        const bambu = await addWithSheet(
+          'bambu',
+          createArea.id,
+          O.some(gsheetData.BAMBU.data.spreadsheetId!)
+        );
+        const results1 = await runAsyncApplyExternalEventSources(
+          logger,
+          framework,
+          100
+        );
+        checkLastQuizSync(results1);
+
+        await new Promise(res => setTimeout(res, 1000));
+        const results2 = await runAsyncApplyExternalEventSources(
+          logger,
+          framework,
+          100
+        );
+        checkLastQuizSync(results2);
+        expect(results1.equipmentAfter.get(bambu.id)!.lastQuizSync).not.toEqual(
+          results2.equipmentAfter.get(bambu.id)!.lastQuizSync
+        );
+        expect(results1.newEvents.length).toBeGreaterThan(0);
+        expect(results2.newEvents).toHaveLength(0);
+      });
       it('Handle equipment in different areas', () => {});
     });
   });

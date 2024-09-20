@@ -13,8 +13,6 @@ import {QzEvent} from '../../types/qz-event';
 import {extractGoogleSheetData} from '../../training-sheets/google';
 import {UUID} from 'io-ts-types';
 
-const GOOGLE_UPDATE_INTERVAL_MS = 5 * 60 * 1000;
-
 export type PullSheetData = (
   logger: Logger,
   trainingSheetId: string
@@ -63,7 +61,8 @@ export const asyncApplyExternalEventSources = (
   logger: Logger,
   currentState: BetterSQLite3Database,
   pullGoogleSheetData: PullSheetData,
-  updateState: (event: DomainEvent) => void
+  updateState: (event: DomainEvent) => void,
+  googleRateLimitMs: number
 ) => {
   return () => async () => {
     logger.info('Applying external event sources...');
@@ -72,7 +71,7 @@ export const asyncApplyExternalEventSources = (
         O.isNone(equipment.lastQuizSync) ||
         (Date.now() as EpochTimestampMilliseconds) -
           equipment.lastQuizSync.value >
-          GOOGLE_UPDATE_INTERVAL_MS
+          googleRateLimitMs
       ) {
         logger.info(
           'Triggering event update from google training sheets for %s...',

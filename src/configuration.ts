@@ -42,7 +42,7 @@ const Config = t.strict({
   TURSO_TOKEN: t.union([t.undefined, t.string]),
   TURSO_SYNC_URL: t.union([t.undefined, t.string]),
   LOG_LEVEL: withDefaultIfEmpty(LogLevel, 'debug'),
-  QUIZ_RESULT_REFRESH_COOLDOWN_MS: withDefaultIfEmpty(
+  GOOGLE_RATELIMIT_MS: withDefaultIfEmpty(
     tt.IntFromString,
     (20 * 60 * 1000) as t.Int
   ),

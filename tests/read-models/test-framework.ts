@@ -54,7 +54,8 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   const sharedReadModel = initSharedReadModel(
     dbClient,
     logger,
-    localPullGoogleSheetData
+    localPullGoogleSheetData,
+    120_000
   );
   const frameworkCommitEvent = commitEvent(
     dbClient,
