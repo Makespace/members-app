@@ -24,6 +24,7 @@ export type SharedReadModel = {
   asyncApplyExternalEventSources: () => T.Task<void>;
   members: {
     get: (memberNumber: number) => O.Option<Member>;
+    getAll: () => ReadonlyArray<Member>;
   };
   equipment: {
     get: (id: UUID) => O.Option<Equipment>;

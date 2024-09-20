@@ -7,7 +7,6 @@ import {Form} from '../../types/form';
 import {pageTemplate} from '../../templates';
 import {getEquipmentIdFromForm} from '../equipment/get-equipment-id-from-form';
 import {memberInput} from '../../templates/member-input';
-import {readModels} from '../../read-models';
 import {Member} from '../../read-models/members';
 import {Equipment} from '../../read-models/shared-state/return-types';
 import {failureWithStatus} from '../../types/failure-with-status';
@@ -43,7 +42,7 @@ const renderForm = (viewModel: ViewModel) =>
 
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({events, user, readModel}) =>
+  ({user, readModel}) =>
     pipe(
       {user},
       E.right,
@@ -57,10 +56,7 @@ const constructForm: Form<ViewModel>['constructForm'] =
         }
         return E.right(equipment.value);
       }),
-      E.let('members', () => {
-        const memberDetails = readModels.members.getAllDetails(events);
-        return [...memberDetails.values()];
-      })
+      E.let('members', () => readModel.members.getAll())
     );
 
 export const markMemberTrainedForm: Form<ViewModel> = {
