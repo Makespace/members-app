@@ -42,7 +42,7 @@ const pullNewEquipmentQuizResultsLocal = async (equipment: Equipment) =>
   )();
 
 const defaultEquipment = (): Equipment => ({
-  id: 'ebedee32-49f4-4d36-a350-4fa7848792bf',
+  id: 'ebedee32-49f4-4d36-a350-4fa7848792bf' as UUID,
   name: 'Metal Lathe',
   trainers: [],
   trainedMembers: [],
@@ -143,7 +143,7 @@ describe('Training sheets worker', () => {
           Partial<EventOfType<'EquipmentTrainingQuizResult'>>
         >({
           type: 'EquipmentTrainingQuizResult',
-          equipmentId: defaultEquipment().id as UUID,
+          equipmentId: defaultEquipment().id,
           trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
           ...gsheetData.METAL_LATHE.entries[0],
         });
@@ -156,7 +156,7 @@ describe('Training sheets worker', () => {
           EventOfType<'EquipmentTrainingQuizResult'>
         >[] = gsheetData.LASER_CUTTER.entries.map(e => ({
           type: 'EquipmentTrainingQuizResult',
-          equipmentId: defaultEquipment().id as UUID,
+          equipmentId: defaultEquipment().id,
           trainingSheetId: gsheetData.LASER_CUTTER.data.spreadsheetId!,
           actor: {
             tag: 'system',
@@ -182,7 +182,7 @@ describe('Training sheets worker', () => {
           EventOfType<'EquipmentTrainingQuizResult'>
         >[] = gsheetData.BAMBU.entries.map(e => ({
           type: 'EquipmentTrainingQuizResult',
-          equipmentId: defaultEquipment().id as UUID,
+          equipmentId: defaultEquipment().id,
           trainingSheetId: gsheetData.BAMBU.data.spreadsheetId!,
           actor: {
             tag: 'system',
