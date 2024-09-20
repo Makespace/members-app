@@ -67,3 +67,17 @@ export const getMember =
       O.let('ownerOf', () => getOwnerOf)
     );
   };
+
+export const getAllMember =
+  (db: BetterSQLite3Database): SharedReadModel['members']['getAll'] =>
+  () =>
+    pipe(
+      db.select().from(membersTable).all(),
+      RA.map(m => {
+        const opt = getMember(db)(m.memberNumber);
+        if (O.isNone(opt)) {
+          throw new Error('');
+        }
+        return opt.value;
+      })
+    );

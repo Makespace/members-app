@@ -3,7 +3,7 @@ import * as O from 'fp-ts/Option';
 import {createTables} from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
-import {getMember} from './get-member';
+import {getAllMember, getMember} from './get-member';
 import {Equipment, Member} from './return-types';
 import {getAllEquipment, getEquipment} from './get-equipment';
 import {Client} from '@libsql/client/.';
@@ -54,6 +54,7 @@ export const initSharedReadModel = (
     ),
     members: {
       get: getMember(readModelDb),
+      getAll: getAllMember(readModelDb),
     },
     equipment: {
       get: getEquipment(readModelDb),
