@@ -11,6 +11,6 @@ export type Form<T> = {
   ) => (context: {
     user: User;
     events: ReadonlyArray<DomainEvent>;
-    readModelDb: SharedReadModel['db'];
+    readModel: SharedReadModel;
   }) => E.Either<FailureWithStatus, T>;
 };

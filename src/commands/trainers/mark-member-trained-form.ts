@@ -1,20 +1,21 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
+import * as O from 'fp-ts/Option';
 import {html, safe, sanitizeString} from '../../types/html';
 import {User} from '../../types';
 import {Form} from '../../types/form';
 import {pageTemplate} from '../../templates';
-import {getEquipmentName} from '../equipment/get-equipment-name';
 import {getEquipmentIdFromForm} from '../equipment/get-equipment-id-from-form';
-import {UUID} from 'io-ts-types';
 import {memberInput} from '../../templates/member-input';
 import {readModels} from '../../read-models';
 import {Member} from '../../read-models/members';
+import {Equipment} from '../../read-models/shared-state/return-types';
+import {failureWithStatus} from '../../types/failure-with-status';
+import {StatusCodes} from 'http-status-codes';
 
 type ViewModel = {
   user: User;
-  equipmentId: UUID;
-  equipmentName: string;
+  equipment: Equipment;
   members: ReadonlyArray<Member>;
 };
 
@@ -25,13 +26,13 @@ const renderForm = (viewModel: ViewModel) =>
   pipe(
     html`
       <h1>
-        Mark a member as trained on ${sanitizeString(viewModel.equipmentName)}
+        Mark a member as trained on ${sanitizeString(viewModel.equipment.name)}
       </h1>
       <form action="/equipment/mark-member-trained" method="post">
         <input
           type="hidden"
           name="equipmentId"
-          value="${viewModel.equipmentId}"
+          value="${viewModel.equipment.id}"
         />
         ${memberInput(viewModel.members)}
         <button type="submit">Confirm</button>
@@ -42,14 +43,20 @@ const renderForm = (viewModel: ViewModel) =>
 
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({events, user}) =>
+  ({events, user, readModel}) =>
     pipe(
       {user},
       E.right,
-      E.bind('equipmentId', () => getEquipmentIdFromForm(input)),
-      E.bind('equipmentName', ({equipmentId}) =>
-        getEquipmentName(events, equipmentId)
-      ),
+      E.bind('equipment_id', () => getEquipmentIdFromForm(input)),
+      E.bind('equipment', ({equipment_id}) => {
+        const equipment = readModel.equipment.get(equipment_id);
+        if (O.isNone(equipment)) {
+          return E.left(
+            failureWithStatus('Unknown equipment', StatusCodes.NOT_FOUND)()
+          );
+        }
+        return E.right(equipment.value);
+      }),
       E.let('members', () => {
         const memberDetails = readModels.members.getAllDetails(events);
         return [...memberDetails.values()];
