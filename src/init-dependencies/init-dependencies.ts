@@ -66,7 +66,8 @@ export const initDependencies = (
   const sharedReadModel = initSharedReadModel(
     dbClient,
     logger,
-    pullGoogleSheetData(googleAuth)
+    pullGoogleSheetData(googleAuth),
+    conf.GOOGLE_RATELIMIT_MS
   );
 
   const deps: Dependencies = {

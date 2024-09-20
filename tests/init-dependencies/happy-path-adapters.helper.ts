@@ -19,7 +19,8 @@ export const happyPathAdapters: Dependencies = {
       level: 'fatal',
       timestamp: pino.stdTimeFunctions.isoTime,
     }),
-    localPullGoogleSheetData
+    localPullGoogleSheetData,
+    120_000
   ),
   logger: (() => undefined) as never as Logger,
   rateLimitSendingOfEmails: TE.right,
