@@ -1,7 +1,7 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {eq, isNull, and, isNotNull, not} from 'drizzle-orm';
+import {eq, isNull, and, isNotNull, not, max} from 'drizzle-orm';
 import {SharedReadModel} from '.';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {
@@ -171,6 +171,21 @@ export const getEquipment =
         }))
       );
 
+    const getLastQuizResult = () =>
+      pipe(
+        db
+          .select({
+            lastQuizResult: max(trainingQuizTable.timestamp),
+          })
+          .from(trainingQuizTable)
+          .where(eq(trainingQuizTable.equipmentId, id))
+          .get(),
+        row =>
+          O.fromNullable(
+            row?.lastQuizResult?.getUTCMilliseconds() as EpochTimestampMilliseconds
+          )
+      );
+
     return pipe(
       db.select().from(equipmentTable).where(eq(equipmentTable.id, id)).get(),
       O.fromNullable,
@@ -178,9 +193,6 @@ export const getEquipment =
         ...data,
         id,
         trainingSheetId: O.fromNullable(data.trainingSheetId),
-        lastQuizResult: O.fromNullable(
-          data.lastQuizResult
-        ) as O.Option<EpochTimestampMilliseconds>,
         lastQuizSync: O.fromNullable(
           data.lastQuizSync
         ) as O.Option<EpochTimestampMilliseconds>,
@@ -190,6 +202,7 @@ export const getEquipment =
       O.let('membersAwaitingTraining', getMembersAwaitingTraining),
       O.let('orphanedPassedQuizes', getOrphanedTrainingQuizes),
       O.let('failedQuizAttempts', getFailedQuizAttempts),
+      O.let('lastQuizResult', getLastQuizResult),
       O.bind('area', ({areaId}) => getArea(areaId)),
       foo => foo
     );

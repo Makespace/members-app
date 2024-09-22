@@ -42,8 +42,7 @@ export const equipmentTable = sqliteTable('equipment', {
     .notNull()
     .references(() => areasTable.id),
   trainingSheetId: text('trainingSheetId'),
-  lastQuizResult: integer('lastQuizResult'),
-  lastQuizSync: integer('lastQuizResult'),
+  lastQuizSync: integer('lastQuizSync'),
 });
 
 const createEquipmentTable = sql`
@@ -52,7 +51,6 @@ const createEquipmentTable = sql`
   name TEXT,
   areaId TEXT,
   trainingSheetId TEXT,
-  lastQuizResult INTEGER,
   lastQuizSync INTEGER
   );
 `;

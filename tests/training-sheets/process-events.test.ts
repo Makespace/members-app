@@ -92,8 +92,12 @@ const checkLastQuizSyncUpdated = (results: ApplyExternalEventsResults) => {
   // Check that the last quiz sync property is updated to reflect
   // that a quiz sync was preformed.
   for (const equipment of results.equipmentAfter.values()) {
-    expect(equipment.lastQuizSync).toBeGreaterThan(results.startTime);
-    expect(equipment.lastQuizSync).toBeLessThan(results.endTime);
+    expect(getSomeOrFail(equipment.lastQuizSync)).toBeGreaterThanOrEqual(
+      results.startTime
+    );
+    expect(getSomeOrFail(equipment.lastQuizSync)).toBeLessThanOrEqual(
+      results.endTime
+    );
   }
 };
 
