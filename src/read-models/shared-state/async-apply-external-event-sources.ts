@@ -11,7 +11,6 @@ import {sheets_v4} from '@googleapis/sheets';
 import {EpochTimestampMilliseconds, Equipment} from './return-types';
 import {QzEvent} from '../../types/qz-event';
 import {extractGoogleSheetData} from '../../training-sheets/google';
-import {UUID} from 'io-ts-types';
 
 export type PullSheetData = (
   logger: Logger,
@@ -40,7 +39,7 @@ export const pullNewEquipmentQuizResults = (
       extractGoogleSheetData(
         logger,
         trainingSheetId,
-        equipment.id as UUID,
+        equipment.id,
         equipment.lastQuizResult
       )
     ),
@@ -68,10 +67,11 @@ export const asyncApplyExternalEventSources = (
     logger.info('Applying external event sources...');
     for (const equipment of getAllEquipment(currentState)()) {
       if (
-        O.isNone(equipment.lastQuizSync) ||
-        (Date.now() as EpochTimestampMilliseconds) -
-          equipment.lastQuizSync.value >
-          googleRateLimitMs
+        O.isSome(equipment.trainingSheetId) &&
+        (O.isNone(equipment.lastQuizSync) ||
+          (Date.now() as EpochTimestampMilliseconds) -
+            equipment.lastQuizSync.value >
+            googleRateLimitMs)
       ) {
         logger.info(
           'Triggering event update from google training sheets for %s...',
