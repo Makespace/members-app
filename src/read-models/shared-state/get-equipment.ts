@@ -1,7 +1,7 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {eq, isNull, and, isNotNull, not, max} from 'drizzle-orm';
+import {eq, and, not, max} from 'drizzle-orm';
 import {SharedReadModel} from '.';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {
@@ -43,8 +43,6 @@ export const getEquipment =
       );
 
     const quizPassed = eq(trainingQuizTable.score, trainingQuizTable.maxScore);
-    const alreadyTrained = isNull(trainedMemberstable.memberNumber);
-    const isKnownMember = isNotNull(membersTable.memberNumber);
     const getTrainedMembers = () =>
       pipe(
         db
@@ -84,13 +82,9 @@ export const getEquipment =
             trainedMemberstable,
             eq(membersTable.memberNumber, trainedMemberstable.memberNumber)
           )
-          .where(
-            and(
-              and(eq(trainingQuizTable.equipmentId, id), quizPassed),
-              not(alreadyTrained)
-            )
-          )
+          .where(and(eq(trainingQuizTable.equipmentId, id), quizPassed))
           .all(),
+        RA.filter(q => q.trainedMembers === null), // Only include members not already trained.
         RA.map(q => ({
           ...q.members,
           quizId: q.trainingQuizResults.quizId as UUID,
@@ -115,13 +109,9 @@ export const getEquipment =
             trainedMemberstable,
             eq(membersTable.memberNumber, trainedMemberstable.memberNumber)
           )
-          .where(
-            and(
-              and(eq(trainingQuizTable.equipmentId, id), not(quizPassed)),
-              not(alreadyTrained)
-            )
-          )
+          .where(and(eq(trainingQuizTable.equipmentId, id), not(quizPassed)))
           .all(),
+        RA.filter(q => q.trainedMembers === null), // Only include members not already trained.
         RA.map(q => ({
           ...q.members,
           agreementSigned: O.fromNullable(q.members.agreementSigned),
@@ -149,13 +139,9 @@ export const getEquipment =
               membersTable.memberNumber
             )
           )
-          .where(
-            and(
-              and(eq(trainingQuizTable.equipmentId, id), quizPassed),
-              not(isKnownMember)
-            )
-          )
+          .where(and(eq(trainingQuizTable.equipmentId, id), quizPassed))
           .all(),
+        RA.filter(q => q.members === null), // Unknown user.
         RA.map(q => ({
           id: q.trainingQuizResults.quizId as UUID,
           score: q.trainingQuizResults.score,
