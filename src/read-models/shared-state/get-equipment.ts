@@ -85,6 +85,22 @@ export const getEquipment =
           .where(and(eq(trainingQuizTable.equipmentId, id), quizPassed))
           .all(),
         RA.filter(q => q.trainedMembers === null), // Only include members not already trained.
+        rows => {
+          const latestQuizRowByMember = new Map<number, (typeof rows)[0]>();
+          for (const row of rows) {
+            const existing = latestQuizRowByMember.get(
+              row.members.memberNumber
+            );
+            if (
+              !existing ||
+              existing.trainingQuizResults.timestamp <
+                row.trainingQuizResults.timestamp
+            ) {
+              latestQuizRowByMember.set(row.members.memberNumber, row);
+            }
+          }
+          return [...latestQuizRowByMember.values()];
+        },
         RA.map(q => ({
           ...q.members,
           quizId: q.trainingQuizResults.quizId as UUID,

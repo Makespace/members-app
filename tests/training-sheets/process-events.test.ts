@@ -15,6 +15,7 @@ import {
 } from '../../src/read-models/shared-state/return-types';
 import {getSomeOrFail} from '../helpers';
 import {EmailAddress} from '../../src/types';
+import {getLatestEvent} from '../data/google_sheet_data';
 
 const sortQuizResults = RA.sort({
   compare: (a, b) =>
@@ -104,14 +105,10 @@ const checkLastQuizSyncUpdated = (results: ApplyExternalEventsResults) => {
 const checkLastQuizEventTimestamp = (
   data: gsheetData.ManualParsed,
   equipmentAfter: Equipment
-) => {
-  const latestEvent = data.entries.sort(
-    (a, b) => a.timestampEpochMS - b.timestampEpochMS
-  )[data.entries.length - 1];
+) =>
   expect(getSomeOrFail(equipmentAfter.lastQuizResult)).toStrictEqual(
-    latestEvent.timestampEpochMS
+    getLatestEvent(data).timestampEpochMS
   );
-};
 
 describe('Training sheets worker', () => {
   describe('Process results', () => {
@@ -328,6 +325,11 @@ describe('Training sheets worker', () => {
         expect(
           bambuAfter.membersAwaitingTraining[0].emailAddress
         ).toStrictEqual(gsheetData.BAMBU.entries[0].emailProvided);
+        expect(
+          bambuAfter.membersAwaitingTraining[0].waitingSince
+        ).toStrictEqual(
+          new Date(getLatestEvent(gsheetData.BAMBU).timestampEpochMS)
+        );
 
         // Lathe results only have a single failed entry.
         const latheAfter = results.equipmentAfter.get(lathe.id)!;

@@ -381,6 +381,11 @@ export const LASER_CUTTER: ManualParsed = {
   ],
 };
 
+export const getLatestEvent = (data: ManualParsed) =>
+  data.entries.sort((a, b) => a.timestampEpochMS - b.timestampEpochMS)[
+    data.entries.length - 1
+  ];
+
 export const NOT_FOUND_ERROR = {
   errors: [
     {
