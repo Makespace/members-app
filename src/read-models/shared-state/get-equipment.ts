@@ -135,7 +135,7 @@ export const getEquipment =
           score: q.trainingQuizResults.score,
           maxScore: q.trainingQuizResults.maxScore,
           percentage: Math.ceil(
-            q.trainingQuizResults.score / q.trainingQuizResults.maxScore
+            (q.trainingQuizResults.score / q.trainingQuizResults.maxScore) * 100
           ),
           timestamp: q.trainingQuizResults.timestamp,
           quizAnswers: q.trainingQuizResults.quizAnswers,
