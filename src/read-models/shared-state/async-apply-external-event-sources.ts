@@ -9,8 +9,8 @@ import {getAllEquipment} from './get-equipment';
 import {pipe} from 'fp-ts/lib/function';
 import {sheets_v4} from '@googleapis/sheets';
 import {EpochTimestampMilliseconds, Equipment} from './return-types';
-import {QzEvent} from '../../types/qz-event';
 import {extractGoogleSheetData} from '../../training-sheets/google';
+import {constructEvent, EventOfType} from '../../types/domain-event';
 
 export type PullSheetData = (
   logger: Logger,
@@ -21,14 +21,23 @@ export const pullNewEquipmentQuizResults = (
   logger: Logger,
   pullGoogleSheetData: PullSheetData,
   equipment: Equipment
-): T.Task<ReadonlyArray<QzEvent>> => {
+): T.Task<
+  ReadonlyArray<
+    | EventOfType<'EquipmentTrainingQuizResult'>
+    | EventOfType<'EquipmentTrainingQuizSync'>
+  >
+> => {
   if (O.isNone(equipment.trainingSheetId)) {
     logger.warn(
       'No training sheet registered for equipment %s, skipping training data ingestion',
       equipment.name
     );
     // eslint-disable-next-line @typescript-eslint/require-await
-    return async () => [] as ReadonlyArray<QzEvent>;
+    return async () =>
+      [] as ReadonlyArray<
+        | EventOfType<'EquipmentTrainingQuizResult'>
+        | EventOfType<'EquipmentTrainingQuizSync'>
+      >;
   }
   const trainingSheetId = equipment.trainingSheetId.value;
   logger = logger.child({trainingSheetId});
@@ -44,6 +53,16 @@ export const pullNewEquipmentQuizResults = (
       )
     ),
     TE.map(RA.flatten),
+    TE.map(
+      RA.append<
+        | EventOfType<'EquipmentTrainingQuizResult'>
+        | EventOfType<'EquipmentTrainingQuizSync'>
+      >(
+        constructEvent('EquipmentTrainingQuizSync')({
+          equipmentId: equipment.id,
+        })
+      )
+    ),
     // eslint-disable-next-line @typescript-eslint/require-await
     TE.getOrElse(err => async () => {
       logger.error(
@@ -51,7 +70,10 @@ export const pullNewEquipmentQuizResults = (
         equipment.name,
         err.message
       );
-      return [] as ReadonlyArray<QzEvent>;
+      return [] as ReadonlyArray<
+        | EventOfType<'EquipmentTrainingQuizResult'>
+        | EventOfType<'EquipmentTrainingQuizSync'>
+      >;
     })
   );
 };

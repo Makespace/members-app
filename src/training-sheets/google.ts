@@ -3,11 +3,10 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
 
 import {Logger} from 'pino';
-import {constructEvent} from '../types/domain-event';
+import {constructEvent, EventOfType} from '../types/domain-event';
 import {v4} from 'uuid';
 import {UUID} from 'io-ts-types';
 import {DateTime} from 'luxon';
-import {QzEvent} from '../types/qz-event';
 import {sheets_v4} from '@googleapis/sheets';
 import {EpochTimestampMilliseconds} from '../read-models/shared-state/return-types';
 
@@ -180,7 +179,9 @@ const extractFromRow =
     trainingSheetId: string,
     timezone: string
   ) =>
-  (row: sheets_v4.Schema$RowData): O.Option<QzEvent> => {
+  (
+    row: sheets_v4.Schema$RowData
+  ): O.Option<EventOfType<'EquipmentTrainingQuizResult'>> => {
     if (!row.values) {
       return O.none;
     }
@@ -234,11 +235,6 @@ const extractFromRow =
       {} as Record<string, string>
     );
 
-    if (timestampEpochMS.value === null) {
-      console.log('FOUND NULL TIMESTAMP VALUE');
-      console.log(quizAnswers);
-    }
-
     return O.some(
       constructEvent('EquipmentTrainingQuizResult')({
         id: v4() as UUID,
@@ -264,7 +260,7 @@ export const extractGoogleSheetData =
   ) =>
   (
     spreadsheet: sheets_v4.Schema$Spreadsheet
-  ): ReadonlyArray<ReadonlyArray<QzEvent>> =>
+  ): ReadonlyArray<ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>>> =>
     !spreadsheet.sheets || spreadsheet.sheets.length < 1
       ? []
       : spreadsheet.sheets.map(sheet => {
