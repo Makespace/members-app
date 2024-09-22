@@ -1,6 +1,5 @@
 import {DomainEvent} from '../../types/domain-event';
 import * as O from 'fp-ts/Option';
-import { v4 as uuid4 } from 'uuid';
 import {gravatarHashFromEmail} from '../members/avatar';
 import {
   areasTable,
@@ -13,7 +12,6 @@ import {
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {eq} from 'drizzle-orm';
-import { ensureEventTableExists } from '../../init-dependencies/event-store/ensure-events-table-exists';
 
 export const updateState =
   (db: BetterSQLite3Database) => (event: DomainEvent) => {
@@ -149,6 +147,14 @@ export const updateState =
       case 'EquipmentTrainingSheetRegistered':
         db.update(equipmentTable)
           .set({trainingSheetId: event.trainingSheetId})
+          .where(eq(equipmentTable.id, event.equipmentId))
+          .run();
+        break;
+      case 'EquipmentTrainingQuizSync':
+        db.update(equipmentTable)
+          .set({
+            lastQuizSync: event.recordedAt.getTime(),
+          })
           .where(eq(equipmentTable.id, event.equipmentId))
           .run();
         break;
