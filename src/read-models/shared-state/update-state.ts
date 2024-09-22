@@ -96,6 +96,16 @@ export const updateState =
           })
           .run();
         break;
+      case 'LegacyMemberTrainedOnEquipment':
+        // TODO - Will need special treatment when we allow revoking training because these events might come out of order.
+        db.insert(trainedMemberstable)
+          .values({
+            memberNumber: event.memberNumber,
+            equipmentId: event.equipmentId,
+            trainedAt: event.recordedAt,
+          })
+          .run();
+        break;
       case 'OwnerAgreementSigned':
         db.update(membersTable)
           .set({agreementSigned: event.signedAt})

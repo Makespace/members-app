@@ -1,5 +1,6 @@
 import {Logger} from 'pino';
 import * as T from 'fp-ts/Task';
+import * as E from 'fp-ts/Either';
 import * as TE from 'fp-ts/TaskEither';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
@@ -11,6 +12,7 @@ import {sheets_v4} from '@googleapis/sheets';
 import {EpochTimestampMilliseconds, Equipment} from './return-types';
 import {extractGoogleSheetData} from '../../training-sheets/google';
 import {constructEvent, EventOfType} from '../../types/domain-event';
+import {pullLegacyTrainedMembers} from '../../init-dependencies/google/legacy_trained_members';
 
 export type PullSheetData = (
   logger: Logger,
@@ -83,7 +85,8 @@ export const asyncApplyExternalEventSources = (
   currentState: BetterSQLite3Database,
   pullGoogleSheetData: PullSheetData,
   updateState: (event: DomainEvent) => void,
-  googleRateLimitMs: number
+  googleRateLimitMs: number,
+  legacyTrainingSheetId: string
 ) => {
   return () => async () => {
     logger.info('Applying external event sources...');
@@ -109,6 +112,18 @@ export const asyncApplyExternalEventSources = (
         );
       }
     }
+    pipe(
+      await pullLegacyTrainedMembers(
+        logger,
+        currentState,
+        legacyTrainingSheetId,
+        pullGoogleSheetData
+      )(),
+      E.map(RA.map(updateState)),
+      E.mapLeft(err =>
+        logger.error(`Failed to pull legacy trained members: '${err.message}'`)
+      )
+    );
     logger.info('Finished applying external event sources');
   };
 };

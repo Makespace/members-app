@@ -92,6 +92,12 @@ export const DomainEvent = t.union([
     memberNumber: t.number,
     trainedByMemberNumber: t.union([t.number, t.null]), // Null to indicate system.
   }),
+  eventCodec('LegacyMemberTrainedOnEquipment', {
+    // Separate to MemberTrainedOnEquipment events as these didn't have the verification that the new events do.
+    equipmentId: tt.UUID,
+    memberNumber: t.number,
+    trainedByMemberNumber: t.union([t.number, t.null]),
+  }),
   eventCodec('MemberEmailChanged', {
     memberNumber: t.number,
     newEmail: EmailAddressCodec,
