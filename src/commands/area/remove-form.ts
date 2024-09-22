@@ -73,11 +73,11 @@ export const removeForm: Form<ViewModel> = {
   renderForm,
   constructForm:
     input =>
-    ({user, readModelDb}) =>
+    ({user, readModel}) =>
       pipe(
         {user},
         E.right,
         E.bind('areaId', () => getAreaId(input)),
-        E.bind('areaName', ({areaId}) => getAreaName(readModelDb, areaId))
+        E.bind('areaName', ({areaId}) => getAreaName(readModel.db, areaId))
       ),
 };

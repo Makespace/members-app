@@ -172,13 +172,13 @@ const getAreaName = (db: SharedReadModel['db'], areaId: string) =>
 
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({user, events, readModelDb}): E.Either<FailureWithStatus, ViewModel> =>
+  ({user, events, readModel}): E.Either<FailureWithStatus, ViewModel> =>
     pipe(
       {user},
       E.right,
       E.bind('areaId', () => getAreaId(input)),
       E.bind('areaOwners', ({areaId}) => getPotentialOwners(events, areaId)),
-      E.bind('areaName', ({areaId}) => getAreaName(readModelDb, areaId))
+      E.bind('areaName', ({areaId}) => getAreaName(readModel.db, areaId))
     );
 
 export const addOwnerForm: Form<ViewModel> = {
