@@ -180,10 +180,11 @@ export const getEquipment =
           .from(trainingQuizTable)
           .where(eq(trainingQuizTable.equipmentId, id))
           .get(),
-        row =>
-          O.fromNullable(
-            row?.lastQuizResult?.getUTCMilliseconds() as EpochTimestampMilliseconds
-          )
+        row => {
+          return O.fromNullable(
+            row?.lastQuizResult?.getTime() as EpochTimestampMilliseconds
+          );
+        }
       );
 
     return pipe(
