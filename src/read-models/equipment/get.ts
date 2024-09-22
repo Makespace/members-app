@@ -29,6 +29,7 @@ const pertinentEvents: Array<EventName> = [
   'EquipmentAdded',
   'TrainerAdded',
   'MemberTrainedOnEquipment',
+  'LegacyMemberTrainedOnEquipment',
   'EquipmentTrainingSheetRegistered',
 ];
 
@@ -52,7 +53,10 @@ const updateState = (
       });
     }
   }
-  if (isEventOfType('MemberTrainedOnEquipment')(event)) {
+  if (
+    isEventOfType('MemberTrainedOnEquipment')(event) ||
+    isEventOfType('LegacyMemberTrainedOnEquipment')(event)
+  ) {
     const equipment = state.get(event.equipmentId);
     if (equipment) {
       state.set(event.equipmentId, {
