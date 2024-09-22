@@ -77,15 +77,13 @@ export const asyncApplyExternalEventSources = (
           'Triggering event update from google training sheets for %s...',
           equipment.name
         );
-        RA.map(updateState)(
+        pipe(
           await pullNewEquipmentQuizResults(
             logger,
             pullGoogleSheetData,
             equipment
-          )()
-        );
-        equipment.lastQuizSync = O.some(
-          Date.now() as EpochTimestampMilliseconds
+          )(),
+          RA.map(updateState)
         );
       }
     }

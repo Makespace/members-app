@@ -75,6 +75,9 @@ export const DomainEvent = t.union([
     timestampEpochMS: t.number, // Unix Epoch January 1st 1970.
     quizAnswers: t.record(t.string, t.string),
   }),
+  eventCodec('EquipmentTrainingQuizSync', {
+    equipmentId: tt.UUID,
+  }),
   eventCodec('MemberDetailsUpdated', {
     memberNumber: t.number,
     name: t.union([t.string, t.undefined]),

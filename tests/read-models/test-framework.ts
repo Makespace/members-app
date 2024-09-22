@@ -46,7 +46,9 @@ export type TestFramework = {
   eventStoreDb: libsqlClient.Client;
 };
 
-export const initTestFramework = async (): Promise<TestFramework> => {
+export const initTestFramework = async (
+  googleRateLimitMs: number = 120_000
+): Promise<TestFramework> => {
   const logger = createLogger({level: 'silent'});
   const dbClient = libsqlClient.createClient({
     url: `file:/tmp/${randomUUID()}.db`,
@@ -55,7 +57,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     dbClient,
     logger,
     localPullGoogleSheetData,
-    120_000
+    googleRateLimitMs
   );
   const frameworkCommitEvent = commitEvent(
     dbClient,
