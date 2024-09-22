@@ -335,7 +335,9 @@ describe('Training sheets worker', () => {
           framework,
           10_000
         );
-        checkLastQuizSync(results);
+        expect(
+          results.equipmentAfter.get(bambu.id)!.lastQuizSync // No training sheet so not updated.
+        ).toStrictEqual(O.none);
         expect(
           results.equipmentAfter.get(bambu.id)!.lastQuizResult
         ).toStrictEqual(O.none);
