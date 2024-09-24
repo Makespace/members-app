@@ -2,6 +2,7 @@ import {Config} from '../configuration';
 import {Dependencies} from '../dependencies';
 import {createRateLimiter} from './rate-limit-sending-of-emails';
 import {sendEmail} from './send-email';
+import * as O from 'fp-ts/Option';
 import createLogger, {LoggerOptions} from 'pino';
 import nodemailer from 'nodemailer';
 import smtp from 'nodemailer-smtp-transport';
@@ -10,8 +11,6 @@ import {getAllEvents, getAllEventsByType} from './event-store/get-all-events';
 import {getResourceEvents} from './event-store/get-resource-events';
 import {Client} from '@libsql/client';
 import {pullGoogleSheetData} from './google/pull_sheet_data';
-import * as O from 'fp-ts/Option';
-import {updateTrainingQuizResults} from '../training-sheets/training-sheets-worker';
 import {initSharedReadModel} from '../read-models/shared-state';
 import {GoogleAuth} from 'google-auth-library';
 
@@ -58,7 +57,26 @@ export const initDependencies = (
     })
   );
 
-  const sharedReadModel = initSharedReadModel(dbClient);
+  const googleAuth =
+    conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON.toLowerCase().trim() === 'disabled'
+      ? O.none
+      : O.some(
+          pullGoogleSheetData(
+            new GoogleAuth({
+              // Google issues the credentials file and validates it.
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              credentials: JSON.parse(conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON),
+              scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+            })
+          )
+        );
+
+  const sharedReadModel = initSharedReadModel(
+    dbClient,
+    logger,
+    googleAuth,
+    conf.GOOGLE_RATELIMIT_MS
+  );
 
   const deps: Dependencies = {
     commitEvent: commitEvent(dbClient, logger, sharedReadModel.asyncRefresh),
@@ -69,36 +87,6 @@ export const initDependencies = (
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
     logger,
-    updateTrainingQuizResults: O.none,
-    lastTrainingQuizResultRefresh: O.none,
-    trainingQuizRefreshRunning: false,
   };
-
-  if (conf.BACKGROUND_PROCESSING_ENABLED) {
-    if (!conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON) {
-      throw new Error(
-        'Background processing is enabled but google service account key not provided'
-      );
-    }
-    const auth = new GoogleAuth({
-      // Google issues the credentials file and validates it.
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      credentials: JSON.parse(conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON),
-      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-    });
-    deps.updateTrainingQuizResults = O.some(() =>
-      updateTrainingQuizResults(
-        pullGoogleSheetData(auth),
-        deps,
-        logger,
-        conf.QUIZ_RESULT_REFRESH_COOLDOWN_MS
-      )
-    );
-  } else {
-    logger.warn(
-      "Background processing is disabled - training results won't be gathered"
-    );
-  }
-
   return deps;
 };

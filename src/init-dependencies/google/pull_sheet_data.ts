@@ -7,17 +7,12 @@ import {sheets, sheets_v4} from '@googleapis/sheets';
 import {GoogleAuth} from 'google-auth-library';
 
 export const pullGoogleSheetData =
-  (auth: GoogleAuth | null) =>
+  (auth: GoogleAuth) =>
   (
     logger: Logger,
     trainingSheetId: string
-  ): TE.TaskEither<Failure, sheets_v4.Schema$Spreadsheet> => {
-    if (auth === null) {
-      return TE.left({
-        message: 'Google connectivity disabled - failed to get spreadsheet',
-      });
-    }
-    return pipe(
+  ): TE.TaskEither<Failure, sheets_v4.Schema$Spreadsheet> =>
+    pipe(
       TE.tryCatch(
         () =>
           sheets({
@@ -37,4 +32,3 @@ export const pullGoogleSheetData =
       ),
       TE.map(resp => resp.data)
     );
-  };

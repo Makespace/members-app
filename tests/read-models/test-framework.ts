@@ -1,5 +1,6 @@
 import createLogger from 'pino';
 import * as T from 'fp-ts/Task';
+import * as O from 'fp-ts/Option';
 import {
   getAllEvents,
   getAllEventsByType,
@@ -17,6 +18,7 @@ import {EventName, EventOfType} from '../../src/types/domain-event';
 import {Dependencies} from '../../src/dependencies';
 import {applyToResource} from '../../src/commands/apply-command-to-resource';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
+import {localPullGoogleSheetData} from '../init-dependencies/pull-local-google';
 
 type ToFrameworkCommands<T> = {
   [K in keyof T]: {
@@ -45,14 +47,22 @@ export type TestFramework = {
   eventStoreDb: libsqlClient.Client;
 };
 
-export const initTestFramework = async (): Promise<TestFramework> => {
+export const initTestFramework = async (
+  googleRateLimitMs: number = 120_000
+): Promise<TestFramework> => {
+  const logger = createLogger({level: 'silent'});
   const dbClient = libsqlClient.createClient({
     url: `file:/tmp/${randomUUID()}.db`,
   });
-  const sharedReadModel = initSharedReadModel(dbClient);
+  const sharedReadModel = initSharedReadModel(
+    dbClient,
+    logger,
+    O.some(localPullGoogleSheetData),
+    googleRateLimitMs
+  );
   const frameworkCommitEvent = commitEvent(
     dbClient,
-    createLogger({level: 'silent'}),
+    logger,
     sharedReadModel.asyncRefresh
   );
   await ensureEventTableExists(dbClient)();
@@ -93,9 +103,6 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       equipment: {
         add: frameworkify(commands.equipment.add),
         trainingSheet: frameworkify(commands.equipment.trainingSheet),
-        trainingSheetQuizResult: frameworkify(
-          commands.equipment.trainingSheetQuizResult
-        ),
       },
       trainers: {
         add: frameworkify(commands.trainers.add),

@@ -42,19 +42,15 @@ const Config = t.strict({
   TURSO_TOKEN: t.union([t.undefined, t.string]),
   TURSO_SYNC_URL: t.union([t.undefined, t.string]),
   LOG_LEVEL: withDefaultIfEmpty(LogLevel, 'debug'),
-  BACKGROUND_PROCESSING_ENABLED: withDefaultIfEmpty(
-    tt.BooleanFromString,
-    false
-  ),
-  BACKGROUND_PROCESSING_RUN_INTERVAL_MS: withDefaultIfEmpty(
+  GOOGLE_RATELIMIT_MS: withDefaultIfEmpty(
     tt.IntFromString,
-    (30 * 60 * 1000) as t.Int
+    (20 * 60 * 1000) as t.Int
   ),
-  QUIZ_RESULT_REFRESH_COOLDOWN_MS: withDefaultIfEmpty(
-    tt.IntFromString,
-    (5 * 60 * 1000) as t.Int
+  GOOGLE_SERVICE_ACCOUNT_KEY_JSON: tt.NonEmptyString, // Don't default so we don't accidentally disable.
+  LEGACY_TRAINING_COMPLETE_SHEET: withDefaultIfEmpty(
+    t.string,
+    '1Do4CbGZ7ndvK0955nBOi1psn7jVxgvRZHhlsQbZR3_Y'
   ),
-  GOOGLE_SERVICE_ACCOUNT_KEY_JSON: t.union([t.undefined, t.string]),
 });
 
 export type Config = t.TypeOf<typeof Config>;

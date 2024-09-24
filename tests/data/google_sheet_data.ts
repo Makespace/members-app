@@ -1,5 +1,6 @@
 import {sheets_v4} from '@googleapis/sheets';
 import {readFileSync} from 'node:fs';
+import {EpochTimestampMilliseconds} from '../../src/read-models/shared-state/return-types';
 
 type ManualParsedEntry = {
   emailProvided: string;
@@ -8,11 +9,11 @@ type ManualParsedEntry = {
   maxScore: number;
   percentage: number;
   fullMarks: boolean;
-  timestampEpochS: number;
+  timestampEpochMS: EpochTimestampMilliseconds;
   quizAnswers: Record<string, string>;
 };
 
-type ManualParsed = {
+export type ManualParsed = {
   data: sheets_v4.Schema$Spreadsheet;
   entries: ManualParsedEntry[];
 };
@@ -36,7 +37,7 @@ export const METAL_LATHE: ManualParsed = {
       maxScore: 14,
       percentage: 93,
       fullMarks: false,
-      timestampEpochS: 1705770960,
+      timestampEpochMS: 1705770960_000 as EpochTimestampMilliseconds,
       quizAnswers: {
         Email: 'test@makespace.com',
         'How many oil level check glasses are there on the Makespace metal lathe?':
@@ -88,7 +89,7 @@ export const BAMBU: ManualParsed = {
       maxScore: 5,
       percentage: 80,
       fullMarks: false,
-      timestampEpochS: 1700768963,
+      timestampEpochMS: 1700768963_000 as EpochTimestampMilliseconds,
       quizAnswers: {
         Timestamp: '23/11/2023 19:49:23',
         'Email address': 'flonn@example.com',
@@ -128,7 +129,7 @@ export const BAMBU: ManualParsed = {
       maxScore: 5,
       percentage: 100,
       fullMarks: true,
-      timestampEpochS: 1700769348,
+      timestampEpochMS: 1700769348_000 as EpochTimestampMilliseconds,
       quizAnswers: {
         Timestamp: '23/11/2023 19:55:48',
         'Email address': 'flonn@example.com',
@@ -168,7 +169,7 @@ export const BAMBU: ManualParsed = {
       maxScore: 12,
       percentage: 100,
       fullMarks: true,
-      timestampEpochS: 1710249052,
+      timestampEpochMS: 1710249052_000 as EpochTimestampMilliseconds,
       quizAnswers: {
         Timestamp: '12/03/2024 13:10:52',
         'Email address': 'flonn@example.com',
@@ -213,7 +214,7 @@ export const BAMBU: ManualParsed = {
       maxScore: 12,
       percentage: 100,
       fullMarks: true,
-      timestampEpochS: 1710249842,
+      timestampEpochMS: 1710249842_000 as EpochTimestampMilliseconds,
       quizAnswers: {
         Timestamp: '12/03/2024 13:24:02',
         'Email address': 'flonn@example.com',
@@ -268,7 +269,7 @@ export const LASER_CUTTER: ManualParsed = {
       maxScore: 24,
       percentage: 100,
       fullMarks: true,
-      timestampEpochS: 1601214546,
+      timestampEpochMS: 1601214546_000 as EpochTimestampMilliseconds,
       quizAnswers: {
         Timestamp: '27/09/2020 14:49:06',
         'Email address': 'sparky@example.com',
@@ -326,7 +327,7 @@ export const LASER_CUTTER: ManualParsed = {
       maxScore: 24,
       percentage: 100,
       fullMarks: true,
-      timestampEpochS: 1601298462,
+      timestampEpochMS: 1601298462_000 as EpochTimestampMilliseconds,
       quizAnswers: {
         Timestamp: '28/09/2020 14:07:42',
         'Email address': 'flonn@example.com',
@@ -379,6 +380,11 @@ export const LASER_CUTTER: ManualParsed = {
     },
   ],
 };
+
+export const getLatestEvent = (data: ManualParsed) =>
+  data.entries.sort((a, b) => a.timestampEpochMS - b.timestampEpochMS)[
+    data.entries.length - 1
+  ];
 
 export const NOT_FOUND_ERROR = {
   errors: [

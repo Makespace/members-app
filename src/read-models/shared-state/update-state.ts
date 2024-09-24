@@ -8,6 +8,7 @@ import {
   ownersTable,
   trainedMemberstable,
   trainersTable,
+  trainingQuizTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {eq} from 'drizzle-orm';
@@ -116,7 +117,47 @@ export const updateState =
           })
           .run();
         break;
-
+      case 'EquipmentTrainingQuizResult':
+        db.insert(trainingQuizTable)
+          .values({
+            quizId: event.id,
+            equipmentId: event.equipmentId,
+            sheetId: event.trainingSheetId,
+            memberNumberProvided: event.memberNumberProvided,
+            emailProvided: event.emailProvided,
+            score: event.score,
+            maxScore: event.maxScore,
+            timestamp: new Date(event.timestampEpochMS),
+            quizAnswers: event.quizAnswers,
+          })
+          .run();
+        break;
+      case 'EquipmentTrainingQuizEmailUpdated':
+        db.update(trainingQuizTable)
+          .set({emailProvided: event.newEmail})
+          .where(eq(trainingQuizTable.quizId, event.quizId))
+          .run();
+        break;
+      case 'EquipmentTrainingQuizMemberNumberUpdated':
+        db.update(trainingQuizTable)
+          .set({memberNumberProvided: event.newMemberNumber})
+          .where(eq(trainingQuizTable.quizId, event.quizId))
+          .run();
+        break;
+      case 'EquipmentTrainingSheetRegistered':
+        db.update(equipmentTable)
+          .set({trainingSheetId: event.trainingSheetId})
+          .where(eq(equipmentTable.id, event.equipmentId))
+          .run();
+        break;
+      case 'EquipmentTrainingQuizSync':
+        db.update(equipmentTable)
+          .set({
+            lastQuizSync: event.recordedAt.getTime(),
+          })
+          .where(eq(equipmentTable.id, event.equipmentId))
+          .run();
+        break;
       default:
         break;
     }

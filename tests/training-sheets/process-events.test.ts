@@ -1,268 +1,246 @@
-import {faker} from '@faker-js/faker';
-import * as TE from 'fp-ts/TaskEither';
-import {TestFramework, initTestFramework} from '../read-models/test-framework';
-import {NonEmptyString, UUID} from 'io-ts-types';
-import {
-  DomainEvent,
-  EventName,
-  EventOfType,
-} from '../../src/types/domain-event';
-import {happyPathAdapters} from '../init-dependencies/happy-path-adapters.helper';
-import {updateTrainingQuizResults} from '../../src/training-sheets/training-sheets-worker';
-import {Dependencies} from '../../src/dependencies';
-import {Resource} from '../../src/types/resource';
-import pino, {Logger} from 'pino';
-import {failureWithStatus} from '../../src/types/failure-with-status';
-import {StatusCodes} from 'http-status-codes';
-import * as gsheetData from '../data/google_sheet_data';
-import {ResourceVersion} from '../../src/types';
-import * as O from 'fp-ts/Option';
-import * as T from 'io-ts';
+import {UUID} from 'io-ts-types';
+import {EventOfType, isEventOfType} from '../../src/types/domain-event';
+import pino from 'pino';
 import * as RA from 'fp-ts/lib/ReadonlyArray';
 import * as N from 'fp-ts/number';
-
-type TrainingSheetWorkerDependencies = Dependencies & {
-  commitedEvents: DomainEvent[];
-};
+import * as O from 'fp-ts/Option';
+import * as gsheetData from '../data/google_sheet_data';
+import {pullNewEquipmentQuizResults} from '../../src/read-models/shared-state/async-apply-external-event-sources';
+import {localPullGoogleSheetData} from '../init-dependencies/pull-local-google';
+import {
+  EpochTimestampMilliseconds,
+  Equipment,
+} from '../../src/read-models/shared-state/return-types';
 
 const sortQuizResults = RA.sort({
   compare: (a, b) =>
     N.Ord.compare(
-      (a as EventOfType<'EquipmentTrainingQuizResult'>).timestampEpochS,
-      (b as EventOfType<'EquipmentTrainingQuizResult'>).timestampEpochS
+      (a as EventOfType<'EquipmentTrainingQuizResult'>).timestampEpochMS,
+      (b as EventOfType<'EquipmentTrainingQuizResult'>).timestampEpochMS
     ),
   equals: (a, b) =>
     N.Ord.equals(
-      (a as EventOfType<'EquipmentTrainingQuizResult'>).timestampEpochS,
-      (b as EventOfType<'EquipmentTrainingQuizResult'>).timestampEpochS
+      (a as EventOfType<'EquipmentTrainingQuizResult'>).timestampEpochMS,
+      (b as EventOfType<'EquipmentTrainingQuizResult'>).timestampEpochMS
     ),
 });
 
-const dependenciesForTrainingSheetsWorker = (
-  framework: TestFramework
-): TrainingSheetWorkerDependencies => {
-  const commitedEvents: DomainEvent[] = [];
-  return {
-    ...happyPathAdapters,
-    logger: pino({
-      level: 'error',
+const pullNewEquipmentQuizResultsLocal = async (equipment: Equipment) =>
+  pullNewEquipmentQuizResults(
+    pino({
+      level: 'fatal',
       timestamp: pino.stdTimeFunctions.isoTime,
     }),
-    commitedEvents,
-    commitEvent:
-      (resource: Resource, lastKnownVersion: ResourceVersion) =>
-      (event: DomainEvent) => {
-        commitedEvents.push(event);
-        return happyPathAdapters.commitEvent(resource, lastKnownVersion)(event);
-      },
-    getAllEventsByType: <T extends EventName>(eventType: T) =>
-      TE.tryCatch(
-        () => framework.getAllEventsByType(eventType),
-        failureWithStatus(
-          'Failed to get events from test framework',
-          StatusCodes.INTERNAL_SERVER_ERROR
-        )
-      ),
-    updateTrainingQuizResults: O.none,
+    localPullGoogleSheetData,
+    equipment
+  )();
+
+const defaultEquipment = (): Equipment => ({
+  id: 'ebedee32-49f4-4d36-a350-4fa7848792bf' as UUID,
+  name: 'Metal Lathe',
+  trainers: [],
+  trainedMembers: [],
+  area: {
+    id: 'f9cee7aa-75c6-42cc-8585-0e658044fe8e',
+    name: 'Metal Shop',
+  },
+  membersAwaitingTraining: [],
+  orphanedPassedQuizes: [],
+  failedQuizAttempts: [],
+  trainingSheetId: O.none,
+  lastQuizResult: O.none,
+  lastQuizSync: O.none,
+});
+
+type EquipmentQuizResultEvents = {
+  quizResults: ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>>;
+  quizSync: ReadonlyArray<EventOfType<'EquipmentTrainingQuizSync'>>;
+  startTime: Date;
+  endTime: Date;
+};
+const pullEquipmentQuizResultsWrapper = async (
+  spreadsheetId: O.Option<string>,
+  lastQuizResult: O.Option<EpochTimestampMilliseconds> = O.none
+): Promise<EquipmentQuizResultEvents> => {
+  const equipment = defaultEquipment();
+  equipment.trainingSheetId = spreadsheetId;
+  equipment.lastQuizResult = lastQuizResult;
+  const startTime = new Date();
+  const events = await pullNewEquipmentQuizResultsLocal(equipment);
+  const endTime = new Date();
+  const result = {
+    quizResults: [] as EventOfType<'EquipmentTrainingQuizResult'>[],
+    quizSync: [] as EventOfType<'EquipmentTrainingQuizSync'>[],
+  };
+  for (const event of events) {
+    if (isEventOfType('EquipmentTrainingQuizResult')(event)) {
+      result.quizResults.push(event);
+    } else if (isEventOfType('EquipmentTrainingQuizSync')) {
+      result.quizSync.push(event);
+    } else {
+      throw new Error('Unexpected event type');
+    }
+  }
+  return {
+    ...result,
+    startTime,
+    endTime,
   };
 };
 
-const localPullGoogleSheetData = (logger: Logger, trainingSheetId: string) => {
-  logger.debug(`Pulling local google sheet '${trainingSheetId}'`);
-  const sheet = gsheetData.TRAINING_SHEETS[trainingSheetId].data;
-  return sheet
-    ? TE.right(sheet)
-    : TE.left({
-        message: 'Sheet not found',
-      });
+const checkQuizSync = (results: EquipmentQuizResultEvents) => {
+  expect(results.quizSync).toHaveLength(1);
+  expect(results.quizSync[0].recordedAt.getTime()).toBeGreaterThanOrEqual(
+    results.startTime.getTime()
+  );
+  expect(results.quizSync[0].recordedAt.getTime()).toBeLessThanOrEqual(
+    results.endTime.getTime()
+  );
 };
 
 describe('Training sheets worker', () => {
   describe('Process results', () => {
-    let framework: TestFramework;
-    beforeEach(async () => {
-      framework = await initTestFramework();
-    });
-
-    describe('Existing area + equipment', () => {
-      const createArea = {
-        id: faker.string.uuid() as UUID,
-        name: faker.company.buzzNoun() as NonEmptyString,
-      };
-      const addEquipment = {
-        id: faker.string.uuid() as UUID,
-        name: faker.company.buzzNoun() as NonEmptyString,
-        areaId: createArea.id,
-      };
-      beforeEach(async () => {
-        await framework.commands.area.create(createArea);
-        await framework.commands.equipment.add(addEquipment);
+    describe('Processes a registered training sheet', () => {
+      it('Equipment with no training sheet', async () => {
+        const result = await pullEquipmentQuizResultsWrapper(O.none);
+        expect(result.quizResults).toHaveLength(0);
+        expect(result.quizSync).toHaveLength(0);
       });
 
-      describe('Processes a registered training sheet', () => {
-        let deps: TrainingSheetWorkerDependencies;
-        it('empty sheet produces no events', async () => {
-          await framework.commands.equipment.trainingSheet({
-            equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.EMPTY.data.spreadsheetId!,
-          });
-
-          deps = dependenciesForTrainingSheetsWorker(framework);
-          await updateTrainingQuizResults(
-            localPullGoogleSheetData,
-            deps,
-            deps.logger,
-            0 as T.Int
-          );
-          expect(deps.commitedEvents).toHaveLength(0);
+      it('empty sheet produces no events, but does indicate a sync', async () => {
+        const result = await pullEquipmentQuizResultsWrapper(
+          O.some(gsheetData.EMPTY.data.spreadsheetId!)
+        );
+        expect(result.quizResults).toHaveLength(0);
+        checkQuizSync(result);
+      });
+      it('metal lathe training sheet', async () => {
+        const results = await pullEquipmentQuizResultsWrapper(
+          O.some(gsheetData.METAL_LATHE.data.spreadsheetId!)
+        );
+        checkQuizSync(results);
+        expect(results.quizResults[0]).toMatchObject<
+          Partial<EventOfType<'EquipmentTrainingQuizResult'>>
+        >({
+          type: 'EquipmentTrainingQuizResult',
+          equipmentId: defaultEquipment().id,
+          trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
+          ...gsheetData.METAL_LATHE.entries[0],
         });
-        it('metal lathe training sheet', async () => {
-          await framework.commands.equipment.trainingSheet({
-            equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
-          });
+      });
+      it('training sheet with a summary page', async () => {
+        const results = await pullEquipmentQuizResultsWrapper(
+          O.some(gsheetData.LASER_CUTTER.data.spreadsheetId!)
+        );
+        checkQuizSync(results);
+        const expected: readonly Partial<
+          EventOfType<'EquipmentTrainingQuizResult'>
+        >[] = gsheetData.LASER_CUTTER.entries.map(e => ({
+          type: 'EquipmentTrainingQuizResult',
+          equipmentId: defaultEquipment().id,
+          trainingSheetId: gsheetData.LASER_CUTTER.data.spreadsheetId!,
+          actor: {
+            tag: 'system',
+          },
+          ...e,
+        }));
+        expect(results.quizResults).toHaveLength(expected.length);
 
-          deps = dependenciesForTrainingSheetsWorker(framework);
-          await updateTrainingQuizResults(
-            localPullGoogleSheetData,
-            deps,
-            deps.logger,
-            0 as T.Int
-          );
-          expect(deps.commitedEvents).toHaveLength(1);
-          const commitedEvent = deps.commitedEvents[0];
-          expect(commitedEvent).toMatchObject<
+        for (const [actualEvent, expectedEvent] of RA.zip(
+          sortQuizResults(results.quizResults),
+          sortQuizResults(expected)
+        )) {
+          expect(actualEvent).toMatchObject<
             Partial<EventOfType<'EquipmentTrainingQuizResult'>>
-          >({
-            type: 'EquipmentTrainingQuizResult',
-            equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
-            ...gsheetData.METAL_LATHE.entries[0],
-          });
-        });
-        it('Handle already registered quiz results', async () => {
-          await framework.commands.equipment.trainingSheet({
-            equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
-          });
-          await framework.commands.equipment.trainingSheetQuizResult({
-            id: faker.string.uuid() as UUID,
-            equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
-            ...gsheetData.METAL_LATHE.entries[0],
-          });
-          deps = dependenciesForTrainingSheetsWorker(framework);
-          await updateTrainingQuizResults(
-            localPullGoogleSheetData,
-            deps,
-            deps.logger,
-            0 as T.Int
-          );
-          expect(deps.commitedEvents).toHaveLength(0);
-        });
-        it('Rate limit prevent double update', async () => {
-          await framework.commands.equipment.trainingSheet({
-            equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.EMPTY.data.spreadsheetId!,
-          });
-          deps = dependenciesForTrainingSheetsWorker(framework);
+          >(expectedEvent);
+        }
+      });
+      it('training sheet with multiple response pages (different quiz questions)', async () => {
+        const results = await pullEquipmentQuizResultsWrapper(
+          O.some(gsheetData.BAMBU.data.spreadsheetId!)
+        );
+        checkQuizSync(results);
+        const expected: readonly Partial<
+          EventOfType<'EquipmentTrainingQuizResult'>
+        >[] = gsheetData.BAMBU.entries.map(e => ({
+          type: 'EquipmentTrainingQuizResult',
+          equipmentId: defaultEquipment().id,
+          trainingSheetId: gsheetData.BAMBU.data.spreadsheetId!,
+          actor: {
+            tag: 'system',
+          },
+          ...e,
+        }));
+        expect(results.quizResults).toHaveLength(expected.length);
 
-          let timesCalled = 0;
-          const callCountWrapper = (
-            logger: Logger,
-            trainingSheetId: string
-          ) => {
-            timesCalled++;
-            return localPullGoogleSheetData(logger, trainingSheetId);
-          };
+        for (const [actualEvent, expectedEvent] of RA.zip(
+          sortQuizResults(results.quizResults),
+          sortQuizResults(expected)
+        )) {
+          expect(actualEvent).toMatchObject<
+            Partial<EventOfType<'EquipmentTrainingQuizResult'>>
+          >(expectedEvent);
+        }
+      });
+      it('Only take new rows, date in future', async () => {
+        const results = await pullEquipmentQuizResultsWrapper(
+          O.some(gsheetData.BAMBU.data.spreadsheetId!),
+          O.some(Date.now() as EpochTimestampMilliseconds)
+        );
+        checkQuizSync(results);
+        expect(results.quizResults).toHaveLength(0);
+      });
+      it('Only take new rows, date in far past', async () => {
+        const results = await pullEquipmentQuizResultsWrapper(
+          O.some(gsheetData.BAMBU.data.spreadsheetId!),
+          O.some(0 as EpochTimestampMilliseconds)
+        );
+        checkQuizSync(results);
+        expect(results.quizResults).toHaveLength(
+          gsheetData.BAMBU.entries.length
+        );
+      });
 
-          await updateTrainingQuizResults(
-            callCountWrapper,
-            deps,
-            deps.logger,
-            0 as T.Int
-          );
+      // The quiz results have dates:
+      // 1700768963 Thursday, November 23, 2023 7:49:23 PM
+      // 1700769348 Thursday, November 23, 2023 7:55:48 PM
+      // 1710249052 Tuesday, March 12, 2024 1:10:52 PM
+      // 1710249842 Tuesday, March 12, 2024 1:24:02 PM
 
-          await updateTrainingQuizResults(
-            callCountWrapper,
-            deps,
-            deps.logger,
-            (60 * 1000) as T.Int // Period won't has elapsed since last call.
-          );
+      it('Only take new rows, exclude 1', async () => {
+        const results = await pullEquipmentQuizResultsWrapper(
+          O.some(gsheetData.BAMBU.data.spreadsheetId!),
+          O.some(1700768963_000 as EpochTimestampMilliseconds)
+        );
+        checkQuizSync(results);
+        expect(results.quizResults).toHaveLength(3);
+      });
 
-          expect(timesCalled).toEqual(1);
-        });
-        it('training sheet with a summary page', async () => {
-          await framework.commands.equipment.trainingSheet({
-            equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.LASER_CUTTER.data.spreadsheetId!,
-          });
+      it('Only take new rows, exclude 2', async () => {
+        const results = await pullEquipmentQuizResultsWrapper(
+          O.some(gsheetData.BAMBU.data.spreadsheetId!),
+          O.some(1700769348_000 as EpochTimestampMilliseconds)
+        );
+        checkQuizSync(results);
+        expect(results.quizResults).toHaveLength(2);
+      });
 
-          deps = dependenciesForTrainingSheetsWorker(framework);
-          await updateTrainingQuizResults(
-            localPullGoogleSheetData,
-            deps,
-            deps.logger,
-            0 as T.Int
-          );
-          const expected: readonly Partial<
-            EventOfType<'EquipmentTrainingQuizResult'>
-          >[] = gsheetData.LASER_CUTTER.entries.map(e => ({
-            type: 'EquipmentTrainingQuizResult',
-            equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.LASER_CUTTER.data.spreadsheetId!,
-            actor: {
-              tag: 'system',
-            },
-            ...e,
-          }));
-          expect(deps.commitedEvents).toHaveLength(expected.length);
+      it('Only take new rows, exclude 3', async () => {
+        const results = await pullEquipmentQuizResultsWrapper(
+          O.some(gsheetData.BAMBU.data.spreadsheetId!),
+          O.some(1710249052_000 as EpochTimestampMilliseconds)
+        );
+        checkQuizSync(results);
+        expect(results.quizResults).toHaveLength(1);
+      });
 
-          for (const [actualEvent, expectedEvent] of RA.zip(
-            sortQuizResults(deps.commitedEvents),
-            sortQuizResults(expected)
-          )) {
-            expect(actualEvent).toMatchObject<
-              Partial<EventOfType<'EquipmentTrainingQuizResult'>>
-            >(expectedEvent);
-          }
-        });
-        it('training sheet with multiple response pages (different quiz questions)', async () => {
-          await framework.commands.equipment.trainingSheet({
-            equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.BAMBU.data.spreadsheetId!,
-          });
-
-          deps = dependenciesForTrainingSheetsWorker(framework);
-          await updateTrainingQuizResults(
-            localPullGoogleSheetData,
-            deps,
-            deps.logger,
-            0 as T.Int
-          );
-
-          const expected: readonly Partial<
-            EventOfType<'EquipmentTrainingQuizResult'>
-          >[] = gsheetData.BAMBU.entries.map(e => ({
-            type: 'EquipmentTrainingQuizResult',
-            equipmentId: addEquipment.id,
-            trainingSheetId: gsheetData.BAMBU.data.spreadsheetId!,
-            actor: {
-              tag: 'system',
-            },
-            ...e,
-          }));
-          expect(deps.commitedEvents).toHaveLength(expected.length);
-
-          for (const [actualEvent, expectedEvent] of RA.zip(
-            sortQuizResults(deps.commitedEvents),
-            sortQuizResults(expected)
-          )) {
-            expect(actualEvent).toMatchObject<
-              Partial<EventOfType<'EquipmentTrainingQuizResult'>>
-            >(expectedEvent);
-          }
-        });
+      it('Only take new rows, exclude all (already have latest)', async () => {
+        const results = await pullEquipmentQuizResultsWrapper(
+          O.some(gsheetData.BAMBU.data.spreadsheetId!),
+          O.some(1710249842_000 as EpochTimestampMilliseconds)
+        );
+        checkQuizSync(results);
+        expect(results.quizResults).toHaveLength(0);
       });
     });
   });
