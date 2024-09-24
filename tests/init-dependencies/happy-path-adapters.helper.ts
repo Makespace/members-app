@@ -1,5 +1,6 @@
 import {Dependencies} from '../../src/dependencies';
 import * as TE from 'fp-ts/TaskEither';
+import * as O from 'fp-ts/Option';
 import pino, {Logger} from 'pino';
 import {StatusCodes} from 'http-status-codes';
 import {faker} from '@faker-js/faker';
@@ -19,7 +20,7 @@ export const happyPathAdapters: Dependencies = {
       level: 'fatal',
       timestamp: pino.stdTimeFunctions.isoTime,
     }),
-    localPullGoogleSheetData,
+    O.some(localPullGoogleSheetData),
     120_000
   ),
   logger: (() => undefined) as never as Logger,
