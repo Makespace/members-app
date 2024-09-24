@@ -18,7 +18,7 @@ import {EventName, EventOfType} from '../../src/types/domain-event';
 import {Dependencies} from '../../src/dependencies';
 import {applyToResource} from '../../src/commands/apply-command-to-resource';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
-import {localPullGoogleSheetData} from '../init-dependencies/pull-local-google';
+import {localGoogleHelpers} from '../init-dependencies/pull-local-google';
 
 type ToFrameworkCommands<T> = {
   [K in keyof T]: {
@@ -57,7 +57,7 @@ export const initTestFramework = async (
   const sharedReadModel = initSharedReadModel(
     dbClient,
     logger,
-    O.some(localPullGoogleSheetData),
+    O.some(localGoogleHelpers),
     googleRateLimitMs
   );
   const frameworkCommitEvent = commitEvent(

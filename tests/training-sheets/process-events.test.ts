@@ -6,11 +6,11 @@ import * as N from 'fp-ts/number';
 import * as O from 'fp-ts/Option';
 import * as gsheetData from '../data/google_sheet_data';
 import {pullNewEquipmentQuizResults} from '../../src/read-models/shared-state/async-apply-external-event-sources';
-import {localPullGoogleSheetData} from '../init-dependencies/pull-local-google';
 import {
   EpochTimestampMilliseconds,
   Equipment,
 } from '../../src/read-models/shared-state/return-types';
+import {localGoogleHelpers} from '../init-dependencies/pull-local-google';
 
 const sortQuizResults = RA.sort({
   compare: (a, b) =>
@@ -31,7 +31,7 @@ const pullNewEquipmentQuizResultsLocal = async (equipment: Equipment) =>
       level: 'fatal',
       timestamp: pino.stdTimeFunctions.isoTime,
     }),
-    localPullGoogleSheetData,
+    localGoogleHelpers,
     equipment
   )();
 

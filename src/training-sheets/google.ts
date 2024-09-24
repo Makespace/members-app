@@ -9,6 +9,7 @@ import {UUID} from 'io-ts-types';
 import {DateTime} from 'luxon';
 import {sheets_v4} from '@googleapis/sheets';
 import {EpochTimestampMilliseconds} from '../read-models/shared-state/return-types';
+import {GoogleSheetMetadataInital} from './extract-metadata';
 
 // Bounds to prevent clearly broken parsing.
 const MIN_RECOGNISED_MEMBER_NUMBER = 0;
@@ -20,15 +21,6 @@ const MAX_VALID_TIMESTAMP_EPOCH_MS =
   4102444800_000 as EpochTimestampMilliseconds; // Year 2100
 
 const FORM_RESPONSES_SHEET_REGEX = /^Form Responses [0-9]*/i;
-
-const extractRowFormattedValues = (
-  row: sheets_v4.Schema$RowData
-): O.Option<string[]> => {
-  if (row.values) {
-    return O.some(row.values.map(cd => cd.formattedValue ?? ''));
-  }
-  return O.none;
-};
 
 const extractScore = (
   rowValue: string | undefined | null
@@ -130,47 +122,6 @@ const extractTimestamp = (
   }
 };
 
-const EMAIL_COLUMN_NAMES = ['email address', 'email'];
-
-type SheetInfo = {
-  columnIndexes: {
-    timestamp: O.Option<number>;
-    email: O.Option<number>;
-    score: O.Option<number>;
-    memberNumber: O.Option<number>;
-  };
-  columnNames: string[];
-};
-
-const extractQuizSheetInformation =
-  (logger: Logger) =>
-  (firstRow: sheets_v4.Schema$RowData): O.Option<SheetInfo> => {
-    const columnNames = extractRowFormattedValues(firstRow);
-    if (O.isNone(columnNames)) {
-      logger.debug('Failed to find column names');
-      return O.none;
-    }
-    logger.trace('Found column names for sheet %o', columnNames.value);
-
-    return O.some({
-      columnIndexes: {
-        timestamp: RA.findIndex<string>(
-          val => val.toLowerCase() === 'timestamp'
-        )(columnNames.value),
-        email: RA.findIndex<string>(val =>
-          EMAIL_COLUMN_NAMES.includes(val.toLowerCase())
-        )(columnNames.value),
-        score: RA.findIndex<string>(val => val.toLowerCase() === 'score')(
-          columnNames.value
-        ),
-        memberNumber: RA.findIndex<string>(
-          val => val.toLowerCase() === 'membership number'
-        )(columnNames.value),
-      },
-      columnNames: columnNames.value,
-    });
-  };
-
 const extractFromRow =
   (
     logger: Logger,
@@ -259,11 +210,6 @@ export const extractGoogleSheetData =
             logger.warn('Skipping sheet due to missing title');
             return [];
           }
-          if (!FORM_RESPONSES_SHEET_REGEX.test(title)) {
-            logger.warn(
-              `Skipping sheet '${title}' as title doesn't match expected for form responses`
-            );
-          }
 
           if (
             !sheet.data ||
@@ -317,3 +263,7 @@ export const extractGoogleSheetData =
             )
           );
         });
+
+export const shouldPullFromSheet = (
+  sheet: GoogleSheetMetadataInital
+): boolean => FORM_RESPONSES_SHEET_REGEX.test(sheet.name);

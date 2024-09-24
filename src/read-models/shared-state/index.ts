@@ -10,11 +10,9 @@ import {Client} from '@libsql/client/.';
 import {asyncRefresh} from './async-refresh';
 import {updateState} from './update-state';
 import {Logger} from 'pino';
-import {
-  asyncApplyExternalEventSources,
-  PullSheetData,
-} from './async-apply-external-event-sources';
+import {asyncApplyExternalEventSources} from './async-apply-external-event-sources';
 import {UUID} from 'io-ts-types';
+import {GoogleHelpers} from '../../init-dependencies/google/pull_sheet_data';
 
 export {replayState} from './deprecated-replay';
 
@@ -35,7 +33,7 @@ export type SharedReadModel = {
 export const initSharedReadModel = (
   eventStoreClient: Client,
   logger: Logger,
-  pullGoogleSheetData: O.Option<PullSheetData>,
+  googleHelpers: O.Option<GoogleHelpers>,
   googleRateLimitMs: number
 ): SharedReadModel => {
   const readModelDb = drizzle(new Database());
@@ -48,7 +46,7 @@ export const initSharedReadModel = (
     asyncApplyExternalEventSources: asyncApplyExternalEventSources(
       logger,
       readModelDb,
-      pullGoogleSheetData,
+      googleHelpers,
       updateState_,
       googleRateLimitMs
     ),
