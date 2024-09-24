@@ -32,12 +32,16 @@ export const getAllEvents =
           StatusCodes.INTERNAL_SERVER_ERROR
         )
       ),
-      TE.chainEitherK(
-        flow(
+      TE.chainEitherK(raw => {
+        console.log('Decoding events table');
+        const result = flow(
           EventsTable.decode,
           E.mapLeft(internalCodecFailure('Failed to decode DB table'))
-        )
-      ),
+        )(raw);
+        console.log('Decoded result');
+        console.log(result);
+        return result;
+      }),
       TE.map(table => table.rows),
       TE.chainEitherK(eventsFromRows)
     );
