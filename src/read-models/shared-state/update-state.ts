@@ -128,7 +128,6 @@ export const updateState =
             score: event.score,
             maxScore: event.maxScore,
             timestamp: new Date(event.timestampEpochMS),
-            quizAnswers: event.quizAnswers,
           })
           .run();
         break;

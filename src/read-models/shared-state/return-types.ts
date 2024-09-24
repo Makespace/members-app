@@ -19,7 +19,6 @@ type FailedQuizAttempt = MemberCoreInfo & {
   maxScore: number;
   percentage: number;
   timestamp: Date;
-  quizAnswers: unknown;
 };
 
 type TrainedMember = MemberCoreInfo & {
