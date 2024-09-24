@@ -135,7 +135,6 @@ export const trainingQuizTable = sqliteTable('trainingQuizResults', {
   score: integer('score').notNull(),
   maxScore: integer('maxScore').notNull(),
   timestamp: integer('timestamp', {mode: 'timestamp'}).notNull(),
-  quizAnswers: text('quizAnswers', {mode: 'json'}).notNull(),
 });
 
 const createTrainingQuizTable = sql`
@@ -147,8 +146,7 @@ const createTrainingQuizTable = sql`
     emailProvided TEXT,
     score INTEGER,
     maxScore INTEGER,
-    timestamp INTEGER,
-    quizAnswers TEXT
+    timestamp INTEGER
   )
 `;
 

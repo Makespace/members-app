@@ -73,7 +73,6 @@ export const DomainEvent = t.union([
     maxScore: t.number,
     percentage: t.number,
     timestampEpochMS: t.number, // Unix Epoch January 1st 1970.
-    quizAnswers: t.record(t.string, t.string),
   }),
   eventCodec('EquipmentTrainingQuizSync', {
     equipmentId: tt.UUID,

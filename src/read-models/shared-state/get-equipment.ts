@@ -138,7 +138,6 @@ export const getEquipment =
             (q.trainingQuizResults.score / q.trainingQuizResults.maxScore) * 100
           ),
           timestamp: q.trainingQuizResults.timestamp,
-          quizAnswers: q.trainingQuizResults.quizAnswers,
         }))
       );
 

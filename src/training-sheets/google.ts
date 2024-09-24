@@ -226,15 +226,6 @@ const extractFromRow =
       logger.trace('Skipped quiz row: %o', row.values);
       return O.none;
     }
-
-    const quizAnswers = RA.zip(sheetInfo.columnNames, row.values).reduce(
-      (accum, [columnName, columnValue]) => {
-        accum[columnName] = columnValue?.formattedValue ?? '';
-        return accum;
-      },
-      {} as Record<string, string>
-    );
-
     return O.some(
       constructEvent('EquipmentTrainingQuizResult')({
         id: v4() as UUID,
@@ -246,7 +237,6 @@ const extractFromRow =
         trainingSheetId,
         timestampEpochMS: timestampEpochMS.value,
         ...score.value,
-        quizAnswers: quizAnswers,
       })
     );
   };

@@ -109,7 +109,6 @@ describe('Integration asyncApplyExternalEventSources', () => {
       maxScore: gsheetData.METAL_LATHE.entries[0].maxScore,
       percentage: gsheetData.METAL_LATHE.entries[0].percentage,
       timestamp: new Date(gsheetData.METAL_LATHE.entries[0].timestampEpochMS),
-      quizAnswers: gsheetData.METAL_LATHE.entries[0].quizAnswers,
     });
   });
   // it('Handle no equipment', async () => {
