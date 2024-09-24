@@ -41,7 +41,10 @@ export const pullNewEquipmentQuizResults = (
   }
   const trainingSheetId = equipment.trainingSheetId.value;
   logger = logger.child({trainingSheetId});
-  logger.info('Scanning training sheet. Pulling google sheet data...');
+  logger.info(
+    'Scanning training sheet. Pulling google sheet data from %s...',
+    equipment.lastQuizResult
+  );
   return pipe(
     pullGoogleSheetData(logger, trainingSheetId),
     TE.map(
@@ -110,6 +113,10 @@ export const asyncApplyExternalEventSources = (
             equipment
           )(),
           RA.map(updateState)
+        );
+        logger.info(
+          'Finished pulling events from google training sheet for %s',
+          equipment.name
         );
       }
     }
