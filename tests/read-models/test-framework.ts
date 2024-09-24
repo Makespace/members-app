@@ -1,5 +1,6 @@
 import createLogger from 'pino';
 import * as T from 'fp-ts/Task';
+import * as O from 'fp-ts/Option';
 import {
   getAllEvents,
   getAllEventsByType,
@@ -56,7 +57,7 @@ export const initTestFramework = async (
   const sharedReadModel = initSharedReadModel(
     dbClient,
     logger,
-    localPullGoogleSheetData,
+    O.some(localPullGoogleSheetData),
     googleRateLimitMs
   );
   const frameworkCommitEvent = commitEvent(
