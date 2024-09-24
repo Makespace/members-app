@@ -18,30 +18,22 @@ export const getAllEvents =
   () =>
     pipe(
       TE.tryCatch(
-        () => {
-          console.log('Getting all events...');
-          const result = dbClient.execute({
+        () =>
+          dbClient.execute({
             sql: "SELECT * FROM events WHERE event_type != 'EquipmentTrainingQuizResult'",
             args: {},
-          });
-          console.log('Got all events');
-          return result;
-        },
+          }),
         failureWithStatus(
           'Failed to query database',
           StatusCodes.INTERNAL_SERVER_ERROR
         )
       ),
-      TE.chainEitherK(raw => {
-        console.log('Decoding events table');
-        const result = flow(
+      TE.chainEitherK(
+        flow(
           EventsTable.decode,
           E.mapLeft(internalCodecFailure('Failed to decode DB table'))
-        )(raw);
-        console.log('Decoded result');
-        console.log(result);
-        return result;
-      }),
+        )
+      ),
       TE.map(table => table.rows),
       TE.chainEitherK(eventsFromRows)
     );
