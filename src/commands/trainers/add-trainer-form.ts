@@ -1,23 +1,23 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
+import * as O from 'fp-ts/Option';
 import {pageTemplate} from '../../templates';
 import {html, joinHtml, safe, sanitizeString} from '../../types/html';
-import {DomainEvent, User} from '../../types';
+import {User} from '../../types';
 import {Form} from '../../types/form';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
-import {readModels} from '../../read-models';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {renderMemberNumber} from '../../templates/member-number';
 import {UUID} from 'io-ts-types';
+import {Equipment} from '../../read-models/shared-state/return-types';
 
 type ViewModel = {
   user: User;
   members: ReadonlyArray<User>;
-  equipmentId: UUID;
-  equipmentName: string;
+  equipment: Equipment;
 };
 
 const renderForm = (viewModel: ViewModel) =>
@@ -38,7 +38,7 @@ const renderForm = (viewModel: ViewModel) =>
               <input
                 type="hidden"
                 name="equipmentId"
-                value="${viewModel.equipmentId}"
+                value="${viewModel.equipment.id}"
               />
               <button type="submit">Add</button>
             </form>
@@ -74,30 +74,23 @@ const getEquipmentId = (input: unknown) =>
     E.map(({equipment}) => equipment)
   );
 
-const getEquipmentName = (
-  events: ReadonlyArray<DomainEvent>,
-  equipmentId: string
-) =>
-  pipe(
-    equipmentId,
-    readModels.equipment.get(events),
-    E.fromOption(() =>
-      failureWithStatus('No such equipment', StatusCodes.NOT_FOUND)()
-    ),
-    E.map(equipment => equipment.name)
-  );
-
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({user, events}) =>
+  ({user, readModel}) =>
     pipe(
       E.Do,
       E.bind('equipmentId', () => getEquipmentId(input)),
-      E.bind('equipmentName', ({equipmentId}) =>
-        getEquipmentName(events, equipmentId)
-      ),
+      E.bind('equipment', ({equipmentId}) => {
+        const equipment = readModel.equipment.get(equipmentId);
+        if (O.isNone(equipment)) {
+          return E.left(
+            failureWithStatus('Unknown equipment', StatusCodes.NOT_FOUND)()
+          );
+        }
+        return E.right(equipment.value);
+      }),
       E.bind('user', () => E.right(user)),
-      E.bind('members', () => E.right(readModels.members.getAll(events)))
+      E.bind('members', () => E.right(readModel.members.getAll()))
     );
 
 export const addTrainerForm: Form<ViewModel> = {

@@ -1,11 +1,11 @@
 import {areas} from './areas';
-import {equipment} from './equipment';
 import {members} from './members';
+import {equipment} from './equipment';
 import {superUsers} from './super-users';
 
 export const readModels = {
   areas,
-  equipment,
   members,
   superUsers,
+  equipment,
 };

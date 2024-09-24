@@ -7,7 +7,7 @@ import {EventName, isEventOfType} from '../../types/domain-event';
 import {Eq as stringEq} from 'fp-ts/string';
 import {UUID} from 'io-ts-types';
 
-export type Equipment = {
+type Equipment = {
   name: string;
   id: UUID;
   trainers: ReadonlyArray<number>;

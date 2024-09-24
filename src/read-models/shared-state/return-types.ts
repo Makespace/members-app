@@ -1,15 +1,55 @@
 import * as O from 'fp-ts/Option';
 import {EmailAddress, GravatarHash} from '../../types';
+import {UUID} from 'io-ts-types';
+
+type OrphanedPassedQuiz = {
+  id: UUID;
+  score: number;
+  maxScore: number;
+  percentage: number;
+  timestamp: Date;
+
+  memberNumberProvided: O.Option<number>;
+  emailProvided: O.Option<string>;
+};
+
+type FailedQuizAttempt = MemberCoreInfo & {
+  quizId: UUID;
+  score: number;
+  maxScore: number;
+  percentage: number;
+  timestamp: Date;
+  quizAnswers: unknown;
+};
+
+type TrainedMember = MemberCoreInfo & {
+  trainedBy: number | null;
+  trainedAt: Date;
+};
+
+export type EpochTimestampMilliseconds = number & {
+  readonly EpochTimestampMilliseconds: unique symbol;
+};
 
 export type Equipment = {
-  id: string;
+  id: UUID;
   name: string;
   trainers: ReadonlyArray<MemberCoreInfo>;
-  trainedMembers: ReadonlyArray<MemberCoreInfo>;
+  trainedMembers: ReadonlyArray<TrainedMember>;
   area: {
     id: string;
     name: string;
   };
+  membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>;
+  orphanedPassedQuizes: ReadonlyArray<OrphanedPassedQuiz>;
+  failedQuizAttempts: ReadonlyArray<FailedQuizAttempt>;
+  trainingSheetId: O.Option<string>;
+
+  // Uses the actual spreadsheet timestamp rather than our local timestamp which could be
+  // different due to clock drift or eventual consistency issues on the google side.
+  lastQuizResult: O.Option<EpochTimestampMilliseconds>;
+  // Uses local timestamp.
+  lastQuizSync: O.Option<EpochTimestampMilliseconds>;
 };
 
 type TrainedOn = {
@@ -33,6 +73,12 @@ type MemberCoreInfo = {
   agreementSigned: O.Option<Date>;
   isSuperUser: boolean;
   gravatarHash: GravatarHash;
+};
+
+export type MemberAwaitingTraining = MemberCoreInfo & {
+  quizId: UUID;
+  memberNumber: number;
+  waitingSince: Date;
 };
 
 export type Member = MemberCoreInfo & {

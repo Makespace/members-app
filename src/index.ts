@@ -18,7 +18,6 @@ import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
 import cookieSession from 'cookie-session';
 import {initRoutes} from './routes';
-import * as O from 'fp-ts/Option';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -54,17 +53,6 @@ startMagicLinkEmailPubSub(deps, conf);
 const server = http.createServer(app);
 createTerminus(server);
 
-const backgroundTask = setInterval(() => {
-  if (O.isNone(deps.updateTrainingQuizResults)) {
-    deps.logger.info('Background task skipped as disabled');
-    return;
-  }
-  deps.logger.info('Background task running...');
-  deps.updateTrainingQuizResults
-    .value()
-    .then(() => deps.logger.info('Background update of quiz results finished'))
-    .catch(err => deps.logger.error(err, 'Background update unexpected error'));
-}, conf.BACKGROUND_PROCESSING_RUN_INTERVAL_MS);
 const periodicReadModelRefresh = setInterval(() => {
   deps.sharedReadModel
     .asyncRefresh()()
@@ -73,9 +61,22 @@ const periodicReadModelRefresh = setInterval(() => {
       deps.logger.error(err, 'Unexpected error when refreshing read model')
     );
 }, 5000);
+const periodicExternalReadModelRefresh = setInterval(() => {
+  deps.sharedReadModel
+    .asyncApplyExternalEventSources()()
+    .then(() =>
+      deps.logger.info('Refreshed read model with external event sources')
+    )
+    .catch(err =>
+      deps.logger.error(
+        err,
+        'Unexpected error when refreshing read model with external sources'
+      )
+    );
+}, 60_000);
 server.on('close', () => {
-  clearInterval(backgroundTask);
   clearInterval(periodicReadModelRefresh);
+  clearInterval(periodicExternalReadModelRefresh);
 });
 
 // Readmodels are used to get the current status of the background tasks via the
@@ -91,6 +92,7 @@ void (async () => {
   )();
 
   await deps.sharedReadModel.asyncRefresh()();
+  await deps.sharedReadModel.asyncApplyExternalEventSources()();
 
   server.listen(conf.PORT, () => {
     deps.logger.info({port: conf.PORT}, 'Server listening');

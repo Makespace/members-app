@@ -41,13 +41,17 @@ export const equipmentTable = sqliteTable('equipment', {
   areaId: text('areaId')
     .notNull()
     .references(() => areasTable.id),
+  trainingSheetId: text('trainingSheetId'),
+  lastQuizSync: integer('lastQuizSync'),
 });
 
 const createEquipmentTable = sql`
   CREATE TABLE IF NOT EXISTS equipment (
   id TEXT,
   name TEXT,
-  areaId TEXT
+  areaId TEXT,
+  trainingSheetId TEXT,
+  lastQuizSync INTEGER
   );
 `;
 
@@ -75,13 +79,15 @@ export const trainedMemberstable = sqliteTable('trainedMembers', {
     .notNull()
     .references(() => equipmentTable.id),
   trainedAt: integer('trainedAt', {mode: 'timestamp'}).notNull(),
+  trainedBy: integer('trainedBy').references(() => membersTable.memberNumber),
 });
 
 const createTrainedMembersTable = sql`
   CREATE TABLE IF NOT EXISTS trainedMembers (
     memberNumber INTEGER,
     equipmentID TEXT,
-    trainedAt INTEGER
+    trainedAt INTEGER,
+    trainedBy INTEGER
   )
 `;
 
@@ -117,6 +123,35 @@ const createOwnersTable = sql`
   )
 `;
 
+export const trainingQuizTable = sqliteTable('trainingQuizResults', {
+  quizId: text('quizId').notNull().primaryKey(),
+  equipmentId: text('equipmentId')
+    .notNull()
+    .references(() => equipmentTable.id),
+  sheetId: text('sheetId').notNull(),
+  // Member number might not be linked to a member if it is entered incorrectly.
+  memberNumberProvided: integer('memberNumberProvided'),
+  emailProvided: text('emailProvided'),
+  score: integer('score').notNull(),
+  maxScore: integer('maxScore').notNull(),
+  timestamp: integer('timestamp', {mode: 'timestamp'}).notNull(),
+  quizAnswers: text('quizAnswers', {mode: 'json'}).notNull(),
+});
+
+const createTrainingQuizTable = sql`
+  CREATE TABLE IF NOT EXISTS trainingQuizResults (
+    quizId TEXT,
+    equipmentId TEXT,
+    sheetId TEXT,
+    memberNumberProvided INTEGER,
+    emailProvided TEXT,
+    score INTEGER,
+    maxScore INTEGER,
+    timestamp INTEGER,
+    quizAnswers TEXT
+  )
+`;
+
 export const createTables = [
   createMembersTable,
   createEquipmentTable,
@@ -124,6 +159,7 @@ export const createTables = [
   createTrainedMembersTable,
   createAreasTable,
   createOwnersTable,
+  createTrainingQuizTable,
 ];
 
 type Member = {
