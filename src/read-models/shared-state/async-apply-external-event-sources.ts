@@ -1,7 +1,5 @@
 import {Logger} from 'pino';
-import * as T from 'fp-ts/Task';
 import * as E from 'fp-ts/Either';
-import * as TE from 'fp-ts/TaskEither';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {DomainEvent} from '../../types';
@@ -9,17 +7,73 @@ import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {getAllEquipment} from './get-equipment';
 import {pipe} from 'fp-ts/lib/function';
 import {EpochTimestampMilliseconds, Equipment} from './return-types';
-import {extractGoogleSheetData, shouldPullFromSheet} from '../../training-sheets/google';
-import {constructEvent, EventOfType} from '../../types/domain-event';
+import {
+  extractGoogleSheetData,
+  shouldPullFromSheet,
+} from '../../training-sheets/google';
+import {constructEvent} from '../../types/domain-event';
 import {GoogleHelpers} from '../../init-dependencies/google/pull_sheet_data';
-import { extractGoogleSheetMetadata, extractInitialGoogleSheetMetadata, GoogleSheetMetadata, GoogleSheetsMetadataInital } from '../../training-sheets/extract-metadata';
+import {
+  extractGoogleSheetMetadata,
+  extractInitialGoogleSheetMetadata,
+  GoogleSheetMetadata,
+} from '../../training-sheets/extract-metadata';
+import {getChunkIndexes} from '../../util';
 
-export const pullNewEquipmentQuizResults = (
+const ROW_BATCH_SIZE = 500;
+
+export const pullNewEquipmentQuizResultsForSheet = async (
   logger: Logger,
   googleHelpers: GoogleHelpers,
   equipment: Equipment,
-  updateState: (event: DomainEvent) => void,
-): T.Task<void> => {
+  trainingSheetId: string,
+  sheet: GoogleSheetMetadata,
+  updateState: (event: DomainEvent) => void
+) => {
+  logger.info('Processing sheet %s', sheet.name);
+  for (const [rowStart, rowEnd] of getChunkIndexes(
+    2,
+    sheet.rowCount,
+    ROW_BATCH_SIZE
+  )) {
+    logger.debug(
+      'Pulling data for sheet %s rows %s to %s',
+      sheet.name,
+      rowStart,
+      rowEnd
+    );
+    const data = await googleHelpers.pullGoogleSheetData(
+      logger,
+      trainingSheetId,
+      sheet.name,
+      rowStart,
+      rowEnd
+    )();
+    if (E.isLeft(data)) {
+      logger.debug(
+        'Failed to pull data for sheet %s rows %s to %s, skipping rest of sheet'
+      );
+      return;
+    }
+    pipe(
+      data.right,
+      extractGoogleSheetData(
+        logger,
+        trainingSheetId,
+        equipment.id,
+        equipment.lastQuizResult
+      ),
+      RA.map(updateState)
+    );
+  }
+};
+
+export const pullNewEquipmentQuizResults = async (
+  logger: Logger,
+  googleHelpers: GoogleHelpers,
+  equipment: Equipment,
+  updateState: (event: DomainEvent) => void
+): Promise<void> => {
   // TODO - Refactor this into fp-ts style.
   if (O.isNone(equipment.trainingSheetId)) {
     logger.warn(
@@ -27,7 +81,7 @@ export const pullNewEquipmentQuizResults = (
       equipment.name
     );
     // eslint-disable-next-line @typescript-eslint/require-await
-    return async () => {};
+    return;
   }
   const trainingSheetId = equipment.trainingSheetId.value;
   logger = logger.child({trainingSheetId});
@@ -36,25 +90,31 @@ export const pullNewEquipmentQuizResults = (
     equipment.lastQuizResult
   );
 
-  const initialRaw = await googleHelpers.pullGoogleSheetDataMetadata(logger, trainingSheetId)();
+  const initialRaw = await googleHelpers.pullGoogleSheetDataMetadata(
+    logger,
+    trainingSheetId
+  )();
   if (E.isLeft(initialRaw)) {
     logger.warn(initialRaw.left);
-    return async() => {};
+    return;
   }
 
   const initialMeta = extractInitialGoogleSheetMetadata(initialRaw.right);
 
   if (E.isLeft(initialMeta)) {
-    logger.warn('Failed to get google sheet metadata for training sheet %s, skipping', trainingSheetId);
+    logger.warn(
+      'Failed to get google sheet metadata for training sheet %s, skipping',
+      trainingSheetId
+    );
     logger.warn(initialMeta.left);
-    return async () => {};
+    return;
   }
 
   const sheets: GoogleSheetMetadata[] = [];
   for (const sheet of initialMeta.right.sheets) {
     if (!shouldPullFromSheet(sheet)) {
       logger.warn(
-        `Skipping sheet as doesn't match expected for form responses`
+        "Skipping sheet as doesn't match expected for form responses"
       );
       continue;
     }
@@ -64,10 +124,13 @@ export const pullNewEquipmentQuizResults = (
       trainingSheetId,
       sheet.name,
       1,
-      1,
+      1
     )();
     if (E.isLeft(firstRowData)) {
-      logger.warn('Failed to get google sheet first row data for sheet %s, skipping', sheet.name);
+      logger.warn(
+        'Failed to get google sheet first row data for sheet %s, skipping',
+        sheet.name
+      );
       continue;
     }
 
@@ -80,45 +143,20 @@ export const pullNewEquipmentQuizResults = (
     sheets.push(meta.value);
   }
 
-  
+  for (const sheet of sheets) {
+    await pullNewEquipmentQuizResultsForSheet(
+      logger,
+      googleHelpers,
+      equipment,
+      trainingSheetId,
+      sheet,
+      updateState
+    );
+  }
 
-  
-  
-  
-  return pipe(
-    ,
-    ,
-  )
-    TE.map(
-      extractGoogleSheetData(
-        logger,
-        trainingSheetId,
-        equipment.id,
-        equipment.lastQuizResult
-      )
-    ),
-    TE.map(RA.flatten),
-    TE.map(
-      RA.append<
-        | EventOfType<'EquipmentTrainingQuizResult'>
-        | EventOfType<'EquipmentTrainingQuizSync'>
-      >(
-        constructEvent('EquipmentTrainingQuizSync')({
-          equipmentId: equipment.id,
-        })
-      )
-    ),
-    // eslint-disable-next-line @typescript-eslint/require-await
-    TE.getOrElse(err => async () => {
-      logger.error(
-        'Failed to receive data from google sheets for equipment %s: %s',
-        equipment.name,
-        err.message
-      );
-      return [] as ReadonlyArray<
-        | EventOfType<'EquipmentTrainingQuizResult'>
-        | EventOfType<'EquipmentTrainingQuizSync'>
-      >;
+  updateState(
+    constructEvent('EquipmentTrainingQuizSync')({
+      equipmentId: equipment.id,
     })
   );
 };
@@ -154,10 +192,10 @@ export const asyncApplyExternalEventSources = (
           equipment,
           updateState
         )(),
-        logger.info(
-          'Finished pulling events from google training sheet for %s',
-          equipment.name
-        );
+          logger.info(
+            'Finished pulling events from google training sheet for %s',
+            equipment.name
+          );
       }
     }
     logger.info('Finished applying external event sources');

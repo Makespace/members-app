@@ -201,7 +201,7 @@ export const extractGoogleSheetData =
   ) =>
   (
     spreadsheet: sheets_v4.Schema$Spreadsheet
-  ): ReadonlyArray<ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>>> =>
+  ): ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>> =>
     !spreadsheet.sheets || spreadsheet.sheets.length < 1
       ? []
       : spreadsheet.sheets.map(sheet => {
