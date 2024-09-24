@@ -18,7 +18,15 @@ export const getAllEvents =
   () =>
     pipe(
       TE.tryCatch(
-        () => dbClient.execute({sql: 'SELECT * FROM events;', args: {}}),
+        () => {
+          console.log('Getting all events...');
+          const result = dbClient.execute({
+            sql: 'SELECT * FROM events;',
+            args: {},
+          });
+          console.log('Got all events');
+          return result;
+        },
         failureWithStatus(
           'Failed to query database',
           StatusCodes.INTERNAL_SERVER_ERROR
