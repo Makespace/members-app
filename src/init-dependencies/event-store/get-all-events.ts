@@ -21,7 +21,7 @@ export const getAllEvents =
         () => {
           console.log('Getting all events...');
           const result = dbClient.execute({
-            sql: 'SELECT * FROM events;',
+            sql: "SELECT * FROM events WHERE event_type != 'EquipmentTrainingQuizResult'",
             args: {},
           });
           console.log('Got all events');
