@@ -21,6 +21,15 @@ export const eventsFromRows = (rows: EventsTable['rows']) =>
   pipe(
     rows,
     E.traverseArray(reshapeRowToEvent),
+    E.chain(a => {
+      for (const x of a) {
+        if (E.isLeft(DomainEvent.decode(x))) {
+          console.log('Failed to decode');
+          console.log(x);
+        }
+      }
+      return E.right(a);
+    }),
     E.chain(t.readonlyArray(DomainEvent).decode),
     E.mapLeft(internalCodecFailure('Failed to get events from DB'))
   );
