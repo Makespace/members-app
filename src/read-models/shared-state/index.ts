@@ -35,7 +35,7 @@ export type SharedReadModel = {
 export const initSharedReadModel = (
   eventStoreClient: Client,
   logger: Logger,
-  pullGoogleSheetData: PullSheetData,
+  pullGoogleSheetData: O.Option<PullSheetData>,
   googleRateLimitMs: number
 ): SharedReadModel => {
   const readModelDb = drizzle(new Database());

@@ -2,6 +2,7 @@ import {Config} from '../configuration';
 import {Dependencies} from '../dependencies';
 import {createRateLimiter} from './rate-limit-sending-of-emails';
 import {sendEmail} from './send-email';
+import * as O from 'fp-ts/Option';
 import createLogger, {LoggerOptions} from 'pino';
 import nodemailer from 'nodemailer';
 import smtp from 'nodemailer-smtp-transport';
@@ -56,17 +57,24 @@ export const initDependencies = (
     })
   );
 
-  const googleAuth = new GoogleAuth({
-    // Google issues the credentials file and validates it.
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    credentials: JSON.parse(conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON),
-    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-  });
+  const googleAuth =
+    conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON.toLowerCase().trim() === 'disabled'
+      ? O.none
+      : O.some(
+          pullGoogleSheetData(
+            new GoogleAuth({
+              // Google issues the credentials file and validates it.
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              credentials: JSON.parse(conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON),
+              scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+            })
+          )
+        );
 
   const sharedReadModel = initSharedReadModel(
     dbClient,
     logger,
-    pullGoogleSheetData(googleAuth),
+    googleAuth,
     conf.GOOGLE_RATELIMIT_MS
   );
 

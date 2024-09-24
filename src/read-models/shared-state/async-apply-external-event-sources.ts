@@ -81,12 +81,16 @@ export const pullNewEquipmentQuizResults = (
 export const asyncApplyExternalEventSources = (
   logger: Logger,
   currentState: BetterSQLite3Database,
-  pullGoogleSheetData: PullSheetData,
+  pullGoogleSheetData: O.Option<PullSheetData>,
   updateState: (event: DomainEvent) => void,
   googleRateLimitMs: number
 ) => {
   return () => async () => {
     logger.info('Applying external event sources...');
+    if (O.isNone(pullGoogleSheetData)) {
+      logger.info('Google external event source disabled');
+      return;
+    }
     for (const equipment of getAllEquipment(currentState)()) {
       if (
         O.isSome(equipment.trainingSheetId) &&
@@ -102,7 +106,7 @@ export const asyncApplyExternalEventSources = (
         pipe(
           await pullNewEquipmentQuizResults(
             logger,
-            pullGoogleSheetData,
+            pullGoogleSheetData.value,
             equipment
           )(),
           RA.map(updateState)
