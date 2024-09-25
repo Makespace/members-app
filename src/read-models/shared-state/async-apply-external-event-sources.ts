@@ -8,6 +8,7 @@ import {getAllEquipment} from './get-equipment';
 import {pipe} from 'fp-ts/lib/function';
 import {EpochTimestampMilliseconds, Equipment} from './return-types';
 import {
+  columnBoundsRequired,
   extractGoogleSheetData,
   shouldPullFromSheet,
 } from '../../training-sheets/google';
@@ -29,6 +30,7 @@ export const pullNewEquipmentQuizResultsForSheet = async (
   equipment: Equipment,
   trainingSheetId: string,
   sheet: GoogleSheetMetadata,
+  timezone: string,
   updateState: (event: DomainEvent) => void
 ) => {
   logger.info('Processing sheet %s', sheet.name);
@@ -43,14 +45,17 @@ export const pullNewEquipmentQuizResultsForSheet = async (
       rowStart,
       rowEnd
     );
+
+    const [minCol, maxCol] = columnBoundsRequired(sheet);
+
     const data = await googleHelpers.pullGoogleSheetData(
       logger,
       trainingSheetId,
       sheet.name,
       rowStart,
       rowEnd,
-      Math.min(...Object.values(sheet.requiredColumns)),
-      Math.max(...Object.values(sheet.requiredColumns))
+      minCol,
+      maxCol
     )();
     if (E.isLeft(data)) {
       logger.debug(
@@ -64,6 +69,8 @@ export const pullNewEquipmentQuizResultsForSheet = async (
         logger,
         trainingSheetId,
         equipment.id,
+        sheet,
+        timezone,
         equipment.lastQuizResult
       ),
       RA.map(updateState)
@@ -102,7 +109,10 @@ export const pullNewEquipmentQuizResults = async (
     return;
   }
 
-  const initialMeta = extractInitialGoogleSheetMetadata(initialRaw.right);
+  const initialMeta = extractInitialGoogleSheetMetadata(
+    logger,
+    initialRaw.right
+  );
 
   if (E.isLeft(initialMeta)) {
     logger.warn(
@@ -155,6 +165,7 @@ export const pullNewEquipmentQuizResults = async (
       equipment,
       trainingSheetId,
       sheet,
+      initialMeta.right.timezone,
       updateState
     );
   }

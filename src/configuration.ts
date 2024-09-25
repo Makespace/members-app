@@ -3,15 +3,7 @@ import * as tt from 'io-ts-types';
 import * as E from 'fp-ts/Either';
 import {pipe} from 'fp-ts/lib/function';
 import {formatValidationErrors} from 'io-ts-reporters';
-
-const withDefaultIfEmpty = <C extends t.Any>(codec: C, ifEmpty: t.TypeOf<C>) =>
-  tt.withValidate(codec, (input, context) =>
-    pipe(
-      tt.NonEmptyString.validate(input, context),
-      E.orElse(() => t.success(String(ifEmpty))),
-      E.chain(nonEmptyString => codec.validate(nonEmptyString, context))
-    )
-  );
+import {withDefaultIfEmpty} from './util';
 
 const LogLevel = t.keyof({
   trace: null,
