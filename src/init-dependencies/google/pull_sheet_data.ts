@@ -1,20 +1,44 @@
 import {Logger} from 'pino';
 import * as TE from 'fp-ts/TaskEither';
+import * as t from 'io-ts';
+import * as tt from 'io-ts-types';
+import * as E from 'fp-ts/Either';
 import {Failure} from '../../types';
 
 import {pipe} from 'fp-ts/lib/function';
 import {sheets, sheets_v4} from '@googleapis/sheets';
 import {GoogleAuth} from 'google-auth-library';
 import {columnIndexToLetter} from '../../training-sheets/extract-metadata';
+import {formatValidationErrors} from 'io-ts-reporters';
 
 export type GoogleSpreadsheetInitialMetadata = sheets_v4.Schema$Spreadsheet & {
   readonly GoogleSpreadsheetInitialMetadata: unique symbol;
 };
 
 // Contains only a single sheet
-export type GoogleSpreadsheetDataForSheet = sheets_v4.Schema$Spreadsheet & {
-  readonly GoogleSpreadsheetDataForSheet: unique symbol;
-};
+export const GoogleSpreadsheetDataForSheet = t.strict({
+  sheets: tt.nonEmptyArray(
+    // Array always has length = 1 because this is data for a single sheet.
+    t.strict({
+      data: tt.nonEmptyArray(
+        t.strict({
+          rowData: tt.nonEmptyArray(
+            t.strict({
+              values: tt.nonEmptyArray(
+                t.strict({
+                  formattedValue: t.string,
+                })
+              ),
+            })
+          ),
+        })
+      ),
+    })
+  ),
+});
+export type GoogleSpreadsheetDataForSheet = t.TypeOf<
+  typeof GoogleSpreadsheetDataForSheet
+>;
 
 export const pullGoogleSheetDataMetadata =
   (auth: GoogleAuth) =>
@@ -82,7 +106,18 @@ export const pullGoogleSheetData =
           };
         }
       ),
-      TE.map(resp => resp.data as GoogleSpreadsheetDataForSheet)
+      TE.map(resp => resp.data),
+      TE.chain(data =>
+        TE.fromEither(
+          pipe(
+            data,
+            GoogleSpreadsheetDataForSheet.decode,
+            E.mapLeft(e => ({
+              message: `Failed to get all required google spreadsheet data from API response: ${formatValidationErrors(e).join(',')}`,
+            }))
+          )
+        )
+      )
     );
 
 export interface GoogleHelpers {

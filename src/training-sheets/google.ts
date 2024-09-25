@@ -1,7 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
-import * as E from 'fp-ts/Either';
 
 import {Logger} from 'pino';
 import {constructEvent, EventOfType} from '../types/domain-event';
@@ -12,7 +11,6 @@ import {EpochTimestampMilliseconds} from '../read-models/shared-state/return-typ
 import {
   GoogleSheetMetadata,
   GoogleSheetMetadataInital,
-  SpreadsheetData,
 } from './extract-metadata';
 import {GoogleSpreadsheetDataForSheet} from '../init-dependencies/google/pull_sheet_data';
 
@@ -201,13 +199,8 @@ export const extractGoogleSheetData =
   (
     spreadsheet: GoogleSpreadsheetDataForSheet
   ): ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>> => {
-    const data = SpreadsheetData.decode(spreadsheet);
-    if (E.isLeft(data)) {
-      logger.warn('Skipping sheet %s due to missing data', trainingSheetId);
-      return [];
-    }
     return pipe(
-      data.right.sheets[0].data[0].rowData,
+      spreadsheet.sheets[0].data[0].rowData,
       RA.map(
         extractFromRow(logger, metadata, equipmentId, trainingSheetId, timezone)
       ),
