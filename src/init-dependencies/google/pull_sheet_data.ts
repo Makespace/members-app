@@ -48,7 +48,7 @@ export const pullGoogleSheetData =
     sheetName: string,
     rowStart: number, // 1 indexed.
     rowEnd: number,
-    columnStartIndex: number,
+    columnStartIndex: number, // 0 indexed, converted to a letter.
     columnEndIndex: number
   ): TE.TaskEither<Failure, GoogleSpreadsheetDataForSheet> =>
     pipe(
