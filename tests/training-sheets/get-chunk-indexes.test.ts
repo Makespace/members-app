@@ -1,4 +1,4 @@
-import {getChunkIndexes} from '../src/util';
+import {getChunkIndexes} from '../../src/util';
 
 describe('Get chunk indexes', () => {
   [
