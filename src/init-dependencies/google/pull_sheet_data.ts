@@ -3,19 +3,51 @@ import * as TE from 'fp-ts/TaskEither';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as E from 'fp-ts/Either';
-import {Failure} from '../../types';
 
 import {pipe} from 'fp-ts/lib/function';
-import {sheets, sheets_v4} from '@googleapis/sheets';
+import {sheets} from '@googleapis/sheets';
 import {GoogleAuth} from 'google-auth-library';
 import {columnIndexToLetter} from '../../training-sheets/extract-metadata';
 import {formatValidationErrors} from 'io-ts-reporters';
+import {DateTime} from 'luxon';
 
-export type GoogleSpreadsheetInitialMetadata = sheets_v4.Schema$Spreadsheet & {
-  readonly GoogleSpreadsheetInitialMetadata: unique symbol;
-};
+const DEFAULT_TIMEZONE = 'Europe/London';
 
-// Contains only a single sheet
+// Not all the google form sheets are actually in Europe/London.
+// Issue first noticed because CI is in a different zone (UTC) than local test machine (BST).
+export const GoogleTimezone = tt.withValidate(t.string, (input, context) =>
+  pipe(
+    t.string.validate(input, context),
+    E.chain(timezoneRaw =>
+      DateTime.local().setZone(timezoneRaw).isValid
+        ? E.right(timezoneRaw)
+        : E.left([])
+    ),
+    E.orElse(() => t.success(DEFAULT_TIMEZONE))
+  )
+);
+
+export const GoogleSpreadsheetInitialMetadata = t.strict({
+  properties: t.strict({
+    timeZone: GoogleTimezone,
+  }),
+  sheets: t.array(
+    t.strict({
+      properties: t.strict({
+        title: t.string,
+        gridProperties: t.strict({
+          rowCount: t.number,
+        }),
+      }),
+    })
+  ),
+});
+export type GoogleSpreadsheetInitialMetadata = t.TypeOf<
+  typeof GoogleSpreadsheetInitialMetadata
+>;
+
+// Contains only a single sheet. Structure is a little verbose to match the part of the
+// google api it is taken from.
 export const GoogleSpreadsheetDataForSheet = t.strict({
   sheets: tt.nonEmptyArray(
     // Array always has length = 1 because this is data for a single sheet.
@@ -62,7 +94,19 @@ export const pullGoogleSheetDataMetadata =
           return `Failed to get training spreadsheet metadata ${trainingSheetId}`;
         }
       ),
-      TE.map(resp => resp.data as GoogleSpreadsheetInitialMetadata)
+      TE.map(resp => resp.data),
+      TE.chain(data =>
+        TE.fromEither(
+          pipe(
+            data,
+            GoogleSpreadsheetInitialMetadata.decode,
+            E.mapLeft(
+              e =>
+                `Failed to get google spreadsheet metadata from API response: ${formatValidationErrors(e).join(',')}`
+            )
+          )
+        )
+      )
     );
 
 export const pullGoogleSheetData =
@@ -75,7 +119,7 @@ export const pullGoogleSheetData =
     rowEnd: number,
     columnStartIndex: number, // 0 indexed, converted to a letter.
     columnEndIndex: number
-  ): TE.TaskEither<Failure, GoogleSpreadsheetDataForSheet> =>
+  ): TE.TaskEither<string, GoogleSpreadsheetDataForSheet> =>
     pipe(
       TE.tryCatch(
         () => {
@@ -99,11 +143,12 @@ export const pullGoogleSheetData =
           });
         },
         reason => {
-          logger.error(reason, 'Failed to get spreadsheet');
-          return {
-            // Expand failure reasons.
-            message: `Failed to get training spreadsheet ${trainingSheetId}`,
-          };
+          logger.error(
+            reason,
+            'Failed to get training spreadsheet %s',
+            trainingSheetId
+          );
+          return `Failed to get training spreadsheet ${trainingSheetId}`;
         }
       ),
       TE.map(resp => resp.data),
@@ -112,9 +157,10 @@ export const pullGoogleSheetData =
           pipe(
             data,
             GoogleSpreadsheetDataForSheet.decode,
-            E.mapLeft(e => ({
-              message: `Failed to get all required google spreadsheet data from API response: ${formatValidationErrors(e).join(',')}`,
-            }))
+            E.mapLeft(
+              e =>
+                `Failed to get all required google spreadsheet data from API response: ${formatValidationErrors(e).join(',')}`
+            )
           )
         )
       )

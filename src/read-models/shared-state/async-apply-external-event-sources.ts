@@ -16,7 +16,6 @@ import {constructEvent} from '../../types/domain-event';
 import {GoogleHelpers} from '../../init-dependencies/google/pull_sheet_data';
 import {
   extractGoogleSheetMetadata,
-  extractInitialGoogleSheetMetadata,
   GoogleSheetMetadata,
   MAX_COLUMN_INDEX,
 } from '../../training-sheets/extract-metadata';
@@ -100,25 +99,11 @@ export const pullNewEquipmentQuizResults = async (
     equipment.lastQuizResult
   );
 
-  const initialRaw = await googleHelpers.pullGoogleSheetDataMetadata(
+  const initialMeta = await googleHelpers.pullGoogleSheetDataMetadata(
     logger,
     trainingSheetId
   )();
-  if (E.isLeft(initialRaw)) {
-    logger.warn(initialRaw.left);
-    return;
-  }
-
-  const initialMeta = extractInitialGoogleSheetMetadata(
-    logger,
-    initialRaw.right
-  );
-
   if (E.isLeft(initialMeta)) {
-    logger.warn(
-      'Failed to get google sheet metadata for training sheet %s, skipping',
-      trainingSheetId
-    );
     logger.warn(initialMeta.left);
     return;
   }
@@ -165,7 +150,7 @@ export const pullNewEquipmentQuizResults = async (
       equipment,
       trainingSheetId,
       sheet,
-      initialMeta.right.timezone,
+      initialMeta.timezone,
       updateState
     );
   }
