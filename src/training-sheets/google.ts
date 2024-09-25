@@ -8,10 +8,7 @@ import {v4} from 'uuid';
 import {UUID} from 'io-ts-types';
 import {DateTime} from 'luxon';
 import {EpochTimestampMilliseconds} from '../read-models/shared-state/return-types';
-import {
-  GoogleSheetMetadata,
-  GoogleSheetMetadataInital,
-} from './extract-metadata';
+import {GoogleSheetMetadata} from './extract-metadata';
 import {GoogleSpreadsheetDataForSheet} from '../init-dependencies/google/pull_sheet_data';
 
 // Bounds to prevent clearly broken parsing.
