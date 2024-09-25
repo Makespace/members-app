@@ -77,7 +77,7 @@ const pullNewEquipmentQuizResultsForSheet = async (
   }
 };
 
-const pullNewEquipmentQuizResults = async (
+export const pullNewEquipmentQuizResults = async (
   logger: Logger,
   googleHelpers: GoogleHelpers,
   equipment: Equipment,
