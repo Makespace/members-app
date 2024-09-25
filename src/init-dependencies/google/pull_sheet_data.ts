@@ -5,6 +5,7 @@ import {Failure} from '../../types';
 import {pipe} from 'fp-ts/lib/function';
 import {sheets, sheets_v4} from '@googleapis/sheets';
 import {GoogleAuth} from 'google-auth-library';
+import {columnIndexToLetter} from '../../training-sheets/extract-metadata';
 
 export type GoogleSpreadsheetInitialMetadata = sheets_v4.Schema$Spreadsheet & {
   readonly GoogleSpreadsheetInitialMetadata: unique symbol;
@@ -46,19 +47,32 @@ export const pullGoogleSheetData =
     trainingSheetId: string,
     sheetName: string,
     rowStart: number, // 1 indexed.
-    rowEnd: number
+    rowEnd: number,
+    columnStartIndex: number,
+    columnEndIndex: number
   ): TE.TaskEither<Failure, GoogleSpreadsheetDataForSheet> =>
     pipe(
       TE.tryCatch(
-        () =>
-          sheets({
+        () => {
+          const ranges = [
+            `${sheetName}!${columnIndexToLetter(columnStartIndex)}${rowStart}:${columnIndexToLetter(columnEndIndex)}${rowEnd}`,
+          ];
+          const fields = 'sheets(data(rowData(values(formattedValue))))';
+          logger.info(
+            'Querying sheet %s for fields %s range %s',
+            trainingSheetId,
+            fields,
+            ranges
+          );
+          return sheets({
             version: 'v4',
             auth,
           }).spreadsheets.get({
             spreadsheetId: trainingSheetId,
-            fields: 'sheets(data(rowData(values(formattedValue))))',
-            ranges: [`${sheetName}!${rowStart}:${rowEnd}`],
-          }),
+            fields,
+            ranges,
+          });
+        },
         reason => {
           logger.error(reason, 'Failed to get spreadsheet');
           return {
