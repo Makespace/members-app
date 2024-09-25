@@ -1,17 +1,8 @@
-import {pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
-import * as t from 'io-ts';
-import * as E from 'fp-ts/Either';
 
 import {Logger} from 'pino';
-import {
-  GoogleSpreadsheetDataForSheet,
-  GoogleSpreadsheetInitialMetadata,
-} from '../init-dependencies/google/pull_sheet_data';
-import {withDefaultIfEmpty} from '../util';
-import {DateTime} from 'luxon';
-import {formatValidationErrors} from 'io-ts-reporters';
+import {GoogleSpreadsheetDataForSheet} from '../init-dependencies/google/pull_sheet_data';
 
 const EMAIL_COLUMN_NAMES = ['email address', 'email'];
 
@@ -37,24 +28,15 @@ export const MAX_COLUMN_INDEX = 25;
 export const columnIndexToLetter = (index: ColumnIndex): ColumnLetter =>
   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(index);
 
-export const extractInitialGoogleSheetMetadata = (
-  logger: Logger,
-  spreadsheet: GoogleSpreadsheetInitialMetadata
-): GoogleSheetsMetadataInital => ({
-  sheets: spreadsheet.sheets.map(sheet => ({
-    name: sheet.properties.title,
-    rowCount: sheet.properties.gridProperties.rowCount,
-  })),
-  timezone: spreadsheet.properties.timeZone,
-});
-
 export const extractGoogleSheetMetadata =
   (logger: Logger) =>
   (
-    initialMeta: GoogleSheetMetadataInital,
+    initialMeta: {
+      properties: {title: string; gridProperties: {rowCount: number}};
+    },
     sheetData: GoogleSpreadsheetDataForSheet
   ): O.Option<GoogleSheetMetadata> => {
-    logger = logger.child({sheetName: initialMeta.name});
+    logger = logger.child({sheetName: initialMeta.properties.title});
     const columnNames = sheetData.sheets[0].data[0].rowData[0].values.map(
       col => col.formattedValue
     );
@@ -65,7 +47,7 @@ export const extractGoogleSheetMetadata =
     if (O.isNone(timestamp)) {
       logger.warn(
         'Failed to find timestamp column, skipping sheet: %s',
-        initialMeta.name
+        initialMeta.properties.title
       );
       return O.none;
     }
@@ -75,7 +57,7 @@ export const extractGoogleSheetMetadata =
     if (O.isNone(score)) {
       logger.warn(
         'Failed to find score column, skipping sheet: %s',
-        initialMeta.name
+        initialMeta.properties.title
       );
       return O.none;
     }
@@ -87,7 +69,8 @@ export const extractGoogleSheetMetadata =
     )(columnNames);
 
     return O.some({
-      ...initialMeta,
+      name: initialMeta.properties.title,
+      rowCount: initialMeta.properties.gridProperties.rowCount,
       mappedColumns: {
         timestamp: timestamp.value,
         score: score.value,

@@ -210,9 +210,11 @@ export const extractGoogleSheetData =
     );
   };
 
-export const shouldPullFromSheet = (
-  sheet: GoogleSheetMetadataInital
-): boolean => FORM_RESPONSES_SHEET_REGEX.test(sheet.name);
+export const shouldPullFromSheet = (sheet: {
+  properties: {
+    title: string;
+  };
+}): boolean => FORM_RESPONSES_SHEET_REGEX.test(sheet.properties.title);
 
 export const columnBoundsRequired = (
   sheet: GoogleSheetMetadata
