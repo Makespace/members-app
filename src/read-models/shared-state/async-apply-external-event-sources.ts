@@ -17,6 +17,7 @@ import {
   extractGoogleSheetMetadata,
   extractInitialGoogleSheetMetadata,
   GoogleSheetMetadata,
+  MAX_COLUMN_INDEX,
 } from '../../training-sheets/extract-metadata';
 import {getChunkIndexes} from '../../util';
 
@@ -47,7 +48,9 @@ export const pullNewEquipmentQuizResultsForSheet = async (
       trainingSheetId,
       sheet.name,
       rowStart,
-      rowEnd
+      rowEnd,
+      Math.min(...Object.values(sheet.requiredColumns)),
+      Math.max(...Object.values(sheet.requiredColumns))
     )();
     if (E.isLeft(data)) {
       logger.debug(
@@ -124,7 +127,9 @@ export const pullNewEquipmentQuizResults = async (
       trainingSheetId,
       sheet.name,
       1,
-      1
+      1,
+      0,
+      MAX_COLUMN_INDEX
     )();
     if (E.isLeft(firstRowData)) {
       logger.warn(

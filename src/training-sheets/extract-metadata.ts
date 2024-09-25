@@ -40,6 +40,7 @@ export interface GoogleSheetsMetadata {
   sheets: GoogleSheetMetadata[];
 }
 
+export const MAX_COLUMN_INDEX = 25;
 // Doesn't support beyond 26 columns but actually thats fine for the current data.
 export const columnIndexToLetter = (index: ColumnIndex): ColumnLetter =>
   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(index);
