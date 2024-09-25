@@ -10,6 +10,7 @@ import {GoogleAuth} from 'google-auth-library';
 import {columnIndexToLetter} from '../../training-sheets/extract-metadata';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {DateTime} from 'luxon';
+import { withDefaultIfEmpty } from '../../util';
 
 const DEFAULT_TIMEZONE = 'Europe/London';
 
@@ -58,7 +59,7 @@ export const GoogleSpreadsheetDataForSheet = t.strict({
             t.strict({
               values: tt.nonEmptyArray(
                 t.strict({
-                  formattedValue: t.string,
+                  formattedValue: withDefaultIfEmpty(t.string, ''),
                 })
               ),
             })
