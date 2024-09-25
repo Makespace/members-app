@@ -12,6 +12,7 @@ import {
 } from '../init-dependencies/google/pull_sheet_data';
 import {withDefaultIfEmpty} from '../util';
 import {DateTime} from 'luxon';
+import {formatValidationErrors} from 'io-ts-reporters';
 
 const EMAIL_COLUMN_NAMES = ['email address', 'email'];
 
@@ -71,7 +72,10 @@ export const extractInitialGoogleSheetMetadata = (
   pipe(
     spreadsheet,
     SheetProperties.decode,
-    E.mapLeft(_e => 'Failed to extract initial google sheet metadata'),
+    E.mapLeft(e => {
+      logger.warn(formatValidationErrors(e));
+      return 'Failed to extract initial google sheet metadata';
+    }),
     E.map(properties => ({
       sheets: properties.sheets.map(sheet => ({
         name: sheet.properties.title,

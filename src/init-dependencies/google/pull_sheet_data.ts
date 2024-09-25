@@ -31,7 +31,7 @@ export const pullGoogleSheetDataMetadata =
           }).spreadsheets.get({
             spreadsheetId: trainingSheetId,
             includeGridData: false, // Only the metadata.
-            fields: 'sheets(properties)', // Only the metadata about the sheets.
+            fields: 'sheets(properties),properties(timeZone)', // Only the metadata about the sheets.
           }),
         reason => {
           logger.error(reason, 'Failed to get spreadsheet metadata');
