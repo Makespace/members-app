@@ -1,5 +1,5 @@
 import * as O from 'fp-ts/Option';
-import {columnBoundsRequired} from '../src/training-sheets/google';
+import {columnBoundsRequired} from '../../src/training-sheets/google';
 
 describe('columnBoundsRequired', () => {
   [
