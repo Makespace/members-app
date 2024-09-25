@@ -120,7 +120,7 @@ export const pullNewEquipmentQuizResults = async (
     const firstRowData = await googleHelpers.pullGoogleSheetData(
       logger,
       trainingSheetId,
-      sheet.name,
+      sheet.properties.title,
       1,
       1,
       0,
@@ -129,7 +129,7 @@ export const pullNewEquipmentQuizResults = async (
     if (E.isLeft(firstRowData)) {
       logger.warn(
         'Failed to get google sheet first row data for sheet %s, skipping',
-        sheet.name
+        sheet.properties.title
       );
       continue;
     }
@@ -139,7 +139,11 @@ export const pullNewEquipmentQuizResults = async (
       continue;
     }
 
-    logger.info('Got metadata for sheet: %s: %o', sheet.name, meta.value);
+    logger.info(
+      'Got metadata for sheet: %s: %o',
+      sheet.properties.title,
+      meta.value
+    );
     sheets.push(meta.value);
   }
 
@@ -150,7 +154,7 @@ export const pullNewEquipmentQuizResults = async (
       equipment,
       trainingSheetId,
       sheet,
-      initialMeta.timezone,
+      initialMeta.right.properties.timeZone,
       updateState
     );
   }
