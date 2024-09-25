@@ -34,10 +34,10 @@ export const extractGoogleSheetMetadata =
     initialMeta: {
       properties: {title: string; gridProperties: {rowCount: number}};
     },
-    sheetData: GoogleSpreadsheetDataForSheet
+    firstRowData: GoogleSpreadsheetDataForSheet
   ): O.Option<GoogleSheetMetadata> => {
     logger = logger.child({sheetName: initialMeta.properties.title});
-    const columnNames = sheetData.sheets[0].data[0].rowData[0].values.map(
+    const columnNames = firstRowData.sheets[0].data[0].rowData[0].values.map(
       col => col.formattedValue
     );
     logger.trace('Found column names for sheet: %o', columnNames);
