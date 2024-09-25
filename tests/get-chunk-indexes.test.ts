@@ -15,6 +15,7 @@ describe('Get chunk indexes', () => {
       ],
     ],
     [2, 1, 500, []],
+    [1000, 2, 500, []],
   ].forEach(([start, end, chunkSize, expected]) => {
     it(`${start.toString()}:${end.toString()}:${chunkSize.toString()}`, () => {
       expect(

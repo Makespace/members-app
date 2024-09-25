@@ -191,11 +191,11 @@ export const asyncApplyExternalEventSources = (
           googleHelpers.value,
           equipment,
           updateState
-        )(),
-          logger.info(
-            'Finished pulling events from google training sheet for %s',
-            equipment.name
-          );
+        );
+        logger.info(
+          'Finished pulling events from google training sheet for %s',
+          equipment.name
+        );
       }
     }
     logger.info('Finished applying external event sources');
