@@ -29,15 +29,17 @@ type ColumnIndex = number; // 0-indexed.
 export interface GoogleSheetMetadata {
   name: GoogleSheetName;
   rowCount: number;
-  requiredColumns: {
+  mappedColumns: {
+    // Timestamp and score are required for every sheet, some other sheets only have email or member number.
     timestamp: ColumnIndex;
-    email: ColumnIndex;
     score: ColumnIndex;
-    memberNumber: ColumnIndex;
+    email: O.Option<ColumnIndex>;
+    memberNumber: O.Option<ColumnIndex>;
   };
 }
 export interface GoogleSheetsMetadata {
   sheets: GoogleSheetMetadata[];
+  timezone: string;
 }
 
 export const MAX_COLUMN_INDEX = 25;
@@ -73,7 +75,7 @@ export const extractInitialGoogleSheetMetadata = (
     }))
   );
 
-const SpreadsheetData = t.strict({
+export const SpreadsheetData = t.strict({
   sheets: tt.nonEmptyArray(
     t.strict({
       data: tt.nonEmptyArray(
@@ -120,16 +122,6 @@ export const extractGoogleSheetMetadata =
       );
       return O.none;
     }
-    const email = RA.findIndex<string>(val =>
-      EMAIL_COLUMN_NAMES.includes(val.toLowerCase())
-    )(columnNames);
-    if (O.isNone(email)) {
-      logger.warn(
-        'Failed to find email column, skipping sheet: %s',
-        initialMeta.name
-      );
-      return O.none;
-    }
     const score = RA.findIndex<string>(val => val.toLowerCase() === 'score')(
       columnNames
     );
@@ -143,21 +135,30 @@ export const extractGoogleSheetMetadata =
     const memberNumber = RA.findIndex<string>(
       val => val.toLowerCase() === 'membership number'
     )(columnNames);
-    if (O.isNone(memberNumber)) {
-      logger.warn(
-        'Failed to find member number column, skipping sheet: %s',
-        initialMeta.name
-      );
-      return O.none;
-    }
+    const email = RA.findIndex<string>(val =>
+      EMAIL_COLUMN_NAMES.includes(val.toLowerCase())
+    )(columnNames);
 
     return O.some({
       ...initialMeta,
-      requiredColumns: {
+      mappedColumns: {
         timestamp: timestamp.value,
-        email: email.value,
         score: score.value,
-        memberNumber: memberNumber.value,
+        email: email,
+        memberNumber: memberNumber,
       },
     });
   };
+
+const getTimezone = (metadata: GoogleSheetMetadata): string => {
+  let timezone = spreadsheet.properties?.timeZone;
+  if (!timezone || !DateTime.local().setZone(timezone).isValid) {
+    // Not all the google form sheets are actually in Europe/London.
+    // Issue first noticed because CI is in a different zone (UTC) than local test machine (BST).
+    logger.info(
+      `Unable to determine timezone for google sheet '${spreadsheet.properties?.title}', '${timezone}' - defaulting to Europe/London`
+    );
+    timezone = 'Europe/London';
+  }
+  return timezone;
+}
