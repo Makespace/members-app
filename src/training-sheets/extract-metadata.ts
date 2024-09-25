@@ -2,7 +2,6 @@ import {pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
 import * as t from 'io-ts';
-import * as tt from 'io-ts-types';
 import * as E from 'fp-ts/Either';
 
 import {Logger} from 'pino';
@@ -85,40 +84,14 @@ export const extractInitialGoogleSheetMetadata = (
     }))
   );
 
-export const SpreadsheetData = t.strict({
-  sheets: tt.nonEmptyArray(
-    t.strict({
-      data: tt.nonEmptyArray(
-        t.strict({
-          rowData: tt.nonEmptyArray(
-            t.strict({
-              values: tt.nonEmptyArray(
-                t.strict({
-                  formattedValue: t.string,
-                })
-              ),
-            })
-          ),
-        })
-      ),
-    })
-  ),
-});
-
 export const extractGoogleSheetMetadata =
   (logger: Logger) =>
   (
     initialMeta: GoogleSheetMetadataInital,
-    spreadsheetDataForSheet: GoogleSpreadsheetDataForSheet
+    sheetData: GoogleSpreadsheetDataForSheet
   ): O.Option<GoogleSheetMetadata> => {
     logger = logger.child({sheetName: initialMeta.name});
-    const validated = SpreadsheetData.decode(spreadsheetDataForSheet);
-    if (E.isLeft(validated)) {
-      logger.warn('Failed to validate spreadsheet data, skipping sheet');
-      return O.none;
-    }
-
-    const columnNames = validated.right.sheets[0].data[0].rowData[0].values.map(
+    const columnNames = sheetData.sheets[0].data[0].rowData[0].values.map(
       col => col.formattedValue
     );
     logger.trace('Found column names for sheet: %o', columnNames);

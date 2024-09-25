@@ -22,7 +22,7 @@ import {
 } from '../../training-sheets/extract-metadata';
 import {getChunkIndexes} from '../../util';
 
-const ROW_BATCH_SIZE = 500;
+const ROW_BATCH_SIZE = 10;
 
 export const pullNewEquipmentQuizResultsForSheet = async (
   logger: Logger,
@@ -35,7 +35,7 @@ export const pullNewEquipmentQuizResultsForSheet = async (
 ) => {
   logger.info('Processing sheet %s', sheet.name);
   for (const [rowStart, rowEnd] of getChunkIndexes(
-    2,
+    2, // 1-indexed and first row is headers.
     sheet.rowCount,
     ROW_BATCH_SIZE
   )) {
