@@ -6,7 +6,7 @@ import {GoogleSpreadsheetDataForSheet} from '../init-dependencies/google/pull_sh
 
 const EMAIL_COLUMN_NAMES = ['email address', 'email'];
 
-type GoogleSheetName = string;
+export type GoogleSheetName = string;
 
 type ColumnLetter = string;
 type ColumnIndex = number; // 0-indexed.

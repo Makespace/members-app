@@ -1,6 +1,12 @@
 import {sheets_v4} from '@googleapis/sheets';
 import {readFileSync} from 'node:fs';
 import {EpochTimestampMilliseconds} from '../../src/read-models/shared-state/return-types';
+import {
+  GoogleSpreadsheetDataForSheet,
+  GoogleSpreadsheetInitialMetadata,
+} from '../../src/init-dependencies/google/pull_sheet_data';
+import {GoogleSheetName} from '../../src/training-sheets/extract-metadata';
+import {getRightOrFail} from '../helpers';
 
 type ManualParsedEntry = {
   emailProvided: string;
@@ -13,22 +19,47 @@ type ManualParsedEntry = {
 };
 
 export type ManualParsed = {
-  data: sheets_v4.Schema$Spreadsheet;
+  apiResp: sheets_v4.Schema$Spreadsheet;
+  metadata: GoogleSpreadsheetInitialMetadata;
+  sheets: Record<GoogleSheetName, GoogleSpreadsheetDataForSheet>;
   entries: ManualParsedEntry[];
 };
 
-export const EMPTY: ManualParsed = {
-  data: JSON.parse(
+const genManualParsed = (
+  // Enumlate the google api which filters out other sheets using the range parameter.
+  apiResp: sheets_v4.Schema$Spreadsheet,
+  entries: ManualParsedEntry[]
+): ManualParsed => {
+  const sheets: Record<GoogleSheetName, GoogleSpreadsheetDataForSheet> = {};
+  for (const sheet of apiResp.sheets!) {
+    const apiRespCopy = JSON.parse(JSON.stringify(apiResp)) as typeof apiResp;
+    apiRespCopy.sheets = apiRespCopy.sheets!.filter(
+      s => s.properties!.title === sheet.properties!.title
+    );
+    sheets[sheet.properties!.title as string] = getRightOrFail(
+      GoogleSpreadsheetDataForSheet.decode(apiRespCopy)
+    );
+  }
+  return {
+    apiResp,
+    entries,
+    sheets,
+    metadata: getRightOrFail(GoogleSpreadsheetInitialMetadata.decode(apiResp)),
+  };
+};
+
+export const EMPTY = genManualParsed(
+  JSON.parse(
     readFileSync('./tests/data/google_spreadsheets_empty.json', 'utf8')
   ) as sheets_v4.Schema$Spreadsheet,
-  entries: [],
-};
-export const METAL_LATHE: ManualParsed = {
-  data: JSON.parse(
+  []
+);
+
+export const METAL_LATHE: ManualParsed = genManualParsed(
+  JSON.parse(
     readFileSync('./tests/data/google_spreadsheets_metal_lathe.json', 'utf8')
   ) as sheets_v4.Schema$Spreadsheet,
-  // Manually parsed data for testing:
-  entries: [
+  [
     {
       emailProvided: 'test@makespace.com',
       memberNumberProvided: 1234,
@@ -38,14 +69,14 @@ export const METAL_LATHE: ManualParsed = {
       fullMarks: false,
       timestampEpochMS: 1705770960_000 as EpochTimestampMilliseconds,
     },
-  ],
-};
+  ]
+);
 
-export const BAMBU: ManualParsed = {
-  data: JSON.parse(
+export const BAMBU: ManualParsed = genManualParsed(
+  JSON.parse(
     readFileSync('./tests/data/google_spreadsheets_bambu.json', 'utf8')
   ) as sheets_v4.Schema$Spreadsheet,
-  entries: [
+  [
     // Manually parsed data for testing:
     {
       emailProvided: 'flonn@example.com',
@@ -83,13 +114,14 @@ export const BAMBU: ManualParsed = {
       fullMarks: true,
       timestampEpochMS: 1710249842_000 as EpochTimestampMilliseconds,
     },
-  ],
-};
-export const LASER_CUTTER: ManualParsed = {
-  data: JSON.parse(
+  ]
+);
+
+export const LASER_CUTTER: ManualParsed = genManualParsed(
+  JSON.parse(
     readFileSync('./tests/data/google_spreadsheets_laser_cutter.json', 'utf8')
   ) as sheets_v4.Schema$Spreadsheet,
-  entries: [
+  [
     // Manually parsed data for testing
     // Note some entries were missing in the source spreadsheet so are treated as '' to match the spreadsheet behaviour.
     {
@@ -110,8 +142,8 @@ export const LASER_CUTTER: ManualParsed = {
       fullMarks: true,
       timestampEpochMS: 1601298462_000 as EpochTimestampMilliseconds,
     },
-  ],
-};
+  ]
+);
 
 export const getLatestEvent = (data: ManualParsed) =>
   data.entries.sort((a, b) => a.timestampEpochMS - b.timestampEpochMS)[
@@ -129,8 +161,8 @@ export const NOT_FOUND_ERROR = {
   code: '404',
 };
 export const TRAINING_SHEETS = {
-  [EMPTY.data.spreadsheetId!]: EMPTY,
-  [METAL_LATHE.data.spreadsheetId!]: METAL_LATHE,
-  [LASER_CUTTER.data.spreadsheetId!]: LASER_CUTTER,
-  [BAMBU.data.spreadsheetId!]: BAMBU,
+  [EMPTY.apiResp.spreadsheetId!]: EMPTY,
+  [METAL_LATHE.apiResp.spreadsheetId!]: METAL_LATHE,
+  [LASER_CUTTER.apiResp.spreadsheetId!]: LASER_CUTTER,
+  [BAMBU.apiResp.spreadsheetId!]: BAMBU,
 };
