@@ -11,6 +11,7 @@ export type GoogleSpreadsheetInitialMetadata = sheets_v4.Schema$Spreadsheet & {
   readonly GoogleSpreadsheetInitialMetadata: unique symbol;
 };
 
+// Contains only a single sheet
 export type GoogleSpreadsheetDataForSheet = sheets_v4.Schema$Spreadsheet & {
   readonly GoogleSpreadsheetDataForSheet: unique symbol;
 };
