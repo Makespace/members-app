@@ -21,9 +21,9 @@ import {
 } from '../../training-sheets/extract-metadata';
 import {getChunkIndexes} from '../../util';
 
-const ROW_BATCH_SIZE = 10;
+const ROW_BATCH_SIZE = 200;
 
-export const pullNewEquipmentQuizResultsForSheet = async (
+const pullNewEquipmentQuizResultsForSheet = async (
   logger: Logger,
   googleHelpers: GoogleHelpers,
   equipment: Equipment,
@@ -77,7 +77,7 @@ export const pullNewEquipmentQuizResultsForSheet = async (
   }
 };
 
-export const pullNewEquipmentQuizResults = async (
+const pullNewEquipmentQuizResults = async (
   logger: Logger,
   googleHelpers: GoogleHelpers,
   equipment: Equipment,
