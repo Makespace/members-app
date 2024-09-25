@@ -10,6 +10,8 @@ import {
   GoogleSpreadsheetDataForSheet,
   GoogleSpreadsheetInitialMetadata,
 } from '../init-dependencies/google/pull_sheet_data';
+import {withDefaultIfEmpty} from '../util';
+import {DateTime} from 'luxon';
 
 const EMAIL_COLUMN_NAMES = ['email address', 'email'];
 
@@ -21,6 +23,7 @@ export interface GoogleSheetMetadataInital {
 }
 export interface GoogleSheetsMetadataInital {
   sheets: GoogleSheetMetadataInital[];
+  timezone: string;
 }
 
 type ColumnLetter = string;
@@ -37,17 +40,18 @@ export interface GoogleSheetMetadata {
     memberNumber: O.Option<ColumnIndex>;
   };
 }
-export interface GoogleSheetsMetadata {
-  sheets: GoogleSheetMetadata[];
-  timezone: string;
-}
 
 export const MAX_COLUMN_INDEX = 25;
 // Doesn't support beyond 26 columns but actually thats fine for the current data.
 export const columnIndexToLetter = (index: ColumnIndex): ColumnLetter =>
   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(index);
 
+const DEFAULT_TIMEZONE = 'Europe/London';
+
 const SheetProperties = t.strict({
+  properties: t.strict({
+    timeZone: withDefaultIfEmpty(t.string, DEFAULT_TIMEZONE),
+  }),
   sheets: t.array(
     t.strict({
       properties: t.strict({
@@ -61,6 +65,7 @@ const SheetProperties = t.strict({
 });
 
 export const extractInitialGoogleSheetMetadata = (
+  logger: Logger,
   spreadsheet: GoogleSpreadsheetInitialMetadata
 ): E.Either<string, GoogleSheetsMetadataInital> =>
   pipe(
@@ -72,6 +77,7 @@ export const extractInitialGoogleSheetMetadata = (
         name: sheet.properties.title,
         rowCount: sheet.properties.gridProperties.rowCount,
       })),
+      timezone: validateTimezone(logger, properties.properties.timeZone),
     }))
   );
 
@@ -150,15 +156,14 @@ export const extractGoogleSheetMetadata =
     });
   };
 
-const getTimezone = (metadata: GoogleSheetMetadata): string => {
-  let timezone = spreadsheet.properties?.timeZone;
-  if (!timezone || !DateTime.local().setZone(timezone).isValid) {
+const validateTimezone = (logger: Logger, timezone: string): string => {
+  if (!DateTime.local().setZone(timezone).isValid) {
     // Not all the google form sheets are actually in Europe/London.
     // Issue first noticed because CI is in a different zone (UTC) than local test machine (BST).
     logger.info(
-      `Unable to determine timezone for google sheet '${spreadsheet.properties?.title}', '${timezone}' - defaulting to Europe/London`
+      `Unable to determine timezone for google sheet, timezone is invalid: '${timezone}' - defaulting to Europe/London`
     );
-    timezone = 'Europe/London';
+    timezone = DEFAULT_TIMEZONE;
   }
   return timezone;
-}
+};

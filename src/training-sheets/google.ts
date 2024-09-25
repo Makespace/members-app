@@ -223,3 +223,12 @@ export const extractGoogleSheetData =
 export const shouldPullFromSheet = (
   sheet: GoogleSheetMetadataInital
 ): boolean => FORM_RESPONSES_SHEET_REGEX.test(sheet.name);
+
+export const columnBoundsRequired = (
+  sheet: GoogleSheetMetadata
+): [number, number] => {
+  const colIndexes = Object.values(sheet.mappedColumns)
+    .filter(col => typeof col === 'number' || O.isSome(col))
+    .map(col => (typeof col === 'number' ? col : col.value));
+  return [Math.min(...colIndexes), Math.max(...colIndexes)];
+};
