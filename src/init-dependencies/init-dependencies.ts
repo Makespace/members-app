@@ -10,7 +10,11 @@ import {commitEvent} from './event-store/commit-event';
 import {getAllEvents, getAllEventsByType} from './event-store/get-all-events';
 import {getResourceEvents} from './event-store/get-resource-events';
 import {Client} from '@libsql/client';
-import {pullGoogleSheetData} from './google/pull_sheet_data';
+import {
+  GoogleHelpers,
+  pullGoogleSheetData,
+  pullGoogleSheetDataMetadata,
+} from './google/pull_sheet_data';
 import {initSharedReadModel} from '../read-models/shared-state';
 import {GoogleAuth} from 'google-auth-library';
 
@@ -57,24 +61,26 @@ export const initDependencies = (
     })
   );
 
-  const googleAuth =
-    conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON.toLowerCase().trim() === 'disabled'
-      ? O.none
-      : O.some(
-          pullGoogleSheetData(
-            new GoogleAuth({
-              // Google issues the credentials file and validates it.
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-              credentials: JSON.parse(conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON),
-              scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-            })
-          )
-        );
+  let googleHelpers: O.Option<GoogleHelpers> = O.none;
+  if (
+    conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON.toLowerCase().trim() !== 'disabled'
+  ) {
+    const googleAuth = new GoogleAuth({
+      // Google issues the credentials file and validates it.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      credentials: JSON.parse(conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON),
+      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+    });
+    googleHelpers = O.some({
+      pullGoogleSheetData: pullGoogleSheetData(googleAuth),
+      pullGoogleSheetDataMetadata: pullGoogleSheetDataMetadata(googleAuth),
+    });
+  }
 
   const sharedReadModel = initSharedReadModel(
     dbClient,
     logger,
-    googleAuth,
+    googleHelpers,
     conf.GOOGLE_RATELIMIT_MS
   );
 

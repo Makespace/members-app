@@ -61,13 +61,13 @@ describe('Integration asyncApplyExternalEventSources', () => {
       framework,
       'bambu',
       areaId,
-      O.some(gsheetData.BAMBU.data.spreadsheetId!)
+      O.some(gsheetData.BAMBU.apiResp.spreadsheetId!)
     );
     const lathe = await addWithSheet(
       framework,
       'Metal Lathe',
       areaId,
-      O.some(gsheetData.METAL_LATHE.data.spreadsheetId!)
+      O.some(gsheetData.METAL_LATHE.apiResp.spreadsheetId!)
     );
     const results = await runAsyncApplyExternalEventSources(framework);
     checkLastQuizSyncUpdated(results);
@@ -111,65 +111,60 @@ describe('Integration asyncApplyExternalEventSources', () => {
       timestamp: new Date(gsheetData.METAL_LATHE.entries[0].timestampEpochMS),
     });
   });
-  // it('Handle no equipment', async () => {
-  //   const framework = await initTestFramework(1000);
-  //   const results = await runAsyncApplyExternalEventSources(framework);
-  //   checkLastQuizSync(results);
-  //   expect(results.equipmentAfter.size).toStrictEqual(0);
-  // });
-  // it('Handle equipment with no training sheet', async () => {
-  //   const framework = await initTestFramework(1000);
-  //   const areaId = await addArea(framework);
-  //   const bambu = await addWithSheet(framework, 'bambu', areaId, O.none);
-  //   const results = await runAsyncApplyExternalEventSources(framework);
-  //   expect(
-  //     results.equipmentAfter.get(bambu.id)!.lastQuizSync // No training sheet so not updated.
-  //   ).toStrictEqual(O.none);
-  //   expect(
-  //     results.equipmentAfter.get(bambu.id)!.lastQuizResult
-  //   ).toStrictEqual(O.none);
-  //   expect(results.newEvents).toHaveLength(0);
-  // });
-  // it('Rate limit equipment pull', async () => {
-  //   const framework = await initTestFramework(1000);
-  //   const areaId = await addArea(framework);
-  //   const bambu = await addWithSheet(
-  //     framework,
-  //     'bambu',
-  //     areaId,
-  //     O.some(gsheetData.BAMBU.data.spreadsheetId!)
-  //   );
-  //   const results1 = await runAsyncApplyExternalEventSources(framework);
-  //   checkLastQuizSync(results1);
-  //   const results2 = await runAsyncApplyExternalEventSources(framework);
-  //   expect(
-  //     results1.equipmentAfter.get(bambu.id)!.lastQuizSync
-  //   ).toStrictEqual(results2.equipmentAfter.get(bambu.id)!.lastQuizSync);
-  //   expect(results1.newEvents.length).toBeGreaterThan(0);
-  //   expect(results2.newEvents).toHaveLength(0);
-  // });
-  // it('Repeat equipment pull no rate limit', async () => {
-  //   const rateLimitMs = 100;
-  //   const framework = await initTestFramework(rateLimitMs);
-  //   const areaId = await addArea(framework);
-  //   const bambu = await addWithSheet(
-  //     framework,
-  //     'bambu',
-  //     areaId,
-  //     O.some(gsheetData.BAMBU.data.spreadsheetId!)
-  //   );
-  //   const results1 = await runAsyncApplyExternalEventSources(framework);
-  //   checkLastQuizSync(results1);
+  it('Handle no equipment', async () => {
+    const framework = await initTestFramework(1000);
+    const results = await runAsyncApplyExternalEventSources(framework);
+    checkLastQuizSyncUpdated(results);
+    expect(results.equipmentAfter.size).toStrictEqual(0);
+  });
+  it('Handle equipment with no training sheet', async () => {
+    const framework = await initTestFramework(1000);
+    const areaId = await addArea(framework);
+    const bambu = await addWithSheet(framework, 'bambu', areaId, O.none);
+    const results = await runAsyncApplyExternalEventSources(framework);
+    expect(
+      results.equipmentAfter.get(bambu.id)!.lastQuizSync // No training sheet so not updated.
+    ).toStrictEqual(O.none);
+    expect(results.equipmentAfter.get(bambu.id)!.lastQuizResult).toStrictEqual(
+      O.none
+    );
+  });
+  it('Rate limit equipment pull', async () => {
+    const framework = await initTestFramework(1000);
+    const areaId = await addArea(framework);
+    const bambu = await addWithSheet(
+      framework,
+      'bambu',
+      areaId,
+      O.some(gsheetData.BAMBU.apiResp.spreadsheetId!)
+    );
+    const results1 = await runAsyncApplyExternalEventSources(framework);
+    checkLastQuizSyncUpdated(results1);
+    const results2 = await runAsyncApplyExternalEventSources(framework);
+    expect(results1.equipmentAfter.get(bambu.id)!.lastQuizSync).toStrictEqual(
+      results2.equipmentAfter.get(bambu.id)!.lastQuizSync
+    );
+  });
+  it('Repeat equipment pull no rate limit', async () => {
+    const rateLimitMs = 100;
+    const framework = await initTestFramework(rateLimitMs);
+    const areaId = await addArea(framework);
+    const bambu = await addWithSheet(
+      framework,
+      'bambu',
+      areaId,
+      O.some(gsheetData.BAMBU.apiResp.spreadsheetId!)
+    );
+    const results1 = await runAsyncApplyExternalEventSources(framework);
+    checkLastQuizSyncUpdated(results1);
 
-  //   await new Promise(res => setTimeout(res, rateLimitMs));
-  //   const results2 = await runAsyncApplyExternalEventSources(framework);
-  //   checkLastQuizSync(results2);
-  //   expect(results1.equipmentAfter.get(bambu.id)!.lastQuizSync).not.toEqual(
-  //     results2.equipmentAfter.get(bambu.id)!.lastQuizSync
-  //   );
-  //   expect(results1.newEvents.length).toBeGreaterThan(0);
-  //   expect(results2.newEvents).toHaveLength(0);
-  // });
+    await new Promise(res => setTimeout(res, rateLimitMs));
+    const results2 = await runAsyncApplyExternalEventSources(framework);
+    checkLastQuizSyncUpdated(results2);
+    expect(results1.equipmentAfter.get(bambu.id)!.lastQuizSync).not.toEqual(
+      results2.equipmentAfter.get(bambu.id)!.lastQuizSync
+    );
+  });
 });
 
 type ApplyExternalEventsResults = {

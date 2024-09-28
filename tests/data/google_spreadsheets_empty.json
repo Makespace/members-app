@@ -139,7 +139,7 @@
                 "index": 0,
                 "sheetType": "GRID",
                 "gridProperties": {
-                    "rowCount": 190,
+                    "rowCount": 1,
                     "columnCount": 25,
                     "frozenRowCount": 1
                 }
