@@ -18,11 +18,16 @@ const MIN_RECOGNISED_MEMBER_NUMBER = 0;
 const MAX_RECOGNISED_MEMBER_NUMBER = 10_000;
 
 const MIN_VALID_TIMESTAMP_EPOCH_MS =
-  1262304000_000 as EpochTimestampMilliseconds; // Year 2010
-const MAX_VALID_TIMESTAMP_EPOCH_MS =
-  4102444800_000 as EpochTimestampMilliseconds; // Year 2100
+  1546304461_000 as EpochTimestampMilliseconds; // Year 2019, Can't see any training results before this.
 
 const FORM_RESPONSES_SHEET_REGEX = /^Form Responses [0-9]*/i;
+
+const FORMATS_TO_TRY = [
+  'dd/MM/yyyy HH:mm:ss',
+  'MM/dd/yyyy HH:mm:ss',
+  'M/dd/yyyy HH:mm:ss',
+  'yyyy-MM-dd HH:mm:ss',
+];
 
 const extractScore = (
   rowValue: string | undefined | null
@@ -94,7 +99,44 @@ const extractMemberNumber = (
   return O.some(rowValue);
 };
 
-const extractTimestamp =
+const timestampValid = (
+  raw: string,
+  timezone: string,
+  ts: DateTime
+): E.Either<string, EpochTimestampMilliseconds> => {
+  let timestampEpochMS;
+  try {
+    if (ts.isValid) {
+      timestampEpochMS = (ts.toUnixInteger() *
+        1000) as EpochTimestampMilliseconds;
+    } else {
+      return E.left(
+        `Failed to parse timestamp: ${raw} in timezone ${timezone}, reason: ${ts.invalidReason}`
+      );
+    }
+  } catch (e) {
+    let errStr = 'unknown';
+    if (e instanceof Error) {
+      errStr = `${e.name}: ${e.message}`;
+    }
+    return E.left(
+      `Unable to parse timestamp: '${raw}' in timezone ${timezone}, err: ${errStr}`
+    );
+  }
+  if (
+    isNaN(timestampEpochMS) ||
+    !isFinite(timestampEpochMS) ||
+    timestampEpochMS < MIN_VALID_TIMESTAMP_EPOCH_MS ||
+    timestampEpochMS > DateTime.utc().toUnixInteger() * 10 * 60 * 1000
+  ) {
+    return E.left(
+      `Produced timestamp is invalid/out-of-range: '${raw}', timezone: '${timezone}' decoded to ${timestampEpochMS}`
+    );
+  }
+  return E.right(timestampEpochMS);
+};
+
+export const extractTimestamp =
   (timezone: string) =>
   (
     rowValue: O.Option<string>
@@ -103,31 +145,17 @@ const extractTimestamp =
       return E.left('Missing column value');
     }
     let timestampEpochMS;
-    try {
-      timestampEpochMS = (DateTime.fromFormat(
-        rowValue.value,
-        'dd/MM/yyyy HH:mm:ss',
-        {
-          setZone: true,
-          zone: timezone,
-        }
-      ).toUnixInteger() * 1000) as EpochTimestampMilliseconds;
-    } catch (e) {
-      return E.left(
-        `Unable to parse timestamp: '${rowValue.value}' in timezone ${timezone}`
-      );
+    for (const format of FORMATS_TO_TRY) {
+      const ts = DateTime.fromFormat(rowValue.value, format, {
+        setZone: true,
+        zone: timezone,
+      });
+      timestampEpochMS = timestampValid(rowValue.value, timezone, ts);
+      if (E.isRight(timestampEpochMS)) {
+        return timestampEpochMS;
+      }
     }
-    if (
-      isNaN(timestampEpochMS) ||
-      !isFinite(timestampEpochMS) ||
-      timestampEpochMS < MIN_VALID_TIMESTAMP_EPOCH_MS ||
-      timestampEpochMS > MAX_VALID_TIMESTAMP_EPOCH_MS
-    ) {
-      return E.left(
-        `Produced timestamp is invalid/out-of-range: '${rowValue.value}', timezone: '${timezone}'`
-      );
-    }
-    return E.right(timestampEpochMS);
+    return timestampEpochMS as E.Left<string>;
   };
 
 const extractFromRow =
