@@ -1,16 +1,20 @@
 import {UUID} from 'io-ts-types';
-import {EventOfType, isEventOfType} from '../../src/types/domain-event';
+import {
+  DomainEvent,
+  EventOfType,
+  isEventOfType,
+} from '../../src/types/domain-event';
 import pino from 'pino';
 import * as RA from 'fp-ts/lib/ReadonlyArray';
 import * as N from 'fp-ts/number';
 import * as O from 'fp-ts/Option';
 import * as gsheetData from '../data/google_sheet_data';
 import {pullNewEquipmentQuizResults} from '../../src/read-models/shared-state/async-apply-external-event-sources';
-import {localPullGoogleSheetData} from '../init-dependencies/pull-local-google';
 import {
   EpochTimestampMilliseconds,
   Equipment,
 } from '../../src/read-models/shared-state/return-types';
+import {localGoogleHelpers} from '../init-dependencies/pull-local-google';
 
 const sortQuizResults = RA.sort({
   compare: (a, b) =>
@@ -25,15 +29,21 @@ const sortQuizResults = RA.sort({
     ),
 });
 
-const pullNewEquipmentQuizResultsLocal = async (equipment: Equipment) =>
-  pullNewEquipmentQuizResults(
+const pullNewEquipmentQuizResultsLocal = async (equipment: Equipment) => {
+  const newEvents: DomainEvent[] = [];
+  await pullNewEquipmentQuizResults(
     pino({
       level: 'fatal',
       timestamp: pino.stdTimeFunctions.isoTime,
     }),
-    localPullGoogleSheetData,
-    equipment
-  )();
+    localGoogleHelpers,
+    equipment,
+    newEvent => {
+      newEvents.push(newEvent);
+    }
+  );
+  return newEvents;
+};
 
 const defaultEquipment = (): Equipment => ({
   id: 'ebedee32-49f4-4d36-a350-4fa7848792bf' as UUID,
@@ -75,7 +85,7 @@ const pullEquipmentQuizResultsWrapper = async (
   for (const event of events) {
     if (isEventOfType('EquipmentTrainingQuizResult')(event)) {
       result.quizResults.push(event);
-    } else if (isEventOfType('EquipmentTrainingQuizSync')) {
+    } else if (isEventOfType('EquipmentTrainingQuizSync')(event)) {
       result.quizSync.push(event);
     } else {
       throw new Error('Unexpected event type');
@@ -109,14 +119,14 @@ describe('Training sheets worker', () => {
 
       it('empty sheet produces no events, but does indicate a sync', async () => {
         const result = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.EMPTY.data.spreadsheetId!)
+          O.some(gsheetData.EMPTY.apiResp.spreadsheetId!)
         );
         expect(result.quizResults).toHaveLength(0);
         checkQuizSync(result);
       });
       it('metal lathe training sheet', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.METAL_LATHE.data.spreadsheetId!)
+          O.some(gsheetData.METAL_LATHE.apiResp.spreadsheetId!)
         );
         checkQuizSync(results);
         expect(results.quizResults[0]).toMatchObject<
@@ -124,13 +134,13 @@ describe('Training sheets worker', () => {
         >({
           type: 'EquipmentTrainingQuizResult',
           equipmentId: defaultEquipment().id,
-          trainingSheetId: gsheetData.METAL_LATHE.data.spreadsheetId!,
+          trainingSheetId: gsheetData.METAL_LATHE.apiResp.spreadsheetId!,
           ...gsheetData.METAL_LATHE.entries[0],
         });
       });
       it('training sheet with a summary page', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.LASER_CUTTER.data.spreadsheetId!)
+          O.some(gsheetData.LASER_CUTTER.apiResp.spreadsheetId!)
         );
         checkQuizSync(results);
         const expected: readonly Partial<
@@ -138,7 +148,7 @@ describe('Training sheets worker', () => {
         >[] = gsheetData.LASER_CUTTER.entries.map(e => ({
           type: 'EquipmentTrainingQuizResult',
           equipmentId: defaultEquipment().id,
-          trainingSheetId: gsheetData.LASER_CUTTER.data.spreadsheetId!,
+          trainingSheetId: gsheetData.LASER_CUTTER.apiResp.spreadsheetId!,
           actor: {
             tag: 'system',
           },
@@ -157,7 +167,7 @@ describe('Training sheets worker', () => {
       });
       it('training sheet with multiple response pages (different quiz questions)', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.BAMBU.data.spreadsheetId!)
+          O.some(gsheetData.BAMBU.apiResp.spreadsheetId!)
         );
         checkQuizSync(results);
         const expected: readonly Partial<
@@ -165,7 +175,7 @@ describe('Training sheets worker', () => {
         >[] = gsheetData.BAMBU.entries.map(e => ({
           type: 'EquipmentTrainingQuizResult',
           equipmentId: defaultEquipment().id,
-          trainingSheetId: gsheetData.BAMBU.data.spreadsheetId!,
+          trainingSheetId: gsheetData.BAMBU.apiResp.spreadsheetId!,
           actor: {
             tag: 'system',
           },
@@ -184,7 +194,7 @@ describe('Training sheets worker', () => {
       });
       it('Only take new rows, date in future', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.BAMBU.data.spreadsheetId!),
+          O.some(gsheetData.BAMBU.apiResp.spreadsheetId!),
           O.some(Date.now() as EpochTimestampMilliseconds)
         );
         checkQuizSync(results);
@@ -192,7 +202,7 @@ describe('Training sheets worker', () => {
       });
       it('Only take new rows, date in far past', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.BAMBU.data.spreadsheetId!),
+          O.some(gsheetData.BAMBU.apiResp.spreadsheetId!),
           O.some(0 as EpochTimestampMilliseconds)
         );
         checkQuizSync(results);
@@ -209,7 +219,7 @@ describe('Training sheets worker', () => {
 
       it('Only take new rows, exclude 1', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.BAMBU.data.spreadsheetId!),
+          O.some(gsheetData.BAMBU.apiResp.spreadsheetId!),
           O.some(1700768963_000 as EpochTimestampMilliseconds)
         );
         checkQuizSync(results);
@@ -218,7 +228,7 @@ describe('Training sheets worker', () => {
 
       it('Only take new rows, exclude 2', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.BAMBU.data.spreadsheetId!),
+          O.some(gsheetData.BAMBU.apiResp.spreadsheetId!),
           O.some(1700769348_000 as EpochTimestampMilliseconds)
         );
         checkQuizSync(results);
@@ -227,7 +237,7 @@ describe('Training sheets worker', () => {
 
       it('Only take new rows, exclude 3', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.BAMBU.data.spreadsheetId!),
+          O.some(gsheetData.BAMBU.apiResp.spreadsheetId!),
           O.some(1710249052_000 as EpochTimestampMilliseconds)
         );
         checkQuizSync(results);
@@ -236,7 +246,7 @@ describe('Training sheets worker', () => {
 
       it('Only take new rows, exclude all (already have latest)', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.BAMBU.data.spreadsheetId!),
+          O.some(gsheetData.BAMBU.apiResp.spreadsheetId!),
           O.some(1710249842_000 as EpochTimestampMilliseconds)
         );
         checkQuizSync(results);

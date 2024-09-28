@@ -7,7 +7,7 @@ import {faker} from '@faker-js/faker';
 import {EventName} from '../../src/types/domain-event';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
 import * as libsqlClient from '@libsql/client';
-import {localPullGoogleSheetData} from './pull-local-google';
+import {localGoogleHelpers} from './pull-local-google';
 
 export const happyPathAdapters: Dependencies = {
   commitEvent: () => () =>
@@ -20,7 +20,7 @@ export const happyPathAdapters: Dependencies = {
       level: 'fatal',
       timestamp: pino.stdTimeFunctions.isoTime,
     }),
-    O.some(localPullGoogleSheetData),
+    O.some(localGoogleHelpers),
     120_000
   ),
   logger: (() => undefined) as never as Logger,
