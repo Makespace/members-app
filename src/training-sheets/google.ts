@@ -1,6 +1,7 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
+import * as E from 'fp-ts/Either';
 
 import {Logger} from 'pino';
 import {constructEvent, EventOfType} from '../types/domain-event';
@@ -96,32 +97,37 @@ const extractMemberNumber = (
 const extractTimestamp =
   (timezone: string) =>
   (
-    rowValue: string | undefined | null
-  ): O.Option<EpochTimestampMilliseconds> => {
-    if (!rowValue) {
-      return O.none;
+    rowValue: O.Option<string>
+  ): E.Either<string, EpochTimestampMilliseconds> => {
+    if (!rowValue || O.isNone(rowValue)) {
+      return E.left('Missing column value');
     }
+    let timestampEpochMS;
     try {
-      const timestampEpochMS = (DateTime.fromFormat(
-        rowValue,
+      timestampEpochMS = (DateTime.fromFormat(
+        rowValue.value,
         'dd/MM/yyyy HH:mm:ss',
         {
           setZone: true,
           zone: timezone,
         }
       ).toUnixInteger() * 1000) as EpochTimestampMilliseconds;
-      if (
-        isNaN(timestampEpochMS) ||
-        !isFinite(timestampEpochMS) ||
-        timestampEpochMS < MIN_VALID_TIMESTAMP_EPOCH_MS ||
-        timestampEpochMS > MAX_VALID_TIMESTAMP_EPOCH_MS
-      ) {
-        return O.none;
-      }
-      return O.some(timestampEpochMS);
-    } catch {
-      return O.none;
+    } catch (e) {
+      return E.left(
+        `Unable to parse timestamp: '${rowValue.value}' in timezone ${timezone}`
+      );
     }
+    if (
+      isNaN(timestampEpochMS) ||
+      !isFinite(timestampEpochMS) ||
+      timestampEpochMS < MIN_VALID_TIMESTAMP_EPOCH_MS ||
+      timestampEpochMS > MAX_VALID_TIMESTAMP_EPOCH_MS
+    ) {
+      return E.left(
+        `Produced timestamp is invalid/out-of-range: '${rowValue.value}', timezone: '${timezone}'`
+      );
+    }
+    return E.right(timestampEpochMS);
   };
 
 const extractFromRow =
@@ -164,8 +170,7 @@ const extractFromRow =
       row.values,
       lookup(metadata.mappedColumns.timestamp),
       O.map(entry => entry.formattedValue),
-      O.map(extractTimestamp(timezone)),
-      O.flatten
+      extractTimestamp(timezone)
     );
 
     if (O.isNone(email) && O.isNone(memberNumber)) {
@@ -181,9 +186,11 @@ const extractFromRow =
       logger.trace('Skipped quiz row: %o', row);
       return O.none;
     }
-    if (O.isNone(timestampEpochMS)) {
-      logger.warn('Failed to extract timestamp from row, skipped row');
-      logger.trace('Skipped quiz row: %o', row);
+    if (E.isLeft(timestampEpochMS)) {
+      logger.warn(
+        'Failed to extract timestamp from row, skipped row, reason: %s',
+        timestampEpochMS.left
+      );
       return O.none;
     }
     return O.some(
@@ -195,7 +202,7 @@ const extractFromRow =
           : null,
         emailProvided: O.isSome(email) ? email.value : null,
         trainingSheetId,
-        timestampEpochMS: timestampEpochMS.value,
+        timestampEpochMS: timestampEpochMS.right,
         ...score.value,
       })
     );
