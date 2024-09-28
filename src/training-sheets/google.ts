@@ -10,6 +10,7 @@ import {DateTime} from 'luxon';
 import {EpochTimestampMilliseconds} from '../read-models/shared-state/return-types';
 import {GoogleSheetMetadata} from './extract-metadata';
 import {GoogleSpreadsheetDataForSheet} from '../init-dependencies/google/pull_sheet_data';
+import {lookup} from 'fp-ts/ReadonlyArray';
 
 // Bounds to prevent clearly broken parsing.
 const MIN_RECOGNISED_MEMBER_NUMBER = 0;
@@ -92,35 +93,36 @@ const extractMemberNumber = (
   return O.some(rowValue);
 };
 
-const extractTimestamp = (
-  timezone: string,
-  rowValue: string | undefined | null
-): O.Option<EpochTimestampMilliseconds> => {
-  if (!rowValue) {
-    return O.none;
-  }
-  try {
-    const timestampEpochMS = (DateTime.fromFormat(
-      rowValue,
-      'dd/MM/yyyy HH:mm:ss',
-      {
-        setZone: true,
-        zone: timezone,
-      }
-    ).toUnixInteger() * 1000) as EpochTimestampMilliseconds;
-    if (
-      isNaN(timestampEpochMS) ||
-      !isFinite(timestampEpochMS) ||
-      timestampEpochMS < MIN_VALID_TIMESTAMP_EPOCH_MS ||
-      timestampEpochMS > MAX_VALID_TIMESTAMP_EPOCH_MS
-    ) {
+const extractTimestamp =
+  (timezone: string) =>
+  (
+    rowValue: string | undefined | null
+  ): O.Option<EpochTimestampMilliseconds> => {
+    if (!rowValue) {
       return O.none;
     }
-    return O.some(timestampEpochMS);
-  } catch {
-    return O.none;
-  }
-};
+    try {
+      const timestampEpochMS = (DateTime.fromFormat(
+        rowValue,
+        'dd/MM/yyyy HH:mm:ss',
+        {
+          setZone: true,
+          zone: timezone,
+        }
+      ).toUnixInteger() * 1000) as EpochTimestampMilliseconds;
+      if (
+        isNaN(timestampEpochMS) ||
+        !isFinite(timestampEpochMS) ||
+        timestampEpochMS < MIN_VALID_TIMESTAMP_EPOCH_MS ||
+        timestampEpochMS > MAX_VALID_TIMESTAMP_EPOCH_MS
+      ) {
+        return O.none;
+      }
+      return O.some(timestampEpochMS);
+    } catch {
+      return O.none;
+    }
+  };
 
 const extractFromRow =
   (
@@ -134,21 +136,36 @@ const extractFromRow =
     values: {formattedValue: string}[];
   }): O.Option<EventOfType<'EquipmentTrainingQuizResult'>> => {
     const email = O.isSome(metadata.mappedColumns.email)
-      ? extractEmail(
-          row.values[metadata.mappedColumns.email.value].formattedValue
+      ? pipe(
+          row.values,
+          lookup(metadata.mappedColumns.email.value),
+          O.map(entry => entry.formattedValue),
+          O.map(extractEmail),
+          O.flatten
         )
       : O.none;
     const memberNumber = O.isSome(metadata.mappedColumns.memberNumber)
-      ? extractMemberNumber(
-          row.values[metadata.mappedColumns.memberNumber.value].formattedValue
+      ? pipe(
+          row.values,
+          lookup(metadata.mappedColumns.memberNumber.value),
+          O.map(entry => entry.formattedValue),
+          O.map(extractMemberNumber),
+          O.flatten
         )
       : O.none;
-    const score = extractScore(
-      row.values[metadata.mappedColumns.score].formattedValue
+    const score = pipe(
+      row.values,
+      lookup(metadata.mappedColumns.score),
+      O.map(entry => entry.formattedValue),
+      O.map(extractScore),
+      O.flatten
     );
-    const timestampEpochMS = extractTimestamp(
-      timezone,
-      row.values[metadata.mappedColumns.timestamp].formattedValue
+    const timestampEpochMS = pipe(
+      row.values,
+      lookup(metadata.mappedColumns.timestamp),
+      O.map(entry => entry.formattedValue),
+      O.map(extractTimestamp(timezone)),
+      O.flatten
     );
 
     if (O.isNone(email) && O.isNone(memberNumber)) {
