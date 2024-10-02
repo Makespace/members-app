@@ -84,4 +84,38 @@ describe('get', () => {
       expect(equipment.area.name).toStrictEqual(createArea.name);
     });
   });
+
+  describe('When equipment has a member marked as trained twice', () => {
+    const addTrainedMember = {
+      memberNumber: faker.number.int() as Int,
+      email: faker.internet.email() as EmailAddress,
+    };
+    const createArea = {
+      id: faker.string.uuid() as UUID,
+      name: faker.company.buzzNoun() as NonEmptyString,
+    };
+    const addEquipment = {
+      id: equipmentId,
+      name: faker.company.buzzNoun() as NonEmptyString,
+      areaId: createArea.id,
+    };
+    const markTrained = {
+      equipmentId: equipmentId,
+      memberNumber: addTrainedMember.memberNumber,
+    };
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(
+        addTrainedMember
+      );
+      await framework.commands.area.create(createArea);
+      await framework.commands.equipment.add(addEquipment);
+      await framework.commands.trainers.markTrained(markTrained);
+      await framework.commands.trainers.markTrained(markTrained);
+    });
+
+    it('equipment only shows member as trained once', () => {
+      const equipment = runQuery();
+      expect(equipment.trainedMembers).toHaveLength(1);
+    });
+  });
 });
