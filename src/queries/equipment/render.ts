@@ -135,8 +135,9 @@ const currentlyTrainedUsersTable = (viewModel: ViewModel) =>
 const waitingForTrainingRow = (member: MemberAwaitingTraining) => html`
   <tr class="passed_training_quiz_row">
     <td hidden>${member.quizId}</td>
-    <td>${displayDate(DateTime.fromJSDate(member.waitingSince))}</td>
+    <td>${sanitizeString(O.getOrElse(() => 'unknown')(member.name))}</td>
     <td>${renderMemberNumber(member.memberNumber)}</td>
+    <td>${displayDate(DateTime.fromJSDate(member.waitingSince))}</td>
     <td><button>Mark as trained</button></td>
   </tr>
 `;
@@ -148,13 +149,16 @@ const waitingForTrainingTable = (viewModel: ViewModel) =>
     RA.match(
       () => html`<p>No one is waiting for training</p>`,
       rows => html`
-        <tr>
-          <th hidden>Quiz ID</th>
-          <th>Waiting Since</th>
-          <th>Member Number</th>
-          <th>Actions</th>
-        </tr>
-        ${joinHtml(rows)}
+        <table>
+          <tr>
+            <th hidden>Quiz ID</th>
+            <th>Name</th>
+            <th>Member Number</th>
+            <th>Waiting Since</th>
+            <th>Actions</th>
+          </tr>
+          ${joinHtml(rows)}
+        </table>
       `
     )
   );
