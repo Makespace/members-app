@@ -112,12 +112,12 @@ const equipmentActions = (viewModel: ViewModel) => html`
 const currentlyTrainedUsersTable = (viewModel: ViewModel) =>
   pipe(
     viewModel.equipment.trainedMembers,
-    RA.map(member => member.memberNumber),
-    RA.map(renderMemberNumber),
     RA.map(
-      memberNumberHtml =>
+      member =>
         html`<tr>
-          <td>${memberNumberHtml}</td>
+          <td>${sanitizeString(O.getOrElse(() => '')(member.name))}</td>
+          <td>${renderMemberNumber(member.memberNumber)}</td>
+          <td>${displayDate(DateTime.fromJSDate(member.trainedAt))}</td>
         </tr>`
     ),
     joinHtml,
@@ -125,7 +125,9 @@ const currentlyTrainedUsersTable = (viewModel: ViewModel) =>
       <h2>Currently Trained Users</h2>
       <table>
         <tr>
+          <th>Name</th>
           <th>Member Number</th>
+          <th>Trained at</th>
         </tr>
         ${rows}
       </table>
