@@ -38,3 +38,17 @@ export const withDefaultIfEmpty = <C extends t.Any>(
       E.chain(nonEmptyString => codec.validate(nonEmptyString, context))
     )
   );
+
+export const accumByMap =
+  <T, R>(accumBy: (a: T) => string | number, map: (a: T[]) => R) =>
+  (arr: ReadonlyArray<T>): ReadonlyArray<R> => {
+    const accumulated: Record<string | number, T[]> = {};
+    for (const el of arr) {
+      const key = accumBy(el);
+      if (!accumulated[key]) {
+        accumulated[key] = [];
+      }
+      accumulated[key].push(el);
+    }
+    return Object.values(accumulated).map(map);
+  };

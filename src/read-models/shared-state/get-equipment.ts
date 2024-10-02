@@ -14,6 +14,7 @@ import {
 } from './state';
 import {EpochTimestampMilliseconds} from './return-types';
 import {UUID} from 'io-ts-types';
+import {accumByMap} from '../../util';
 
 export const getEquipment =
   (db: BetterSQLite3Database): SharedReadModel['equipment']['get'] =>
@@ -53,7 +54,12 @@ export const getEquipment =
             eq(membersTable.memberNumber, trainedMemberstable.memberNumber)
           )
           .where(eq(trainedMemberstable.equipmentId, id))
+          .orderBy(trainedMemberstable.trainedAt)
           .all(),
+        accumByMap(
+          row => row.members.memberNumber,
+          rows => rows[rows.length - 1]
+        ),
         RA.map(result => ({
           ...result.members,
           trainedBy: result.trainedMembers.trainedBy,
