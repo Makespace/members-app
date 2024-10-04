@@ -118,4 +118,53 @@ describe('get', () => {
       expect(equipment.trainedMembers).toHaveLength(1);
     });
   });
+
+  describe('When equipment has a member marked as trained then revoked', () => {
+    const addTrainedMember = {
+      memberNumber: faker.number.int() as Int,
+      email: faker.internet.email() as EmailAddress,
+    };
+    const createArea = {
+      id: faker.string.uuid() as UUID,
+      name: faker.company.buzzNoun() as NonEmptyString,
+    };
+    const addEquipment = {
+      id: equipmentId,
+      name: faker.company.buzzNoun() as NonEmptyString,
+      areaId: createArea.id,
+    };
+    const markTrained = {
+      equipmentId: equipmentId,
+      memberNumber: addTrainedMember.memberNumber,
+    };
+    const revokeTrained = {
+      equipmentId: equipmentId,
+      memberNumber: addTrainedMember.memberNumber,
+    };
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(
+        addTrainedMember
+      );
+      await framework.commands.area.create(createArea);
+      await framework.commands.equipment.add(addEquipment);
+      await framework.commands.trainers.markTrained(markTrained);
+      await framework.commands.trainers.revokeTrained(revokeTrained);
+    });
+
+    it("equipment doesn't show the member as trained", () => {
+      const equipment = runQuery();
+      expect(equipment.trainedMembers).toHaveLength(0);
+    });
+
+    describe('Member is then re-trained', () => {
+      beforeEach(async () => {
+        await framework.commands.trainers.markTrained(markTrained);
+      });
+
+      it('Equipment shows the member as trained again', () => {
+        const equipment = runQuery();
+        expect(equipment.trainedMembers).toHaveLength(1);
+      });
+    });
+  });
 });

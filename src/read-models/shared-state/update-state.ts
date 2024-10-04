@@ -11,7 +11,7 @@ import {
   trainingQuizTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {eq} from 'drizzle-orm';
+import {and, eq} from 'drizzle-orm';
 
 export const updateState =
   (db: BetterSQLite3Database) => (event: DomainEvent) => {
@@ -155,6 +155,16 @@ export const updateState =
             lastQuizSync: event.recordedAt.getTime(),
           })
           .where(eq(equipmentTable.id, event.equipmentId))
+          .run();
+        break;
+      case 'RevokeTrainedOnEquipment':
+        db.delete(trainedMemberstable)
+          .where(
+            and(
+              eq(trainedMemberstable.equipmentId, event.equipmentId),
+              eq(trainedMemberstable.memberNumber, event.memberNumber)
+            )
+          )
           .run();
         break;
       default:

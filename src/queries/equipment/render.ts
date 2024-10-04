@@ -119,6 +119,21 @@ const currentlyTrainedUsersTable = (viewModel: ViewModel) =>
           <td>${sanitizeString(O.getOrElse(() => '')(member.name))}</td>
           <td>${renderMemberNumber(member.memberNumber)}</td>
           <td>${displayDate(DateTime.fromJSDate(member.trainedAt))}</td>
+          <td>
+            <form action="/equipment/revoke-member-trained" method="post">
+              <input
+                type="hidden"
+                name="equipmentId"
+                value="${viewModel.equipment.id}"
+              />
+              <input
+                type="hidden"
+                name="memberNumber"
+                value="${member.memberNumber}"
+              />
+              <button type="submit">Revoke Training</button>
+            </form>
+          </td>
         </tr>`
     ),
     joinHtml,
@@ -129,6 +144,7 @@ const currentlyTrainedUsersTable = (viewModel: ViewModel) =>
           <th>Name</th>
           <th>Member Number</th>
           <th>Trained at</th>
+          <th>Actions</th>
         </tr>
         ${rows}
       </table>
