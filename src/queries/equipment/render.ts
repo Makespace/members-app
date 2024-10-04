@@ -14,7 +14,7 @@ import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {MemberAwaitingTraining} from '../../read-models/shared-state/return-types';
 import {DateTime} from 'luxon';
-import { UUID } from 'io-ts-types';
+import {UUID} from 'io-ts-types';
 
 const trainersList = (trainers: ViewModel['equipment']['trainers']) =>
   pipe(
