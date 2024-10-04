@@ -14,6 +14,7 @@ import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {MemberAwaitingTraining} from '../../read-models/shared-state/return-types';
 import {DateTime} from 'luxon';
+import { UUID } from 'io-ts-types';
 
 const trainersList = (trainers: ViewModel['equipment']['trainers']) =>
   pipe(
@@ -134,20 +135,31 @@ const currentlyTrainedUsersTable = (viewModel: ViewModel) =>
     `
   );
 
-const waitingForTrainingRow = (member: MemberAwaitingTraining) => html`
-  <tr class="passed_training_quiz_row">
-    <td hidden>${member.quizId}</td>
-    <td>${sanitizeString(O.getOrElse(() => 'unknown')(member.name))}</td>
-    <td>${renderMemberNumber(member.memberNumber)}</td>
-    <td>${displayDate(DateTime.fromJSDate(member.waitingSince))}</td>
-    <td><button>Mark as trained</button></td>
-  </tr>
-`;
+const waitingForTrainingRow =
+  (equipmentId: UUID) => (member: MemberAwaitingTraining) => html`
+    <tr class="passed_training_quiz_row">
+      <td hidden>${member.quizId}</td>
+      <td>${sanitizeString(O.getOrElse(() => 'unknown')(member.name))}</td>
+      <td>${renderMemberNumber(member.memberNumber)}</td>
+      <td>${displayDate(DateTime.fromJSDate(member.waitingSince))}</td>
+      <td>
+        <form action="/equipment/mark-member-trained" method="post">
+          <input type="hidden" name="equipmentId" value="${equipmentId}" />
+          <input
+            type="hidden"
+            name="memberNumber"
+            value="${member.memberNumber}"
+          />
+          <button type="submit">Mark as trained</button>
+        </form>
+      </td>
+    </tr>
+  `;
 
 const waitingForTrainingTable = (viewModel: ViewModel) =>
   pipe(
     viewModel.equipment.membersAwaitingTraining,
-    RA.map(waitingForTrainingRow),
+    RA.map(waitingForTrainingRow(viewModel.equipment.id)),
     RA.match(
       () => html`<p>No one is waiting for training</p>`,
       rows => html`
