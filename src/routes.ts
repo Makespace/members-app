@@ -34,6 +34,11 @@ export const initRoutes = (
       'mark-member-trained',
       commands.trainers.markTrained
     ),
+    ...command(
+      'equipment',
+      'revoke-member-trained',
+      commands.trainers.revokeTrained
+    ),
     query('/equipment/:equipment', queries.equipment),
     query('/super-users', queries.superUsers),
     ...command('super-users', 'declare', commands.superUser.declare),

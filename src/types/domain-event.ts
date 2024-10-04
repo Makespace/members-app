@@ -91,6 +91,11 @@ export const DomainEvent = t.union([
     memberNumber: t.number,
     trainedByMemberNumber: t.union([t.number, t.null]), // Null to indicate system.
   }),
+  eventCodec('RevokeTrainedOnEquipment', {
+    equipmentId: tt.UUID,
+    memberNumber: t.number,
+    revokedByMemberNumber: t.union([t.number, t.null]), // Null to indicate system.
+  }),
   eventCodec('MemberEmailChanged', {
     memberNumber: t.number,
     newEmail: EmailAddressCodec,

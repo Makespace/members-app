@@ -3,6 +3,8 @@ import {addTrainerForm} from './add-trainer-form';
 
 import {markMemberTrained} from './mark-member-trained';
 import {markMemberTrainedForm} from './mark-member-trained-form';
+import {revokeMemberTrained} from './revoke-member-trained';
+import {revokeMemberTrainedForm} from './revoke-member-trained-form';
 
 export const trainers = {
   add: {
@@ -12,5 +14,9 @@ export const trainers = {
   markTrained: {
     ...markMemberTrained,
     ...markMemberTrainedForm,
+  },
+  revokeTrained: {
+    ...revokeMemberTrained,
+    ...revokeMemberTrainedForm,
   },
 };
