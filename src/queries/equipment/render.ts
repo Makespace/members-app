@@ -12,9 +12,15 @@ import {
 import {ViewModel} from './view-model';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {MemberAwaitingTraining} from '../../read-models/shared-state/return-types';
+import * as N from 'fp-ts/number';
+import {
+  FailedQuizAttempt,
+  MemberAwaitingTraining,
+  OrphanedPassedQuiz,
+} from '../../read-models/shared-state/return-types';
 import {DateTime} from 'luxon';
 import {UUID} from 'io-ts-types';
+import {contramap} from 'fp-ts/lib/Ord';
 
 const trainersList = (trainers: ViewModel['equipment']['trainers']) =>
   pipe(
@@ -110,6 +116,18 @@ const equipmentActions = (viewModel: ViewModel) => html`
   </ul>
 `;
 
+const byQuizDate = pipe(
+  N.Ord,
+  contramap(
+    (q: FailedQuizAttempt | OrphanedPassedQuiz) => -q.timestamp.getTime()
+  )
+);
+
+const byWaitingLongest = pipe(
+  N.Ord,
+  contramap((m: MemberAwaitingTraining) => m.waitingSince.getTime())
+);
+
 const currentlyTrainedUsersTable = (viewModel: ViewModel) =>
   pipe(
     viewModel.equipment.trainedMembers,
@@ -175,6 +193,7 @@ const waitingForTrainingRow =
 const waitingForTrainingTable = (viewModel: ViewModel) =>
   pipe(
     viewModel.equipment.membersAwaitingTraining,
+    RA.sortBy([byWaitingLongest]),
     RA.map(waitingForTrainingRow(viewModel.equipment.id)),
     RA.match(
       () => html`<p>No one is waiting for training</p>`,
@@ -211,6 +230,8 @@ const passedUnknownQuizRow = (
 const unknownMemberWaitingForTrainingTable = (viewModel: ViewModel) =>
   pipe(
     viewModel.equipment.orphanedPassedQuizes,
+    RA.sortBy([byQuizDate]),
+    RA.takeLeft(10),
     RA.map(passedUnknownQuizRow),
     RA.match(
       () => html``,
@@ -248,12 +269,14 @@ const failedKnownQuizRow = (
 const failedQuizTrainingTable = (viewModel: ViewModel) =>
   pipe(
     viewModel.equipment.failedQuizAttempts,
+    RA.sortBy([byQuizDate]),
+    RA.takeLeft(10),
     RA.map(failedKnownQuizRow),
     RA.match(
       () => html``,
       rows => html`
         <h3>Failed quizes</h3>
-        <p>Members who haven't passed (but have attempted) the quiz</p>
+        <p>Members who haven't passed (but have attempted) the quiz recently</p>
         <table>
           <tr>
             <th hidden>Quiz ID</th>

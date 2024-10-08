@@ -2,7 +2,7 @@ import * as O from 'fp-ts/Option';
 import {EmailAddress, GravatarHash} from '../../types';
 import {UUID} from 'io-ts-types';
 
-type OrphanedPassedQuiz = {
+export type OrphanedPassedQuiz = {
   id: UUID;
   score: number;
   maxScore: number;
@@ -13,7 +13,7 @@ type OrphanedPassedQuiz = {
   emailProvided: O.Option<string>;
 };
 
-type FailedQuizAttempt = MemberCoreInfo & {
+export type FailedQuizAttempt = MemberCoreInfo & {
   quizId: UUID;
   score: number;
   maxScore: number;
