@@ -26,6 +26,17 @@ const FORMATS_TO_TRY = [
   'dd/MM/yyyy HH:mm:ss',
   'MM/dd/yyyy HH:mm:ss',
   'M/dd/yyyy HH:mm:ss',
+  'dd/M/yyyy HH:mm:ss',
+  'M/d/yyyy HH:mm:ss',
+  'd/M/yyyy HH:mm:ss',
+
+  'dd/MM/yyyy H:m:s',
+  'MM/dd/yyyy H:m:s',
+  'M/dd/yyyy H:m:s',
+  'dd/M/yyyy H:m:s',
+  'M/d/yyyy H:m:s',
+  'd/M/yyyy H:m:s',
+
   'yyyy-MM-dd HH:mm:ss',
 ];
 
