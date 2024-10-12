@@ -260,12 +260,12 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
     if (Math.random() < 0.01) {
       deps.logger.info(newEvent);
     }
-    // await deps.commitEvent(
-    //   {
-    //     type: 'LegacyMemberTrainedOnEquipment',
-    //     id: 'LegacyMemberTrainedOnEquipment', // Intentionally fudge the versioning control for this 1-off import.
-    //   },
-    //   'no-such-resource'
-    // )(newEvent)();
+    await deps.commitEvent(
+      {
+        type: 'LegacyMemberTrainedOnEquipment',
+        id: 'LegacyMemberTrainedOnEquipment', // Intentionally fudge the versioning control for this 1-off import.
+      },
+      'no-such-resource'
+    )(newEvent)();
   }
 };
