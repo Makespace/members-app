@@ -61,9 +61,9 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
     'Form responses 1',
     2, // Rows start at 1, row 2 is column headers.
     // 2000,
-    150,
+    250,
     0,
-    11
+    8
   )();
   if (E.isLeft(sheetData)) {
     deps.logger.warn('Failed to get legacy sheet data for import, skipping');
@@ -75,6 +75,11 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
 
   for (const row of sheetData.right.sheets[0].data[0].rowData) {
     // I know the sheet schema so I know exactly what columns to use.
+    if (row.values.length < 9) {
+      deps.logger.warn('Failed to parse row as missing columns');
+      deps.logger.warn(row.values);
+      continue;
+    }
     parsedData.push({
       timestamp: extractTimestamp('Europe/London')(
         O.fromNullable(row.values[0].formattedValue)
@@ -149,6 +154,7 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
 
     'Bio Labs Safety Training Part I - General': '8e66ecc7-4765-424a-8e71-75d19a2345f0',
     'Bio Labs Safety Training Part II - Working': '593e396d-dfb3-4339-bb10-3660fa5df4c3',
+    'BioLabs_Autoclave': 'cadb1006-2262-44ab-b270-946c2946aafc',
 
   };
 
