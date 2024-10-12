@@ -59,9 +59,9 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
     deps.logger,
     conf.LEGACY_TRAINING_COMPLETE_SHEET,
     'Form responses 1',
-    1,
+    2, // Rows start at 1, row 2 is column headers.
     // 2000,
-    100,
+    2,
     0,
     11
   )();
@@ -80,9 +80,9 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
         O.fromNullable(row.values[0].formattedValue)
       ),
       trainer_number: tt.IntFromString.decode(row.values[3].formattedValue),
-      equipment_name: t.string.decode(row.values[4]),
-      trainee_number: tt.IntFromString.decode(row.values[6]),
-      passed: t.string.decode(row.values[8]),
+      equipment_name: t.string.decode(row.values[4].formattedValue),
+      trainee_number: tt.IntFromString.decode(row.values[6].formattedValue),
+      passed: t.string.decode(row.values[8].formattedValue),
       raw: row,
     });
   }
@@ -91,7 +91,11 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
 
   const equipmentNameIdMap: Record<string, string> = {
     'Bambu X1': 'be613ddb-f959-4c07-9dab-a714c1d9dcfd',
+
     Ultimakers: '075f535b-a519-4aaf-84cf-f8b547008bd3',
+    '3D_Printer': '075f535b-a519-4aaf-84cf-f8b547008bd3',
+
+
     'Markforged Mark II': 'dccca823-4a09-4f65-8ca5-b4bbbd3a118b',
     'Form 3 Resin Printer': '2a96f797-4e3b-4778-9eb8-bf7cd600edd6',
     'Domino Joiner': '22aeae84-31ad-4a60-ab5b-c973ddf5d4a3',
@@ -121,31 +125,31 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
   for (const parsedRow of parsedData) {
     if (E.isLeft(parsedRow.trainee_number)) {
       deps.logger.warn('Failed to parse legacy row trainee number');
-      deps.logger.warn(parsedRow.raw);
+      deps.logger.warn(parsedRow.trainee_number);
       continue;
     }
 
     if (E.isLeft(parsedRow.trainer_number)) {
       deps.logger.warn('Failed to parse legacy row trainer number');
-      deps.logger.warn(parsedRow.raw);
+      deps.logger.warn(parsedRow);
       continue;
     }
 
     if (E.isLeft(parsedRow.passed)) {
       deps.logger.warn('Failed to parse legacy row passed');
-      deps.logger.warn(parsedRow.raw);
+      deps.logger.warn(parsedRow);
       continue;
     }
 
     if (E.isLeft(parsedRow.timestamp)) {
       deps.logger.warn('Failed to parse legacy row timestamp');
-      deps.logger.warn(parsedRow.raw);
+      deps.logger.warn(parsedRow);
       continue;
     }
 
     if (E.isLeft(parsedRow.equipment_name)) {
       deps.logger.warn('Failed to parse legacy row equipment name');
-      deps.logger.warn(parsedRow.raw);
+      deps.logger.warn(parsedRow);
       continue;
     }
 
@@ -157,32 +161,33 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
         'Failed to find equipment id for equipment name: {}',
         parsedRow.equipment_name.right
       );
-      deps.logger.warn(parsedRow.raw);
+      deps.logger.warn(parsedRow);
       continue;
     }
 
     if (!parsedRow.passed.right) {
       deps.logger.warn('Legacy row not passed');
-      deps.logger.warn(parsedRow.raw);
+      deps.logger.warn(parsedRow);
       continue;
     }
 
     // Magic numbers from me manually checking the spreadsheet.
     if (
-      parsedRow.timestamp.right < 1601591897000 ||
+      parsedRow.timestamp.right < 1601588298000 ||
       parsedRow.timestamp.right > 1728735321000
     ) {
       deps.logger.warn('Failed to parse legacy row timestamp - out of range');
       deps.logger.warn(parsedRow.timestamp.right);
-      deps.logger.warn(parsedRow.raw);
+      deps.logger.warn(parsedRow);
       continue;
     }
+    parse(equipmentId.value);
     newEvents.push({
       type: 'MemberTrainedOnEquipment',
       legacyImport: true,
       memberNumber: parsedRow.trainee_number.right,
       trainedByMemberNumber: parsedRow.trainer_number.right,
-      equipmentId: parse(equipmentId.value).toString() as tt.UUID,
+      equipmentId: equipmentId.value as tt.UUID,
       actor: {tag: 'system'} satisfies Actor,
       recordedAt: new Date(parsedRow.timestamp.right),
     });
