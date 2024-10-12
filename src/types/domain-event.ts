@@ -90,6 +90,7 @@ export const DomainEvent = t.union([
     equipmentId: tt.UUID,
     memberNumber: t.number,
     trainedByMemberNumber: t.union([t.number, t.null]), // Null to indicate system.
+    legacyImport: tt.withFallback(t.boolean, false),
   }),
   eventCodec('RevokeTrainedOnEquipment', {
     equipmentId: tt.UUID,
