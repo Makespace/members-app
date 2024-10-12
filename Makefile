@@ -48,6 +48,3 @@ release: export TAG = latest/$(shell date +%Y%m%d%H%M)
 release:
 	git tag $$TAG
 	git push origin $$TAG
-
-test-legacy-import:
-	npx tsx tests/temp_test_legacy_import.ts

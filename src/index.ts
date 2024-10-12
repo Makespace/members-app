@@ -18,7 +18,6 @@ import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
 import cookieSession from 'cookie-session';
 import {initRoutes} from './routes';
-import {legacyTrainingImport} from './training-sheets/legacy-training-import';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -92,7 +91,6 @@ void (async () => {
     TE.mapLeft(e => deps.logger.error(e, 'Failed to start server'))
   )();
 
-  await legacyTrainingImport(conf, deps);
   await deps.sharedReadModel.asyncRefresh()();
   await deps.sharedReadModel.asyncApplyExternalEventSources()();
 
