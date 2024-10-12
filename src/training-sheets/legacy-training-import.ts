@@ -59,8 +59,9 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
     deps.logger,
     conf.LEGACY_TRAINING_COMPLETE_SHEET,
     'Form responses 1',
-    0,
-    2000,
+    1,
+    // 2000,
+    100,
     0,
     11
   )();
