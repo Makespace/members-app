@@ -7,11 +7,9 @@ import {TaskEither} from 'fp-ts/lib/TaskEither';
 import {StatusCodes} from 'http-status-codes';
 
 import {legacyTrainingImport} from '../src/training-sheets/legacy-training-import';
-import { DomainEvent, EventName, EventOfType } from '../src/types/domain-event';
-import { FailureWithStatus } from '../src/types/failure-with-status';
-import { Resource } from '../src/types/resource';
-// import { EventName, EventOfType } from './src/types/domain-event';
-// import { FailureWithStatus } from './src/types/failure-with-status';
+import {DomainEvent, EventName, EventOfType} from '../src/types/domain-event';
+import {FailureWithStatus} from '../src/types/failure-with-status';
+import {Resource} from '../src/types/resource';
 
 async function main() {
   await legacyTrainingImport(
@@ -42,13 +40,13 @@ async function main() {
     {
       logger: pino(),
       getAllEventsByType: function <T extends EventName>(
-        eventType: T
+        _eventType: T
       ): TaskEither<FailureWithStatus, ReadonlyArray<EventOfType<T>>> {
         return TE.right([]);
       },
       commitEvent: function (
-        resource: Resource,
-        lastKnownVersion
+        _resource: Resource,
+        _lastKnownVersion
       ): (
         event: DomainEvent
       ) => TaskEither<
@@ -61,4 +59,4 @@ async function main() {
   );
 }
 
-main();
+void main();
