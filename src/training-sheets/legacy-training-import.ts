@@ -266,8 +266,8 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
       'no-such-resource'
     )(newEvent)();
     if (E.isLeft(res)) {
-      throw new Error(
-        `Legacy import commit failure: resource_id: ${resourceId}, ${inspect(res.left)}`
+      deps.logger.warn(
+        `Legacy import commit failure (skipped): resource_id: ${resourceId}, ${inspect(res.left)}`
       );
     } else {
       successfully_committed++;
