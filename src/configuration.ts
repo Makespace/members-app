@@ -39,10 +39,7 @@ const Config = t.strict({
     (20 * 60 * 1000) as t.Int
   ),
   GOOGLE_SERVICE_ACCOUNT_KEY_JSON: tt.NonEmptyString, // Don't default so we don't accidentally disable.
-  LEGACY_TRAINING_COMPLETE_SHEET: withDefaultIfEmpty(
-    t.string,
-    '1Do4CbGZ7ndvK0955nBOi1psn7jVxgvRZHhlsQbZR3_Y'
-  ),
+  LEGACY_TRAINING_COMPLETE_SHEET: t.union([t.undefined, t.string]), // If not provided then don't do legacy import. Will be removed after legacy import working.
 });
 
 export type Config = t.TypeOf<typeof Config>;

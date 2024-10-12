@@ -25,6 +25,7 @@ const process = (input: {
           : null, // We may want to handle 'system' members added differently or prevent this entirely for auditing purposes.
       equipmentId: input.command.equipmentId,
       memberNumber: input.command.memberNumber,
+      legacyImport: false,
     })
   );
 
