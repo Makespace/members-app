@@ -256,18 +256,19 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
     sheetData.right.sheets[0].data[0].rowData.length
   );
   let successfully_committed = 0;
-  let version = 1;
   for (const newEvent of newEvents) {
+    const resourceId = `${newEvent.equipmentId}_${newEvent.memberNumber}_${newEvent.recordedAt.toISOString()}`;
     const res = await deps.commitEvent(
       {
         type: 'LegacyMemberTrainedOnEquipment',
-        id: 'LegacyMemberTrainedOnEquipment', // Intentionally fudge the versioning control for this 1-off import.
+        id: resourceId, // Intentionally fudge the versioning control for this 1-off import.
       },
-      version
+      'no-such-resource'
     )(newEvent)();
-    version += 1;
     if (E.isLeft(res)) {
-      throw new Error(`Legacy import commit failure: ${inspect(res.left)}`);
+      throw new Error(
+        `Legacy import commit failure: ${inspect(res.left)}, resource_id: ${resourceId}`
+      );
     } else {
       successfully_committed++;
     }
