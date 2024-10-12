@@ -251,7 +251,11 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
     });
   }
 
-  deps.logger.info('Successful events:');
+  deps.logger.info(
+    'Successful events: %s out of %s rows',
+    newEvents.length,
+    sheetData.right.sheets[0].data[0].rowData.length
+  );
   for (const newEvent of newEvents) {
     if (Math.random() < 0.01) {
       deps.logger.info(newEvent);
