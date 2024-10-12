@@ -1,6 +1,4 @@
-import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
-import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
@@ -12,6 +10,7 @@ import {pullGoogleSheetData} from '../init-dependencies/google/pull_sheet_data';
 import {extractTimestamp} from './google';
 import {EventOfType} from '../types/domain-event';
 import {Actor} from '../types/actor';
+import {inspect} from 'node:util';
 
 type ImportDeps = Pick<
   Dependencies,
@@ -39,15 +38,15 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
     deps.logger.warn(prevEvents.left);
     return;
   }
-  const alreadyLegacyImported = pipe(
-    prevEvents.right,
-    RA.filter(e => e.legacyImport),
-    RA.isNonEmpty
-  );
-  if (alreadyLegacyImported) {
-    deps.logger.info('Already completed legacy import');
-    return;
-  }
+  // const alreadyLegacyImported = pipe(
+  //   prevEvents.right,
+  //   RA.filter(e => e.legacyImport),
+  //   RA.isNonEmpty
+  // );
+  // if (alreadyLegacyImported) {
+  //   deps.logger.info('Already completed legacy import');
+  //   return;
+  // }
 
   const googleAuth = new GoogleAuth({
     // Google issues the credentials file and validates it.
@@ -256,16 +255,25 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
     newEvents.length,
     sheetData.right.sheets[0].data[0].rowData.length
   );
+  let successfully_committed = 0;
+  let version = 1;
   for (const newEvent of newEvents) {
-    if (Math.random() < 0.01) {
-      deps.logger.info(newEvent);
-    }
-    await deps.commitEvent(
+    const res = await deps.commitEvent(
       {
         type: 'LegacyMemberTrainedOnEquipment',
         id: 'LegacyMemberTrainedOnEquipment', // Intentionally fudge the versioning control for this 1-off import.
       },
-      'no-such-resource'
+      version
     )(newEvent)();
+    version += 1;
+    if (E.isLeft(res)) {
+      throw new Error(`Legacy import commit failure: ${inspect(res.left)}`);
+    } else {
+      successfully_committed++;
+    }
   }
+  deps.logger.info(
+    'Successful legacy events committed: %s',
+    successfully_committed
+  );
 };
