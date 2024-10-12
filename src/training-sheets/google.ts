@@ -78,7 +78,7 @@ const extractScore = (
   });
 };
 
-export const extractEmail = (
+const extractEmail = (
   rowValue: string | undefined | null
 ): O.Option<string> => {
   if (!rowValue) {
@@ -89,7 +89,7 @@ export const extractEmail = (
   return O.some(rowValue.trim());
 };
 
-export const extractMemberNumber = (
+const extractMemberNumber = (
   rowValue: string | number | undefined | null
 ): O.Option<number> => {
   if (!rowValue) {

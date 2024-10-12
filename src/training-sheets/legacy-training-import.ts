@@ -13,7 +13,7 @@ import {extractTimestamp} from './google';
 import {EventOfType} from '../types/domain-event';
 import {Actor} from '../types/actor';
 
-export type ImportDeps = Pick<
+type ImportDeps = Pick<
   Dependencies,
   'logger' | 'getAllEventsByType' | 'commitEvent'
 >;
