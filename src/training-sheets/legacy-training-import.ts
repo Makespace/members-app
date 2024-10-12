@@ -61,7 +61,7 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
     'Form responses 1',
     2, // Rows start at 1, row 2 is column headers.
     // 2000,
-    2,
+    150,
     0,
     11
   )();
@@ -99,17 +99,41 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
     'Markforged Mark II': 'dccca823-4a09-4f65-8ca5-b4bbbd3a118b',
     'Form 3 Resin Printer': '2a96f797-4e3b-4778-9eb8-bf7cd600edd6',
     'Domino Joiner': '22aeae84-31ad-4a60-ab5b-c973ddf5d4a3',
+
+
     'Band Saw': '4fda0066-5c6f-4043-9b2e-4ca1fda44057',
+    Band_Saw: '4fda0066-5c6f-4043-9b2e-4ca1fda44057',
+
+
+    'Plunge_Router': 'f857639d-78dd-49eb-81db-33b48a9092fe',
     'Festool OF1010 Router': 'f857639d-78dd-49eb-81db-33b48a9092fe',
+
+
     'Mitre Saw': '6ff03684-04b6-4d10-9df8-7020b0955fb6',
     'Planer/Thicknesser  Hammer A3-31': 'ea9f1ed0-1044-4cbe-b58d-12bc2416acec',
+
+    'Circular_Hand Saw': 'a33d672e-c433-4a82-a322-ceba1fa72d47',
     'Plunge Saw  Festool TS75': 'a33d672e-c433-4a82-a322-ceba1fa72d47',
+
+
     Tormek: 'de26bff7-a0e3-4fcb-809d-abebaaea3a07',
+
+    'Thickneser': '794a7ba7-3e93-4558-8087-df7816a5984a',
     Thicknesser: '794a7ba7-3e93-4558-8087-df7816a5984a',
+
     'HPC Laser Cutter': 'dbc3d9b6-4152-413d-8768-835a5d3d9d2e',
+    'Laser_Cutter': 'dbc3d9b6-4152-413d-8768-835a5d3d9d2e',
+
+
     Trotec: '7fb37d96-56f2-4ffa-a213-135f0e5bd0ba',
+
     'CNC Router': '44295217-416c-436e-a7ed-c4ff2d3e0bd5',
+    CNC_Router: '44295217-416c-436e-a7ed-c4ff2d3e0bd5',
+
+
+    'CNC_Model_Mill': '38137289-f97b-4c9c-8aed-00e2b82f8d9a',
     'CNC Model Mill': '38137289-f97b-4c9c-8aed-00e2b82f8d9a',
+
     'Embroidery Machine': '1178c538-04b0-4ef9-8419-34e73f90648d',
     'Pfaff 591 industrial sewing machine':
       '0f2dd455-096d-418e-9508-dd2c880a7ed3',
@@ -120,6 +144,12 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
     'Electrical Working Policy': '8aea8e2f-acb9-4b31-9c1a-7f34c16e5ce0',
     'Fine Metals Bench': 'd053cd2c-1ba3-483c-bdb9-338b14ffc753',
     'Glass Working Kiln': '26a9f079-5a86-4014-85af-15dfebdf73ea',
+
+    'Wood_Lathe': '72a373b3-cb24-4797-8ba4-5b007e0a45d0',
+
+    'Bio Labs Safety Training Part I - General': '8e66ecc7-4765-424a-8e71-75d19a2345f0',
+    'Bio Labs Safety Training Part II - Working': '593e396d-dfb3-4339-bb10-3660fa5df4c3',
+
   };
 
   for (const parsedRow of parsedData) {
@@ -158,7 +188,7 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
     );
     if (O.isNone(equipmentId)) {
       deps.logger.warn(
-        'Failed to find equipment id for equipment name: {}',
+        'Failed to find equipment id for equipment name: %s',
         parsedRow.equipment_name.right
       );
       deps.logger.warn(parsedRow);
@@ -193,8 +223,8 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
     });
   }
 
-  deps.logger.info('Successful events:');
-  for (const newEvent of newEvents) {
-    deps.logger.info(newEvent);
-  }
+  // deps.logger.info('Successful events:');
+  // for (const newEvent of newEvents) {
+  //   deps.logger.info(newEvent);
+  // }
 };
