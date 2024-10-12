@@ -4,12 +4,14 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
+import {parse} from 'uuid';
 import {Config} from '../configuration';
 import {Dependencies} from '../dependencies';
 import {GoogleAuth} from 'google-auth-library';
 import {pullGoogleSheetData} from '../init-dependencies/google/pull_sheet_data';
-import { extractEmail, extractTimestamp } from './google';
-import { EventOfType } from '../types/domain-event';
+import {extractTimestamp} from './google';
+import {EventOfType} from '../types/domain-event';
+import {Actor} from '../types/actor';
 
 export type ImportDeps = Pick<
   Dependencies,
@@ -76,21 +78,19 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
       timestamp: extractTimestamp('Europe/London')(
         O.fromNullable(row.values[0].formattedValue)
       ),
-      // trainer_addr: extractEmail(row.values[1].formattedValue), // Legacy column, not provided anymore.
-      trainer_name: row.values[11].formattedValue, // There is a combined column in the sheet that seems to handle the different legacy positions for this.
       trainer_number: tt.IntFromString.decode(row.values[3].formattedValue),
       equipment_name: t.string.decode(row.values[4]),
-      trainee_name: t.string.decode(row.values[5]),
       trainee_number: tt.IntFromString.decode(row.values[6]),
       passed: t.string.decode(row.values[8]),
+      raw: row,
     });
   }
 
   const newEvents: EventOfType<'MemberTrainedOnEquipment'>[] = [];
 
-  const equipmentNameIdMap = {
+  const equipmentNameIdMap: Record<string, string> = {
     'Bambu X1': 'be613ddb-f959-4c07-9dab-a714c1d9dcfd',
-    'Ultimakers': '075f535b-a519-4aaf-84cf-f8b547008bd3',
+    Ultimakers: '075f535b-a519-4aaf-84cf-f8b547008bd3',
     'Markforged Mark II': 'dccca823-4a09-4f65-8ca5-b4bbbd3a118b',
     'Form 3 Resin Printer': '2a96f797-4e3b-4778-9eb8-bf7cd600edd6',
     'Domino Joiner': '22aeae84-31ad-4a60-ab5b-c973ddf5d4a3',
@@ -99,14 +99,15 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
     'Mitre Saw': '6ff03684-04b6-4d10-9df8-7020b0955fb6',
     'Planer/Thicknesser  Hammer A3-31': 'ea9f1ed0-1044-4cbe-b58d-12bc2416acec',
     'Plunge Saw  Festool TS75': 'a33d672e-c433-4a82-a322-ceba1fa72d47',
-    'Tormek': 'de26bff7-a0e3-4fcb-809d-abebaaea3a07',
-    'Thicknesser': '794a7ba7-3e93-4558-8087-df7816a5984a',
+    Tormek: 'de26bff7-a0e3-4fcb-809d-abebaaea3a07',
+    Thicknesser: '794a7ba7-3e93-4558-8087-df7816a5984a',
     'HPC Laser Cutter': 'dbc3d9b6-4152-413d-8768-835a5d3d9d2e',
-    'Trotec': '7fb37d96-56f2-4ffa-a213-135f0e5bd0ba',
+    Trotec: '7fb37d96-56f2-4ffa-a213-135f0e5bd0ba',
     'CNC Router': '44295217-416c-436e-a7ed-c4ff2d3e0bd5',
     'CNC Model Mill': '38137289-f97b-4c9c-8aed-00e2b82f8d9a',
     'Embroidery Machine': '1178c538-04b0-4ef9-8419-34e73f90648d',
-    'Pfaff 591 industrial sewing machine': '0f2dd455-096d-418e-9508-dd2c880a7ed3',
+    'Pfaff 591 industrial sewing machine':
+      '0f2dd455-096d-418e-9508-dd2c880a7ed3',
     'Metal Mill': 'b0dc0a6d-e342-4be7-a9c7-2cc21615a705',
     'Metal Lathe': '079bba13-2f32-4b31-9da1-e8c5f030b958',
     'Tool Grinder': 'c351ba85-2514-413e-8257-63c1d846ddd3',
@@ -117,15 +118,77 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
   };
 
   for (const parsedRow of parsedData) {
+    if (E.isLeft(parsedRow.trainee_number)) {
+      deps.logger.warn('Failed to parse legacy row trainee number');
+      deps.logger.warn(parsedRow.raw);
+      continue;
+    }
 
+    if (E.isLeft(parsedRow.trainer_number)) {
+      deps.logger.warn('Failed to parse legacy row trainer number');
+      deps.logger.warn(parsedRow.raw);
+      continue;
+    }
+
+    if (E.isLeft(parsedRow.passed)) {
+      deps.logger.warn('Failed to parse legacy row passed');
+      deps.logger.warn(parsedRow.raw);
+      continue;
+    }
+
+    if (E.isLeft(parsedRow.timestamp)) {
+      deps.logger.warn('Failed to parse legacy row timestamp');
+      deps.logger.warn(parsedRow.raw);
+      continue;
+    }
+
+    if (E.isLeft(parsedRow.equipment_name)) {
+      deps.logger.warn('Failed to parse legacy row equipment name');
+      deps.logger.warn(parsedRow.raw);
+      continue;
+    }
+
+    const equipmentId = O.fromNullable(
+      equipmentNameIdMap[parsedRow.equipment_name.right]
+    );
+    if (O.isNone(equipmentId)) {
+      deps.logger.warn(
+        'Failed to find equipment id for equipment name: {}',
+        parsedRow.equipment_name.right
+      );
+      deps.logger.warn(parsedRow.raw);
+      continue;
+    }
+
+    if (!parsedRow.passed.right) {
+      deps.logger.warn('Legacy row not passed');
+      deps.logger.warn(parsedRow.raw);
+      continue;
+    }
+
+    // Magic numbers from me manually checking the spreadsheet.
+    if (
+      parsedRow.timestamp.right < 1601591897000 ||
+      parsedRow.timestamp.right > 1728735321000
+    ) {
+      deps.logger.warn('Failed to parse legacy row timestamp - out of range');
+      deps.logger.warn(parsedRow.timestamp.right);
+      deps.logger.warn(parsedRow.raw);
+      continue;
+    }
     newEvents.push({
       type: 'MemberTrainedOnEquipment',
       legacyImport: true,
-      memberNumber: parsedRow.trainee_number,
-      trainedByMemberNumber: parsedRow.trainer_number,
-      equipmentId: parsedRow.equipment_name,
-    })
+      memberNumber: parsedRow.trainee_number.right,
+      trainedByMemberNumber: parsedRow.trainer_number.right,
+      equipmentId: parse(equipmentId.value).toString() as tt.UUID,
+      actor: {tag: 'system'} satisfies Actor,
+      recordedAt: new Date(parsedRow.timestamp.right),
+    });
   }
-  
 
+  deps.logger.info('Successful events:');
+  for (const newEvent of newEvents) {
+    deps.logger.info(newEvent);
+  }
 };
