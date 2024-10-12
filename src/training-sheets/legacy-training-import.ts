@@ -19,7 +19,6 @@ type ImportDeps = Pick<
 
 // Temporary import script.
 export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
-  // Ontime legacy import.
   deps.logger.info('Checking if we need to do legacy training import');
   if (!conf.LEGACY_TRAINING_COMPLETE_SHEET) {
     deps.logger.info(
@@ -38,15 +37,6 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
     deps.logger.warn(prevEvents.left);
     return;
   }
-  // const alreadyLegacyImported = pipe(
-  //   prevEvents.right,
-  //   RA.filter(e => e.legacyImport),
-  //   RA.isNonEmpty
-  // );
-  // if (alreadyLegacyImported) {
-  //   deps.logger.info('Already completed legacy import');
-  //   return;
-  // }
 
   const googleAuth = new GoogleAuth({
     // Google issues the credentials file and validates it.
@@ -59,7 +49,6 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
     conf.LEGACY_TRAINING_COMPLETE_SHEET,
     'Form responses 1',
     2, // Rows start at 1, row 2 is column headers.
-    // 2000,
     2050,
     0,
     8
@@ -257,6 +246,7 @@ export const legacyTrainingImport = async (conf: Config, deps: ImportDeps) => {
   );
   let successfully_committed = 0;
   for (const newEvent of newEvents) {
+    // Resource ID prevents us committing member trained events twice.
     const resourceId = `${newEvent.equipmentId}_${newEvent.memberNumber}_${newEvent.recordedAt.toISOString()}`;
     const res = await deps.commitEvent(
       {
