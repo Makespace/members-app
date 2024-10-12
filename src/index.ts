@@ -54,31 +54,31 @@ startMagicLinkEmailPubSub(deps, conf);
 const server = http.createServer(app);
 createTerminus(server);
 
-const periodicReadModelRefresh = setInterval(() => {
-  deps.sharedReadModel
-    .asyncRefresh()()
-    .then(() => deps.logger.debug('Refreshed read model'))
-    .catch(err =>
-      deps.logger.error(err, 'Unexpected error when refreshing read model')
-    );
-}, 5000);
-const periodicExternalReadModelRefresh = setInterval(() => {
-  deps.sharedReadModel
-    .asyncApplyExternalEventSources()()
-    .then(() =>
-      deps.logger.info('Refreshed read model with external event sources')
-    )
-    .catch(err =>
-      deps.logger.error(
-        err,
-        'Unexpected error when refreshing read model with external sources'
-      )
-    );
-}, 30_000);
-server.on('close', () => {
-  clearInterval(periodicReadModelRefresh);
-  clearInterval(periodicExternalReadModelRefresh);
-});
+// const periodicReadModelRefresh = setInterval(() => {
+//   deps.sharedReadModel
+//     .asyncRefresh()()
+//     .then(() => deps.logger.debug('Refreshed read model'))
+//     .catch(err =>
+//       deps.logger.error(err, 'Unexpected error when refreshing read model')
+//     );
+// }, 5000);
+// const periodicExternalReadModelRefresh = setInterval(() => {
+//   deps.sharedReadModel
+//     .asyncApplyExternalEventSources()()
+//     .then(() =>
+//       deps.logger.info('Refreshed read model with external event sources')
+//     )
+//     .catch(err =>
+//       deps.logger.error(
+//         err,
+//         'Unexpected error when refreshing read model with external sources'
+//       )
+//     );
+// }, 30_000);
+// server.on('close', () => {
+//   clearInterval(periodicReadModelRefresh);
+//   clearInterval(periodicExternalReadModelRefresh);
+// });
 
 // Readmodels are used to get the current status of the background tasks via the
 // events that have been written.
