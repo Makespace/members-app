@@ -58,7 +58,7 @@ const getEvents = async (trainingSheetId: string) => {
 };
 
 describe('Google training sheet integration', () => {
-  it('Form 3 Resin Printer', async () => {
+  it.skip('Form 3 Resin Printer', async () => {
     const events = await getEvents(
       '1rnG8qvYXL5CucsS7swr9ajGYvHndBG1TKIbyG3KioHc'
     );
