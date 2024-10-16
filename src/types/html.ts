@@ -69,12 +69,18 @@ interface Page {
   rendered: CompleteHtmlDocument;
 }
 
+interface Raw {
+  body: string;
+  contentType: string;
+}
+
 interface Redirect {
   url: string;
 }
 
 export type HttpResponse =
   | Sum.Member<'Redirect', Redirect>
+  | Sum.Member<'Raw', Raw>
   | Sum.Member<'Page', Page>;
 
 export const HttpResponse = Sum.create<HttpResponse>();
