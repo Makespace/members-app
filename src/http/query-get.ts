@@ -37,6 +37,12 @@ export const queryGet =
         HttpResponse.match({
           Page: ({rendered}) => res.status(200).send(rendered),
           Redirect: ({url}) => res.redirect(url),
+          Raw: ({body, contentType}) => {
+            res.status(200);
+            res.setHeader('content-type', contentType);
+            res.send(body as CompleteHtmlDocument);
+            return res;
+          },
         })
       )
     )();

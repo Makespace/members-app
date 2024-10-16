@@ -69,7 +69,7 @@ const superUserNav = html`
         <a href="/members/failed-imports">View failed member number imports</a>
       </li>
       <li>
-        <a href="/event-log">View log of all actions taken</a>
+        <a href="/event-log.csv">View log of all actions taken</a>
       </li>
       <li><a href="/members/create">Link an email and number</a></li>
     </ul>

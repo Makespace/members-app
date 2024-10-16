@@ -37,6 +37,7 @@ export const isolatedPageTemplate = (title: HtmlSubstitution) => (body: Html) =>
 export const templatePage: (r: HttpResponse) => HttpResponse =
   HttpResponse.match({
     Redirect: HttpResponse.mk.Redirect,
+    Raw: HttpResponse.mk.Raw,
     Page: ({rendered}) =>
       HttpResponse.mk.Page({
         rendered,
