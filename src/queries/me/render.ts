@@ -179,6 +179,7 @@ const superUserNav = html`
       <li>
         <a href="/event-log">View log of all actions taken</a>
       </li>
+      <li><a href="/members/create">Link an email and number</a></li>
     </ul>
   </nav>
 `;
