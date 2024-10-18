@@ -86,8 +86,8 @@ export const render = (viewModel: ViewModel) =>
         ${renderOwnerAgreementStatus(viewModel.member.agreementSigned, false)}
         ${renderOwnerStatus(viewModel.member.ownerOf)}
         <h2>Training status</h2>
-        ${renderTrainingStatus(viewModel.member.trainedOn)}
-        ${renderTrainerStatus(viewModel.member.trainerFor)}
+        ${renderTrainingStatus(viewModel.member.trainedOn, false)}
+        ${renderTrainerStatus(viewModel.member.trainerFor, false)}
         ${viewModel.member.isSuperUser ? superUserNav : ''}
       </div>
     `,

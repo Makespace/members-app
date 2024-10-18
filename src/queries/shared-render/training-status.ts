@@ -37,7 +37,10 @@ const howToGetTrained = html`<details>
   </div>
 </details> `;
 
-export const renderTrainingStatus = (trainedOn: ReadonlyArray<TrainedOn>) =>
+export const renderTrainingStatus = (
+  trainedOn: ReadonlyArray<TrainedOn>,
+  third_person: boolean
+) =>
   pipe(
     trainedOn,
     RA.map(
@@ -50,16 +53,26 @@ export const renderTrainingStatus = (trainedOn: ReadonlyArray<TrainedOn>) =>
         </li>`
     ),
     RA.match(
-      () => html`
-        <p>You are currently not allowed to use any RED equipment.</p>
-        ${howToGetTrained}
-      `,
-      listItems => html`
-        <p>You are permitted to use the following RED equipment:</p>
-        <ul>
-          ${joinHtml(listItems)}
-        </ul>
-        ${howToGetTrained}
-      `
+      () =>
+        third_person
+          ? html``
+          : html`
+              <p>You are currently not allowed to use any RED equipment.</p>
+              ${howToGetTrained}
+            `,
+      listItems =>
+        third_person
+          ? html`
+              <ul>
+                ${joinHtml(listItems)}
+              </ul>
+            `
+          : html`
+              <p>You are permitted to use the following RED equipment:</p>
+              <ul>
+                ${joinHtml(listItems)}
+              </ul>
+              ${howToGetTrained}
+            `
     )
   );
