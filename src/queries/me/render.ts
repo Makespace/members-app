@@ -84,7 +84,7 @@ export const render = (viewModel: ViewModel) =>
         ${renderMemberDetails(viewModel)}
         <h2>Owner status</h2>
         ${renderOwnerAgreementStatus(viewModel.member.agreementSigned, false)}
-        ${renderOwnerStatus(viewModel.member.ownerOf)}
+        ${renderOwnerStatus(viewModel.member.ownerOf, false)}
         <h2>Training status</h2>
         ${renderTrainingStatus(viewModel.member.trainedOn, false)}
         ${renderTrainerStatus(viewModel.member.trainerFor, false)}
