@@ -5,7 +5,10 @@ import {displayDate} from '../../templates/display-date';
 import {DateTime} from 'luxon';
 import {TrainerFor} from '../../read-models/shared-state/return-types';
 
-export const renderTrainerStatus = (trainerFor: ReadonlyArray<TrainerFor>) =>
+export const renderTrainerStatus = (
+  trainerFor: ReadonlyArray<TrainerFor>,
+  third_person: boolean
+) =>
   pipe(
     trainerFor,
     RA.map(
@@ -19,11 +22,18 @@ export const renderTrainerStatus = (trainerFor: ReadonlyArray<TrainerFor>) =>
     ),
     RA.match(
       () => html``,
-      listItems => html`
-        <p>You are a trainer for:</p>
-        <ul>
-          ${joinHtml(listItems)}
-        </ul>
-      `
+      listItems =>
+        third_person
+          ? html`
+              <ul>
+                ${joinHtml(listItems)}
+              </ul>
+            `
+          : html`
+              <p>You are a trainer for:</p>
+              <ul>
+                ${joinHtml(listItems)}
+              </ul>
+            `
     )
   );

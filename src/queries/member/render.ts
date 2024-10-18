@@ -82,7 +82,7 @@ export const render = (viewModel: ViewModel) =>
           </tr>
           <tr>
             <th scope="row">Owner of</th>
-            <td>${renderOwnerStatus(viewModel.member.ownerOf)}</td>
+            <td>${renderOwnerStatus(viewModel.member.ownerOf, true)}</td>
           </tr>
           <tr>
             <th scope="row">Owner agreement</th>
@@ -95,11 +95,11 @@ export const render = (viewModel: ViewModel) =>
           </tr>
           <tr>
             <th scope="row">Trainer for</th>
-            <td>${renderTrainerStatus(viewModel.member.trainerFor)}</td>
+            <td>${renderTrainerStatus(viewModel.member.trainerFor, true)}</td>
           </tr>
           <tr>
             <th scope="row">Trained on</th>
-            <td>${renderTrainingStatus(viewModel.member.trainedOn)}</td>
+            <td>${renderTrainingStatus(viewModel.member.trainedOn, true)}</td>
           </tr>
         </tbody>
       </table>
