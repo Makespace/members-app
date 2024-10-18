@@ -22,12 +22,13 @@ export const member: Query = deps => (user, params) =>
     t.strict({member: tt.NumberFromString}).decode,
     E.mapLeft(invalidParams),
     E.map(params => params.member),
-    TE.fromEither,
-    TE.chain(constructViewModel(deps, user)),
-    TE.map(viewModel => render(viewModel)),
-    TE.map(rendered =>
+    E.map(constructViewModel(deps, user)),
+    E.flatten,
+    E.map(viewModel => render(viewModel)),
+    E.map(rendered =>
       HttpResponse.mk.Page({
         rendered,
       })
-    )
+    ),
+    TE.fromEither
   );
