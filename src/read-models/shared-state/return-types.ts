@@ -57,6 +57,12 @@ type TrainedOn = {
   trainedAt: Date;
 };
 
+type TrainerFor = {
+  equipment_id: UUID;
+  equipment_name: string;
+  since: Date;
+};
+
 type OwnerOf = {
   id: string;
   name: string;
@@ -82,5 +88,6 @@ export type MemberAwaitingTraining = MemberCoreInfo & {
 
 export type Member = MemberCoreInfo & {
   trainedOn: ReadonlyArray<TrainedOn>;
+  trainerFor: ReadonlyArray<TrainerFor>;
   ownerOf: ReadonlyArray<OwnerOf>;
 };

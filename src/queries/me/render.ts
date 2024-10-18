@@ -96,9 +96,14 @@ const renderMemberDetails = (viewModel: ViewModel) => html`
   </table>
 `;
 
-const renderOwnerStatus = (ownerOf: ViewModel['member']['ownerOf']) =>
+export const renderOwnerStatus = (ownerOf: ViewModel['member']['ownerOf']) =>
   pipe(
     ownerOf,
+    (a) => {
+      console.log('OWNER OF');
+      console.log(a);
+      return ownerOf;
+    },
     RA.map(
       area =>
         html`<li>
@@ -123,7 +128,34 @@ const renderOwnerStatus = (ownerOf: ViewModel['member']['ownerOf']) =>
     )
   );
 
-const renderTrainingStatus = (trainedOn: ViewModel['member']['trainedOn']) =>
+export const renderTrainerStatus = (
+  trainerFor: ViewModel['member']['trainerFor']
+) =>
+  pipe(
+    trainerFor,
+    RA.map(
+      equipment =>
+        html`<li>
+          <a href="/equipment/${equipment.equipment_id}"
+            >${sanitizeString(equipment.equipment_name)}</a
+          >
+          (since ${displayDate(DateTime.fromJSDate(equipment.since))})
+        </li>`
+    ),
+    RA.match(
+      () => html``,
+      listItems => html`
+        <p>You are a trainer for:</p>
+        <ul>
+          ${joinHtml(listItems)}
+        </ul>
+      `
+    )
+  );
+
+export const renderTrainingStatus = (
+  trainedOn: ViewModel['member']['trainedOn']
+) =>
   pipe(
     trainedOn,
     RA.map(
@@ -150,19 +182,28 @@ const renderTrainingStatus = (trainedOn: ViewModel['member']['trainedOn']) =>
     )
   );
 
-const renderOwnerAgreementStatus = (
-  status: ViewModel['member']['agreementSigned']
+export const renderOwnerAgreementStatus = (
+  status: ViewModel['member']['agreementSigned'],
+  third_person: boolean
 ) =>
   pipe(
     status,
     O.matchW(
       () => safe(''),
-      date => html`
-        <p>
-          You have signed the Owners Agreement
-          (${displayDate(DateTime.fromJSDate(date))})
-        </p>
-      `
+      date =>
+        third_person
+          ? html`
+              <p>
+                User signed Owners Agreement
+                (${displayDate(DateTime.fromJSDate(date))})
+              </p>
+            `
+          : html`
+              <p>
+                You have signed the Owners Agreement
+                (${displayDate(DateTime.fromJSDate(date))})
+              </p>
+            `
     )
   );
 
@@ -191,10 +232,11 @@ export const render = (viewModel: ViewModel) =>
         <h2>Your details</h2>
         ${renderMemberDetails(viewModel)}
         <h2>Owner status</h2>
-        ${renderOwnerAgreementStatus(viewModel.member.agreementSigned)}
+        ${renderOwnerAgreementStatus(viewModel.member.agreementSigned, false)}
         ${renderOwnerStatus(viewModel.member.ownerOf)}
         <h2>Training status</h2>
         ${renderTrainingStatus(viewModel.member.trainedOn)}
+        ${renderTrainerStatus(viewModel.member.trainerFor)}
         ${viewModel.member.isSuperUser ? superUserNav : ''}
       </div>
     `,

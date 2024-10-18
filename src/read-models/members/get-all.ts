@@ -72,5 +72,10 @@ export const getAllDetailsAsActor =
     pipe(
       events,
       getAllDetails,
+      (b) => {
+        console.log('All details');
+        console.log(b);
+        return b;
+      },
       redactDetailsForActor(liftActorOrUser(actorOrUser))
     );
