@@ -51,19 +51,19 @@ export type Equipment = {
   lastQuizSync: O.Option<EpochTimestampMilliseconds>;
 };
 
-type TrainedOn = {
+export type TrainedOn = {
   id: string;
   name: string;
   trainedAt: Date;
 };
 
-type TrainerFor = {
+export type TrainerFor = {
   equipment_id: UUID;
   equipment_name: string;
   since: Date;
 };
 
-type OwnerOf = {
+export type OwnerOf = {
   id: string;
   name: string;
   ownershipRecordedAt: Date;
