@@ -14,6 +14,9 @@ import {eq} from 'drizzle-orm';
 import {SharedReadModel} from '.';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {Member} from './return-types';
+import {Actor, User} from '../../types';
+import {redactDetailsForActor} from '../members/redact';
+import {liftActorOrUser} from '../members/get-all';
 import {UUID} from 'io-ts-types';
 
 const fieldIsNotNull =
@@ -106,5 +109,28 @@ export const getAllMember =
           throw new Error('');
         }
         return opt.value;
+      })
+    );
+
+export const getMemberAsActor =
+  (db: BetterSQLite3Database): SharedReadModel['members']['getAsActor'] =>
+  (actorOrUser: Actor | User) =>
+  (memberNumber: number): O.Option<Member> =>
+    pipe(
+      memberNumber,
+      getMember(db),
+      O.chain(member => {
+        const actor = liftActorOrUser(actorOrUser);
+        const members = new Map<number, Member>();
+        members.set(member.memberNumber, member);
+        if (actor.tag === 'user') {
+          const actorDetails = getMember(db)(actor.user.memberNumber);
+          if (O.isSome(actorDetails)) {
+            members.set(actor.user.memberNumber, actorDetails.value);
+          }
+        }
+        return O.fromNullable(
+          redactDetailsForActor(actor)(members).get(memberNumber)
+        );
       })
     );
