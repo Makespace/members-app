@@ -10,12 +10,10 @@ import {
 import {ViewModel} from './view-model';
 import {pageTemplate} from '../../templates';
 import {renderMemberNumber} from '../../templates/member-number';
-import {
-  renderOwnerAgreementStatus,
-  renderOwnerStatus,
-  renderTrainerStatus,
-  renderTrainingStatus,
-} from '../me/render';
+import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
+import {renderOwnerStatus} from '../shared-render/owner-status';
+import {renderTrainerStatus} from '../shared-render/trainer-status';
+import {renderTrainingStatus} from '../shared-render/training-status';
 
 const ownPageBanner = html`<h1>This is your profile!</h1>`;
 
