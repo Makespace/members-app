@@ -7,6 +7,6 @@ export const sessionOptions = (
   secret: conf.SESSION_SECRET,
   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   httpOnly: true,
-  sameSite: 'strict',
+  sameSite: 'lax',
   secure: conf.PUBLIC_URL.startsWith('https://'),
 });
