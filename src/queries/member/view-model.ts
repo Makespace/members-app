@@ -5,4 +5,5 @@ export type ViewModel = {
   member: Readonly<Member>;
   user: Readonly<User>;
   isSelf: boolean;
+  isSuperUser: boolean;
 };

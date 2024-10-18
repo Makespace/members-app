@@ -84,15 +84,17 @@ export const render = (viewModel: ViewModel) =>
             <th scope="row">Owner of</th>
             <td>${renderOwnerStatus(viewModel.member.ownerOf, true)}</td>
           </tr>
-          <tr>
-            <th scope="row">Owner agreement</th>
-            <td>
-              ${renderOwnerAgreementStatus(
-                viewModel.member.agreementSigned,
-                true
-              )}
-            </td>
-          </tr>
+          ${viewModel.isSuperUser
+            ? html`<tr>
+                <th scope="row">Owner agreement</th>
+                <td>
+                  ${renderOwnerAgreementStatus(
+                    viewModel.member.agreementSigned,
+                    true
+                  )}
+                </td>
+              </tr>`
+            : html``}
           <tr>
             <th scope="row">Trainer for</th>
             <td>${renderTrainerStatus(viewModel.member.trainerFor, true)}</td>
