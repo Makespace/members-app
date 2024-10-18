@@ -2,8 +2,6 @@
  * Actually connects to google and pulls spreadsheet data.
  *
  * Only runs when triggered manually.
- *
- * Only assert information about people who are ok having their data be test data.
  */
 
 import pino from 'pino';
@@ -57,7 +55,7 @@ const getEvents = async (trainingSheetId: string) => {
   return events;
 };
 
-describe('Google training sheet integration', () => {
+describe.skip('Google training sheet integration', () => {
   it.skip('Form 3 Resin Printer', async () => {
     const events = await getEvents(
       '1rnG8qvYXL5CucsS7swr9ajGYvHndBG1TKIbyG3KioHc'
