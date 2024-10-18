@@ -23,6 +23,11 @@ export const constructViewModel =
         member: pipe(
           events,
           readModels.members.getDetailsAsActor(user)(memberNumber),
+          (a) => {
+            console.log('Details');
+            console.log(a);
+            return a;
+          },
           E.fromOption(() =>
             failureWithStatus('No such member', StatusCodes.NOT_FOUND)()
           )
