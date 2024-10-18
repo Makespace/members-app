@@ -99,11 +99,6 @@ const renderMemberDetails = (viewModel: ViewModel) => html`
 export const renderOwnerStatus = (ownerOf: ViewModel['member']['ownerOf']) =>
   pipe(
     ownerOf,
-    (a) => {
-      console.log('OWNER OF');
-      console.log(a);
-      return ownerOf;
-    },
     RA.map(
       area =>
         html`<li>
