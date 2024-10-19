@@ -9,11 +9,11 @@ import * as RA from 'fp-ts/lib/ReadonlyArray';
 import * as N from 'fp-ts/number';
 import * as O from 'fp-ts/Option';
 import * as gsheetData from '../data/google_sheet_data';
-import {pullNewEquipmentQuizResults} from '../../src/read-models/shared-state/async-apply-external-event-sources';
 import {
-  EpochTimestampMilliseconds,
-  Equipment,
-} from '../../src/read-models/shared-state/return-types';
+  EquipmentWithLastQuizResult,
+  pullNewEquipmentQuizResults,
+} from '../../src/read-models/shared-state/async-apply-external-event-sources';
+import {EpochTimestampMilliseconds} from '../../src/read-models/shared-state/return-types';
 import {localGoogleHelpers} from '../init-dependencies/pull-local-google';
 
 const sortQuizResults = RA.sort({
@@ -29,7 +29,9 @@ const sortQuizResults = RA.sort({
     ),
 });
 
-const pullNewEquipmentQuizResultsLocal = async (equipment: Equipment) => {
+const pullNewEquipmentQuizResultsLocal = async (
+  equipment: EquipmentWithLastQuizResult
+) => {
   const newEvents: DomainEvent[] = [];
   await pullNewEquipmentQuizResults(
     pino({
@@ -45,18 +47,10 @@ const pullNewEquipmentQuizResultsLocal = async (equipment: Equipment) => {
   return newEvents;
 };
 
-const defaultEquipment = (): Equipment => ({
+const defaultEquipment = (): EquipmentWithLastQuizResult => ({
   id: 'ebedee32-49f4-4d36-a350-4fa7848792bf' as UUID,
   name: 'Metal Lathe',
-  trainers: [],
-  trainedMembers: [],
-  area: O.some({
-    id: 'f9cee7aa-75c6-42cc-8585-0e658044fe8e',
-    name: 'Metal Shop',
-  }),
-  membersAwaitingTraining: [],
-  orphanedPassedQuizes: [],
-  failedQuizAttempts: [],
+  areaId: 'f9cee7aa-75c6-42cc-8585-0e658044fe8e' as UUID,
   trainingSheetId: O.none,
   lastQuizResult: O.none,
   lastQuizSync: O.none,

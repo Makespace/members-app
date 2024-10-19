@@ -37,6 +37,7 @@ const getEvents = async (trainingSheetId: string) => {
     {
       id: 'a008b6f2-3338-4339-a846-3b4f3d12fe3d' as UUID,
       name: 'Test Equipment',
+      areaId: '619b5afb-af04-4a56-8475-3e92ff2908ef' as UUID,
       trainingSheetId: O.some(trainingSheetId),
       lastQuizResult: O.none,
       lastQuizSync: O.none,

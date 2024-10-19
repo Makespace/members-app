@@ -24,7 +24,7 @@ import {expandLastQuizResult} from './equipment/expand';
 
 const ROW_BATCH_SIZE = 200;
 
-type EquipmentWithLastQuizResult = MinimalEquipment & {
+export type EquipmentWithLastQuizResult = MinimalEquipment & {
   lastQuizResult: O.Option<EpochTimestampMilliseconds>;
 };
 
