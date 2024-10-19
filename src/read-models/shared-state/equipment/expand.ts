@@ -246,7 +246,7 @@ export const expandAll =
       expandLastQuizResult(db),
       e => ({
         ...e,
-        area: getAreaMinimal(db)(e.id as UUID),
+        area: getAreaMinimal(db)(e.id),
       })
     );
   };

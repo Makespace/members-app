@@ -50,10 +50,10 @@ const defaultEquipment = (): Equipment => ({
   name: 'Metal Lathe',
   trainers: [],
   trainedMembers: [],
-  area: {
+  area: O.some({
     id: 'f9cee7aa-75c6-42cc-8585-0e658044fe8e',
     name: 'Metal Shop',
-  },
+  }),
   membersAwaitingTraining: [],
   orphanedPassedQuizes: [],
   failedQuizAttempts: [],
