@@ -69,9 +69,9 @@ export const trainersTable = sqliteTable('trainers', {
 const createTrainersTable = sql`
   CREATE TABLE IF NOT EXISTS trainers (
     memberNumber INTEGER,
-    equipmentID TEXT,
+    equipmentId TEXT,
     since INTEGER,
-    markedTrainerByActor TEXT,
+    markedTrainerByActor TEXT
   )
 `;
 
@@ -89,9 +89,9 @@ export const trainedMemberstable = sqliteTable('trainedMembers', {
 const createTrainedMembersTable = sql`
   CREATE TABLE IF NOT EXISTS trainedMembers (
     memberNumber INTEGER,
-    equipmentID TEXT,
+    equipmentId TEXT,
     trainedAt INTEGER,
-    trainedByActor TEXT,
+    trainedByActor TEXT
   )
 `;
 

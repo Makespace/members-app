@@ -36,7 +36,7 @@ export type TrainerInfo = MemberCoreInfo & {
 };
 
 export type MinimalEquipment = {
-  id: string;
+  id: UUID;
   name: string;
   trainingSheetId: O.Option<string>;
   // Uses local timestamp.

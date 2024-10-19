@@ -9,6 +9,7 @@ import {UUID} from 'io-ts-types';
 
 const transformRow = <
   R extends {
+    id: string;
     trainingSheetId: string | undefined | null;
     lastQuizSync: number | undefined | null;
   },
@@ -16,6 +17,7 @@ const transformRow = <
   row: R
 ) => ({
   ...row,
+  id: row.id as UUID,
   trainingSheetId: O.fromNullable(row.trainingSheetId),
   lastQuizSync: O.fromNullable(
     row.lastQuizSync
