@@ -23,7 +23,7 @@ import {accumByMap} from '../../../util';
 import {Actor} from '../../../types';
 import {getAreaMinimal} from '../area/get';
 
-export const expandTrainers =
+const expandTrainers =
   (db: BetterSQLite3Database) =>
   <T extends MinimalEquipment>(
     equipment: T
@@ -52,7 +52,7 @@ export const expandTrainers =
       })
     );
 
-export const expandTrainedMembers =
+const expandTrainedMembers =
   (db: BetterSQLite3Database) =>
   <T extends MinimalEquipment>(
     equipment: T
@@ -90,7 +90,7 @@ export const expandTrainedMembers =
 // thing where we get all the trained members then get the quiz results and then filter.
 // Since the db is local / in memory this should be pretty fast.
 const quizPassed = eq(trainingQuizTable.score, trainingQuizTable.maxScore);
-export const expandMembersAwaitingTraining =
+const expandMembersAwaitingTraining =
   (db: BetterSQLite3Database) =>
   <T extends MinimalEquipment>(
     equipment: T
@@ -137,7 +137,7 @@ export const expandMembersAwaitingTraining =
       })
     );
 
-export const expandFailedQuizAttempts =
+const expandFailedQuizAttempts =
   (db: BetterSQLite3Database) =>
   <T extends MinimalEquipment>(
     equipment: T
@@ -176,7 +176,7 @@ export const expandFailedQuizAttempts =
       })
     );
 
-export const expandOrphanedTrainingQuizes =
+const expandOrphanedTrainingQuizes =
   (db: BetterSQLite3Database) =>
   <T extends MinimalEquipment>(
     equipment: T
@@ -238,11 +238,6 @@ export const expandAll =
   <T extends MinimalEquipment>(equipment: T) => {
     return pipe(
       equipment,
-      (e) => {
-        console.log('Equipment');
-        console.log(e);
-        return e;
-      },
       expandTrainers(db),
       expandTrainedMembers(db),
       expandMembersAwaitingTraining(db),
