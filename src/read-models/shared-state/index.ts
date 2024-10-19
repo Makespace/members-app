@@ -30,6 +30,9 @@ export type SharedReadModel = {
     get: (id: UUID) => O.Option<Equipment>;
     getAll: () => ReadonlyArray<Equipment>;
   };
+  area: {
+    get: (id: UUID) => O.Option<Area>;
+  }
 };
 
 export const initSharedReadModel = (
