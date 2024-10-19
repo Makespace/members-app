@@ -63,13 +63,15 @@ export const trainersTable = sqliteTable('trainers', {
     .notNull()
     .references(() => equipmentTable.id),
   since: integer('since', {mode: 'timestamp'}).notNull(),
+  markedTrainerByActor: text('markedTrainerByActor', {mode: 'json'}).notNull(),
 });
 
 const createTrainersTable = sql`
   CREATE TABLE IF NOT EXISTS trainers (
     memberNumber INTEGER,
-    equipmentID TEXT,
-    since INTEGER
+    equipmentId TEXT,
+    since INTEGER,
+    markedTrainerByActor TEXT
   )
 `;
 
@@ -81,15 +83,15 @@ export const trainedMemberstable = sqliteTable('trainedMembers', {
     .notNull()
     .references(() => equipmentTable.id),
   trainedAt: integer('trainedAt', {mode: 'timestamp'}).notNull(),
-  trainedBy: integer('trainedBy').references(() => membersTable.memberNumber),
+  trainedByActor: text('trainedByActor', {mode: 'json'}).notNull(),
 });
 
 const createTrainedMembersTable = sql`
   CREATE TABLE IF NOT EXISTS trainedMembers (
     memberNumber INTEGER,
-    equipmentID TEXT,
+    equipmentId TEXT,
     trainedAt INTEGER,
-    trainedBy INTEGER
+    trainedByActor TEXT
   )
 `;
 
@@ -115,13 +117,15 @@ export const ownersTable = sqliteTable('owners', {
   ownershipRecordedAt: integer('ownershipRecordedAt', {
     mode: 'timestamp',
   }).notNull(),
+  markedOwnerByActor: text('markedOwnerByActor', {mode: 'json'}).notNull(),
 });
 
 const createOwnersTable = sql`
   CREATE TABLE IF NOT EXISTS owners (
     memberNumber INTEGER,
     areaId TEXT,
-    ownershipRecordedAt INTEGER
+    ownershipRecordedAt INTEGER,
+    markedOwnerByActor TEXT
   )
 `;
 

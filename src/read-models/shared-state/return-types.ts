@@ -1,5 +1,5 @@
 import * as O from 'fp-ts/Option';
-import {EmailAddress, GravatarHash} from '../../types';
+import {Actor, EmailAddress, GravatarHash} from '../../types';
 import {UUID} from 'io-ts-types';
 
 export type OrphanedPassedQuiz = {
@@ -21,35 +21,40 @@ export type FailedQuizAttempt = MemberCoreInfo & {
   timestamp: Date;
 };
 
-type TrainedMember = MemberCoreInfo & {
-  trainedBy: number | null;
-  trainedAt: Date;
+export type TrainedMember = MemberCoreInfo & {
+  markedTrainedByActor: O.Option<Actor>;
+  trainedSince: Date;
 };
 
 export type EpochTimestampMilliseconds = number & {
   readonly EpochTimestampMilliseconds: unique symbol;
 };
 
-export type Equipment = {
+export type TrainerInfo = MemberCoreInfo & {
+  markedTrainerByActor: O.Option<Actor>;
+  trainerSince: Date;
+};
+
+export type MinimalEquipment = {
   id: UUID;
   name: string;
-  trainers: ReadonlyArray<MemberCoreInfo>;
-  trainedMembers: ReadonlyArray<TrainedMember>;
-  area: {
-    id: string;
-    name: string;
-  };
-  membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>;
-  orphanedPassedQuizes: ReadonlyArray<OrphanedPassedQuiz>;
-  failedQuizAttempts: ReadonlyArray<FailedQuizAttempt>;
+  areaId: UUID;
   trainingSheetId: O.Option<string>;
-
-  // Uses the actual spreadsheet timestamp rather than our local timestamp which could be
-  // different due to clock drift or eventual consistency issues on the google side.
-  lastQuizResult: O.Option<EpochTimestampMilliseconds>;
   // Uses local timestamp.
   lastQuizSync: O.Option<EpochTimestampMilliseconds>;
 };
+
+export type Equipment = {
+  trainers: ReadonlyArray<TrainerInfo>;
+  trainedMembers: ReadonlyArray<TrainedMember>;
+  area: MinimalArea;
+  membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>;
+  orphanedPassedQuizes: ReadonlyArray<OrphanedPassedQuiz>;
+  failedQuizAttempts: ReadonlyArray<FailedQuizAttempt>;
+  // Uses the actual spreadsheet timestamp rather than our local timestamp which could be
+  // different due to clock drift or eventual consistency issues on the google side.
+  lastQuizResult: O.Option<EpochTimestampMilliseconds>;
+} & Omit<MinimalEquipment, 'areaId'>;
 
 export type TrainedOn = {
   id: string;
@@ -69,7 +74,7 @@ export type OwnerOf = {
   ownershipRecordedAt: Date;
 };
 
-type MemberCoreInfo = {
+export type MemberCoreInfo = {
   memberNumber: number;
   emailAddress: EmailAddress;
   prevEmails: ReadonlyArray<EmailAddress>;
@@ -90,4 +95,19 @@ export type Member = MemberCoreInfo & {
   trainedOn: ReadonlyArray<TrainedOn>;
   trainerFor: ReadonlyArray<TrainerFor>;
   ownerOf: ReadonlyArray<OwnerOf>;
+};
+
+export type MinimalArea = {
+  id: UUID;
+  name: string;
+};
+
+export type Owner = MemberCoreInfo & {
+  ownershipRecordedAt: Date;
+  markedOwnerBy: O.Option<Actor>;
+};
+
+export type Area = MinimalArea & {
+  owners: ReadonlyArray<Owner>;
+  equipment: ReadonlyArray<Equipment>;
 };
