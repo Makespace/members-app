@@ -1,5 +1,5 @@
-import {Actor} from '../../types';
-import {Member, MultipleMembers} from './return-types';
+import {Actor} from '../../../types';
+import {Member, MultipleMembers} from '../../members/return-types';
 
 const redactEmail = (member: Member): Member =>
   Object.assign({}, member, {emailAddress: '******'});
