@@ -1,5 +1,6 @@
 import {ViewModel} from './view-model';
-import {escapeCsv, renderActor} from '../../csv';
+import {escapeCsv} from '../../csv';
+import {renderActor} from '../../types/actor';
 
 export const render = (viewModel: ViewModel) => {
   const rows = [];

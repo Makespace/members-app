@@ -5,7 +5,7 @@ import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import {getAllMember, getMember, getMemberAsActor} from './get-member';
 import {Area, Equipment, Member} from './return-types';
-import {getAllEquipment, getEquipment} from './get-equipment';
+
 import {Client} from '@libsql/client/.';
 import {asyncRefresh} from './async-refresh';
 import {updateState} from './update-state';
@@ -14,7 +14,8 @@ import {asyncApplyExternalEventSources} from './async-apply-external-event-sourc
 import {UUID} from 'io-ts-types';
 import {GoogleHelpers} from '../../init-dependencies/google/pull_sheet_data';
 import {User} from '../../types';
-import {getAllArea, getArea} from './get-area';
+import {getAllEquipmentFull, getEquipmentFull} from './equipment/helpers';
+import {getAllAreaFull, getAreaFull} from './area/helpers';
 
 export {replayState} from './deprecated-replay';
 
@@ -63,12 +64,12 @@ export const initSharedReadModel = (
       getAsActor: getMemberAsActor(readModelDb),
     },
     equipment: {
-      get: getEquipment(readModelDb),
-      getAll: getAllEquipment(readModelDb),
+      get: getEquipmentFull(readModelDb),
+      getAll: getAllEquipmentFull(readModelDb),
     },
     area: {
-      get: getArea(readModelDb),
-      getAll: getAllArea(readModelDb),
+      get: getAreaFull(readModelDb),
+      getAll: getAllAreaFull(readModelDb),
     },
   };
 };

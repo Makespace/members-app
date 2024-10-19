@@ -1,5 +1,5 @@
-import {ExpandedArea} from '../../read-models/shared-state/return-types';
+import {Area} from '../../read-models/shared-state/return-types';
 
 export type ViewModel = {
-  byArea: ReadonlyArray<ExpandedArea>;
+  areas: ReadonlyArray<Area>;
 };
