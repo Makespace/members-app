@@ -63,13 +63,23 @@ export const trainersTable = sqliteTable('trainers', {
     .notNull()
     .references(() => equipmentTable.id),
   since: integer('since', {mode: 'timestamp'}).notNull(),
+  markedTrainerByUser: integer('markedTrainerByUser').references(
+    () => membersTable.memberNumber
+  ),
+  markedTrainedBySystem: integer('markedTrainedBySystem', {
+    mode: 'boolean',
+  }).default(false),
+  markedTrainerByApi: integer('markedTrainerByApi', {mode: 'boolean'}).default(
+    false
+  ),
 });
 
 const createTrainersTable = sql`
   CREATE TABLE IF NOT EXISTS trainers (
     memberNumber INTEGER,
     equipmentID TEXT,
-    since INTEGER
+    since INTEGER,
+    markedTrainedBy
   )
 `;
 
@@ -81,7 +91,15 @@ export const trainedMemberstable = sqliteTable('trainedMembers', {
     .notNull()
     .references(() => equipmentTable.id),
   trainedAt: integer('trainedAt', {mode: 'timestamp'}).notNull(),
-  trainedBy: integer('trainedBy').references(() => membersTable.memberNumber),
+  markedTrainedByUser: integer('markedTrainedByUser').references(
+    () => membersTable.memberNumber
+  ),
+  markedTrainedBySystem: integer('markedTrainedBySystem', {
+    mode: 'boolean',
+  }).default(false),
+  markedTrainedByApi: integer('markedTrainedByApi', {mode: 'boolean'}).default(
+    false
+  ),
 });
 
 const createTrainedMembersTable = sql`
@@ -89,7 +107,7 @@ const createTrainedMembersTable = sql`
     memberNumber INTEGER,
     equipmentID TEXT,
     trainedAt INTEGER,
-    trainedBy INTEGER
+    trainedBy INTEGER,
   )
 `;
 
@@ -115,6 +133,15 @@ export const ownersTable = sqliteTable('owners', {
   ownershipRecordedAt: integer('ownershipRecordedAt', {
     mode: 'timestamp',
   }).notNull(),
+  markedOwnerByUser: integer('markedOwnerByUser').references(
+    () => membersTable.memberNumber
+  ),
+  markedOwnerBySystem: integer('markedOwnerBySystem', {
+    mode: 'boolean',
+  }).default(false),
+  markedOwnerByApi: integer('markedOwnerByApi', {mode: 'boolean'}).default(
+    false
+  ),
 });
 
 const createOwnersTable = sql`

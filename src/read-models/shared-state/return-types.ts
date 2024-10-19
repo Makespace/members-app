@@ -1,5 +1,5 @@
 import * as O from 'fp-ts/Option';
-import {EmailAddress, GravatarHash} from '../../types';
+import {Actor, EmailAddress, GravatarHash} from '../../types';
 import {UUID} from 'io-ts-types';
 
 export type OrphanedPassedQuiz = {
@@ -35,10 +35,7 @@ export type Equipment = {
   name: string;
   trainers: ReadonlyArray<MemberCoreInfo>;
   trainedMembers: ReadonlyArray<TrainedMember>;
-  area: {
-    id: string;
-    name: string;
-  };
+  area: MinimalArea;
   membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>;
   orphanedPassedQuizes: ReadonlyArray<OrphanedPassedQuiz>;
   failedQuizAttempts: ReadonlyArray<FailedQuizAttempt>;
@@ -91,3 +88,28 @@ export type Member = MemberCoreInfo & {
   trainerFor: ReadonlyArray<TrainerFor>;
   ownerOf: ReadonlyArray<OwnerOf>;
 };
+
+export interface MinimalArea {
+  id: string;
+  name: string;
+}
+type MemberNumber = number;
+
+export interface Area extends MinimalArea {
+  owners: ReadonlyArray<{
+    memberNumber: MemberNumber;
+    ownerSince: Date;
+    markedOwnerBy: Actor;
+  }>;
+  equipment: ReadonlyArray<{
+    id: string;
+    name: string;
+  }>;
+}
+
+export interface ExpandedArea extends Area {
+  owners: ReadonlyArray<
+    MemberCoreInfo & {ownerSince: Date; markedOwnerBy: Actor}
+  >;
+  equipment: ReadonlyArray<Equipment>;
+}
