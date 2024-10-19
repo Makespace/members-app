@@ -74,7 +74,7 @@ export type OwnerOf = {
   ownershipRecordedAt: Date;
 };
 
-type MemberCoreInfo = {
+export type MemberCoreInfo = {
   memberNumber: number;
   emailAddress: EmailAddress;
   prevEmails: ReadonlyArray<EmailAddress>;

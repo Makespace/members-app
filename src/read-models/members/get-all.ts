@@ -3,7 +3,7 @@ import {DomainEvent, isEventOfType, Actor, User} from '../../types';
 import {pipe} from 'fp-ts/lib/function';
 import {MultipleMembers} from './return-types';
 import {replayState} from '../shared-state';
-import {redactDetailsForActor} from './redact';
+import {redactDetailsForActor} from '../shared-state/member/redact';
 
 export const getAll = (
   events: ReadonlyArray<DomainEvent>

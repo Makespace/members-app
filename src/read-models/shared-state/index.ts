@@ -3,7 +3,6 @@ import * as O from 'fp-ts/Option';
 import {createTables} from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
-import {getAllMember, getMember, getMemberAsActor} from './get-member';
 import {Area, Equipment, Member} from './return-types';
 
 import {Client} from '@libsql/client/.';
@@ -16,6 +15,11 @@ import {GoogleHelpers} from '../../init-dependencies/google/pull_sheet_data';
 import {User} from '../../types';
 import {getAllEquipmentFull, getEquipmentFull} from './equipment/helpers';
 import {getAllAreaFull, getAreaFull} from './area/helpers';
+import {
+  getAllMemberFull,
+  getMemberFull,
+  getMemberAsActorFull,
+} from './member/helper';
 
 export {replayState} from './deprecated-replay';
 
@@ -59,9 +63,9 @@ export const initSharedReadModel = (
       googleRateLimitMs
     ),
     members: {
-      get: getMember(readModelDb),
-      getAll: getAllMember(readModelDb),
-      getAsActor: getMemberAsActor(readModelDb),
+      get: getMemberFull(readModelDb),
+      getAll: getAllMemberFull(readModelDb),
+      getAsActor: getMemberAsActorFull(readModelDb),
     },
     equipment: {
       get: getEquipmentFull(readModelDb),

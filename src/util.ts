@@ -52,3 +52,15 @@ export const accumByMap =
     }
     return Object.values(accumulated).map(map);
   };
+
+export const fieldIsNotNull =
+  <K extends string>(key: K) =>
+  <T extends Record<K, string | null>>(obj: T): obj is T & {[P in K]: string} =>
+    obj[key] !== null;
+
+export const fieldIsUUID =
+  <K extends string>(key: K) =>
+  <T extends Record<K, string | null>>(
+    obj: T
+  ): obj is T & {[P in K]: tt.UUID} =>
+    E.isRight(tt.UUID.decode(obj[key]));
