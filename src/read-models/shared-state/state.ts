@@ -62,12 +62,14 @@ export const trainersTable = sqliteTable('trainers', {
   equipmentId: text('equipmentId')
     .notNull()
     .references(() => equipmentTable.id),
+  since: integer('since', {mode: 'timestamp'}).notNull(),
 });
 
 const createTrainersTable = sql`
   CREATE TABLE IF NOT EXISTS trainers (
     memberNumber INTEGER,
-    equipmentID TEXT
+    equipmentID TEXT,
+    since INTEGER
   )
 `;
 

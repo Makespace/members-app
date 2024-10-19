@@ -10,6 +10,10 @@ import {
 import {ViewModel} from './view-model';
 import {pageTemplate} from '../../templates';
 import {renderMemberNumber} from '../../templates/member-number';
+import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
+import {renderOwnerStatus} from '../shared-render/owner-status';
+import {renderTrainerStatus} from '../shared-render/trainer-status';
+import {renderTrainingStatus} from '../shared-render/training-status';
 
 const ownPageBanner = html`<h1>This is your profile!</h1>`;
 
@@ -75,6 +79,29 @@ export const render = (viewModel: ViewModel) =>
               )}
               ${ifSelf(viewModel, editAvatar())}
             </td>
+          </tr>
+          <tr>
+            <th scope="row">Owner of</th>
+            <td>${renderOwnerStatus(viewModel.member.ownerOf, true)}</td>
+          </tr>
+          ${viewModel.isSuperUser
+            ? html`<tr>
+                <th scope="row">Owner agreement</th>
+                <td>
+                  ${renderOwnerAgreementStatus(
+                    viewModel.member.agreementSigned,
+                    true
+                  )}
+                </td>
+              </tr>`
+            : html``}
+          <tr>
+            <th scope="row">Trainer for</th>
+            <td>${renderTrainerStatus(viewModel.member.trainerFor, true)}</td>
+          </tr>
+          <tr>
+            <th scope="row">Trained on</th>
+            <td>${renderTrainingStatus(viewModel.member.trainedOn, true)}</td>
           </tr>
         </tbody>
       </table>

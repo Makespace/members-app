@@ -1,6 +1,7 @@
 import {pipe} from 'fp-ts/lib/function';
 import {Dependencies} from '../../dependencies';
 import * as E from 'fp-ts/Either';
+import * as O from 'fp-ts/Option';
 import {
   failureWithStatus,
   FailureWithStatus,
@@ -12,8 +13,9 @@ import {sequenceS} from 'fp-ts/lib/Apply';
 
 export const constructViewModel =
   (deps: Dependencies, user: User) =>
-  (memberNumber: number): E.Either<FailureWithStatus, ViewModel> =>
-    pipe(
+  (memberNumber: number): E.Either<FailureWithStatus, ViewModel> => {
+    const userDetails = deps.sharedReadModel.members.get(user.memberNumber);
+    return pipe(
       {
         user: E.right(user),
         isSelf: E.right(memberNumber === user.memberNumber),
@@ -23,9 +25,13 @@ export const constructViewModel =
             failureWithStatus('No such member', StatusCodes.NOT_FOUND)()
           )
         ),
+        isSuperUser: E.right(
+          O.isSome(userDetails) && userDetails.value.isSuperUser
+        ),
       },
       sequenceS(E.Apply)
     );
+  };
 
 // Use the shared read model for getting member information
 // Add redacting of this information

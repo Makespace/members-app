@@ -1,51 +1,13 @@
 import {pipe} from 'fp-ts/lib/function';
-import * as O from 'fp-ts/Option';
-import * as RA from 'fp-ts/ReadonlyArray';
 import {getGravatarThumbnail} from '../../templates/avatar';
-import {
-  html,
-  sanitizeOption,
-  safe,
-  sanitizeString,
-  joinHtml,
-} from '../../types/html';
+import {html, sanitizeOption, safe, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
 import {pageTemplate} from '../../templates';
 import {renderMemberNumber} from '../../templates/member-number';
-import {displayDate} from '../../templates/display-date';
-import {DateTime} from 'luxon';
-
-const howToGetTrained = html`<details>
-  <summary>How to get trained</summary>
-  <div>
-    <ol>
-      <li>
-        Do
-        <a href="https://equipment.makespace.org/">the online training</a>
-      </li>
-      <li>
-        Sign up for practical training session on
-        <a href="https://www.meetup.com/makespace">Meetup</a>
-      </li>
-    </ol>
-    <p>Remember:</p>
-    <ul>
-      <li>All trainers are members volunteering their time.</li>
-      <li>
-        Trainings are often only scheduled on demand after people have passed
-        the online quiz.
-      </li>
-      <li>
-        If you are struggling to join a practical training, reach out to the
-        relevant owners via email.
-      </li>
-      <li>
-        We always need more trainers. If you'd like to help others please let
-        the owners know.
-      </li>
-    </ul>
-  </div>
-</details> `;
+import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
+import {renderOwnerStatus} from '../shared-render/owner-status';
+import {renderTrainerStatus} from '../shared-render/trainer-status';
+import {renderTrainingStatus} from '../shared-render/training-status';
 
 const editName = (viewModel: ViewModel) =>
   html`<a href="/members/edit-name?member=${viewModel.member.memberNumber}"
@@ -96,76 +58,6 @@ const renderMemberDetails = (viewModel: ViewModel) => html`
   </table>
 `;
 
-const renderOwnerStatus = (ownerOf: ViewModel['member']['ownerOf']) =>
-  pipe(
-    ownerOf,
-    RA.map(
-      area =>
-        html`<li>
-          <a href="/equipment#${safe(area.id)}">${sanitizeString(area.name)}</a>
-          (since ${displayDate(DateTime.fromJSDate(area.ownershipRecordedAt))})
-        </li>`
-    ),
-    RA.match(
-      () => html`
-        <p>You currently do not own any areas.</p>
-        <p>
-          Owners are the members who maintain and expand the capabilities of our
-          areas. We are always looking for more.
-        </p>
-      `,
-      listItems => html`
-        <p>You are an owner of the following areas:</p>
-        <ul>
-          ${joinHtml(listItems)}
-        </ul>
-      `
-    )
-  );
-
-const renderTrainingStatus = (trainedOn: ViewModel['member']['trainedOn']) =>
-  pipe(
-    trainedOn,
-    RA.map(
-      equipment =>
-        html`<li>
-          <a href="/equipment/${safe(equipment.id)}"
-            >${sanitizeString(equipment.name)}</a
-          >
-          (since ${displayDate(DateTime.fromJSDate(equipment.trainedAt))})
-        </li>`
-    ),
-    RA.match(
-      () => html`
-        <p>You are currently not allowed to use any RED equipment.</p>
-        ${howToGetTrained}
-      `,
-      listItems => html`
-        <p>You are permitted to use the following RED equipment:</p>
-        <ul>
-          ${joinHtml(listItems)}
-        </ul>
-        ${howToGetTrained}
-      `
-    )
-  );
-
-const renderOwnerAgreementStatus = (
-  status: ViewModel['member']['agreementSigned']
-) =>
-  pipe(
-    status,
-    O.matchW(
-      () => safe(''),
-      date => html`
-        <p>
-          You have signed the Owners Agreement
-          (${displayDate(DateTime.fromJSDate(date))})
-        </p>
-      `
-    )
-  );
-
 const superUserNav = html`
   <h2>Admin</h2>
   <p>You have super-user privileges. You can:</p>
@@ -191,10 +83,11 @@ export const render = (viewModel: ViewModel) =>
         <h2>Your details</h2>
         ${renderMemberDetails(viewModel)}
         <h2>Owner status</h2>
-        ${renderOwnerAgreementStatus(viewModel.member.agreementSigned)}
-        ${renderOwnerStatus(viewModel.member.ownerOf)}
+        ${renderOwnerAgreementStatus(viewModel.member.agreementSigned, false)}
+        ${renderOwnerStatus(viewModel.member.ownerOf, false)}
         <h2>Training status</h2>
-        ${renderTrainingStatus(viewModel.member.trainedOn)}
+        ${renderTrainingStatus(viewModel.member.trainedOn, false)}
+        ${renderTrainerStatus(viewModel.member.trainerFor, false)}
         ${viewModel.member.isSuperUser ? superUserNav : ''}
       </div>
     `,
