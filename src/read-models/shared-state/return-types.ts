@@ -21,32 +21,39 @@ export type FailedQuizAttempt = MemberCoreInfo & {
   timestamp: Date;
 };
 
-type TrainedMember = MemberCoreInfo & {
-  trainedBy: number | null;
-  trainedAt: Date;
+export type TrainedMember = MemberCoreInfo & {
+  markedTrainedByActor: O.Option<Actor>;
+  trainedSince: Date;
 };
 
 export type EpochTimestampMilliseconds = number & {
   readonly EpochTimestampMilliseconds: unique symbol;
 };
 
-export type Equipment = {
-  id: UUID;
-  name: string;
-  trainers: ReadonlyArray<MemberCoreInfo>;
-  trainedMembers: ReadonlyArray<TrainedMember>;
-  area: MinimalArea;
-  membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>;
-  orphanedPassedQuizes: ReadonlyArray<OrphanedPassedQuiz>;
-  failedQuizAttempts: ReadonlyArray<FailedQuizAttempt>;
-  trainingSheetId: O.Option<string>;
+export type TrainerInfo = MemberCoreInfo & {
+  markedTrainerByActor: O.Option<Actor>;
+  trainerSince: Date;
+};
 
-  // Uses the actual spreadsheet timestamp rather than our local timestamp which could be
-  // different due to clock drift or eventual consistency issues on the google side.
-  lastQuizResult: O.Option<EpochTimestampMilliseconds>;
+export type MinimalEquipment = {
+  id: string;
+  name: string;
+  trainingSheetId: O.Option<string>;
   // Uses local timestamp.
   lastQuizSync: O.Option<EpochTimestampMilliseconds>;
 };
+
+export type Equipment = {
+  trainers: ReadonlyArray<TrainerInfo>;
+  trainedMembers: ReadonlyArray<TrainedMember>;
+  area: O.Option<MinimalArea>;
+  membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>;
+  orphanedPassedQuizes: ReadonlyArray<OrphanedPassedQuiz>;
+  failedQuizAttempts: ReadonlyArray<FailedQuizAttempt>;
+  // Uses the actual spreadsheet timestamp rather than our local timestamp which could be
+  // different due to clock drift or eventual consistency issues on the google side.
+  lastQuizResult: O.Option<EpochTimestampMilliseconds>;
+} & MinimalEquipment;
 
 export type TrainedOn = {
   id: string;
@@ -89,27 +96,17 @@ export type Member = MemberCoreInfo & {
   ownerOf: ReadonlyArray<OwnerOf>;
 };
 
-export interface MinimalArea {
+export type MinimalArea = {
   id: string;
   name: string;
-}
-type MemberNumber = number;
+};
 
-export interface Area extends MinimalArea {
-  owners: ReadonlyArray<{
-    memberNumber: MemberNumber;
-    ownerSince: Date;
-    markedOwnerBy: Actor;
-  }>;
-  equipment: ReadonlyArray<{
-    id: string;
-    name: string;
-  }>;
-}
+export type Owner = MemberCoreInfo & {
+  ownershipRecordedAt: Date;
+  markedOwnerBy: O.Option<Actor>;
+};
 
-export interface ExpandedArea extends Area {
-  owners: ReadonlyArray<
-    MemberCoreInfo & {ownerSince: Date; markedOwnerBy: Actor}
-  >;
+export type Area = MinimalArea & {
+  owners: ReadonlyArray<Owner>;
   equipment: ReadonlyArray<Equipment>;
-}
+};

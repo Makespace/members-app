@@ -5,7 +5,7 @@ import sanitize from 'sanitize-html';
 
 export type Html = string & {readonly Html: unique symbol};
 
-type SanitizedString = string & {
+export type SanitizedString = string & {
   readonly SanitizedString: unique symbol;
 };
 

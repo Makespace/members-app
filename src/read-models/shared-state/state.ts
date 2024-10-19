@@ -63,15 +63,7 @@ export const trainersTable = sqliteTable('trainers', {
     .notNull()
     .references(() => equipmentTable.id),
   since: integer('since', {mode: 'timestamp'}).notNull(),
-  markedTrainerByUser: integer('markedTrainerByUser').references(
-    () => membersTable.memberNumber
-  ),
-  markedTrainedBySystem: integer('markedTrainedBySystem', {
-    mode: 'boolean',
-  }).default(false),
-  markedTrainerByApi: integer('markedTrainerByApi', {mode: 'boolean'}).default(
-    false
-  ),
+  markedTrainerByActor: text('markedTrainerByActor', {mode: 'json'}).notNull(),
 });
 
 const createTrainersTable = sql`
@@ -79,7 +71,7 @@ const createTrainersTable = sql`
     memberNumber INTEGER,
     equipmentID TEXT,
     since INTEGER,
-    markedTrainedBy
+    markedTrainerByActor TEXT,
   )
 `;
 
@@ -91,15 +83,7 @@ export const trainedMemberstable = sqliteTable('trainedMembers', {
     .notNull()
     .references(() => equipmentTable.id),
   trainedAt: integer('trainedAt', {mode: 'timestamp'}).notNull(),
-  markedTrainedByUser: integer('markedTrainedByUser').references(
-    () => membersTable.memberNumber
-  ),
-  markedTrainedBySystem: integer('markedTrainedBySystem', {
-    mode: 'boolean',
-  }).default(false),
-  markedTrainedByApi: integer('markedTrainedByApi', {mode: 'boolean'}).default(
-    false
-  ),
+  trainedByActor: text('trainedByActor', {mode: 'json'}).notNull(),
 });
 
 const createTrainedMembersTable = sql`
@@ -107,7 +91,7 @@ const createTrainedMembersTable = sql`
     memberNumber INTEGER,
     equipmentID TEXT,
     trainedAt INTEGER,
-    trainedBy INTEGER,
+    trainedByActor TEXT,
   )
 `;
 
@@ -133,22 +117,15 @@ export const ownersTable = sqliteTable('owners', {
   ownershipRecordedAt: integer('ownershipRecordedAt', {
     mode: 'timestamp',
   }).notNull(),
-  markedOwnerByUser: integer('markedOwnerByUser').references(
-    () => membersTable.memberNumber
-  ),
-  markedOwnerBySystem: integer('markedOwnerBySystem', {
-    mode: 'boolean',
-  }).default(false),
-  markedOwnerByApi: integer('markedOwnerByApi', {mode: 'boolean'}).default(
-    false
-  ),
+  markedOwnerByActor: text('markedOwnerByActor', {mode: 'json'}).notNull(),
 });
 
 const createOwnersTable = sql`
   CREATE TABLE IF NOT EXISTS owners (
     memberNumber INTEGER,
     areaId TEXT,
-    ownershipRecordedAt INTEGER
+    ownershipRecordedAt INTEGER,
+    markedOwnerByActor TEXT,
   )
 `;
 

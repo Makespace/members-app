@@ -1,16 +1,3 @@
-import {Actor} from './types';
-
-export const renderActor = (actor: Actor) => {
-  switch (actor.tag) {
-    case 'system':
-      return 'system';
-    case 'token':
-      return 'api';
-    case 'user':
-      return actor.user.emailAddress;
-  }
-};
-
 export function escapeCsv(cell: string | number): string {
   if (typeof cell === 'number') {
     return cell.toString();

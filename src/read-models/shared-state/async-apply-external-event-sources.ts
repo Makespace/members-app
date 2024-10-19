@@ -4,7 +4,7 @@ import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {DomainEvent} from '../../types';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {getAllEquipment} from './get-equipment';
+import {getAllEquipment} from './equipment/expand';
 import {pipe} from 'fp-ts/lib/function';
 import {EpochTimestampMilliseconds, Equipment} from './return-types';
 import {

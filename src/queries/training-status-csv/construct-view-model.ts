@@ -1,16 +1,13 @@
-import {pipe} from 'fp-ts/lib/function';
 import {User} from '../../types';
 import {Dependencies} from '../../dependencies';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
-import * as RA from 'fp-ts/ReadonlyArray';
 import {ViewModel} from './view-model';
 import {
   FailureWithStatus,
   failureWithStatus,
 } from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
-import {UUID} from 'io-ts-types';
 
 export const constructViewModel =
   (deps: Dependencies) =>
@@ -25,30 +22,6 @@ export const constructViewModel =
       );
     }
     return E.right({
-      byArea: pipe(
-        deps.sharedReadModel.equipment.getAll(),
-        RA.map(equipment => ({
-          area: equipment.area,
-          owners: pipe(
-            equipment.area.id as UUID,
-            deps.sharedReadModel.area.get,
-            O.map(areaDetails => {
-              return [];
-            }),
-            //   pipe(
-            //     areaDetails.owners,
-            //     RA.map(owner => ({
-            //       detais: deps.sharedReadModel.members.get(owner.memberNumber),
-            //       ownershipRecordedAt: owner.ownershipRecordedAt,
-            //     }))
-            //   )
-            // ),
-            O.getOrElse<ReadonlyArray<ViewModel['byArea'][0]['owners']>>(
-              () => []
-            )
-          ),
-          equipment,
-        }))
-      ),
+      areas: deps.sharedReadModel.area.getAll(),
     });
   };

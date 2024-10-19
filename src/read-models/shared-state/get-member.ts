@@ -38,6 +38,7 @@ export const getMember =
           id: trainedMemberstable.equipmentId,
           name: equipmentTable.name,
           trainedAt: trainedMemberstable.trainedAt,
+          trainedByActor: trainedMemberstable.trainedByActor,
         })
         .from(trainedMemberstable)
         .leftJoin(
@@ -46,7 +47,11 @@ export const getMember =
         )
         .where(eq(trainedMemberstable.memberNumber, memberNumber))
         .all(),
-      RA.filter(fieldIsNotNull('name'))
+      RA.filter(fieldIsNotNull('name')),
+      RA.map(row => ({
+        ...row,
+        trainedByActor: O.fromEither(Actor.decode(row.trainedByActor)),
+      }))
     );
 
     const getOwnerOf = pipe(
