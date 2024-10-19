@@ -4,7 +4,7 @@ import {createTables} from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import {getAllMember, getMember, getMemberAsActor} from './get-member';
-import {Equipment, Member} from './return-types';
+import {Area, Equipment, Member} from './return-types';
 import {getAllEquipment, getEquipment} from './get-equipment';
 import {Client} from '@libsql/client/.';
 import {asyncRefresh} from './async-refresh';
@@ -14,6 +14,7 @@ import {asyncApplyExternalEventSources} from './async-apply-external-event-sourc
 import {UUID} from 'io-ts-types';
 import {GoogleHelpers} from '../../init-dependencies/google/pull_sheet_data';
 import {User} from '../../types';
+import {getAllArea, getArea} from './get-area';
 
 export {replayState} from './deprecated-replay';
 
@@ -32,7 +33,8 @@ export type SharedReadModel = {
   };
   area: {
     get: (id: UUID) => O.Option<Area>;
-  }
+    getAll: () => ReadonlyArray<Area>;
+  };
 };
 
 export const initSharedReadModel = (
@@ -63,6 +65,10 @@ export const initSharedReadModel = (
     equipment: {
       get: getEquipment(readModelDb),
       getAll: getAllEquipment(readModelDb),
+    },
+    area: {
+      get: getArea(readModelDb),
+      getAll: getAllArea(readModelDb),
     },
   };
 };

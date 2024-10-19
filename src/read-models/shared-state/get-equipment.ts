@@ -5,7 +5,6 @@ import {eq, and, not, max} from 'drizzle-orm';
 import {SharedReadModel} from '.';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {
-  areasTable,
   equipmentTable,
   membersTable,
   trainedMemberstable,
@@ -15,16 +14,11 @@ import {
 import {EpochTimestampMilliseconds} from './return-types';
 import {UUID} from 'io-ts-types';
 import {accumByMap} from '../../util';
+import {getMinimalArea} from './get-area';
 
 export const getEquipment =
   (db: BetterSQLite3Database): SharedReadModel['equipment']['get'] =>
   (id: UUID) => {
-    const getArea = (areaId: string) =>
-      pipe(
-        db.select().from(areasTable).where(eq(areasTable.id, areaId)).get(),
-        O.fromNullable
-      );
-
     const getTrainers = () =>
       pipe(
         db
@@ -211,7 +205,7 @@ export const getEquipment =
       O.let('orphanedPassedQuizes', getOrphanedTrainingQuizes),
       O.let('failedQuizAttempts', getFailedQuizAttempts),
       O.let('lastQuizResult', getLastQuizResult),
-      O.bind('area', ({areaId}) => getArea(areaId)),
+      O.bind('area', ({areaId}) => getMinimalArea(db)(areaId as UUID)),
       foo => foo
     );
   };
