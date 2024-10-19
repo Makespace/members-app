@@ -3,7 +3,6 @@ import {pipe} from 'fp-ts/lib/function';
 import {eq} from 'drizzle-orm';
 import {getEquipmentForAreaMinimal} from '../equipment/get';
 import {Equipment, MinimalArea, Owner} from '../return-types';
-import {UUID} from 'io-ts-types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {membersTable, ownersTable} from '../state';
 import * as O from 'fp-ts/Option';
@@ -37,11 +36,11 @@ const expandOwners =
       })
     );
 
-export const expandEquipment =
+const expandEquipment =
   (db: BetterSQLite3Database) =>
   <T extends MinimalArea>(area: T): T & {equipment: ReadonlyArray<Equipment>} =>
     pipe(
-      area.id as UUID,
+      area.id,
       getEquipmentForAreaMinimal(db),
       RA.map(expandAllEquipment(db)),
       equipment => ({
