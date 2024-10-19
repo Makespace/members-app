@@ -4,9 +4,8 @@ import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {DomainEvent} from '../../types';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {getAllEquipment} from './get-equipment';
 import {pipe} from 'fp-ts/lib/function';
-import {EpochTimestampMilliseconds, Equipment} from './return-types';
+import {EpochTimestampMilliseconds, MinimalEquipment} from './return-types';
 import {
   columnBoundsRequired,
   extractGoogleSheetData,
@@ -20,13 +19,19 @@ import {
   MAX_COLUMN_INDEX,
 } from '../../training-sheets/extract-metadata';
 import {getChunkIndexes} from '../../util';
+import {getAllEquipmentMinimal} from './equipment/get';
+import {expandLastQuizResult} from './equipment/expand';
 
 const ROW_BATCH_SIZE = 200;
+
+export type EquipmentWithLastQuizResult = MinimalEquipment & {
+  lastQuizResult: O.Option<EpochTimestampMilliseconds>;
+};
 
 const pullNewEquipmentQuizResultsForSheet = async (
   logger: Logger,
   googleHelpers: GoogleHelpers,
-  equipment: Equipment,
+  equipment: EquipmentWithLastQuizResult,
   trainingSheetId: string,
   sheet: GoogleSheetMetadata,
   timezone: string,
@@ -80,7 +85,7 @@ const pullNewEquipmentQuizResultsForSheet = async (
 export const pullNewEquipmentQuizResults = async (
   logger: Logger,
   googleHelpers: GoogleHelpers,
-  equipment: Equipment,
+  equipment: EquipmentWithLastQuizResult,
   updateState: (event: DomainEvent) => void
 ): Promise<void> => {
   // TODO - Refactor this into fp-ts style.
@@ -179,7 +184,7 @@ export const asyncApplyExternalEventSources = (
       logger.info('Google external event source disabled');
       return;
     }
-    for (const equipment of getAllEquipment(currentState)()) {
+    for (const equipment of getAllEquipmentMinimal(currentState)) {
       if (
         O.isSome(equipment.trainingSheetId) &&
         (O.isNone(equipment.lastQuizSync) ||
@@ -194,7 +199,7 @@ export const asyncApplyExternalEventSources = (
         await pullNewEquipmentQuizResults(
           logger,
           googleHelpers.value,
-          equipment,
+          expandLastQuizResult(currentState)(equipment),
           updateState
         );
         logger.info(

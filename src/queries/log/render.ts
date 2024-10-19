@@ -2,23 +2,12 @@ import {pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
-import {Actor} from '../../types/actor';
 import {DomainEvent} from '../../types';
 import {inspect} from 'node:util';
 import {displayDate} from '../../templates/display-date';
 import {pageTemplate} from '../../templates';
 import {DateTime} from 'luxon';
-
-const renderActor = (actor: Actor) => {
-  switch (actor.tag) {
-    case 'system':
-      return html`System`;
-    case 'token':
-      return html`Admin via API`;
-    case 'user':
-      return sanitizeString(actor.user.emailAddress);
-  }
-};
+import {renderActor} from '../../types/actor';
 
 const renderPayload = (event: DomainEvent) =>
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, unused-imports/no-unused-vars

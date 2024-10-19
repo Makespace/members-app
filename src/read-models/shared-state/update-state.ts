@@ -85,6 +85,7 @@ export const updateState =
             memberNumber: event.memberNumber,
             equipmentId: event.equipmentId,
             since: event.recordedAt,
+            markedTrainerByActor: event.actor,
           })
           .run();
         break;
@@ -94,6 +95,7 @@ export const updateState =
             memberNumber: event.memberNumber,
             equipmentId: event.equipmentId,
             trainedAt: event.recordedAt,
+            trainedByActor: event.actor,
           })
           .run();
         break;
@@ -115,6 +117,7 @@ export const updateState =
             memberNumber: event.memberNumber,
             areaId: event.areaId,
             ownershipRecordedAt: event.recordedAt,
+            markedOwnerByActor: event.actor,
           })
           .run();
         break;

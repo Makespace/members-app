@@ -136,7 +136,7 @@ const currentlyTrainedUsersTable = (viewModel: ViewModel) =>
         html`<tr>
           <td>${sanitizeString(O.getOrElse(() => '')(member.name))}</td>
           <td>${renderMemberNumber(member.memberNumber)}</td>
-          <td>${displayDate(DateTime.fromJSDate(member.trainedAt))}</td>
+          <td>${displayDate(DateTime.fromJSDate(member.trainedSince))}</td>
           <td>
             <form action="/equipment/revoke-member-trained" method="post">
               <input

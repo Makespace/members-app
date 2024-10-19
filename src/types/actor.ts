@@ -1,3 +1,4 @@
+import {Html, html, SanitizedString, sanitizeString} from './html';
 import {User} from './user';
 import * as t from 'io-ts';
 
@@ -14,3 +15,14 @@ export const Actor = t.union(
 );
 
 export type Actor = t.TypeOf<typeof Actor>;
+
+export const renderActor = (actor: Actor): Html | SanitizedString => {
+  switch (actor.tag) {
+    case 'system':
+      return html`System`;
+    case 'token':
+      return html`Admin via API`;
+    case 'user':
+      return sanitizeString(actor.user.emailAddress);
+  }
+};

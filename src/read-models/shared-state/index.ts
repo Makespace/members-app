@@ -3,9 +3,8 @@ import * as O from 'fp-ts/Option';
 import {createTables} from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
-import {getAllMember, getMember, getMemberAsActor} from './get-member';
-import {Equipment, Member} from './return-types';
-import {getAllEquipment, getEquipment} from './get-equipment';
+import {Area, Equipment, Member} from './return-types';
+
 import {Client} from '@libsql/client/.';
 import {asyncRefresh} from './async-refresh';
 import {updateState} from './update-state';
@@ -14,6 +13,13 @@ import {asyncApplyExternalEventSources} from './async-apply-external-event-sourc
 import {UUID} from 'io-ts-types';
 import {GoogleHelpers} from '../../init-dependencies/google/pull_sheet_data';
 import {User} from '../../types';
+import {getAllEquipmentFull, getEquipmentFull} from './equipment/helpers';
+import {getAllAreaFull, getAreaFull} from './area/helpers';
+import {
+  getAllMemberFull,
+  getMemberFull,
+  getMemberAsActorFull,
+} from './member/helper';
 
 export {replayState} from './deprecated-replay';
 
@@ -29,6 +35,10 @@ export type SharedReadModel = {
   equipment: {
     get: (id: UUID) => O.Option<Equipment>;
     getAll: () => ReadonlyArray<Equipment>;
+  };
+  area: {
+    get: (id: UUID) => O.Option<Area>;
+    getAll: () => ReadonlyArray<Area>;
   };
 };
 
@@ -53,13 +63,17 @@ export const initSharedReadModel = (
       googleRateLimitMs
     ),
     members: {
-      get: getMember(readModelDb),
-      getAll: getAllMember(readModelDb),
-      getAsActor: getMemberAsActor(readModelDb),
+      get: getMemberFull(readModelDb),
+      getAll: getAllMemberFull(readModelDb),
+      getAsActor: getMemberAsActorFull(readModelDb),
     },
     equipment: {
-      get: getEquipment(readModelDb),
-      getAll: getAllEquipment(readModelDb),
+      get: getEquipmentFull(readModelDb),
+      getAll: getAllEquipmentFull(readModelDb),
+    },
+    area: {
+      get: getAreaFull(readModelDb),
+      getAll: getAllAreaFull(readModelDb),
     },
   };
 };

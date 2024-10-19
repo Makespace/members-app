@@ -72,6 +72,7 @@ const superUserNav = html`
         <a href="/event-log.csv">View log of all actions taken</a>
       </li>
       <li><a href="/members/create">Link an email and number</a></li>
+      <li><a href="/training-status.csv">Download current owners and trainers</li>
     </ul>
   </nav>
 `;
