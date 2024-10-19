@@ -1,10 +1,12 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
+import * as E from 'fp-ts/Either';
 import {
   areasTable,
   equipmentTable,
   membersTable,
   ownersTable,
+  trainersTable,
   trainedMemberstable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
@@ -15,11 +17,17 @@ import {Member} from './return-types';
 import {Actor, User} from '../../types';
 import {redactDetailsForActor} from '../members/redact';
 import {liftActorOrUser} from '../members/get-all';
+import {UUID} from 'io-ts-types';
 
 const fieldIsNotNull =
   <K extends string>(key: K) =>
   <T extends Record<K, string | null>>(obj: T): obj is T & {[P in K]: string} =>
     obj[key] !== null;
+
+const fieldIsUUID =
+  <K extends string>(key: K) =>
+  <T extends Record<K, string | null>>(obj: T): obj is T & {[P in K]: UUID} =>
+    E.isRight(UUID.decode(obj[key]));
 
 export const getMember =
   (db: BetterSQLite3Database): SharedReadModel['members']['get'] =>
@@ -55,6 +63,24 @@ export const getMember =
       RA.filter(fieldIsNotNull('name'))
     );
 
+    const getTrainerFor = pipe(
+      db
+        .select({
+          equipment_id: trainersTable.equipmentId,
+          equipment_name: equipmentTable.name,
+          since: trainersTable.since,
+        })
+        .from(trainersTable)
+        .leftJoin(
+          equipmentTable,
+          eq(trainersTable.equipmentId, equipmentTable.id)
+        )
+        .where(eq(trainersTable.memberNumber, memberNumber))
+        .all(),
+      RA.filter(fieldIsNotNull('equipment_name')),
+      RA.filter(fieldIsUUID('equipment_id'))
+    );
+
     return pipe(
       db
         .select()
@@ -67,7 +93,8 @@ export const getMember =
         agreementSigned: O.fromNullable(member.agreementSigned),
       })),
       O.let('trainedOn', () => getTrainedOn),
-      O.let('ownerOf', () => getOwnerOf)
+      O.let('ownerOf', () => getOwnerOf),
+      O.let('trainerFor', () => getTrainerFor)
     );
   };
 
