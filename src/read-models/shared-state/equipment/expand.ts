@@ -238,6 +238,11 @@ export const expandAll =
   <T extends MinimalEquipment>(equipment: T) => {
     return pipe(
       equipment,
+      (e) => {
+        console.log('Equipment');
+        console.log(e);
+        return e;
+      },
       expandTrainers(db),
       expandTrainedMembers(db),
       expandMembersAwaitingTraining(db),
@@ -246,7 +251,10 @@ export const expandAll =
       expandLastQuizResult(db),
       e => ({
         ...e,
-        area: getAreaMinimal(db)(e.id),
+        area: O.getOrElse(() => ({
+          id: e.areaId,
+          name: 'unknown',
+        }))(getAreaMinimal(db)(e.areaId)),
       })
     );
   };

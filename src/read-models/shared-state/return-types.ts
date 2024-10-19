@@ -38,6 +38,7 @@ export type TrainerInfo = MemberCoreInfo & {
 export type MinimalEquipment = {
   id: UUID;
   name: string;
+  areaId: UUID;
   trainingSheetId: O.Option<string>;
   // Uses local timestamp.
   lastQuizSync: O.Option<EpochTimestampMilliseconds>;
@@ -46,14 +47,14 @@ export type MinimalEquipment = {
 export type Equipment = {
   trainers: ReadonlyArray<TrainerInfo>;
   trainedMembers: ReadonlyArray<TrainedMember>;
-  area: O.Option<MinimalArea>;
+  area: MinimalArea;
   membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>;
   orphanedPassedQuizes: ReadonlyArray<OrphanedPassedQuiz>;
   failedQuizAttempts: ReadonlyArray<FailedQuizAttempt>;
   // Uses the actual spreadsheet timestamp rather than our local timestamp which could be
   // different due to clock drift or eventual consistency issues on the google side.
   lastQuizResult: O.Option<EpochTimestampMilliseconds>;
-} & MinimalEquipment;
+} & Omit<MinimalEquipment, 'areaId'>;
 
 export type TrainedOn = {
   id: string;
@@ -97,7 +98,7 @@ export type Member = MemberCoreInfo & {
 };
 
 export type MinimalArea = {
-  id: string;
+  id: UUID;
   name: string;
 };
 

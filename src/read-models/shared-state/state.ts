@@ -125,7 +125,7 @@ const createOwnersTable = sql`
     memberNumber INTEGER,
     areaId TEXT,
     ownershipRecordedAt INTEGER,
-    markedOwnerByActor TEXT,
+    markedOwnerByActor TEXT
   )
 `;
 

@@ -36,9 +36,7 @@ export const constructViewModel =
         O.isNone(member)
           ? false
           : member.value.ownerOf.findIndex(
-              ownerOf =>
-                O.isSome(equipment.area) &&
-                ownerOf.id === equipment.area.value.id
+              ownerOf => ownerOf.id === equipment.area.id
             ) !== -1
       ),
       TE.let(
