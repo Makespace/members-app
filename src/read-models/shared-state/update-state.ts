@@ -90,6 +90,24 @@ export const updateState =
           .run();
         break;
       case 'MemberTrainedOnEquipment': {
+        const existing = O.fromNullable(
+          db
+            .select()
+            .from(trainedMemberstable)
+            .where(
+              and(
+                eq(trainedMemberstable.equipmentId, event.equipmentId),
+                eq(trainedMemberstable.memberNumber, event.memberNumber)
+              )
+            )
+            .limit(1)
+            .get()
+        );
+        if (O.isSome(existing) && existing.value.trainedAt < event.recordedAt) {
+          // If we have already marked this member as trained in the past then
+          // don't re-mark them as this would refresh their 'trained since'.
+          break;
+        }
         db.insert(trainedMemberstable)
           .values({
             memberNumber: event.memberNumber,

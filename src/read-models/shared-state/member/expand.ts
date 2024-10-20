@@ -28,13 +28,12 @@ const expandTrainedOn =
           trainedByActor: trainedMemberstable.markTrainedByActor,
         })
         .from(trainedMemberstable)
-        .leftJoin(
+        .innerJoin(
           equipmentTable,
           eq(equipmentTable.id, trainedMemberstable.equipmentId)
         )
         .where(eq(trainedMemberstable.memberNumber, member.memberNumber))
         .all(),
-      RA.filter(fieldIsNotNull('name')),
       RA.map(row => ({
         ...row,
         markedTrainedByActor: O.fromEither(Actor.decode(row.trainedByActor)),
