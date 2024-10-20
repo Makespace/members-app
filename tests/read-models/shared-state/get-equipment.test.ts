@@ -103,19 +103,48 @@ describe('get', () => {
       equipmentId: equipmentId,
       memberNumber: addTrainedMember.memberNumber,
     };
+    let markedTrainedTimestampStart: number;
+    let markedTrainedTimestampEnd: number;
     beforeEach(async () => {
       await framework.commands.memberNumbers.linkNumberToEmail(
         addTrainedMember
       );
       await framework.commands.area.create(createArea);
       await framework.commands.equipment.add(addEquipment);
+      markedTrainedTimestampStart = Date.now();
       await framework.commands.trainers.markTrained(markTrained);
+      markedTrainedTimestampEnd = Date.now();
       await framework.commands.trainers.markTrained(markTrained);
     });
 
     it('equipment only shows member as trained once', () => {
       const equipment = runQuery();
       expect(equipment.trainedMembers).toHaveLength(1);
+    });
+
+    it('member only shows trained once', () => {
+      const member = pipe(
+        markTrained.memberNumber,
+        framework.sharedReadModel.members.get,
+        getSomeOrFail
+      );
+      expect(member.trainedOn).toHaveLength(1);
+      expect(member.trainedOn[0].id).toStrictEqual(markTrained.equipmentId);
+      expect(member.trainedOn[0].name).toStrictEqual(addEquipment.name);
+      expect(member.trainedOn[0].trainedAt.getTime()).toBeLessThanOrEqual(
+        markedTrainedTimestampStart
+      );
+      expect(member.trainedOn[0].trainedAt.getTime()).toBeLessThanOrEqual(
+        markedTrainedTimestampEnd
+      );
+    });
+
+    it('equipment_check_test', async () => {
+      const events = await framework.getAllEvents();
+      console.log(events);
+
+      const equipment = runQuery();
+      console.log(equipment);
     });
   });
 
