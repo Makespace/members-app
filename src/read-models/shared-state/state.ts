@@ -83,7 +83,11 @@ export const trainedMemberstable = sqliteTable('trainedMembers', {
     .notNull()
     .references(() => equipmentTable.id),
   trainedAt: integer('trainedAt', {mode: 'timestamp'}).notNull(),
-  trainedByActor: text('trainedByActor', {mode: 'json'}).notNull(),
+  trainedByMemberNumber: integer('trainedByMemberNumber'),
+  legacyImport: integer('legacyImport', {mode: 'boolean'})
+    .notNull()
+    .default(false),
+  markTrainedByActor: text('markTrainedByActor', {mode: 'json'}).notNull(),
 });
 
 const createTrainedMembersTable = sql`
@@ -91,7 +95,9 @@ const createTrainedMembersTable = sql`
     memberNumber INTEGER,
     equipmentId TEXT,
     trainedAt INTEGER,
-    trainedByActor TEXT
+    trainedByMemberNumber INTEGER,
+    legacyImport INTEGER,
+    markTrainedByActor TEXT
   )
 `;
 
