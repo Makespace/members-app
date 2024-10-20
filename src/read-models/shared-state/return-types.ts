@@ -23,7 +23,10 @@ export type FailedQuizAttempt = MemberCoreInfo & {
 
 export type TrainedMember = MemberCoreInfo & {
   markedTrainedByActor: O.Option<Actor>;
+  trainedByMemberNumber: O.Option<number>;
+  trainedByEmail: O.Option<EmailAddress>;
   trainedSince: Date;
+  legacyImport: boolean;
 };
 
 export type EpochTimestampMilliseconds = number & {

@@ -89,16 +89,19 @@ export const updateState =
           })
           .run();
         break;
-      case 'MemberTrainedOnEquipment':
+      case 'MemberTrainedOnEquipment': {
         db.insert(trainedMemberstable)
           .values({
             memberNumber: event.memberNumber,
             equipmentId: event.equipmentId,
             trainedAt: event.recordedAt,
-            trainedByActor: event.actor,
+            trainedByMemberNumber: event.trainedByMemberNumber,
+            legacyImport: event.legacyImport,
+            markTrainedByActor: event.actor,
           })
           .run();
         break;
+      }
       case 'OwnerAgreementSigned':
         db.update(membersTable)
           .set({agreementSigned: event.signedAt})
