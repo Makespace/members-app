@@ -20,7 +20,7 @@ export const render = (viewModel: ViewModel) => {
     '',
     'Trained Members',
     '',
-    'area_id,area_name,equipment_id,equipment_name,member_number,email,name,trainedSince,markedTrainedBy',
+    'area_id,area_name,equipment_id,equipment_name,member_number,email,name,trainedSince,trainedByMemberNumber,trainedByEmail,markedTrainedBy,legacyImport',
   ];
   for (const {
     owners,
@@ -79,11 +79,14 @@ export const render = (viewModel: ViewModel) => {
             equipmentName,
             trained.memberNumber,
             trained.emailAddress,
-            O.getOrElse(() => '')(trained.name),
+            trained.name,
             trained.trainedSince.toISOString(),
+            trained.trainedByMemberNumber,
+            trained.trainedByEmail,
             O.isSome(trained.markedTrainedByActor)
               ? renderActor(trained.markedTrainedByActor.value)
               : '',
+            trained.legacyImport,
           ]
             .map(escapeCsv)
             .join(',')

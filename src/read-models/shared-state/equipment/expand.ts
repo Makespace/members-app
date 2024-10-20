@@ -22,6 +22,7 @@ import {UUID} from 'io-ts-types';
 import {accumByMap} from '../../../util';
 import {Actor} from '../../../types';
 import {getAreaMinimal} from '../area/get';
+import {getMemberCore} from '../member/get';
 
 const expandTrainers =
   (db: BetterSQLite3Database) =>
@@ -72,14 +73,27 @@ const expandTrainedMembers =
         row => row.members.memberNumber,
         rows => rows[rows.length - 1]
       ),
-      RA.map(result => ({
-        ...result.members,
-        markedTrainedByActor: O.fromEither(
-          Actor.decode(result.trainedMembers.trainedByActor)
-        ),
-        trainedSince: result.trainedMembers.trainedAt,
-        agreementSigned: O.fromNullable(result.members.agreementSigned),
-      })),
+      RA.map(result => {
+        const trainedByMemberNumber = O.fromNullable(
+          result.trainedMembers.trainedByMemberNumber
+        );
+        return {
+          ...result.members,
+          markedTrainedByActor: O.fromEither(
+            Actor.decode(result.trainedMembers.markTrainedByActor)
+          ),
+          trainedSince: result.trainedMembers.trainedAt,
+          agreementSigned: O.fromNullable(result.members.agreementSigned),
+          trainedByMemberNumber,
+          trainedByEmail: pipe(
+            trainedByMemberNumber,
+            O.map(getMemberCore(db)),
+            O.flatten,
+            O.map(trainedByDetails => trainedByDetails.emailAddress)
+          ),
+          legacyImport: result.trainedMembers.legacyImport,
+        };
+      }),
       trainedMembers => ({
         ...equipment,
         trainedMembers,

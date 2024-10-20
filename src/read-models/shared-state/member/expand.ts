@@ -25,7 +25,7 @@ const expandTrainedOn =
           id: trainedMemberstable.equipmentId,
           name: equipmentTable.name,
           trainedAt: trainedMemberstable.trainedAt,
-          trainedByActor: trainedMemberstable.trainedByActor,
+          trainedByActor: trainedMemberstable.markTrainedByActor,
         })
         .from(trainedMemberstable)
         .leftJoin(
@@ -37,7 +37,7 @@ const expandTrainedOn =
       RA.filter(fieldIsNotNull('name')),
       RA.map(row => ({
         ...row,
-        trainedByActor: O.fromEither(Actor.decode(row.trainedByActor)),
+        markedTrainedByActor: O.fromEither(Actor.decode(row.trainedByActor)),
       })),
       trainedOn => ({
         ...member,
