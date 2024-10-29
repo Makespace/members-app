@@ -40,6 +40,7 @@ const trainersList = (trainers: ViewModel['equipment']['trainers']) =>
   );
 
 const isOwner = (viewModel: ViewModel) => viewModel.isSuperUserOrOwnerOfArea;
+
 const isTrainerOrOwner = (viewModel: ViewModel) =>
   viewModel.isSuperUserOrTrainerOfArea || viewModel.isSuperUserOrOwnerOfArea;
 
@@ -47,7 +48,7 @@ const trainMember = (viewModel: ViewModel) =>
   pipe(
     viewModel,
     O.of,
-    O.filter(isOwner),
+    O.filter(isTrainerOrOwner),
     O.map(viewModel => viewModel.equipment.id),
     O.map(
       id =>
