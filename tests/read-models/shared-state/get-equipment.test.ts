@@ -85,6 +85,16 @@ describe('get', () => {
     });
   });
 
+  describe('when someone was marked as trainer without being an owner', () => {
+    it.todo('returns that they are not an owner');
+    it.todo('returns that they are not a trainer');
+  });
+
+  describe('when someone was an owner and trainer but is no longer an owner', () => {
+    it.todo('returns that they are not an owner');
+    it.todo('returns that they are not a trainer');
+  });
+
   describe('When equipment has a member marked as trained twice', () => {
     const addTrainedMember = {
       memberNumber: faker.number.int() as Int,
