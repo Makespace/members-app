@@ -12,38 +12,37 @@ describe('get', () => {
   const equipmentId = faker.string.uuid() as UUID;
   const runQuery = () =>
     pipe(equipmentId, framework.sharedReadModel.equipment.get, getSomeOrFail);
+  const addTrainerMember = {
+    memberNumber: faker.number.int(),
+    email: faker.internet.email() as EmailAddress,
+  };
+  const addTrainedMember = {
+    memberNumber: faker.number.int() as Int,
+    email: faker.internet.email() as EmailAddress,
+  };
+  const createArea = {
+    id: faker.string.uuid() as UUID,
+    name: faker.company.buzzNoun() as NonEmptyString,
+  };
+  const addEquipment = {
+    id: equipmentId,
+    name: faker.company.buzzNoun() as NonEmptyString,
+    areaId: createArea.id,
+  };
+  const addTrainer = {
+    memberNumber: addTrainerMember.memberNumber,
+    equipmentId: equipmentId,
+  };
+  const markTrained = {
+    equipmentId: equipmentId,
+    memberNumber: addTrainedMember.memberNumber,
+  };
 
   beforeEach(async () => {
     framework = await initTestFramework();
   });
 
   describe('when equipment has a trainer and trained users', () => {
-    const addTrainerMember = {
-      memberNumber: faker.number.int(),
-      email: faker.internet.email() as EmailAddress,
-    };
-    const addTrainedMember = {
-      memberNumber: faker.number.int() as Int,
-      email: faker.internet.email() as EmailAddress,
-    };
-    const createArea = {
-      id: faker.string.uuid() as UUID,
-      name: faker.company.buzzNoun() as NonEmptyString,
-    };
-    const addEquipment = {
-      id: equipmentId,
-      name: faker.company.buzzNoun() as NonEmptyString,
-      areaId: createArea.id,
-    };
-    const addTrainer = {
-      memberNumber: addTrainerMember.memberNumber,
-      equipmentId: equipmentId,
-    };
-    const markTrained = {
-      equipmentId: equipmentId,
-      memberNumber: addTrainedMember.memberNumber,
-    };
-
     beforeEach(async () => {
       await framework.commands.memberNumbers.linkNumberToEmail(
         addTrainerMember
@@ -86,8 +85,32 @@ describe('get', () => {
   });
 
   describe('when someone was marked as trainer without being an owner', () => {
-    it.todo('returns that they are not an owner');
-    it.todo('returns that they are not a trainer');
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(
+        addTrainerMember
+      );
+      await framework.commands.area.create(createArea);
+      await framework.commands.equipment.add(addEquipment);
+      await framework.commands.trainers.add(addTrainer);
+    });
+
+    it('returns that they are not an owner', () => {
+      const member = pipe(
+        addTrainer.memberNumber,
+        framework.sharedReadModel.members.get,
+        getSomeOrFail
+      );
+      expect(member.ownerOf).toHaveLength(0);
+    });
+
+    it.failing('returns that they are not a trainer', () => {
+      const member = pipe(
+        addTrainer.memberNumber,
+        framework.sharedReadModel.members.get,
+        getSomeOrFail
+      );
+      expect(member.trainerFor).toHaveLength(0);
+    });
   });
 
   describe('when someone was an owner and trainer but is no longer an owner', () => {
