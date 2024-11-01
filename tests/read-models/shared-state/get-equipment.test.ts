@@ -118,9 +118,33 @@ describe('get', () => {
     });
   });
 
-  describe('when someone was an owner and trainer but is no longer an owner', () => {
-    it.todo('returns that they are not an owner');
-    it.todo('returns that they are not a trainer');
+  describe.skip('when someone was an owner and trainer but is no longer an owner', () => {
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(
+        addTrainerMember
+      );
+      await framework.commands.area.create(createArea);
+      await framework.commands.equipment.add(addEquipment);
+      await framework.commands.trainers.add(addTrainer);
+      // await framework.commands.area.removeOwner(removeOwner);
+    });
+    it('returns that they are not an owner', () => {
+      const member = pipe(
+        addTrainer.memberNumber,
+        framework.sharedReadModel.members.get,
+        getSomeOrFail
+      );
+      expect(member.ownerOf).toHaveLength(0);
+    });
+
+    it('returns that they are not a trainer', () => {
+      const member = pipe(
+        addTrainer.memberNumber,
+        framework.sharedReadModel.members.get,
+        getSomeOrFail
+      );
+      expect(member.trainerFor).toHaveLength(0);
+    });
   });
 
   describe('When equipment has a member marked as trained twice', () => {
