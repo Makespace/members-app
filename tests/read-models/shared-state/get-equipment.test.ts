@@ -29,6 +29,10 @@ describe('get', () => {
     name: faker.company.buzzNoun() as NonEmptyString,
     areaId: createArea.id,
   };
+  const addOwner = {
+    memberNumber: addTrainerMember.memberNumber,
+    areaId: createArea.id,
+  };
   const addTrainer = {
     memberNumber: addTrainerMember.memberNumber,
     equipmentId: equipmentId,
@@ -52,6 +56,7 @@ describe('get', () => {
       );
       await framework.commands.area.create(createArea);
       await framework.commands.equipment.add(addEquipment);
+      await framework.commands.area.addOwner(addOwner);
       await framework.commands.trainers.add(addTrainer);
       await framework.commands.trainers.markTrained(markTrained);
     });
@@ -103,7 +108,7 @@ describe('get', () => {
       expect(member.ownerOf).toHaveLength(0);
     });
 
-    it.failing('returns that they are not a trainer', () => {
+    it('returns that they are not a trainer', () => {
       const member = pipe(
         addTrainer.memberNumber,
         framework.sharedReadModel.members.get,

@@ -12,6 +12,7 @@ import {
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, eq} from 'drizzle-orm';
+import {isOwnerOfAreaContainingEquipment} from './area/helpers';
 
 export const updateState =
   (db: BetterSQLite3Database) => (event: DomainEvent) => {
@@ -79,16 +80,24 @@ export const updateState =
           .values({id: event.id, name: event.name, areaId: event.areaId})
           .run();
         break;
-      case 'TrainerAdded':
-        db.insert(trainersTable)
-          .values({
-            memberNumber: event.memberNumber,
-            equipmentId: event.equipmentId,
-            since: event.recordedAt,
-            markedTrainerByActor: event.actor,
-          })
-          .run();
+      case 'TrainerAdded': {
+        if (
+          isOwnerOfAreaContainingEquipment(db)(
+            event.equipmentId,
+            event.memberNumber
+          )
+        ) {
+          db.insert(trainersTable)
+            .values({
+              memberNumber: event.memberNumber,
+              equipmentId: event.equipmentId,
+              since: event.recordedAt,
+              markedTrainerByActor: event.actor,
+            })
+            .run();
+        }
         break;
+      }
       case 'MemberTrainedOnEquipment': {
         const existing = O.fromNullable(
           db
