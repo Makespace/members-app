@@ -30,7 +30,7 @@ const renderForm = (viewModel: ViewModel) =>
         </form>
       </div>
     `,
-    pageTemplate(safe('Create Area'), viewModel.user)
+    pageTemplate(safe('Remove Area'), viewModel.user)
   );
 
 const getAreaName = (db: SharedReadModel['db'], areaId: string) =>
