@@ -32,7 +32,7 @@ const resource: Command<RemoveArea>['resource'] = command => ({
   id: command.id,
 });
 
-export const remove: Command<RemoveArea> = {
+export const removeArea: Command<RemoveArea> = {
   process,
   resource,
   decode: codec.decode,
