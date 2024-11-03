@@ -1,23 +1,46 @@
 /* eslint-disable unused-imports/no-unused-vars */
+import * as tt from 'io-ts-types';
+import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import {pageTemplate} from '../../templates';
-import {User} from '../../types';
+import {EmailAddress, User} from '../../types';
 import {Form} from '../../types/form';
-import {pipe} from 'fp-ts/lib/function';
+import {flow, pipe} from 'fp-ts/lib/function';
 import {html, safe, sanitizeString} from '../../types/html';
-import {eq} from 'drizzle-orm';
 import {StatusCodes} from 'http-status-codes';
-import {SharedReadModel} from '../../read-models/shared-state';
-import {areasTable} from '../../read-models/shared-state/state';
 import {failureWithStatus} from '../../types/failure-with-status';
+import {formatValidationErrors} from 'io-ts-reporters';
+import {getAreaName} from './get-area-name';
+import {membersTable} from '../../read-models/shared-state/state';
+import {eq} from 'drizzle-orm';
+import {SharedReadModel} from '../../read-models/shared-state';
+import * as O from 'fp-ts/Option';
 
 type ViewModel = {
   user: User;
   areaId: string;
   areaName: string;
-  ownerName: string;
-  ownerMemberNumber: number;
+  owner: {
+    memberNumber: number;
+    name: O.Option<string>;
+    email: EmailAddress;
+  };
 };
+
+const renderOwner = (owner: ViewModel['owner']) =>
+  pipe(
+    owner.name,
+    O.match(
+      () =>
+        html`<a href="/member/${owner.memberNumber}"
+          >${sanitizeString(owner.email)} (${owner.memberNumber})
+        </a>`,
+      name =>
+        html`<a href="/member/${owner.memberNumber}"
+          >${sanitizeString(name)} (${owner.memberNumber})</a
+        >`
+    )
+  );
 
 const renderForm = (viewModel: ViewModel) =>
   pipe(
@@ -25,14 +48,16 @@ const renderForm = (viewModel: ViewModel) =>
     () => html`
       <div class="stack-large">
         <h1>Remove owner?</h1>
-        <p>
-          This will remove <b>${sanitizeString(viewModel.ownerName)}</b> from
-          the owners of the <b>${sanitizeString(viewModel.areaName)}</b> area.
-        </p>
-        <p>
-          They will also no longer be a trainer for any of the red equipment in
-          the area.
-        </p>
+        <div>
+          <p>
+            This will remove ${renderOwner(viewModel.owner)} from the owners of
+            the <b>${sanitizeString(viewModel.areaName)}</b> area.
+          </p>
+          <p>
+            They will also no longer be a trainer for any of the red equipment
+            in the area.
+          </p>
+        </div>
         <form action="#" method="post">
           <input
             type="hidden"
@@ -42,7 +67,7 @@ const renderForm = (viewModel: ViewModel) =>
           <input
             type="hidden"
             name="memberNumber"
-            value="${viewModel.ownerMemberNumber}"
+            value="${viewModel.owner.memberNumber}"
           />
           <button type="submit">Confirm and send</button>
         </form>
@@ -51,19 +76,42 @@ const renderForm = (viewModel: ViewModel) =>
     pageTemplate(safe('Remove Owner'), viewModel.user)
   );
 
-const getAreaName = (db: SharedReadModel['db'], areaId: string) =>
+const getOwner = (db: SharedReadModel['db'], memberNumber: number) =>
   pipe(
     db
-      .select({areaName: areasTable.name})
-      .from(areasTable)
-      .where(eq(areasTable.id, areaId))
+      .select({
+        name: membersTable.name,
+        memberNumber: membersTable.memberNumber,
+        email: membersTable.emailAddress,
+      })
+      .from(membersTable)
+      .where(eq(membersTable.memberNumber, memberNumber))
       .get(),
-    result => result?.areaName,
     E.fromNullable(
       failureWithStatus(
-        'The requested area does not exist',
+        'The requested member does not exist',
         StatusCodes.NOT_FOUND
       )()
+    )
+  );
+
+const paramsCodec = t.strict({
+  memberNumber: tt.NumberFromString,
+  areaId: tt.UUID,
+});
+
+const decodeParams = (input: unknown) =>
+  pipe(
+    input,
+    paramsCodec.decode,
+    E.mapLeft(
+      flow(
+        formatValidationErrors,
+        failureWithStatus(
+          'Parameters submitted to the form were invalid',
+          StatusCodes.BAD_REQUEST
+        )
+      )
     )
   );
 
@@ -72,7 +120,13 @@ export const removeOwnerForm: Form<ViewModel> = {
   constructForm:
     input =>
     ({user, readModel}) =>
-      E.left(
-        failureWithStatus('not implemented', StatusCodes.NOT_IMPLEMENTED)()
+      pipe(
+        input,
+        decodeParams,
+        E.bind('user', () => E.right(user)),
+        E.bind('areaName', ({areaId}) => getAreaName(readModel.db, areaId)),
+        E.bind('owner', ({memberNumber}) =>
+          getOwner(readModel.db, memberNumber)
+        )
       ),
 };

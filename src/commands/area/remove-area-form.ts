@@ -5,12 +5,10 @@ import {User} from '../../types';
 import {Form} from '../../types/form';
 import {flow, pipe} from 'fp-ts/lib/function';
 import {html, safe, sanitizeString} from '../../types/html';
-import {eq} from 'drizzle-orm';
 import {StatusCodes} from 'http-status-codes';
-import {SharedReadModel} from '../../read-models/shared-state';
-import {areasTable} from '../../read-models/shared-state/state';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {formatValidationErrors} from 'io-ts-reporters';
+import {getAreaName} from './get-area-name';
 
 type ViewModel = {
   user: User;
@@ -31,22 +29,6 @@ const renderForm = (viewModel: ViewModel) =>
       </div>
     `,
     pageTemplate(safe('Remove Area'), viewModel.user)
-  );
-
-const getAreaName = (db: SharedReadModel['db'], areaId: string) =>
-  pipe(
-    db
-      .select({areaName: areasTable.name})
-      .from(areasTable)
-      .where(eq(areasTable.id, areaId))
-      .get(),
-    result => result?.areaName,
-    E.fromNullable(
-      failureWithStatus(
-        'The requested area does not exist',
-        StatusCodes.NOT_FOUND
-      )()
-    )
   );
 
 const paramsCodec = t.strict({
