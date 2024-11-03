@@ -99,6 +99,7 @@ export const initTestFramework = async (
         create: frameworkify(commands.area.create),
         remove: frameworkify(commands.area.remove),
         addOwner: frameworkify(commands.area.addOwner),
+        removeOwner: frameworkify(commands.area.removeOwner),
       },
       equipment: {
         add: frameworkify(commands.equipment.add),
