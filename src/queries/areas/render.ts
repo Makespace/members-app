@@ -28,7 +28,22 @@ const renderSignedAt = (
   `;
 };
 
-const renderOwnerTable = (owners: ViewModel['areas'][number]['owners']) =>
+const renderRemoveOwner = (
+  areaId: ViewModel['areas'][number]['id'],
+  owner: ViewModel['areas'][number]['owners'][number]
+) => html`
+  <a
+    href="/areas/remove-owner?memberNumber=${owner.memberNumber}&areaId=${safe(
+      areaId
+    )}"
+    >Remove</a
+  >
+`;
+
+const renderOwnerTable = (
+  areaId: ViewModel['areas'][number]['id'],
+  owners: ViewModel['areas'][number]['owners']
+) =>
   pipe(
     owners,
     RA.map(
@@ -38,6 +53,7 @@ const renderOwnerTable = (owners: ViewModel['areas'][number]['owners']) =>
           <td>${sanitizeString(O.getOrElse(() => '-')(owner.name))}</td>
           <td>${safe(owner.email)}</td>
           <td>${renderSignedAt(owner)}</td>
+          <td>${renderRemoveOwner(areaId, owner)}</td>
         </tr>
       `
     ),
@@ -51,6 +67,7 @@ const renderOwnerTable = (owners: ViewModel['areas'][number]['owners']) =>
               <th>Name</th>
               <th>Email</th>
               <th>Agreement Signed</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -76,7 +93,7 @@ const renderArea = (area: ViewModel['areas'][number]) => html`
   <article>
     <h2>${sanitizeString(area.name)}</h2>
     <div>${renderEquipment(area.equipment)}</div>
-    ${renderOwnerTable(area.owners)}
+    ${renderOwnerTable(area.id, area.owners)}
     <div class="wrap">
       <a class="button" href="/areas/add-owner?area=${safe(area.id)}"
         >Add owner</a
