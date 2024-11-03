@@ -69,7 +69,7 @@ const getAreaId = (input: unknown) =>
     )
   );
 
-export const removeForm: Form<ViewModel> = {
+export const removeAreaForm: Form<ViewModel> = {
   renderForm,
   constructForm:
     input =>

@@ -4,7 +4,7 @@ import {NonEmptyString, UUID} from 'io-ts-types';
 import {constructEvent} from '../../../src/types';
 import {v4} from 'uuid';
 import {arbitraryActor} from '../../helpers';
-import {remove} from '../../../src/commands/area/remove';
+import {removeArea} from '../../../src/commands/area/remove-area';
 
 describe('remove-area', () => {
   const areaId = v4() as UUID;
@@ -15,7 +15,7 @@ describe('remove-area', () => {
   };
 
   describe('when the area does not yet exist', () => {
-    const result = remove.process({
+    const result = removeArea.process({
       command,
       events: [],
     });
@@ -26,7 +26,7 @@ describe('remove-area', () => {
   });
 
   describe('when the area already exists', () => {
-    const result = remove.process({
+    const result = removeArea.process({
       command,
       events: [
         constructEvent('AreaCreated')({
@@ -49,7 +49,7 @@ describe('remove-area', () => {
   });
 
   describe('when the area is already removed', () => {
-    const result = remove.process({
+    const result = removeArea.process({
       command: {
         id: areaId,
         actor: arbitraryActor(),
