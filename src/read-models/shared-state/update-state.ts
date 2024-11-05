@@ -151,6 +151,16 @@ export const updateState =
           })
           .run();
         break;
+      case 'OwnerRemoved':
+        db.delete(ownersTable)
+          .where(
+            and(
+              eq(ownersTable.memberNumber, event.memberNumber),
+              eq(ownersTable.areaId, event.areaId)
+            )
+          )
+          .run();
+        break;
       case 'EquipmentTrainingQuizResult':
         db.insert(trainingQuizTable)
           .values({
