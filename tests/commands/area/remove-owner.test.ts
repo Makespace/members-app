@@ -11,7 +11,8 @@ describe('remove-owner', () => {
   const areaName = faker.commerce.productName() as NonEmptyString;
   const memberNumber = faker.number.int();
   const command = {
-    id: areaId,
+    areaId: areaId,
+    memberNumber,
     actor: arbitraryActor(),
   };
 
@@ -41,12 +42,12 @@ describe('remove-owner', () => {
         ],
       });
 
-      it.failing('removes them as owner', () => {
+      it('removes them as owner', () => {
         expect(result).toStrictEqual(
           O.some(
             expect.objectContaining({
               type: 'OwnerRemoved',
-              id: areaId,
+              areaId,
               memberNumber,
             })
           )
