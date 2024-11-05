@@ -22,11 +22,11 @@ describe('get', () => {
   };
   const createArea = {
     id: faker.string.uuid() as UUID,
-    name: faker.company.buzzNoun() as NonEmptyString,
+    name: faker.airline.airport().name as NonEmptyString,
   };
   const addEquipment = {
     id: equipmentId,
-    name: faker.company.buzzNoun() as NonEmptyString,
+    name: faker.science.chemicalElement().name as NonEmptyString,
     areaId: createArea.id,
   };
   const addOwner = {
@@ -143,7 +143,7 @@ describe('get', () => {
       expect(member.ownerOf).toHaveLength(0);
     });
 
-    it.failing('returns that they are not a trainer', () => {
+    it('returns that they are not a trainer', () => {
       const member = pipe(
         addTrainer.memberNumber,
         framework.sharedReadModel.members.get,
@@ -156,11 +156,11 @@ describe('get', () => {
   describe('when someone was an owner and trainer in two areas but is no longer an owner in one', () => {
     const createAnotherArea = {
       id: faker.string.uuid() as UUID,
-      name: faker.company.buzzNoun() as NonEmptyString,
+      name: faker.airline.airport().name as NonEmptyString,
     };
     const addOtherEquipment = {
-      id: equipmentId,
-      name: faker.company.buzzNoun() as NonEmptyString,
+      id: faker.string.uuid() as UUID,
+      name: faker.science.chemicalElement().name as NonEmptyString,
       areaId: createAnotherArea.id,
     };
     const addOwnerToOtherArea = {
@@ -180,11 +180,13 @@ describe('get', () => {
       await framework.commands.equipment.add(addEquipment);
       await framework.commands.area.addOwner(addOwner);
       await framework.commands.trainers.add(addTrainer);
-      await framework.commands.area.removeOwner(removeOwner);
+
       await framework.commands.area.create(createAnotherArea);
       await framework.commands.equipment.add(addOtherEquipment);
       await framework.commands.area.addOwner(addOwnerToOtherArea);
       await framework.commands.trainers.add(addAsTrainerToOtherEquipment);
+
+      await framework.commands.area.removeOwner(removeOwner);
     });
 
     it('returns that they are only an owner of the other area', () => {
