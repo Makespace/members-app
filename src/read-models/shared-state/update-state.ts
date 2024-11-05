@@ -1,4 +1,5 @@
 import {DomainEvent} from '../../types/domain-event';
+import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
 import {gravatarHashFromEmail} from '../members/avatar';
 import {
@@ -11,8 +12,9 @@ import {
   trainingQuizTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {and, eq} from 'drizzle-orm';
+import {and, eq, inArray} from 'drizzle-orm';
 import {isOwnerOfAreaContainingEquipment} from './area/helpers';
+import {pipe} from 'fp-ts/lib/function';
 
 export const updateState =
   (db: BetterSQLite3Database) => (event: DomainEvent) => {
@@ -151,7 +153,7 @@ export const updateState =
           })
           .run();
         break;
-      case 'OwnerRemoved':
+      case 'OwnerRemoved': {
         db.delete(ownersTable)
           .where(
             and(
@@ -160,7 +162,24 @@ export const updateState =
             )
           )
           .run();
+        const equipmentInArea = pipe(
+          db
+            .select({equipmentId: equipmentTable.id})
+            .from(equipmentTable)
+            .where(eq(equipmentTable.areaId, event.areaId))
+            .all(),
+          RA.map(({equipmentId}) => equipmentId)
+        );
+        db.delete(trainersTable)
+          .where(
+            and(
+              inArray(trainersTable.equipmentId, [...equipmentInArea]),
+              eq(trainersTable.memberNumber, event.memberNumber)
+            )
+          )
+          .run();
         break;
+      }
       case 'EquipmentTrainingQuizResult':
         db.insert(trainingQuizTable)
           .values({
