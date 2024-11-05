@@ -33,6 +33,10 @@ describe('get', () => {
     memberNumber: addTrainerMember.memberNumber,
     areaId: createArea.id,
   };
+  const removeOwner = {
+    memberNumber: addOwner.memberNumber,
+    areaId: addOwner.areaId,
+  };
   const addTrainer = {
     memberNumber: addTrainerMember.memberNumber,
     equipmentId: equipmentId,
@@ -118,17 +122,19 @@ describe('get', () => {
     });
   });
 
-  describe.skip('when someone was an owner and trainer but is no longer an owner', () => {
+  describe('when someone was an owner and trainer but is no longer an owner', () => {
     beforeEach(async () => {
       await framework.commands.memberNumbers.linkNumberToEmail(
         addTrainerMember
       );
       await framework.commands.area.create(createArea);
       await framework.commands.equipment.add(addEquipment);
+      await framework.commands.area.addOwner(addOwner);
       await framework.commands.trainers.add(addTrainer);
-      // await framework.commands.area.removeOwner(removeOwner);
+      await framework.commands.area.removeOwner(removeOwner);
     });
-    it('returns that they are not an owner', () => {
+
+    it.failing('returns that they are not an owner', () => {
       const member = pipe(
         addTrainer.memberNumber,
         framework.sharedReadModel.members.get,
@@ -137,7 +143,7 @@ describe('get', () => {
       expect(member.ownerOf).toHaveLength(0);
     });
 
-    it('returns that they are not a trainer', () => {
+    it.failing('returns that they are not a trainer', () => {
       const member = pipe(
         addTrainer.memberNumber,
         framework.sharedReadModel.members.get,
