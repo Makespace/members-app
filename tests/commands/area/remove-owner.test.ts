@@ -55,6 +55,21 @@ describe('remove-owner', () => {
       });
     });
 
+    describe('and the member was an owner before the area has been removed', () => {
+      const result = removeOwner.process({
+        command,
+        events: [
+          areaCreated,
+          constructEvent('OwnerAdded')({memberNumber, areaId}),
+          constructEvent('AreaRemoved')({id: areaId}),
+        ],
+      });
+
+      it('does nothing', () => {
+        expect(result).toStrictEqual(O.none);
+      });
+    });
+
     describe('and the member was never an owner of it', () => {
       it.todo('does nothing');
     });
