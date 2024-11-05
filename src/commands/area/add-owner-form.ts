@@ -2,7 +2,7 @@ import {flow, pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
-import {DomainEvent, User} from '../../types';
+import {EmailAddress, User} from '../../types';
 import * as t from 'io-ts';
 import {StatusCodes} from 'http-status-codes';
 import {formatValidationErrors} from 'io-ts-reporters';
@@ -11,20 +11,31 @@ import {
   failureWithStatus,
 } from '../../types/failure-with-status';
 import {Form} from '../../types/form';
-import {AreaOwners} from '../../read-models/members/get-potential-owners';
-import {readModels} from '../../read-models';
 import {html, joinHtml, safe, sanitizeString} from '../../types/html';
-import {Member} from '../../read-models/members/return-types';
 import {pageTemplate} from '../../templates';
 import {renderMemberNumber} from '../../templates/member-number';
 import {SharedReadModel} from '../../read-models/shared-state';
-import {areasTable} from '../../read-models/shared-state/state';
-import {eq} from 'drizzle-orm';
+import {
+  areasTable,
+  membersTable,
+  ownersTable,
+} from '../../read-models/shared-state/state';
+import {eq, notInArray} from 'drizzle-orm';
+
+type Member = {
+  memberNumber: number;
+  emailAddress: EmailAddress;
+  name: O.Option<string>;
+  agreementSigned: O.Option<Date>;
+};
 
 type ViewModel = {
   user: User;
   areaId: string;
-  areaOwners: AreaOwners;
+  areaOwners: {
+    existing: ReadonlyArray<Member>;
+    potential: ReadonlyArray<Member>;
+  };
   areaName: string;
 };
 
@@ -144,15 +155,52 @@ const getAreaId = (input: unknown) =>
     )
   );
 
-const getPotentialOwners = (
-  events: ReadonlyArray<DomainEvent>,
+const getExistingAndPotentialOwners = (
+  db: SharedReadModel['db'],
   areaId: string
-) =>
-  pipe(
-    events,
-    readModels.members.getPotentialOwners(areaId),
-    E.fromOption(failureWithStatus('No such area', StatusCodes.NOT_FOUND))
-  );
+): ViewModel['areaOwners'] => {
+  const existing = db
+    .select({
+      memberNumber: ownersTable.memberNumber,
+      emailAddress: membersTable.emailAddress,
+      name: membersTable.name,
+      agreementSigned: membersTable.agreementSigned,
+    })
+    .from(ownersTable)
+    .innerJoin(
+      membersTable,
+      eq(membersTable.memberNumber, ownersTable.memberNumber)
+    )
+    .where(eq(ownersTable.areaId, areaId))
+    .all()
+    .map(member => ({
+      ...member,
+      agreementSigned: O.fromNullable(member.agreementSigned),
+    }));
+  const potential = db
+    .select({
+      memberNumber: membersTable.memberNumber,
+      emailAddress: membersTable.emailAddress,
+      name: membersTable.name,
+      agreementSigned: membersTable.agreementSigned,
+    })
+    .from(membersTable)
+    .where(
+      notInArray(
+        membersTable.memberNumber,
+        existing.map(({memberNumber}) => memberNumber)
+      )
+    )
+    .all()
+    .map(member => ({
+      ...member,
+      agreementSigned: O.fromNullable(member.agreementSigned),
+    }));
+  return {
+    existing,
+    potential,
+  };
+};
 
 const getAreaName = (db: SharedReadModel['db'], areaId: string) =>
   pipe(
@@ -172,13 +220,15 @@ const getAreaName = (db: SharedReadModel['db'], areaId: string) =>
 
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({user, events, readModel}): E.Either<FailureWithStatus, ViewModel> =>
+  ({user, readModel}): E.Either<FailureWithStatus, ViewModel> =>
     pipe(
       {user},
       E.right,
       E.bind('areaId', () => getAreaId(input)),
-      E.bind('areaOwners', ({areaId}) => getPotentialOwners(events, areaId)),
-      E.bind('areaName', ({areaId}) => getAreaName(readModel.db, areaId))
+      E.bind('areaName', ({areaId}) => getAreaName(readModel.db, areaId)),
+      E.bind('areaOwners', ({areaId}) =>
+        E.right(getExistingAndPotentialOwners(readModel.db, areaId))
+      )
     );
 
 export const addOwnerForm: Form<ViewModel> = {
