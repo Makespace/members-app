@@ -153,6 +153,63 @@ describe('get', () => {
     });
   });
 
+  describe('when someone was an owner and trainer in two areas but is no longer an owner in one', () => {
+    const createAnotherArea = {
+      id: faker.string.uuid() as UUID,
+      name: faker.company.buzzNoun() as NonEmptyString,
+    };
+    const addOtherEquipment = {
+      id: equipmentId,
+      name: faker.company.buzzNoun() as NonEmptyString,
+      areaId: createAnotherArea.id,
+    };
+    const addOwnerToOtherArea = {
+      memberNumber: addTrainerMember.memberNumber,
+      areaId: createAnotherArea.id,
+    };
+    const addAsTrainerToOtherEquipment = {
+      memberNumber: addTrainerMember.memberNumber,
+      equipmentId: addOtherEquipment.id,
+    };
+
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(
+        addTrainerMember
+      );
+      await framework.commands.area.create(createArea);
+      await framework.commands.equipment.add(addEquipment);
+      await framework.commands.area.addOwner(addOwner);
+      await framework.commands.trainers.add(addTrainer);
+      await framework.commands.area.removeOwner(removeOwner);
+      await framework.commands.area.create(createAnotherArea);
+      await framework.commands.equipment.add(addOtherEquipment);
+      await framework.commands.area.addOwner(addOwnerToOtherArea);
+      await framework.commands.trainers.add(addAsTrainerToOtherEquipment);
+    });
+
+    it('returns that they are only an owner of the other area', () => {
+      const member = pipe(
+        addTrainer.memberNumber,
+        framework.sharedReadModel.members.get,
+        getSomeOrFail
+      );
+      expect(member.ownerOf).toHaveLength(1);
+      expect(member.ownerOf[0].id).toStrictEqual(createAnotherArea.id);
+    });
+
+    it('returns that they are only a trainer of the equipment in the other area', () => {
+      const member = pipe(
+        addTrainer.memberNumber,
+        framework.sharedReadModel.members.get,
+        getSomeOrFail
+      );
+      expect(member.trainerFor).toHaveLength(1);
+      expect(member.trainerFor[0].equipment_id).toStrictEqual(
+        addOtherEquipment.id
+      );
+    });
+  });
+
   describe('When equipment has a member marked as trained twice', () => {
     const addTrainedMember = {
       memberNumber: faker.number.int() as Int,
