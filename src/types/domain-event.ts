@@ -41,6 +41,10 @@ export const DomainEvent = t.union([
     areaId: tt.UUID,
     memberNumber: t.number,
   }),
+  eventCodec('OwnerRemoved', {
+    areaId: tt.UUID,
+    memberNumber: t.number,
+  }),
   eventCodec('SuperUserDeclared', {
     memberNumber: t.number,
   }),

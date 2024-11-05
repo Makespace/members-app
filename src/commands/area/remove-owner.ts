@@ -3,19 +3,28 @@ import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import {Command} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
+import {pipe} from 'fp-ts/lib/function';
+import * as RA from 'fp-ts/ReadonlyArray';
+import {constructEvent, isEventOfType} from '../../types';
 
 const codec = t.strict({
-  id: tt.UUID,
+  memberNumber: tt.NumberFromString,
+  areaId: tt.UUID,
 });
 
 type RemoveOwner = t.TypeOf<typeof codec>;
 
-// eslint-disable-next-line unused-imports/no-unused-vars
-const process: Command<RemoveOwner>['process'] = input => O.none;
+const process: Command<RemoveOwner>['process'] = input =>
+  pipe(
+    input.events,
+    RA.last,
+    O.filter(isEventOfType('OwnerAdded')),
+    O.map(() => constructEvent('OwnerRemoved')(input.command))
+  );
 
 const resource: Command<RemoveOwner>['resource'] = command => ({
   type: 'Area',
-  id: command.id,
+  id: command.areaId,
 });
 
 export const removeOwner: Command<RemoveOwner> = {
