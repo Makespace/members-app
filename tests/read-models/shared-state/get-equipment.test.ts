@@ -134,7 +134,7 @@ describe('get', () => {
       await framework.commands.area.removeOwner(removeOwner);
     });
 
-    it.failing('returns that they are not an owner', () => {
+    it('returns that they are not an owner', () => {
       const member = pipe(
         addTrainer.memberNumber,
         framework.sharedReadModel.members.get,
