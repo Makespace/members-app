@@ -74,7 +74,7 @@ describe('add-owner', () => {
         events: [areaCreated, ownerAdded, ownerRemoved],
       });
 
-      it.failing('adds them as owner', () => {
+      it('adds them as owner', () => {
         expect(result).toStrictEqual(
           O.some(
             expect.objectContaining({

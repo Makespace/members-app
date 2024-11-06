@@ -1,4 +1,4 @@
-import {constructEvent, isEventOfType} from '../../types';
+import {constructEvent, filterByName, isEventOfType} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
@@ -22,14 +22,24 @@ const process: Command<AddOwner>['process'] = input => {
     return O.none;
   }
 
+  const happyPathEvent = pipe(
+    input.command,
+    constructEvent('OwnerAdded'),
+    O.some
+  );
+
   return pipe(
     input.events,
-    RA.filter(isEventOfType('OwnerAdded')),
+    filterByName(['OwnerAdded', 'OwnerRemoved']),
     RA.filter(event => event.memberNumber === input.command.memberNumber),
-    RA.match(
-      () => O.some(constructEvent('OwnerAdded')(input.command)),
-      () => O.none
-    )
+    RA.reduce(happyPathEvent, (_, event) => {
+      switch (event.type) {
+        case 'OwnerAdded':
+          return O.none;
+        case 'OwnerRemoved':
+          return happyPathEvent;
+      }
+    })
   );
 };
 
