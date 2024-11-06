@@ -32,7 +32,7 @@ describe('add-owner', () => {
       events: [],
     });
 
-    it.failing('does nothing', () => {
+    it('does nothing', () => {
       expect(result).toStrictEqual(O.none);
     });
   });
@@ -43,7 +43,7 @@ describe('add-owner', () => {
       events: [areaCreated, areaRemoved],
     });
 
-    it.failing('does nothing', () => {
+    it('does nothing', () => {
       expect(result).toStrictEqual(O.none);
     });
   });

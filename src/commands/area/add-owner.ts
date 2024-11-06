@@ -14,8 +14,15 @@ const codec = t.strict({
 
 type AddOwner = t.TypeOf<typeof codec>;
 
-const process: Command<AddOwner>['process'] = input =>
-  pipe(
+const process: Command<AddOwner>['process'] = input => {
+  if (input.events.length === 0) {
+    return O.none;
+  }
+  if (pipe(input.events, RA.some(isEventOfType('AreaRemoved')))) {
+    return O.none;
+  }
+
+  return pipe(
     input.events,
     RA.filter(isEventOfType('OwnerAdded')),
     RA.filter(event => event.memberNumber === input.command.memberNumber),
@@ -24,6 +31,7 @@ const process: Command<AddOwner>['process'] = input =>
       () => O.none
     )
   );
+};
 
 const resource: Command<AddOwner>['resource'] = (command: AddOwner) => ({
   type: 'Area',
