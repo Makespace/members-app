@@ -21,21 +21,14 @@ import {
 import {DateTime} from 'luxon';
 import {UUID} from 'io-ts-types';
 import {contramap} from 'fp-ts/lib/Ord';
+import {renderMembersAsList} from '../../templates/member-link-list';
 
 const trainersList = (trainers: ViewModel['equipment']['trainers']) =>
   pipe(
     trainers,
-    RA.map(
-      trainer => html`<li>${renderMemberNumber(trainer.memberNumber)}</li>`
-    ),
     RA.match(
       () => html`<p>This equipment needs trainers.</p>`,
-      items => html`
-        <h2>Trainers</h2>
-        <ul>
-          ${joinHtml(items)}
-        </ul>
-      `
+      renderMembersAsList
     )
   );
 
@@ -314,6 +307,7 @@ export const render = (viewModel: ViewModel) =>
       <div class="stack">
         <h1>${sanitizeString(viewModel.equipment.name)}</h1>
         ${equipmentActions(viewModel)}
+        <h2>Trainers</h2>
         ${trainersList(viewModel.equipment.trainers)}
         ${currentlyTrainedUsersTable(viewModel)}
         ${isTrainerOrOwner(viewModel) ? trainingQuizResults(viewModel) : html``}
