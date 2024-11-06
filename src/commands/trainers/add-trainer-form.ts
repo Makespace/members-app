@@ -13,16 +13,24 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {renderMemberNumber} from '../../templates/member-number';
 import {UUID} from 'io-ts-types';
 import {Equipment} from '../../read-models/shared-state/return-types';
+import {SharedReadModel} from '../../read-models/shared-state';
+import {
+  equipmentTable,
+  membersTable,
+  ownersTable,
+  trainersTable,
+} from '../../read-models/shared-state/state';
+import {eq} from 'drizzle-orm';
 
 type ViewModel = {
   user: User;
-  members: ReadonlyArray<User>;
+  areaOwnersThatAreNotTrainers: ReadonlyArray<User>;
   equipment: Equipment;
 };
 
 const renderForm = (viewModel: ViewModel) =>
   pipe(
-    viewModel.members,
+    viewModel.areaOwnersThatAreNotTrainers,
     RA.map(
       member =>
         html`<tr>
@@ -74,6 +82,44 @@ const getEquipmentId = (input: unknown) =>
     E.map(({equipment}) => equipment)
   );
 
+const getPotentialTrainers = (db: SharedReadModel['db'], equipmentId: UUID) => {
+  const areaId = db
+    .select({value: equipmentTable.areaId})
+    .from(equipmentTable)
+    .where(eq(equipmentTable.id, equipmentId))
+    .get();
+  if (areaId === undefined) {
+    return E.left(
+      failureWithStatus('Unknown equipment', StatusCodes.NOT_FOUND)()
+    );
+  }
+  const existingTrainers = pipe(
+    db
+      .select({memberNumber: trainersTable.memberNumber})
+      .from(trainersTable)
+      .where(eq(trainersTable.equipmentId, equipmentId))
+      .all(),
+    RA.map(({memberNumber}) => memberNumber)
+  );
+  const owners = db
+    .select({
+      emailAddress: membersTable.emailAddress,
+      memberNumber: membersTable.memberNumber,
+    })
+    .from(ownersTable)
+    .innerJoin(
+      membersTable,
+      eq(ownersTable.memberNumber, membersTable.memberNumber)
+    )
+    .where(eq(ownersTable.areaId, areaId.value))
+    .all();
+  return pipe(
+    owners,
+    RA.filter(owner => !existingTrainers.includes(owner.memberNumber)),
+    E.right
+  );
+};
+
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
   ({user, readModel}) =>
@@ -89,8 +135,10 @@ const constructForm: Form<ViewModel>['constructForm'] =
         }
         return E.right(equipment.value);
       }),
-      E.bind('user', () => E.right(user)),
-      E.bind('members', () => E.right(readModel.members.getAll()))
+      E.bind('areaOwnersThatAreNotTrainers', ({equipmentId}) =>
+        getPotentialTrainers(readModel.db, equipmentId)
+      ),
+      E.bind('user', () => E.right(user))
     );
 
 export const addTrainerForm: Form<ViewModel> = {
