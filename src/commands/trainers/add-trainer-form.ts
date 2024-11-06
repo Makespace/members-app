@@ -28,8 +28,27 @@ type ViewModel = {
   equipment: Equipment;
 };
 
-const renderForm = (viewModel: ViewModel) =>
+const nobodyToAddAsTrainer = (user: ViewModel['user']) =>
   pipe(
+    html`
+      <div class="stack">
+        <h1>Add a trainer</h1>
+        <p>You can't add any trainers right now.</p>
+        <p>
+          Either all owners are already trainers or there are no owners for this
+          area.
+        </p>
+      </div>
+    `,
+    pageTemplate(safe('Add Trainer'), user)
+  );
+
+const renderForm = (viewModel: ViewModel) => {
+  if (viewModel.areaOwnersThatAreNotTrainers.length === 0) {
+    return nobodyToAddAsTrainer(viewModel.user);
+  }
+
+  return pipe(
     viewModel.areaOwnersThatAreNotTrainers,
     RA.map(
       member =>
@@ -72,6 +91,7 @@ const renderForm = (viewModel: ViewModel) =>
     `,
     pageTemplate(safe('Add Trainer'), viewModel.user)
   );
+};
 
 const getEquipmentId = (input: unknown) =>
   pipe(
