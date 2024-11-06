@@ -1,4 +1,3 @@
-import * as E from 'fp-ts/Either';
 import {applyToResource} from '../../../src/commands/apply-command-to-resource';
 import {
   TestFramework,
@@ -48,11 +47,12 @@ describe('addTrainer', () => {
     };
     beforeEach(async () => {
       await applyAddTrainer(input, arbitraryActor())();
+      await applyAddTrainer(input, arbitraryActor())();
     });
 
-    it('is idempotent', async () => {
-      const result = await applyAddTrainer(input, arbitraryActor())();
-      expect(result).toStrictEqual(E.left(expect.anything()));
+    it('records all of them as they may have ceased being a trainer by no longer being an owner', async () => {
+      const events = await framework.getAllEventsByType('TrainerAdded');
+      expect(events).toHaveLength(2);
     });
   });
 });
