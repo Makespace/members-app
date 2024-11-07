@@ -91,7 +91,7 @@ export type HttpResponse =
 
 export const HttpResponse = Sum.create<HttpResponse>();
 
-export const toPageContent = (title: HtmlSubstitution) => (body: Html) =>
+export const toLoggedInContent = (title: HtmlSubstitution) => (body: Html) =>
   HttpResponse.mk.LoggedInContent({
     title: title,
     body: body,

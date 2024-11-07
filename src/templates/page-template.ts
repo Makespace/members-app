@@ -1,4 +1,4 @@
-import {HttpResponse, User} from '../types';
+import {User} from '../types';
 import {
   html,
   Html,
@@ -33,18 +33,3 @@ export const isolatedPageTemplate = (title: HtmlSubstitution) => (body: Html) =>
       </body>
     </html>
   ` as CompleteHtmlDocument;
-
-export const templatePage: (r: HttpResponse) => HttpResponse =
-  HttpResponse.match({
-    Redirect: HttpResponse.mk.Redirect,
-    Raw: HttpResponse.mk.Raw,
-    CompleteHtmlPage: ({rendered}) =>
-      HttpResponse.mk.CompleteHtmlPage({
-        rendered,
-      }),
-    LoggedInContent: ({title, body}) =>
-      HttpResponse.mk.LoggedInContent({
-        title,
-        body,
-      }),
-  });

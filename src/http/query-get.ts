@@ -4,16 +4,12 @@ import {pipe} from 'fp-ts/lib/function';
 import {Request, Response} from 'express';
 import {getUserFromSession} from '../authentication';
 import {StatusCodes} from 'http-status-codes';
-import {User, HttpResponse} from '../types';
-import {oopsPage, pageTemplate, templatePage} from '../templates';
-import {Params, Query} from '../queries/query';
+import {HttpResponse} from '../types';
+import {oopsPage, pageTemplate} from '../templates';
+import {Query} from '../queries/query';
 import {logInPath} from '../authentication/auth-routes';
 import {CompleteHtmlDocument, sanitizeString} from '../types/html';
 import * as O from 'fp-ts/Option';
-
-const buildPage =
-  (deps: Dependencies, params: Params, query: Query) => (user: User) =>
-    pipe(query(deps)(user, params), TE.map(templatePage));
 
 export const queryGet =
   (deps: Dependencies, query: Query) =>
@@ -25,9 +21,7 @@ export const queryGet =
       return;
     }
     await pipe(
-      user.value,
-      TE.right,
-      TE.chain(buildPage(deps, req.params, query)),
+      query(deps)(user.value, req.params),
       TE.matchW(
         failure => {
           deps.logger.error(failure, 'Failed respond to a query');
