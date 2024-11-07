@@ -2,9 +2,7 @@ import {flow, pipe} from 'fp-ts/lib/function';
 import * as tt from 'io-ts-types';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
-import {pageTemplate} from '../../templates';
-import {html, safe} from '../../types/html';
-import {User} from '../../types';
+import {html, safe, toLoggedInContent} from '../../types/html';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {formatValidationErrors} from 'io-ts-reporters';
@@ -12,7 +10,6 @@ import {Form} from '../../types/form';
 import {renderMemberNumber} from '../../templates/member-number';
 
 type ViewModel = {
-  user: User;
   toBeRevoked: number;
 };
 
@@ -37,35 +34,32 @@ const renderForm = (viewModel: ViewModel) =>
         <button type="submit">Confirm and send</button>
       </form>
     `,
-    pageTemplate(safe('Revoke super user'), viewModel.user)
+    toLoggedInContent(safe('Revoke super user'))
   );
 
 const paramsCodec = t.strict({
   memberNumber: tt.IntFromString,
 });
 
-const constructForm: Form<ViewModel>['constructForm'] =
-  input =>
-  ({user}) =>
-    pipe(
-      input,
-      paramsCodec.decode,
-      E.mapLeft(
-        flow(
-          formatValidationErrors,
-          failureWithStatus(
-            'Parameters submitted to the form were invalid',
-            StatusCodes.BAD_REQUEST
-          )
+const constructForm: Form<ViewModel>['constructForm'] = input => () =>
+  pipe(
+    input,
+    paramsCodec.decode,
+    E.mapLeft(
+      flow(
+        formatValidationErrors,
+        failureWithStatus(
+          'Parameters submitted to the form were invalid',
+          StatusCodes.BAD_REQUEST
         )
-      ),
-      E.map(params => ({
-        user,
-        toBeRevoked: params.memberNumber,
-      }))
-    );
+      )
+    ),
+    E.map(params => ({
+      toBeRevoked: params.memberNumber,
+    }))
+  );
 
 export const revokeForm: Form<ViewModel> = {
-  renderForm: renderForm,
+  renderForm,
   constructForm,
 };

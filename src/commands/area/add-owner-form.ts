@@ -2,7 +2,7 @@ import {flow, pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
-import {EmailAddress, User} from '../../types';
+import {EmailAddress} from '../../types';
 import * as t from 'io-ts';
 import {StatusCodes} from 'http-status-codes';
 import {formatValidationErrors} from 'io-ts-reporters';
@@ -11,8 +11,13 @@ import {
   failureWithStatus,
 } from '../../types/failure-with-status';
 import {Form} from '../../types/form';
-import {html, joinHtml, safe, sanitizeString} from '../../types/html';
-import {pageTemplate} from '../../templates';
+import {
+  html,
+  joinHtml,
+  safe,
+  sanitizeString,
+  toLoggedInContent,
+} from '../../types/html';
 import {renderMemberNumber} from '../../templates/member-number';
 import {SharedReadModel} from '../../read-models/shared-state';
 import {
@@ -31,7 +36,6 @@ type Member = {
 };
 
 type ViewModel = {
-  user: User;
   areaId: string;
   areaOwners: {
     existing: ReadonlyArray<Member>;
@@ -112,7 +116,7 @@ const renderBody = (viewModel: ViewModel) => html`
 `;
 
 const renderForm = (viewModel: ViewModel) =>
-  pipe(viewModel, renderBody, pageTemplate(safe('Add Owner'), viewModel.user));
+  pipe(viewModel, renderBody, toLoggedInContent(safe('Add Owner')));
 
 const paramsCodec = t.strict({
   area: t.string,
@@ -199,10 +203,9 @@ const getAreaName = (db: SharedReadModel['db'], areaId: string) =>
 
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({user, readModel}): E.Either<FailureWithStatus, ViewModel> =>
+  ({readModel}): E.Either<FailureWithStatus, ViewModel> =>
     pipe(
-      {user},
-      E.right,
+      E.Do,
       E.bind('areaId', () => getAreaId(input)),
       E.bind('areaName', ({areaId}) => getAreaName(readModel.db, areaId)),
       E.bind('areaOwners', ({areaId}) =>

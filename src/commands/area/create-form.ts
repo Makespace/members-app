@@ -1,20 +1,15 @@
 import * as E from 'fp-ts/Either';
-import {pageTemplate} from '../../templates';
-import {User} from '../../types';
 import {Form} from '../../types/form';
 import {pipe} from 'fp-ts/lib/function';
-import {html, safe} from '../../types/html';
+import {html, safe, toLoggedInContent} from '../../types/html';
 import {v4} from 'uuid';
 import {UUID} from 'io-ts-types';
 
-type ViewModel = {
-  user: User;
-};
+type ViewModel = unknown;
 
-const renderForm = (viewModel: ViewModel) =>
+const renderForm = () =>
   pipe(
-    viewModel,
-    () => html`
+    html`
       <h1>Create an area</h1>
       <form action="#" method="post">
         <label for="name">What is this area called</label>
@@ -23,13 +18,10 @@ const renderForm = (viewModel: ViewModel) =>
         <button type="submit">Confirm and send</button>
       </form>
     `,
-    pageTemplate(safe('Create Area'), viewModel.user)
+    toLoggedInContent(safe('Create Area'))
   );
 
 export const createForm: Form<ViewModel> = {
   renderForm,
-  constructForm:
-    () =>
-    ({user}) =>
-      E.right({user}),
+  constructForm: () => () => E.right({}),
 };

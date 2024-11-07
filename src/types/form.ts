@@ -1,11 +1,11 @@
 import {DomainEvent, User} from '.';
 import {FailureWithStatus} from './failure-with-status';
 import * as E from 'fp-ts/Either';
-import {CompleteHtmlDocument} from './html';
+import {LoggedInContent} from './html';
 import {SharedReadModel} from '../read-models/shared-state';
 
 export type Form<T> = {
-  renderForm: (viewModel: T) => CompleteHtmlDocument;
+  renderForm: (viewModel: T) => LoggedInContent;
   constructForm: (
     input: unknown
   ) => (context: {

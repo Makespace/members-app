@@ -1,15 +1,11 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
-import {pageTemplate} from '../../templates';
-import {html, safe} from '../../types/html';
-import {User} from '../../types';
+import {html, safe, toLoggedInContent} from '../../types/html';
 import {Form} from '../../types/form';
 
-type ViewModel = {
-  user: User;
-};
+type ViewModel = unknown;
 
-const renderForm = (viewModel: ViewModel) =>
+const renderForm = () =>
   pipe(
     html`
       <h1>Link a member number to an e-mail address</h1>
@@ -24,16 +20,10 @@ const renderForm = (viewModel: ViewModel) =>
         <button type="submit">Confirm and send</button>
       </form>
     `,
-    pageTemplate(
-      safe('Link a member number to an e-mail address'),
-      viewModel.user
-    )
+    toLoggedInContent(safe('Link a member number to an e-mail address'))
   );
 
-const constructForm: Form<ViewModel>['constructForm'] =
-  () =>
-  ({user}) =>
-    E.right({user});
+const constructForm: Form<ViewModel>['constructForm'] = () => () => E.right({});
 
 export const linkNumberToEmailForm: Form<ViewModel> = {
   renderForm,

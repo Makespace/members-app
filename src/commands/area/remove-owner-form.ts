@@ -2,11 +2,10 @@
 import * as tt from 'io-ts-types';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
-import {pageTemplate} from '../../templates';
-import {EmailAddress, User} from '../../types';
+import {EmailAddress} from '../../types';
 import {Form} from '../../types/form';
 import {flow, pipe} from 'fp-ts/lib/function';
-import {html, safe, sanitizeString} from '../../types/html';
+import {html, safe, sanitizeString, toLoggedInContent} from '../../types/html';
 import {StatusCodes} from 'http-status-codes';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {formatValidationErrors} from 'io-ts-reporters';
@@ -17,7 +16,6 @@ import {SharedReadModel} from '../../read-models/shared-state';
 import * as O from 'fp-ts/Option';
 
 type ViewModel = {
-  user: User;
   areaId: string;
   areaName: string;
   owner: {
@@ -73,7 +71,7 @@ const renderForm = (viewModel: ViewModel) =>
         </form>
       </div>
     `,
-    pageTemplate(safe('Remove Owner'), viewModel.user)
+    toLoggedInContent(safe('Remove Owner'))
   );
 
 const getOwner = (db: SharedReadModel['db'], memberNumber: number) =>
@@ -119,11 +117,10 @@ export const removeOwnerForm: Form<ViewModel> = {
   renderForm,
   constructForm:
     input =>
-    ({user, readModel}) =>
+    ({readModel}) =>
       pipe(
         input,
         decodeParams,
-        E.bind('user', () => E.right(user)),
         E.bind('areaName', ({areaId}) => getAreaName(readModel.db, areaId)),
         E.bind('owner', ({memberNumber}) =>
           getOwner(readModel.db, memberNumber)

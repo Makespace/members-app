@@ -2,8 +2,13 @@ import {pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
-import {pageTemplate} from '../../templates';
-import {html, joinHtml, safe, sanitizeString} from '../../types/html';
+import {
+  html,
+  joinHtml,
+  safe,
+  sanitizeString,
+  toLoggedInContent,
+} from '../../types/html';
 import {User} from '../../types';
 import {Form} from '../../types/form';
 import {formatValidationErrors} from 'io-ts-reporters';
@@ -23,29 +28,27 @@ import {
 import {eq} from 'drizzle-orm';
 
 type ViewModel = {
-  user: User;
   areaOwnersThatAreNotTrainers: ReadonlyArray<User>;
   equipment: Equipment;
 };
 
-const nobodyToAddAsTrainer = (user: ViewModel['user']) =>
-  pipe(
-    html`
-      <div class="stack">
-        <h1>Add a trainer</h1>
-        <p>You can't add any trainers right now.</p>
-        <p>
-          Either all owners are already trainers or there are no owners for this
-          area.
-        </p>
-      </div>
-    `,
-    pageTemplate(safe('Add Trainer'), user)
-  );
+const nobodyToAddAsTrainer = pipe(
+  html`
+    <div class="stack">
+      <h1>Add a trainer</h1>
+      <p>You can't add any trainers right now.</p>
+      <p>
+        Either all owners are already trainers or there are no owners for this
+        area.
+      </p>
+    </div>
+  `,
+  toLoggedInContent(safe('Add Trainer'))
+);
 
 const renderForm = (viewModel: ViewModel) => {
   if (viewModel.areaOwnersThatAreNotTrainers.length === 0) {
-    return nobodyToAddAsTrainer(viewModel.user);
+    return nobodyToAddAsTrainer;
   }
 
   return pipe(
@@ -89,7 +92,7 @@ const renderForm = (viewModel: ViewModel) => {
         </tbody>
       </table>
     `,
-    pageTemplate(safe('Add Trainer'), viewModel.user)
+    toLoggedInContent(safe('Add Trainer'))
   );
 };
 
@@ -142,7 +145,7 @@ const getPotentialTrainers = (db: SharedReadModel['db'], equipmentId: UUID) => {
 
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({user, readModel}) =>
+  ({readModel}) =>
     pipe(
       E.Do,
       E.bind('equipmentId', () => getEquipmentId(input)),
@@ -157,8 +160,7 @@ const constructForm: Form<ViewModel>['constructForm'] =
       }),
       E.bind('areaOwnersThatAreNotTrainers', ({equipmentId}) =>
         getPotentialTrainers(readModel.db, equipmentId)
-      ),
-      E.bind('user', () => E.right(user))
+      )
     );
 
 export const addTrainerForm: Form<ViewModel> = {
