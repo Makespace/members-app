@@ -1,8 +1,6 @@
-import {pipe} from 'fp-ts/lib/function';
 import {getGravatarThumbnail} from '../../templates/avatar';
-import {html, sanitizeOption, safe, sanitizeString} from '../../types/html';
+import {html, sanitizeOption, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
-import {pageTemplate} from '../../templates';
 import {renderMemberNumber} from '../../templates/member-number';
 import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
 import {renderOwnerStatus} from '../shared-render/owner-status';
@@ -76,21 +74,18 @@ const superUserNav = html`
     </ul>
   </nav>
 `;
-export const render = (viewModel: ViewModel) =>
-  pipe(
-    html`
-      <div class="stack">
-        <h1>Your Makespace profile</h1>
-        <h2>Your details</h2>
-        ${renderMemberDetails(viewModel)}
-        <h2>Owner status</h2>
-        ${renderOwnerAgreementStatus(viewModel.member.agreementSigned, false)}
-        ${renderOwnerStatus(viewModel.member.ownerOf, false)}
-        <h2>Training status</h2>
-        ${renderTrainingStatus(viewModel.member.trainedOn, false)}
-        ${renderTrainerStatus(viewModel.member.trainerFor, false)}
-        ${viewModel.member.isSuperUser ? superUserNav : ''}
-      </div>
-    `,
-    pageTemplate(safe('Member'), viewModel.user)
-  );
+
+export const render = (viewModel: ViewModel) => html`
+  <div class="stack">
+    <h1>Your Makespace profile</h1>
+    <h2>Your details</h2>
+    ${renderMemberDetails(viewModel)}
+    <h2>Owner status</h2>
+    ${renderOwnerAgreementStatus(viewModel.member.agreementSigned, false)}
+    ${renderOwnerStatus(viewModel.member.ownerOf, false)}
+    <h2>Training status</h2>
+    ${renderTrainingStatus(viewModel.member.trainedOn, false)}
+    ${renderTrainerStatus(viewModel.member.trainerFor, false)}
+    ${viewModel.member.isSuperUser ? superUserNav : ''}
+  </div>
+`;

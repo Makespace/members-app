@@ -10,5 +10,5 @@ export const log: Query = deps => user =>
     user,
     constructViewModel(deps),
     TE.map(render),
-    TE.map(rendered => HttpResponse.mk.Page({rendered}))
+    TE.map(rendered => HttpResponse.mk.CompleteHtmlPage({rendered}))
   );

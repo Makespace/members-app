@@ -47,5 +47,5 @@ export const allEquipment: Query = deps => user =>
     TE.of,
     TE.let('areas', () => getAreas(deps.sharedReadModel.db)),
     TE.map(render),
-    TE.map(rendered => HttpResponse.mk.Page({rendered}))
+    TE.map(rendered => HttpResponse.mk.CompleteHtmlPage({rendered}))
   );

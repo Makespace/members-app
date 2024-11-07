@@ -65,8 +65,13 @@ export type CompleteHtmlDocument = Html & {
   readonly CompleteHtmlDocument: unique symbol;
 };
 
-interface Page {
+interface CompleteHtmlPage {
   rendered: CompleteHtmlDocument;
+}
+
+interface LoggedInPage {
+  title: HtmlSubstitution;
+  body: Html;
 }
 
 interface Raw {
@@ -81,6 +86,13 @@ interface Redirect {
 export type HttpResponse =
   | Sum.Member<'Redirect', Redirect>
   | Sum.Member<'Raw', Raw>
-  | Sum.Member<'Page', Page>;
+  | Sum.Member<'CompleteHtmlPage', CompleteHtmlPage>
+  | Sum.Member<'LoggedInContent', LoggedInPage>;
 
 export const HttpResponse = Sum.create<HttpResponse>();
+
+export const toPageContent = (title: HtmlSubstitution) => (body: Html) =>
+  HttpResponse.mk.LoggedInContent({
+    title: title,
+    body: body,
+  });

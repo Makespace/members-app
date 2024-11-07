@@ -3,13 +3,13 @@ import {Dependencies} from '../dependencies';
 import {pipe} from 'fp-ts/lib/function';
 import {Request, Response} from 'express';
 import {getUserFromSession} from '../authentication';
-import {failureWithStatus} from '../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {User, HttpResponse} from '../types';
-import {oopsPage, templatePage} from '../templates';
+import {oopsPage, pageTemplate, templatePage} from '../templates';
 import {Params, Query} from '../queries/query';
 import {logInPath} from '../authentication/auth-routes';
 import {CompleteHtmlDocument, sanitizeString} from '../types/html';
+import * as O from 'fp-ts/Option';
 
 const buildPage =
   (deps: Dependencies, params: Params, query: Query) => (user: User) =>
@@ -18,12 +18,15 @@ const buildPage =
 export const queryGet =
   (deps: Dependencies, query: Query) =>
   async (req: Request, res: Response<CompleteHtmlDocument>) => {
+    const user = getUserFromSession(deps)(req.session);
+    if (O.isNone(user)) {
+      deps.logger.info('Did not respond to query as user was not logged in.');
+      res.redirect(logInPath);
+      return;
+    }
     await pipe(
-      req.session,
-      getUserFromSession(deps),
-      TE.fromOption(() =>
-        failureWithStatus('You are not logged in.', StatusCodes.UNAUTHORIZED)()
-      ),
+      user.value,
+      TE.right,
       TE.chain(buildPage(deps, req.params, query)),
       TE.matchW(
         failure => {
@@ -35,7 +38,9 @@ export const queryGet =
                 .send(oopsPage(sanitizeString(failure.message)));
         },
         HttpResponse.match({
-          Page: ({rendered}) => res.status(200).send(rendered),
+          CompleteHtmlPage: ({rendered}) => res.status(200).send(rendered),
+          LoggedInContent: ({title, body}) =>
+            res.status(200).send(pageTemplate(title, user.value)(body)),
           Redirect: ({url}) => res.redirect(url),
           Raw: ({body, contentType}) => {
             res.status(200);
