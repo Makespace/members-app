@@ -1,15 +1,12 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
-import {pageTemplate} from '../../templates';
-import {html, safe} from '../../types/html';
-import {User} from '../../types';
+import {html, safe, toLoggedInContent} from '../../types/html';
 import {Form} from '../../types/form';
 import {memberInput} from '../../templates/member-input';
 import {readModels} from '../../read-models';
 import {Member} from '../../read-models/members';
 
 type ViewModel = {
-  user: User;
   members: ReadonlyArray<Member>;
 };
 
@@ -25,11 +22,7 @@ const render = (viewModel: ViewModel) => html`
 `;
 
 const renderForm = (viewModel: ViewModel) =>
-  pipe(
-    viewModel,
-    render,
-    pageTemplate(safe('Declare super user'), viewModel.user)
-  );
+  pipe(viewModel, render, toLoggedInContent(safe('Declare super user')));
 
 const constructForm: Form<ViewModel>['constructForm'] =
   () =>

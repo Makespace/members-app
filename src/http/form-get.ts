@@ -1,14 +1,16 @@
 import {Request, Response} from 'express';
+import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
 import {StatusCodes} from 'http-status-codes';
 import {getUserFromSession} from '../authentication';
 import {Dependencies} from '../dependencies';
-import {oopsPage} from '../templates';
+import {oopsPage, pageTemplate} from '../templates';
 import {sequenceS} from 'fp-ts/lib/Apply';
 import {Form} from '../types/form';
 import {failureWithStatus} from '../types/failure-with-status';
 import {CompleteHtmlDocument, sanitizeString} from '../types/html';
+import {logInPath} from '../authentication/auth-routes';
 
 const getUser = (req: Request, deps: Dependencies) =>
   pipe(
@@ -26,6 +28,11 @@ const getUser = (req: Request, deps: Dependencies) =>
 export const formGet =
   <T>(deps: Dependencies, form: Form<T>) =>
   async (req: Request, res: Response<CompleteHtmlDocument>) => {
+    const user = getUserFromSession(deps)(req.session);
+    if (O.isNone(user)) {
+      res.redirect(logInPath);
+      return;
+    }
     await pipe(
       {
         user: getUser(req, deps),
@@ -35,6 +42,7 @@ export const formGet =
       TE.let('readModel', () => deps.sharedReadModel),
       TE.chainEitherK(form.constructForm({...req.query, ...req.params})),
       TE.map(form.renderForm),
+      TE.map(({title, body}) => pageTemplate(title, user.value)(body)),
       TE.matchW(
         failure => {
           deps.logger.error(failure, 'Failed to show form to a user');

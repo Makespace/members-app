@@ -69,7 +69,7 @@ interface CompleteHtmlPage {
   rendered: CompleteHtmlDocument;
 }
 
-interface LoggedInPage {
+export interface LoggedInContent {
   title: HtmlSubstitution;
   body: Html;
 }
@@ -87,12 +87,12 @@ export type HttpResponse =
   | Sum.Member<'Redirect', Redirect>
   | Sum.Member<'Raw', Raw>
   | Sum.Member<'CompleteHtmlPage', CompleteHtmlPage>
-  | Sum.Member<'LoggedInContent', LoggedInPage>;
+  | Sum.Member<'LoggedInContent', LoggedInContent>;
 
 export const HttpResponse = Sum.create<HttpResponse>();
 
 export const toLoggedInContent = (title: HtmlSubstitution) => (body: Html) =>
-  HttpResponse.mk.LoggedInContent({
+  ({
     title: title,
     body: body,
-  });
+  }) satisfies LoggedInContent;

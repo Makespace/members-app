@@ -1,15 +1,12 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
-import {html, safe, sanitizeString} from '../../types/html';
-import {User} from '../../types';
+import {html, safe, sanitizeString, toLoggedInContent} from '../../types/html';
 import {Form} from '../../types/form';
-import {pageTemplate} from '../../templates';
 import {getEquipmentName} from './get-equipment-name';
 import {getEquipmentIdFromForm} from './get-equipment-id-from-form';
 import {UUID} from 'io-ts-types';
 
 type ViewModel = {
-  user: User;
   equipmentId: UUID;
   equipmentName: string;
 };
@@ -31,15 +28,14 @@ const renderForm = (viewModel: ViewModel) =>
         <button type="submit">Confirm and send</button>
       </form>
     `,
-    pageTemplate(safe('Register training sheet'), viewModel.user)
+    toLoggedInContent(safe('Register training sheet'))
   );
 
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({events, user}) =>
+  ({events}) =>
     pipe(
-      {user},
-      E.right,
+      E.Do,
       E.bind('equipmentId', () => getEquipmentIdFromForm(input)),
       E.bind('equipmentName', ({equipmentId}) =>
         getEquipmentName(events, equipmentId)

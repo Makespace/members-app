@@ -1,9 +1,8 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
-import {pageTemplate} from '../../templates';
-import {html, safe, sanitizeString} from '../../types/html';
-import {DomainEvent, User} from '../../types';
+import {html, safe, sanitizeString, toLoggedInContent} from '../../types/html';
+import {DomainEvent} from '../../types';
 import {v4} from 'uuid';
 import {Form} from '../../types/form';
 import {formatValidationErrors} from 'io-ts-reporters';
@@ -13,7 +12,6 @@ import {readModels} from '../../read-models';
 import {UUID} from 'io-ts-types';
 
 type ViewModel = {
-  user: User;
   areaId: UUID;
   areaName: string;
 };
@@ -30,7 +28,7 @@ const renderForm = (viewModel: ViewModel) =>
         <button type="submit">Confirm and send</button>
       </form>
     `,
-    pageTemplate(safe('Create Equipment'), viewModel.user)
+    toLoggedInContent(safe('Create Equipment'))
   );
 
 const getAreaId = (input: unknown) =>
@@ -54,12 +52,11 @@ const getAreaName = (events: ReadonlyArray<DomainEvent>, areaId: UUID) =>
 
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({user, events}) =>
+  ({events}) =>
     pipe(
       E.Do,
       E.bind('areaId', () => getAreaId(input)),
-      E.bind('areaName', ({areaId}) => getAreaName(events, areaId)),
-      E.bind('user', () => E.right(user))
+      E.bind('areaName', ({areaId}) => getAreaName(events, areaId))
     );
 
 export const addForm: Form<ViewModel> = {

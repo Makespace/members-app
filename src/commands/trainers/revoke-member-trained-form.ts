@@ -1,10 +1,8 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
-import {html, safe, sanitizeString} from '../../types/html';
-import {User} from '../../types';
+import {html, safe, sanitizeString, toLoggedInContent} from '../../types/html';
 import {Form} from '../../types/form';
-import {pageTemplate} from '../../templates';
 import {getEquipmentIdFromForm} from '../equipment/get-equipment-id-from-form';
 import {memberInput} from '../../templates/member-input';
 import {Member} from '../../read-models/members';
@@ -13,7 +11,6 @@ import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 
 type ViewModel = {
-  user: User;
   equipment: Equipment;
   members: ReadonlyArray<Member>;
 };
@@ -34,15 +31,14 @@ const renderForm = (viewModel: ViewModel) =>
         <button type="submit">Confirm</button>
       </form>
     `,
-    pageTemplate(safe('Revoked Training'), viewModel.user)
+    toLoggedInContent(safe('Revoke Training'))
   );
 
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({user, readModel}) =>
+  ({readModel}) =>
     pipe(
-      {user},
-      E.right,
+      E.Do,
       E.bind('equipment_id', () => getEquipmentIdFromForm(input)),
       E.bind('equipment', ({equipment_id}) => {
         const equipment = readModel.equipment.get(equipment_id);

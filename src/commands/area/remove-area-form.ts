@@ -1,25 +1,21 @@
 import * as E from 'fp-ts/Either';
 import * as t from 'io-ts';
-import {pageTemplate} from '../../templates';
-import {User} from '../../types';
 import {Form} from '../../types/form';
 import {flow, pipe} from 'fp-ts/lib/function';
-import {html, safe, sanitizeString} from '../../types/html';
+import {html, safe, sanitizeString, toLoggedInContent} from '../../types/html';
 import {StatusCodes} from 'http-status-codes';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {getAreaName} from './get-area-name';
 
 type ViewModel = {
-  user: User;
   areaId: string;
   areaName: string;
 };
 
 const renderForm = (viewModel: ViewModel) =>
   pipe(
-    viewModel,
-    () => html`
+    html`
       <div class="stack-large">
         <h1>Remove '${sanitizeString(viewModel.areaName)}'?</h1>
         <form action="#" method="post">
@@ -28,7 +24,7 @@ const renderForm = (viewModel: ViewModel) =>
         </form>
       </div>
     `,
-    pageTemplate(safe('Remove Area'), viewModel.user)
+    toLoggedInContent(safe('Remove Area'))
   );
 
 const paramsCodec = t.strict({
@@ -55,10 +51,9 @@ export const removeAreaForm: Form<ViewModel> = {
   renderForm,
   constructForm:
     input =>
-    ({user, readModel}) =>
+    ({readModel}) =>
       pipe(
-        {user},
-        E.right,
+        E.Do,
         E.bind('areaId', () => getAreaId(input)),
         E.bind('areaName', ({areaId}) => getAreaName(readModel.db, areaId))
       ),
