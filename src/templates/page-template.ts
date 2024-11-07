@@ -38,8 +38,13 @@ export const templatePage: (r: HttpResponse) => HttpResponse =
   HttpResponse.match({
     Redirect: HttpResponse.mk.Redirect,
     Raw: HttpResponse.mk.Raw,
-    Page: ({rendered}) =>
-      HttpResponse.mk.Page({
+    CompleteHtmlPage: ({rendered}) =>
+      HttpResponse.mk.CompleteHtmlPage({
         rendered,
+      }),
+    LoggedInContent: ({title, body}) =>
+      HttpResponse.mk.LoggedInContent({
+        title,
+        body,
       }),
   });
