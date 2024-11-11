@@ -4,12 +4,12 @@ import {pipe} from 'fp-ts/lib/function';
 import {Request, Response} from 'express';
 import {getUserFromSession} from '../authentication';
 import {StatusCodes} from 'http-status-codes';
-import {HttpResponse} from '../types';
 import {oopsPage, pageTemplate} from '../templates';
 import {Query} from '../queries/query';
 import {logInPath} from '../authentication/auth-routes';
 import {CompleteHtmlDocument, sanitizeString} from '../types/html';
 import * as O from 'fp-ts/Option';
+import {match} from '../types/tagged-union';
 
 export const queryGet =
   (deps: Dependencies, query: Query) =>
@@ -31,7 +31,7 @@ export const queryGet =
                 .status(failure.status)
                 .send(oopsPage(sanitizeString(failure.message)));
         },
-        HttpResponse.match({
+        match({
           CompleteHtmlPage: ({rendered}) => res.status(200).send(rendered),
           LoggedInContent: ({title, body}) =>
             res.status(200).send(pageTemplate(title, user.value)(body)),

@@ -1,7 +1,7 @@
-import * as Sum from '@unsplash/sum-types';
 import * as O from 'fp-ts/Option';
 import {UUID} from 'io-ts-types';
 import sanitize from 'sanitize-html';
+import {TaggedUnion, toTaggedContructors} from './tagged-union';
 
 export type Html = string & {readonly Html: unique symbol};
 
@@ -65,34 +65,16 @@ export type CompleteHtmlDocument = Html & {
   readonly CompleteHtmlDocument: unique symbol;
 };
 
-interface CompleteHtmlPage {
-  rendered: CompleteHtmlDocument;
-}
+const httpResponseConstructors = {
+  CompleteHtmlPage: (rendered: CompleteHtmlDocument) => ({rendered}),
+  LoggedInContent: (input: {title: HtmlSubstitution; body: Html}) => input,
+  Raw: (input: {body: string; contentType: string}) => input,
+  Redirect: (url: string) => ({url}),
+};
 
-export interface LoggedInContent {
-  title: HtmlSubstitution;
-  body: Html;
-}
+export type HttpResponse = TaggedUnion<typeof httpResponseConstructors>;
 
-interface Raw {
-  body: string;
-  contentType: string;
-}
-
-interface Redirect {
-  url: string;
-}
-
-export type HttpResponse =
-  | Sum.Member<'Redirect', Redirect>
-  | Sum.Member<'Raw', Raw>
-  | Sum.Member<'CompleteHtmlPage', CompleteHtmlPage>
-  | Sum.Member<'LoggedInContent', LoggedInContent>;
-
-export const HttpResponse = Sum.create<HttpResponse>();
+export const HttpResponse = toTaggedContructors(httpResponseConstructors);
 
 export const toLoggedInContent = (title: HtmlSubstitution) => (body: Html) =>
-  ({
-    title: title,
-    body: body,
-  }) satisfies LoggedInContent;
+  HttpResponse.LoggedInContent({title, body});
