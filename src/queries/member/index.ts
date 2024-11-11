@@ -25,10 +25,6 @@ export const member: Query = deps => (user, params) =>
     E.map(constructViewModel(deps, user)),
     E.flatten,
     E.map(viewModel => render(viewModel)),
-    E.map(rendered =>
-      HttpResponse.mk.CompleteHtmlPage({
-        rendered,
-      })
-    ),
+    E.map(HttpResponse.CompleteHtmlPage),
     TE.fromEither
   );

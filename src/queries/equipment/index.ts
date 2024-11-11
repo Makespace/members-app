@@ -24,9 +24,6 @@ export const equipment: Query = deps => (user, params) =>
     E.map(params => params.equipment),
     TE.fromEither,
     TE.chain(constructViewModel(deps, user)),
-    TE.map(viewModel =>
-      HttpResponse.mk.CompleteHtmlPage({
-        rendered: render(viewModel),
-      })
-    )
+    TE.map(render),
+    TE.map(HttpResponse.CompleteHtmlPage)
   );

@@ -11,7 +11,7 @@ export const logcsv: Query = deps => user =>
     constructViewModel(deps),
     TE.map(render),
     TE.map(body =>
-      HttpResponse.mk.Raw({
+      HttpResponse.Raw({
         body,
         contentType: 'text/csv',
       })

@@ -12,7 +12,7 @@ export const trainingStatusCsv: Query = deps => user =>
     constructViewModel(deps),
     E.map(render),
     E.map(body =>
-      HttpResponse.mk.Raw({
+      HttpResponse.Raw({
         body,
         contentType: 'text/csv',
       })
