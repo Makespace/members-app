@@ -12,9 +12,11 @@ export const navBar = (user: User) => html`
         alt="Makespace"
         class="page-nav__logo"
     /></a>
-    <a href="/members">Members</a>
-    <a href="/equipment">Equipment</a>
-    <a href="/log-out">Log out</a>
+    <div class="page-nav__inner">
+      <a href="/members">Members</a>
+      <a href="/equipment">Equipment</a>
+      <a href="/log-out">Log out</a>
+    </div>
     ${loggedInUserSquare(user)}
   </nav>
 `;
