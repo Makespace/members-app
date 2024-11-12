@@ -249,7 +249,9 @@ details > *:not(summary) {
 .page-nav {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   justify-content: space-between;
+  gap: 1rem;
   margin-top: 4rem;
   margin-bottom: 4rem;
 }
@@ -257,6 +259,12 @@ details > *:not(summary) {
 .page-nav__logo {
   height: 4rem;
   margin: 0;
+}
+
+.page-nav__inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .passed_training_quiz_row {
