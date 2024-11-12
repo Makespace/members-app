@@ -61,6 +61,7 @@ const superUserNav = html`
   <p>You have super-user privileges. You can:</p>
   <nav>
     <ul>
+      <li><a href="/members">View all members</a></li>
       <li><a href="/areas">Manage areas and owners</a></li>
       <li><a href="/super-users">Manage super-users</a></li>
       <li>
