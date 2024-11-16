@@ -97,7 +97,7 @@ export const render = (viewModel: ViewModel) =>
             : html``}
           <tr>
             <th scope="row">Trainer for</th>
-            <td>${renderTrainerStatus(viewModel.member.trainerFor, true)}</td>
+            <td>${renderTrainerStatus(viewModel.member.trainerFor)}</td>
           </tr>
           <tr>
             <th scope="row">Trained on</th>
