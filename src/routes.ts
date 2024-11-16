@@ -16,6 +16,7 @@ export const initRoutes = (
   const email = emailHandler(conf, deps);
   return [
     query('/', queries.me),
+    query('/admin', queries.admin),
     query('/raise-issue', queries.raiseIssue),
     query('/event-log', queries.log),
     query('/event-log.csv', queries.logcsv),
