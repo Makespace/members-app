@@ -1,4 +1,5 @@
 export {areas} from './areas';
+export {raiseIssue} from './raise-issue';
 export {superUsers} from './super-users';
 export {allEquipment} from './all-equipment';
 export {equipment} from './equipment';
