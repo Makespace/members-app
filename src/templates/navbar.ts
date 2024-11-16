@@ -13,7 +13,7 @@ export const navBar = (user: User) => html`
         class="page-nav__logo"
     /></a>
     <div class="page-nav__inner">
-      <a href="/members">Members</a>
+      <a href="/raise-issue">Raise an Issue</a>
       <a href="/equipment">Equipment</a>
       <a href="/log-out">Log out</a>
     </div>
