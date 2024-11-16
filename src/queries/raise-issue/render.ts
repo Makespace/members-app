@@ -5,6 +5,20 @@ type ViewModel = {
 };
 
 const infoSystemsGroupEmailAddress = safe('infosystems@makespace.org');
+const mailSubject = encodeURIComponent('ISSUE with member records');
+const body = (memberNumber: ViewModel['memberNumber']) =>
+  encodeURIComponent(`Hi,
+
+My member number is ${memberNumber}.
+
+I have the following issue with my records:
+
+...
+`);
+const mailtoLink = (memberNumber: ViewModel['memberNumber']) =>
+  safe(
+    `mailto:${infoSystemsGroupEmailAddress}?subject=${mailSubject}&body=${body(memberNumber)}`
+  );
 
 export const render = (viewModel: ViewModel) => html`
   <div class="stack">
@@ -12,7 +26,7 @@ export const render = (viewModel: ViewModel) => html`
     <h2>If your records are wrong</h2>
     <p>
       Send the app and records team an email:
-      <a href="mailto:${infoSystemsGroupEmailAddress}"
+      <a href="${mailtoLink(viewModel.memberNumber)}"
         >${infoSystemsGroupEmailAddress}</a
       >
     </p>
