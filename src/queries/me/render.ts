@@ -81,12 +81,13 @@ export const render = (viewModel: ViewModel) => html`
     <h1>Your Makespace profile</h1>
     <h2>Your details</h2>
     ${renderMemberDetails(viewModel)}
-    <h2>Owner status</h2>
+    <h2>Train members</h2>
+    ${renderTrainerStatus(viewModel.member.trainerFor)}
+    <h2>Your training record</h2>
+    ${renderTrainingStatus(viewModel.member.trainedOn, false)}
+    <h2>Area ownership</h2>
     ${renderOwnerAgreementStatus(viewModel.member.agreementSigned, false)}
     ${renderOwnerStatus(viewModel.member.ownerOf, false)}
-    <h2>Training status</h2>
-    ${renderTrainingStatus(viewModel.member.trainedOn, false)}
-    ${renderTrainerStatus(viewModel.member.trainerFor, false)}
     ${viewModel.member.isSuperUser ? superUserNav : ''}
   </div>
 `;
