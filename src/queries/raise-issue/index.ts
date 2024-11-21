@@ -8,6 +8,6 @@ export const raiseIssue: Query = () => user =>
   pipe(
     {memberNumber: user.memberNumber},
     render,
-    toLoggedInContent(safe('My Details')),
+    toLoggedInContent(safe('Raise an issue')),
     TE.right
   );
