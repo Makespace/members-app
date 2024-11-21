@@ -77,17 +77,25 @@ const superUserNav = html`
 `;
 
 export const render = (viewModel: ViewModel) => html`
-  <div class="stack">
+  <div class="stack-large">
     <h1>Your Makespace profile</h1>
-    <h2>Your details</h2>
-    ${renderMemberDetails(viewModel)}
-    <h2>Train members</h2>
-    ${renderTrainerStatus(viewModel.member.trainerFor)}
-    <h2>Your training record</h2>
-    ${renderTrainingStatus(viewModel.member.trainedOn, false)}
-    <h2>Area ownership</h2>
-    ${renderOwnerAgreementStatus(viewModel.member.agreementSigned, false)}
-    ${renderOwnerStatus(viewModel.member.ownerOf, false)}
-    ${viewModel.member.isSuperUser ? superUserNav : ''}
+    <section>
+      <h2>Your details</h2>
+      ${renderMemberDetails(viewModel)}
+    </section>
+    <section>
+      <h2>Train members</h2>
+      ${renderTrainerStatus(viewModel.member.trainerFor)}
+    </section>
+    <section>
+      <h2>Your training record</h2>
+      ${renderTrainingStatus(viewModel.member.trainedOn, false)}
+    </section>
+    <section>
+      <h2>Area ownership</h2>
+      ${renderOwnerAgreementStatus(viewModel.member.agreementSigned, false)}
+      ${renderOwnerStatus(viewModel.member.ownerOf, false)}
+    </section>
+    <section>${viewModel.member.isSuperUser ? superUserNav : ''}</section>
   </div>
 `;
