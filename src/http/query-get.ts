@@ -15,6 +15,7 @@ export const queryGet =
   (deps: Dependencies, query: Query) =>
   async (req: Request, res: Response<CompleteHtmlDocument>) => {
     const user = getUserFromSession(deps)(req.session);
+    const isSuperUser = false;
     if (O.isNone(user)) {
       deps.logger.info('Did not respond to query as user was not logged in.');
       res.redirect(logInPath);
@@ -34,7 +35,9 @@ export const queryGet =
         match({
           CompleteHtmlPage: ({rendered}) => res.status(200).send(rendered),
           LoggedInContent: ({title, body}) =>
-            res.status(200).send(pageTemplate(title, user.value)(body)),
+            res
+              .status(200)
+              .send(pageTemplate(title, user.value, isSuperUser)(body)),
           Redirect: ({url}) => res.redirect(url),
           Raw: ({body, contentType}) => {
             res.status(200);
