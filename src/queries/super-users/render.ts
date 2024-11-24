@@ -1,9 +1,8 @@
 import {pipe} from 'fp-ts/lib/function';
-import {html, joinHtml, safe} from '../../types/html';
+import {html, joinHtml} from '../../types/html';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {ViewModel} from './view-model';
 import {displayDate} from '../../templates/display-date';
-import {pageTemplate} from '../../templates';
 import {renderMemberNumber} from '../../templates/member-number';
 import {DateTime} from 'luxon';
 
@@ -38,13 +37,9 @@ const renderSuperUsers = (superUsers: ViewModel['superUsers']) =>
     )
   );
 
-export const render = (viewModel: ViewModel) =>
-  pipe(
-    html`
+export const render = (viewModel: ViewModel) => html`
     <h1>Super-users</h1>
     <a href="/super-users/declare">Declare a member to be a super-user</a>
     </table>
     ${renderSuperUsers(viewModel.superUsers)}
-  `,
-    pageTemplate(safe('Super users'), viewModel.user)
-  );
+  `;

@@ -1,18 +1,11 @@
 import {pipe} from 'fp-ts/lib/function';
-import {
-  html,
-  joinHtml,
-  sanitizeOption,
-  safe,
-  sanitizeString,
-} from '../../types/html';
+import {html, joinHtml, sanitizeOption, sanitizeString} from '../../types/html';
 import * as N from 'fp-ts/number';
 import {contramap, Ord} from 'fp-ts/Ord';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {ViewModel} from './view-model';
 import {getGravatarThumbnail} from '../../templates/avatar';
 import {renderMemberNumber} from '../../templates/member-number';
-import {pageTemplate} from '../../templates';
 import {Member} from '../../read-models/members';
 
 const ordByMemberNumber: Ord<Member> = pipe(
@@ -58,11 +51,7 @@ const renderMembers = (viewModel: ViewModel) =>
     )
   );
 
-export const render = (viewModel: ViewModel) =>
-  pipe(
-    html`
-      <h1>Members of Makespace</h1>
-      ${renderMembers(viewModel)}
-    `,
-    pageTemplate(safe('Members'), viewModel.user)
-  );
+export const render = (viewModel: ViewModel) => html`
+  <h1>Members of Makespace</h1>
+  ${renderMembers(viewModel)}
+`;

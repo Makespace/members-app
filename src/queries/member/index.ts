@@ -9,7 +9,7 @@ import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {formatValidationErrors} from 'io-ts-reporters';
 import * as tt from 'io-ts-types';
-import {HttpResponse} from '../../types';
+import {safe, toLoggedInContent} from '../../types/html';
 
 const invalidParams = flow(
   formatValidationErrors,
@@ -25,6 +25,6 @@ export const member: Query = deps => (user, params) =>
     E.map(constructViewModel(deps, user)),
     E.flatten,
     E.map(viewModel => render(viewModel)),
-    E.map(HttpResponse.CompleteHtmlPage),
+    E.map(toLoggedInContent(safe('Member'))),
     TE.fromEither
   );

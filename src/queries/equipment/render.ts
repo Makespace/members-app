@@ -1,5 +1,4 @@
 import {pipe} from 'fp-ts/lib/function';
-import {pageTemplate} from '../../templates';
 import {displayDate} from '../../templates/display-date';
 import {renderMemberNumber} from '../../templates/member-number';
 import {
@@ -8,6 +7,7 @@ import {
   joinHtml,
   sanitizeOption,
   sanitizeString,
+  toLoggedInContent,
 } from '../../types/html';
 import {ViewModel} from './view-model';
 import * as O from 'fp-ts/Option';
@@ -313,5 +313,5 @@ export const render = (viewModel: ViewModel) =>
         ${isTrainerOrOwner(viewModel) ? trainingQuizResults(viewModel) : html``}
       </div>
     `,
-    pageTemplate(sanitizeString(viewModel.equipment.name), viewModel.user)
+    toLoggedInContent(sanitizeString(viewModel.equipment.name))
   );

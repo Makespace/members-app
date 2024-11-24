@@ -2,7 +2,6 @@ import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
 import {render} from './render';
 import {Query} from '../query';
-import {HttpResponse} from '../../types';
 import {SharedReadModel} from '../../read-models/shared-state';
 import {ViewModel} from './view-model';
 import {
@@ -13,6 +12,7 @@ import {
 } from '../../read-models/shared-state/state';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {eq} from 'drizzle-orm';
+import {safe, toLoggedInContent} from '../../types/html';
 
 const getAreas = (db: SharedReadModel['db']): ViewModel['areas'] => {
   return pipe(
@@ -48,5 +48,5 @@ export const areas: Query = deps => user =>
     TE.let('user', () => user),
     TE.let('areas', () => getAreas(deps.sharedReadModel.db)),
     TE.map(render),
-    TE.map(HttpResponse.CompleteHtmlPage)
+    TE.map(toLoggedInContent(safe('Manage Areas and Owners')))
   );
