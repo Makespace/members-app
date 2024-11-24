@@ -3,12 +3,12 @@ import * as TE from 'fp-ts/TaskEither';
 import {render} from './render';
 import {constructViewModel} from './construct-view-model';
 import {Query} from '../query';
-import {HttpResponse} from '../../types';
+import {safe, toLoggedInContent} from '../../types/html';
 
 export const failedImports: Query = deps => user =>
   pipe(
     user,
     constructViewModel(deps),
     TE.map(render),
-    TE.map(HttpResponse.CompleteHtmlPage)
+    TE.map(toLoggedInContent(safe('Failed Member Imports')))
   );

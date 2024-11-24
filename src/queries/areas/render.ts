@@ -8,7 +8,6 @@ import {
 } from '../../types/html';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {ViewModel} from './view-model';
-import {pageTemplate} from '../../templates';
 import {renderMemberNumber} from '../../templates/member-number';
 import * as O from 'fp-ts/Option';
 import {displayDate} from '../../templates/display-date';
@@ -119,14 +118,10 @@ const addAreaCallToAction = html`
   <a class="button" href="/areas/create">Add area of responsibility</a>
 `;
 
-export const render = (viewModel: ViewModel) =>
-  pipe(
-    html`
-      <div class="stack-large">
-        <h1>Manage Areas and Owners</h1>
-        <div>${addAreaCallToAction}</div>
-        <section class="stack-large">${renderAreas(viewModel.areas)}</section>
-      </div>
-    `,
-    pageTemplate(safe('Manage Areas and Owners'), viewModel.user)
-  );
+export const render = (viewModel: ViewModel) => html`
+  <div class="stack-large">
+    <h1>Manage Areas and Owners</h1>
+    <div>${addAreaCallToAction}</div>
+    <section class="stack-large">${renderAreas(viewModel.areas)}</section>
+  </div>
+`;

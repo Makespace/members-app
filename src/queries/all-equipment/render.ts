@@ -8,7 +8,6 @@ import {
 } from '../../types/html';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {ViewModel} from './view-model';
-import {pageTemplate} from '../../templates';
 
 const renderEquipment = (equipment: ViewModel['areas'][number]['equipment']) =>
   pipe(
@@ -39,13 +38,9 @@ const renderArea = (area: ViewModel['areas'][number]) => html`
 const renderAreas = (areas: ViewModel['areas']) =>
   pipe(areas, RA.map(renderArea), joinHtml);
 
-export const render = (viewModel: ViewModel) =>
-  pipe(
-    html`
-      <div class="stack-large">
-        <h1>Equipment of Makespace</h1>
-        <div class="stack-large">${renderAreas(viewModel.areas)}</div>
-      </div>
-    `,
-    pageTemplate(safe('Equipment'), viewModel.user)
-  );
+export const render = (viewModel: ViewModel) => html`
+  <div class="stack-large">
+    <h1>Equipment of Makespace</h1>
+    <div class="stack-large">${renderAreas(viewModel.areas)}</div>
+  </div>
+`;

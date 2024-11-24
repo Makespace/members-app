@@ -8,7 +8,6 @@ import {render} from './render';
 import * as E from 'fp-ts/Either';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {Query} from '../query';
-import {HttpResponse} from '../../types';
 import {UUID} from 'io-ts-types';
 
 const invalidParams = flow(
@@ -24,6 +23,5 @@ export const equipment: Query = deps => (user, params) =>
     E.map(params => params.equipment),
     TE.fromEither,
     TE.chain(constructViewModel(deps, user)),
-    TE.map(render),
-    TE.map(HttpResponse.CompleteHtmlPage)
+    TE.map(render)
   );

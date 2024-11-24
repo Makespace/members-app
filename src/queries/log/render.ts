@@ -1,11 +1,10 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {html, joinHtml, safe, sanitizeString} from '../../types/html';
+import {html, joinHtml, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
 import {DomainEvent} from '../../types';
 import {inspect} from 'node:util';
 import {displayDate} from '../../templates/display-date';
-import {pageTemplate} from '../../templates';
 import {DateTime} from 'luxon';
 import {renderActor} from '../../types/actor';
 
@@ -41,12 +40,8 @@ const renderLog = (log: ViewModel['events']) =>
     `
   );
 
-export const render = (viewModel: ViewModel) =>
-  pipe(
-    html`
-      <h1>Event log</h1>
-      <p>Most recent at top</p>
-      ${renderLog(viewModel.events)}
-    `,
-    pageTemplate(safe('Event Log'), viewModel.user)
-  );
+export const render = (viewModel: ViewModel) => html`
+  <h1>Event log</h1>
+  <p>Most recent at top</p>
+  ${renderLog(viewModel.events)}
+`;

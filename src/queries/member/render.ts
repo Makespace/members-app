@@ -1,14 +1,6 @@
-import {pipe} from 'fp-ts/lib/function';
 import {getGravatarProfile, getGravatarThumbnail} from '../../templates/avatar';
-import {
-  Html,
-  html,
-  sanitizeOption,
-  safe,
-  sanitizeString,
-} from '../../types/html';
+import {Html, html, sanitizeOption, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
-import {pageTemplate} from '../../templates';
 import {renderMemberNumber} from '../../templates/member-number';
 import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
 import {renderOwnerStatus} from '../shared-render/owner-status';
@@ -33,78 +25,74 @@ const editAvatar = () =>
 const ifSelf = (viewModel: ViewModel, fragment: Html) =>
   viewModel.isSelf ? fragment : '';
 
-export const render = (viewModel: ViewModel) =>
-  pipe(
-    html`
-      ${ifSelf(viewModel, ownPageBanner)}
-      <div class="profile">
-        ${getGravatarProfile(
-          viewModel.member.gravatarHash,
-          viewModel.member.memberNumber
-        )}
-      </div>
-      <table>
-        <caption>
-          Details
-        </caption>
-        <tbody>
-          <tr>
-            <th scope="row">Member number</th>
-            <td>${renderMemberNumber(viewModel.member.memberNumber)}</td>
-          </tr>
-          <tr>
-            <th scope="row">Email</th>
-            <td>${sanitizeString(viewModel.member.emailAddress)}</td>
-          </tr>
-          <tr>
-            <th scope="row">Name</th>
+export const render = (viewModel: ViewModel) => html`
+  ${ifSelf(viewModel, ownPageBanner)}
+  <div class="profile">
+    ${getGravatarProfile(
+      viewModel.member.gravatarHash,
+      viewModel.member.memberNumber
+    )}
+  </div>
+  <table>
+    <caption>
+      Details
+    </caption>
+    <tbody>
+      <tr>
+        <th scope="row">Member number</th>
+        <td>${renderMemberNumber(viewModel.member.memberNumber)}</td>
+      </tr>
+      <tr>
+        <th scope="row">Email</th>
+        <td>${sanitizeString(viewModel.member.emailAddress)}</td>
+      </tr>
+      <tr>
+        <th scope="row">Name</th>
+        <td>
+          ${sanitizeOption(viewModel.member.name)}
+          ${ifSelf(viewModel, editName(viewModel))}
+        </td>
+      </tr>
+      <tr>
+        <th scope="row">Pronouns</th>
+        <td>
+          ${sanitizeOption(viewModel.member.pronouns)}
+          ${ifSelf(viewModel, editPronouns(viewModel))}
+        </td>
+      </tr>
+      <tr>
+        <th scope="row">Avatar</th>
+        <td>
+          ${getGravatarThumbnail(
+            viewModel.member.gravatarHash,
+            viewModel.member.memberNumber
+          )}
+          ${ifSelf(viewModel, editAvatar())}
+        </td>
+      </tr>
+      <tr>
+        <th scope="row">Owner of</th>
+        <td>${renderOwnerStatus(viewModel.member.ownerOf, true)}</td>
+      </tr>
+      ${viewModel.isSuperUser
+        ? html`<tr>
+            <th scope="row">Owner agreement</th>
             <td>
-              ${sanitizeOption(viewModel.member.name)}
-              ${ifSelf(viewModel, editName(viewModel))}
-            </td>
-          </tr>
-          <tr>
-            <th scope="row">Pronouns</th>
-            <td>
-              ${sanitizeOption(viewModel.member.pronouns)}
-              ${ifSelf(viewModel, editPronouns(viewModel))}
-            </td>
-          </tr>
-          <tr>
-            <th scope="row">Avatar</th>
-            <td>
-              ${getGravatarThumbnail(
-                viewModel.member.gravatarHash,
-                viewModel.member.memberNumber
+              ${renderOwnerAgreementStatus(
+                viewModel.member.agreementSigned,
+                true
               )}
-              ${ifSelf(viewModel, editAvatar())}
             </td>
-          </tr>
-          <tr>
-            <th scope="row">Owner of</th>
-            <td>${renderOwnerStatus(viewModel.member.ownerOf, true)}</td>
-          </tr>
-          ${viewModel.isSuperUser
-            ? html`<tr>
-                <th scope="row">Owner agreement</th>
-                <td>
-                  ${renderOwnerAgreementStatus(
-                    viewModel.member.agreementSigned,
-                    true
-                  )}
-                </td>
-              </tr>`
-            : html``}
-          <tr>
-            <th scope="row">Trainer for</th>
-            <td>${renderTrainerStatus(viewModel.member.trainerFor)}</td>
-          </tr>
-          <tr>
-            <th scope="row">Trained on</th>
-            <td>${renderTrainingStatus(viewModel.member.trainedOn, true)}</td>
-          </tr>
-        </tbody>
-      </table>
-    `,
-    pageTemplate(safe('Member'), viewModel.user)
-  );
+          </tr>`
+        : html``}
+      <tr>
+        <th scope="row">Trainer for</th>
+        <td>${renderTrainerStatus(viewModel.member.trainerFor)}</td>
+      </tr>
+      <tr>
+        <th scope="row">Trained on</th>
+        <td>${renderTrainingStatus(viewModel.member.trainedOn, true)}</td>
+      </tr>
+    </tbody>
+  </table>
+`;
