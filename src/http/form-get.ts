@@ -29,6 +29,7 @@ export const formGet =
   <T>(deps: Dependencies, form: Form<T>) =>
   async (req: Request, res: Response<CompleteHtmlDocument>) => {
     const user = getUserFromSession(deps)(req.session);
+    const isSuperUser = false;
     if (O.isNone(user)) {
       res.redirect(logInPath);
       return;
@@ -42,7 +43,9 @@ export const formGet =
       TE.let('readModel', () => deps.sharedReadModel),
       TE.chainEitherK(form.constructForm({...req.query, ...req.params})),
       TE.map(form.renderForm),
-      TE.map(({title, body}) => pageTemplate(title, user.value)(body)),
+      TE.map(({title, body}) =>
+        pageTemplate(title, user.value, isSuperUser)(body)
+      ),
       TE.matchW(
         failure => {
           deps.logger.error(failure, 'Failed to show form to a user');

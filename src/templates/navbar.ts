@@ -2,7 +2,8 @@ import {User} from '../types';
 import {html} from '../types/html';
 import {loggedInUserSquare} from './logged-in-user-square';
 
-export const navBar = (user: User) => html`
+// eslint-disable-next-line unused-imports/no-unused-vars
+export const navBar = (user: User, isSuperUser: boolean) => html`
   <nav class="page-nav">
     <a href="/"
       ><img
