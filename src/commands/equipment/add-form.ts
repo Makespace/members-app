@@ -2,14 +2,13 @@ import {pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import {html, safe, sanitizeString, toLoggedInContent} from '../../types/html';
-import {DomainEvent} from '../../types';
 import {v4} from 'uuid';
 import {Form} from '../../types/form';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
-import {readModels} from '../../read-models';
 import {UUID} from 'io-ts-types';
+import {SharedReadModel} from '../../read-models/shared-state';
 
 type ViewModel = {
   areaId: UUID;
@@ -40,10 +39,10 @@ const getAreaId = (input: unknown) =>
     E.map(({area}) => area)
   );
 
-const getAreaName = (events: ReadonlyArray<DomainEvent>, areaId: UUID) =>
+const getAreaName = (readModel: SharedReadModel, areaId: UUID) =>
   pipe(
     areaId,
-    readModels.areas.getArea(events),
+    readModel.area.get,
     E.fromOption(() =>
       failureWithStatus('No such area', StatusCodes.NOT_FOUND)()
     ),
@@ -52,11 +51,11 @@ const getAreaName = (events: ReadonlyArray<DomainEvent>, areaId: UUID) =>
 
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({events}) =>
+  ({readModel}) =>
     pipe(
       E.Do,
       E.bind('areaId', () => getAreaId(input)),
-      E.bind('areaName', ({areaId}) => getAreaName(events, areaId))
+      E.bind('areaName', ({areaId}) => getAreaName(readModel, areaId))
     );
 
 export const addForm: Form<ViewModel> = {

@@ -33,12 +33,12 @@ const renderForm = (viewModel: ViewModel) =>
 
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({events}) =>
+  ({readModel}) =>
     pipe(
       E.Do,
       E.bind('equipmentId', () => getEquipmentIdFromForm(input)),
       E.bind('equipmentName', ({equipmentId}) =>
-        getEquipmentName(events, equipmentId)
+        getEquipmentName(readModel, equipmentId)
       )
     );
 

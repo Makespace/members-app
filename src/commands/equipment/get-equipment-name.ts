@@ -1,17 +1,17 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
-import {DomainEvent} from '../../types';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
-import {readModels} from '../../read-models';
+import {SharedReadModel} from '../../read-models/shared-state';
+import {UUID} from 'io-ts-types';
 
 export const getEquipmentName = (
-  events: ReadonlyArray<DomainEvent>,
-  equipmentId: string
+  readModel: SharedReadModel,
+  equipmentId: UUID
 ) =>
   pipe(
     equipmentId,
-    readModels.equipment.get(events),
+    readModel.equipment.get,
     E.fromOption(() =>
       failureWithStatus('No such equipment', StatusCodes.NOT_FOUND)()
     ),
