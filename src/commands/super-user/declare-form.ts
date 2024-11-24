@@ -3,7 +3,6 @@ import * as E from 'fp-ts/Either';
 import {html, safe, toLoggedInContent} from '../../types/html';
 import {Form} from '../../types/form';
 import {memberInput} from '../../templates/member-input';
-import {readModels} from '../../read-models';
 import {Member} from '../../read-models/members';
 
 type ViewModel = {
@@ -26,14 +25,12 @@ const renderForm = (viewModel: ViewModel) =>
 
 const constructForm: Form<ViewModel>['constructForm'] =
   () =>
-  ({events, user}) =>
+  ({readModel, user}) =>
     pipe(
       {user},
       E.right,
       E.let('members', () =>
-        [...readModels.members.getAllDetails(events).values()].filter(
-          member => !member.isSuperUser
-        )
+        readModel.members.getAll().filter(member => !member.isSuperUser)
       )
     );
 

@@ -37,7 +37,6 @@ export const formGet =
     await pipe(
       {
         user: getUser(req, deps),
-        events: deps.getAllEvents(),
       },
       sequenceS(TE.ApplyPar),
       TE.let('readModel', () => deps.sharedReadModel),
