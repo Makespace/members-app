@@ -14,6 +14,7 @@ export const navBar = (user: User, isSuperUser: boolean) => html`
         class="page-nav__logo"
     /></a>
     <div class="page-nav__inner">
+      ${isSuperUser ? html`<a href="/admin">Admin</a>` : ''}
       <a href="/raise-issue">Raise an Issue</a>
       <a href="/equipment">Equipment</a>
       <a href="/log-out">Log out</a>

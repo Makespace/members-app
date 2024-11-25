@@ -56,26 +56,6 @@ const renderMemberDetails = (viewModel: ViewModel) => html`
   </table>
 `;
 
-const superUserNav = html`
-  <h2>Admin</h2>
-  <p>You have super-user privileges. You can:</p>
-  <nav>
-    <ul>
-      <li><a href="/members">View all members</a></li>
-      <li><a href="/areas">Manage areas and owners</a></li>
-      <li><a href="/super-users">Manage super-users</a></li>
-      <li>
-        <a href="/members/failed-imports">View failed member number imports</a>
-      </li>
-      <li>
-        <a href="/event-log.csv">View log of all actions taken</a>
-      </li>
-      <li><a href="/members/create">Link an email and number</a></li>
-      <li><a href="/training-status.csv">Download current owners and trainers</li>
-    </ul>
-  </nav>
-`;
-
 export const render = (viewModel: ViewModel) => html`
   <div class="stack-large">
     <h1>Your Makespace profile</h1>
@@ -96,6 +76,5 @@ export const render = (viewModel: ViewModel) => html`
       ${renderOwnerAgreementStatus(viewModel.member.agreementSigned, false)}
       ${renderOwnerStatus(viewModel.member.ownerOf, false)}
     </section>
-    <section>${viewModel.member.isSuperUser ? superUserNav : ''}</section>
   </div>
 `;
