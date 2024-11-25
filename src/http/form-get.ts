@@ -21,7 +21,11 @@ export const formGet =
       res.redirect(logInPath);
       return;
     }
-    const isSuperUser = false;
+    const member = deps.sharedReadModel.members.get(user.value.memberNumber);
+    if (O.isNone(member)) {
+      res.redirect(logInPath);
+      return;
+    }
     pipe(
       {
         user: user.value,
@@ -30,7 +34,7 @@ export const formGet =
       form.constructForm({...req.query, ...req.params}),
       E.map(form.renderForm),
       E.map(({title, body}) =>
-        pageTemplate(title, user.value, isSuperUser)(body)
+        pageTemplate(title, user.value, member.value.isSuperUser)(body)
       ),
       E.matchW(
         failure => {
