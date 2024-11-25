@@ -15,9 +15,13 @@ export const queryGet =
   (deps: Dependencies, query: Query) =>
   async (req: Request, res: Response<CompleteHtmlDocument>) => {
     const user = getUserFromSession(deps)(req.session);
-    const isSuperUser = false;
     if (O.isNone(user)) {
       deps.logger.info('Did not respond to query as user was not logged in.');
+      res.redirect(logInPath);
+      return;
+    }
+    const member = deps.sharedReadModel.members.get(user.value.memberNumber);
+    if (O.isNone(member)) {
       res.redirect(logInPath);
       return;
     }
@@ -37,7 +41,9 @@ export const queryGet =
           LoggedInContent: ({title, body}) =>
             res
               .status(200)
-              .send(pageTemplate(title, user.value, isSuperUser)(body)),
+              .send(
+                pageTemplate(title, user.value, member.value.isSuperUser)(body)
+              ),
           Redirect: ({url}) => res.redirect(url),
           Raw: ({body, contentType}) => {
             res.status(200);
