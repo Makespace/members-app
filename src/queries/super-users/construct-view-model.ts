@@ -19,7 +19,7 @@ export const constructViewModel =
         readModels.superUsers.is(user.memberNumber),
         failureWithStatus(
           'Only super-users can see this page',
-          StatusCodes.UNAUTHORIZED
+          StatusCodes.FORBIDDEN
         )
       ),
       TE.map(events => ({

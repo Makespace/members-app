@@ -50,7 +50,7 @@ const emailPost =
       TE.filterOrElse(command.isAuthorized, () =>
         failureWithStatus(
           'You are not authorized to perform this action',
-          StatusCodes.UNAUTHORIZED
+          StatusCodes.FORBIDDEN
         )()
       ),
       TE.chainEitherK(({input, actor}) =>

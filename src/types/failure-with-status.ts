@@ -7,6 +7,7 @@ type ApplicationStatusCode =
   | StatusCodes.INTERNAL_SERVER_ERROR
   | StatusCodes.BAD_REQUEST
   | StatusCodes.UNAUTHORIZED
+  | StatusCodes.FORBIDDEN
   | StatusCodes.NOT_FOUND
   | StatusCodes.NOT_IMPLEMENTED;
 

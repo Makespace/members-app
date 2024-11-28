@@ -79,7 +79,7 @@ export const formPost =
       TE.filterOrElse(command.isAuthorized, () =>
         failureWithStatus(
           'You are not authorized to perform this action',
-          StatusCodes.UNAUTHORIZED
+          StatusCodes.FORBIDDEN
         )()
       ),
       TE.chain(({input, actor}) =>

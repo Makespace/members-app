@@ -17,7 +17,7 @@ export const constructViewModel =
       return E.left(
         failureWithStatus(
           'You do not have the necessary permission to see this page.',
-          StatusCodes.UNAUTHORIZED
+          StatusCodes.FORBIDDEN
         )()
       );
     }
