@@ -23,7 +23,7 @@ export const admin: Query = deps => user => {
     return TE.left(
       failureWithStatus(
         'You are not authorised to see this page',
-        StatusCodes.UNAUTHORIZED
+        StatusCodes.FORBIDDEN
       )()
     );
   }

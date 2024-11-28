@@ -14,7 +14,7 @@ export const constructViewModel = (deps: Dependencies) => (user: User) =>
     TE.filterOrElse(readModels.superUsers.is(user.memberNumber), () =>
       failureWithStatus(
         'You do not have the necessary permission to see this page.',
-        StatusCodes.UNAUTHORIZED
+        StatusCodes.FORBIDDEN
       )()
     ),
     TE.map(RA.reverse),

@@ -18,7 +18,7 @@ describe('construct-view-model', () => {
         T.map(getLeftOrFail)
       )();
 
-      expect(failure.status).toStrictEqual(StatusCodes.UNAUTHORIZED);
+      expect(failure.status).toStrictEqual(StatusCodes.FORBIDDEN);
     });
   });
 });

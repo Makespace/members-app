@@ -18,7 +18,7 @@ export const constructViewModel =
       TE.filterOrElseW(readModels.superUsers.is(user.memberNumber), () =>
         failureWithStatus(
           'You are not authorised to see this page',
-          StatusCodes.UNAUTHORIZED
+          StatusCodes.FORBIDDEN
         )()
       ),
       TE.map(events => ({
