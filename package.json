@@ -79,6 +79,7 @@
     "pino-http": "^10.0.0",
     "pino-pretty": "^11.0.0",
     "pubsub-js": "^1.9.4",
+    "qs": "^6.13.1",
     "sanitize-html": "^2.13.0",
     "uuid": "^9.0.0",
     "validator": "^13.7.0"

@@ -5,11 +5,26 @@ import {Request, Response} from 'express';
 import {getUserFromSession} from '../authentication';
 import {StatusCodes} from 'http-status-codes';
 import {oopsPage, pageTemplate} from '../templates';
-import {Query} from '../queries/query';
+import {Query, Params} from '../queries/query';
 import {logInPath} from '../authentication/auth-routes';
 import {CompleteHtmlDocument, sanitizeString} from '../types/html';
 import * as O from 'fp-ts/Option';
 import {match} from '../types/tagged-union';
+import {ParsedQs} from 'qs';
+
+// req.query has a complicated type:
+// type ParsedQs = { [key: string]: undefined | string | string[] | ParsedQs | ParsedQs[] };
+// Here we ignore the complex cases and filter down to Record<string, string>
+// See https://evanhahn.com/gotchas-with-express-query-parsing-and-how-to-avoid-them/
+const simplifyExpressQuery = (qs: ParsedQs) => {
+  const params: Params = {};
+  for (const [k, v] of Object.entries(qs)) {
+    if (typeof v === 'string') {
+      params[k] = v;
+    }
+  }
+  return params;
+};
 
 export const queryGet =
   (deps: Dependencies, query: Query) =>
@@ -26,7 +41,7 @@ export const queryGet =
       return;
     }
     await pipe(
-      query(deps)(user.value, req.params),
+      query(deps)(user.value, req.params, simplifyExpressQuery(req.query)),
       TE.matchW(
         failure => {
           deps.logger.error(failure, 'Failed respond to a query');

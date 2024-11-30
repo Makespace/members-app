@@ -13,8 +13,8 @@ describe('construct-view-model', () => {
 
     it('does not show the event log', async () => {
       const failure = await pipe(
-        arbitraryUser(),
-        constructViewModel(deps),
+        {},
+        constructViewModel(deps)(arbitraryUser()),
         T.map(getLeftOrFail)
       )();
 
