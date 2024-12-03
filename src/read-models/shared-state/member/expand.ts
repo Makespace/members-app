@@ -38,14 +38,6 @@ const expandTrainedOn =
         ...row,
         markedTrainedByActor: O.fromEither(Actor.decode(row.trainedByActor)),
       })),
-      rows => {
-        // Temp debugging to try and workout why we have multiple trainedOn appearing for some users.
-        if (member.memberNumber === 131) {
-          console.log('DEBUG 131 TRAINED ON');
-          console.log(rows);
-        }
-        return rows;
-      },
       trainedOn => ({
         ...member,
         trainedOn,

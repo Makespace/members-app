@@ -6,6 +6,8 @@ import {getSomeOrFail} from '../../helpers';
 
 import {EmailAddress} from '../../../src/types';
 import {Int} from 'io-ts';
+import {updateState} from '../../../src/read-models/shared-state/update-state';
+import {EventOfType} from '../../../src/types/domain-event';
 
 describe('get', () => {
   let framework: TestFramework;
@@ -321,6 +323,90 @@ describe('get', () => {
         const equipment = runQuery();
         expect(equipment.trainedMembers).toHaveLength(1);
       });
+    });
+  });
+
+  describe('Direct event insert tests', () => {
+    // Tests that use direct event insertion to force specific event database state and check the read result.
+    // These are required to check resolution of bugs on the write side or to handle things that insert with different
+    // rules that the usual UI triggered insertions - for example: legacy training import.
+
+    describe('Member is marked as trained twice on a piece of equipment by the legacy import', () => {
+      // This is a specific test case derived from a bug reported during QA after the legacy import.
+      const member = {
+        memberNumber: faker.number.int() as Int,
+        email: faker.internet.email() as EmailAddress,
+      };
+      const trainer = {
+        memberNumber: faker.number.int() as Int,
+        email: faker.internet.email() as EmailAddress,
+      };
+      const createArea = {
+        id: faker.string.uuid() as UUID,
+        name: faker.company.buzzNoun() as NonEmptyString,
+      };
+      const equipment1 = {
+        id: faker.string.uuid() as UUID,
+        name: faker.company.buzzNoun() as NonEmptyString,
+        areaId: createArea.id,
+      };
+
+      beforeEach(async () => {
+        await framework.commands.memberNumbers.linkNumberToEmail(member);
+        await framework.commands.memberNumbers.linkNumberToEmail(trainer);
+        await framework.commands.area.create(createArea);
+        await framework.commands.equipment.add(equipment1);
+      });
+
+      // The database truncates the milliseconds on the date which was hiding the duplicate event problem
+      // as in reality the events have exactly the same time (to the millisecond) but in tests they were
+      // getting rounded leading the tests down the happy/no-duplication path.
+      const dates: [string, Date][] = [
+        ['With milliseconds', new Date(2024, 11, 2, 23, 12, 23, 323)],
+        ['Without milliseconds', new Date(2024, 11, 2, 23, 12, 23, 0)],
+      ];
+
+      for (const [name, recordedAt] of dates) {
+        describe(`Duplicate events: ${name}`, () => {
+          beforeEach(() => {
+            // The legacy import inserts events directly
+            const update = updateState(framework.sharedReadModel.db);
+            const memberTrainedEvents: EventOfType<'MemberTrainedOnEquipment'>[] =
+              [
+                {
+                  trainedByMemberNumber: trainer.memberNumber,
+                  equipmentId: equipment1.id,
+                },
+                {
+                  trainedByMemberNumber: trainer.memberNumber,
+                  equipmentId: equipment1.id,
+                },
+              ].map(partialEvent => ({
+                legacyImport: true,
+                memberNumber: member.memberNumber,
+                type: 'MemberTrainedOnEquipment',
+                actor: {
+                  tag: 'system',
+                },
+                recordedAt,
+                ...partialEvent,
+              }));
+            memberTrainedEvents.forEach(update);
+          });
+          const getEquipment = (id: UUID) =>
+            getSomeOrFail(framework.sharedReadModel.equipment.get(id));
+
+          const getMember = (memberNumber: number) =>
+            getSomeOrFail(framework.sharedReadModel.members.get(memberNumber));
+
+          it('The member is only marked as trained on the piece of equipment once', () => {
+            const m = getMember(member.memberNumber);
+            const e = getEquipment(equipment1.id);
+            expect(m.trainedOn).toHaveLength(1);
+            expect(e.trainedMembers).toHaveLength(1);
+          });
+        });
+      }
     });
   });
 });
