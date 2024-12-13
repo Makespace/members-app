@@ -12,11 +12,6 @@ const editName = (viewModel: ViewModel) =>
     >Edit</a
   >`;
 
-const editPronouns = (viewModel: ViewModel) =>
-  html`<a href="/members/edit-pronouns?member=${viewModel.member.memberNumber}"
-    >Edit</a
-  >`;
-
 const editAvatar = () =>
   html`<a href="https://gravatar.com/profile">Edit via Gravatar</a>`;
 
@@ -34,13 +29,6 @@ const renderMemberDetails = (viewModel: ViewModel) => html`
       <tr>
         <th scope="row">Name</th>
         <td>${sanitizeOption(viewModel.member.name)} ${editName(viewModel)}</td>
-      </tr>
-      <tr>
-        <th scope="row">Pronouns</th>
-        <td>
-          ${sanitizeOption(viewModel.member.pronouns)}
-          ${editPronouns(viewModel)}
-        </td>
       </tr>
       <tr>
         <th scope="row">Avatar</th>

@@ -28,7 +28,6 @@ const handleEvent = (
       memberNumber: event.memberNumber,
       emailAddress: event.email,
       name: O.none,
-      pronouns: O.none,
       agreementSigned: O.none,
       isSuperUser: false,
       prevEmails: [],
@@ -41,11 +40,7 @@ const handleEvent = (
     if (current) {
       const name =
         event.name !== undefined ? O.fromNullable(event.name) : current.name;
-      const pronouns =
-        event.pronouns !== undefined
-          ? O.fromNullable(event.pronouns)
-          : current.pronouns;
-      state.members.set(event.memberNumber, {...current, name, pronouns});
+      state.members.set(event.memberNumber, {...current, name});
     }
   }
   if (isEventOfType('MemberEmailChanged')(event)) {

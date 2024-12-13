@@ -17,7 +17,6 @@ const process: Command<EditName>['process'] = input =>
     constructEvent('MemberDetailsUpdated')({
       memberNumber: input.command.memberNumber,
       name: input.command.name,
-      pronouns: undefined,
     })
   );
 
