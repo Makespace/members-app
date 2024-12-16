@@ -8,7 +8,7 @@ A place for us to keep track of:
 - who is trained
 - who needs training
 
-Currently deployed to: [makespace-app.fly.dev](https://makespace-app.fly.dev/) with no persistence across deployments.
+Currently deployed to: [app.makespace.org](https://app.makespace.org)
 
 Architecture:
 
@@ -146,3 +146,6 @@ Not verified
 'Form 3 Resin Printer': '1rnG8qvYXL5CucsS7swr9ajGYvHndBG1TKIbyG3KioHc',
 'Bambu': '1i1vJmCO8_Dkpbv-izOSkffoAeJTNrJsmAV5hD0w2ADw'
 ```
+
+## Fly.io
+- Deployment URL [makespace-app.fly.dev](https://makespace-app.fly.dev/)
