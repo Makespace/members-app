@@ -112,7 +112,6 @@ export const initTestFramework = async (
       },
       members: {
         editName: frameworkify(commands.members.editName),
-        editPronouns: frameworkify(commands.members.editPronouns),
         signOwnerAgreement: frameworkify(commands.members.signOwnerAgreement),
         editEmail: frameworkify(commands.members.editEmail),
       },

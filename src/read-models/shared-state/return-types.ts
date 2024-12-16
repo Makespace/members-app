@@ -82,7 +82,6 @@ export type MemberCoreInfo = {
   emailAddress: EmailAddress;
   prevEmails: ReadonlyArray<EmailAddress>;
   name: O.Option<string>;
-  pronouns: O.Option<string>;
   agreementSigned: O.Option<Date>;
   isSuperUser: boolean;
   gravatarHash: GravatarHash;

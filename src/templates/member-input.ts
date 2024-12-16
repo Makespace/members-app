@@ -14,7 +14,7 @@ const memberInputSelector = (member: Member): Html => html`
     <label for="member-${member.memberNumber}">
       ${getGravatarThumbnail(member.gravatarHash, member.memberNumber)}
       <span>
-        ${sanitizeOption(member.name)} (${sanitizeOption(member.pronouns)})
+        (${sanitizeOption(member.name)})
         (${sanitizeString(member.emailAddress)})
       </span>
     </label>
