@@ -83,23 +83,29 @@ export const render = (viewModel: ViewModel) => html`
       </li>
     </ul>
     <p>
-      To contribute email
+      To contribute, please email
       <a href="${newContributorMailToLink(viewModel.memberNumber)}"
         >${infoSystemsGroupEmailAddress}</a
       >.
     </p>
 
     <h2 id="contact">Contact</h2>
-    <p>For anything else use one of the below emails.</p>
-    <p>
-      Please include your member number (${viewModel.memberNumber}) in the
-      email.
-    </p>
     <ul>
-      <li>General information: <code>info@makespace.org</code></li>
-      <li>Membership queries: <code>membership@makespace.org</code></li>
-      <li>Account queries: <code>accounts@makespace.org</code></li>
-      <li>For any other queries: <code>management@makespace.org</code></li>
+      <li>
+        How to use equipment, ideas for the space, project help etc.:
+        <a href="https://groups.google.com/g/cammakespace"
+          >Makespace google group</a
+        >.
+        <br />
+        You can also start a thread by emailing:
+        <a href="mailto:cammakespace@googlegroups.com"
+          >cammakespace@googlegroups.com</a
+        >
+      </li>
+      <li>
+        Membership issues, health and safety concerns, lost fobs etc.:
+        <a href="management@makespace.org">management@makespace.org</a>
+      </li>
     </ul>
   </div>
 `;
