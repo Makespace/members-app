@@ -9,6 +9,7 @@ import {
   renderTrainerStatus,
 } from '../shared-render/trainer-status';
 import {renderTrainingStatus} from '../shared-render/training-status';
+import {ownerResources} from './owner-resources';
 
 const editName = (viewModel: ViewModel) =>
   html`<a href="/members/edit-name?member=${viewModel.member.memberNumber}"
@@ -77,7 +78,7 @@ export const render = (viewModel: ViewModel) => html`
     <section>
       <h2>Area ownership</h2>
       ${renderOwnerAgreementStatus(viewModel.member.agreementSigned, false)}
-      ${renderOwnerStatus(viewModel.member.ownerOf, false)}
+      ${renderOwnerStatus(viewModel.member.ownerOf, false)} ${ownerResources}
     </section>
   </div>
 `;
