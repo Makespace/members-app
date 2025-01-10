@@ -4,7 +4,10 @@ import {ViewModel} from './view-model';
 import {renderMemberNumber} from '../../templates/member-number';
 import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
 import {renderOwnerStatus} from '../shared-render/owner-status';
-import {renderTrainerStatus} from '../shared-render/trainer-status';
+import {
+  howToBecomeATrainer,
+  renderTrainerStatus,
+} from '../shared-render/trainer-status';
 import {renderTrainingStatus} from '../shared-render/training-status';
 
 const editName = (viewModel: ViewModel) =>
@@ -65,7 +68,7 @@ export const render = (viewModel: ViewModel) => html`
     </section>
     <section>
       <h2>Train members</h2>
-      ${renderTrainerStatus(viewModel.member.trainerFor)}
+      ${renderTrainerStatus(viewModel.member.trainerFor)}${howToBecomeATrainer}
     </section>
     <section>
       <h2>Your training record</h2>
