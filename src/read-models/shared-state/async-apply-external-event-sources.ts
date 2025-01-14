@@ -117,7 +117,8 @@ export const pullNewEquipmentQuizResults = async (
   for (const sheet of initialMeta.right.sheets) {
     if (!shouldPullFromSheet(sheet)) {
       logger.warn(
-        "Skipping sheet as doesn't match expected for form responses"
+        "Skipping sheet '%s' as doesn't match expected for form responses",
+        sheet.properties.title
       );
       continue;
     }
