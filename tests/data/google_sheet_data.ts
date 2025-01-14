@@ -14,7 +14,6 @@ type ManualParsedEntry = {
   score: number;
   maxScore: number;
   percentage: number;
-  fullMarks: boolean;
   timestampEpochMS: EpochTimestampMilliseconds;
 };
 
@@ -66,7 +65,6 @@ export const METAL_LATHE: ManualParsed = genManualParsed(
       score: 13,
       maxScore: 14,
       percentage: 93,
-      fullMarks: false,
       timestampEpochMS: 1705770960_000 as EpochTimestampMilliseconds,
     },
   ]
@@ -84,7 +82,6 @@ export const BAMBU: ManualParsed = genManualParsed(
       score: 4,
       maxScore: 5,
       percentage: 80,
-      fullMarks: false,
       timestampEpochMS: 1700768963_000 as EpochTimestampMilliseconds,
     },
     {
@@ -93,7 +90,6 @@ export const BAMBU: ManualParsed = genManualParsed(
       score: 5,
       maxScore: 5,
       percentage: 100,
-      fullMarks: true,
       timestampEpochMS: 1700769348_000 as EpochTimestampMilliseconds,
     },
     {
@@ -102,7 +98,6 @@ export const BAMBU: ManualParsed = genManualParsed(
       score: 12,
       maxScore: 12,
       percentage: 100,
-      fullMarks: true,
       timestampEpochMS: 1710249052_000 as EpochTimestampMilliseconds,
     },
     {
@@ -111,7 +106,6 @@ export const BAMBU: ManualParsed = genManualParsed(
       score: 12,
       maxScore: 12,
       percentage: 100,
-      fullMarks: true,
       timestampEpochMS: 1710249842_000 as EpochTimestampMilliseconds,
     },
   ]
@@ -130,7 +124,6 @@ export const LASER_CUTTER: ManualParsed = genManualParsed(
       score: 24,
       maxScore: 24,
       percentage: 100,
-      fullMarks: true,
       timestampEpochMS: 1601214546_000 as EpochTimestampMilliseconds,
     },
     {
@@ -139,7 +132,6 @@ export const LASER_CUTTER: ManualParsed = genManualParsed(
       score: 24,
       maxScore: 24,
       percentage: 100,
-      fullMarks: true,
       timestampEpochMS: 1601298462_000 as EpochTimestampMilliseconds,
     },
   ]

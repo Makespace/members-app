@@ -14,9 +14,13 @@ import {GoogleAuth} from 'google-auth-library/build/src/auth/googleauth';
 import {UUID} from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
+import * as N from 'fp-ts/number';
 import {DomainEvent} from '../../src/types';
 import {pipe} from 'fp-ts/lib/function';
 import {getSomeOrFail} from '../helpers';
+import {Ord} from 'fp-ts/lib/Ord';
+import {contramap} from 'fp-ts/lib/Ord';
+import {EventOfType} from '../../src/types/domain-event';
 
 const CREDENTIALS_PATH = '../test-google/credentials.json.ignore';
 
@@ -47,7 +51,34 @@ const getEvents = async (trainingSheetId: string) => {
   return events;
 };
 
-describe.skip('Google training sheet integration', () => {
+const ordByTimestampEpoch: Ord<EventOfType<'EquipmentTrainingQuizResult'>> =
+  pipe(
+    N.Ord,
+    contramap(event => event.timestampEpochMS)
+  );
+
+const filterUserEvents = (userMemberNumber: number) =>
+  RA.filter<DomainEvent, EventOfType<'EquipmentTrainingQuizResult'>>(
+    (event: DomainEvent): event is EventOfType<'EquipmentTrainingQuizResult'> =>
+      event.type === 'EquipmentTrainingQuizResult' &&
+      event.memberNumberProvided === userMemberNumber
+  );
+
+const stripNonStatic = (
+  events: ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>>
+): ReadonlyArray<
+  Omit<EventOfType<'EquipmentTrainingQuizResult'>, 'recordedAt' | 'id'>
+> =>
+  pipe(
+    events,
+    RA.map(event => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const {recordedAt: _a, id: _b, ...nonStaticProperties} = event;
+      return nonStaticProperties;
+    })
+  );
+
+describe('Google training sheet integration', () => {
   it.skip('Form 3 Resin Printer', async () => {
     const events = await getEvents(
       '1rnG8qvYXL5CucsS7swr9ajGYvHndBG1TKIbyG3KioHc'
@@ -68,6 +99,43 @@ describe.skip('Google training sheet integration', () => {
       throw new Error();
     }
     expect(userEvent.timestampEpochMS).toStrictEqual(1726008048000);
+  });
+
+  it.skip('Embroidery Machine', async () => {
+    const userEvents = pipe(
+      await getEvents('1Krto0mc2clINQJrM8ZJJh0P5hISjt1C3vnK2xQaBATM'),
+      filterUserEvents(TEST_USER),
+      RA.sort(ordByTimestampEpoch),
+      stripNonStatic
+    );
+    const expected: typeof userEvents = [
+      {
+        type: 'EquipmentTrainingQuizResult',
+        actor: {tag: 'system'},
+        equipmentId: 'a008b6f2-3338-4339-a846-3b4f3d12fe3d' as UUID,
+        memberNumberProvided: 1741,
+        emailProvided: 'paul.la.lancaster@gmail.com',
+        trainingSheetId: '1Krto0mc2clINQJrM8ZJJh0P5hISjt1C3vnK2xQaBATM',
+        timestampEpochMS: 1736799191000,
+        score: 6,
+        maxScore: 7,
+        percentage: 86,
+      },
+      {
+        type: 'EquipmentTrainingQuizResult',
+        actor: {tag: 'system'},
+        equipmentId: 'a008b6f2-3338-4339-a846-3b4f3d12fe3d' as UUID,
+        memberNumberProvided: 1741,
+        emailProvided: 'paul.la.lancaster@gmail.com',
+        trainingSheetId: '1Krto0mc2clINQJrM8ZJJh0P5hISjt1C3vnK2xQaBATM',
+        timestampEpochMS: 1736799242000,
+        score: 7,
+        maxScore: 7,
+        percentage: 100,
+      },
+    ];
+
+    expect(userEvents).toStrictEqual(expected);
   });
 
   // it('Metal Lathe', async () => {
@@ -152,11 +220,6 @@ describe.skip('Google training sheet integration', () => {
   // it.skip('Festool OF1010 Router', async () => {
   //   const _events = await getEvents(
   //     '16CvHlJlUt2bOkITgnFd2gwbLN0weTV1u7CuOb2bhyxk'
-  //   );
-  // });
-  // it.skip('Embroidery Machine', async () => {
-  //   const _events = await getEvents(
-  //     '1Krto0mc2clINQJrM8ZJJh0P5hISjt1C3vnK2xQaBATM'
   //   );
   // });
   // it.skip('Planer Thicknesser', async () => {

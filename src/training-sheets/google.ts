@@ -46,7 +46,6 @@ const extractScore = (
   score: number;
   maxScore: number;
   percentage: number;
-  fullMarks: boolean;
 }> => {
   if (!rowValue) {
     return O.none;
@@ -68,13 +67,10 @@ const extractScore = (
 
   const percentage = Math.round((score / maxScore) * 100);
 
-  // We don't say 'passed' incase the pass-rate is different for some reason.
-  const fullMarks = score === maxScore;
   return O.some({
     score,
     maxScore,
     percentage,
-    fullMarks,
   });
 };
 
