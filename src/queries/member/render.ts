@@ -9,17 +9,17 @@ import {renderTrainingStatus} from '../shared-render/training-status';
 
 const ownPageBanner = html`<h1>This is your profile!</h1>`;
 
-const editName = (viewModel: ViewModel) => html`
-  <a href="/members/edit-name?member=${viewModel.member.memberNumber}">
+const editName = (viewModel: ViewModel) =>
+  html`<a href="/members/edit-name?member=${viewModel.member.memberNumber}">
     Edit
-  </a>
-`;
+  </a>`;
 
-const editFormOfAddress = (viewModel: ViewModel) => html`
-  <a href="/members/edit-form-of-address?member=${viewModel.member.memberNumber}">
+const editFormOfAddress = (viewModel: ViewModel) =>
+  html`<a
+    href="/members/edit-form-of-address?member=${viewModel.member.memberNumber}"
+  >
     Edit
-  </a>
-`;
+  </a>`;
 
 const editAvatar = () =>
   html`<a href="https://gravatar.com/profile">Edit via Gravatar</a>`;
@@ -50,18 +50,17 @@ export const render = (viewModel: ViewModel) => html`
       </tr>
       <tr>
         <th scope="row">
-          <p>Name</p> 
+          <p>Name</p>
           <p><small>Used for record keeping</small></p>
         </th>
         <td>
           ${sanitizeOption(viewModel.member.name)}
-          ${viewModel.isSuperUser ? html`${editName(viewModel)}`
-            : html``}
+          ${viewModel.isSuperUser ? html`${editName(viewModel)}` : html``}
         </td>
       </tr>
       <tr>
         <th scope="row">
-          <p>Form of address</p> 
+          <p>Form of address</p>
           <p><small>Preferred pronouns or nickname</small></p>
         </th>
         <td>

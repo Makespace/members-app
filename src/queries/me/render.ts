@@ -12,7 +12,9 @@ import {renderTrainingStatus} from '../shared-render/training-status';
 import {ownerResources} from './owner-resources';
 
 const editFormOfAddress = (viewModel: ViewModel) => html`
-  <a href="/members/edit-form-of-address?member=${viewModel.member.memberNumber}">
+  <a
+    href="/members/edit-form-of-address?member=${viewModel.member.memberNumber}"
+  >
     Edit
   </a>
 `;
@@ -33,14 +35,14 @@ const renderMemberDetails = (viewModel: ViewModel) => html`
       </tr>
       <tr>
         <th scope="row">
-          <p>Name</p> 
+          <p>Name</p>
           <p><small>Used for record keeping</small></p>
         </th>
         <td>${sanitizeOption(viewModel.member.name)}</td>
       </tr>
       <tr>
         <th scope="row">
-          <p>Form of address</p> 
+          <p>Form of address</p>
           <p><small>Preferred pronouns or nickname</small></p>
         </th>
         <td>
