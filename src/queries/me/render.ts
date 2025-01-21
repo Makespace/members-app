@@ -11,15 +11,8 @@ import {
 import {renderTrainingStatus} from '../shared-render/training-status';
 import {ownerResources} from './owner-resources';
 
-const editName = (viewModel: ViewModel) =>
-  html`<a href="/members/edit-name?member=${viewModel.member.memberNumber}"
-    >Edit</a
-  >`;
-
-const editPronouns = (viewModel: ViewModel) =>
-  html`<a href="/members/edit-pronouns?member=${viewModel.member.memberNumber}"
-    >Edit</a
-  >`;
+const editFormOfAddress = (viewModel: ViewModel) =>
+  html`<a href="/members/edit-form-of-address?member=${viewModel.member.memberNumber}">Edit</a>`;
 
 const editAvatar = () =>
   html`<a href="https://gravatar.com/profile">Edit via Gravatar</a>`;
@@ -36,14 +29,20 @@ const renderMemberDetails = (viewModel: ViewModel) => html`
         <td>${sanitizeString(viewModel.member.emailAddress)}</td>
       </tr>
       <tr>
-        <th scope="row">Name</th>
-        <td>${sanitizeOption(viewModel.member.name)} ${editName(viewModel)}</td>
+        <th scope="row">
+          <p>Name</p> 
+          <p><small>Used for record keeping</small></p>
+        </th>
+        <td>${sanitizeOption(viewModel.member.name)}</td>
       </tr>
       <tr>
-        <th scope="row">Pronouns</th>
+        <th scope="row">
+          <p>Form of address</p> 
+          <p><small>Preferred pronouns or nickname</small></p>
+        </th>
         <td>
-          ${sanitizeOption(viewModel.member.pronouns)}
-          ${editPronouns(viewModel)}
+          ${sanitizeOption(viewModel.member.formOfAddress)}
+          ${editFormOfAddress(viewModel)}
         </td>
       </tr>
       <tr>

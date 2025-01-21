@@ -3,7 +3,7 @@ import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import {Command} from '../command';
-import {isSelfOrPrivileged} from '../is-self-or-privileged';
+import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,
@@ -17,7 +17,7 @@ const process: Command<EditName>['process'] = input =>
     constructEvent('MemberDetailsUpdated')({
       memberNumber: input.command.memberNumber,
       name: input.command.name,
-      pronouns: undefined,
+      formOfAddress: undefined,
     })
   );
 
@@ -30,5 +30,5 @@ export const editName: Command<EditName> = {
   process,
   resource,
   decode: codec.decode,
-  isAuthorized: isSelfOrPrivileged,
+  isAuthorized: isAdminOrSuperUser,
 };

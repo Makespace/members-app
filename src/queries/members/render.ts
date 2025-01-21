@@ -25,7 +25,7 @@ const renderMembers = (viewModel: ViewModel) =>
           </td>
           <td>${renderMemberNumber(member.memberNumber)}</td>
           <td>${sanitizeOption(member.name)}</td>
-          <td>${sanitizeOption(member.pronouns)}</td>
+          <td>${sanitizeOption(member.formOfAddress)}</td>
           <td>${sanitizeString(member.emailAddress)}</td>
         </tr>
       `
@@ -38,8 +38,8 @@ const renderMembers = (viewModel: ViewModel) =>
             <tr>
               <th></th>
               <th>Member number</th>
-              <th>Name</th>
-              <th>Pronouns</th>
+              <th>Full Name</th>
+              <th>Preferred form of address</th>
               <th>Email</th>
             </tr>
           </thead>

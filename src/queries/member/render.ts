@@ -14,8 +14,8 @@ const editName = (viewModel: ViewModel) =>
     >Edit</a
   >`;
 
-const editPronouns = (viewModel: ViewModel) =>
-  html`<a href="/members/edit-pronouns?member=${viewModel.member.memberNumber}"
+const editFormOfAddress = (viewModel: ViewModel) =>
+  html`<a href="/members/edit-form-of-address?member=${viewModel.member.memberNumber}"
     >Edit</a
   >`;
 
@@ -47,17 +47,25 @@ export const render = (viewModel: ViewModel) => html`
         <td>${sanitizeString(viewModel.member.emailAddress)}</td>
       </tr>
       <tr>
-        <th scope="row">Name</th>
+        <th scope="row">
+          <p>Name</p> 
+          <p><small>Used for record keeping</small></p>
+        </th>
         <td>
           ${sanitizeOption(viewModel.member.name)}
-          ${ifSelf(viewModel, editName(viewModel))}
+          ${viewModel.isSuperUser
+            ? html`${editName(viewModel)}`
+            : html``}
         </td>
       </tr>
       <tr>
-        <th scope="row">Pronouns</th>
+        <th scope="row">
+          <p>Form of address</p> 
+          <p><small>Preferred pronouns or nickname</small></p>
+        </th>
         <td>
-          ${sanitizeOption(viewModel.member.pronouns)}
-          ${ifSelf(viewModel, editPronouns(viewModel))}
+          ${sanitizeOption(viewModel.member.formOfAddress)}
+          ${ifSelf(viewModel, editFormOfAddress(viewModel))}
         </td>
       </tr>
       <tr>
