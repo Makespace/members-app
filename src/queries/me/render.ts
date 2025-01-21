@@ -11,8 +11,11 @@ import {
 import {renderTrainingStatus} from '../shared-render/training-status';
 import {ownerResources} from './owner-resources';
 
-const editFormOfAddress = (viewModel: ViewModel) =>
-  html`<a href="/members/edit-form-of-address?member=${viewModel.member.memberNumber}">Edit</a>`;
+const editFormOfAddress = (viewModel: ViewModel) => html`
+  <a href="/members/edit-form-of-address?member=${viewModel.member.memberNumber}">
+    Edit
+  </a>
+`;
 
 const editAvatar = () =>
   html`<a href="https://gravatar.com/profile">Edit via Gravatar</a>`;
