@@ -9,15 +9,17 @@ import {renderTrainingStatus} from '../shared-render/training-status';
 
 const ownPageBanner = html`<h1>This is your profile!</h1>`;
 
-const editName = (viewModel: ViewModel) =>
-  html`<a href="/members/edit-name?member=${viewModel.member.memberNumber}"
-    >Edit</a
-  >`;
+const editName = (viewModel: ViewModel) => html`
+  <a href="/members/edit-name?member=${viewModel.member.memberNumber}">
+    Edit
+  </a>
+`;
 
-const editFormOfAddress = (viewModel: ViewModel) =>
-  html`<a href="/members/edit-form-of-address?member=${viewModel.member.memberNumber}"
-    >Edit</a
-  >`;
+const editFormOfAddress = (viewModel: ViewModel) => html`
+  <a href="/members/edit-form-of-address?member=${viewModel.member.memberNumber}">
+    Edit
+  </a>
+`;
 
 const editAvatar = () =>
   html`<a href="https://gravatar.com/profile">Edit via Gravatar</a>`;
@@ -53,8 +55,7 @@ export const render = (viewModel: ViewModel) => html`
         </th>
         <td>
           ${sanitizeOption(viewModel.member.name)}
-          ${viewModel.isSuperUser
-            ? html`${editName(viewModel)}`
+          ${viewModel.isSuperUser ? html`${editName(viewModel)}`
             : html``}
         </td>
       </tr>
