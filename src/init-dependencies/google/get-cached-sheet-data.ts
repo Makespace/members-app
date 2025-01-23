@@ -15,6 +15,6 @@ export const getCachedSheetData =
 export const cacheSheetData = (dbClient: Client): Dependencies['cacheSheetData'] =>
     (data: ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>>) => {
         pipe(
-            dbClient.execute("INSERT INTO cachedSheetData (cache_timestamp, sheet_id, equipment_id, cached_data) VALUES ($s)")
+            dbClient.execute("INSERT INTO cachedSheetData (cache_timestamp, sheet_id, equipment_id, cached_data) VALUES (%s, %s, %s, %s)")
         )
     };
