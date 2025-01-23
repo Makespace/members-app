@@ -61,19 +61,22 @@ const periodicReadModelRefresh = setInterval(() => {
       deps.logger.error(err, 'Unexpected error when refreshing read model')
     );
 }, 5000);
-const periodicExternalReadModelRefresh = setInterval(() => {
-  deps.sharedReadModel
-    .asyncApplyExternalEventSources()()
-    .then(() =>
-      deps.logger.info('Refreshed read model with external event sources')
-    )
-    .catch(err =>
-      deps.logger.error(
-        err,
-        'Unexpected error when refreshing read model with external sources'
+const periodicExternalReadModelRefresh = setInterval(
+  () => {
+    deps.sharedReadModel
+      .asyncApplyExternalEventSources()()
+      .then(() =>
+        deps.logger.info('Refreshed read model with external event sources')
       )
-    );
-}, 30_000);
+      .catch(err =>
+        deps.logger.error(
+          err,
+          'Unexpected error when refreshing read model with external sources'
+        )
+      );
+  },
+  2 * 3600 * 1000
+);
 server.on('close', () => {
   clearInterval(periodicReadModelRefresh);
   clearInterval(periodicExternalReadModelRefresh);
