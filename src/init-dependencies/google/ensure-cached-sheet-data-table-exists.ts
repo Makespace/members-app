@@ -6,14 +6,12 @@ export const ensureCachedSheetDataTableExists = (dbClient: Client) =>
   TE.tryCatch(
     () =>
       dbClient.execute(`
-    CREATE TABLE IF NOT EXISTS events (
-      id TEXT,
-      resource_version number,
-      resource_id TEXT,
-      resource_type TEXT,
-      event_type TEXT,
-      payload TEXT
+    CREATE TABLE IF NOT EXISTS cached_sheet_data (
+      cache_timestamp timestamp,
+      sheet_id TEXT,
+      equipment_id TEXT,
+      cached_data TEXT
     );
     `),
-    failure('Event table does not exist and could not be created')
+    failure('Cached sheet data table does not exist and could not be created')
   );
