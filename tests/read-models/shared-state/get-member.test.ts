@@ -130,6 +130,16 @@ describe('get-via-shared-read-model', () => {
         expect(result.isSuperUser).toBe(true);
       });
 
+      it.failing(
+        'they have a date since when they have been a superuser',
+        () => {
+          const result = runQuery();
+          expect(result.superUserSince).toStrictEqual(
+            O.some(expect.anything())
+          );
+        }
+      );
+
       describe('and when their superuser status has been revoked', () => {
         beforeEach(async () => {
           await framework.commands.superUser.revoke({
@@ -140,6 +150,11 @@ describe('get-via-shared-read-model', () => {
         it('they are no longer a superuser', () => {
           const result = runQuery();
           expect(result.isSuperUser).toBe(false);
+        });
+
+        it('they no longer have a date since when they have been a superuser', () => {
+          const result = runQuery();
+          expect(result.superUserSince).toStrictEqual(O.none);
         });
       });
     });
