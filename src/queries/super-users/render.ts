@@ -1,21 +1,28 @@
 import {pipe} from 'fp-ts/lib/function';
-import {html, joinHtml} from '../../types/html';
+import {html, joinHtml, safe, sanitizeString} from '../../types/html';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {ViewModel} from './view-model';
 import {displayDate} from '../../templates/display-date';
 import {renderMemberNumber} from '../../templates/member-number';
 import {DateTime} from 'luxon';
+import * as O from 'fp-ts/Option';
 
 const renderSuperUsers = (superUsers: ViewModel['superUsers']) =>
   pipe(
     superUsers,
     RA.map(
-      user => html`
+      member => html`
         <tr>
-          <td>${renderMemberNumber(user.memberNumber)}</td>
-          <td>${displayDate(DateTime.fromJSDate(user.since))}</td>
+          <td>${renderMemberNumber(member.memberNumber)}</td>
+          <td>${sanitizeString(O.getOrElse(() => '-')(member.name))}</td>
+          <td>${safe(member.emailAddress)}</td>
           <td>
-            <a href="/super-users/revoke?memberNumber=${user.memberNumber}">
+            ${member.superUserSince
+              ? displayDate(DateTime.fromJSDate(member.superUserSince))
+              : safe('-')}
+          </td>
+          <td>
+            <a href="/super-users/revoke?memberNumber=${member.memberNumber}">
               Revoke
             </a>
           </td>
@@ -28,6 +35,8 @@ const renderSuperUsers = (superUsers: ViewModel['superUsers']) =>
         <table>
           <tr>
             <th>Member Number</th>
+            <th>Name</th>
+            <th>Email</th>
             <th>SU since</th>
             <th></th>
           </tr>
@@ -38,8 +47,7 @@ const renderSuperUsers = (superUsers: ViewModel['superUsers']) =>
   );
 
 export const render = (viewModel: ViewModel) => html`
-    <h1>Super-users</h1>
-    <a href="/super-users/declare">Declare a member to be a super-user</a>
-    </table>
-    ${renderSuperUsers(viewModel.superUsers)}
-  `;
+  <h1>Super-users</h1>
+  <a href="/super-users/declare">Declare a member to be a super-user</a>
+  ${renderSuperUsers(viewModel.superUsers)}
+`;

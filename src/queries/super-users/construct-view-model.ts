@@ -9,6 +9,8 @@ import {
 } from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {readModels} from '../../read-models';
+import {membersTable} from '../../read-models/shared-state/state';
+import {eq} from 'drizzle-orm';
 
 export const constructViewModel =
   (deps: Dependencies) =>
@@ -22,8 +24,12 @@ export const constructViewModel =
           StatusCodes.FORBIDDEN
         )
       ),
-      TE.map(events => ({
+      TE.map(() => ({
         user: user,
-        superUsers: readModels.superUsers.getAll()(events),
+        superUsers: deps.sharedReadModel.db
+          .select()
+          .from(membersTable)
+          .where(eq(membersTable.isSuperUser, true))
+          .all(),
       }))
     );

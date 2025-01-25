@@ -1,9 +1,12 @@
 import {User} from '../../types';
+import * as O from 'fp-ts/Option';
 
 export type ViewModel = {
   user: User;
   superUsers: ReadonlyArray<{
     memberNumber: number;
-    since: Date;
+    name: O.Option<string>;
+    emailAddress: string;
+    superUserSince: Date | null;
   }>;
 };
