@@ -9,12 +9,14 @@ import {membersTable} from '../state';
 const transformRow = <
   R extends {
     agreementSigned: Date | null | undefined;
+    superUserSince: Date | null | undefined;
   },
 >(
   row: R
 ) => ({
   ...row,
   agreementSigned: O.fromNullable(row.agreementSigned),
+  superUserSince: O.fromNullable(row.superUserSince),
 });
 
 export const getMemberCore =
