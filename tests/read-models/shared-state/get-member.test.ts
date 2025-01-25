@@ -142,15 +142,14 @@ describe('get-via-shared-read-model', () => {
         expect(result.isSuperUser).toBe(true);
       });
 
-      it.failing(
-        'they have a date since when they have been a superuser',
-        () => {
-          const result = runQuery();
-          expect(result.superUserSince).toStrictEqual(
-            O.some(firstMadeSuperUserAt)
-          );
-        }
-      );
+      it('they have a date since when they have been a superuser', () => {
+        const result = pipe(
+          runQuery(),
+          member => member.superUserSince,
+          getSomeOrFail
+        );
+        expect(result).toEqual(firstMadeSuperUserAt);
+      });
 
       describe('and when their superuser status has been revoked', () => {
         beforeEach(async () => {
@@ -183,15 +182,14 @@ describe('get-via-shared-read-model', () => {
             expect(result.isSuperUser).toBe(true);
           });
 
-          it.failing(
-            'they have a date since when they have been a superuser',
-            () => {
-              const result = runQuery();
-              expect(result.superUserSince).toStrictEqual(
-                O.some(madeSuperUserAgainAt)
-              );
-            }
-          );
+          it('they have a date since when they have been a superuser', () => {
+            const result = pipe(
+              runQuery(),
+              member => member.superUserSince,
+              getSomeOrFail
+            );
+            expect(result).toEqual(madeSuperUserAgainAt);
+          });
         });
       });
     });
