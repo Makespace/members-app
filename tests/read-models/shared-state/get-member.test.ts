@@ -156,6 +156,29 @@ describe('get-via-shared-read-model', () => {
           const result = runQuery();
           expect(result.superUserSince).toStrictEqual(O.none);
         });
+
+        describe('and they have been again declared to be a super user', () => {
+          beforeEach(async () => {
+            await framework.commands.superUser.declare({
+              memberNumber,
+            });
+          });
+
+          it('they are a superuser', () => {
+            const result = runQuery();
+            expect(result.isSuperUser).toBe(true);
+          });
+
+          it.failing(
+            'they have a date since when they have been a superuser',
+            () => {
+              const result = runQuery();
+              expect(result.superUserSince).toStrictEqual(
+                O.some(expect.anything())
+              );
+            }
+          );
+        });
       });
     });
 
