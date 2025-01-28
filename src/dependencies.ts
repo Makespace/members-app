@@ -7,8 +7,6 @@ import {StatusCodes} from 'http-status-codes';
 import {Resource} from './types/resource';
 import {EventName, EventOfType} from './types/domain-event';
 import {SharedReadModel} from './read-models/shared-state';
-import * as t from 'io-ts';
-import {UUID} from 'io-ts-types';
 
 export type Dependencies = {
   commitEvent: (
@@ -40,20 +38,17 @@ export type Dependencies = {
   sendEmail: (email: Email) => TE.TaskEither<Failure, string>;
   getCachedSheetData: () => TE.TaskEither<
     FailureWithStatus,
-    ReadonlyArray<{
-      cache_entry_id: string;
-      cached_timestamp: Date;
-      sheet_id: string;
-      equipment_id: string;
-      cached_data: t.Validation<
-        ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>>
-      >;
-    }>
+    ReadonlyArray<
+      | EventOfType<'EquipmentTrainingQuizResult'>
+      | EventOfType<'EquipmentTrainingQuizSync'>
+    >
   >;
   cacheSheetData: (
     cacheTimestamp: Date,
     sheetId: string,
-    equipmentId: UUID,
-    data: ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>>
+    data: ReadonlyArray<
+      | EventOfType<'EquipmentTrainingQuizSync'>
+      | EventOfType<'EquipmentTrainingQuizResult'>
+    >
   ) => TE.TaskEither<Failure, void>;
 };

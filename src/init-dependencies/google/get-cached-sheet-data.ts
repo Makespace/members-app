@@ -1,7 +1,9 @@
+// This could be generalised as another event store that is intentionally ephemeral but can be used to store other things.
+// Lets see how well it works for sheet data and if it has value as an approach for other stuff.
+
 import {Client} from '@libsql/client/.';
 import {Dependencies} from '../../dependencies';
 import {flow, pipe} from 'fp-ts/lib/function';
-import {UUID} from 'io-ts-types';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import * as tt from 'io-ts-types';
@@ -18,7 +20,12 @@ import {StatusCodes} from 'http-status-codes';
 
 const extractCachedEvents = (
   rawCachedData: string
-): t.Validation<ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>>> =>
+): t.Validation<
+  ReadonlyArray<
+    | EventOfType<'EquipmentTrainingQuizResult'>
+    | EventOfType<'EquipmentTrainingQuizSync'>
+  >
+> =>
   pipe(
     rawCachedData,
     tt.JsonFromString.decode,
@@ -26,7 +33,10 @@ const extractCachedEvents = (
     E.chain(t.readonlyArray(DomainEvent).decode),
     E.map(
       elements =>
-        elements as ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>>
+        elements as ReadonlyArray<
+          | EventOfType<'EquipmentTrainingQuizResult'>
+          | EventOfType<'EquipmentTrainingQuizSync'>
+        >
     )
   );
 
@@ -58,23 +68,31 @@ export const getCachedSheetData =
       )
     );
 
+// This would be more efficient with a simple key-value store.
 export const cacheSheetData =
   (dbClient: Client): Dependencies['cacheSheetData'] =>
   (
     cacheTimestamp: Date,
     sheetId: string,
-    equipmentId: UUID,
-    data: ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>>
+    data: ReadonlyArray<
+      | EventOfType<'EquipmentTrainingQuizResult'>
+      | EventOfType<'EquipmentTrainingQuizSync'>
+    >
   ) =>
     TE.tryCatch(
       () =>
         dbClient
           .execute({
-            sql: 'INSERT INTO cached_sheet_data (cache_timestamp, sheet_id, equipment_id, cached_data) VALUES ($cacheTimestamp, $sheetId, $equipmentId, $cachedData)',
+            sql: `
+              INSERT INTO cached_sheet_data (cache_timestamp, sheet_id, cached_data)
+              VALUES ($cacheTimestamp, $sheetId, $cachedData)
+              ON CONFLICT (sheet_id) DO UPDATE SET
+                cache_timestamp = excluded.cache_timestamp,
+                cached_data = excluded.cached_data;
+            `,
             args: {
               cacheTimestamp,
               sheetId,
-              equipmentId,
               data: JSON.stringify(data),
             },
           })
