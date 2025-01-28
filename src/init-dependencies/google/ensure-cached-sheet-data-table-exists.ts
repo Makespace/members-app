@@ -7,10 +7,8 @@ export const ensureCachedSheetDataTableExists = (dbClient: Client) =>
     () =>
       dbClient.execute(`
     CREATE TABLE IF NOT EXISTS cached_sheet_data (
-      cache_entry_id TEXT,
       cache_timestamp timestamp,
       sheet_id TEXT,
-      equipment_id TEXT,
       cached_data TEXT
     );
     `),
