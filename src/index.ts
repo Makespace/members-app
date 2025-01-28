@@ -18,6 +18,7 @@ import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
 import cookieSession from 'cookie-session';
 import {initRoutes} from './routes';
+import { ensureCachedSheetDataTableExists } from './init-dependencies/google/ensure-cached-sheet-data-table-exists';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -88,6 +89,7 @@ server.on('close', () => {
 void (async () => {
   await pipe(
     ensureEventTableExists(dbClient),
+    TE.map(ensureCachedSheetDataTableExists(dbClient)),
     TE.mapLeft(e => deps.logger.error(e, 'Failed to start server'))
   )();
 
