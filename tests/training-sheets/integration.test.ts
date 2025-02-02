@@ -26,6 +26,8 @@ const CREDENTIALS_PATH = '../test-google/credentials.json.ignore';
 
 const TEST_USER = 1741;
 
+const TEST_EQUIPMENT_ID = 'a008b6f2-3338-4339-a846-3b4f3d12fe3d' as UUID;
+
 const getEvents = async (trainingSheetId: string) => {
   const auth = new GoogleAuth({
     keyFile: CREDENTIALS_PATH,
@@ -33,13 +35,15 @@ const getEvents = async (trainingSheetId: string) => {
   });
   const events: DomainEvent[] = [];
   await pullNewEquipmentQuizResults(
-    pino(),
+    pino({
+      level: 'trace',
+    }),
     {
       pullGoogleSheetData: pullGoogleSheetData(auth),
       pullGoogleSheetDataMetadata: pullGoogleSheetDataMetadata(auth),
     },
     {
-      id: 'a008b6f2-3338-4339-a846-3b4f3d12fe3d' as UUID,
+      id: TEST_EQUIPMENT_ID,
       name: 'Test Equipment',
       areaId: '619b5afb-af04-4a56-8475-3e92ff2908ef' as UUID,
       trainingSheetId: O.some(trainingSheetId),
@@ -112,8 +116,8 @@ describe('Google training sheet integration', () => {
       {
         type: 'EquipmentTrainingQuizResult',
         actor: {tag: 'system'},
-        equipmentId: 'a008b6f2-3338-4339-a846-3b4f3d12fe3d' as UUID,
-        memberNumberProvided: 1741,
+        equipmentId: TEST_EQUIPMENT_ID,
+        memberNumberProvided: TEST_USER,
         emailProvided: 'paul.la.lancaster@gmail.com',
         trainingSheetId: '1Krto0mc2clINQJrM8ZJJh0P5hISjt1C3vnK2xQaBATM',
         timestampEpochMS: 1736799191000,
@@ -124,13 +128,49 @@ describe('Google training sheet integration', () => {
       {
         type: 'EquipmentTrainingQuizResult',
         actor: {tag: 'system'},
-        equipmentId: 'a008b6f2-3338-4339-a846-3b4f3d12fe3d' as UUID,
-        memberNumberProvided: 1741,
+        equipmentId: TEST_EQUIPMENT_ID,
+        memberNumberProvided: TEST_USER,
         emailProvided: 'paul.la.lancaster@gmail.com',
         trainingSheetId: '1Krto0mc2clINQJrM8ZJJh0P5hISjt1C3vnK2xQaBATM',
         timestampEpochMS: 1736799242000,
         score: 7,
         maxScore: 7,
+        percentage: 100,
+      },
+    ];
+
+    expect(userEvents).toStrictEqual(expected);
+  });
+  it.skip('Band_Saw', async () => {
+    const userEvents = pipe(
+      await getEvents('11S81Gb-QyFNaI_-RH3Xcrwqtyfd47z7l-lXUAB9SzEY'),
+      filterUserEvents(TEST_USER),
+      RA.sort(ordByTimestampEpoch),
+      stripNonStatic
+    );
+    const expected: typeof userEvents = [
+      {
+        type: 'EquipmentTrainingQuizResult',
+        actor: {tag: 'system'},
+        equipmentId: TEST_EQUIPMENT_ID,
+        memberNumberProvided: TEST_USER,
+        emailProvided: 'paul.la.lancaster@gmail.com',
+        trainingSheetId: '11S81Gb-QyFNaI_-RH3Xcrwqtyfd47z7l-lXUAB9SzEY',
+        timestampEpochMS: 1725998724000,
+        score: 180,
+        maxScore: 200,
+        percentage: 90,
+      },
+      {
+        type: 'EquipmentTrainingQuizResult',
+        actor: {tag: 'system'},
+        equipmentId: TEST_EQUIPMENT_ID,
+        memberNumberProvided: TEST_USER,
+        emailProvided: 'paul.la.lancaster@gmail.com',
+        trainingSheetId: '11S81Gb-QyFNaI_-RH3Xcrwqtyfd47z7l-lXUAB9SzEY',
+        timestampEpochMS: 1725999015000,
+        score: 200,
+        maxScore: 200,
         percentage: 100,
       },
     ];
@@ -175,11 +215,6 @@ describe('Google training sheet integration', () => {
   // it.skip('CNC_Router', async () => {
   //   const _events = await getEvents(
   //     '1af3nNXVXjYMTuH6F9vAg2CKRIewU3M8-nhUjiRIf8Q0'
-  //   );
-  // });
-  // it.skip('Band_Saw', async () => {
-  //   const _events = await getEvents(
-  //     '11S81Gb-QyFNaI_-RH3Xcrwqtyfd47z7l-lXUAB9SzEY'
   //   );
   // });
   // it.skip('Mitre Saw', async () => {
