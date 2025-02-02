@@ -28,6 +28,8 @@ const TEST_USER = 1741;
 
 const TEST_EQUIPMENT_ID = 'a008b6f2-3338-4339-a846-3b4f3d12fe3d' as UUID;
 
+const REDACTED_EMAIL = '<EMAIL>';
+
 const getEvents = async (trainingSheetId: string) => {
   const auth = new GoogleAuth({
     keyFile: CREDENTIALS_PATH,
@@ -82,6 +84,16 @@ const stripNonStatic = (
     })
   );
 
+const redactEmail = (
+  events: ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>>
+): ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>> =>
+  pipe(
+    events,
+    RA.map(event =>
+      event.emailProvided ? {...event, emailProvided: REDACTED_EMAIL} : event
+    )
+  );
+
 describe('Google training sheet integration', () => {
   it.skip('Form 3 Resin Printer', async () => {
     const events = await getEvents(
@@ -110,6 +122,7 @@ describe('Google training sheet integration', () => {
       await getEvents('1Krto0mc2clINQJrM8ZJJh0P5hISjt1C3vnK2xQaBATM'),
       filterUserEvents(TEST_USER),
       RA.sort(ordByTimestampEpoch),
+      redactEmail,
       stripNonStatic
     );
     const expected: typeof userEvents = [
@@ -118,7 +131,7 @@ describe('Google training sheet integration', () => {
         actor: {tag: 'system'},
         equipmentId: TEST_EQUIPMENT_ID,
         memberNumberProvided: TEST_USER,
-        emailProvided: 'paul.la.lancaster@gmail.com',
+        emailProvided: REDACTED_EMAIL,
         trainingSheetId: '1Krto0mc2clINQJrM8ZJJh0P5hISjt1C3vnK2xQaBATM',
         timestampEpochMS: 1736799191000,
         score: 6,
@@ -130,7 +143,7 @@ describe('Google training sheet integration', () => {
         actor: {tag: 'system'},
         equipmentId: TEST_EQUIPMENT_ID,
         memberNumberProvided: TEST_USER,
-        emailProvided: 'paul.la.lancaster@gmail.com',
+        emailProvided: REDACTED_EMAIL,
         trainingSheetId: '1Krto0mc2clINQJrM8ZJJh0P5hISjt1C3vnK2xQaBATM',
         timestampEpochMS: 1736799242000,
         score: 7,
@@ -146,6 +159,7 @@ describe('Google training sheet integration', () => {
       await getEvents('11S81Gb-QyFNaI_-RH3Xcrwqtyfd47z7l-lXUAB9SzEY'),
       filterUserEvents(TEST_USER),
       RA.sort(ordByTimestampEpoch),
+      redactEmail,
       stripNonStatic
     );
     const expected: typeof userEvents = [
@@ -154,7 +168,7 @@ describe('Google training sheet integration', () => {
         actor: {tag: 'system'},
         equipmentId: TEST_EQUIPMENT_ID,
         memberNumberProvided: TEST_USER,
-        emailProvided: 'paul.la.lancaster@gmail.com',
+        emailProvided: REDACTED_EMAIL,
         trainingSheetId: '11S81Gb-QyFNaI_-RH3Xcrwqtyfd47z7l-lXUAB9SzEY',
         timestampEpochMS: 1725998724000,
         score: 180,
@@ -166,7 +180,7 @@ describe('Google training sheet integration', () => {
         actor: {tag: 'system'},
         equipmentId: TEST_EQUIPMENT_ID,
         memberNumberProvided: TEST_USER,
-        emailProvided: 'paul.la.lancaster@gmail.com',
+        emailProvided: REDACTED_EMAIL,
         trainingSheetId: '11S81Gb-QyFNaI_-RH3Xcrwqtyfd47z7l-lXUAB9SzEY',
         timestampEpochMS: 1725999015000,
         score: 200,
