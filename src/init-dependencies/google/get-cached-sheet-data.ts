@@ -45,7 +45,7 @@ export const getCachedSheetData =
   () =>
     pipe(
       TE.tryCatch(
-        () => dbClient.execute('SELECT * FROM cachedSheetData'),
+        () => dbClient.execute('SELECT * FROM cached_sheet_data'),
         failureWithStatus(
           'Failed to get cached sheet data',
           StatusCodes.INTERNAL_SERVER_ERROR
