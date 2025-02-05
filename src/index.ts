@@ -18,6 +18,9 @@ import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
 import cookieSession from 'cookie-session';
 import {initRoutes} from './routes';
+import {ensureCachedSheetDataTableExists} from './init-dependencies/google/ensure-cached-sheet-data-table-exists';
+import {loadCachedSheetData} from './load-cached-sheet-data';
+import {timeAsync} from './util';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -88,9 +91,23 @@ server.on('close', () => {
 void (async () => {
   await pipe(
     ensureEventTableExists(dbClient),
+    TE.map(ensureCachedSheetDataTableExists(dbClient)),
     TE.mapLeft(e => deps.logger.error(e, 'Failed to start server'))
   )();
 
+  deps.logger.info('Loading cached external events...');
+  await timeAsync(elapsedNs =>
+    deps.logger.info(
+      'Loaded cached external events in %sms',
+      elapsedNs / (1000 * 1000)
+    )
+  )(
+    loadCachedSheetData(
+      deps.getCachedSheetData,
+      deps.logger,
+      deps.sharedReadModel.updateState
+    )
+  );
   await deps.sharedReadModel.asyncRefresh()();
   await deps.sharedReadModel.asyncApplyExternalEventSources()();
 

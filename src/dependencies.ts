@@ -1,12 +1,15 @@
 import {Logger} from 'pino';
 import {Failure, Email, DomainEvent, ResourceVersion} from './types';
 import * as TE from 'fp-ts/TaskEither';
+import * as t from 'io-ts';
 import {FailureWithStatus} from './types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 
 import {Resource} from './types/resource';
 import {EventName, EventOfType} from './types/domain-event';
 import {SharedReadModel} from './read-models/shared-state';
+
+type TrainingSheetId = string;
 
 export type Dependencies = {
   commitEvent: (
@@ -36,4 +39,25 @@ export type Dependencies = {
   logger: Logger;
   rateLimitSendingOfEmails: (email: Email) => TE.TaskEither<Failure, Email>;
   sendEmail: (email: Email) => TE.TaskEither<Failure, string>;
+  getCachedSheetData: () => TE.TaskEither<
+    FailureWithStatus,
+    ReadonlyArray<{
+      cached_at: Date;
+      sheet_id: string;
+      cached_data: t.Validation<
+        ReadonlyArray<
+          | EventOfType<'EquipmentTrainingQuizResult'>
+          | EventOfType<'EquipmentTrainingQuizSync'>
+        >
+      >;
+    }>
+  >;
+  cacheSheetData: (
+    cacheTimestamp: Date,
+    sheetId: TrainingSheetId,
+    data: ReadonlyArray<
+      | EventOfType<'EquipmentTrainingQuizSync'>
+      | EventOfType<'EquipmentTrainingQuizResult'>
+    >
+  ) => TE.TaskEither<Failure, void>;
 };

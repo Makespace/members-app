@@ -11,7 +11,7 @@ import {
   extractGoogleSheetData,
   shouldPullFromSheet,
 } from '../../training-sheets/google';
-import {constructEvent} from '../../types/domain-event';
+import {constructEvent, EventOfType} from '../../types/domain-event';
 import {GoogleHelpers} from '../../init-dependencies/google/pull_sheet_data';
 import {
   extractGoogleSheetMetadata,
@@ -21,6 +21,7 @@ import {
 import {getChunkIndexes} from '../../util';
 import {getAllEquipmentMinimal} from './equipment/get';
 import {expandLastQuizResult} from './equipment/expand';
+import {Dependencies} from '../../dependencies';
 
 const ROW_BATCH_SIZE = 200;
 
@@ -35,7 +36,7 @@ const pullNewEquipmentQuizResultsForSheet = async (
   trainingSheetId: string,
   sheet: GoogleSheetMetadata,
   timezone: string,
-  updateState: (event: DomainEvent) => void
+  updateState: (event: EventOfType<'EquipmentTrainingQuizResult'>) => void
 ) => {
   logger.info('Processing sheet %s', sheet.name);
   for (const [rowStart, rowEnd] of getChunkIndexes(
@@ -86,7 +87,11 @@ export const pullNewEquipmentQuizResults = async (
   logger: Logger,
   googleHelpers: GoogleHelpers,
   equipment: EquipmentWithLastQuizResult,
-  updateState: (event: DomainEvent) => void
+  updateState: (
+    event:
+      | EventOfType<'EquipmentTrainingQuizSync'>
+      | EventOfType<'EquipmentTrainingQuizResult'>
+  ) => void
 ): Promise<void> => {
   // TODO - Refactor this into fp-ts style.
   if (O.isNone(equipment.trainingSheetId)) {
@@ -177,7 +182,8 @@ export const asyncApplyExternalEventSources = (
   currentState: BetterSQLite3Database,
   googleHelpers: O.Option<GoogleHelpers>,
   updateState: (event: DomainEvent) => void,
-  googleRateLimitMs: number
+  googleRateLimitMs: number,
+  cacheSheetData: Dependencies['cacheSheetData']
 ) => {
   return () => async () => {
     logger.info('Applying external event sources...');
@@ -197,16 +203,42 @@ export const asyncApplyExternalEventSources = (
           'Triggering event update from google training sheets for %s...',
           equipment.name
         );
+        const events: (
+          | EventOfType<'EquipmentTrainingQuizSync'>
+          | EventOfType<'EquipmentTrainingQuizResult'>
+        )[] = [];
+        const collectEvents = (
+          event:
+            | EventOfType<'EquipmentTrainingQuizSync'>
+            | EventOfType<'EquipmentTrainingQuizResult'>
+        ) => {
+          events.push(event);
+          updateState(event);
+        };
+
         await pullNewEquipmentQuizResults(
           logger,
           googleHelpers.value,
           expandLastQuizResult(currentState)(equipment),
-          updateState
+          collectEvents
         );
         logger.info(
-          'Finished pulling events from google training sheet for %s',
+          'Finished pulling events from google training sheet for %s, caching...',
           equipment.name
         );
+        const x = await cacheSheetData(
+          new Date(),
+          equipment.trainingSheetId.value,
+          events
+        )();
+        if (E.isLeft(x)) {
+          logger.error(
+            'Failed to cache training sheet data for %s training sheet id %s, due to: %s',
+            equipment.name,
+            equipment.trainingSheetId,
+            x.left.message
+          );
+        }
       }
     }
     logger.info('Finished applying external event sources');
