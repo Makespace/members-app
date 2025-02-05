@@ -17,10 +17,8 @@ describe('Cache sheet data', () => {
     const sheetId = 'myTestingSheetId';
     const cacheTimestamp = new Date(2024, 1, 23, 4, 23, 45);
     let cachedData: ReadonlyArray<{
-      cache_entry_id: string;
-      cached_timestamp: Date;
+      cached_at: Date;
       sheet_id: string;
-      equipment_id: string;
       cached_data: t.Validation<
         ReadonlyArray<
           | EventOfType<'EquipmentTrainingQuizResult'>
@@ -49,20 +47,17 @@ describe('Cache sheet data', () => {
           }),
         ])()
       );
-      console.log(await db.execute('SELECT * FROM cached_sheet_data'));
-
       cachedData = getRightOrFail(await getCachedSheetData(db)()());
     });
     it('Each sheet is cached', () => {
       expect(cachedData).toHaveLength(1); // 1 sheet
     });
-    // it('All events cached are returned', () => {
-    //   expect(getRightOrFail(cachedData[0].cached_data)).toHaveLength(2); // 2 events.
-    // });
-    // it('Event cache is correctly labeled', () => {
-    //   expect(cachedData[0].equipment_id).toStrictEqual(equipmentId);
-    //   expect(cachedData[0].sheet_id).toStrictEqual(sheetId);
-    //   expect(cachedData[0].cached_timestamp).toStrictEqual(cacheTimestamp);
-    // });
+    it('All events cached are returned', () => {
+      expect(getRightOrFail(cachedData[0].cached_data)).toHaveLength(2); // 2 events.
+    });
+    it('Event cache is correctly labeled', () => {
+      expect(cachedData[0].sheet_id).toStrictEqual(sheetId);
+      expect(cachedData[0].cached_at).toStrictEqual(cacheTimestamp);
+    });
   });
 });

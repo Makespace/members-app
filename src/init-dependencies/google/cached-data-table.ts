@@ -4,10 +4,8 @@ import * as tt from 'io-ts-types';
 export const CachedDataTable = t.strict({
   rows: t.readonlyArray(
     t.strict({
-      cache_entry_id: t.string,
-      cached_timestamp: tt.DateFromNumber,
+      cached_at: tt.DateFromNumber,
       sheet_id: t.string,
-      equipment_id: t.string,
       cached_data: t.string,
     })
   ),

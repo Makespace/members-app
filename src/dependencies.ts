@@ -42,10 +42,8 @@ export type Dependencies = {
   getCachedSheetData: () => TE.TaskEither<
     FailureWithStatus,
     ReadonlyArray<{
-      cache_entry_id: string;
-      cached_timestamp: Date;
+      cached_at: Date;
       sheet_id: string;
-      equipment_id: string;
       cached_data: t.Validation<
         ReadonlyArray<
           | EventOfType<'EquipmentTrainingQuizResult'>
