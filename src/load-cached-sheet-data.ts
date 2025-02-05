@@ -24,18 +24,16 @@ export const loadCachedSheetData = async (
     events.right.forEach(cachedSheetData => {
       if (E.isLeft(cachedSheetData.cached_data)) {
         logger.info(
-          'Failed to load events for sheet %s, equipment %s generated at %s, skipping...',
+          'Failed to load events for sheet %s cached at %s, skipping...',
           cachedSheetData.sheet_id,
-          cachedSheetData.equipment_id,
-          cachedSheetData.cached_timestamp.toISOString()
+          cachedSheetData.cached_at.toISOString()
         );
       } else {
         logger.info(
-          'Loaded % events for sheet %s, equipment %s generated at %s',
+          'Loaded % events for sheet %s, cached at %s',
           cachedSheetData.cached_data.right.length,
           cachedSheetData.sheet_id,
-          cachedSheetData.equipment_id,
-          cachedSheetData.cached_timestamp.toISOString()
+          cachedSheetData.cached_at.toISOString()
         );
         cachedSheetData.cached_data.right.forEach(updateState);
       }

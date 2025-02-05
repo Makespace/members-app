@@ -84,16 +84,16 @@ export const cacheSheetData =
         dbClient
           .execute({
             sql: `
-              INSERT INTO cached_sheet_data (cache_timestamp, sheet_id, cached_data)
-              VALUES ($cacheTimestamp, $sheetId, $cachedData)
+              INSERT INTO cached_sheet_data (cached_at, sheet_id, cached_data)
+              VALUES ($cachedAt, $sheetId, $cachedData)
               ON CONFLICT (sheet_id) DO UPDATE SET
-                cache_timestamp = excluded.cache_timestamp,
+                cached_at = excluded.cached_at,
                 cached_data = excluded.cached_data;
             `,
             args: {
-              cacheTimestamp,
+              cachedAt: cacheTimestamp,
               sheetId,
-              data: JSON.stringify(data),
+              cachedData: JSON.stringify(data),
             },
           })
           .then(() => {}),

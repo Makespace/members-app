@@ -9,7 +9,7 @@ import {initSharedReadModel} from '../../src/read-models/shared-state';
 import * as libsqlClient from '@libsql/client';
 import {localGoogleHelpers} from './pull-local-google';
 
-export const cacheSheetData = (
+const cacheSheetData = (
   _cacheTimestamp: Date,
   _sheetId: string,
   _data: ReadonlyArray<
