@@ -64,3 +64,12 @@ export const fieldIsUUID =
     obj: T
   ): obj is T & {[P in K]: tt.UUID} =>
     E.isRight(tt.UUID.decode(obj[key]));
+
+export const timeAsync =
+  (callback: (nanoseconds: number) => void) => async (fn: Promise<void>) => {
+    const start = process.hrtime.bigint();
+    const result = await fn;
+    // Realistically we aren't going to be have elapsed periods big enough that this conversion back to number is problematic.
+    callback(Number(process.hrtime.bigint() - start));
+    return result;
+  };
