@@ -20,6 +20,7 @@ import cookieSession from 'cookie-session';
 import {initRoutes} from './routes';
 import {ensureCachedSheetDataTableExists} from './init-dependencies/google/ensure-cached-sheet-data-table-exists';
 import {loadCachedSheetData} from './load-cached-sheet-data';
+import {timeAsync} from './util';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -95,12 +96,18 @@ void (async () => {
   )();
 
   deps.logger.info('Loading cached external events...');
-  await loadCachedSheetData(
-    deps.getCachedSheetData,
-    deps.logger,
-    deps.sharedReadModel.updateState
+  await timeAsync(elapsedNs =>
+    deps.logger.info(
+      'Loaded cached external events in %sms',
+      elapsedNs / (1000 * 1000)
+    )
+  )(
+    loadCachedSheetData(
+      deps.getCachedSheetData,
+      deps.logger,
+      deps.sharedReadModel.updateState
+    )
   );
-  deps.logger.info('Cached external events loaded');
   await deps.sharedReadModel.asyncRefresh()();
   await deps.sharedReadModel.asyncApplyExternalEventSources()();
 
