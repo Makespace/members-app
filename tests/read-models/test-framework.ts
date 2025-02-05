@@ -19,6 +19,8 @@ import {Dependencies} from '../../src/dependencies';
 import {applyToResource} from '../../src/commands/apply-command-to-resource';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
 import {localGoogleHelpers} from '../init-dependencies/pull-local-google';
+import {cacheSheetData} from '../../src/init-dependencies/google/get-cached-sheet-data';
+import {ensureCachedSheetDataTableExists} from '../../src/init-dependencies/google/ensure-cached-sheet-data-table-exists';
 
 type ToFrameworkCommands<T> = {
   [K in keyof T]: {
@@ -58,7 +60,8 @@ export const initTestFramework = async (
     dbClient,
     logger,
     O.some(localGoogleHelpers),
-    googleRateLimitMs
+    googleRateLimitMs,
+    cacheSheetData(dbClient)
   );
   const frameworkCommitEvent = commitEvent(
     dbClient,
@@ -66,6 +69,7 @@ export const initTestFramework = async (
     sharedReadModel.asyncRefresh
   );
   await ensureEventTableExists(dbClient)();
+  await ensureCachedSheetDataTableExists(dbClient)();
   const frameworkGetAllEvents = () =>
     pipe(getAllEvents(dbClient)(), T.map(getRightOrFail))();
   const frameworkGetAllEventsByType = <EN extends EventName>(eventType: EN) =>

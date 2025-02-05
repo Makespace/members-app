@@ -60,9 +60,9 @@ export const getCachedSheetData =
       TE.map(table =>
         pipe(
           table.rows,
-          RA.map(entry => ({
-            ...entry,
-            cached_data: extractCachedEvents(entry.cached_data),
+          RA.map(row => ({
+            ...row,
+            cached_data: extractCachedEvents(row.cached_data),
           }))
         )
       )

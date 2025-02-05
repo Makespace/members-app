@@ -13,13 +13,13 @@ import {createTerminus} from '@godaddy/terminus';
 import http from 'http';
 import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
-import * as E from 'fp-ts/Either';
 import {ensureEventTableExists} from './init-dependencies/event-store/ensure-events-table-exists';
 import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
 import cookieSession from 'cookie-session';
 import {initRoutes} from './routes';
 import {ensureCachedSheetDataTableExists} from './init-dependencies/google/ensure-cached-sheet-data-table-exists';
+import {loadCachedSheetData} from './load-cached-sheet-data';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -95,21 +95,12 @@ void (async () => {
   )();
 
   deps.logger.info('Loading cached external events...');
-  const events = await deps.getCachedSheetData()();
-  if (E.isLeft(events)) {
-    // Potential pitfall here - transient db errors could produce large spikes in processing.
-    // Tradeoff is that an error/bug in cached sheet data doesn't bring down the application.
-    deps.logger.error(
-      events.left,
-      'Failed to load cached external events data - continuing anyway...'
-    );
-  } else {
-    deps.logger.info(
-      'Loaded %s events from external events data cache',
-      events.right.length
-    );
-    events.right.forEach(deps.sharedReadModel.updateState);
-  }
+  await loadCachedSheetData(
+    deps.getCachedSheetData,
+    deps.logger,
+    deps.sharedReadModel.updateState
+  );
+  deps.logger.info('Cached external events loaded');
   await deps.sharedReadModel.asyncRefresh()();
   await deps.sharedReadModel.asyncApplyExternalEventSources()();
 

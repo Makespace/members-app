@@ -5,6 +5,7 @@ import {
   getCachedSheetData,
 } from '../../src/init-dependencies/google/get-cached-sheet-data';
 import {UUID} from 'io-ts-types';
+import * as t from 'io-ts';
 import {faker} from '@faker-js/faker';
 import {constructEvent, EventOfType} from '../../src/types/domain-event';
 import {getRightOrFail} from '../helpers';
@@ -14,14 +15,23 @@ describe('Cache sheet data', () => {
   describe('Cache then restore', () => {
     const equipmentId = '326e8fda-7be8-4cd8-87d5-7cdfafebf996' as UUID;
     const sheetId = 'myTestingSheetId';
-    let cachedData: ReadonlyArray<
-      | EventOfType<'EquipmentTrainingQuizResult'>
-      | EventOfType<'EquipmentTrainingQuizSync'>
-    >;
+    const cacheTimestamp = new Date(2024, 1, 23, 4, 23, 45);
+    let cachedData: ReadonlyArray<{
+      cache_entry_id: string;
+      cached_timestamp: Date;
+      sheet_id: string;
+      equipment_id: string;
+      cached_data: t.Validation<
+        ReadonlyArray<
+          | EventOfType<'EquipmentTrainingQuizResult'>
+          | EventOfType<'EquipmentTrainingQuizSync'>
+        >
+      >;
+    }>;
     beforeEach(async () => {
       const db = libsqlClient.createClient({url: ':memory:'});
       await ensureCachedSheetDataTableExists(db)();
-      await cacheSheetData(db)(new Date(2024, 1, 23, 4, 23, 45), sheetId, [
+      await cacheSheetData(db)(cacheTimestamp, sheetId, [
         constructEvent('EquipmentTrainingQuizSync')({
           equipmentId,
         }),
@@ -39,8 +49,16 @@ describe('Cache sheet data', () => {
       ])();
       cachedData = getRightOrFail(await getCachedSheetData(db)()());
     });
+    it('Each sheet is cached', () => {
+      expect(cachedData).toHaveLength(1); // 1 sheet
+    });
     it('All events cached are returned', () => {
-      expect(cachedData).toHaveLength(2);
+      expect(getRightOrFail(cachedData[0].cached_data)).toHaveLength(2); // 2 events.
+    });
+    it('Event cache is correctly labeled', () => {
+      expect(cachedData[0].equipment_id).toStrictEqual(equipmentId);
+      expect(cachedData[0].sheet_id).toStrictEqual(sheetId);
+      expect(cachedData[0].cached_timestamp).toStrictEqual(cacheTimestamp);
     });
   });
 });
