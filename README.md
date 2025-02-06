@@ -19,6 +19,14 @@ Architecture:
 - event store lives in a sqlite database using the `libsql` library so that persistence can be delegated to Turso if need be
 - pages are rendered server side with sprinklings of JS for interactivity as needed e.g. GridJS to filter tables
 
+Tooling:
+
+- [VisualStudio](https://code.visualstudio.com/) or other JavaScript IDE
+- Node.js
+- [Docker](https://www.docker.com/)
+- [Bun](https://bun.sh/)
+- [mise-en-place](https://mise.jdx.dev/)
+
 ## Try it locally
 
 ```

@@ -1,8 +1,8 @@
 import {editEmail} from './edit-email';
 import {editName} from './edit-name';
 import {editNameForm} from './edit-name-form';
-import {editPronouns} from './edit-pronouns';
-import {editPronounsForm} from './edit-pronouns-form';
+import {editFormOfAddress} from './edit-form-of-address';
+import {editFormOfAddressForm} from './edit-form-of-address-form';
 import {signOwnerAgreement} from './sign-owner-agreement';
 import {signOwnerAgreementForm} from './sign-owner-agreement-form';
 
@@ -14,9 +14,9 @@ export const members = {
   editEmail: {
     ...editEmail,
   },
-  editPronouns: {
-    ...editPronouns,
-    ...editPronounsForm,
+  editFormOfAddress: {
+    ...editFormOfAddress,
+    ...editFormOfAddressForm,
   },
   signOwnerAgreement: {
     ...signOwnerAgreement,

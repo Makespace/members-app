@@ -17,10 +17,10 @@ type ViewModel = {
 const renderForm = (viewModel: ViewModel) =>
   pipe(
     html`
-      <h1>Edit pronouns</h1>
+      <h1>Edit preferred form of address</h1>
       <form action="?next=/member/${viewModel.user.memberNumber}" method="post">
-        <label for="name">New pronouns</label>
-        <input type="text" name="pronouns" id="pronouns" />
+        <label for="name">New form of address</label>
+        <input type="text" name="formOfAddress" id="formOfAddress" />
         <input
           type="hidden"
           name="memberNumber"
@@ -29,7 +29,7 @@ const renderForm = (viewModel: ViewModel) =>
         <button type="submit">Confirm</button>
       </form>
     `,
-    toLoggedInContent(safe('Edit pronouns'))
+    toLoggedInContent(safe('Edit preferred form of address'))
   );
 
 const paramsCodec = t.strict({
@@ -58,7 +58,7 @@ const constructForm: Form<ViewModel>['constructForm'] =
       }))
     );
 
-export const editPronounsForm: Form<ViewModel> = {
+export const editFormOfAddressForm: Form<ViewModel> = {
   renderForm,
   constructForm,
 };

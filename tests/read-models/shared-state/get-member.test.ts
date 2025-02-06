@@ -74,9 +74,9 @@ describe('get-via-shared-read-model', () => {
           memberNumber,
           name: 'Ix',
         });
-        await framework.commands.members.editPronouns({
+        await framework.commands.members.editFormOfAddress({
           memberNumber,
-          pronouns: 'he/him',
+          formOfAddress: 'he/him',
         });
         await framework.commands.members.editName({
           memberNumber,
@@ -87,7 +87,7 @@ describe('get-via-shared-read-model', () => {
       it('returns latest details', () => {
         const result = runQuery();
         expect(result.name).toStrictEqual(O.some('Ford Prefect'));
-        expect(result.pronouns).toStrictEqual(O.some('he/him'));
+        expect(result.formOfAddress).toStrictEqual(O.some('he/him'));
       });
     });
 
