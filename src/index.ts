@@ -104,10 +104,16 @@ void (async () => {
       elapsedNs / (1000 * 1000)
     )
   )(
-    loadCachedSheetData(
-      deps.getCachedSheetData,
-      deps.logger,
-      deps.sharedReadModel
+    Promise.all(
+      deps.sharedReadModel.equipment
+        .getAll()
+        .map(
+          loadCachedSheetData(
+            deps.getCachedSheetData,
+            deps.logger,
+            deps.sharedReadModel.updateState
+          )
+        )
     )
   );
   await deps.sharedReadModel.asyncApplyExternalEventSources()();
