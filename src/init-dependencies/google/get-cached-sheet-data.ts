@@ -42,10 +42,16 @@ const extractCachedEvents = (
 
 export const getCachedSheetData =
   (dbClient: Client): Dependencies['getCachedSheetData'] =>
-  () =>
+  (sheetId: string) =>
     pipe(
       TE.tryCatch(
-        () => dbClient.execute('SELECT * FROM cached_sheet_data'),
+        () =>
+          dbClient.execute({
+            sql: 'SELECT * FROM cached_sheet_data WHERE sheet_id = $sheetId',
+            args: {
+              sheetId,
+            },
+          }),
         failureWithStatus(
           'Failed to get cached sheet data',
           StatusCodes.INTERNAL_SERVER_ERROR

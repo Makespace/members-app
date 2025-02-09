@@ -95,6 +95,8 @@ void (async () => {
     TE.mapLeft(e => deps.logger.error(e, 'Failed to start server'))
   )();
 
+  deps.logger.info('Populating shared read model...');
+  await deps.sharedReadModel.asyncRefresh()();
   deps.logger.info('Loading cached external events...');
   await timeAsync(elapsedNs =>
     deps.logger.info(
