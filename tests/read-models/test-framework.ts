@@ -68,8 +68,8 @@ export const initTestFramework = async (
     logger,
     sharedReadModel.asyncRefresh
   );
-  await ensureEventTableExists(dbClient)();
-  await ensureCachedSheetDataTableExists(dbClient)();
+  getRightOrFail(await ensureEventTableExists(dbClient)());
+  getRightOrFail(await ensureCachedSheetDataTableExists(dbClient)());
   const frameworkGetAllEvents = () =>
     pipe(getAllEvents(dbClient)(), T.map(getRightOrFail))();
   const frameworkGetAllEventsByType = <EN extends EventName>(eventType: EN) =>
