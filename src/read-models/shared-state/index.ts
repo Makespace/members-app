@@ -20,6 +20,7 @@ import {
   getMemberFull,
   getMemberAsActorFull,
 } from './member/helper';
+import {Dependencies} from '../../dependencies';
 
 export {replayState} from './deprecated-replay';
 
@@ -27,6 +28,7 @@ export type SharedReadModel = {
   db: BetterSQLite3Database;
   asyncRefresh: () => T.Task<void>;
   asyncApplyExternalEventSources: () => T.Task<void>;
+  updateState: ReturnType<typeof updateState>;
   members: {
     get: (memberNumber: number) => O.Option<Member>;
     getAll: () => ReadonlyArray<Member>;
@@ -46,7 +48,8 @@ export const initSharedReadModel = (
   eventStoreClient: Client,
   logger: Logger,
   googleHelpers: O.Option<GoogleHelpers>,
-  googleRateLimitMs: number
+  googleRateLimitMs: number,
+  cacheSheetData: Dependencies['cacheSheetData']
 ): SharedReadModel => {
   const readModelDb = drizzle(new Database());
   createTables.forEach(statement => readModelDb.run(statement));
@@ -55,12 +58,14 @@ export const initSharedReadModel = (
   return {
     db: readModelDb,
     asyncRefresh: asyncRefresh(eventStoreClient, updateState_),
+    updateState: updateState_,
     asyncApplyExternalEventSources: asyncApplyExternalEventSources(
       logger,
       readModelDb,
       googleHelpers,
       updateState_,
-      googleRateLimitMs
+      googleRateLimitMs,
+      cacheSheetData
     ),
     members: {
       get: getMemberFull(readModelDb),

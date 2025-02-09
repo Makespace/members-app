@@ -4,10 +4,19 @@ import * as O from 'fp-ts/Option';
 import pino, {Logger} from 'pino';
 import {StatusCodes} from 'http-status-codes';
 import {faker} from '@faker-js/faker';
-import {EventName} from '../../src/types/domain-event';
+import {EventName, EventOfType} from '../../src/types/domain-event';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
 import * as libsqlClient from '@libsql/client';
 import {localGoogleHelpers} from './pull-local-google';
+
+const cacheSheetData = (
+  _cacheTimestamp: Date,
+  _sheetId: string,
+  _data: ReadonlyArray<
+    | EventOfType<'EquipmentTrainingQuizSync'>
+    | EventOfType<'EquipmentTrainingQuizResult'>
+  >
+) => TE.asUnit(TE.right(''));
 
 export const happyPathAdapters: Dependencies = {
   commitEvent: () => () =>
@@ -21,11 +30,14 @@ export const happyPathAdapters: Dependencies = {
       timestamp: pino.stdTimeFunctions.isoTime,
     }),
     O.some(localGoogleHelpers),
-    120_000
+    120_000,
+    cacheSheetData
   ),
   logger: (() => undefined) as never as Logger,
   rateLimitSendingOfEmails: TE.right,
   sendEmail: () => TE.right('success'),
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getAllEventsByType: <T extends EventName>(_eventType: T) => TE.right([]),
+  cacheSheetData,
+  getCachedSheetData: () => TE.right(O.none),
 };

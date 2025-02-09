@@ -17,6 +17,10 @@ import {
 } from './google/pull_sheet_data';
 import {initSharedReadModel} from '../read-models/shared-state';
 import {GoogleAuth} from 'google-auth-library';
+import {
+  cacheSheetData,
+  getCachedSheetData,
+} from './google/get-cached-sheet-data';
 
 export const initDependencies = (
   dbClient: Client,
@@ -77,11 +81,14 @@ export const initDependencies = (
     });
   }
 
+  const _cacheSheetData = cacheSheetData(dbClient);
+
   const sharedReadModel = initSharedReadModel(
     dbClient,
     logger,
     googleHelpers,
-    conf.GOOGLE_RATELIMIT_MS
+    conf.GOOGLE_RATELIMIT_MS,
+    _cacheSheetData
   );
 
   const deps: Dependencies = {
@@ -93,6 +100,8 @@ export const initDependencies = (
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
     logger,
+    getCachedSheetData: getCachedSheetData(dbClient),
+    cacheSheetData: _cacheSheetData,
   };
   return deps;
 };
