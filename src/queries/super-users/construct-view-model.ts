@@ -8,22 +8,34 @@ import {
   failureWithStatus,
 } from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
-import {readModels} from '../../read-models';
+import {membersTable} from '../../read-models/shared-state/state';
+import {eq} from 'drizzle-orm';
 
 export const constructViewModel =
-  (deps: Dependencies) =>
+  (sharedReadModel: Dependencies['sharedReadModel']) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> =>
     pipe(
-      deps.getAllEvents(),
-      TE.filterOrElse(
-        readModels.superUsers.is(user.memberNumber),
+      sharedReadModel.members.get(user.memberNumber),
+      TE.fromOption(
         failureWithStatus(
-          'Only super-users can see this page',
-          StatusCodes.FORBIDDEN
+          'Cannot find sufficent information about you to determine if you can access this page',
+          StatusCodes.UNAUTHORIZED
         )
       ),
-      TE.map(events => ({
+      TE.filterOrElse(
+        loggedInMember => loggedInMember.isSuperUser,
+        () =>
+          failureWithStatus(
+            'Only super-users can see this page',
+            StatusCodes.FORBIDDEN
+          )()
+      ),
+      TE.map(() => ({
         user: user,
-        superUsers: readModels.superUsers.getAll()(events),
+        superUsers: sharedReadModel.db
+          .select()
+          .from(membersTable)
+          .where(eq(membersTable.isSuperUser, true))
+          .all(),
       }))
     );

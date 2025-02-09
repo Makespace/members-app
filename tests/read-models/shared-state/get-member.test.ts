@@ -119,10 +119,22 @@ describe('get-via-shared-read-model', () => {
     });
 
     describe('and they have been declared a super user', () => {
+      const firstMadeSuperUserAt = faker.date.anytime();
+      const superUserRevokedAt = faker.date.future({
+        refDate: firstMadeSuperUserAt,
+      });
+      const madeSuperUserAgainAt = faker.date.future({
+        refDate: superUserRevokedAt,
+      });
       beforeEach(async () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(firstMadeSuperUserAt);
         await framework.commands.superUser.declare({
           memberNumber,
         });
+      });
+      afterEach(() => {
+        jest.useRealTimers();
       });
 
       it('they are a superuser', () => {
@@ -130,8 +142,18 @@ describe('get-via-shared-read-model', () => {
         expect(result.isSuperUser).toBe(true);
       });
 
+      it('they have a date since when they have been a superuser', () => {
+        const result = pipe(
+          runQuery(),
+          member => member.superUserSince,
+          getSomeOrFail
+        );
+        expect(result).toEqual(firstMadeSuperUserAt);
+      });
+
       describe('and when their superuser status has been revoked', () => {
         beforeEach(async () => {
+          jest.setSystemTime(superUserRevokedAt);
           await framework.commands.superUser.revoke({
             memberNumber,
           });
@@ -140,6 +162,34 @@ describe('get-via-shared-read-model', () => {
         it('they are no longer a superuser', () => {
           const result = runQuery();
           expect(result.isSuperUser).toBe(false);
+        });
+
+        it('they no longer have a date since when they have been a superuser', () => {
+          const result = runQuery();
+          expect(result.superUserSince).toStrictEqual(O.none);
+        });
+
+        describe('and they have been again declared to be a super user', () => {
+          beforeEach(async () => {
+            jest.setSystemTime(madeSuperUserAgainAt);
+            await framework.commands.superUser.declare({
+              memberNumber,
+            });
+          });
+
+          it('they are a superuser', () => {
+            const result = runQuery();
+            expect(result.isSuperUser).toBe(true);
+          });
+
+          it('they have a date since when they have been a superuser', () => {
+            const result = pipe(
+              runQuery(),
+              member => member.superUserSince,
+              getSomeOrFail
+            );
+            expect(result).toEqual(madeSuperUserAgainAt);
+          });
         });
       });
     });

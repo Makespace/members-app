@@ -85,6 +85,7 @@ export type MemberCoreInfo = {
   pronouns: O.Option<string>;
   agreementSigned: O.Option<Date>;
   isSuperUser: boolean;
+  superUserSince: O.Option<Date>;
   gravatarHash: GravatarHash;
 };
 
