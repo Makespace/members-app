@@ -66,7 +66,8 @@ export const fieldIsUUID =
     E.isRight(tt.UUID.decode(obj[key]));
 
 export const timeAsync =
-  (callback: (nanoseconds: number) => void) => async (fn: Promise<void>) => {
+  (callback: (nanoseconds: number) => void) =>
+  async (fn: PromiseLike<void | void[]>) => {
     const start = process.hrtime.bigint();
     const result = await fn;
     // Realistically we aren't going to be have elapsed periods big enough that this conversion back to number is problematic.

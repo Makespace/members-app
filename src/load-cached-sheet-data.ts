@@ -2,16 +2,17 @@ import {Logger} from 'pino';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
 import {Dependencies} from './dependencies';
-import {SharedReadModel} from './read-models/shared-state';
+import {Equipment} from './read-models/shared-state/return-types';
 
-export const loadCachedSheetData = async (
-  getCachedSheetData: Dependencies['getCachedSheetData'],
-  logger: Logger,
-  sharedReadModel: SharedReadModel
-) => {
-  // We only load cached training events for equipment we know about.
-  logger = logger.child({section: 'loadCachedSheetData'});
-  for (const equipment of sharedReadModel.equipment.getAll()) {
+export const loadCachedSheetData =
+  (
+    getCachedSheetData: Dependencies['getCachedSheetData'],
+    logger: Logger,
+    updateState: Dependencies['sharedReadModel']['updateState']
+  ) =>
+  async (equipment: Equipment) => {
+    // We only load cached training events for equipment we know about.
+    logger = logger.child({section: 'loadCachedSheetData'});
     const equipmentLogger = logger.child({
       equipment_name: equipment.name,
       equipment_id: equipment.id,
@@ -26,7 +27,7 @@ export const loadCachedSheetData = async (
       equipmentLogger.info(
         'Equipment has no training sheet id - not loading any cached data'
       );
-      continue;
+      return;
     }
     equipmentLogger.info('Loading cached sheet data for sheet');
     const cachedSheetData = await getCachedSheetData(
@@ -42,7 +43,7 @@ export const loadCachedSheetData = async (
     } else {
       if (O.isNone(cachedSheetData.right)) {
         equipmentLogger.info('No cached events found');
-        continue;
+        return;
       }
       const loadedData = cachedSheetData.right.value;
       const sheetDataLogger = equipmentLogger.child({
@@ -66,10 +67,9 @@ export const loadCachedSheetData = async (
               cachedEvent.equipmentId
             );
           } else {
-            sharedReadModel.updateState(cachedEvent);
+            updateState(cachedEvent);
           }
         }
       }
     }
-  }
-};
+  };
