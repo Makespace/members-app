@@ -47,7 +47,8 @@ export const getCachedSheetData =
       TE.tryCatch(
         () =>
           dbClient.execute({
-            sql: 'SELECT * FROM cached_sheet_data WHERE sheet_id = $sheetId',
+            // Currently we can do LIMIT 1 because we only expect each sheet to have a single entry within the cache sheet data
+            sql: 'SELECT * FROM cached_sheet_data WHERE sheet_id = $sheetId LIMIT 1',
             args: {
               sheetId,
             },
@@ -69,7 +70,8 @@ export const getCachedSheetData =
           RA.map(row => ({
             ...row,
             cached_data: extractCachedEvents(row.cached_data),
-          }))
+          })),
+          RA.head
         )
       )
     );

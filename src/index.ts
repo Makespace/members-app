@@ -96,7 +96,7 @@ void (async () => {
   )();
 
   deps.logger.info('Populating shared read model...');
-  await deps.sharedReadModel.asyncRefresh()();
+  await deps.sharedReadModel.asyncRefresh()(); // We refresh before we load cached sheet data so we know what sheets to load cached data from.
   deps.logger.info('Loading cached external events...');
   await timeAsync(elapsedNs =>
     deps.logger.info(
@@ -107,10 +107,9 @@ void (async () => {
     loadCachedSheetData(
       deps.getCachedSheetData,
       deps.logger,
-      deps.sharedReadModel.updateState
+      deps.sharedReadModel
     )
   );
-  await deps.sharedReadModel.asyncRefresh()();
   await deps.sharedReadModel.asyncApplyExternalEventSources()();
 
   server.listen(conf.PORT, () => {

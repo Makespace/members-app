@@ -29,43 +29,44 @@ export const loadCachedSheetData = async (
       continue;
     }
     equipmentLogger.info('Loading cached sheet data for sheet');
-    const events = await getCachedSheetData(equipment.trainingSheetId.value)();
-    if (E.isLeft(events)) {
+    const cachedSheetData = await getCachedSheetData(
+      equipment.trainingSheetId.value
+    )();
+    if (E.isLeft(cachedSheetData)) {
       // Potential pitfall here - transient db errors could produce large spikes in processing.
       // Tradeoff is that an error/bug in cached sheet data doesn't bring down the application.
       equipmentLogger.error(
-        events.left,
+        cachedSheetData.left,
         'Failed to load cached sheet data for sheet - skipping...'
       );
     } else {
-      equipmentLogger.info(
-        'Loaded %s cached sheet data blocks',
-        events.right.length
-      );
-      for (const cachedSheetDataBlock of events.right) {
-        const sheetBlockLogger = equipmentLogger.child({
-          sheet_block_cached_at: cachedSheetDataBlock.cached_at.toISOString(),
-        });
-        if (E.isLeft(cachedSheetDataBlock.cached_data)) {
-          sheetBlockLogger.info(
-            'Failed to parse cached sheet data block cached, skipping...'
-          );
-        } else {
-          sheetBlockLogger.info(
-            'Loaded %s events from cached sheet data block, loading into shared read model...',
-            cachedSheetDataBlock.cached_data.right.length
-          );
-          for (const cachedEvent of cachedSheetDataBlock.cached_data.right) {
-            // This filtering makes loading cache data more predictable by only loading equipment events for the piece of equipment that is being loaded
-            // even if the sheet has previously generated events for other pieces of equipment.
-            if (cachedEvent.equipmentId !== equipment.id) {
-              sheetBlockLogger.warn(
-                'Skipping event within cached sheet data block due to equipment id mismatch (cached %s)',
-                cachedEvent.equipmentId
-              );
-            } else {
-              sharedReadModel.updateState(cachedEvent);
-            }
+      if (O.isNone(cachedSheetData.right)) {
+        equipmentLogger.info('No cached events found');
+        continue;
+      }
+      const loadedData = cachedSheetData.right.value;
+      const sheetDataLogger = equipmentLogger.child({
+        sheet_block_cached_at: loadedData.cached_at.toISOString(),
+      });
+      if (E.isLeft(loadedData.cached_data)) {
+        sheetDataLogger.info(
+          'Failed to parse cached sheet data block cached, skipping...'
+        );
+      } else {
+        sheetDataLogger.info(
+          'Loaded %s events from cached sheet data block, loading into shared read model...',
+          loadedData.cached_data.right.length
+        );
+        for (const cachedEvent of loadedData.cached_data.right) {
+          // This filtering makes loading cache data more predictable by only loading equipment events for the piece of equipment that is being loaded
+          // even if the sheet has previously generated events for other pieces of equipment.
+          if (cachedEvent.equipmentId !== equipment.id) {
+            sheetDataLogger.warn(
+              'Skipping event within cached sheet data block due to equipment id mismatch (cached %s)',
+              cachedEvent.equipmentId
+            );
+          } else {
+            sharedReadModel.updateState(cachedEvent);
           }
         }
       }
