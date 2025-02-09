@@ -267,6 +267,14 @@ describe('get', () => {
         markedTrainedTimestampEnd
       );
     });
+
+    it('equipment_check_test', async () => {
+      const events = await framework.getAllEvents();
+      console.log(events);
+
+      const equipment = runQuery();
+      console.log(equipment);
+    });
   });
 
   describe('When equipment has a member marked as trained then revoked', () => {
