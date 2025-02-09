@@ -33,7 +33,7 @@ const getEvents = async (trainingSheetId: string) => {
   });
   const events: DomainEvent[] = [];
   await pullNewEquipmentQuizResults(
-    pino(),
+    pino({level: 'silent'}),
     {
       pullGoogleSheetData: pullGoogleSheetData(auth),
       pullGoogleSheetDataMetadata: pullGoogleSheetDataMetadata(auth),
