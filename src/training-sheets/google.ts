@@ -17,6 +17,9 @@ import {lookup} from 'fp-ts/ReadonlyArray';
 const MIN_RECOGNISED_MEMBER_NUMBER = 0;
 const MAX_RECOGNISED_MEMBER_NUMBER = 10_000;
 
+const MAX_RECOGNISED_SCORE = 10_000;
+const MIN_RECOGNISED_SCORE = 0;
+
 const MIN_VALID_TIMESTAMP_EPOCH_MS =
   1546304461_000 as EpochTimestampMilliseconds; // Year 2019, Can't see any training results before this.
 
@@ -56,12 +59,21 @@ const extractScore = (
   }
 
   const score = parseInt(parts[0], 10);
-  if (isNaN(score) || score < 0 || score > 100) {
+  if (
+    isNaN(score) ||
+    score < MIN_RECOGNISED_SCORE ||
+    score > MAX_RECOGNISED_SCORE
+  ) {
     return O.none;
   }
 
   const maxScore = parseInt(parts[1], 10);
-  if (isNaN(maxScore) || maxScore < 1 || maxScore > 100 || maxScore < score) {
+  if (
+    isNaN(maxScore) ||
+    maxScore < MIN_RECOGNISED_SCORE ||
+    maxScore > MAX_RECOGNISED_SCORE ||
+    maxScore < score
+  ) {
     return O.none;
   }
 

@@ -30,6 +30,7 @@ export const updateState =
             prevEmails: [],
             isSuperUser: false,
             agreementSigned: undefined,
+            superUserSince: undefined,
           })
           .run();
         break;
@@ -67,13 +68,13 @@ export const updateState =
       }
       case 'SuperUserDeclared':
         db.update(membersTable)
-          .set({isSuperUser: true})
+          .set({isSuperUser: true, superUserSince: event.recordedAt})
           .where(eq(membersTable.memberNumber, event.memberNumber))
           .run();
         break;
       case 'SuperUserRevoked':
         db.update(membersTable)
-          .set({isSuperUser: false})
+          .set({isSuperUser: false, superUserSince: null})
           .where(eq(membersTable.memberNumber, event.memberNumber))
           .run();
         break;

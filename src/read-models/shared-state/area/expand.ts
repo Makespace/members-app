@@ -25,6 +25,7 @@ const expandOwners =
       RA.map(ownerDetails => ({
         ...ownerDetails.members,
         agreementSigned: O.fromNullable(ownerDetails.members.agreementSigned),
+        superUserSince: O.fromNullable(ownerDetails.members.superUserSince),
         ownershipRecordedAt: ownerDetails.owners.ownershipRecordedAt,
         markedOwnerBy: O.fromEither(
           Actor.decode(ownerDetails.owners.markedOwnerByActor)

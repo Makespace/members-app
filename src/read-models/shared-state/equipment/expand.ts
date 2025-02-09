@@ -42,6 +42,7 @@ const expandTrainers =
       RA.map(member => ({
         ...member.members,
         agreementSigned: O.fromNullable(member.members.agreementSigned),
+        superUserSince: O.fromNullable(member.members.superUserSince),
         markedTrainerByActor: O.fromEither(
           Actor.decode(member.trainers.markedTrainerByActor)
         ),
@@ -84,6 +85,7 @@ const expandTrainedMembers =
           ),
           trainedSince: result.trainedMembers.trainedAt,
           agreementSigned: O.fromNullable(result.members.agreementSigned),
+          superUserSince: O.fromNullable(result.members.superUserSince),
           trainedByMemberNumber,
           trainedByEmail: pipe(
             trainedByMemberNumber,
@@ -143,6 +145,7 @@ const expandMembersAwaitingTraining =
         ...q.members,
         quizId: q.trainingQuizResults.quizId as UUID,
         agreementSigned: O.fromNullable(q.members.agreementSigned),
+        superUserSince: O.fromNullable(q.members.superUserSince),
         waitingSince: q.trainingQuizResults.timestamp,
       })),
       membersAwaitingTraining => ({
@@ -176,6 +179,7 @@ const expandFailedQuizAttempts =
       RA.map(q => ({
         ...q.members,
         agreementSigned: O.fromNullable(q.members.agreementSigned),
+        superUserSince: O.fromNullable(q.members.superUserSince),
         quizId: q.trainingQuizResults.quizId as UUID,
         score: q.trainingQuizResults.score,
         maxScore: q.trainingQuizResults.maxScore,
