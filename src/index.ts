@@ -13,11 +13,15 @@ import {createTerminus} from '@godaddy/terminus';
 import http from 'http';
 import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
+import * as O from 'fp-ts/Option';
 import {ensureEventTableExists} from './init-dependencies/event-store/ensure-events-table-exists';
 import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
 import cookieSession from 'cookie-session';
 import {initRoutes} from './routes';
+import {ensureCachedSheetDataTableExists} from './init-dependencies/google/ensure-cached-sheet-data-table-exists';
+import {loadCachedSheetData} from './load-cached-sheet-data';
+import {timeAsync} from './util';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -88,10 +92,40 @@ server.on('close', () => {
 void (async () => {
   await pipe(
     ensureEventTableExists(dbClient),
+    TE.map(ensureCachedSheetDataTableExists(dbClient)),
     TE.mapLeft(e => deps.logger.error(e, 'Failed to start server'))
   )();
 
-  await deps.sharedReadModel.asyncRefresh()();
+  deps.logger.info('Populating shared read model...');
+  await deps.sharedReadModel.asyncRefresh()(); // We refresh before we load cached sheet data so we know what sheets to load cached data from.
+  deps.logger.info('Loading cached external events...');
+  await timeAsync(elapsedNs =>
+    deps.logger.info(
+      'Loaded cached external events in %sms',
+      elapsedNs / (1000 * 1000)
+    )
+  )(
+    Promise.all(
+      deps.sharedReadModel.equipment
+        .getAll()
+        .map(
+          loadCachedSheetData(
+            deps.getCachedSheetData,
+            deps.logger,
+            deps.sharedReadModel.updateState
+          )
+        )
+    )
+  );
+  for (const equipment of deps.sharedReadModel.equipment.getAll()) {
+    deps.logger.info(
+      'After loading cached external events the last quiz sync for equipment %s (%s) was %s (epoch ms)',
+      equipment.name,
+      equipment.id,
+      O.getOrElse<string | number>(() => 'never')(equipment.lastQuizSync)
+    );
+  }
+
   await deps.sharedReadModel.asyncApplyExternalEventSources()();
 
   server.listen(conf.PORT, () => {
