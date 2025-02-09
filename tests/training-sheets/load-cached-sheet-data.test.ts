@@ -130,57 +130,63 @@ describe('Load cached sheet data', () => {
           _cacheSheetData(data.timestamp, data.sheetId, data.data)()
         )
       );
-      await Promise.all(
-        registerSheet.map(sheet =>
-          _loadCachedSheetData(
-            getSomeOrFail(
-              framework.sharedReadModel.equipment.get(sheet.equipmentId)
-            )
-          )
+    });
+
+    it('Loads the training quiz results for first piece of equipment (0 failed, 1 passed)', async () => {
+      await _loadCachedSheetData(
+        getSomeOrFail(
+          framework.sharedReadModel.equipment.get(registerSheet[0].equipmentId)
         )
       );
-    });
-
-    it('Loads the last quiz sync time correctly', () => {
-      for (let i = 0; i < registerSheet.length; i++) {
-        expect(
-          getSomeOrFail(
-            getSomeOrFail(
-              framework.sharedReadModel.equipment.get(
-                registerSheet[i].equipmentId
-              )
-            ).lastQuizSync
-          )
-        ).toStrictEqual(trainingSyncEvents[i].recordedAt.getTime());
-      }
-    });
-
-    it('Loads the training quiz results for first piece of equipment', () => {
       // Note we are only checking some attributes are as expected. The point of this test is not to check
       // everything - just enough that we verify the load from cache functionality is working as expected.
-      const membersWaiting = getSomeOrFail(
+      const equipmentAfter = getSomeOrFail(
         framework.sharedReadModel.equipment.get(registerSheet[0].equipmentId)
-      ).membersAwaitingTraining;
-      expect(membersWaiting).toHaveLength(1);
-      expect(membersWaiting[0].memberNumber).toStrictEqual(
-        linkMember.memberNumber
       );
-      expect(membersWaiting[0].waitingSince).toStrictEqual(
-        trainingQuizResults[0].recordedAt
+      expect(getSomeOrFail(equipmentAfter.lastQuizSync)).toStrictEqual(
+        trainingSyncEvents[0].recordedAt.getTime()
       );
+
+      expect(equipmentAfter.failedQuizAttempts).toHaveLength(0);
+      expect(equipmentAfter.membersAwaitingTraining).toHaveLength(1);
+      expect(
+        equipmentAfter.membersAwaitingTraining[0].memberNumber
+      ).toStrictEqual(linkMember.memberNumber);
+      expect(
+        equipmentAfter.membersAwaitingTraining[0].waitingSince.getTime()
+      ).toStrictEqual(trainingQuizResults[0].timestampEpochMS);
     });
 
-    it('Loads the training quiz results for second piece of equipment', () => {
-      const membersWaiting = getSomeOrFail(
+    it('Loads the training quiz results for second piece of equipment (1 failed, 0 passed)', async () => {
+      await _loadCachedSheetData(
+        getSomeOrFail(
+          framework.sharedReadModel.equipment.get(registerSheet[1].equipmentId)
+        )
+      );
+      const equipmentAfter = getSomeOrFail(
         framework.sharedReadModel.equipment.get(registerSheet[1].equipmentId)
-      ).membersAwaitingTraining;
-      expect(membersWaiting).toHaveLength(1);
-      expect(membersWaiting[0].memberNumber).toStrictEqual(
+      );
+      expect(getSomeOrFail(equipmentAfter.lastQuizSync)).toStrictEqual(
+        trainingSyncEvents[1].recordedAt.getTime()
+      );
+
+      expect(equipmentAfter.failedQuizAttempts).toHaveLength(1);
+      expect(equipmentAfter.failedQuizAttempts[0].memberNumber).toStrictEqual(
         linkMember.memberNumber
       );
-      expect(membersWaiting[0].waitingSince).toStrictEqual(
-        trainingQuizResults[1].recordedAt
+      expect(equipmentAfter.failedQuizAttempts[0].score).toStrictEqual(
+        trainingQuizResults[1].score
       );
+      expect(equipmentAfter.failedQuizAttempts[0].maxScore).toStrictEqual(
+        trainingQuizResults[1].maxScore
+      );
+      expect(equipmentAfter.failedQuizAttempts[0].percentage).toStrictEqual(
+        trainingQuizResults[1].percentage
+      );
+      expect(
+        equipmentAfter.failedQuizAttempts[0].timestamp.getTime()
+      ).toStrictEqual(trainingQuizResults[1].timestampEpochMS);
+      expect(equipmentAfter.membersAwaitingTraining).toHaveLength(0);
     });
   });
 });
