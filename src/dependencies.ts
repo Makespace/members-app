@@ -39,11 +39,10 @@ export type Dependencies = {
   logger: Logger;
   rateLimitSendingOfEmails: (email: Email) => TE.TaskEither<Failure, Email>;
   sendEmail: (email: Email) => TE.TaskEither<Failure, string>;
-  getCachedSheetData: () => TE.TaskEither<
+  getCachedSheetData: (sheetId: string) => TE.TaskEither<
     FailureWithStatus,
     ReadonlyArray<{
       cached_at: Date;
-      sheet_id: string;
       cached_data: t.Validation<
         ReadonlyArray<
           | EventOfType<'EquipmentTrainingQuizResult'>
