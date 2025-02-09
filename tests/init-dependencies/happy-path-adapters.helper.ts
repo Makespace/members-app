@@ -39,5 +39,5 @@ export const happyPathAdapters: Dependencies = {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getAllEventsByType: <T extends EventName>(_eventType: T) => TE.right([]),
   cacheSheetData,
-  getCachedSheetData: () => TE.right([]),
+  getCachedSheetData: () => TE.right(O.none),
 };

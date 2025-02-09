@@ -8,7 +8,7 @@ import {UUID} from 'io-ts-types';
 import * as t from 'io-ts';
 import {faker} from '@faker-js/faker';
 import {constructEvent, EventOfType} from '../../src/types/domain-event';
-import {getRightOrFail} from '../helpers';
+import {getRightOrFail, getSomeOrFail} from '../helpers';
 import {ensureCachedSheetDataTableExists} from '../../src/init-dependencies/google/ensure-cached-sheet-data-table-exists';
 
 describe('Cache sheet data', () => {
@@ -27,16 +27,15 @@ describe('Cache sheet data', () => {
       percentage: 100,
       timestampEpochMS: 1738623209,
     };
-    let cachedData: ReadonlyArray<{
+    let cachedData: {
       cached_at: Date;
-      sheet_id: string;
       cached_data: t.Validation<
         ReadonlyArray<
           | EventOfType<'EquipmentTrainingQuizResult'>
           | EventOfType<'EquipmentTrainingQuizSync'>
         >
       >;
-    }>;
+    };
     let db: libsqlClient.Client;
     beforeEach(async () => {
       db = libsqlClient.createClient({url: ':memory:'});
@@ -49,13 +48,12 @@ describe('Cache sheet data', () => {
           constructEvent('EquipmentTrainingQuizResult')(trainingQuizResult),
         ])()
       );
-      cachedData = getRightOrFail(await getCachedSheetData(db)()());
-    });
-    it('Each sheet is cached', () => {
-      expect(cachedData).toHaveLength(1); // 1 sheet
+      cachedData = getSomeOrFail(
+        getRightOrFail(await getCachedSheetData(db)(sheetId)())
+      );
     });
     it('All events cached are returned', () => {
-      const returnedCachedData = getRightOrFail(cachedData[0].cached_data);
+      const returnedCachedData = getRightOrFail(cachedData.cached_data);
       expect(returnedCachedData).toHaveLength(2); // 2 events.
       returnedCachedData.forEach(e =>
         expect(e.equipmentId).toStrictEqual(equipmentId)
@@ -65,22 +63,20 @@ describe('Cache sheet data', () => {
       ).toMatchObject(trainingQuizResult);
     });
     it('Event cache is correctly labeled', () => {
-      expect(cachedData[0].sheet_id).toStrictEqual(sheetId);
-      expect(cachedData[0].cached_at).toStrictEqual(cacheTimestamp);
+      expect(cachedData.cached_at).toStrictEqual(cacheTimestamp);
     });
 
     describe('Overwrite cache then restore', () => {
       const newCacheTimestamp = new Date(2024, 1, 23, 5, 23, 45);
-      let cachedDataAfter: ReadonlyArray<{
+      let cachedDataAfter: {
         cached_at: Date;
-        sheet_id: string;
         cached_data: t.Validation<
           ReadonlyArray<
             | EventOfType<'EquipmentTrainingQuizResult'>
             | EventOfType<'EquipmentTrainingQuizSync'>
           >
         >;
-      }>;
+      };
       beforeEach(async () => {
         getRightOrFail(
           await cacheSheetData(db)(newCacheTimestamp, sheetId, [
@@ -111,35 +107,39 @@ describe('Cache sheet data', () => {
             }),
           ])()
         );
-        cachedDataAfter = getRightOrFail(await getCachedSheetData(db)()());
-      });
-      it('Each sheet is cached', () => {
-        expect(cachedDataAfter).toHaveLength(1); // 1 sheet
+        cachedDataAfter = getSomeOrFail(
+          getRightOrFail(await getCachedSheetData(db)(sheetId)())
+        );
       });
       it('All events cached are returned', () => {
-        expect(getRightOrFail(cachedDataAfter[0].cached_data)).toHaveLength(3); // 3 events.
+        expect(getRightOrFail(cachedDataAfter.cached_data)).toHaveLength(3); // 3 events.
       });
       it('Event cache is correctly labeled', () => {
-        expect(cachedDataAfter[0].sheet_id).toStrictEqual(sheetId);
-        expect(cachedDataAfter[0].cached_at).toStrictEqual(newCacheTimestamp);
+        expect(cachedDataAfter.cached_at).toStrictEqual(newCacheTimestamp);
       });
     });
     describe('Cache multiple equipment', () => {
       const secondSheetCacheTimestamp = new Date(2024, 1, 23, 5, 23, 45);
       const secondEquipmentId = 'ed779c68-d165-45b3-bd0f-5590021d5337' as UUID;
       const secondSheetId = 'secondSheetId';
-      let cachedDataAfter: ReadonlyArray<{
+      let firstSheetData: {
         cached_at: Date;
-        sheet_id: string;
         cached_data: t.Validation<
           ReadonlyArray<
             | EventOfType<'EquipmentTrainingQuizResult'>
             | EventOfType<'EquipmentTrainingQuizSync'>
           >
         >;
-      }>;
-      let firstSheetData: (typeof cachedDataAfter)[0];
-      let secondSheetData: (typeof cachedDataAfter)[0];
+      };
+      let secondSheetData: {
+        cached_at: Date;
+        cached_data: t.Validation<
+          ReadonlyArray<
+            | EventOfType<'EquipmentTrainingQuizResult'>
+            | EventOfType<'EquipmentTrainingQuizSync'>
+          >
+        >;
+      };
       beforeEach(async () => {
         getRightOrFail(
           await cacheSheetData(db)(secondSheetCacheTimestamp, secondSheetId, [
@@ -159,18 +159,15 @@ describe('Cache sheet data', () => {
             }),
           ])()
         );
-        cachedDataAfter = getRightOrFail(await getCachedSheetData(db)()());
-        firstSheetData = cachedDataAfter.find(
-          data => data.sheet_id === sheetId
-        )!;
-        secondSheetData = cachedDataAfter.find(
-          data => data.sheet_id === secondSheetId
-        )!;
+        firstSheetData = getSomeOrFail(
+          getRightOrFail(await getCachedSheetData(db)(sheetId)())
+        );
+        secondSheetData = getSomeOrFail(
+          getRightOrFail(await getCachedSheetData(db)(secondSheetId)())
+        );
       });
       it('Event cache is correctly labeled', () => {
-        expect(firstSheetData.sheet_id).toStrictEqual(sheetId);
         expect(firstSheetData.cached_at).toStrictEqual(cacheTimestamp);
-        expect(secondSheetData.sheet_id).toStrictEqual(secondSheetId);
         expect(secondSheetData.cached_at).toStrictEqual(
           secondSheetCacheTimestamp
         );
