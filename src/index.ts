@@ -13,6 +13,7 @@ import {createTerminus} from '@godaddy/terminus';
 import http from 'http';
 import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
+import * as O from 'fp-ts/Option';
 import {ensureEventTableExists} from './init-dependencies/event-store/ensure-events-table-exists';
 import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
@@ -116,6 +117,15 @@ void (async () => {
         )
     )
   );
+  for (const equipment of deps.sharedReadModel.equipment.getAll()) {
+    deps.logger.info(
+      'After loading cached external events the last quiz sync for equipment %s (%s) was %s (epoch ms)',
+      equipment.name,
+      equipment.id,
+      O.getOrElse<string | number>(() => 'never')(equipment.lastQuizSync)
+    );
+  }
+
   await deps.sharedReadModel.asyncApplyExternalEventSources()();
 
   server.listen(conf.PORT, () => {
