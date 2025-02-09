@@ -6,7 +6,7 @@ import {UUID} from 'io-ts-types';
 describe('extractGoogleSheetData', () => {
   it('Extract google sheet data, missing columns', () => {
     const results = extractGoogleSheetData(
-      pino(),
+      pino({level: 'silent'}),
       'ABC123',
       'deb0a681-d5f9-4e89-bd0c-e7a0d361c350' as UUID,
       {

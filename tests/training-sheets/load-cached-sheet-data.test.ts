@@ -52,7 +52,9 @@ describe('Load cached sheet data', () => {
     getRightOrFail(
       await ensureCachedSheetDataTableExists(framework.eventStoreDb)()
     );
-    const logger = pino();
+    const logger = pino({
+      level: 'silent',
+    });
     _cacheSheetData = cacheSheetData(framework.eventStoreDb);
     _loadCachedSheetData = loadCachedSheetData(
       getCachedSheetData(framework.eventStoreDb),
