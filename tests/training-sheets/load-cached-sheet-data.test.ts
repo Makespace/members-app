@@ -69,7 +69,9 @@ describe('Load cached sheet data', () => {
   });
   describe('Load previously cached data - 2 pieces of equipment', () => {
     const timestamp = new Date(2024, 1, 23, 4, 23, 45);
-    const trainingQuizResults: EventOfType<'EquipmentTrainingQuizResult'>[] = [
+    const trainingQuizResults: ReadonlyArray<
+      EventOfType<'EquipmentTrainingQuizResult'>
+    > = [
       constructEvent('EquipmentTrainingQuizResult')({
         equipmentId: registerSheet[0].equipmentId,
         id: faker.string.uuid() as UUID,
@@ -93,6 +95,16 @@ describe('Load cached sheet data', () => {
         timestampEpochMS: 1739133422000,
       }),
     ];
+    const trainingSyncEvents: ReadonlyArray<
+      EventOfType<'EquipmentTrainingQuizSync'>
+    > = [
+      constructEvent('EquipmentTrainingQuizSync')({
+        equipmentId: registerSheet[0].equipmentId,
+      }),
+      constructEvent('EquipmentTrainingQuizSync')({
+        equipmentId: registerSheet[1].equipmentId,
+      }),
+    ];
     const data: {
       sheetId: string;
       timestamp: Date;
@@ -104,29 +116,19 @@ describe('Load cached sheet data', () => {
       {
         sheetId: registerSheet[0].trainingSheetId,
         timestamp,
-        data: [
-          constructEvent('EquipmentTrainingQuizSync')({
-            equipmentId: registerSheet[0].equipmentId,
-          }),
-          trainingQuizResults[0],
-        ],
+        data: [trainingSyncEvents[0], trainingQuizResults[0]],
       },
       {
         sheetId: registerSheet[1].trainingSheetId,
         timestamp,
-        data: [
-          constructEvent('EquipmentTrainingQuizSync')({
-            equipmentId: registerSheet[1].equipmentId,
-          }),
-          trainingQuizResults[1],
-        ],
+        data: [trainingSyncEvents[1], trainingQuizResults[1]],
       },
     ];
     beforeEach(async () => {
       await Promise.all(
-        data.map(data => {
-          _cacheSheetData(data.timestamp, data.sheetId, data.data);
-        })
+        data.map(data =>
+          _cacheSheetData(data.timestamp, data.sheetId, data.data)()
+        )
       );
       await Promise.all(
         registerSheet.map(sheet =>
@@ -143,11 +145,13 @@ describe('Load cached sheet data', () => {
       for (let i = 0; i < registerSheet.length; i++) {
         expect(
           getSomeOrFail(
-            framework.sharedReadModel.equipment.get(
-              registerSheet[i].equipmentId
-            )
-          ).lastQuizSync
-        ).toStrictEqual(data[i].timestamp);
+            getSomeOrFail(
+              framework.sharedReadModel.equipment.get(
+                registerSheet[i].equipmentId
+              )
+            ).lastQuizSync
+          )
+        ).toStrictEqual(trainingSyncEvents[i].recordedAt.getTime());
       }
     });
 
