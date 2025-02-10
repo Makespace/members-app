@@ -126,8 +126,6 @@ void (async () => {
     );
   }
 
-  await deps.sharedReadModel.asyncApplyExternalEventSources()();
-
   server.listen(conf.PORT, () => {
     deps.logger.info({port: conf.PORT}, 'Server listening');
     if (conf.PUBLIC_URL.includes('localhost')) {
