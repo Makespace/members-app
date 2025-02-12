@@ -77,7 +77,7 @@ const periodicExternalReadModelRefresh = setInterval(() => {
         'Unexpected error when refreshing read model with external sources'
       )
     );
-}, 300_000);
+}, 30_000);
 server.on('close', () => {
   clearInterval(periodicReadModelRefresh);
   clearInterval(periodicExternalReadModelRefresh);
