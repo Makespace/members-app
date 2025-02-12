@@ -16,7 +16,7 @@ primary_region = 'lhr'
   SMTP_HOST = 'in-v3.mailjet.com'
   SMTP_FROM = 'it-maintainers@makespace.org'
   LOG_LEVEL = 'debug'
-  RUST_BACKTRACE = '1'
+  RUST_BACKTRACE = 'full'
 
 [http_service]
   internal_port = 8080
