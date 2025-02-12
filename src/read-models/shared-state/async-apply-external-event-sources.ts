@@ -38,18 +38,14 @@ const pullNewEquipmentQuizResultsForSheet = async (
   timezone: string,
   updateState: (event: EventOfType<'EquipmentTrainingQuizResult'>) => void
 ) => {
-  logger.info('Processing sheet %s', sheet.name);
+  logger = logger.child({sheet_name: sheet.name});
+  logger.info('Processing sheet');
   for (const [rowStart, rowEnd] of getChunkIndexes(
     2, // 1-indexed and first row is headers.
     sheet.rowCount,
     ROW_BATCH_SIZE
   )) {
-    logger.debug(
-      'Pulling data for sheet %s rows %s to %s',
-      sheet.name,
-      rowStart,
-      rowEnd
-    );
+    logger.debug('Pulling data for sheet rows %s to %s', rowStart, rowEnd);
 
     const [minCol, maxCol] = columnBoundsRequired(sheet);
 
@@ -65,7 +61,9 @@ const pullNewEquipmentQuizResultsForSheet = async (
     if (E.isLeft(data)) {
       logger.error(
         data.left,
-        'Failed to pull data for sheet %s rows %s to %s, skipping rest of sheet'
+        'Failed to pull data for sheet rows %s to %s, skipping rest of sheet',
+        rowStart,
+        rowEnd
       );
       return;
     }
@@ -81,6 +79,7 @@ const pullNewEquipmentQuizResultsForSheet = async (
       ),
       RA.map(updateState)
     );
+    logger.info('Finished processing sheet');
   }
 };
 
