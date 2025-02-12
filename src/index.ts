@@ -65,22 +65,22 @@ const periodicReadModelRefresh = setInterval(() => {
       deps.logger.error(err, 'Unexpected error when refreshing read model')
     );
 }, 5000);
-// const periodicExternalReadModelRefresh = setInterval(() => {
-//   deps.sharedReadModel
-//     .asyncApplyExternalEventSources()()
-//     .then(() =>
-//       deps.logger.info('Refreshed read model with external event sources')
-//     )
-//     .catch(err =>
-//       deps.logger.error(
-//         err,
-//         'Unexpected error when refreshing read model with external sources'
-//       )
-//     );
-// }, 30_000);
+const periodicExternalReadModelRefresh = setInterval(() => {
+  deps.sharedReadModel
+    .asyncApplyExternalEventSources()()
+    .then(() =>
+      deps.logger.info('Refreshed read model with external event sources')
+    )
+    .catch(err =>
+      deps.logger.error(
+        err,
+        'Unexpected error when refreshing read model with external sources'
+      )
+    );
+}, 30_000);
 server.on('close', () => {
   clearInterval(periodicReadModelRefresh);
-  // clearInterval(periodicExternalReadModelRefresh);
+  clearInterval(periodicExternalReadModelRefresh);
 });
 
 // Readmodels are used to get the current status of the background tasks via the
