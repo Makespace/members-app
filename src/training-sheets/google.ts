@@ -12,6 +12,7 @@ import {EpochTimestampMilliseconds} from '../read-models/shared-state/return-typ
 import {GoogleSheetMetadata} from './extract-metadata';
 import {GoogleSpreadsheetDataForSheet} from '../init-dependencies/google/pull_sheet_data';
 import {lookup} from 'fp-ts/ReadonlyArray';
+import {array} from 'fp-ts';
 
 // Bounds to prevent clearly broken parsing.
 const MIN_RECOGNISED_MEMBER_NUMBER = 0;
@@ -270,16 +271,35 @@ export const extractGoogleSheetData =
     spreadsheet: GoogleSpreadsheetDataForSheet
   ): ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>> => {
     return pipe(
-      spreadsheet.sheets[0].data[0].rowData,
-      RA.map(
-        extractFromRow(logger, metadata, equipmentId, trainingSheetId, timezone)
+      spreadsheet.sheets[0].data,
+      array.lookup(0),
+      O.flatMap(sheetData => O.fromNullable(sheetData.rowData)),
+      O.flatMap(row_data =>
+        O.some(
+          pipe(
+            row_data,
+            RA.map(
+              extractFromRow(
+                logger,
+                metadata,
+                equipmentId,
+                trainingSheetId,
+                timezone
+              )
+            ),
+            RA.filterMap(e => e),
+            RA.filter(
+              e =>
+                O.isNone(eventsFromExclusive) ||
+                e.timestampEpochMS > eventsFromExclusive.value
+            )
+          )
+        )
       ),
-      RA.filterMap(e => e),
-      RA.filter(
-        e =>
-          O.isNone(eventsFromExclusive) ||
-          e.timestampEpochMS > eventsFromExclusive.value
-      )
+      O.getOrElse(() => {
+        logger.warn('Failed to get row data, skipping');
+        return [] as ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>>;
+      })
     );
   };
 

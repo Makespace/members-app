@@ -33,10 +33,11 @@ const localPullGoogleSheetData = (
     gsheetData.TRAINING_SHEETS[trainingSheetId].sheets[sheetName]
   );
   if (sheet) {
-    if (rowStart > sheet.sheets[0].data[0].rowData.length) {
+    const rowData = sheet.sheets[0].data[0].rowData!;
+    if (rowStart > rowData.length) {
       return TE.left('Sheet no more data');
     }
-    sheet.sheets[0].data[0].rowData = sheet.sheets[0].data[0].rowData.slice(
+    sheet.sheets[0].data[0].rowData = rowData.slice(
       rowStart - 1, // 1 indexed.
       rowEnd
     ) as NonEmptyArray<{

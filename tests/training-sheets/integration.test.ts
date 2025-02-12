@@ -37,7 +37,7 @@ const getEvents = async (trainingSheetId: string) => {
   });
   const events: DomainEvent[] = [];
   await pullNewEquipmentQuizResults(
-    pino({level: 'silent'}),
+    pino({level: 'trace'}),
     {
       pullGoogleSheetData: pullGoogleSheetData(auth),
       pullGoogleSheetDataMetadata: pullGoogleSheetDataMetadata(auth),
@@ -189,6 +189,21 @@ describe('Google training sheet integration', () => {
 
     expect(userEvents).toStrictEqual(expected);
   });
+  it('Bambu X1', async () => {
+    const events = await getEvents(
+      '1i1vJmCO8_Dkpbv-izOSkffoAeJTNrJsmAV5hD0w2ADw'
+    );
+    expect(events).toHaveLength(729); // Obviously this will change so you will need to manually update.
+    const userEvents = pipe(
+      events,
+      filterUserEvents(TEST_USER),
+      RA.sort(ordByTimestampEpoch),
+      redactEmail,
+      stripNonStatic
+    );
+    console.log(userEvents);
+    expect(userEvents).toHaveLength(3);
+  }, 30000);
 
   // it('Metal Lathe', async () => {
   //   const events = await getEvents(
@@ -282,11 +297,6 @@ describe('Google training sheet integration', () => {
   // it.skip('Metal_Mill', async () => {
   //   const _events = await getEvents(
   //     '1yulN3ewYS2XpT22joP5HteZ9H9qebvSEcFXQhxPwXlk'
-  //   );
-  // });
-  // it.skip('Bambu', async () => {
-  //   const _events = await getEvents(
-  //     '1i1vJmCO8_Dkpbv-izOSkffoAeJTNrJsmAV5hD0w2ADw'
   //   );
   // });
 });
