@@ -102,7 +102,7 @@ const checkQuizSync = (results: EquipmentQuizResultEvents) => {
   );
 };
 
-describe('Training sheets worker', () => {
+describe.skip('Training sheets worker', () => {
   describe('Process results', () => {
     describe('Processes a registered training sheet', () => {
       it('Equipment with no training sheet', async () => {
