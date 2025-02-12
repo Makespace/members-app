@@ -45,6 +45,7 @@ const pullNewEquipmentQuizResultsForSheet = async (
     logger.warn(
       'Skipping sheet because the training sheet has been temporarly disabled'
     );
+    return;
   }
   for (const [rowStart, rowEnd] of getChunkIndexes(
     2, // 1-indexed and first row is headers.
@@ -222,6 +223,7 @@ export const asyncApplyExternalEventSources = (
             | EventOfType<'EquipmentTrainingQuizSync'>
             | EventOfType<'EquipmentTrainingQuizResult'>
         ) => {
+          logger.info('Collected event %o', event);
           events.push(event);
           updateState(event);
         };
