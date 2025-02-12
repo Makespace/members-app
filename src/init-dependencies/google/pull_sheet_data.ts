@@ -52,17 +52,21 @@ export const GoogleSpreadsheetDataForSheet = t.strict({
   sheets: tt.nonEmptyArray(
     // Array always has length = 1 because this is data for a single sheet.
     t.strict({
-      data: tt.nonEmptyArray(
+      data: t.array(
         t.strict({
-          rowData: tt.nonEmptyArray(
-            t.strict({
-              values: tt.nonEmptyArray(
-                t.strict({
-                  formattedValue: tt.withFallback(t.string, ''),
-                })
-              ),
-            })
-          ),
+          rowData: t.union([
+            t.array(
+              t.strict({
+                values: t.array(
+                  t.strict({
+                    formattedValue: tt.withFallback(t.string, ''),
+                  })
+                ),
+              })
+            ),
+            t.undefined,
+            t.null,
+          ]),
         })
       ),
     })

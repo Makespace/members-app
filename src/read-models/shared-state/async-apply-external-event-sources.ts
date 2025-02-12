@@ -63,7 +63,8 @@ const pullNewEquipmentQuizResultsForSheet = async (
       maxCol
     )();
     if (E.isLeft(data)) {
-      logger.debug(
+      logger.error(
+        data.left,
         'Failed to pull data for sheet %s rows %s to %s, skipping rest of sheet'
       );
       return;
