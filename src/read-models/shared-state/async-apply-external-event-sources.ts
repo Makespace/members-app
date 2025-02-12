@@ -171,6 +171,10 @@ export const pullNewEquipmentQuizResults = async (
     );
   }
 
+  logger.info(
+    'Finished pulling equipment quiz results for all sheets, generating quiz sync event...'
+  );
+
   updateState(
     constructEvent('EquipmentTrainingQuizSync')({
       equipmentId: equipment.id,
