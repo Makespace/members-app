@@ -37,9 +37,15 @@ const pullNewEquipmentQuizResultsForSheet = async (
   sheet: GoogleSheetMetadata,
   timezone: string,
   updateState: (event: EventOfType<'EquipmentTrainingQuizResult'>) => void
-) => {
+): Promise<void> => {
   logger = logger.child({sheet_name: sheet.name});
   logger.info('Processing sheet');
+  if (trainingSheetId === '1i1vJmCO8_Dkpbv-izOSkffoAeJTNrJsmAV5hD0w2ADw') {
+    // Trying to identify the source of a rust panic.
+    logger.warn(
+      'Skipping sheet because the training sheet has been temporarly disabled'
+    );
+  }
   for (const [rowStart, rowEnd] of getChunkIndexes(
     2, // 1-indexed and first row is headers.
     sheet.rowCount,
