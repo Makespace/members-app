@@ -64,7 +64,7 @@ const periodicReadModelRefresh = setInterval(() => {
     .catch(err =>
       deps.logger.error(err, 'Unexpected error when refreshing read model')
     );
-}, 5000);
+}, 10000);
 const periodicExternalReadModelRefresh = setInterval(() => {
   deps.sharedReadModel
     .asyncApplyExternalEventSources()()
