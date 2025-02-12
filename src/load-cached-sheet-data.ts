@@ -12,8 +12,8 @@ export const loadCachedSheetData =
   ) =>
   async (equipment: Equipment) => {
     // We only load cached training events for equipment we know about.
-    logger = logger.child({section: 'loadCachedSheetData'});
     const equipmentLogger = logger.child({
+      section: 'loadCachedSheetData',
       equipment_name: equipment.name,
       equipment_id: equipment.id,
       equipment_training_sheet_id: O.getOrElse<string | null>(() => null)(
