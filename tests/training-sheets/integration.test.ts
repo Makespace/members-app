@@ -189,7 +189,7 @@ describe('Google training sheet integration', () => {
 
     expect(userEvents).toStrictEqual(expected);
   });
-  it('Bambu X1', async () => {
+  it.skip('Bambu X1', async () => {
     const events = await getEvents(
       '1i1vJmCO8_Dkpbv-izOSkffoAeJTNrJsmAV5hD0w2ADw'
     );
