@@ -35,7 +35,7 @@ const pullNewEquipmentQuizResultsForSheet = async (
   trainingSheetId: string,
   sheet: GoogleSheetMetadata,
   timezone: string,
-  updateState: (event: EventOfType<'EquipmentTrainingQuizResult'>) => void
+  _updateState: (event: EventOfType<'EquipmentTrainingQuizResult'>) => void
 ): Promise<void> => {
   logger = logger.child({sheet_name: sheet.name});
   logger.info('Processing sheet');
