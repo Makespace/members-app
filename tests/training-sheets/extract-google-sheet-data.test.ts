@@ -2,6 +2,7 @@ import pino from 'pino';
 import * as O from 'fp-ts/Option';
 import {extractGoogleSheetData} from '../../src/training-sheets/google';
 import {UUID} from 'io-ts-types';
+import {getSomeOrFail} from '../helpers';
 
 describe('extractGoogleSheetData', () => {
   it('Extract google sheet data, missing columns', () => {
@@ -42,6 +43,6 @@ describe('extractGoogleSheetData', () => {
       ],
     });
     // Check that no valid results are produced but that we don't error.
-    expect(results).toHaveLength(0);
+    expect(getSomeOrFail(results)).toHaveLength(0);
   });
 });
