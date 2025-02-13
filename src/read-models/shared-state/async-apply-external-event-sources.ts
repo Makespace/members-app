@@ -203,6 +203,11 @@ export const asyncApplyExternalEventSources = (
       return;
     }
     for (const equipment of getAllEquipmentMinimal(currentState)) {
+      if (equipment.id === 'be613ddb-f959-4c07-9dab-a714c1d9dcfd') {
+        logger.error('Skipping bambu equipment async apply completely');
+        continue;
+      }
+
       if (
         O.isSome(equipment.trainingSheetId) &&
         (O.isNone(equipment.lastQuizSync) ||
