@@ -1,10 +1,8 @@
 import {Logger} from 'pino';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
-import * as RA from 'fp-ts/ReadonlyArray';
 import {DomainEvent} from '../../types';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {pipe} from 'fp-ts/lib/function';
 import {EpochTimestampMilliseconds, MinimalEquipment} from './return-types';
 import {
   columnBoundsRequired,
@@ -22,6 +20,7 @@ import {getChunkIndexes} from '../../util';
 import {getAllEquipmentMinimal} from './equipment/get';
 import {expandLastQuizResult} from './equipment/expand';
 import {Dependencies} from '../../dependencies';
+import {inspect} from 'node:util';
 
 const ROW_BATCH_SIZE = 200;
 
@@ -74,18 +73,23 @@ const pullNewEquipmentQuizResultsForSheet = async (
       );
       return;
     }
-    pipe(
-      data.right,
-      extractGoogleSheetData(
-        logger,
-        trainingSheetId,
-        equipment.id,
-        sheet,
-        timezone,
-        equipment.lastQuizResult
-      ),
-      RA.map(updateState)
-    );
+    logger.info('Pulled data from google');
+    logger.info(inspect(data));
+    logger.info('About to extract google sheet data');
+    const result = extractGoogleSheetData(
+      logger,
+      trainingSheetId,
+      equipment.id,
+      sheet,
+      timezone,
+      equipment.lastQuizResult
+    )(data.right);
+    logger.info('Google sheet data extracted, result:');
+    logger.info(inspect(result));
+    logger.info('Updating data with the extracted data');
+    if (O.isSome(result)) {
+      result.value.forEach(updateState);
+    }
     logger.info('Finished processing sheet');
   }
 };

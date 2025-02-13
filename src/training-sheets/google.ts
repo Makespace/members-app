@@ -269,8 +269,8 @@ export const extractGoogleSheetData =
   ) =>
   (
     spreadsheet: GoogleSpreadsheetDataForSheet
-  ): ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>> => {
-    return pipe(
+  ): O.Option<ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>>> =>
+    pipe(
       spreadsheet.sheets[0].data,
       array.lookup(0),
       O.flatMap(sheetData => O.fromNullable(sheetData.rowData)),
@@ -295,13 +295,8 @@ export const extractGoogleSheetData =
             )
           )
         )
-      ),
-      O.getOrElse(() => {
-        logger.warn('Failed to get row data, skipping');
-        return [] as ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>>;
-      })
+      )
     );
-  };
 
 export const shouldPullFromSheet = (sheet: {
   properties: {
