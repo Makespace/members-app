@@ -11,6 +11,12 @@ import {GoogleHelpers} from '../../init-dependencies/google/pull_sheet_data';
 import {getAllEquipmentMinimal} from './equipment/get';
 import {expandLastQuizResult} from './equipment/expand';
 import {Dependencies} from '../../dependencies';
+import {
+  extractGoogleSheetMetadata,
+  GoogleSheetMetadata,
+  MAX_COLUMN_INDEX,
+} from '../../training-sheets/extract-metadata';
+import {shouldPullFromSheet} from '../../training-sheets/google';
 import {inspect} from 'node:util';
 
 // const ROW_BATCH_SIZE = 200;
@@ -121,49 +127,52 @@ export const pullNewEquipmentQuizResults = async (
     return;
   }
 
-  logger.info('Initial meta data');
-  logger.info(inspect(initialMeta));
-  return;
+  // Early return here - all is ok.
 
-  // const sheets: GoogleSheetMetadata[] = [];
-  // for (const sheet of initialMeta.right.sheets) {
-  //   if (!shouldPullFromSheet(sheet)) {
-  //     logger.warn(
-  //       "Skipping sheet '%s' as doesn't match expected for form responses",
-  //       sheet.properties.title
-  //     );
-  //     continue;
-  //   }
+  logger.info('Got meta data for sheet...');
 
-  //   const firstRowData = await googleHelpers.pullGoogleSheetData(
-  //     logger,
-  //     trainingSheetId,
-  //     sheet.properties.title,
-  //     1,
-  //     1,
-  //     0,
-  //     MAX_COLUMN_INDEX
-  //   )();
-  //   if (E.isLeft(firstRowData)) {
-  //     logger.warn(
-  //       'Failed to get google sheet first row data for sheet %s, skipping',
-  //       sheet.properties.title
-  //     );
-  //     continue;
-  //   }
+  const sheets: GoogleSheetMetadata[] = [];
+  for (const sheet of initialMeta.right.sheets) {
+    if (!shouldPullFromSheet(sheet)) {
+      logger.warn(
+        "Skipping sheet '%s' as doesn't match expected for form responses",
+        sheet.properties.title
+      );
+      continue;
+    }
 
-  //   const meta = extractGoogleSheetMetadata(logger)(sheet, firstRowData.right);
-  //   if (O.isNone(meta)) {
-  //     continue;
-  //   }
+    const firstRowData = await googleHelpers.pullGoogleSheetData(
+      logger,
+      trainingSheetId,
+      sheet.properties.title,
+      1,
+      1,
+      0,
+      MAX_COLUMN_INDEX
+    )();
+    if (E.isLeft(firstRowData)) {
+      logger.warn(
+        'Failed to get google sheet first row data for sheet %s, skipping',
+        sheet.properties.title
+      );
+      continue;
+    }
 
-  //   logger.info(
-  //     'Got metadata for sheet: %s: %o',
-  //     sheet.properties.title,
-  //     meta.value
-  //   );
-  //   sheets.push(meta.value);
-  // }
+    const meta = extractGoogleSheetMetadata(logger)(sheet, firstRowData.right);
+    if (O.isNone(meta)) {
+      continue;
+    }
+
+    logger.info(
+      'Got metadata for sheet: %s: %o',
+      sheet.properties.title,
+      meta.value
+    );
+    sheets.push(meta.value);
+  }
+
+  logger.info('Sheets to pull');
+  logger.info(inspect(sheets));
 
   // for (const sheet of sheets) {
   //   await pullNewEquipmentQuizResultsForSheet(
