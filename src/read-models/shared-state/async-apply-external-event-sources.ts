@@ -86,10 +86,10 @@ const pullNewEquipmentQuizResultsForSheet = async (
     )(data.right);
     logger.info('Google sheet data extracted, result:');
     logger.info(inspect(result));
-    logger.info('Updating data with the extracted data');
-    if (O.isSome(result)) {
-      result.value.forEach(updateState);
-    }
+    logger.info('[SKIPPED] Updating data with the extracted data');
+    // if (O.isSome(result)) {
+    //   result.value.forEach(updateState);
+    // }
     logger.info('Finished processing sheet');
   }
 };
