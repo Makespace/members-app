@@ -35,7 +35,7 @@ const pullNewEquipmentQuizResultsForSheet = async (
   trainingSheetId: string,
   sheet: GoogleSheetMetadata,
   timezone: string,
-  _updateState: (event: EventOfType<'EquipmentTrainingQuizResult'>) => void
+  updateState: (event: EventOfType<'EquipmentTrainingQuizResult'>) => void
 ): Promise<void> => {
   logger = logger.child({sheet_name: sheet.name});
   logger.info('Processing sheet');
@@ -86,12 +86,13 @@ const pullNewEquipmentQuizResultsForSheet = async (
     )(data.right);
     logger.info('Google sheet data extracted, result:');
     logger.info(inspect(result));
-    logger.info('[SKIPPED] Updating data with the extracted data');
-    // if (O.isSome(result)) {
-    //   result.value.forEach(updateState);
-    // }
-    logger.info('Finished processing sheet');
+    logger.info('Updating data with the extracted data');
+    if (O.isSome(result)) {
+      result.value.forEach(updateState);
+    }
+    return; // Early return.
   }
+  logger.info('Finished processing sheet');
 };
 
 export const pullNewEquipmentQuizResults = async (
