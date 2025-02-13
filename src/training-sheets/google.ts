@@ -24,7 +24,7 @@ const MIN_RECOGNISED_SCORE = 0;
 const MIN_VALID_TIMESTAMP_EPOCH_MS =
   1546304461_000 as EpochTimestampMilliseconds; // Year 2019, Can't see any training results before this.
 
-const FORM_RESPONSES_SHEET_REGEX = /^Form Responses [0-9]*/i;
+// const FORM_RESPONSES_SHEET_REGEX = /^Form Responses [0-9]*/i;
 
 const FORMATS_TO_TRY = [
   'dd/MM/yyyy HH:mm:ss',
@@ -298,11 +298,11 @@ export const extractGoogleSheetData =
       )
     );
 
-export const shouldPullFromSheet = (sheet: {
-  properties: {
-    title: string;
-  };
-}): boolean => FORM_RESPONSES_SHEET_REGEX.test(sheet.properties.title);
+// const shouldPullFromSheet = (sheet: {
+//   properties: {
+//     title: string;
+//   };
+// }): boolean => FORM_RESPONSES_SHEET_REGEX.test(sheet.properties.title);
 
 export const columnBoundsRequired = (
   sheet: GoogleSheetMetadata

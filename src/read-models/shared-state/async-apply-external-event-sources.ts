@@ -4,102 +4,93 @@ import * as O from 'fp-ts/Option';
 import {DomainEvent} from '../../types';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {EpochTimestampMilliseconds, MinimalEquipment} from './return-types';
-import {
-  columnBoundsRequired,
-  extractGoogleSheetData,
-  shouldPullFromSheet,
-} from '../../training-sheets/google';
-import {constructEvent, EventOfType} from '../../types/domain-event';
+
+import {EventOfType} from '../../types/domain-event';
 import {GoogleHelpers} from '../../init-dependencies/google/pull_sheet_data';
-import {
-  extractGoogleSheetMetadata,
-  GoogleSheetMetadata,
-  MAX_COLUMN_INDEX,
-} from '../../training-sheets/extract-metadata';
-import {getChunkIndexes} from '../../util';
+
 import {getAllEquipmentMinimal} from './equipment/get';
 import {expandLastQuizResult} from './equipment/expand';
 import {Dependencies} from '../../dependencies';
 import {inspect} from 'node:util';
 
-const ROW_BATCH_SIZE = 200;
+// const ROW_BATCH_SIZE = 200;
 
 export type EquipmentWithLastQuizResult = MinimalEquipment & {
   lastQuizResult: O.Option<EpochTimestampMilliseconds>;
 };
 
-const pullNewEquipmentQuizResultsForSheet = async (
-  logger: Logger,
-  googleHelpers: GoogleHelpers,
-  equipment: EquipmentWithLastQuizResult,
-  trainingSheetId: string,
-  sheet: GoogleSheetMetadata,
-  timezone: string,
-  updateState: (event: EventOfType<'EquipmentTrainingQuizResult'>) => void
-): Promise<void> => {
-  logger = logger.child({sheet_name: sheet.name});
-  logger.info('Processing sheet');
-  if (trainingSheetId === '1i1vJmCO8_Dkpbv-izOSkffoAeJTNrJsmAV5hD0w2ADw') {
-    // Trying to identify the source of a rust panic.
-    logger.warn(
-      'Skipping sheet because the training sheet has been temporarly disabled'
-    );
-    return;
-  }
-  for (const [rowStart, rowEnd] of getChunkIndexes(
-    2, // 1-indexed and first row is headers.
-    sheet.rowCount,
-    ROW_BATCH_SIZE
-  )) {
-    logger.debug('Pulling data for sheet rows %s to %s', rowStart, rowEnd);
+// const pullNewEquipmentQuizResultsForSheet = async (
+//   logger: Logger,
+//   googleHelpers: GoogleHelpers,
+//   equipment: EquipmentWithLastQuizResult,
+//   trainingSheetId: string,
+//   sheet: GoogleSheetMetadata,
+//   timezone: string,
+//   updateState: (event: EventOfType<'EquipmentTrainingQuizResult'>) => void
+// ): Promise<void> => {
+//   logger = logger.child({sheet_name: sheet.name});
+//   logger.info('Processing sheet');
+//   if (trainingSheetId === '1i1vJmCO8_Dkpbv-izOSkffoAeJTNrJsmAV5hD0w2ADw') {
+//     // Trying to identify the source of a rust panic.
+//     logger.warn(
+//       'Skipping sheet because the training sheet has been temporarly disabled'
+//     );
+//     return;
+//   }
+//   for (const [rowStart, rowEnd] of getChunkIndexes(
+//     2, // 1-indexed and first row is headers.
+//     sheet.rowCount,
+//     ROW_BATCH_SIZE
+//   )) {
+//     logger.debug('Pulling data for sheet rows %s to %s', rowStart, rowEnd);
 
-    const [minCol, maxCol] = columnBoundsRequired(sheet);
+//     const [minCol, maxCol] = columnBoundsRequired(sheet);
 
-    const data = await googleHelpers.pullGoogleSheetData(
-      logger,
-      trainingSheetId,
-      sheet.name,
-      rowStart,
-      rowEnd,
-      minCol,
-      maxCol
-    )();
-    if (E.isLeft(data)) {
-      logger.error(
-        data.left,
-        'Failed to pull data for sheet rows %s to %s, skipping rest of sheet',
-        rowStart,
-        rowEnd
-      );
-      return;
-    }
-    logger.info('Pulled data from google');
-    logger.info(inspect(data));
-    logger.info('About to extract google sheet data');
-    const result = extractGoogleSheetData(
-      logger,
-      trainingSheetId,
-      equipment.id,
-      sheet,
-      timezone,
-      equipment.lastQuizResult
-    )(data.right);
-    logger.info('Google sheet data extracted, result:');
-    logger.info(inspect(result));
-    logger.info('Updating data with the extracted data');
-    if (O.isSome(result)) {
-      result.value.forEach(updateState);
-    }
-    return; // Early return.
-  }
-  logger.info('Finished processing sheet');
-};
+//     const data = await googleHelpers.pullGoogleSheetData(
+//       logger,
+//       trainingSheetId,
+//       sheet.name,
+//       rowStart,
+//       rowEnd,
+//       minCol,
+//       maxCol
+//     )();
+//     if (E.isLeft(data)) {
+//       logger.error(
+//         data.left,
+//         'Failed to pull data for sheet rows %s to %s, skipping rest of sheet',
+//         rowStart,
+//         rowEnd
+//       );
+//       return;
+//     }
+//     logger.info('Pulled data from google');
+//     logger.info(inspect(data));
+//     logger.info('About to extract google sheet data');
+//     const result = extractGoogleSheetData(
+//       logger,
+//       trainingSheetId,
+//       equipment.id,
+//       sheet,
+//       timezone,
+//       equipment.lastQuizResult
+//     )(data.right);
+//     logger.info('Google sheet data extracted, result:');
+//     logger.info(inspect(result));
+//     logger.info('Updating data with the extracted data');
+//     if (O.isSome(result)) {
+//       result.value.forEach(updateState);
+//     }
+//     return; // Early return.
+//   }
+//   logger.info('Finished processing sheet');
+// };
 
 export const pullNewEquipmentQuizResults = async (
   logger: Logger,
   googleHelpers: GoogleHelpers,
   equipment: EquipmentWithLastQuizResult,
-  updateState: (
+  _updateState: (
     event:
       | EventOfType<'EquipmentTrainingQuizSync'>
       | EventOfType<'EquipmentTrainingQuizResult'>
@@ -130,67 +121,71 @@ export const pullNewEquipmentQuizResults = async (
     return;
   }
 
-  const sheets: GoogleSheetMetadata[] = [];
-  for (const sheet of initialMeta.right.sheets) {
-    if (!shouldPullFromSheet(sheet)) {
-      logger.warn(
-        "Skipping sheet '%s' as doesn't match expected for form responses",
-        sheet.properties.title
-      );
-      continue;
-    }
+  logger.info('Initial meta data');
+  logger.info(inspect(initialMeta));
+  return;
 
-    const firstRowData = await googleHelpers.pullGoogleSheetData(
-      logger,
-      trainingSheetId,
-      sheet.properties.title,
-      1,
-      1,
-      0,
-      MAX_COLUMN_INDEX
-    )();
-    if (E.isLeft(firstRowData)) {
-      logger.warn(
-        'Failed to get google sheet first row data for sheet %s, skipping',
-        sheet.properties.title
-      );
-      continue;
-    }
+  // const sheets: GoogleSheetMetadata[] = [];
+  // for (const sheet of initialMeta.right.sheets) {
+  //   if (!shouldPullFromSheet(sheet)) {
+  //     logger.warn(
+  //       "Skipping sheet '%s' as doesn't match expected for form responses",
+  //       sheet.properties.title
+  //     );
+  //     continue;
+  //   }
 
-    const meta = extractGoogleSheetMetadata(logger)(sheet, firstRowData.right);
-    if (O.isNone(meta)) {
-      continue;
-    }
+  //   const firstRowData = await googleHelpers.pullGoogleSheetData(
+  //     logger,
+  //     trainingSheetId,
+  //     sheet.properties.title,
+  //     1,
+  //     1,
+  //     0,
+  //     MAX_COLUMN_INDEX
+  //   )();
+  //   if (E.isLeft(firstRowData)) {
+  //     logger.warn(
+  //       'Failed to get google sheet first row data for sheet %s, skipping',
+  //       sheet.properties.title
+  //     );
+  //     continue;
+  //   }
 
-    logger.info(
-      'Got metadata for sheet: %s: %o',
-      sheet.properties.title,
-      meta.value
-    );
-    sheets.push(meta.value);
-  }
+  //   const meta = extractGoogleSheetMetadata(logger)(sheet, firstRowData.right);
+  //   if (O.isNone(meta)) {
+  //     continue;
+  //   }
 
-  for (const sheet of sheets) {
-    await pullNewEquipmentQuizResultsForSheet(
-      logger,
-      googleHelpers,
-      equipment,
-      trainingSheetId,
-      sheet,
-      initialMeta.right.properties.timeZone,
-      updateState
-    );
-  }
+  //   logger.info(
+  //     'Got metadata for sheet: %s: %o',
+  //     sheet.properties.title,
+  //     meta.value
+  //   );
+  //   sheets.push(meta.value);
+  // }
 
-  logger.info(
-    'Finished pulling equipment quiz results for all sheets, generating quiz sync event...'
-  );
+  // for (const sheet of sheets) {
+  //   await pullNewEquipmentQuizResultsForSheet(
+  //     logger,
+  //     googleHelpers,
+  //     equipment,
+  //     trainingSheetId,
+  //     sheet,
+  //     initialMeta.right.properties.timeZone,
+  //     updateState
+  //   );
+  // }
 
-  updateState(
-    constructEvent('EquipmentTrainingQuizSync')({
-      equipmentId: equipment.id,
-    })
-  );
+  // logger.info(
+  //   'Finished pulling equipment quiz results for all sheets, generating quiz sync event...'
+  // );
+
+  // updateState(
+  //   constructEvent('EquipmentTrainingQuizSync')({
+  //     equipmentId: equipment.id,
+  //   })
+  // );
 };
 
 export const asyncApplyExternalEventSources = (
@@ -199,7 +194,7 @@ export const asyncApplyExternalEventSources = (
   googleHelpers: O.Option<GoogleHelpers>,
   updateState: (event: DomainEvent) => void,
   googleRateLimitMs: number,
-  cacheSheetData: Dependencies['cacheSheetData']
+  _cacheSheetData: Dependencies['cacheSheetData']
 ) => {
   return () => async () => {
     logger.info('Applying external event sources...');
@@ -224,43 +219,43 @@ export const asyncApplyExternalEventSources = (
           'Triggering event update from google training sheets for %s...',
           equipment.name
         );
-        const events: (
-          | EventOfType<'EquipmentTrainingQuizSync'>
-          | EventOfType<'EquipmentTrainingQuizResult'>
-        )[] = [];
-        const collectEvents = (
-          event:
-            | EventOfType<'EquipmentTrainingQuizSync'>
-            | EventOfType<'EquipmentTrainingQuizResult'>
-        ) => {
-          logger.info('Collected event %o', event);
-          events.push(event);
-          // updateState(event);
-        };
+        // const events: (
+        //   | EventOfType<'EquipmentTrainingQuizSync'>
+        //   | EventOfType<'EquipmentTrainingQuizResult'>
+        // )[] = [];
+        // const collectEvents = (
+        //   event:
+        //     | EventOfType<'EquipmentTrainingQuizSync'>
+        //     | EventOfType<'EquipmentTrainingQuizResult'>
+        // ) => {
+        //   logger.info('Collected event %o', event);
+        //   events.push(event);
+        //   // updateState(event);
+        // };
 
         await pullNewEquipmentQuizResults(
           logger,
           googleHelpers.value,
           expandLastQuizResult(currentState)(equipment),
-          collectEvents
+          updateState
         );
         logger.info(
           'Finished pulling events from google training sheet for %s, caching...',
           equipment.name
         );
-        const x = await cacheSheetData(
-          new Date(),
-          equipment.trainingSheetId.value,
-          events
-        )();
-        if (E.isLeft(x)) {
-          logger.error(
-            'Failed to cache training sheet data for %s training sheet id %s, due to: %s',
-            equipment.name,
-            equipment.trainingSheetId,
-            x.left.message
-          );
-        }
+        // const x = await cacheSheetData(
+        //   new Date(),
+        //   equipment.trainingSheetId.value,
+        //   events
+        // )();
+        // if (E.isLeft(x)) {
+        //   logger.error(
+        //     'Failed to cache training sheet data for %s training sheet id %s, due to: %s',
+        //     equipment.name,
+        //     equipment.trainingSheetId,
+        //     x.left.message
+        //   );
+        // }
       }
     }
     logger.info('Finished applying external event sources');
