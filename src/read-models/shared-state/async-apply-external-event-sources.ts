@@ -230,7 +230,7 @@ export const asyncApplyExternalEventSources = (
         ) => {
           logger.info('Collected event %o', event);
           events.push(event);
-          updateState(event);
+          // updateState(event);
         };
 
         await pullNewEquipmentQuizResults(
