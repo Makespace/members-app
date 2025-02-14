@@ -5,7 +5,7 @@ import {DomainEvent} from '../../types';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {EpochTimestampMilliseconds, MinimalEquipment} from './return-types';
 
-import {EventOfType} from '../../types/domain-event';
+import {constructEvent, EventOfType} from '../../types/domain-event';
 import {GoogleHelpers} from '../../init-dependencies/google/pull_sheet_data';
 
 import {getAllEquipmentMinimal} from './equipment/get';
@@ -37,7 +37,7 @@ const pullNewEquipmentQuizResultsForSheet = async (
   trainingSheetId: string,
   sheet: GoogleSheetMetadata,
   timezone: string,
-  _updateState: (event: EventOfType<'EquipmentTrainingQuizResult'>) => void
+  updateState: (event: EventOfType<'EquipmentTrainingQuizResult'>) => void
 ): Promise<void> => {
   logger = logger.child({sheet_name: sheet.name});
   logger.info('Processing sheet');
@@ -83,10 +83,10 @@ const pullNewEquipmentQuizResultsForSheet = async (
     logger.info('Google sheet data extracted, result:');
     await new Promise(res => setTimeout(res, 5000));
     logger.info(inspect(result));
-    // logger.info('Updating data with the extracted data');
-    // if (O.isSome(result)) {
-    //   result.value.forEach(updateState);
-    // }
+    logger.info('Updating data with the extracted data');
+    if (O.isSome(result)) {
+      result.value.forEach(updateState);
+    }
   }
   logger.info('Finished processing sheet');
 };
@@ -185,15 +185,15 @@ export const pullNewEquipmentQuizResults = async (
     );
   }
 
-  // logger.info(
-  //   'Finished pulling equipment quiz results for all sheets, generating quiz sync event...'
-  // );
+  logger.info(
+    'Finished pulling equipment quiz results for all sheets, generating quiz sync event...'
+  );
 
-  // updateState(
-  //   constructEvent('EquipmentTrainingQuizSync')({
-  //     equipmentId: equipment.id,
-  //   })
-  // );
+  updateState(
+    constructEvent('EquipmentTrainingQuizSync')({
+      equipmentId: equipment.id,
+    })
+  );
 };
 
 export const asyncApplyExternalEventSources = (
