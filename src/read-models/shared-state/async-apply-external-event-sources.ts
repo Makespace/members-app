@@ -18,6 +18,7 @@ import {
 } from '../../training-sheets/extract-metadata';
 import {
   columnBoundsRequired,
+  extractGoogleSheetData,
   shouldPullFromSheet,
 } from '../../training-sheets/google';
 import {inspect} from 'node:util';
@@ -35,7 +36,7 @@ const pullNewEquipmentQuizResultsForSheet = async (
   equipment: EquipmentWithLastQuizResult,
   trainingSheetId: string,
   sheet: GoogleSheetMetadata,
-  _timezone: string,
+  timezone: string,
   _updateState: (event: EventOfType<'EquipmentTrainingQuizResult'>) => void
 ): Promise<void> => {
   logger = logger.child({sheet_name: sheet.name});
@@ -70,17 +71,18 @@ const pullNewEquipmentQuizResultsForSheet = async (
     logger.info('Pulled data from google');
     logger.info(inspect(data));
     await new Promise(res => setTimeout(res, 5000));
-    // logger.info('About to extract google sheet data');
-    // const result = extractGoogleSheetData(
-    //   logger,
-    //   trainingSheetId,
-    //   equipment.id,
-    //   sheet,
-    //   timezone,
-    //   equipment.lastQuizResult
-    // )(data.right);
-    // logger.info('Google sheet data extracted, result:');
-    // logger.info(inspect(result));
+    logger.info('About to extract google sheet data');
+    const result = extractGoogleSheetData(
+      logger,
+      trainingSheetId,
+      equipment.id,
+      sheet,
+      timezone,
+      equipment.lastQuizResult
+    )(data.right);
+    logger.info('Google sheet data extracted, result:');
+    await new Promise(res => setTimeout(res, 5000));
+    logger.info(inspect(result));
     // logger.info('Updating data with the extracted data');
     // if (O.isSome(result)) {
     //   result.value.forEach(updateState);
