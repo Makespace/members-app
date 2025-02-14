@@ -49,7 +49,7 @@ const pullNewEquipmentQuizResultsForSheet = async (
 
     const [minCol, maxCol] = columnBoundsRequired(sheet);
 
-    await googleHelpers.pullGoogleSheetData(
+    const data = await googleHelpers.pullGoogleSheetData(
       logger,
       trainingSheetId,
       sheet.name,
@@ -58,17 +58,18 @@ const pullNewEquipmentQuizResultsForSheet = async (
       minCol,
       maxCol
     )();
-    // if (E.isLeft(data)) {
-    //   logger.error(
-    //     data.left,
-    //     'Failed to pull data for sheet rows %s to %s, skipping rest of sheet',
-    //     rowStart,
-    //     rowEnd
-    //   );
-    //   return;
-    // }
-    // logger.info('Pulled data from google');
-    // logger.info(inspect(data));
+    if (E.isLeft(data)) {
+      logger.error(
+        data.left,
+        'Failed to pull data for sheet rows %s to %s, skipping rest of sheet',
+        rowStart,
+        rowEnd
+      );
+      return;
+    }
+    logger.info('Pulled data from google');
+    logger.info(inspect(data));
+    await new Promise(res => setTimeout(res, 5000));
     // logger.info('About to extract google sheet data');
     // const result = extractGoogleSheetData(
     //   logger,
