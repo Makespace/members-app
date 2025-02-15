@@ -67,9 +67,7 @@ const pullNewEquipmentQuizResultsForSheet = async (
       );
       return;
     }
-    logger.info('Pulled data from google');
-    await new Promise(res => setTimeout(res, 5000));
-    logger.info('About to extract google sheet data');
+    logger.info('Pulled data from google, extracting...');
     const result = extractGoogleSheetData(
       logger,
       trainingSheetId,
@@ -78,9 +76,9 @@ const pullNewEquipmentQuizResultsForSheet = async (
       timezone,
       equipment.lastQuizResult
     )(data.right);
-    logger.info('Google sheet data extracted, result:');
-    await new Promise(res => setTimeout(res, 5000));
-    logger.info('Updating data with the extracted data');
+    logger.info(
+      'Google sheet data extracted, updating data with the extracted data...'
+    );
     if (O.isSome(result)) {
       result.value.forEach(updateState);
     }
@@ -234,7 +232,8 @@ export const asyncApplyExternalEventSources = (
           collectEvents
         );
         logger.info(
-          'Finished pulling events from google training sheet for %s, caching...',
+          'Finished pulling %s events from google training sheet for %s, caching...',
+          events.length,
           equipment.name
         );
         // const x = await cacheSheetData(
