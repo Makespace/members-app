@@ -110,8 +110,14 @@ const expandMembersAwaitingTraining =
   (db: BetterSQLite3Database) =>
   <T extends MinimalEquipment>(
     equipment: T
-  ): T & {membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>} =>
-    pipe(
+  ): T & {membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>} => {
+    if (O.isNone(equipment.trainingSheetId)) {
+      return {
+        ...equipment,
+        membersAwaitingTraining: [],
+      };
+    }
+    return pipe(
       db
         .select()
         .from(trainingQuizTable)
@@ -124,12 +130,13 @@ const expandMembersAwaitingTraining =
           trainedMemberstable,
           eq(membersTable.memberNumber, trainedMemberstable.memberNumber)
         )
-        .where(and(eq(trainingQuizTable.equipmentId, equipment.id), quizPassed))
+        .where(
+          and(
+            and(eq(trainingQuizTable.equipmentId, equipment.id), quizPassed),
+            eq(trainingQuizTable.sheetId, equipment.trainingSheetId.value)
+          )
+        )
         .all(),
-      data => {
-        console.log(data);
-        return data;
-      },
       RA.filter(q => q.trainedMembers === null), // Only include members not already trained.
       rows => {
         const latestQuizRowByMember = new Map<number, (typeof rows)[0]>();
@@ -157,6 +164,7 @@ const expandMembersAwaitingTraining =
         membersAwaitingTraining,
       })
     );
+  };
 
 const expandFailedQuizAttempts =
   (db: BetterSQLite3Database) =>
