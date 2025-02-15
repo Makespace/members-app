@@ -203,11 +203,6 @@ export const asyncApplyExternalEventSources = (
       return;
     }
     for (const equipment of getAllEquipmentMinimal(currentState)) {
-      if (equipment.id === 'be613ddb-f959-4c07-9dab-a714c1d9dcfd') {
-        logger.error('Skipping bambu equipment async apply completely');
-        continue;
-      }
-
       if (
         O.isSome(equipment.trainingSheetId) &&
         (O.isNone(equipment.lastQuizSync) ||
@@ -228,7 +223,6 @@ export const asyncApplyExternalEventSources = (
             | EventOfType<'EquipmentTrainingQuizSync'>
             | EventOfType<'EquipmentTrainingQuizResult'>
         ) => {
-          logger.info('Collected event %o', event);
           events.push(event);
           updateState(event);
         };
@@ -243,19 +237,19 @@ export const asyncApplyExternalEventSources = (
           'Finished pulling events from google training sheet for %s, caching...',
           equipment.name
         );
-        const x = await cacheSheetData(
-          new Date(),
-          equipment.trainingSheetId.value,
-          events
-        )();
-        if (E.isLeft(x)) {
-          logger.error(
-            'Failed to cache training sheet data for %s training sheet id %s, due to: %s',
-            equipment.name,
-            equipment.trainingSheetId,
-            x.left.message
-          );
-        }
+        // const x = await cacheSheetData(
+        //   new Date(),
+        //   equipment.trainingSheetId.value,
+        //   events
+        // )();
+        // if (E.isLeft(x)) {
+        //   logger.error(
+        //     'Failed to cache training sheet data for %s training sheet id %s, due to: %s',
+        //     equipment.name,
+        //     equipment.trainingSheetId,
+        //     x.left.message
+        //   );
+        // }
       }
     }
     logger.info('Finished applying external event sources');
