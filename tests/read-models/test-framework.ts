@@ -19,7 +19,10 @@ import {Dependencies} from '../../src/dependencies';
 import {applyToResource} from '../../src/commands/apply-command-to-resource';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
 import {localGoogleHelpers} from '../init-dependencies/pull-local-google';
-import {cacheSheetData} from '../../src/init-dependencies/google/get-cached-sheet-data';
+import {
+  cacheSheetData,
+  getCachedSheetData,
+} from '../../src/init-dependencies/google/get-cached-sheet-data';
 import {ensureCachedSheetDataTableExists} from '../../src/init-dependencies/google/ensure-cached-sheet-data-table-exists';
 
 type ToFrameworkCommands<T> = {
@@ -47,6 +50,7 @@ export type TestFramework = {
     getResourceEvents: Dependencies['getResourceEvents'];
   };
   eventStoreDb: libsqlClient.Client;
+  getCachedSheetData: Dependencies['getCachedSheetData'];
 };
 
 export const initTestFramework = async (
@@ -98,6 +102,7 @@ export const initTestFramework = async (
       commitEvent: frameworkCommitEvent,
       getResourceEvents: getResourceEvents(dbClient),
     },
+    getCachedSheetData: getCachedSheetData(dbClient),
     commands: {
       area: {
         create: frameworkify(commands.area.create),
