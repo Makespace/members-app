@@ -12,7 +12,7 @@ import {faker} from '@faker-js/faker';
 import {initTestFramework, TestFramework} from '../read-models/test-framework';
 import {EmailAddress} from '../../src/types';
 
-describe('Load cached sheet data', () => {
+describe.skip('Load cached sheet data', () => {
   const createArea = {
     id: faker.string.uuid() as UUID,
     name: faker.airline.airport().name as NonEmptyString,

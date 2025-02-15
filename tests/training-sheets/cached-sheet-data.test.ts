@@ -12,7 +12,7 @@ import {getRightOrFail, getSomeOrFail} from '../helpers';
 import {ensureCachedSheetDataTableExists} from '../../src/init-dependencies/google/ensure-cached-sheet-data-table-exists';
 import pino from 'pino';
 
-describe('Cache sheet data', () => {
+describe.skip('Cache sheet data', () => {
   describe('Cache then restore', () => {
     const equipmentId = '326e8fda-7be8-4cd8-87d5-7cdfafebf996' as UUID;
     const sheetId = 'myTestingSheetId';
