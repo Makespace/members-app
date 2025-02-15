@@ -220,7 +220,6 @@ export const asyncApplyExternalEventSources = (
         'Finished pulling %s events from google training sheet, caching...',
         events.length
       );
-      await new Promise(res => setTimeout(res, 7500));
       await cacheSheetData(
         new Date(),
         equipment.trainingSheetId.value,

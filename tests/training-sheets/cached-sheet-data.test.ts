@@ -1,9 +1,6 @@
 import * as libsqlClient from '@libsql/client';
 
-import {
-  cacheSheetData,
-  getCachedSheetData,
-} from '../../src/init-dependencies/google/get-cached-sheet-data';
+import {getCachedSheetData} from '../../src/init-dependencies/google/get-cached-sheet-data';
 import {UUID} from 'io-ts-types';
 import * as t from 'io-ts';
 import {faker} from '@faker-js/faker';
@@ -11,6 +8,7 @@ import {constructEvent, EventOfType} from '../../src/types/domain-event';
 import {getRightOrFail, getSomeOrFail} from '../helpers';
 import {ensureCachedSheetDataTableExists} from '../../src/init-dependencies/google/ensure-cached-sheet-data-table-exists';
 import pino from 'pino';
+import {cacheSheetData} from '../../src/init-dependencies/google/cache-sheet-data';
 
 describe.skip('Cache sheet data', () => {
   describe('Cache then restore', () => {
