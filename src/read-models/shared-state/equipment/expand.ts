@@ -126,6 +126,10 @@ const expandMembersAwaitingTraining =
         )
         .where(and(eq(trainingQuizTable.equipmentId, equipment.id), quizPassed))
         .all(),
+      data => {
+        console.log(data);
+        return data;
+      },
       RA.filter(q => q.trainedMembers === null), // Only include members not already trained.
       rows => {
         const latestQuizRowByMember = new Map<number, (typeof rows)[0]>();

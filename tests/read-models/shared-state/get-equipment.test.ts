@@ -8,7 +8,7 @@ import {EmailAddress} from '../../../src/types';
 import {Int} from 'io-ts';
 import {updateState} from '../../../src/read-models/shared-state/update-state';
 import {constructEvent, EventOfType} from '../../../src/types/domain-event';
-import {trainingQuizTable} from '../../../src/read-models/shared-state/state';
+import {membersTable, trainedMemberstable, trainingQuizTable} from '../../../src/read-models/shared-state/state';
 
 describe('get', () => {
   let framework: TestFramework;
@@ -20,6 +20,10 @@ describe('get', () => {
     email: faker.internet.email() as EmailAddress,
   };
   const addTrainedMember = {
+    memberNumber: faker.number.int() as Int,
+    email: faker.internet.email() as EmailAddress,
+  };
+  const addUntrainedMember = {
     memberNumber: faker.number.int() as Int,
     email: faker.internet.email() as EmailAddress,
   };
@@ -56,8 +60,8 @@ describe('get', () => {
     id: faker.string.uuid() as UUID,
     equipmentId: addEquipment.id,
     trainingSheetId: addTrainingSheet.trainingSheetId,
-    memberNumberProvided: addTrainerMember.memberNumber,
-    emailProvided: addTrainerMember.email,
+    memberNumberProvided: addUntrainedMember.memberNumber,
+    emailProvided: addUntrainedMember.email,
     score: 10,
     maxScore: 10,
     percentage: 100,
@@ -421,7 +425,7 @@ describe('get', () => {
   describe('User has completed the quiz and passed', () => {
     beforeEach(async () => {
       await framework.commands.memberNumbers.linkNumberToEmail(
-        addTrainedMember
+        addUntrainedMember
       );
       await framework.commands.area.create(createArea);
       await framework.commands.equipment.add(addEquipment);
@@ -433,7 +437,10 @@ describe('get', () => {
 
     describe('User is already trained', () => {
       beforeEach(async () => {
-        await framework.commands.trainers.markTrained(markTrained);
+        await framework.commands.trainers.markTrained({
+          memberNumber: addUntrainedMember.memberNumber,
+          equipmentId: addEquipment.id,
+        });
       });
 
       it("User doesn't appear as awaiting training", () => {
@@ -452,7 +459,7 @@ describe('get', () => {
         ).membersAwaitingTraining;
         expect(awaitingTraining).toHaveLength(1);
         expect(awaitingTraining[0].memberNumber).toStrictEqual(
-          addTrainedMember.memberNumber
+          addUntrainedMember.memberNumber
         );
       });
     });
@@ -461,7 +468,7 @@ describe('get', () => {
   describe('Check equipment quiz result event idempotency', () => {
     beforeEach(async () => {
       await framework.commands.memberNumbers.linkNumberToEmail(
-        addTrainerMember
+        addUntrainedMember
       );
       await framework.commands.area.create(createArea);
       await framework.commands.equipment.add(addEquipment);
@@ -492,7 +499,7 @@ describe('get', () => {
           ).membersAwaitingTraining;
           expect(awaitingTraining).toHaveLength(1);
           expect(awaitingTraining[0].memberNumber).toStrictEqual(
-            addTrainerMember.memberNumber
+            addUntrainedMember.memberNumber
           );
         });
         it("The shared read model database doesn't contain duplicate entries", () => {
@@ -510,7 +517,7 @@ describe('get', () => {
   describe("User passes equipment quiz twice and hasn't been trained yet", () => {
     beforeEach(async () => {
       await framework.commands.memberNumbers.linkNumberToEmail(
-        addTrainerMember
+        addUntrainedMember
       );
       await framework.commands.area.create(createArea);
       await framework.commands.equipment.add(addEquipment); // We add the equipment but never register a training sheet.
@@ -536,7 +543,7 @@ describe('get', () => {
       ).membersAwaitingTraining;
       expect(awaitingTraining).toHaveLength(1);
       expect(awaitingTraining[0].memberNumber).toStrictEqual(
-        addTrainerMember.memberNumber
+        addUntrainedMember.memberNumber
       );
     });
   });
@@ -544,7 +551,7 @@ describe('get', () => {
   describe('Check equipment quiz results for no sheet but correct equipment', () => {
     beforeEach(async () => {
       await framework.commands.memberNumbers.linkNumberToEmail(
-        addTrainerMember
+        addUntrainedMember
       );
       await framework.commands.area.create(createArea);
       await framework.commands.equipment.add(addEquipment); // We add the equipment but never register a training sheet.
@@ -563,7 +570,7 @@ describe('get', () => {
   describe('Check equipment quiz results for different sheet but correct equipment', () => {
     beforeEach(async () => {
       await framework.commands.memberNumbers.linkNumberToEmail(
-        addTrainerMember
+        addUntrainedMember
       );
       await framework.commands.area.create(createArea);
       await framework.commands.equipment.add(addEquipment);
