@@ -18,7 +18,6 @@ export const cacheSheetData =
     logger.info('Caching sheet data (%s entries)', data.length);
     const cachedData = JSON.stringify(data);
     logger.info('Cache data to insert length: %s', cachedData.length);
-    await new Promise(res => setTimeout(res, 5000));
     try {
       await dbClient.execute({
         sql: `

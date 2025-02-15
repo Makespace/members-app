@@ -10,7 +10,7 @@ import {initTestFramework, TestFramework} from '../read-models/test-framework';
 import {EmailAddress} from '../../src/types';
 import {cacheSheetData} from '../../src/init-dependencies/google/cache-sheet-data';
 
-describe.skip('Load cached sheet data', () => {
+describe('Load cached sheet data', () => {
   const createArea = {
     id: faker.string.uuid() as UUID,
     name: faker.airline.airport().name as NonEmptyString,
