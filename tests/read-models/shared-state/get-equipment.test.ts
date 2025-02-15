@@ -7,7 +7,8 @@ import {getSomeOrFail} from '../../helpers';
 import {EmailAddress} from '../../../src/types';
 import {Int} from 'io-ts';
 import {updateState} from '../../../src/read-models/shared-state/update-state';
-import {EventOfType} from '../../../src/types/domain-event';
+import {constructEvent, EventOfType} from '../../../src/types/domain-event';
+import {trainingQuizTable} from '../../../src/read-models/shared-state/state';
 
 describe('get', () => {
   let framework: TestFramework;
@@ -46,6 +47,21 @@ describe('get', () => {
   const markTrained = {
     equipmentId: equipmentId,
     memberNumber: addTrainedMember.memberNumber,
+  };
+  const addTrainingSheet = {
+    equipmentId,
+    trainingSheetId: 'testTrainingSheetId',
+  };
+  const passedQuizResult = {
+    id: faker.string.uuid() as UUID,
+    equipmentId: addEquipment.id,
+    trainingSheetId: addTrainingSheet.trainingSheetId,
+    memberNumberProvided: addTrainerMember.memberNumber,
+    emailProvided: addTrainerMember.email,
+    score: 10,
+    maxScore: 10,
+    percentage: 100,
+    timestampEpochMS: 1739621371,
   };
 
   beforeEach(async () => {
@@ -399,6 +415,172 @@ describe('get', () => {
           });
         });
       }
+    });
+  });
+
+  describe('User has completed the quiz and passed', () => {
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(
+        addTrainedMember
+      );
+      await framework.commands.area.create(createArea);
+      await framework.commands.equipment.add(addEquipment);
+      await framework.commands.equipment.trainingSheet(addTrainingSheet);
+      updateState(framework.sharedReadModel.db)(
+        constructEvent('EquipmentTrainingQuizResult')(passedQuizResult)
+      );
+    });
+
+    describe('User is already trained', () => {
+      beforeEach(async () => {
+        await framework.commands.trainers.markTrained(markTrained);
+      });
+
+      it("User doesn't appear as awaiting training", () => {
+        expect(
+          getSomeOrFail(
+            framework.sharedReadModel.equipment.get(addEquipment.id)
+          ).membersAwaitingTraining
+        ).toHaveLength(0);
+      });
+    });
+
+    describe('User is not already trained', () => {
+      it('User appears as awaiting training', () => {
+        const awaitingTraining = getSomeOrFail(
+          framework.sharedReadModel.equipment.get(addEquipment.id)
+        ).membersAwaitingTraining;
+        expect(awaitingTraining).toHaveLength(1);
+        expect(awaitingTraining[0].memberNumber).toStrictEqual(
+          addTrainedMember.memberNumber
+        );
+      });
+    });
+  });
+
+  describe('Check equipment quiz result event idempotency', () => {
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(
+        addTrainerMember
+      );
+      await framework.commands.area.create(createArea);
+      await framework.commands.equipment.add(addEquipment);
+    });
+
+    [true, false].forEach(quizIdDuplicate => {
+      describe(`Duplicate of same event, quiz id duplicate ${quizIdDuplicate}`, () => {
+        beforeEach(() => {
+          const update = updateState(framework.sharedReadModel.db);
+          for (let i = 0; i < 2; i++) {
+            if (quizIdDuplicate) {
+              update(
+                constructEvent('EquipmentTrainingQuizResult')(passedQuizResult)
+              );
+            } else {
+              update(
+                constructEvent('EquipmentTrainingQuizResult')({
+                  ...passedQuizResult,
+                  id: faker.string.uuid() as UUID,
+                })
+              );
+            }
+          }
+        });
+        it('The user is marked as waiting for training exactly once', () => {
+          const awaitingTraining = getSomeOrFail(
+            framework.sharedReadModel.equipment.get(addEquipment.id)
+          ).membersAwaitingTraining;
+          expect(awaitingTraining).toHaveLength(1);
+          expect(awaitingTraining[0].memberNumber).toStrictEqual(
+            addTrainerMember.memberNumber
+          );
+        });
+        it("The shared read model database doesn't contain duplicate entries", () => {
+          // Strictly speaking this is looking at the internals however its important we don't let the shared db just grow infinitely
+          const rows = framework.sharedReadModel.db
+            .select()
+            .from(trainingQuizTable)
+            .all();
+          expect(rows.length).toHaveLength(1);
+        });
+      });
+    });
+  });
+
+  describe("User passes equipment quiz twice and hasn't been trained yet", () => {
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(
+        addTrainerMember
+      );
+      await framework.commands.area.create(createArea);
+      await framework.commands.equipment.add(addEquipment); // We add the equipment but never register a training sheet.
+      for (let i = 0; i < 2; i++) {
+        updateState(framework.sharedReadModel.db)(
+          constructEvent('EquipmentTrainingQuizResult')({
+            ...passedQuizResult,
+            id: faker.string.uuid() as UUID,
+            timestampEpochMS: faker.number.int({
+              // Random epoch timestamp.
+              min: 1500000000,
+              max: 1900000000,
+            }),
+          })
+        );
+      }
+    });
+    // Note that we don't specifically care in this case if the training quiz result is added to the shared read
+    // state once or twice since they are technically different events but (currently) produce the same outcome.
+    it('The user is marked as waiting for training exactly once', () => {
+      const awaitingTraining = getSomeOrFail(
+        framework.sharedReadModel.equipment.get(addEquipment.id)
+      ).membersAwaitingTraining;
+      expect(awaitingTraining).toHaveLength(1);
+      expect(awaitingTraining[0].memberNumber).toStrictEqual(
+        addTrainerMember.memberNumber
+      );
+    });
+  });
+
+  describe('Check equipment quiz results for no sheet but correct equipment', () => {
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(
+        addTrainerMember
+      );
+      await framework.commands.area.create(createArea);
+      await framework.commands.equipment.add(addEquipment); // We add the equipment but never register a training sheet.
+      updateState(framework.sharedReadModel.db)(
+        constructEvent('EquipmentTrainingQuizResult')(passedQuizResult)
+      );
+    });
+    it('No users are marked as waiting for training', () => {
+      expect(
+        getSomeOrFail(framework.sharedReadModel.equipment.get(addEquipment.id))
+          .membersAwaitingTraining
+      ).toHaveLength(0);
+    });
+  });
+
+  describe('Check equipment quiz results for different sheet but correct equipment', () => {
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(
+        addTrainerMember
+      );
+      await framework.commands.area.create(createArea);
+      await framework.commands.equipment.add(addEquipment);
+      await framework.commands.equipment.trainingSheet({
+        equipmentId: addEquipment.id,
+        trainingSheetId: faker.string.uuid(), // A different training sheet id.
+      });
+      updateState(framework.sharedReadModel.db)(
+        // Events have ended up in the db somehow from an unknown (perhaps removed) training sheet.
+        constructEvent('EquipmentTrainingQuizResult')(passedQuizResult)
+      );
+    });
+    it('No users are marked as waiting for training', () => {
+      expect(
+        getSomeOrFail(framework.sharedReadModel.equipment.get(addEquipment.id))
+          .membersAwaitingTraining
+      ).toHaveLength(0);
     });
   });
 });
