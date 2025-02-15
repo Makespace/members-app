@@ -1,8 +1,5 @@
 import {loadCachedSheetData} from '../../src/load-cached-sheet-data';
-import {
-  cacheSheetData,
-  getCachedSheetData,
-} from '../../src/init-dependencies/google/get-cached-sheet-data';
+import {getCachedSheetData} from '../../src/init-dependencies/google/get-cached-sheet-data';
 import pino from 'pino';
 import {ensureCachedSheetDataTableExists} from '../../src/init-dependencies/google/ensure-cached-sheet-data-table-exists';
 import {getRightOrFail, getSomeOrFail} from '../helpers';
@@ -11,6 +8,7 @@ import {NonEmptyString, UUID} from 'io-ts-types';
 import {faker} from '@faker-js/faker';
 import {initTestFramework, TestFramework} from '../read-models/test-framework';
 import {EmailAddress} from '../../src/types';
+import {cacheSheetData} from '../../src/init-dependencies/google/cache-sheet-data';
 
 describe.skip('Load cached sheet data', () => {
   const createArea = {

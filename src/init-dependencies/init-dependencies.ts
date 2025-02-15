@@ -17,10 +17,8 @@ import {
 } from './google/pull_sheet_data';
 import {initSharedReadModel} from '../read-models/shared-state';
 import {GoogleAuth} from 'google-auth-library';
-import {
-  cacheSheetData,
-  getCachedSheetData,
-} from './google/get-cached-sheet-data';
+import {getCachedSheetData} from './google/get-cached-sheet-data';
+import {cacheSheetData} from './google/cache-sheet-data';
 
 export const initDependencies = (
   dbClient: Client,
