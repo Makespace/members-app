@@ -22,7 +22,6 @@ import {
   shouldPullFromSheet,
 } from '../../training-sheets/google';
 import {getChunkIndexes} from '../../util';
-import { cacheSheetData } from '../../init-dependencies/google/get-cached-sheet-data';
 
 const ROW_BATCH_SIZE = 200;
 
