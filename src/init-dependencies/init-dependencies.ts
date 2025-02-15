@@ -24,6 +24,7 @@ import {
 
 export const initDependencies = (
   dbClient: Client,
+  cacheClient: Client,
   conf: Config
 ): Dependencies => {
   let loggerOptions: LoggerOptions;
@@ -81,7 +82,7 @@ export const initDependencies = (
     });
   }
 
-  const _cacheSheetData = cacheSheetData(dbClient);
+  const _cacheSheetData = cacheSheetData(cacheClient);
 
   const sharedReadModel = initSharedReadModel(
     dbClient,

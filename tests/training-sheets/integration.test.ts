@@ -42,14 +42,9 @@ const getEvents = async (trainingSheetId: string) => {
       pullGoogleSheetData: pullGoogleSheetData(auth),
       pullGoogleSheetDataMetadata: pullGoogleSheetDataMetadata(auth),
     },
-    {
-      id: TEST_EQUIPMENT_ID,
-      name: 'Test Equipment',
-      areaId: '619b5afb-af04-4a56-8475-3e92ff2908ef' as UUID,
-      trainingSheetId: O.some(trainingSheetId),
-      lastQuizResult: O.none,
-      lastQuizSync: O.none,
-    },
+    TEST_EQUIPMENT_ID,
+    trainingSheetId,
+    O.none,
     event => events.push(event)
   );
   return events;
@@ -201,7 +196,6 @@ describe('Google training sheet integration', () => {
       redactEmail,
       stripNonStatic
     );
-    console.log(userEvents);
     expect(userEvents).toHaveLength(3);
   }, 30000);
 

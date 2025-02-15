@@ -129,7 +129,12 @@ describe('Load cached sheet data', () => {
     beforeEach(async () => {
       await Promise.all(
         data.map(data =>
-          _cacheSheetData(data.timestamp, data.sheetId, data.data)()
+          _cacheSheetData(
+            data.timestamp,
+            data.sheetId,
+            pino({level: 'silent'}),
+            data.data
+          )()
         )
       );
     });
