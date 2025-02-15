@@ -12,7 +12,6 @@ import {
 } from '../../src/init-dependencies/google/pull_sheet_data';
 import {GoogleAuth} from 'google-auth-library/build/src/auth/googleauth';
 import {UUID} from 'io-ts-types';
-import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as N from 'fp-ts/number';
 import {DomainEvent} from '../../src/types';
@@ -44,7 +43,6 @@ const getEvents = async (trainingSheetId: string) => {
     },
     TEST_EQUIPMENT_ID,
     trainingSheetId,
-    O.none,
     event => events.push(event)
   );
   return events;

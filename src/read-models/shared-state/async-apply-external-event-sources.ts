@@ -3,7 +3,6 @@ import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
 import {DomainEvent} from '../../types';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {EpochTimestampMilliseconds} from './return-types';
 
 import {constructEvent, EventOfType} from '../../types/domain-event';
 import {GoogleHelpers} from '../../init-dependencies/google/pull_sheet_data';
@@ -22,7 +21,6 @@ import {
 } from '../../training-sheets/google';
 import {getChunkIndexes} from '../../util';
 import {UUID} from 'io-ts-types';
-import {expandLastQuizResult} from './equipment/expand';
 
 const ROW_BATCH_SIZE = 200;
 
@@ -31,7 +29,6 @@ const pullNewEquipmentQuizResultsForSheet = async (
   googleHelpers: GoogleHelpers,
   equipmentId: UUID,
   trainingSheetId: string,
-  eventsFromExclusive: O.Option<EpochTimestampMilliseconds>,
   sheet: GoogleSheetMetadata,
   timezone: string,
   updateState: (event: EventOfType<'EquipmentTrainingQuizResult'>) => void
@@ -71,8 +68,7 @@ const pullNewEquipmentQuizResultsForSheet = async (
       trainingSheetId,
       equipmentId,
       sheet,
-      timezone,
-      eventsFromExclusive
+      timezone
     )(data.right);
     logger.info(
       'Google sheet data extracted, updating data with the extracted data...'
@@ -89,7 +85,6 @@ export const pullNewEquipmentQuizResults = async (
   googleHelpers: GoogleHelpers,
   equipmentId: UUID,
   trainingSheetId: string,
-  eventsSinceExclusive: O.Option<EpochTimestampMilliseconds>,
   updateState: (
     event:
       | EventOfType<'EquipmentTrainingQuizSync'>
@@ -155,7 +150,6 @@ export const pullNewEquipmentQuizResults = async (
       googleHelpers,
       equipmentId,
       trainingSheetId,
-      eventsSinceExclusive,
       sheet,
       initialMeta.right.properties.timeZone,
       updateState
@@ -220,7 +214,6 @@ export const asyncApplyExternalEventSources = (
         googleHelpers.value,
         equipment.id,
         equipment.trainingSheetId.value,
-        expandLastQuizResult(currentState)(equipment).lastQuizResult,
         collectEvents
       );
       equipmentLogger.info(

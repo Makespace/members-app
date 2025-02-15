@@ -7,10 +7,8 @@ import {
 import pino from 'pino';
 import * as RA from 'fp-ts/lib/ReadonlyArray';
 import * as N from 'fp-ts/number';
-import * as O from 'fp-ts/Option';
 import * as gsheetData from '../data/google_sheet_data';
 import {pullNewEquipmentQuizResults} from '../../src/read-models/shared-state/async-apply-external-event-sources';
-import {EpochTimestampMilliseconds} from '../../src/read-models/shared-state/return-types';
 import {localGoogleHelpers} from '../init-dependencies/pull-local-google';
 
 const sortQuizResults = RA.sort({
@@ -28,8 +26,7 @@ const sortQuizResults = RA.sort({
 
 const pullNewEquipmentQuizResultsLocal = async (
   equipmentId: UUID,
-  trainingSheetId: string,
-  eventsSinceExclusive: O.Option<EpochTimestampMilliseconds>
+  trainingSheetId: string
 ) => {
   const newEvents: DomainEvent[] = [];
   await pullNewEquipmentQuizResults(
@@ -40,7 +37,6 @@ const pullNewEquipmentQuizResultsLocal = async (
     localGoogleHelpers,
     equipmentId,
     trainingSheetId,
-    eventsSinceExclusive,
     newEvent => {
       newEvents.push(newEvent);
     }
@@ -57,14 +53,12 @@ type EquipmentQuizResultEvents = {
   endTime: Date;
 };
 const pullEquipmentQuizResultsWrapper = async (
-  spreadsheetId: string,
-  lastQuizResult: O.Option<EpochTimestampMilliseconds> = O.none
+  spreadsheetId: string
 ): Promise<EquipmentQuizResultEvents> => {
   const startTime = new Date();
   const events = await pullNewEquipmentQuizResultsLocal(
     TEST_EQUIPMENT_ID,
-    spreadsheetId,
-    lastQuizResult
+    spreadsheetId
   );
   const endTime = new Date();
   const result = {
@@ -174,66 +168,6 @@ describe('Training sheets worker', () => {
             Partial<EventOfType<'EquipmentTrainingQuizResult'>>
           >(expectedEvent);
         }
-      });
-      it('Only take new rows, date in future', async () => {
-        const results = await pullEquipmentQuizResultsWrapper(
-          gsheetData.BAMBU.apiResp.spreadsheetId!,
-          O.some(Date.now() as EpochTimestampMilliseconds)
-        );
-        checkQuizSync(results);
-        expect(results.quizResults).toHaveLength(0);
-      });
-      it('Only take new rows, date in far past', async () => {
-        const results = await pullEquipmentQuizResultsWrapper(
-          gsheetData.BAMBU.apiResp.spreadsheetId!,
-          O.some(0 as EpochTimestampMilliseconds)
-        );
-        checkQuizSync(results);
-        expect(results.quizResults).toHaveLength(
-          gsheetData.BAMBU.entries.length
-        );
-      });
-
-      // The quiz results have dates:
-      // 1700768963 Thursday, November 23, 2023 7:49:23 PM
-      // 1700769348 Thursday, November 23, 2023 7:55:48 PM
-      // 1710249052 Tuesday, March 12, 2024 1:10:52 PM
-      // 1710249842 Tuesday, March 12, 2024 1:24:02 PM
-
-      it('Only take new rows, exclude 1', async () => {
-        const results = await pullEquipmentQuizResultsWrapper(
-          gsheetData.BAMBU.apiResp.spreadsheetId!,
-          O.some(1700768963_000 as EpochTimestampMilliseconds)
-        );
-        checkQuizSync(results);
-        expect(results.quizResults).toHaveLength(3);
-      });
-
-      it('Only take new rows, exclude 2', async () => {
-        const results = await pullEquipmentQuizResultsWrapper(
-          gsheetData.BAMBU.apiResp.spreadsheetId!,
-          O.some(1700769348_000 as EpochTimestampMilliseconds)
-        );
-        checkQuizSync(results);
-        expect(results.quizResults).toHaveLength(2);
-      });
-
-      it('Only take new rows, exclude 3', async () => {
-        const results = await pullEquipmentQuizResultsWrapper(
-          gsheetData.BAMBU.apiResp.spreadsheetId!,
-          O.some(1710249052_000 as EpochTimestampMilliseconds)
-        );
-        checkQuizSync(results);
-        expect(results.quizResults).toHaveLength(1);
-      });
-
-      it('Only take new rows, exclude all (already have latest)', async () => {
-        const results = await pullEquipmentQuizResultsWrapper(
-          gsheetData.BAMBU.apiResp.spreadsheetId!,
-          O.some(1710249842_000 as EpochTimestampMilliseconds)
-        );
-        checkQuizSync(results);
-        expect(results.quizResults).toHaveLength(0);
       });
     });
   });
