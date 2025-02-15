@@ -55,6 +55,7 @@ export type Dependencies = {
   cacheSheetData: (
     cacheTimestamp: Date,
     sheetId: TrainingSheetId,
+    logger: Logger,
     data: ReadonlyArray<
       | EventOfType<'EquipmentTrainingQuizSync'>
       | EventOfType<'EquipmentTrainingQuizResult'>

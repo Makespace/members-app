@@ -17,6 +17,7 @@ import {
   internalCodecFailure,
 } from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
+import {Logger} from 'pino';
 
 const extractCachedEvents = (
   rawCachedData: string
@@ -82,12 +83,14 @@ export const cacheSheetData =
   (
     cacheTimestamp: Date,
     sheetId: string,
+    logger: Logger,
     data: ReadonlyArray<
       | EventOfType<'EquipmentTrainingQuizResult'>
       | EventOfType<'EquipmentTrainingQuizSync'>
     >
-  ) =>
-    TE.tryCatch(
+  ) => {
+    logger.info('Caching sheet data (%s entries)', data.length);
+    return TE.tryCatch(
       () =>
         dbClient
           .execute({
@@ -107,3 +110,4 @@ export const cacheSheetData =
           .then(() => {}),
       failure('Failed to insert cached sheet data')
     );
+  };

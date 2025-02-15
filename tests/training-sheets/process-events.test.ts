@@ -9,10 +9,7 @@ import * as RA from 'fp-ts/lib/ReadonlyArray';
 import * as N from 'fp-ts/number';
 import * as O from 'fp-ts/Option';
 import * as gsheetData from '../data/google_sheet_data';
-import {
-  EquipmentWithLastQuizResult,
-  pullNewEquipmentQuizResults,
-} from '../../src/read-models/shared-state/async-apply-external-event-sources';
+import {pullNewEquipmentQuizResults} from '../../src/read-models/shared-state/async-apply-external-event-sources';
 import {EpochTimestampMilliseconds} from '../../src/read-models/shared-state/return-types';
 import {localGoogleHelpers} from '../init-dependencies/pull-local-google';
 
@@ -30,7 +27,9 @@ const sortQuizResults = RA.sort({
 });
 
 const pullNewEquipmentQuizResultsLocal = async (
-  equipment: EquipmentWithLastQuizResult
+  equipmentId: UUID,
+  trainingSheetId: string,
+  eventsSinceExclusive: O.Option<EpochTimestampMilliseconds>
 ) => {
   const newEvents: DomainEvent[] = [];
   await pullNewEquipmentQuizResults(
@@ -39,7 +38,9 @@ const pullNewEquipmentQuizResultsLocal = async (
       timestamp: pino.stdTimeFunctions.isoTime,
     }),
     localGoogleHelpers,
-    equipment,
+    equipmentId,
+    trainingSheetId,
+    eventsSinceExclusive,
     newEvent => {
       newEvents.push(newEvent);
     }
@@ -47,14 +48,7 @@ const pullNewEquipmentQuizResultsLocal = async (
   return newEvents;
 };
 
-const defaultEquipment = (): EquipmentWithLastQuizResult => ({
-  id: 'ebedee32-49f4-4d36-a350-4fa7848792bf' as UUID,
-  name: 'Metal Lathe',
-  areaId: 'f9cee7aa-75c6-42cc-8585-0e658044fe8e' as UUID,
-  trainingSheetId: O.none,
-  lastQuizResult: O.none,
-  lastQuizSync: O.none,
-});
+const TEST_EQUIPMENT_ID = 'ebedee32-49f4-4d36-a350-4fa7848792bf' as UUID;
 
 type EquipmentQuizResultEvents = {
   quizResults: ReadonlyArray<EventOfType<'EquipmentTrainingQuizResult'>>;
@@ -63,14 +57,15 @@ type EquipmentQuizResultEvents = {
   endTime: Date;
 };
 const pullEquipmentQuizResultsWrapper = async (
-  spreadsheetId: O.Option<string>,
+  spreadsheetId: string,
   lastQuizResult: O.Option<EpochTimestampMilliseconds> = O.none
 ): Promise<EquipmentQuizResultEvents> => {
-  const equipment = defaultEquipment();
-  equipment.trainingSheetId = spreadsheetId;
-  equipment.lastQuizResult = lastQuizResult;
   const startTime = new Date();
-  const events = await pullNewEquipmentQuizResultsLocal(equipment);
+  const events = await pullNewEquipmentQuizResultsLocal(
+    TEST_EQUIPMENT_ID,
+    spreadsheetId,
+    lastQuizResult
+  );
   const endTime = new Date();
   const result = {
     quizResults: [] as EventOfType<'EquipmentTrainingQuizResult'>[],
@@ -102,46 +97,40 @@ const checkQuizSync = (results: EquipmentQuizResultEvents) => {
   );
 };
 
-describe.skip('Training sheets worker', () => {
+describe('Training sheets worker', () => {
   describe('Process results', () => {
     describe('Processes a registered training sheet', () => {
-      it('Equipment with no training sheet', async () => {
-        const result = await pullEquipmentQuizResultsWrapper(O.none);
-        expect(result.quizResults).toHaveLength(0);
-        expect(result.quizSync).toHaveLength(0);
-      });
-
       it('empty sheet produces no events, but does indicate a sync', async () => {
         const result = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.EMPTY.apiResp.spreadsheetId!)
+          gsheetData.EMPTY.apiResp.spreadsheetId!
         );
         expect(result.quizResults).toHaveLength(0);
         checkQuizSync(result);
       });
       it('metal lathe training sheet', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.METAL_LATHE.apiResp.spreadsheetId!)
+          gsheetData.METAL_LATHE.apiResp.spreadsheetId!
         );
         checkQuizSync(results);
         expect(results.quizResults[0]).toMatchObject<
           Partial<EventOfType<'EquipmentTrainingQuizResult'>>
         >({
           type: 'EquipmentTrainingQuizResult',
-          equipmentId: defaultEquipment().id,
+          equipmentId: TEST_EQUIPMENT_ID,
           trainingSheetId: gsheetData.METAL_LATHE.apiResp.spreadsheetId!,
           ...gsheetData.METAL_LATHE.entries[0],
         });
       });
       it('training sheet with a summary page', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.LASER_CUTTER.apiResp.spreadsheetId!)
+          gsheetData.LASER_CUTTER.apiResp.spreadsheetId!
         );
         checkQuizSync(results);
         const expected: readonly Partial<
           EventOfType<'EquipmentTrainingQuizResult'>
         >[] = gsheetData.LASER_CUTTER.entries.map(e => ({
           type: 'EquipmentTrainingQuizResult',
-          equipmentId: defaultEquipment().id,
+          equipmentId: TEST_EQUIPMENT_ID,
           trainingSheetId: gsheetData.LASER_CUTTER.apiResp.spreadsheetId!,
           actor: {
             tag: 'system',
@@ -161,14 +150,14 @@ describe.skip('Training sheets worker', () => {
       });
       it('training sheet with multiple response pages (different quiz questions)', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.BAMBU.apiResp.spreadsheetId!)
+          gsheetData.BAMBU.apiResp.spreadsheetId!
         );
         checkQuizSync(results);
         const expected: readonly Partial<
           EventOfType<'EquipmentTrainingQuizResult'>
         >[] = gsheetData.BAMBU.entries.map(e => ({
           type: 'EquipmentTrainingQuizResult',
-          equipmentId: defaultEquipment().id,
+          equipmentId: TEST_EQUIPMENT_ID,
           trainingSheetId: gsheetData.BAMBU.apiResp.spreadsheetId!,
           actor: {
             tag: 'system',
@@ -188,7 +177,7 @@ describe.skip('Training sheets worker', () => {
       });
       it('Only take new rows, date in future', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.BAMBU.apiResp.spreadsheetId!),
+          gsheetData.BAMBU.apiResp.spreadsheetId!,
           O.some(Date.now() as EpochTimestampMilliseconds)
         );
         checkQuizSync(results);
@@ -196,7 +185,7 @@ describe.skip('Training sheets worker', () => {
       });
       it('Only take new rows, date in far past', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.BAMBU.apiResp.spreadsheetId!),
+          gsheetData.BAMBU.apiResp.spreadsheetId!,
           O.some(0 as EpochTimestampMilliseconds)
         );
         checkQuizSync(results);
@@ -213,7 +202,7 @@ describe.skip('Training sheets worker', () => {
 
       it('Only take new rows, exclude 1', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.BAMBU.apiResp.spreadsheetId!),
+          gsheetData.BAMBU.apiResp.spreadsheetId!,
           O.some(1700768963_000 as EpochTimestampMilliseconds)
         );
         checkQuizSync(results);
@@ -222,7 +211,7 @@ describe.skip('Training sheets worker', () => {
 
       it('Only take new rows, exclude 2', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.BAMBU.apiResp.spreadsheetId!),
+          gsheetData.BAMBU.apiResp.spreadsheetId!,
           O.some(1700769348_000 as EpochTimestampMilliseconds)
         );
         checkQuizSync(results);
@@ -231,7 +220,7 @@ describe.skip('Training sheets worker', () => {
 
       it('Only take new rows, exclude 3', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.BAMBU.apiResp.spreadsheetId!),
+          gsheetData.BAMBU.apiResp.spreadsheetId!,
           O.some(1710249052_000 as EpochTimestampMilliseconds)
         );
         checkQuizSync(results);
@@ -240,7 +229,7 @@ describe.skip('Training sheets worker', () => {
 
       it('Only take new rows, exclude all (already have latest)', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          O.some(gsheetData.BAMBU.apiResp.spreadsheetId!),
+          gsheetData.BAMBU.apiResp.spreadsheetId!,
           O.some(1710249842_000 as EpochTimestampMilliseconds)
         );
         checkQuizSync(results);

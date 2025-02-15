@@ -30,7 +30,12 @@ const dbClient = libsqlClient.createClient({
   syncUrl: conf.TURSO_SYNC_URL,
   authToken: conf.TURSO_TOKEN,
 });
-const deps = initDependencies(dbClient, conf);
+const cacheClient = libsqlClient.createClient({
+  url: conf.EVENT_DB_URL,
+  syncUrl: conf.TURSO_SYNC_URL,
+  authToken: conf.TURSO_TOKEN,
+});
+const deps = initDependencies(dbClient, cacheClient, conf);
 const routes = initRoutes(deps, conf);
 
 // Passport Setup

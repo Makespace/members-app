@@ -10,7 +10,7 @@ import {
   Equipment,
 } from '../../src/read-models/shared-state/return-types';
 
-describe.skip('Integration asyncApplyExternalEventSources', () => {
+describe('Integration asyncApplyExternalEventSources', () => {
   const addArea = async (framework: TestFramework) => {
     const createArea = {
       id: faker.string.uuid() as UUID,

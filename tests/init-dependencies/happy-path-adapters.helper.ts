@@ -12,6 +12,7 @@ import {localGoogleHelpers} from './pull-local-google';
 const cacheSheetData = (
   _cacheTimestamp: Date,
   _sheetId: string,
+  _logger: Logger,
   _data: ReadonlyArray<
     | EventOfType<'EquipmentTrainingQuizSync'>
     | EventOfType<'EquipmentTrainingQuizResult'>

@@ -10,6 +10,7 @@ import {faker} from '@faker-js/faker';
 import {constructEvent, EventOfType} from '../../src/types/domain-event';
 import {getRightOrFail, getSomeOrFail} from '../helpers';
 import {ensureCachedSheetDataTableExists} from '../../src/init-dependencies/google/ensure-cached-sheet-data-table-exists';
+import pino from 'pino';
 
 describe('Cache sheet data', () => {
   describe('Cache then restore', () => {
@@ -41,12 +42,17 @@ describe('Cache sheet data', () => {
       db = libsqlClient.createClient({url: ':memory:'});
       await ensureCachedSheetDataTableExists(db)();
       getRightOrFail(
-        await cacheSheetData(db)(cacheTimestamp, sheetId, [
-          constructEvent('EquipmentTrainingQuizSync')({
-            equipmentId,
-          }),
-          constructEvent('EquipmentTrainingQuizResult')(trainingQuizResult),
-        ])()
+        await cacheSheetData(db)(
+          cacheTimestamp,
+          sheetId,
+          pino({level: 'silent'}),
+          [
+            constructEvent('EquipmentTrainingQuizSync')({
+              equipmentId,
+            }),
+            constructEvent('EquipmentTrainingQuizResult')(trainingQuizResult),
+          ]
+        )()
       );
       cachedData = getSomeOrFail(
         getRightOrFail(await getCachedSheetData(db)(sheetId)())
@@ -79,33 +85,38 @@ describe('Cache sheet data', () => {
       };
       beforeEach(async () => {
         getRightOrFail(
-          await cacheSheetData(db)(newCacheTimestamp, sheetId, [
-            constructEvent('EquipmentTrainingQuizSync')({
-              equipmentId,
-            }),
-            constructEvent('EquipmentTrainingQuizResult')({
-              equipmentId: equipmentId,
-              trainingSheetId: sheetId,
-              memberNumberProvided: faker.number.int(),
-              emailProvided: 'beans@bob.co.uk',
-              score: 23,
-              id: '1a3eeb99-dd7a-4f55-a018-6f5e2678fc14' as UUID,
-              maxScore: 23,
-              percentage: 100,
-              timestampEpochMS: 1738623209,
-            }),
-            constructEvent('EquipmentTrainingQuizResult')({
-              equipmentId: equipmentId,
-              trainingSheetId: sheetId,
-              memberNumberProvided: faker.number.int(),
-              emailProvided: 'fred@bob.co.uk',
-              score: 17,
-              id: 'bbbbeb99-aa7a-4f55-a018-ffff2678feee' as UUID,
-              maxScore: 23,
-              percentage: 74,
-              timestampEpochMS: 1738623333,
-            }),
-          ])()
+          await cacheSheetData(db)(
+            newCacheTimestamp,
+            sheetId,
+            pino({level: 'silent'}),
+            [
+              constructEvent('EquipmentTrainingQuizSync')({
+                equipmentId,
+              }),
+              constructEvent('EquipmentTrainingQuizResult')({
+                equipmentId: equipmentId,
+                trainingSheetId: sheetId,
+                memberNumberProvided: faker.number.int(),
+                emailProvided: 'beans@bob.co.uk',
+                score: 23,
+                id: '1a3eeb99-dd7a-4f55-a018-6f5e2678fc14' as UUID,
+                maxScore: 23,
+                percentage: 100,
+                timestampEpochMS: 1738623209,
+              }),
+              constructEvent('EquipmentTrainingQuizResult')({
+                equipmentId: equipmentId,
+                trainingSheetId: sheetId,
+                memberNumberProvided: faker.number.int(),
+                emailProvided: 'fred@bob.co.uk',
+                score: 17,
+                id: 'bbbbeb99-aa7a-4f55-a018-ffff2678feee' as UUID,
+                maxScore: 23,
+                percentage: 74,
+                timestampEpochMS: 1738623333,
+              }),
+            ]
+          )()
         );
         cachedDataAfter = getSomeOrFail(
           getRightOrFail(await getCachedSheetData(db)(sheetId)())
@@ -142,22 +153,27 @@ describe('Cache sheet data', () => {
       };
       beforeEach(async () => {
         getRightOrFail(
-          await cacheSheetData(db)(secondSheetCacheTimestamp, secondSheetId, [
-            constructEvent('EquipmentTrainingQuizSync')({
-              equipmentId: secondEquipmentId,
-            }),
-            constructEvent('EquipmentTrainingQuizResult')({
-              equipmentId: secondEquipmentId,
-              trainingSheetId: secondSheetId,
-              memberNumberProvided: faker.number.int(),
-              emailProvided: 'beans@bob.co.uk',
-              score: 10,
-              id: 'e139bb51-af9b-420d-87cf-53417491fdb4' as UUID,
-              maxScore: 10,
-              percentage: 100,
-              timestampEpochMS: 1738627209,
-            }),
-          ])()
+          await cacheSheetData(db)(
+            secondSheetCacheTimestamp,
+            secondSheetId,
+            pino({level: 'silent'}),
+            [
+              constructEvent('EquipmentTrainingQuizSync')({
+                equipmentId: secondEquipmentId,
+              }),
+              constructEvent('EquipmentTrainingQuizResult')({
+                equipmentId: secondEquipmentId,
+                trainingSheetId: secondSheetId,
+                memberNumberProvided: faker.number.int(),
+                emailProvided: 'beans@bob.co.uk',
+                score: 10,
+                id: 'e139bb51-af9b-420d-87cf-53417491fdb4' as UUID,
+                maxScore: 10,
+                percentage: 100,
+                timestampEpochMS: 1738627209,
+              }),
+            ]
+          )()
         );
         firstSheetData = getSomeOrFail(
           getRightOrFail(await getCachedSheetData(db)(sheetId)())
