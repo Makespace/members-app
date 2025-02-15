@@ -8,7 +8,7 @@ import {EmailAddress} from '../../../src/types';
 import {Int} from 'io-ts';
 import {updateState} from '../../../src/read-models/shared-state/update-state';
 import {constructEvent, EventOfType} from '../../../src/types/domain-event';
-import {membersTable, trainedMemberstable, trainingQuizTable} from '../../../src/read-models/shared-state/state';
+import {trainingQuizTable} from '../../../src/read-models/shared-state/state';
 
 describe('get', () => {
   let framework: TestFramework;
@@ -472,6 +472,7 @@ describe('get', () => {
       );
       await framework.commands.area.create(createArea);
       await framework.commands.equipment.add(addEquipment);
+      await framework.commands.equipment.trainingSheet(addTrainingSheet);
     });
 
     [true, false].forEach(quizIdDuplicate => {
@@ -508,7 +509,7 @@ describe('get', () => {
             .select()
             .from(trainingQuizTable)
             .all();
-          expect(rows.length).toHaveLength(1);
+          expect(rows).toHaveLength(1);
         });
       });
     });
@@ -520,7 +521,8 @@ describe('get', () => {
         addUntrainedMember
       );
       await framework.commands.area.create(createArea);
-      await framework.commands.equipment.add(addEquipment); // We add the equipment but never register a training sheet.
+      await framework.commands.equipment.add(addEquipment);
+      await framework.commands.equipment.trainingSheet(addTrainingSheet);
       for (let i = 0; i < 2; i++) {
         updateState(framework.sharedReadModel.db)(
           constructEvent('EquipmentTrainingQuizResult')({
