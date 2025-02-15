@@ -9,7 +9,6 @@ import * as E from 'fp-ts/Either';
 import * as tt from 'io-ts-types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as t from 'io-ts';
-import {failure} from '../../types';
 import {DomainEvent, EventOfType} from '../../types/domain-event';
 import {CachedDataTable} from './cached-data-table';
 import {
@@ -80,7 +79,7 @@ export const getCachedSheetData =
 // This would be more efficient with a simple key-value store.
 export const cacheSheetData =
   (dbClient: Client): Dependencies['cacheSheetData'] =>
-  (
+  async (
     cacheTimestamp: Date,
     sheetId: string,
     logger: Logger,
@@ -90,24 +89,31 @@ export const cacheSheetData =
     >
   ) => {
     logger.info('Caching sheet data (%s entries)', data.length);
-    return TE.tryCatch(
-      () =>
-        dbClient
-          .execute({
-            sql: `
+    const cachedData = JSON.stringify(data);
+    logger.info('Cache data to insert length: %s', cachedData.length);
+    try {
+      await dbClient.execute({
+        sql: `
               INSERT INTO cached_sheet_data (cached_at, sheet_id, cached_data)
               VALUES ($cachedAt, $sheetId, $cachedData)
               ON CONFLICT (sheet_id) DO UPDATE SET
                 cached_at = excluded.cached_at,
                 cached_data = excluded.cached_data;
             `,
-            args: {
-              cachedAt: cacheTimestamp,
-              sheetId,
-              cachedData: JSON.stringify(data),
-            },
-          })
-          .then(() => {}),
-      failure('Failed to insert cached sheet data')
-    );
+        args: {
+          cachedAt: cacheTimestamp,
+          sheetId,
+          cachedData,
+        },
+      });
+    } catch (e) {
+      logger.error(e, 'Failed to insert cache data, failing silently...');
+    }
+    // return TE.tryCatch(
+    //   () =>
+    //     dbClient.execute({
+
+    //     }),
+    //   failure('Failed to insert cached sheet data')
+    // );
   };
