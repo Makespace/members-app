@@ -194,7 +194,7 @@ export const asyncApplyExternalEventSources = (
   googleHelpers: O.Option<GoogleHelpers>,
   updateState: (event: DomainEvent) => void,
   googleRateLimitMs: number,
-  cacheSheetData: Dependencies['cacheSheetData']
+  _cacheSheetData: Dependencies['cacheSheetData']
 ) => {
   return () => async () => {
     logger.info('Applying external event sources...');
