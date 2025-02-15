@@ -262,10 +262,7 @@ export const extractGoogleSheetData =
     trainingSheetId: string,
     equipmentId: UUID,
     metadata: GoogleSheetMetadata,
-    timezone: string,
-    // Note we filter events on timestamp rather than last row currently to handle
-    // blank rows but potentially we could switch if we added detection for blank rows.
-    eventsFromExclusive: O.Option<EpochTimestampMilliseconds>
+    timezone: string
   ) =>
   (
     spreadsheet: GoogleSpreadsheetDataForSheet
@@ -287,12 +284,7 @@ export const extractGoogleSheetData =
                 timezone
               )
             ),
-            RA.filterMap(e => e),
-            RA.filter(
-              e =>
-                O.isNone(eventsFromExclusive) ||
-                e.timestampEpochMS > eventsFromExclusive.value
-            )
+            RA.filterMap(e => e)
           )
         )
       )

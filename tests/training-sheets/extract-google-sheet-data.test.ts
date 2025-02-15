@@ -21,8 +21,7 @@ describe('extractGoogleSheetData', () => {
           memberNumber: O.some(2),
         },
       },
-      'Europe/London',
-      O.none
+      'Europe/London'
     )({
       sheets: [
         {

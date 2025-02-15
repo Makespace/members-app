@@ -228,7 +228,7 @@ const expandOrphanedTrainingQuizes =
     ),
   });
 
-export const expandLastQuizResult =
+const expandLastQuizResult =
   (db: BetterSQLite3Database) =>
   <T extends MinimalEquipment>(
     equipment: T
