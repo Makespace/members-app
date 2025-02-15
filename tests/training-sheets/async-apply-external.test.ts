@@ -4,11 +4,12 @@ import {faker} from '@faker-js/faker';
 import * as gsheetData from '../data/google_sheet_data';
 import {initTestFramework, TestFramework} from '../read-models/test-framework';
 import {EmailAddress} from '../../src/types';
-import {getSomeOrFail} from '../helpers';
+import {getRightOrFail, getSomeOrFail} from '../helpers';
 import {
   EpochTimestampMilliseconds,
   Equipment,
 } from '../../src/read-models/shared-state/return-types';
+import {EventOfType} from '../../src/types/domain-event';
 
 describe('Integration asyncApplyExternalEventSources', () => {
   const addArea = async (framework: TestFramework) => {
@@ -145,25 +146,67 @@ describe('Integration asyncApplyExternalEventSources', () => {
       results2.equipmentAfter.get(bambu.id)!.lastQuizSync
     );
   });
-  it('Repeat equipment pull no rate limit', async () => {
-    const rateLimitMs = 100;
-    const framework = await initTestFramework(rateLimitMs);
-    const areaId = await addArea(framework);
-    const bambu = await addWithSheet(
-      framework,
-      'bambu',
-      areaId,
-      O.some(gsheetData.BAMBU.apiResp.spreadsheetId!)
-    );
-    const results1 = await runAsyncApplyExternalEventSources(framework);
-    checkLastQuizSyncUpdated(results1);
+  describe('Repeat equipment pull no rate limit', () => {
+    let framework: TestFramework;
+    let results1: ApplyExternalEventsResults;
+    let cachedData1: ReadonlyArray<
+      | EventOfType<'EquipmentTrainingQuizResult'>
+      | EventOfType<'EquipmentTrainingQuizSync'>
+    >;
+    let results2: ApplyExternalEventsResults;
+    let cachedData2: ReadonlyArray<
+      | EventOfType<'EquipmentTrainingQuizResult'>
+      | EventOfType<'EquipmentTrainingQuizSync'>
+    >;
+    let equipment: {id: UUID; trainingSheetId: O.Option<string>};
 
-    await new Promise(res => setTimeout(res, rateLimitMs));
-    const results2 = await runAsyncApplyExternalEventSources(framework);
-    checkLastQuizSyncUpdated(results2);
-    expect(results1.equipmentAfter.get(bambu.id)!.lastQuizSync).not.toEqual(
-      results2.equipmentAfter.get(bambu.id)!.lastQuizSync
-    );
+    beforeEach(async () => {
+      const rateLimitMs = 100;
+      framework = await initTestFramework(rateLimitMs);
+      const areaId = await addArea(framework);
+      equipment = await addWithSheet(
+        framework,
+        'bambu',
+        areaId,
+        O.some(gsheetData.BAMBU.apiResp.spreadsheetId!)
+      );
+      results1 = await runAsyncApplyExternalEventSources(framework);
+      cachedData1 = getRightOrFail(
+        getSomeOrFail(
+          getRightOrFail(
+            await framework.getCachedSheetData(
+              getSomeOrFail(equipment.trainingSheetId)
+            )()
+          )
+        ).cached_data
+      );
+      await new Promise(res => setTimeout(res, rateLimitMs));
+      results2 = await runAsyncApplyExternalEventSources(framework);
+      cachedData2 = getRightOrFail(
+        getSomeOrFail(
+          getRightOrFail(
+            await framework.getCachedSheetData(
+              getSomeOrFail(equipment.trainingSheetId)
+            )()
+          )
+        ).cached_data
+      );
+    });
+
+    it('updates the last quiz sync both times indicating a sync both times', () => {
+      checkLastQuizSyncUpdated(results1);
+      checkLastQuizSyncUpdated(results2);
+      expect(
+        results1.equipmentAfter.get(equipment.id)!.lastQuizSync
+      ).not.toEqual(results2.equipmentAfter.get(equipment.id)!.lastQuizSync);
+    });
+
+    it('Cached data is the same after both runs', () => {
+      // The source (our simulated google endpoint using local data) doesn't change so we should cache the same
+      // number of events both times.
+      expect(cachedData1.length).toBeGreaterThan(1); // At least 1 event is the sync event then x more events from the data source.
+      expect(cachedData2.length).toStrictEqual(cachedData1.length);
+    });
   });
 });
 
