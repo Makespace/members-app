@@ -21,7 +21,6 @@ import {
   extractGoogleSheetData,
   shouldPullFromSheet,
 } from '../../training-sheets/google';
-import {inspect} from 'node:util';
 import {getChunkIndexes} from '../../util';
 
 const ROW_BATCH_SIZE = 200;
@@ -69,7 +68,6 @@ const pullNewEquipmentQuizResultsForSheet = async (
       return;
     }
     logger.info('Pulled data from google');
-    logger.info(inspect(data));
     await new Promise(res => setTimeout(res, 5000));
     logger.info('About to extract google sheet data');
     const result = extractGoogleSheetData(
@@ -82,7 +80,6 @@ const pullNewEquipmentQuizResultsForSheet = async (
     )(data.right);
     logger.info('Google sheet data extracted, result:');
     await new Promise(res => setTimeout(res, 5000));
-    logger.info(inspect(result));
     logger.info('Updating data with the extracted data');
     if (O.isSome(result)) {
       result.value.forEach(updateState);
@@ -169,9 +166,6 @@ export const pullNewEquipmentQuizResults = async (
     );
     sheets.push(meta.value);
   }
-
-  logger.info('Sheets to pull');
-  logger.info(inspect(sheets));
 
   for (const sheet of sheets) {
     await pullNewEquipmentQuizResultsForSheet(
