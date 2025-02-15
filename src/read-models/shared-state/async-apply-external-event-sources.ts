@@ -221,18 +221,12 @@ export const asyncApplyExternalEventSources = (
         events.length
       );
       await new Promise(res => setTimeout(res, 7500));
-      const x = await cacheSheetData(
+      await cacheSheetData(
         new Date(),
         equipment.trainingSheetId.value,
         equipmentLogger,
         events
-      )();
-      if (E.isLeft(x)) {
-        equipmentLogger.error(
-          'Failed to cache training sheet data due to: %s',
-          x.left.message
-        );
-      }
+      );
     }
     logger.info('Finished applying external event sources');
   };

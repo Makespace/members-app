@@ -134,7 +134,7 @@ describe('Load cached sheet data', () => {
             data.sheetId,
             pino({level: 'silent'}),
             data.data
-          )()
+          )
         )
       );
     });

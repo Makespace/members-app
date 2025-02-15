@@ -60,5 +60,5 @@ export type Dependencies = {
       | EventOfType<'EquipmentTrainingQuizSync'>
       | EventOfType<'EquipmentTrainingQuizResult'>
     >
-  ) => TE.TaskEither<Failure, void>;
+  ) => Promise<void>;
 };

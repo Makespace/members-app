@@ -9,7 +9,7 @@ import {initSharedReadModel} from '../../src/read-models/shared-state';
 import * as libsqlClient from '@libsql/client';
 import {localGoogleHelpers} from './pull-local-google';
 
-const cacheSheetData = (
+const cacheSheetData = async (
   _cacheTimestamp: Date,
   _sheetId: string,
   _logger: Logger,
@@ -17,7 +17,7 @@ const cacheSheetData = (
     | EventOfType<'EquipmentTrainingQuizSync'>
     | EventOfType<'EquipmentTrainingQuizResult'>
   >
-) => TE.asUnit(TE.right(''));
+) => {};
 
 export const happyPathAdapters: Dependencies = {
   commitEvent: () => () =>
