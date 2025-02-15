@@ -22,6 +22,7 @@ import {
   shouldPullFromSheet,
 } from '../../training-sheets/google';
 import {getChunkIndexes} from '../../util';
+import { cacheSheetData } from '../../init-dependencies/google/get-cached-sheet-data';
 
 const ROW_BATCH_SIZE = 200;
 
@@ -123,8 +124,6 @@ export const pullNewEquipmentQuizResults = async (
     return;
   }
 
-  // Early return here - all is ok.
-
   logger.info('Got meta data for sheet...');
 
   const sheets: GoogleSheetMetadata[] = [];
@@ -196,7 +195,7 @@ export const asyncApplyExternalEventSources = (
   googleHelpers: O.Option<GoogleHelpers>,
   updateState: (event: DomainEvent) => void,
   googleRateLimitMs: number,
-  _cacheSheetData: Dependencies['cacheSheetData']
+  cacheSheetData: Dependencies['cacheSheetData']
 ) => {
   return () => async () => {
     logger.info('Applying external event sources...');
@@ -221,43 +220,43 @@ export const asyncApplyExternalEventSources = (
           'Triggering event update from google training sheets for %s...',
           equipment.name
         );
-        // const events: (
-        //   | EventOfType<'EquipmentTrainingQuizSync'>
-        //   | EventOfType<'EquipmentTrainingQuizResult'>
-        // )[] = [];
-        // const collectEvents = (
-        //   event:
-        //     | EventOfType<'EquipmentTrainingQuizSync'>
-        //     | EventOfType<'EquipmentTrainingQuizResult'>
-        // ) => {
-        //   logger.info('Collected event %o', event);
-        //   events.push(event);
-        //   // updateState(event);
-        // };
+        const events: (
+          | EventOfType<'EquipmentTrainingQuizSync'>
+          | EventOfType<'EquipmentTrainingQuizResult'>
+        )[] = [];
+        const collectEvents = (
+          event:
+            | EventOfType<'EquipmentTrainingQuizSync'>
+            | EventOfType<'EquipmentTrainingQuizResult'>
+        ) => {
+          logger.info('Collected event %o', event);
+          events.push(event);
+          updateState(event);
+        };
 
         await pullNewEquipmentQuizResults(
           logger,
           googleHelpers.value,
           expandLastQuizResult(currentState)(equipment),
-          updateState
+          collectEvents
         );
         logger.info(
           'Finished pulling events from google training sheet for %s, caching...',
           equipment.name
         );
-        // const x = await cacheSheetData(
-        //   new Date(),
-        //   equipment.trainingSheetId.value,
-        //   events
-        // )();
-        // if (E.isLeft(x)) {
-        //   logger.error(
-        //     'Failed to cache training sheet data for %s training sheet id %s, due to: %s',
-        //     equipment.name,
-        //     equipment.trainingSheetId,
-        //     x.left.message
-        //   );
-        // }
+        const x = await cacheSheetData(
+          new Date(),
+          equipment.trainingSheetId.value,
+          events
+        )();
+        if (E.isLeft(x)) {
+          logger.error(
+            'Failed to cache training sheet data for %s training sheet id %s, due to: %s',
+            equipment.name,
+            equipment.trainingSheetId,
+            x.left.message
+          );
+        }
       }
     }
     logger.info('Finished applying external event sources');
