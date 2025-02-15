@@ -160,7 +160,8 @@ const createTrainingQuizTable = sql`
     emailProvided TEXT,
     score INTEGER,
     maxScore INTEGER,
-    timestamp INTEGER
+    timestamp INTEGER,
+    UNIQUE(equipmentId, sheetId, memberNumberProvided, emailProvided, timestamp)
   )
 `;
 

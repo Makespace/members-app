@@ -219,6 +219,15 @@ export const updateState =
             maxScore: event.maxScore,
             timestamp: new Date(event.timestampEpochMS),
           })
+          .onConflictDoNothing({
+            target: [
+              trainingQuizTable.equipmentId,
+              trainingQuizTable.sheetId,
+              trainingQuizTable.memberNumberProvided,
+              trainingQuizTable.emailProvided,
+              trainingQuizTable.timestamp,
+            ],
+          })
           .run();
         break;
       case 'EquipmentTrainingQuizEmailUpdated':
