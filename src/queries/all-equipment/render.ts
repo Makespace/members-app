@@ -13,9 +13,10 @@ const renderEquipment = (equipment: ViewModel['areas'][number]['equipment']) =>
   pipe(
     equipment,
     RA.map(
-      item => html`
-        <a href="/equipment/${safe(item.id)}">${sanitizeString(item.name)}</a>
-      `
+      item =>
+        html` <a href="/equipment/${safe(item.id)}"
+          >${sanitizeString(item.name)}</a
+        >`
     ),
     commaHtml
   );
