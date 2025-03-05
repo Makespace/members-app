@@ -19,15 +19,16 @@ export const ownerResources = html`
       <li>
         <a
           href="https://drive.google.com/drive/folders/1tPSEo7ZfaASiwHcbcmnPD4nDN14JYZe6"
-        ></a
-        >Google Drive folder
+          >Google Drive folder</a
+        >
       </li>
       to store all equipment related files including training slides and quizzes
       <li>
         <a
           href="https://drive.google.com/drive/folders/163eSpehv_L8E1I59VPVzyKIkN8TJthVA?usp=sharing"
           >Google Drive folder</a
-        >for sharing material like videos on equipment pages
+        >
+        for sharing material like videos on equipment pages
       </li>
       <li>
         Each piece of Red equipment should have a safety poster next to it.
