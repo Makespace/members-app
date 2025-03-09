@@ -62,7 +62,8 @@ export const initRoutes = (
     ),
     email('owner-agreement-invite', sendEmailCommands.ownerAgreementInvite),
     get('/ping', ping),
-    query('/debug/dump-shared-db', queries.dumpSharedDbAsJson),
+    query('/debug/dump-shared-db/json', queries.dumpSharedDbAsJson),
+    query('/debug/dump-shared-db/buffer', queries.dumpSharedDbAsBuffer),
     ...authRoutes(deps),
   ];
 };

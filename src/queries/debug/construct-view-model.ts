@@ -29,6 +29,7 @@ export const constructViewModel =
           )()
       ),
       TE.map(() => ({
-        dump: sharedReadModel.debug.dump(),
+        jsonDump: sharedReadModel.debug.dump(),
+        bufferDump: sharedReadModel._underlyingReadModelDb.serialize(),
       }))
     );
