@@ -27,6 +27,7 @@ export {replayState} from './deprecated-replay';
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
+  _underlyingReadModelDb: Database.Database; // This is exposed only to allow debug serialisation of the db.
   asyncRefresh: () => T.Task<void>;
   asyncApplyExternalEventSources: () => T.Task<void>;
   updateState: ReturnType<typeof updateState>;
@@ -55,12 +56,14 @@ export const initSharedReadModel = (
   googleRateLimitMs: number,
   cacheSheetData: Dependencies['cacheSheetData']
 ): SharedReadModel => {
-  const readModelDb = drizzle(new Database());
+  const _underlyingReadModelDb = new Database();
+  const readModelDb = drizzle(_underlyingReadModelDb);
   createTables.forEach(statement => readModelDb.run(statement));
   const updateState_ = updateState(readModelDb);
 
   return {
     db: readModelDb,
+    _underlyingReadModelDb,
     asyncRefresh: asyncRefresh(eventStoreClient, updateState_),
     updateState: updateState_,
     asyncApplyExternalEventSources: asyncApplyExternalEventSources(

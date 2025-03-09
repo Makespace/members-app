@@ -11,5 +11,5 @@ export {logcsv} from './logcsv';
 export {trainingStatusCsv} from './training-status-csv';
 export {me} from './me';
 export {failedImports} from './failed-imports';
-export {dumpSharedDbAsJson} from './debug';
+export {dumpSharedDbAsJson, dumpSharedDbAsBuffer} from './debug';
 export {Query} from './query';

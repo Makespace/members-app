@@ -1,3 +1,4 @@
+import Database from 'better-sqlite3';
 import {pipe} from 'fp-ts/lib/function';
 import {arbitraryUser} from '../../types/user.helper';
 import {getRightOrFail} from '../../helpers';
@@ -38,7 +39,18 @@ describe('construct-view-model', () => {
       constructViewModel(framework.sharedReadModel),
       T.map(getRightOrFail)
     )();
-    expect(result.dump).toBeDefined();
+    expect(result.jsonDump).toBeDefined();
+    expect(result.bufferDump).toBeDefined();
+  });
+
+  it('produces a serialised buffer that can be loaded back into a database', async () => {
+    const result = await pipe(
+      superUser,
+      constructViewModel(framework.sharedReadModel),
+      T.map(getRightOrFail)
+    )();
+    const db = new Database(result.bufferDump);
+    expect(db).toBeDefined();
   });
 
   it('fails if the logged in user is not a super user', async () => {
