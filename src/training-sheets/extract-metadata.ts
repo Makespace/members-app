@@ -45,7 +45,9 @@ export const extractGoogleSheetMetadata =
       O.flatMap(sheetData => O.fromNullable(sheetData.rowData)),
       O.flatMap(array.lookup(0)),
       O.flatMap(firstRowData =>
-        O.some(firstRowData.values.map(col => col.formattedValue))
+        'values' in firstRowData
+          ? O.some(firstRowData.values.map(col => col.formattedValue))
+          : O.none
       )
     );
     if (O.isNone(columnNames)) {

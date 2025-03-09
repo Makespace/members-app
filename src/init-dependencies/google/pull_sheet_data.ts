@@ -56,13 +56,16 @@ export const GoogleSpreadsheetDataForSheet = t.strict({
         t.strict({
           rowData: t.union([
             t.array(
-              t.strict({
-                values: t.array(
-                  t.strict({
-                    formattedValue: tt.withFallback(t.string, ''),
-                  })
-                ),
-              })
+              t.union([
+                t.strict({
+                  values: t.array(
+                    t.strict({
+                      formattedValue: tt.withFallback(t.string, ''),
+                    })
+                  ),
+                }),
+                t.strict({}),
+              ])
             ),
             t.undefined,
             t.null,
