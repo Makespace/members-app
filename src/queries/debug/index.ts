@@ -8,7 +8,7 @@ import {HttpResponse} from '../../types';
 export const dumpSharedDbAsJson: Query = deps => user =>
   pipe(
     user,
-    constructViewModel(deps),
+    constructViewModel(deps.sharedReadModel),
     TE.map(render),
     TE.map(body =>
       HttpResponse.Raw({
