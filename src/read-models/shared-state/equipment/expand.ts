@@ -131,7 +131,10 @@ const expandMembersAwaitingTraining =
         )
         .leftJoin(
           trainedMemberstable,
-          eq(membersTable.memberNumber, trainedMemberstable.memberNumber)
+          and(
+            eq(membersTable.memberNumber, trainedMemberstable.memberNumber),
+            eq(trainedMemberstable.equipmentId, equipment.id)
+          )
         )
         .where(
           and(
@@ -184,7 +187,10 @@ const expandFailedQuizAttempts =
         )
         .leftJoin(
           trainedMemberstable,
-          eq(membersTable.memberNumber, trainedMemberstable.memberNumber)
+          and(
+            eq(membersTable.memberNumber, trainedMemberstable.memberNumber),
+            eq(trainedMemberstable.equipmentId, equipment.id)
+          )
         )
         .where(
           and(eq(trainingQuizTable.equipmentId, equipment.id), not(quizPassed))
