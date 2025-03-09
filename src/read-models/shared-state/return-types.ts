@@ -47,6 +47,15 @@ export type MinimalEquipment = {
   lastQuizSync: O.Option<EpochTimestampMilliseconds>;
 };
 
+export type RawTrainingQuizResult = {
+  id: string;
+  memberNumberProvided: number | null;
+  emailProvided: string | null;
+  score: number;
+  maxScore: number;
+  timestamp: Date;
+};
+
 export type Equipment = {
   trainers: ReadonlyArray<TrainerInfo>;
   trainedMembers: ReadonlyArray<TrainedMember>;
@@ -57,6 +66,10 @@ export type Equipment = {
   // Uses the actual spreadsheet timestamp rather than our local timestamp which could be
   // different due to clock drift or eventual consistency issues on the google side.
   lastQuizResult: O.Option<EpochTimestampMilliseconds>;
+
+  // This is only populated for certain equipment that is being debugged as it comes with
+  // a performance penalty.
+  trainingQuizResultsRaw: ReadonlyArray<RawTrainingQuizResult>;
 } & Omit<MinimalEquipment, 'areaId'>;
 
 export type TrainedOn = {

@@ -5,6 +5,7 @@ import {
   Html,
   html,
   joinHtml,
+  safe,
   sanitizeOption,
   sanitizeString,
   toLoggedInContent,
@@ -300,6 +301,15 @@ const trainingQuizResults = (viewModel: ViewModel) => html`
   ${failedQuizTrainingTable(viewModel)}
 `;
 
+const debugRender = (equipment: ViewModel['equipment']): Html => html`
+  <input
+    type="hidden"
+    id="trainingQuizResultsRaw"
+    name="trainingQuizResultsRaw"
+    value="${safe(JSON.stringify(equipment.trainingQuizResultsRaw))}"
+  />
+`;
+
 export const render = (viewModel: ViewModel) =>
   pipe(
     viewModel,
@@ -311,6 +321,7 @@ export const render = (viewModel: ViewModel) =>
         ${trainersList(viewModel.equipment.trainers)}
         ${currentlyTrainedUsersTable(viewModel)}
         ${isTrainerOrOwner(viewModel) ? trainingQuizResults(viewModel) : html``}
+        ${viewModel.isSuperUser ? debugRender(viewModel.equipment) : html``}
       </div>
     `,
     toLoggedInContent(sanitizeString(viewModel.equipment.name))

@@ -5,5 +5,6 @@ export type ViewModel = {
   user: User;
   isSuperUserOrOwnerOfArea: boolean;
   isSuperUserOrTrainerOfArea: boolean;
+  isSuperUser: boolean;
   equipment: Equipment;
 };

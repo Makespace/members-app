@@ -15,6 +15,7 @@ import {
   MemberAwaitingTraining,
   MinimalEquipment,
   OrphanedPassedQuiz,
+  RawTrainingQuizResult,
   TrainedMember,
   TrainerInfo,
 } from '../return-types';
@@ -110,19 +111,32 @@ const expandMembersAwaitingTraining =
   (db: BetterSQLite3Database) =>
   <T extends MinimalEquipment>(
     equipment: T
-  ): T & {membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>} => {
+  ): T & {
+    membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>;
+    trainingQuizResultsRaw: ReadonlyArray<RawTrainingQuizResult>;
+  } => {
     if (O.isNone(equipment.trainingSheetId)) {
       return {
         ...equipment,
         membersAwaitingTraining: [],
+        trainingQuizResultsRaw: [],
       };
     }
+    const trainingQuizResultsRaw: RawTrainingQuizResult[] = [];
     if (equipment.id === '22aeae84-31ad-4a60-ab5b-c973ddf5d4a3') {
-      console.log('Getting members awaiting training for jointer');
-      const rowsRaw = db.select().from(trainingQuizTable).all();
-      for (const row of rowsRaw) {
-        console.log(row);
-      }
+      db.select()
+        .from(trainingQuizTable)
+        .all()
+        .forEach(qr =>
+          trainingQuizResultsRaw.push({
+            id: qr.quizId,
+            memberNumberProvided: qr.memberNumberProvided,
+            emailProvided: qr.emailProvided,
+            score: qr.score,
+            maxScore: qr.maxScore,
+            timestamp: qr.timestamp,
+          })
+        );
     }
 
     return pipe(
@@ -170,6 +184,7 @@ const expandMembersAwaitingTraining =
       membersAwaitingTraining => ({
         ...equipment,
         membersAwaitingTraining,
+        trainingQuizResultsRaw,
       })
     );
   };
