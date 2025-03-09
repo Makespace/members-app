@@ -186,9 +186,16 @@ const extractFromRow =
     trainingSheetId: string,
     timezone: string
   ) =>
-  (row: {
-    values: {formattedValue: string}[];
-  }): O.Option<EventOfType<'EquipmentTrainingQuizResult'>> => {
+  (
+    row:
+      | {
+          values: {formattedValue: string}[] | undefined;
+        }
+      | Record<string, never>
+  ): O.Option<EventOfType<'EquipmentTrainingQuizResult'>> => {
+    if (!row.values) {
+      return O.none;
+    }
     const email = O.isSome(metadata.mappedColumns.email)
       ? pipe(
           row.values,
