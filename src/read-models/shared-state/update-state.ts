@@ -26,7 +26,7 @@ export const updateState =
             emailAddress: event.email,
             gravatarHash: gravatarHashFromEmail(event.email),
             name: O.none,
-            pronouns: O.none,
+            formOfAddress: O.none,
             prevEmails: [],
             isSuperUser: false,
             agreementSigned: undefined,
@@ -41,9 +41,9 @@ export const updateState =
             .where(eq(membersTable.memberNumber, event.memberNumber))
             .run();
         }
-        if (event.pronouns) {
+        if (event.formOfAddress) {
           db.update(membersTable)
-            .set({pronouns: O.some(event.pronouns)})
+            .set({formOfAddress: O.some(event.formOfAddress)})
             .where(eq(membersTable.memberNumber, event.memberNumber))
             .run();
         }

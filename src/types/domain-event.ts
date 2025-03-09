@@ -84,7 +84,7 @@ export const DomainEvent = t.union([
   eventCodec('MemberDetailsUpdated', {
     memberNumber: t.number,
     name: t.union([t.string, t.undefined]),
-    pronouns: t.union([t.string, t.undefined]),
+    formOfAddress: t.union([t.string, t.undefined]),
   }),
   eventCodec('OwnerAgreementSigned', {
     memberNumber: t.number,

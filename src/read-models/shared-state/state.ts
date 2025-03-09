@@ -13,7 +13,7 @@ export const membersTable = sqliteTable('members', {
   emailAddress: text('emailAddress').notNull().$type<EmailAddress>(),
   gravatarHash: text('gravatarHash').notNull().$type<GravatarHash>(),
   name: blob('name', {mode: 'json'}).notNull().$type<O.Option<string>>(),
-  pronouns: blob('pronouns', {mode: 'json'})
+  formOfAddress: blob('formOfAddress', {mode: 'json'})
     .notNull()
     .$type<O.Option<string>>(),
   prevEmails: blob('prevEmails', {mode: 'json'})
@@ -30,7 +30,7 @@ const createMembersTable = sql`
     emailAddress TEXT,
     gravatarHash TEXT,
     name BLOB,
-    pronouns BLOB,
+    formOfAddress BLOB,
     prevEmails BLOB,
     isSuperUser INTEGER,
     superUserSince INTEGER,
@@ -181,7 +181,7 @@ type Member = {
   emailAddress: EmailAddress;
   prevEmails: ReadonlyArray<EmailAddress>;
   name: O.Option<string>;
-  pronouns: O.Option<string>;
+  formOfAddress: O.Option<string>;
   agreementSigned: O.Option<Date>;
   isSuperUser: boolean;
   gravatarHash: GravatarHash;
