@@ -15,7 +15,6 @@ import {
   MemberAwaitingTraining,
   MinimalEquipment,
   OrphanedPassedQuiz,
-  RawTrainingQuizResult,
   TrainedMember,
   TrainerInfo,
 } from '../return-types';
@@ -113,7 +112,6 @@ const expandMembersAwaitingTraining =
     equipment: T
   ): T & {
     membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>;
-    trainingQuizResultsRaw: ReadonlyArray<RawTrainingQuizResult>;
   } => {
     if (O.isNone(equipment.trainingSheetId)) {
       return {
@@ -122,23 +120,6 @@ const expandMembersAwaitingTraining =
         trainingQuizResultsRaw: [],
       };
     }
-    const trainingQuizResultsRaw: RawTrainingQuizResult[] = db
-      .select()
-      .from(trainingQuizTable)
-      .where(eq(trainingQuizTable.sheetId, equipment.trainingSheetId.value))
-      .all()
-      .map(qr => ({
-        // Don't want random columns being leaked out unintentionally in future so they
-        // explicitly listed.
-        quizId: qr.quizId,
-        equipmentId: qr.equipmentId,
-        memberNumberProvided: qr.memberNumberProvided,
-        emailProvided: qr.emailProvided,
-        score: qr.score,
-        maxScore: qr.maxScore,
-        timestamp: qr.timestamp,
-      }));
-
     return pipe(
       db
         .select()
@@ -184,7 +165,6 @@ const expandMembersAwaitingTraining =
       membersAwaitingTraining => ({
         ...equipment,
         membersAwaitingTraining,
-        trainingQuizResultsRaw,
       })
     );
   };
