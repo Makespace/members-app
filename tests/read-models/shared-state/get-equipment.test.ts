@@ -10,6 +10,12 @@ import {updateState} from '../../../src/read-models/shared-state/update-state';
 import {constructEvent, EventOfType} from '../../../src/types/domain-event';
 import {trainingQuizTable} from '../../../src/read-models/shared-state/state';
 
+const randomEpochTimestamp = () =>
+  faker.number.int({
+    min: 1500000000,
+    max: 1900000000,
+  });
+
 describe('get', () => {
   let framework: TestFramework;
   const equipmentId = faker.string.uuid() as UUID;
@@ -528,11 +534,7 @@ describe('get', () => {
           constructEvent('EquipmentTrainingQuizResult')({
             ...passedQuizResult,
             id: faker.string.uuid() as UUID,
-            timestampEpochMS: faker.number.int({
-              // Random epoch timestamp.
-              min: 1500000000,
-              max: 1900000000,
-            }),
+            timestampEpochMS: randomEpochTimestamp(),
           })
         );
       }
@@ -590,6 +592,90 @@ describe('get', () => {
         getSomeOrFail(framework.sharedReadModel.equipment.get(addEquipment.id))
           .membersAwaitingTraining
       ).toHaveLength(0);
+    });
+  });
+
+  describe('User is trained on 1 piece of equipment and is waiting on another', () => {
+    // A failure in this situation is what caused bug https://github.com/Makespace/members-app/issues/100.
+    // The user is already trained on equipment 1, has passed the quiz for equipment 2 and is awaiting training on equipment 2.
+    const member = addUntrainedMember;
+    const equipment1 = addEquipment;
+    const equipment1Sheet = {
+      trainingSheetId: faker.company.buzzNoun(),
+      equipmentId: equipment1.id,
+    };
+    const equipment2 = {
+      id: faker.string.uuid() as UUID,
+      name: faker.science.chemicalElement().name as NonEmptyString,
+      areaId: equipment1.areaId,
+    };
+    const equipment2Sheet = {
+      trainingSheetId: faker.company.buzzNoun(),
+      equipmentId: equipment2.id,
+    };
+
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(member);
+      await framework.commands.area.create(createArea);
+      await framework.commands.equipment.add(equipment1);
+      await framework.commands.equipment.trainingSheet(equipment1Sheet);
+      await framework.commands.trainers.markTrained({
+        memberNumber: member.memberNumber,
+        equipmentId: equipment1.id,
+      });
+      updateState(framework.sharedReadModel.db)(
+        constructEvent('EquipmentTrainingQuizResult')({
+          ...passedQuizResult,
+          id: faker.string.uuid() as UUID,
+          equipmentId: equipment1.id,
+          trainingSheetId: equipment1Sheet.trainingSheetId,
+          memberNumberProvided: member.memberNumber,
+          emailProvided: member.email,
+          timestampEpochMS: randomEpochTimestamp(),
+        })
+      );
+
+      await framework.commands.equipment.add(equipment2);
+      await framework.commands.equipment.trainingSheet(equipment2Sheet);
+      updateState(framework.sharedReadModel.db)(
+        constructEvent('EquipmentTrainingQuizResult')({
+          ...passedQuizResult,
+          id: faker.string.uuid() as UUID,
+          equipmentId: equipment2.id,
+          trainingSheetId: equipment2Sheet.trainingSheetId,
+          memberNumberProvided: member.memberNumber,
+          emailProvided: member.email,
+          timestampEpochMS: randomEpochTimestamp(),
+        })
+      );
+    });
+    it('The user is not marked as waiting for training for equipment 1', () => {
+      const awaitingTraining = getSomeOrFail(
+        framework.sharedReadModel.equipment.get(equipment1.id)
+      ).membersAwaitingTraining;
+      expect(awaitingTraining).toHaveLength(0);
+    });
+    it('The user is marked as trained for equipment 1', () => {
+      const trained = getSomeOrFail(
+        framework.sharedReadModel.equipment.get(equipment1.id)
+      ).trainedMembers;
+      expect(trained).toHaveLength(1);
+      expect(trained[0].memberNumber).toStrictEqual(member.memberNumber);
+    });
+    it('The user is marked as waiting for training for equipment 2', () => {
+      const awaitingTraining = getSomeOrFail(
+        framework.sharedReadModel.equipment.get(equipment2.id)
+      ).membersAwaitingTraining;
+      expect(awaitingTraining).toHaveLength(1);
+      expect(awaitingTraining[0].memberNumber).toStrictEqual(
+        member.memberNumber
+      );
+    });
+    it('The user is not marked as trained for equipment 2', () => {
+      const trained = getSomeOrFail(
+        framework.sharedReadModel.equipment.get(equipment2.id)
+      ).trainedMembers;
+      expect(trained).toHaveLength(0);
     });
   });
 });
