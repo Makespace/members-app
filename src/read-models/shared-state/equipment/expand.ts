@@ -122,22 +122,22 @@ const expandMembersAwaitingTraining =
         trainingQuizResultsRaw: [],
       };
     }
-    const trainingQuizResultsRaw: RawTrainingQuizResult[] = [];
-    if (equipment.id === '22aeae84-31ad-4a60-ab5b-c973ddf5d4a3') {
-      db.select()
-        .from(trainingQuizTable)
-        .all()
-        .forEach(qr =>
-          trainingQuizResultsRaw.push({
-            id: qr.quizId,
-            memberNumberProvided: qr.memberNumberProvided,
-            emailProvided: qr.emailProvided,
-            score: qr.score,
-            maxScore: qr.maxScore,
-            timestamp: qr.timestamp,
-          })
-        );
-    }
+    const trainingQuizResultsRaw: RawTrainingQuizResult[] = db
+      .select()
+      .from(trainingQuizTable)
+      .where(eq(trainingQuizTable.sheetId, equipment.trainingSheetId.value))
+      .all()
+      .map(qr => ({
+        // Don't want random columns being leaked out unintentionally in future so they
+        // explicitly listed.
+        quizId: qr.quizId,
+        equipmentId: qr.equipmentId,
+        memberNumberProvided: qr.memberNumberProvided,
+        emailProvided: qr.emailProvided,
+        score: qr.score,
+        maxScore: qr.maxScore,
+        timestamp: qr.timestamp,
+      }));
 
     return pipe(
       db

@@ -48,7 +48,8 @@ export type MinimalEquipment = {
 };
 
 export type RawTrainingQuizResult = {
-  id: string;
+  quizId: string;
+  equipmentId: string;
   memberNumberProvided: number | null;
   emailProvided: string | null;
   score: number;
