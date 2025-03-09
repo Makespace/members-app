@@ -117,6 +117,14 @@ const expandMembersAwaitingTraining =
         membersAwaitingTraining: [],
       };
     }
+    if (equipment.id === '22aeae84-31ad-4a60-ab5b-c973ddf5d4a3') {
+      console.log('Getting members awaiting training for jointer');
+      const rowsRaw = db.select().from(trainingQuizTable).all();
+      for (const row of rowsRaw) {
+        console.log(row);
+      }
+    }
+
     return pipe(
       db
         .select()
