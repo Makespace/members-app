@@ -21,7 +21,7 @@ import {Ord} from 'fp-ts/lib/Ord';
 import {contramap} from 'fp-ts/lib/Ord';
 import {EventOfType} from '../../src/types/domain-event';
 
-const CREDENTIALS_PATH = '../test-google/credentials.json.ignore';
+const CREDENTIALS_PATH = '../test-google/credentials_new.json.ignore';
 
 const TEST_USER = 1741;
 
@@ -195,6 +195,20 @@ describe('Google training sheet integration', () => {
       stripNonStatic
     );
     expect(userEvents).toHaveLength(3);
+  }, 30000);
+  it.skip('HPC Laser Cutter', async () => {
+    const events = await getEvents(
+      '1481VwMyXeqZDZBkgxn8O-R0oM4mt4mbkN2wzmSNvvBs'
+    );
+    expect(events).toHaveLength(706); // Obviously this will change so you will need to manually update.
+    const userEvents = pipe(
+      events,
+      filterUserEvents(TEST_USER),
+      RA.sort(ordByTimestampEpoch),
+      redactEmail,
+      stripNonStatic
+    );
+    expect(userEvents).toHaveLength(1);
   }, 30000);
 
   // it('Metal Lathe', async () => {
