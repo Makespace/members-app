@@ -21,6 +21,7 @@ import {
   getMemberAsActorFull,
 } from './member/helper';
 import {Dependencies} from '../../dependencies';
+import {dumpCurrentState, SharedDatabaseDump} from './debug/dump';
 
 export {replayState} from './deprecated-replay';
 
@@ -41,6 +42,9 @@ export type SharedReadModel = {
   area: {
     get: (id: UUID) => O.Option<Area>;
     getAll: () => ReadonlyArray<Area>;
+  };
+  debug: {
+    dump: () => SharedDatabaseDump;
   };
 };
 
@@ -79,6 +83,9 @@ export const initSharedReadModel = (
     area: {
       get: getAreaFull(readModelDb),
       getAll: getAllAreaFull(readModelDb),
+    },
+    debug: {
+      dump: dumpCurrentState(readModelDb),
     },
   };
 };
