@@ -297,11 +297,18 @@ export const extractGoogleSheetData =
       )
     );
 
-export const shouldPullFromSheet = (sheet: {
-  properties: {
-    title: string;
-  };
-}): boolean => FORM_RESPONSES_SHEET_REGEX.test(sheet.properties.title);
+export const shouldPullFromSheet = (
+  sheetId: string,
+  sheet: {
+    properties: {
+      title: string;
+    };
+  }
+): boolean =>
+  // This specific sheet (woodworking handtools) breaks all the other conventions and puts its raw data in a sheet called Summary.
+  (sheetId === '1CD_Va0th0dJmOSCjVGVCimrzkN7gKGjmMhifv7S9hY0' &&
+    sheet.properties.title === 'Summary') ||
+  FORM_RESPONSES_SHEET_REGEX.test(sheet.properties.title);
 
 export const columnBoundsRequired = (
   sheet: GoogleSheetMetadata

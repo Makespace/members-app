@@ -106,7 +106,7 @@ export const pullNewEquipmentQuizResults = async (
 
   const sheets: GoogleSheetMetadata[] = [];
   for (const sheet of initialMeta.right.sheets) {
-    if (!shouldPullFromSheet(sheet)) {
+    if (!shouldPullFromSheet(trainingSheetId, sheet)) {
       logger.warn(
         "Skipping sheet '%s' as doesn't match expected for form responses",
         sheet.properties.title
