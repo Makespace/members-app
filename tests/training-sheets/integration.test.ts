@@ -210,6 +210,20 @@ describe('Google training sheet integration', () => {
     );
     expect(userEvents).toHaveLength(1);
   }, 30000);
+  it.skip('Woodworking Handtools', async () => {
+    const events = await getEvents(
+      '1CD_Va0th0dJmOSCjVGVCimrzkN7gKGjmMhifv7S9hY0'
+    );
+    expect(events).toHaveLength(274); // Obviously this will change so you will need to manually update.
+    const userEvents = pipe(
+      events,
+      filterUserEvents(TEST_USER),
+      RA.sort(ordByTimestampEpoch),
+      redactEmail,
+      stripNonStatic
+    );
+    expect(userEvents).toHaveLength(3);
+  });
 
   // it('Metal Lathe', async () => {
   //   const events = await getEvents(
@@ -293,11 +307,6 @@ describe('Google training sheet integration', () => {
   // it.skip('Planer Thicknesser', async () => {
   //   const _events = await getEvents(
   //     '1TVuM9GtSyE8Cq3_p3R3GZOmZE47Au-gSM1B9vXl2JOA'
-  //   );
-  // });
-  // it.skip('Woodworking Handtools', async () => {
-  //   const _events = await getEvents(
-  //     '1CD_Va0th0dJmOSCjVGVCimrzkN7gKGjmMhifv7S9hY0'
   //   );
   // });
   // it.skip('Metal_Mill', async () => {
