@@ -132,6 +132,11 @@ const currentlyTrainedUsersTable = (viewModel: ViewModel) =>
           <td>${renderMemberNumber(member.memberNumber)}</td>
           <td>${displayDate(DateTime.fromJSDate(member.trainedSince))}</td>
           <td>
+            ${O.isNone(member.trainedByMemberNumber)
+              ? ''
+              : renderMemberNumber(member.trainedByMemberNumber.value)}
+          </td>
+          <td>
             <form action="/equipment/revoke-member-trained" method="post">
               <input
                 type="hidden"
@@ -156,6 +161,7 @@ const currentlyTrainedUsersTable = (viewModel: ViewModel) =>
           <th>Name</th>
           <th>Member Number</th>
           <th>Trained at</th>
+          <th>Trained by</th>
           <th>Actions</th>
         </tr>
         ${rows}
