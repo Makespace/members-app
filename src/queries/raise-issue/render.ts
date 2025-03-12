@@ -4,7 +4,7 @@ type ViewModel = {
   memberNumber: number;
 };
 
-const infoSystemsGroupEmailAddress = safe('infosystems@makespace.org');
+const appOwnersGroupEmailAddress = safe('database-owners@makespace.org');
 
 const mailtoLink = (emailAddress: string, subject: string, body: string) =>
   safe(
@@ -13,7 +13,7 @@ const mailtoLink = (emailAddress: string, subject: string, body: string) =>
 
 const badRecordsMailtoLink = (memberNumber: ViewModel['memberNumber']) =>
   mailtoLink(
-    infoSystemsGroupEmailAddress,
+    appOwnersGroupEmailAddress,
     'ISSUE with member records',
     `Hi,
 
@@ -27,7 +27,7 @@ I have the following issue with my records:
 
 const newContributorMailToLink = (memberNumber: ViewModel['memberNumber']) =>
   mailtoLink(
-    infoSystemsGroupEmailAddress,
+    appOwnersGroupEmailAddress,
     'ISSUE New contributor',
     `Hi,
 
@@ -48,7 +48,7 @@ export const render = (viewModel: ViewModel) => html`
     <p>
       Send the app and records team an email:
       <a href="${badRecordsMailtoLink(viewModel.memberNumber)}"
-        >${infoSystemsGroupEmailAddress}</a
+        >${appOwnersGroupEmailAddress}</a
       >
     </p>
     <p>
@@ -78,14 +78,14 @@ export const render = (viewModel: ViewModel) => html`
       </li>
       <li>
         Coordination happens on the
-        <code>${infoSystemsGroupEmailAddress}</code> mailing list and the
-        WhatsApp group chat.
+        <code>${appOwnersGroupEmailAddress}</code> mailing list and the WhatsApp
+        group chat.
       </li>
     </ul>
     <p>
       To contribute, please email
       <a href="${newContributorMailToLink(viewModel.memberNumber)}"
-        >${infoSystemsGroupEmailAddress}</a
+        >${appOwnersGroupEmailAddress}</a
       >.
     </p>
 
