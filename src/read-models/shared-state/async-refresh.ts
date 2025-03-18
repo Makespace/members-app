@@ -13,8 +13,10 @@ export const asyncRefresh = (
   return () => async () => {
     const events = await pipe(
       getAllEvents(eventStoreDb)(),
-      TE.getOrElse(() => {
-        throw new Error('unexpected Left');
+      TE.getOrElse(failure => {
+        throw new Error(
+          `unexpected Left from getAllEvents: ${failure.message}`
+        );
       })
     )();
 
