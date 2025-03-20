@@ -7,6 +7,13 @@ export const head = (title: HtmlSubstitution) => html`
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>${title} | Cambridge Makespace</title>
     <link rel="stylesheet" href="/static/styles.css" />
+    <noscript
+      ><style>
+        .jsonly {
+          display: none;
+        }
+      </style></noscript
+    >
 
     <!-- Generated using https://realfavicongenerator.net -->
     <link

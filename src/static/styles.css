@@ -267,6 +267,13 @@ details > *:not(summary) {
   gap: 1rem;
 }
 
+.page-nav__previous {
+  position: fixed;
+  top: 0;
+  left: 0;
+  margin: 1rem;
+}
+
 .passed_training_quiz_row {
   background-color: lightgreen;
 }
