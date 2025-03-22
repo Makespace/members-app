@@ -5,6 +5,16 @@ import {pipe} from 'fp-ts/lib/function';
 import {EmailAddressCodec} from './email-address';
 import {Actor} from './actor';
 
+const defineEvent = <A extends string, T extends t.Props>(
+  type: A,
+  payload: T
+) => {
+  return {
+    type,
+    codec: eventCodec(type, payload),
+  };
+};
+
 const eventCodec = <A extends string, T extends t.Props>(
   type: A,
   payload: T
@@ -24,95 +34,170 @@ const eventCodec = <A extends string, T extends t.Props>(
     recordedAt: tt.DateFromISOString,
   });
 
-export const DomainEvent = t.union([
-  eventCodec('AreaCreated', {
-    name: t.string,
-    id: tt.UUID,
-  }),
-  eventCodec('AreaRemoved', {
-    id: tt.UUID,
-  }),
-  eventCodec('EquipmentAdded', {
-    name: t.string,
-    id: tt.UUID,
-    areaId: tt.UUID,
-  }),
-  eventCodec('OwnerAdded', {
-    areaId: tt.UUID,
-    memberNumber: t.number,
-  }),
-  eventCodec('OwnerRemoved', {
-    areaId: tt.UUID,
-    memberNumber: t.number,
-  }),
-  eventCodec('SuperUserDeclared', {
-    memberNumber: t.number,
-  }),
-  eventCodec('SuperUserRevoked', {
-    memberNumber: t.number,
-  }),
-  eventCodec('TrainerAdded', {
-    memberNumber: t.number,
-    equipmentId: tt.UUID,
-  }),
-  eventCodec('MemberNumberLinkedToEmail', {
+const AreaCreated = defineEvent('AreaCreated', {
+  name: t.string,
+  id: tt.UUID,
+});
+
+const AreaRemoved = defineEvent('AreaRemoved', {
+  id: tt.UUID,
+});
+
+const EquipmentAdded = defineEvent('EquipmentAdded', {
+  name: t.string,
+  id: tt.UUID,
+  areaId: tt.UUID,
+});
+
+const OwnerAdded = defineEvent('OwnerAdded', {
+  areaId: tt.UUID,
+  memberNumber: t.number,
+});
+
+const OwnerRemoved = defineEvent('OwnerRemoved', {
+  areaId: tt.UUID,
+  memberNumber: t.number,
+});
+
+const SuperUserDeclared = defineEvent('SuperUserDeclared', {
+  memberNumber: t.number,
+});
+
+const SuperUserRevoked = defineEvent('SuperUserRevoked', {
+  memberNumber: t.number,
+});
+
+const TrainerAdded = defineEvent('TrainerAdded', {
+  memberNumber: t.number,
+  equipmentId: tt.UUID,
+});
+
+const MemberNumberLinkedToEmail = defineEvent('MemberNumberLinkedToEmail', {
+  memberNumber: t.number,
+  email: EmailAddressCodec,
+});
+
+const LinkingMemberNumberToAnAlreadyUsedEmailAttempted = defineEvent(
+  'LinkingMemberNumberToAnAlreadyUsedEmailAttempted',
+  {
     memberNumber: t.number,
     email: EmailAddressCodec,
-  }),
-  eventCodec('LinkingMemberNumberToAnAlreadyUsedEmailAttempted', {
-    memberNumber: t.number,
-    email: EmailAddressCodec,
-  }),
-  eventCodec('EquipmentTrainingSheetRegistered', {
+  }
+);
+
+const EquipmentTrainingSheetRegistered = defineEvent(
+  'EquipmentTrainingSheetRegistered',
+  {
     equipmentId: tt.UUID,
     trainingSheetId: t.string,
-  }),
-  eventCodec('EquipmentTrainingQuizResult', {
-    equipmentId: tt.UUID,
-    trainingSheetId: t.string,
-    memberNumberProvided: t.union([t.number, t.null]),
-    emailProvided: t.union([t.string, t.null]), // Note this is a free-form text entry without validation so it might not be a valid email hence no use of EmailAddressCodec.
-    score: t.number,
-    id: tt.UUID,
-    maxScore: t.number,
-    percentage: t.number,
-    timestampEpochMS: t.number, // Unix Epoch January 1st 1970.
-  }),
-  eventCodec('EquipmentTrainingQuizSync', {
-    equipmentId: tt.UUID,
-  }),
-  eventCodec('MemberDetailsUpdated', {
-    memberNumber: t.number,
-    name: t.union([t.string, t.undefined]),
-    formOfAddress: t.union([t.string, t.undefined]),
-  }),
-  eventCodec('OwnerAgreementSigned', {
-    memberNumber: t.number,
-    signedAt: tt.DateFromISOString,
-  }),
-  eventCodec('MemberTrainedOnEquipment', {
-    equipmentId: tt.UUID,
-    memberNumber: t.number,
-    trainedByMemberNumber: t.union([t.number, t.null]), // Null to indicate system.
-    legacyImport: tt.withFallback(t.boolean, false),
-  }),
-  eventCodec('RevokeTrainedOnEquipment', {
-    equipmentId: tt.UUID,
-    memberNumber: t.number,
-    revokedByMemberNumber: t.union([t.number, t.null]), // Null to indicate system.
-  }),
-  eventCodec('MemberEmailChanged', {
-    memberNumber: t.number,
-    newEmail: EmailAddressCodec,
-  }),
-  eventCodec('EquipmentTrainingQuizMemberNumberUpdated', {
+  }
+);
+
+const EquipmentTrainingQuizResult = defineEvent('EquipmentTrainingQuizResult', {
+  equipmentId: tt.UUID,
+  trainingSheetId: t.string,
+  memberNumberProvided: t.union([t.number, t.null]),
+  emailProvided: t.union([t.string, t.null]), // Note this is a free-form text entry without validation so it might not be a valid email hence no use of EmailAddressCodec.
+  score: t.number,
+  id: tt.UUID,
+  maxScore: t.number,
+  percentage: t.number,
+  timestampEpochMS: t.number, // Unix Epoch January 1st 1970.
+});
+
+const EquipmentTrainingQuizSync = defineEvent('EquipmentTrainingQuizSync', {
+  equipmentId: tt.UUID,
+});
+
+const MemberDetailsUpdated = defineEvent('MemberDetailsUpdated', {
+  memberNumber: t.number,
+  name: t.union([t.string, t.undefined]),
+  formOfAddress: t.union([t.string, t.undefined]),
+});
+
+const OwnerAgreementSigned = defineEvent('OwnerAgreementSigned', {
+  memberNumber: t.number,
+  signedAt: tt.DateFromISOString,
+});
+
+const MemberTrainedOnEquipment = defineEvent('MemberTrainedOnEquipment', {
+  equipmentId: tt.UUID,
+  memberNumber: t.number,
+  trainedByMemberNumber: t.union([t.number, t.null]), // Null to indicate system.
+  legacyImport: tt.withFallback(t.boolean, false),
+});
+
+const RevokeTrainedOnEquipment = defineEvent('RevokeTrainedOnEquipment', {
+  equipmentId: tt.UUID,
+  memberNumber: t.number,
+  revokedByMemberNumber: t.union([t.number, t.null]), // Null to indicate system.
+});
+
+const MemberEmailChanged = defineEvent('MemberEmailChanged', {
+  memberNumber: t.number,
+  newEmail: EmailAddressCodec,
+});
+
+const EquipmentTrainingQuizMemberNumberUpdated = defineEvent(
+  'EquipmentTrainingQuizMemberNumberUpdated',
+  {
     quizId: tt.UUID,
     newMemberNumber: t.number,
-  }),
-  eventCodec('EquipmentTrainingQuizEmailUpdated', {
+  }
+);
+
+const EquipmentTrainingQuizEmailUpdated = defineEvent(
+  'EquipmentTrainingQuizEmailUpdated',
+  {
     quizId: tt.UUID,
     newEmail: t.string,
-  }),
+  }
+);
+
+export const events = [
+  AreaCreated,
+  AreaRemoved,
+  EquipmentAdded,
+  OwnerAdded,
+  OwnerRemoved,
+  SuperUserDeclared,
+  SuperUserRevoked,
+  TrainerAdded,
+  MemberNumberLinkedToEmail,
+  LinkingMemberNumberToAnAlreadyUsedEmailAttempted,
+  EquipmentTrainingSheetRegistered,
+  EquipmentTrainingQuizResult,
+  EquipmentTrainingQuizSync,
+  MemberDetailsUpdated,
+  OwnerAgreementSigned,
+  MemberTrainedOnEquipment,
+  RevokeTrainedOnEquipment,
+  MemberEmailChanged,
+  EquipmentTrainingQuizMemberNumberUpdated,
+  EquipmentTrainingQuizEmailUpdated,
+];
+
+export const DomainEvent = t.union([
+  AreaCreated.codec,
+  AreaRemoved.codec,
+  EquipmentAdded.codec,
+  OwnerAdded.codec,
+  OwnerRemoved.codec,
+  SuperUserDeclared.codec,
+  SuperUserRevoked.codec,
+  TrainerAdded.codec,
+  MemberNumberLinkedToEmail.codec,
+  LinkingMemberNumberToAnAlreadyUsedEmailAttempted.codec,
+  EquipmentTrainingSheetRegistered.codec,
+  EquipmentTrainingQuizResult.codec,
+  EquipmentTrainingQuizSync.codec,
+  MemberDetailsUpdated.codec,
+  OwnerAgreementSigned.codec,
+  MemberTrainedOnEquipment.codec,
+  RevokeTrainedOnEquipment.codec,
+  MemberEmailChanged.codec,
+  EquipmentTrainingQuizMemberNumberUpdated.codec,
+  EquipmentTrainingQuizEmailUpdated.codec,
 ]);
 
 export type DomainEvent = t.TypeOf<typeof DomainEvent>;

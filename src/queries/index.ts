@@ -12,4 +12,5 @@ export {trainingStatusCsv} from './training-status-csv';
 export {me} from './me';
 export {failedImports} from './failed-imports';
 export {dumpSharedDbAsJson, dumpSharedDbAsBuffer} from './debug';
+export {domainEvents} from './domain-events';
 export {Query} from './query';
