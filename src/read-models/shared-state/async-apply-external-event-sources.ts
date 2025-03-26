@@ -1,11 +1,16 @@
 import {Logger} from 'pino';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
+import * as t from 'io-ts';
+import * as tt from 'io-ts-types';
 import {DomainEvent} from '../../types';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 
 import {constructEvent, EventOfType} from '../../types/domain-event';
-import {GoogleHelpers} from '../../init-dependencies/google/pull_sheet_data';
+import {
+  GoogleHelpers,
+  GoogleSpreadsheetDataForSheet,
+} from '../../init-dependencies/google/pull_sheet_data';
 
 import {getAllEquipmentMinimal} from './equipment/get';
 import {Dependencies} from '../../dependencies';
@@ -21,8 +26,14 @@ import {
 } from '../../training-sheets/google';
 import {getChunkIndexes} from '../../util';
 import {UUID} from 'io-ts-types';
+import {formatValidationErrors} from 'io-ts-reporters';
+import {DateTime, Duration} from 'luxon';
 
 const ROW_BATCH_SIZE = 200;
+const EXPECTED_TROUBLE_TICKET_RESPONSE_SHEET_NAME = 'Form Responses 1';
+const TROUBLE_TICKET_SYNC_INTERVAL = Duration.fromMillis(1000 * 60 * 20);
+const TROUBLE_TICKET_RESPONSES_SHEET =
+  '1ZSQoCOyw4ss9JuriySQX04gISfFnb4MadNpPFkEYW84'; // FIXME - Make this configurable.
 
 const pullNewEquipmentQuizResultsForSheet = async (
   logger: Logger,
@@ -167,13 +178,165 @@ export const pullNewEquipmentQuizResults = async (
   );
 };
 
+const TroubleTicketRow = t.strict({
+  timestamp: tt.DateFromISOString,
+  email_address: t.union([t.string, t.null]),
+  which_equipment: t.union([t.string, t.null]),
+  name: t.union([t.string, t.null]),
+  membership_number: t.union([t.number, t.null]),
+  responses: t.record(t.string, t.string),
+});
+
+export const extractTroubleTicketResponseRows = (
+  logger: Logger,
+  data: GoogleSpreadsheetDataForSheet,
+  updateState: (event: EventOfType<'TroubleTicketResponseSubmitted'>) => void
+) => {
+  // FIXME - This is all quite hard coded for the prototype.
+  const rows = data.sheets[0]?.data[0]?.rowData;
+  if (!rows) {
+    logger.error('Failed to find any trouble ticket row data');
+    return;
+  }
+
+  for (const row of rows) {
+    if ('values' in row) {
+      const responses = Object.fromEntries([
+        [
+          'If you answered "Other" above or an ABS or PLA 3d printer, please tell us which one. (printers are numbered from the left',
+          row.values[3],
+        ],
+        ["What's the status of the machine?", row.values[4]],
+        [
+          'What were you attempting to do with the machine? Please include details about material or file type and what you expected to happen.',
+          row.values[5],
+        ],
+        [
+          'What error or issue did you encounter.  Please include events and observations about what actually happened.',
+          row.values[6],
+        ],
+        [
+          'What steps did you take before encountering the error.  Please include any relevant settings or changes made prior to the error.',
+          row.values[7],
+        ],
+      ]);
+
+      const validated = TroubleTicketRow.decode({
+        timestamp: row.values[0],
+        email_address: row.values[1],
+        which_equipment: row.values[2],
+        name: row.values[8],
+        membership_number: row.values[9],
+        responses,
+      });
+
+      if (E.isLeft(validated)) {
+        logger.warn(
+          `Failed to parse trouble ticket row, skipping: ${formatValidationErrors(validated.left).join(',')}`
+        );
+        continue;
+      }
+      updateState(
+        constructEvent('TroubleTicketResponseSubmitted')({
+          response_submitted: validated.right.timestamp,
+          email_address: validated.right.email_address,
+          which_equipment: validated.right.which_equipment,
+          submitter_name: validated.right.name,
+          submitter_membership_number: validated.right.membership_number,
+          submitted_response: validated.right.responses,
+        })
+      );
+    }
+  }
+};
+
+export const pullTroubleTicketResponses = async (
+  logger: Logger,
+  googleHelpers: GoogleHelpers,
+  updateState: (event: DomainEvent) => void,
+  cacheTroubleTicketData: Dependencies['cacheTroubleTicketData']
+): Promise<void> => {
+  logger.info('Getting trouble ticket response sheet metadata...');
+  const initialMeta = await googleHelpers.pullGoogleSheetDataMetadata(
+    logger,
+    TROUBLE_TICKET_RESPONSES_SHEET
+  )();
+  if (E.isLeft(initialMeta)) {
+    logger.error(
+      `Failed to get trouble ticket response sheet metadata. Not continuing: ${initialMeta.left}`
+    );
+    return;
+  }
+
+  const events: EventOfType<'TroubleTicketResponseSubmitted'>[] = [];
+  const collectEvents = (
+    event: EventOfType<'TroubleTicketResponseSubmitted'>
+  ) => {
+    events.push(event);
+    updateState(event);
+  };
+
+  for (const sheet of initialMeta.right.sheets) {
+    if (
+      sheet.properties.title === EXPECTED_TROUBLE_TICKET_RESPONSE_SHEET_NAME
+    ) {
+      logger.info(
+        'Found trouble tickets sheet %s, pulling data in batches...',
+        sheet.properties.title
+      );
+      for (const [rowStart, rowEnd] of getChunkIndexes(
+        2, // 1-indexed and first row is headers.
+        sheet.properties.gridProperties.rowCount,
+        ROW_BATCH_SIZE
+      )) {
+        logger.debug('Pulling trouble tickets rows %s to %s', rowStart, rowEnd);
+        const [minCol, maxCol] = [0, 10]; // FIXME - Determine this dynamically.
+        const data = await googleHelpers.pullGoogleSheetData(
+          logger,
+          TROUBLE_TICKET_RESPONSES_SHEET,
+          sheet.properties.title,
+          rowStart,
+          rowEnd,
+          minCol,
+          maxCol
+        )();
+        if (E.isLeft(data)) {
+          logger.error(
+            data.left,
+            'Failed to pull data for trouble ticket responses rows %s to %s, skipping rest of sheet',
+            rowStart,
+            rowEnd
+          );
+          return;
+        }
+        logger.info('Pulled data from google, extracting...');
+        extractTroubleTicketResponseRows(logger, data.right, collectEvents);
+      }
+    }
+  }
+  logger.info(
+    'Found %s trouble ticket response events, caching...',
+    events.length
+  );
+  await cacheTroubleTicketData(
+    new Date(),
+    TROUBLE_TICKET_RESPONSES_SHEET,
+    logger,
+    events
+  );
+  logger.info('Finished caching trouble ticket response events');
+};
+
+let lastTroubleTicketSync: O.Option<DateTime> = O.none; // FIXME - Temporary for POC.
+
 export const asyncApplyExternalEventSources = (
   logger: Logger,
   currentState: BetterSQLite3Database,
   googleHelpers: O.Option<GoogleHelpers>,
   updateState: (event: DomainEvent) => void,
   googleRefreshIntervalMs: number,
-  cacheSheetData: Dependencies['cacheSheetData']
+  cacheSheetData: Dependencies['cacheSheetData'],
+  cacheTroubleTicketData: Dependencies['cacheTroubleTicketData']
 ) => {
   return () => async () => {
     logger.info('Applying external event sources...');
@@ -181,6 +344,29 @@ export const asyncApplyExternalEventSources = (
       logger.info('Google external event source disabled');
       return;
     }
+
+    logger.info('Pulling latest trouble ticket reports...');
+    if (
+      O.isNone(lastTroubleTicketSync) ||
+      lastTroubleTicketSync.value.diffNow() > TROUBLE_TICKET_SYNC_INTERVAL
+    ) {
+      await pullTroubleTicketResponses(
+        logger,
+        googleHelpers.value,
+        updateState,
+        cacheTroubleTicketData
+      );
+      lastTroubleTicketSync = O.some(DateTime.now());
+    } else {
+      logger.info(
+        '%s since last trouble ticket sync - not resyncing yet',
+        lastTroubleTicketSync.value.diffNow().toHuman()
+      );
+    }
+
+    logger.info(
+      'Finished pulling trouble ticket reports, getting google training sheet data...'
+    );
     for (const equipment of getAllEquipmentMinimal(currentState)) {
       const equipmentLogger = logger.child({equipment});
       if (

@@ -61,4 +61,19 @@ export type Dependencies = {
       | EventOfType<'EquipmentTrainingQuizResult'>
     >
   ) => Promise<void>;
+  getCachedTroubleTicketData: (sheetId: string) => TE.TaskEither<
+    FailureWithStatus,
+    O.Option<{
+      cached_at: Date;
+      cached_data: t.Validation<
+        ReadonlyArray<EventOfType<'TroubleTicketResponseSubmitted'>>
+      >;
+    }>
+  >;
+  cacheTroubleTicketData: (
+    cacheTimestamp: Date,
+    sheetId: TrainingSheetId,
+    logger: Logger,
+    data: ReadonlyArray<EventOfType<'TroubleTicketResponseSubmitted'>>
+  ) => Promise<void>;
 };
