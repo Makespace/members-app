@@ -154,6 +154,18 @@ const EquipmentTrainingQuizEmailUpdated = defineEvent(
   }
 );
 
+const TroubleTicketResponseSubmitted = defineEvent(
+  'TroubleTicketResponseSubmitted',
+  {
+    response_submitted: tt.DateFromISOString,
+    email_address: t.union([t.string, t.null]), // Do not trust this - it is not verified.
+    which_equipment: t.union([t.string, t.null]),
+    submitter_name: t.union([t.string, t.null]), // Do not trust this - it is not verified
+    submitter_membership_number: t.union([t.number, t.null]), // Do not trust this - it is not verified
+    submitted_response: t.record(t.string, t.string),
+  }
+);
+
 export const events = [
   AreaCreated,
   AreaRemoved,
@@ -175,6 +187,7 @@ export const events = [
   MemberEmailChanged,
   EquipmentTrainingQuizMemberNumberUpdated,
   EquipmentTrainingQuizEmailUpdated,
+  TroubleTicketResponseSubmitted,
 ];
 
 export const DomainEvent = t.union([
@@ -198,6 +211,7 @@ export const DomainEvent = t.union([
   MemberEmailChanged.codec,
   EquipmentTrainingQuizMemberNumberUpdated.codec,
   EquipmentTrainingQuizEmailUpdated.codec,
+  TroubleTicketResponseSubmitted.codec,
 ]);
 
 export type DomainEvent = t.TypeOf<typeof DomainEvent>;

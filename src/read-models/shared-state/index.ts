@@ -54,7 +54,8 @@ export const initSharedReadModel = (
   logger: Logger,
   googleHelpers: O.Option<GoogleHelpers>,
   googleRateLimitMs: number,
-  cacheSheetData: Dependencies['cacheSheetData']
+  cacheSheetData: Dependencies['cacheSheetData'],
+  cacheTroubleTicketData: Dependencies['cacheTroubleTicketData']
 ): SharedReadModel => {
   const _underlyingReadModelDb = new Database();
   const readModelDb = drizzle(_underlyingReadModelDb);
@@ -72,7 +73,8 @@ export const initSharedReadModel = (
       googleHelpers,
       updateState_,
       googleRateLimitMs,
-      cacheSheetData
+      cacheSheetData,
+      cacheTroubleTicketData
     ),
     members: {
       get: getMemberFull(readModelDb),
