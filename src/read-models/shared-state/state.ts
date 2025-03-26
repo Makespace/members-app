@@ -165,6 +165,34 @@ const createTrainingQuizTable = sql`
   )
 `;
 
+export const troubleTicketResponsesTable = sqliteTable(
+  'troubleTicketResponses',
+  {
+    responseSubmitted: integer('responseSubmitted', {
+      mode: 'timestamp',
+    }).notNull(),
+    emailAddress: text('emailAddress'),
+    whichEquipment: text('whichEquipment'), // FIXME - This should be the equipment_id if found
+    submitterName: text('submitterName'),
+    submitterMembershipNumber: integer('submitterMembershipNumber'),
+    submittedResponse: text('submittedResponse', {mode: 'json'}),
+  }
+);
+
+// Using response_submitted, email_address, which_equipment as the unique key is temporary
+// for POC. In future we should probably use the row index or something from the trouble tickets sheet.
+const createTroubleTicketResponsesTable = sql`
+  CREATE TABLE IF NOT EXISTS troubleTicketResponses (
+    responseSubmitted INTEGER,
+    emailAddress TEXT,
+    whichEquipment TEXT,
+    submitterName TEXT,
+    submitterMembershipNumber INTEGER,
+    submittedResponse TEXT,
+    UNIQUE(responseSubmitted, emailAddress, whichEquipment)
+  )
+`;
+
 export const createTables = [
   createMembersTable,
   createEquipmentTable,
@@ -173,6 +201,7 @@ export const createTables = [
   createAreasTable,
   createOwnersTable,
   createTrainingQuizTable,
+  createTroubleTicketResponsesTable,
 ];
 
 type Member = {
