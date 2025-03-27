@@ -20,6 +20,7 @@ export const render = () => html`
       </li>
       <li><a href="/members/create">Link an email and number</a></li>
       <li><a href="/training-status.csv">Download current owners and trainers</li>
+      <li><a href="/trouble-tickets">View all trouble tickets (prototype)</li>
     </ul>
   </nav>
   </div>
