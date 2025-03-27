@@ -13,4 +13,5 @@ export {me} from './me';
 export {failedImports} from './failed-imports';
 export {dumpSharedDbAsJson, dumpSharedDbAsBuffer} from './debug';
 export {domainEvents} from './domain-events';
+export {troubleTickets} from './trouble-tickets';
 export {Query} from './query';
