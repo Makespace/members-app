@@ -1,19 +1,14 @@
 import {Client} from '@libsql/client/.';
-import {Dependencies} from '../../dependencies';
 import {Logger} from 'pino';
-import {EventOfType} from '../../types/domain-event';
 
 // This would be more efficient with a simple key-value store.
 export const cacheSheetData =
-  (dbClient: Client): Dependencies['cacheSheetData'] =>
+  <T>(dbClient: Client) =>
   async (
     cacheTimestamp: Date,
     sheetId: string,
     logger: Logger,
-    data: ReadonlyArray<
-      | EventOfType<'EquipmentTrainingQuizResult'>
-      | EventOfType<'EquipmentTrainingQuizSync'>
-    >
+    data: ReadonlyArray<T>
   ) => {
     logger.info('Caching sheet data (%s entries)', data.length);
     const cachedData = JSON.stringify(data);
@@ -32,11 +27,4 @@ export const cacheSheetData =
     } catch (e) {
       logger.error(e, 'Failed to insert cache data, failing silently...');
     }
-    // return TE.tryCatch(
-    //   () =>
-    //     dbClient.execute({
-
-    //     }),
-    //   failure('Failed to insert cached sheet data')
-    // );
   };

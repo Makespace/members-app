@@ -270,7 +270,7 @@ export const updateState =
       case 'TroubleTicketResponseSubmitted':
         db.insert(troubleTicketResponsesTable)
           .values({
-            responseSubmitted: event.response_submitted,
+            responseSubmitted: new Date(event.response_submitted_epoch_ms),
             emailAddress: event.email_address,
             whichEquipment: event.which_equipment,
             submitterName: event.submitter_name,

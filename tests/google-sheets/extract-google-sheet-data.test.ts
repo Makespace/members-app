@@ -1,6 +1,6 @@
 import pino from 'pino';
 import * as O from 'fp-ts/Option';
-import {extractGoogleSheetData} from '../../src/training-sheets/google';
+import {extractGoogleSheetData} from '../../src/google/google';
 import {UUID} from 'io-ts-types';
 import {getSomeOrFail} from '../helpers';
 

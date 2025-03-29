@@ -63,6 +63,7 @@ export const initTestFramework = async (
     logger,
     O.some(localGoogleHelpers),
     googleRateLimitMs,
+    cacheSheetData(dbClient),
     cacheSheetData(dbClient)
   );
   const frameworkCommitEvent = commitEvent(

@@ -157,7 +157,7 @@ const EquipmentTrainingQuizEmailUpdated = defineEvent(
 const TroubleTicketResponseSubmitted = defineEvent(
   'TroubleTicketResponseSubmitted',
   {
-    response_submitted: tt.DateFromISOString,
+    response_submitted_epoch_ms: t.number, // Unix Epoch January 1st 1970.
     email_address: t.union([t.string, t.null]), // Do not trust this - it is not verified.
     which_equipment: t.union([t.string, t.null]),
     submitter_name: t.union([t.string, t.null]), // Do not trust this - it is not verified
