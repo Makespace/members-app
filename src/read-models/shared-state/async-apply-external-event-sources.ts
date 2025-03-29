@@ -192,7 +192,7 @@ const grabColumn =
       val => validator(val)
     );
 
-export const extractTroubleTicketResponseRows = (
+const extractTroubleTicketResponseRows = (
   logger: Logger,
   data: GoogleSpreadsheetDataForSheet,
   updateState: (event: EventOfType<'TroubleTicketResponseSubmitted'>) => void,
