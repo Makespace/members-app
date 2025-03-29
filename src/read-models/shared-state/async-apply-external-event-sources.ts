@@ -1,6 +1,7 @@
 import {Logger} from 'pino';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
+import * as A from 'fp-ts/Array';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import {DomainEvent} from '../../types';
@@ -18,16 +19,18 @@ import {
   extractGoogleSheetMetadata,
   GoogleSheetMetadata,
   MAX_COLUMN_INDEX,
-} from '../../training-sheets/extract-metadata';
+} from '../../google/extract-metadata';
 import {
   columnBoundsRequired,
   extractGoogleSheetData,
   shouldPullFromSheet,
-} from '../../training-sheets/google';
+} from '../../google/google';
 import {getChunkIndexes} from '../../util';
 import {UUID} from 'io-ts-types';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {DateTime, Duration} from 'luxon';
+import {pipe} from 'fp-ts/lib/function';
+import {extractTimestamp} from '../../google/util';
 
 const ROW_BATCH_SIZE = 200;
 const EXPECTED_TROUBLE_TICKET_RESPONSE_SHEET_NAME = 'Form Responses 1';
@@ -178,19 +181,22 @@ export const pullNewEquipmentQuizResults = async (
   );
 };
 
-const TroubleTicketRow = t.strict({
-  timestamp: tt.DateFromISOString,
-  email_address: t.union([t.string, t.null]),
-  which_equipment: t.union([t.string, t.null]),
-  name: t.union([t.string, t.null]),
-  membership_number: t.union([t.number, t.null]),
-  responses: t.record(t.string, t.string),
-});
+const grabColumn =
+  (values: {formattedValue: string}[]) =>
+  <T>(index: number, validator: t.Decode<unknown, T>): t.Validation<T> =>
+    pipe(
+      values,
+      A.lookup(index),
+      O.map(val => val.formattedValue),
+      O.getOrElse<string | null>(() => null),
+      val => validator(val)
+    );
 
 export const extractTroubleTicketResponseRows = (
   logger: Logger,
   data: GoogleSpreadsheetDataForSheet,
-  updateState: (event: EventOfType<'TroubleTicketResponseSubmitted'>) => void
+  updateState: (event: EventOfType<'TroubleTicketResponseSubmitted'>) => void,
+  timezone: string
 ) => {
   // FIXME - This is all quite hard coded for the prototype.
   const rows = data.sheets[0]?.data[0]?.rowData;
@@ -201,49 +207,77 @@ export const extractTroubleTicketResponseRows = (
 
   for (const row of rows) {
     if ('values' in row) {
-      const responses = Object.fromEntries([
-        [
-          'If you answered "Other" above or an ABS or PLA 3d printer, please tell us which one. (printers are numbered from the left',
-          row.values[3],
-        ],
-        ["What's the status of the machine?", row.values[4]],
-        [
-          'What were you attempting to do with the machine? Please include details about material or file type and what you expected to happen.',
-          row.values[5],
-        ],
-        [
-          'What error or issue did you encounter.  Please include events and observations about what actually happened.',
-          row.values[6],
-        ],
-        [
-          'What steps did you take before encountering the error.  Please include any relevant settings or changes made prior to the error.',
-          row.values[7],
-        ],
-      ]);
+      const _grabColumn = grabColumn(row.values);
+      const timestamp = _grabColumn(0, extractTimestamp(timezone).decode);
+      const email_address = _grabColumn(1, t.union([t.string, t.null]).decode);
+      const which_equipment = _grabColumn(
+        2,
+        t.union([t.string, t.null]).decode
+      );
+      const name = _grabColumn(8, t.union([t.string, t.null]).decode);
+      const membership_number = _grabColumn(
+        9,
+        t.union([t.Int, tt.IntFromString, t.null]).decode
+      );
 
-      const validated = TroubleTicketRow.decode({
-        timestamp: row.values[0],
-        email_address: row.values[1],
-        which_equipment: row.values[2],
-        name: row.values[8],
-        membership_number: row.values[9],
-        responses,
-      });
-
-      if (E.isLeft(validated)) {
+      const validationErr = (column: string, err: t.Errors) => {
         logger.warn(
-          `Failed to parse trouble ticket row, skipping: ${formatValidationErrors(validated.left).join(',')}`
+          `Failed to parse trouble ticket row (column ${column}), skipping: ${formatValidationErrors(err).join(',')}`
         );
+      };
+
+      const grabOtherResponse = (i: number) =>
+        pipe(
+          _grabColumn(i, t.string.decode),
+          E.getOrElseW(err => {
+            logger.warn(
+              `Failed to parse trouble ticket column ${i} - defaulting to empty: ${formatValidationErrors(err).join(',')}`
+            );
+            return '';
+          })
+        );
+
+      const responses = {
+        ['If you answered "Other" above or an ABS or PLA 3d printer, please tell us which one. (printers are numbered from the left']:
+          grabOtherResponse(3),
+        ["What's the status of the machine?"]: grabOtherResponse(4),
+        ['What were you attempting to do with the machine? Please include details about material or file type and what you expected to happen.']:
+          grabOtherResponse(5),
+        ['What error or issue did you encounter.  Please include events and observations about what actually happened.']:
+          grabOtherResponse(6),
+        ['What steps did you take before encountering the error.  Please include any relevant settings or changes made prior to the error.']:
+          grabOtherResponse(7),
+      };
+
+      if (E.isLeft(timestamp)) {
+        validationErr('timestamp', timestamp.left);
         continue;
       }
+      if (E.isLeft(email_address)) {
+        validationErr('timestamp', email_address.left);
+        continue;
+      }
+      if (E.isLeft(which_equipment)) {
+        validationErr('timestamp', which_equipment.left);
+        continue;
+      }
+      if (E.isLeft(name)) {
+        validationErr('timestamp', name.left);
+        continue;
+      }
+      if (E.isLeft(membership_number)) {
+        validationErr('timestamp', membership_number.left);
+        continue;
+      }
+
       updateState(
         constructEvent('TroubleTicketResponseSubmitted')({
-          response_submitted: validated.right.timestamp,
-          email_address: validated.right.email_address,
-          which_equipment: validated.right.which_equipment,
-          submitter_name: validated.right.name,
-          submitter_membership_number: validated.right.membership_number,
-          submitted_response: validated.right.responses,
+          response_submitted_epoch_ms: timestamp.right,
+          email_address: email_address.right,
+          which_equipment: which_equipment.right,
+          submitter_name: name.right,
+          submitter_membership_number: membership_number.right,
+          submitted_response: responses,
         })
       );
     }
@@ -253,7 +287,7 @@ export const extractTroubleTicketResponseRows = (
 export const pullTroubleTicketResponses = async (
   logger: Logger,
   googleHelpers: GoogleHelpers,
-  updateState: (event: DomainEvent) => void,
+  updateState: (event: EventOfType<'TroubleTicketResponseSubmitted'>) => void,
   cacheTroubleTicketData: Dependencies['cacheTroubleTicketData']
 ): Promise<void> => {
   logger.info('Getting trouble ticket response sheet metadata...');
@@ -310,7 +344,12 @@ export const pullTroubleTicketResponses = async (
           return;
         }
         logger.info('Pulled data from google, extracting...');
-        extractTroubleTicketResponseRows(logger, data.right, collectEvents);
+        extractTroubleTicketResponseRows(
+          logger,
+          data.right,
+          collectEvents,
+          initialMeta.right.properties.timeZone
+        );
       }
     }
   }

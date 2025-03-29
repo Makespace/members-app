@@ -10,7 +10,7 @@ import {Resource} from './types/resource';
 import {EventName, EventOfType} from './types/domain-event';
 import {SharedReadModel} from './read-models/shared-state';
 
-type TrainingSheetId = string;
+export type GoogleSheetId = string;
 
 export type Dependencies = {
   commitEvent: (
@@ -54,7 +54,7 @@ export type Dependencies = {
   >;
   cacheSheetData: (
     cacheTimestamp: Date,
-    sheetId: TrainingSheetId,
+    sheetId: GoogleSheetId,
     logger: Logger,
     data: ReadonlyArray<
       | EventOfType<'EquipmentTrainingQuizSync'>
@@ -72,7 +72,7 @@ export type Dependencies = {
   >;
   cacheTroubleTicketData: (
     cacheTimestamp: Date,
-    sheetId: TrainingSheetId,
+    sheetId: GoogleSheetId,
     logger: Logger,
     data: ReadonlyArray<EventOfType<'TroubleTicketResponseSubmitted'>>
   ) => Promise<void>;

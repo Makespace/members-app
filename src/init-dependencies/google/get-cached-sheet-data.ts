@@ -2,46 +2,46 @@
 // Lets see how well it works for sheet data and if it has value as an approach for other stuff.
 
 import {Client} from '@libsql/client/.';
-import {Dependencies} from '../../dependencies';
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
+import * as O from 'fp-ts/Option';
 import * as tt from 'io-ts-types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as t from 'io-ts';
-import {DomainEvent, EventOfType} from '../../types/domain-event';
+import {DomainEvent} from '../../types/domain-event';
 import {CachedDataTable} from './cached-data-table';
 import {
+  FailureWithStatus,
   failureWithStatus,
   internalCodecFailure,
 } from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 
-const extractCachedEvents = (
+// Note that this isn't automatically type safe. It does rely on the cached
+// data actually being the type of DomainEvent we say it is.
+const extractCachedEvents = <R>(
   rawCachedData: string
-): t.Validation<
-  ReadonlyArray<
-    | EventOfType<'EquipmentTrainingQuizResult'>
-    | EventOfType<'EquipmentTrainingQuizSync'>
-  >
-> =>
+): t.Validation<ReadonlyArray<R>> =>
   pipe(
     rawCachedData,
     tt.JsonFromString.decode,
     E.chain(tt.JsonArray.decode),
     E.chain(t.readonlyArray(DomainEvent).decode),
-    E.map(
-      elements =>
-        elements as ReadonlyArray<
-          | EventOfType<'EquipmentTrainingQuizResult'>
-          | EventOfType<'EquipmentTrainingQuizSync'>
-        >
-    )
+    E.map(elements => elements as ReadonlyArray<R>)
   );
 
 export const getCachedSheetData =
-  (dbClient: Client): Dependencies['getCachedSheetData'] =>
-  (sheetId: string) =>
+  <R>(dbClient: Client) =>
+  (
+    sheetId: string
+  ): TE.TaskEither<
+    FailureWithStatus,
+    O.Option<{
+      cached_at: Date;
+      cached_data: t.Validation<ReadonlyArray<R>>;
+    }>
+  > =>
     pipe(
       TE.tryCatch(
         () =>
@@ -68,7 +68,7 @@ export const getCachedSheetData =
           table.rows,
           RA.map(row => ({
             ...row,
-            cached_data: extractCachedEvents(row.cached_data),
+            cached_data: extractCachedEvents<R>(row.cached_data),
           })),
           RA.head
         )

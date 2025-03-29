@@ -80,14 +80,18 @@ export const initDependencies = (
     });
   }
 
-  const _cacheSheetData = cacheSheetData(cacheClient);
+  const _cacheSheetData: Dependencies['cacheSheetData'] =
+    cacheSheetData(cacheClient);
+  const _cacheTroubleTicketData: Dependencies['cacheTroubleTicketData'] =
+    cacheSheetData(cacheClient);
 
   const sharedReadModel = initSharedReadModel(
     dbClient,
     logger,
     googleHelpers,
     conf.GOOGLE_RATELIMIT_MS,
-    _cacheSheetData
+    _cacheSheetData,
+    _cacheTroubleTicketData
   );
 
   const deps: Dependencies = {
@@ -100,7 +104,9 @@ export const initDependencies = (
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
     logger,
     getCachedSheetData: getCachedSheetData(dbClient),
+    getCachedTroubleTicketData: getCachedSheetData(dbClient),
     cacheSheetData: _cacheSheetData,
+    cacheTroubleTicketData: _cacheTroubleTicketData,
   };
   return deps;
 };
