@@ -15,7 +15,7 @@ const pullTroubleTicketsLocal = async () => {
   const cachedData: EventOfType<'TroubleTicketResponseSubmitted'>[] = [];
   await pullTroubleTicketResponses(
     pino({
-      level: 'trace',
+      level: 'fatal',
       timestamp: pino.stdTimeFunctions.isoTime,
     }),
     localGoogleHelpers,

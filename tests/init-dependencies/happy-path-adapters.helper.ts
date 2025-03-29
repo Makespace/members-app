@@ -4,19 +4,16 @@ import * as O from 'fp-ts/Option';
 import pino, {Logger} from 'pino';
 import {StatusCodes} from 'http-status-codes';
 import {faker} from '@faker-js/faker';
-import {EventName, EventOfType} from '../../src/types/domain-event';
+import {EventName} from '../../src/types/domain-event';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
 import * as libsqlClient from '@libsql/client';
 import {localGoogleHelpers} from './pull-local-google';
 
-const cacheSheetData = async (
+const cacheSheetData = async <T>(
   _cacheTimestamp: Date,
   _sheetId: string,
   _logger: Logger,
-  _data: ReadonlyArray<
-    | EventOfType<'EquipmentTrainingQuizSync'>
-    | EventOfType<'EquipmentTrainingQuizResult'>
-  >
+  _data: ReadonlyArray<T>
 ) => {};
 
 export const happyPathAdapters: Dependencies = {
@@ -32,6 +29,7 @@ export const happyPathAdapters: Dependencies = {
     }),
     O.some(localGoogleHelpers),
     120_000,
+    cacheSheetData,
     cacheSheetData
   ),
   logger: (() => undefined) as never as Logger,
@@ -40,5 +38,7 @@ export const happyPathAdapters: Dependencies = {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getAllEventsByType: <T extends EventName>(_eventType: T) => TE.right([]),
   cacheSheetData,
+  cacheTroubleTicketData: cacheSheetData,
   getCachedSheetData: () => TE.right(O.none),
+  getCachedTroubleTicketData: () => TE.right(O.none),
 };
