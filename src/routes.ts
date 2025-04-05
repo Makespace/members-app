@@ -69,6 +69,9 @@ export const initRoutes = (
     get('/ping', ping),
     query('/debug/dump-shared-db/json', queries.dumpSharedDbAsJson),
     query('/debug/dump-shared-db/buffer', queries.dumpSharedDbAsBuffer),
+
+    // Temporary location for POC - may move under individual equipments eventually.
+    query('/trouble-tickets', queries.troubleTickets),
     ...authRoutes(deps),
   ];
 };

@@ -1,11 +1,17 @@
 import {Logger} from 'pino';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
+import * as A from 'fp-ts/Array';
+import * as t from 'io-ts';
+import * as tt from 'io-ts-types';
 import {DomainEvent} from '../../types';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 
 import {constructEvent, EventOfType} from '../../types/domain-event';
-import {GoogleHelpers} from '../../init-dependencies/google/pull_sheet_data';
+import {
+  GoogleHelpers,
+  GoogleSpreadsheetDataForSheet,
+} from '../../init-dependencies/google/pull_sheet_data';
 
 import {getAllEquipmentMinimal} from './equipment/get';
 import {Dependencies} from '../../dependencies';
@@ -13,16 +19,22 @@ import {
   extractGoogleSheetMetadata,
   GoogleSheetMetadata,
   MAX_COLUMN_INDEX,
-} from '../../training-sheets/extract-metadata';
+} from '../../google/extract-metadata';
 import {
   columnBoundsRequired,
   extractGoogleSheetData,
   shouldPullFromSheet,
-} from '../../training-sheets/google';
+} from '../../google/google';
 import {getChunkIndexes} from '../../util';
 import {UUID} from 'io-ts-types';
+import {formatValidationErrors} from 'io-ts-reporters';
+import {DateTime, Duration} from 'luxon';
+import {pipe} from 'fp-ts/lib/function';
+import {extractTimestamp} from '../../google/util';
 
 const ROW_BATCH_SIZE = 200;
+const EXPECTED_TROUBLE_TICKET_RESPONSE_SHEET_NAME = 'Form Responses 1';
+const TROUBLE_TICKET_SYNC_INTERVAL = Duration.fromMillis(1000 * 60 * 20);
 
 const pullNewEquipmentQuizResultsForSheet = async (
   logger: Logger,
@@ -167,13 +179,202 @@ export const pullNewEquipmentQuizResults = async (
   );
 };
 
+const grabColumn =
+  (values: {formattedValue: string}[]) =>
+  <T>(index: number, validator: t.Decode<unknown, T>): t.Validation<T> =>
+    pipe(
+      values,
+      A.lookup(index),
+      O.map(val => val.formattedValue),
+      O.getOrElse<string | null>(() => null),
+      val => validator(val)
+    );
+
+const extractTroubleTicketResponseRows = (
+  logger: Logger,
+  data: GoogleSpreadsheetDataForSheet,
+  updateState: (event: EventOfType<'TroubleTicketResponseSubmitted'>) => void,
+  timezone: string
+) => {
+  // FIXME - This is all quite hard coded for the prototype.
+  const rows = data.sheets[0]?.data[0]?.rowData;
+  if (!rows) {
+    return;
+  }
+
+  for (const row of rows) {
+    if ('values' in row) {
+      const _grabColumn = grabColumn(row.values);
+      const timestamp = _grabColumn(0, extractTimestamp(timezone).decode);
+      const email_address = _grabColumn(1, t.union([t.string, t.null]).decode);
+      const which_equipment = _grabColumn(
+        2,
+        t.union([t.string, t.null]).decode
+      );
+      const name = _grabColumn(8, t.union([t.string, t.null]).decode);
+      const membership_number = _grabColumn(
+        9,
+        t.union([t.Int, tt.IntFromString, t.null]).decode
+      );
+
+      const validationErr = (column: string, err: t.Errors) => {
+        logger.warn(
+          `Failed to parse trouble ticket row (column ${column}), skipping: ${formatValidationErrors(err).join(',')}`
+        );
+      };
+
+      const grabOtherResponse = (i: number) =>
+        pipe(
+          _grabColumn(i, t.string.decode),
+          E.getOrElseW(err => {
+            logger.warn(
+              `Failed to parse trouble ticket column ${i} - defaulting to empty: ${formatValidationErrors(err).join(',')}`
+            );
+            return '';
+          })
+        );
+
+      const responses = {
+        ['If you answered "Other" above or an ABS or PLA 3d printer, please tell us which one. (printers are numbered from the left']:
+          grabOtherResponse(3),
+        ["What's the status of the machine?"]: grabOtherResponse(4),
+        ['What were you attempting to do with the machine? Please include details about material or file type and what you expected to happen.']:
+          grabOtherResponse(5),
+        ['What error or issue did you encounter.  Please include events and observations about what actually happened.']:
+          grabOtherResponse(6),
+        ['What steps did you take before encountering the error.  Please include any relevant settings or changes made prior to the error.']:
+          grabOtherResponse(7),
+      };
+
+      if (E.isLeft(timestamp)) {
+        validationErr('timestamp', timestamp.left);
+        continue;
+      }
+      if (E.isLeft(email_address)) {
+        validationErr('timestamp', email_address.left);
+        continue;
+      }
+      if (E.isLeft(which_equipment)) {
+        validationErr('timestamp', which_equipment.left);
+        continue;
+      }
+      if (E.isLeft(name)) {
+        validationErr('timestamp', name.left);
+        continue;
+      }
+      if (E.isLeft(membership_number)) {
+        validationErr('timestamp', membership_number.left);
+        continue;
+      }
+
+      updateState(
+        constructEvent('TroubleTicketResponseSubmitted')({
+          response_submitted_epoch_ms: timestamp.right,
+          email_address: email_address.right,
+          which_equipment: which_equipment.right,
+          submitter_name: name.right,
+          submitter_membership_number: membership_number.right,
+          submitted_response: responses,
+        })
+      );
+    }
+  }
+};
+
+export const pullTroubleTicketResponses = async (
+  logger: Logger,
+  googleHelpers: GoogleHelpers,
+  troubleTicketSheetId: string,
+  updateState: (event: EventOfType<'TroubleTicketResponseSubmitted'>) => void,
+  cacheTroubleTicketData: Dependencies['cacheTroubleTicketData']
+): Promise<void> => {
+  logger.info('Getting trouble ticket response sheet metadata...');
+  const initialMeta = await googleHelpers.pullGoogleSheetDataMetadata(
+    logger,
+    troubleTicketSheetId
+  )();
+  if (E.isLeft(initialMeta)) {
+    logger.error(
+      `Failed to get trouble ticket response sheet metadata. Not continuing: ${initialMeta.left}`
+    );
+    return;
+  }
+
+  const events: EventOfType<'TroubleTicketResponseSubmitted'>[] = [];
+  const collectEvents = (
+    event: EventOfType<'TroubleTicketResponseSubmitted'>
+  ) => {
+    events.push(event);
+    updateState(event);
+  };
+
+  for (const sheet of initialMeta.right.sheets) {
+    if (
+      sheet.properties.title === EXPECTED_TROUBLE_TICKET_RESPONSE_SHEET_NAME
+    ) {
+      logger.info(
+        'Found trouble tickets sheet %s, pulling data in batches...',
+        sheet.properties.title
+      );
+      for (const [rowStart, rowEnd] of getChunkIndexes(
+        2, // 1-indexed and first row is headers.
+        sheet.properties.gridProperties.rowCount,
+        ROW_BATCH_SIZE
+      )) {
+        logger.debug('Pulling trouble tickets rows %s to %s', rowStart, rowEnd);
+        const [minCol, maxCol] = [0, 10]; // FIXME - Determine this dynamically.
+        const data = await googleHelpers.pullGoogleSheetData(
+          logger,
+          troubleTicketSheetId,
+          sheet.properties.title,
+          rowStart,
+          rowEnd,
+          minCol,
+          maxCol
+        )();
+        if (E.isLeft(data)) {
+          logger.error(
+            data.left,
+            'Failed to pull data for trouble ticket responses rows %s to %s, skipping rest of sheet',
+            rowStart,
+            rowEnd
+          );
+          return;
+        }
+        logger.info('Pulled data from google, extracting...');
+        extractTroubleTicketResponseRows(
+          logger,
+          data.right,
+          collectEvents,
+          initialMeta.right.properties.timeZone
+        );
+      }
+    }
+  }
+  logger.info(
+    'Found %s trouble ticket response events, caching...',
+    events.length
+  );
+  await cacheTroubleTicketData(
+    new Date(),
+    troubleTicketSheetId,
+    logger,
+    events
+  );
+  logger.info('Finished caching trouble ticket response events');
+};
+
+let lastTroubleTicketSync: O.Option<DateTime> = O.none; // FIXME - Temporary for POC.
+
 export const asyncApplyExternalEventSources = (
   logger: Logger,
   currentState: BetterSQLite3Database,
   googleHelpers: O.Option<GoogleHelpers>,
   updateState: (event: DomainEvent) => void,
   googleRefreshIntervalMs: number,
-  cacheSheetData: Dependencies['cacheSheetData']
+  troubleTicketSheetId: O.Option<string>,
+  cacheSheetData: Dependencies['cacheSheetData'],
+  cacheTroubleTicketData: Dependencies['cacheTroubleTicketData']
 ) => {
   return () => async () => {
     logger.info('Applying external event sources...');
@@ -181,6 +382,32 @@ export const asyncApplyExternalEventSources = (
       logger.info('Google external event source disabled');
       return;
     }
+
+    if (O.isSome(troubleTicketSheetId)) {
+      logger.info('Pulling latest trouble ticket reports...');
+      if (
+        O.isNone(lastTroubleTicketSync) ||
+        lastTroubleTicketSync.value.diffNow() > TROUBLE_TICKET_SYNC_INTERVAL
+      ) {
+        await pullTroubleTicketResponses(
+          logger,
+          googleHelpers.value,
+          troubleTicketSheetId.value,
+          updateState,
+          cacheTroubleTicketData
+        );
+        lastTroubleTicketSync = O.some(DateTime.now());
+      } else {
+        logger.info(
+          '%s since last trouble ticket sync - not resyncing yet',
+          lastTroubleTicketSync.value.diffNow().toHuman()
+        );
+      }
+    }
+
+    logger.info(
+      'Finished pulling trouble ticket reports, getting google training sheet data...'
+    );
     for (const equipment of getAllEquipmentMinimal(currentState)) {
       const equipmentLogger = logger.child({equipment});
       if (

@@ -20,7 +20,10 @@ import * as libsqlClient from '@libsql/client';
 import cookieSession from 'cookie-session';
 import {initRoutes} from './routes';
 import {ensureCachedSheetDataTableExists} from './init-dependencies/google/ensure-cached-sheet-data-table-exists';
-import {loadCachedSheetData} from './load-cached-sheet-data';
+import {
+  loadCachedSheetData,
+  loadCachedTroubleTicketData,
+} from './load-cached-sheet-data';
 import {timeAsync} from './util';
 
 // Dependencies and Config
@@ -82,7 +85,7 @@ const periodicExternalReadModelRefresh = setInterval(() => {
         'Unexpected error when refreshing read model with external sources'
       )
     );
-}, 600_000);
+}, 60_000);
 server.on('close', () => {
   clearInterval(periodicReadModelRefresh);
   clearInterval(periodicExternalReadModelRefresh);
@@ -128,6 +131,38 @@ void (async () => {
       equipment.name,
       equipment.id,
       O.getOrElse<string | number>(() => 'never')(equipment.lastQuizSync)
+    );
+  }
+
+  if (conf.TROUBLE_TICKET_SHEET) {
+    await timeAsync(elapsedNs =>
+      deps.logger.info(
+        'Loaded cached trouble ticket events in %sms',
+        elapsedNs / (1000 * 1000)
+      )
+    )(
+      Promise.all([
+        pipe(
+          loadCachedTroubleTicketData(
+            conf.TROUBLE_TICKET_SHEET,
+            deps.getCachedTroubleTicketData,
+            deps.sharedReadModel.updateState
+          ),
+          TE.match(
+            failure => {
+              deps.logger.warn(
+                'Failed to load cached trouble ticket data - continuing anyway: %s',
+                failure.message
+              );
+            },
+            _ => {}
+          )
+        )(),
+      ])
+    );
+  } else {
+    deps.logger.warn(
+      'No trouble ticket sheet provided - skipping loading cache data'
     );
   }
 

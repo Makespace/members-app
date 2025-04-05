@@ -246,7 +246,7 @@ const checkLastQuizSyncUpdated = (results: ApplyExternalEventsResults) => {
 };
 
 const checkLastQuizEventTimestamp = (
-  data: gsheetData.ManualParsed,
+  data: gsheetData.ManualParsed<gsheetData.ManualParsedTrainingSheetEntry>,
   equipmentAfter: Equipment
 ) =>
   expect(getSomeOrFail(equipmentAfter.lastQuizResult)).toStrictEqual(

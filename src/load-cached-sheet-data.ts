@@ -1,8 +1,17 @@
 import {Logger} from 'pino';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
+import * as RA from 'fp-ts/ReadonlyArray';
 import {Dependencies} from './dependencies';
 import {Equipment} from './read-models/shared-state/return-types';
+import {pipe} from 'fp-ts/lib/function';
+import {
+  FailureWithStatus,
+  failureWithStatus,
+} from './types/failure-with-status';
+import {StatusCodes} from 'http-status-codes';
+import {formatValidationErrors} from 'io-ts-reporters';
 
 export const loadCachedSheetData =
   (
@@ -73,3 +82,43 @@ export const loadCachedSheetData =
       }
     }
   };
+
+export const loadCachedTroubleTicketData = (
+  troubleTicketSheetId: string,
+  getCachedTroubleTicketData: Dependencies['getCachedTroubleTicketData'],
+  updateState: Dependencies['sharedReadModel']['updateState']
+): TE.TaskEither<FailureWithStatus, void> =>
+  pipe(
+    getCachedTroubleTicketData(troubleTicketSheetId),
+    TE.flatMap(cacheData =>
+      pipe(
+        cacheData,
+        O.match(
+          () =>
+            TE.left(
+              failureWithStatus(
+                'No cached trouble data found',
+                StatusCodes.NOT_FOUND
+              )()
+            ),
+          dataValidation =>
+            pipe(
+              dataValidation.cached_data,
+              E.match(
+                errs =>
+                  TE.left(
+                    failureWithStatus(
+                      `Cached trouble data is malformed: ${formatValidationErrors(errs).join(',')}`,
+                      StatusCodes.BAD_REQUEST
+                    )()
+                  ),
+                data => TE.right(data)
+              )
+            )
+        )
+      )
+    ),
+    TE.map(loadedData => {
+      pipe(loadedData, RA.map(updateState));
+    })
+  );

@@ -13,7 +13,7 @@ const localPullGoogleSheetDataMetadata = (
   trainingSheetId: string
 ): TE.TaskEither<string, GoogleSpreadsheetInitialMetadata> => {
   logger.debug(`Pulling local google sheet metadata '${trainingSheetId}'`);
-  const sheet = gsheetData.TRAINING_SHEETS[trainingSheetId].metadata;
+  const sheet = gsheetData.GOOGLE_SHEETS[trainingSheetId].metadata;
   return sheet ? TE.right(sheet) : TE.left('Spreadsheet not found');
 };
 
@@ -30,7 +30,7 @@ const localPullGoogleSheetData = (
 ): TE.TaskEither<string, GoogleSpreadsheetDataForSheet> => {
   logger.debug(`Pulling local google sheet '${trainingSheetId}'`);
   const sheet = clone(
-    gsheetData.TRAINING_SHEETS[trainingSheetId].sheets[sheetName]
+    gsheetData.GOOGLE_SHEETS[trainingSheetId].sheets[sheetName]
   );
   if (sheet) {
     const rowData = sheet.sheets[0].data[0].rowData!;

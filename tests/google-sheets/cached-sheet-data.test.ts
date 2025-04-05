@@ -51,7 +51,12 @@ describe('Cache sheet data', () => {
         ]
       );
       cachedData = getSomeOrFail(
-        getRightOrFail(await getCachedSheetData(db)(sheetId)())
+        getRightOrFail(
+          await getCachedSheetData<
+            | EventOfType<'EquipmentTrainingQuizResult'>
+            | EventOfType<'EquipmentTrainingQuizSync'>
+          >(db)(sheetId)()
+        )
       );
     });
     it('All events cached are returned', () => {
@@ -113,7 +118,12 @@ describe('Cache sheet data', () => {
           ]
         );
         cachedDataAfter = getSomeOrFail(
-          getRightOrFail(await getCachedSheetData(db)(sheetId)())
+          getRightOrFail(
+            await getCachedSheetData<
+              | EventOfType<'EquipmentTrainingQuizResult'>
+              | EventOfType<'EquipmentTrainingQuizSync'>
+            >(db)(sheetId)()
+          )
         );
       });
       it('All events cached are returned', () => {
@@ -168,10 +178,20 @@ describe('Cache sheet data', () => {
           ]
         );
         firstSheetData = getSomeOrFail(
-          getRightOrFail(await getCachedSheetData(db)(sheetId)())
+          getRightOrFail(
+            await getCachedSheetData<
+              | EventOfType<'EquipmentTrainingQuizResult'>
+              | EventOfType<'EquipmentTrainingQuizSync'>
+            >(db)(sheetId)()
+          )
         );
         secondSheetData = getSomeOrFail(
-          getRightOrFail(await getCachedSheetData(db)(secondSheetId)())
+          getRightOrFail(
+            await getCachedSheetData<
+              | EventOfType<'EquipmentTrainingQuizResult'>
+              | EventOfType<'EquipmentTrainingQuizSync'>
+            >(db)(secondSheetId)()
+          )
         );
       });
       it('Event cache is correctly labeled', () => {

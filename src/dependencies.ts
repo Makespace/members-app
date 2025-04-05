@@ -10,7 +10,7 @@ import {Resource} from './types/resource';
 import {EventName, EventOfType} from './types/domain-event';
 import {SharedReadModel} from './read-models/shared-state';
 
-type TrainingSheetId = string;
+export type GoogleSheetId = string;
 
 export type Dependencies = {
   commitEvent: (
@@ -54,11 +54,26 @@ export type Dependencies = {
   >;
   cacheSheetData: (
     cacheTimestamp: Date,
-    sheetId: TrainingSheetId,
+    sheetId: GoogleSheetId,
     logger: Logger,
     data: ReadonlyArray<
       | EventOfType<'EquipmentTrainingQuizSync'>
       | EventOfType<'EquipmentTrainingQuizResult'>
     >
+  ) => Promise<void>;
+  getCachedTroubleTicketData: (sheetId: string) => TE.TaskEither<
+    FailureWithStatus,
+    O.Option<{
+      cached_at: Date;
+      cached_data: t.Validation<
+        ReadonlyArray<EventOfType<'TroubleTicketResponseSubmitted'>>
+      >;
+    }>
+  >;
+  cacheTroubleTicketData: (
+    cacheTimestamp: Date,
+    sheetId: GoogleSheetId,
+    logger: Logger,
+    data: ReadonlyArray<EventOfType<'TroubleTicketResponseSubmitted'>>
   ) => Promise<void>;
 };

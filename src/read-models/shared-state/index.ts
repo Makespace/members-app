@@ -3,7 +3,7 @@ import * as O from 'fp-ts/Option';
 import {createTables} from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
-import {Area, Equipment, Member} from './return-types';
+import {Area, Equipment, Member, TroubleTicket} from './return-types';
 
 import {Client} from '@libsql/client/.';
 import {asyncRefresh} from './async-refresh';
@@ -22,6 +22,7 @@ import {
 } from './member/helper';
 import {Dependencies} from '../../dependencies';
 import {dumpCurrentState, SharedDatabaseDump} from './debug/dump';
+import {getAllTroubleTicketFull} from './troubletickets/get';
 
 export {replayState} from './deprecated-replay';
 
@@ -47,6 +48,9 @@ export type SharedReadModel = {
   debug: {
     dump: () => SharedDatabaseDump;
   };
+  troubleTickets: {
+    getAll: () => ReadonlyArray<TroubleTicket>;
+  };
 };
 
 export const initSharedReadModel = (
@@ -54,7 +58,9 @@ export const initSharedReadModel = (
   logger: Logger,
   googleHelpers: O.Option<GoogleHelpers>,
   googleRateLimitMs: number,
-  cacheSheetData: Dependencies['cacheSheetData']
+  troubleTicketSheetId: O.Option<string>,
+  cacheSheetData: Dependencies['cacheSheetData'],
+  cacheTroubleTicketData: Dependencies['cacheTroubleTicketData']
 ): SharedReadModel => {
   const _underlyingReadModelDb = new Database();
   const readModelDb = drizzle(_underlyingReadModelDb);
@@ -72,7 +78,9 @@ export const initSharedReadModel = (
       googleHelpers,
       updateState_,
       googleRateLimitMs,
-      cacheSheetData
+      troubleTicketSheetId,
+      cacheSheetData,
+      cacheTroubleTicketData
     ),
     members: {
       get: getMemberFull(readModelDb),
@@ -89,6 +97,9 @@ export const initSharedReadModel = (
     },
     debug: {
       dump: dumpCurrentState(readModelDb),
+    },
+    troubleTickets: {
+      getAll: getAllTroubleTicketFull(readModelDb),
     },
   };
 };

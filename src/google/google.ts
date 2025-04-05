@@ -7,176 +7,19 @@ import {Logger} from 'pino';
 import {constructEvent, EventOfType} from '../types/domain-event';
 import {v4} from 'uuid';
 import {UUID} from 'io-ts-types';
-import {DateTime} from 'luxon';
-import {EpochTimestampMilliseconds} from '../read-models/shared-state/return-types';
 import {GoogleSheetMetadata} from './extract-metadata';
 import {GoogleSpreadsheetDataForSheet} from '../init-dependencies/google/pull_sheet_data';
 import {lookup} from 'fp-ts/ReadonlyArray';
 import {array} from 'fp-ts';
-
-// Bounds to prevent clearly broken parsing.
-const MIN_RECOGNISED_MEMBER_NUMBER = 0;
-const MAX_RECOGNISED_MEMBER_NUMBER = 10_000;
-
-const MAX_RECOGNISED_SCORE = 10_000;
-const MIN_RECOGNISED_SCORE = 0;
-
-const MIN_VALID_TIMESTAMP_EPOCH_MS =
-  1546304461_000 as EpochTimestampMilliseconds; // Year 2019, Can't see any training results before this.
+import {
+  extractEmail,
+  extractMemberNumber,
+  extractScore,
+  extractTimestamp,
+} from './util';
+import {formatValidationErrors} from 'io-ts-reporters';
 
 const FORM_RESPONSES_SHEET_REGEX = /^Form Responses [0-9]*/i;
-
-const FORMATS_TO_TRY = [
-  'dd/MM/yyyy HH:mm:ss',
-  'MM/dd/yyyy HH:mm:ss',
-  'M/dd/yyyy HH:mm:ss',
-  'dd/M/yyyy HH:mm:ss',
-  'M/d/yyyy HH:mm:ss',
-  'd/M/yyyy HH:mm:ss',
-
-  'dd/MM/yyyy H:m:s',
-  'MM/dd/yyyy H:m:s',
-  'M/dd/yyyy H:m:s',
-  'dd/M/yyyy H:m:s',
-  'M/d/yyyy H:m:s',
-  'd/M/yyyy H:m:s',
-
-  'yyyy-MM-dd HH:mm:ss',
-];
-
-const extractScore = (
-  rowValue: string | undefined | null
-): O.Option<{
-  score: number;
-  maxScore: number;
-  percentage: number;
-}> => {
-  if (!rowValue) {
-    return O.none;
-  }
-  const parts = rowValue.split(' / ');
-  if (parts.length !== 2) {
-    return O.none;
-  }
-
-  const score = parseInt(parts[0], 10);
-  if (
-    isNaN(score) ||
-    score < MIN_RECOGNISED_SCORE ||
-    score > MAX_RECOGNISED_SCORE
-  ) {
-    return O.none;
-  }
-
-  const maxScore = parseInt(parts[1], 10);
-  if (
-    isNaN(maxScore) ||
-    maxScore < MIN_RECOGNISED_SCORE ||
-    maxScore > MAX_RECOGNISED_SCORE ||
-    maxScore < score
-  ) {
-    return O.none;
-  }
-
-  const percentage = Math.round((score / maxScore) * 100);
-
-  return O.some({
-    score,
-    maxScore,
-    percentage,
-  });
-};
-
-const extractEmail = (
-  rowValue: string | undefined | null
-): O.Option<string> => {
-  if (!rowValue) {
-    return O.none;
-  }
-  // We may want to add further normalisation to user emails such as making them
-  // all lowercase (when used as a id) to prevent user confusion.
-  return O.some(rowValue.trim());
-};
-
-const extractMemberNumber = (
-  rowValue: string | number | undefined | null
-): O.Option<number> => {
-  if (!rowValue) {
-    return O.none;
-  }
-  if (typeof rowValue === 'string') {
-    rowValue = parseInt(rowValue.trim(), 10);
-  }
-
-  if (
-    isNaN(rowValue) ||
-    rowValue <= MIN_RECOGNISED_MEMBER_NUMBER ||
-    rowValue > MAX_RECOGNISED_MEMBER_NUMBER
-  ) {
-    return O.none;
-  }
-
-  return O.some(rowValue);
-};
-
-const timestampValid = (
-  raw: string,
-  timezone: string,
-  ts: DateTime
-): E.Either<string, EpochTimestampMilliseconds> => {
-  let timestampEpochMS;
-  try {
-    if (ts.isValid) {
-      timestampEpochMS = (ts.toUnixInteger() *
-        1000) as EpochTimestampMilliseconds;
-    } else {
-      return E.left(
-        `Failed to parse timestamp: ${raw} in timezone ${timezone}, reason: ${ts.invalidReason}`
-      );
-    }
-  } catch (e) {
-    let errStr = 'unknown';
-    if (e instanceof Error) {
-      errStr = `${e.name}: ${e.message}`;
-    }
-    return E.left(
-      `Unable to parse timestamp: '${raw}' in timezone ${timezone}, err: ${errStr}`
-    );
-  }
-  if (
-    isNaN(timestampEpochMS) ||
-    !isFinite(timestampEpochMS) ||
-    timestampEpochMS < MIN_VALID_TIMESTAMP_EPOCH_MS ||
-    timestampEpochMS > DateTime.utc().toUnixInteger() * 10 * 60 * 1000
-  ) {
-    return E.left(
-      `Produced timestamp is invalid/out-of-range: '${raw}', timezone: '${timezone}' decoded to ${timestampEpochMS}`
-    );
-  }
-  return E.right(timestampEpochMS);
-};
-
-export const extractTimestamp =
-  (timezone: string) =>
-  (
-    rowValue: O.Option<string>
-  ): E.Either<string, EpochTimestampMilliseconds> => {
-    if (!rowValue || O.isNone(rowValue)) {
-      return E.left('Missing column value');
-    }
-    let timestampEpochMS;
-    for (const format of FORMATS_TO_TRY) {
-      const ts = DateTime.fromFormat(rowValue.value, format, {
-        setZone: true,
-        zone: timezone,
-      });
-      timestampEpochMS = timestampValid(rowValue.value, timezone, ts);
-      if (E.isRight(timestampEpochMS)) {
-        return timestampEpochMS;
-      }
-    }
-    return timestampEpochMS as E.Left<string>;
-  };
 
 const extractFromRow =
   (
@@ -222,10 +65,10 @@ const extractFromRow =
       O.flatten
     );
     const timestampEpochMS = pipe(
-      row.values,
-      lookup(metadata.mappedColumns.timestamp),
+      lookup(metadata.mappedColumns.timestamp)(row.values),
       O.map(entry => entry.formattedValue),
-      extractTimestamp(timezone)
+      O.getOrElse<string | null>(() => null),
+      extractTimestamp(timezone).decode
     );
 
     if (O.isNone(email) && O.isNone(memberNumber)) {
@@ -244,7 +87,7 @@ const extractFromRow =
     if (E.isLeft(timestampEpochMS)) {
       logger.warn(
         'Failed to extract timestamp from row, skipped row, reason: %s',
-        timestampEpochMS.left
+        formatValidationErrors(timestampEpochMS.left)
       );
       return O.none;
     }

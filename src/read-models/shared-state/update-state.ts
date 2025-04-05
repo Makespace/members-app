@@ -10,6 +10,7 @@ import {
   trainedMemberstable,
   trainersTable,
   trainingQuizTable,
+  troubleTicketResponsesTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, eq, inArray} from 'drizzle-orm';
@@ -264,6 +265,25 @@ export const updateState =
               eq(trainedMemberstable.memberNumber, event.memberNumber)
             )
           )
+          .run();
+        break;
+      case 'TroubleTicketResponseSubmitted':
+        db.insert(troubleTicketResponsesTable)
+          .values({
+            responseSubmitted: new Date(event.response_submitted_epoch_ms),
+            emailAddress: event.email_address,
+            whichEquipment: event.which_equipment,
+            submitterName: event.submitter_name,
+            submitterMembershipNumber: event.submitter_membership_number,
+            submittedResponse: event.submitted_response,
+          })
+          .onConflictDoNothing({
+            target: [
+              troubleTicketResponsesTable.responseSubmitted,
+              troubleTicketResponsesTable.emailAddress,
+              troubleTicketResponsesTable.whichEquipment,
+            ],
+          })
           .run();
         break;
       default:
