@@ -58,6 +58,7 @@ export const initSharedReadModel = (
   logger: Logger,
   googleHelpers: O.Option<GoogleHelpers>,
   googleRateLimitMs: number,
+  troubleTicketSheetId: O.Option<string>,
   cacheSheetData: Dependencies['cacheSheetData'],
   cacheTroubleTicketData: Dependencies['cacheTroubleTicketData']
 ): SharedReadModel => {
@@ -77,6 +78,7 @@ export const initSharedReadModel = (
       googleHelpers,
       updateState_,
       googleRateLimitMs,
+      troubleTicketSheetId,
       cacheSheetData,
       cacheTroubleTicketData
     ),

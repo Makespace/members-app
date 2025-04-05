@@ -6,7 +6,6 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {Dependencies} from './dependencies';
 import {Equipment} from './read-models/shared-state/return-types';
 import {pipe} from 'fp-ts/lib/function';
-import {TROUBLE_TICKET_RESPONSES_SHEET} from './read-models/shared-state/async-apply-external-event-sources';
 import {
   FailureWithStatus,
   failureWithStatus,
@@ -85,11 +84,12 @@ export const loadCachedSheetData =
   };
 
 export const loadCachedTroubleTicketData = (
+  troubleTicketSheetId: string,
   getCachedTroubleTicketData: Dependencies['getCachedTroubleTicketData'],
   updateState: Dependencies['sharedReadModel']['updateState']
 ): TE.TaskEither<FailureWithStatus, void> =>
   pipe(
-    getCachedTroubleTicketData(TROUBLE_TICKET_RESPONSES_SHEET),
+    getCachedTroubleTicketData(troubleTicketSheetId),
     TE.flatMap(cacheData =>
       pipe(
         cacheData,

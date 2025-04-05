@@ -85,7 +85,7 @@ const periodicExternalReadModelRefresh = setInterval(() => {
         'Unexpected error when refreshing read model with external sources'
       )
     );
-}, 600_000);
+}, 60_000);
 server.on('close', () => {
   clearInterval(periodicReadModelRefresh);
   clearInterval(periodicExternalReadModelRefresh);
@@ -134,30 +134,37 @@ void (async () => {
     );
   }
 
-  await timeAsync(elapsedNs =>
-    deps.logger.info(
-      'Loaded cached trouble ticket events in %sms',
-      elapsedNs / (1000 * 1000)
-    )
-  )(
-    Promise.all([
-      pipe(
-        loadCachedTroubleTicketData(
-          deps.getCachedTroubleTicketData,
-          deps.sharedReadModel.updateState
-        ),
-        TE.match(
-          failure => {
-            deps.logger.warn(
-              'Failed to load cached trouble ticket data - continuing anyway: %s',
-              failure.message
-            );
-          },
-          _ => {}
-        )
-      )(),
-    ])
-  );
+  if (conf.TROUBLE_TICKET_SHEET) {
+    await timeAsync(elapsedNs =>
+      deps.logger.info(
+        'Loaded cached trouble ticket events in %sms',
+        elapsedNs / (1000 * 1000)
+      )
+    )(
+      Promise.all([
+        pipe(
+          loadCachedTroubleTicketData(
+            conf.TROUBLE_TICKET_SHEET,
+            deps.getCachedTroubleTicketData,
+            deps.sharedReadModel.updateState
+          ),
+          TE.match(
+            failure => {
+              deps.logger.warn(
+                'Failed to load cached trouble ticket data - continuing anyway: %s',
+                failure.message
+              );
+            },
+            _ => {}
+          )
+        )(),
+      ])
+    );
+  } else {
+    deps.logger.warn(
+      'No trouble ticket sheet provided - skipping loading cache data'
+    );
+  }
 
   server.listen(conf.PORT, () => {
     deps.logger.info({port: conf.PORT}, 'Server listening');

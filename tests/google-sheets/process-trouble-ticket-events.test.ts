@@ -19,6 +19,7 @@ const pullTroubleTicketsLocal = async () => {
       timestamp: pino.stdTimeFunctions.isoTime,
     }),
     localGoogleHelpers,
+    TROUBLE_TICKETS_EXAMPLE.apiResp.spreadsheetId!,
     newEvent => {
       newEvents.push(newEvent);
     },
