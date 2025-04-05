@@ -35,7 +35,7 @@ import {extractTimestamp} from '../../google/util';
 const ROW_BATCH_SIZE = 200;
 const EXPECTED_TROUBLE_TICKET_RESPONSE_SHEET_NAME = 'Form Responses 1';
 const TROUBLE_TICKET_SYNC_INTERVAL = Duration.fromMillis(1000 * 60 * 20);
-const TROUBLE_TICKET_RESPONSES_SHEET =
+export const TROUBLE_TICKET_RESPONSES_SHEET =
   '1ZSQoCOyw4ss9JuriySQX04gISfFnb4MadNpPFkEYW84'; // FIXME - Make this configurable.
 
 const pullNewEquipmentQuizResultsForSheet = async (
