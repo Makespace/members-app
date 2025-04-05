@@ -194,7 +194,4 @@ describe('Load cached sheet data', () => {
       expect(equipmentAfter.membersAwaitingTraining).toHaveLength(0);
     });
   });
-  describe('Cache and load trouble ticket data', () => {
-    it.todo('Loads the data');
-  });
 });
