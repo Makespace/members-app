@@ -90,6 +90,7 @@ export const initDependencies = (
     logger,
     googleHelpers,
     conf.GOOGLE_RATELIMIT_MS,
+    O.fromNullable(conf.TROUBLE_TICKET_SHEET),
     _cacheSheetData,
     _cacheTroubleTicketData
   );

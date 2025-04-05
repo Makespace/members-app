@@ -35,8 +35,6 @@ import {extractTimestamp} from '../../google/util';
 const ROW_BATCH_SIZE = 200;
 const EXPECTED_TROUBLE_TICKET_RESPONSE_SHEET_NAME = 'Form Responses 1';
 const TROUBLE_TICKET_SYNC_INTERVAL = Duration.fromMillis(1000 * 60 * 20);
-export const TROUBLE_TICKET_RESPONSES_SHEET =
-  '1ZSQoCOyw4ss9JuriySQX04gISfFnb4MadNpPFkEYW84'; // FIXME - Make this configurable.
 
 const pullNewEquipmentQuizResultsForSheet = async (
   logger: Logger,
@@ -287,13 +285,14 @@ const extractTroubleTicketResponseRows = (
 export const pullTroubleTicketResponses = async (
   logger: Logger,
   googleHelpers: GoogleHelpers,
+  troubleTicketSheetId: string,
   updateState: (event: EventOfType<'TroubleTicketResponseSubmitted'>) => void,
   cacheTroubleTicketData: Dependencies['cacheTroubleTicketData']
 ): Promise<void> => {
   logger.info('Getting trouble ticket response sheet metadata...');
   const initialMeta = await googleHelpers.pullGoogleSheetDataMetadata(
     logger,
-    TROUBLE_TICKET_RESPONSES_SHEET
+    troubleTicketSheetId
   )();
   if (E.isLeft(initialMeta)) {
     logger.error(
@@ -327,7 +326,7 @@ export const pullTroubleTicketResponses = async (
         const [minCol, maxCol] = [0, 10]; // FIXME - Determine this dynamically.
         const data = await googleHelpers.pullGoogleSheetData(
           logger,
-          TROUBLE_TICKET_RESPONSES_SHEET,
+          troubleTicketSheetId,
           sheet.properties.title,
           rowStart,
           rowEnd,
@@ -359,7 +358,7 @@ export const pullTroubleTicketResponses = async (
   );
   await cacheTroubleTicketData(
     new Date(),
-    TROUBLE_TICKET_RESPONSES_SHEET,
+    troubleTicketSheetId,
     logger,
     events
   );
@@ -374,6 +373,7 @@ export const asyncApplyExternalEventSources = (
   googleHelpers: O.Option<GoogleHelpers>,
   updateState: (event: DomainEvent) => void,
   googleRefreshIntervalMs: number,
+  troubleTicketSheetId: O.Option<string>,
   cacheSheetData: Dependencies['cacheSheetData'],
   cacheTroubleTicketData: Dependencies['cacheTroubleTicketData']
 ) => {
@@ -384,23 +384,26 @@ export const asyncApplyExternalEventSources = (
       return;
     }
 
-    logger.info('Pulling latest trouble ticket reports...');
-    if (
-      O.isNone(lastTroubleTicketSync) ||
-      lastTroubleTicketSync.value.diffNow() > TROUBLE_TICKET_SYNC_INTERVAL
-    ) {
-      await pullTroubleTicketResponses(
-        logger,
-        googleHelpers.value,
-        updateState,
-        cacheTroubleTicketData
-      );
-      lastTroubleTicketSync = O.some(DateTime.now());
-    } else {
-      logger.info(
-        '%s since last trouble ticket sync - not resyncing yet',
-        lastTroubleTicketSync.value.diffNow().toHuman()
-      );
+    if (O.isSome(troubleTicketSheetId)) {
+      logger.info('Pulling latest trouble ticket reports...');
+      if (
+        O.isNone(lastTroubleTicketSync) ||
+        lastTroubleTicketSync.value.diffNow() > TROUBLE_TICKET_SYNC_INTERVAL
+      ) {
+        await pullTroubleTicketResponses(
+          logger,
+          googleHelpers.value,
+          troubleTicketSheetId.value,
+          updateState,
+          cacheTroubleTicketData
+        );
+        lastTroubleTicketSync = O.some(DateTime.now());
+      } else {
+        logger.info(
+          '%s since last trouble ticket sync - not resyncing yet',
+          lastTroubleTicketSync.value.diffNow().toHuman()
+        );
+      }
     }
 
     logger.info(
