@@ -17,6 +17,7 @@ primary_region = 'ams'
   SMTP_FROM = 'it-maintainers@makespace.org'
   LOG_LEVEL = 'debug'
   RUST_BACKTRACE = 'full'
+  TROUBLE_TICKET_SHEET = '1ZSQoCOyw4ss9JuriySQX04gISfFnb4MadNpPFkEYW84'
 
 [http_service]
   internal_port = 8080
