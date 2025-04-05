@@ -199,7 +199,6 @@ const extractTroubleTicketResponseRows = (
   // FIXME - This is all quite hard coded for the prototype.
   const rows = data.sheets[0]?.data[0]?.rowData;
   if (!rows) {
-    logger.error('Failed to find any trouble ticket row data');
     return;
   }
 
