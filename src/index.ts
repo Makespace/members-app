@@ -150,7 +150,7 @@ void (async () => {
           failure => {
             deps.logger.warn(
               'Failed to load cached trouble ticket data - continuing anyway: %s',
-              failure
+              failure.message
             );
           },
           _ => {}

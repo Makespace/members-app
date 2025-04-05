@@ -7,7 +7,10 @@ import {Dependencies} from './dependencies';
 import {Equipment} from './read-models/shared-state/return-types';
 import {pipe} from 'fp-ts/lib/function';
 import {TROUBLE_TICKET_RESPONSES_SHEET} from './read-models/shared-state/async-apply-external-event-sources';
-import {failureWithStatus} from './types/failure-with-status';
+import {
+  FailureWithStatus,
+  failureWithStatus,
+} from './types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {formatValidationErrors} from 'io-ts-reporters';
 
@@ -84,7 +87,7 @@ export const loadCachedSheetData =
 export const loadCachedTroubleTicketData = (
   getCachedTroubleTicketData: Dependencies['getCachedTroubleTicketData'],
   updateState: Dependencies['sharedReadModel']['updateState']
-) =>
+): TE.TaskEither<FailureWithStatus, void> =>
   pipe(
     getCachedTroubleTicketData(TROUBLE_TICKET_RESPONSES_SHEET),
     TE.flatMap(cacheData =>
@@ -96,7 +99,7 @@ export const loadCachedTroubleTicketData = (
               failureWithStatus(
                 'No cached trouble data found',
                 StatusCodes.NOT_FOUND
-              )
+              )()
             ),
           dataValidation =>
             pipe(
@@ -107,7 +110,7 @@ export const loadCachedTroubleTicketData = (
                     failureWithStatus(
                       `Cached trouble data is malformed: ${formatValidationErrors(errs).join(',')}`,
                       StatusCodes.BAD_REQUEST
-                    )
+                    )()
                   ),
                 data => TE.right(data)
               )
