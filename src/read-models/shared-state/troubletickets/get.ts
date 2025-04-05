@@ -1,5 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
+import {desc} from 'drizzle-orm';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
 import {troubleTicketResponsesTable} from '../state';
@@ -27,6 +28,10 @@ const transformRow = <
 export const getAllTroubleTicketFull =
   (db: BetterSQLite3Database) => (): ReadonlyArray<TroubleTicket> =>
     pipe(
-      db.select().from(troubleTicketResponsesTable).all(),
+      db
+        .select()
+        .from(troubleTicketResponsesTable)
+        .orderBy(desc(troubleTicketResponsesTable.responseSubmitted))
+        .all(),
       RA.map(transformRow)
     );
