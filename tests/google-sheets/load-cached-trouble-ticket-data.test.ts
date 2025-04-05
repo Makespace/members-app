@@ -2,7 +2,7 @@ import {loadCachedTroubleTicketData} from '../../src/load-cached-sheet-data';
 import {getCachedSheetData} from '../../src/init-dependencies/google/get-cached-sheet-data';
 import pino from 'pino';
 import {ensureCachedSheetDataTableExists} from '../../src/init-dependencies/google/ensure-cached-sheet-data-table-exists';
-import {getRightOrFail} from '../helpers';
+import {getLeftOrFail, getRightOrFail} from '../helpers';
 import {constructEvent, EventOfType} from '../../src/types/domain-event';
 import {faker} from '@faker-js/faker';
 import {initTestFramework, TestFramework} from '../read-models/test-framework';
@@ -91,19 +91,56 @@ describe('Load cached trouble ticket data', () => {
         },
       }),
     ];
-    beforeEach(async () => {
-      await _cacheSheetData(
-        timestamp,
-        troubleTicketSheetId,
-        pino({level: 'silent'}),
-        trainingQuizResults
-      );
+    describe('Cache load with no store', () => {
+      it('Check no responses are retrieved', async () => {
+        getLeftOrFail(await _loadCachedTroubleTicket());
+        const troubleTickets =
+          framework.sharedReadModel.troubleTickets.getAll();
+        expectTroubleTicketToMatchResponses([], troubleTickets);
+      });
     });
+    describe('Cache store + load', () => {
+      beforeEach(async () => {
+        await _cacheSheetData(
+          timestamp,
+          troubleTicketSheetId,
+          pino({level: 'silent'}),
+          trainingQuizResults
+        );
+      });
 
-    it('Check both responses are retrieved', async () => {
-      getRightOrFail(await _loadCachedTroubleTicket());
-      const troubleTickets = framework.sharedReadModel.troubleTickets.getAll();
-      expectTroubleTicketToMatchResponses(trainingQuizResults, troubleTickets);
+      it('Check both responses are retrieved', async () => {
+        getRightOrFail(await _loadCachedTroubleTicket());
+        const troubleTickets =
+          framework.sharedReadModel.troubleTickets.getAll();
+        expectTroubleTicketToMatchResponses(
+          trainingQuizResults,
+          troubleTickets
+        );
+      });
+    });
+    describe('Double store then cache load', () => {
+      beforeEach(async () => {
+        for (let i = 0; i < 2; i++) {
+          await _cacheSheetData(
+            timestamp,
+            troubleTicketSheetId,
+            pino({level: 'silent'}),
+            trainingQuizResults
+          );
+        }
+      });
+
+      it('Check both responses are retrieved', async () => {
+        // Specifically interested we don't double-store.
+        getRightOrFail(await _loadCachedTroubleTicket());
+        const troubleTickets =
+          framework.sharedReadModel.troubleTickets.getAll();
+        expectTroubleTicketToMatchResponses(
+          trainingQuizResults,
+          troubleTickets
+        );
+      });
     });
   });
 });
