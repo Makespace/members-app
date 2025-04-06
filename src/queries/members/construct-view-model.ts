@@ -1,20 +1,17 @@
 import {pipe} from 'fp-ts/lib/function';
-import {Dependencies} from '../../dependencies';
 import * as TE from 'fp-ts/TaskEither';
 import {FailureWithStatus} from '../../types/failure-with-status';
 import {User} from '../../types/user';
 import {ViewModel} from './view-model';
-import {readModels} from '../../read-models';
+import {SharedReadModel} from '../../read-models/shared-state';
 
 export const constructViewModel =
-  (deps: Dependencies) =>
+  (sharedReadModel: SharedReadModel) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> =>
     pipe(
-      deps.getAllEvents(),
-      TE.map(events => ({
-        members: [
-          ...readModels.members.getAllDetailsAsActor(user)(events).values(),
-        ],
+      TE.right(sharedReadModel.members.getAll()),
+      TE.map(members => ({
+        members,
         user,
       }))
     );
