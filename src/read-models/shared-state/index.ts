@@ -24,8 +24,6 @@ import {Dependencies} from '../../dependencies';
 import {dumpCurrentState, SharedDatabaseDump} from './debug/dump';
 import {getAllTroubleTicketFull} from './troubletickets/get';
 
-export {replayState} from './deprecated-replay';
-
 export type SharedReadModel = {
   db: BetterSQLite3Database;
   _underlyingReadModelDb: Database.Database; // This is exposed only to allow debug serialisation of the db.

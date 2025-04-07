@@ -9,7 +9,7 @@ const renderFailedLinkings = (failedImports: ViewModel['failedImports']) =>
     RA.map(
       item =>
         html`<li>
-          <b>${item.memberNumber}</b> -- ${sanitizeString(item.email)}
+          <b>${item.memberNumber}</b> — ${sanitizeString(item.email)}
         </li>`
     ),
     joinHtml,
