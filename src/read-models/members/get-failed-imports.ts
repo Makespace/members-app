@@ -1,14 +1,16 @@
+import * as RA from 'fp-ts/ReadonlyArray';
 import {pipe} from 'fp-ts/lib/function';
 import {DomainEvent} from '../../types';
-import {replayState} from '../shared-state';
 import {FailedLinking} from './failed-linking';
+import {isEventOfType} from '../../types';
 
 export const getFailedImports = (
   events: ReadonlyArray<DomainEvent>
 ): ReadonlyArray<FailedLinking> =>
   pipe(
     events,
-    replayState,
-    state => state.failedImports,
-    failedImports => Array.from(failedImports.values())
+    RA.filter(
+      isEventOfType('LinkingMemberNumberToAnAlreadyUsedEmailAttempted')
+    ),
+    RA.map(({memberNumber, email}) => ({memberNumber, email}))
   );
