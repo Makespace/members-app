@@ -1,12 +1,10 @@
-import {getAll, getAllDetails, getAllDetailsAsActor} from './get-all';
+import {getAll} from './get-all';
 import {lookupByEmail} from './lookup-by-email';
 import {getFailedImports} from './get-failed-imports';
 
 export const members = {
   lookupByEmail,
   getAll,
-  getAllDetails,
-  getAllDetailsAsActor,
   getFailedImports,
 };
 
