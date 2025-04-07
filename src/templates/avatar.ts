@@ -27,6 +27,7 @@ const gravatar =
       "
       src="${safe(viewModel.url1x)}"
       alt="The avatar of ${viewModel.memberNumber}"
+      loading="lazy"
     />
   `;
 
