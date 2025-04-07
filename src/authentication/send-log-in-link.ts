@@ -42,22 +42,34 @@ const toEmail =
     `).html,
   });
 
-type SedLogInLink = (
+const lookupMemberNumber = (emailAddress: string) =>
+  flow(
+    readModels.members.lookupByCaseInsensitiveEmail(emailAddress),
+    members => {
+      switch (members.length) {
+        case 0:
+          return E.left(failure('No member associated with that email')());
+        case 1:
+          return E.right(members[0]);
+        default:
+          return E.left(
+            failure(
+              'Multiple members associated with that email with diffrent capitalization. This is very likely to be a mistake.'
+            )()
+          );
+      }
+    }
+  );
+
+type SendLogInLink = (
   deps: Dependencies,
   conf: Config
 ) => (emailAddress: EmailAddress) => TE.TaskEither<Failure, string>;
 
-const lookupMemberNumber = (emailAddress: string) =>
-  flow(
-    readModels.members.lookupByEmail(emailAddress),
-    E.fromOption(() => failure('No member associated with that email')())
-  );
-
-export const sendLogInLink: SedLogInLink = (deps, conf) => emailAddress =>
+export const sendLogInLink: SendLogInLink = (deps, conf) => emailAddress =>
   pipe(
     deps.getAllEvents(),
     TE.chainEitherK(lookupMemberNumber(emailAddress)),
-    TE.map(memberNumber => ({memberNumber, emailAddress})),
     TE.map(magicLink.create(conf)),
     TE.map(toEmail(emailAddress)),
     TE.chain(deps.rateLimitSendingOfEmails),
