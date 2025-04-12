@@ -87,6 +87,7 @@ export type MemberCoreInfo = {
   isSuperUser: boolean;
   superUserSince: O.Option<Date>;
   gravatarHash: GravatarHash;
+  status: string;
 };
 
 export type MemberAwaitingTraining = MemberCoreInfo & {

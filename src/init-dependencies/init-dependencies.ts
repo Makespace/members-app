@@ -92,7 +92,8 @@ export const initDependencies = (
     conf.GOOGLE_RATELIMIT_MS,
     O.fromNullable(conf.TROUBLE_TICKET_SHEET),
     _cacheSheetData,
-    _cacheTroubleTicketData
+    _cacheTroubleTicketData,
+    O.fromNullable(conf.RECURLY_TOKEN)
   );
 
   const deps: Dependencies = {

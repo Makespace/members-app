@@ -7,6 +7,10 @@
   --green-color: #00703c;
   --green-darkened-color: #005a30;
 
+  --grey-color: #505a5f;
+  --red-color: #d4351c;
+  --yellow-color: #ffdd00;
+
   font-family: Optima, Candara, 'Noto Sans', source-sans-pro, sans-serif;
   font-weight: normal;
   line-height: 1.5;
@@ -367,4 +371,38 @@ label img {
 *:target{
   z-index: 1;
   outline: var(--border-color) solid 3px;
+}
+
+.tag {
+  font-weight: 400;
+  font-size: 1rem;
+  line-height: 1.25;
+  display: inline-block;
+  max-width: 160px;
+  margin-top: -2px;
+  margin-bottom: -3px;
+  padding: 2px 8px 3px;
+  background-color: var(--grey-color);
+  text-decoration: none;
+  overflow-wrap: break-word;
+}
+
+.tag--grey {
+  background-color: color-mix(in oklch, white 50%, var(--grey-color));
+  color: color-mix(in oklch, black 50%, var(--grey-color));
+}
+
+.tag--green {
+  background-color: color-mix(in oklch, white 50%, var(--green-color));
+  color: color-mix(in oklch, black 50%, var(--green-color));
+}
+
+.tag--yellow {
+  background-color: color-mix(in oklch, white 50%, var(--yellow-color));
+  color: color-mix(in oklch, black 50%, var(--yellow-color));
+}
+
+.tag--red {
+  background-color: color-mix(in oklch, white 50%, var(--red-color));
+  color: color-mix(in oklch, black 50%, var(--red-color));
 }

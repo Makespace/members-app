@@ -7,6 +7,7 @@ import {ViewModel} from './view-model';
 import {getGravatarThumbnail} from '../../templates/avatar';
 import {renderMemberNumber} from '../../templates/member-number';
 import {Member} from '../../read-models/members';
+import {memberStatusTag} from '../../templates/member-status';
 
 const ordByMemberNumber: Ord<Member> = pipe(
   N.Ord,
@@ -27,6 +28,7 @@ const renderMembers = (viewModel: ViewModel) =>
           <td>${sanitizeOption(member.name)}</td>
           <td>${sanitizeOption(member.formOfAddress)}</td>
           <td>${sanitizeString(member.emailAddress)}</td>
+          <td>${memberStatusTag(member.status)}</td>
         </tr>
       `
     ),
@@ -41,6 +43,7 @@ const renderMembers = (viewModel: ViewModel) =>
               <th>Full Name</th>
               <th>Preferred form of address</th>
               <th>Email</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>

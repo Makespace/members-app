@@ -32,6 +32,7 @@ const Config = t.strict({
     'file:/tmp/makespace-member-app.db'
   ),
   TURSO_TOKEN: t.union([t.undefined, t.string]),
+  RECURLY_TOKEN: t.union([t.undefined, t.string]),
   TURSO_SYNC_URL: t.union([t.undefined, t.string]),
   LOG_LEVEL: withDefaultIfEmpty(LogLevel, 'debug'),
   GOOGLE_RATELIMIT_MS: withDefaultIfEmpty(

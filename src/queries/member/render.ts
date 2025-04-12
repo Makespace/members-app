@@ -2,6 +2,7 @@ import {getGravatarProfile, getGravatarThumbnail} from '../../templates/avatar';
 import {Html, html, sanitizeOption, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
 import {renderMemberNumber} from '../../templates/member-number';
+import {memberStatusTag} from '../../templates/member-status';
 import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
 import {renderOwnerStatus} from '../shared-render/owner-status';
 import {renderTrainerStatus} from '../shared-render/trainer-status';
@@ -57,6 +58,10 @@ export const render = (viewModel: ViewModel) => html`
           ${sanitizeOption(viewModel.member.name)}
           ${viewModel.isSuperUser ? html`${editName(viewModel)}` : html``}
         </td>
+      </tr>
+      <tr>
+        <th scope="row">Status</th>
+        <td>${memberStatusTag(viewModel.member.status)}</td>
       </tr>
       <tr>
         <th scope="row">

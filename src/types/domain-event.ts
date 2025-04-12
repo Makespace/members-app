@@ -166,6 +166,15 @@ const TroubleTicketResponseSubmitted = defineEvent(
   }
 );
 
+const RecurlySubscriptionUpdated = defineEvent('RecurlySubscriptionUpdated', {
+  email: EmailAddressCodec,
+  hasActiveSubscription: t.boolean,
+  hasPausedSubscription: t.boolean,
+  hasFutureSubscription: t.boolean,
+  hasCanceledSubscription: t.boolean,
+  hasPastDueInvoice: t.boolean,
+});
+
 export const events = [
   AreaCreated,
   AreaRemoved,
@@ -188,6 +197,7 @@ export const events = [
   EquipmentTrainingQuizMemberNumberUpdated,
   EquipmentTrainingQuizEmailUpdated,
   TroubleTicketResponseSubmitted,
+  RecurlySubscriptionUpdated,
 ];
 
 export const DomainEvent = t.union([
@@ -212,6 +222,7 @@ export const DomainEvent = t.union([
   EquipmentTrainingQuizMemberNumberUpdated.codec,
   EquipmentTrainingQuizEmailUpdated.codec,
   TroubleTicketResponseSubmitted.codec,
+  RecurlySubscriptionUpdated.codec,
 ]);
 
 export type DomainEvent = t.TypeOf<typeof DomainEvent>;

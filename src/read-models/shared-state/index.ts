@@ -58,7 +58,8 @@ export const initSharedReadModel = (
   googleRateLimitMs: number,
   troubleTicketSheetId: O.Option<string>,
   cacheSheetData: Dependencies['cacheSheetData'],
-  cacheTroubleTicketData: Dependencies['cacheTroubleTicketData']
+  cacheTroubleTicketData: Dependencies['cacheTroubleTicketData'],
+  recurlyToken: O.Option<string>
 ): SharedReadModel => {
   const _underlyingReadModelDb = new Database();
   const readModelDb = drizzle(_underlyingReadModelDb);
@@ -78,7 +79,8 @@ export const initSharedReadModel = (
       googleRateLimitMs,
       troubleTicketSheetId,
       cacheSheetData,
-      cacheTroubleTicketData
+      cacheTroubleTicketData,
+      recurlyToken
     ),
     members: {
       get: getMemberFull(readModelDb),
