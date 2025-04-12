@@ -32,6 +32,7 @@ export const updateState =
             isSuperUser: false,
             agreementSigned: undefined,
             superUserSince: undefined,
+            status: 'inactive',
           })
           .run();
         break;
@@ -286,6 +287,16 @@ export const updateState =
           })
           .run();
         break;
+      case 'RecurlySubscriptionUpdated': {
+        const status = event.hasActiveSubscription ? 'active' : 'inactive';
+        db.update(membersTable)
+          .set({
+            status,
+          })
+          .where(eq(membersTable.emailAddress, event.email))
+          .run();
+        break;
+      }
       default:
         break;
     }

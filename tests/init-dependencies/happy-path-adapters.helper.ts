@@ -31,7 +31,8 @@ export const happyPathAdapters: Dependencies = {
     120_000,
     O.none,
     cacheSheetData,
-    cacheSheetData
+    cacheSheetData,
+    O.none
   ),
   logger: (() => undefined) as never as Logger,
   rateLimitSendingOfEmails: TE.right,

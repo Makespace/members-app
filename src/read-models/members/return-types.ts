@@ -16,6 +16,7 @@ export type Member = {
   agreementSigned: O.Option<Date>;
   isSuperUser: boolean;
   gravatarHash: GravatarHash;
+  status: string;
 };
 
 export type MultipleMembers = Map<number, Member>;
