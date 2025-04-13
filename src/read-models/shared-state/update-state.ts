@@ -301,8 +301,8 @@ export const updateState =
       case 'MemberRejoinedWithNewNumber': {
         db.insert(memberLinkTable)
           .values({
-            oldMembershipNumber: event.old_number,
-            newMembershipNumber: event.new_number,
+            oldMembershipNumber: event.oldMembershipNumber,
+            newMembershipNumber: event.newMembershipNumber,
             accountsLinkedAt: event.recordedAt,
             markedLinkedByMemberNumber:
               event.actor.tag === 'user' ? event.actor.user.memberNumber : null,

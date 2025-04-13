@@ -176,8 +176,8 @@ const RecurlySubscriptionUpdated = defineEvent('RecurlySubscriptionUpdated', {
 });
 
 const MemberRejoinedWithNewNumber = defineEvent('MemberRejoinedWithNewNumber', {
-  old_number: t.number,
-  new_number: t.number,
+  oldMembershipNumber: t.number,
+  newMembershipNumber: t.number,
 });
 
 export const events = [
