@@ -5,6 +5,7 @@ import {gravatarHashFromEmail} from '../members/avatar';
 import {
   areasTable,
   equipmentTable,
+  memberLinkTable,
   membersTable,
   ownersTable,
   trainedMemberstable,
@@ -294,6 +295,18 @@ export const updateState =
             status,
           })
           .where(eq(membersTable.emailAddress, event.email))
+          .run();
+        break;
+      }
+      case 'MemberRejoinedWithNewNumber': {
+        db.insert(memberLinkTable)
+          .values({
+            oldMembershipNumber: event.old_number,
+            newMembershipNumber: event.new_number,
+            accountsLinkedAt: event.recordedAt,
+            markedLinkedByMemberNumber:
+              event.actor.tag === 'user' ? event.actor.user.memberNumber : null,
+          })
           .run();
         break;
       }

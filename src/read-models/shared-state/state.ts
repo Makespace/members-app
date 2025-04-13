@@ -2,7 +2,6 @@ import {sql} from 'drizzle-orm';
 import {EmailAddress, GravatarHash} from '../../types';
 import * as O from 'fp-ts/Option';
 import {blob, integer, sqliteTable, text} from 'drizzle-orm/sqlite-core';
-
 export const membersTable = sqliteTable('members', {
   memberNumber: integer('memberNumber').notNull().primaryKey(),
   emailAddress: text('emailAddress').notNull().$type<EmailAddress>(),
@@ -33,6 +32,24 @@ const createMembersTable = sql`
     agreementSigned INTEGER,
     status TEXT
   );`;
+
+export const memberLinkTable = sqliteTable('memberLinkTable', {
+  oldMembershipNumber: integer('oldMembershipNumber').notNull(),
+  newMembershipNumber: integer('newMembershipNumber').notNull(),
+  accountsLinkedAt: integer('accountsLinkedAt', {
+    mode: 'timestamp_ms',
+  }).notNull(),
+  markedLinkedByMemberNumber: integer('markedLinkedByMemberNumber'),
+});
+
+const createMemberLinkTable = sql`
+  CREATE TABLE IF NOT EXISTS memberLinkTable (
+    oldMembershipNumber INTEGER NOT NULL,
+    newMembershipNumber INTEGER NOT NULL,
+    accountsLinkedAt INTEGER NOT NULL,
+    markedLinkedByMemberNumber INTEGER
+  );
+`;
 
 export const equipmentTable = sqliteTable('equipment', {
   id: text('id').notNull().primaryKey(),
@@ -192,6 +209,7 @@ const createTroubleTicketResponsesTable = sql`
 
 export const createTables = [
   createMembersTable,
+  createMemberLinkTable,
   createEquipmentTable,
   createTrainersTable,
   createTrainedMembersTable,
