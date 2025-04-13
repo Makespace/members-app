@@ -175,6 +175,11 @@ const RecurlySubscriptionUpdated = defineEvent('RecurlySubscriptionUpdated', {
   hasPastDueInvoice: t.boolean,
 });
 
+const MemberRejoinedWithNewNumber = defineEvent('MemberRejoinedWithNewNumber', {
+  old_number: t.number,
+  new_number: t.number,
+});
+
 export const events = [
   AreaCreated,
   AreaRemoved,
@@ -198,6 +203,7 @@ export const events = [
   EquipmentTrainingQuizEmailUpdated,
   TroubleTicketResponseSubmitted,
   RecurlySubscriptionUpdated,
+  MemberRejoinedWithNewNumber,
 ];
 
 export const DomainEvent = t.union([
@@ -223,6 +229,7 @@ export const DomainEvent = t.union([
   EquipmentTrainingQuizEmailUpdated.codec,
   TroubleTicketResponseSubmitted.codec,
   RecurlySubscriptionUpdated.codec,
+  MemberRejoinedWithNewNumber.codec,
 ]);
 
 export type DomainEvent = t.TypeOf<typeof DomainEvent>;
