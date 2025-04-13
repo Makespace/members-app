@@ -25,3 +25,6 @@ export const render = () => html`
   </nav>
   </div>
 `;
+
+// Endpoint link deactivated while testing but still accessible directly.
+// <li><a href="/members/rejoined">Link a user with their old membership</a></li>

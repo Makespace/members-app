@@ -65,6 +65,11 @@ export const initRoutes = (
       'sign-owner-agreement',
       commands.members.signOwnerAgreement
     ),
+    ...command(
+      'members',
+      'rejoined',
+      commands.memberNumbers.markMemberRejoined
+    ),
     email('owner-agreement-invite', sendEmailCommands.ownerAgreementInvite),
     get('/ping', ping),
     query('/debug/dump-shared-db/json', queries.dumpSharedDbAsJson),
