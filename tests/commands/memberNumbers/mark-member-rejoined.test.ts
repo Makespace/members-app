@@ -12,6 +12,7 @@ import {
   MarkMemberRejoined,
   markMemberRejoined,
 } from '../../../src/commands/member-numbers/mark-member-rejoined';
+import {Int} from 'io-ts';
 
 describe('markMemberRejoined', () => {
   let framework: TestFramework;
@@ -26,8 +27,8 @@ describe('markMemberRejoined', () => {
     );
   });
   const command = {
-    oldMembershipNumber: faker.number.int(),
-    newMembershipNumber: faker.number.int(),
+    oldMembershipNumber: faker.number.int() as Int,
+    newMembershipNumber: faker.number.int() as Int,
     actor: arbitraryActor(),
   };
 
