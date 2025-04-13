@@ -37,6 +37,7 @@ import {extractTimestamp} from '../../google/util';
 const ROW_BATCH_SIZE = 200;
 const EXPECTED_TROUBLE_TICKET_RESPONSE_SHEET_NAME = 'Form Responses 1';
 const TROUBLE_TICKET_SYNC_INTERVAL = Duration.fromMillis(1000 * 60 * 20);
+const RECURLY_SYNC_INTERVAL = Duration.fromMillis(1000 * 60 * 20);
 
 const pullNewEquipmentQuizResultsForSheet = async (
   logger: Logger,
@@ -451,12 +452,26 @@ async function asyncApplyGoogleEvents(
   logger.info('...done');
 }
 
+let lastRecurlySync: O.Option<DateTime> = O.none;
 async function asyncApplyRecurlyEvents(
   logger: Logger,
   currentState: BetterSQLite3Database,
   updateState: (event: DomainEvent) => void,
   recurlyToken: string
 ) {
+  if (
+    O.isSome(lastRecurlySync) &&
+    lastRecurlySync.value.diffNow().negate() < RECURLY_SYNC_INTERVAL
+  ) {
+    logger.info(
+      'Skipping recurly sync, next sync in %s',
+      RECURLY_SYNC_INTERVAL.minus(
+        lastRecurlySync.value.diffNow().negate()
+      ).toHuman()
+    );
+    return;
+  }
+  lastRecurlySync = O.some(DateTime.now());
   logger.info('Fetching recurly events...');
   const client = new recurly.Client(recurlyToken);
 
