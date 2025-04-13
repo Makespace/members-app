@@ -15,8 +15,8 @@ describe('get-via-shared-read-model', () => {
     framework = await initTestFramework();
   });
 
-  const memberNumber = faker.number.int();
-  const otherMemberNumber = faker.number.int();
+  const memberNumber = faker.number.int() as Int;
+  const otherMemberNumber = faker.number.int() as Int;
   const runQuery = (id = memberNumber) =>
     pipe(id, framework.sharedReadModel.members.get, getSomeOrFail);
 
@@ -192,6 +192,14 @@ describe('get-via-shared-read-model', () => {
           });
         });
       });
+
+      describe('and then they rejoin with a new member number', () => {
+        it.todo('they are no longer a superuser');
+        describe('and they have been again declared to be a super user', () => {
+          it.todo('they are a superuser');
+          it.todo('they have a new date since when they have been a superuser');
+        });
+      });
     });
 
     describe('and they have signed the owner agreement', () => {
@@ -228,7 +236,7 @@ describe('get-via-shared-read-model', () => {
         await framework.commands.equipment.add(createEquipment);
         advanceTo(trainedAt);
         await framework.commands.trainers.markTrained({
-          memberNumber: memberNumber as Int,
+          memberNumber: memberNumber,
           equipmentId: createEquipment.id,
         });
       });
@@ -251,7 +259,7 @@ describe('get-via-shared-read-model', () => {
       beforeEach(async () => {
         advanceTo(signedAt);
         await framework.commands.members.signOwnerAgreement({
-          memberNumber: memberNumber as Int,
+          memberNumber: memberNumber,
           signedAt,
         });
       });
@@ -308,6 +316,112 @@ describe('get-via-shared-read-model', () => {
       it('returns that they are no longer an owner', () => {
         const result = runQuery();
         expect(result.ownerOf).toHaveLength(0);
+      });
+    });
+
+    [true, false].forEach(withinTrainingLapsePeriod => {
+      describe(`and they have left and then rejoined with a new member number ${withinTrainingLapsePeriod ? 'within' : 'without'} the training-lapse period`, () => {
+        const newMembershipNumber = faker.number.int() as Int;
+
+        beforeEach(async () => {
+          await framework.commands.memberNumbers.markMemberRejoined({
+            oldMembershipNumber: memberNumber,
+            newMembershipNumber,
+          });
+        });
+
+        it.todo('There is a record of the old membership number');
+        it.todo(
+          'Searching for the member by either number shows the same base data'
+        );
+
+        if (withinTrainingLapsePeriod) {
+          describe('and the user is marked trained on equipment on their old number', () => {
+            it.todo('the user shows as trained on their old date');
+            it.todo('Equipment shows as currently trained');
+            describe('and the user is marked trained on the equipment on their new number', () => {
+              it.todo('the member is shown as trained on their old date');
+            });
+          });
+          describe('and the user completes a quiz on their old number', () => {
+            it.todo('is shown as awaiting training');
+          });
+          describe('and the user completes a quiz on their new number', () => {
+            it.todo('is shown as awaiting training');
+          });
+          describe('and the user is marked trained on equipment on their new number', () => {
+            it.todo('the user shows as trained');
+            it.todo('Equipment shows as currently trained');
+          });
+          describe('and then they are marked as an owner of an area on their old number', () => {
+            it.todo('The member is shown a owner');
+            describe('and then they are marked as a trainer of a piece of equipment on their old number', () => {
+              it.todo('The member is shown a trainer');
+            });
+            describe('and then they are marked as a trainer of a piece of equipment on their new number', () => {
+              it.todo('The member is shown a trainer');
+            });
+            describe('and then they are marked as an owner of the area on their new number', () => {
+              it.todo('The member is still shown as an owner');
+            });
+            describe('and then they are removed as an owner of the area on their old number', () => {
+              it.todo('The member is not shown as an owner');
+            });
+            describe('and then they are removed as an owner of an area on their new number', () => {
+              it.todo('The member is not shown as an owner'); // Revoking at this point is taken as revoking for both because they were linked at the time.
+            });
+          });
+          describe('and then they are marked as an owner of an area on their new number', () => {
+            it.todo('The member is shown a owner');
+            describe('and then they are marked as a trainer of a piece of equipment on their new number', () => {
+              it.todo('The member is shown a trainer');
+            });
+            describe('and then they are removed as an owner of an area on their new number', () => {
+              it.todo('The member is not shown as an owner');
+            });
+          });
+        } else {
+          describe('and the user is marked trained on equipment on their old number', () => {
+            it.todo('Does not transfer training');
+            it.todo("Equipment pages show as 'previously trained'");
+            describe('and the user is marked trained on the equipment on their new number', () => {
+              it.todo('the member is shown as trained on their new date');
+            });
+          });
+          describe('and the user completes a quiz on their old number', () => {
+            it.todo('is not shown as awaiting training');
+          });
+          describe('and the user is marked trained on equipment on their new number', () => {
+            it.todo('the member is shown as trained');
+          });
+          describe('and then they are marked as an owner of an area on their old number', () => {
+            it.todo('The member is not shown as a owner');
+            describe('and then they are marked as an owner of the area on their new number', () => {
+              it.todo('The member is shown as an owner');
+              describe('and then they are removed as an owner of an area on their new number', () => {
+                it.todo('The member is not shown as an owner');
+              });
+            });
+          });
+          describe('and then they are marked as an owner of an area on their new number', () => {
+            it.todo('The member is shown a owner');
+            describe('and then they are marked as a trainer of a piece of equipment on their new number', () => {
+              it.todo('The member is shown a trainer');
+            });
+            describe('and then they are removed as an owner of an area on their new number', () => {
+              it.todo('The member is not shown as an owner');
+            });
+          });
+        }
+        describe('and then they rejoin as a member again', () => {
+          if (withinTrainingLapsePeriod) {
+            it.todo('all the training ownership/trainer status continues over');
+          } else {
+            it.todo(
+              'none of the training ownership/trainer status continues over'
+            );
+          }
+        });
       });
     });
   });
