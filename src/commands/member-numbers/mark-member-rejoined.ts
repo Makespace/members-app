@@ -1,6 +1,7 @@
 import * as RA from 'fp-ts/ReadonlyArray';
 import {constructEvent, isEventOfType} from '../../types';
 import * as t from 'io-ts';
+import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import {Command} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
@@ -8,8 +9,8 @@ import {pipe} from 'fp-ts/lib/function';
 import {EventOfType} from '../../types/domain-event';
 
 const codec = t.strict({
-  oldMembershipNumber: t.Integer,
-  newMembershipNumber: t.Integer,
+  oldMembershipNumber: tt.IntFromString,
+  newMembershipNumber: tt.IntFromString,
 });
 
 export type MarkMemberRejoined = t.TypeOf<typeof codec>;
