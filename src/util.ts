@@ -3,6 +3,7 @@ import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as E from 'fp-ts/Either';
 import {pipe} from 'fp-ts/lib/function';
+import {NonEmptyArray} from 'fp-ts/lib/NonEmptyArray';
 
 export const logPassThru =
   (logger: Logger, msg: string) =>
@@ -40,15 +41,16 @@ export const withDefaultIfEmpty = <C extends t.Any>(
   );
 
 export const accumByMap =
-  <T, R>(accumBy: (a: T) => string | number, map: (a: T[]) => R) =>
+  <T, R>(accumBy: (a: T) => string | number, map: (a: NonEmptyArray<T>) => R) =>
   (arr: ReadonlyArray<T>): ReadonlyArray<R> => {
-    const accumulated: Record<string | number, T[]> = {};
+    const accumulated: Record<string | number, NonEmptyArray<T>> = {};
     for (const el of arr) {
       const key = accumBy(el);
       if (!accumulated[key]) {
-        accumulated[key] = [];
+        accumulated[key] = [el];
+      } else {
+        accumulated[key].push(el);
       }
-      accumulated[key].push(el);
     }
     return Object.values(accumulated).map(map);
   };
