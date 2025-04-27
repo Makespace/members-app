@@ -334,7 +334,7 @@ describe('get-via-shared-read-model', () => {
       // old one. We are specifically checking that the order of operations isn't important as sometimes members don't get registered as having rejoined for awhile.
       // Note that the 'normal' order of operations is that the new and old accounts are linked immediately - i.e. there are no actions prior to linking the accounts.
       [true, false].forEach(useExistingEmail => {
-        describe(`and they have left and then rejoined with a new member number ${withinTrainingLapsePeriod ? 'within' : 'without'} the training-lapse period`, () => {
+        describe(`and they have left and then rejoined with a new member number ${withinTrainingLapsePeriod ? 'within' : 'outwith'} the training-lapse period`, () => {
           describe(
             useExistingEmail
               ? 'using their existing email'
@@ -415,9 +415,21 @@ describe('get-via-shared-read-model', () => {
                 // If there are no actions prior to linking then we can perform the linking immediately.
                 beforeEach(markMemberRejoined);
 
-                it.todo(
-                  'Searching for the member by either number shows the same base data'
-                );
+                it('Searching for the member by either number shows the same base data', () => {
+                  const old =
+                    framework.sharedReadModel.members.get(memberNumber);
+                  const newData =
+                    framework.sharedReadModel.members.get(newMembershipNumber);
+                  expect(getSomeOrFail(old)).toStrictEqual(
+                    getSomeOrFail(newData)
+                  );
+                });
+
+                it('The list of all members only shows the member once', () => {
+                  expect(
+                    framework.sharedReadModel.members.getAll()
+                  ).toHaveLength(1);
+                });
 
                 if (withinTrainingLapsePeriod) {
                   describe('and the user is marked trained on equipment on their old number', () => {

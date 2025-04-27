@@ -78,7 +78,7 @@ export type OwnerOf = {
 };
 
 export type MemberCoreInfo = {
-  memberNumber: number;
+  memberNumbers: number[];
   emailAddress: EmailAddress;
   prevEmails: ReadonlyArray<EmailAddress>;
   name: O.Option<string>;
@@ -92,7 +92,6 @@ export type MemberCoreInfo = {
 
 export type MemberAwaitingTraining = MemberCoreInfo & {
   quizId: UUID;
-  memberNumber: number;
   waitingSince: Date;
 };
 
