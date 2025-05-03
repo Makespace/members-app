@@ -13,7 +13,7 @@ export type OrphanedPassedQuiz = {
   emailProvided: O.Option<string>;
 };
 
-export type FailedQuizAttempt = MemberCoreInfo & {
+export type FailedQuizAttempt = Omit<MemberCoreInfo, 'memberNumbers'> & {
   quizId: UUID;
   score: number;
   maxScore: number;
