@@ -11,16 +11,23 @@ export type MemberCoreInfoPreMerge = Omit<MemberCoreInfo, 'memberNumbers'> & {
 
 export const mergeMemberCore = (
   // Array should be in order of priority with index = 0 being highest priority.
-  m: ReadonlyNonEmptyArray<MemberCoreInfoPreMerge>
-): MemberCoreInfo => ({
-  memberNumbers: m.map(e => e.memberNumber),
-  emailAddress: m[0].emailAddress,
-  prevEmails: m.flatMap(e => [...e.prevEmails, e.emailAddress]),
-  name: m[0].name,
-  formOfAddress: m[0].formOfAddress,
-  agreementSigned: m[0].agreementSigned,
-  isSuperUser: m[0].isSuperUser,
-  superUserSince: m[0].superUserSince,
-  gravatarHash: m[0].gravatarHash,
-  status: m[0].status,
-});
+  records: ReadonlyNonEmptyArray<MemberCoreInfoPreMerge>
+): MemberCoreInfo => {
+  const memberNumbers = records.map(e => e.memberNumber);
+  const emailAddress = records[0].emailAddress;
+  return {
+    memberNumber: Math.max(...memberNumbers),
+    memberNumbers,
+    emailAddress,
+    prevEmails: records
+      .flatMap(e => [...e.prevEmails, e.emailAddress])
+      .filter(e => e !== emailAddress),
+    name: records[0].name,
+    formOfAddress: records[0].formOfAddress,
+    agreementSigned: records[0].agreementSigned,
+    isSuperUser: records[0].isSuperUser,
+    superUserSince: records[0].superUserSince,
+    gravatarHash: records[0].gravatarHash,
+    status: records[0].status,
+  };
+};
