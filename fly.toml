@@ -2,7 +2,7 @@
 #
 
 app = 'makespace-app'
-primary_region = 'ams'
+primary_region = 'lhr'
 
 [build]
 
