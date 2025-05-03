@@ -9,19 +9,19 @@ import {pipe} from 'fp-ts/lib/function';
 import {EventOfType} from '../../types/domain-event';
 
 const codec = t.strict({
-  oldMembershipNumber: tt.IntFromString,
-  newMembershipNumber: tt.IntFromString,
+  oldMemberNumber: tt.IntFromString,
+  newMemberNumber: tt.IntFromString,
 });
 
-export type MarkMemberRejoined = t.TypeOf<typeof codec>;
+export type MarkMemberRejoinedWithNewNumber = t.TypeOf<typeof codec>;
 
 const isDuplicateOfPreviousCommand =
-  (command: MarkMemberRejoined) =>
+  (command: MarkMemberRejoinedWithNewNumber) =>
   (event: EventOfType<'MemberRejoinedWithNewNumber'>) =>
-    event.oldMembershipNumber === command.oldMembershipNumber &&
-    event.newMembershipNumber === command.newMembershipNumber;
+    event.oldMemberNumber === command.oldMemberNumber &&
+    event.newMemberNumber === command.newMemberNumber;
 
-const process: Command<MarkMemberRejoined>['process'] = input =>
+const process: Command<MarkMemberRejoinedWithNewNumber>['process'] = input =>
   pipe(
     input.events,
     RA.filter(isEventOfType('MemberRejoinedWithNewNumber')),
@@ -31,14 +31,16 @@ const process: Command<MarkMemberRejoined>['process'] = input =>
         : O.some(constructEvent('MemberRejoinedWithNewNumber')(input.command))
   );
 
-const resource: Command<MarkMemberRejoined>['resource'] = input => ({
-  type: 'Member',
-  id: input.oldMembershipNumber.toString(),
-});
+const resource: Command<MarkMemberRejoinedWithNewNumber>['resource'] =
+  input => ({
+    type: 'Member',
+    id: input.oldMemberNumber.toString(),
+  });
 
-export const markMemberRejoined: Command<MarkMemberRejoined> = {
-  process,
-  resource,
-  decode: codec.decode,
-  isAuthorized: isAdminOrSuperUser,
-};
+export const markMemberRejoinedWithNewNumber: Command<MarkMemberRejoinedWithNewNumber> =
+  {
+    process,
+    resource,
+    decode: codec.decode,
+    isAuthorized: isAdminOrSuperUser,
+  };

@@ -34,8 +34,8 @@ const createMembersTable = sql`
   );`;
 
 export const memberLinkTable = sqliteTable('memberLinkTable', {
-  oldMembershipNumber: integer('oldMembershipNumber').notNull(),
-  newMembershipNumber: integer('newMembershipNumber').notNull(),
+  oldMemberNumber: integer('oldMemberNumber').notNull(),
+  newMemberNumber: integer('newMemberNumber').notNull(),
   accountsLinkedAt: integer('accountsLinkedAt', {
     mode: 'timestamp_ms',
   }).notNull(),
@@ -44,8 +44,8 @@ export const memberLinkTable = sqliteTable('memberLinkTable', {
 
 const createMemberLinkTable = sql`
   CREATE TABLE IF NOT EXISTS memberLinkTable (
-    oldMembershipNumber INTEGER NOT NULL,
-    newMembershipNumber INTEGER NOT NULL,
+    oldMemberNumber INTEGER NOT NULL,
+    newMemberNumber INTEGER NOT NULL,
     accountsLinkedAt INTEGER NOT NULL,
     markedLinkedByMemberNumber INTEGER
   );
