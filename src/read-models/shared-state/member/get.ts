@@ -6,9 +6,10 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import * as RAE from 'fp-ts/ReadonlyNonEmptyArray';
 import {MemberCoreInfo} from '../return-types';
 import {memberLinkTable, membersTable} from '../state';
-import {mergeMemberCore} from './merge';
+import {MemberCoreInfoPreMerge, mergeMemberCore} from './merge';
 import {NonEmptyArray} from 'fp-ts/lib/NonEmptyArray';
-import {accumByMap} from '../../../util';
+import {groupMembershipNumbers} from './group-membership-numbers';
+import {ReadonlyNonEmptyArray} from 'fp-ts/ReadonlyNonEmptyArray';
 
 const transformRow = <
   R extends {
@@ -70,17 +71,46 @@ export const getMemberCore =
     );
   };
 
+const getMemberNumberGrouping = (
+  db: BetterSQLite3Database
+): ReadonlyArray<ReadonlyNonEmptyArray<number>> =>
+  groupMembershipNumbers(
+    db
+      .select({
+        a: memberLinkTable.oldMembershipNumber,
+        b: memberLinkTable.newMembershipNumber,
+      })
+      .from(memberLinkTable)
+      .all()
+  );
+
+const nonEmptyMap = <T, R>(
+  i: ReadonlyNonEmptyArray<T>,
+  fn: (t: T) => R
+): ReadonlyNonEmptyArray<R> => i.map(fn) as NonEmptyArray<R>;
+
 export const getAllMemberCore = (
   db: BetterSQLite3Database
 ): ReadonlyArray<MemberCoreInfo> => {
-  
-}
-  // pipe(
-  //   db
-  //     .select()
-  //     .from(membersTable)
-  //     .orderBy(desc(membersTable.memberNumber))
-  //     .all(),
-  //   RA.map(transformRow),
-  //   accumByMap(r => r.memberNumber, mergeMemberCore)
-  // );
+  // I feel like there might be a better way than this.
+  // Perhaps the shared read model sql lite database isn't the way to store the member number grouping.
+  const membersLookup: Record<number, MemberCoreInfoPreMerge> = {};
+  for (const row of db.select().from(membersTable).all()) {
+    membersLookup[row.memberNumber] = transformRow(row);
+  }
+  const result: MemberCoreInfo[] = [];
+  for (const grouping of getMemberNumberGrouping(db)) {
+    result.push(
+      mergeMemberCore(
+        nonEmptyMap(grouping, memberNumber => membersLookup[memberNumber])
+      )
+    );
+    for (const groupingMemberNumber of grouping) {
+      delete membersLookup[groupingMemberNumber];
+    }
+  }
+  for (const remaining of Object.values(membersLookup)) {
+    result.push(mergeMemberCore([remaining]));
+  }
+  return result;
+};
