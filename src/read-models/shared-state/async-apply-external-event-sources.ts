@@ -34,7 +34,7 @@ import {DateTime, Duration} from 'luxon';
 import {pipe} from 'fp-ts/lib/function';
 import {extractTimestamp} from '../../google/util';
 
-const ROW_BATCH_SIZE = 200;
+const ROW_BATCH_SIZE = 50;
 const EXPECTED_TROUBLE_TICKET_RESPONSE_SHEET_NAME = 'Form Responses 1';
 const TROUBLE_TICKET_SYNC_INTERVAL = Duration.fromMillis(1000 * 60 * 20);
 const RECURLY_SYNC_INTERVAL = Duration.fromMillis(1000 * 60 * 20);
