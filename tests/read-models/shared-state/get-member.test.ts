@@ -340,7 +340,7 @@ describe('get-via-shared-read-model', () => {
               ? 'using their existing email'
               : 'using a new email',
             () => {
-              const newMembershipNumber = faker.number.int() as Int;
+              const newMemberNumber = faker.number.int() as Int;
               const newEmail = faker.internet.email() as EmailAddress;
 
               // Create some example equipment + area to be used throughout these tests.
@@ -364,28 +364,30 @@ describe('get-via-shared-read-model', () => {
                 });
               });
 
+              const createNewMemberRecord = () =>
+                framework.commands.memberNumbers.linkNumberToEmail({
+                  memberNumber: newMemberNumber,
+                  email: newEmail,
+                });
+
               const markMemberRejoined = useExistingEmail
-                ? async () => {
-                    // If an account already exists with an email then the linking of membership number -> email fails but you can still mark the user as rejoined
-                    // to reuse the email.
-                    await framework.commands.memberNumbers.markMemberRejoined({
-                      oldMembershipNumber: memberNumber,
-                      newMembershipNumber,
-                    });
-                  }
-                : async () => {
+                ? () =>
+                    // In this case we are marking a member as having rejoined without creating them a new account.
+                    framework.commands.memberNumbers.markMemberRejoinedWithExistingNumber(
+                      {
+                        memberNumber,
+                      }
+                    )
+                : () =>
                     // In this case we are creating a new account with a new email and then linking the accounts.
                     // This is 1 way to handle a rejoin however it is more of an edge case. It is likely better just to
                     // take the old account, update the email and then mark that member as rejoined.
-                    await framework.commands.memberNumbers.linkNumberToEmail({
-                      memberNumber: newMembershipNumber,
-                      email: newEmail,
-                    });
-                    await framework.commands.memberNumbers.markMemberRejoined({
-                      oldMembershipNumber: memberNumber,
-                      newMembershipNumber,
-                    });
-                  };
+                    framework.commands.memberNumbers.markMemberRejoinedWithNewNumber(
+                      {
+                        oldMemberNumber: memberNumber,
+                        newMemberNumber,
+                      }
+                    );
               const markTrainedOnOldNumber = () =>
                 framework.commands.trainers.markTrained({
                   memberNumber,
@@ -393,7 +395,7 @@ describe('get-via-shared-read-model', () => {
                 });
               const markTrainedOnNewNumber = () =>
                 framework.commands.trainers.markTrained({
-                  memberNumber: newMembershipNumber,
+                  memberNumber: newMemberNumber,
                   equipmentId: equipmentId,
                 });
               const quizPass = (memberNumber: number, email: EmailAddress) =>
@@ -413,13 +415,18 @@ describe('get-via-shared-read-model', () => {
 
               describe('without actions prior to linking accounts', () => {
                 // If there are no actions prior to linking then we can perform the linking immediately.
-                beforeEach(markMemberRejoined);
+                beforeEach(async () => {
+                  if (!useExistingEmail) {
+                    await createNewMemberRecord();
+                  }
+                  await markMemberRejoined();
+                });
 
                 it('Searching for the member by either number shows the same base data', () => {
                   const old =
                     framework.sharedReadModel.members.get(memberNumber);
                   const newData =
-                    framework.sharedReadModel.members.get(newMembershipNumber);
+                    framework.sharedReadModel.members.get(newMemberNumber);
                   expect(getSomeOrFail(old)).toStrictEqual(
                     getSomeOrFail(newData)
                   );
@@ -427,7 +434,13 @@ describe('get-via-shared-read-model', () => {
 
                 it('The list of all members only shows the member once', () => {
                   expect(
-                    framework.sharedReadModel.members.getAll()
+                    framework.sharedReadModel.members
+                      .getAll()
+                      .filter(m =>
+                        [memberNumber, newMemberNumber].includes(
+                          m.memberNumber as Int
+                        )
+                      )
                   ).toHaveLength(1);
                 });
 
@@ -531,6 +544,7 @@ describe('get-via-shared-read-model', () => {
                   describe('and the user is marked trained on equipment on their old number', () => {
                     beforeEach(async () => {
                       // The user is marked trained on the old number before the linking.
+                      await createNewMemberRecord();
                       await markTrainedOnOldNumber();
                       await markMemberRejoined();
                     });
@@ -539,6 +553,7 @@ describe('get-via-shared-read-model', () => {
                   });
                   describe('and the user is marked trained on equipment on their new number', () => {
                     beforeEach(async () => {
+                      await createNewMemberRecord();
                       await markTrainedOnNewNumber();
                       await markMemberRejoined();
                     });
@@ -547,6 +562,7 @@ describe('get-via-shared-read-model', () => {
                   });
                   describe('and the user is marked trained on the equipment on their old number and new number', () => {
                     beforeEach(async () => {
+                      await createNewMemberRecord();
                       await markTrainedOnOldNumber();
                       await markTrainedOnNewNumber();
                       await markMemberRejoined();
@@ -561,9 +577,7 @@ describe('get-via-shared-read-model', () => {
                   if (useExistingEmail) {
                     // If using an existing email then its just the member number that might change on the quiz results.
                     describe('and the user completes a quiz on their new number + existing email', () => {
-                      beforeEach(() =>
-                        quizPass(newMembershipNumber, memberEmail)
-                      );
+                      beforeEach(() => quizPass(newMemberNumber, memberEmail));
                       it.todo('is shown as awaiting training');
                       describe('and the user completes a quiz on their old number + existing email', () => {
                         // Handle duplicate quiz results across the new + old numbers.
@@ -578,13 +592,11 @@ describe('get-via-shared-read-model', () => {
                       it.todo('is shown as awaiting training');
                     });
                     describe('and the user completes a quiz on their new number + new email', () => {
-                      beforeEach(() => quizPass(newMembershipNumber, newEmail));
+                      beforeEach(() => quizPass(newMemberNumber, newEmail));
                       it.todo('is shown as awaiting training');
                     });
                     describe('and the user completes a quiz on their new number + old email', () => {
-                      beforeEach(() =>
-                        quizPass(newMembershipNumber, memberEmail)
-                      );
+                      beforeEach(() => quizPass(newMemberNumber, memberEmail));
                       it.todo('is shown as awaiting training');
                     });
                   }

@@ -30,24 +30,21 @@ const getMemberNumbers =
     pipe(
       db
         .select({
-          oldMembershipNumber: memberLinkTable.oldMembershipNumber,
-          newMembershipNumber: memberLinkTable.newMembershipNumber,
+          oldMemberNumber: memberLinkTable.oldMemberNumber,
+          newMemberNumber: memberLinkTable.newMemberNumber,
         })
         .from(memberLinkTable)
         .where(
           or(
-            eq(memberLinkTable.oldMembershipNumber, memberNumber),
-            eq(memberLinkTable.newMembershipNumber, memberNumber)
+            eq(memberLinkTable.oldMemberNumber, memberNumber),
+            eq(memberLinkTable.newMemberNumber, memberNumber)
           )
         )
         .all(),
       rows =>
         Array.from(
           new Set([
-            ...rows.flatMap(row => [
-              row.oldMembershipNumber,
-              row.newMembershipNumber,
-            ]),
+            ...rows.flatMap(row => [row.oldMemberNumber, row.newMemberNumber]),
             memberNumber,
           ])
         ) as NonEmptyArray<number>
@@ -77,17 +74,17 @@ const getMemberNumberGrouping = (
   groupMembershipNumbers(
     db
       .select({
-        a: memberLinkTable.oldMembershipNumber,
-        b: memberLinkTable.newMembershipNumber,
+        a: memberLinkTable.oldMemberNumber,
+        b: memberLinkTable.newMemberNumber,
       })
       .from(memberLinkTable)
       .all()
   );
 
-const nonEmptyMap = <T, R>(
+const nonEmptyMapFilter = <T, R>(
   i: ReadonlyNonEmptyArray<T>,
   fn: (t: T) => R
-): ReadonlyNonEmptyArray<R> => i.map(fn) as NonEmptyArray<R>;
+): ReadonlyNonEmptyArray<R> => i.map(fn).filter(e => e) as NonEmptyArray<R>;
 
 export const getAllMemberCore = (
   db: BetterSQLite3Database
@@ -102,7 +99,7 @@ export const getAllMemberCore = (
   for (const grouping of getMemberNumberGrouping(db)) {
     result.push(
       mergeMemberCore(
-        nonEmptyMap(grouping, memberNumber => membersLookup[memberNumber])
+        nonEmptyMapFilter(grouping, memberNumber => membersLookup[memberNumber])
       )
     );
     for (const groupingMemberNumber of grouping) {

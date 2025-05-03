@@ -1,15 +1,21 @@
 import {linkNumberToEmail} from './link-number-to-email';
 import {linkNumberToEmailForm} from './link-number-to-email-form';
-import {markMemberRejoined} from './mark-member-rejoined';
-import {markMemberRejoinedForm} from './mark-member-rejoined-form';
+import {markMemberRejoinedWithNewNumber} from './mark-member-rejoined-with-new-number';
+import {markMemberRejoinedWithNewNumberForm} from './mark-member-rejoined-with-new-number-form';
+import {markMemberRejoinedWithExistingNumber} from './mark-member-rejoined-with-existing-number';
+import {markMemberRejoinedWithExistingNumberForm} from './mark-member-rejoined-with-existing-number-form';
 
 export const memberNumbers = {
   linkNumberToEmail: {
     ...linkNumberToEmail,
     ...linkNumberToEmailForm,
   },
-  markMemberRejoined: {
-    ...markMemberRejoined,
-    ...markMemberRejoinedForm,
+  markMemberRejoinedWithNewNumber: {
+    ...markMemberRejoinedWithNewNumber,
+    ...markMemberRejoinedWithNewNumberForm,
+  },
+  markMemberRejoinedWithExistingNumber: {
+    ...markMemberRejoinedWithExistingNumber,
+    ...markMemberRejoinedWithExistingNumberForm,
   },
 };

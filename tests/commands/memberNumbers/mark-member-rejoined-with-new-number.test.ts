@@ -9,33 +9,33 @@ import {
   initTestFramework,
 } from '../../read-models/test-framework';
 import {
-  MarkMemberRejoined,
-  markMemberRejoined,
-} from '../../../src/commands/member-numbers/mark-member-rejoined';
+  MarkMemberRejoinedWithNewNumber,
+  markMemberRejoinedWithNewNumber,
+} from '../../../src/commands/member-numbers/mark-member-rejoined-with-new-number';
 import {Int} from 'io-ts';
 
-describe('markMemberRejoined', () => {
+describe('markMemberRejoinedWithNewNumber', () => {
   let framework: TestFramework;
-  let applyMarkMemberRejoined: ReturnType<
-    typeof applyToResource<MarkMemberRejoined>
+  let applyMarkMemberRejoinedWithNewNumber: ReturnType<
+    typeof applyToResource<MarkMemberRejoinedWithNewNumber>
   >;
   beforeEach(async () => {
     framework = await initTestFramework();
-    applyMarkMemberRejoined = applyToResource(
+    applyMarkMemberRejoinedWithNewNumber = applyToResource(
       framework.depsForApplyToResource,
-      markMemberRejoined
+      markMemberRejoinedWithNewNumber
     );
   });
   const command = {
-    oldMembershipNumber: faker.number.int() as Int,
-    newMembershipNumber: faker.number.int() as Int,
+    oldMemberNumber: faker.number.int() as Int,
+    newMemberNumber: faker.number.int() as Int,
     actor: arbitraryActor(),
   };
 
   describe('when give the same command multiple times', () => {
     beforeEach(async () => {
-      await applyMarkMemberRejoined(command, arbitraryActor())();
-      await applyMarkMemberRejoined(command, arbitraryActor())();
+      await applyMarkMemberRejoinedWithNewNumber(command, arbitraryActor())();
+      await applyMarkMemberRejoinedWithNewNumber(command, arbitraryActor())();
     });
 
     it('only raises one event', async () => {
@@ -51,18 +51,14 @@ describe('markMemberRejoined', () => {
     const events: ReadonlyArray<DomainEvent> = [];
     const event = pipe(
       {command, events},
-      markMemberRejoined.process,
+      markMemberRejoinedWithNewNumber.process,
       O.filter(isEventOfType('MemberRejoinedWithNewNumber')),
       getSomeOrFail
     );
 
     it('raises an event linking the memberships', () => {
-      expect(event.oldMembershipNumber).toStrictEqual(
-        command.oldMembershipNumber
-      );
-      expect(event.newMembershipNumber).toStrictEqual(
-        command.newMembershipNumber
-      );
+      expect(event.oldMemberNumber).toStrictEqual(command.oldMemberNumber);
+      expect(event.newMemberNumber).toStrictEqual(command.newMemberNumber);
       expect(event.actor).toStrictEqual(command.actor);
     });
   });

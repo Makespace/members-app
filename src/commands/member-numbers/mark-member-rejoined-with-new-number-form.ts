@@ -8,35 +8,35 @@ type ViewModel = unknown;
 const renderForm = () =>
   pipe(
     html`
-      <h1>Mark member rejoined</h1>
+      <h1>Mark member rejoined with new number</h1>
       <form action="/members/rejoined" method="post">
-        <label for="oldMembershipNumber"
+        <label for="oldMemberNumber"
           >What was the users old membership number?</label
         >
         <input
           type="number"
-          name="oldMembershipNumber"
-          id="oldMembershipNumber"
+          name="oldMemberNumber"
+          id="oldMemberNumber"
           required="true"
         />
-        <label for="newMembershipNumber"
+        <label for="newMemberNumber"
           >What is the users new membership number?
         </label>
         <input
           type="number"
-          name="newMembershipNumber"
-          id="newMembershipNumber"
+          name="newMemberNumber"
+          id="newMemberNumber"
           required="true"
         />
         <button type="submit">Confirm and send</button>
       </form>
     `,
-    toLoggedInContent(safe('Link a member number to an e-mail address'))
+    toLoggedInContent(safe('Mark a member as rejoining makespace'))
   );
 
 const constructForm: Form<ViewModel>['constructForm'] = () => () => E.right({});
 
-export const markMemberRejoinedForm: Form<ViewModel> = {
+export const markMemberRejoinedWithNewNumberForm: Form<ViewModel> = {
   renderForm,
   constructForm,
 };

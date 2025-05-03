@@ -130,8 +130,11 @@ export const initTestFramework = async (
         linkNumberToEmail: frameworkify(
           commands.memberNumbers.linkNumberToEmail
         ),
-        markMemberRejoined: frameworkify(
-          commands.memberNumbers.markMemberRejoined
+        markMemberRejoinedWithNewNumber: frameworkify(
+          commands.memberNumbers.markMemberRejoinedWithNewNumber
+        ),
+        markMemberRejoinedWithExistingNumber: frameworkify(
+          commands.memberNumbers.markMemberRejoinedWithExistingNumber
         ),
       },
       superUser: {

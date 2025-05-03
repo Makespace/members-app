@@ -176,9 +176,16 @@ const RecurlySubscriptionUpdated = defineEvent('RecurlySubscriptionUpdated', {
 });
 
 const MemberRejoinedWithNewNumber = defineEvent('MemberRejoinedWithNewNumber', {
-  oldMembershipNumber: t.number,
-  newMembershipNumber: t.number,
+  oldMemberNumber: t.number,
+  newMemberNumber: t.number,
 });
+
+const MemberRejoinedWithExistingNumber = defineEvent(
+  'MemberRejoinedWithExistingNumber',
+  {
+    memberNumber: t.number,
+  }
+);
 
 export const events = [
   AreaCreated,
@@ -204,6 +211,7 @@ export const events = [
   TroubleTicketResponseSubmitted,
   RecurlySubscriptionUpdated,
   MemberRejoinedWithNewNumber,
+  MemberRejoinedWithExistingNumber,
 ];
 
 export const DomainEvent = t.union([
@@ -230,6 +238,7 @@ export const DomainEvent = t.union([
   TroubleTicketResponseSubmitted.codec,
   RecurlySubscriptionUpdated.codec,
   MemberRejoinedWithNewNumber.codec,
+  MemberRejoinedWithExistingNumber.codec,
 ]);
 
 export type DomainEvent = t.TypeOf<typeof DomainEvent>;
