@@ -408,7 +408,8 @@ async function asyncApplyGoogleEvents(
     if (
       O.isNone(equipment.trainingSheetId) ||
       (O.isSome(equipment.lastQuizSync) &&
-        Date.now() - equipment.lastQuizSync.value < googleRefreshIntervalMs)
+        Date.now() - equipment.lastQuizSync.value <
+          googleRefreshIntervalMs + Math.random() * googleRefreshIntervalMs) // Try a random offset to spread out cpu usage.
     ) {
       equipmentLogger.info('No google training sheet refresh required');
       continue;

@@ -37,7 +37,7 @@ const Config = t.strict({
   LOG_LEVEL: withDefaultIfEmpty(LogLevel, 'debug'),
   GOOGLE_RATELIMIT_MS: withDefaultIfEmpty(
     tt.IntFromString,
-    (20 * 60 * 1000) as t.Int
+    (30 * 60 * 1000) as t.Int
   ),
   GOOGLE_SERVICE_ACCOUNT_KEY_JSON: tt.NonEmptyString, // Don't default so we don't accidentally disable.
   LEGACY_TRAINING_COMPLETE_SHEET: t.union([t.undefined, t.string]), // If not provided then don't do legacy import. Will be removed after legacy import working.
