@@ -333,12 +333,12 @@ describe('get-via-shared-read-model', () => {
       // 'Some actions prior to linking the accounts' means things like marking the member as trained on 1 piece of equipment on their new account before linking it to their
       // old one. We are specifically checking that the order of operations isn't important as sometimes members don't get registered as having rejoined for awhile.
       // Note that the 'normal' order of operations is that the new and old accounts are linked immediately - i.e. there are no actions prior to linking the accounts.
-      [true, false].forEach(useExistingEmail => {
+      [true, false].forEach(useExistingAccount => {
         describe(`and they have left and then rejoined with a new member number ${withinTrainingLapsePeriod ? 'within' : 'outwith'} the training-lapse period`, () => {
           describe(
-            useExistingEmail
-              ? 'using their existing email'
-              : 'using a new email',
+            useExistingAccount
+              ? 'using their existing account'
+              : 'using a new account',
             () => {
               const newMemberNumber = faker.number.int() as Int;
               const newEmail = faker.internet.email() as EmailAddress;
@@ -370,7 +370,7 @@ describe('get-via-shared-read-model', () => {
                   email: newEmail,
                 });
 
-              const markMemberRejoined = useExistingEmail
+              const markMemberRejoined = useExistingAccount
                 ? () =>
                     // In this case we are marking a member as having rejoined without creating them a new account.
                     framework.commands.memberNumbers.markMemberRejoinedWithExistingNumber(
@@ -416,21 +416,23 @@ describe('get-via-shared-read-model', () => {
               describe('without actions prior to linking accounts', () => {
                 // If there are no actions prior to linking then we can perform the linking immediately.
                 beforeEach(async () => {
-                  if (!useExistingEmail) {
+                  if (!useExistingAccount) {
                     await createNewMemberRecord();
                   }
                   await markMemberRejoined();
                 });
 
-                it('Searching for the member by either number shows the same base data', () => {
-                  const old =
-                    framework.sharedReadModel.members.get(memberNumber);
-                  const newData =
-                    framework.sharedReadModel.members.get(newMemberNumber);
-                  expect(getSomeOrFail(old)).toStrictEqual(
-                    getSomeOrFail(newData)
-                  );
-                });
+                if (!useExistingAccount) {
+                  it('Searching for the member by either number shows the same base data', () => {
+                    const old =
+                      framework.sharedReadModel.members.get(memberNumber);
+                    const newData =
+                      framework.sharedReadModel.members.get(newMemberNumber);
+                    expect(getSomeOrFail(old)).toStrictEqual(
+                      getSomeOrFail(newData)
+                    );
+                  });
+                }
 
                 it('The list of all members only shows the member once', () => {
                   expect(
@@ -574,19 +576,13 @@ describe('get-via-shared-read-model', () => {
                     beforeEach(() => quizPass(memberNumber, memberEmail));
                     it.todo('is shown as awaiting training');
                   });
-                  if (useExistingEmail) {
-                    // If using an existing email then its just the member number that might change on the quiz results.
-                    describe('and the user completes a quiz on their new number + existing email', () => {
-                      beforeEach(() => quizPass(newMemberNumber, memberEmail));
+                  if (useExistingAccount) {
+                    describe('and the user completes a quiz on their old number + existing email', () => {
+                      beforeEach(() => quizPass(memberNumber, memberEmail));
                       it.todo('is shown as awaiting training');
-                      describe('and the user completes a quiz on their old number + existing email', () => {
-                        // Handle duplicate quiz results across the new + old numbers.
-                        beforeEach(() => quizPass(memberNumber, memberEmail));
-                        it.todo('is shown as awaiting training only once');
-                      });
                     });
                   } else {
-                    // By adding another email into the mix there are more possibilities.
+                    // By adding another account into the mix there are more possibilities.
                     describe('and the user completes a quiz on their old number + new email', () => {
                       beforeEach(() => quizPass(memberNumber, newEmail));
                       it.todo('is shown as awaiting training');
