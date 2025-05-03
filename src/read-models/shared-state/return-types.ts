@@ -78,6 +78,7 @@ export type OwnerOf = {
 };
 
 export type MemberCoreInfo = {
+  memberNumber: number;
   memberNumbers: number[];
   emailAddress: EmailAddress;
   prevEmails: ReadonlyArray<EmailAddress>;
