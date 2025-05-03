@@ -9,7 +9,7 @@ const renderForm = () =>
   pipe(
     html`
       <h1>Mark member rejoined with new number</h1>
-      <form action="/members/rejoined" method="post">
+      <form action="/members/rejoined-with-new" method="post">
         <label for="oldMemberNumber"
           >What was the users old membership number?</label
         >

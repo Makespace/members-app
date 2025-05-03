@@ -27,4 +27,5 @@ export const render = () => html`
 `;
 
 // Endpoint link deactivated while testing but still accessible directly.
-// <li><a href="/members/rejoined">Link a user with their old membership</a></li>
+// <li><a href="/members/rejoined-with-new">Link a user with their old membership</a></li>
+// <li><a href="/members/rejoined-with-existing">Mark a user as rejoined</a></li>
