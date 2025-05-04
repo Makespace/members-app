@@ -6,21 +6,24 @@ export class MemberLinking {
   // required for almost every operation.
   // I previously tried sqllite for this and it was messy.
 
+  // This stores every member number. If the account has no grouping it still
+  // appears here to allow easy enumeration of all member numbers without duplicates.
   private grouping: Set<MemberNumber>[];
 
   constructor() {
     this.grouping = [];
   }
 
-  add(a: MemberNumber, b: MemberNumber) {
+  link(numbers: MemberNumber[]) {
     for (const group of this.grouping) {
-      if (group.has(a) || group.has(b)) {
-        group.add(a);
-        group.add(b);
+      for (const memberNumber of numbers) {
+        if (group.has(memberNumber)) {
+          numbers.forEach(group.add);
+        }
         return;
       }
     }
-    this.grouping.push(new Set([a, b]));
+    this.grouping.push(new Set(numbers));
   }
 
   all(): Readonly<Set<MemberNumber>[]> {

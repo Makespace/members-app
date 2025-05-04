@@ -66,9 +66,8 @@ export const initSharedReadModel = (
   const _underlyingReadModelDb = new Database();
   const readModelDb = drizzle(_underlyingReadModelDb);
   createTables.forEach(statement => readModelDb.run(statement));
-  const updateState_ = updateState(readModelDb);
-
   const linking = new MemberLinking();
+  const updateState_ = updateState(readModelDb, linking);
 
   return {
     db: readModelDb,

@@ -5,7 +5,6 @@ import {gravatarHashFromEmail} from '../members/avatar';
 import {
   areasTable,
   equipmentTable,
-  memberLinkTable,
   membersTable,
   ownersTable,
   trainedMemberstable,
@@ -17,11 +16,14 @@ import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, eq, inArray} from 'drizzle-orm';
 import {isOwnerOfAreaContainingEquipment} from './area/helpers';
 import {pipe} from 'fp-ts/lib/function';
+import {MemberLinking} from './member-linking';
 
 export const updateState =
-  (db: BetterSQLite3Database) => (event: DomainEvent) => {
+  (db: BetterSQLite3Database, linking: MemberLinking) =>
+  (event: DomainEvent) => {
     switch (event.type) {
       case 'MemberNumberLinkedToEmail':
+        linking.link([event.memberNumber]);
         db.insert(membersTable)
           .values({
             memberNumber: event.memberNumber,
@@ -299,15 +301,7 @@ export const updateState =
         break;
       }
       case 'MemberRejoinedWithNewNumber': {
-        db.insert(memberLinkTable)
-          .values({
-            oldMemberNumber: event.oldMemberNumber,
-            newMemberNumber: event.newMemberNumber,
-            accountsLinkedAt: event.recordedAt,
-            markedLinkedByMemberNumber:
-              event.actor.tag === 'user' ? event.actor.user.memberNumber : null,
-          })
-          .run();
+        linking.link([event.oldMemberNumber, event.newMemberNumber]);
         break;
       }
       default:

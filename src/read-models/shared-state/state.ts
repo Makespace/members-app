@@ -33,24 +33,6 @@ const createMembersTable = sql`
     status TEXT
   );`;
 
-export const memberLinkTable = sqliteTable('memberLinkTable', {
-  oldMemberNumber: integer('oldMemberNumber').notNull(),
-  newMemberNumber: integer('newMemberNumber').notNull(),
-  accountsLinkedAt: integer('accountsLinkedAt', {
-    mode: 'timestamp_ms',
-  }).notNull(),
-  markedLinkedByMemberNumber: integer('markedLinkedByMemberNumber'),
-});
-
-const createMemberLinkTable = sql`
-  CREATE TABLE IF NOT EXISTS memberLinkTable (
-    oldMemberNumber INTEGER NOT NULL,
-    newMemberNumber INTEGER NOT NULL,
-    accountsLinkedAt INTEGER NOT NULL,
-    markedLinkedByMemberNumber INTEGER
-  );
-`;
-
 export const equipmentTable = sqliteTable('equipment', {
   id: text('id').notNull().primaryKey(),
   name: text('name').notNull(),
@@ -209,7 +191,6 @@ const createTroubleTicketResponsesTable = sql`
 
 export const createTables = [
   createMembersTable,
-  createMemberLinkTable,
   createEquipmentTable,
   createTrainersTable,
   createTrainedMembersTable,
