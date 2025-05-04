@@ -40,30 +40,22 @@ const expandTrainers =
         .from(trainersTable)
         .where(eq(trainersTable.equipmentId, equipment.id))
         .all(),
-      RA.map(trainer => {
-        const member = getMergedMemberSet(db)(
-          linking.map(trainer.memberNumber)
-        );
-        if (O.isNone(member)) {
-          return O.none;
-        }
-        return O.some({
-          member: member.value,
-          trainerSince: trainer.trainerSince,
-          markedTrainerByActor: trainer.markedTrainerByActor,
-        });
-      }),
-      RA.filter(O.isSome),
-      RA.map(t => t.value),
+      RA.filterMap(trainer =>
+        pipe(
+          linking.map(trainer.memberNumber),
+          getMergedMemberSet(db),
+          O.map(member => ({
+            ...member,
+            ...trainer,
+            markedTrainerByActor: O.fromEither(
+              Actor.decode(trainer.markedTrainerByActor)
+            ),
+          }))
+        )
+      ),
       trainers => ({
+        trainers,
         ...equipment,
-        trainers: trainers.map(trainer => ({
-          ...trainer.member,
-          markedTrainerByActor: O.fromEither(
-            Actor.decode(trainer.markedTrainerByActor)
-          ),
-          trainerSince: trainer.trainerSince,
-        })),
       })
     );
 
@@ -74,7 +66,9 @@ const expandTrainedMembers =
   ): T & {trainedMembers: ReadonlyArray<TrainedMember>} =>
     pipe(
       db
-        .select()
+        .select({
+          memberNumber: trainedMemberstable.memberNumber,
+        })
         .from(trainedMemberstable)
         .where(eq(trainedMemberstable.equipmentId, equipment.id))
         .orderBy(trainedMemberstable.trainedAt)
