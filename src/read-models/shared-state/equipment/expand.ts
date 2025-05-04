@@ -31,12 +31,8 @@ const expandTrainers =
   ): T & {trainers: ReadonlyArray<TrainerInfo>} =>
     pipe(
       db
-        .select()
-        .from(membersTable)
-        .innerJoin(
-          trainersTable,
-          eq(membersTable.memberNumber, trainersTable.memberNumber)
-        )
+        .select({memberNumber: trainersTable.memberNumber})
+        .from(trainersTable)
         .where(eq(trainersTable.equipmentId, equipment.id))
         .all(),
       RA.map(member => ({
