@@ -40,7 +40,7 @@ export const getMergedMember =
 
 export const getMergedMemberSet =
   (db: BetterSQLite3Database) =>
-  (memberNumbers: Set<number>): O.Option<MemberCoreInfo> =>
+  (memberNumbers: ReadonlySet<number>): O.Option<MemberCoreInfo> =>
     getMergedMember(db)(Array.from(memberNumbers.values()));
 
 export const getMemberCore =

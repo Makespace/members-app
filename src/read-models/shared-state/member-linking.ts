@@ -14,7 +14,7 @@ export class MemberLinking {
     this.grouping = [];
   }
 
-  link(numbers: MemberNumber[]) {
+  link(numbers: readonly MemberNumber[]) {
     for (const group of this.grouping) {
       for (const memberNumber of numbers) {
         if (group.has(memberNumber)) {
@@ -39,7 +39,7 @@ export class MemberLinking {
     return new Set([a]);
   }
 
-  mapAll(all: MemberNumber[]): ReadonlySet<MemberNumber>[] {
-    return all.map(this.map);
+  mapAll(all: readonly MemberNumber[]): ReadonlySet<MemberNumber>[] {
+    return Array.from(new Set(all.map(this.map)));
   }
 }

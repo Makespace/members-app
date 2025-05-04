@@ -22,31 +22,48 @@ import {UUID} from 'io-ts-types';
 import {accumByMap} from '../../../util';
 import {Actor} from '../../../types';
 import {getAreaMinimal} from '../area/get';
-import {getMemberCore} from '../member/get';
+import {getMemberCore, getMergedMemberSet} from '../member/get';
+import {MemberLinking} from '../member-linking';
 
 const expandTrainers =
-  (db: BetterSQLite3Database) =>
+  (db: BetterSQLite3Database, linking: MemberLinking) =>
   <T extends MinimalEquipment>(
     equipment: T
   ): T & {trainers: ReadonlyArray<TrainerInfo>} =>
     pipe(
       db
-        .select({memberNumber: trainersTable.memberNumber})
+        .select({
+          memberNumber: trainersTable.memberNumber,
+          trainerSince: trainersTable.since,
+          markedTrainerByActor: trainersTable.markedTrainerByActor,
+        })
         .from(trainersTable)
         .where(eq(trainersTable.equipmentId, equipment.id))
         .all(),
-      RA.map(member => ({
-        ...member.members,
-        agreementSigned: O.fromNullable(member.members.agreementSigned),
-        superUserSince: O.fromNullable(member.members.superUserSince),
-        markedTrainerByActor: O.fromEither(
-          Actor.decode(member.trainers.markedTrainerByActor)
-        ),
-        trainerSince: member.trainers.since,
-      })),
+      RA.map(trainer => {
+        const member = getMergedMemberSet(db)(
+          linking.map(trainer.memberNumber)
+        );
+        if (O.isNone(member)) {
+          return O.none;
+        }
+        return O.some({
+          member: member.value,
+          trainerSince: trainer.trainerSince,
+          markedTrainerByActor: trainer.markedTrainerByActor,
+        });
+      }),
+      RA.filter(O.isSome),
+      RA.map(t => t.value),
       trainers => ({
         ...equipment,
-        trainers,
+        trainers: trainers.map(trainer => ({
+          ...trainer.member,
+          markedTrainerByActor: O.fromEither(
+            Actor.decode(trainer.markedTrainerByActor)
+          ),
+          trainerSince: trainer.trainerSince,
+        })),
       })
     );
 
@@ -58,11 +75,7 @@ const expandTrainedMembers =
     pipe(
       db
         .select()
-        .from(membersTable)
-        .innerJoin(
-          trainedMemberstable,
-          eq(membersTable.memberNumber, trainedMemberstable.memberNumber)
-        )
+        .from(trainedMemberstable)
         .where(eq(trainedMemberstable.equipmentId, equipment.id))
         .orderBy(trainedMemberstable.trainedAt)
         .all(),
