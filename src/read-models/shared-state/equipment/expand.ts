@@ -19,10 +19,9 @@ import {
   TrainerInfo,
 } from '../return-types';
 import {UUID} from 'io-ts-types';
-import {accumByMap} from '../../../util';
-import {Actor} from '../../../types';
+import {Actor, EmailAddress} from '../../../types';
 import {getAreaMinimal} from '../area/get';
-import {getMemberCore, getMergedMemberSet} from '../member/get';
+import {getMergedMemberSet} from '../member/get';
 import {MemberLinking} from '../member-linking';
 
 const expandTrainers =
@@ -60,44 +59,46 @@ const expandTrainers =
     );
 
 const expandTrainedMembers =
-  (db: BetterSQLite3Database) =>
+  (db: BetterSQLite3Database, linking: MemberLinking) =>
   <T extends MinimalEquipment>(
     equipment: T
   ): T & {trainedMembers: ReadonlyArray<TrainedMember>} =>
     pipe(
       db
-        .select({
-          memberNumber: trainedMemberstable.memberNumber,
-        })
+        .select()
         .from(trainedMemberstable)
         .where(eq(trainedMemberstable.equipmentId, equipment.id))
         .orderBy(trainedMemberstable.trainedAt)
         .all(),
-      accumByMap(
-        row => row.members.memberNumber,
-        rows => rows[rows.length - 1]
-      ),
-      RA.map(result => {
+      RA.filterMap(trainedMember => {
         const trainedByMemberNumber = O.fromNullable(
-          result.trainedMembers.trainedByMemberNumber
+          trainedMember.trainedByMemberNumber
         );
-        return {
-          ...result.members,
-          markedTrainedByActor: O.fromEither(
-            Actor.decode(result.trainedMembers.markTrainedByActor)
-          ),
-          trainedSince: result.trainedMembers.trainedAt,
-          agreementSigned: O.fromNullable(result.members.agreementSigned),
-          superUserSince: O.fromNullable(result.members.superUserSince),
-          trainedByMemberNumber,
-          trainedByEmail: pipe(
+        return pipe(
+          linking.map(trainedMember.memberNumber),
+          getMergedMemberSet(db),
+          O.map(member => ({
+            ...member,
+            ...trainedMember,
+            trainedSince: trainedMember.trainedAt,
+            markedTrainedByActor: O.fromEither(
+              Actor.decode(trainedMember.markTrainedByActor)
+            ),
             trainedByMemberNumber,
-            O.map(getMemberCore(db)),
-            O.flatten,
-            O.map(trainedByDetails => trainedByDetails.emailAddress)
-          ),
-          legacyImport: result.trainedMembers.legacyImport,
-        };
+            trainedByEmail: pipe(
+              trainedByMemberNumber,
+              O.map(trainedByMemberNumber =>
+                pipe(
+                  linking.map(trainedByMemberNumber),
+                  getMergedMemberSet(db),
+                  O.map(m => m.emailAddress)
+                )
+              ),
+              O.flatten
+            ),
+            legacyImport: trainedMember.legacyImport,
+          }))
+        );
       }),
       trainedMembers => ({
         ...equipment,
