@@ -1,15 +1,17 @@
 import {pipe} from 'fp-ts/lib/function';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {eq, or, inArray, desc} from 'drizzle-orm';
+import {inArray, desc} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as RAE from 'fp-ts/ReadonlyNonEmptyArray';
 import {MemberCoreInfo} from '../return-types';
-import {memberLinkTable, membersTable} from '../state';
+import {membersTable} from '../state';
 import {MemberCoreInfoPreMerge, mergeMemberCore} from './merge';
-import {NonEmptyArray} from 'fp-ts/lib/NonEmptyArray';
-import {groupMembershipNumbers} from './group-membership-numbers';
-import {ReadonlyNonEmptyArray} from 'fp-ts/ReadonlyNonEmptyArray';
+import {
+  getMemberNumberGrouping,
+  getMemberNumbers,
+} from './group-membership-numbers';
+import {nonEmptyMapFilter} from '../../../util';
 
 const transformRow = <
   R extends {
@@ -24,41 +26,14 @@ const transformRow = <
   superUserSince: O.fromNullable(row.superUserSince),
 });
 
-const getMemberNumbers =
+export const getMergedMember =
   (db: BetterSQLite3Database) =>
-  (memberNumber: number): NonEmptyArray<number> =>
+  (memberNumbers: number[]): O.Option<MemberCoreInfo> =>
     pipe(
-      db
-        .select({
-          oldMemberNumber: memberLinkTable.oldMemberNumber,
-          newMemberNumber: memberLinkTable.newMemberNumber,
-        })
-        .from(memberLinkTable)
-        .where(
-          or(
-            eq(memberLinkTable.oldMemberNumber, memberNumber),
-            eq(memberLinkTable.newMemberNumber, memberNumber)
-          )
-        )
-        .all(),
-      rows =>
-        Array.from(
-          new Set([
-            ...rows.flatMap(row => [row.oldMemberNumber, row.newMemberNumber]),
-            memberNumber,
-          ])
-        ) as NonEmptyArray<number>
-    );
-
-export const getMemberCore =
-  (db: BetterSQLite3Database) =>
-  (memberNumber: number): O.Option<MemberCoreInfo> => {
-    const memberDataToGet = getMemberNumbers(db)(memberNumber);
-    return pipe(
       db
         .select()
         .from(membersTable)
-        .where(inArray(membersTable.memberNumber, memberDataToGet))
+        .where(inArray(membersTable.memberNumber, memberNumbers))
         .orderBy(desc(membersTable.memberNumber))
         .all(),
       RA.match(
@@ -66,25 +41,11 @@ export const getMemberCore =
         rows => O.some(mergeMemberCore(RAE.map(transformRow)(rows)))
       )
     );
-  };
 
-const getMemberNumberGrouping = (
-  db: BetterSQLite3Database
-): ReadonlyArray<ReadonlyNonEmptyArray<number>> =>
-  groupMembershipNumbers(
-    db
-      .select({
-        a: memberLinkTable.oldMemberNumber,
-        b: memberLinkTable.newMemberNumber,
-      })
-      .from(memberLinkTable)
-      .all()
-  );
-
-const nonEmptyMapFilter = <T, R>(
-  i: ReadonlyNonEmptyArray<T>,
-  fn: (t: T) => R
-): ReadonlyNonEmptyArray<R> => i.map(fn).filter(e => e) as NonEmptyArray<R>;
+export const getMemberCore =
+  (db: BetterSQLite3Database) =>
+  (memberNumber: number): O.Option<MemberCoreInfo> =>
+    getMergedMember(db)(getMemberNumbers(db)(memberNumber));
 
 export const getAllMemberCore = (
   db: BetterSQLite3Database
