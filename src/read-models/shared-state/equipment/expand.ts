@@ -19,7 +19,7 @@ import {
   TrainerInfo,
 } from '../return-types';
 import {UUID} from 'io-ts-types';
-import {Actor, EmailAddress} from '../../../types';
+import {Actor} from '../../../types';
 import {getAreaMinimal} from '../area/get';
 import {getMergedMemberSet} from '../member/get';
 import {MemberLinking} from '../member-linking';
@@ -165,8 +165,6 @@ const expandMembersAwaitingTraining =
       RA.map(q => ({
         ...q.members,
         quizId: q.trainingQuizResults.quizId as UUID,
-        agreementSigned: O.fromNullable(q.members.agreementSigned),
-        superUserSince: O.fromNullable(q.members.superUserSince),
         waitingSince: q.trainingQuizResults.timestamp,
       })),
       membersAwaitingTraining => ({
@@ -277,12 +275,12 @@ const expandLastQuizResult =
     );
 
 export const expandAll =
-  (db: BetterSQLite3Database) =>
+  (db: BetterSQLite3Database, linking: MemberLinking) =>
   <T extends MinimalEquipment>(equipment: T) => {
     return pipe(
       equipment,
-      expandTrainers(db),
-      expandTrainedMembers(db),
+      expandTrainers(db, linking),
+      expandTrainedMembers(db, linking),
       expandMembersAwaitingTraining(db),
       expandOrphanedTrainingQuizes(db),
       expandFailedQuizAttempts(db),

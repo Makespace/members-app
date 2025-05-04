@@ -13,7 +13,7 @@ export type OrphanedPassedQuiz = {
   emailProvided: O.Option<string>;
 };
 
-export type FailedQuizAttempt = Omit<MemberCoreInfo, 'memberNumbers'> & {
+export type FailedQuizAttempt = Pick<MemberCoreInfo, 'memberNumber'> & {
   quizId: UUID;
   score: number;
   maxScore: number;
@@ -21,7 +21,7 @@ export type FailedQuizAttempt = Omit<MemberCoreInfo, 'memberNumbers'> & {
   timestamp: Date;
 };
 
-export type TrainedMember = MemberCoreInfo & {
+export type TrainedMember = Pick<MemberCoreInfo, 'name' | 'memberNumber'> & {
   markedTrainedByActor: O.Option<Actor>;
   trainedByMemberNumber: O.Option<number>;
   trainedByEmail: O.Option<EmailAddress>;
@@ -33,7 +33,7 @@ export type EpochTimestampMilliseconds = number & {
   readonly EpochTimestampMilliseconds: unique symbol;
 };
 
-export type TrainerInfo = MemberCoreInfo & {
+export type TrainerInfo = Pick<MemberCoreInfo, 'name' | 'memberNumber'> & {
   markedTrainerByActor: O.Option<Actor>;
   trainerSince: Date;
 };
@@ -91,7 +91,10 @@ export type MemberCoreInfo = {
   status: string;
 };
 
-export type MemberAwaitingTraining = MemberCoreInfo & {
+export type MemberAwaitingTraining = Pick<
+  MemberCoreInfo,
+  'memberNumber' | 'name'
+> & {
   quizId: UUID;
   waitingSince: Date;
 };
@@ -107,7 +110,7 @@ export type MinimalArea = {
   name: string;
 };
 
-export type Owner = MemberCoreInfo & {
+export type Owner = Pick<MemberCoreInfo, 'memberNumber'> & {
   ownershipRecordedAt: Date;
   markedOwnerBy: O.Option<Actor>;
 };
