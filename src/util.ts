@@ -4,6 +4,7 @@ import * as tt from 'io-ts-types';
 import * as E from 'fp-ts/Either';
 import {pipe} from 'fp-ts/lib/function';
 import {NonEmptyArray} from 'fp-ts/lib/NonEmptyArray';
+import {ReadonlyNonEmptyArray} from 'fp-ts/lib/ReadonlyNonEmptyArray';
 
 export const logPassThru =
   (logger: Logger, msg: string) =>
@@ -76,3 +77,8 @@ export const timeAsync =
     callback(Number(process.hrtime.bigint() - start));
     return result;
   };
+
+export const nonEmptyMapFilter = <T, R>(
+  i: ReadonlyNonEmptyArray<T>,
+  fn: (t: T) => R
+): ReadonlyNonEmptyArray<R> => i.map(fn).filter(e => e) as NonEmptyArray<R>;

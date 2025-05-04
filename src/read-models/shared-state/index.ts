@@ -23,10 +23,12 @@ import {
 import {Dependencies} from '../../dependencies';
 import {dumpCurrentState, SharedDatabaseDump} from './debug/dump';
 import {getAllTroubleTicketFull} from './troubletickets/get';
+import {MemberLinking} from './member-linking';
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
   _underlyingReadModelDb: Database.Database; // This is exposed only to allow debug serialisation of the db.
+  linking: MemberLinking;
   asyncRefresh: () => T.Task<void>;
   asyncApplyExternalEventSources: () => T.Task<void>;
   updateState: ReturnType<typeof updateState>;
@@ -66,8 +68,11 @@ export const initSharedReadModel = (
   createTables.forEach(statement => readModelDb.run(statement));
   const updateState_ = updateState(readModelDb);
 
+  const linking = new MemberLinking();
+
   return {
     db: readModelDb,
+    linking,
     _underlyingReadModelDb,
     asyncRefresh: asyncRefresh(eventStoreClient, updateState_),
     updateState: updateState_,
