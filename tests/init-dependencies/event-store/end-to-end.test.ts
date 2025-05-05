@@ -39,7 +39,7 @@ describe('event-store end-to-end', () => {
 
     beforeEach(async () => {
       dbClient = libsqlClient.createClient({
-        url: `file:/tmp/${randomUUID()}.db`,
+        url: ':memory:',
       });
       await ensureEventTableExists(dbClient)();
       getTestEvents = () =>
