@@ -18,9 +18,9 @@ export class MemberLinking {
     for (const group of this.grouping) {
       for (const memberNumber of numbers) {
         if (group.has(memberNumber)) {
-          numbers.forEach(group.add);
+          numbers.forEach(v => group.add(v));
+          return;
         }
-        return;
       }
     }
     this.grouping.push(new Set(numbers));
