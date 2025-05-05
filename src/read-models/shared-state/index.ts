@@ -87,17 +87,17 @@ export const initSharedReadModel = (
       recurlyToken
     ),
     members: {
-      get: getMemberFull(readModelDb),
-      getAll: getAllMemberFull(readModelDb),
-      getAsActor: getMemberAsActorFull(readModelDb),
+      get: getMemberFull(readModelDb, linking),
+      getAll: getAllMemberFull(readModelDb, linking),
+      getAsActor: getMemberAsActorFull(readModelDb, linking),
     },
     equipment: {
-      get: getEquipmentFull(readModelDb),
-      getAll: getAllEquipmentFull(readModelDb),
+      get: getEquipmentFull(readModelDb, linking),
+      getAll: getAllEquipmentFull(readModelDb, linking),
     },
     area: {
-      get: getAreaFull(readModelDb),
-      getAll: getAllAreaFull(readModelDb),
+      get: getAreaFull(readModelDb, linking),
+      getAll: getAllAreaFull(readModelDb, linking),
     },
     debug: {
       dump: dumpCurrentState(readModelDb),

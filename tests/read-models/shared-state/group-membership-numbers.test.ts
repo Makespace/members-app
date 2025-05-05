@@ -1,37 +1,20 @@
 import {ReadonlyNonEmptyArray} from 'fp-ts/lib/ReadonlyNonEmptyArray';
-import {groupMembershipNumbers} from '../../../src/read-models/shared-state/member/group-membership-numbers';
+import {MemberLinking} from '../../../src/read-models/shared-state/member-linking';
 
 describe('Group membership numbers', () => {
   const tests: {
-    input: {
-      a: number;
-      b: number;
-    }[];
+    input: number[][];
     output: ReadonlyArray<ReadonlyNonEmptyArray<number>>;
   }[] = [
     {
-      input: [
-        {
-          a: 1,
-          b: 2,
-        },
-      ],
+      input: [[1, 2]],
       output: [[1, 2]],
     },
     {
       input: [
-        {
-          a: 1,
-          b: 2,
-        },
-        {
-          a: 2,
-          b: 3,
-        },
-        {
-          a: 4,
-          b: 5,
-        },
+        [1, 2],
+        [2, 3],
+        [4, 5],
       ],
       output: [
         [1, 2, 3],
@@ -42,7 +25,11 @@ describe('Group membership numbers', () => {
 
   tests.forEach((data, index) => {
     it(index.toString(), () => {
-      expect(groupMembershipNumbers(data.input)).toStrictEqual(data.output);
+      const linking = new MemberLinking();
+      for (const i of data.input) {
+        linking.link(i);
+      }
+      expect(linking.all()).toStrictEqual(data.output);
     });
   });
 });

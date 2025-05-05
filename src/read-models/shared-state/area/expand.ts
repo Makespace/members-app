@@ -8,6 +8,7 @@ import {membersTable, ownersTable} from '../state';
 import * as O from 'fp-ts/Option';
 import {Actor} from '../../../types';
 import {expandAll as expandAllEquipment} from '../equipment/expand';
+import {MemberLinking} from '../member-linking';
 
 const expandOwners =
   (db: BetterSQLite3Database) =>
@@ -38,12 +39,12 @@ const expandOwners =
     );
 
 const expandEquipment =
-  (db: BetterSQLite3Database) =>
+  (db: BetterSQLite3Database, linking: MemberLinking) =>
   <T extends MinimalArea>(area: T): T & {equipment: ReadonlyArray<Equipment>} =>
     pipe(
       area.id,
       getEquipmentForAreaMinimal(db),
-      RA.map(expandAllEquipment(db)),
+      RA.map(expandAllEquipment(db, linking)),
       equipment => ({
         ...area,
         equipment,
@@ -51,7 +52,7 @@ const expandEquipment =
     );
 
 export const expandAll =
-  (db: BetterSQLite3Database) =>
+  (db: BetterSQLite3Database, linking: MemberLinking) =>
   <T extends MinimalArea>(area: T) => {
-    return pipe(area, expandEquipment(db), expandOwners(db));
+    return pipe(area, expandEquipment(db, linking), expandOwners(db));
   };
