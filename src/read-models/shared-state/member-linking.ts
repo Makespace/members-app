@@ -15,15 +15,18 @@ export class MemberLinking {
   }
 
   link(numbers: readonly MemberNumber[]) {
-    for (const group of this.grouping) {
+    const newGrouping = new Set(numbers);
+    this.grouping = this.grouping.filter(group => {
       for (const memberNumber of numbers) {
         if (group.has(memberNumber)) {
-          numbers.forEach(v => group.add(v));
-          return;
+          numbers.forEach(n => newGrouping.add(n));
+          group.forEach(n => newGrouping.add(n));
+          return false;
         }
       }
-    }
-    this.grouping.push(new Set(numbers));
+      return true;
+    });
+    this.grouping.push(newGrouping);
   }
 
   all(): Readonly<Set<MemberNumber>[]> {
