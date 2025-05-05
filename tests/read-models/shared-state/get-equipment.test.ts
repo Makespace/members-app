@@ -388,7 +388,10 @@ describe('get', () => {
         describe(`Duplicate events: ${name}`, () => {
           beforeEach(() => {
             // The legacy import inserts events directly
-            const update = updateState(framework.sharedReadModel.db);
+            const update = updateState(
+              framework.sharedReadModel.db,
+              framework.sharedReadModel.linking
+            );
             const memberTrainedEvents: EventOfType<'MemberTrainedOnEquipment'>[] =
               [
                 {
@@ -436,9 +439,10 @@ describe('get', () => {
       await framework.commands.area.create(createArea);
       await framework.commands.equipment.add(addEquipment);
       await framework.commands.equipment.trainingSheet(addTrainingSheet);
-      updateState(framework.sharedReadModel.db)(
-        constructEvent('EquipmentTrainingQuizResult')(passedQuizResult)
-      );
+      updateState(
+        framework.sharedReadModel.db,
+        framework.sharedReadModel.linking
+      )(constructEvent('EquipmentTrainingQuizResult')(passedQuizResult));
     });
 
     describe('User is already trained', () => {
@@ -484,7 +488,10 @@ describe('get', () => {
     [true, false].forEach(quizIdDuplicate => {
       describe(`Duplicate of same event, quiz id duplicate ${quizIdDuplicate}`, () => {
         beforeEach(() => {
-          const update = updateState(framework.sharedReadModel.db);
+          const update = updateState(
+            framework.sharedReadModel.db,
+            framework.sharedReadModel.linking
+          );
           for (let i = 0; i < 2; i++) {
             if (quizIdDuplicate) {
               update(
@@ -530,7 +537,10 @@ describe('get', () => {
       await framework.commands.equipment.add(addEquipment);
       await framework.commands.equipment.trainingSheet(addTrainingSheet);
       for (let i = 0; i < 2; i++) {
-        updateState(framework.sharedReadModel.db)(
+        updateState(
+          framework.sharedReadModel.db,
+          framework.sharedReadModel.linking
+        )(
           constructEvent('EquipmentTrainingQuizResult')({
             ...passedQuizResult,
             id: faker.string.uuid() as UUID,
@@ -559,9 +569,10 @@ describe('get', () => {
       );
       await framework.commands.area.create(createArea);
       await framework.commands.equipment.add(addEquipment); // We add the equipment but never register a training sheet.
-      updateState(framework.sharedReadModel.db)(
-        constructEvent('EquipmentTrainingQuizResult')(passedQuizResult)
-      );
+      updateState(
+        framework.sharedReadModel.db,
+        framework.sharedReadModel.linking
+      )(constructEvent('EquipmentTrainingQuizResult')(passedQuizResult));
     });
     it('No users are marked as waiting for training', () => {
       expect(
@@ -582,7 +593,10 @@ describe('get', () => {
         equipmentId: addEquipment.id,
         trainingSheetId: faker.string.uuid(), // A different training sheet id.
       });
-      updateState(framework.sharedReadModel.db)(
+      updateState(
+        framework.sharedReadModel.db,
+        framework.sharedReadModel.linking
+      )(
         // Events have ended up in the db somehow from an unknown (perhaps removed) training sheet.
         constructEvent('EquipmentTrainingQuizResult')(passedQuizResult)
       );
@@ -623,7 +637,10 @@ describe('get', () => {
         memberNumber: member.memberNumber,
         equipmentId: equipment1.id,
       });
-      updateState(framework.sharedReadModel.db)(
+      updateState(
+        framework.sharedReadModel.db,
+        framework.sharedReadModel.linking
+      )(
         constructEvent('EquipmentTrainingQuizResult')({
           ...passedQuizResult,
           id: faker.string.uuid() as UUID,
@@ -637,7 +654,10 @@ describe('get', () => {
 
       await framework.commands.equipment.add(equipment2);
       await framework.commands.equipment.trainingSheet(equipment2Sheet);
-      updateState(framework.sharedReadModel.db)(
+      updateState(
+        framework.sharedReadModel.db,
+        framework.sharedReadModel.linking
+      )(
         constructEvent('EquipmentTrainingQuizResult')({
           ...passedQuizResult,
           id: faker.string.uuid() as UUID,

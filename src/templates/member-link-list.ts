@@ -8,7 +8,6 @@ type Member = {
   memberNumber: number;
   emailAddress: EmailAddress;
   name: O.Option<string>;
-  agreementSigned: O.Option<Date>;
 };
 
 const renderMember = (member: Member) =>
