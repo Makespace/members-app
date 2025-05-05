@@ -1,14 +1,13 @@
-import {ReadonlyNonEmptyArray} from 'fp-ts/lib/ReadonlyNonEmptyArray';
 import {MemberLinking} from '../../../src/read-models/shared-state/member-linking';
 
 describe('Group membership numbers', () => {
   const tests: {
     input: number[][];
-    output: ReadonlyArray<ReadonlyNonEmptyArray<number>>;
+    output: ReadonlyArray<ReadonlySet<number>>;
   }[] = [
     {
       input: [[1, 2]],
-      output: [[1, 2]],
+      output: [new Set([1, 2])],
     },
     {
       input: [
@@ -16,10 +15,7 @@ describe('Group membership numbers', () => {
         [2, 3],
         [4, 5],
       ],
-      output: [
-        [1, 2, 3],
-        [4, 5],
-      ],
+      output: [new Set([1, 2, 3]), new Set([4, 5])],
     },
   ];
 
