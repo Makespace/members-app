@@ -1,3 +1,4 @@
+import * as O from 'fp-ts/Option';
 import {Member, MemberCoreInfo} from '../return-types';
 import {ReadonlyNonEmptyArray} from 'fp-ts/lib/ReadonlyNonEmptyArray';
 
@@ -15,6 +16,21 @@ export const mergeMemberCore = (
 ): MemberCoreInfo => {
   const memberNumbers = records.map(e => e.memberNumber);
   const emailAddress = records[0].emailAddress;
+  const isSuperUser = records.map(r => r.isSuperUser).some(b => b);
+  const superUserSince = records
+    .map(r => r.superUserSince)
+    .reduce((prev, cur) => {
+      if (O.isNone(cur)) {
+        return prev;
+      }
+      if (O.isNone(prev)) {
+        return cur;
+      }
+      if (cur.value < prev.value) {
+        return cur;
+      }
+      return prev;
+    }, O.none);
   return {
     memberNumber: Math.max(...memberNumbers),
     memberNumbers,
@@ -25,8 +41,8 @@ export const mergeMemberCore = (
     name: records[0].name,
     formOfAddress: records[0].formOfAddress,
     agreementSigned: records[0].agreementSigned,
-    isSuperUser: records[0].isSuperUser,
-    superUserSince: records[0].superUserSince,
+    isSuperUser,
+    superUserSince,
     gravatarHash: records[0].gravatarHash,
     status: records[0].status,
   };

@@ -194,12 +194,98 @@ describe('get-via-shared-read-model', () => {
         });
       });
 
-      describe('and then they rejoin with a new member number', () => {
-        it.todo('they are no longer a superuser');
-        describe('and they have been again declared to be a super user', () => {
-          it.todo('they are a superuser');
-          it.todo('they have a new date since when they have been a superuser');
-        });
+      [true /*false*/].forEach(rejoinWithNewNumber => {
+        describe(
+          rejoinWithNewNumber
+            ? 'and then they rejoin with a new member number'
+            : 'and then they rejoin with their existing number',
+          () => {
+            const newMemberNumber = faker.number.int() as Int;
+            const newEmail = faker.internet.email() as EmailAddress;
+            beforeEach(async () => {
+              if (rejoinWithNewNumber) {
+                await framework.commands.memberNumbers.linkNumberToEmail({
+                  memberNumber: newMemberNumber,
+                  email: newEmail,
+                });
+                await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber(
+                  {
+                    oldMemberNumber: memberNumber,
+                    newMemberNumber,
+                  }
+                );
+              } else {
+                await framework.commands.memberNumbers.markMemberRejoinedWithExistingNumber(
+                  {
+                    memberNumber,
+                  }
+                );
+              }
+            });
+
+            it('they are no longer a superuser on their existing member number', () => {
+              const result = runQuery();
+              expect(result.isSuperUser).toBe(false);
+            });
+            if (rejoinWithNewNumber) {
+              it('they are no longer a superuser on their new member number', () => {
+                const result = runQuery(newMemberNumber);
+                expect(result.isSuperUser).toBe(false);
+              });
+            }
+            (rejoinWithNewNumber ? [/*true,*/ false] : [false]).forEach(
+              declareOnTheirNewNumber =>
+                describe(
+                  declareOnTheirNewNumber
+                    ? 'and they have been again declared to be a super user on their new number'
+                    : 'and they have been again declared to be a super user on their existing number',
+                  () => {
+                    const madeSuperUserAgainAfterRejoinAt = faker.date.future({
+                      refDate: madeSuperUserAgainAt,
+                    });
+                    beforeEach(async () => {
+                      jest.setSystemTime(madeSuperUserAgainAfterRejoinAt);
+                      if (declareOnTheirNewNumber) {
+                        await framework.commands.superUser.declare({
+                          memberNumber: newMemberNumber,
+                        });
+                      } else {
+                        await framework.commands.superUser.declare({
+                          memberNumber,
+                        });
+                      }
+                    });
+                    it('they are a superuser on their existing number', () => {
+                      const result = runQuery();
+                      expect(result.isSuperUser).toBe(true);
+                    });
+                    if (rejoinWithNewNumber) {
+                      it('they are a superuser on their new number', () => {
+                        const result = runQuery(newMemberNumber);
+                        expect(result.isSuperUser).toBe(true);
+                      });
+                    }
+                    it('they have a new date since when they have been a superuser on their existing number', () => {
+                      const result = pipe(
+                        runQuery(),
+                        member => member.superUserSince,
+                        getSomeOrFail
+                      );
+                      expect(result).toEqual(madeSuperUserAgainAfterRejoinAt);
+                    });
+                    it('they have a new date since when they have been a superuser on their new number', () => {
+                      const result = pipe(
+                        runQuery(newMemberNumber),
+                        member => member.superUserSince,
+                        getSomeOrFail
+                      );
+                      expect(result).toEqual(madeSuperUserAgainAfterRejoinAt);
+                    });
+                  }
+                )
+            );
+          }
+        );
       });
     });
 
