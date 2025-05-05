@@ -29,6 +29,8 @@ const process: Command<DeclareSuperUserCommand>['process'] = input =>
           : O.none
     )
   );
+// const process: Command<DeclareSuperUserCommand>['process'] = input =>
+//   O.some(constructEvent('SuperUserDeclared')(input.command));
 
 export const declare: Command<DeclareSuperUserCommand> = {
   process,

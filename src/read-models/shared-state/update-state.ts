@@ -18,6 +18,13 @@ import {isOwnerOfAreaContainingEquipment} from './area/helpers';
 import {pipe} from 'fp-ts/lib/function';
 import {MemberLinking} from './member-linking';
 
+const revokeSuperuser = (db: BetterSQLite3Database, memberNumber: number) =>
+  db
+    .update(membersTable)
+    .set({isSuperUser: false, superUserSince: null})
+    .where(eq(membersTable.memberNumber, memberNumber))
+    .run();
+
 export const updateState =
   (db: BetterSQLite3Database, linking: MemberLinking) =>
   (event: DomainEvent) => {
@@ -78,10 +85,7 @@ export const updateState =
           .run();
         break;
       case 'SuperUserRevoked':
-        db.update(membersTable)
-          .set({isSuperUser: false, superUserSince: null})
-          .where(eq(membersTable.memberNumber, event.memberNumber))
-          .run();
+        revokeSuperuser(db, event.memberNumber);
         break;
       case 'EquipmentAdded':
         db.insert(equipmentTable)
@@ -302,6 +306,12 @@ export const updateState =
       }
       case 'MemberRejoinedWithNewNumber': {
         linking.link([event.oldMemberNumber, event.newMemberNumber]);
+        revokeSuperuser(db, event.oldMemberNumber);
+        revokeSuperuser(db, event.newMemberNumber);
+        break;
+      }
+      case 'MemberRejoinedWithExistingNumber': {
+        revokeSuperuser(db, event.memberNumber);
         break;
       }
       default:
