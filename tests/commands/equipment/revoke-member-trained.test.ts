@@ -25,6 +25,9 @@ describe('revokeMemberTrained', () => {
       revokeMemberTrained
     );
   });
+  afterEach(() => {
+    framework.eventStoreDb.close();
+  });
 
   [tokenActor(), systemActor()].forEach(actor => {
     describe(`${actor.tag} revoke member trained`, () => {

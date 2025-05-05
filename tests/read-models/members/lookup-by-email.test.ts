@@ -13,6 +13,9 @@ describe('lookupByEmail', () => {
   beforeEach(async () => {
     framework = await initTestFramework();
   });
+  afterEach(() => {
+    framework.eventStoreDb.close();
+  });
 
   describe('when no members exist', () => {
     beforeEach(async () => {
@@ -63,6 +66,9 @@ describe('lookupByCaseInsensitiveEmail', () => {
   let framework: TestFramework;
   beforeEach(async () => {
     framework = await initTestFramework();
+  });
+  afterEach(() => {
+    framework.eventStoreDb.close();
   });
 
   describe('when no members exist', () => {

@@ -30,6 +30,10 @@ describe('linkNumberToEmail', () => {
       linkNumberToEmail
     );
   });
+  afterEach(() => {
+    framework.eventStoreDb.close();
+  });
+
   const command = {
     email: faker.internet.email() as EmailAddress,
     memberNumber: faker.number.int(),

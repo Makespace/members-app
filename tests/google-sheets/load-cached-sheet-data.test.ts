@@ -67,6 +67,10 @@ describe('Load cached sheet data', () => {
       registerSheet.map(framework.commands.equipment.trainingSheet)
     );
   });
+  afterEach(() => {
+    framework.eventStoreDb.close();
+  });
+
   describe('Load previously cached data - 2 pieces of equipment', () => {
     const timestamp = new Date(2024, 1, 23, 4, 23, 45);
     const trainingQuizResults: ReadonlyArray<

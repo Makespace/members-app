@@ -8,6 +8,9 @@ describe('getFailedImports', () => {
   beforeEach(async () => {
     framework = await initTestFramework();
   });
+  afterEach(() => {
+    framework.eventStoreDb.close();
+  });
 
   describe('when the email is already in use', () => {
     const previousLinking = {
