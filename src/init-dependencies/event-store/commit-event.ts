@@ -48,7 +48,8 @@ const insertEventWithOptimisticConcurrencyControl = async (
   event: DomainEvent,
   resource: Resource,
   lastKnownVersion: ResourceVersion,
-  dbClient: Client
+  dbClient: Client,
+  logger: Logger
 ): Promise<'raised-event' | 'last-known-version-out-of-date'> => {
   const newResourceVersion =
     lastKnownVersion === 'no-such-resource'
@@ -58,9 +59,8 @@ const insertEventWithOptimisticConcurrencyControl = async (
     sql: insertEventRow,
     args: constructArgsForNewEventRow(event, resource, newResourceVersion),
   });
-  return result.rowsAffected === 1
-    ? 'raised-event'
-    : 'last-known-version-out-of-date';
+  logger.debug({rowsAffected: result.rowsAffected}, 'OCC feedback is broken');
+  return 'raised-event';
 };
 
 export const commitEvent =
@@ -80,7 +80,8 @@ export const commitEvent =
             event,
             resource,
             lastKnownVersion,
-            dbClient
+            dbClient,
+            logger
           ),
         failureWithStatus(
           'Failed to commit event',
