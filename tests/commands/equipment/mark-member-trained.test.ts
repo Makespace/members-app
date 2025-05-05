@@ -25,6 +25,9 @@ describe('markMemberTrained', () => {
       markMemberTrained
     );
   });
+  afterEach(() => {
+    framework.eventStoreDb.close();
+  });
 
   [tokenActor(), systemActor()].forEach(actor => {
     describe(`${actor.tag} mark member trained`, () => {

@@ -111,12 +111,16 @@ describe('Integration asyncApplyExternalEventSources', () => {
       percentage: gsheetData.METAL_LATHE.entries[0].percentage,
       timestamp: new Date(gsheetData.METAL_LATHE.entries[0].timestampEpochMS),
     });
+
+    framework.eventStoreDb.close();
   });
   it('Handle no equipment', async () => {
     const framework = await initTestFramework(1000);
     const results = await runAsyncApplyExternalEventSources(framework);
     checkLastQuizSyncUpdated(results);
     expect(results.equipmentAfter.size).toStrictEqual(0);
+
+    framework.eventStoreDb.close();
   });
   it('Handle equipment with no training sheet', async () => {
     const framework = await initTestFramework(1000);
@@ -129,6 +133,8 @@ describe('Integration asyncApplyExternalEventSources', () => {
     expect(results.equipmentAfter.get(bambu.id)!.lastQuizResult).toStrictEqual(
       O.none
     );
+
+    framework.eventStoreDb.close();
   });
   it('Rate limit equipment pull', async () => {
     const framework = await initTestFramework(1000);
@@ -145,6 +151,8 @@ describe('Integration asyncApplyExternalEventSources', () => {
     expect(results1.equipmentAfter.get(bambu.id)!.lastQuizSync).toStrictEqual(
       results2.equipmentAfter.get(bambu.id)!.lastQuizSync
     );
+
+    framework.eventStoreDb.close();
   });
   describe('Repeat equipment pull no rate limit', () => {
     let framework: TestFramework;
@@ -191,6 +199,9 @@ describe('Integration asyncApplyExternalEventSources', () => {
           )
         ).cached_data
       );
+    });
+    afterEach(() => {
+      framework.eventStoreDb.close();
     });
 
     it('updates the last quiz sync both times indicating a sync both times', () => {

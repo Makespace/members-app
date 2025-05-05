@@ -10,6 +10,9 @@ describe('get-all', () => {
   beforeEach(async () => {
     framework = await initTestFramework();
   });
+  afterEach(() => {
+    framework.eventStoreDb.close();
+  });
 
   describe('when no owners have been added', () => {
     beforeEach(async () => {

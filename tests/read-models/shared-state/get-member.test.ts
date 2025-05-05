@@ -14,6 +14,9 @@ describe('get-via-shared-read-model', () => {
   beforeEach(async () => {
     framework = await initTestFramework();
   });
+  afterEach(() => {
+    framework.eventStoreDb.close();
+  });
 
   const memberNumber = faker.number.int() as Int;
   const memberEmail = 'foo@example.com' as EmailAddress;
