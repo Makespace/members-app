@@ -23,7 +23,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
-      - run: make test
+      - run: make node_modules
+      - run: npx jest
 
   smoketest:
     runs-on: ubuntu-latest
