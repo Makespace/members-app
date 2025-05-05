@@ -7,33 +7,32 @@ primary_region = 'lhr'
 [build]
 
 [deploy]
-  strategy = "bluegreen"
+strategy = "bluegreen"
 
 [env]
-  BACKGROUND_PROCESSING_ENABLED = 'true'
-  SMTP_PORT = '587'
-  PUBLIC_URL = 'https://app.makespace.org'
-  SMTP_HOST = 'in-v3.mailjet.com'
-  SMTP_FROM = 'it-maintainers@makespace.org'
-  LOG_LEVEL = 'debug'
-  RUST_BACKTRACE = 'full'
-  TROUBLE_TICKET_SHEET = '1P36QUdnEyIGlX_pMP-3FjWTFXOILKAYNYNAkl6N4nK4'
+BACKGROUND_PROCESSING_ENABLED = 'true'
+SMTP_PORT = '587'
+PUBLIC_URL = 'https://app.makespace.org'
+SMTP_HOST = 'in-v3.mailjet.com'
+SMTP_FROM = 'it-maintainers@makespace.org'
+LOG_LEVEL = 'debug'
+RUST_BACKTRACE = 'full'
+TROUBLE_TICKET_SHEET = '1P36QUdnEyIGlX_pMP-3FjWTFXOILKAYNYNAkl6N4nK4'
 
 [http_service]
-  internal_port = 8080
-  force_https = true
-  auto_stop_machines = "stop"
-  auto_start_machines = true
-  min_machines_running = 1
-  processes = ['app']
+internal_port = 8080
+force_https = true
+auto_stop_machines = "stop"
+auto_start_machines = true
+min_machines_running = 1
+processes = ['app']
 
 [[http_service.checks]]
-  grace_period = "10m"
-  interval = "30s"
-  method = "GET"
-  timeout = "5s"
-  path = "/ping"
+grace_period = "10m"
+interval = "30s"
+method = "GET"
+timeout = "5s"
+path = "/ping"
 
 [[vm]]
-  size = 'shared-cpu-1x'
-  memory = '512mb'
+size = 'performance-1x'
