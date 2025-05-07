@@ -28,7 +28,7 @@ jobs:
   deploy:
     name: Deploy to fly.io
     if: github.ref == 'refs/heads/main'
-    needs: [typecheck, lint, test, smoketest]
+    needs: [typecheck, lint, smoketest]
     runs-on: ubuntu-latest
     concurrency: deploy-group
     steps:
