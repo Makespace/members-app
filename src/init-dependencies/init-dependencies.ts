@@ -79,6 +79,7 @@ export const initDependencies = (
       pullGoogleSheetDataMetadata: pullGoogleSheetDataMetadata(googleAuth),
     });
   }
+  googleHelpers = O.none;
 
   const _cacheSheetData: Dependencies['cacheSheetData'] =
     cacheSheetData(cacheClient);
