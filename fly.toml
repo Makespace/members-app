@@ -10,7 +10,7 @@ primary_region = 'lhr'
 strategy = "bluegreen"
 
 [env]
-BACKGROUND_PROCESSING_ENABLED = 'true'
+BACKGROUND_PROCESSING_ENABLED = 'false'
 SMTP_PORT = '587'
 PUBLIC_URL = 'https://app.makespace.org'
 SMTP_HOST = 'in-v3.mailjet.com'
