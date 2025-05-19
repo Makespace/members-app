@@ -1,4 +1,4 @@
-import * as Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 import express, {Application} from 'express';
 import {createRouter} from './http';
 import passport from 'passport';
