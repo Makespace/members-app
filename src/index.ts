@@ -96,7 +96,6 @@ const periodicExternalReadModelRefresh = setInterval(() => {
     );
 }, 60_000);
 server.on('close', () => {
-  throw new Error('asd');
   clearInterval(periodicReadModelRefresh);
   clearInterval(periodicExternalReadModelRefresh);
 });
