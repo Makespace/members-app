@@ -49,6 +49,7 @@
     "@godaddy/terminus": "^4.12.1",
     "@googleapis/sheets": "^9.0.0",
     "@libsql/client": "^0.15.4",
+    "@sentry/node": "^9.20.0",
     "@types/html-escaper": "^3.0.2",
     "@types/nodemailer-smtp-transport": "^2.7.5",
     "@types/pubsub-js": "^1.8.3",
