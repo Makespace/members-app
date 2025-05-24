@@ -23,7 +23,7 @@ export type FailedQuizAttempt = Pick<MemberCoreInfo, 'memberNumber'> & {
 
 export type TrainedMember = Pick<
   MemberCoreInfo,
-  'name' | 'memberNumber' | 'emailAddress'
+  'name' | 'memberNumber' | 'emailAddress' | 'memberNumbers'
 > & {
   markedTrainedByActor: O.Option<Actor>;
   trainedByMemberNumber: O.Option<number>;
