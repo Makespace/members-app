@@ -9,7 +9,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {gravatarHashFromEmail} from '../../../src/read-models/members/avatar';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {Int} from 'io-ts';
-import { inspect } from 'node:util';
+import {inspect} from 'node:util';
 
 const expectUserIsTrainedOnEquipmentAt =
   (framework: TestFramework) =>
@@ -32,7 +32,7 @@ const expectedEquipmentHasUserTrained =
         equipmentId,
         framework.sharedReadModel.equipment.get,
         getSomeOrFail,
-        (e) => {
+        e => {
           console.log(inspect(e));
           return e;
         },
@@ -62,10 +62,81 @@ const expectUserNotAwaitingTraining =
         framework.sharedReadModel.equipment.get,
         getSomeOrFail,
         e => e.membersAwaitingTraining,
-        RA.map(w => w.memberNumbers),
-        RA.flatten
+        RA.flatMap(w => w.memberNumbers)
       )
     ).not.toContain<number>(memberNumber);
+
+const expectAreaHasOwner =
+  (framework: TestFramework) => (memberNumber: number, areaId: UUID) =>
+    expect(
+      pipe(
+        areaId,
+        framework.sharedReadModel.area.get,
+        getSomeOrFail,
+        a => a.owners,
+        RA.flatMap(owner => owner.memberNumbers)
+      )
+    ).toContain(memberNumber);
+
+const expectUserIsOwner =
+  (framework: TestFramework) => (memberNumber: number, areaId: UUID) =>
+    expect(
+      pipe(
+        memberNumber,
+        framework.sharedReadModel.members.get,
+        getSomeOrFail,
+        m => m.ownerOf,
+        RA.map(a => a.id)
+      )
+    ).toContain(areaId);
+
+const expectUserIsNotOwner =
+  (framework: TestFramework) => (memberNumber: number, areaId: UUID) =>
+    expect(
+      pipe(
+        memberNumber,
+        framework.sharedReadModel.members.get,
+        getSomeOrFail,
+        m => m.ownerOf,
+        RA.map(a => a.id)
+      )
+    ).not.toContain(areaId);
+
+const expectAreaDoesNotHaveOwner =
+  (framework: TestFramework) => (memberNumber: number, areaId: UUID) =>
+    expect(
+      pipe(
+        areaId,
+        framework.sharedReadModel.area.get,
+        getSomeOrFail,
+        a => a.owners,
+        RA.flatMap(owner => owner.memberNumbers)
+      )
+    ).not.toContain(memberNumber);
+
+const expectUserIsTrainer =
+  (framework: TestFramework) => (memberNumber: number, equipmentId: UUID) =>
+    expect(
+      pipe(
+        equipmentId,
+        framework.sharedReadModel.equipment.get,
+        getSomeOrFail,
+        e => e.trainers,
+        RA.flatMap(e => e.memberNumbers)
+      )
+    ).toContain(memberNumber);
+
+const expectUserIsNotTrainer =
+  (framework: TestFramework) => (memberNumber: number, equipmentId: UUID) =>
+    expect(
+      pipe(
+        equipmentId,
+        framework.sharedReadModel.equipment.get,
+        getSomeOrFail,
+        e => e.trainers,
+        RA.flatMap(e => e.memberNumbers)
+      )
+    ).not.toContain(memberNumber);
 
 describe('get-via-shared-read-model', () => {
   let framework: TestFramework;
@@ -551,6 +622,21 @@ describe('get-via-shared-read-model', () => {
                 timestampEpochMS: Date.now(),
               })
             );
+          const markOwner = (memberNumber: number) =>
+            framework.commands.area.addOwner({
+              areaId,
+              memberNumber,
+            });
+          const revokeOwner = (memberNumber: number) =>
+            framework.commands.area.removeOwner({
+              areaId,
+              memberNumber,
+            });
+          const markTrainer = (memberNumber: number) =>
+            framework.commands.trainers.add({
+              equipmentId,
+              memberNumber,
+            });
 
           describe('without actions prior to linking accounts', () => {
             const markedTrainedOnOldNumberAt = faker.date.anytime();
@@ -742,37 +828,100 @@ describe('get-via-shared-read-model', () => {
               }
 
               describe('and then they are marked as an owner of an area on their old number', () => {
-                it.todo('The member is shown a owner');
-                describe('and then they are marked as a trainer of a piece of equipment on their old number', () => {
-                  it.todo('The member is shown a trainer');
-                });
-                if (!useExistingAccount) {
-                  describe('and then they are marked as a trainer of a piece of equipment on their new number', () => {
-                    it.todo('The member is shown a trainer');
-                  });
-                  describe('and then they are marked as an owner of the area on their new number', () => {
-                    it.todo('The member is still shown as an owner');
-                  });
-                }
+                beforeEach(() => markOwner(memberNumber));
 
-                describe('and then they are removed as an owner of the area on their old number', () => {
-                  it.todo('The member is not shown as an owner');
-                });
-
-                if (!useExistingAccount) {
-                  describe('and then they are removed as an owner of an area on their new number', () => {
-                    it.todo('The member is not shown as an owner'); // Revoking at this point is taken as revoking for both because they were linked at the time.
+                describe('The area has the user as an owner', () => {
+                  [true, false].forEach(onOldNumber => {
+                    it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                      expectAreaHasOwner(framework)(
+                        onOldNumber ? memberNumber : newMemberNumber,
+                        areaId
+                      ));
                   });
-                }
+                });
+                it('The user is marked as an owner', () =>
+                  expectUserIsOwner(framework)(memberNumber, areaId));
+
+                (useExistingAccount ? [true] : [true, false]).forEach(
+                  markTrainerOnOld => {
+                    describe(`and then they are marked as a trainer of a piece of equipment on their ${markTrainerOnOld ? 'old' : 'new'} number`, () => {
+                      beforeEach(() =>
+                        markTrainer(
+                          markTrainerOnOld ? memberNumber : newMemberNumber
+                        )
+                      );
+                      describe('The member is shown a trainer', () => {
+                        [true, false].forEach(onOldNumber => {
+                          it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                            expectUserIsTrainer(framework)(
+                              onOldNumber ? memberNumber : newMemberNumber,
+                              equipmentId
+                            ));
+                        });
+                      });
+                    });
+                  }
+                );
+
+                (useExistingAccount ? [true] : [true, false]).forEach(
+                  revokeOnOld => {
+                    describe(`and then they are removed as an owner of the area on their ${revokeOnOld ? 'old' : 'new'} number`, () => {
+                      beforeEach(() =>
+                        revokeOwner(
+                          revokeOnOld ? memberNumber : newMemberNumber
+                        )
+                      );
+                      describe('The member is not shown as an owner', () => {
+                        [true, false].forEach(onOldNumber => {
+                          it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                            expectAreaDoesNotHaveOwner(framework)(
+                              onOldNumber ? memberNumber : newMemberNumber,
+                              areaId
+                            ));
+                        });
+                      });
+                      it('The user is not marked as an owner', () =>
+                        expectUserIsNotOwner(framework)(memberNumber, areaId));
+                    });
+                  }
+                );
               });
               if (!useExistingAccount) {
                 describe('and then they are marked as an owner of an area on their new number', () => {
-                  it.todo('The member is shown a owner');
+                  beforeEach(() => markOwner(newMemberNumber));
+                  describe('The area has the user as an owner', () => {
+                    [true, false].forEach(onOldNumber => {
+                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                        expectAreaHasOwner(framework)(
+                          onOldNumber ? memberNumber : newMemberNumber,
+                          areaId
+                        ));
+                    });
+                  });
+                  it('The user is marked as an owner', () =>
+                    expectUserIsOwner(framework)(memberNumber, areaId));
                   describe('and then they are marked as a trainer of a piece of equipment on their new number', () => {
                     it.todo('The member is shown a trainer');
                   });
-                  describe('and then they are removed as an owner of an area on their new number', () => {
-                    it.todo('The member is not shown as an owner');
+                  [true, false].forEach(revokeOnOld => {
+                    describe(`and then they are removed as an owner of the area on their ${revokeOnOld ? 'old' : 'new'} number`, () => {
+                      beforeEach(() =>
+                        revokeOwner(
+                          revokeOnOld ? memberNumber : newMemberNumber
+                        )
+                      );
+                      describe('The member is not shown as an owner', () => {
+                        [true, false].forEach(onOldNumber => {
+                          it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                            expectAreaDoesNotHaveOwner(framework)(
+                              onOldNumber ? memberNumber : newMemberNumber,
+                              areaId
+                            ));
+                        });
+                      });
+                      it('The user is not marked as an owner', () =>
+                        expectUserIsNotOwner(framework)(memberNumber, areaId));
+                    });
                   });
                 });
               }
