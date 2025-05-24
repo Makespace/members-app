@@ -9,6 +9,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {gravatarHashFromEmail} from '../../../src/read-models/members/avatar';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {Int} from 'io-ts';
+import { inspect } from 'node:util';
 
 const expectUserIsTrainedOnEquipmentAt =
   (framework: TestFramework) =>
@@ -31,8 +32,12 @@ const expectedEquipmentHasUserTrained =
         equipmentId,
         framework.sharedReadModel.equipment.get,
         getSomeOrFail,
+        (e) => {
+          console.log(inspect(e));
+          return e;
+        },
         e => e.trainedMembers,
-        RA.map(x => x.memberNumber)
+        RA.flatMap(x => x.memberNumbers)
       )
     ).toContain<number>(memberNumber);
 
@@ -621,18 +626,18 @@ describe('get-via-shared-read-model', () => {
                         ));
                     });
                   });
-                  it('equipment shows user as currently trained on both member numbers', () => {
+                  it('equipment shows user as currently trained on their existing member number', () =>
                     expectedEquipmentHasUserTrained(framework)(
                       memberNumber,
                       equipmentId
-                    );
+                    ));
+                  it('equipment shows user as currently trained on their new member number', () =>
                     expectedEquipmentHasUserTrained(framework)(
                       newMemberNumber,
                       equipmentId
-                    );
-                  });
+                    ));
                 }
-
+                //get-via-shared-read-model › when the member exists › and they have left and then rejoined within the training-lapse period using a new account › without actions prior to linking accounts › and the user is marked trained on equipment on their old number › equipment shows user as currently trained on their new member number
                 if (!useExistingAccount) {
                   describe('and the user is marked trained on the equipment on their new number', () => {
                     beforeEach(async () => {
