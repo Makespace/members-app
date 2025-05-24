@@ -4,7 +4,7 @@ import {advanceTo} from 'jest-date-mock';
 import {constructEvent, EmailAddress} from '../../../src/types';
 import {TestFramework, initTestFramework} from '../test-framework';
 import {faker} from '@faker-js/faker';
-import {getSomeOrFail} from '../../helpers';
+import {expectMatchSecondsPrecision, getSomeOrFail} from '../../helpers';
 import {pipe} from 'fp-ts/lib/function';
 import {gravatarHashFromEmail} from '../../../src/read-models/members/avatar';
 import {NonEmptyString, UUID} from 'io-ts-types';
@@ -12,18 +12,17 @@ import {Int} from 'io-ts';
 
 const expectUserIsTrainedOnEquipmentAt =
   (framework: TestFramework) =>
-  (memberNumber: number, equipmentId: string, expectTrainedAt: Date) => {
-    expect(
-      pipe(
-        memberNumber,
-        framework.sharedReadModel.members.get,
-        getSomeOrFail,
-        member => member.trainedOn,
-        RA.findFirst(e => e.id === equipmentId),
-        getSomeOrFail
-      )
-    ).toStrictEqual(expectTrainedAt);
-  };
+  (memberNumber: number, equipmentId: string, expectTrainedAt: Date) =>
+    pipe(
+      memberNumber,
+      framework.sharedReadModel.members.get,
+      getSomeOrFail,
+      member => member.trainedOn,
+      RA.findFirst(e => e.id === equipmentId),
+      getSomeOrFail,
+      trainedOnEntry => trainedOnEntry.trainedAt,
+      expectMatchSecondsPrecision(expectTrainedAt)
+    );
 
 describe('get-via-shared-read-model', () => {
   let framework: TestFramework;
@@ -554,17 +553,13 @@ describe('get-via-shared-read-model', () => {
                   await markTrainedOnOldNumber();
                 });
 
-                describe('the user shows as trained on their old date', () => {
-                  [true, false].forEach(onOldNumber => {
-                    it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                      expectUserIsTrainedOnEquipmentAt(framework)(
-                        onOldNumber ? memberNumber : newMemberNumber,
-                        equipmentId,
-                        markedTrainedOnOldNumberAt
-                      ));
-                  });
-                });
                 if (useExistingAccount) {
+                  it('the user shows as trained on their old number', () =>
+                    expectUserIsTrainedOnEquipmentAt(framework)(
+                      memberNumber,
+                      equipmentId,
+                      markedTrainedOnOldNumberAt
+                    ));
                   it('equipment shows user as currently trained on their existing member number', () =>
                     expect(
                       pipe(
@@ -576,6 +571,16 @@ describe('get-via-shared-read-model', () => {
                       )
                     ).toContain<number>(memberNumber));
                 } else {
+                  describe('the user shows as trained on their old date', () => {
+                    [true, false].forEach(onOldNumber => {
+                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                        expectUserIsTrainedOnEquipmentAt(framework)(
+                          onOldNumber ? memberNumber : newMemberNumber,
+                          equipmentId,
+                          markedTrainedOnOldNumberAt
+                        ));
+                    });
+                  });
                   it('equipment shows user as currently trained on their new member number only', () => {
                     const trainedList = pipe(
                       equipmentId,

@@ -44,3 +44,9 @@ export const userActor = (): UserActor => ({
     memberNumber: 12,
   },
 });
+
+// Datetimes are truncated to integers in the database meaning they are truncated to the nearest second.
+export const expectMatchSecondsPrecision = (expected: Date) => (actual: Date) =>
+  expect(Math.floor(actual.getTime() / 1000)).toStrictEqual(
+    Math.floor(expected.getTime() / 1000)
+  );
