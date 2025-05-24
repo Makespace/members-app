@@ -671,10 +671,9 @@ describe('get-via-shared-read-model', () => {
                   describe('is shown as awaiting training', () => {
                     [true, false].forEach(onOldNumber => {
                       it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                        expectUserIsTrainedOnEquipmentAt(framework)(
+                        expectUserAwaitingTraining(framework)(
                           onOldNumber ? memberNumber : newMemberNumber,
-                          equipmentId,
-                          markedTrainedOnOldNumberAt
+                          equipmentId
                         ));
                     });
                   });
