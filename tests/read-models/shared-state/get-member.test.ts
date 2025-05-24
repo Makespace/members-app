@@ -23,7 +23,44 @@ const expectUserIsTrainedOnEquipmentAt =
       trainedOnEntry => trainedOnEntry.trainedAt,
       expectMatchSecondsPrecision(expectTrainedAt)
     );
-//  bun jest -t "get-via-shared-read-model when the member exists and they have left and then rejoined within the training-lapse period using a new account without actions prior to linking accounts and the user is marked trained on equipment on their old number the user shows as trained on their old date on their old number$" tests/read-models/shared-state/get-member.test.ts
+
+const expectedEquipmentHasUserTrained =
+  (framework: TestFramework) => (memberNumber: number, equipmentId: UUID) =>
+    expect(
+      pipe(
+        equipmentId,
+        framework.sharedReadModel.equipment.get,
+        getSomeOrFail,
+        e => e.trainedMembers,
+        RA.map(x => x.memberNumber)
+      )
+    ).toContain<number>(memberNumber);
+
+const expectUserAwaitingTraining =
+  (framework: TestFramework) => (memberNumber: number, equipmentId: UUID) =>
+    expect(
+      pipe(
+        equipmentId,
+        framework.sharedReadModel.equipment.get,
+        getSomeOrFail,
+        e => e.membersAwaitingTraining,
+        RA.map(w => w.memberNumbers),
+        RA.flatten
+      )
+    ).toContain<number>(memberNumber);
+
+const expectUserNotAwaitingTraining =
+  (framework: TestFramework) => (memberNumber: number, equipmentId: UUID) =>
+    expect(
+      pipe(
+        equipmentId,
+        framework.sharedReadModel.equipment.get,
+        getSomeOrFail,
+        e => e.membersAwaitingTraining,
+        RA.map(w => w.memberNumbers),
+        RA.flatten
+      )
+    ).not.toContain<number>(memberNumber);
 
 describe('get-via-shared-read-model', () => {
   let framework: TestFramework;
@@ -511,6 +548,10 @@ describe('get-via-shared-read-model', () => {
             );
 
           describe('without actions prior to linking accounts', () => {
+            const markedTrainedOnOldNumberAt = faker.date.anytime();
+            const markedTrainedOnNewNumberAt = faker.date.future({
+              refDate: markedTrainedOnOldNumberAt,
+            });
             // If there are no actions prior to linking then we can perform the linking immediately.
             beforeEach(async () => {
               if (!useExistingAccount) {
@@ -544,17 +585,17 @@ describe('get-via-shared-read-model', () => {
 
             if (withinTrainingLapsePeriod) {
               describe('and the user is marked trained on equipment on their old number', () => {
-                const markedTrainedOnOldNumberAt = faker.date.anytime();
-                const markedTrainedOnNewNumberAt = faker.date.future({
-                  refDate: markedTrainedOnOldNumberAt,
-                });
                 beforeEach(async () => {
                   jest.useFakeTimers();
                   jest.setSystemTime(markedTrainedOnOldNumberAt);
                   await markTrainedOnOldNumber();
 
-                  console.log(`markedTrainedOnOldNumberAt ${markedTrainedOnOldNumberAt}`);
-                  console.log(`markedTrainedOnNewNumberAt ${markedTrainedOnNewNumberAt}`);
+                  console.log(
+                    `markedTrainedOnOldNumberAt ${markedTrainedOnOldNumberAt}`
+                  );
+                  console.log(
+                    `markedTrainedOnNewNumberAt ${markedTrainedOnNewNumberAt}`
+                  );
                 });
 
                 if (useExistingAccount) {
@@ -565,15 +606,10 @@ describe('get-via-shared-read-model', () => {
                       markedTrainedOnOldNumberAt
                     ));
                   it('equipment shows user as currently trained on their existing member number', () =>
-                    expect(
-                      pipe(
-                        equipmentId,
-                        framework.sharedReadModel.equipment.get,
-                        getSomeOrFail,
-                        e => e.trainedMembers,
-                        RA.map(x => x.memberNumber)
-                      )
-                    ).toContain<number>(memberNumber));
+                    expectedEquipmentHasUserTrained(framework)(
+                      memberNumber,
+                      equipmentId
+                    ));
                 } else {
                   describe('the user shows as trained on their old date', () => {
                     [true, false].forEach(onOldNumber => {
@@ -586,16 +622,14 @@ describe('get-via-shared-read-model', () => {
                     });
                   });
                   it('equipment shows user as currently trained on both member numbers', () => {
-                    const trainedList = pipe(
-                      equipmentId,
-                      framework.sharedReadModel.equipment.get,
-                      getSomeOrFail,
-                      e => e.trainedMembers,
-                      RA.map(x => x.memberNumbers),
-                      RA.flatten
+                    expectedEquipmentHasUserTrained(framework)(
+                      memberNumber,
+                      equipmentId
                     );
-                    expect(trainedList).toContain<number>(memberNumber);
-                    expect(trainedList).toContain<number>(newMemberNumber);
+                    expectedEquipmentHasUserTrained(framework)(
+                      newMemberNumber,
+                      equipmentId
+                    );
                   });
                 }
 
@@ -620,28 +654,86 @@ describe('get-via-shared-read-model', () => {
               });
               describe('and the user passes a quiz on their old number', () => {
                 beforeEach(() => quizPass(memberNumber, memberEmail));
-                it('is shown as awaiting training', () => {
-                  const waiting = pipe(
-                    equipmentId,
-                    framework.sharedReadModel.equipment.get,
-                    getSomeOrFail,
-                    e => e.membersAwaitingTraining,
-                    RA.map(w => w.memberNumbers),
-                    RA.flatten
-                  );
-                  expect(waiting).toContain<number>(memberNumber);
-                });
+                it('is shown as awaiting training', () =>
+                  expectUserAwaitingTraining(framework)(
+                    memberNumber,
+                    equipmentId
+                  ));
               });
               if (!useExistingAccount) {
                 describe('and the user passes a quiz on their new number', () => {
-                  it.todo('is shown as awaiting training');
+                  beforeEach(() => quizPass(newMemberNumber, memberEmail));
+                  describe('is shown as awaiting training', () => {
+                    [true, false].forEach(onOldNumber => {
+                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                        expectUserIsTrainedOnEquipmentAt(framework)(
+                          onOldNumber ? memberNumber : newMemberNumber,
+                          equipmentId,
+                          markedTrainedOnOldNumberAt
+                        ));
+                    });
+                  });
+                  describe('and the user is marked trained on equipment on their new number', () => {
+                    beforeEach(async () => {
+                      jest.useFakeTimers();
+                      jest.setSystemTime(markedTrainedOnNewNumberAt);
+                      await markTrainedOnOldNumber();
+                    });
+                    describe('the user shows as trained', () => {
+                      [true, false].forEach(onOldNumber => {
+                        it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                          expectUserIsTrainedOnEquipmentAt(framework)(
+                            onOldNumber ? memberNumber : newMemberNumber,
+                            equipmentId,
+                            markedTrainedOnNewNumberAt
+                          ));
+                      });
+                    });
+                    describe('Equipment shows as currently trained', () => {
+                      [true, false].forEach(onOldNumber => {
+                        it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                          expectedEquipmentHasUserTrained(framework)(
+                            onOldNumber ? memberNumber : newMemberNumber,
+                            equipmentId
+                          ));
+                      });
+                    });
+                    describe('the user is not shown as awaiting training', () => {
+                      [true, false].forEach(onOldNumber => {
+                        it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                          expectUserNotAwaitingTraining(framework)(
+                            onOldNumber ? memberNumber : newMemberNumber,
+                            equipmentId
+                          ));
+                      });
+                    });
+                  });
                 });
-              }
-
-              if (!useExistingAccount) {
                 describe('and the user is marked trained on equipment on their new number', () => {
-                  it.todo('the user shows as trained');
-                  it.todo('Equipment shows as currently trained');
+                  beforeEach(async () => {
+                    jest.useFakeTimers();
+                    jest.setSystemTime(markedTrainedOnNewNumberAt);
+                    await markTrainedOnOldNumber();
+                  });
+                  describe('the user shows as trained', () => {
+                    [true, false].forEach(onOldNumber => {
+                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                        expectUserIsTrainedOnEquipmentAt(framework)(
+                          onOldNumber ? memberNumber : newMemberNumber,
+                          equipmentId,
+                          markedTrainedOnNewNumberAt
+                        ));
+                    });
+                  });
+                  describe('Equipment shows as currently trained', () => {
+                    [true, false].forEach(onOldNumber => {
+                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                        expectedEquipmentHasUserTrained(framework)(
+                          onOldNumber ? memberNumber : newMemberNumber,
+                          equipmentId
+                        ));
+                    });
+                  });
                 });
               }
 
