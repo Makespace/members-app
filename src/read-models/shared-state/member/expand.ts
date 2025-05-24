@@ -8,7 +8,7 @@ import {
   trainedMemberstable,
 } from '../state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {eq} from 'drizzle-orm';
+import {eq, inArray} from 'drizzle-orm';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {MemberCoreInfo, OwnerOf, TrainedOn, TrainerFor} from '../return-types';
 import {Actor} from '../../../types';
@@ -32,7 +32,7 @@ const expandTrainedOn =
           equipmentTable,
           eq(equipmentTable.id, trainedMemberstable.equipmentId)
         )
-        .where(eq(trainedMemberstable.memberNumber, member.memberNumber))
+        .where(inArray(trainedMemberstable.memberNumber, member.memberNumbers))
         .all(),
       RA.map(row => ({
         ...row,
