@@ -38,7 +38,7 @@ export type EpochTimestampMilliseconds = number & {
 
 export type TrainerInfo = Pick<
   MemberCoreInfo,
-  'name' | 'memberNumber' | 'emailAddress'
+  'name' | 'memberNumber' | 'emailAddress' | 'memberNumbers'
 > & {
   markedTrainerByActor: O.Option<Actor>;
   trainerSince: Date;
@@ -118,7 +118,7 @@ export type MinimalArea = {
 
 export type Owner = Pick<
   MemberCoreInfo,
-  'memberNumber' | 'name' | 'emailAddress'
+  'memberNumber' | 'name' | 'emailAddress' | 'memberNumbers'
 > & {
   ownershipRecordedAt: Date;
   markedOwnerBy: O.Option<Actor>;
