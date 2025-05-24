@@ -17,10 +17,6 @@ const expectUserIsTrainedOnEquipmentAt =
       memberNumber,
       framework.sharedReadModel.members.get,
       getSomeOrFail,
-      (m) => {
-        console.log(m);
-        return m;
-      },
       member => member.trainedOn,
       RA.findFirst(e => e.id === equipmentId),
       getSomeOrFail,
@@ -589,16 +585,17 @@ describe('get-via-shared-read-model', () => {
                         ));
                     });
                   });
-                  it('equipment shows user as currently trained on their new member number only', () => {
+                  it('equipment shows user as currently trained on both member numbers', () => {
                     const trainedList = pipe(
                       equipmentId,
                       framework.sharedReadModel.equipment.get,
                       getSomeOrFail,
                       e => e.trainedMembers,
-                      RA.map(x => x.memberNumber)
+                      RA.map(x => x.memberNumbers),
+                      RA.flatten
                     );
+                    expect(trainedList).toContain<number>(memberNumber);
                     expect(trainedList).toContain<number>(newMemberNumber);
-                    expect(trainedList).not.toContain<number>(memberNumber);
                   });
                 }
 
