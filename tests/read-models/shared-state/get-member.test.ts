@@ -17,12 +17,17 @@ const expectUserIsTrainedOnEquipmentAt =
       memberNumber,
       framework.sharedReadModel.members.get,
       getSomeOrFail,
+      (m) => {
+        console.log(m);
+        return m;
+      },
       member => member.trainedOn,
       RA.findFirst(e => e.id === equipmentId),
       getSomeOrFail,
       trainedOnEntry => trainedOnEntry.trainedAt,
       expectMatchSecondsPrecision(expectTrainedAt)
     );
+//  bun jest -t "get-via-shared-read-model when the member exists and they have left and then rejoined within the training-lapse period using a new account without actions prior to linking accounts and the user is marked trained on equipment on their old number the user shows as trained on their old date on their old number$" tests/read-models/shared-state/get-member.test.ts
 
 describe('get-via-shared-read-model', () => {
   let framework: TestFramework;
@@ -551,6 +556,9 @@ describe('get-via-shared-read-model', () => {
                   jest.useFakeTimers();
                   jest.setSystemTime(markedTrainedOnOldNumberAt);
                   await markTrainedOnOldNumber();
+
+                  console.log(`markedTrainedOnOldNumberAt ${markedTrainedOnOldNumberAt}`);
+                  console.log(`markedTrainedOnNewNumberAt ${markedTrainedOnNewNumberAt}`);
                 });
 
                 if (useExistingAccount) {
