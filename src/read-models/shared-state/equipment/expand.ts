@@ -1,7 +1,7 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {eq, and, not, max} from 'drizzle-orm';
+import {eq, and, not, max, notInArray, isNotNull} from 'drizzle-orm';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {
   membersTable,
@@ -21,7 +21,7 @@ import {
 import {UUID} from 'io-ts-types';
 import {Actor} from '../../../types';
 import {getAreaMinimal} from '../area/get';
-import {getMergedMemberSet} from '../member/get';
+import {getMemberCore, getMergedMemberSet} from '../member/get';
 import {MemberLinking} from '../member-linking';
 
 const expandTrainers =
@@ -111,10 +111,11 @@ const expandTrainedMembers =
 // Since the db is local / in memory this should be pretty fast.
 const quizPassed = eq(trainingQuizTable.score, trainingQuizTable.maxScore);
 const expandMembersAwaitingTraining =
-  (db: BetterSQLite3Database) =>
+  (db: BetterSQLite3Database, linking: MemberLinking) =>
   <T extends MinimalEquipment>(
-    equipment: T
+    equipment: T & {trainedMembers: ReadonlyArray<TrainedMember>}
   ): T & {
+    trainedMembers: ReadonlyArray<TrainedMember>;
     membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>;
   } => {
     if (O.isNone(equipment.trainingSheetId)) {
@@ -124,49 +125,59 @@ const expandMembersAwaitingTraining =
         trainingQuizResultsRaw: [],
       };
     }
+
+    const alreadyTrained = equipment.trainedMembers.flatMap(
+      m => m.memberNumbers
+    );
     return pipe(
       db
         .select()
         .from(trainingQuizTable)
-        .innerJoin(
-          // If member info is null then this is an orphaned result.
-          membersTable,
-          eq(trainingQuizTable.memberNumberProvided, membersTable.memberNumber)
-        )
-        .leftJoin(
-          trainedMemberstable,
-          and(
-            eq(membersTable.memberNumber, trainedMemberstable.memberNumber),
-            eq(trainedMemberstable.equipmentId, equipment.id)
-          )
-        )
         .where(
           and(
-            and(eq(trainingQuizTable.equipmentId, equipment.id), quizPassed),
-            eq(trainingQuizTable.sheetId, equipment.trainingSheetId.value)
+            and(
+              notInArray(
+                trainingQuizTable.memberNumberProvided,
+                alreadyTrained
+              ),
+              and(
+                and(
+                  eq(trainingQuizTable.equipmentId, equipment.id),
+                  quizPassed
+                ),
+                eq(trainingQuizTable.sheetId, equipment.trainingSheetId.value)
+              )
+            ),
+            isNotNull(trainingQuizTable.memberNumberProvided)
           )
         )
         .all(),
-      RA.filter(q => q.trainedMembers === null), // Only include members not already trained.
+      data => {
+        console.log(data);
+        return data;
+      },
       rows => {
         const latestQuizRowByMember = new Map<number, (typeof rows)[0]>();
         for (const row of rows) {
-          const existing = latestQuizRowByMember.get(row.members.memberNumber);
-          if (
-            !existing ||
-            existing.trainingQuizResults.timestamp <
-              row.trainingQuizResults.timestamp
-          ) {
-            latestQuizRowByMember.set(row.members.memberNumber, row);
+          const memberNumber = row.memberNumberProvided!;
+          const existing = latestQuizRowByMember.get(memberNumber); // null entries filtered out above.
+          if (!existing || existing.timestamp < row.timestamp) {
+            latestQuizRowByMember.set(memberNumber, row);
           }
         }
         return [...latestQuizRowByMember.values()];
       },
-      RA.map(q => ({
-        ...q.members,
-        quizId: q.trainingQuizResults.quizId as UUID,
-        waitingSince: q.trainingQuizResults.timestamp,
-      })),
+      RA.filterMap(q =>
+        pipe(
+          q.memberNumberProvided!,
+          getMemberCore(db, linking),
+          O.map(memberInfo => ({
+            ...memberInfo,
+            quizId: q.quizId as UUID,
+            waitingSince: q.timestamp,
+          }))
+        )
+      ),
       membersAwaitingTraining => ({
         ...equipment,
         membersAwaitingTraining,
@@ -281,7 +292,7 @@ export const expandAll =
       equipment,
       expandTrainers(db, linking),
       expandTrainedMembers(db, linking),
-      expandMembersAwaitingTraining(db),
+      expandMembersAwaitingTraining(db, linking),
       expandOrphanedTrainingQuizes(db),
       expandFailedQuizAttempts(db),
       expandLastQuizResult(db),

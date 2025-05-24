@@ -99,7 +99,7 @@ export type MemberCoreInfo = {
 
 export type MemberAwaitingTraining = Pick<
   MemberCoreInfo,
-  'memberNumber' | 'name'
+  'memberNumber' | 'name' | 'memberNumbers'
 > & {
   quizId: UUID;
   waitingSince: Date;

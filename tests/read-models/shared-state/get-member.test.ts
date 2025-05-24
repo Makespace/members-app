@@ -618,11 +618,22 @@ describe('get-via-shared-read-model', () => {
                   });
                 }
               });
-              describe('and the user completes a quiz on their old number', () => {
-                it.todo('is shown as awaiting training');
+              describe('and the user passes a quiz on their old number', () => {
+                beforeEach(() => quizPass(memberNumber, memberEmail));
+                it('is shown as awaiting training', () => {
+                  const waiting = pipe(
+                    equipmentId,
+                    framework.sharedReadModel.equipment.get,
+                    getSomeOrFail,
+                    e => e.membersAwaitingTraining,
+                    RA.map(w => w.memberNumbers),
+                    RA.flatten
+                  );
+                  expect(waiting).toContain<number>(memberNumber);
+                });
               });
               if (!useExistingAccount) {
-                describe('and the user completes a quiz on their new number', () => {
+                describe('and the user passes a quiz on their new number', () => {
                   it.todo('is shown as awaiting training');
                 });
               }
