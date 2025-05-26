@@ -35,4 +35,5 @@ timeout = "5s"
 path = "/ping"
 
 [[vm]]
-size = 'performance-1x'
+size = 'shared-cpu-1x'
+memory = '512mb'
