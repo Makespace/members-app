@@ -13,6 +13,9 @@ describe('get-area', () => {
   beforeEach(async () => {
     framework = await initTestFramework();
   });
+  afterEach(() => {
+    framework.eventStoreDb.close();
+  });
 
   describe('when area exists', () => {
     const createArea = {

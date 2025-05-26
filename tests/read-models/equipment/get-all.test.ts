@@ -11,6 +11,9 @@ describe('get-all', () => {
   beforeEach(async () => {
     framework = await initTestFramework();
   });
+  afterEach(() => {
+    framework.eventStoreDb.close();
+  });
 
   const createArea = {
     id: faker.string.uuid() as UUID,

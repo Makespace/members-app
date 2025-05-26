@@ -10,6 +10,9 @@ describe('get-for-area', () => {
   beforeEach(async () => {
     framework = await initTestFramework();
   });
+  afterEach(() => {
+    framework.eventStoreDb.close();
+  });
 
   describe('when area exists and contains equipment', () => {
     const createArea = {

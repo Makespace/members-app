@@ -21,6 +21,10 @@ describe('addTrainer', () => {
       addTrainer
     );
   });
+  afterEach(() => {
+    framework.eventStoreDb.close();
+  });
+
   const equipmentId = faker.string.uuid() as UUID;
 
   describe('when multiple trainers are added', () => {

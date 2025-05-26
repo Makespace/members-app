@@ -26,6 +26,10 @@ describe('markMemberRejoinedWithNewNumber', () => {
       markMemberRejoinedWithNewNumber
     );
   });
+  afterEach(() => {
+    framework.eventStoreDb.close();
+  });
+
   const command = {
     oldMemberNumber: faker.number.int() as Int,
     newMemberNumber: faker.number.int() as Int,

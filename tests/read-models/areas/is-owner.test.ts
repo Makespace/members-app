@@ -19,6 +19,9 @@ describe('isOwner', () => {
     await framework.commands.area.addOwner(addOwner);
     events = await framework.getAllEvents();
   });
+  afterEach(() => {
+    framework.eventStoreDb.close();
+  });
 
   describe('when user is an owner of the area', () => {
     it('returns true', () => {
