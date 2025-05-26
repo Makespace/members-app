@@ -22,7 +22,7 @@ const transformRow = <
   superUserSince: O.fromNullable(row.superUserSince),
 });
 
-export const getMergedMember =
+const getMergedMember =
   (db: BetterSQLite3Database) =>
   (memberNumbers: number[]): O.Option<MemberCoreInfo> =>
     pipe(
