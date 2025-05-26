@@ -880,7 +880,7 @@ describe('get-via-shared-read-model', () => {
                 });
               });
               it('The user is marked as an owner', () =>
-                expectUserIsOwner(framework)(memberNumber, areaId));
+                expectUserIsOwner(framework)(newMemberNumber, areaId));
               [true, false].forEach(markTrainerOnOld => {
                 describe(`and then they are marked as a trainer of a piece of equipment on their ${markTrainerOnOld ? 'old' : 'new'} number`, () => {
                   beforeEach(() =>
