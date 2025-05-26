@@ -33,9 +33,6 @@ export const applyToResource =
           )
         )
       ),
-      TE.chain(({event, version}) => {
-        console.log(event);
-        return deps.commitEvent(resource, version)(event);
-      })
+      TE.chain(({event, version}) => deps.commitEvent(resource, version)(event))
     );
   };
