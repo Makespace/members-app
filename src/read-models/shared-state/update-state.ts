@@ -94,7 +94,7 @@ export const updateState =
         break;
       case 'TrainerAdded': {
         if (
-          isOwnerOfAreaContainingEquipment(db)(
+          isOwnerOfAreaContainingEquipment(db, linking)(
             event.equipmentId,
             event.memberNumber
           )

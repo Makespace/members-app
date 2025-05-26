@@ -4,34 +4,35 @@ import {eq} from 'drizzle-orm';
 import {getEquipmentForAreaMinimal} from '../equipment/get';
 import {Equipment, MinimalArea, Owner} from '../return-types';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {membersTable, ownersTable} from '../state';
+import {ownersTable} from '../state';
 import * as O from 'fp-ts/Option';
 import {Actor} from '../../../types';
 import {expandAll as expandAllEquipment} from '../equipment/expand';
 import {MemberLinking} from '../member-linking';
+import {getMergedMemberSet} from '../member/get';
 
 const expandOwners =
-  (db: BetterSQLite3Database) =>
+  (db: BetterSQLite3Database, linking: MemberLinking) =>
   <T extends MinimalArea>(area: T): T & {owners: ReadonlyArray<Owner>} =>
     pipe(
       db
         .select()
-        .from(membersTable)
-        .innerJoin(
-          ownersTable,
-          eq(membersTable.memberNumber, ownersTable.memberNumber)
-        )
+        .from(ownersTable)
         .where(eq(ownersTable.areaId, area.id))
         .all(),
-      RA.map(ownerDetails => ({
-        ...ownerDetails.members,
-        agreementSigned: O.fromNullable(ownerDetails.members.agreementSigned),
-        superUserSince: O.fromNullable(ownerDetails.members.superUserSince),
-        ownershipRecordedAt: ownerDetails.owners.ownershipRecordedAt,
-        markedOwnerBy: O.fromEither(
-          Actor.decode(ownerDetails.owners.markedOwnerByActor)
-        ),
-      })),
+      RA.filterMap(owner =>
+        pipe(
+          linking.map(owner.memberNumber),
+          getMergedMemberSet(db),
+          O.map(member => ({
+            ...member,
+            agreementSigned: member.agreementSigned,
+            superUserSince: member.superUserSince,
+            ownershipRecordedAt: owner.ownershipRecordedAt,
+            markedOwnerBy: O.fromEither(Actor.decode(owner.markedOwnerByActor)),
+          }))
+        )
+      ),
       owners => ({
         ...area,
         owners,
@@ -54,5 +55,5 @@ const expandEquipment =
 export const expandAll =
   (db: BetterSQLite3Database, linking: MemberLinking) =>
   <T extends MinimalArea>(area: T) => {
-    return pipe(area, expandEquipment(db, linking), expandOwners(db));
+    return pipe(area, expandEquipment(db, linking), expandOwners(db, linking));
   };
