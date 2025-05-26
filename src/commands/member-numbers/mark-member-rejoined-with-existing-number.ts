@@ -12,7 +12,7 @@ const codec = t.strict({
   memberNumber: tt.IntFromString,
 });
 
-export type MarkMemberRejoinedWithExistingNumber = t.TypeOf<typeof codec>;
+type MarkMemberRejoinedWithExistingNumber = t.TypeOf<typeof codec>;
 
 const isDuplicateOfPreviousCommand =
   (command: MarkMemberRejoinedWithExistingNumber) =>

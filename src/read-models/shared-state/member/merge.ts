@@ -1,12 +1,8 @@
 import * as O from 'fp-ts/Option';
-import {Member, MemberCoreInfo} from '../return-types';
+import {MemberCoreInfo} from '../return-types';
 import {ReadonlyNonEmptyArray} from 'fp-ts/lib/ReadonlyNonEmptyArray';
 
-export const mergeMembers = (m: ReadonlyNonEmptyArray<Member>): Member => {
-  return m[0];
-};
-
-export type MemberCoreInfoPreMerge = Omit<MemberCoreInfo, 'memberNumbers'> & {
+type MemberCoreInfoPreMerge = Omit<MemberCoreInfo, 'memberNumbers'> & {
   memberNumber: number;
 };
 
