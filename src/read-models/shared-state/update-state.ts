@@ -193,7 +193,10 @@ export const updateState =
         db.delete(ownersTable)
           .where(
             and(
-              eq(ownersTable.memberNumber, event.memberNumber),
+              inArray(
+                ownersTable.memberNumber,
+                Array.from(linking.map(event.memberNumber))
+              ),
               eq(ownersTable.areaId, event.areaId)
             )
           )
