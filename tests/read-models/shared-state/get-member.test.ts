@@ -9,6 +9,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {gravatarHashFromEmail} from '../../../src/read-models/members/avatar';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {Int} from 'io-ts';
+import {allMemberNumbers} from '../../../src/read-models/shared-state/return-types';
 
 const expectUserIsTrainedOnEquipmentAt =
   (framework: TestFramework) =>
@@ -44,7 +45,7 @@ const expectedEquipmentHasUserTrained =
         framework.sharedReadModel.equipment.get,
         getSomeOrFail,
         e => e.trainedMembers,
-        RA.flatMap(x => x.memberNumbers)
+        RA.flatMap(allMemberNumbers)
       )
     ).toContain<number>(memberNumber);
 
@@ -56,8 +57,7 @@ const expectUserAwaitingTraining =
         framework.sharedReadModel.equipment.get,
         getSomeOrFail,
         e => e.membersAwaitingTraining,
-        RA.map(w => w.memberNumbers),
-        RA.flatten
+        RA.flatMap(allMemberNumbers)
       )
     ).toContain<number>(memberNumber);
 
@@ -69,7 +69,7 @@ const expectUserNotAwaitingTraining =
         framework.sharedReadModel.equipment.get,
         getSomeOrFail,
         e => e.membersAwaitingTraining,
-        RA.flatMap(w => w.memberNumbers)
+        RA.flatMap(allMemberNumbers)
       )
     ).not.toContain<number>(memberNumber);
 
@@ -81,7 +81,7 @@ const expectAreaHasOwner =
         framework.sharedReadModel.area.get,
         getSomeOrFail,
         a => a.owners,
-        RA.flatMap(owner => owner.memberNumbers)
+        RA.flatMap(allMemberNumbers)
       )
     ).toContain(memberNumber);
 
@@ -117,7 +117,7 @@ const expectAreaDoesNotHaveOwner =
         framework.sharedReadModel.area.get,
         getSomeOrFail,
         a => a.owners,
-        RA.flatMap(owner => owner.memberNumbers)
+        RA.flatMap(allMemberNumbers)
       )
     ).not.toContain(memberNumber);
 
@@ -129,7 +129,7 @@ const expectEquipmentHasUserAsTrainer =
         framework.sharedReadModel.equipment.get,
         getSomeOrFail,
         e => e.trainers,
-        RA.flatMap(e => e.memberNumbers)
+        RA.flatMap(allMemberNumbers)
       )
     ).toContain(memberNumber);
 
@@ -388,7 +388,9 @@ describe('get-via-shared-read-model', () => {
             ? 'and then they rejoin with a new member number'
             : 'and then they rejoin with their existing number',
           () => {
-            const newMemberNumber = faker.number.int() as Int;
+            const newMemberNumber = faker.number.int({
+              min: memberNumber + 1,
+            }) as Int;
             const newEmail = faker.internet.email() as EmailAddress;
             beforeEach(async () => {
               if (rejoinWithNewNumber) {
@@ -954,7 +956,9 @@ describe('get-via-shared-read-model', () => {
               const rejoinedWithNewNumberAgainAt = faker.date.soon({
                 refDate: membershipStoppedAgainAt,
               });
-              const newestMemberNumber = faker.number.int() as Int;
+              const newestMemberNumber = faker.number.int({
+                min: newMemberNumber + 1,
+              }) as Int;
               const newestEmail = faker.internet.email() as EmailAddress;
 
               const usersMembershipNumbers: [string, Int][] = useExistingAccount
