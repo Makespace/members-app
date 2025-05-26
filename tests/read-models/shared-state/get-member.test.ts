@@ -26,15 +26,16 @@ const expectUserIsTrainedOnEquipmentAt =
     );
 
 const expectUserIsTrainedOnEquipment =
-  (framework: TestFramework) => (memberNumber: number, equipmentId: string) =>
+  (framework: TestFramework) => (memberNumber: number, equipmentId: UUID) =>
     expect(
       pipe(
         memberNumber,
         framework.sharedReadModel.members.get,
         getSomeOrFail,
-        member => member.trainedOn
+        member => member.trainedOn,
+        RA.map(e => e.id)
       )
-    ).toContain(equipmentId);
+    ).toContain<UUID>(equipmentId);
 
 const expectedEquipmentHasUserTrained =
   (framework: TestFramework) => (memberNumber: number, equipmentId: UUID) =>
