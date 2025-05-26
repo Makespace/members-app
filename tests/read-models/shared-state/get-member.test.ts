@@ -10,8 +10,6 @@ import {gravatarHashFromEmail} from '../../../src/read-models/members/avatar';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {Int} from 'io-ts';
 import {inspect} from 'node:util';
-import {TRAINING_LAPSE_PERIOD} from '../../../src/read-models/shared-state/member-linking';
-import {DateTime} from 'luxon';
 
 const expectUserIsTrainedOnEquipmentAt =
   (framework: TestFramework) =>
@@ -574,276 +572,224 @@ describe('get-via-shared-read-model', () => {
         expect(result.ownerOf).toHaveLength(0);
       });
     });
+    // This next section gets a little complicated as there are many cases to consider. If you have any ideas for how to structure the order of operations in
+    // a clearer way then please reach out.
+    //
+    // There are 3 scenarios covered here.
+    // 1. The member rejoins with a different membership number, the same email and no actions have been taken on the new account prior to linking the accounts.
+    // 2. The member rejoins with a different membership number, a different email and no actions have been taken on the new account prior to linking the accounts.
+    // 3. The member rejoins with a different membership number, the same email and some actions have been taken on the new account prior to linking the accounts.
+    // 3. The member rejoins with a different membership number, a different email and some actions have been taken on the new account prior to linking the accounts.
 
-    [true, false].forEach(withinTrainingLapsePeriod => {
-      // This next section gets a little complicated as there are many cases to consider. If you have any ideas for how to structure the order of operations in
-      // a clearer way then please reach out.
-      //
-      // There are 3 scenarios covered here.
-      // 1. The member rejoins with a different membership number, the same email and no actions have been taken on the new account prior to linking the accounts.
-      // 2. The member rejoins with a different membership number, a different email and no actions have been taken on the new account prior to linking the accounts.
-      // 3. The member rejoins with a different membership number, the same email and some actions have been taken on the new account prior to linking the accounts.
-      // 3. The member rejoins with a different membership number, a different email and some actions have been taken on the new account prior to linking the accounts.
+    // 'Some actions prior to linking the accounts' means things like marking the member as trained on 1 piece of equipment on their new account before linking it to their
+    // old one. We are specifically checking that the order of operations isn't important as sometimes members don't get registered as having rejoined for awhile.
+    // Note that the 'normal' order of operations is that the new and old accounts are linked immediately - i.e. there are no actions prior to linking the accounts.
+    [true, false].forEach(useExistingAccount => {
+      describe(`and they have left and then rejoined ${useExistingAccount ? 'using their existing account' : 'using a new account'}`, () => {
+        const newMemberNumber = faker.number.int() as Int;
+        const newEmail = faker.internet.email() as EmailAddress;
 
-      // 'Some actions prior to linking the accounts' means things like marking the member as trained on 1 piece of equipment on their new account before linking it to their
-      // old one. We are specifically checking that the order of operations isn't important as sometimes members don't get registered as having rejoined for awhile.
-      // Note that the 'normal' order of operations is that the new and old accounts are linked immediately - i.e. there are no actions prior to linking the accounts.
-      [true, false].forEach(useExistingAccount => {
-        describe(`and they have left and then rejoined ${withinTrainingLapsePeriod ? 'within' : 'outwith'} the training-lapse period ${useExistingAccount ? 'using their existing account' : 'using a new account'}`, () => {
-          const newMemberNumber = faker.number.int() as Int;
-          const newEmail = faker.internet.email() as EmailAddress;
+        // Create some example equipment + area to be used throughout these tests.
+        // This equipment/area is not specifically important to the test.
+        const equipmentId = faker.string.uuid() as UUID;
+        const areaId = faker.string.uuid() as UUID;
+        const trainingSheetId = faker.string.uuid() as UUID;
+        beforeEach(async () => {
+          await framework.commands.area.create({
+            id: areaId,
+            name: faker.airline.airline().name as NonEmptyString,
+          });
+          await framework.commands.equipment.add({
+            id: equipmentId,
+            name: faker.airline.airplane().name as NonEmptyString,
+            areaId,
+          });
+          await framework.commands.equipment.trainingSheet({
+            equipmentId,
+            trainingSheetId,
+          });
+        });
 
-          // Create some example equipment + area to be used throughout these tests.
-          // This equipment/area is not specifically important to the test.
-          const equipmentId = faker.string.uuid() as UUID;
-          const areaId = faker.string.uuid() as UUID;
-          const trainingSheetId = faker.string.uuid() as UUID;
-          beforeEach(async () => {
-            await framework.commands.area.create({
-              id: areaId,
-              name: faker.airline.airline().name as NonEmptyString,
-            });
-            await framework.commands.equipment.add({
-              id: equipmentId,
-              name: faker.airline.airplane().name as NonEmptyString,
-              areaId,
-            });
-            await framework.commands.equipment.trainingSheet({
-              equipmentId,
-              trainingSheetId,
-            });
+        const createNewMemberRecord = () =>
+          framework.commands.memberNumbers.linkNumberToEmail({
+            memberNumber: newMemberNumber,
+            email: newEmail,
           });
 
-          const createNewMemberRecord = () =>
-            framework.commands.memberNumbers.linkNumberToEmail({
-              memberNumber: newMemberNumber,
-              email: newEmail,
-            });
-
-          const markMemberRejoined = useExistingAccount
-            ? () =>
-                // In this case we are marking a member as having rejoined without creating them a new account.
-                framework.commands.memberNumbers.markMemberRejoinedWithExistingNumber(
-                  {
-                    memberNumber,
-                  }
-                )
-            : () =>
-                // In this case we are creating a new account with a new email and then linking the accounts.
-                // This is 1 way to handle a rejoin however it is more of an edge case. It is likely better just to
-                // take the old account, update the email and then mark that member as rejoined.
-                framework.commands.memberNumbers.markMemberRejoinedWithNewNumber(
-                  {
-                    oldMemberNumber: memberNumber,
-                    newMemberNumber,
-                  }
-                );
-          const markTrainedOnOldNumber = () =>
-            framework.commands.trainers.markTrained({
-              memberNumber,
-              equipmentId: equipmentId,
-            });
-          const markTrainedOnNewNumber = () =>
-            framework.commands.trainers.markTrained({
-              memberNumber: newMemberNumber,
-              equipmentId: equipmentId,
-            });
-          const quizPass = (memberNumber: number, email: EmailAddress) =>
-            framework.sharedReadModel.updateState(
-              constructEvent('EquipmentTrainingQuizResult')({
-                id: faker.string.uuid() as UUID,
-                equipmentId,
-                trainingSheetId,
-                memberNumberProvided: memberNumber,
-                emailProvided: email,
-                score: 10,
-                maxScore: 10,
-                percentage: 100,
-                timestampEpochMS: Date.now(),
-              })
-            );
-          const markOwner = (memberNumber: number) =>
-            framework.commands.area.addOwner({
-              areaId,
-              memberNumber,
-            });
-          const revokeOwner = (memberNumber: number) =>
-            framework.commands.area.removeOwner({
-              areaId,
-              memberNumber,
-            });
-          const markTrainer = (memberNumber: number) =>
-            framework.commands.trainers.add({
+        const markMemberRejoined = useExistingAccount
+          ? () =>
+              // In this case we are marking a member as having rejoined without creating them a new account.
+              framework.commands.memberNumbers.markMemberRejoinedWithExistingNumber(
+                {
+                  memberNumber,
+                }
+              )
+          : () =>
+              // In this case we are creating a new account with a new email and then linking the accounts.
+              // This is 1 way to handle a rejoin however it is more of an edge case. It is likely better just to
+              // take the old account, update the email and then mark that member as rejoined.
+              framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
+                oldMemberNumber: memberNumber,
+                newMemberNumber,
+              });
+        const markTrainedOnOldNumber = () =>
+          framework.commands.trainers.markTrained({
+            memberNumber,
+            equipmentId: equipmentId,
+          });
+        const markTrainedOnNewNumber = () =>
+          framework.commands.trainers.markTrained({
+            memberNumber: newMemberNumber,
+            equipmentId: equipmentId,
+          });
+        const quizPass = (memberNumber: number, email: EmailAddress) =>
+          framework.sharedReadModel.updateState(
+            constructEvent('EquipmentTrainingQuizResult')({
+              id: faker.string.uuid() as UUID,
               equipmentId,
-              memberNumber,
-            });
+              trainingSheetId,
+              memberNumberProvided: memberNumber,
+              emailProvided: email,
+              score: 10,
+              maxScore: 10,
+              percentage: 100,
+              timestampEpochMS: Date.now(),
+            })
+          );
+        const markOwner = (memberNumber: number) =>
+          framework.commands.area.addOwner({
+            areaId,
+            memberNumber,
+          });
+        const revokeOwner = (memberNumber: number) =>
+          framework.commands.area.removeOwner({
+            areaId,
+            memberNumber,
+          });
+        const markTrainer = (memberNumber: number) =>
+          framework.commands.trainers.add({
+            equipmentId,
+            memberNumber,
+          });
 
-          describe('without actions prior to linking accounts', () => {
-            // If there are no actions prior to linking then we can perform the linking immediately.
-            // This means all the actions specified below occur after the linking.
-            // This means that the training lapse period won't actually have any affect for things
-            // like being marked as a trainer because its all happening after the rejoin anyway.
-            beforeEach(async () => {
-              if (!useExistingAccount) {
-                await createNewMemberRecord();
-              }
-              await markMemberRejoined();
-            });
-
+        describe('without actions prior to linking accounts', () => {
+          // If there are no actions prior to linking then we can perform the linking immediately.
+          // This means all the actions specified below occur after the linking.
+          // This means that the training lapse period won't actually have any affect for things
+          // like being marked as a trainer because its all happening after the rejoin anyway.
+          beforeEach(async () => {
             if (!useExistingAccount) {
-              it('Searching for the member by either number shows the same base data', () => {
-                const old = framework.sharedReadModel.members.get(memberNumber);
-                const newData =
-                  framework.sharedReadModel.members.get(newMemberNumber);
-                expect(getSomeOrFail(old)).toStrictEqual(
-                  getSomeOrFail(newData)
-                );
+              await createNewMemberRecord();
+            }
+            await markMemberRejoined();
+          });
+
+          if (!useExistingAccount) {
+            it('Searching for the member by either number shows the same base data', () => {
+              const old = framework.sharedReadModel.members.get(memberNumber);
+              const newData =
+                framework.sharedReadModel.members.get(newMemberNumber);
+              expect(getSomeOrFail(old)).toStrictEqual(getSomeOrFail(newData));
+            });
+          }
+
+          it('The list of all members only shows the member once', () => {
+            expect(
+              framework.sharedReadModel.members
+                .getAll()
+                .filter(m =>
+                  [memberNumber, newMemberNumber].includes(
+                    m.memberNumber as Int
+                  )
+                )
+            ).toHaveLength(1);
+          });
+
+          describe('and the user is marked trained on equipment on their old number', () => {
+            // Do not confuse these markedTrainedOn dates with the training-lapse stuff.
+            // They are not related and are local to these tests where we check the marked trained behaviour.
+            const markedTrainedOnOldNumberAt = faker.date.anytime();
+            const markedTrainedOnNewNumberAt = faker.date.future({
+              refDate: markedTrainedOnOldNumberAt,
+            });
+
+            beforeEach(async () => {
+              jest.useFakeTimers();
+              jest.setSystemTime(markedTrainedOnOldNumberAt);
+              await markTrainedOnOldNumber();
+            });
+            describe('the user shows as trained', () => {
+              (useExistingAccount ? [true] : [true, false]).forEach(
+                onOldNumber => {
+                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                    expectUserIsTrainedOnEquipment(framework)(
+                      onOldNumber ? memberNumber : newMemberNumber,
+                      equipmentId
+                    ));
+                }
+              );
+            });
+            describe('equipment shows user as currently trained', () => {
+              (useExistingAccount ? [true] : [true, false]).forEach(
+                onOldNumber =>
+                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                    expectedEquipmentHasUserTrained(framework)(
+                      onOldNumber ? memberNumber : newMemberNumber,
+                      equipmentId
+                    ))
+              );
+            });
+            if (!useExistingAccount) {
+              describe('and the user is marked trained on the equipment on their new number', () => {
+                beforeEach(async () => {
+                  jest.setSystemTime(markedTrainedOnNewNumberAt);
+                  await markTrainedOnNewNumber();
+                });
+                describe('the user shows as trained on their old date', () => {
+                  [true, false].forEach(onOldNumber => {
+                    it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                      expectUserIsTrainedOnEquipmentAt(framework)(
+                        onOldNumber ? memberNumber : newMemberNumber,
+                        equipmentId,
+                        markedTrainedOnOldNumberAt
+                      ));
+                  });
+                });
               });
             }
-
-            it('The list of all members only shows the member once', () => {
-              expect(
-                framework.sharedReadModel.members
-                  .getAll()
-                  .filter(m =>
-                    [memberNumber, newMemberNumber].includes(
-                      m.memberNumber as Int
-                    )
-                  )
-              ).toHaveLength(1);
-            });
-
-            describe('and the user is marked trained on equipment on their old number', () => {
-              // Do not confuse these markedTrainedOn dates with the training-lapse stuff.
-              // They are not related and are local to these tests where we check the marked trained behaviour.
-              const markedTrainedOnOldNumberAt = faker.date.anytime();
-              const markedTrainedOnNewNumberAt = faker.date.future({
-                refDate: markedTrainedOnOldNumberAt,
-              });
-
-              beforeEach(async () => {
-                jest.useFakeTimers();
-                jest.setSystemTime(markedTrainedOnOldNumberAt);
-                await markTrainedOnOldNumber();
-              });
-              describe('the user shows as trained', () => {
-                (useExistingAccount ? [true] : [true, false]).forEach(
-                  onOldNumber => {
-                    it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                      expectUserIsTrainedOnEquipment(framework)(
-                        onOldNumber ? memberNumber : newMemberNumber,
-                        equipmentId
-                      ));
-                  }
-                );
-              });
-              describe('equipment shows user as currently trained', () => {
-                (useExistingAccount ? [true] : [true, false]).forEach(
-                  onOldNumber =>
-                    it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                      expectedEquipmentHasUserTrained(framework)(
-                        onOldNumber ? memberNumber : newMemberNumber,
-                        equipmentId
-                      ))
-                );
-              });
-              if (!useExistingAccount) {
-                describe('and the user is marked trained on the equipment on their new number', () => {
-                  beforeEach(async () => {
-                    jest.setSystemTime(markedTrainedOnNewNumberAt);
-                    await markTrainedOnNewNumber();
-                  });
-                  describe('the user shows as trained on their old date', () => {
-                    [true, false].forEach(onOldNumber => {
-                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                        expectUserIsTrainedOnEquipmentAt(framework)(
-                          onOldNumber ? memberNumber : newMemberNumber,
-                          equipmentId,
-                          markedTrainedOnOldNumberAt
-                        ));
-                    });
-                  });
-                });
-              }
-            });
-            describe('and the user passes a quiz on their old number', () => {
-              beforeEach(() => quizPass(memberNumber, memberEmail));
-              if (withinTrainingLapsePeriod) {
-                // Note this is the training lapse period between member account linking. It isn't the expiry of quiz passes.
-                // Note that training lapse period does affect quiz results because they come out of order/sync with when membership numbers are/aren't linked together.
-                describe('is shown as awaiting training', () =>
-                  [true, false].forEach(onOldNumber => {
-                    it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                      expectUserAwaitingTraining(framework)(
-                        onOldNumber ? memberNumber : newMemberNumber,
-                        equipmentId
-                      ));
-                  }));
-              } else {
-                describe('is not shown as awaiting training', () =>
-                  [true, false].forEach(onOldNumber => {
-                    it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                      expectUserNotAwaitingTraining(framework)(
-                        onOldNumber ? memberNumber : newMemberNumber,
-                        equipmentId
-                      ));
-                  }));
-              }
-            });
-            if (!useExistingAccount) {
-              describe('and the user passes a quiz on their new number', () => {
-                beforeEach(() => quizPass(newMemberNumber, memberEmail));
-                describe('is shown as awaiting training', () => {
-                  [true, false].forEach(onOldNumber => {
-                    it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                      expectUserAwaitingTraining(framework)(
-                        onOldNumber ? memberNumber : newMemberNumber,
-                        equipmentId
-                      ));
-                  });
-                });
-                describe('and the user is marked trained on equipment on their new number', () => {
-                  beforeEach(async () => {
-                    await markTrainedOnOldNumber();
-                  });
-                  describe('the user shows as trained', () => {
-                    [true, false].forEach(onOldNumber => {
-                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                        // We aren't checking for a specific date that the user was trained on this equipment because
-                        // that is already checked in other tests.
-                        expectUserIsTrainedOnEquipment(framework)(
-                          onOldNumber ? memberNumber : newMemberNumber,
-                          equipmentId
-                        ));
-                    });
-                  });
-                  describe('Equipment shows as currently trained', () => {
-                    [true, false].forEach(onOldNumber => {
-                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                        expectedEquipmentHasUserTrained(framework)(
-                          onOldNumber ? memberNumber : newMemberNumber,
-                          equipmentId
-                        ));
-                    });
-                  });
-                  describe('the user is not shown as awaiting training', () => {
-                    [true, false].forEach(onOldNumber => {
-                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                        expectUserNotAwaitingTraining(framework)(
-                          onOldNumber ? memberNumber : newMemberNumber,
-                          equipmentId
-                        ));
-                    });
-                  });
+          });
+          describe('and the user passes a quiz on their old number', () => {
+            beforeEach(() => quizPass(memberNumber, memberEmail));
+            describe('is shown as awaiting training', () =>
+              [true, false].forEach(onOldNumber => {
+                it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                  expectUserAwaitingTraining(framework)(
+                    onOldNumber ? memberNumber : newMemberNumber,
+                    equipmentId
+                  ));
+              }));
+          });
+          if (!useExistingAccount) {
+            describe('and the user passes a quiz on their new number', () => {
+              beforeEach(() => quizPass(newMemberNumber, memberEmail));
+              describe('is shown as awaiting training', () => {
+                [true, false].forEach(onOldNumber => {
+                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                    expectUserAwaitingTraining(framework)(
+                      onOldNumber ? memberNumber : newMemberNumber,
+                      equipmentId
+                    ));
                 });
               });
               describe('and the user is marked trained on equipment on their new number', () => {
                 beforeEach(async () => {
-                  await markTrainedOnNewNumber();
+                  await markTrainedOnOldNumber();
                 });
                 describe('the user shows as trained', () => {
                   [true, false].forEach(onOldNumber => {
                     it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                      // We aren't checking for a specific date that the user was trained on this equipment because
+                      // that is already checked in other tests.
                       expectUserIsTrainedOnEquipment(framework)(
                         onOldNumber ? memberNumber : newMemberNumber,
                         equipmentId
@@ -859,10 +805,99 @@ describe('get-via-shared-read-model', () => {
                       ));
                   });
                 });
+                describe('the user is not shown as awaiting training', () => {
+                  [true, false].forEach(onOldNumber => {
+                    it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                      expectUserNotAwaitingTraining(framework)(
+                        onOldNumber ? memberNumber : newMemberNumber,
+                        equipmentId
+                      ));
+                  });
+                });
               });
-            }
-            describe('and then they are marked as an owner of an area on their old number', () => {
-              beforeEach(() => markOwner(memberNumber));
+            });
+            describe('and the user is marked trained on equipment on their new number', () => {
+              beforeEach(async () => {
+                await markTrainedOnNewNumber();
+              });
+              describe('the user shows as trained', () => {
+                [true, false].forEach(onOldNumber => {
+                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                    expectUserIsTrainedOnEquipment(framework)(
+                      onOldNumber ? memberNumber : newMemberNumber,
+                      equipmentId
+                    ));
+                });
+              });
+              describe('Equipment shows as currently trained', () => {
+                [true, false].forEach(onOldNumber => {
+                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                    expectedEquipmentHasUserTrained(framework)(
+                      onOldNumber ? memberNumber : newMemberNumber,
+                      equipmentId
+                    ));
+                });
+              });
+            });
+          }
+          describe('and then they are marked as an owner of an area on their old number', () => {
+            beforeEach(() => markOwner(memberNumber));
+            describe('The area has the user as an owner', () => {
+              [true, false].forEach(onOldNumber => {
+                it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                  expectAreaHasOwner(framework)(
+                    onOldNumber ? memberNumber : newMemberNumber,
+                    areaId
+                  ));
+              });
+            });
+            it('The user is marked as an owner', () =>
+              expectUserIsOwner(framework)(memberNumber, areaId));
+            (useExistingAccount ? [true] : [true, false]).forEach(
+              markTrainerOnOld => {
+                describe(`and then they are marked as a trainer of a piece of equipment on their ${markTrainerOnOld ? 'old' : 'new'} number`, () => {
+                  beforeEach(() =>
+                    markTrainer(
+                      markTrainerOnOld ? memberNumber : newMemberNumber
+                    )
+                  );
+                  describe('The member is shown a trainer', () => {
+                    [true, false].forEach(onOldNumber => {
+                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                        expectUserIsTrainer(framework)(
+                          onOldNumber ? memberNumber : newMemberNumber,
+                          equipmentId
+                        ));
+                    });
+                  });
+                });
+              }
+            );
+
+            (useExistingAccount ? [true] : [true, false]).forEach(
+              revokeOnOld => {
+                describe(`and then they are removed as an owner of the area on their ${revokeOnOld ? 'old' : 'new'} number`, () => {
+                  beforeEach(() =>
+                    revokeOwner(revokeOnOld ? memberNumber : newMemberNumber)
+                  );
+                  describe('The member is not shown as an owner', () => {
+                    [true, false].forEach(onOldNumber => {
+                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                        expectAreaDoesNotHaveOwner(framework)(
+                          onOldNumber ? memberNumber : newMemberNumber,
+                          areaId
+                        ));
+                    });
+                  });
+                  it('The user is not marked as an owner', () =>
+                    expectUserIsNotOwner(framework)(memberNumber, areaId));
+                });
+              }
+            );
+          });
+          if (!useExistingAccount) {
+            describe('and then they are marked as an owner of an area on their new number', () => {
+              beforeEach(() => markOwner(newMemberNumber));
               describe('The area has the user as an owner', () => {
                 [true, false].forEach(onOldNumber => {
                   it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
@@ -874,332 +909,225 @@ describe('get-via-shared-read-model', () => {
               });
               it('The user is marked as an owner', () =>
                 expectUserIsOwner(framework)(memberNumber, areaId));
-              (useExistingAccount ? [true] : [true, false]).forEach(
-                markTrainerOnOld => {
-                  describe(`and then they are marked as a trainer of a piece of equipment on their ${markTrainerOnOld ? 'old' : 'new'} number`, () => {
-                    beforeEach(() =>
-                      markTrainer(
-                        markTrainerOnOld ? memberNumber : newMemberNumber
-                      )
-                    );
-                    describe('The member is shown a trainer', () => {
-                      [true, false].forEach(onOldNumber => {
-                        it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                          expectUserIsTrainer(framework)(
-                            onOldNumber ? memberNumber : newMemberNumber,
-                            equipmentId
-                          ));
-                      });
+              [true, false].forEach(markTrainerOnOld => {
+                describe(`and then they are marked as a trainer of a piece of equipment on their ${markTrainerOnOld ? 'old' : 'new'} number`, () => {
+                  beforeEach(() =>
+                    markTrainer(
+                      markTrainerOnOld ? memberNumber : newMemberNumber
+                    )
+                  );
+                  describe('The member is shown as a trainer', () => {
+                    // It doesn't matter if the old number is within
+                    [true, false].forEach(onOldNumber => {
+                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                        expectUserIsTrainer(framework)(
+                          onOldNumber ? memberNumber : newMemberNumber,
+                          equipmentId
+                        ));
                     });
-                  });
-                }
-              );
-
-              (useExistingAccount ? [true] : [true, false]).forEach(
-                revokeOnOld => {
-                  describe(`and then they are removed as an owner of the area on their ${revokeOnOld ? 'old' : 'new'} number`, () => {
-                    beforeEach(() =>
-                      revokeOwner(revokeOnOld ? memberNumber : newMemberNumber)
-                    );
-                    describe('The member is not shown as an owner', () => {
-                      [true, false].forEach(onOldNumber => {
-                        it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                          expectAreaDoesNotHaveOwner(framework)(
-                            onOldNumber ? memberNumber : newMemberNumber,
-                            areaId
-                          ));
-                      });
-                    });
-                    it('The user is not marked as an owner', () =>
-                      expectUserIsNotOwner(framework)(memberNumber, areaId));
-                  });
-                }
-              );
-            });
-            if (!useExistingAccount) {
-              describe('and then they are marked as an owner of an area on their new number', () => {
-                beforeEach(() => markOwner(newMemberNumber));
-                describe('The area has the user as an owner', () => {
-                  [true, false].forEach(onOldNumber => {
-                    it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                      expectAreaHasOwner(framework)(
-                        onOldNumber ? memberNumber : newMemberNumber,
-                        areaId
-                      ));
-                  });
-                });
-                it('The user is marked as an owner', () =>
-                  expectUserIsOwner(framework)(memberNumber, areaId));
-                [true, false].forEach(markTrainerOnOld => {
-                  describe(`and then they are marked as a trainer of a piece of equipment on their ${markTrainerOnOld ? 'old' : 'new'} number`, () => {
-                    beforeEach(() =>
-                      markTrainer(
-                        markTrainerOnOld ? memberNumber : newMemberNumber
-                      )
-                    );
-                    describe('The member is shown as a trainer', () => {
-                      // It doesn't matter if the old number is within
-                      [true, false].forEach(onOldNumber => {
-                        it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                          expectUserIsTrainer(framework)(
-                            onOldNumber ? memberNumber : newMemberNumber,
-                            equipmentId
-                          ));
-                      });
-                    });
-                  });
-                });
-
-                [true, false].forEach(revokeOnOld => {
-                  describe(`and then they are removed as an owner of the area on their ${revokeOnOld ? 'old' : 'new'} number`, () => {
-                    beforeEach(() =>
-                      revokeOwner(revokeOnOld ? memberNumber : newMemberNumber)
-                    );
-                    describe('The member is not shown as an owner', () => {
-                      [true, false].forEach(onOldNumber => {
-                        it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                          expectAreaDoesNotHaveOwner(framework)(
-                            onOldNumber ? memberNumber : newMemberNumber,
-                            areaId
-                          ));
-                      });
-                    });
-                    it('The user is not marked as an owner', () =>
-                      expectUserIsNotOwner(framework)(memberNumber, areaId));
                   });
                 });
               });
-            }
+
+              [true, false].forEach(revokeOnOld => {
+                describe(`and then they are removed as an owner of the area on their ${revokeOnOld ? 'old' : 'new'} number`, () => {
+                  beforeEach(() =>
+                    revokeOwner(revokeOnOld ? memberNumber : newMemberNumber)
+                  );
+                  describe('The member is not shown as an owner', () => {
+                    [true, false].forEach(onOldNumber => {
+                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                        expectAreaDoesNotHaveOwner(framework)(
+                          onOldNumber ? memberNumber : newMemberNumber,
+                          areaId
+                        ));
+                    });
+                  });
+                  it('The user is not marked as an owner', () =>
+                    expectUserIsNotOwner(framework)(memberNumber, areaId));
+                });
+              });
+            });
+          }
+        });
+
+        describe('with actions prior to rejoining accounts', () => {
+          const wasMemberWithOldNumberAt = faker.date.anytime();
+          const membershipedStoppedAt = faker.date.soon({
+            refDate: wasMemberWithOldNumberAt,
+          });
+          const rejoinedWithNewNumberAt = faker.date.soon({
+            refDate: membershipedStoppedAt,
+            days: 90,
           });
 
-          describe('with actions prior to rejoining accounts', () => {
-            const wasMemberWithOldNumberAt = faker.date.anytime();
-            const membershipedStoppedAt = faker.date.soon({
-              refDate: wasMemberWithOldNumberAt,
-            });
-            const rejoinedWithNewNumberAt = withinTrainingLapsePeriod
-              ? faker.date.soon({
-                  refDate: membershipedStoppedAt,
-                  days: TRAINING_LAPSE_PERIOD.as('days'),
-                })
-              : faker.date.future({
-                  refDate: DateTime.fromJSDate(membershipedStoppedAt)
-                    .plus(TRAINING_LAPSE_PERIOD)
-                    .toJSDate(),
-                });
+          describe('and the user is marked trained on equipment on their old number', () => {
+            beforeEach(async () => {
+              // The user is marked trained on the old number before the linking.
+              jest.useFakeTimers();
+              jest.setSystemTime(wasMemberWithOldNumberAt);
+              await createNewMemberRecord();
+              await markTrainedOnOldNumber();
 
-            describe('and the user is marked trained on equipment on their old number', () => {
+              jest.setSystemTime(membershipedStoppedAt);
+              // await stopMembership(); Not yet implemented so no-op.
+
+              jest.setSystemTime(rejoinedWithNewNumberAt);
+              await markMemberRejoined();
+            });
+            describe('the user shows as trained on their old date', () => {
+              (useExistingAccount ? [true] : [true, false]).forEach(
+                onOldNumber => {
+                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                    expectUserIsTrainedOnEquipmentAt(framework)(
+                      onOldNumber ? memberNumber : newMemberNumber,
+                      equipmentId,
+                      wasMemberWithOldNumberAt
+                    ));
+                }
+              );
+            });
+            describe('equipment shows user as currently trained', () => {
+              (useExistingAccount ? [true] : [true, false]).forEach(
+                onOldNumber =>
+                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                    expectedEquipmentHasUserTrained(framework)(
+                      onOldNumber ? memberNumber : newMemberNumber,
+                      equipmentId
+                    ))
+              );
+            });
+          });
+          if (!useExistingAccount) {
+            describe('and the user is marked trained on equipment on their new number', () => {
               beforeEach(async () => {
-                // The user is marked trained on the old number before the linking.
                 jest.useFakeTimers();
                 jest.setSystemTime(wasMemberWithOldNumberAt);
                 await createNewMemberRecord();
-                await markTrainedOnOldNumber();
-
                 jest.setSystemTime(membershipedStoppedAt);
-                await stopMembership();
-
+                // await stopMembership(); Not yet implemented so no-op.
                 jest.setSystemTime(rejoinedWithNewNumberAt);
                 await markMemberRejoined();
+                await markTrainedOnNewNumber();
               });
-              if (withinTrainingLapsePeriod) {
-                describe('the user shows as trained on their old date', () => {
-                  (useExistingAccount ? [true] : [true, false]).forEach(
-                    onOldNumber => {
-                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                        expectUserIsTrainedOnEquipmentAt(framework)(
-                          onOldNumber ? memberNumber : newMemberNumber,
-                          equipmentId,
-                          wasMemberWithOldNumberAt
-                        ));
-                    }
-                  );
-                });
-                describe('equipment shows user as currently trained', () => {
-                  (useExistingAccount ? [true] : [true, false]).forEach(
-                    onOldNumber =>
-                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                        expectedEquipmentHasUserTrained(framework)(
-                          onOldNumber ? memberNumber : newMemberNumber,
-                          equipmentId
-                        ))
-                  );
-                });
-              } else {
-                describe('user is not shown as trained', () =>
-                  (useExistingAccount ? [true] : [true, false]).forEach(
-                    onOldNumber => {
-                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                        expectUserIsNotTrainedOnEquipment(framework)(
-                          onOldNumber ? memberNumber : newMemberNumber,
-                          equipmentId
-                        ));
-                    }
-                  ));
-                describe('equipment does not show the user as currently trained', () =>
-                  (useExistingAccount ? [true] : [true, false]).forEach(
-                    onOldNumber => {
-                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                        expectedEquipmentNotHasUserTrained(framework)(
-                          onOldNumber ? memberNumber : newMemberNumber,
-                          equipmentId
-                        ));
-                    }
-                  ));
-              }
-            });
-            if (!useExistingAccount) {
-              describe('and the user is marked trained on equipment on their new number', () => {
-                beforeEach(async () => {
-                  jest.useFakeTimers();
-                  jest.setSystemTime(wasMemberWithOldNumberAt);
-                  await createNewMemberRecord();
-                  jest.setSystemTime(membershipedStoppedAt);
-                  await stopMembership();
-                  jest.setSystemTime(rejoinedWithNewNumberAt);
-                  await markMemberRejoined();
-                  await markTrainedOnNewNumber();
-                });
-                describe('the user shows as trained', () => {
-                  (useExistingAccount ? [true] : [true, false]).forEach(
-                    onOldNumber => {
-                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                        expectUserIsTrainedOnEquipmentAt(framework)(
-                          onOldNumber ? memberNumber : newMemberNumber,
-                          equipmentId,
-                          rejoinedWithNewNumberAt
-                        ));
-                    }
-                  );
-                });
-                describe('equipment shows user as currently trained', () => {
-                  (useExistingAccount ? [true] : [true, false]).forEach(
-                    onOldNumber =>
-                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                        expectedEquipmentHasUserTrained(framework)(
-                          onOldNumber ? memberNumber : newMemberNumber,
-                          equipmentId
-                        ))
-                  );
-                });
+              describe('the user shows as trained', () => {
+                (useExistingAccount ? [true] : [true, false]).forEach(
+                  onOldNumber => {
+                    it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                      expectUserIsTrainedOnEquipmentAt(framework)(
+                        onOldNumber ? memberNumber : newMemberNumber,
+                        equipmentId,
+                        rejoinedWithNewNumberAt
+                      ));
+                  }
+                );
               });
-              describe('and the user is marked trained on the equipment on their old number and new number', () => {
-                beforeEach(async () => {
-                  jest.useFakeTimers();
-                  jest.setSystemTime(wasMemberWithOldNumberAt);
-                  await createNewMemberRecord();
-                  await markTrainedOnOldNumber();
-                  jest.setSystemTime(membershipedStoppedAt);
-                  await stopMembership();
-                  jest.setSystemTime(rejoinedWithNewNumberAt);
-                  await markMemberRejoined();
-                  await markTrainedOnNewNumber();
-                });
-                describe('equipment shows user as currently trained', () => {
-                  [true, false].forEach(onOldNumber =>
+              describe('equipment shows user as currently trained', () => {
+                (useExistingAccount ? [true] : [true, false]).forEach(
+                  onOldNumber =>
                     it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
                       expectedEquipmentHasUserTrained(framework)(
                         onOldNumber ? memberNumber : newMemberNumber,
                         equipmentId
                       ))
-                  );
-                });
-                if (withinTrainingLapsePeriod) {
-                  describe('the user shows as trained on their old date', () => {
-                    [true, false].forEach(onOldNumber => {
-                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                        expectUserIsTrainedOnEquipmentAt(framework)(
-                          onOldNumber ? memberNumber : newMemberNumber,
-                          equipmentId,
-                          wasMemberWithOldNumberAt
-                        ));
-                    });
-                  });
-                } else {
-                  describe('the user shows as trained on their new date', () => {
-                    [true, false].forEach(onOldNumber => {
-                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                        expectUserIsTrainedOnEquipmentAt(framework)(
-                          onOldNumber ? memberNumber : newMemberNumber,
-                          equipmentId,
-                          rejoinedWithNewNumberAt
-                        ));
-                    });
-                  });
-                }
+                );
               });
-            }
+            });
+            describe('and the user is marked trained on the equipment on their old number and new number', () => {
+              beforeEach(async () => {
+                jest.useFakeTimers();
+                jest.setSystemTime(wasMemberWithOldNumberAt);
+                await createNewMemberRecord();
+                await markTrainedOnOldNumber();
+                jest.setSystemTime(membershipedStoppedAt);
+                // await stopMembership(); Not yet implemented so no-op.
+                jest.setSystemTime(rejoinedWithNewNumberAt);
+                await markMemberRejoined();
+                await markTrainedOnNewNumber();
+              });
+              describe('equipment shows user as currently trained', () => {
+                [true, false].forEach(onOldNumber =>
+                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                    expectedEquipmentHasUserTrained(framework)(
+                      onOldNumber ? memberNumber : newMemberNumber,
+                      equipmentId
+                    ))
+                );
+              });
+              describe('the user shows as trained on their old date', () => {
+                [true, false].forEach(onOldNumber => {
+                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+                    expectUserIsTrainedOnEquipmentAt(framework)(
+                      onOldNumber ? memberNumber : newMemberNumber,
+                      equipmentId,
+                      wasMemberWithOldNumberAt
+                    ));
+                });
+              });
+            });
+          }
 
+          describe('and the user completes a quiz on their old number + existing email', () => {
+            beforeEach(() => quizPass(memberNumber, memberEmail));
+            it.todo('is shown as awaiting training');
+          });
+          if (useExistingAccount) {
             describe('and the user completes a quiz on their old number + existing email', () => {
               beforeEach(() => quizPass(memberNumber, memberEmail));
               it.todo('is shown as awaiting training');
             });
-            if (useExistingAccount) {
-              describe('and the user completes a quiz on their old number + existing email', () => {
-                beforeEach(() => quizPass(memberNumber, memberEmail));
-                it.todo('is shown as awaiting training');
-              });
-            } else {
-              // By adding another account into the mix there are more possibilities.
-              describe('and the user completes a quiz on their old number + new email', () => {
-                beforeEach(() => quizPass(memberNumber, newEmail));
-                it.todo('is shown as awaiting training');
-              });
-              if (!useExistingAccount) {
-                describe('and the user completes a quiz on their new number + new email', () => {
-                  beforeEach(() => quizPass(newMemberNumber, newEmail));
-                  it.todo('is shown as awaiting training');
-                });
-                describe('and the user completes a quiz on their new number + old email', () => {
-                  beforeEach(() => quizPass(newMemberNumber, memberEmail));
-                  it.todo('is shown as awaiting training');
-                });
-              }
-            }
-            describe('and then they are marked as an owner of an area on their old number', () => {
-              it.todo('The member is shown a owner');
-              describe('and then they are marked as a trainer of a piece of equipment on their old number', () => {
-                it.todo('The member is shown a trainer');
-              });
-              if (!useExistingAccount) {
-                describe('and then they are marked as a trainer of a piece of equipment on their new number', () => {
-                  it.todo('The member is shown a trainer');
-                });
-                describe('and then they are marked as an owner of the area on their new number', () => {
-                  it.todo('The member is still shown as an owner');
-                });
-              }
-              describe('and then they are removed as an owner of the area on their old number', () => {
-                it.todo('The member is not shown as an owner');
-              });
-              if (!useExistingAccount) {
-                describe('and then they are removed as an owner of an area on their new number', () => {
-                  it.todo('The member is not shown as an owner'); // Revoking at this point is taken as revoking for both because they were linked at the time.
-                });
-              }
+          } else {
+            // By adding another account into the mix there are more possibilities.
+            describe('and the user completes a quiz on their old number + new email', () => {
+              beforeEach(() => quizPass(memberNumber, newEmail));
+              it.todo('is shown as awaiting training');
             });
             if (!useExistingAccount) {
-              describe('and then they are marked as an owner of an area on their new number', () => {
-                it.todo('The member is shown a owner');
-                describe('and then they are marked as a trainer of a piece of equipment on their new number', () => {
-                  it.todo('The member is shown a trainer');
-                });
-                describe('and then they are removed as an owner of an area on their new number', () => {
-                  it.todo('The member is not shown as an owner');
-                });
+              describe('and the user completes a quiz on their new number + new email', () => {
+                beforeEach(() => quizPass(newMemberNumber, newEmail));
+                it.todo('is shown as awaiting training');
+              });
+              describe('and the user completes a quiz on their new number + old email', () => {
+                beforeEach(() => quizPass(newMemberNumber, memberEmail));
+                it.todo('is shown as awaiting training');
               });
             }
-            describe('and then they rejoin as a member again', () => {
-              if (withinTrainingLapsePeriod) {
-                it.todo(
-                  'all the training ownership/trainer status continues over'
-                );
-              } else {
-                it.todo(
-                  'none of the training ownership/trainer status continues over'
-                );
-              }
+          }
+          describe('and then they are marked as an owner of an area on their old number', () => {
+            it.todo('The member is shown a owner');
+            describe('and then they are marked as a trainer of a piece of equipment on their old number', () => {
+              it.todo('The member is shown a trainer');
             });
+            if (!useExistingAccount) {
+              describe('and then they are marked as a trainer of a piece of equipment on their new number', () => {
+                it.todo('The member is shown a trainer');
+              });
+              describe('and then they are marked as an owner of the area on their new number', () => {
+                it.todo('The member is still shown as an owner');
+              });
+            }
+            describe('and then they are removed as an owner of the area on their old number', () => {
+              it.todo('The member is not shown as an owner');
+            });
+            if (!useExistingAccount) {
+              describe('and then they are removed as an owner of an area on their new number', () => {
+                it.todo('The member is not shown as an owner'); // Revoking at this point is taken as revoking for both because they were linked at the time.
+              });
+            }
+          });
+          if (!useExistingAccount) {
+            describe('and then they are marked as an owner of an area on their new number', () => {
+              it.todo('The member is shown a owner');
+              describe('and then they are marked as a trainer of a piece of equipment on their new number', () => {
+                it.todo('The member is shown a trainer');
+              });
+              describe('and then they are removed as an owner of an area on their new number', () => {
+                it.todo('The member is not shown as an owner');
+              });
+            });
+          }
+          describe('and then they rejoin as a member again', () => {
+            it.todo('all the training ownership/trainer status continues over');
           });
         });
       });

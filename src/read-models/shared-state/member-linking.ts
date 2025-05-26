@@ -1,10 +1,4 @@
-import {Duration} from 'luxon';
-
 type MemberNumber = number;
-
-export const TRAINING_LAPSE_PERIOD = Duration.fromObject({
-  months: 6,
-});
 
 export class MemberLinking {
   // Stores the linking between member numbers.
