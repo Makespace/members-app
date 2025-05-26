@@ -1058,7 +1058,7 @@ describe('get-via-shared-read-model', () => {
                     expectUserIsTrainedOnEquipmentAt(framework)(
                       onOldNumber ? memberNumber : newMemberNumber,
                       equipmentId,
-                      rejoinedAt
+                      membershipedStoppedAt
                     ));
                 });
               });
