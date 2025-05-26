@@ -85,6 +85,10 @@ const expectAreaHasOwner =
         areaId,
         framework.sharedReadModel.area.get,
         getSomeOrFail,
+        a => {
+          console.log(a);
+          return a;
+        },
         a => a.owners,
         RA.flatMap(owner => owner.memberNumbers)
       )
