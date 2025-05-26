@@ -326,7 +326,7 @@ describe('get-via-shared-read-model', () => {
         });
       });
 
-      [true /*false*/].forEach(rejoinWithNewNumber => {
+      [true, false].forEach(rejoinWithNewNumber => {
         describe(
           rejoinWithNewNumber
             ? 'and then they rejoin with a new member number'
@@ -365,7 +365,7 @@ describe('get-via-shared-read-model', () => {
                 expect(result.isSuperUser).toBe(false);
               });
             }
-            (rejoinWithNewNumber ? [/*true,*/ false] : [false]).forEach(
+            (rejoinWithNewNumber ? [true, false] : [false]).forEach(
               declareOnTheirNewNumber =>
                 describe(
                   declareOnTheirNewNumber
