@@ -707,6 +707,67 @@ describe('get-via-shared-read-model', () => {
             memberNumber,
           });
 
+        const userIsAwaitingTraining = (
+          equipmentId: UUID,
+          usersMembershipNumbers: [string, Int][]
+        ) =>
+          describe('equipment shows user as awaiting training', () =>
+            testOnUsersNumbers(usersMembershipNumbers)(
+              membershipNumberToCheck =>
+                expectUserAwaitingTraining(framework)(
+                  membershipNumberToCheck,
+                  equipmentId
+                )
+            ));
+
+        const userIsNotAwaitingTraining = (
+          equipmentId: UUID,
+          usersMembershipNumbers: [string, Int][]
+        ) =>
+          describe('equipment does not show user as awaiting training', () =>
+            testOnUsersNumbers(usersMembershipNumbers)(
+              membershipNumberToCheck =>
+                expectUserNotAwaitingTraining(framework)(
+                  membershipNumberToCheck,
+                  equipmentId
+                )
+            ));
+
+        const userIsOwner = (
+          areaId: UUID,
+          usersMembershipNumbers: [string, Int][]
+        ) => {
+          describe('area shows user as owner', () =>
+            testOnUsersNumbers(usersMembershipNumbers)(
+              membershipNumberToCheck =>
+                expectAreaHasOwner(framework)(membershipNumberToCheck, areaId)
+            ));
+          describe('user shows user as owner', () =>
+            testOnUsersNumbers(usersMembershipNumbers)(
+              membershipNumberToCheck =>
+                expectUserIsOwner(framework)(membershipNumberToCheck, areaId)
+            ));
+        };
+
+        const userIsNotOwner = (
+          areaId: UUID,
+          usersMembershipNumbers: [string, Int][]
+        ) => {
+          describe('area does not show user as owner', () =>
+            testOnUsersNumbers(usersMembershipNumbers)(
+              membershipNumberToCheck =>
+                expectAreaDoesNotHaveOwner(framework)(
+                  membershipNumberToCheck,
+                  areaId
+                )
+            ));
+          describe('user does not show user as owner', () =>
+            testOnUsersNumbers(usersMembershipNumbers)(
+              membershipNumberToCheck =>
+                expectUserIsNotOwner(framework)(membershipNumberToCheck, areaId)
+            ));
+        };
+
         describe('without actions prior to linking accounts', () => {
           // If there are no actions prior to linking then we can perform the linking immediately.
           // This means all the actions specified below occur after the linking.
@@ -775,104 +836,31 @@ describe('get-via-shared-read-model', () => {
           });
           describe('and the user passes a quiz on their old number', () => {
             beforeEach(() => quizPass(memberNumber, memberEmail));
-            describe('is shown as awaiting training', () =>
-              (useExistingAccount ? [true] : [true, false]).forEach(
-                onOldNumber => {
-                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                    expectUserAwaitingTraining(framework)(
-                      onOldNumber ? memberNumber : newMemberNumber,
-                      equipmentId
-                    ));
-                }
-              ));
+            userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
           });
           // and they have left and then rejoined using their existing account › without actions prior to linking accounts › and the user passes a quiz on their old number › is shown as awaiting training › on their new number
           if (!useExistingAccount) {
             describe('and the user passes a quiz on their new number', () => {
               beforeEach(() => quizPass(newMemberNumber, memberEmail));
-              describe('is shown as awaiting training', () => {
-                [true, false].forEach(onOldNumber => {
-                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                    expectUserAwaitingTraining(framework)(
-                      onOldNumber ? memberNumber : newMemberNumber,
-                      equipmentId
-                    ));
-                });
-              });
+              userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
               describe('and the user is marked trained on equipment on their new number', () => {
                 beforeEach(async () => {
                   await markTrainedOnOldNumber();
                 });
-                describe('the user shows as trained', () => {
-                  [true, false].forEach(onOldNumber => {
-                    it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                      // We aren't checking for a specific date that the user was trained on this equipment because
-                      // that is already checked in other tests.
-                      expectUserIsTrainedOnEquipment(framework)(
-                        onOldNumber ? memberNumber : newMemberNumber,
-                        equipmentId
-                      ));
-                  });
-                });
-                describe('Equipment shows as currently trained', () => {
-                  [true, false].forEach(onOldNumber => {
-                    it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                      expectedEquipmentHasUserTrained(framework)(
-                        onOldNumber ? memberNumber : newMemberNumber,
-                        equipmentId
-                      ));
-                  });
-                });
-                describe('the user is not shown as awaiting training', () => {
-                  [true, false].forEach(onOldNumber => {
-                    it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                      expectUserNotAwaitingTraining(framework)(
-                        onOldNumber ? memberNumber : newMemberNumber,
-                        equipmentId
-                      ));
-                  });
-                });
+                userIsTrained(equipmentId, usersMembershipNumbers);
+                userIsNotAwaitingTraining(equipmentId, usersMembershipNumbers);
               });
             });
             describe('and the user is marked trained on equipment on their new number', () => {
               beforeEach(async () => {
                 await markTrainedOnNewNumber();
               });
-              describe('the user shows as trained', () => {
-                [true, false].forEach(onOldNumber => {
-                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                    expectUserIsTrainedOnEquipment(framework)(
-                      onOldNumber ? memberNumber : newMemberNumber,
-                      equipmentId
-                    ));
-                });
-              });
-              describe('Equipment shows as currently trained', () => {
-                [true, false].forEach(onOldNumber => {
-                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                    expectedEquipmentHasUserTrained(framework)(
-                      onOldNumber ? memberNumber : newMemberNumber,
-                      equipmentId
-                    ));
-                });
-              });
+              userIsTrained(equipmentId, usersMembershipNumbers);
             });
           }
           describe('and then they are marked as an owner of an area on their old number', () => {
             beforeEach(() => markOwner(memberNumber));
-            describe('The area has the user as an owner', () => {
-              (useExistingAccount ? [true] : [true, false]).forEach(
-                onOldNumber => {
-                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                    expectAreaHasOwner(framework)(
-                      onOldNumber ? memberNumber : newMemberNumber,
-                      areaId
-                    ));
-                }
-              );
-            });
-            it('The user is marked as an owner', () =>
-              expectUserIsOwner(framework)(memberNumber, areaId));
+            userIsOwner(areaId, usersMembershipNumbers);
             (useExistingAccount ? [true] : [true, false]).forEach(
               markTrainerOnOld => {
                 describe(`and then they are marked as a trainer of a piece of equipment on their ${markTrainerOnOld ? 'old' : 'new'} number`, () => {
@@ -892,17 +880,7 @@ describe('get-via-shared-read-model', () => {
                   beforeEach(() =>
                     revokeOwner(revokeOnOld ? memberNumber : newMemberNumber)
                   );
-                  describe('The member is not shown as an owner', () => {
-                    [true, false].forEach(onOldNumber => {
-                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                        expectAreaDoesNotHaveOwner(framework)(
-                          onOldNumber ? memberNumber : newMemberNumber,
-                          areaId
-                        ));
-                    });
-                  });
-                  it('The user is not marked as an owner', () =>
-                    expectUserIsNotOwner(framework)(memberNumber, areaId));
+                  userIsNotOwner(areaId, usersMembershipNumbers);
                 });
               }
             );
@@ -910,17 +888,7 @@ describe('get-via-shared-read-model', () => {
           if (!useExistingAccount) {
             describe('and then they are marked as an owner of an area on their new number', () => {
               beforeEach(() => markOwner(newMemberNumber));
-              describe('The area has the user as an owner', () => {
-                [true, false].forEach(onOldNumber => {
-                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                    expectAreaHasOwner(framework)(
-                      onOldNumber ? memberNumber : newMemberNumber,
-                      areaId
-                    ));
-                });
-              });
-              it('The user is marked as an owner', () =>
-                expectUserIsOwner(framework)(newMemberNumber, areaId));
+              userIsOwner(areaId, usersMembershipNumbers);
               [true, false].forEach(markTrainerOnOld => {
                 describe(`and then they are marked as a trainer of a piece of equipment on their ${markTrainerOnOld ? 'old' : 'new'} number`, () => {
                   beforeEach(() =>
@@ -937,17 +905,7 @@ describe('get-via-shared-read-model', () => {
                   beforeEach(() =>
                     revokeOwner(revokeOnOld ? memberNumber : newMemberNumber)
                   );
-                  describe('The member is not shown as an owner', () => {
-                    [true, false].forEach(onOldNumber => {
-                      it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                        expectAreaDoesNotHaveOwner(framework)(
-                          onOldNumber ? memberNumber : newMemberNumber,
-                          areaId
-                        ));
-                    });
-                  });
-                  it('The user is not marked as an owner', () =>
-                    expectUserIsNotOwner(framework)(memberNumber, areaId));
+                  userIsNotOwner(areaId, usersMembershipNumbers);
                 });
               });
             });
@@ -979,28 +937,16 @@ describe('get-via-shared-read-model', () => {
               }
               await markMemberRejoined();
             });
-            describe('the user shows as trained on their old date', () => {
-              (useExistingAccount ? [true] : [true, false]).forEach(
-                onOldNumber => {
-                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                    expectUserIsTrainedOnEquipmentAt(framework)(
-                      onOldNumber ? memberNumber : newMemberNumber,
-                      equipmentId,
-                      wasMemberWithOldNumberAt
-                    ));
-                }
-              );
-            });
-            describe('equipment shows user as currently trained', () => {
-              (useExistingAccount ? [true] : [true, false]).forEach(
-                onOldNumber =>
-                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                    expectedEquipmentHasUserTrained(framework)(
-                      onOldNumber ? memberNumber : newMemberNumber,
-                      equipmentId
-                    ))
-              );
-            });
+            userIsTrained(equipmentId, usersMembershipNumbers);
+            describe('the user shows as trained on their old date', () =>
+              testOnUsersNumbers(usersMembershipNumbers)(
+                membershipNumberToCheck =>
+                  expectUserIsTrainedOnEquipmentAt(framework)(
+                    membershipNumberToCheck,
+                    equipmentId,
+                    wasMemberWithOldNumberAt
+                  )
+              ));
             describe('and then they rejoin as a member again', () => {
               const membershipStoppedAgainAt = faker.date.soon({
                 refDate: rejoinedAt,
@@ -1011,7 +957,7 @@ describe('get-via-shared-read-model', () => {
               const newestMemberNumber = faker.number.int() as Int;
               const newestEmail = faker.internet.email() as EmailAddress;
 
-              const memberNumbers: [string, Int][] = useExistingAccount
+              const usersMembershipNumbers: [string, Int][] = useExistingAccount
                 ? [['old', memberNumber]]
                 : [
                     ['old', memberNumber],
@@ -1050,25 +996,16 @@ describe('get-via-shared-read-model', () => {
                 }
                 await markMemberRejoinedAgain();
               });
-              describe('the user shows as trained on their old date', () => {
-                memberNumbers.forEach(([name, memberNumberToCheck]) =>
-                  it(`on their ${name} number`, () =>
+              userIsTrained(equipmentId, usersMembershipNumbers);
+              describe('the user shows as trained on their old date', () =>
+                testOnUsersNumbers(usersMembershipNumbers)(
+                  membershipNumberToCheck =>
                     expectUserIsTrainedOnEquipmentAt(framework)(
-                      memberNumberToCheck,
+                      membershipNumberToCheck,
                       equipmentId,
                       wasMemberWithOldNumberAt
-                    ))
-                );
-              });
-              describe('equipment shows user as currently trained', () => {
-                memberNumbers.forEach(([name, memberNumberToCheck]) =>
-                  it(`on their ${name} number`, () =>
-                    expectedEquipmentHasUserTrained(framework)(
-                      memberNumberToCheck,
-                      equipmentId
-                    ))
-                );
-              });
+                    )
+                ));
             });
           });
           if (!useExistingAccount) {
@@ -1083,25 +1020,7 @@ describe('get-via-shared-read-model', () => {
                 jest.setSystemTime(rejoinedAt);
                 await markMemberRejoined();
               });
-              describe('the user shows as trained', () => {
-                [true, false].forEach(onOldNumber => {
-                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                    expectUserIsTrainedOnEquipmentAt(framework)(
-                      onOldNumber ? memberNumber : newMemberNumber,
-                      equipmentId,
-                      membershipedStoppedAt
-                    ));
-                });
-              });
-              describe('equipment shows user as currently trained', () => {
-                [true, false].forEach(onOldNumber =>
-                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                    expectedEquipmentHasUserTrained(framework)(
-                      onOldNumber ? memberNumber : newMemberNumber,
-                      equipmentId
-                    ))
-                );
-              });
+              userIsTrained(equipmentId, usersMembershipNumbers);
             });
             describe('the user is marked trained on the equipment on their old number and new number', () => {
               beforeEach(async () => {
@@ -1117,25 +1036,16 @@ describe('get-via-shared-read-model', () => {
                 jest.setSystemTime(rejoinedAt);
                 await markMemberRejoined();
               });
-              describe('equipment shows user as currently trained', () => {
-                [true, false].forEach(onOldNumber =>
-                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                    expectedEquipmentHasUserTrained(framework)(
-                      onOldNumber ? memberNumber : newMemberNumber,
-                      equipmentId
-                    ))
-                );
-              });
-              describe('the user shows as trained on their old date', () => {
-                [true, false].forEach(onOldNumber => {
-                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
+              userIsTrained(equipmentId, usersMembershipNumbers);
+              describe('the user shows as trained on their old date', () =>
+                testOnUsersNumbers(usersMembershipNumbers)(
+                  membershipNumberToCheck =>
                     expectUserIsTrainedOnEquipmentAt(framework)(
-                      onOldNumber ? memberNumber : newMemberNumber,
+                      membershipNumberToCheck,
                       equipmentId,
                       wasMemberWithOldNumberAt
-                    ));
-                });
-              });
+                    )
+                ));
             });
           }
 
@@ -1154,17 +1064,7 @@ describe('get-via-shared-read-model', () => {
               }
               await markMemberRejoined();
             });
-            describe('is shown as awaiting training', () => {
-              (useExistingAccount ? [true] : [true, false]).forEach(
-                onOldNumber => {
-                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                    expectUserAwaitingTraining(framework)(
-                      onOldNumber ? memberNumber : newMemberNumber,
-                      equipmentId
-                    ));
-                }
-              );
-            });
+            userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
           });
           if (!useExistingAccount) {
             // By adding another account into the mix there are more possibilities.
@@ -1180,15 +1080,7 @@ describe('get-via-shared-read-model', () => {
                 jest.setSystemTime(rejoinedAt);
                 await markMemberRejoined();
               });
-              describe('is shown as awaiting training', () => {
-                [true, false].forEach(onOldNumber => {
-                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                    expectUserAwaitingTraining(framework)(
-                      onOldNumber ? memberNumber : newMemberNumber,
-                      equipmentId
-                    ));
-                });
-              });
+              userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
             });
             describe('the user completes a quiz on their new number + existing email', () => {
               beforeEach(async () => {
@@ -1202,15 +1094,7 @@ describe('get-via-shared-read-model', () => {
                 jest.setSystemTime(rejoinedAt);
                 await markMemberRejoined();
               });
-              describe('is shown as awaiting training', () => {
-                [true, false].forEach(onOldNumber => {
-                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                    expectUserAwaitingTraining(framework)(
-                      onOldNumber ? memberNumber : newMemberNumber,
-                      equipmentId
-                    ));
-                });
-              });
+              userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
             });
             describe('the user completes a quiz on their new number + new email', () => {
               beforeEach(async () => {
@@ -1224,15 +1108,7 @@ describe('get-via-shared-read-model', () => {
                 jest.setSystemTime(rejoinedAt);
                 await markMemberRejoined();
               });
-              describe('is shown as awaiting training', () => {
-                [true, false].forEach(onOldNumber => {
-                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                    expectUserAwaitingTraining(framework)(
-                      onOldNumber ? memberNumber : newMemberNumber,
-                      equipmentId
-                    ));
-                });
-              });
+              userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
             });
           }
           describe('the user is an owner of an area on their old number', () => {
@@ -1250,20 +1126,7 @@ describe('get-via-shared-read-model', () => {
               }
               await markMemberRejoined();
             });
-            describe('The area has the user as an owner', () => {
-              (useExistingAccount ? [true] : [true, false]).forEach(
-                onOldNumber => {
-                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                    expectAreaHasOwner(framework)(
-                      onOldNumber ? memberNumber : newMemberNumber,
-                      areaId
-                    ));
-                }
-              );
-            });
-            it('The user is marked as an owner', () =>
-              expectUserIsOwner(framework)(memberNumber, areaId));
-
+            userIsOwner(areaId, usersMembershipNumbers);
             describe('and then they are marked as a trainer of a piece of equipment on their old number', () => {
               beforeEach(() => markTrainer(memberNumber));
               userIsTrainer(equipmentId, usersMembershipNumbers);
@@ -1274,38 +1137,18 @@ describe('get-via-shared-read-model', () => {
                 userIsTrainer(equipmentId, usersMembershipNumbers);
               });
               describe('and then they are marked as an owner of the area on their new number', () => {
-                it('The member is still shown as an owner', () =>
-                  expectUserIsOwner(framework)(memberNumber, areaId));
+                beforeEach(() => markOwner(newMemberNumber));
+                userIsOwner(areaId, usersMembershipNumbers); // User is still an owner.
               });
             }
             describe('and then they are removed as an owner of the area on their old number', () => {
               beforeEach(() => revokeOwner(memberNumber));
-              describe('The member is not shown as an owner anymore', () => {
-                [true, false].forEach(onOldNumber => {
-                  it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                    expectAreaDoesNotHaveOwner(framework)(
-                      onOldNumber ? memberNumber : newMemberNumber,
-                      areaId
-                    ));
-                });
-              });
-              it('The user is not marked as an owner anymore', () =>
-                expectUserIsNotOwner(framework)(memberNumber, areaId));
+              userIsNotOwner(areaId, usersMembershipNumbers);
             });
             if (!useExistingAccount) {
               describe('and then they are removed as an owner of an area on their new number', () => {
                 beforeEach(() => revokeOwner(newMemberNumber)); // Revoking at this point is taken as revoking for both because they were linked at the time.
-                describe('The member is not shown as an owner', () => {
-                  [true, false].forEach(onOldNumber => {
-                    it(`on their ${onOldNumber ? 'old' : 'new'} number`, () =>
-                      expectAreaDoesNotHaveOwner(framework)(
-                        onOldNumber ? memberNumber : newMemberNumber,
-                        areaId
-                      ));
-                  });
-                });
-                it('The user is not marked as an owner anymore', () =>
-                  expectUserIsNotOwner(framework)(memberNumber, areaId));
+                userIsNotOwner(areaId, usersMembershipNumbers);
               });
             }
           });
