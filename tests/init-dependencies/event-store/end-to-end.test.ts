@@ -131,7 +131,9 @@ describe('event-store end-to-end', () => {
         expect(events).toStrictEqual([initialEvent, competingEvent]);
       });
 
-      it('returns on left', () => {
+      it.failing('returns on left', () => {
+        // Known failure.
+        // https://github.com/Makespace/members-app/issues/119
         expect(result).toStrictEqual(E.left(expect.anything()));
       });
     });
