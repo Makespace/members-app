@@ -1,8 +1,13 @@
 import * as O from 'fp-ts/Option';
+import * as RA from 'fp-ts/ReadonlyArray';
 import {MemberCoreInfo} from '../return-types';
 import {ReadonlyNonEmptyArray} from 'fp-ts/lib/ReadonlyNonEmptyArray';
+import {pipe} from 'fp-ts/lib/function';
 
-type MemberCoreInfoPreMerge = Omit<MemberCoreInfo, 'memberNumbers'> & {
+export type MemberCoreInfoPreMerge = Omit<
+  MemberCoreInfo,
+  'pastMemberNumbers'
+> & {
   memberNumber: number;
 };
 
@@ -27,9 +32,13 @@ export const mergeMemberCore = (
       }
       return prev;
     }, O.none);
+  const memberNumber = Math.max(...memberNumbers);
   return {
-    memberNumber: Math.max(...memberNumbers),
-    memberNumbers,
+    memberNumber,
+    pastMemberNumbers: pipe(
+      memberNumbers,
+      RA.filter(m => m !== memberNumber)
+    ),
     emailAddress,
     prevEmails: records
       .flatMap(e => [...e.prevEmails, e.emailAddress])

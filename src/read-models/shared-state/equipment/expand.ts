@@ -10,6 +10,7 @@ import {
   trainingQuizTable,
 } from '../state';
 import {
+  allMemberNumbers,
   EpochTimestampMilliseconds,
   FailedQuizAttempt,
   MemberAwaitingTraining,
@@ -126,9 +127,7 @@ const expandMembersAwaitingTraining =
       };
     }
 
-    const alreadyTrained = equipment.trainedMembers.flatMap(
-      m => m.memberNumbers
-    );
+    const alreadyTrained = equipment.trainedMembers.flatMap(allMemberNumbers);
     return pipe(
       db
         .select()

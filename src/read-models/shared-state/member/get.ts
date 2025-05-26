@@ -6,21 +6,8 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import * as RAE from 'fp-ts/ReadonlyNonEmptyArray';
 import {MemberCoreInfo} from '../return-types';
 import {membersTable} from '../state';
-import {mergeMemberCore} from './merge';
+import {MemberCoreInfoPreMerge, mergeMemberCore} from './merge';
 import {MemberLinking} from '../member-linking';
-
-const transformRow = <
-  R extends {
-    agreementSigned: Date | null | undefined;
-    superUserSince: Date | null | undefined;
-  },
->(
-  row: R
-) => ({
-  ...row,
-  agreementSigned: O.fromNullable(row.agreementSigned),
-  superUserSince: O.fromNullable(row.superUserSince),
-});
 
 const getMergedMember =
   (db: BetterSQLite3Database) =>
@@ -34,7 +21,19 @@ const getMergedMember =
         .all(),
       RA.match(
         () => O.none,
-        rows => O.some(mergeMemberCore(RAE.map(transformRow)(rows)))
+        rows =>
+          pipe(
+            rows,
+            RAE.map(
+              (row): MemberCoreInfoPreMerge => ({
+                ...row,
+                agreementSigned: O.fromNullable(row.agreementSigned),
+                superUserSince: O.fromNullable(row.superUserSince),
+              })
+            ),
+            mergeMemberCore,
+            O.some
+          )
       )
     );
 

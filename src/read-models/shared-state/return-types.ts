@@ -23,7 +23,7 @@ export type FailedQuizAttempt = Pick<MemberCoreInfo, 'memberNumber'> & {
 
 export type TrainedMember = Pick<
   MemberCoreInfo,
-  'name' | 'memberNumber' | 'emailAddress' | 'memberNumbers'
+  'name' | 'memberNumber' | 'emailAddress' | 'pastMemberNumbers'
 > & {
   markedTrainedByActor: O.Option<Actor>;
   trainedByMemberNumber: O.Option<number>;
@@ -38,7 +38,7 @@ export type EpochTimestampMilliseconds = number & {
 
 export type TrainerInfo = Pick<
   MemberCoreInfo,
-  'name' | 'memberNumber' | 'emailAddress' | 'memberNumbers'
+  'name' | 'memberNumber' | 'emailAddress' | 'pastMemberNumbers'
 > & {
   markedTrainerByActor: O.Option<Actor>;
   trainerSince: Date;
@@ -85,7 +85,7 @@ export type OwnerOf = {
 
 export type MemberCoreInfo = {
   memberNumber: number;
-  memberNumbers: number[];
+  pastMemberNumbers: ReadonlyArray<number>;
   emailAddress: EmailAddress;
   prevEmails: ReadonlyArray<EmailAddress>;
   name: O.Option<string>;
@@ -97,9 +97,13 @@ export type MemberCoreInfo = {
   status: string;
 };
 
+export const allMemberNumbers = (
+  m: Pick<MemberCoreInfo, 'memberNumber' | 'pastMemberNumbers'>
+): ReadonlyArray<number> => [m.memberNumber, ...m.pastMemberNumbers];
+
 export type MemberAwaitingTraining = Pick<
   MemberCoreInfo,
-  'memberNumber' | 'name' | 'memberNumbers'
+  'memberNumber' | 'name' | 'pastMemberNumbers'
 > & {
   quizId: UUID;
   waitingSince: Date;
@@ -118,7 +122,7 @@ export type MinimalArea = {
 
 export type Owner = Pick<
   MemberCoreInfo,
-  'memberNumber' | 'name' | 'emailAddress' | 'memberNumbers'
+  'memberNumber' | 'name' | 'emailAddress' | 'pastMemberNumbers'
 > & {
   ownershipRecordedAt: Date;
   markedOwnerBy: O.Option<Actor>;
