@@ -152,10 +152,6 @@ const expandMembersAwaitingTraining =
           )
         )
         .all(),
-      data => {
-        console.log(data);
-        return data;
-      },
       rows => {
         const latestQuizRowByMember = new Map<number, (typeof rows)[0]>();
         for (const row of rows) {
