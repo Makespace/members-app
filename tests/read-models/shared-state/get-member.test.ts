@@ -405,14 +405,16 @@ describe('get-via-shared-read-model', () => {
                       );
                       expect(result).toEqual(madeSuperUserAgainAfterRejoinAt);
                     });
-                    it('they have a new date since when they have been a superuser on their new number', () => {
-                      const result = pipe(
-                        runQuery(newMemberNumber),
-                        member => member.superUserSince,
-                        getSomeOrFail
-                      );
-                      expect(result).toEqual(madeSuperUserAgainAfterRejoinAt);
-                    });
+                    if (rejoinWithNewNumber) {
+                      it('they have a new date since when they have been a superuser on their new number', () => {
+                        const result = pipe(
+                          runQuery(newMemberNumber),
+                          member => member.superUserSince,
+                          getSomeOrFail
+                        );
+                        expect(result).toEqual(madeSuperUserAgainAfterRejoinAt);
+                      });
+                    }
                   }
                 )
             );
