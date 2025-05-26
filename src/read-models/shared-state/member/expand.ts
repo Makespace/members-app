@@ -58,7 +58,7 @@ const expandOwnerOf =
         })
         .from(ownersTable)
         .leftJoin(areasTable, eq(areasTable.id, ownersTable.areaId))
-        .where(eq(ownersTable.memberNumber, member.memberNumber))
+        .where(inArray(ownersTable.memberNumber, member.memberNumbers))
         .all(),
       RA.filter(fieldIsNotNull('name')),
       ownerOf => ({
@@ -84,7 +84,7 @@ const expandTrainerFor =
           equipmentTable,
           eq(trainersTable.equipmentId, equipmentTable.id)
         )
-        .where(eq(trainersTable.memberNumber, member.memberNumber))
+        .where(inArray(trainersTable.memberNumber, member.memberNumbers))
         .all(),
       RA.filter(fieldIsNotNull('equipment_name')),
       RA.filter(fieldIsUUID('equipment_id')),
