@@ -15,6 +15,9 @@ describe('construct-view-model', () => {
   beforeEach(async () => {
     framework = await initTestFramework();
   });
+  afterEach(() => {
+    framework.eventStoreDb.close();
+  });
 
   const loggedInUser = arbitraryUser();
   beforeEach(async () => {

@@ -65,6 +65,10 @@ describe('Load cached trouble ticket data', () => {
       framework.sharedReadModel.updateState
     );
   });
+  afterEach(() => {
+    framework.eventStoreDb.close();
+  });
+
   describe('Load previously cached trouble tickets', () => {
     const timestamp = new Date(2024, 1, 23, 4, 23, 45);
     const trainingQuizResults: ReadonlyArray<

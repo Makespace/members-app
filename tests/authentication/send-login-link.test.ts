@@ -20,6 +20,10 @@ describe('send-log-in-link', () => {
     framework = await initTestFramework();
   });
 
+  afterEach(() => {
+    framework.eventStoreDb.close();
+  });
+
   const getAllEvents: Dependencies['getAllEvents'] = () => () =>
     framework.getAllEvents().then(events => E.right(events));
 

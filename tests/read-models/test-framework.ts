@@ -12,7 +12,6 @@ import {commands, Command} from '../../src/commands';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
 import {arbitraryActor, getRightOrFail} from '../helpers';
 import * as libsqlClient from '@libsql/client';
-import {randomUUID} from 'crypto';
 import {getResourceEvents} from '../../src/init-dependencies/event-store/get-resource-events';
 import {EventName, EventOfType} from '../../src/types/domain-event';
 import {Dependencies} from '../../src/dependencies';
@@ -56,7 +55,7 @@ export const initTestFramework = async (
 ): Promise<TestFramework> => {
   const logger = createLogger({level: 'silent'});
   const dbClient = libsqlClient.createClient({
-    url: `file:/tmp/${randomUUID()}.db`,
+    url: ':memory:',
   });
   const sharedReadModel = initSharedReadModel(
     dbClient,

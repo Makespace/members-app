@@ -24,7 +24,7 @@ prod:
 	docker-compose --file docker-compose.yaml up --build
 
 test: node_modules
-	bun jest
+	npx jest
 
 smoketest: .env
 	./scripts/smoketest.sh
