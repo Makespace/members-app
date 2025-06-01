@@ -45,8 +45,9 @@ const expandTrainers =
           linking.map(trainer.memberNumber),
           getMergedMemberSet(db),
           O.map(member => ({
-            ...member,
+            // Order is important here otherwise the trainedMember memberNumber overwrites the member memberNumber which might not match due to memberNumber linking.
             ...trainer,
+            ...member,
             markedTrainerByActor: O.fromEither(
               Actor.decode(trainer.markedTrainerByActor)
             ),
