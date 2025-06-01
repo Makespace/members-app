@@ -10,7 +10,7 @@ primary_region = 'lhr'
 strategy = "bluegreen"
 
 [env]
-BACKGROUND_PROCESSING_ENABLED = 'false'
+BACKGROUND_PROCESSING_ENABLED = 'true'
 SMTP_PORT = '587'
 PUBLIC_URL = 'https://app.makespace.org'
 SMTP_HOST = 'in-v3.mailjet.com'
@@ -35,5 +35,5 @@ timeout = "5s"
 path = "/ping"
 
 [[vm]]
-size = 'shared-cpu-1x'
+size = 'shared-cpu-2x'
 memory = '512mb'
