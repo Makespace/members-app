@@ -36,7 +36,7 @@ export const getMemberAsActorFull =
           }
         }
         return O.fromNullable(
-          redactDetailsForActor(actor)(members).get(memberNumber)
+          redactDetailsForActor(actor)(members).get(member.memberNumber)
         );
       })
     );
