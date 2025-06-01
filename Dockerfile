@@ -40,5 +40,6 @@ FROM node AS prod
 COPY --from=prod-deps /app/node_modules node_modules/
 COPY --from=prod-build /app/build/ build/
 COPY ./src/static build/src/static/
+COPY ./src/instrument.mjs ./
 RUN ls -l
-CMD ["node", "build/src/index.js"]
+CMD ["node", "--import", "./instrument.mjs", "build/src/index.js"]
