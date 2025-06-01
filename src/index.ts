@@ -1,4 +1,3 @@
-import * as Sentry from '@sentry/node';
 import express, {Application} from 'express';
 import {createRouter} from './http';
 import passport from 'passport';
@@ -41,14 +40,6 @@ const cacheClient = libsqlClient.createClient({
 });
 const deps = initDependencies(dbClient, cacheClient, conf);
 const routes = initRoutes(deps, conf);
-
-// Ensure to call this before importing any other modules!
-if (conf.SENTRY_DSN) {
-  Sentry.init({
-    dsn: conf.SENTRY_DSN,
-    tracesSampleRate: 1.0,
-  });
-}
 
 // Passport Setup
 passport.use(magicLink.name, magicLink.strategy(deps, conf));

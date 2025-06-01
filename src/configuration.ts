@@ -17,7 +17,6 @@ const LogLevel = t.keyof({
 
 const Config = t.strict({
   ADMIN_API_BEARER_TOKEN: tt.NonEmptyString,
-  SENTRY_DSN: t.union([t.undefined, t.string]),
   PORT: withDefaultIfEmpty(tt.IntFromString, 8080 as t.Int),
   PUBLIC_URL: tt.NonEmptyString,
   SESSION_SECRET: tt.NonEmptyString,
