@@ -5,7 +5,6 @@ import {gravatarHashFromEmail} from '../members/avatar';
 import {
   areasTable,
   equipmentTable,
-  memberLinkTable,
   membersTable,
   ownersTable,
   trainedMemberstable,
@@ -17,11 +16,21 @@ import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, eq, inArray} from 'drizzle-orm';
 import {isOwnerOfAreaContainingEquipment} from './area/helpers';
 import {pipe} from 'fp-ts/lib/function';
+import {MemberLinking} from './member-linking';
+
+const revokeSuperuser = (db: BetterSQLite3Database, memberNumber: number) =>
+  db
+    .update(membersTable)
+    .set({isSuperUser: false, superUserSince: null})
+    .where(eq(membersTable.memberNumber, memberNumber))
+    .run();
 
 export const updateState =
-  (db: BetterSQLite3Database) => (event: DomainEvent) => {
+  (db: BetterSQLite3Database, linking: MemberLinking) =>
+  (event: DomainEvent) => {
     switch (event.type) {
       case 'MemberNumberLinkedToEmail':
+        linking.link([event.memberNumber]);
         db.insert(membersTable)
           .values({
             memberNumber: event.memberNumber,
@@ -76,10 +85,7 @@ export const updateState =
           .run();
         break;
       case 'SuperUserRevoked':
-        db.update(membersTable)
-          .set({isSuperUser: false, superUserSince: null})
-          .where(eq(membersTable.memberNumber, event.memberNumber))
-          .run();
+        revokeSuperuser(db, event.memberNumber);
         break;
       case 'EquipmentAdded':
         db.insert(equipmentTable)
@@ -88,7 +94,7 @@ export const updateState =
         break;
       case 'TrainerAdded': {
         if (
-          isOwnerOfAreaContainingEquipment(db)(
+          isOwnerOfAreaContainingEquipment(db, linking)(
             event.equipmentId,
             event.memberNumber
           )
@@ -187,7 +193,10 @@ export const updateState =
         db.delete(ownersTable)
           .where(
             and(
-              eq(ownersTable.memberNumber, event.memberNumber),
+              inArray(
+                ownersTable.memberNumber,
+                Array.from(linking.map(event.memberNumber))
+              ),
               eq(ownersTable.areaId, event.areaId)
             )
           )
@@ -299,15 +308,13 @@ export const updateState =
         break;
       }
       case 'MemberRejoinedWithNewNumber': {
-        db.insert(memberLinkTable)
-          .values({
-            oldMembershipNumber: event.oldMembershipNumber,
-            newMembershipNumber: event.newMembershipNumber,
-            accountsLinkedAt: event.recordedAt,
-            markedLinkedByMemberNumber:
-              event.actor.tag === 'user' ? event.actor.user.memberNumber : null,
-          })
-          .run();
+        linking.link([event.oldMemberNumber, event.newMemberNumber]);
+        revokeSuperuser(db, event.oldMemberNumber);
+        revokeSuperuser(db, event.newMemberNumber);
+        break;
+      }
+      case 'MemberRejoinedWithExistingNumber': {
+        revokeSuperuser(db, event.memberNumber);
         break;
       }
       default:

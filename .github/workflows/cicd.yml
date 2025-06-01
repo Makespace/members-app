@@ -18,6 +18,14 @@ jobs:
       - uses: jdx/mise-action@v2
       - run: make lint unused-exports
 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - run: make node_modules
+      - run: npx jest
+
   smoketest:
     runs-on: ubuntu-latest
     steps:
@@ -28,7 +36,7 @@ jobs:
   deploy:
     name: Deploy to fly.io
     if: github.ref == 'refs/heads/main'
-    needs: [typecheck, lint, smoketest]
+    needs: [typecheck, lint, test, smoketest]
     runs-on: ubuntu-latest
     concurrency: deploy-group
     steps:

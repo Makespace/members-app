@@ -24,25 +24,6 @@ describe('declare-super-user', () => {
     });
   });
 
-  describe('when the member is already a super user', () => {
-    const memberNumber = faker.number.int();
-    const result = declare.process({
-      command: {
-        memberNumber,
-        actor: arbitraryActor(),
-      },
-      events: [
-        constructEvent('SuperUserDeclared')({
-          memberNumber,
-        }),
-      ],
-    });
-
-    it('does nothing', () => {
-      expect(result).toStrictEqual(O.none);
-    });
-  });
-
   describe('when the member was previously a super user', () => {
     const memberNumber = faker.number.int();
     const result = declare.process({

@@ -39,20 +39,6 @@ export const withDefaultIfEmpty = <C extends t.Any>(
     )
   );
 
-export const accumByMap =
-  <T, R>(accumBy: (a: T) => string | number, map: (a: T[]) => R) =>
-  (arr: ReadonlyArray<T>): ReadonlyArray<R> => {
-    const accumulated: Record<string | number, T[]> = {};
-    for (const el of arr) {
-      const key = accumBy(el);
-      if (!accumulated[key]) {
-        accumulated[key] = [];
-      }
-      accumulated[key].push(el);
-    }
-    return Object.values(accumulated).map(map);
-  };
-
 export const fieldIsNotNull =
   <K extends string>(key: K) =>
   <T extends Record<K, string | null>>(obj: T): obj is T & {[P in K]: string} =>
