@@ -789,6 +789,16 @@ describe('get-via-shared-read-model', () => {
                 framework.sharedReadModel.members.get(newMemberNumber);
               expect(getSomeOrFail(old)).toStrictEqual(getSomeOrFail(newData));
             });
+
+            it('Searching for the member by either number (as actor) shows the same base data', () => {
+              const asSelf = framework.sharedReadModel.members.getAsActor({
+                emailAddress: memberEmail,
+                memberNumber: memberNumber,
+              });
+              const old = asSelf(memberNumber);
+              const newData = asSelf(newMemberNumber);
+              expect(getSomeOrFail(old)).toStrictEqual(getSomeOrFail(newData));
+            });
           }
 
           it('The list of all members only shows the member once', () => {
