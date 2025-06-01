@@ -21,7 +21,7 @@ export const render = () => html`
       <li><a href="/members/create">Link an email and number</a></li>
       <li><a href="/training-status.csv">Download current owners and trainers</li>
       <li><a href="/trouble-tickets">View all trouble tickets (prototype)</li>
-      <li><a href="/members/rejoined-with-new">Link a current user with their old membership</a></li>
+      <li><a href="/members/rejoined-with-new">Mark member rejoined with new number</a></li>
       <li><a href="/members/rejoined-with-existing">Mark a user as rejoined</a></li>
     </ul>
   </nav>
