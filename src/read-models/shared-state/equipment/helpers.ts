@@ -6,12 +6,14 @@ import {getAllEquipmentMinimal, getEquipmentMinimal} from './get';
 import {expandAll} from './expand';
 import {Equipment} from '../return-types';
 import {UUID} from 'io-ts-types';
+import {MemberLinking} from '../member-linking';
 
 export const getAllEquipmentFull =
-  (db: BetterSQLite3Database) => (): ReadonlyArray<Equipment> =>
-    pipe(getAllEquipmentMinimal(db), RA.map(expandAll(db)));
+  (db: BetterSQLite3Database, linking: MemberLinking) =>
+  (): ReadonlyArray<Equipment> =>
+    pipe(getAllEquipmentMinimal(db), RA.map(expandAll(db, linking)));
 
 export const getEquipmentFull =
-  (db: BetterSQLite3Database) =>
+  (db: BetterSQLite3Database, linking: MemberLinking) =>
   (equipmentId: UUID): O.Option<Equipment> =>
-    pipe(equipmentId, getEquipmentMinimal(db), O.map(expandAll(db)));
+    pipe(equipmentId, getEquipmentMinimal(db), O.map(expandAll(db, linking)));

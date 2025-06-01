@@ -13,7 +13,7 @@ export type OrphanedPassedQuiz = {
   emailProvided: O.Option<string>;
 };
 
-export type FailedQuizAttempt = MemberCoreInfo & {
+export type FailedQuizAttempt = Pick<MemberCoreInfo, 'memberNumber'> & {
   quizId: UUID;
   score: number;
   maxScore: number;
@@ -21,7 +21,10 @@ export type FailedQuizAttempt = MemberCoreInfo & {
   timestamp: Date;
 };
 
-export type TrainedMember = MemberCoreInfo & {
+export type TrainedMember = Pick<
+  MemberCoreInfo,
+  'name' | 'memberNumber' | 'emailAddress' | 'pastMemberNumbers'
+> & {
   markedTrainedByActor: O.Option<Actor>;
   trainedByMemberNumber: O.Option<number>;
   trainedByEmail: O.Option<EmailAddress>;
@@ -33,7 +36,10 @@ export type EpochTimestampMilliseconds = number & {
   readonly EpochTimestampMilliseconds: unique symbol;
 };
 
-export type TrainerInfo = MemberCoreInfo & {
+export type TrainerInfo = Pick<
+  MemberCoreInfo,
+  'name' | 'memberNumber' | 'emailAddress' | 'pastMemberNumbers'
+> & {
   markedTrainerByActor: O.Option<Actor>;
   trainerSince: Date;
 };
@@ -79,6 +85,7 @@ export type OwnerOf = {
 
 export type MemberCoreInfo = {
   memberNumber: number;
+  pastMemberNumbers: ReadonlyArray<number>;
   emailAddress: EmailAddress;
   prevEmails: ReadonlyArray<EmailAddress>;
   name: O.Option<string>;
@@ -90,9 +97,15 @@ export type MemberCoreInfo = {
   status: string;
 };
 
-export type MemberAwaitingTraining = MemberCoreInfo & {
+export const allMemberNumbers = (
+  m: Pick<MemberCoreInfo, 'memberNumber' | 'pastMemberNumbers'>
+): ReadonlyArray<number> => [m.memberNumber, ...m.pastMemberNumbers];
+
+export type MemberAwaitingTraining = Pick<
+  MemberCoreInfo,
+  'memberNumber' | 'name' | 'pastMemberNumbers'
+> & {
   quizId: UUID;
-  memberNumber: number;
   waitingSince: Date;
 };
 
@@ -107,7 +120,10 @@ export type MinimalArea = {
   name: string;
 };
 
-export type Owner = MemberCoreInfo & {
+export type Owner = Pick<
+  MemberCoreInfo,
+  'memberNumber' | 'name' | 'emailAddress' | 'pastMemberNumbers'
+> & {
   ownershipRecordedAt: Date;
   markedOwnerBy: O.Option<Actor>;
 };

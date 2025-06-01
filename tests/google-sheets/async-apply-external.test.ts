@@ -91,9 +91,6 @@ describe('Integration asyncApplyExternalEventSources', () => {
     expect(bambuAfter.membersAwaitingTraining[0].memberNumber).toStrictEqual(
       gsheetData.BAMBU.entries[0].memberNumberProvided
     );
-    expect(bambuAfter.membersAwaitingTraining[0].emailAddress).toStrictEqual(
-      gsheetData.BAMBU.entries[0].emailProvided
-    );
     expect(bambuAfter.membersAwaitingTraining[0].waitingSince).toStrictEqual(
       new Date(gsheetData.getLatestEvent(gsheetData.BAMBU).timestampEpochMS)
     );

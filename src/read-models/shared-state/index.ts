@@ -23,10 +23,12 @@ import {
 import {Dependencies} from '../../dependencies';
 import {dumpCurrentState, SharedDatabaseDump} from './debug/dump';
 import {getAllTroubleTicketFull} from './troubletickets/get';
+import {MemberLinking} from './member-linking';
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
   _underlyingReadModelDb: Database.Database; // This is exposed only to allow debug serialisation of the db.
+  linking: MemberLinking;
   asyncRefresh: () => T.Task<void>;
   asyncApplyExternalEventSources: () => T.Task<void>;
   updateState: ReturnType<typeof updateState>;
@@ -64,10 +66,12 @@ export const initSharedReadModel = (
   const _underlyingReadModelDb = new Database();
   const readModelDb = drizzle(_underlyingReadModelDb);
   createTables.forEach(statement => readModelDb.run(statement));
-  const updateState_ = updateState(readModelDb);
+  const linking = new MemberLinking();
+  const updateState_ = updateState(readModelDb, linking);
 
   return {
     db: readModelDb,
+    linking,
     _underlyingReadModelDb,
     asyncRefresh: asyncRefresh(eventStoreClient, updateState_),
     updateState: updateState_,
@@ -83,17 +87,17 @@ export const initSharedReadModel = (
       recurlyToken
     ),
     members: {
-      get: getMemberFull(readModelDb),
-      getAll: getAllMemberFull(readModelDb),
-      getAsActor: getMemberAsActorFull(readModelDb),
+      get: getMemberFull(readModelDb, linking),
+      getAll: getAllMemberFull(readModelDb, linking),
+      getAsActor: getMemberAsActorFull(readModelDb, linking),
     },
     equipment: {
-      get: getEquipmentFull(readModelDb),
-      getAll: getAllEquipmentFull(readModelDb),
+      get: getEquipmentFull(readModelDb, linking),
+      getAll: getAllEquipmentFull(readModelDb, linking),
     },
     area: {
-      get: getAreaFull(readModelDb),
-      getAll: getAllAreaFull(readModelDb),
+      get: getAreaFull(readModelDb, linking),
+      getAll: getAllAreaFull(readModelDb, linking),
     },
     debug: {
       dump: dumpCurrentState(readModelDb),

@@ -1,7 +1,10 @@
 import {getGravatarProfile, getGravatarThumbnail} from '../../templates/avatar';
 import {Html, html, sanitizeOption, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
-import {renderMemberNumber} from '../../templates/member-number';
+import {
+  renderMemberNumber,
+  renderMemberNumbers,
+} from '../../templates/member-number';
 import {memberStatusTag} from '../../templates/member-status';
 import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
 import {renderOwnerStatus} from '../shared-render/owner-status';
@@ -44,6 +47,10 @@ export const render = (viewModel: ViewModel) => html`
       <tr>
         <th scope="row">Member number</th>
         <td>${renderMemberNumber(viewModel.member.memberNumber)}</td>
+      </tr>
+      <tr>
+        <th scope="row">Past Member Numbers</th>
+        <td>${renderMemberNumbers(viewModel.member.pastMemberNumbers)}</td>
       </tr>
       <tr>
         <th scope="row">Email</th>

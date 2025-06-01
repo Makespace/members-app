@@ -67,8 +67,13 @@ export const initRoutes = (
     ),
     ...command(
       'members',
-      'rejoined',
-      commands.memberNumbers.markMemberRejoined
+      'rejoined-with-new',
+      commands.memberNumbers.markMemberRejoinedWithNewNumber
+    ),
+    ...command(
+      'members',
+      'rejoined-with-existing',
+      commands.memberNumbers.markMemberRejoinedWithExistingNumber
     ),
     email('owner-agreement-invite', sendEmailCommands.ownerAgreementInvite),
     get('/ping', ping),
