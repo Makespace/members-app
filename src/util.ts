@@ -3,6 +3,8 @@ import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as E from 'fp-ts/Either';
 import {pipe} from 'fp-ts/lib/function';
+import {Client, InArgs} from '@libsql/client/.';
+import {startSpan} from '@sentry/node';
 
 export const logPassThru =
   (logger: Logger, msg: string) =>
@@ -60,3 +62,19 @@ export const timeAsync =
     callback(Number(process.hrtime.bigint() - start));
     return result;
   };
+
+export const dbExecute = (dbClient: Client, sql: string, args: InArgs) =>
+  startSpan(
+    {
+      name: 'db query',
+      attributes: {
+        sql,
+      },
+      op: 'db.sql.query',
+    },
+    () =>
+      dbClient.execute({
+        sql,
+        args,
+      })
+  );

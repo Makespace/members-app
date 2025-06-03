@@ -12,6 +12,7 @@ import {Client} from '@libsql/client/.';
 import {StatusCodes} from 'http-status-codes';
 import {DomainEvent} from '../../types';
 import {EventName, EventOfType} from '../../types/domain-event';
+import {dbExecute} from '../../util';
 
 export const getAllEvents =
   (dbClient: Client): Dependencies['getAllEvents'] =>
@@ -19,10 +20,11 @@ export const getAllEvents =
     pipe(
       TE.tryCatch(
         () =>
-          dbClient.execute({
-            sql: "SELECT * FROM events WHERE event_type != 'EquipmentTrainingQuizResult'",
-            args: {},
-          }),
+          dbExecute(
+            dbClient,
+            "SELECT * FROM events WHERE event_type != 'EquipmentTrainingQuizResult'",
+            {}
+          ),
         failureWithStatus(
           'Failed to query database',
           StatusCodes.INTERNAL_SERVER_ERROR
@@ -44,10 +46,9 @@ export const getAllEventsByType =
     pipe(
       TE.tryCatch(
         () =>
-          dbClient.execute({
-            sql: 'SELECT * FROM events WHERE event_type = ?;',
-            args: [eventType],
-          }),
+          dbExecute(dbClient, 'SELECT * FROM events WHERE event_type = ?;', [
+            eventType,
+          ]),
         failureWithStatus(
           `Failed to query database for events of type '${eventType}'`,
           StatusCodes.INTERNAL_SERVER_ERROR
