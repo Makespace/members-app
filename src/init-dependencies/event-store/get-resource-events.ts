@@ -12,6 +12,7 @@ import {eventsFromRows} from './events-from-rows';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {Client} from '@libsql/client/.';
 import {StatusCodes} from 'http-status-codes';
+import {dbExecute} from '../../util';
 
 const getLatestVersion = (rows: EventsTable['rows']) =>
   pipe(
@@ -26,10 +27,11 @@ export const getResourceEvents =
     pipe(
       TE.tryCatch(
         () =>
-          dbClient.execute({
-            sql: 'SELECT * FROM events WHERE resource_type = ? AND resource_id = ?;',
-            args: [resource.type, resource.id],
-          }),
+          dbExecute(
+            dbClient,
+            'SELECT * FROM events WHERE resource_type = ? AND resource_id = ?;',
+            [resource.type, resource.id]
+          ),
         failureWithStatus(
           'Failed to query database',
           StatusCodes.INTERNAL_SERVER_ERROR

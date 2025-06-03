@@ -17,6 +17,7 @@ import {
   internalCodecFailure,
 } from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
+import {dbExecute} from '../../util';
 
 // Note that this isn't automatically type safe. It does rely on the cached
 // data actually being the type of DomainEvent we say it is.
@@ -45,13 +46,14 @@ export const getCachedSheetData =
     pipe(
       TE.tryCatch(
         () =>
-          dbClient.execute({
+          dbExecute(
             // Currently we can do LIMIT 1 because we only expect each sheet to have a single entry within the cache sheet data
-            sql: 'SELECT * FROM cached_sheet_data WHERE sheet_id = $sheetId LIMIT 1',
-            args: {
+            dbClient,
+            'SELECT * FROM cached_sheet_data WHERE sheet_id = $sheetId LIMIT 1',
+            {
               sheetId,
-            },
-          }),
+            }
+          ),
         failureWithStatus(
           'Failed to get cached sheet data',
           StatusCodes.INTERNAL_SERVER_ERROR

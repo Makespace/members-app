@@ -12,6 +12,7 @@ import {v4 as uuidv4} from 'uuid';
 import {Client} from '@libsql/client/.';
 import {DomainEvent, ResourceVersion} from '../../types';
 import {Resource} from '../../types/resource';
+import {dbExecute} from '../../util';
 
 export const initialVersionNumber = 0;
 
@@ -55,10 +56,11 @@ const insertEventWithOptimisticConcurrencyControl = async (
     lastKnownVersion === 'no-such-resource'
       ? initialVersionNumber
       : lastKnownVersion + 1;
-  const result = await dbClient.execute({
-    sql: insertEventRow,
-    args: constructArgsForNewEventRow(event, resource, newResourceVersion),
-  });
+  const result = await dbExecute(
+    dbClient,
+    insertEventRow,
+    constructArgsForNewEventRow(event, resource, newResourceVersion)
+  );
   logger.debug({rowsAffected: result.rowsAffected}, 'OCC feedback is broken');
   return 'raised-event';
 };
