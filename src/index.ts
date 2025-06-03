@@ -60,6 +60,10 @@ app.use(cookieSessionPassportWorkaround);
 app.set('trust proxy', true);
 app.use(createRouter(routes));
 
+setInterval(() => {
+  deps.logger.info('Heartbeat');
+}, 5000);
+
 // Start application
 startMagicLinkEmailPubSub(deps, conf);
 const server = http.createServer(app);
