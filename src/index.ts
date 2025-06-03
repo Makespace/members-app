@@ -25,6 +25,7 @@ import {
   loadCachedTroubleTicketData,
 } from './load-cached-sheet-data';
 import {timeAsync} from './util';
+import { startSpan } from '@sentry/node';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -61,7 +62,10 @@ app.set('trust proxy', true);
 app.use(createRouter(routes));
 
 setInterval(() => {
-  deps.logger.info('Heartbeat');
+  startSpan({
+    name: 'Heartbeat',
+    op: 'mark'
+  }, () => deps.logger.info('Heartbeat'));
 }, 5000);
 
 // Start application
