@@ -33,6 +33,7 @@ import {formatValidationErrors} from 'io-ts-reporters';
 import {DateTime, Duration} from 'luxon';
 import {pipe} from 'fp-ts/lib/function';
 import {extractTimestamp} from '../../google/util';
+import {startSpan} from '@sentry/node';
 
 const ROW_BATCH_SIZE = 50;
 const EXPECTED_TROUBLE_TICKET_RESPONSE_SHEET_NAME = 'Form Responses 1';
@@ -379,78 +380,107 @@ async function asyncApplyGoogleEvents(
   cacheSheetData: Dependencies['cacheSheetData'],
   cacheTroubleTicketData: Dependencies['cacheTroubleTicketData']
 ) {
-  if (O.isSome(troubleTicketSheetId)) {
-    logger.info('Pulling latest trouble ticket reports...');
-    if (
-      O.isNone(lastTroubleTicketSync) ||
-      lastTroubleTicketSync.value.diffNow() > TROUBLE_TICKET_SYNC_INTERVAL
-    ) {
-      await pullTroubleTicketResponses(
-        logger,
-        googleHelpers,
-        troubleTicketSheetId.value,
-        updateState,
-        cacheTroubleTicketData
-      );
-      lastTroubleTicketSync = O.some(DateTime.now());
-    } else {
-      logger.info(
-        '%s since last trouble ticket sync - not resyncing yet',
-        lastTroubleTicketSync.value.diffNow().toHuman()
-      );
+  await startSpan(
+    {
+      name: 'Apply Google Events',
+    },
+    async () => {
+      if (O.isSome(troubleTicketSheetId)) {
+        logger.info('Pulling latest trouble ticket reports...');
+        if (
+          O.isNone(lastTroubleTicketSync) ||
+          lastTroubleTicketSync.value.diffNow() > TROUBLE_TICKET_SYNC_INTERVAL
+        ) {
+          await startSpan(
+            {
+              name: 'Trouble Ticket Sync',
+              attributes: {
+                troubleTicketSheetId: troubleTicketSheetId.value,
+              },
+            },
+            async () => {
+              await pullTroubleTicketResponses(
+                logger,
+                googleHelpers,
+                troubleTicketSheetId.value,
+                updateState,
+                cacheTroubleTicketData
+              );
+              lastTroubleTicketSync = O.some(DateTime.now());
+            }
+          );
+        } else {
+          logger.info(
+            '%s since last trouble ticket sync - not resyncing yet',
+            lastTroubleTicketSync.value.diffNow().toHuman()
+          );
+        }
+        logger.info('...done');
+      }
+
+      logger.info('Pulling google training sheet data...');
+      for (const equipment of getAllEquipmentMinimal(currentState)) {
+        const equipmentLogger = logger.child({equipment});
+        if (
+          O.isNone(equipment.trainingSheetId) ||
+          (O.isSome(equipment.lastQuizSync) &&
+            Date.now() - equipment.lastQuizSync.value <
+              googleRefreshIntervalMs + Math.random() * googleRefreshIntervalMs) // Try a random offset to spread out cpu usage.
+        ) {
+          equipmentLogger.info('No google training sheet refresh required');
+          continue;
+        }
+        const equipmentTrainingSheetId = equipment.trainingSheetId.value;
+        await startSpan(
+          {
+            name: 'Async Apply Google Events Equipment',
+            attributes: {
+              equipment_id: equipment.id,
+              equipment_name: equipment.name,
+              equipment_training_sheet_id: equipmentTrainingSheetId,
+            },
+          },
+          async () => {
+            equipmentLogger.info(
+              'Triggering event update from google training sheets...'
+            );
+
+            const events: (
+              | EventOfType<'EquipmentTrainingQuizSync'>
+              | EventOfType<'EquipmentTrainingQuizResult'>
+            )[] = [];
+            const collectEvents = (
+              event:
+                | EventOfType<'EquipmentTrainingQuizSync'>
+                | EventOfType<'EquipmentTrainingQuizResult'>
+            ) => {
+              events.push(event);
+              updateState(event);
+            };
+
+            await pullNewEquipmentQuizResults(
+              equipmentLogger,
+              googleHelpers,
+              equipment.id,
+              equipmentTrainingSheetId,
+              collectEvents
+            );
+            equipmentLogger.info(
+              'Finished pulling %s events from google training sheet, caching...',
+              events.length
+            );
+            await cacheSheetData(
+              new Date(),
+              equipmentTrainingSheetId,
+              equipmentLogger,
+              events
+            );
+          }
+        );
+      }
+      logger.info('...done');
     }
-    logger.info('...done');
-  }
-
-  logger.info('Pulling google training sheet data...');
-  for (const equipment of getAllEquipmentMinimal(currentState)) {
-    const equipmentLogger = logger.child({equipment});
-    if (
-      O.isNone(equipment.trainingSheetId) ||
-      (O.isSome(equipment.lastQuizSync) &&
-        Date.now() - equipment.lastQuizSync.value <
-          googleRefreshIntervalMs + Math.random() * googleRefreshIntervalMs) // Try a random offset to spread out cpu usage.
-    ) {
-      equipmentLogger.info('No google training sheet refresh required');
-      continue;
-    }
-
-    equipmentLogger.info(
-      'Triggering event update from google training sheets...'
-    );
-
-    const events: (
-      | EventOfType<'EquipmentTrainingQuizSync'>
-      | EventOfType<'EquipmentTrainingQuizResult'>
-    )[] = [];
-    const collectEvents = (
-      event:
-        | EventOfType<'EquipmentTrainingQuizSync'>
-        | EventOfType<'EquipmentTrainingQuizResult'>
-    ) => {
-      events.push(event);
-      updateState(event);
-    };
-
-    await pullNewEquipmentQuizResults(
-      equipmentLogger,
-      googleHelpers,
-      equipment.id,
-      equipment.trainingSheetId.value,
-      collectEvents
-    );
-    equipmentLogger.info(
-      'Finished pulling %s events from google training sheet, caching...',
-      events.length
-    );
-    await cacheSheetData(
-      new Date(),
-      equipment.trainingSheetId.value,
-      equipmentLogger,
-      events
-    );
-  }
-  logger.info('...done');
+  );
 }
 
 let lastRecurlySync: O.Option<DateTime> = O.none;
@@ -473,39 +503,47 @@ async function asyncApplyRecurlyEvents(
     return;
   }
   lastRecurlySync = O.some(DateTime.now());
-  logger.info('Fetching recurly events...');
-  const client = new recurly.Client(recurlyToken);
 
-  const accounts = client.listAccounts();
-  for await (const account of accounts.each()) {
-    const {
-      email,
-      hasActiveSubscription,
-      hasFutureSubscription,
-      hasCanceledSubscription,
-      hasPausedSubscription,
-      hasPastDueInvoice,
-    } = account;
+  await startSpan(
+    {
+      name: 'Recurly Event Sync',
+    },
+    async () => {
+      logger.info('Fetching recurly events...');
+      const client = new recurly.Client(recurlyToken);
 
-    const maybeEmail = E.getOrElseW(() => undefined)(
-      EmailAddressCodec.decode(email)
-    );
+      const accounts = client.listAccounts();
+      for await (const account of accounts.each()) {
+        const {
+          email,
+          hasActiveSubscription,
+          hasFutureSubscription,
+          hasCanceledSubscription,
+          hasPausedSubscription,
+          hasPastDueInvoice,
+        } = account;
 
-    if (maybeEmail === undefined) {
-      continue;
+        const maybeEmail = E.getOrElseW(() => undefined)(
+          EmailAddressCodec.decode(email)
+        );
+
+        if (maybeEmail === undefined) {
+          continue;
+        }
+
+        const event = constructEvent('RecurlySubscriptionUpdated')({
+          email: maybeEmail,
+          hasActiveSubscription: hasActiveSubscription ?? false,
+          hasFutureSubscription: hasFutureSubscription ?? false,
+          hasCanceledSubscription: hasCanceledSubscription ?? false,
+          hasPausedSubscription: hasPausedSubscription ?? false,
+          hasPastDueInvoice: hasPastDueInvoice ?? false,
+        });
+
+        updateState(event);
+      }
     }
-
-    const event = constructEvent('RecurlySubscriptionUpdated')({
-      email: maybeEmail,
-      hasActiveSubscription: hasActiveSubscription ?? false,
-      hasFutureSubscription: hasFutureSubscription ?? false,
-      hasCanceledSubscription: hasCanceledSubscription ?? false,
-      hasPausedSubscription: hasPausedSubscription ?? false,
-      hasPastDueInvoice: hasPastDueInvoice ?? false,
-    });
-
-    updateState(event);
-  }
+  );
 
   logger.info('...done');
 }
@@ -521,35 +559,41 @@ export const asyncApplyExternalEventSources = (
   cacheTroubleTicketData: Dependencies['cacheTroubleTicketData'],
   recurlyToken: O.Option<string>
 ) => {
-  return () => async () => {
-    logger.info('Applying external event sources...');
+  return () => () =>
+    startSpan(
+      {
+        name: 'Async Apply External Event Sources',
+      },
+      async () => {
+        logger.info('Applying external event sources...');
 
-    if (O.isNone(googleHelpers)) {
-      logger.info('Google external event source disabled');
-    } else {
-      await asyncApplyGoogleEvents(
-        logger,
-        currentState,
-        googleHelpers.value,
-        updateState,
-        googleRefreshIntervalMs,
-        troubleTicketSheetId,
-        cacheSheetData,
-        cacheTroubleTicketData
-      );
-    }
+        if (O.isNone(googleHelpers)) {
+          logger.info('Google external event source disabled');
+        } else {
+          await asyncApplyGoogleEvents(
+            logger,
+            currentState,
+            googleHelpers.value,
+            updateState,
+            googleRefreshIntervalMs,
+            troubleTicketSheetId,
+            cacheSheetData,
+            cacheTroubleTicketData
+          );
+        }
 
-    if (O.isNone(recurlyToken)) {
-      logger.info('Recurly external event source disabled');
-    } else {
-      await asyncApplyRecurlyEvents(
-        logger,
-        currentState,
-        updateState,
-        recurlyToken.value
-      );
-    }
+        if (O.isNone(recurlyToken)) {
+          logger.info('Recurly external event source disabled');
+        } else {
+          await asyncApplyRecurlyEvents(
+            logger,
+            currentState,
+            updateState,
+            recurlyToken.value
+          );
+        }
 
-    logger.info('Finished applying external event sources');
-  };
+        logger.info('Finished applying external event sources');
+      }
+    );
 };
