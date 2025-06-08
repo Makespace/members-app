@@ -93,6 +93,13 @@ const EquipmentTrainingSheetRegistered = defineEvent(
   }
 );
 
+const EquipmentTrainingSheetRemoved = defineEvent(
+  'EquipmentTrainingSheetRemoved',
+  {
+    equipmentId: tt.UUID,
+  }
+);
+
 const EquipmentTrainingQuizResult = defineEvent('EquipmentTrainingQuizResult', {
   equipmentId: tt.UUID,
   trainingSheetId: t.string,
@@ -199,6 +206,7 @@ export const events = [
   MemberNumberLinkedToEmail,
   LinkingMemberNumberToAnAlreadyUsedEmailAttempted,
   EquipmentTrainingSheetRegistered,
+  EquipmentTrainingSheetRemoved,
   EquipmentTrainingQuizResult,
   EquipmentTrainingQuizSync,
   MemberDetailsUpdated,
@@ -226,6 +234,7 @@ export const DomainEvent = t.union([
   MemberNumberLinkedToEmail.codec,
   LinkingMemberNumberToAnAlreadyUsedEmailAttempted.codec,
   EquipmentTrainingSheetRegistered.codec,
+  EquipmentTrainingSheetRemoved.codec,
   EquipmentTrainingQuizResult.codec,
   EquipmentTrainingQuizSync.codec,
   MemberDetailsUpdated.codec,

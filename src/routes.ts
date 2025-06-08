@@ -37,6 +37,11 @@ export const initRoutes = (
     ),
     ...command(
       'equipment',
+      'remove-training-sheet',
+      commands.equipment.removeTrainingSheet
+    ),
+    ...command(
+      'equipment',
       'mark-member-trained',
       commands.trainers.markTrained
     ),

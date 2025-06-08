@@ -113,6 +113,9 @@ export const initTestFramework = async (
       equipment: {
         add: frameworkify(commands.equipment.add),
         trainingSheet: frameworkify(commands.equipment.trainingSheet),
+        removeTrainingSheet: frameworkify(
+          commands.equipment.removeTrainingSheet
+        ),
       },
       trainers: {
         add: frameworkify(commands.trainers.add),

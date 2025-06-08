@@ -95,6 +95,20 @@ describe('get-all', () => {
         O.some(registerSheet.trainingSheetId)
       );
     });
+    describe('then the training sheet is revoked', () => {
+      const removeTrainingSheet = {
+        equipmentId: registerSheet.equipmentId,
+      };
+      beforeEach(async () => {
+        await framework.commands.equipment.removeTrainingSheet(
+          removeTrainingSheet
+        );
+      });
+      it('no longer returns a sheet id', () => {
+        const allEquipment = getAll(events);
+        expect(allEquipment[0].trainingSheetId).toStrictEqual(O.none);
+      });
+    });
   });
 
   describe('when equipment has had multiple sheets registered', () => {

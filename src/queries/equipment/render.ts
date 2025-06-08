@@ -22,6 +22,7 @@ import {DateTime} from 'luxon';
 import {UUID} from 'io-ts-types';
 import {contramap} from 'fp-ts/lib/Ord';
 import {renderMembersAsList} from '../../templates/member-link-list';
+import {currentTrainingSheetButton} from '../shared-render/current-training-sheet-button';
 
 const trainersList = (trainers: ViewModel['equipment']['trainers']) =>
   pipe(
@@ -92,14 +93,28 @@ const currentSheet = (viewModel: ViewModel) =>
     O.of,
     O.filter(isTrainerOrOwner),
     O.flatMap(viewModel => viewModel.equipment.trainingSheetId),
-    O.map(trainingSheetId => sanitizeString(trainingSheetId)),
-    O.map(trainingSheetId => {
-      return html`<li>
-        <a href="https://docs.google.com/spreadsheets/d/${trainingSheetId}">
-          Current training sheet
-        </a>
-      </li>`;
-    }),
+    O.map(currentTrainingSheetButton),
+    O.getOrElse(() => html``)
+  );
+
+const removeTrainingSheet = (viewModel: ViewModel) =>
+  pipe(
+    viewModel,
+    O.of,
+    O.filter(isTrainerOrOwner),
+    O.flatMap(viewModel =>
+      O.isNone(viewModel.equipment.trainingSheetId)
+        ? O.none
+        : O.some(viewModel.equipment.id)
+    ),
+    O.map(
+      id =>
+        html` <li>
+          <a href="/equipment/remove-training-sheet?equipmentId=${id}">
+            Remove training sheet
+          </a>
+        </li>`
+    ),
     O.getOrElse(() => html``)
   );
 
@@ -107,6 +122,7 @@ const equipmentActions = (viewModel: ViewModel) => html`
   <ul>
     ${trainMember(viewModel)} ${addTrainer(viewModel)}
     ${registerSheet(viewModel)} ${currentSheet(viewModel)}
+    ${removeTrainingSheet(viewModel)}
   </ul>
 `;
 
