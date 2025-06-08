@@ -1,4 +1,5 @@
 import * as O from 'fp-ts/Option';
+import * as RA from 'fp-ts/ReadonlyArray';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {faker} from '@faker-js/faker';
 import * as gsheetData from '../data/google_sheet_data';
@@ -70,22 +71,38 @@ describe('Integration asyncApplyExternalEventSources', () => {
       areaId,
       O.some(gsheetData.METAL_LATHE.apiResp.spreadsheetId!)
     );
-    const results = await runAsyncApplyExternalEventSources(framework);
-    checkLastQuizSyncUpdated(results);
+    const resultsAfterFirstRun =
+      await runAsyncApplyExternalEventSources(framework);
+
+    const resultsAfterSecondRun =
+      await runAsyncApplyExternalEventSources(framework);
+
+    expect(
+      RA.filter((e: Equipment) => O.isSome(e.lastQuizSync))(
+        Array.from(resultsAfterFirstRun.equipmentAfter.values())
+      )
+    ).toHaveLength(1); // Only update a single piece of equipment at a time.
+
+    expect(
+      RA.filter((e: Equipment) => O.isSome(e.lastQuizSync))(
+        Array.from(resultsAfterSecondRun.equipmentAfter.values())
+      )
+    ).toHaveLength(2); // Only update a single piece of equipment at a time.
+
     checkLastQuizEventTimestamp(
       gsheetData.BAMBU,
-      results.equipmentAfter.get(bambu.id)!
+      resultsAfterSecondRun.equipmentAfter.get(bambu.id)!
     );
     checkLastQuizEventTimestamp(
       gsheetData.METAL_LATHE,
-      results.equipmentAfter.get(lathe.id)!
+      resultsAfterSecondRun.equipmentAfter.get(lathe.id)!
     );
 
     // We already test the produced quiz result events above
     // and testing updateState is also tested elsewhere so this integration
     // test doesn't need to enumerate every combination it just needs to check
     // that generally the equipment is getting updated.
-    const bambuAfter = results.equipmentAfter.get(bambu.id)!;
+    const bambuAfter = resultsAfterSecondRun.equipmentAfter.get(bambu.id)!;
     expect(bambuAfter.orphanedPassedQuizes).toHaveLength(0);
     expect(bambuAfter.membersAwaitingTraining).toHaveLength(1);
     expect(bambuAfter.membersAwaitingTraining[0].memberNumber).toStrictEqual(
@@ -96,7 +113,7 @@ describe('Integration asyncApplyExternalEventSources', () => {
     );
 
     // Lathe results only have a single failed entry.
-    const latheAfter = results.equipmentAfter.get(lathe.id)!;
+    const latheAfter = resultsAfterSecondRun.equipmentAfter.get(lathe.id)!;
     expect(latheAfter.orphanedPassedQuizes).toHaveLength(0);
     expect(latheAfter.failedQuizAttempts).toHaveLength(1);
     expect(latheAfter.failedQuizAttempts[0]).toMatchObject({

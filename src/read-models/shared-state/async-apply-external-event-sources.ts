@@ -15,7 +15,7 @@ import {
   GoogleSpreadsheetDataForSheet,
 } from '../../init-dependencies/google/pull_sheet_data';
 
-import {getAllEquipmentMinimal} from './equipment/get';
+import {getLeastRecentlySyncedEquipment} from './equipment/get';
 import {Dependencies} from '../../dependencies';
 import {
   extractGoogleSheetMetadata,
@@ -418,14 +418,19 @@ async function asyncApplyGoogleEvents(
         logger.info('...done');
       }
 
-      logger.info('Pulling google training sheet data...');
-      for (const equipment of getAllEquipmentMinimal(currentState)) {
+      logger.info(
+        'Pulling google training sheet data for least recently synced equipment'
+      );
+      // Temporarily try syncing just 1 piece of equipment at a time
+      for (const equipment of getLeastRecentlySyncedEquipment(
+        currentState,
+        1
+      )) {
         const equipmentLogger = logger.child({equipment});
         if (
           O.isNone(equipment.trainingSheetId) ||
           (O.isSome(equipment.lastQuizSync) &&
-            Date.now() - equipment.lastQuizSync.value <
-              googleRefreshIntervalMs + Math.random() * googleRefreshIntervalMs) // Try a random offset to spread out cpu usage.
+            Date.now() - equipment.lastQuizSync.value < googleRefreshIntervalMs)
         ) {
           equipmentLogger.info('No google training sheet refresh required');
           continue;
@@ -478,7 +483,7 @@ async function asyncApplyGoogleEvents(
           }
         );
       }
-      logger.info('...done');
+      logger.info('Finished pulling google training sheet data');
     }
   );
 }
