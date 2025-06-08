@@ -317,6 +317,13 @@ export const updateState =
         revokeSuperuser(db, event.memberNumber);
         break;
       }
+      case 'EquipmentTrainingSheetRemoved': {
+        db.update(equipmentTable)
+          .set({trainingSheetId: null})
+          .where(eq(equipmentTable.id, event.equipmentId))
+          .run();
+        break;
+      }
       default:
         break;
     }
