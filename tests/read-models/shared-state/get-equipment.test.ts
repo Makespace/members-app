@@ -2,6 +2,7 @@ import {faker} from '@faker-js/faker';
 import {TestFramework, initTestFramework} from '../test-framework';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {pipe} from 'fp-ts/lib/function';
+import * as O from 'fp-ts/Option';
 import {getSomeOrFail} from '../../helpers';
 
 import {EmailAddress} from '../../../src/types';
@@ -121,6 +122,11 @@ describe('get', () => {
       const equipment = runQuery();
       expect(equipment.area.id).toStrictEqual(createArea.id);
       expect(equipment.area.name).toStrictEqual(createArea.name);
+    });
+
+    it('has no training sheet', () => {
+      const equipment = runQuery();
+      expect(equipment.trainingSheetId).toStrictEqual(O.none);
     });
   });
 
@@ -699,6 +705,67 @@ describe('get', () => {
         framework.sharedReadModel.equipment.get(equipment2.id)
       ).trainedMembers;
       expect(trained).toHaveLength(0);
+    });
+  });
+
+  describe('Equipment added to non-existant area', () => {
+    beforeEach(async () => {
+      await framework.commands.equipment.add(addEquipment);
+    });
+
+    it('returns the equipment', () => {
+      const equipment = runQuery();
+      expect(equipment.id).toStrictEqual(addEquipment.id);
+    });
+    it('returns the area but with the name as unknown', () => {
+      const equipment = runQuery();
+      expect(equipment.area.id).toStrictEqual(createArea.id);
+      expect(equipment.area.name).toStrictEqual('unknown');
+    });
+  });
+
+  describe('training sheet registered', () => {
+    beforeEach(async () => {
+      await framework.commands.area.create(createArea);
+      await framework.commands.equipment.add(addEquipment);
+      await framework.commands.equipment.trainingSheet(addTrainingSheet);
+    });
+
+    it('returns the training sheet', () => {
+      const equipment = runQuery();
+      expect(equipment.trainingSheetId).toStrictEqual(
+        O.some(addTrainingSheet.trainingSheetId)
+      );
+    });
+
+    describe('training sheet remove', () => {
+      beforeEach(async () => {
+        await framework.commands.equipment.removeTrainingSheet({
+          equipmentId: addTrainingSheet.equipmentId,
+        });
+      });
+      it('has no training sheet', () => {
+        const equipment = runQuery();
+        expect(equipment.trainingSheetId).toStrictEqual(O.none);
+      });
+    });
+
+    describe('another training sheet registered', () => {
+      const secondAddTrainingSheet = {
+        equipmentId: addTrainingSheet.equipmentId,
+        trainingSheetId: faker.string.alpha(8),
+      };
+      beforeEach(async () => {
+        await framework.commands.equipment.trainingSheet(
+          secondAddTrainingSheet
+        );
+      });
+      it('returns the new training sheet', () => {
+        const equipment = runQuery();
+        expect(equipment.trainingSheetId).toStrictEqual(
+          O.some(secondAddTrainingSheet.trainingSheetId)
+        );
+      });
     });
   });
 });
