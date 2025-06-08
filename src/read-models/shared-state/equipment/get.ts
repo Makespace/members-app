@@ -1,6 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {eq} from 'drizzle-orm';
+import {eq, asc, isNotNull} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {equipmentTable} from '../state';
@@ -51,3 +51,18 @@ export const getAllEquipmentMinimal = (
   db: BetterSQLite3Database
 ): ReadonlyArray<MinimalEquipment> =>
   pipe(db.select().from(equipmentTable).all(), RA.map(transformRow));
+
+export const getLeastRecentlySyncedEquipment = (
+  db: BetterSQLite3Database,
+  count: number
+): ReadonlyArray<MinimalEquipment> =>
+  pipe(
+    db
+      .select()
+      .from(equipmentTable)
+      .where(isNotNull(equipmentTable.trainingSheetId))
+      .orderBy(asc(equipmentTable.lastQuizSync))
+      .limit(count)
+      .all(),
+    RA.map(transformRow)
+  );
