@@ -21,6 +21,9 @@ const renderForm = (viewModel: ViewModel) =>
         Are you sure you wish to remove the current training sheet for
         ${sanitizeString(viewModel.equipmentName)}?
       </h1>
+      <p>
+        Current sheet id: '${sanitizeString(viewModel.currentTrainingSheetId)}'
+      </p>
       ${currentTrainingSheetButton(viewModel.currentTrainingSheetId)}
       <form action="/equipment/remove-training-sheet" method="del">
         <input
