@@ -25,7 +25,7 @@ const renderForm = (viewModel: ViewModel) =>
         Current sheet id: '${sanitizeString(viewModel.currentTrainingSheetId)}'
       </p>
       ${currentTrainingSheetButton(viewModel.currentTrainingSheetId)}
-      <form action="/equipment/remove-training-sheet" method="del">
+      <form action="/equipment/remove-training-sheet" method="post">
         <input
           type="hidden"
           name="equipmentId"
