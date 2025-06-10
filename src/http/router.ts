@@ -6,6 +6,7 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {pipe} from 'fp-ts/lib/function';
 import {Route} from '../types/route';
 import {html} from '../types/html';
+import {setupExpressErrorHandler} from '@sentry/node';
 
 export const createRouter = (routes: ReadonlyArray<Route>): Router => {
   const router = Router();
@@ -18,6 +19,7 @@ export const createRouter = (routes: ReadonlyArray<Route>): Router => {
   );
 
   router.use('/static', express.static(path.resolve(__dirname, '../static')));
+  setupExpressErrorHandler(router);
 
   router.use((req, res) => {
     res
