@@ -25,7 +25,6 @@ import {
   loadCachedTroubleTicketData,
 } from './load-cached-sheet-data';
 import {timeAsync} from './util';
-import {startSpan} from '@sentry/node';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -61,14 +60,10 @@ app.use(cookieSessionPassportWorkaround);
 app.set('trust proxy', true);
 app.use(createRouter(routes));
 
+let lastHeartbeat = Date.now();
 setInterval(() => {
-  startSpan(
-    {
-      name: 'Heartbeat',
-      op: 'mark',
-    },
-    () => deps.logger.info('Heartbeat')
-  );
+  deps.logger.info(`Heartbeat, last ${Date.now() - lastHeartbeat}ms ago`);
+  lastHeartbeat = Date.now();
 }, 5000);
 
 // Start application
