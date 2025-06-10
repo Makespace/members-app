@@ -12,6 +12,9 @@ import {SharedReadModel} from './read-models/shared-state';
 
 export type GoogleSheetId = string;
 
+// Future scans of the sheet should start at this row + 1 if set otherwise scan the entire sheet.
+export type LastGoogleSheetRowRead = O.Option<number>;
+
 export type Dependencies = {
   commitEvent: (
     resource: Resource,
@@ -44,6 +47,7 @@ export type Dependencies = {
     FailureWithStatus,
     O.Option<{
       cached_at: Date;
+      last_row_read: LastGoogleSheetRowRead;
       cached_data: t.Validation<
         ReadonlyArray<
           | EventOfType<'EquipmentTrainingQuizResult'>
@@ -56,6 +60,7 @@ export type Dependencies = {
     cacheTimestamp: Date,
     sheetId: GoogleSheetId,
     logger: Logger,
+    last_row_read: LastGoogleSheetRowRead,
     data: ReadonlyArray<
       | EventOfType<'EquipmentTrainingQuizSync'>
       | EventOfType<'EquipmentTrainingQuizResult'>
@@ -65,6 +70,7 @@ export type Dependencies = {
     FailureWithStatus,
     O.Option<{
       cached_at: Date;
+      last_row_read: LastGoogleSheetRowRead;
       cached_data: t.Validation<
         ReadonlyArray<EventOfType<'TroubleTicketResponseSubmitted'>>
       >;
@@ -74,6 +80,7 @@ export type Dependencies = {
     cacheTimestamp: Date,
     sheetId: GoogleSheetId,
     logger: Logger,
+    last_row_read: LastGoogleSheetRowRead,
     data: ReadonlyArray<EventOfType<'TroubleTicketResponseSubmitted'>>
   ) => Promise<void>;
 };
