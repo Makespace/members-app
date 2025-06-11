@@ -7,11 +7,16 @@ import * as E from 'fp-ts/Either';
 import {pipe} from 'fp-ts/lib/function';
 import {sheets} from '@googleapis/sheets';
 import {GoogleAuth} from 'google-auth-library';
-import {columnIndexToLetter} from '../../google/extract-metadata';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {DateTime} from 'luxon';
 
 const DEFAULT_TIMEZONE = 'Europe/London';
+
+export type ColumnLetter = string;
+export type ColumnIndex = number; // 0-indexed.
+// Doesn't support beyond 26 columns but actually thats fine for the current data.
+export const columnIndexToLetter = (index: ColumnIndex): ColumnLetter =>
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(index);
 
 // Not all the google form sheets are actually in Europe/London.
 // Issue first noticed because CI is in a different zone (UTC) than local test machine (BST).

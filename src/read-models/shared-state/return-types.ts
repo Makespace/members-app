@@ -44,6 +44,9 @@ export type TrainerInfo = Pick<
   trainerSince: Date;
 };
 
+export type SheetName = string;
+export type LastGoogleSheetRowRead = Record<SheetName, number>;
+
 export type MinimalEquipment = {
   id: UUID;
   name: string;
@@ -51,6 +54,7 @@ export type MinimalEquipment = {
   trainingSheetId: O.Option<string>;
   // Uses local timestamp.
   lastQuizSync: O.Option<EpochTimestampMilliseconds>;
+  lastRowsRead: Readonly<LastGoogleSheetRowRead>;
 };
 
 export type Equipment = {

@@ -1,9 +1,10 @@
 import * as O from 'fp-ts/Option';
 import * as E from 'fp-ts/Either';
+import * as A from 'fp-ts/Array';
 import * as t from 'io-ts';
 
 import {DateTime} from 'luxon';
-import {EpochTimestampMilliseconds} from '../read-models/shared-state/return-types';
+import {EpochTimestampMilliseconds} from '../../shared-state/return-types';
 import {pipe} from 'fp-ts/lib/function';
 
 // Bounds to prevent clearly broken parsing.
@@ -187,3 +188,14 @@ export const extractTimestamp = (timezone: string) => {
     t.identity
   );
 };
+
+export const grabColumn =
+  (values: {formattedValue: string}[]) =>
+  <T>(index: number, validator: t.Decode<unknown, T>): t.Validation<T> =>
+    pipe(
+      values,
+      A.lookup(index),
+      O.map(val => val.formattedValue),
+      O.getOrElse<string | null>(() => null),
+      val => validator(val)
+    );

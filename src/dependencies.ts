@@ -9,11 +9,9 @@ import {StatusCodes} from 'http-status-codes';
 import {Resource} from './types/resource';
 import {EventName, EventOfType} from './types/domain-event';
 import {SharedReadModel} from './read-models/shared-state';
+import {LastGoogleSheetRowRead} from './read-models/shared-state/return-types';
 
 export type GoogleSheetId = string;
-
-// Future scans of the sheet should start at this row + 1 if set otherwise scan the entire sheet.
-export type LastGoogleSheetRowRead = O.Option<number>;
 
 export type Dependencies = {
   commitEvent: (

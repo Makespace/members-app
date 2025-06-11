@@ -49,7 +49,8 @@ const createEquipmentTable = sql`
   name TEXT,
   areaId TEXT,
   trainingSheetId TEXT,
-  lastQuizSync INTEGER
+  lastQuizSync INTEGER,
+  lastRowRead
   );
 `;
 

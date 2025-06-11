@@ -2,7 +2,10 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
 
 import {Logger} from 'pino';
-import {GoogleSpreadsheetDataForSheet} from '../init-dependencies/google/pull_sheet_data';
+import {
+  ColumnIndex,
+  GoogleSpreadsheetDataForSheet,
+} from '../../../init-dependencies/google/pull_sheet_data';
 import {array} from 'fp-ts';
 import {pipe} from 'fp-ts/lib/function';
 
@@ -10,8 +13,6 @@ const EMAIL_COLUMN_NAMES = ['email address', 'email'];
 
 export type GoogleSheetName = string;
 
-type ColumnLetter = string;
-type ColumnIndex = number; // 0-indexed.
 // Requires a subsequent call to get the column names.
 export interface GoogleSheetMetadata {
   name: GoogleSheetName;
@@ -26,9 +27,6 @@ export interface GoogleSheetMetadata {
 }
 
 export const MAX_COLUMN_INDEX = 25;
-// Doesn't support beyond 26 columns but actually thats fine for the current data.
-export const columnIndexToLetter = (index: ColumnIndex): ColumnLetter =>
-  'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(index);
 
 export const extractGoogleSheetMetadata =
   (logger: Logger) =>

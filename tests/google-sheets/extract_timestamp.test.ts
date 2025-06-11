@@ -1,5 +1,5 @@
 import {getRightOrFail} from '../helpers';
-import {extractTimestamp} from '../../src/google/util';
+import {extractTimestamp} from '../../src/read-models/external-event-sources/google/util';
 
 describe('Extract timestamp', () => {
   // Found some missing rows due to this timestamp:
