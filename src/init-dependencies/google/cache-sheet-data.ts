@@ -1,8 +1,7 @@
 import {Client} from '@libsql/client/.';
 import {Logger} from 'pino';
-import * as O from 'fp-ts/Option';
 import {dbExecute} from '../../util';
-import {LastGoogleSheetRowRead} from '../../dependencies';
+import {LastGoogleSheetRowRead} from '../../read-models/shared-state/return-types';
 
 // This would be more efficient with a simple key-value store.
 export const cacheSheetData =
@@ -32,12 +31,7 @@ export const cacheSheetData =
             last_row_read = excluded.last_row_read,
             cached_data = excluded.cached_data;
         `,
-        [
-          cacheTimestamp,
-          sheetId,
-          O.getOrElse<null | number>(() => null)(last_row_read),
-          cachedData,
-        ]
+        [cacheTimestamp, sheetId, JSON.stringify(last_row_read), cachedData]
       );
     } catch (e) {
       logger.error(e, 'Failed to insert cache data, failing silently...');

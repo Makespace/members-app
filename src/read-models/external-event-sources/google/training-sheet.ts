@@ -33,6 +33,8 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {v4} from 'uuid';
 import {lookup} from 'fp-ts/ReadonlyArray';
 import {array} from 'fp-ts';
+import {LastGoogleSheetRowRead} from '../../shared-state/return-types';
+import * as R from 'fp-ts/Record';
 
 const ROW_BATCH_SIZE = 50;
 const FORM_RESPONSES_SHEET_REGEX = /^Form Responses [0-9]*/i;
@@ -178,6 +180,8 @@ export const columnBoundsRequired = (
   return [Math.min(...colIndexes), Math.max(...colIndexes)];
 };
 
+type LastRowRead = number;
+
 const pullNewEquipmentQuizResultsForSheet = async (
   logger: Logger,
   googleHelpers: GoogleHelpers,
@@ -185,12 +189,13 @@ const pullNewEquipmentQuizResultsForSheet = async (
   trainingSheetId: string,
   sheet: GoogleSheetMetadata,
   timezone: string,
+  prevLastRowRead: O.Option<LastRowRead>,
   updateState: (event: EventOfType<'EquipmentTrainingQuizResult'>) => void
-): Promise<void> => {
+): Promise<LastRowRead> => {
   logger = logger.child({sheet_name: sheet.name});
   logger.info('Processing sheet');
   for (const [rowStart, rowEnd] of getChunkIndexes(
-    2, // 1-indexed and first row is headers.
+    O.getOrElse(() => 1)(prevLastRowRead) + 1, // 1-indexed and first row is headers.
     sheet.rowCount,
     ROW_BATCH_SIZE
   )) {
@@ -214,7 +219,7 @@ const pullNewEquipmentQuizResultsForSheet = async (
         rowStart,
         rowEnd
       );
-      return;
+      return rowStart - 1;
     }
     logger.info('Pulled data from google, extracting...');
     const result = extractGoogleSheetData(
@@ -232,6 +237,7 @@ const pullNewEquipmentQuizResultsForSheet = async (
     }
   }
   logger.info('Finished processing sheet');
+  return sheet.rowCount - 1;
 };
 
 export const pullNewEquipmentQuizResults = async (
@@ -239,12 +245,13 @@ export const pullNewEquipmentQuizResults = async (
   googleHelpers: GoogleHelpers,
   equipmentId: UUID,
   trainingSheetId: string,
+  prevLastRowsRead: Readonly<LastGoogleSheetRowRead>,
   updateState: (
     event:
       | EventOfType<'EquipmentTrainingQuizSync'>
       | EventOfType<'EquipmentTrainingQuizResult'>
   ) => void
-): Promise<void> => {
+): Promise<Readonly<LastGoogleSheetRowRead>> => {
   logger.info('Scanning training sheet. Pulling google sheet data...');
 
   const initialMeta = await googleHelpers.pullGoogleSheetDataMetadata(
@@ -253,7 +260,7 @@ export const pullNewEquipmentQuizResults = async (
   )();
   if (E.isLeft(initialMeta)) {
     logger.warn(initialMeta.left);
-    return;
+    return prevLastRowsRead;
   }
 
   logger.info('Got meta data for sheet...');
@@ -298,20 +305,35 @@ export const pullNewEquipmentQuizResults = async (
     sheets.push(meta.value);
   }
 
+  const newLastRowRead: LastGoogleSheetRowRead = JSON.parse(
+    JSON.stringify(prevLastRowsRead)
+  ) as LastGoogleSheetRowRead;
+
   for (const sheet of sheets) {
-    await pullNewEquipmentQuizResultsForSheet(
+    const prevLastRowReadForSheet = pipe(
+      prevLastRowsRead,
+      R.lookup(trainingSheetId),
+      O.flatMap(R.lookup(trainingSheetId))
+    );
+    const lastRowRead = await pullNewEquipmentQuizResultsForSheet(
       logger,
       googleHelpers,
       equipmentId,
       trainingSheetId,
       sheet,
       initialMeta.right.properties.timeZone,
+      prevLastRowReadForSheet,
       updateState
     );
+    if (!newLastRowRead[trainingSheetId]) {
+      newLastRowRead[trainingSheetId] = {};
+    }
+    newLastRowRead[trainingSheetId][sheet.name] = lastRowRead;
   }
 
   logger.info(
-    'Finished pulling equipment quiz results for all sheets, generating quiz sync event...'
+    'Finished pulling equipment quiz results for all sheets %o, generating quiz sync event...',
+    newLastRowRead
   );
 
   updateState(
@@ -319,6 +341,7 @@ export const pullNewEquipmentQuizResults = async (
       equipmentId,
     })
   );
+  return newLastRowRead;
 };
 
 export async function asyncApplyTrainingSheetEvents(
@@ -371,11 +394,12 @@ export async function asyncApplyTrainingSheetEvents(
           updateState(event);
         };
 
-        await pullNewEquipmentQuizResults(
+        const lastRowRead = await pullNewEquipmentQuizResults(
           equipmentLogger,
           googleHelpers,
           equipment.id,
           equipmentTrainingSheetId,
+          equipment.lastRowsRead,
           collectEvents
         );
         equipmentLogger.info(
@@ -386,6 +410,7 @@ export async function asyncApplyTrainingSheetEvents(
           new Date(),
           equipmentTrainingSheetId,
           equipmentLogger,
+          lastRowRead,
           events
         );
       }

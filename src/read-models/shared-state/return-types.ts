@@ -44,8 +44,12 @@ export type TrainerInfo = Pick<
   trainerSince: Date;
 };
 
+export type GoogleSheetId = string;
 export type SheetName = string;
-export type LastGoogleSheetRowRead = Record<SheetName, number>;
+export type LastGoogleSheetRowRead = Record<
+  GoogleSheetId,
+  Record<SheetName, number>
+>;
 
 export type MinimalEquipment = {
   id: UUID;
