@@ -202,7 +202,7 @@ describe('Integration asyncApplyExternalEventSources', () => {
           )
         ).cached_data
       );
-      await new Promise(res => setTimeout(res, rateLimitMs * 2)); // The rate limit varies between [rateLimitMs, 2 * rateLimitMs] to spread cpu load.
+      await new Promise(res => setTimeout(res, rateLimitMs));
       results2 = await runAsyncApplyExternalEventSources(framework);
       cachedData2 = getRightOrFail(
         getSomeOrFail(

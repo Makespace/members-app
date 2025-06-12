@@ -29,7 +29,7 @@ const transformRow = <
   lastQuizSync: O.fromNullable(
     row.lastQuizSync
   ) as O.Option<EpochTimestampMilliseconds>,
-  lastRowsRead: row.lastRowsRead as LastGoogleSheetRowRead,
+  lastRowsRead: (row.lastRowsRead ?? {}) as LastGoogleSheetRowRead,
 });
 
 export const getEquipmentForAreaMinimal =
