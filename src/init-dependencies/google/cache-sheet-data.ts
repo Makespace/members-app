@@ -22,7 +22,6 @@ export const cacheSheetData =
           VALUES (?, ?, ?)
           ON CONFLICT (sheet_id) DO UPDATE SET
             cached_at = excluded.cached_at,
-            last_row_read = excluded.last_row_read,
             cached_data = excluded.cached_data;
         `,
         [cacheTimestamp, sheetId, cachedData]
