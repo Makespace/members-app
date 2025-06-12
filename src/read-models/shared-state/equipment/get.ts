@@ -4,7 +4,11 @@ import {eq, asc, isNotNull} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {equipmentTable} from '../state';
-import {EpochTimestampMilliseconds, MinimalEquipment} from '../return-types';
+import {
+  EpochTimestampMilliseconds,
+  LastGoogleSheetRowRead,
+  MinimalEquipment,
+} from '../return-types';
 import {UUID} from 'io-ts-types';
 
 const transformRow = <
@@ -13,6 +17,7 @@ const transformRow = <
     areaId: string;
     trainingSheetId: string | undefined | null;
     lastQuizSync: number | undefined | null;
+    lastRowsRead: unknown;
   },
 >(
   row: R
@@ -24,6 +29,7 @@ const transformRow = <
   lastQuizSync: O.fromNullable(
     row.lastQuizSync
   ) as O.Option<EpochTimestampMilliseconds>,
+  lastRowsRead: row.lastRowsRead as LastGoogleSheetRowRead,
 });
 
 export const getEquipmentForAreaMinimal =

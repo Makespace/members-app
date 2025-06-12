@@ -8,8 +8,9 @@ import pino from 'pino';
 import * as RA from 'fp-ts/lib/ReadonlyArray';
 import * as N from 'fp-ts/number';
 import * as gsheetData from '../data/google_sheet_data';
-import {pullNewEquipmentQuizResults} from '../../src/read-models/shared-state/async-apply-external-event-sources';
 import {localGoogleHelpers} from '../init-dependencies/pull-local-google';
+import {pullNewEquipmentQuizResults} from '../../src/read-models/external-event-sources/google/training-sheet';
+import {LastGoogleSheetRowRead} from '../../src/read-models/shared-state/return-types';
 
 const sortQuizResults = RA.sort({
   compare: (a, b) =>
@@ -26,7 +27,8 @@ const sortQuizResults = RA.sort({
 
 const pullNewEquipmentQuizResultsLocal = async (
   equipmentId: UUID,
-  trainingSheetId: string
+  trainingSheetId: string,
+  prevLastRowRead: LastGoogleSheetRowRead
 ) => {
   const newEvents: DomainEvent[] = [];
   await pullNewEquipmentQuizResults(
@@ -37,6 +39,7 @@ const pullNewEquipmentQuizResultsLocal = async (
     localGoogleHelpers,
     equipmentId,
     trainingSheetId,
+    prevLastRowRead,
     newEvent => {
       newEvents.push(newEvent);
     }
@@ -53,12 +56,14 @@ type EquipmentQuizResultEvents = {
   endTime: Date;
 };
 const pullEquipmentQuizResultsWrapper = async (
-  spreadsheetId: string
+  spreadsheetId: string,
+  prevLastRowRead: LastGoogleSheetRowRead
 ): Promise<EquipmentQuizResultEvents> => {
   const startTime = new Date();
   const events = await pullNewEquipmentQuizResultsLocal(
     TEST_EQUIPMENT_ID,
-    spreadsheetId
+    spreadsheetId,
+    prevLastRowRead
   );
   const endTime = new Date();
   const result = {
@@ -96,14 +101,16 @@ describe('Training sheets worker', () => {
     describe('Processes a registered training sheet', () => {
       it('empty sheet produces no events, but does indicate a sync', async () => {
         const result = await pullEquipmentQuizResultsWrapper(
-          gsheetData.EMPTY.apiResp.spreadsheetId!
+          gsheetData.EMPTY.apiResp.spreadsheetId!,
+          {}
         );
         expect(result.quizResults).toHaveLength(0);
         checkQuizSync(result);
       });
       it('metal lathe training sheet', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          gsheetData.METAL_LATHE.apiResp.spreadsheetId!
+          gsheetData.METAL_LATHE.apiResp.spreadsheetId!,
+          {}
         );
         checkQuizSync(results);
         expect(results.quizResults[0]).toMatchObject<
@@ -117,7 +124,8 @@ describe('Training sheets worker', () => {
       });
       it('training sheet with a summary page', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          gsheetData.LASER_CUTTER.apiResp.spreadsheetId!
+          gsheetData.LASER_CUTTER.apiResp.spreadsheetId!,
+          {}
         );
         checkQuizSync(results);
         const expected: readonly Partial<
@@ -144,7 +152,8 @@ describe('Training sheets worker', () => {
       });
       it('training sheet with multiple response pages (different quiz questions)', async () => {
         const results = await pullEquipmentQuizResultsWrapper(
-          gsheetData.BAMBU.apiResp.spreadsheetId!
+          gsheetData.BAMBU.apiResp.spreadsheetId!,
+          {}
         );
         checkQuizSync(results);
         const expected: readonly Partial<

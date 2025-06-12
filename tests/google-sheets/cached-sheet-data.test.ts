@@ -46,6 +46,7 @@ describe('Cache sheet data', () => {
         [
           constructEvent('EquipmentTrainingQuizSync')({
             equipmentId,
+            lastRowsRead: {},
           }),
           constructEvent('EquipmentTrainingQuizResult')(trainingQuizResult),
         ]
@@ -92,6 +93,7 @@ describe('Cache sheet data', () => {
           [
             constructEvent('EquipmentTrainingQuizSync')({
               equipmentId,
+              lastRowsRead: {},
             }),
             constructEvent('EquipmentTrainingQuizResult')({
               equipmentId: equipmentId,
@@ -163,6 +165,7 @@ describe('Cache sheet data', () => {
           [
             constructEvent('EquipmentTrainingQuizSync')({
               equipmentId: secondEquipmentId,
+              lastRowsRead: {},
             }),
             constructEvent('EquipmentTrainingQuizResult')({
               equipmentId: secondEquipmentId,

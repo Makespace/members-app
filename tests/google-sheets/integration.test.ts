@@ -5,7 +5,6 @@
  */
 
 import pino from 'pino';
-import {pullNewEquipmentQuizResults} from '../../src/read-models/shared-state/async-apply-external-event-sources';
 import {
   pullGoogleSheetData,
   pullGoogleSheetDataMetadata,
@@ -20,6 +19,7 @@ import {getSomeOrFail} from '../helpers';
 import {Ord} from 'fp-ts/lib/Ord';
 import {contramap} from 'fp-ts/lib/Ord';
 import {EventOfType} from '../../src/types/domain-event';
+import {pullNewEquipmentQuizResults} from '../../src/read-models/external-event-sources/google/training-sheet';
 
 const CREDENTIALS_PATH = '../test-google/credentials_new.json.ignore';
 
@@ -43,6 +43,7 @@ const getEvents = async (trainingSheetId: string) => {
     },
     TEST_EQUIPMENT_ID,
     trainingSheetId,
+    {},
     event => events.push(event)
   );
   return events;

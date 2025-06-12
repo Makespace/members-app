@@ -1,8 +1,8 @@
 import pino from 'pino';
 import * as O from 'fp-ts/Option';
-import {extractGoogleSheetData} from '../../src/google/google';
 import {UUID} from 'io-ts-types';
 import {getSomeOrFail} from '../helpers';
+import {extractGoogleSheetData} from '../../src/read-models/external-event-sources/google/training-sheet';
 
 describe('extractGoogleSheetData', () => {
   it('Extract google sheet data, missing columns', () => {

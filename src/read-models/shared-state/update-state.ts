@@ -264,6 +264,7 @@ export const updateState =
         db.update(equipmentTable)
           .set({
             lastQuizSync: event.recordedAt.getTime(),
+            lastRowsRead: event.lastRowsRead,
           })
           .where(eq(equipmentTable.id, event.equipmentId))
           .run();

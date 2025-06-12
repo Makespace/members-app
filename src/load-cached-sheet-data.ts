@@ -58,18 +58,14 @@ export const loadCachedSheetData =
       const sheetDataLogger = equipmentLogger.child({
         sheet_block_cached_at: loadedData.cached_at.toISOString(),
       });
-      if (
-        E.isLeft(loadedData.cached_data) ||
-        E.isLeft(loadedData.last_row_read)
-      ) {
+      if (E.isLeft(loadedData.cached_data)) {
         sheetDataLogger.info(
           'Failed to parse cached sheet data block cached, skipping...'
         );
       } else {
         sheetDataLogger.info(
           'Loaded %s events from cached sheet data block, last row read %o, loading into shared read model...',
-          loadedData.cached_data.right.length,
-          loadedData.last_row_read.right
+          loadedData.cached_data.right.length
         );
         for (const cachedEvent of loadedData.cached_data.right) {
           // This filtering makes loading cache data more predictable by only loading equipment events for the piece of equipment that is being loaded

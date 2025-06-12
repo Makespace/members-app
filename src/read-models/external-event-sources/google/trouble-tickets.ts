@@ -235,7 +235,7 @@ export async function asyncApplyTroubleTicketEvents(
             updateState(event);
           };
 
-          const newLastRowRead = await pullTroubleTicketResponses(
+          lastRowRead = await pullTroubleTicketResponses(
             logger,
             googleHelpers,
             troubleTicketSheetId.value,
@@ -243,7 +243,6 @@ export async function asyncApplyTroubleTicketEvents(
             collectEvents
           );
           lastTroubleTicketSync = O.some(DateTime.now());
-          lastRowRead = newLastRowRead;
 
           logger.info(
             'Found %s trouble ticket response events %o, caching...',
@@ -254,7 +253,6 @@ export async function asyncApplyTroubleTicketEvents(
             new Date(),
             troubleTicketSheetId.value,
             logger,
-            newLastRowRead,
             events
           );
           logger.info('Finished caching trouble ticket response events');

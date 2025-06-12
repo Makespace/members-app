@@ -5,9 +5,9 @@ import {
   GoogleSpreadsheetDataForSheet,
   GoogleSpreadsheetInitialMetadata,
 } from '../../src/init-dependencies/google/pull_sheet_data';
-import {GoogleSheetName} from '../../src/google/extract-metadata';
 import {getRightOrFail} from '../helpers';
 import {EventOfType} from '../../src/types/domain-event';
+import {GoogleSheetName} from '../../src/read-models/external-event-sources/google/extract-metadata';
 
 export type ManualParsedTrainingSheetEntry = {
   emailProvided: string;

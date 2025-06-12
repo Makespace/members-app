@@ -1,9 +1,9 @@
 import pino from 'pino';
 import * as O from 'fp-ts/Option';
-import {extractGoogleSheetMetadata} from '../../src/google/extract-metadata';
 
 import * as gsheetData from '../data/google_sheet_data';
 import {getSomeOrFail} from '../helpers';
+import {extractGoogleSheetMetadata} from '../../src/read-models/external-event-sources/google/extract-metadata';
 
 describe('extract metadata', () => {
   it('Empty sheet', () => {

@@ -114,6 +114,10 @@ const EquipmentTrainingQuizResult = defineEvent('EquipmentTrainingQuizResult', {
 
 const EquipmentTrainingQuizSync = defineEvent('EquipmentTrainingQuizSync', {
   equipmentId: tt.UUID,
+  lastRowsRead: tt.withFallback(
+    t.record(t.string, t.record(t.string, t.number)),
+    {}
+  ),
 });
 
 const MemberDetailsUpdated = defineEvent('MemberDetailsUpdated', {

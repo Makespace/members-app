@@ -9,7 +9,6 @@ import {StatusCodes} from 'http-status-codes';
 import {Resource} from './types/resource';
 import {EventName, EventOfType} from './types/domain-event';
 import {SharedReadModel} from './read-models/shared-state';
-import {LastGoogleSheetRowRead} from './read-models/shared-state/return-types';
 
 export type GoogleSheetId = string;
 
@@ -45,7 +44,6 @@ export type Dependencies = {
     FailureWithStatus,
     O.Option<{
       cached_at: Date;
-      last_row_read: t.Validation<LastGoogleSheetRowRead>;
       cached_data: t.Validation<
         ReadonlyArray<
           | EventOfType<'EquipmentTrainingQuizResult'>
@@ -58,7 +56,6 @@ export type Dependencies = {
     cacheTimestamp: Date,
     sheetId: GoogleSheetId,
     logger: Logger,
-    last_row_read: LastGoogleSheetRowRead,
     data: ReadonlyArray<
       | EventOfType<'EquipmentTrainingQuizSync'>
       | EventOfType<'EquipmentTrainingQuizResult'>
@@ -68,7 +65,6 @@ export type Dependencies = {
     FailureWithStatus,
     O.Option<{
       cached_at: Date;
-      last_row_read: t.Validation<LastGoogleSheetRowRead>;
       cached_data: t.Validation<
         ReadonlyArray<EventOfType<'TroubleTicketResponseSubmitted'>>
       >;
@@ -78,7 +74,6 @@ export type Dependencies = {
     cacheTimestamp: Date,
     sheetId: GoogleSheetId,
     logger: Logger,
-    last_row_read: LastGoogleSheetRowRead,
     data: ReadonlyArray<EventOfType<'TroubleTicketResponseSubmitted'>>
   ) => Promise<void>;
 };

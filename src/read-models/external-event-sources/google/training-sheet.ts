@@ -252,7 +252,7 @@ export const pullNewEquipmentQuizResults = async (
       | EventOfType<'EquipmentTrainingQuizSync'>
       | EventOfType<'EquipmentTrainingQuizResult'>
   ) => void
-): Promise<Readonly<LastGoogleSheetRowRead>> => {
+): Promise<void> => {
   logger.info('Scanning training sheet. Pulling google sheet data...');
 
   const initialMeta = await googleHelpers.pullGoogleSheetDataMetadata(
@@ -261,7 +261,7 @@ export const pullNewEquipmentQuizResults = async (
   )();
   if (E.isLeft(initialMeta)) {
     logger.warn(initialMeta.left);
-    return prevLastRowRead;
+    return;
   }
 
   logger.info('Got meta data for sheet...');
@@ -340,9 +340,9 @@ export const pullNewEquipmentQuizResults = async (
   updateState(
     constructEvent('EquipmentTrainingQuizSync')({
       equipmentId,
+      lastRowsRead: newLastRowRead,
     })
   );
-  return newLastRowRead;
 };
 
 export async function asyncApplyTrainingSheetEvents(
@@ -395,7 +395,7 @@ export async function asyncApplyTrainingSheetEvents(
           updateState(event);
         };
 
-        const lastRowRead = await pullNewEquipmentQuizResults(
+        await pullNewEquipmentQuizResults(
           equipmentLogger,
           googleHelpers,
           equipment.id,
@@ -411,7 +411,6 @@ export async function asyncApplyTrainingSheetEvents(
           new Date(),
           equipmentTrainingSheetId,
           equipmentLogger,
-          lastRowRead,
           events
         );
       }

@@ -104,9 +104,11 @@ describe('Load cached sheet data', () => {
     > = [
       constructEvent('EquipmentTrainingQuizSync')({
         equipmentId: registerSheet[0].equipmentId,
+        lastRowsRead: {},
       }),
       constructEvent('EquipmentTrainingQuizSync')({
         equipmentId: registerSheet[1].equipmentId,
+        lastRowsRead: {},
       }),
     ];
     const data: {
