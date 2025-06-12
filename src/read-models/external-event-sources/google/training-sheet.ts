@@ -193,9 +193,10 @@ const pullNewEquipmentQuizResultsForSheet = async (
   updateState: (event: EventOfType<'EquipmentTrainingQuizResult'>) => void
 ): Promise<LastRowRead> => {
   logger = logger.child({sheet_name: sheet.name});
-  logger.info('Processing sheet');
+  const startRow = O.getOrElse(() => 1)(prevLastRowRead) + 1;
+  logger.info('Processing sheet, starting at row %s', startRow);
   for (const [rowStart, rowEnd] of getChunkIndexes(
-    O.getOrElse(() => 1)(prevLastRowRead) + 1, // 1-indexed and first row is headers.
+    startRow, // 1-indexed and first row is headers.
     sheet.rowCount,
     ROW_BATCH_SIZE
   )) {
@@ -245,7 +246,7 @@ export const pullNewEquipmentQuizResults = async (
   googleHelpers: GoogleHelpers,
   equipmentId: UUID,
   trainingSheetId: string,
-  prevLastRowsRead: Readonly<LastGoogleSheetRowRead>,
+  prevLastRowRead: Readonly<LastGoogleSheetRowRead>,
   updateState: (
     event:
       | EventOfType<'EquipmentTrainingQuizSync'>
@@ -260,7 +261,7 @@ export const pullNewEquipmentQuizResults = async (
   )();
   if (E.isLeft(initialMeta)) {
     logger.warn(initialMeta.left);
-    return prevLastRowsRead;
+    return prevLastRowRead;
   }
 
   logger.info('Got meta data for sheet...');
@@ -306,14 +307,14 @@ export const pullNewEquipmentQuizResults = async (
   }
 
   const newLastRowRead: LastGoogleSheetRowRead = JSON.parse(
-    JSON.stringify(prevLastRowsRead)
+    JSON.stringify(prevLastRowRead)
   ) as LastGoogleSheetRowRead;
 
   for (const sheet of sheets) {
     const prevLastRowReadForSheet = pipe(
-      prevLastRowsRead,
+      prevLastRowRead,
       R.lookup(trainingSheetId),
-      O.flatMap(R.lookup(trainingSheetId))
+      O.flatMap(R.lookup(sheet.name))
     );
     const lastRowRead = await pullNewEquipmentQuizResultsForSheet(
       logger,

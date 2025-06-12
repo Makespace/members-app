@@ -6,6 +6,7 @@ export const CachedDataTable = t.strict({
     t.strict({
       cached_at: tt.DateFromNumber,
       sheet_id: t.string,
+      last_row_read: tt.withFallback(t.string, '{}'),
       cached_data: t.string,
     })
   ),

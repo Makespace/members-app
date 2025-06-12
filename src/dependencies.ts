@@ -45,7 +45,7 @@ export type Dependencies = {
     FailureWithStatus,
     O.Option<{
       cached_at: Date;
-      last_row_read: LastGoogleSheetRowRead;
+      last_row_read: t.Validation<LastGoogleSheetRowRead>;
       cached_data: t.Validation<
         ReadonlyArray<
           | EventOfType<'EquipmentTrainingQuizResult'>
@@ -68,7 +68,7 @@ export type Dependencies = {
     FailureWithStatus,
     O.Option<{
       cached_at: Date;
-      last_row_read: LastGoogleSheetRowRead;
+      last_row_read: t.Validation<LastGoogleSheetRowRead>;
       cached_data: t.Validation<
         ReadonlyArray<EventOfType<'TroubleTicketResponseSubmitted'>>
       >;

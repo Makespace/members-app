@@ -8,9 +8,9 @@ export const cacheSheetData =
   <T>(dbClient: Client) =>
   async (
     cacheTimestamp: Date,
-    last_row_read: LastGoogleSheetRowRead,
     sheetId: string,
     logger: Logger,
+    last_row_read: LastGoogleSheetRowRead,
     data: ReadonlyArray<T>
   ) => {
     logger.info(

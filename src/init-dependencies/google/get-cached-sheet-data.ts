@@ -18,6 +18,7 @@ import {
 } from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {dbExecute} from '../../util';
+import {LastGoogleSheetRowRead} from '../../read-models/shared-state/return-types';
 
 // Note that this isn't automatically type safe. It does rely on the cached
 // data actually being the type of DomainEvent we say it is.
@@ -32,6 +33,16 @@ const extractCachedEvents = <R>(
     E.map(elements => elements as ReadonlyArray<R>)
   );
 
+const extractLastRowRead = (
+  rawLastRowReadData: string
+): t.Validation<LastGoogleSheetRowRead> =>
+  pipe(
+    rawLastRowReadData,
+    tt.JsonFromString.decode,
+    E.chain(tt.JsonRecord.decode),
+    E.chain(t.record(t.string, t.record(t.string, t.number)).decode)
+  );
+
 export const getCachedSheetData =
   <R>(dbClient: Client) =>
   (
@@ -40,6 +51,7 @@ export const getCachedSheetData =
     FailureWithStatus,
     O.Option<{
       cached_at: Date;
+      last_row_read: t.Validation<LastGoogleSheetRowRead>;
       cached_data: t.Validation<ReadonlyArray<R>>;
     }>
   > =>
@@ -70,6 +82,7 @@ export const getCachedSheetData =
           table.rows,
           RA.map(row => ({
             ...row,
+            last_row_read: extractLastRowRead(row.last_row_read),
             cached_data: extractCachedEvents<R>(row.cached_data),
           })),
           RA.head

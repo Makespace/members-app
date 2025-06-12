@@ -19,12 +19,16 @@ import {DateTime, Duration} from 'luxon';
 import {pipe} from 'fp-ts/lib/function';
 import {extractTimestamp, grabColumn} from './util';
 import {startSpan} from '@sentry/node';
+import {LastGoogleSheetRowRead} from '../../shared-state/return-types';
+import * as R from 'fp-ts/Record';
 
 const ROW_BATCH_SIZE = 50;
 const TROUBLE_TICKET_SYNC_INTERVAL = Duration.fromMillis(1000 * 60 * 20);
 const EXPECTED_TROUBLE_TICKET_RESPONSE_SHEET_NAME = 'Form Responses 1';
 
-let lastTroubleTicketSync: O.Option<DateTime> = O.none; // FIXME - Temporary for POC.
+// FIXME - Remove global state, Temporary for POC.
+let lastTroubleTicketSync: O.Option<DateTime> = O.none;
+let lastRowRead: LastGoogleSheetRowRead = {};
 
 const extractTroubleTicketResponseRows = (
   logger: Logger,
@@ -121,9 +125,9 @@ export const pullTroubleTicketResponses = async (
   logger: Logger,
   googleHelpers: GoogleHelpers,
   troubleTicketSheetId: string,
-  updateState: (event: EventOfType<'TroubleTicketResponseSubmitted'>) => void,
-  cacheTroubleTicketData: Dependencies['cacheTroubleTicketData']
-): Promise<void> => {
+  prevLastRowRead: Readonly<LastGoogleSheetRowRead>,
+  collectEvents: (event: EventOfType<'TroubleTicketResponseSubmitted'>) => void
+): Promise<Readonly<LastGoogleSheetRowRead>> => {
   logger.info('Getting trouble ticket response sheet metadata...');
   const initialMeta = await googleHelpers.pullGoogleSheetDataMetadata(
     logger,
@@ -133,27 +137,35 @@ export const pullTroubleTicketResponses = async (
     logger.error(
       `Failed to get trouble ticket response sheet metadata. Not continuing: ${initialMeta.left}`
     );
-    return;
+    return prevLastRowRead;
   }
 
-  const events: EventOfType<'TroubleTicketResponseSubmitted'>[] = [];
-  const collectEvents = (
-    event: EventOfType<'TroubleTicketResponseSubmitted'>
-  ) => {
-    events.push(event);
-    updateState(event);
-  };
+  const newLastRowRead: LastGoogleSheetRowRead = JSON.parse(
+    JSON.stringify(prevLastRowRead)
+  ) as LastGoogleSheetRowRead;
+  if (!newLastRowRead[troubleTicketSheetId]) {
+    newLastRowRead[troubleTicketSheetId] = {};
+  }
 
   for (const sheet of initialMeta.right.sheets) {
     if (
       sheet.properties.title === EXPECTED_TROUBLE_TICKET_RESPONSE_SHEET_NAME
     ) {
+      const prevLastRowReadForSheet = pipe(
+        prevLastRowRead,
+        R.lookup(troubleTicketSheetId),
+        O.flatMap(R.lookup(sheet.properties.title))
+      );
+
+      const startRow = O.getOrElse(() => 1)(prevLastRowReadForSheet) + 1; // 1-indexed and first row is headers.
+
       logger.info(
-        'Found trouble tickets sheet %s, pulling data in batches...',
-        sheet.properties.title
+        'Found trouble tickets sheet %s, pulling data in batches starting at row %s...',
+        sheet.properties.title,
+        startRow
       );
       for (const [rowStart, rowEnd] of getChunkIndexes(
-        2, // 1-indexed and first row is headers.
+        startRow,
         sheet.properties.gridProperties.rowCount,
         ROW_BATCH_SIZE
       )) {
@@ -175,7 +187,9 @@ export const pullTroubleTicketResponses = async (
             rowStart,
             rowEnd
           );
-          return;
+          newLastRowRead[troubleTicketSheetId][sheet.properties.title] =
+            rowStart - 1;
+          return newLastRowRead; // Note we return early without checking more sheets.
         }
         logger.info('Pulled data from google, extracting...');
         extractTroubleTicketResponseRows(
@@ -185,19 +199,11 @@ export const pullTroubleTicketResponses = async (
           initialMeta.right.properties.timeZone
         );
       }
+      newLastRowRead[troubleTicketSheetId][sheet.properties.title] =
+        sheet.properties.gridProperties.rowCount - 1;
     }
   }
-  logger.info(
-    'Found %s trouble ticket response events, caching...',
-    events.length
-  );
-  await cacheTroubleTicketData(
-    new Date(),
-    troubleTicketSheetId,
-    logger,
-    events
-  );
-  logger.info('Finished caching trouble ticket response events');
+  return newLastRowRead;
 };
 
 export async function asyncApplyTroubleTicketEvents(
@@ -221,14 +227,37 @@ export async function asyncApplyTroubleTicketEvents(
           },
         },
         async () => {
-          await pullTroubleTicketResponses(
+          const events: EventOfType<'TroubleTicketResponseSubmitted'>[] = [];
+          const collectEvents = (
+            event: EventOfType<'TroubleTicketResponseSubmitted'>
+          ) => {
+            events.push(event);
+            updateState(event);
+          };
+
+          const newLastRowRead = await pullTroubleTicketResponses(
             logger,
             googleHelpers,
             troubleTicketSheetId.value,
-            updateState,
-            cacheTroubleTicketData
+            lastRowRead,
+            collectEvents
           );
           lastTroubleTicketSync = O.some(DateTime.now());
+          lastRowRead = newLastRowRead;
+
+          logger.info(
+            'Found %s trouble ticket response events %o, caching...',
+            lastRowRead,
+            events.length
+          );
+          await cacheTroubleTicketData(
+            new Date(),
+            troubleTicketSheetId.value,
+            logger,
+            newLastRowRead,
+            events
+          );
+          logger.info('Finished caching trouble ticket response events');
         }
       );
     } else {
