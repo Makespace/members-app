@@ -59,7 +59,8 @@ export type Dependencies = {
     data: ReadonlyArray<
       | EventOfType<'EquipmentTrainingQuizSync'>
       | EventOfType<'EquipmentTrainingQuizResult'>
-    >
+    >,
+    append: boolean // If true then data should be appended to existing data.
   ) => Promise<void>;
   getCachedTroubleTicketData: (sheetId: string) => TE.TaskEither<
     FailureWithStatus,
@@ -74,6 +75,7 @@ export type Dependencies = {
     cacheTimestamp: Date,
     sheetId: GoogleSheetId,
     logger: Logger,
-    data: ReadonlyArray<EventOfType<'TroubleTicketResponseSubmitted'>>
+    data: ReadonlyArray<EventOfType<'TroubleTicketResponseSubmitted'>>,
+    append: boolean // If true then data should be appended to existing data.
   ) => Promise<void>;
 };

@@ -28,7 +28,7 @@ const EXPECTED_TROUBLE_TICKET_RESPONSE_SHEET_NAME = 'Form Responses 1';
 
 // FIXME - Remove global state, Temporary for POC.
 let lastTroubleTicketSync: O.Option<DateTime> = O.none;
-let lastRowRead: LastGoogleSheetRowRead = {};
+let lastRowRead: O.Option<LastGoogleSheetRowRead> = O.none;
 
 const extractTroubleTicketResponseRows = (
   logger: Logger,
@@ -235,6 +235,9 @@ export async function asyncApplyTroubleTicketEvents(
             updateState(event);
           };
 
+          // If starting from
+          const shouldAppendData = O.isSome(lastRowRead);
+
           lastRowRead = await pullTroubleTicketResponses(
             logger,
             googleHelpers,
@@ -253,7 +256,8 @@ export async function asyncApplyTroubleTicketEvents(
             new Date(),
             troubleTicketSheetId.value,
             logger,
-            events
+            events,
+            true
           );
           logger.info('Finished caching trouble ticket response events');
         }

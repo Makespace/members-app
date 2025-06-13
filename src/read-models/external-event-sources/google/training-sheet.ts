@@ -411,7 +411,8 @@ export async function asyncApplyTrainingSheetEvents(
           new Date(),
           equipmentTrainingSheetId,
           equipmentLogger,
-          events
+          events,
+          true
         );
       }
     );
