@@ -3,7 +3,7 @@ import * as O from 'fp-ts/Option';
 import * as A from 'fp-ts/Array';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as RR from 'fp-ts/ReadonlyRecord';
-import {SyncWorkerDependencies} from './dependencies';
+import {SyncWorkerDependencies, SyncWorkerDependenciesGoogle} from './dependencies';
 import {Logger} from 'pino';
 import {
   GoogleHelpers,
@@ -28,13 +28,6 @@ import {formatValidationErrors} from 'io-ts-reporters';
 
 const ROW_BATCH_SIZE = 50;
 const EQUIPMENT_SYNC_INTERVAL_MS = 40 * 60 * 1000;
-
-export type SyncWorkerDependenciesGoogle = Omit<
-  SyncWorkerDependencies,
-  'google'
-> & {
-  google: GoogleHelpers;
-};
 
 const extractFromRow =
   (
