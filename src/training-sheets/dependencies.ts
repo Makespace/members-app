@@ -26,3 +26,10 @@ export interface SyncWorkerDependencies {
   clearCache: (sheetId: string) => TE.TaskEither<string, void>;
   getSheetsToSync: () => TE.TaskEither<string, ReadonlyMap<UUID, string>>;
 }
+
+export type SyncWorkerDependenciesGoogle = Omit<
+  SyncWorkerDependencies,
+  'google'
+> & {
+  google: GoogleHelpers;
+};
