@@ -4,7 +4,7 @@ import {EpochTimestampMilliseconds} from '../../src/read-models/shared-state/ret
 import {
   GoogleSpreadsheetDataForSheet,
   GoogleSpreadsheetInitialMetadata,
-} from '../../src/init-dependencies/google/pull_sheet_data';
+} from '../../src/training-sheets/google/pull_sheet_data';
 import {GoogleSheetName} from '../../src/google/extract-metadata';
 import {getRightOrFail} from '../helpers';
 import {EventOfType} from '../../src/types/domain-event';

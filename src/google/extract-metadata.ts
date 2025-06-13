@@ -2,7 +2,7 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
 
 import {Logger} from 'pino';
-import {GoogleSpreadsheetDataForSheet} from '../init-dependencies/google/pull_sheet_data';
+import {GoogleSpreadsheetDataForSheet} from '../training-sheets/google/pull_sheet_data';
 import {array} from 'fp-ts';
 import {pipe} from 'fp-ts/lib/function';
 

@@ -1,4 +1,4 @@
-import {GoogleTimezone} from '../../src/init-dependencies/google/pull_sheet_data';
+import {GoogleTimezone} from '../../src/training-sheets/google/pull_sheet_data';
 import {getRightOrFail} from '../helpers';
 
 describe('Google timezone parse', () => {

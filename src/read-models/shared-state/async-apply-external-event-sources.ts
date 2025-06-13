@@ -13,7 +13,7 @@ import {constructEvent, EventOfType} from '../../types/domain-event';
 import {
   GoogleHelpers,
   GoogleSpreadsheetDataForSheet,
-} from '../../init-dependencies/google/pull_sheet_data';
+} from '../../training-sheets/google/pull_sheet_data';
 
 import {getLeastRecentlySyncedEquipment} from './equipment/get';
 import {Dependencies} from '../../dependencies';
@@ -385,38 +385,7 @@ async function asyncApplyGoogleEvents(
       name: 'Apply Google Events',
     },
     async () => {
-      if (O.isSome(troubleTicketSheetId)) {
-        logger.info('Pulling latest trouble ticket reports...');
-        if (
-          O.isNone(lastTroubleTicketSync) ||
-          lastTroubleTicketSync.value.diffNow() > TROUBLE_TICKET_SYNC_INTERVAL
-        ) {
-          await startSpan(
-            {
-              name: 'Trouble Ticket Sync',
-              attributes: {
-                troubleTicketSheetId: troubleTicketSheetId.value,
-              },
-            },
-            async () => {
-              await pullTroubleTicketResponses(
-                logger,
-                googleHelpers,
-                troubleTicketSheetId.value,
-                updateState,
-                cacheTroubleTicketData
-              );
-              lastTroubleTicketSync = O.some(DateTime.now());
-            }
-          );
-        } else {
-          logger.info(
-            '%s since last trouble ticket sync - not resyncing yet',
-            lastTroubleTicketSync.value.diffNow().toHuman()
-          );
-        }
-        logger.info('...done');
-      }
+      
 
       logger.info(
         'Pulling google training sheet data for least recently synced equipment'
