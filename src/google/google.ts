@@ -8,7 +8,7 @@ import {constructEvent, EventOfType} from '../types/domain-event';
 import {v4} from 'uuid';
 import {UUID} from 'io-ts-types';
 import {GoogleSheetMetadata} from './extract-metadata';
-import {GoogleSpreadsheetDataForSheet} from '../init-dependencies/google/pull_sheet_data';
+import {GoogleSpreadsheetDataForSheet} from '../training-sheets/google/pull_sheet_data';
 import {lookup} from 'fp-ts/ReadonlyArray';
 import {array} from 'fp-ts';
 import {

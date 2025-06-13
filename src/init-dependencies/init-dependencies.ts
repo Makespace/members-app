@@ -62,7 +62,6 @@ export const initDependencies = (
   const sharedReadModel = initSharedReadModel(
     dbClient,
     logger,
-    O.fromNullable(conf.TROUBLE_TICKET_SHEET),
     O.fromNullable(conf.RECURLY_TOKEN)
   );
 

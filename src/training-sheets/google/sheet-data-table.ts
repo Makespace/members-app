@@ -21,13 +21,7 @@ export const SheetSyncMetadataTable = t.strict({
   rows: t.readonlyArray(
     t.strict({
       sheet_id: t.string,
-      row_index: t.Integer,
-      member_number_provided: t.Integer,
-      email_provided: t.string,
-      score: t.Integer,
-      max_score: t.Integer,
-      percentage: t.Integer,
-      cached_at: tt.DateFromNumber,
+      last_sync: tt.DateFromNumber,
     })
   ),
 });
