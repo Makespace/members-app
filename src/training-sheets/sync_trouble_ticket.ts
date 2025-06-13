@@ -9,7 +9,7 @@ export const syncTroubleTickets = (
   troubleTicketSheetId: string,
 ): Promise<void> => pipe(
     troubleTicketSheetId,
-    deps.
+    
 
 );
 

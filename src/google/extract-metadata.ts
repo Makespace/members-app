@@ -30,63 +30,62 @@ export const MAX_COLUMN_INDEX = 25;
 export const columnIndexToLetter = (index: ColumnIndex): ColumnLetter =>
   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(index);
 
-export const extractGoogleSheetMetadata =
-  (logger: Logger) =>
-  (
-    initialMeta: {
-      properties: {title: string; gridProperties: {rowCount: number}};
-    },
-    firstRowData: GoogleSpreadsheetDataForSheet
-  ): O.Option<GoogleSheetMetadata> => {
-    logger = logger.child({sheetName: initialMeta.properties.title});
-    const columnNames: O.Option<string[]> = pipe(
-      firstRowData.sheets[0].data,
-      array.lookup(0),
-      O.flatMap(sheetData => O.fromNullable(sheetData.rowData)),
-      O.flatMap(array.lookup(0)),
-      O.flatMap(firstRowData =>
-        'values' in firstRowData
-          ? O.some(firstRowData.values.map(col => col.formattedValue))
-          : O.none
-      )
+export const extractGoogleSheetMetadata = (
+  logger: Logger,
+  initialMeta: {
+    properties: {title: string; gridProperties: {rowCount: number}};
+  },
+  firstRowData: GoogleSpreadsheetDataForSheet
+): O.Option<GoogleSheetMetadata> => {
+  logger = logger.child({sheetName: initialMeta.properties.title});
+  const columnNames: O.Option<string[]> = pipe(
+    firstRowData.sheets[0].data,
+    array.lookup(0),
+    O.flatMap(sheetData => O.fromNullable(sheetData.rowData)),
+    O.flatMap(array.lookup(0)),
+    O.flatMap(firstRowData =>
+      'values' in firstRowData
+        ? O.some(firstRowData.values.map(col => col.formattedValue))
+        : O.none
+    )
+  );
+  if (O.isNone(columnNames)) {
+    logger.error('Found no column names for sheet, skipping sheet');
+    return O.none;
+  }
+  logger.trace('Found column names for sheet: %o', columnNames);
+  const timestamp = RA.findIndex<string>(
+    val => val.toLowerCase() === 'timestamp'
+  )(columnNames.value);
+  if (O.isNone(timestamp)) {
+    logger.warn('Failed to find timestamp column, skipping sheet');
+    return O.none;
+  }
+  const score = RA.findIndex<string>(val => val.toLowerCase() === 'score')(
+    columnNames.value
+  );
+  if (O.isNone(score)) {
+    logger.warn(
+      'Failed to find score column, skipping sheet: %s',
+      initialMeta.properties.title
     );
-    if (O.isNone(columnNames)) {
-      logger.error('Found no column names for sheet, skipping sheet');
-      return O.none;
-    }
-    logger.trace('Found column names for sheet: %o', columnNames);
-    const timestamp = RA.findIndex<string>(
-      val => val.toLowerCase() === 'timestamp'
-    )(columnNames.value);
-    if (O.isNone(timestamp)) {
-      logger.warn('Failed to find timestamp column, skipping sheet');
-      return O.none;
-    }
-    const score = RA.findIndex<string>(val => val.toLowerCase() === 'score')(
-      columnNames.value
-    );
-    if (O.isNone(score)) {
-      logger.warn(
-        'Failed to find score column, skipping sheet: %s',
-        initialMeta.properties.title
-      );
-      return O.none;
-    }
-    const memberNumber = RA.findIndex<string>(
-      val => val.toLowerCase() === 'membership number'
-    )(columnNames.value);
-    const email = RA.findIndex<string>(val =>
-      EMAIL_COLUMN_NAMES.includes(val.toLowerCase())
-    )(columnNames.value);
+    return O.none;
+  }
+  const memberNumber = RA.findIndex<string>(
+    val => val.toLowerCase() === 'membership number'
+  )(columnNames.value);
+  const email = RA.findIndex<string>(val =>
+    EMAIL_COLUMN_NAMES.includes(val.toLowerCase())
+  )(columnNames.value);
 
-    return O.some({
-      name: initialMeta.properties.title,
-      rowCount: initialMeta.properties.gridProperties.rowCount,
-      mappedColumns: {
-        timestamp: timestamp.value,
-        score: score.value,
-        email: email,
-        memberNumber: memberNumber,
-      },
-    });
-  };
+  return O.some({
+    name: initialMeta.properties.title,
+    rowCount: initialMeta.properties.gridProperties.rowCount,
+    mappedColumns: {
+      timestamp: timestamp.value,
+      score: score.value,
+      email: email,
+      memberNumber: memberNumber,
+    },
+  });
+};

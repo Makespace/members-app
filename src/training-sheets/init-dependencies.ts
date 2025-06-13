@@ -14,6 +14,7 @@ import {storeSync} from './db/store_sync';
 import {lastRowRead} from './db/last_row_read';
 import {storeRowsRead} from './db/store_rows_read';
 import {clearCache} from './db/clear_cache';
+import {getSheetsToSync} from './db/get_sheets_to_sync';
 
 const initDBCommands = (db: Client) => {
   return {
@@ -22,6 +23,7 @@ const initDBCommands = (db: Client) => {
     lastRowRead: lastRowRead(db),
     storeRowsRead: storeRowsRead(db),
     clearCache: clearCache(db),
+    getSheetsToSync: getSheetsToSync(db),
   };
 };
 
