@@ -12,7 +12,8 @@ export const ensureSheetDataTableExists = (dbClient: Client) =>
     dbClient,
     `
         CREATE TABLE IF NOT EXISTS sheet_data (
-          sheet_id TEXT PRIMARY KEY,
+          sheet_id TEXT,
+          sheet_name TEXT,
           row_index INTEGER,
           member_number_provided INTEGER,
           email_provided TEXT,
