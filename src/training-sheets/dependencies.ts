@@ -20,4 +20,5 @@ export interface SyncWorkerDependencies {
     data: ReadonlyArray<SheetDataTable['rows'][0]>
   ) => TE.TaskEither<string, void>;
   lastRowRead: (sheetId: string) => TE.TaskEither<string, LastRowRead>;
+  clearCache: (sheetId: string) => TE.TaskEither<string, void>;
 }
