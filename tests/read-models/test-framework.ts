@@ -19,7 +19,7 @@ import {applyToResource} from '../../src/commands/apply-command-to-resource';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
 import {localGoogleHelpers} from '../init-dependencies/pull-local-google';
 import {getCachedSheetData} from '../../src/init-dependencies/google/get-cached-sheet-data';
-import {ensureCachedSheetDataTableExists} from '../../src/init-dependencies/google/ensure-cached-sheet-data-table-exists';
+import {ensureCachedSheetDataTableExists} from '../../src/init-dependencies/google/ensure-cached-sheet-data-table-does-not-exists';
 import {cacheSheetData} from '../../src/init-dependencies/google/cache-sheet-data';
 
 type ToFrameworkCommands<T> = {

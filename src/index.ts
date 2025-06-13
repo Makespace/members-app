@@ -19,12 +19,21 @@ import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
 import cookieSession from 'cookie-session';
 import {initRoutes} from './routes';
-import {ensureCachedSheetDataTableExists} from './init-dependencies/google/ensure-cached-sheet-data-table-exists';
 import {
   loadCachedSheetData,
   loadCachedTroubleTicketData,
 } from './load-cached-sheet-data';
 import {timeAsync} from './util';
+import {Worker} from 'worker_threads';
+
+// This background worker can be treated as a completely independent process
+// but we just spawn it as a thread for now.
+const backgroundSyncWorker = new Worker('./training-sheets/sync_worker.js');
+backgroundSyncWorker.on('exit', () => {
+  console.error('Background worker has finished. Stopping parent');
+  // eslint-disable-next-line n/no-process-exit
+  process.exit(1);
+});
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -33,12 +42,7 @@ const dbClient = libsqlClient.createClient({
   syncUrl: conf.TURSO_SYNC_URL,
   authToken: conf.TURSO_TOKEN,
 });
-const cacheClient = libsqlClient.createClient({
-  url: conf.EVENT_DB_URL,
-  syncUrl: conf.TURSO_SYNC_URL,
-  authToken: conf.TURSO_TOKEN,
-});
-const deps = initDependencies(dbClient, cacheClient, conf);
+const deps = initDependencies(dbClient, conf);
 const routes = initRoutes(deps, conf);
 
 // Passport Setup
@@ -106,7 +110,6 @@ server.on('close', () => {
 void (async () => {
   await pipe(
     ensureEventTableExists(dbClient),
-    TE.map(ensureCachedSheetDataTableExists(dbClient)),
     TE.mapLeft(e => deps.logger.error(e, 'Failed to start server'))
   )();
 
