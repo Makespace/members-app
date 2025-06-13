@@ -5,6 +5,7 @@ export const SheetDataTable = t.strict({
   rows: t.readonlyArray(
     t.strict({
       sheet_id: t.string,
+      sheet_name: t.string,
       row_index: t.Integer,
       member_number_provided: t.Integer,
       email_provided: t.string,
