@@ -27,6 +27,7 @@ import {
 import {formatValidationErrors} from 'io-ts-reporters';
 
 const ROW_BATCH_SIZE = 50;
+const EQUIPMENT_SYNC_INTERVAL_MS = 40 * 60 * 1000;
 
 export type SyncWorkerDependenciesGoogle = Omit<
   SyncWorkerDependencies,
@@ -311,6 +312,21 @@ export const syncEquipmentTrainingSheets = async (
   }
 
   for (const [equipmentId, trainingSheetId] of sheetsToSync.right.entries()) {
+    const lastSync = await deps.lastSync(trainingSheetId)();
+    if (
+      E.isRight(lastSync) &&
+      O.isSome(lastSync.right) &&
+      Date.now() - lastSync.right.value.getTime() < EQUIPMENT_SYNC_INTERVAL_MS
+    ) {
+      deps.logger.info(
+        'Skipping sync of %s for equipment %s as last sync was recent: %s',
+        equipmentId,
+        trainingSheetId,
+        lastSync.right.value.toISOString()
+      );
+      continue;
+    }
+
     await syncTrainingSheet(
       deps.logger.child({equipmentId, trainingSheetId}),
       deps,
