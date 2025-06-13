@@ -5,7 +5,7 @@ import {SyncWorkerDependencies} from '../dependencies';
 import {pipe} from 'fp-ts/lib/function';
 import {inspect} from 'node:util';
 
-export const lastRowRead =
+export const storeRowsRead =
   (db: Client): SyncWorkerDependencies['storeRowsRead'] =>
   data =>
     pipe(
