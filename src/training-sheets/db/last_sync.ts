@@ -1,4 +1,4 @@
-import {Client, ResultSet} from '@libsql/client';
+import {Client} from '@libsql/client';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import * as RA from 'fp-ts/ReadonlyArray';
@@ -12,7 +12,7 @@ export const lastSync =
   (db: Client): SyncWorkerDependencies['lastSync'] =>
   troubleTicketId =>
     pipe(
-      TE.tryCatch<string, ResultSet>(
+      TE.tryCatch(
         () =>
           db.execute('SELECT * FROM sheet_sync_metadata WHERE sheet_id = ?', [
             troubleTicketId,
