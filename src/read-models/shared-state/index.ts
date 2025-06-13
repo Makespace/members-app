@@ -56,11 +56,6 @@ export type SharedReadModel = {
 export const initSharedReadModel = (
   eventStoreClient: Client,
   logger: Logger,
-  googleHelpers: O.Option<GoogleHelpers>,
-  googleRateLimitMs: number,
-  troubleTicketSheetId: O.Option<string>,
-  cacheSheetData: Dependencies['cacheSheetData'],
-  cacheTroubleTicketData: Dependencies['cacheTroubleTicketData'],
   recurlyToken: O.Option<string>
 ): SharedReadModel => {
   const _underlyingReadModelDb = new Database();
@@ -78,12 +73,7 @@ export const initSharedReadModel = (
     asyncApplyExternalEventSources: asyncApplyExternalEventSources(
       logger,
       readModelDb,
-      googleHelpers,
       updateState_,
-      googleRateLimitMs,
-      troubleTicketSheetId,
-      cacheSheetData,
-      cacheTroubleTicketData,
       recurlyToken
     ),
     members: {

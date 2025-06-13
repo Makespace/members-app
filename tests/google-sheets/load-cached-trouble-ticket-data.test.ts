@@ -1,7 +1,7 @@
 import {loadCachedTroubleTicketData} from '../../src/load-cached-sheet-data';
 import {getCachedSheetData} from '../../src/init-dependencies/google/get-cached-sheet-data';
 import pino from 'pino';
-import {ensureCachedSheetDataTableExists} from '../../src/init-dependencies/google/ensure-cached-sheet-data-table-exists';
+import {ensureCachedSheetDataTableExists} from '../../src/init-dependencies/google/ensure-cached-sheet-data-table-does-not-exists';
 import {getLeftOrFail, getRightOrFail} from '../helpers';
 import {constructEvent, EventOfType} from '../../src/types/domain-event';
 import {faker} from '@faker-js/faker';

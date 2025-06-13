@@ -100,21 +100,28 @@ const EquipmentTrainingSheetRemoved = defineEvent(
   }
 );
 
-const EquipmentTrainingQuizResult = defineEvent('EquipmentTrainingQuizResult', {
-  equipmentId: tt.UUID,
-  trainingSheetId: t.string,
-  memberNumberProvided: t.union([t.number, t.null]),
-  emailProvided: t.union([t.string, t.null]), // Note this is a free-form text entry without validation so it might not be a valid email hence no use of EmailAddressCodec.
-  score: t.number,
-  id: tt.UUID,
-  maxScore: t.number,
-  percentage: t.number,
-  timestampEpochMS: t.number, // Unix Epoch January 1st 1970.
-});
+const EquipmentTrainingQuizResult = defineEvent(
+  // Old event no longer used.
+  'EquipmentTrainingQuizResult',
+  {}
+);
+const EquipmentTrainingQuizSync = defineEvent('EquipmentTrainingQuizSync', {}); // Old event no longer used.
+const EquipmentTrainingQuizEmailUpdated = defineEvent(
+  // Old event no longer used.
+  'EquipmentTrainingQuizEmailUpdated',
+  {}
+);
+const EquipmentTrainingQuizMemberNumberUpdated = defineEvent(
+  // Old event no longer used.
+  'EquipmentTrainingQuizMemberNumberUpdated',
+  {}
+);
 
-const EquipmentTrainingQuizSync = defineEvent('EquipmentTrainingQuizSync', {
-  equipmentId: tt.UUID,
-});
+const TroubleTicketResponseSubmitted = defineEvent(
+  // Old event no longer used.
+  'TroubleTicketResponseSubmitted',
+  {}
+);
 
 const MemberDetailsUpdated = defineEvent('MemberDetailsUpdated', {
   memberNumber: t.number,
@@ -144,34 +151,6 @@ const MemberEmailChanged = defineEvent('MemberEmailChanged', {
   memberNumber: t.number,
   newEmail: EmailAddressCodec,
 });
-
-const EquipmentTrainingQuizMemberNumberUpdated = defineEvent(
-  'EquipmentTrainingQuizMemberNumberUpdated',
-  {
-    quizId: tt.UUID,
-    newMemberNumber: t.number,
-  }
-);
-
-const EquipmentTrainingQuizEmailUpdated = defineEvent(
-  'EquipmentTrainingQuizEmailUpdated',
-  {
-    quizId: tt.UUID,
-    newEmail: t.string,
-  }
-);
-
-const TroubleTicketResponseSubmitted = defineEvent(
-  'TroubleTicketResponseSubmitted',
-  {
-    response_submitted_epoch_ms: t.number, // Unix Epoch January 1st 1970.
-    email_address: t.union([t.string, t.null]), // Do not trust this - it is not verified.
-    which_equipment: t.union([t.string, t.null]),
-    submitter_name: t.union([t.string, t.null]), // Do not trust this - it is not verified
-    submitter_membership_number: t.union([t.number, t.null]), // Do not trust this - it is not verified
-    submitted_response: t.record(t.string, t.string),
-  }
-);
 
 const RecurlySubscriptionUpdated = defineEvent('RecurlySubscriptionUpdated', {
   email: EmailAddressCodec,

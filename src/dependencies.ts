@@ -1,8 +1,6 @@
 import {Logger} from 'pino';
 import {Failure, Email, DomainEvent, ResourceVersion} from './types';
 import * as TE from 'fp-ts/TaskEither';
-import * as t from 'io-ts';
-import * as O from 'fp-ts/Option';
 import {FailureWithStatus} from './types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 
@@ -40,40 +38,4 @@ export type Dependencies = {
   logger: Logger;
   rateLimitSendingOfEmails: (email: Email) => TE.TaskEither<Failure, Email>;
   sendEmail: (email: Email) => TE.TaskEither<Failure, string>;
-  getCachedSheetData: (sheetId: string) => TE.TaskEither<
-    FailureWithStatus,
-    O.Option<{
-      cached_at: Date;
-      cached_data: t.Validation<
-        ReadonlyArray<
-          | EventOfType<'EquipmentTrainingQuizResult'>
-          | EventOfType<'EquipmentTrainingQuizSync'>
-        >
-      >;
-    }>
-  >;
-  cacheSheetData: (
-    cacheTimestamp: Date,
-    sheetId: GoogleSheetId,
-    logger: Logger,
-    data: ReadonlyArray<
-      | EventOfType<'EquipmentTrainingQuizSync'>
-      | EventOfType<'EquipmentTrainingQuizResult'>
-    >
-  ) => Promise<void>;
-  getCachedTroubleTicketData: (sheetId: string) => TE.TaskEither<
-    FailureWithStatus,
-    O.Option<{
-      cached_at: Date;
-      cached_data: t.Validation<
-        ReadonlyArray<EventOfType<'TroubleTicketResponseSubmitted'>>
-      >;
-    }>
-  >;
-  cacheTroubleTicketData: (
-    cacheTimestamp: Date,
-    sheetId: GoogleSheetId,
-    logger: Logger,
-    data: ReadonlyArray<EventOfType<'TroubleTicketResponseSubmitted'>>
-  ) => Promise<void>;
 };

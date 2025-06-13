@@ -556,49 +556,22 @@ async function asyncApplyRecurlyEvents(
 export const asyncApplyExternalEventSources = (
   logger: Logger,
   currentState: BetterSQLite3Database,
-  googleHelpers: O.Option<GoogleHelpers>,
   updateState: (event: DomainEvent) => void,
-  googleRefreshIntervalMs: number,
-  troubleTicketSheetId: O.Option<string>,
-  cacheSheetData: Dependencies['cacheSheetData'],
-  cacheTroubleTicketData: Dependencies['cacheTroubleTicketData'],
   recurlyToken: O.Option<string>
 ) => {
-  return () => () =>
-    startSpan(
-      {
-        name: 'Async Apply External Event Sources',
-      },
-      async () => {
-        logger.info('Applying external event sources...');
+  return () => async () => {
+    logger.info('Applying external event sources...');
+    if (O.isNone(recurlyToken)) {
+      logger.info('Recurly external event source disabled');
+    } else {
+      await asyncApplyRecurlyEvents(
+        logger,
+        currentState,
+        updateState,
+        recurlyToken.value
+      );
+    }
 
-        if (O.isNone(googleHelpers)) {
-          logger.info('Google external event source disabled');
-        } else {
-          await asyncApplyGoogleEvents(
-            logger,
-            currentState,
-            googleHelpers.value,
-            updateState,
-            googleRefreshIntervalMs,
-            troubleTicketSheetId,
-            cacheSheetData,
-            cacheTroubleTicketData
-          );
-        }
-
-        if (O.isNone(recurlyToken)) {
-          logger.info('Recurly external event source disabled');
-        } else {
-          await asyncApplyRecurlyEvents(
-            logger,
-            currentState,
-            updateState,
-            recurlyToken.value
-          );
-        }
-
-        logger.info('Finished applying external event sources');
-      }
-    );
+    logger.info('Finished applying external event sources');
+  };
 };
