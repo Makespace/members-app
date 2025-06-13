@@ -73,3 +73,39 @@ export const getAllEventsByType =
         es => es as ReadonlyArray<EventOfType<T>>
       )
     );
+
+export const getAllEventsByTypes =
+  (dbClient: Client) =>
+  <T extends EventName, R extends EventName>(eventType: T, eventType2: R) =>
+    pipe(
+      TE.tryCatch(
+        () =>
+          dbExecute(dbClient, 'SELECT * FROM events WHERE event_type IN ?', [
+            eventType,
+            eventType2,
+          ]),
+        failureWithStatus(
+          `Failed to query database for events of type '${eventType}' + '${eventType2}'`,
+          StatusCodes.INTERNAL_SERVER_ERROR
+        )
+      ),
+      TE.chainEitherK(
+        flow(
+          EventsTable.decode,
+          E.mapLeft(
+            internalCodecFailure(
+              `Failed to decode db rows for event type '${eventType}' + '${eventType2}'`
+            )
+          )
+        )
+      ),
+      TE.map(table => table.rows),
+      TE.chainEitherK(eventsFromRows),
+      // This assumes that the DB has only returned events of the correct type.
+      // This assumption avoids the need to do extra validation.
+      // TODO - Pass codec to validate straight to eventsFromRows and get best of both.
+      TE.map<
+        ReadonlyArray<DomainEvent>,
+        ReadonlyArray<EventOfType<T> | EventOfType<R>>
+      >(es => es as ReadonlyArray<EventOfType<T> | EventOfType<R>>)
+    );

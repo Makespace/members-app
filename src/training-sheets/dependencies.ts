@@ -6,6 +6,7 @@ import {GoogleHelpers} from './google/pull_sheet_data';
 import {SheetDataTable} from './google/sheet-data-table';
 import {ReadonlyRecord} from 'fp-ts/lib/ReadonlyRecord';
 import {Client} from '@libsql/client';
+import {UUID} from 'io-ts-types';
 
 export type SheetName = string;
 export type RowIndex = number;
@@ -23,4 +24,5 @@ export interface SyncWorkerDependencies {
   ) => TE.TaskEither<string, void>;
   lastRowRead: (sheetId: string) => TE.TaskEither<string, LastRowRead>;
   clearCache: (sheetId: string) => TE.TaskEither<string, void>;
+  getSheetsToSync: () => TE.TaskEither<string, ReadonlyMap<UUID, string>>;
 }
