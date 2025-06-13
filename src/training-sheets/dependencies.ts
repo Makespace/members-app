@@ -5,6 +5,7 @@ import {Config} from '../configuration';
 import {GoogleHelpers} from './google/pull_sheet_data';
 import {SheetDataTable} from './google/sheet-data-table';
 import {ReadonlyRecord} from 'fp-ts/lib/ReadonlyRecord';
+import {Client} from '@libsql/client';
 
 export type SheetName = string;
 export type RowIndex = number;
@@ -14,6 +15,7 @@ export interface SyncWorkerDependencies {
   conf: Config;
   logger: Logger;
   google: O.Option<GoogleHelpers>;
+  db: Client;
   lastSync: (sheetId: string) => TE.TaskEither<string, O.Option<Date>>;
   storeSync: (sheetId: string, date: Date) => TE.TaskEither<string, void>;
   storeRowsRead: (

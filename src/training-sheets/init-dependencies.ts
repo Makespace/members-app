@@ -54,6 +54,7 @@ export const initDependencies = (): SyncWorkerDependencies => {
     conf,
     logger,
     google,
+    db,
     ...initDBCommands(db),
   };
 };
