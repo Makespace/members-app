@@ -5,13 +5,13 @@ import {pipe} from 'fp-ts/lib/function';
 
 export const storeSync =
   (db: Client): SyncWorkerDependencies['storeSync'] =>
-  (troubleTicketId, date) =>
+  (sheetId, date) =>
     pipe(
       TE.tryCatch(
         () =>
           db.execute(
             'INSERT INTO sheet_sync_metadata(sheet_id, last_sync) VALUES (?, ?) ON CONFLICT (sheet_id) DO UPDATE SET last_sync=excluded.last_sync',
-            [troubleTicketId, date]
+            [sheetId, date]
           ),
         reason =>
           `Failed to update sheet sync metadata: ${(reason as Error).message}`

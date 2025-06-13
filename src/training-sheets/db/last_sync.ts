@@ -10,19 +10,19 @@ import {formatValidationErrors} from 'io-ts-reporters';
 
 export const lastSync =
   (db: Client): SyncWorkerDependencies['lastSync'] =>
-  troubleTicketId =>
+  sheetId =>
     pipe(
       TE.tryCatch(
         () =>
           db.execute('SELECT * FROM sheet_sync_metadata WHERE sheet_id = ?', [
-            troubleTicketId,
+            sheetId,
           ]),
         reason =>
           `Failed to read sheet sync metadata: ${(reason as Error).message}`
       ),
       TE.flatMapEither(data =>
         pipe(
-          data.rows,
+          data,
           SheetSyncMetadataTable.decode,
           E.mapLeft(e => formatValidationErrors(e).join(','))
         )
