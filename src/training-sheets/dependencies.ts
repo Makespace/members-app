@@ -11,4 +11,8 @@ export interface SyncWorkerDependencies {
   lastSync: (
     troubleTicketSheetId: string
   ) => TE.TaskEither<string, O.Option<Date>>;
+  storeSync: (
+    troubleTicketSheetId: string,
+    date: Date
+  ) => TE.TaskEither<string, void>;
 }
