@@ -9,7 +9,8 @@ describe('extract metadata', () => {
   it('Empty sheet', () => {
     const metadata = gsheetData.EMPTY.metadata;
     const result = getSomeOrFail(
-      extractGoogleSheetMetadata(pino({level: 'silent'}))(
+      extractGoogleSheetMetadata(
+        pino({level: 'silent'}),
         metadata.sheets[0],
         Object.values(gsheetData.EMPTY.sheets)[0]
       )

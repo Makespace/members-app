@@ -43,10 +43,3 @@ export interface SyncWorkerDependencies {
     ReadonlyMap<UUID, string>
   >;
 }
-
-export type SyncWorkerDependenciesGoogle = Omit<
-  SyncWorkerDependencies,
-  'google'
-> & {
-  google: GoogleHelpers;
-};

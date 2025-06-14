@@ -17,10 +17,12 @@ import {EventName, EventOfType} from '../../src/types/domain-event';
 import {Dependencies} from '../../src/dependencies';
 import {applyToResource} from '../../src/commands/apply-command-to-resource';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
-import {localGoogleHelpers} from '../init-dependencies/pull-local-google';
 import {getCachedSheetData} from '../../src/training-sheets/google/get-cached-sheet-data';
-import {ensureCachedSheetDataTableExists} from '../../src/training-sheets/google/ensure-cached-sheet-data-table-does-not-exists';
-import {cacheSheetData} from '../../src/training-sheets/google/cache-sheet-data';
+import {
+  ensureSheetDataSyncMetadataTableExists,
+  ensureSheetDataTableExists,
+  ensureTroubleTicketDataTableExists,
+} from '../../src/training-sheets/google/ensure-sheet-data-tables-exist';
 
 type ToFrameworkCommands<T> = {
   [K in keyof T]: {
@@ -47,33 +49,23 @@ export type TestFramework = {
     getResourceEvents: Dependencies['getResourceEvents'];
   };
   eventStoreDb: libsqlClient.Client;
-  getCachedSheetData: Dependencies['getCachedSheetData'];
 };
 
-export const initTestFramework = async (
-  googleRateLimitMs: number = 120_000
-): Promise<TestFramework> => {
+export const initTestFramework = async (): Promise<TestFramework> => {
   const logger = createLogger({level: 'silent'});
   const dbClient = libsqlClient.createClient({
     url: ':memory:',
   });
-  const sharedReadModel = initSharedReadModel(
-    dbClient,
-    logger,
-    O.some(localGoogleHelpers),
-    googleRateLimitMs,
-    O.none,
-    cacheSheetData(dbClient),
-    cacheSheetData(dbClient),
-    O.none
-  );
+  const sharedReadModel = initSharedReadModel(dbClient, logger, O.none);
   const frameworkCommitEvent = commitEvent(
     dbClient,
     logger,
     sharedReadModel.asyncRefresh
   );
   getRightOrFail(await ensureEventTableExists(dbClient)());
-  getRightOrFail(await ensureCachedSheetDataTableExists(dbClient)());
+  await ensureSheetDataTableExists(dbClient);
+  await ensureSheetDataSyncMetadataTableExists(dbClient);
+  await ensureTroubleTicketDataTableExists(dbClient);
   const frameworkGetAllEvents = () =>
     pipe(getAllEvents(dbClient)(), T.map(getRightOrFail))();
   const frameworkGetAllEventsByType = <EN extends EventName>(eventType: EN) =>

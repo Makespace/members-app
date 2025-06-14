@@ -5,7 +5,7 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import * as RR from 'fp-ts/ReadonlyRecord';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
-import {SyncWorkerDependenciesGoogle} from './dependencies';
+import {SyncWorkerDependencies} from './dependencies';
 import {Logger} from 'pino';
 import {
   GoogleHelpers,
@@ -219,7 +219,8 @@ const shouldPullFromSheet = (
 
 const syncTroubleTicketSheet = async (
   log: Logger,
-  deps: SyncWorkerDependenciesGoogle,
+  deps: SyncWorkerDependencies,
+  google: GoogleHelpers,
   troubleTicketSheetId: string
 ): Promise<void> => {
   const storeSyncResult = await deps.storeSync(
@@ -231,7 +232,7 @@ const syncTroubleTicketSheet = async (
     return;
   }
   log.info('Syncing trouble ticket sheet, getting meta data...');
-  const initialMeta = await deps.google.pullGoogleSheetDataMetadata(
+  const initialMeta = await google.pullGoogleSheetDataMetadata(
     log,
     troubleTicketSheetId
   )();
@@ -266,7 +267,7 @@ const syncTroubleTicketSheet = async (
     }
     const rows = await pullTroubleTicketRows(
       sheetLog,
-      deps.google,
+      google,
       troubleTicketSheetId,
       sheet,
       initialMeta.right.properties.timeZone,
@@ -289,7 +290,8 @@ const syncTroubleTicketSheet = async (
 };
 
 export const syncTroubleTickets = async (
-  deps: SyncWorkerDependenciesGoogle,
+  deps: SyncWorkerDependencies,
+  google: GoogleHelpers,
   troubleTicketSheetId: string
 ): Promise<void> => {
   const log = deps.logger.child({troubleTicketSheetId});
@@ -306,5 +308,5 @@ export const syncTroubleTickets = async (
     );
     return;
   }
-  await syncTroubleTicketSheet(log, deps, troubleTicketSheetId);
+  await syncTroubleTicketSheet(log, deps, google, troubleTicketSheetId);
 };
