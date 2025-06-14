@@ -1,6 +1,7 @@
 import {Logger} from 'pino';
 import {Failure, Email, DomainEvent, ResourceVersion} from './types';
 import * as TE from 'fp-ts/TaskEither';
+import * as O from 'fp-ts/Option';
 import {FailureWithStatus} from './types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 
@@ -38,4 +39,5 @@ export type Dependencies = {
   logger: Logger;
   rateLimitSendingOfEmails: (email: Email) => TE.TaskEither<Failure, Email>;
   sendEmail: (email: Email) => TE.TaskEither<Failure, string>;
+  lastQuizSync: (sheetId: string) => TE.TaskEither<string, O.Option<Date>>;
 };

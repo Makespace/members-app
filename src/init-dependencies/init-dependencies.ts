@@ -12,6 +12,7 @@ import {getResourceEvents} from './event-store/get-resource-events';
 import {Client} from '@libsql/client';
 
 import {initSharedReadModel} from '../read-models/shared-state';
+import {lastSync} from '../sync-worker/db/last_sync';
 
 export const initLogger = (conf: Config) => {
   let loggerOptions: LoggerOptions;
@@ -74,6 +75,7 @@ export const initDependencies = (
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
     logger,
+    lastQuizSync: lastSync(dbClient),
   };
   return deps;
 };
