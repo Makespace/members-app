@@ -2,7 +2,7 @@ import * as O from 'fp-ts/Option';
 import * as E from 'fp-ts/Either';
 import * as t from 'io-ts';
 
-import {DateTime} from 'luxon';
+import {DateTime, Duration} from 'luxon';
 import {pipe} from 'fp-ts/lib/function';
 
 // Bounds to prevent clearly broken parsing.
@@ -12,7 +12,12 @@ const MAX_RECOGNISED_MEMBER_NUMBER = 10_000;
 const MAX_RECOGNISED_SCORE = 10_000;
 const MIN_RECOGNISED_SCORE = 0;
 
-const MIN_VALID_TIMESTAMP_EPOCH_MS = 1546304461_000; // Year 2019, Can't see any training results before this.
+const MIN_VALID_TIMESTAMP = DateTime.fromObject({
+  // Can't see any training results before this.
+  year: 2019,
+  month: 0,
+  day: 0,
+});
 
 const FORMATS_TO_TRY = [
   'dd/MM/yyyy HH:mm:ss',
@@ -112,42 +117,25 @@ const timestampValid = (
   timezone: string,
   ts: DateTime,
   context: t.Context
-): t.Validation<Date> => {
-  let timestampEpochMS;
-  try {
-    if (ts.isValid) {
-      timestampEpochMS = ts.toUnixInteger() * 1000;
-    } else {
-      return t.failure(
-        raw,
-        context,
-        `Failed to parse timestamp in timezone ${timezone}, reason: ${ts.invalidReason}`
-      );
-    }
-  } catch (e) {
-    let errStr = 'unknown';
-    if (e instanceof Error) {
-      errStr = `${e.name}: ${e.message}`;
-    }
+): t.Validation<DateTime> => {
+  if (!ts.isValid) {
     return t.failure(
       raw,
       context,
-      `Failed to parse timestamp in timezone ${timezone}, err: ${errStr}`
+      `Failed to parse timestamp in timezone ${timezone}, reason: ${ts.invalidReason}`
     );
   }
   if (
-    isNaN(timestampEpochMS) ||
-    !isFinite(timestampEpochMS) ||
-    timestampEpochMS < MIN_VALID_TIMESTAMP_EPOCH_MS ||
-    timestampEpochMS > DateTime.utc().toUnixInteger() * 10 * 60 * 1000
+    ts < MIN_VALID_TIMESTAMP ||
+    ts > DateTime.now().plus(Duration.fromObject({days: 1}))
   ) {
     return t.failure(
       raw,
       context,
-      `Produced timestamp is invalid/out-of-range, timezone: '${timezone}' decoded to ${timestampEpochMS}}`
+      `Produced timestamp is invalid/out-of-range, timezone: '${timezone}' decoded to ${ts.toISO()}}`
     );
   }
-  return E.right(ts.toJSDate());
+  return E.right(ts);
 };
 
 export const extractTimestamp = (timezone: string) => {
@@ -159,18 +147,17 @@ export const extractTimestamp = (timezone: string) => {
         t.string.validate(input, context),
         E.flatMap(rawStr => {
           for (const format of FORMATS_TO_TRY) {
-            const ts = DateTime.fromFormat(rawStr, format, {
-              setZone: true,
-              zone: timezone,
-            });
-            const timestampEpochMS = timestampValid(
+            const validatedTs = timestampValid(
               rawStr,
               timezone,
-              ts,
+              DateTime.fromFormat(rawStr, format, {
+                setZone: true,
+                zone: timezone,
+              }),
               context
             );
-            if (E.isRight(timestampEpochMS)) {
-              return timestampEpochMS;
+            if (E.isRight(validatedTs)) {
+              return validatedTs.right.toJSDate();
             }
           }
           return t.failure(rawStr, context, 'Unrecognised timestamp format');
