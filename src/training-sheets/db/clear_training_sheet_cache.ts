@@ -3,8 +3,8 @@ import * as TE from 'fp-ts/TaskEither';
 import {SyncWorkerDependencies} from '../dependencies';
 import {pipe} from 'fp-ts/lib/function';
 
-export const clearCache =
-  (db: Client): SyncWorkerDependencies['clearCache'] =>
+export const clearTrainingSheetCache =
+  (db: Client): SyncWorkerDependencies['clearTrainingSheetCache'] =>
   sheetId =>
     pipe(
       TE.tryCatch(

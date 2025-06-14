@@ -3,7 +3,6 @@ import * as E from 'fp-ts/Either';
 import * as t from 'io-ts';
 
 import {DateTime} from 'luxon';
-import {EpochTimestampMilliseconds} from '../read-models/shared-state/return-types';
 import {pipe} from 'fp-ts/lib/function';
 
 // Bounds to prevent clearly broken parsing.
@@ -13,8 +12,7 @@ const MAX_RECOGNISED_MEMBER_NUMBER = 10_000;
 const MAX_RECOGNISED_SCORE = 10_000;
 const MIN_RECOGNISED_SCORE = 0;
 
-const MIN_VALID_TIMESTAMP_EPOCH_MS =
-  1546304461_000 as EpochTimestampMilliseconds; // Year 2019, Can't see any training results before this.
+const MIN_VALID_TIMESTAMP_EPOCH_MS = 1546304461_000; // Year 2019, Can't see any training results before this.
 
 const FORMATS_TO_TRY = [
   'dd/MM/yyyy HH:mm:ss',
@@ -114,12 +112,11 @@ const timestampValid = (
   timezone: string,
   ts: DateTime,
   context: t.Context
-): t.Validation<EpochTimestampMilliseconds> => {
+): t.Validation<Date> => {
   let timestampEpochMS;
   try {
     if (ts.isValid) {
-      timestampEpochMS = (ts.toUnixInteger() *
-        1000) as EpochTimestampMilliseconds;
+      timestampEpochMS = ts.toUnixInteger() * 1000;
     } else {
       return t.failure(
         raw,
@@ -150,18 +147,13 @@ const timestampValid = (
       `Produced timestamp is invalid/out-of-range, timezone: '${timezone}' decoded to ${timestampEpochMS}}`
     );
   }
-  return E.right(timestampEpochMS);
+  return E.right(ts.toJSDate());
 };
 
 export const extractTimestamp = (timezone: string) => {
-  return new t.Type<
-    EpochTimestampMilliseconds,
-    EpochTimestampMilliseconds,
-    unknown
-  >(
+  return new t.Type<Date, Date, unknown>(
     `TimestampTimezone${timezone}`,
-    (input: unknown): input is EpochTimestampMilliseconds =>
-      typeof input === 'number',
+    (input: unknown): input is Date => input instanceof Date,
     (input, context) =>
       pipe(
         t.string.validate(input, context),

@@ -5,8 +5,8 @@ import {SyncWorkerDependencies} from '../dependencies';
 import {pipe} from 'fp-ts/lib/function';
 import {inspect} from 'node:util';
 
-export const storeRowsRead =
-  (db: Client): SyncWorkerDependencies['storeRowsRead'] =>
+export const storeTrainingSheetRowsRead =
+  (db: Client): SyncWorkerDependencies['storeTrainingSheetRowsRead'] =>
   data =>
     pipe(
       data,

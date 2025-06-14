@@ -7,6 +7,7 @@ export const SheetDataTable = t.strict({
       sheet_id: t.string,
       sheet_name: t.string,
       row_index: t.Integer,
+      response_submitted: tt.DateFromNumber,
       member_number_provided: t.union([t.Integer, t.null]),
       email_provided: t.union([t.string, t.null]),
       score: t.Integer,
@@ -32,6 +33,8 @@ export const TroubleTicketDataTable = t.strict({
   rows: t.readonlyArray(
     t.strict({
       sheet_id: t.string,
+      sheet_name: t.string,
+      row_index: t.Integer,
       response_submitted: tt.DateFromNumber,
       cached_at: tt.DateFromNumber,
       // Do not trust provided data - it is not verified.

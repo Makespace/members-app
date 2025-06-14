@@ -1,10 +1,27 @@
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
-import {SyncWorkerDependencies, SyncWorkerDependenciesGoogle} from './dependencies';
+import * as A from 'fp-ts/Array';
+import * as RA from 'fp-ts/ReadonlyArray';
+import * as RR from 'fp-ts/ReadonlyRecord';
+import * as t from 'io-ts';
+import * as tt from 'io-ts-types';
+import {SyncWorkerDependenciesGoogle} from './dependencies';
+import {Logger} from 'pino';
+import {
+  GoogleHelpers,
+  GoogleSpreadsheetDataForSheet,
+  GoogleSpreadsheetInitialMetadata,
+} from './google/pull_sheet_data';
+import {TroubleTicketDataTable} from './google/sheet-data-table';
+import {GoogleSheetMetadata} from '../google/extract-metadata';
+import {pipe} from 'fp-ts/lib/function';
+import {extractTimestamp} from '../google/util';
+import {formatValidationErrors} from 'io-ts-reporters';
+import {getChunkIndexes} from '../util';
 
-const TROUBLE_TICKET_SYNC_INTERVAL = Duration.fromMillis(1000 * 60 * 20);
-
-
+const ROW_BATCH_SIZE = 50;
+const TROUBLE_TICKET_SYNC_INTERVAL_MS = 20 * 60 * 1000;
+const EXPECTED_TROUBLE_TICKET_RESPONSE_SHEET_NAME = 'Form Responses 1';
 
 const grabColumn =
   (values: {formattedValue: string}[]) =>
@@ -17,202 +34,271 @@ const grabColumn =
       val => validator(val)
     );
 
-const extractTroubleTicketResponseRows = (
-  logger: Logger,
-  data: GoogleSpreadsheetDataForSheet,
-  updateState: (event: EventOfType<'TroubleTicketResponseSubmitted'>) => void,
-  timezone: string
-) => {
-  // FIXME - This is all quite hard coded for the prototype.
-  const rows = data.sheets[0]?.data[0]?.rowData;
-  if (!rows) {
-    return;
-  }
+const extractFromRow =
+  (
+    logger: Logger,
+    metadata: GoogleSheetMetadata,
+    troubleTicketSheetId: string,
+    timezone: string
+  ) =>
+  (
+    row:
+      | {
+          values: {formattedValue: string}[] | undefined;
+        }
+      | Record<string, never>,
+    rowIndex: number
+  ): O.Option<TroubleTicketDataTable['rows'][0]> => {
+    if (!row.values) {
+      return O.none;
+    }
+    const _grabColumn = grabColumn(row.values);
+    const timestamp = _grabColumn(0, extractTimestamp(timezone).decode);
+    const email_address = _grabColumn(1, t.union([t.string, t.null]).decode);
+    const which_equipment = _grabColumn(2, t.union([t.string, t.null]).decode);
+    const name = _grabColumn(8, t.union([t.string, t.null]).decode);
+    const membership_number = _grabColumn(
+      9,
+      t.union([t.Int, tt.IntFromString, t.null]).decode
+    );
 
-  for (const row of rows) {
-    if ('values' in row) {
-      const _grabColumn = grabColumn(row.values);
-      const timestamp = _grabColumn(0, extractTimestamp(timezone).decode);
-      const email_address = _grabColumn(1, t.union([t.string, t.null]).decode);
-      const which_equipment = _grabColumn(
-        2,
-        t.union([t.string, t.null]).decode
+    const validationErr = (column: string, err: t.Errors) => {
+      logger.warn(
+        `Failed to parse trouble ticket row (column ${column}), skipping: ${formatValidationErrors(err).join(',')}`
       );
-      const name = _grabColumn(8, t.union([t.string, t.null]).decode);
-      const membership_number = _grabColumn(
-        9,
-        t.union([t.Int, tt.IntFromString, t.null]).decode
-      );
+    };
 
-      const validationErr = (column: string, err: t.Errors) => {
-        logger.warn(
-          `Failed to parse trouble ticket row (column ${column}), skipping: ${formatValidationErrors(err).join(',')}`
-        );
-      };
-
-      const grabOtherResponse = (i: number) =>
-        pipe(
-          _grabColumn(i, t.string.decode),
-          E.getOrElseW(err => {
-            logger.warn(
-              `Failed to parse trouble ticket column ${i} - defaulting to empty: ${formatValidationErrors(err).join(',')}`
-            );
-            return '';
-          })
-        );
-
-      const responses = {
-        ['If you answered "Other" above or an ABS or PLA 3d printer, please tell us which one. (printers are numbered from the left']:
-          grabOtherResponse(3),
-        ["What's the status of the machine?"]: grabOtherResponse(4),
-        ['What were you attempting to do with the machine? Please include details about material or file type and what you expected to happen.']:
-          grabOtherResponse(5),
-        ['What error or issue did you encounter.  Please include events and observations about what actually happened.']:
-          grabOtherResponse(6),
-        ['What steps did you take before encountering the error.  Please include any relevant settings or changes made prior to the error.']:
-          grabOtherResponse(7),
-      };
-
-      if (E.isLeft(timestamp)) {
-        validationErr('timestamp', timestamp.left);
-        continue;
-      }
-      if (E.isLeft(email_address)) {
-        validationErr('timestamp', email_address.left);
-        continue;
-      }
-      if (E.isLeft(which_equipment)) {
-        validationErr('timestamp', which_equipment.left);
-        continue;
-      }
-      if (E.isLeft(name)) {
-        validationErr('timestamp', name.left);
-        continue;
-      }
-      if (E.isLeft(membership_number)) {
-        validationErr('timestamp', membership_number.left);
-        continue;
-      }
-
-      updateState(
-        constructEvent('TroubleTicketResponseSubmitted')({
-          response_submitted_epoch_ms: timestamp.right,
-          email_address: email_address.right,
-          which_equipment: which_equipment.right,
-          submitter_name: name.right,
-          submitter_membership_number: membership_number.right,
-          submitted_response: responses,
+    const grabOtherResponse = (i: number) =>
+      pipe(
+        _grabColumn(i, t.string.decode),
+        E.getOrElseW(err => {
+          logger.warn(
+            `Failed to parse trouble ticket column ${i} - defaulting to empty: ${formatValidationErrors(err).join(',')}`
+          );
+          return '';
         })
       );
+
+    const responses = {
+      ['If you answered "Other" above or an ABS or PLA 3d printer, please tell us which one. (printers are numbered from the left']:
+        grabOtherResponse(3),
+      ["What's the status of the machine?"]: grabOtherResponse(4),
+      ['What were you attempting to do with the machine? Please include details about material or file type and what you expected to happen.']:
+        grabOtherResponse(5),
+      ['What error or issue did you encounter.  Please include events and observations about what actually happened.']:
+        grabOtherResponse(6),
+      ['What steps did you take before encountering the error.  Please include any relevant settings or changes made prior to the error.']:
+        grabOtherResponse(7),
+    };
+
+    if (E.isLeft(timestamp)) {
+      validationErr('timestamp', timestamp.left);
+      return O.none;
     }
+    if (E.isLeft(email_address)) {
+      validationErr('email address', email_address.left);
+      return O.none;
+    }
+    if (E.isLeft(which_equipment)) {
+      validationErr('which equipment', which_equipment.left);
+      return O.none;
+    }
+    if (E.isLeft(name)) {
+      validationErr('name', name.left);
+      return O.none;
+    }
+    if (E.isLeft(membership_number)) {
+      validationErr('membership number', membership_number.left);
+      return O.none;
+    }
+
+    return O.some({
+      sheet_id: troubleTicketSheetId,
+      sheet_name: metadata.name,
+      row_index: rowIndex,
+      response_submitted: timestamp.right,
+      cached_at: new Date(),
+      // Do not trust provided data - it is not verified.
+      submitted_email: email_address.right,
+      submitted_equipment: which_equipment.right,
+      submitted_name: name.right,
+      submitted_membership_number: membership_number.right,
+      submitted_response_json: JSON.stringify(responses),
+    });
+  };
+
+const extractTroubleTicketResponseRows = (
+  logger: Logger,
+  troubleTicketSheetId: string,
+  metadata: GoogleSheetMetadata,
+  timezone: string,
+  spreadsheet: GoogleSpreadsheetDataForSheet,
+  startRow: number
+): ReadonlyArray<TroubleTicketDataTable['rows'][0]> =>
+  pipe(
+    spreadsheet.sheets[0].data,
+    A.lookup(0),
+    O.flatMap(sheetData => O.fromNullable(sheetData.rowData)),
+    O.map(data => {
+      return pipe(
+        data,
+        RA.filterMapWithIndex((i, row) =>
+          extractFromRow(
+            logger,
+            metadata,
+            troubleTicketSheetId,
+            timezone
+          )(row, i + startRow)
+        )
+      );
+    }),
+    O.getOrElse<ReadonlyArray<TroubleTicketDataTable['rows'][0]>>(() => [])
+  );
+
+const pullTroubleTicketRows = async (
+  log: Logger,
+  google: GoogleHelpers,
+  troubleTicketSheetId: string,
+  sheet: GoogleSheetMetadata,
+  timezone: string,
+  initialRowStart: number
+): Promise<ReadonlyArray<TroubleTicketDataTable['rows'][0]>> => {
+  log.info('Pulling trouble ticket rows starting at row %s', initialRowStart);
+  const resultantRows: TroubleTicketDataTable['rows'][0][] = [];
+
+  for (const [rowStart, rowEnd] of getChunkIndexes(
+    initialRowStart,
+    sheet.rowCount,
+    ROW_BATCH_SIZE
+  )) {
+    log.debug('Pulling trouble tickets rows %s to %s', rowStart, rowEnd);
+    const [minCol, maxCol] = [0, 10]; // FIXME - Determine this dynamically.
+    const data = await google.pullGoogleSheetData(
+      log,
+      troubleTicketSheetId,
+      sheet.name,
+      rowStart,
+      rowEnd,
+      minCol,
+      maxCol
+    )();
+    if (E.isLeft(data)) {
+      log.error(
+        data.left,
+        'Failed to pull data for trouble ticket responses rows %s to %s, skipping rest of sheet',
+        rowStart,
+        rowEnd
+      );
+      return resultantRows;
+    }
+    log.info('Pulled data from google, extracting...');
+    resultantRows.push(
+      ...extractTroubleTicketResponseRows(
+        log,
+        troubleTicketSheetId,
+        sheet,
+        timezone,
+        data.right,
+        rowStart
+      )
+    );
   }
+  return resultantRows;
 };
 
-export const pullTroubleTicketResponses = async (
-  logger: Logger,
-  googleHelpers: GoogleHelpers,
-  troubleTicketSheetId: string,
-  updateState: (event: EventOfType<'TroubleTicketResponseSubmitted'>) => void,
-  cacheTroubleTicketData: Dependencies['cacheTroubleTicketData']
+const shouldPullFromSheet = (
+  sheet: GoogleSpreadsheetInitialMetadata['sheets'][0]
+): boolean =>
+  sheet.properties.title === EXPECTED_TROUBLE_TICKET_RESPONSE_SHEET_NAME;
+
+const syncTroubleTicketSheet = async (
+  log: Logger,
+  deps: SyncWorkerDependenciesGoogle,
+  troubleTicketSheetId: string
 ): Promise<void> => {
-  logger.info('Getting trouble ticket response sheet metadata...');
-  const initialMeta = await googleHelpers.pullGoogleSheetDataMetadata(
-    logger,
+  const storeSyncResult = await deps.storeSync(
+    troubleTicketSheetId,
+    new Date()
+  )();
+  if (E.isLeft(storeSyncResult)) {
+    log.warn(`Failed to record sync time - ${storeSyncResult.left}`);
+    return;
+  }
+  log.info('Syncing trouble ticket sheet, getting meta data...');
+  const initialMeta = await deps.google.pullGoogleSheetDataMetadata(
+    log,
     troubleTicketSheetId
   )();
   if (E.isLeft(initialMeta)) {
-    logger.error(
+    log.error(
       `Failed to get trouble ticket response sheet metadata. Not continuing: ${initialMeta.left}`
     );
     return;
   }
 
-  const events: EventOfType<'TroubleTicketResponseSubmitted'>[] = [];
-  const collectEvents = (
-    event: EventOfType<'TroubleTicketResponseSubmitted'>
-  ) => {
-    events.push(event);
-    updateState(event);
-  };
+  log.info('Getting last row read...');
+
+  const lastRowRead =
+    await deps.lastTroubleTicketRowRead(troubleTicketSheetId)();
+
+  if (E.isLeft(lastRowRead)) {
+    log.warn('Failed to get last row read data');
+    log.warn(lastRowRead.left);
+    return;
+  }
+
+  log.info('Got last row read data: %o', lastRowRead.right);
 
   for (const sheet of initialMeta.right.sheets) {
-    if (
-      sheet.properties.title === EXPECTED_TROUBLE_TICKET_RESPONSE_SHEET_NAME
-    ) {
-      logger.info(
-        'Found trouble tickets sheet %s, pulling data in batches...',
+    const sheetLog = log.child({sheet_name: sheet.properties.title});
+    if (!shouldPullFromSheet(sheet)) {
+      sheetLog.warn(
+        "Skipping sheet '%s' as doesn't match expected for trouble tickets",
         sheet.properties.title
       );
-      for (const [rowStart, rowEnd] of getChunkIndexes(
-        2, // 1-indexed and first row is headers.
-        sheet.properties.gridProperties.rowCount,
-        ROW_BATCH_SIZE
-      )) {
-        logger.debug('Pulling trouble tickets rows %s to %s', rowStart, rowEnd);
-        const [minCol, maxCol] = [0, 10]; // FIXME - Determine this dynamically.
-        const data = await googleHelpers.pullGoogleSheetData(
-          logger,
-          troubleTicketSheetId,
-          sheet.properties.title,
-          rowStart,
-          rowEnd,
-          minCol,
-          maxCol
-        )();
-        if (E.isLeft(data)) {
-          logger.error(
-            data.left,
-            'Failed to pull data for trouble ticket responses rows %s to %s, skipping rest of sheet',
-            rowStart,
-            rowEnd
-          );
-          return;
-        }
-        logger.info('Pulled data from google, extracting...');
-        extractTroubleTicketResponseRows(
-          logger,
-          data.right,
-          collectEvents,
-          initialMeta.right.properties.timeZone
-        );
-      }
+      continue;
+    }
+    const rows = await pullTroubleTicketRows(
+      sheetLog,
+      deps.google,
+      troubleTicketSheetId,
+      sheet,
+      initialMeta.right.properties.timeZone,
+      O.getOrElse(() => 1)(
+        RR.lookup(sheet.properties.title)(lastRowRead.right)
+      ) + 1 // 1-indexed and first row is headers.
+    );
+    log.info(
+      'Finished pulling trouble sheet rows, pulled %s new rows',
+      rows.length
+    );
+    const rowsReadResult = await deps.storeTroubleTicketRowsRead(rows)();
+    if (E.isLeft(rowsReadResult)) {
+      sheetLog.info(
+        `Failed to store rows read: ${rowsReadResult.left}, continuing anyway...`
+      );
     }
   }
-  logger.info(
-    'Found %s trouble ticket response events, caching...',
-    events.length
-  );
-  await cacheTroubleTicketData(
-    new Date(),
-    troubleTicketSheetId,
-    logger,
-    events
-  );
-  logger.info('Finished caching trouble ticket response events');
+  log.info('Finished processing trouble ticket sheet');
 };
 
 export const syncTroubleTickets = async (
   deps: SyncWorkerDependenciesGoogle,
   troubleTicketSheetId: string
 ): Promise<void> => {
+  const log = deps.logger.child({troubleTicketSheetId});
   const lastSync = await deps.lastSync(troubleTicketSheetId)();
   if (
     E.isRight(lastSync) &&
     O.isSome(lastSync.right) &&
-    Date.now() - lastSync.right.value.getTime() < TROUBLE_TICKET_SYNC_INTERVAL
+    Date.now() - lastSync.right.value.getTime() <
+      TROUBLE_TICKET_SYNC_INTERVAL_MS
   ) {
-    deps.logger.info(
-      'Skipping trouble ticket sync of %s as last sync was recent: %s',
-      troubleTicketSheetId,
+    log.info(
+      'Skipping trouble ticket sync as last sync was recent: %s',
       lastSync.right.value.toISOString()
     );
     return;
   }
-  await pullTroubleTicketResponses(
-    logger,
-    googleHelpers,
-    troubleTicketSheetId.value,
-    updateState,
-    cacheTroubleTicketData
-  );
+  await syncTroubleTicketSheet(log, deps, troubleTicketSheetId);
 };
