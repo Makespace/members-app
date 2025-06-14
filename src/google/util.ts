@@ -117,7 +117,7 @@ const timestampValid = (
   timezone: string,
   ts: DateTime,
   context: t.Context
-): t.Validation<DateTime> => {
+): t.Validation<Date> => {
   if (!ts.isValid) {
     return t.failure(
       raw,
@@ -135,7 +135,7 @@ const timestampValid = (
       `Produced timestamp is invalid/out-of-range, timezone: '${timezone}' decoded to ${ts.toISO()}}`
     );
   }
-  return E.right(ts);
+  return E.right(ts.toJSDate());
 };
 
 export const extractTimestamp = (timezone: string) => {
@@ -157,7 +157,7 @@ export const extractTimestamp = (timezone: string) => {
               context
             );
             if (E.isRight(validatedTs)) {
-              return validatedTs.right.toJSDate();
+              return validatedTs;
             }
           }
           return t.failure(rawStr, context, 'Unrecognised timestamp format');
