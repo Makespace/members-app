@@ -13,7 +13,6 @@ import {
   GoogleSpreadsheetInitialMetadata,
 } from './google/pull_sheet_data';
 import {TroubleTicketDataTable} from './google/sheet-data-table';
-import {GoogleSheetMetadata} from '../google/extract-metadata';
 import {pipe} from 'fp-ts/lib/function';
 import {extractTimestamp} from '../google/util';
 import {formatValidationErrors} from 'io-ts-reporters';
@@ -37,7 +36,7 @@ const grabColumn =
 const extractFromRow =
   (
     logger: Logger,
-    metadata: GoogleSheetMetadata,
+    sheetName: string,
     troubleTicketSheetId: string,
     timezone: string
   ) =>
@@ -114,7 +113,7 @@ const extractFromRow =
 
     return O.some({
       sheet_id: troubleTicketSheetId,
-      sheet_name: metadata.name,
+      sheet_name: sheetName,
       row_index: rowIndex,
       response_submitted: timestamp.right,
       cached_at: new Date(),
@@ -130,7 +129,7 @@ const extractFromRow =
 const extractTroubleTicketResponseRows = (
   logger: Logger,
   troubleTicketSheetId: string,
-  metadata: GoogleSheetMetadata,
+  sheetName: string,
   timezone: string,
   spreadsheet: GoogleSpreadsheetDataForSheet,
   startRow: number
@@ -145,7 +144,7 @@ const extractTroubleTicketResponseRows = (
         RA.filterMapWithIndex((i, row) =>
           extractFromRow(
             logger,
-            metadata,
+            sheetName,
             troubleTicketSheetId,
             timezone
           )(row, i + startRow)
@@ -159,7 +158,14 @@ const pullTroubleTicketRows = async (
   log: Logger,
   google: GoogleHelpers,
   troubleTicketSheetId: string,
-  sheet: GoogleSheetMetadata,
+  sheet: {
+    properties: {
+      title: string;
+      gridProperties: {
+        rowCount: number;
+      };
+    };
+  },
   timezone: string,
   initialRowStart: number
 ): Promise<ReadonlyArray<TroubleTicketDataTable['rows'][0]>> => {
@@ -168,7 +174,7 @@ const pullTroubleTicketRows = async (
 
   for (const [rowStart, rowEnd] of getChunkIndexes(
     initialRowStart,
-    sheet.rowCount,
+    sheet.properties.gridProperties.rowCount,
     ROW_BATCH_SIZE
   )) {
     log.debug('Pulling trouble tickets rows %s to %s', rowStart, rowEnd);
@@ -176,7 +182,7 @@ const pullTroubleTicketRows = async (
     const data = await google.pullGoogleSheetData(
       log,
       troubleTicketSheetId,
-      sheet.name,
+      sheet.properties.title,
       rowStart,
       rowEnd,
       minCol,
@@ -196,7 +202,7 @@ const pullTroubleTicketRows = async (
       ...extractTroubleTicketResponseRows(
         log,
         troubleTicketSheetId,
-        sheet,
+        sheet.properties.title,
         timezone,
         data.right,
         rowStart
