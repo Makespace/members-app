@@ -1,6 +1,6 @@
 import pino from 'pino';
 import * as O from 'fp-ts/Option';
-import {extractGoogleSheetMetadata} from '../../src/google/extract-metadata';
+import {extractGoogleSheetMetadata} from '../../src/sync-worker/google/extract-metadata';
 
 import * as gsheetData from '../data/google_sheet_data';
 import {getSomeOrFail} from '../helpers';

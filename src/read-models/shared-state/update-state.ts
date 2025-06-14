@@ -9,8 +9,6 @@ import {
   ownersTable,
   trainedMemberstable,
   trainersTable,
-  trainingQuizTable,
-  troubleTicketResponsesTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, eq, inArray} from 'drizzle-orm';
@@ -219,52 +217,9 @@ export const updateState =
           .run();
         break;
       }
-      case 'EquipmentTrainingQuizResult':
-        db.insert(trainingQuizTable)
-          .values({
-            quizId: event.id,
-            equipmentId: event.equipmentId,
-            sheetId: event.trainingSheetId,
-            memberNumberProvided: event.memberNumberProvided,
-            emailProvided: event.emailProvided,
-            score: event.score,
-            maxScore: event.maxScore,
-            timestamp: new Date(event.timestampEpochMS),
-          })
-          .onConflictDoNothing({
-            target: [
-              trainingQuizTable.equipmentId,
-              trainingQuizTable.sheetId,
-              trainingQuizTable.memberNumberProvided,
-              trainingQuizTable.emailProvided,
-              trainingQuizTable.timestamp,
-            ],
-          })
-          .run();
-        break;
-      case 'EquipmentTrainingQuizEmailUpdated':
-        db.update(trainingQuizTable)
-          .set({emailProvided: event.newEmail})
-          .where(eq(trainingQuizTable.quizId, event.quizId))
-          .run();
-        break;
-      case 'EquipmentTrainingQuizMemberNumberUpdated':
-        db.update(trainingQuizTable)
-          .set({memberNumberProvided: event.newMemberNumber})
-          .where(eq(trainingQuizTable.quizId, event.quizId))
-          .run();
-        break;
       case 'EquipmentTrainingSheetRegistered':
         db.update(equipmentTable)
           .set({trainingSheetId: event.trainingSheetId})
-          .where(eq(equipmentTable.id, event.equipmentId))
-          .run();
-        break;
-      case 'EquipmentTrainingQuizSync':
-        db.update(equipmentTable)
-          .set({
-            lastQuizSync: event.recordedAt.getTime(),
-          })
           .where(eq(equipmentTable.id, event.equipmentId))
           .run();
         break;
@@ -276,25 +231,6 @@ export const updateState =
               eq(trainedMemberstable.memberNumber, event.memberNumber)
             )
           )
-          .run();
-        break;
-      case 'TroubleTicketResponseSubmitted':
-        db.insert(troubleTicketResponsesTable)
-          .values({
-            responseSubmitted: new Date(event.response_submitted_epoch_ms),
-            emailAddress: event.email_address,
-            whichEquipment: event.which_equipment,
-            submitterName: event.submitter_name,
-            submitterMembershipNumber: event.submitter_membership_number,
-            submittedResponse: event.submitted_response,
-          })
-          .onConflictDoNothing({
-            target: [
-              troubleTicketResponsesTable.responseSubmitted,
-              troubleTicketResponsesTable.emailAddress,
-              troubleTicketResponsesTable.whichEquipment,
-            ],
-          })
           .run();
         break;
       case 'RecurlySubscriptionUpdated': {

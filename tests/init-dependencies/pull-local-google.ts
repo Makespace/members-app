@@ -5,7 +5,7 @@ import {
   GoogleHelpers,
   GoogleSpreadsheetDataForSheet,
   GoogleSpreadsheetInitialMetadata,
-} from '../../src/training-sheets/google/pull_sheet_data';
+} from '../../src/sync-worker/google/pull_sheet_data';
 import {NonEmptyArray} from 'fp-ts/lib/NonEmptyArray';
 
 const localPullGoogleSheetDataMetadata = (

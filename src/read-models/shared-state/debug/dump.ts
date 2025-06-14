@@ -11,7 +11,6 @@ import {
   ownersTable,
   trainedMemberstable,
   trainersTable,
-  trainingQuizTable,
 } from '../state';
 import {ReadonlyRecord} from 'fp-ts/lib/ReadonlyRecord';
 
@@ -30,6 +29,5 @@ export const dumpCurrentState =
         trainedMemberstable,
         areasTable,
         ownersTable,
-        trainingQuizTable,
       }).map(([tableName, table]) => [tableName, db.select().from(table).all()])
     );

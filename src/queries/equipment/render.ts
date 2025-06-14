@@ -310,7 +310,7 @@ const renderLastRefresh = (
   lastRefresh: ViewModel['equipment']['lastQuizSync']
 ): Html =>
   O.isSome(lastRefresh)
-    ? html`Last refresh: ${displayDate(lastRefresh.value)}`
+    ? html`Last refresh: ${displayDate(DateTime.fromJSDate(lastRefresh.value))}`
     : html`Last refresh date unknown`;
 
 const trainingQuizResults = (viewModel: ViewModel) => html`

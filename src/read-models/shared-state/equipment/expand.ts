@@ -3,15 +3,9 @@ import * as O from 'fp-ts/Option';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {eq, and, not, max, notInArray, isNotNull} from 'drizzle-orm';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {
-  membersTable,
-  trainedMemberstable,
-  trainersTable,
-  trainingQuizTable,
-} from '../state';
+import {membersTable, trainedMemberstable, trainersTable} from '../state';
 import {
   allMemberNumbers,
-  EpochTimestampMilliseconds,
   FailedQuizAttempt,
   MemberAwaitingTraining,
   MinimalEquipment,
@@ -166,7 +160,7 @@ const expandMembersAwaitingTraining =
       },
       RA.filterMap(q =>
         pipe(
-          q.memberNumberProvided!,
+          q.memberNumberProvided,
           getMemberCore(db, linking),
           O.map(memberInfo => ({
             ...memberInfo,

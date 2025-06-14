@@ -7,7 +7,7 @@ import * as E from 'fp-ts/Either';
 import {pipe} from 'fp-ts/lib/function';
 import {sheets} from '@googleapis/sheets';
 import {GoogleAuth} from 'google-auth-library';
-import {columnIndexToLetter} from '../../google/extract-metadata';
+import {columnIndexToLetter} from './extract-metadata';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {DateTime} from 'luxon';
 

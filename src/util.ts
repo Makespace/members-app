@@ -53,16 +53,6 @@ export const fieldIsUUID =
   ): obj is T & {[P in K]: tt.UUID} =>
     E.isRight(tt.UUID.decode(obj[key]));
 
-export const timeAsync =
-  (callback: (nanoseconds: number) => void) =>
-  async (fn: PromiseLike<void | void[]>) => {
-    const start = process.hrtime.bigint();
-    const result = await fn;
-    // Realistically we aren't going to be have elapsed periods big enough that this conversion back to number is problematic.
-    callback(Number(process.hrtime.bigint() - start));
-    return result;
-  };
-
 export const dbExecute = (dbClient: Client, sql: string, args: InArgs) =>
   startSpan(
     {

@@ -7,14 +7,6 @@ import {faker} from '@faker-js/faker';
 import {EventName} from '../../src/types/domain-event';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
 import * as libsqlClient from '@libsql/client';
-import {localGoogleHelpers} from './pull-local-google';
-
-const cacheSheetData = async <T>(
-  _cacheTimestamp: Date,
-  _sheetId: string,
-  _logger: Logger,
-  _data: ReadonlyArray<T>
-) => {};
 
 export const happyPathAdapters: Dependencies = {
   commitEvent: () => () =>
@@ -27,20 +19,11 @@ export const happyPathAdapters: Dependencies = {
       level: 'fatal',
       timestamp: pino.stdTimeFunctions.isoTime,
     }),
-    O.some(localGoogleHelpers),
-    120_000,
     O.none,
-    cacheSheetData,
-    cacheSheetData,
-    O.none
   ),
   logger: (() => undefined) as never as Logger,
   rateLimitSendingOfEmails: TE.right,
   sendEmail: () => TE.right('success'),
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getAllEventsByType: <T extends EventName>(_eventType: T) => TE.right([]),
-  cacheSheetData,
-  cacheTroubleTicketData: cacheSheetData,
-  getCachedSheetData: () => TE.right(O.none),
-  getCachedTroubleTicketData: () => TE.right(O.none),
 };

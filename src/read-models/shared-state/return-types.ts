@@ -45,8 +45,6 @@ export type MinimalEquipment = {
   name: string;
   areaId: UUID;
   trainingSheetId: O.Option<string>;
-  // Uses local timestamp.
-  lastQuizSync: O.Option<Date>;
 };
 
 export type Equipment = {
@@ -56,8 +54,6 @@ export type Equipment = {
   membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>;
   orphanedPassedQuizes: ReadonlyArray<OrphanedPassedQuiz>;
   failedQuizAttempts: ReadonlyArray<FailedQuizAttempt>;
-  // Uses the actual spreadsheet timestamp rather than our local timestamp which could be
-  // different due to clock drift or eventual consistency issues on the google side.
   lastQuizResult: O.Option<Date>;
 } & Omit<MinimalEquipment, 'areaId'>;
 

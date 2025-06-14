@@ -1,14 +1,14 @@
 import {loadCachedSheetData} from '../../src/load-cached-sheet-data';
-import {getCachedSheetData} from '../../src/training-sheets/google/get-cached-sheet-data';
+import {getCachedSheetData} from '../../src/sync-worker/google/get-cached-sheet-data';
 import pino from 'pino';
-import {ensureCachedSheetDataTableExists} from '../../src/training-sheets/google/ensure-cached-sheet-data-table-does-not-exists';
+import {ensureCachedSheetDataTableExists} from '../../src/sync-worker/google/ensure-cached-sheet-data-table-does-not-exists';
 import {getRightOrFail, getSomeOrFail} from '../helpers';
 import {constructEvent, EventOfType} from '../../src/types/domain-event';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {faker} from '@faker-js/faker';
 import {initTestFramework, TestFramework} from '../read-models/test-framework';
 import {EmailAddress} from '../../src/types';
-import {cacheSheetData} from '../../src/training-sheets/google/cache-sheet-data';
+import {cacheSheetData} from '../../src/sync-worker/google/cache-sheet-data';
 
 describe('Load cached sheet data', () => {
   const createArea = {

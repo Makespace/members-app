@@ -1,11 +1,10 @@
 import {sheets_v4} from '@googleapis/sheets';
 import {readFileSync} from 'node:fs';
-import {EpochTimestampMilliseconds} from '../../src/read-models/shared-state/return-types';
 import {
   GoogleSpreadsheetDataForSheet,
   GoogleSpreadsheetInitialMetadata,
-} from '../../src/training-sheets/google/pull_sheet_data';
-import {GoogleSheetName} from '../../src/google/extract-metadata';
+} from '../../src/sync-worker/google/pull_sheet_data';
+import {GoogleSheetName} from '../../src/sync-worker/google/extract-metadata';
 import {getRightOrFail} from '../helpers';
 import {EventOfType} from '../../src/types/domain-event';
 
@@ -15,11 +14,11 @@ export type ManualParsedTrainingSheetEntry = {
   score: number;
   maxScore: number;
   percentage: number;
-  timestampEpochMS: EpochTimestampMilliseconds;
+  timestampEpochMS: number;
 };
 
 export type ManualParsedTroubleTicketEntry = {
-  timestampEpochMs: EpochTimestampMilliseconds;
+  timestampEpochMs: number;
   emailProvided: string | null;
   whichEquipmentWereYouUsing: string | null;
   ifYouAnsweredOtherAbove: string;
@@ -104,7 +103,7 @@ export const METAL_LATHE: ManualParsed<ManualParsedTrainingSheetEntry> =
         score: 13,
         maxScore: 14,
         percentage: 93,
-        timestampEpochMS: 1705770960_000 as EpochTimestampMilliseconds,
+        timestampEpochMS: 1705770960_000,
       },
     ]
   );
@@ -122,7 +121,7 @@ export const BAMBU: ManualParsed<ManualParsedTrainingSheetEntry> =
         score: 4,
         maxScore: 5,
         percentage: 80,
-        timestampEpochMS: 1700768963_000 as EpochTimestampMilliseconds,
+        timestampEpochMS: 1700768963_000,
       },
       {
         emailProvided: 'flonn@example.com',
@@ -130,7 +129,7 @@ export const BAMBU: ManualParsed<ManualParsedTrainingSheetEntry> =
         score: 5,
         maxScore: 5,
         percentage: 100,
-        timestampEpochMS: 1700769348_000 as EpochTimestampMilliseconds,
+        timestampEpochMS: 1700769348_000,
       },
       {
         emailProvided: 'flonn@example.com',
@@ -138,7 +137,7 @@ export const BAMBU: ManualParsed<ManualParsedTrainingSheetEntry> =
         score: 12,
         maxScore: 12,
         percentage: 100,
-        timestampEpochMS: 1710249052_000 as EpochTimestampMilliseconds,
+        timestampEpochMS: 1710249052_000,
       },
       {
         emailProvided: 'flonn@example.com',
@@ -146,7 +145,7 @@ export const BAMBU: ManualParsed<ManualParsedTrainingSheetEntry> =
         score: 12,
         maxScore: 12,
         percentage: 100,
-        timestampEpochMS: 1710249842_000 as EpochTimestampMilliseconds,
+        timestampEpochMS: 1710249842_000,
       },
     ]
   );
@@ -165,7 +164,7 @@ export const LASER_CUTTER: ManualParsed<ManualParsedTrainingSheetEntry> =
         score: 24,
         maxScore: 24,
         percentage: 100,
-        timestampEpochMS: 1601214546_000 as EpochTimestampMilliseconds,
+        timestampEpochMS: 1601214546_000,
       },
       {
         emailProvided: 'flonn@example.com',
@@ -173,7 +172,7 @@ export const LASER_CUTTER: ManualParsed<ManualParsedTrainingSheetEntry> =
         score: 24,
         maxScore: 24,
         percentage: 100,
-        timestampEpochMS: 1601298462_000 as EpochTimestampMilliseconds,
+        timestampEpochMS: 1601298462_000,
       },
     ]
   );
@@ -188,7 +187,7 @@ export const TROUBLE_TICKETS_EXAMPLE: ManualParsed<ManualParsedTroubleTicketEntr
     ) as sheets_v4.Schema$Spreadsheet,
     [
       {
-        timestampEpochMs: 1622379030000 as EpochTimestampMilliseconds,
+        timestampEpochMs: 1622379030000,
         emailProvided: 'example@example1.com',
         whichEquipmentWereYouUsing: '3d printer (PLA)',
         ifYouAnsweredOtherAbove: '',
@@ -202,7 +201,7 @@ export const TROUBLE_TICKETS_EXAMPLE: ManualParsed<ManualParsedTroubleTicketEntr
         membershipNumberProvided: 1234,
       },
       {
-        timestampEpochMs: 1743029221000 as EpochTimestampMilliseconds,
+        timestampEpochMs: 1743029221000,
         emailProvided: 'example2.example2.com',
         whichEquipmentWereYouUsing: 'Metal Lathe',
         ifYouAnsweredOtherAbove: 'Testing the google form is working',
@@ -215,7 +214,7 @@ export const TROUBLE_TICKETS_EXAMPLE: ManualParsed<ManualParsedTroubleTicketEntr
         membershipNumberProvided: 9876,
       },
       {
-        timestampEpochMs: 1743091734000 as EpochTimestampMilliseconds,
+        timestampEpochMs: 1743091734000,
         emailProvided: 'example3@example3.com',
         whichEquipmentWereYouUsing: 'Embroidery Machine',
         ifYouAnsweredOtherAbove: '',
