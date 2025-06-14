@@ -51,10 +51,6 @@ export type Equipment = {
   trainers: ReadonlyArray<TrainerInfo>;
   trainedMembers: ReadonlyArray<TrainedMember>;
   area: MinimalArea;
-  membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>;
-  orphanedPassedQuizes: ReadonlyArray<OrphanedPassedQuiz>;
-  failedQuizAttempts: ReadonlyArray<FailedQuizAttempt>;
-  lastQuizResult: O.Option<Date>;
 } & Omit<MinimalEquipment, 'areaId'>;
 
 export type TrainedOn = {

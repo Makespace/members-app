@@ -10,6 +10,7 @@ import {ViewModel} from './view-model';
 import {User} from '../../types';
 import {UUID} from 'io-ts-types';
 import {StatusCodes} from 'http-status-codes';
+import { getQuizResults } from '../../read-models/external-state/equipment-quiz';
 
 export const constructViewModel =
   (deps: Dependencies, user: User) =>
@@ -53,5 +54,9 @@ export const constructViewModel =
       TE.let(
         'isSuperUserOrTrainerOfArea',
         ({isSuperUser, isTrainer}) => isSuperUser || isTrainer
+      )
+      TE.bind(
+        'quizResults',
+        ({equipment}) => getQuizResults(equipment.trainingSheetId)
       )
     );
