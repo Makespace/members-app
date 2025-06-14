@@ -3,8 +3,8 @@ import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {desc} from 'drizzle-orm';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
-import {troubleTicketResponsesTable} from '../state';
-import {TroubleTicket} from '../return-types';
+import {troubleTicketResponsesTable} from '../shared-state/state';
+import {TroubleTicket} from '../shared-state/return-types';
 
 const transformRow = <
   R extends {

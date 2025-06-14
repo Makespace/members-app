@@ -9,7 +9,7 @@ import {pullNewEquipmentQuizResults} from '../../src/read-models/shared-state/as
 import {
   pullGoogleSheetData,
   pullGoogleSheetDataMetadata,
-} from '../../src/training-sheets/google/pull_sheet_data';
+} from '../../src/sync-worker/google/pull_sheet_data';
 import {GoogleAuth} from 'google-auth-library/build/src/auth/googleauth';
 import {UUID} from 'io-ts-types';
 import * as RA from 'fp-ts/ReadonlyArray';

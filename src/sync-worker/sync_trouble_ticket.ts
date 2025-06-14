@@ -14,7 +14,7 @@ import {
 } from './google/pull_sheet_data';
 import {TroubleTicketDataTable} from './google/sheet-data-table';
 import {pipe} from 'fp-ts/lib/function';
-import {extractTimestamp} from '../google/util';
+import {extractTimestamp} from './google/util';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {getChunkIndexes} from '../util';
 

@@ -12,8 +12,7 @@ import {
   extractGoogleSheetMetadata,
   GoogleSheetMetadata,
   MAX_COLUMN_INDEX,
-} from '../google/extract-metadata';
-import {columnBoundsRequired, shouldPullFromSheet} from '../google/google';
+} from './google/extract-metadata';
 import {SheetDataTable} from './google/sheet-data-table';
 import {getChunkIndexes} from '../util';
 import {pipe} from 'fp-ts/lib/function';
@@ -22,12 +21,36 @@ import {
   extractMemberNumber,
   extractScore,
   extractTimestamp,
-} from '../google/util';
+} from './google/util';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {SyncWorkerDependencies} from './dependencies';
 
 const ROW_BATCH_SIZE = 50;
 const EQUIPMENT_SYNC_INTERVAL_MS = 40 * 60 * 1000;
+
+const FORM_RESPONSES_SHEET_REGEX = /^Form Responses [0-9]*/i;
+
+export const columnBoundsRequired = (
+  sheet: GoogleSheetMetadata
+): [number, number] => {
+  const colIndexes = Object.values(sheet.mappedColumns)
+    .filter(col => typeof col === 'number' || O.isSome(col))
+    .map(col => (typeof col === 'number' ? col : col.value));
+  return [Math.min(...colIndexes), Math.max(...colIndexes)];
+};
+
+export const shouldPullFromSheet = (
+  sheetId: string,
+  sheet: {
+    properties: {
+      title: string;
+    };
+  }
+): boolean =>
+  // This specific sheet (woodworking handtools) breaks all the other conventions and puts its raw data in a sheet called Summary.
+  (sheetId === '1CD_Va0th0dJmOSCjVGVCimrzkN7gKGjmMhifv7S9hY0' &&
+    sheet.properties.title === 'Summary') ||
+  FORM_RESPONSES_SHEET_REGEX.test(sheet.properties.title);
 
 const extractFromRow =
   (

@@ -4,7 +4,7 @@ import {eq, asc, isNotNull} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {equipmentTable} from '../state';
-import {EpochTimestampMilliseconds, MinimalEquipment} from '../return-types';
+import {MinimalEquipment} from '../return-types';
 import {UUID} from 'io-ts-types';
 
 const transformRow = <
@@ -12,7 +12,6 @@ const transformRow = <
     id: string;
     areaId: string;
     trainingSheetId: string | undefined | null;
-    lastQuizSync: number | undefined | null;
   },
 >(
   row: R
@@ -21,9 +20,6 @@ const transformRow = <
   id: row.id as UUID,
   areaId: row.areaId as UUID,
   trainingSheetId: O.fromNullable(row.trainingSheetId),
-  lastQuizSync: O.fromNullable(
-    row.lastQuizSync
-  ) as O.Option<EpochTimestampMilliseconds>,
 });
 
 export const getEquipmentForAreaMinimal =
@@ -52,17 +48,3 @@ export const getAllEquipmentMinimal = (
 ): ReadonlyArray<MinimalEquipment> =>
   pipe(db.select().from(equipmentTable).all(), RA.map(transformRow));
 
-export const getLeastRecentlySyncedEquipment = (
-  db: BetterSQLite3Database,
-  count: number
-): ReadonlyArray<MinimalEquipment> =>
-  pipe(
-    db
-      .select()
-      .from(equipmentTable)
-      .where(isNotNull(equipmentTable.trainingSheetId))
-      .orderBy(asc(equipmentTable.lastQuizSync))
-      .limit(count)
-      .all(),
-    RA.map(transformRow)
-  );

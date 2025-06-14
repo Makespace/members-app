@@ -13,17 +13,11 @@ import {createTerminus} from '@godaddy/terminus';
 import http from 'http';
 import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
-import * as O from 'fp-ts/Option';
 import {ensureEventTableExists} from './init-dependencies/event-store/ensure-events-table-exists';
 import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
 import cookieSession from 'cookie-session';
 import {initRoutes} from './routes';
-import {
-  loadCachedSheetData,
-  loadCachedTroubleTicketData,
-} from './load-cached-sheet-data';
-import {timeAsync} from './util';
 import {Worker} from 'worker_threads';
 
 // This background worker can be treated as a completely independent process
@@ -114,67 +108,7 @@ void (async () => {
   )();
 
   deps.logger.info('Populating shared read model...');
-  await deps.sharedReadModel.asyncRefresh()(); // We refresh before we load cached sheet data so we know what sheets to load cached data from.
-  deps.logger.info('Loading cached external events...');
-  await timeAsync(elapsedNs =>
-    deps.logger.info(
-      'Loaded cached external events in %sms',
-      elapsedNs / (1000 * 1000)
-    )
-  )(
-    Promise.all(
-      deps.sharedReadModel.equipment
-        .getAll()
-        .map(
-          loadCachedSheetData(
-            deps.getCachedSheetData,
-            deps.logger,
-            deps.sharedReadModel.updateState
-          )
-        )
-    )
-  );
-  for (const equipment of deps.sharedReadModel.equipment.getAll()) {
-    deps.logger.info(
-      'After loading cached external events the last quiz sync for equipment %s (%s) was %s (epoch ms)',
-      equipment.name,
-      equipment.id,
-      O.getOrElse<string | number>(() => 'never')(equipment.lastQuizSync)
-    );
-  }
-
-  if (conf.TROUBLE_TICKET_SHEET) {
-    await timeAsync(elapsedNs =>
-      deps.logger.info(
-        'Loaded cached trouble ticket events in %sms',
-        elapsedNs / (1000 * 1000)
-      )
-    )(
-      Promise.all([
-        pipe(
-          loadCachedTroubleTicketData(
-            conf.TROUBLE_TICKET_SHEET,
-            deps.getCachedTroubleTicketData,
-            deps.sharedReadModel.updateState
-          ),
-          TE.match(
-            failure => {
-              deps.logger.warn(
-                'Failed to load cached trouble ticket data - continuing anyway: %s',
-                failure.message
-              );
-            },
-            _ => {}
-          )
-        )(),
-      ])
-    );
-  } else {
-    deps.logger.warn(
-      'No trouble ticket sheet provided - skipping loading cache data'
-    );
-  }
-
+  await deps.sharedReadModel.asyncRefresh()();
   server.listen(conf.PORT, () => {
     deps.logger.info({port: conf.PORT}, 'Server listening');
     if (conf.PUBLIC_URL.includes('localhost')) {

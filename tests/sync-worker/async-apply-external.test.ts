@@ -7,7 +7,6 @@ import {initTestFramework, TestFramework} from '../read-models/test-framework';
 import {EmailAddress} from '../../src/types';
 import {getRightOrFail, getSomeOrFail} from '../helpers';
 import {
-  EpochTimestampMilliseconds,
   Equipment,
 } from '../../src/read-models/shared-state/return-types';
 import {EventOfType} from '../../src/types/domain-event';

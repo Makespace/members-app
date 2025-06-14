@@ -17,12 +17,11 @@ import {EventName, EventOfType} from '../../src/types/domain-event';
 import {Dependencies} from '../../src/dependencies';
 import {applyToResource} from '../../src/commands/apply-command-to-resource';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
-import {getCachedSheetData} from '../../src/training-sheets/google/get-cached-sheet-data';
 import {
   ensureSheetDataSyncMetadataTableExists,
   ensureSheetDataTableExists,
   ensureTroubleTicketDataTableExists,
-} from '../../src/training-sheets/google/ensure-sheet-data-tables-exist';
+} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
 
 type ToFrameworkCommands<T> = {
   [K in keyof T]: {
@@ -94,7 +93,6 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       commitEvent: frameworkCommitEvent,
       getResourceEvents: getResourceEvents(dbClient),
     },
-    getCachedSheetData: getCachedSheetData(dbClient),
     commands: {
       area: {
         create: frameworkify(commands.area.create),

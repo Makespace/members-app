@@ -1,5 +1,5 @@
 import * as O from 'fp-ts/Option';
-import {columnBoundsRequired} from '../../src/google/google';
+import {columnBoundsRequired} from '../../src/sync-worker/sync_training_sheet';
 
 describe('columnBoundsRequired', () => {
   [
