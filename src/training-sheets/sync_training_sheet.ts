@@ -3,7 +3,7 @@ import * as O from 'fp-ts/Option';
 import * as A from 'fp-ts/Array';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as RR from 'fp-ts/ReadonlyRecord';
-import {SyncWorkerDependencies, SyncWorkerDependenciesGoogle} from './dependencies';
+import {SyncWorkerDependenciesGoogle} from './dependencies';
 import {Logger} from 'pino';
 import {
   GoogleHelpers,
@@ -103,6 +103,7 @@ const extractFromRow =
       sheet_id: trainingSheetId,
       sheet_name: metadata.name,
       row_index: rowIndex,
+      response_submitted: timestampEpochMS.right,
       member_number_provided: O.isSome(memberNumber)
         ? memberNumber.value
         : null,
@@ -260,7 +261,7 @@ export const syncTrainingSheet = async (
 
   log.info('Getting last row read...');
 
-  const lastRowRead = await deps.lastRowRead(trainingSheetId)();
+  const lastRowRead = await deps.lastTrainingSheetRowRead(trainingSheetId)();
 
   if (E.isLeft(lastRowRead)) {
     log.warn('Failed to get last row read data');
@@ -268,7 +269,7 @@ export const syncTrainingSheet = async (
     return;
   }
 
-  log.info('Got last row read data: %o', lastRowRead);
+  log.info('Got last row read data: %o', lastRowRead.right);
 
   for (const sheet of sheets) {
     const sheetLog = log.child({sheet_name: sheet.name});
@@ -284,7 +285,7 @@ export const syncTrainingSheet = async (
       'Finished pulling training sheet rows, pulled %s new rows',
       rows.length
     );
-    const rowsReadResult = await deps.storeRowsRead(rows)();
+    const rowsReadResult = await deps.storeTrainingSheetRowsRead(rows)();
     if (E.isLeft(rowsReadResult)) {
       sheetLog.info(
         `Failed to store rows read: ${rowsReadResult.left}, continuing anyway...`
@@ -298,7 +299,7 @@ export const syncTrainingSheet = async (
 export const syncEquipmentTrainingSheets = async (
   deps: SyncWorkerDependenciesGoogle
 ): Promise<void> => {
-  const sheetsToSync = await deps.getSheetsToSync()();
+  const sheetsToSync = await deps.getTrainingSheetsToSync()();
   if (E.isLeft(sheetsToSync)) {
     deps.logger.error(`Failed to get sheets to sync: '${sheetsToSync.left}'`);
     return;

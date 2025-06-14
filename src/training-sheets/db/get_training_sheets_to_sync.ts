@@ -23,8 +23,8 @@ const accumTrainingSheet = (
   return equipmentToSync;
 };
 
-export const getSheetsToSync =
-  (db: Client): SyncWorkerDependencies['getSheetsToSync'] =>
+export const getTrainingSheetsToSync =
+  (db: Client): SyncWorkerDependencies['getTrainingSheetsToSync'] =>
   () =>
     pipe(
       getAllEventsByTypes(db)(

@@ -19,8 +19,8 @@ export const LastRowReadTable = t.strict({
 });
 export type LastRowReadTable = t.TypeOf<typeof LastRowReadTable>;
 
-export const lastRowRead =
-  (db: Client): SyncWorkerDependencies['lastRowRead'] =>
+export const lastTrainingSheetRowRead =
+  (db: Client): SyncWorkerDependencies['lastTrainingSheetRowRead'] =>
   sheetId =>
     pipe(
       TE.tryCatch<string, ResultSet>(
