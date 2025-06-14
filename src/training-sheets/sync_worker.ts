@@ -31,8 +31,9 @@ async function main() {
   ]);
 
   if (O.isSome(deps.google)) {
+    const google = deps.google.value;
     setInterval(() => {
-      syncEquipmentTrainingSheets(deps)
+      syncEquipmentTrainingSheets(deps, google)
         .then(() => deps.logger.info('Equipment training sheet sync complete'))
         .catch(err =>
           deps.logger.error(err, 'Equipment training sheet sync error')
@@ -41,7 +42,7 @@ async function main() {
     const troubleTicketSheet = deps.conf.TROUBLE_TICKET_SHEET;
     if (troubleTicketSheet) {
       setInterval(() => {
-        syncTroubleTickets(deps, troubleTicketSheet)
+        syncTroubleTickets(deps, google, troubleTicketSheet)
           .then(() => deps.logger.info('Trouble ticket sync complete'))
           .catch(err => deps.logger.error(err, 'Trouble ticket sync error'));
       }, 20 * 60_000);

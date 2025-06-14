@@ -3,7 +3,6 @@ import * as O from 'fp-ts/Option';
 import * as A from 'fp-ts/Array';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as RR from 'fp-ts/ReadonlyRecord';
-import {SyncWorkerDependenciesGoogle} from './dependencies';
 import {Logger} from 'pino';
 import {
   GoogleHelpers,
@@ -25,6 +24,7 @@ import {
   extractTimestamp,
 } from '../google/util';
 import {formatValidationErrors} from 'io-ts-reporters';
+import {SyncWorkerDependencies} from './dependencies';
 
 const ROW_BATCH_SIZE = 50;
 const EQUIPMENT_SYNC_INTERVAL_MS = 40 * 60 * 1000;
@@ -198,7 +198,8 @@ const pullTrainingSheetRows = async (
 
 export const syncTrainingSheet = async (
   log: Logger,
-  deps: SyncWorkerDependenciesGoogle,
+  deps: SyncWorkerDependencies,
+  google: GoogleHelpers,
   trainingSheetId: string
 ) => {
   const storeSyncResult = await deps.storeSync(trainingSheetId, new Date())();
@@ -208,7 +209,7 @@ export const syncTrainingSheet = async (
   }
 
   log.info('Syncing training sheet, getting meta data...');
-  const initialMeta = await deps.google.pullGoogleSheetDataMetadata(
+  const initialMeta = await google.pullGoogleSheetDataMetadata(
     log,
     trainingSheetId
   )();
@@ -229,7 +230,7 @@ export const syncTrainingSheet = async (
       continue;
     }
 
-    const firstRowData = await deps.google.pullGoogleSheetData(
+    const firstRowData = await google.pullGoogleSheetData(
       log,
       trainingSheetId,
       sheet.properties.title,
@@ -275,7 +276,7 @@ export const syncTrainingSheet = async (
     const sheetLog = log.child({sheet_name: sheet.name});
     const rows = await pullTrainingSheetRows(
       sheetLog,
-      deps.google,
+      google,
       trainingSheetId,
       sheet,
       initialMeta.right.properties.timeZone,
@@ -297,7 +298,8 @@ export const syncTrainingSheet = async (
 };
 
 export const syncEquipmentTrainingSheets = async (
-  deps: SyncWorkerDependenciesGoogle
+  deps: SyncWorkerDependencies,
+  google: GoogleHelpers
 ): Promise<void> => {
   const sheetsToSync = await deps.getTrainingSheetsToSync()();
   if (E.isLeft(sheetsToSync)) {
@@ -324,6 +326,7 @@ export const syncEquipmentTrainingSheets = async (
     await syncTrainingSheet(
       deps.logger.child({equipmentId, trainingSheetId}),
       deps,
+      google,
       trainingSheetId
     );
   }
