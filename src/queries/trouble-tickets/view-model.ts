@@ -1,5 +1,5 @@
-import {TroubleTicket} from '../../read-models/shared-state/return-types';
+import {TroubleTicketDataTable} from '../../sync-worker/google/sheet-data-table';
 
 export type ViewModel = {
-  troubleTicketData: ReadonlyArray<TroubleTicket>;
+  troubleTicketData: TroubleTicketDataTable['rows'];
 };

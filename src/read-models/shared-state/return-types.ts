@@ -93,12 +93,3 @@ export type Area = MinimalArea & {
   owners: ReadonlyArray<Owner>;
   equipment: ReadonlyArray<Equipment>;
 };
-
-export type TroubleTicket = {
-  responseSubmitted: Date;
-  emailAddress: O.Option<string>;
-  whichEquipment: O.Option<string>;
-  submitterName: O.Option<string>;
-  submitterMembershipNumber: O.Option<number>;
-  submittedResponse: unknown;
-};

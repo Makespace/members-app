@@ -13,11 +13,7 @@ import {Client} from '@libsql/client';
 
 import {initSharedReadModel} from '../read-models/shared-state';
 import {lastSync} from '../sync-worker/db/last_sync';
-import {
-  getFailedQuizResults,
-  getPassedQuizResults,
-  getSheetData,
-} from '../sync-worker/db/get_sheet_data';
+import {getSheetData} from '../sync-worker/db/get_sheet_data';
 
 export const initLogger = (conf: Config) => {
   let loggerOptions: LoggerOptions;
@@ -82,8 +78,8 @@ export const initDependencies = (
     logger,
     lastQuizSync: lastSync(dbClient),
     getSheetData: getSheetData(dbClient),
-    getPassedQuizResults: getPassedQuizResults(dbClient),
-    getFailedQuizResults: getFailedQuizResults(dbClient),
+    // getPassedQuizResults: getPassedQuizResults(dbClient),
+    // getFailedQuizResults: getFailedQuizResults(dbClient),
   };
   return deps;
 };
