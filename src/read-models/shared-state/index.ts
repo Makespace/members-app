@@ -3,7 +3,7 @@ import * as O from 'fp-ts/Option';
 import {createTables} from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
-import {Area, Equipment, Member, TroubleTicket} from './return-types';
+import {Area, Equipment, Member} from './return-types';
 
 import {Client} from '@libsql/client/.';
 import {asyncRefresh} from './async-refresh';
@@ -20,7 +20,6 @@ import {
   getMemberAsActorFull,
 } from './member/helper';
 import {dumpCurrentState, SharedDatabaseDump} from './debug/dump';
-import {getAllTroubleTicketFull} from '../external-state/trouble-tickets';
 import {MemberLinking} from './member-linking';
 
 export type SharedReadModel = {
@@ -45,9 +44,6 @@ export type SharedReadModel = {
   };
   debug: {
     dump: () => SharedDatabaseDump;
-  };
-  troubleTickets: {
-    getAll: () => ReadonlyArray<TroubleTicket>;
   };
 };
 
@@ -89,9 +85,6 @@ export const initSharedReadModel = (
     },
     debug: {
       dump: dumpCurrentState(readModelDb),
-    },
-    troubleTickets: {
-      getAll: getAllTroubleTicketFull(readModelDb),
     },
   };
 };

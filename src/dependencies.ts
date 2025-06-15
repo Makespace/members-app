@@ -8,7 +8,10 @@ import {StatusCodes} from 'http-status-codes';
 import {Resource} from './types/resource';
 import {EventName, EventOfType} from './types/domain-event';
 import {SharedReadModel} from './read-models/shared-state';
-import {SheetDataTable} from './sync-worker/google/sheet-data-table';
+import {
+  SheetDataTable,
+  TroubleTicketDataTable,
+} from './sync-worker/google/sheet-data-table';
 
 export type GoogleSheetId = string;
 
@@ -46,15 +49,19 @@ export type Dependencies = {
     skip_member_numbers: ReadonlyArray<number>,
     skip_emails: ReadonlyArray<string>
   ) => TE.TaskEither<string, SheetDataTable['rows']>;
-  getPassedQuizResults: (
-    sheetId: string,
-    skip_member_numbers: ReadonlyArray<number>,
-    skip_emails: ReadonlyArray<string>
-  ) => TE.TaskEither<string, SheetDataTable['rows']>;
-  getFailedQuizResults: (
-    sheetId: string,
-    skip_member_numbers: ReadonlyArray<number>,
-    skip_emails: ReadonlyArray<string>,
-    count: number
-  ) => TE.TaskEither<string, SheetDataTable['rows']>;
+  getTroubleTicketData: (
+    sheetId: string
+  ) => TE.TaskEither<string, TroubleTicketDataTable['rows']>;
+
+  // getPassedQuizResults: (
+  //   sheetId: string,
+  //   skip_member_numbers: ReadonlyArray<number>,
+  //   skip_emails: ReadonlyArray<string>
+  // ) => TE.TaskEither<string, SheetDataTable['rows']>;
+  // getFailedQuizResults: (
+  //   sheetId: string,
+  //   skip_member_numbers: ReadonlyArray<number>,
+  //   skip_emails: ReadonlyArray<string>,
+  //   count: number
+  // ) => TE.TaskEither<string, SheetDataTable['rows']>;
 };

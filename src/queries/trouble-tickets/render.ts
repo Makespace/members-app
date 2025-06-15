@@ -1,5 +1,4 @@
 import {pipe} from 'fp-ts/lib/function';
-import * as O from 'fp-ts/Option';
 import {
   html,
   HtmlSubstitution,
@@ -18,23 +17,25 @@ const troubleTicketRows = (
   return viewModel.troubleTicketData.map(
     ticket => html`
       <tr>
-        <td>${displayDate(DateTime.fromJSDate(ticket.responseSubmitted))}</td>
+        <td>${displayDate(DateTime.fromJSDate(ticket.response_submitted))}</td>
         <td>
-          ${O.isNone(ticket.emailAddress)
-            ? safe('Not Provided')
-            : sanitizeString(ticket.emailAddress.value)}
+          ${ticket.submitted_email
+            ? sanitizeString(ticket.submitted_email)
+            : safe('Not Provided')}
         </td>
         <td>
-          ${O.isNone(ticket.submitterMembershipNumber)
-            ? safe('Not Provided')
-            : renderMemberNumber(ticket.submitterMembershipNumber.value)}
+          ${ticket.submitted_membership_number
+            ? renderMemberNumber(ticket.submitted_membership_number)
+            : safe('Not Provided')}
         </td>
         <td>
-          ${O.isNone(ticket.whichEquipment)
-            ? safe('Not Provided')
-            : sanitizeString(ticket.whichEquipment.value)}
+          ${ticket.submitted_equipment
+            ? sanitizeString(ticket.submitted_equipment)
+            : safe('Not Provided')}
         </td>
-        <td>${sanitizeString(JSON.stringify(ticket.submittedResponse))}</td>
+        <td>
+          ${sanitizeString(JSON.stringify(ticket.submitted_response_json))}
+        </td>
       </tr>
     `
   );
