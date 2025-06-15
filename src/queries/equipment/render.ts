@@ -5,7 +5,6 @@ import {
   Html,
   html,
   joinHtml,
-  sanitizeOption,
   sanitizeString,
   toLoggedInContent,
 } from '../../types/html';
@@ -20,6 +19,7 @@ import {contramap} from 'fp-ts/lib/Ord';
 import {renderMembersAsList} from '../../templates/member-link-list';
 import {currentTrainingSheetButton} from '../shared-render/current-training-sheet-button';
 import {EquipmentQuizResults} from '../../read-models/external-state/equipment-quiz';
+import { SheetDataTable } from '../../sync-worker/google/sheet-data-table';
 
 const trainersList = (trainers: ViewModel['equipment']['trainers']) =>
   pipe(
@@ -176,9 +176,8 @@ const currentlyTrainedUsersTable = (viewModel: ViewModel) =>
   );
 
 const waitingForTrainingRow =
-  (equipmentId: UUID) => (member: MemberAwaitingTraining) => html`
+  (equipmentId: UUID) => (member: SheetDataTable['rows'][0]) => html`
     <tr class="passed_training_quiz_row">
-      <td hidden>${member.quizId}</td>
       <td>${sanitizeString(O.getOrElse(() => 'unknown')(member.name))}</td>
       <td>${renderMemberNumber(member.memberNumber)}</td>
       <td>${displayDate(DateTime.fromJSDate(member.waitingSince))}</td>
@@ -198,66 +197,71 @@ const waitingForTrainingRow =
 
 const waitingForTrainingTable = (viewModel: ViewModel) =>
   pipe(
-    viewModel.equipment.membersAwaitingTraining,
-    RA.sortBy([byWaitingLongest]),
-    RA.map(waitingForTrainingRow(viewModel.equipment.id)),
-    RA.match(
-      () => html`<p>No one is waiting for training</p>`,
-      rows => html`
-        <table>
-          <tr>
-            <th hidden>Quiz ID</th>
-            <th>Name</th>
-            <th>Member Number</th>
-            <th>Waiting Since</th>
-            <th>Actions</th>
-          </tr>
-          ${joinHtml(rows)}
-        </table>
-      `
+    viewModel.quizResults,
+    O.map(
+      r => pipe(
+        r.passedQuizes,
+        RA.map(waitingForTrainingRow(viewModel.equipment.id)),
+        RA.match(
+          () => html`<p>No one is waiting for training</p>`,
+          rows => html`
+            <table>
+              <tr>
+                <th hidden>Quiz ID</th>
+                <th>Name</th>
+                <th>Member Number</th>
+                <th>Waiting Since</th>
+                <th>Actions</th>
+              </tr>
+              ${joinHtml(rows)}
+            </table>
+          `
+        )
+      )
     )
+    
   );
 
-const passedUnknownQuizRow = (
-  unknownQuiz: ViewModel['equipment']['orphanedPassedQuizes'][0]
-) => html`
-  <tr class="passed_training_quiz_row">
-    <td hidden>${unknownQuiz.id}</td>
-    <td>${displayDate(DateTime.fromJSDate(unknownQuiz.timestamp))}</td>
-    ${O.isSome(unknownQuiz.memberNumberProvided)
-      ? html`<td>
-          ${renderMemberNumber(unknownQuiz.memberNumberProvided.value)}
-        </td>`
-      : html`<td>${sanitizeOption(unknownQuiz.memberNumberProvided)}</td>`}
-    <td>${sanitizeOption(unknownQuiz.emailProvided)}</td>
-  </tr>
-`;
+// const passedUnknownQuizRow = (
+//   unknownQuiz: ViewModel['equipment']['orphanedPassedQuizes'][0]
+// ) => html`
+//   <tr class="passed_training_quiz_row">
+//     <td hidden>${unknownQuiz.id}</td>
+//     <td>${displayDate(DateTime.fromJSDate(unknownQuiz.timestamp))}</td>
+//     ${O.isSome(unknownQuiz.memberNumberProvided)
+//       ? html`<td>
+//           ${renderMemberNumber(unknownQuiz.memberNumberProvided.value)}
+//         </td>`
+//       : html`<td>${sanitizeOption(unknownQuiz.memberNumberProvided)}</td>`}
+//     <td>${sanitizeOption(unknownQuiz.emailProvided)}</td>
+//   </tr>
+// `;
 
-const unknownMemberWaitingForTrainingTable = (viewModel: ViewModel) =>
-  pipe(
-    viewModel.equipment.orphanedPassedQuizes,
-    RA.sortBy([byQuizDate]),
-    RA.takeLeft(10),
-    RA.map(passedUnknownQuizRow),
-    RA.match(
-      () => html``,
-      rows => html`
-        <h3>Waiting for Training - Unknown Member</h3>
-        <p>
-          Quizes passed by members without matching email and member numbers.
-        </p>
-        <table>
-          <tr>
-            <th hidden>Quiz ID</th>
-            <th>Timestamp</th>
-            <th>Member Number Provided</th>
-            <th>Email Provided</th>
-          </tr>
-          ${joinHtml(rows)}
-        </table>
-      `
-    )
-  );
+// const unknownMemberWaitingForTrainingTable = (viewModel: ViewModel) =>
+//   pipe(
+//     viewModel.equipment.orphanedPassedQuizes,
+//     RA.sortBy([byQuizDate]),
+//     RA.takeLeft(10),
+//     RA.map(passedUnknownQuizRow),
+//     RA.match(
+//       () => html``,
+//       rows => html`
+//         <h3>Waiting for Training - Unknown Member</h3>
+//         <p>
+//           Quizes passed by members without matching email and member numbers.
+//         </p>
+//         <table>
+//           <tr>
+//             <th hidden>Quiz ID</th>
+//             <th>Timestamp</th>
+//             <th>Member Number Provided</th>
+//             <th>Email Provided</th>
+//           </tr>
+//           ${joinHtml(rows)}
+//         </table>
+//       `
+//     )
+//   );
 
 const failedQuizRow = (row: EquipmentQuizResults['failedQuizes'][0]) => html`
   <tr class="failed_training_quiz_row">
@@ -316,9 +320,7 @@ const trainingQuizResults = (viewModel: ViewModel) => html`
     )
   )}
   <h3>Waiting for Training</h3>
-  ${waitingForTrainingTable(viewModel)}
-  ${unknownMemberWaitingForTrainingTable(viewModel)}
-  ${failedQuizTrainingTable(viewModel)}
+  ${waitingForTrainingTable(viewModel)} ${failedQuizTrainingTable(viewModel)}
 `;
 
 export const render = (viewModel: ViewModel) =>

@@ -2,25 +2,6 @@ import * as O from 'fp-ts/Option';
 import {Actor, EmailAddress, GravatarHash} from '../../types';
 import {UUID} from 'io-ts-types';
 
-export type OrphanedPassedQuiz = {
-  id: UUID;
-  score: number;
-  maxScore: number;
-  percentage: number;
-  timestamp: Date;
-
-  memberNumberProvided: O.Option<number>;
-  emailProvided: O.Option<string>;
-};
-
-export type FailedQuizAttempt = Pick<MemberCoreInfo, 'memberNumber'> & {
-  quizId: UUID;
-  score: number;
-  maxScore: number;
-  percentage: number;
-  timestamp: Date;
-};
-
 export type TrainedMember = Pick<
   MemberCoreInfo,
   'name' | 'memberNumber' | 'emailAddress' | 'pastMemberNumbers'
@@ -88,14 +69,6 @@ export type MemberCoreInfo = {
 export const allMemberNumbers = (
   m: Pick<MemberCoreInfo, 'memberNumber' | 'pastMemberNumbers'>
 ): ReadonlyArray<number> => [m.memberNumber, ...m.pastMemberNumbers];
-
-export type MemberAwaitingTraining = Pick<
-  MemberCoreInfo,
-  'memberNumber' | 'name' | 'pastMemberNumbers'
-> & {
-  quizId: UUID;
-  waitingSince: Date;
-};
 
 export type Member = MemberCoreInfo & {
   trainedOn: ReadonlyArray<TrainedOn>;
