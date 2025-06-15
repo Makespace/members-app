@@ -11,8 +11,8 @@ import {User} from '../../types';
 import {UUID} from 'io-ts-types';
 import {StatusCodes} from 'http-status-codes';
 import {
-  EquipmentQuizResults,
-  getQuizResults,
+  FullQuizResults,
+  getFullQuizResults,
 } from '../../read-models/external-state/equipment-quiz';
 
 export const constructViewModel =
@@ -63,13 +63,8 @@ export const constructViewModel =
           return TE.right(O.none);
         }
         return pipe(
-          getQuizResults(deps)(
-            equipment.trainingSheetId.value,
-            equipment.trainedMembers
-          ),
-          TE.map<EquipmentQuizResults, O.Option<EquipmentQuizResults>>(r =>
-            O.some(r)
-          ),
+          getFullQuizResults(deps, equipment.trainingSheetId.value, equipment),
+          TE.map<FullQuizResults, O.Option<FullQuizResults>>(O.some),
           TE.mapLeft(err_str =>
             failureWithStatus(err_str, StatusCodes.INTERNAL_SERVER_ERROR)()
           )
