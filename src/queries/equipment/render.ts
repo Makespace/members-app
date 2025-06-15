@@ -13,16 +13,13 @@ import {ViewModel} from './view-model';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as N from 'fp-ts/number';
-import {
-  FailedQuizAttempt,
-  MemberAwaitingTraining,
-  OrphanedPassedQuiz,
-} from '../../read-models/shared-state/return-types';
+import {MemberAwaitingTraining} from '../../read-models/shared-state/return-types';
 import {DateTime} from 'luxon';
 import {UUID} from 'io-ts-types';
 import {contramap} from 'fp-ts/lib/Ord';
 import {renderMembersAsList} from '../../templates/member-link-list';
 import {currentTrainingSheetButton} from '../shared-render/current-training-sheet-button';
+import {EquipmentQuizResults} from '../../read-models/external-state/equipment-quiz';
 
 const trainersList = (trainers: ViewModel['equipment']['trainers']) =>
   pipe(
@@ -125,13 +122,6 @@ const equipmentActions = (viewModel: ViewModel) => html`
     ${removeTrainingSheet(viewModel)}
   </ul>
 `;
-
-const byQuizDate = pipe(
-  N.Ord,
-  contramap(
-    (q: FailedQuizAttempt | OrphanedPassedQuiz) => -q.timestamp.getTime()
-  )
-);
 
 const byWaitingLongest = pipe(
   N.Ord,
@@ -269,53 +259,62 @@ const unknownMemberWaitingForTrainingTable = (viewModel: ViewModel) =>
     )
   );
 
-const failedKnownQuizRow = (
-  knownQuiz: ViewModel['equipment']['failedQuizAttempts'][0]
-) => html`
+const failedQuizRow = (row: EquipmentQuizResults['failedQuizes'][0]) => html`
   <tr class="failed_training_quiz_row">
-    <td hidden>${knownQuiz.quizId}</td>
-    <td>${displayDate(DateTime.fromJSDate(knownQuiz.timestamp))}</td>
-    <td>${renderMemberNumber(knownQuiz.memberNumber)}</td>
+    <td>${displayDate(DateTime.fromJSDate(row.response_submitted))}</td>
     <td>
-      ${knownQuiz.score} / ${knownQuiz.maxScore} (${knownQuiz.percentage}%)
+      ${pipe(
+        O.fromNullable(row.member_number_provided),
+        O.map(renderMemberNumber),
+        O.getOrElse(() => html`-`)
+      )}
     </td>
+    <td>${row.score} / ${row.max_score} (${row.percentage}%)</td>
   </tr>
 `;
 
 const failedQuizTrainingTable = (viewModel: ViewModel) =>
   pipe(
-    viewModel.equipment.failedQuizAttempts,
-    RA.sortBy([byQuizDate]),
-    RA.takeLeft(10),
-    RA.map(failedKnownQuizRow),
-    RA.match(
-      () => html``,
-      rows => html`
-        <h3>Failed quizes</h3>
-        <p>Members who haven't passed (but have attempted) the quiz recently</p>
-        <table>
-          <tr>
-            <th hidden>Quiz ID</th>
-            <th>Timestamp</th>
-            <th>Member Number</th>
-            <th>Score</th>
-          </tr>
-          ${joinHtml(rows)}
-        </table>
-      `
-    )
+    viewModel.quizResults,
+    O.map(r =>
+      pipe(
+        r.failedQuizes,
+        RA.map(failedQuizRow),
+        RA.match(
+          () => html``,
+          rows => html`
+            <h3>Failed quizes</h3>
+            <p>
+              Members who haven't passed (but have attempted) the quiz recently
+            </p>
+            <table>
+              <tr>
+                <th>Timestamp</th>
+                <th>Member Number</th>
+                <th>Score</th>
+              </tr>
+              ${joinHtml(rows)}
+            </table>
+          `
+        )
+      )
+    ),
+    O.getOrElse(() => html``)
   );
 
-const renderLastRefresh = (
-  lastQuizSync: ViewModel['equipment']['lastQuizSync']
-): Html =>
+const renderLastRefresh = (lastQuizSync: O.Option<Date>): Html =>
   O.isSome(lastQuizSync)
     ? html`Last refresh: ${displayDate(DateTime.fromJSDate(lastQuizSync.value))}`
     : html`Last refresh date unknown`;
 
 const trainingQuizResults = (viewModel: ViewModel) => html`
   <h2>Training Quiz Results</h2>
-  ${renderLastRefresh(viewModel.equipment.lastQuizSync)}
+  ${renderLastRefresh(
+    pipe(
+      viewModel.quizResults,
+      O.flatMap(r => r.lastQuizSync)
+    )
+  )}
   <h3>Waiting for Training</h3>
   ${waitingForTrainingTable(viewModel)}
   ${unknownMemberWaitingForTrainingTable(viewModel)}
