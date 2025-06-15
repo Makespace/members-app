@@ -20,7 +20,7 @@ import {
   getMemberAsActorFull,
 } from './member/helper';
 import {dumpCurrentState, SharedDatabaseDump} from './debug/dump';
-import {getAllTroubleTicketFull} from '../external-state/get';
+import {getAllTroubleTicketFull} from '../external-state/trouble-tickets';
 import {MemberLinking} from './member-linking';
 
 export type SharedReadModel = {

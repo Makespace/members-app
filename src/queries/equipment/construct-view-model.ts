@@ -10,7 +10,10 @@ import {ViewModel} from './view-model';
 import {User} from '../../types';
 import {UUID} from 'io-ts-types';
 import {StatusCodes} from 'http-status-codes';
-import { getQuizResults } from '../../read-models/external-state/equipment-quiz';
+import {
+  EquipmentQuizResults,
+  getQuizResults,
+} from '../../read-models/external-state/equipment-quiz';
 
 export const constructViewModel =
   (deps: Dependencies, user: User) =>
@@ -54,9 +57,22 @@ export const constructViewModel =
       TE.let(
         'isSuperUserOrTrainerOfArea',
         ({isSuperUser, isTrainer}) => isSuperUser || isTrainer
-      )
-      TE.bind(
-        'quizResults',
-        ({equipment}) => getQuizResults(equipment.trainingSheetId)
-      )
+      ),
+      TE.bind('quizResults', ({equipment}) => {
+        if (O.isNone(equipment.trainingSheetId)) {
+          return TE.right(O.none);
+        }
+        return pipe(
+          getQuizResults(deps)(
+            equipment.trainingSheetId.value,
+            equipment.trainedMembers
+          ),
+          TE.map<EquipmentQuizResults, O.Option<EquipmentQuizResults>>(r =>
+            O.some(r)
+          ),
+          TE.mapLeft(err_str =>
+            failureWithStatus(err_str, StatusCodes.INTERNAL_SERVER_ERROR)()
+          )
+        );
+      })
     );
