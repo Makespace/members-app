@@ -37,3 +37,75 @@ export const getSheetData =
       ),
       TE.map(data => data.rows)
     );
+
+export const getPassedQuizResults =
+  (db: Client) =>
+  (
+    sheetId: string,
+    skip_member_numbers: ReadonlyArray<number>,
+    skip_emails: ReadonlyArray<string>
+  ): TE.TaskEither<string, SheetDataTable['rows']> =>
+    pipe(
+      TE.tryCatch<string, ResultSet>(
+        () =>
+          db.execute(
+            `
+            SELECT *
+            FROM sheet_data
+            WHERE sheet_id = ?
+            AND member_number_provided NOT IN ?
+            AND email_provided NOT IN ?
+            AND percentage = 100
+            ORDER BY response_submitted DESC
+            `,
+            [sheetId, skip_member_numbers as any, skip_emails as any]
+          ),
+        reason =>
+          `Failed to get sheet data for sheet '${sheetId}': ${(reason as Error).message}`
+      ),
+      TE.flatMapEither<ResultSet, string, SheetDataTable>(data =>
+        pipe(
+          data,
+          SheetDataTable.decode,
+          E.mapLeft(e => formatValidationErrors(e).join(','))
+        )
+      ),
+      TE.map(data => data.rows)
+    );
+
+export const getFailedQuizResults =
+  (db: Client) =>
+  (
+    sheetId: string,
+    skip_member_numbers: ReadonlyArray<number>,
+    skip_emails: ReadonlyArray<string>,
+    count: number
+  ): TE.TaskEither<string, SheetDataTable['rows']> =>
+    pipe(
+      TE.tryCatch<string, ResultSet>(
+        () =>
+          db.execute(
+            `
+            SELECT *
+            FROM sheet_data
+            WHERE sheet_id = ?
+            AND member_number_provided NOT IN ?
+            AND email_provided NOT IN ?
+            AND percentage < 100
+            ORDER BY response_submitted DESC
+            LIMIT ?
+            `,
+            [sheetId, skip_member_numbers as any, skip_emails as any, count]
+          ),
+        reason =>
+          `Failed to get sheet data for sheet '${sheetId}': ${(reason as Error).message}`
+      ),
+      TE.flatMapEither<ResultSet, string, SheetDataTable>(data =>
+        pipe(
+          data,
+          SheetDataTable.decode,
+          E.mapLeft(e => formatValidationErrors(e).join(','))
+        )
+      ),
+      TE.map(data => data.rows)
+    );

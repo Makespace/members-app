@@ -46,4 +46,15 @@ export type Dependencies = {
     skip_member_numbers: ReadonlyArray<number>,
     skip_emails: ReadonlyArray<string>
   ) => TE.TaskEither<string, SheetDataTable['rows']>;
+  getPassedQuizResults: (
+    sheetId: string,
+    skip_member_numbers: ReadonlyArray<number>,
+    skip_emails: ReadonlyArray<string>
+  ) => TE.TaskEither<string, SheetDataTable['rows']>;
+  getFailedQuizResults: (
+    sheetId: string,
+    skip_member_numbers: ReadonlyArray<number>,
+    skip_emails: ReadonlyArray<string>,
+    count: number
+  ) => TE.TaskEither<string, SheetDataTable['rows']>;
 };
