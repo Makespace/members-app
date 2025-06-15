@@ -8,6 +8,7 @@ import {StatusCodes} from 'http-status-codes';
 import {Resource} from './types/resource';
 import {EventName, EventOfType} from './types/domain-event';
 import {SharedReadModel} from './read-models/shared-state';
+import {SheetDataTable} from './sync-worker/google/sheet-data-table';
 
 export type GoogleSheetId = string;
 
@@ -40,4 +41,9 @@ export type Dependencies = {
   rateLimitSendingOfEmails: (email: Email) => TE.TaskEither<Failure, Email>;
   sendEmail: (email: Email) => TE.TaskEither<Failure, string>;
   lastQuizSync: (sheetId: string) => TE.TaskEither<string, O.Option<Date>>;
+  getSheetData: (
+    sheetId: string,
+    skip_member_numbers: ReadonlyArray<number>,
+    skip_emails: ReadonlyArray<string>
+  ) => TE.TaskEither<string, SheetDataTable['rows']>;
 };
