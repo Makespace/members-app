@@ -23,6 +23,9 @@ import {
   ensureTroubleTicketDataTableExists,
 } from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
 import {getTroubleTicketData} from '../../src/sync-worker/db/get_trouble_ticket_data';
+import {storeTrainingSheetRowsRead} from '../../src/sync-worker/db/store_training_sheet_rows_read';
+import {storeTroubleTicketRowsRead} from '../../src/sync-worker/db/store_trouble_ticket_rows_read';
+import {SyncWorkerDependencies} from '../../src/sync-worker/dependencies';
 
 export const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
 
@@ -52,6 +55,8 @@ export type TestFramework = {
   };
   eventStoreDb: libsqlClient.Client;
   getTroubleTicketData: Dependencies['getTroubleTicketData'];
+  storeTrainingSheetRowsRead: SyncWorkerDependencies['storeTrainingSheetRowsRead'];
+  storeTroubleTicketRowsRead: SyncWorkerDependencies['storeTroubleTicketRowsRead'];
 };
 
 export const initTestFramework = async (): Promise<TestFramework> => {
@@ -95,6 +100,8 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       dbClient,
       O.some(TROUBLE_TICKET_SHEET_ID)
     ),
+    storeTrainingSheetRowsRead: storeTrainingSheetRowsRead(dbClient),
+    storeTroubleTicketRowsRead: storeTroubleTicketRowsRead(dbClient),
     eventStoreDb: dbClient,
     sharedReadModel,
     depsForApplyToResource: {
