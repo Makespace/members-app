@@ -22,6 +22,9 @@ import {
   ensureSheetDataTableExists,
   ensureTroubleTicketDataTableExists,
 } from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
+import {getTroubleTicketData} from '../../src/sync-worker/db/get_trouble_ticket_data';
+
+export const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
 
 type ToFrameworkCommands<T> = {
   [K in keyof T]: {
@@ -48,6 +51,7 @@ export type TestFramework = {
     getResourceEvents: Dependencies['getResourceEvents'];
   };
   eventStoreDb: libsqlClient.Client;
+  getTroubleTicketData: Dependencies['getTroubleTicketData'];
 };
 
 export const initTestFramework = async (): Promise<TestFramework> => {
@@ -87,6 +91,10 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   return {
     getAllEvents: frameworkGetAllEvents,
     getAllEventsByType: frameworkGetAllEventsByType,
+    getTroubleTicketData: getTroubleTicketData(
+      dbClient,
+      O.some(TROUBLE_TICKET_SHEET_ID)
+    ),
     eventStoreDb: dbClient,
     sharedReadModel,
     depsForApplyToResource: {
