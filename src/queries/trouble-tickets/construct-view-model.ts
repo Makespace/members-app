@@ -8,12 +8,16 @@ import {User} from '../../types';
 import {pipe} from 'fp-ts/lib/function';
 import {StatusCodes} from 'http-status-codes';
 import {Dependencies} from '../../dependencies';
+import {SharedReadModel} from '../../read-models/shared-state';
 
 export const constructViewModel =
-  (deps: Dependencies) =>
+  (
+    sharedReadModel: SharedReadModel,
+    getTroubleTicketData: Dependencies['getTroubleTicketData']
+  ) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> =>
     pipe(
-      deps.sharedReadModel.members.get(user.memberNumber),
+      sharedReadModel.members.get(user.memberNumber),
       TE.fromOption(
         failureWithStatus(
           'Only super-users can see this page',
@@ -30,7 +34,7 @@ export const constructViewModel =
       ),
       TE.flatMap(_user =>
         pipe(
-          deps.getTroubleTicketData(),
+          getTroubleTicketData(),
           TE.mapLeft(msg =>
             failureWithStatus(msg, StatusCodes.INTERNAL_SERVER_ERROR)()
           )
