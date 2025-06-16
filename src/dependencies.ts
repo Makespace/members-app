@@ -12,6 +12,7 @@ import {
   SheetDataTable,
   TroubleTicketDataTable,
 } from './sync-worker/google/sheet-data-table';
+import {Config} from './configuration';
 
 export type GoogleSheetId = string;
 
@@ -52,6 +53,7 @@ export type Dependencies = {
   getTroubleTicketData: (
     sheetId: string
   ) => TE.TaskEither<string, TroubleTicketDataTable['rows']>;
+  conf: Config;
 
   // getPassedQuizResults: (
   //   sheetId: string,
