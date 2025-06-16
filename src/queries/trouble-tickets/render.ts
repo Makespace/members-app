@@ -1,4 +1,5 @@
 import {pipe} from 'fp-ts/lib/function';
+import * as O from 'fp-ts/Option';
 import {
   html,
   HtmlSubstitution,
@@ -10,11 +11,12 @@ import {ViewModel} from './view-model';
 import {DateTime} from 'luxon';
 import {displayDate} from '../../templates/display-date';
 import {renderMemberNumber} from '../../templates/member-number';
+import {TroubleTicketDataTable} from '../../sync-worker/google/sheet-data-table';
 
 const troubleTicketRows = (
-  viewModel: ViewModel
+  ttr: TroubleTicketDataTable['rows']
 ): ReadonlyArray<HtmlSubstitution> => {
-  return viewModel.troubleTicketData.map(
+  return ttr.map(
     ticket => html`
       <tr>
         <td>${displayDate(DateTime.fromJSDate(ticket.response_submitted))}</td>
@@ -42,21 +44,22 @@ const troubleTicketRows = (
 };
 
 export const render = (viewModel: ViewModel) =>
-  pipe(
-    viewModel,
-    (viewModel: ViewModel) => html`
-      <div class="stack">
-        <h1>Trouble tickets</h1>
-        <table>
-          <tr>
-            <th>Submitted</th>
-            <th>Email Address</th>
-            <th>Member Number</th>
-            <th>Equipment</th>
-            <th>Response</th>
-          </tr>
-          ${joinHtml(troubleTicketRows(viewModel))}
-        </table>
-      </div>
-    `
+  pipe(viewModel, (viewModel: ViewModel) =>
+    O.isSome(viewModel.troubleTicketData)
+      ? html`
+          <div class="stack">
+            <h1>Trouble tickets</h1>
+            <table>
+              <tr>
+                <th>Submitted</th>
+                <th>Email Address</th>
+                <th>Member Number</th>
+                <th>Equipment</th>
+                <th>Response</th>
+              </tr>
+              ${joinHtml(troubleTicketRows(viewModel.troubleTicketData.value))}
+            </table>
+          </div>
+        `
+      : html`<p>No trouble ticket data available</p>`
   );
