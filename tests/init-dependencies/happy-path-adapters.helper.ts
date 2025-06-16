@@ -19,11 +19,18 @@ export const happyPathAdapters: Dependencies = {
       level: 'fatal',
       timestamp: pino.stdTimeFunctions.isoTime,
     }),
-    O.none,
+    O.none
   ),
   logger: (() => undefined) as never as Logger,
   rateLimitSendingOfEmails: TE.right,
   sendEmail: () => TE.right('success'),
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getAllEventsByType: <T extends EventName>(_eventType: T) => TE.right([]),
+  lastQuizSync: (_sheetId: string) => TE.right(O.none),
+  getSheetData: (
+    _sheetId: string,
+    _skip_member_numbers: ReadonlyArray<number>,
+    _skip_emails: ReadonlyArray<string>
+  ) => TE.right([]),
+  getTroubleTicketData: () => TE.right(O.none),
 };

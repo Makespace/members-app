@@ -79,8 +79,10 @@ export const initDependencies = (
     logger,
     lastQuizSync: lastSync(dbClient),
     getSheetData: getSheetData(dbClient),
-    getTroubleTicketData: getTroubleTicketData(dbClient),
-    conf,
+    getTroubleTicketData: getTroubleTicketData(
+      dbClient,
+      O.fromNullable(conf.TROUBLE_TICKET_SHEET)
+    ),
     // getPassedQuizResults: getPassedQuizResults(dbClient),
     // getFailedQuizResults: getFailedQuizResults(dbClient),
   };
