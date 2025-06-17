@@ -65,9 +65,16 @@ export const constructViewModel =
         return pipe(
           getFullQuizResults(deps, equipment.trainingSheetId.value, equipment),
           TE.map<FullQuizResults, O.Option<FullQuizResults>>(O.some),
-          TE.mapLeft(err_str =>
-            failureWithStatus(err_str, StatusCodes.INTERNAL_SERVER_ERROR)()
-          )
+          TE.mapLeft(err_str => {
+            deps.logger.error(
+              'Failed to read sheet sync metadata: %s',
+              err_str
+            );
+            return failureWithStatus(
+              'Internal Error',
+              StatusCodes.INTERNAL_SERVER_ERROR
+            )();
+          })
         );
       })
     );
