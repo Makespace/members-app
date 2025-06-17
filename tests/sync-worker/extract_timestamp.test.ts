@@ -8,6 +8,6 @@ describe('Extract timestamp', () => {
       // Atlantic/Canary == UTC+1
       extractTimestamp('Atlantic/Canary').decode('7/16/2024 21:53:13')
     );
-    expect(timestamp).toStrictEqual(1721163193000);
+    expect(timestamp.getTime()).toStrictEqual(1721163193000);
   });
 });
