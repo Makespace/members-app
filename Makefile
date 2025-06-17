@@ -9,6 +9,7 @@ node_modules: package.json bun.lockb
 	cp .env.example .env
 
 dev: .env
+	docker-compose down -v
 	docker-compose --file docker-compose.yaml --file docker-compose.dev.yaml up --build
 
 populate-local-dev:
