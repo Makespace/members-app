@@ -9,6 +9,8 @@ import {syncEquipmentTrainingSheets} from './sync_training_sheet';
 import {initDependencies} from './init-dependencies';
 import * as O from 'fp-ts/Option';
 
+const EQUIPMENT_SYNC_INTERVAL_MS = 40 * 60 * 1000;
+
 export async function run() {
   const deps = initDependencies();
   deps.logger.info('Background sync worker starting up...');
@@ -34,7 +36,7 @@ export async function run() {
   if (O.isSome(deps.google)) {
     const google = deps.google.value;
     setInterval(() => {
-      syncEquipmentTrainingSheets(deps, google)
+      syncEquipmentTrainingSheets(deps, google, EQUIPMENT_SYNC_INTERVAL_MS)
         .then(() => deps.logger.info('Equipment training sheet sync complete'))
         .catch(err =>
           deps.logger.error(err, 'Equipment training sheet sync error')
