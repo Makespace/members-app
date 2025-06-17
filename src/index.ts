@@ -18,16 +18,6 @@ import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
 import cookieSession from 'cookie-session';
 import {initRoutes} from './routes';
-import {Worker} from 'worker_threads';
-
-// This background worker can be treated as a completely independent process
-// but we just spawn it as a thread for now.
-const backgroundSyncWorker = new Worker('./training-sheets/sync_worker.js');
-backgroundSyncWorker.on('exit', () => {
-  console.error('Background worker has finished. Stopping parent');
-  // eslint-disable-next-line n/no-process-exit
-  process.exit(1);
-});
 
 // Dependencies and Config
 const conf = loadConfig();

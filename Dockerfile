@@ -28,6 +28,11 @@ COPY --from=dev-deps /app/node_modules/ node_modules/
 COPY ./tsconfig.json .
 CMD [ "npx", "tsx", "watch", "./src/index.ts" ]
 
+FROM node AS sync_worker_dev
+COPY --from=dev-deps /app/node_modules/ node_modules/
+COPY ./tsconfig.json .
+CMD [ "npx", "tsx", "watch", "./src/sync-worker/index.ts" ]
+
 # PROD
 FROM bun AS prod-deps
 RUN bun install --frozen-lockfile --production
@@ -43,3 +48,6 @@ COPY ./src/static build/src/static/
 COPY ./src/instrument.mjs ./
 RUN ls -l
 CMD ["node", "--import", "./instrument.mjs", "build/src/index.js"]
+
+FROM prod AS sync_worker
+CMD ["node", "--import", "./instrument.mjs", "build/src/sync_worker/index.js"]
