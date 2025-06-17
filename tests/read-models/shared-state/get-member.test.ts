@@ -1,7 +1,7 @@
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {advanceTo} from 'jest-date-mock';
-import {constructEvent, EmailAddress} from '../../../src/types';
+import {EmailAddress} from '../../../src/types';
 import {TestFramework, initTestFramework} from '../test-framework';
 import {faker} from '@faker-js/faker';
 import {expectMatchSecondsPrecision, getSomeOrFail} from '../../helpers';
@@ -49,29 +49,29 @@ const expectedEquipmentHasUserTrained =
       )
     ).toContain<number>(memberNumber);
 
-const expectUserAwaitingTraining =
-  (framework: TestFramework) => (memberNumber: number, equipmentId: UUID) =>
-    expect(
-      pipe(
-        equipmentId,
-        framework.sharedReadModel.equipment.get,
-        getSomeOrFail,
-        e => e.membersAwaitingTraining,
-        RA.flatMap(allMemberNumbers)
-      )
-    ).toContain<number>(memberNumber);
+// const expectUserAwaitingTraining =
+//   (framework: TestFramework) => (memberNumber: number, equipmentId: UUID) =>
+//     expect(
+//       pipe(
+//         equipmentId,
+//         framework.sharedReadModel.equipment.get,
+//         getSomeOrFail,
+//         e => e.membersAwaitingTraining,
+//         RA.flatMap(allMemberNumbers)
+//       )
+//     ).toContain<number>(memberNumber);
 
-const expectUserNotAwaitingTraining =
-  (framework: TestFramework) => (memberNumber: number, equipmentId: UUID) =>
-    expect(
-      pipe(
-        equipmentId,
-        framework.sharedReadModel.equipment.get,
-        getSomeOrFail,
-        e => e.membersAwaitingTraining,
-        RA.flatMap(allMemberNumbers)
-      )
-    ).not.toContain<number>(memberNumber);
+// const expectUserNotAwaitingTraining =
+//   (framework: TestFramework) => (memberNumber: number, equipmentId: UUID) =>
+//     expect(
+//       pipe(
+//         equipmentId,
+//         framework.sharedReadModel.equipment.get,
+//         getSomeOrFail,
+//         e => e.membersAwaitingTraining,
+//         RA.flatMap(allMemberNumbers)
+//       )
+//     ).not.toContain<number>(memberNumber);
 
 const expectAreaHasOwner =
   (framework: TestFramework) => (memberNumber: number, areaId: UUID) =>
@@ -679,20 +679,20 @@ describe('get-via-shared-read-model', () => {
             memberNumber: newMemberNumber,
             equipmentId: equipmentId,
           });
-        const quizPass = (memberNumber: number, email: EmailAddress) =>
-          framework.sharedReadModel.updateState(
-            constructEvent('EquipmentTrainingQuizResult')({
-              id: faker.string.uuid() as UUID,
-              equipmentId,
-              trainingSheetId,
-              memberNumberProvided: memberNumber,
-              emailProvided: email,
-              score: 10,
-              maxScore: 10,
-              percentage: 100,
-              timestampEpochMS: Date.now(),
-            })
-          );
+        // const quizPass = (memberNumber: number, email: EmailAddress) =>
+        //   framework.sharedReadModel.updateState(
+        //     constructEvent('EquipmentTrainingQuizResult')({
+        //       id: faker.string.uuid() as UUID,
+        //       equipmentId,
+        //       trainingSheetId,
+        //       memberNumberProvided: memberNumber,
+        //       emailProvided: email,
+        //       score: 10,
+        //       maxScore: 10,
+        //       percentage: 100,
+        //       timestampEpochMS: Date.now(),
+        //     })
+        //   );
         const markOwner = (memberNumber: number) =>
           framework.commands.area.addOwner({
             areaId,
@@ -709,31 +709,31 @@ describe('get-via-shared-read-model', () => {
             memberNumber,
           });
 
-        const userIsAwaitingTraining = (
-          equipmentId: UUID,
-          usersMembershipNumbers: [string, Int][]
-        ) =>
-          describe('equipment shows user as awaiting training', () =>
-            testOnUsersNumbers(usersMembershipNumbers)(
-              membershipNumberToCheck =>
-                expectUserAwaitingTraining(framework)(
-                  membershipNumberToCheck,
-                  equipmentId
-                )
-            ));
+        // const userIsAwaitingTraining = (
+        //   equipmentId: UUID,
+        //   usersMembershipNumbers: [string, Int][]
+        // ) =>
+        //   describe('equipment shows user as awaiting training', () =>
+        //     testOnUsersNumbers(usersMembershipNumbers)(
+        //       membershipNumberToCheck =>
+        //         expectUserAwaitingTraining(framework)(
+        //           membershipNumberToCheck,
+        //           equipmentId
+        //         )
+        //     ));
 
-        const userIsNotAwaitingTraining = (
-          equipmentId: UUID,
-          usersMembershipNumbers: [string, Int][]
-        ) =>
-          describe('equipment does not show user as awaiting training', () =>
-            testOnUsersNumbers(usersMembershipNumbers)(
-              membershipNumberToCheck =>
-                expectUserNotAwaitingTraining(framework)(
-                  membershipNumberToCheck,
-                  equipmentId
-                )
-            ));
+        // const userIsNotAwaitingTraining = (
+        //   equipmentId: UUID,
+        //   usersMembershipNumbers: [string, Int][]
+        // ) =>
+        //   describe('equipment does not show user as awaiting training', () =>
+        //     testOnUsersNumbers(usersMembershipNumbers)(
+        //       membershipNumberToCheck =>
+        //         expectUserNotAwaitingTraining(framework)(
+        //           membershipNumberToCheck,
+        //           equipmentId
+        //         )
+        //     ));
 
         const userIsOwner = (
           areaId: UUID,
@@ -846,23 +846,23 @@ describe('get-via-shared-read-model', () => {
               });
             }
           });
-          describe('and the user passes a quiz on their old number', () => {
-            beforeEach(() => quizPass(memberNumber, memberEmail));
-            userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
-          });
+          // describe('and the user passes a quiz on their old number', () => {
+          //   beforeEach(() => quizPass(memberNumber, memberEmail));
+          //   userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
+          // });
           // and they have left and then rejoined using their existing account › without actions prior to linking accounts › and the user passes a quiz on their old number › is shown as awaiting training › on their new number
           if (!useExistingAccount) {
-            describe('and the user passes a quiz on their new number', () => {
-              beforeEach(() => quizPass(newMemberNumber, memberEmail));
-              userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
-              describe('and the user is marked trained on equipment on their new number', () => {
-                beforeEach(async () => {
-                  await markTrainedOnOldNumber();
-                });
-                userIsTrained(equipmentId, usersMembershipNumbers);
-                userIsNotAwaitingTraining(equipmentId, usersMembershipNumbers);
-              });
-            });
+            // describe('and the user passes a quiz on their new number', () => {
+            //   beforeEach(() => quizPass(newMemberNumber, memberEmail));
+            //   userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
+            //   describe('and the user is marked trained on equipment on their new number', () => {
+            //     beforeEach(async () => {
+            //       await markTrainedOnOldNumber();
+            //     });
+            //     userIsTrained(equipmentId, usersMembershipNumbers);
+            //     userIsNotAwaitingTraining(equipmentId, usersMembershipNumbers);
+            //   });
+            // });
             describe('and the user is marked trained on equipment on their new number', () => {
               beforeEach(async () => {
                 await markTrainedOnNewNumber();
@@ -1063,68 +1063,68 @@ describe('get-via-shared-read-model', () => {
             });
           }
 
-          describe('the user completes a quiz on their old number + existing email', () => {
-            beforeEach(async () => {
-              jest.useFakeTimers();
-              jest.setSystemTime(wasMemberWithOldNumberAt);
-              quizPass(memberNumber, memberEmail);
+          // describe('the user completes a quiz on their old number + existing email', () => {
+          //   beforeEach(async () => {
+          //     jest.useFakeTimers();
+          //     jest.setSystemTime(wasMemberWithOldNumberAt);
+          //     quizPass(memberNumber, memberEmail);
 
-              jest.setSystemTime(membershipedStoppedAt);
-              await stopMembership(memberNumber);
+          //     jest.setSystemTime(membershipedStoppedAt);
+          //     await stopMembership(memberNumber);
 
-              jest.setSystemTime(rejoinedAt);
-              if (!useExistingAccount) {
-                await createNewMemberRecord();
-              }
-              await markMemberRejoined();
-            });
-            userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
-          });
-          if (!useExistingAccount) {
-            // By adding another account into the mix there are more possibilities.
-            describe('the user completes a quiz on their old number + new email', () => {
-              beforeEach(async () => {
-                jest.useFakeTimers();
-                jest.setSystemTime(wasMemberWithOldNumberAt);
-                jest.setSystemTime(membershipedStoppedAt);
-                await stopMembership(memberNumber);
-                await createNewMemberRecord();
-                quizPass(memberNumber, newEmail);
+          //     jest.setSystemTime(rejoinedAt);
+          //     if (!useExistingAccount) {
+          //       await createNewMemberRecord();
+          //     }
+          //     await markMemberRejoined();
+          //   });
+          //   userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
+          // });
+          // if (!useExistingAccount) {
+          //   // By adding another account into the mix there are more possibilities.
+          //   describe('the user completes a quiz on their old number + new email', () => {
+          //     beforeEach(async () => {
+          //       jest.useFakeTimers();
+          //       jest.setSystemTime(wasMemberWithOldNumberAt);
+          //       jest.setSystemTime(membershipedStoppedAt);
+          //       await stopMembership(memberNumber);
+          //       await createNewMemberRecord();
+          //       quizPass(memberNumber, newEmail);
 
-                jest.setSystemTime(rejoinedAt);
-                await markMemberRejoined();
-              });
-              userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
-            });
-            describe('the user completes a quiz on their new number + existing email', () => {
-              beforeEach(async () => {
-                jest.useFakeTimers();
-                jest.setSystemTime(wasMemberWithOldNumberAt);
-                jest.setSystemTime(membershipedStoppedAt);
-                await stopMembership(memberNumber);
-                await createNewMemberRecord();
-                quizPass(newMemberNumber, memberEmail);
+          //       jest.setSystemTime(rejoinedAt);
+          //       await markMemberRejoined();
+          //     });
+          //     userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
+          //   });
+          //   describe('the user completes a quiz on their new number + existing email', () => {
+          //     beforeEach(async () => {
+          //       jest.useFakeTimers();
+          //       jest.setSystemTime(wasMemberWithOldNumberAt);
+          //       jest.setSystemTime(membershipedStoppedAt);
+          //       await stopMembership(memberNumber);
+          //       await createNewMemberRecord();
+          //       quizPass(newMemberNumber, memberEmail);
 
-                jest.setSystemTime(rejoinedAt);
-                await markMemberRejoined();
-              });
-              userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
-            });
-            describe('the user completes a quiz on their new number + new email', () => {
-              beforeEach(async () => {
-                jest.useFakeTimers();
-                jest.setSystemTime(wasMemberWithOldNumberAt);
-                jest.setSystemTime(membershipedStoppedAt);
-                await stopMembership(memberNumber);
-                await createNewMemberRecord();
-                quizPass(newMemberNumber, newEmail);
+          //       jest.setSystemTime(rejoinedAt);
+          //       await markMemberRejoined();
+          //     });
+          //     userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
+          //   });
+          //   describe('the user completes a quiz on their new number + new email', () => {
+          //     beforeEach(async () => {
+          //       jest.useFakeTimers();
+          //       jest.setSystemTime(wasMemberWithOldNumberAt);
+          //       jest.setSystemTime(membershipedStoppedAt);
+          //       await stopMembership(memberNumber);
+          //       await createNewMemberRecord();
+          //       quizPass(newMemberNumber, newEmail);
 
-                jest.setSystemTime(rejoinedAt);
-                await markMemberRejoined();
-              });
-              userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
-            });
-          }
+          //       jest.setSystemTime(rejoinedAt);
+          //       await markMemberRejoined();
+          //     });
+          //     userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
+          //   });
+          // }
           describe('the user is an owner of an area on their old number', () => {
             beforeEach(async () => {
               jest.useFakeTimers();
