@@ -46,8 +46,5 @@ COPY --from=prod-deps /app/node_modules node_modules/
 COPY --from=prod-build /app/build/ build/
 COPY ./src/static build/src/static/
 COPY ./src/instrument.mjs ./
-RUN ls -l
-CMD ["node", "--import", "./instrument.mjs", "build/src/index.js"]
-
-FROM prod AS sync_worker
-CMD ["node", "--import", "./instrument.mjs", "build/src/sync_worker/index.js"]
+COPY ./fly-run.sh ./
+CMD ["fly-run.sh"]
