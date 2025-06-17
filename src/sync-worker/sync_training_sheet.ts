@@ -26,9 +26,17 @@ import {formatValidationErrors} from 'io-ts-reporters';
 import {SyncWorkerDependencies} from './dependencies';
 
 const ROW_BATCH_SIZE = 50;
-const EQUIPMENT_SYNC_INTERVAL_MS = 40 * 60 * 1000;
-
 const FORM_RESPONSES_SHEET_REGEX = /^Form Responses [0-9]*/i;
+
+export type SyncTrainingSheetDependencies = Pick<
+  SyncWorkerDependencies,
+  | 'logger'
+  | 'getTrainingSheetsToSync'
+  | 'storeSync'
+  | 'lastSync'
+  | 'storeTrainingSheetRowsRead'
+  | 'lastTrainingSheetRowRead'
+>;
 
 export const columnBoundsRequired = (
   sheet: GoogleSheetMetadata
@@ -219,9 +227,9 @@ const pullTrainingSheetRows = async (
   return resultantRows;
 };
 
-export const syncTrainingSheet = async (
+const syncTrainingSheet = async (
   log: Logger,
-  deps: SyncWorkerDependencies,
+  deps: SyncTrainingSheetDependencies,
   google: GoogleHelpers,
   trainingSheetId: string
 ) => {
@@ -321,8 +329,9 @@ export const syncTrainingSheet = async (
 };
 
 export const syncEquipmentTrainingSheets = async (
-  deps: SyncWorkerDependencies,
-  google: GoogleHelpers
+  deps: SyncTrainingSheetDependencies,
+  google: GoogleHelpers,
+  syncIntervalMs: number
 ): Promise<void> => {
   const sheetsToSync = await deps.getTrainingSheetsToSync()();
   if (E.isLeft(sheetsToSync)) {
@@ -335,7 +344,7 @@ export const syncEquipmentTrainingSheets = async (
     if (
       E.isRight(lastSync) &&
       O.isSome(lastSync.right) &&
-      Date.now() - lastSync.right.value.getTime() < EQUIPMENT_SYNC_INTERVAL_MS
+      Date.now() - lastSync.right.value.getTime() < syncIntervalMs
     ) {
       deps.logger.info(
         'Skipping sync of %s for equipment %s as last sync was recent: %s',
