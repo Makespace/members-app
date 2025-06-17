@@ -9,7 +9,7 @@ import {syncEquipmentTrainingSheets} from './sync_training_sheet';
 import {initDependencies} from './init-dependencies';
 import * as O from 'fp-ts/Option';
 
-async function main() {
+export async function run() {
   const deps = initDependencies();
   deps.logger.info('Background sync worker starting up...');
 
@@ -19,7 +19,7 @@ async function main() {
       `Background Sync Heartbeat, last ${Date.now() - lastHeartbeat}ms ago`
     );
     lastHeartbeat = Date.now();
-  }, 20_000);
+  }, 5000);
 
   deps.logger.info(
     'Background sync worker ensuring sheet data tables exist...'
@@ -29,6 +29,7 @@ async function main() {
     ensureSheetDataSyncMetadataTableExists(deps.db),
     ensureTroubleTicketDataTableExists(deps.db),
   ]);
+  deps.logger.info('All data tables exist, starting...');
 
   if (O.isSome(deps.google)) {
     const google = deps.google.value;
@@ -54,9 +55,6 @@ async function main() {
   }
 }
 
-main()
-  .then(() => console.log('Background sync worker exit'))
-  .catch(err => {
-    console.error('Background sync worker top level error');
-    console.error(err);
-  });
+run()
+  .then(() => console.log('Background worker stopped'))
+  .catch(console.error);

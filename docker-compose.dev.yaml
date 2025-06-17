@@ -4,3 +4,9 @@ services:
       target: dev
     volumes:
       - ./src:/app/src
+
+  sync_worker:
+    build:
+      target: sync_worker_dev
+    volumes:
+      - ./src:/app/src
