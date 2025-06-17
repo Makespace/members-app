@@ -1,15 +1,12 @@
 import pino from 'pino';
 import * as O from 'fp-ts/Option';
-import {extractGoogleSheetData} from '../../src/google/google';
-import {UUID} from 'io-ts-types';
-import {getSomeOrFail} from '../helpers';
+import {extractGoogleSheetData} from '../../src/sync-worker/sync_training_sheet';
 
 describe('extractGoogleSheetData', () => {
   it('Extract google sheet data, missing columns', () => {
     const results = extractGoogleSheetData(
       pino({level: 'silent'}),
       'ABC123',
-      'deb0a681-d5f9-4e89-bd0c-e7a0d361c350' as UUID,
       {
         name: 'Baked Beans',
         rowCount: 21,
@@ -21,27 +18,29 @@ describe('extractGoogleSheetData', () => {
           memberNumber: O.some(2),
         },
       },
-      'Europe/London'
-    )({
-      sheets: [
-        {
-          data: [
-            {
-              rowData: [
-                {
-                  values: [
-                    {
-                      formattedValue: 'beans',
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    });
+      'Europe/London',
+      {
+        sheets: [
+          {
+            data: [
+              {
+                rowData: [
+                  {
+                    values: [
+                      {
+                        formattedValue: 'beans',
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      1
+    );
     // Check that no valid results are produced but that we don't error.
-    expect(getSomeOrFail(results)).toHaveLength(0);
+    expect(results).toHaveLength(0);
   });
 });

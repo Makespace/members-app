@@ -138,7 +138,7 @@ const extractFromRow =
     });
   };
 
-const extractGoogleSheetData = (
+export const extractGoogleSheetData = (
   logger: Logger,
   trainingSheetId: string,
   metadata: GoogleSheetMetadata,
