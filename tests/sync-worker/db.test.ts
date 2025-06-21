@@ -217,7 +217,7 @@ describe('Test sync worker db', () => {
       O.none
     );
     beforeEach(async () =>
-      getRightOrFail(await storeTrainingSheetRowsRead(db)(data)())
+      getRightOrFail(await storeTrainingSheetRowsRead(db, testLogger())(data)())
     );
 
     it('Last training sheet row read indicates all data read', async () =>
@@ -234,7 +234,9 @@ describe('Test sync worker db', () => {
 
     describe('Add more training data for another sheet', () => {
       beforeEach(async () =>
-        getRightOrFail(await storeTrainingSheetRowsRead(db)(data2)())
+        getRightOrFail(
+          await storeTrainingSheetRowsRead(db, testLogger())(data2)()
+        )
       );
 
       it('Get training ticket data for sheet 1 correctly', async () =>
@@ -277,7 +279,9 @@ describe('Test sync worker db', () => {
 
     describe('Add more training data for the same sheet', () => {
       beforeEach(async () =>
-        getRightOrFail(await storeTrainingSheetRowsRead(db)(data1_2)())
+        getRightOrFail(
+          await storeTrainingSheetRowsRead(db, testLogger())(data1_2)()
+        )
       );
       it('Last training data row read indicates all data read', async () =>
         expect(
@@ -299,7 +303,7 @@ describe('Test sync worker db', () => {
     const sheetId = faker.string.alphanumeric({length: 12});
     const data: SheetDataTable['rows'] = [];
     beforeEach(async () =>
-      getRightOrFail(await storeTrainingSheetRowsRead(db)(data)())
+      getRightOrFail(await storeTrainingSheetRowsRead(db, testLogger())(data)())
     );
 
     it('Last training sheet row read is none', async () =>

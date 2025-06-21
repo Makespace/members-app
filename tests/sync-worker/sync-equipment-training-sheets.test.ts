@@ -28,6 +28,7 @@ import {
   expectSyncBetween,
   generateRegisterSheetEvent,
   pushEvents,
+  testLogger,
 } from './util';
 
 const runSyncEquipmentTrainingSheets = async (
@@ -77,7 +78,7 @@ describe('Sync equipment training sheets', () => {
 
   beforeEach(async () => {
     db = createClient({url: ':memory:'});
-    deps = createSyncTrainingSheetDependencies(db);
+    deps = createSyncTrainingSheetDependencies(db, testLogger());
     getRightOrFail(await ensureEventTableExists(db)());
     await ensureDBTablesExist(db);
   });

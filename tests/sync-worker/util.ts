@@ -53,13 +53,14 @@ export const testLogger = () =>
   });
 
 export const createSyncTrainingSheetDependencies = (
-  db: Client
+  db: Client,
+  logger: Logger
 ): SyncTrainingSheetDependencies => ({
   logger: testLogger(),
   getTrainingSheetsToSync: getTrainingSheetsToSync(db),
   storeSync: storeSync(db),
   lastSync: lastSync(db),
-  storeTrainingSheetRowsRead: storeTrainingSheetRowsRead(db),
+  storeTrainingSheetRowsRead: storeTrainingSheetRowsRead(db, logger),
   lastTrainingSheetRowRead: lastTrainingSheetRowRead(db),
 });
 
