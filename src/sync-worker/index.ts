@@ -6,6 +6,7 @@ import {initDependencies} from './init-dependencies';
 import * as O from 'fp-ts/Option';
 
 const EQUIPMENT_SYNC_INTERVAL_MS = 40 * 60 * 1000;
+const TROUBLE_TICKET_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 
 export async function run() {
   const deps = initDependencies();
@@ -37,7 +38,12 @@ export async function run() {
     const troubleTicketSheet = deps.conf.TROUBLE_TICKET_SHEET;
     if (troubleTicketSheet) {
       setInterval(() => {
-        syncTroubleTickets(deps, google, troubleTicketSheet)
+        syncTroubleTickets(
+          deps,
+          google,
+          troubleTicketSheet,
+          TROUBLE_TICKET_SYNC_INTERVAL_MS
+        )
           .then(() => deps.logger.info('Trouble ticket sync complete'))
           .catch(err => deps.logger.error(err, 'Trouble ticket sync error'));
       }, 20 * 60_000);

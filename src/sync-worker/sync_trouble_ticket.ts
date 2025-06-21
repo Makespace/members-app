@@ -19,8 +19,16 @@ import {formatValidationErrors} from 'io-ts-reporters';
 import {getChunkIndexes} from '../util';
 
 const ROW_BATCH_SIZE = 50;
-const TROUBLE_TICKET_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 const EXPECTED_TROUBLE_TICKET_RESPONSE_SHEET_NAME = 'Form Responses 1';
+
+export type SyncTroubleTicketDependencies = Pick<
+  SyncWorkerDependencies,
+  | 'logger'
+  | 'storeSync'
+  | 'lastSync'
+  | 'storeTroubleTicketRowsRead'
+  | 'lastTroubleTicketRowRead'
+>;
 
 const grabColumn =
   (values: {formattedValue: string}[]) =>
@@ -219,7 +227,7 @@ const shouldPullFromSheet = (
 
 export const syncTroubleTicketSheet = async (
   log: Logger,
-  deps: SyncWorkerDependencies,
+  deps: SyncTroubleTicketDependencies,
   google: GoogleHelpers,
   troubleTicketSheetId: string
 ): Promise<void> => {
@@ -290,17 +298,17 @@ export const syncTroubleTicketSheet = async (
 };
 
 export const syncTroubleTickets = async (
-  deps: SyncWorkerDependencies,
+  deps: SyncTroubleTicketDependencies,
   google: GoogleHelpers,
-  troubleTicketSheetId: string
+  troubleTicketSheetId: string,
+  syncIntervalMs: number
 ): Promise<void> => {
   const log = deps.logger.child({troubleTicketSheetId});
   const lastSync = await deps.lastSync(troubleTicketSheetId)();
   if (
     E.isRight(lastSync) &&
     O.isSome(lastSync.right) &&
-    Date.now() - lastSync.right.value.getTime() <
-      TROUBLE_TICKET_SYNC_INTERVAL_MS
+    Date.now() - lastSync.right.value.getTime() < syncIntervalMs
   ) {
     log.info(
       'Skipping trouble ticket sync as last sync was recent: %s',

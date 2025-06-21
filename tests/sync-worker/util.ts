@@ -12,7 +12,10 @@ import {lastTrainingSheetRowRead} from '../../src/sync-worker/db/last_training_s
 import {pipe} from 'fp-ts/lib/function';
 import * as N from 'fp-ts/number';
 import {contramap} from 'fp-ts/lib/Ord';
-import {ManualParsedTrainingSheetEntry} from '../data/google_sheet_data';
+import {
+  ManualParsedTrainingSheetEntry,
+  ManualParsedTroubleTicketEntry,
+} from '../data/google_sheet_data';
 import {
   SheetDataTable,
   TroubleTicketDataTable,
@@ -20,7 +23,12 @@ import {
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
 import {getResourceEvents} from '../../src/init-dependencies/event-store/get-resource-events';
 import {Resource} from '../../src/types/resource';
-import {getRightOrFail} from '../helpers';
+import {getRightOrFail, getSomeOrFail} from '../helpers';
+import {SyncTroubleTicketDependencies} from '../../src/sync-worker/sync_trouble_ticket';
+import {storeTroubleTicketRowsRead} from '../../src/sync-worker/db/store_trouble_ticket_rows_read';
+import {lastTroubleTicketRowRead} from '../../src/sync-worker/db/last_trouble_ticket_row_read';
+import * as O from 'fp-ts/Option';
+import {SyncWorkerDependencies} from '../../src/sync-worker/dependencies';
 
 export const generateRegisterSheetEvent = (
   equipmentId: UUID,
@@ -55,12 +63,23 @@ export const createSyncTrainingSheetDependencies = (
   lastTrainingSheetRowRead: lastTrainingSheetRowRead(db),
 });
 
+export const createSyncTroubleTicketDependencies = (
+  db: Client
+): SyncTroubleTicketDependencies => ({
+  logger: testLogger(),
+  storeSync: storeSync(db),
+  lastSync: lastSync(db),
+  storeTroubleTicketRowsRead: storeTroubleTicketRowsRead(db),
+  lastTroubleTicketRowRead: lastTroubleTicketRowRead(db),
+});
+
 export const byTimestamp = pipe(
   N.Ord,
   contramap(
     (
       d:
         | ManualParsedTrainingSheetEntry
+        | ManualParsedTroubleTicketEntry
         | SheetDataTable['rows'][0]
         | TroubleTicketDataTable['rows'][0]
     ) =>
@@ -87,5 +106,22 @@ export const pushEvents = async (
       resource,
       getRightOrFail(await getResourceEvents(db)(resource)()).version
     )(event)();
+  }
+};
+
+export const expectSyncBetween = async (
+  deps: Pick<SyncWorkerDependencies, 'lastSync'>,
+  sheetId: string,
+  startInclusive: Date,
+  endInclusive: O.Option<Date>
+) => {
+  const lastSync = getSomeOrFail(
+    getRightOrFail(await deps.lastSync(sheetId)())
+  );
+  expect(lastSync.getTime()).toBeGreaterThanOrEqual(startInclusive.getTime());
+  if (O.isSome(endInclusive)) {
+    expect(lastSync.getTime()).toBeLessThanOrEqual(
+      endInclusive.value.getTime()
+    );
   }
 };
