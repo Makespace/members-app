@@ -9,7 +9,7 @@ import {pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import {formatValidationErrors} from 'io-ts-reporters';
 
-export const LastRowReadTable = t.strict({
+const LastRowReadTable = t.strict({
   rows: t.readonlyArray(
     t.strict({
       sheet_name: t.string,
@@ -17,7 +17,7 @@ export const LastRowReadTable = t.strict({
     })
   ),
 });
-export type LastRowReadTable = t.TypeOf<typeof LastRowReadTable>;
+type LastRowReadTable = t.TypeOf<typeof LastRowReadTable>;
 
 export const lastTroubleTicketRowRead =
   (db: Client): SyncWorkerDependencies['lastTroubleTicketRowRead'] =>

@@ -1,6 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {eq, asc, isNotNull} from 'drizzle-orm';
+import {eq} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {equipmentTable} from '../state';
