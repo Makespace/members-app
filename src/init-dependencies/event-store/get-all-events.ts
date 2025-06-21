@@ -80,10 +80,11 @@ export const getAllEventsByTypes =
     pipe(
       TE.tryCatch(
         () =>
-          dbExecute(dbClient, 'SELECT * FROM events WHERE event_type IN ?', [
-            eventType,
-            eventType2,
-          ]),
+          dbExecute(
+            dbClient,
+            'SELECT * FROM events WHERE event_type = ? OR event_type = ?',
+            [eventType, eventType2]
+          ),
         failureWithStatus(
           `Failed to query database for events of type '${eventType}' + '${eventType2}'`,
           StatusCodes.INTERNAL_SERVER_ERROR

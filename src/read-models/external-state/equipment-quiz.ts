@@ -58,9 +58,9 @@ export const getQuizResults = (
     TE.apS('lastQuizSync', deps.lastQuizSync(sheetId)),
     TE.bind('sheetData', () =>
       deps.getSheetData(
-        sheetId,
-        skip.flatMap(allMemberNumbers),
-        skip.map(m => m.emailAddress)
+        sheetId
+        // skip.flatMap(allMemberNumbers),
+        // skip.map(m => m.emailAddress)
       )
     ),
     TE.let('passedQuizes', ({sheetData}) => extractPassedQuizes(sheetData)),

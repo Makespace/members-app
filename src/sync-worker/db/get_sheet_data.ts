@@ -7,11 +7,7 @@ import {SheetDataTable} from '../google/sheet-data-table';
 
 export const getSheetData =
   (db: Client) =>
-  (
-    sheetId: string,
-    skip_member_numbers: ReadonlyArray<number>,
-    skip_emails: ReadonlyArray<string>
-  ): TE.TaskEither<string, SheetDataTable['rows']> =>
+  (sheetId: string): TE.TaskEither<string, SheetDataTable['rows']> =>
     pipe(
       TE.tryCatch<string, ResultSet>(
         () =>
@@ -20,10 +16,8 @@ export const getSheetData =
             SELECT *
             FROM sheet_data
             WHERE sheet_id = ?
-            AND member_number_provided NOT IN ?
-            AND email_provided NOT IN ?
             `,
-            [sheetId, skip_member_numbers as any, skip_emails as any]
+            [sheetId]
           ),
         reason =>
           `Failed to get sheet data for sheet '${sheetId}': ${(reason as Error).message}`
@@ -38,7 +32,7 @@ export const getSheetData =
       TE.map(data => data.rows)
     );
 
-export const getPassedQuizResults =
+const getPassedQuizResults =
   (db: Client) =>
   (
     sheetId: string,
@@ -61,7 +55,7 @@ export const getPassedQuizResults =
             [sheetId, skip_member_numbers as any, skip_emails as any]
           ),
         reason =>
-          `Failed to get sheet data for sheet '${sheetId}': ${(reason as Error).message}`
+          `Failed to get passed quiz results for sheet '${sheetId}': ${(reason as Error).message}`
       ),
       TE.flatMapEither<ResultSet, string, SheetDataTable>(data =>
         pipe(
@@ -73,7 +67,7 @@ export const getPassedQuizResults =
       TE.map(data => data.rows)
     );
 
-export const getFailedQuizResults =
+const getFailedQuizResults =
   (db: Client) =>
   (
     sheetId: string,
@@ -98,7 +92,7 @@ export const getFailedQuizResults =
             [sheetId, skip_member_numbers as any, skip_emails as any, count]
           ),
         reason =>
-          `Failed to get sheet data for sheet '${sheetId}': ${(reason as Error).message}`
+          `Failed to get failed quiz results for sheet '${sheetId}': ${(reason as Error).message}`
       ),
       TE.flatMapEither<ResultSet, string, SheetDataTable>(data =>
         pipe(
