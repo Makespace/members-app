@@ -15,6 +15,9 @@ import {contramap} from 'fp-ts/lib/Ord';
 import {ManualParsedTrainingSheetEntry} from '../data/google_sheet_data';
 import {SheetDataTable} from '../../src/sync-worker/google/sheet-data-table';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
+import {getResourceEvents} from '../../src/init-dependencies/event-store/get-resource-events';
+import {Resource} from '../../src/types/resource';
+import {getRightOrFail} from '../helpers';
 
 export const generateRegisterSheetEvent = (
   equipmentId: UUID,
@@ -66,25 +69,14 @@ export const pushEvents = async (
     | EventOfType<'EquipmentTrainingSheetRemoved'>
   >
 ) => {
-  if (events.length === 0) {
-    return;
-  }
-  await commitEvent(db, logger, () => async () => {})(
-    {
-      type: 'equipment',
-      id: '0', // For the purpose of these tests we can just use the same 'equipment' for concurrency control.
-    },
-    'no-such-resource'
-  )(events[0])();
-  let resourceVersion = 1;
-  for (const event of events.slice(1)) {
+  const resource: Resource = {
+    type: 'equipment',
+    id: '0', // For the purpose of these tests we can just use the same 'equipment' for concurrency control.
+  };
+  for (const event of events) {
     await commitEvent(db, logger, () => async () => {})(
-      {
-        type: 'equipment',
-        id: '0',
-      },
-      resourceVersion
+      resource,
+      getRightOrFail(await getResourceEvents(db)(resource)()).version
     )(event)();
-    resourceVersion++;
   }
 };

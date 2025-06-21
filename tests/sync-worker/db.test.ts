@@ -183,7 +183,7 @@ describe('Test sync worker db', () => {
         ])
       );
 
-      it('Registered training sheet is returned for both pieces of equipment', async () =>
+      it('Registered training sheet is returned for both pieces of equipment', async () => {
         expect(
           getRightOrFail(await getTrainingSheetsToSync(db)()())
         ).toStrictEqual(
@@ -193,7 +193,8 @@ describe('Test sync worker db', () => {
               [equipmentId2]: trainingSheet2,
             })
           )
-        ));
+        );
+      });
       describe('Remove training sheet from equipment', () => {
         beforeEach(() =>
           pushEvents(db, testLogger(), [generateRemoveSheetEvent(equipmentId)])
