@@ -19,9 +19,10 @@ import {getSheetData} from '../../src/sync-worker/db/get_sheet_data';
 import {getRightOrFail, getSomeOrFail} from '../helpers';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
 import {setTimeout} from 'node:timers/promises';
-import { ensureDBTablesExist } from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
+import {ensureDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
+import { ensureEventTableExists } from '../../src/init-dependencies/event-store/ensure-events-table-exists';
 
-const pushEvents = (
+const pushEvents = async (
   db: Client,
   logger: Logger,
   events: ReadonlyArray<
@@ -32,22 +33,22 @@ const pushEvents = (
   if (events.length === 0) {
     return;
   }
-  commitEvent(db, logger, () => async () => {})(
+  await commitEvent(db, logger, () => async () => {})(
     {
       type: 'equipment',
       id: '0', // For the purpose of these tests we can just use the same 'equipment' for concurrency control.
     },
     'no-such-resource'
-  )(events[0]);
+  )(events[0])();
   let resourceVersion = 1;
   for (const event of events.slice(1)) {
-    commitEvent(db, logger, () => async () => {})(
+    await commitEvent(db, logger, () => async () => {})(
       {
         type: 'equipment',
         id: '0',
       },
       resourceVersion
-    )(event);
+    )(event)();
     resourceVersion++;
   }
 };
@@ -62,7 +63,7 @@ const runSyncEquipmentTrainingSheets = async (
     | EventOfType<'EquipmentTrainingSheetRemoved'>
   >
 ) => {
-  pushEvents(db, deps.logger, events);
+  await pushEvents(db, deps.logger, events);
   await syncEquipmentTrainingSheets(deps, google, syncIntervalMs);
 };
 
@@ -77,7 +78,7 @@ const generateRegisterEvent = (
 
 const testLogger = () =>
   pino({
-    level: 'fatal',
+    level: 'debug',
     timestamp: pino.stdTimeFunctions.isoTime,
   });
 
@@ -100,6 +101,7 @@ describe('Sync equipment training sheets', () => {
   beforeEach(async () => {
     db = createClient({url: ':memory:'});
     deps = createSyncTrainingSheetDependencies(db);
+    getRightOrFail(await ensureEventTableExists(db)());
     await ensureDBTablesExist(db);
   });
 
@@ -115,7 +117,7 @@ describe('Sync equipment training sheets', () => {
       endTime = Date.now();
     });
     it('produces no rows', async () => {
-      const rows = getRightOrFail(await getSheetData(db)(sheetId, [], [])());
+      const rows = getRightOrFail(await getSheetData(db)(sheetId)());
       expect(rows).toHaveLength(0);
     });
     it('sync recorded', async () => {
