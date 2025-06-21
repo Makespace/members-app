@@ -43,7 +43,7 @@ const extractFailedQuizes = (
   );
 
 const getQuizResults = (
-  deps: Dependencies,
+  deps: Pick<Dependencies, 'lastQuizSync' | 'getSheetData'>,
   sheetId: string,
   _skip: ReadonlyArray<
     Pick<MemberCoreInfo, 'memberNumber' | 'pastMemberNumbers' | 'emailAddress'>
@@ -72,7 +72,7 @@ export type FullQuizResults = {
 };
 
 export const getFullQuizResults = (
-  deps: Dependencies,
+  deps: Pick<Dependencies, 'sharedReadModel' | 'lastQuizSync' | 'getSheetData'>,
   sheetId: string,
   equipment: Equipment
 ): TE.TaskEither<string, FullQuizResults> =>
@@ -84,6 +84,13 @@ export const getFullQuizResults = (
 
       for (const row of qr.passedQuizes) {
         if (!row.member_number_provided) {
+          continue;
+        }
+        if (
+          equipment.trainedMembers
+            .map(m => m.memberNumber)
+            .includes(row.member_number_provided)
+        ) {
           continue;
         }
         const member = deps.sharedReadModel.members.get(
