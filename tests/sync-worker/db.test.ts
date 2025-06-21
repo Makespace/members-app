@@ -14,9 +14,51 @@ import {getTroubleTicketData} from '../../src/sync-worker/db/get_trouble_ticket_
 import {lastTrainingSheetRowRead} from '../../src/sync-worker/db/last_training_sheet_row_read';
 import {lastTroubleTicketRowRead} from '../../src/sync-worker/db/last_trouble_ticket_row_read';
 import {storeSync} from '../../src/sync-worker/db/store_sync';
+import {storeTrainingSheetRowsRead} from '../../src/sync-worker/db/store_training_sheet_rows_read';
+import {SheetDataTable} from '../../src/sync-worker/google/sheet-data-table';
+import {UUID} from 'io-ts-types';
+import {
+  generateRegisterSheetEvent,
+  generateRemoveSheetEvent,
+  pushEvents,
+  testLogger,
+} from './util';
 
 const expectToBeRight = async <T>(task: TE.TaskEither<T, void>) =>
   expect(getRightOrFail(await task())).toBeUndefined();
+
+const randomTrainingSheetRow = (
+  sheetId: string,
+  sheetName: string,
+  rowIndex: number
+): SheetDataTable['rows'][0] => {
+  const score = faker.number.int({max: 20});
+  const maxScore = 20;
+  return {
+    sheet_id: sheetId,
+    sheet_name: sheetName,
+    row_index: rowIndex,
+    response_submitted: faker.date.past(),
+    member_number_provided: faker.number.int({max: 10000}),
+    email_provided: faker.internet.email(),
+    score,
+    max_score: maxScore,
+    percentage: Math.floor(score / maxScore),
+    cached_at: new Date(),
+  };
+};
+
+const randomTrainingSheetRows = (
+  sheetId: string,
+  sheetName: string,
+  count: number
+): SheetDataTable['rows'] => {
+  const res: SheetDataTable['rows'][0][] = [];
+  for (let rowIndex = 1; rowIndex <= count; rowIndex++) {
+    res.push(randomTrainingSheetRow(sheetId, sheetName, rowIndex));
+  }
+  return res;
+};
 
 describe('Test sync worker db', () => {
   let db: Client;
@@ -58,7 +100,7 @@ describe('Test sync worker db', () => {
       ).toStrictEqual({}));
   });
 
-  describe('Store as sync', () => {
+  describe('Store last sync', () => {
     const sheetId = faker.string.alphanumeric();
     const date = faker.date.past();
     beforeEach(() => storeSync(db)(sheetId, date)());
@@ -94,6 +136,85 @@ describe('Test sync worker db', () => {
         expect(getRightOrFail(await lastSync(db)(newSheetId)())).toStrictEqual(
           O.some(newDate)
         ));
+    });
+  });
+
+  // describe('Store training sheet rows read', () => {
+  //   const sheetId = faker.string.alphanumeric();
+  //   const sheetName = faker.animal.fish();
+  //   const data: SheetDataTable['rows'] = randomTrainingSheetRows(
+  //     sheetId,
+  //     sheetName,
+  //     4
+  //   );
+  //   beforeEach(() => storeTrainingSheetRowsRead(db)(data)());
+  // });
+  describe('Store empty training sheet rows read', () => {
+    const sheetId = faker.string.alphanumeric({length: 12});
+    const data: SheetDataTable['rows'] = [];
+    beforeEach(() => storeTrainingSheetRowsRead(db)(data)());
+
+    it('Last training sheet row read is none', async () =>
+      expect(
+        getRightOrFail(await lastTrainingSheetRowRead(db)(sheetId)())
+      ).toStrictEqual({}));
+  });
+
+  describe('Register a training sheet', () => {
+    const equipmentId = faker.string.uuid() as UUID;
+    const trainingSheet = faker.string.alphanumeric({length: 12});
+    const equipmentId2 = faker.string.uuid() as UUID;
+    const trainingSheet2 = faker.string.alphanumeric({length: 12});
+    beforeEach(() =>
+      pushEvents(db, testLogger(), [
+        generateRegisterSheetEvent(equipmentId, trainingSheet),
+      ])
+    );
+
+    it('Registered training sheet is returned within set to sync', async () =>
+      expect(
+        getRightOrFail(await getTrainingSheetsToSync(db)()())
+      ).toStrictEqual(new Map(Object.entries({[equipmentId]: trainingSheet}))));
+
+    describe('Register a training sheet for second piece of equipment', () => {
+      beforeEach(() =>
+        pushEvents(db, testLogger(), [
+          generateRegisterSheetEvent(equipmentId2, trainingSheet2),
+        ])
+      );
+
+      it('Registered training sheet is returned for both pieces of equipment', async () =>
+        expect(
+          getRightOrFail(await getTrainingSheetsToSync(db)()())
+        ).toStrictEqual(
+          new Map(
+            Object.entries({
+              [equipmentId]: trainingSheet,
+              [equipmentId2]: trainingSheet2,
+            })
+          )
+        ));
+      describe('Remove training sheet from equipment', () => {
+        beforeEach(() =>
+          pushEvents(db, testLogger(), [generateRemoveSheetEvent(equipmentId)])
+        );
+        it('Still registered training sheet is returned within set to sync', async () =>
+          expect(
+            getRightOrFail(await getTrainingSheetsToSync(db)()())
+          ).toStrictEqual(
+            new Map(Object.entries({[equipmentId2]: trainingSheet2}))
+          ));
+      });
+    });
+
+    describe('Remove training sheet from equipment', () => {
+      beforeEach(() =>
+        pushEvents(db, testLogger(), [generateRemoveSheetEvent(equipmentId)])
+      );
+      it('Get training sheets to sync returns nothing', async () =>
+        expect(
+          getRightOrFail(await getTrainingSheetsToSync(db)()())
+        ).toStrictEqual(new Map()));
     });
   });
 });
