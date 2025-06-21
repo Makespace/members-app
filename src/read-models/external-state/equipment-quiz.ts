@@ -5,11 +5,7 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {Dependencies} from '../../dependencies';
 import {SheetDataTable} from '../../sync-worker/google/sheet-data-table';
 import {pipe} from 'fp-ts/lib/function';
-import {
-  allMemberNumbers,
-  Equipment,
-  MemberCoreInfo,
-} from '../shared-state/return-types';
+import {Equipment, MemberCoreInfo} from '../shared-state/return-types';
 
 export type EquipmentQuizResults = {
   passedQuizes: SheetDataTable['rows'];
@@ -30,7 +26,7 @@ export type MemberAwaitingTraining = Pick<
   waitingSince: Date;
 };
 
-export const extractPassedQuizes = (
+const extractPassedQuizes = (
   sheetData: SheetDataTable['rows']
 ): SheetDataTable['rows'] =>
   pipe(
@@ -38,7 +34,7 @@ export const extractPassedQuizes = (
     RA.filter(row => row.percentage === 100)
   );
 
-export const extractFailedQuizes = (
+const extractFailedQuizes = (
   sheetData: SheetDataTable['rows']
 ): SheetDataTable['rows'] =>
   pipe(
@@ -46,10 +42,10 @@ export const extractFailedQuizes = (
     RA.filter(row => row.percentage < 100)
   );
 
-export const getQuizResults = (
+const getQuizResults = (
   deps: Dependencies,
   sheetId: string,
-  skip: ReadonlyArray<
+  _skip: ReadonlyArray<
     Pick<MemberCoreInfo, 'memberNumber' | 'pastMemberNumbers' | 'emailAddress'>
   >
 ): TE.TaskEither<string, EquipmentQuizResults> => {

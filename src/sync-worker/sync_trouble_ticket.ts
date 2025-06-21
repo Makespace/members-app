@@ -225,7 +225,7 @@ const shouldPullFromSheet = (
 ): boolean =>
   sheet.properties.title === EXPECTED_TROUBLE_TICKET_RESPONSE_SHEET_NAME;
 
-export const syncTroubleTicketSheet = async (
+const syncTroubleTicketSheet = async (
   log: Logger,
   deps: SyncTroubleTicketDependencies,
   google: GoogleHelpers,

@@ -8,7 +8,7 @@ import * as O from 'fp-ts/Option';
 const EQUIPMENT_SYNC_INTERVAL_MS = 40 * 60 * 1000;
 const TROUBLE_TICKET_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 
-export async function run() {
+async function run() {
   const deps = initDependencies();
   deps.logger.info('Background sync worker starting up...');
 

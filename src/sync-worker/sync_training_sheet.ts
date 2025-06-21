@@ -47,7 +47,7 @@ export const columnBoundsRequired = (
   return [Math.min(...colIndexes), Math.max(...colIndexes)];
 };
 
-export const shouldPullFromSheet = (
+const shouldPullFromSheet = (
   sheetId: string,
   sheet: {
     properties: {

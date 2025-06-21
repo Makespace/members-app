@@ -13,8 +13,6 @@ import {
   TroubleTicketDataTable,
 } from './sync-worker/google/sheet-data-table';
 
-export type GoogleSheetId = string;
-
 export type Dependencies = {
   commitEvent: (
     resource: Resource,

@@ -23,7 +23,7 @@ import {storeTrainingSheetRowsRead} from '../../src/sync-worker/db/store_trainin
 import {storeTroubleTicketRowsRead} from '../../src/sync-worker/db/store_trouble_ticket_rows_read';
 import {SyncWorkerDependencies} from '../../src/sync-worker/dependencies';
 
-export const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
+const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
 
 type ToFrameworkCommands<T> = {
   [K in keyof T]: {

@@ -11,9 +11,9 @@ import {ReadonlyRecord} from 'fp-ts/lib/ReadonlyRecord';
 import {Client} from '@libsql/client';
 import {UUID} from 'io-ts-types';
 
-export type SheetName = string;
-export type RowIndex = number;
-export type LastRowRead = ReadonlyRecord<SheetName, RowIndex>;
+type SheetName = string;
+type RowIndex = number;
+type LastRowRead = ReadonlyRecord<SheetName, RowIndex>;
 
 export interface SyncWorkerDependencies {
   conf: Config;
