@@ -1,4 +1,4 @@
-import pino, {Logger} from 'pino';
+import {Logger} from 'pino';
 import {GoogleHelpers} from '../../src/sync-worker/google/pull_sheet_data';
 import {
   syncEquipmentTrainingSheets,
@@ -7,20 +7,26 @@ import {
 import {faker} from '@faker-js/faker';
 import {UUID} from 'io-ts-types';
 import {Client, createClient} from '@libsql/client/.';
-import {storeSync} from '../../src/sync-worker/db/store_sync';
-import {lastSync} from '../../src/sync-worker/db/last_sync';
-import {getTrainingSheetsToSync} from '../../src/sync-worker/db/get_training_sheets_to_sync';
-import {storeTrainingSheetRowsRead} from '../../src/sync-worker/db/store_training_sheet_rows_read';
-import {lastTrainingSheetRowRead} from '../../src/sync-worker/db/last_training_sheet_row_read';
 import {localGoogleHelpers as google} from '../init-dependencies/pull-local-google';
-import {constructEvent, EventOfType} from '../../src/types/domain-event';
-import {EMPTY} from '../data/google_sheet_data';
+import {EventOfType} from '../../src/types/domain-event';
+import {
+  EMPTY,
+  ManualParsedTrainingSheetEntry,
+  METAL_LATHE,
+} from '../data/google_sheet_data';
 import {getRightOrFail, getSomeOrFail} from '../helpers';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
 import {ensureDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
 import {setTimeout} from 'node:timers/promises';
 import {getSheetData} from '../../src/sync-worker/db/get_sheet_data';
+import * as RA from 'fp-ts/ReadonlyArray';
+import * as O from 'fp-ts/Option';
+import {
+  byTimestamp,
+  createSyncTrainingSheetDependencies,
+  generateRegisterEvent,
+} from './util';
 
 const pushEvents = async (
   db: Client,
@@ -67,31 +73,48 @@ const runSyncEquipmentTrainingSheets = async (
   await syncEquipmentTrainingSheets(deps, google, syncIntervalMs);
 };
 
-const generateRegisterEvent = (
-  equipmentId: UUID,
-  trainingSheetId: string
-): EventOfType<'EquipmentTrainingSheetRegistered'> =>
-  constructEvent('EquipmentTrainingSheetRegistered')({
-    equipmentId,
-    trainingSheetId,
-  });
+const getSheetDataSorted = async (db: Client, sheetId: string) =>
+  RA.sort(byTimestamp)(getRightOrFail(await getSheetData(db)(sheetId)()));
 
-const testLogger = () =>
-  pino({
-    level: 'fatal',
-    timestamp: pino.stdTimeFunctions.isoTime,
-  });
+const expectSheetDataMatches = async (
+  db: Client,
+  sheetId: string,
+  expectedData: ReadonlyArray<ManualParsedTrainingSheetEntry>
+) => {
+  const rows = await getSheetDataSorted(db, sheetId);
+  expect(rows).toHaveLength(expectedData.length);
+  for (const [actual, expected] of RA.zip(RA.sort(byTimestamp)(expectedData))(
+    rows
+  )) {
+    expect(actual.email_provided).toStrictEqual(expected.emailProvided);
+    expect(actual.member_number_provided).toStrictEqual(
+      expected.memberNumberProvided
+    );
+    expect(actual.score).toStrictEqual(expected.score);
+    expect(actual.max_score).toStrictEqual(expected.maxScore);
+    expect(actual.percentage).toStrictEqual(expected.percentage);
+    expect(actual.response_submitted.getTime()).toStrictEqual(
+      expected.timestampEpochMS
+    );
+  }
+};
 
-const createSyncTrainingSheetDependencies = (
-  db: Client
-): SyncTrainingSheetDependencies => ({
-  logger: testLogger(),
-  getTrainingSheetsToSync: getTrainingSheetsToSync(db),
-  storeSync: storeSync(db),
-  lastSync: lastSync(db),
-  storeTrainingSheetRowsRead: storeTrainingSheetRowsRead(db),
-  lastTrainingSheetRowRead: lastTrainingSheetRowRead(db),
-});
+const expectSyncBetween = async (
+  deps: SyncTrainingSheetDependencies,
+  sheetId: string,
+  startInclusive: Date,
+  endInclusive: O.Option<Date>
+) => {
+  const lastSync = getSomeOrFail(
+    getRightOrFail(await deps.lastSync(sheetId)())
+  );
+  expect(lastSync.getTime()).toBeGreaterThanOrEqual(startInclusive.getTime());
+  if (O.isSome(endInclusive)) {
+    expect(lastSync.getTime()).toBeLessThanOrEqual(
+      endInclusive.value.getTime()
+    );
+  }
+};
 
 describe('Sync equipment training sheets', () => {
   let db: Client;
@@ -116,17 +139,10 @@ describe('Sync equipment training sheets', () => {
       ]);
       endTime = new Date();
     });
-    it('produces no rows', async () => {
-      const rows = getRightOrFail(await getSheetData(db)(sheetId)());
-      expect(rows).toHaveLength(0);
-    });
-    it('sync recorded', async () => {
-      const lastSync = getSomeOrFail(
-        getRightOrFail(await deps.lastSync(sheetId)())
-      );
-      expect(lastSync.getTime()).toBeGreaterThanOrEqual(startTime.getTime());
-      expect(lastSync.getTime()).toBeLessThanOrEqual(endTime.getTime());
-    });
+    it('produces no rows', () =>
+      expectSheetDataMatches(db, sheetId, EMPTY.entries));
+    it('sync recorded', () =>
+      expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
     it('no last training sheet row read', async () => {
       expect(
         getRightOrFail(await deps.lastTrainingSheetRowRead(sheetId)())
@@ -161,12 +177,73 @@ describe('Sync equipment training sheets', () => {
         ]);
       });
 
-      it('sync recorded', async () => {
+      it('sync recorded', () =>
+        expectSyncBetween(deps, sheetId, beforeResync, O.none));
+    });
+  });
+
+  describe('metal lathe training sheet', () => {
+    const sheetId = METAL_LATHE.apiResp.spreadsheetId!;
+    const syncIntervalMs = 20_000;
+    let startTime: Date, endTime: Date;
+    beforeEach(async () => {
+      startTime = new Date();
+      await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
+        generateRegisterEvent(equipmentId, sheetId),
+      ]);
+      endTime = new Date();
+    });
+    it('produces expected rows for a full sync', () =>
+      expectSheetDataMatches(db, sheetId, METAL_LATHE.entries));
+    it('sync recorded', () =>
+      expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
+    it('last training sheet row read points at end of sheet', async () => {
+      expect(
+        getRightOrFail(await deps.lastTrainingSheetRowRead(sheetId)())
+      ).toStrictEqual({
+        [METAL_LATHE.metadata.sheets[0].properties.title]:
+          METAL_LATHE.entries.length,
+      });
+    });
+    describe('re-sync run again within sync interval', () => {
+      let beforeResync: Date;
+      beforeEach(async () => {
+        beforeResync = new Date();
+        await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
+          generateRegisterEvent(equipmentId, sheetId),
+        ]);
+      });
+
+      it('no sync recorded', async () => {
         expect(
           getSomeOrFail(
             getRightOrFail(await deps.lastSync(sheetId)())
           ).getTime()
-        ).toBeGreaterThanOrEqual(beforeResync.getTime());
+        ).toBeLessThanOrEqual(beforeResync.getTime());
+      });
+    });
+
+    describe('re-sync run again after sync interval', () => {
+      const syncIntervalMs = 1;
+      let beforeResync: Date;
+      beforeEach(async () => {
+        await setTimeout(syncIntervalMs);
+        beforeResync = new Date();
+        await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
+          generateRegisterEvent(equipmentId, sheetId),
+        ]);
+      });
+
+      it('sync recorded', () =>
+        expectSyncBetween(deps, sheetId, beforeResync, O.none));
+
+      it('last training sheet row read still points at end of sheet', async () => {
+        expect(
+          getRightOrFail(await deps.lastTrainingSheetRowRead(sheetId)())
+        ).toStrictEqual({
+          [METAL_LATHE.metadata.sheets[0].properties.title]:
+            METAL_LATHE.entries.length,
+        });
       });
     });
   });
