@@ -40,7 +40,7 @@ export const generateRemoveSheetEvent = (
 
 export const testLogger = () =>
   pino({
-    level: 'debug',
+    level: 'fatal',
     timestamp: pino.stdTimeFunctions.isoTime,
   });
 
