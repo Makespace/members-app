@@ -15,12 +15,12 @@ import {lastTrainingSheetRowRead} from '../../src/sync-worker/db/last_training_s
 import {localGoogleHelpers as google} from '../init-dependencies/pull-local-google';
 import {constructEvent, EventOfType} from '../../src/types/domain-event';
 import {EMPTY} from '../data/google_sheet_data';
-import {getSheetData} from '../../src/sync-worker/db/get_sheet_data';
 import {getRightOrFail, getSomeOrFail} from '../helpers';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
-import {setTimeout} from 'node:timers/promises';
 import {ensureDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
-import { ensureEventTableExists } from '../../src/init-dependencies/event-store/ensure-events-table-exists';
+import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
+import {setTimeout} from 'node:timers/promises';
+import {getSheetData} from '../../src/sync-worker/db/get_sheet_data';
 
 const pushEvents = async (
   db: Client,
@@ -78,7 +78,7 @@ const generateRegisterEvent = (
 
 const testLogger = () =>
   pino({
-    level: 'debug',
+    level: 'fatal',
     timestamp: pino.stdTimeFunctions.isoTime,
   });
 
@@ -107,14 +107,14 @@ describe('Sync equipment training sheets', () => {
 
   describe('empty sheet', () => {
     const sheetId = EMPTY.apiResp.spreadsheetId!;
-    let syncIntervalMs = 20_000;
-    let startTime: number, endTime: number;
+    const syncIntervalMs = 20_000;
+    let startTime: Date, endTime: Date;
     beforeEach(async () => {
-      startTime = Date.now();
+      startTime = new Date();
       await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
         generateRegisterEvent(equipmentId, sheetId),
       ]);
-      endTime = Date.now();
+      endTime = new Date();
     });
     it('produces no rows', async () => {
       const rows = getRightOrFail(await getSheetData(db)(sheetId)());
@@ -124,20 +124,18 @@ describe('Sync equipment training sheets', () => {
       const lastSync = getSomeOrFail(
         getRightOrFail(await deps.lastSync(sheetId)())
       );
-      expect(lastSync.getTime()).toBeGreaterThanOrEqual(startTime);
-      expect(lastSync.getTime()).toBeLessThanOrEqual(endTime);
+      expect(lastSync.getTime()).toBeGreaterThanOrEqual(startTime.getTime());
+      expect(lastSync.getTime()).toBeLessThanOrEqual(endTime.getTime());
     });
-    it('last training sheet row read is 0', async () => {
+    it('no last training sheet row read', async () => {
       expect(
         getRightOrFail(await deps.lastTrainingSheetRowRead(sheetId)())
-      ).toStrictEqual({
-        [EMPTY.metadata.sheets[0].properties.title]: 0,
-      });
+      ).toStrictEqual({});
     });
     describe('re-sync run again within sync interval', () => {
-      let beforeResync: number;
+      let beforeResync: Date;
       beforeEach(async () => {
-        beforeResync = Date.now();
+        beforeResync = new Date();
         await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
           generateRegisterEvent(equipmentId, sheetId),
         ]);
@@ -145,17 +143,19 @@ describe('Sync equipment training sheets', () => {
 
       it('no sync recorded', async () => {
         expect(
-          getSomeOrFail(getRightOrFail(await deps.lastSync(sheetId)()))
-        ).toBeLessThanOrEqual(beforeResync);
+          getSomeOrFail(
+            getRightOrFail(await deps.lastSync(sheetId)())
+          ).getTime()
+        ).toBeLessThanOrEqual(beforeResync.getTime());
       });
     });
 
     describe('re-sync run again after sync interval', () => {
-      syncIntervalMs = 1;
-      let beforeResync: number;
+      const syncIntervalMs = 1;
+      let beforeResync: Date;
       beforeEach(async () => {
         await setTimeout(syncIntervalMs);
-        beforeResync = Date.now();
+        beforeResync = new Date();
         await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
           generateRegisterEvent(equipmentId, sheetId),
         ]);
@@ -163,8 +163,10 @@ describe('Sync equipment training sheets', () => {
 
       it('sync recorded', async () => {
         expect(
-          getSomeOrFail(getRightOrFail(await deps.lastSync(sheetId)()))
-        ).toBeGreaterThanOrEqual(beforeResync);
+          getSomeOrFail(
+            getRightOrFail(await deps.lastSync(sheetId)())
+          ).getTime()
+        ).toBeGreaterThanOrEqual(beforeResync.getTime());
       });
     });
   });
