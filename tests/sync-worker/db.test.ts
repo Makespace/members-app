@@ -58,10 +58,15 @@ const randomTrainingSheetRow = (
 const randomTrainingSheetRows = (
   sheetId: string,
   sheetName: string,
-  count: number
+  count: number,
+  startRowIndex: O.Option<number>
 ): SheetDataTable['rows'] => {
   const res: SheetDataTable['rows'][0][] = [];
-  for (let rowIndex = 1; rowIndex <= count; rowIndex++) {
+  for (
+    let rowIndex = O.getOrElse(() => 1)(startRowIndex);
+    rowIndex <= count;
+    rowIndex++
+  ) {
     res.push(randomTrainingSheetRow(sheetId, sheetName, rowIndex));
   }
   return res;
@@ -89,10 +94,15 @@ const randomTroubleTicketRow = (
 const randomTroubleTicketRows = (
   sheetId: string,
   sheetName: string,
-  count: number
+  count: number,
+  startRowIndex: O.Option<number>
 ): TroubleTicketDataTable['rows'] => {
   const res: TroubleTicketDataTable['rows'][0][] = [];
-  for (let rowIndex = 1; rowIndex <= count; rowIndex++) {
+  for (
+    let rowIndex = O.getOrElse(() => 1)(startRowIndex);
+    rowIndex <= count;
+    rowIndex++
+  ) {
     res.push(randomTroubleTicketRow(sheetId, sheetName, rowIndex));
   }
   return res;
@@ -191,17 +201,20 @@ describe('Test sync worker db', () => {
     const data: SheetDataTable['rows'] = randomTrainingSheetRows(
       sheetId,
       sheetName,
-      4
+      4,
+      O.none
     );
     const data1_2: SheetDataTable['rows'] = randomTrainingSheetRows(
       sheetId,
       sheetName,
-      13
+      13,
+      O.some(data.length + 1) // +1 because we are generating the next set of rows.
     );
     const data2: SheetDataTable['rows'] = randomTrainingSheetRows(
       sheetId2,
       sheetName2,
-      7
+      7,
+      O.none
     );
     beforeEach(async () =>
       getRightOrFail(await storeTrainingSheetRowsRead(db)(data)())
@@ -362,17 +375,20 @@ describe('Test sync worker db', () => {
     const data: TroubleTicketDataTable['rows'] = randomTroubleTicketRows(
       sheetId,
       sheetName,
-      4
+      4,
+      O.none
     );
     const data1_2: TroubleTicketDataTable['rows'] = randomTroubleTicketRows(
       sheetId,
       sheetName,
-      13
+      13,
+      O.some(data.length + 1) // +1 because we are generating the next set of rows.
     );
     const data2: TroubleTicketDataTable['rows'] = randomTroubleTicketRows(
       sheetId2,
       sheetName2,
-      7
+      7,
+      O.none
     );
     beforeEach(async () =>
       getRightOrFail(await storeTroubleTicketRowsRead(db)(data)())
@@ -429,7 +445,7 @@ describe('Test sync worker db', () => {
         it('Get trouble ticket data returns nothing', async () =>
           expect(
             getRightOrFail(await getTroubleTicketData(db, O.some(sheetId))()())
-          ).toStrictEqual([]));
+          ).toStrictEqual(O.some([])));
 
         it('Last trouble ticket row read is none', async () =>
           expect(
