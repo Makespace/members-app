@@ -1,4 +1,3 @@
-import {Logger} from 'pino';
 import {GoogleHelpers} from '../../src/sync-worker/google/pull_sheet_data';
 import {
   syncEquipmentTrainingSheets,
@@ -15,7 +14,6 @@ import {
   METAL_LATHE,
 } from '../data/google_sheet_data';
 import {getRightOrFail, getSomeOrFail} from '../helpers';
-import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
 import {ensureDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
 import {setTimeout} from 'node:timers/promises';
@@ -25,39 +23,9 @@ import * as O from 'fp-ts/Option';
 import {
   byTimestamp,
   createSyncTrainingSheetDependencies,
-  generateRegisterEvent,
+  generateRegisterSheetEvent,
+  pushEvents,
 } from './util';
-
-const pushEvents = async (
-  db: Client,
-  logger: Logger,
-  events: ReadonlyArray<
-    | EventOfType<'EquipmentTrainingSheetRegistered'>
-    | EventOfType<'EquipmentTrainingSheetRemoved'>
-  >
-) => {
-  if (events.length === 0) {
-    return;
-  }
-  await commitEvent(db, logger, () => async () => {})(
-    {
-      type: 'equipment',
-      id: '0', // For the purpose of these tests we can just use the same 'equipment' for concurrency control.
-    },
-    'no-such-resource'
-  )(events[0])();
-  let resourceVersion = 1;
-  for (const event of events.slice(1)) {
-    await commitEvent(db, logger, () => async () => {})(
-      {
-        type: 'equipment',
-        id: '0',
-      },
-      resourceVersion
-    )(event)();
-    resourceVersion++;
-  }
-};
 
 const runSyncEquipmentTrainingSheets = async (
   deps: SyncTrainingSheetDependencies,
@@ -135,7 +103,7 @@ describe('Sync equipment training sheets', () => {
     beforeEach(async () => {
       startTime = new Date();
       await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
-        generateRegisterEvent(equipmentId, sheetId),
+        generateRegisterSheetEvent(equipmentId, sheetId),
       ]);
       endTime = new Date();
     });
@@ -153,7 +121,7 @@ describe('Sync equipment training sheets', () => {
       beforeEach(async () => {
         beforeResync = new Date();
         await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
-          generateRegisterEvent(equipmentId, sheetId),
+          generateRegisterSheetEvent(equipmentId, sheetId),
         ]);
       });
 
@@ -173,7 +141,7 @@ describe('Sync equipment training sheets', () => {
         await setTimeout(syncIntervalMs);
         beforeResync = new Date();
         await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
-          generateRegisterEvent(equipmentId, sheetId),
+          generateRegisterSheetEvent(equipmentId, sheetId),
         ]);
       });
 
@@ -189,7 +157,7 @@ describe('Sync equipment training sheets', () => {
     beforeEach(async () => {
       startTime = new Date();
       await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
-        generateRegisterEvent(equipmentId, sheetId),
+        generateRegisterSheetEvent(equipmentId, sheetId),
       ]);
       endTime = new Date();
     });
@@ -210,7 +178,7 @@ describe('Sync equipment training sheets', () => {
       beforeEach(async () => {
         beforeResync = new Date();
         await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
-          generateRegisterEvent(equipmentId, sheetId),
+          generateRegisterSheetEvent(equipmentId, sheetId),
         ]);
       });
 
@@ -230,7 +198,7 @@ describe('Sync equipment training sheets', () => {
         await setTimeout(syncIntervalMs);
         beforeResync = new Date();
         await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
-          generateRegisterEvent(equipmentId, sheetId),
+          generateRegisterSheetEvent(equipmentId, sheetId),
         ]);
       });
 
