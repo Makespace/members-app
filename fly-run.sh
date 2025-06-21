@@ -4,6 +4,6 @@
 # and decided on this approach as a balance between simplicity and ease to reason about.
 
 set -m
-"node", "--import", "./instrument.mjs", "build/src/sync_worker/index.js" &
-"node", "--import", "./instrument.mjs", "build/src/index.js" &
+node --import ./instrument.mjs build/src/sync-worker/index.js &
+node --import ./instrument.mjs build/src/index.js &
 fg %1

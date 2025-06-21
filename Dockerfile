@@ -47,4 +47,4 @@ COPY --from=prod-build /app/build/ build/
 COPY ./src/static build/src/static/
 COPY ./src/instrument.mjs ./
 COPY ./fly-run.sh ./
-CMD ["fly-run.sh"]
+CMD ["/bin/bash", "fly-run.sh"]

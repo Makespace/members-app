@@ -8,5 +8,10 @@ services:
   sync_worker:
     build:
       target: sync_worker_dev
+      context: .
+    env_file:
+      - .env
+    restart: unless-stopped
     volumes:
+      - db-volume:/db
       - ./src:/app/src
