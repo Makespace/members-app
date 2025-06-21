@@ -25,9 +25,6 @@ export const getSheetData =
       TE.flatMapEither<ResultSet, string, SheetDataTable>(data =>
         pipe(
           data,
-          (y) => {
-            return y;
-          },
           SheetDataTable.decode,
           E.mapLeft(
             e =>
