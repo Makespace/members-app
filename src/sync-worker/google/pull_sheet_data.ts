@@ -123,7 +123,7 @@ export const pullGoogleSheetData =
     trainingSheetId: string,
     sheetName: string,
     rowStart: number, // 1 indexed.
-    rowEnd: number,
+    rowEnd: number, // Inclusive
     columnStartIndex: number, // 0 indexed, converted to a letter.
     columnEndIndex: number
   ): TE.TaskEither<string, GoogleSpreadsheetDataForSheet> =>

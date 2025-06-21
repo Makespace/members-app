@@ -170,7 +170,7 @@ describe('Sync equipment training sheets', () => {
         getRightOrFail(await deps.lastTrainingSheetRowRead(sheetId)())
       ).toStrictEqual({
         [METAL_LATHE.metadata.sheets[0].properties.title]:
-          METAL_LATHE.entries.length,
+          METAL_LATHE.entries.length + 1, // The entries don't include the row header.
       });
     });
     describe('re-sync run again within sync interval', () => {
@@ -210,7 +210,7 @@ describe('Sync equipment training sheets', () => {
           getRightOrFail(await deps.lastTrainingSheetRowRead(sheetId)())
         ).toStrictEqual({
           [METAL_LATHE.metadata.sheets[0].properties.title]:
-            METAL_LATHE.entries.length,
+            METAL_LATHE.entries.length + 1, // The entries don't include the row header.
         });
       });
     });
