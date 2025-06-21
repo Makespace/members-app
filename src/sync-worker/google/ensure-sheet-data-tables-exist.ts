@@ -27,7 +27,7 @@ const ensureSheetDataTableExists = (dbClient: Client) =>
     {}
   );
 
-const ensureSheetDataSyncMetadataTableExists = (dbClient: Client) =>
+const ensureSheetSyncMetadataTableExists = (dbClient: Client) =>
   dbExecute(
     dbClient,
     `
@@ -59,9 +59,42 @@ const ensureTroubleTicketDataTableExists = (dbClient: Client) =>
     {}
   );
 
-export const ensureDBTablesExist = (dbClient: Client) =>
-  Promise.all([
+const ensureSheetDataSyncMetadataIndexesExists = (dbClient: Client) =>
+  dbExecute(
+    dbClient,
+    `
+    CREATE INDEX IF NOT EXISTS sheet_data_sheet_id_idx ON sheet_data (sheet_id);
+    `,
+    {}
+  );
+
+const ensureSheetSyncMetadataIndexesExists = (dbClient: Client) =>
+  dbExecute(
+    dbClient,
+    `
+    CREATE UNIQUE INDEX IF NOT EXISTS sheet_sync_metadata_sheet_id_idx ON sheet_sync_metadata (sheet_id);
+    `,
+    {}
+  );
+
+const ensureTroubleTicketDataIndexesExists = (dbClient: Client) =>
+  dbExecute(
+    dbClient,
+    `
+    CREATE INDEX IF NOT EXISTS trouble_ticket_data_sheet_id_idx ON trouble_ticket_data (sheet_id);
+    `,
+    {}
+  );
+
+export const ensureDBTablesExist = async (dbClient: Client) => {
+  await Promise.all([
     ensureSheetDataTableExists(dbClient),
-    ensureSheetDataSyncMetadataTableExists(dbClient),
+    ensureSheetSyncMetadataTableExists(dbClient),
     ensureTroubleTicketDataTableExists(dbClient),
   ]);
+  await Promise.all([
+    ensureSheetDataSyncMetadataIndexesExists(dbClient),
+    ensureSheetSyncMetadataIndexesExists(dbClient),
+    ensureTroubleTicketDataIndexesExists(dbClient),
+  ]);
+};
