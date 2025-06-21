@@ -17,11 +17,7 @@ import {EventName, EventOfType} from '../../src/types/domain-event';
 import {Dependencies} from '../../src/dependencies';
 import {applyToResource} from '../../src/commands/apply-command-to-resource';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
-import {
-  ensureSheetDataSyncMetadataTableExists,
-  ensureSheetDataTableExists,
-  ensureTroubleTicketDataTableExists,
-} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
+import {ensureDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
 import {getTroubleTicketData} from '../../src/sync-worker/db/get_trouble_ticket_data';
 import {storeTrainingSheetRowsRead} from '../../src/sync-worker/db/store_training_sheet_rows_read';
 import {storeTroubleTicketRowsRead} from '../../src/sync-worker/db/store_trouble_ticket_rows_read';
@@ -71,9 +67,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     sharedReadModel.asyncRefresh
   );
   getRightOrFail(await ensureEventTableExists(dbClient)());
-  await ensureSheetDataTableExists(dbClient);
-  await ensureSheetDataSyncMetadataTableExists(dbClient);
-  await ensureTroubleTicketDataTableExists(dbClient);
+  await ensureDBTablesExist(dbClient);
   const frameworkGetAllEvents = () =>
     pipe(getAllEvents(dbClient)(), T.map(getRightOrFail))();
   const frameworkGetAllEventsByType = <EN extends EventName>(eventType: EN) =>
