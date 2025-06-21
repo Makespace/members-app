@@ -13,7 +13,10 @@ import {pipe} from 'fp-ts/lib/function';
 import * as N from 'fp-ts/number';
 import {contramap} from 'fp-ts/lib/Ord';
 import {ManualParsedTrainingSheetEntry} from '../data/google_sheet_data';
-import {SheetDataTable} from '../../src/sync-worker/google/sheet-data-table';
+import {
+  SheetDataTable,
+  TroubleTicketDataTable,
+} from '../../src/sync-worker/google/sheet-data-table';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
 import {getResourceEvents} from '../../src/init-dependencies/event-store/get-resource-events';
 import {Resource} from '../../src/types/resource';
@@ -54,10 +57,16 @@ export const createSyncTrainingSheetDependencies = (
 
 export const byTimestamp = pipe(
   N.Ord,
-  contramap((d: ManualParsedTrainingSheetEntry | SheetDataTable['rows'][0]) =>
-    'response_submitted' in d
-      ? d.response_submitted.getTime()
-      : d.timestampEpochMS
+  contramap(
+    (
+      d:
+        | ManualParsedTrainingSheetEntry
+        | SheetDataTable['rows'][0]
+        | TroubleTicketDataTable['rows'][0]
+    ) =>
+      'response_submitted' in d
+        ? d.response_submitted.getTime()
+        : d.timestampEpochMS
   )
 );
 
