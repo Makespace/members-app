@@ -9,7 +9,9 @@ import {Client, createClient} from '@libsql/client/.';
 import {localGoogleHelpers as google} from '../init-dependencies/pull-local-google';
 import {EventOfType} from '../../src/types/domain-event';
 import {
+  BAMBU,
   EMPTY,
+  LASER_CUTTER,
   ManualParsedTrainingSheetEntry,
   METAL_LATHE,
 } from '../data/google_sheet_data';
@@ -23,6 +25,7 @@ import * as O from 'fp-ts/Option';
 import {
   byTimestamp,
   createSyncTrainingSheetDependencies,
+  expectSyncBetween,
   generateRegisterSheetEvent,
   pushEvents,
 } from './util';
@@ -63,23 +66,6 @@ const expectSheetDataMatches = async (
     expect(actual.percentage).toStrictEqual(expected.percentage);
     expect(actual.response_submitted.getTime()).toStrictEqual(
       expected.timestampEpochMS
-    );
-  }
-};
-
-const expectSyncBetween = async (
-  deps: SyncTrainingSheetDependencies,
-  sheetId: string,
-  startInclusive: Date,
-  endInclusive: O.Option<Date>
-) => {
-  const lastSync = getSomeOrFail(
-    getRightOrFail(await deps.lastSync(sheetId)())
-  );
-  expect(lastSync.getTime()).toBeGreaterThanOrEqual(startInclusive.getTime());
-  if (O.isSome(endInclusive)) {
-    expect(lastSync.getTime()).toBeLessThanOrEqual(
-      endInclusive.value.getTime()
     );
   }
 };
@@ -212,6 +198,57 @@ describe('Sync equipment training sheets', () => {
           [METAL_LATHE.metadata.sheets[0].properties.title]:
             METAL_LATHE.entries.length + 1, // The entries don't include the row header.
         });
+      });
+    });
+  });
+
+  describe('training sheet with a summary page', () => {
+    const sheetId = LASER_CUTTER.apiResp.spreadsheetId!;
+    const syncIntervalMs = 20_000;
+    let startTime: Date, endTime: Date;
+    beforeEach(async () => {
+      startTime = new Date();
+      await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
+        generateRegisterSheetEvent(equipmentId, sheetId),
+      ]);
+      endTime = new Date();
+    });
+    it('produces expected rows for a full sync', () =>
+      expectSheetDataMatches(db, sheetId, LASER_CUTTER.entries));
+    it('sync recorded', () =>
+      expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
+    it('last training sheet row read points at end of sheet', async () => {
+      expect(
+        getRightOrFail(await deps.lastTrainingSheetRowRead(sheetId)())
+      ).toStrictEqual({
+        [LASER_CUTTER.metadata.sheets[0].properties.title]:
+          LASER_CUTTER.entries.length + 1, // The entries don't include the row header.
+      });
+    });
+  });
+
+  describe('training sheet with multiple response pages (different quiz questions)', () => {
+    const sheetId = BAMBU.apiResp.spreadsheetId!;
+    const syncIntervalMs = 20_000;
+    let startTime: Date, endTime: Date;
+    beforeEach(async () => {
+      startTime = new Date();
+      await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
+        generateRegisterSheetEvent(equipmentId, sheetId),
+      ]);
+      endTime = new Date();
+    });
+    it('produces expected rows for a full sync', () =>
+      expectSheetDataMatches(db, sheetId, BAMBU.entries));
+    it('sync recorded', () =>
+      expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
+    it('last training sheet row read points at end of sheet', async () => {
+      expect(
+        getRightOrFail(await deps.lastTrainingSheetRowRead(sheetId)())
+      ).toStrictEqual({
+        'Form responses 3': 3,
+        'Form responses 2': 3,
+        // 'Form responses 1': 1, This is omitted because there are not actual rows just the headers.
       });
     });
   });

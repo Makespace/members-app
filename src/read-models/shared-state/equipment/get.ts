@@ -47,4 +47,3 @@ export const getAllEquipmentMinimal = (
   db: BetterSQLite3Database
 ): ReadonlyArray<MinimalEquipment> =>
   pipe(db.select().from(equipmentTable).all(), RA.map(transformRow));
-

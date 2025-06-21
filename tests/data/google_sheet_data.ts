@@ -18,7 +18,7 @@ export type ManualParsedTrainingSheetEntry = {
 };
 
 export type ManualParsedTroubleTicketEntry = {
-  timestampEpochMs: number;
+  timestampEpochMS: number;
   emailProvided: string | null;
   whichEquipmentWereYouUsing: string | null;
   ifYouAnsweredOtherAbove: string;
@@ -36,7 +36,7 @@ export const manualParsedTroubleTicketToEvent = (
   EventOfType<'TroubleTicketResponseSubmitted'>,
   'actor' | 'type' | 'recordedAt'
 > => ({
-  response_submitted_epoch_ms: m.timestampEpochMs,
+  response_submitted_epoch_ms: m.timestampEpochMS,
   email_address: m.emailProvided,
   which_equipment: m.whichEquipmentWereYouUsing,
   submitter_name: m.nameProvided,
@@ -187,7 +187,7 @@ export const TROUBLE_TICKETS_EXAMPLE: ManualParsed<ManualParsedTroubleTicketEntr
     ) as sheets_v4.Schema$Spreadsheet,
     [
       {
-        timestampEpochMs: 1622379030000,
+        timestampEpochMS: 1622379030000,
         emailProvided: 'example@example1.com',
         whichEquipmentWereYouUsing: '3d printer (PLA)',
         ifYouAnsweredOtherAbove: '',
@@ -201,7 +201,7 @@ export const TROUBLE_TICKETS_EXAMPLE: ManualParsed<ManualParsedTroubleTicketEntr
         membershipNumberProvided: 1234,
       },
       {
-        timestampEpochMs: 1743029221000,
+        timestampEpochMS: 1743029221000,
         emailProvided: 'example2.example2.com',
         whichEquipmentWereYouUsing: 'Metal Lathe',
         ifYouAnsweredOtherAbove: 'Testing the google form is working',
@@ -214,7 +214,7 @@ export const TROUBLE_TICKETS_EXAMPLE: ManualParsed<ManualParsedTroubleTicketEntr
         membershipNumberProvided: 9876,
       },
       {
-        timestampEpochMs: 1743091734000,
+        timestampEpochMS: 1743091734000,
         emailProvided: 'example3@example3.com',
         whichEquipmentWereYouUsing: 'Embroidery Machine',
         ifYouAnsweredOtherAbove: '',
