@@ -1,8 +1,4 @@
-import {
-  ensureSheetDataSyncMetadataTableExists,
-  ensureSheetDataTableExists,
-  ensureTroubleTicketDataTableExists,
-} from './google/ensure-sheet-data-tables-exist';
+import {ensureDBTablesExist} from './google/ensure-sheet-data-tables-exist';
 
 import {syncTroubleTickets} from './sync_trouble_ticket';
 import {syncEquipmentTrainingSheets} from './sync_training_sheet';
@@ -26,11 +22,7 @@ export async function run() {
   deps.logger.info(
     'Background sync worker ensuring sheet data tables exist...'
   );
-  await Promise.all([
-    ensureSheetDataTableExists(deps.db),
-    ensureSheetDataSyncMetadataTableExists(deps.db),
-    ensureTroubleTicketDataTableExists(deps.db),
-  ]);
+  await ensureDBTablesExist(deps.db);
   deps.logger.info('All data tables exist, starting...');
 
   if (O.isSome(deps.google)) {

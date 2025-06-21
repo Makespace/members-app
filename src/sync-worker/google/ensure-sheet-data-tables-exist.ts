@@ -7,7 +7,7 @@ import {dbExecute} from '../../util';
 // once we needed to do things like cache the sheet data (parsing data is slow and prevents startup before healthcheck failure),
 // do incremental pulls (parsing data is slow), only pull 1 bit of equipment at a time (otherwise it blocks the event loop).
 
-export const ensureSheetDataTableExists = (dbClient: Client) =>
+const ensureSheetDataTableExists = (dbClient: Client) =>
   dbExecute(
     dbClient,
     `
@@ -27,7 +27,7 @@ export const ensureSheetDataTableExists = (dbClient: Client) =>
     {}
   );
 
-export const ensureSheetDataSyncMetadataTableExists = (dbClient: Client) =>
+const ensureSheetDataSyncMetadataTableExists = (dbClient: Client) =>
   dbExecute(
     dbClient,
     `
@@ -39,7 +39,7 @@ export const ensureSheetDataSyncMetadataTableExists = (dbClient: Client) =>
     {}
   );
 
-export const ensureTroubleTicketDataTableExists = (dbClient: Client) =>
+const ensureTroubleTicketDataTableExists = (dbClient: Client) =>
   dbExecute(
     dbClient,
     `
@@ -58,3 +58,10 @@ export const ensureTroubleTicketDataTableExists = (dbClient: Client) =>
         `,
     {}
   );
+
+export const ensureDBTablesExist = (dbClient: Client) =>
+  Promise.all([
+    ensureSheetDataTableExists(dbClient),
+    ensureSheetDataSyncMetadataTableExists(dbClient),
+    ensureTroubleTicketDataTableExists(dbClient),
+  ]);
