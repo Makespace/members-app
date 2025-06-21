@@ -19,6 +19,7 @@ import {getSheetData} from '../../src/sync-worker/db/get_sheet_data';
 import {getRightOrFail, getSomeOrFail} from '../helpers';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
 import {setTimeout} from 'node:timers/promises';
+import { ensureDBTablesExist } from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
 
 const pushEvents = (
   db: Client,
@@ -96,9 +97,10 @@ describe('Sync equipment training sheets', () => {
   let deps: SyncTrainingSheetDependencies;
   const equipmentId = faker.string.uuid() as UUID;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     db = createClient({url: ':memory:'});
     deps = createSyncTrainingSheetDependencies(db);
+    await ensureDBTablesExist(db);
   });
 
   describe('empty sheet', () => {
