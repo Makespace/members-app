@@ -94,7 +94,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       dbClient,
       O.some(TROUBLE_TICKET_SHEET_ID)
     ),
-    storeTrainingSheetRowsRead: storeTrainingSheetRowsRead(dbClient),
+    storeTrainingSheetRowsRead: storeTrainingSheetRowsRead(dbClient, logger),
     storeTroubleTicketRowsRead: storeTroubleTicketRowsRead(dbClient),
     eventStoreDb: dbClient,
     sharedReadModel,

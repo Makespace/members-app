@@ -30,7 +30,7 @@ describe('Google training sheet integration', () => {
 
   beforeEach(async () => {
     db = createClient({url: ':memory:'});
-    deps = createSyncTrainingSheetDependencies(db);
+    deps = createSyncTrainingSheetDependencies(db, testLogger());
     getRightOrFail(await ensureEventTableExists(db)());
     await ensureDBTablesExist(db);
 

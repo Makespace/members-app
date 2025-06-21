@@ -18,13 +18,14 @@ import {getTrainingSheetsToSync} from './db/get_training_sheets_to_sync';
 import {storeTroubleTicketRowsRead} from './db/store_trouble_ticket_rows_read';
 import {lastTroubleTicketRowRead} from './db/last_trouble_ticket_row_read';
 import {clearTroubleTicketCache} from './db/clear_trouble_ticket_cache';
+import {Logger} from 'pino';
 
-const initDBCommands = (db: Client) => {
+const initDBCommands = (db: Client, logger: Logger) => {
   return {
     lastSync: lastSync(db),
     storeSync: storeSync(db),
     lastTrainingSheetRowRead: lastTrainingSheetRowRead(db),
-    storeTrainingSheetRowsRead: storeTrainingSheetRowsRead(db),
+    storeTrainingSheetRowsRead: storeTrainingSheetRowsRead(db, logger),
     clearTrainingSheetCache: clearTrainingSheetCache(db),
     getTrainingSheetsToSync: getTrainingSheetsToSync(db),
     storeTroubleTicketRowsRead: storeTroubleTicketRowsRead(db),
@@ -63,6 +64,6 @@ export const initDependencies = (): SyncWorkerDependencies => {
     logger,
     google,
     db,
-    ...initDBCommands(db),
+    ...initDBCommands(db, logger),
   };
 };
