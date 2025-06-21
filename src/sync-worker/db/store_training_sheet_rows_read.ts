@@ -15,9 +15,9 @@ export const storeTrainingSheetRowsRead =
           () =>
             db.execute(
               `INSERT INTO sheet_data(
-                sheet_id, sheet_name, row_index, member_number_provided, email_provided, score, max_score, percentage, cached_at
+                sheet_id, sheet_name, row_index, response_submitted, member_number_provided, email_provided, score, max_score, percentage, cached_at
             ) VALUES (
-                $sheet_id, $sheet_name, $row_index, $member_number_provided, $email_provided, $score, $max_score, $percentage, $cached_at
+                $sheet_id, $sheet_name, $row_index, $response_submitted, $member_number_provided, $email_provided, $score, $max_score, $percentage, $cached_at
             )`,
               entry
             ),
