@@ -56,6 +56,10 @@ describe('event-store end-to-end', () => {
       );
     });
 
+    afterEach(() => {
+      dbClient.close();
+    });
+
     it('is empty', async () => {
       expect(await getTestEvents()).toStrictEqual([]);
     });

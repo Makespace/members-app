@@ -118,6 +118,11 @@ describe('Test sync worker db', () => {
     await ensureGoogleDBTablesExist(googleDB)();
   });
 
+  afterEach(() => {
+    googleDB.close();
+    eventDB.close();
+  });
+
   describe('Empty database', () => {
     const sheetId = faker.string.alphanumeric();
     it('Get last sync returns none', async () =>

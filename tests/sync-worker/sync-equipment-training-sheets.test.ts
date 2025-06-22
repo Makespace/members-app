@@ -85,6 +85,11 @@ describe('Sync equipment training sheets', () => {
     await ensureGoogleDBTablesExist(googleDB)();
   });
 
+  afterEach(() => {
+    googleDB.close();
+    eventDB.close();
+  });
+
   describe('empty sheet', () => {
     const sheetId = EMPTY.apiResp.spreadsheetId!;
     const syncIntervalMs = 20_000;
