@@ -28,7 +28,7 @@ min_machines_running = 1
 processes = ['app']
 
 [[http_service.checks]]
-grace_period = "2m"
+grace_period = "5m"
 interval = "30s"
 method = "GET"
 timeout = "5s"
