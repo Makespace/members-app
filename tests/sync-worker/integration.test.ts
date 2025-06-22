@@ -46,6 +46,11 @@ describe('Google training sheet integration', () => {
     };
   });
 
+  afterEach(() => {
+    googleDB.close();
+    eventDB.close();
+  });
+
   it.skip('Form 3 Resin Printer', async () => {
     const sheetId = '1rnG8qvYXL5CucsS7swr9ajGYvHndBG1TKIbyG3KioHc';
     await syncTrainingSheet(testLogger(), deps, google, sheetId);
