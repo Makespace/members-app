@@ -48,7 +48,7 @@ export const initDependencies = (): SyncWorkerDependencies => {
   const googleDB = createClient({
     url: conf.GOOGLE_DB_URL,
     syncUrl: conf.TURSO_GOOGLEDB_SYNC_URL,
-    authToken: conf.TURSO_TOKEN,
+    authToken: conf.TURSO_GOOGLE_DB_TOKEN,
   });
 
   let google: O.Option<GoogleHelpers> = O.none;

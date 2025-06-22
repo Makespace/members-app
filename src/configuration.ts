@@ -36,6 +36,7 @@ const Config = t.strict({
     'file:/tmp/makespace-member-app-google.db'
   ),
   TURSO_TOKEN: t.union([t.undefined, t.string]),
+  TURSO_GOOGLE_DB_TOKEN: t.union([t.undefined, t.string]),
   RECURLY_TOKEN: t.union([t.undefined, t.string]),
   TURSO_EVENTDB_SYNC_URL: t.union([t.undefined, t.string]),
   TURSO_GOOGLEDB_SYNC_URL: t.union([t.undefined, t.string]),
@@ -63,6 +64,13 @@ export const loadConfig = (): Config =>
           conf.TURSO_TOKEN !== undefined) ||
         !conf.EVENT_DB_URL.startsWith('libsql'),
       () => 'TURSO_TOKEN is required if EVENT_DB_URL is a libsql url'
+    ),
+    E.filterOrElse(
+      conf =>
+        (conf.GOOGLE_DB_URL.startsWith('libsql') &&
+          conf.TURSO_GOOGLE_DB_TOKEN !== undefined) ||
+        !conf.GOOGLE_DB_URL.startsWith('libsql'),
+      () => 'TURSO_GOOGLE_DB_TOKEN is required if GOOGLE_DB_URL is a libsql url'
     ),
     E.getOrElseW(errors => {
       throw new Error(`Failed to parse configuration from ENV:\n${errors}`);

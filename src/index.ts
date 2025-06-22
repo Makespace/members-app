@@ -29,7 +29,7 @@ const eventDB = libsqlClient.createClient({
 const googleDB = libsqlClient.createClient({
   url: conf.GOOGLE_DB_URL,
   syncUrl: conf.TURSO_GOOGLEDB_SYNC_URL,
-  authToken: conf.TURSO_TOKEN,
+  authToken: conf.TURSO_GOOGLE_DB_TOKEN,
 });
 const deps = initDependencies(eventDB, googleDB, conf);
 const routes = initRoutes(deps, conf);
