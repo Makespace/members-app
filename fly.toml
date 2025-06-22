@@ -37,3 +37,9 @@ path = "/ping"
 [[vm]]
 size = 'shared-cpu-2x'
 memory = '512mb'
+
+[mounts]
+source = "google_db_data"
+destination = "/google_db_data"
+initial_size = "1GB"
+processes = ['app']
