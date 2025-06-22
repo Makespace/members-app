@@ -5,5 +5,5 @@
 
 set -m
 node --import ./instrument.mjs build/src/index.js &
-# node --import ./instrument.mjs build/src/sync-worker/index.js &
+node --import ./instrument.mjs build/src/sync-worker/index.js &
 fg %1
