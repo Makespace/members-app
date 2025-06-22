@@ -8,7 +8,7 @@ import {Logger} from 'pino';
 
 export const storeTrainingSheetRowsRead =
   (
-    db: Client,
+    googleDB: Client,
     logger: Logger
   ): SyncWorkerDependencies['storeTrainingSheetRowsRead'] =>
   data =>
@@ -21,7 +21,7 @@ export const storeTrainingSheetRowsRead =
             logger.info(
               `Writing ${entries.length} rows to sheet_data as a batch, first row: ${inspect(entries[0])}`
             );
-            await db.batch(
+            await googleDB.batch(
               entries.map(entry => ({
                 sql: `INSERT INTO sheet_data(
                       sheet_id, sheet_name, row_index, response_submitted, member_number_provided, email_provided, score, max_score, percentage, cached_at

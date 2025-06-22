@@ -4,23 +4,25 @@ import {SyncWorkerDependencies} from '../dependencies';
 import {pipe} from 'fp-ts/lib/function';
 
 export const clearTroubleTicketCache =
-  (db: Client): SyncWorkerDependencies['clearTroubleTicketCache'] =>
+  (googleDB: Client): SyncWorkerDependencies['clearTroubleTicketCache'] =>
   troubleTicketSheetId =>
     pipe(
       TE.tryCatch(
         () =>
-          db.execute('DELETE FROM trouble_ticket_data WHERE sheet_id = ?', [
-            troubleTicketSheetId,
-          ]),
+          googleDB.execute(
+            'DELETE FROM trouble_ticket_data WHERE sheet_id = ?',
+            [troubleTicketSheetId]
+          ),
         reason =>
           `Failed to delete trouble ticket data for '${troubleTicketSheetId}': ${(reason as Error).message}`
       ),
       TE.flatMap(() =>
         TE.tryCatch(
           () =>
-            db.execute('DELETE FROM sheet_sync_metadata WHERE sheet_id = ?', [
-              troubleTicketSheetId,
-            ]),
+            googleDB.execute(
+              'DELETE FROM sheet_sync_metadata WHERE sheet_id = ?',
+              [troubleTicketSheetId]
+            ),
           reason =>
             `Failed to delete from sheet '${troubleTicketSheetId}' sync metadata: ${(reason as Error).message}`
         )

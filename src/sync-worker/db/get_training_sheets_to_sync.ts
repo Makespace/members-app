@@ -24,10 +24,10 @@ const accumTrainingSheet = (
 };
 
 export const getTrainingSheetsToSync =
-  (db: Client): SyncWorkerDependencies['getTrainingSheetsToSync'] =>
+  (eventDB: Client): SyncWorkerDependencies['getTrainingSheetsToSync'] =>
   () =>
     pipe(
-      getAllEventsByTypes(db)(
+      getAllEventsByTypes(eventDB)(
         'EquipmentTrainingSheetRegistered',
         'EquipmentTrainingSheetRemoved'
       ),

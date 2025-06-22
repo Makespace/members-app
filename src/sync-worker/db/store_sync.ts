@@ -4,12 +4,12 @@ import {SyncWorkerDependencies} from '../dependencies';
 import {pipe} from 'fp-ts/lib/function';
 
 export const storeSync =
-  (db: Client): SyncWorkerDependencies['storeSync'] =>
+  (googleDB: Client): SyncWorkerDependencies['storeSync'] =>
   (sheetId, date) =>
     pipe(
       TE.tryCatch(
         () =>
-          db.execute(
+          googleDB.execute(
             'INSERT INTO sheet_sync_metadata(sheet_id, last_sync) VALUES (?, ?) ON CONFLICT (sheet_id) DO UPDATE SET last_sync=excluded.last_sync',
             [sheetId, date]
           ),

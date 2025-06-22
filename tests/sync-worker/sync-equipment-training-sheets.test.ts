@@ -16,7 +16,7 @@ import {
   METAL_LATHE,
 } from '../data/google_sheet_data';
 import {getRightOrFail, getSomeOrFail} from '../helpers';
-import {ensureDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
+import {ensureGoogleDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
 import {setTimeout} from 'node:timers/promises';
 import {getSheetData} from '../../src/sync-worker/db/get_sheet_data';
@@ -35,25 +35,25 @@ const runSyncEquipmentTrainingSheets = async (
   deps: SyncTrainingSheetDependencies,
   google: GoogleHelpers,
   syncIntervalMs: number,
-  db: Client,
+  eventDB: Client,
   events: ReadonlyArray<
     | EventOfType<'EquipmentTrainingSheetRegistered'>
     | EventOfType<'EquipmentTrainingSheetRemoved'>
   >
 ) => {
-  await pushEvents(db, deps.logger, events);
+  await pushEvents(eventDB, deps.logger, events);
   await syncEquipmentTrainingSheets(deps, google, syncIntervalMs);
 };
 
-const getSheetDataSorted = async (db: Client, sheetId: string) =>
-  RA.sort(byTimestamp)(getRightOrFail(await getSheetData(db)(sheetId)()));
+const getSheetDataSorted = async (googleDB: Client, sheetId: string) =>
+  RA.sort(byTimestamp)(getRightOrFail(await getSheetData(googleDB)(sheetId)()));
 
 const expectSheetDataMatches = async (
-  db: Client,
+  googleDB: Client,
   sheetId: string,
   expectedData: ReadonlyArray<ManualParsedTrainingSheetEntry>
 ) => {
-  const rows = await getSheetDataSorted(db, sheetId);
+  const rows = await getSheetDataSorted(googleDB, sheetId);
   expect(rows).toHaveLength(expectedData.length);
   for (const [actual, expected] of RA.zip(RA.sort(byTimestamp)(expectedData))(
     rows
@@ -72,15 +72,17 @@ const expectSheetDataMatches = async (
 };
 
 describe('Sync equipment training sheets', () => {
-  let db: Client;
+  let googleDB: Client;
+  let eventDB: Client;
   let deps: SyncTrainingSheetDependencies;
   const equipmentId = faker.string.uuid() as UUID;
 
   beforeEach(async () => {
-    db = createClient({url: ':memory:'});
-    deps = createSyncTrainingSheetDependencies(db, testLogger());
-    getRightOrFail(await ensureEventTableExists(db)());
-    await ensureDBTablesExist(db);
+    googleDB = createClient({url: ':memory:'});
+    eventDB = createClient({url: ':memory:'});
+    deps = createSyncTrainingSheetDependencies(googleDB, eventDB, testLogger());
+    getRightOrFail(await ensureEventTableExists(eventDB)());
+    await ensureGoogleDBTablesExist(googleDB)();
   });
 
   describe('empty sheet', () => {
@@ -89,13 +91,17 @@ describe('Sync equipment training sheets', () => {
     let startTime: Date, endTime: Date;
     beforeEach(async () => {
       startTime = new Date();
-      await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
-        generateRegisterSheetEvent(equipmentId, sheetId),
-      ]);
+      await runSyncEquipmentTrainingSheets(
+        deps,
+        google,
+        syncIntervalMs,
+        eventDB,
+        [generateRegisterSheetEvent(equipmentId, sheetId)]
+      );
       endTime = new Date();
     });
     it('produces no rows', () =>
-      expectSheetDataMatches(db, sheetId, EMPTY.entries));
+      expectSheetDataMatches(googleDB, sheetId, EMPTY.entries));
     it('sync recorded', () =>
       expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
     it('no last training sheet row read', async () => {
@@ -107,9 +113,13 @@ describe('Sync equipment training sheets', () => {
       let beforeResync: Date;
       beforeEach(async () => {
         beforeResync = new Date();
-        await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
-          generateRegisterSheetEvent(equipmentId, sheetId),
-        ]);
+        await runSyncEquipmentTrainingSheets(
+          deps,
+          google,
+          syncIntervalMs,
+          eventDB,
+          [generateRegisterSheetEvent(equipmentId, sheetId)]
+        );
       });
 
       it('no sync recorded', async () => {
@@ -127,9 +137,13 @@ describe('Sync equipment training sheets', () => {
       beforeEach(async () => {
         await setTimeout(syncIntervalMs);
         beforeResync = new Date();
-        await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
-          generateRegisterSheetEvent(equipmentId, sheetId),
-        ]);
+        await runSyncEquipmentTrainingSheets(
+          deps,
+          google,
+          syncIntervalMs,
+          eventDB,
+          [generateRegisterSheetEvent(equipmentId, sheetId)]
+        );
       });
 
       it('sync recorded', () =>
@@ -143,13 +157,17 @@ describe('Sync equipment training sheets', () => {
     let startTime: Date, endTime: Date;
     beforeEach(async () => {
       startTime = new Date();
-      await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
-        generateRegisterSheetEvent(equipmentId, sheetId),
-      ]);
+      await runSyncEquipmentTrainingSheets(
+        deps,
+        google,
+        syncIntervalMs,
+        eventDB,
+        [generateRegisterSheetEvent(equipmentId, sheetId)]
+      );
       endTime = new Date();
     });
     it('produces expected rows for a full sync', () =>
-      expectSheetDataMatches(db, sheetId, METAL_LATHE.entries));
+      expectSheetDataMatches(googleDB, sheetId, METAL_LATHE.entries));
     it('sync recorded', () =>
       expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
     it('last training sheet row read points at end of sheet', async () => {
@@ -164,9 +182,13 @@ describe('Sync equipment training sheets', () => {
       let beforeResync: Date;
       beforeEach(async () => {
         beforeResync = new Date();
-        await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
-          generateRegisterSheetEvent(equipmentId, sheetId),
-        ]);
+        await runSyncEquipmentTrainingSheets(
+          deps,
+          google,
+          syncIntervalMs,
+          eventDB,
+          [generateRegisterSheetEvent(equipmentId, sheetId)]
+        );
       });
 
       it('no sync recorded', async () => {
@@ -184,9 +206,13 @@ describe('Sync equipment training sheets', () => {
       beforeEach(async () => {
         await setTimeout(syncIntervalMs);
         beforeResync = new Date();
-        await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
-          generateRegisterSheetEvent(equipmentId, sheetId),
-        ]);
+        await runSyncEquipmentTrainingSheets(
+          deps,
+          google,
+          syncIntervalMs,
+          eventDB,
+          [generateRegisterSheetEvent(equipmentId, sheetId)]
+        );
       });
 
       it('sync recorded', () =>
@@ -209,13 +235,17 @@ describe('Sync equipment training sheets', () => {
     let startTime: Date, endTime: Date;
     beforeEach(async () => {
       startTime = new Date();
-      await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
-        generateRegisterSheetEvent(equipmentId, sheetId),
-      ]);
+      await runSyncEquipmentTrainingSheets(
+        deps,
+        google,
+        syncIntervalMs,
+        eventDB,
+        [generateRegisterSheetEvent(equipmentId, sheetId)]
+      );
       endTime = new Date();
     });
     it('produces expected rows for a full sync', () =>
-      expectSheetDataMatches(db, sheetId, LASER_CUTTER.entries));
+      expectSheetDataMatches(googleDB, sheetId, LASER_CUTTER.entries));
     it('sync recorded', () =>
       expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
     it('last training sheet row read points at end of sheet', async () => {
@@ -234,13 +264,17 @@ describe('Sync equipment training sheets', () => {
     let startTime: Date, endTime: Date;
     beforeEach(async () => {
       startTime = new Date();
-      await runSyncEquipmentTrainingSheets(deps, google, syncIntervalMs, db, [
-        generateRegisterSheetEvent(equipmentId, sheetId),
-      ]);
+      await runSyncEquipmentTrainingSheets(
+        deps,
+        google,
+        syncIntervalMs,
+        eventDB,
+        [generateRegisterSheetEvent(equipmentId, sheetId)]
+      );
       endTime = new Date();
     });
     it('produces expected rows for a full sync', () =>
-      expectSheetDataMatches(db, sheetId, BAMBU.entries));
+      expectSheetDataMatches(googleDB, sheetId, BAMBU.entries));
     it('sync recorded', () =>
       expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
     it('last training sheet row read points at end of sheet', async () => {

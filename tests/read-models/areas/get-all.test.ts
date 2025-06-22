@@ -11,7 +11,7 @@ describe('get-all', () => {
     framework = await initTestFramework();
   });
   afterEach(() => {
-    framework.eventStoreDb.close();
+    framework.close();
   });
 
   describe('when no owners have been added', () => {

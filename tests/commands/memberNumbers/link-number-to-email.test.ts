@@ -31,7 +31,7 @@ describe('linkNumberToEmail', () => {
     );
   });
   afterEach(() => {
-    framework.eventStoreDb.close();
+    framework.close();
   });
 
   const command = {

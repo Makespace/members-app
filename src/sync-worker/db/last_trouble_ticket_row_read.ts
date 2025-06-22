@@ -20,12 +20,12 @@ const LastRowReadTable = t.strict({
 type LastRowReadTable = t.TypeOf<typeof LastRowReadTable>;
 
 export const lastTroubleTicketRowRead =
-  (db: Client): SyncWorkerDependencies['lastTroubleTicketRowRead'] =>
+  (googleDB: Client): SyncWorkerDependencies['lastTroubleTicketRowRead'] =>
   sheetId =>
     pipe(
       TE.tryCatch<string, ResultSet>(
         () =>
-          db.execute(
+          googleDB.execute(
             `
             SELECT sheet_name, MAX(row_index) AS last_row_index
             FROM trouble_ticket_data

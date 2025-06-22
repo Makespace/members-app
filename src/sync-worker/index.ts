@@ -1,5 +1,3 @@
-import {ensureDBTablesExist} from './google/ensure-sheet-data-tables-exist';
-
 import {syncTroubleTickets} from './sync_trouble_ticket';
 import {syncEquipmentTrainingSheets} from './sync_training_sheet';
 import {initDependencies} from './init-dependencies';
@@ -23,7 +21,7 @@ async function run() {
   deps.logger.info(
     'Background sync worker ensuring sheet data tables exist...'
   );
-  await ensureDBTablesExist(deps.db);
+  await deps.ensureGoogleDBTablesExist();
   deps.logger.info('All data tables exist, starting...');
 
   if (O.isSome(deps.google)) {

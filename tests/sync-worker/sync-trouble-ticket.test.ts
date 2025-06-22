@@ -1,6 +1,6 @@
 import {createClient, Client} from '@libsql/client';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
-import {ensureDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
+import {ensureGoogleDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
 import {
   SyncTroubleTicketDependencies,
   syncTroubleTickets,
@@ -22,19 +22,19 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {getTroubleTicketData} from '../../src/sync-worker/db/get_trouble_ticket_data';
 import * as O from 'fp-ts/Option';
 
-const getTroubleTicketDataSorted = async (db: Client, sheetId: string) =>
+const getTroubleTicketDataSorted = async (googleDB: Client, sheetId: string) =>
   RA.sort(byTimestamp)(
     getSomeOrFail(
-      getRightOrFail(await getTroubleTicketData(db, O.some(sheetId))()())
+      getRightOrFail(await getTroubleTicketData(googleDB, O.some(sheetId))()())
     )
   );
 
 const expectTroubleTicketDataMatches = async (
-  db: Client,
+  googleDB: Client,
   sheetId: string,
   expectedData: ReadonlyArray<ManualParsedTroubleTicketEntry>
 ) => {
-  const rows = await getTroubleTicketDataSorted(db, sheetId);
+  const rows = await getTroubleTicketDataSorted(googleDB, sheetId);
   expect(rows).toHaveLength(expectedData.length);
   for (const [actual, expected] of RA.zip(RA.sort(byTimestamp)(expectedData))(
     rows
@@ -54,14 +54,16 @@ const expectTroubleTicketDataMatches = async (
 };
 
 describe('Sync trouble ticket sheets', () => {
-  let db: Client;
+  let googleDB: Client;
+  let eventDB: Client;
   let deps: SyncTroubleTicketDependencies;
 
   beforeEach(async () => {
-    db = createClient({url: ':memory:'});
-    deps = createSyncTroubleTicketDependencies(db);
-    getRightOrFail(await ensureEventTableExists(db)());
-    await ensureDBTablesExist(db);
+    googleDB = createClient({url: ':memory:'});
+    eventDB = createClient({url: ':memory:'});
+    deps = createSyncTroubleTicketDependencies(googleDB);
+    getRightOrFail(await ensureEventTableExists(eventDB)());
+    await ensureGoogleDBTablesExist(googleDB)();
   });
 
   describe('empty sheet', () => {
@@ -74,7 +76,7 @@ describe('Sync trouble ticket sheets', () => {
       endTime = new Date();
     });
     it('produces no rows', () =>
-      expectTroubleTicketDataMatches(db, sheetId, EMPTY.entries));
+      expectTroubleTicketDataMatches(googleDB, sheetId, EMPTY.entries));
     it('sync recorded', () =>
       expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
     it('no last trouble ticket row read', async () => {
@@ -123,7 +125,7 @@ describe('Sync trouble ticket sheets', () => {
     });
     it('produces expected rows for a full sync', () =>
       expectTroubleTicketDataMatches(
-        db,
+        googleDB,
         sheetId,
         TROUBLE_TICKETS_EXAMPLE.entries
       ));

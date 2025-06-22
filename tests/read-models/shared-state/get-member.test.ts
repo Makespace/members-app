@@ -163,7 +163,7 @@ describe('get-via-shared-read-model', () => {
     framework = await initTestFramework();
   });
   afterEach(() => {
-    framework.eventStoreDb.close();
+    framework.close();
   });
 
   const userIsTrainer = (

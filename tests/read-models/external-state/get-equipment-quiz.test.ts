@@ -9,8 +9,6 @@ import {
   FullQuizResults,
   getFullQuizResults,
 } from '../../../src/read-models/external-state/equipment-quiz';
-import {getSheetData} from '../../../src/sync-worker/db/get_sheet_data';
-import {lastSync} from '../../../src/sync-worker/db/last_sync';
 import {storeSync} from '../../../src/sync-worker/db/store_sync';
 import {SheetDataTable} from '../../../src/sync-worker/google/sheet-data-table';
 
@@ -23,8 +21,8 @@ const runGetQuizResults = async (
     await getFullQuizResults(
       {
         sharedReadModel: framework.sharedReadModel,
-        lastQuizSync: lastSync(framework.eventStoreDb),
-        getSheetData: getSheetData(framework.eventStoreDb),
+        lastQuizSync: framework.lastSync,
+        getSheetData: framework.getSheetData,
       },
       trainingSheetId,
       getSomeOrFail(framework.sharedReadModel.equipment.get(equipmentId))
@@ -39,7 +37,7 @@ const populateQuizData = async (
   getRightOrFail(await framework.storeTrainingSheetRowsRead(entries)());
   for (const trainingSheetId of new Set(entries.map(m => m.sheet_id))) {
     getRightOrFail(
-      await storeSync(framework.eventStoreDb)(trainingSheetId, syncDate)()
+      await storeSync(framework.googleDB)(trainingSheetId, syncDate)()
     );
   }
 };
@@ -76,7 +74,7 @@ describe('Get equipment quiz', () => {
     framework = await initTestFramework();
   });
   afterEach(() => {
-    framework.eventStoreDb.close();
+    framework.close();
   });
 
   describe('when equipment has 1 trained member and 1 member awaiting training', () => {

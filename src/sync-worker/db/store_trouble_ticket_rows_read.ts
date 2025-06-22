@@ -6,14 +6,14 @@ import {pipe} from 'fp-ts/lib/function';
 import {inspect} from 'node:util';
 
 export const storeTroubleTicketRowsRead =
-  (db: Client): SyncWorkerDependencies['storeTroubleTicketRowsRead'] =>
+  (googleDB: Client): SyncWorkerDependencies['storeTroubleTicketRowsRead'] =>
   data =>
     pipe(
       data,
       RA.map(entry =>
         TE.tryCatch(
           () =>
-            db.execute(
+            googleDB.execute(
               `INSERT INTO trouble_ticket_data(
                 sheet_id, sheet_name, row_index, response_submitted, cached_at, submitted_email, submitted_equipment, submitted_name, submitted_membership_number, submitted_response_json
             ) VALUES (

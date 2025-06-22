@@ -1,5 +1,6 @@
 import {Client} from '@libsql/client/.';
 import {dbExecute} from '../../util';
+import {SyncWorkerDependencies} from '../dependencies';
 
 // This table contains a copy of all the training sheet data currently in google.
 // It is read only on requests from the frontend so it can be accelerated via read-replicas.
@@ -7,9 +8,9 @@ import {dbExecute} from '../../util';
 // once we needed to do things like cache the sheet data (parsing data is slow and prevents startup before healthcheck failure),
 // do incremental pulls (parsing data is slow), only pull 1 bit of equipment at a time (otherwise it blocks the event loop).
 
-const ensureSheetDataTableExists = (dbClient: Client) =>
+const ensureSheetDataTableExists = (googleDB: Client) =>
   dbExecute(
-    dbClient,
+    googleDB,
     `
         CREATE TABLE IF NOT EXISTS sheet_data (
           sheet_id TEXT,
@@ -27,9 +28,9 @@ const ensureSheetDataTableExists = (dbClient: Client) =>
     {}
   );
 
-const ensureSheetSyncMetadataTableExists = (dbClient: Client) =>
+const ensureSheetSyncMetadataTableExists = (googleDB: Client) =>
   dbExecute(
-    dbClient,
+    googleDB,
     `
         CREATE TABLE IF NOT EXISTS sheet_sync_metadata (
           sheet_id TEXT PRIMARY KEY,
@@ -39,9 +40,9 @@ const ensureSheetSyncMetadataTableExists = (dbClient: Client) =>
     {}
   );
 
-const ensureTroubleTicketDataTableExists = (dbClient: Client) =>
+const ensureTroubleTicketDataTableExists = (googleDB: Client) =>
   dbExecute(
-    dbClient,
+    googleDB,
     `
         CREATE TABLE IF NOT EXISTS trouble_ticket_data (
           sheet_id TEXT,
@@ -59,42 +60,44 @@ const ensureTroubleTicketDataTableExists = (dbClient: Client) =>
     {}
   );
 
-const ensureSheetDataSyncMetadataIndexesExists = (dbClient: Client) =>
+const ensureSheetDataSyncMetadataIndexesExists = (googleDB: Client) =>
   dbExecute(
-    dbClient,
+    googleDB,
     `
     CREATE INDEX IF NOT EXISTS sheet_data_sheet_id_idx ON sheet_data (sheet_id);
     `,
     {}
   );
 
-const ensureSheetSyncMetadataIndexesExists = (dbClient: Client) =>
+const ensureSheetSyncMetadataIndexesExists = (googleDB: Client) =>
   dbExecute(
-    dbClient,
+    googleDB,
     `
     CREATE UNIQUE INDEX IF NOT EXISTS sheet_sync_metadata_sheet_id_idx ON sheet_sync_metadata (sheet_id);
     `,
     {}
   );
 
-const ensureTroubleTicketDataIndexesExists = (dbClient: Client) =>
+const ensureTroubleTicketDataIndexesExists = (googleDB: Client) =>
   dbExecute(
-    dbClient,
+    googleDB,
     `
     CREATE INDEX IF NOT EXISTS trouble_ticket_data_sheet_id_idx ON trouble_ticket_data (sheet_id);
     `,
     {}
   );
 
-export const ensureDBTablesExist = async (dbClient: Client) => {
-  await Promise.all([
-    ensureSheetDataTableExists(dbClient),
-    ensureSheetSyncMetadataTableExists(dbClient),
-    ensureTroubleTicketDataTableExists(dbClient),
-  ]);
-  await Promise.all([
-    ensureSheetDataSyncMetadataIndexesExists(dbClient),
-    ensureSheetSyncMetadataIndexesExists(dbClient),
-    ensureTroubleTicketDataIndexesExists(dbClient),
-  ]);
-};
+export const ensureGoogleDBTablesExist =
+  (googleDB: Client): SyncWorkerDependencies['ensureGoogleDBTablesExist'] =>
+  async () => {
+    await Promise.all([
+      ensureSheetDataTableExists(googleDB),
+      ensureSheetSyncMetadataTableExists(googleDB),
+      ensureTroubleTicketDataTableExists(googleDB),
+    ]);
+    await Promise.all([
+      ensureSheetDataSyncMetadataIndexesExists(googleDB),
+      ensureSheetSyncMetadataIndexesExists(googleDB),
+      ensureTroubleTicketDataIndexesExists(googleDB),
+    ]);
+  };

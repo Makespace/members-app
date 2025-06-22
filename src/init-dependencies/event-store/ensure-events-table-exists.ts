@@ -3,11 +3,11 @@ import * as TE from 'fp-ts/TaskEither';
 import {failure} from '../../types';
 import {dbExecute} from '../../util';
 
-export const ensureEventTableExists = (dbClient: Client) =>
+export const ensureEventTableExists = (eventDB: Client) =>
   TE.tryCatch(
     () =>
       dbExecute(
-        dbClient,
+        eventDB,
         `
         CREATE TABLE IF NOT EXISTS events (
           id TEXT,

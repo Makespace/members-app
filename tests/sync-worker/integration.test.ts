@@ -10,7 +10,7 @@ import {
 import {Client, createClient} from '@libsql/client/.';
 
 import {getRightOrFail, getSomeOrFail} from '../helpers';
-import {ensureDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
+import {ensureGoogleDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
 import {getSheetData} from '../../src/sync-worker/db/get_sheet_data';
 import {createSyncTrainingSheetDependencies, testLogger} from './util';
@@ -24,15 +24,17 @@ const TEST_USER = 1741;
 describe('Google training sheet integration', () => {
   // These tests should be used sparingly because they actually query the real
   // google api for data.
-  let db: Client;
+  let googleDB: Client;
+  let eventDB: Client;
   let deps: SyncTrainingSheetDependencies;
   let google: GoogleHelpers;
 
   beforeEach(async () => {
-    db = createClient({url: ':memory:'});
-    deps = createSyncTrainingSheetDependencies(db, testLogger());
-    getRightOrFail(await ensureEventTableExists(db)());
-    await ensureDBTablesExist(db);
+    googleDB = createClient({url: ':memory:'});
+    eventDB = createClient({url: ':memory:'});
+    deps = createSyncTrainingSheetDependencies(googleDB, eventDB, testLogger());
+    getRightOrFail(await ensureEventTableExists(eventDB)());
+    await ensureGoogleDBTablesExist(googleDB)();
 
     const auth = new GoogleAuth({
       keyFile: CREDENTIALS_PATH,
@@ -47,7 +49,9 @@ describe('Google training sheet integration', () => {
   it.skip('Form 3 Resin Printer', async () => {
     const sheetId = '1rnG8qvYXL5CucsS7swr9ajGYvHndBG1TKIbyG3KioHc';
     await syncTrainingSheet(testLogger(), deps, google, sheetId);
-    const producedData = getRightOrFail(await getSheetData(db)(sheetId)());
+    const producedData = getRightOrFail(
+      await getSheetData(googleDB)(sheetId)()
+    );
     const userEvent = getSomeOrFail(
       pipe(
         producedData,

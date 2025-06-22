@@ -9,14 +9,15 @@ import {SheetSyncMetadataTable} from '../google/sheet-data-table';
 import {formatValidationErrors} from 'io-ts-reporters';
 
 export const lastSync =
-  (db: Client): SyncWorkerDependencies['lastSync'] =>
+  (googleDB: Client): SyncWorkerDependencies['lastSync'] =>
   sheetId =>
     pipe(
       TE.tryCatch(
         () =>
-          db.execute('SELECT * FROM sheet_sync_metadata WHERE sheet_id = ?', [
-            sheetId,
-          ]),
+          googleDB.execute(
+            'SELECT * FROM sheet_sync_metadata WHERE sheet_id = ?',
+            [sheetId]
+          ),
         reason =>
           `Failed to read sheet sync metadata: ${(reason as Error).message}`
       ),

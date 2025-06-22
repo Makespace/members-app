@@ -8,7 +8,6 @@ import {
   TroubleTicketDataTable,
 } from './google/sheet-data-table';
 import {ReadonlyRecord} from 'fp-ts/lib/ReadonlyRecord';
-import {Client} from '@libsql/client';
 import {UUID} from 'io-ts-types';
 
 type SheetName = string;
@@ -19,7 +18,6 @@ export interface SyncWorkerDependencies {
   conf: Config;
   logger: Logger;
   google: O.Option<GoogleHelpers>;
-  db: Client;
   lastSync: (sheetId: string) => TE.TaskEither<string, O.Option<Date>>;
   storeSync: (sheetId: string, date: Date) => TE.TaskEither<string, void>;
   storeTrainingSheetRowsRead: (
@@ -42,4 +40,5 @@ export interface SyncWorkerDependencies {
     string,
     ReadonlyMap<UUID, string>
   >;
+  ensureGoogleDBTablesExist: () => Promise<void>;
 }

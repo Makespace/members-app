@@ -26,7 +26,7 @@ describe('async-refresh', () => {
     refresh = asyncRefresh(framework.eventStoreDb, updateStateSpy);
   });
   afterEach(() => {
-    framework.eventStoreDb.close();
+    framework.close();
   });
 
   it('creates the necessary tables', async () => {

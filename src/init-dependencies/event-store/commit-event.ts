@@ -49,7 +49,7 @@ const insertEventWithOptimisticConcurrencyControl = async (
   event: DomainEvent,
   resource: Resource,
   lastKnownVersion: ResourceVersion,
-  dbClient: Client,
+  eventDB: Client,
   logger: Logger
 ): Promise<'raised-event' | 'last-known-version-out-of-date'> => {
   const newResourceVersion =
@@ -57,7 +57,7 @@ const insertEventWithOptimisticConcurrencyControl = async (
       ? initialVersionNumber
       : lastKnownVersion + 1;
   const result = await dbExecute(
-    dbClient,
+    eventDB,
     insertEventRow,
     constructArgsForNewEventRow(event, resource, newResourceVersion)
   );
@@ -67,7 +67,7 @@ const insertEventWithOptimisticConcurrencyControl = async (
 
 export const commitEvent =
   (
-    dbClient: Client,
+    eventDB: Client,
     logger: Logger,
     refreshReadModel: Dependencies['sharedReadModel']['asyncRefresh']
   ): Dependencies['commitEvent'] =>
@@ -82,7 +82,7 @@ export const commitEvent =
             event,
             resource,
             lastKnownVersion,
-            dbClient,
+            eventDB,
             logger
           ),
         failureWithStatus(

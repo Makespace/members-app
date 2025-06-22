@@ -21,12 +21,17 @@ import {initRoutes} from './routes';
 
 // Dependencies and Config
 const conf = loadConfig();
-const dbClient = libsqlClient.createClient({
+const eventDB = libsqlClient.createClient({
   url: conf.EVENT_DB_URL,
-  syncUrl: conf.TURSO_SYNC_URL,
+  syncUrl: conf.TURSO_EVENTDB_SYNC_URL,
   authToken: conf.TURSO_TOKEN,
 });
-const deps = initDependencies(dbClient, conf);
+const googleDB = libsqlClient.createClient({
+  url: conf.GOOGLE_DB_URL,
+  syncUrl: conf.TURSO_GOOGLEDB_SYNC_URL,
+  authToken: conf.TURSO_TOKEN,
+});
+const deps = initDependencies(eventDB, googleDB, conf);
 const routes = initRoutes(deps, conf);
 
 // Passport Setup
@@ -93,7 +98,7 @@ server.on('close', () => {
 
 void (async () => {
   await pipe(
-    ensureEventTableExists(dbClient),
+    ensureEventTableExists(eventDB),
     TE.mapLeft(e => deps.logger.error(e, 'Failed to start server'))
   )();
 

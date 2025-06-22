@@ -22,7 +22,7 @@ describe('addTrainer', () => {
     );
   });
   afterEach(() => {
-    framework.eventStoreDb.close();
+    framework.close();
   });
 
   const equipmentId = faker.string.uuid() as UUID;

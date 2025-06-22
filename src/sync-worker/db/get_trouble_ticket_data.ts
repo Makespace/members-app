@@ -7,7 +7,7 @@ import {formatValidationErrors} from 'io-ts-reporters';
 import {TroubleTicketDataTable} from '../google/sheet-data-table';
 
 export const getTroubleTicketData =
-  (db: Client, sheetId: O.Option<string>) =>
+  (googleDB: Client, sheetId: O.Option<string>) =>
   (): TE.TaskEither<string, O.Option<TroubleTicketDataTable['rows']>> => {
     if (O.isNone(sheetId)) {
       return TE.right(O.none);
@@ -15,7 +15,7 @@ export const getTroubleTicketData =
     return pipe(
       TE.tryCatch<string, ResultSet>(
         () =>
-          db.execute(
+          googleDB.execute(
             `
                 SELECT *
                 FROM trouble_ticket_data

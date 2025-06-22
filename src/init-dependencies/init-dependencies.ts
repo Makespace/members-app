@@ -45,7 +45,8 @@ export const initLogger = (conf: Config) => {
 };
 
 export const initDependencies = (
-  dbClient: Client,
+  eventDB: Client,
+  googleDB: Client,
   conf: Config
 ): Dependencies => {
   const logger = initLogger(conf);
@@ -63,24 +64,24 @@ export const initDependencies = (
   );
 
   const sharedReadModel = initSharedReadModel(
-    dbClient,
+    eventDB,
     logger,
     O.fromNullable(conf.RECURLY_TOKEN)
   );
 
   const deps: Dependencies = {
-    commitEvent: commitEvent(dbClient, logger, sharedReadModel.asyncRefresh),
-    getAllEvents: getAllEvents(dbClient),
-    getAllEventsByType: getAllEventsByType(dbClient),
-    getResourceEvents: getResourceEvents(dbClient),
+    commitEvent: commitEvent(eventDB, logger, sharedReadModel.asyncRefresh),
+    getAllEvents: getAllEvents(eventDB),
+    getAllEventsByType: getAllEventsByType(eventDB),
+    getResourceEvents: getResourceEvents(eventDB),
     sharedReadModel,
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
     logger,
-    lastQuizSync: lastSync(dbClient),
-    getSheetData: getSheetData(dbClient),
+    lastQuizSync: lastSync(googleDB),
+    getSheetData: getSheetData(googleDB),
     getTroubleTicketData: getTroubleTicketData(
-      dbClient,
+      googleDB,
       O.fromNullable(conf.TROUBLE_TICKET_SHEET)
     ),
     // getPassedQuizResults: getPassedQuizResults(dbClient),
