@@ -14,7 +14,7 @@ describe('get', () => {
     framework = await initTestFramework();
   });
   afterEach(() => {
-    framework.eventStoreDb.close();
+    framework.close();
   });
 
   describe('when equipment has a trainer and trained users', () => {

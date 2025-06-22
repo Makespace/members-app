@@ -19,18 +19,20 @@ import {storeTroubleTicketRowsRead} from './db/store_trouble_ticket_rows_read';
 import {lastTroubleTicketRowRead} from './db/last_trouble_ticket_row_read';
 import {clearTroubleTicketCache} from './db/clear_trouble_ticket_cache';
 import {Logger} from 'pino';
+import {ensureGoogleDBTablesExist} from './google/ensure-sheet-data-tables-exist';
 
-const initDBCommands = (db: Client, logger: Logger) => {
+const initDBCommands = (googleDB: Client, eventDB: Client, logger: Logger) => {
   return {
-    lastSync: lastSync(db),
-    storeSync: storeSync(db),
-    lastTrainingSheetRowRead: lastTrainingSheetRowRead(db),
-    storeTrainingSheetRowsRead: storeTrainingSheetRowsRead(db, logger),
-    clearTrainingSheetCache: clearTrainingSheetCache(db),
-    getTrainingSheetsToSync: getTrainingSheetsToSync(db),
-    storeTroubleTicketRowsRead: storeTroubleTicketRowsRead(db),
-    lastTroubleTicketRowRead: lastTroubleTicketRowRead(db),
-    clearTroubleTicketCache: clearTroubleTicketCache(db),
+    lastSync: lastSync(googleDB),
+    storeSync: storeSync(googleDB),
+    lastTrainingSheetRowRead: lastTrainingSheetRowRead(googleDB),
+    storeTrainingSheetRowsRead: storeTrainingSheetRowsRead(googleDB, logger),
+    clearTrainingSheetCache: clearTrainingSheetCache(googleDB),
+    getTrainingSheetsToSync: getTrainingSheetsToSync(eventDB),
+    storeTroubleTicketRowsRead: storeTroubleTicketRowsRead(googleDB),
+    lastTroubleTicketRowRead: lastTroubleTicketRowRead(googleDB),
+    clearTroubleTicketCache: clearTroubleTicketCache(googleDB),
+    ensureGoogleDBTablesExist: ensureGoogleDBTablesExist(googleDB),
   };
 };
 
@@ -38,9 +40,14 @@ export const initDependencies = (): SyncWorkerDependencies => {
   const conf = loadConfig();
   const logger = initLogger(conf);
   logger.info('Background sync worker starting up...');
-  const db = createClient({
+  const eventDB = createClient({
     url: conf.EVENT_DB_URL,
-    syncUrl: conf.TURSO_SYNC_URL,
+    syncUrl: conf.TURSO_EVENTDB_SYNC_URL,
+    authToken: conf.TURSO_TOKEN,
+  });
+  const googleDB = createClient({
+    url: conf.GOOGLE_DB_URL,
+    syncUrl: conf.TURSO_GOOGLEDB_SYNC_URL,
     authToken: conf.TURSO_TOKEN,
   });
 
@@ -63,7 +70,6 @@ export const initDependencies = (): SyncWorkerDependencies => {
     conf,
     logger,
     google,
-    db,
-    ...initDBCommands(db, logger),
+    ...initDBCommands(googleDB, eventDB, logger),
   };
 };

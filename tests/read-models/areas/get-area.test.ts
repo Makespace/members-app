@@ -14,7 +14,7 @@ describe('get-area', () => {
     framework = await initTestFramework();
   });
   afterEach(() => {
-    framework.eventStoreDb.close();
+    framework.close();
   });
 
   describe('when area exists', () => {

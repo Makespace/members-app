@@ -26,7 +26,7 @@ describe('markMemberTrained', () => {
     );
   });
   afterEach(() => {
-    framework.eventStoreDb.close();
+    framework.close();
   });
 
   [tokenActor(), systemActor()].forEach(actor => {

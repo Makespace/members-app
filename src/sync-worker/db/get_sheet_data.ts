@@ -6,12 +6,12 @@ import {formatValidationErrors} from 'io-ts-reporters';
 import {SheetDataTable} from '../google/sheet-data-table';
 
 export const getSheetData =
-  (db: Client) =>
+  (googleDB: Client) =>
   (sheetId: string): TE.TaskEither<string, SheetDataTable['rows']> =>
     pipe(
       TE.tryCatch<string, ResultSet>(
         () =>
-          db.execute(
+          googleDB.execute(
             `
             SELECT *
             FROM sheet_data

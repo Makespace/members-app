@@ -9,7 +9,7 @@ describe('getFailedImports', () => {
     framework = await initTestFramework();
   });
   afterEach(() => {
-    framework.eventStoreDb.close();
+    framework.close();
   });
 
   describe('when the email is already in use', () => {

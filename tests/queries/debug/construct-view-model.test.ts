@@ -16,7 +16,7 @@ describe('construct-view-model', () => {
     framework = await initTestFramework();
   });
   afterEach(() => {
-    framework.eventStoreDb.close();
+    framework.close();
   });
 
   const unregisteredUser = arbitraryUser();

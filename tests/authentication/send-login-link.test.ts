@@ -21,7 +21,7 @@ describe('send-log-in-link', () => {
   });
 
   afterEach(() => {
-    framework.eventStoreDb.close();
+    framework.close();
   });
 
   const getAllEvents: Dependencies['getAllEvents'] = () => () =>

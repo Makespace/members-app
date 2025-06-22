@@ -20,7 +20,7 @@ describe('isOwner', () => {
     events = await framework.getAllEvents();
   });
   afterEach(() => {
-    framework.eventStoreDb.close();
+    framework.close();
   });
 
   describe('when user is an owner of the area', () => {

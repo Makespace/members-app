@@ -17,11 +17,13 @@ import {EventName, EventOfType} from '../../src/types/domain-event';
 import {Dependencies} from '../../src/dependencies';
 import {applyToResource} from '../../src/commands/apply-command-to-resource';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
-import {ensureDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
+import {ensureGoogleDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
 import {getTroubleTicketData} from '../../src/sync-worker/db/get_trouble_ticket_data';
 import {storeTrainingSheetRowsRead} from '../../src/sync-worker/db/store_training_sheet_rows_read';
 import {storeTroubleTicketRowsRead} from '../../src/sync-worker/db/store_trouble_ticket_rows_read';
 import {SyncWorkerDependencies} from '../../src/sync-worker/dependencies';
+import {lastSync} from '../../src/sync-worker/db/last_sync';
+import {getSheetData} from '../../src/sync-worker/db/get_sheet_data';
 
 const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
 
@@ -50,28 +52,35 @@ export type TestFramework = {
     getResourceEvents: Dependencies['getResourceEvents'];
   };
   eventStoreDb: libsqlClient.Client;
+  googleDB: libsqlClient.Client;
   getTroubleTicketData: Dependencies['getTroubleTicketData'];
   storeTrainingSheetRowsRead: SyncWorkerDependencies['storeTrainingSheetRowsRead'];
   storeTroubleTicketRowsRead: SyncWorkerDependencies['storeTroubleTicketRowsRead'];
+  close: () => void;
+  lastSync: SyncWorkerDependencies['lastSync'];
+  getSheetData: Dependencies['getSheetData'];
 };
 
 export const initTestFramework = async (): Promise<TestFramework> => {
   const logger = createLogger({level: 'silent'});
-  const dbClient = libsqlClient.createClient({
+  const eventDB = libsqlClient.createClient({
     url: ':memory:',
   });
-  const sharedReadModel = initSharedReadModel(dbClient, logger, O.none);
+  const googleDB = libsqlClient.createClient({
+    url: ':memory:',
+  });
+  const sharedReadModel = initSharedReadModel(eventDB, logger, O.none);
   const frameworkCommitEvent = commitEvent(
-    dbClient,
+    eventDB,
     logger,
     sharedReadModel.asyncRefresh
   );
-  getRightOrFail(await ensureEventTableExists(dbClient)());
-  await ensureDBTablesExist(dbClient);
+  getRightOrFail(await ensureEventTableExists(eventDB)());
+  await ensureGoogleDBTablesExist(googleDB)();
   const frameworkGetAllEvents = () =>
-    pipe(getAllEvents(dbClient)(), T.map(getRightOrFail))();
+    pipe(getAllEvents(eventDB)(), T.map(getRightOrFail))();
   const frameworkGetAllEventsByType = <EN extends EventName>(eventType: EN) =>
-    pipe(getAllEventsByType(dbClient)(eventType), T.map(getRightOrFail))();
+    pipe(getAllEventsByType(eventDB)(eventType), T.map(getRightOrFail))();
 
   const frameworkify =
     <T>(command: Command<T>) =>
@@ -80,7 +89,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         applyToResource(
           {
             commitEvent: frameworkCommitEvent,
-            getResourceEvents: getResourceEvents(dbClient),
+            getResourceEvents: getResourceEvents(eventDB),
           },
           command
         )(commandPayload, arbitraryActor())
@@ -91,17 +100,24 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     getAllEvents: frameworkGetAllEvents,
     getAllEventsByType: frameworkGetAllEventsByType,
     getTroubleTicketData: getTroubleTicketData(
-      dbClient,
+      googleDB,
       O.some(TROUBLE_TICKET_SHEET_ID)
     ),
-    storeTrainingSheetRowsRead: storeTrainingSheetRowsRead(dbClient, logger),
-    storeTroubleTicketRowsRead: storeTroubleTicketRowsRead(dbClient),
-    eventStoreDb: dbClient,
+    storeTrainingSheetRowsRead: storeTrainingSheetRowsRead(googleDB, logger),
+    storeTroubleTicketRowsRead: storeTroubleTicketRowsRead(googleDB),
+    eventStoreDb: eventDB,
+    googleDB,
     sharedReadModel,
     depsForApplyToResource: {
       commitEvent: frameworkCommitEvent,
-      getResourceEvents: getResourceEvents(dbClient),
+      getResourceEvents: getResourceEvents(eventDB),
     },
+    close: () => {
+      eventDB.close();
+      googleDB.close();
+    },
+    lastSync: lastSync(googleDB),
+    getSheetData: getSheetData(googleDB),
     commands: {
       area: {
         create: frameworkify(commands.area.create),

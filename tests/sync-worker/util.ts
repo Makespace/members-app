@@ -53,25 +53,26 @@ export const testLogger = () =>
   });
 
 export const createSyncTrainingSheetDependencies = (
-  db: Client,
+  googleDB: Client,
+  eventDB: Client,
   logger: Logger
 ): SyncTrainingSheetDependencies => ({
   logger: testLogger(),
-  getTrainingSheetsToSync: getTrainingSheetsToSync(db),
-  storeSync: storeSync(db),
-  lastSync: lastSync(db),
-  storeTrainingSheetRowsRead: storeTrainingSheetRowsRead(db, logger),
-  lastTrainingSheetRowRead: lastTrainingSheetRowRead(db),
+  getTrainingSheetsToSync: getTrainingSheetsToSync(eventDB),
+  storeSync: storeSync(googleDB),
+  lastSync: lastSync(googleDB),
+  storeTrainingSheetRowsRead: storeTrainingSheetRowsRead(googleDB, logger),
+  lastTrainingSheetRowRead: lastTrainingSheetRowRead(googleDB),
 });
 
 export const createSyncTroubleTicketDependencies = (
-  db: Client
+  googleDB: Client
 ): SyncTroubleTicketDependencies => ({
   logger: testLogger(),
-  storeSync: storeSync(db),
-  lastSync: lastSync(db),
-  storeTroubleTicketRowsRead: storeTroubleTicketRowsRead(db),
-  lastTroubleTicketRowRead: lastTroubleTicketRowRead(db),
+  storeSync: storeSync(googleDB),
+  lastSync: lastSync(googleDB),
+  storeTroubleTicketRowsRead: storeTroubleTicketRowsRead(googleDB),
+  lastTroubleTicketRowRead: lastTroubleTicketRowRead(googleDB),
 });
 
 export const byTimestamp = pipe(
@@ -91,7 +92,7 @@ export const byTimestamp = pipe(
 );
 
 export const pushEvents = async (
-  db: Client,
+  eventDB: Client,
   logger: Logger,
   events: ReadonlyArray<
     | EventOfType<'EquipmentTrainingSheetRegistered'>
@@ -103,9 +104,9 @@ export const pushEvents = async (
     id: '0', // For the purpose of these tests we can just use the same 'equipment' for concurrency control.
   };
   for (const event of events) {
-    await commitEvent(db, logger, () => async () => {})(
+    await commitEvent(eventDB, logger, () => async () => {})(
       resource,
-      getRightOrFail(await getResourceEvents(db)(resource)()).version
+      getRightOrFail(await getResourceEvents(eventDB)(resource)()).version
     )(event)();
   }
 };
