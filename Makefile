@@ -42,7 +42,7 @@ watch-typecheck: node_modules
 	bun tsc --noEmit --watch
 
 clear-containers:
-	docker-compose --file docker-compose.yaml --file docker-compose.dev.yaml down
+	docker-compose --file docker-compose.yaml --file docker-compose.dev.yaml down -v
 
 release: export TAG = latest/$(shell date +%Y%m%d%H%M)
 release:

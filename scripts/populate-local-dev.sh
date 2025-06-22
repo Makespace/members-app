@@ -32,6 +32,7 @@ event 'api/members/create' '{"memberNumber": "7777", "email": "trainer@example.c
 event 'api/members/edit-name' '{"memberNumber": "7777", "name": "Treacle Trainer"}'
 event 'api/members/edit-forms-of-address' '{"memberNumber": "7777", "formsOfAddress": "they/them"}'
 event 'api/equipment/mark-member-trained' '{"equipmentId": "4224ee94-09b0-47d4-ae60-fac46b8ca93e", "memberNumber": "7777"}'
+event 'api/areas/add-owner' '{"areaId": "eeaf7f8b-77a3-429d-ae9d-2f7ade53736e", "memberNumber": "7777"}'
 event 'api/equipment/add-trainer' '{"equipmentId": "4224ee94-09b0-47d4-ae60-fac46b8ca93e", "memberNumber": "7777"}'
 
 # Lucy Lathe (Trained on Lathe)
