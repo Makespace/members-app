@@ -19,6 +19,7 @@ describe('construct-view-model', () => {
   });
 
   const loggedInUser = arbitraryUser();
+  const unregisteredUser = arbitraryUser();
   beforeEach(async () => {
     await framework.commands.memberNumbers.linkNumberToEmail({
       memberNumber: loggedInUser.memberNumber,
@@ -45,6 +46,18 @@ describe('construct-view-model', () => {
   it('fails if the logged in user is not a super user', async () => {
     const result = await pipe(
       loggedInUser,
+      constructViewModel(
+        framework.sharedReadModel,
+        framework.getTroubleTicketData
+      )
+    )();
+
+    expect(result).toStrictEqual(E.left(expect.anything()));
+  });
+
+  it('fails if the user is unknown', async () => {
+    const result = await pipe(
+      unregisteredUser,
       constructViewModel(
         framework.sharedReadModel,
         framework.getTroubleTicketData
