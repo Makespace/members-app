@@ -12,12 +12,15 @@ import {renderMemberNumber} from '../../templates/member-number';
 import * as O from 'fp-ts/Option';
 import {displayDate} from '../../templates/display-date';
 import {DateTime} from 'luxon';
+import {
+  Area,
+  Equipment,
+  Owner,
+} from '../../read-models/shared-state/return-types';
 
-const renderSignedAt = (
-  owner: ViewModel['areas'][number]['owners'][number]
-) => {
-  if (owner.agreementSignedAt !== null) {
-    return pipe(owner.agreementSignedAt, DateTime.fromJSDate, displayDate);
+const renderSignedAt = (owner: Owner) => {
+  if (O.isSome(owner.agreementSigned)) {
+    return pipe(owner.agreementSigned.value, DateTime.fromJSDate, displayDate);
   }
   return html`
     <form action="/send-email/owner-agreement-invite" method="post">
@@ -39,10 +42,7 @@ const renderRemoveOwner = (
   >
 `;
 
-const renderOwnerTable = (
-  areaId: ViewModel['areas'][number]['id'],
-  owners: ViewModel['areas'][number]['owners']
-) =>
+const renderOwnerTable = (areaId: Area['id'], owners: ReadonlyArray<Owner>) =>
   pipe(
     owners,
     RA.map(
@@ -50,7 +50,7 @@ const renderOwnerTable = (
         <tr>
           <td>${renderMemberNumber(owner.memberNumber)}</td>
           <td>${sanitizeString(O.getOrElse(() => '-')(owner.name))}</td>
-          <td>${safe(owner.email)}</td>
+          <td>${safe(owner.emailAddress)}</td>
           <td>${renderSignedAt(owner)}</td>
           <td>${renderRemoveOwner(areaId, owner)}</td>
         </tr>
@@ -77,7 +77,7 @@ const renderOwnerTable = (
     )
   );
 
-const renderEquipment = (equipment: ViewModel['areas'][number]['equipment']) =>
+const renderEquipment = (equipment: ReadonlyArray<Equipment>) =>
   pipe(
     equipment,
     RA.map(
@@ -88,7 +88,7 @@ const renderEquipment = (equipment: ViewModel['areas'][number]['equipment']) =>
     items => html`RED equipment: ${commaHtml(items)}`
   );
 
-const renderArea = (area: ViewModel['areas'][number]) => html`
+const renderArea = (area: Area) => html`
   <article>
     <h2>${sanitizeString(area.name)}</h2>
     <div>${renderEquipment(area.equipment)}</div>

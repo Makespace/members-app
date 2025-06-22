@@ -83,7 +83,11 @@ export type MinimalArea = {
 
 export type Owner = Pick<
   MemberCoreInfo,
-  'memberNumber' | 'name' | 'emailAddress' | 'pastMemberNumbers'
+  | 'memberNumber'
+  | 'name'
+  | 'emailAddress'
+  | 'pastMemberNumbers'
+  | 'agreementSigned'
 > & {
   ownershipRecordedAt: Date;
   markedOwnerBy: O.Option<Actor>;
