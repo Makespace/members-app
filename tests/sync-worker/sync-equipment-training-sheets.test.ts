@@ -46,7 +46,9 @@ const runSyncEquipmentTrainingSheets = async (
 };
 
 const getSheetDataSorted = async (googleDB: Client, sheetId: string) =>
-  RA.sort(byTimestamp)(getRightOrFail(await getSheetData(googleDB)(sheetId)()));
+  RA.sort(byTimestamp)(
+    getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
+  );
 
 const expectSheetDataMatches = async (
   googleDB: Client,

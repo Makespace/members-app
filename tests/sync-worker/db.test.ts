@@ -37,7 +37,9 @@ const expectToBeRight = async <T>(task: TE.TaskEither<T, void>) =>
 const randomTrainingSheetRow = (
   sheetId: string,
   sheetName: string,
-  rowIndex: number
+  rowIndex: number,
+  dateFrom: Date,
+  dateTo: Date
 ): SheetDataTable['rows'][0] => {
   const score = faker.number.int({max: 20});
   const maxScore = 20;
@@ -45,7 +47,7 @@ const randomTrainingSheetRow = (
     sheet_id: sheetId,
     sheet_name: sheetName,
     row_index: rowIndex,
-    response_submitted: faker.date.past(),
+    response_submitted: faker.date.between({from: dateFrom, to: dateTo}),
     member_number_provided: faker.number.int({max: 10000}),
     email_provided: faker.internet.email(),
     score,
@@ -59,7 +61,9 @@ const randomTrainingSheetRows = (
   sheetId: string,
   sheetName: string,
   count: number,
-  startRowIndex: O.Option<number>
+  startRowIndex: O.Option<number>,
+  dateFrom: Date,
+  dateTo: Date
 ): SheetDataTable['rows'] => {
   const res: SheetDataTable['rows'][0][] = [];
   for (
@@ -67,7 +71,9 @@ const randomTrainingSheetRows = (
     rowIndex <= count;
     rowIndex++
   ) {
-    res.push(randomTrainingSheetRow(sheetId, sheetName, rowIndex));
+    res.push(
+      randomTrainingSheetRow(sheetId, sheetName, rowIndex, dateFrom, dateTo)
+    );
   }
   return res;
 };
@@ -135,7 +141,7 @@ describe('Test sync worker db', () => {
       expectToBeRight(clearTroubleTicketCache(googleDB)(sheetId)));
     it('Get sheet data returns nothing', async () =>
       expect(
-        getRightOrFail(await getSheetData(googleDB)(sheetId)())
+        getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
       ).toStrictEqual([]));
     it('Get trouble ticket data returns nothing', async () =>
       expect(
@@ -211,19 +217,25 @@ describe('Test sync worker db', () => {
       sheetId,
       sheetName,
       4,
-      O.none
+      O.none,
+      faker.date.past(),
+      new Date()
     );
     const data1_2: SheetDataTable['rows'] = randomTrainingSheetRows(
       sheetId,
       sheetName,
       13,
-      O.some(data.length + 1) // +1 because we are generating the next set of rows.
+      O.some(data.length + 1), // +1 because we are generating the next set of rows.
+      faker.date.past(),
+      new Date()
     );
     const data2: SheetDataTable['rows'] = randomTrainingSheetRows(
       sheetId2,
       sheetName2,
       7,
-      O.none
+      O.none,
+      faker.date.past(),
+      new Date()
     );
     beforeEach(async () =>
       getRightOrFail(
@@ -241,7 +253,7 @@ describe('Test sync worker db', () => {
     it('Get training ticket data', async () =>
       expect(
         RA.sort(byTimestamp)(
-          getRightOrFail(await getSheetData(googleDB)(sheetId)())
+          getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
         )
       ).toStrictEqual(RA.sort(byTimestamp)(data)));
 
@@ -255,14 +267,14 @@ describe('Test sync worker db', () => {
       it('Get training ticket data for sheet 1 correctly', async () =>
         expect(
           RA.sort(byTimestamp)(
-            getRightOrFail(await getSheetData(googleDB)(sheetId)())
+            getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
           )
         ).toStrictEqual(RA.sort(byTimestamp)(data)));
 
       it('Get training ticket data for sheet 2 correctly', async () =>
         expect(
           RA.sort(byTimestamp)(
-            getRightOrFail(await getSheetData(googleDB)(sheetId2)())
+            getRightOrFail(await getSheetData(googleDB)(sheetId2, O.none)())
           )
         ).toStrictEqual(RA.sort(byTimestamp)(data2)));
 
@@ -273,7 +285,7 @@ describe('Test sync worker db', () => {
 
         it('Get sheet data returns nothing', async () =>
           expect(
-            getRightOrFail(await getSheetData(googleDB)(sheetId)())
+            getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
           ).toStrictEqual([]));
 
         it('Last training sheet row read is none', async () =>
@@ -284,7 +296,7 @@ describe('Test sync worker db', () => {
         it('Data for sheet2 is still present', async () =>
           expect(
             RA.sort(byTimestamp)(
-              getRightOrFail(await getSheetData(googleDB)(sheetId2)())
+              getRightOrFail(await getSheetData(googleDB)(sheetId2, O.none)())
             )
           ).toStrictEqual(RA.sort(byTimestamp)(data2)));
       });
@@ -306,10 +318,58 @@ describe('Test sync worker db', () => {
       it('Sheet data contains all the data', async () =>
         expect(
           RA.sort(byTimestamp)(
-            getRightOrFail(await getSheetData(googleDB)(sheetId)())
+            getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
           )
         ).toStrictEqual(pipe(data, RA.concat(data1_2), RA.sort(byTimestamp))));
     });
+  });
+
+  describe('Store old training sheet rows', () => {
+    const sheetId = faker.string.alphanumeric({length: 12});
+    const sheetName = faker.animal.fish();
+
+    const cutoffPoint = faker.date.past();
+
+    const old_data: SheetDataTable['rows'] = randomTrainingSheetRows(
+      sheetId,
+      sheetName,
+      4,
+      O.none,
+      faker.date.past({refDate: cutoffPoint}),
+      cutoffPoint
+    );
+    const new_data: SheetDataTable['rows'] = randomTrainingSheetRows(
+      sheetId,
+      sheetName,
+      13,
+      O.some(old_data.length + 1), // +1 because we are generating the next set of rows.
+      cutoffPoint,
+      new Date()
+    );
+    beforeEach(async () => {
+      getRightOrFail(
+        await storeTrainingSheetRowsRead(googleDB, testLogger())(old_data)()
+      );
+      getRightOrFail(
+        await storeTrainingSheetRowsRead(googleDB, testLogger())(new_data)()
+      );
+    });
+
+    it('Get only new quiz results', async () =>
+      expect(
+        RA.sort(byTimestamp)(
+          getRightOrFail(
+            await getSheetData(googleDB)(sheetId, O.some(cutoffPoint))()
+          )
+        )
+      ).toStrictEqual(RA.sort(byTimestamp)(new_data)));
+
+    it('Get all quiz results', async () =>
+      expect(
+        RA.sort(byTimestamp)(
+          getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
+        )
+      ).toStrictEqual(RA.sort(byTimestamp)(new_data.concat(old_data))));
   });
 
   describe('Store empty training sheet rows read', () => {

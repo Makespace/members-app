@@ -6,6 +6,7 @@ import {Dependencies} from '../../dependencies';
 import {SheetDataTable} from '../../sync-worker/google/sheet-data-table';
 import {pipe} from 'fp-ts/lib/function';
 import {Equipment, MemberCoreInfo} from '../shared-state/return-types';
+import {DateTime, Duration} from 'luxon';
 
 export type EquipmentQuizResults = {
   passedQuizes: SheetDataTable['rows'];
@@ -54,7 +55,12 @@ const getQuizResults = (
     TE.apS('lastQuizSync', deps.lastQuizSync(sheetId)),
     TE.bind('sheetData', () =>
       deps.getSheetData(
-        sheetId
+        sheetId,
+        O.some(
+          DateTime.now()
+            .minus(Duration.fromObject({year: 1}))
+            .toJSDate()
+        )
         // skip.flatMap(allMemberNumbers),
         // skip.map(m => m.emailAddress)
       )

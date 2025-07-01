@@ -28,7 +28,10 @@ export const constructViewModel =
       if (O.isNone(equipment.trainingSheetId)) {
         continue;
       }
-      const x = await deps.getSheetData(equipment.trainingSheetId.value)();
+      const x = await deps.getSheetData(
+        equipment.trainingSheetId.value,
+        O.none
+      )();
       if (E.isRight(x)) {
         result[equipment.name] = x.right;
       } else {
