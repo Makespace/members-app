@@ -2,9 +2,31 @@ import {syncTroubleTickets} from './sync_trouble_ticket';
 import {syncEquipmentTrainingSheets} from './sync_training_sheet';
 import {initDependencies} from './init-dependencies';
 import * as O from 'fp-ts/Option';
+import {GoogleHelpers} from './google/pull_sheet_data';
+import {setTimeout} from 'node:timers/promises';
+import {SyncWorkerDependencies} from './dependencies';
 
-const EQUIPMENT_SYNC_INTERVAL_MS = 40 * 60 * 1000;
+const EQUIPMENT_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 const TROUBLE_TICKET_SYNC_INTERVAL_MS = 20 * 60 * 1000;
+
+async function syncEquipmentTrainingSheetsPeriodically(
+  deps: SyncWorkerDependencies,
+  google: GoogleHelpers
+) {
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    try {
+      await setTimeout(60_000);
+      await syncEquipmentTrainingSheets(
+        deps,
+        google,
+        EQUIPMENT_SYNC_INTERVAL_MS
+      );
+    } catch (err) {
+      deps.logger.error(err, 'Equipment training sheet error');
+    }
+  }
+}
 
 async function run() {
   const deps = initDependencies();
@@ -26,13 +48,16 @@ async function run() {
 
   if (O.isSome(deps.google)) {
     const google = deps.google.value;
-    setInterval(() => {
-      syncEquipmentTrainingSheets(deps, google, EQUIPMENT_SYNC_INTERVAL_MS)
-        .then(() => deps.logger.info('Equipment training sheet sync complete'))
-        .catch(err =>
-          deps.logger.error(err, 'Equipment training sheet sync error')
-        );
-    }, 60_000);
+    syncEquipmentTrainingSheetsPeriodically(deps, google)
+      .then(() =>
+        deps.logger.info('Equipment training sheet periodic sync stopped')
+      )
+      .catch(err =>
+        deps.logger.error(
+          err,
+          'Equipment training sheet top level error - sync stopped'
+        )
+      );
     const troubleTicketSheet = deps.conf.TROUBLE_TICKET_SHEET;
     if (troubleTicketSheet) {
       setInterval(() => {
