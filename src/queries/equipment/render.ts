@@ -306,7 +306,7 @@ const renderLastRefresh = (lastQuizSync: O.Option<Date>): Html =>
     : html`Last refresh date unknown`;
 
 const trainingQuizResults = (viewModel: ViewModel) => html`
-  <h2>Training Quiz Results</h2>
+  <h2>Training Quiz Results (within the last year)</h2>
   ${renderLastRefresh(
     pipe(
       viewModel.quizResults,
