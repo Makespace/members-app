@@ -87,6 +87,7 @@ export const initRoutes = (
 
     // Temporary location for POC - may move under individual equipments eventually.
     query('/trouble-tickets', queries.troubleTickets),
+    query('/google', queries.logGoogleJson),
     ...authRoutes(deps),
   ];
 };
