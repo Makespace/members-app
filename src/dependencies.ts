@@ -43,7 +43,8 @@ export type Dependencies = {
   sendEmail: (email: Email) => TE.TaskEither<Failure, string>;
   lastQuizSync: (sheetId: string) => TE.TaskEither<string, O.Option<Date>>;
   getSheetData: (
-    sheetId: string
+    sheetId: string,
+    from: O.Option<Date>
   ) => TE.TaskEither<string, SheetDataTable['rows']>;
   getTroubleTicketData: () => TE.TaskEither<
     string,

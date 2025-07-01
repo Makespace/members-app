@@ -17,6 +17,7 @@ import {createSyncTrainingSheetDependencies, testLogger} from './util';
 import {GoogleAuth} from 'google-auth-library';
 import {pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
+import * as O from 'fp-ts/Option';
 
 const CREDENTIALS_PATH = '../test-google/credentials_new.json.ignore';
 const TEST_USER = 1741;
@@ -55,7 +56,7 @@ describe('Google training sheet integration', () => {
     const sheetId = '1rnG8qvYXL5CucsS7swr9ajGYvHndBG1TKIbyG3KioHc';
     await syncTrainingSheet(testLogger(), deps, google, sheetId);
     const producedData = getRightOrFail(
-      await getSheetData(googleDB)(sheetId)()
+      await getSheetData(googleDB)(sheetId, O.none)()
     );
     const userEvent = getSomeOrFail(
       pipe(
