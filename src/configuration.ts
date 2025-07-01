@@ -27,10 +27,6 @@ const Config = t.strict({
   SMTP_TLS: withDefaultIfEmpty(tt.BooleanFromString, true),
   SMTP_USER: t.string,
   TOKEN_SECRET: tt.NonEmptyString,
-  EVENT_DB_URL: withDefaultIfEmpty(
-    t.string,
-    'file:/tmp/makespace-member-app.db'
-  ),
   GOOGLE_DB_URL: withDefaultIfEmpty(
     t.string,
     'file:/google_db_data/makespace-member-app-google.db'
@@ -38,7 +34,7 @@ const Config = t.strict({
   TURSO_TOKEN: t.union([t.undefined, t.string]),
   TURSO_GOOGLE_DB_TOKEN: t.union([t.undefined, t.string]),
   RECURLY_TOKEN: t.union([t.undefined, t.string]),
-  TURSO_EVENTDB_SYNC_URL: t.union([t.undefined, t.string]),
+  TURSO_EVENTDB_SYNC_URL: t.string,
   TURSO_GOOGLEDB_SYNC_URL: t.union([t.undefined, t.string]),
   LOG_LEVEL: withDefaultIfEmpty(LogLevel, 'debug'),
   GOOGLE_RATELIMIT_MS: withDefaultIfEmpty(
@@ -60,10 +56,10 @@ export const loadConfig = (): Config =>
     E.mapLeft(formattedErrors => formattedErrors.join('\n')),
     E.filterOrElse(
       conf =>
-        (conf.EVENT_DB_URL.startsWith('libsql') &&
+        (conf.TURSO_EVENTDB_SYNC_URL.startsWith('libsql') &&
           conf.TURSO_TOKEN !== undefined) ||
-        !conf.EVENT_DB_URL.startsWith('libsql'),
-      () => 'TURSO_TOKEN is required if EVENT_DB_URL is a libsql url'
+        !conf.TURSO_EVENTDB_SYNC_URL.startsWith('libsql'),
+      () => 'TURSO_TOKEN is required if TURSO_EVENTDB_SYNC_URL is a libsql url'
     ),
     // E.filterOrElse(
     //   conf =>

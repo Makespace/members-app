@@ -41,8 +41,7 @@ export const initDependencies = (): SyncWorkerDependencies => {
   const logger = initLogger(conf);
   logger.info('Background sync worker starting up...');
   const eventDB = createClient({
-    url: conf.EVENT_DB_URL,
-    syncUrl: conf.TURSO_EVENTDB_SYNC_URL,
+    url: conf.TURSO_EVENTDB_SYNC_URL,
     authToken: conf.TURSO_TOKEN,
   });
   const googleDB = createClient({

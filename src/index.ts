@@ -22,8 +22,7 @@ import {initRoutes} from './routes';
 // Dependencies and Config
 const conf = loadConfig();
 const eventDB = libsqlClient.createClient({
-  url: conf.EVENT_DB_URL,
-  syncUrl: conf.TURSO_EVENTDB_SYNC_URL,
+  url: conf.TURSO_EVENTDB_SYNC_URL,
   authToken: conf.TURSO_TOKEN,
 });
 const googleDB = libsqlClient.createClient({
