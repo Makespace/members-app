@@ -32,7 +32,7 @@ async function run() {
         .catch(err =>
           deps.logger.error(err, 'Equipment training sheet sync error')
         );
-    }, 20 * 60_000);
+    }, 60_000);
     const troubleTicketSheet = deps.conf.TROUBLE_TICKET_SHEET;
     if (troubleTicketSheet) {
       setInterval(() => {
