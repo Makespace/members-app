@@ -17,7 +17,7 @@ type LastRowRead = ReadonlyRecord<SheetName, RowIndex>;
 export interface SyncWorkerDependencies {
   conf: Config;
   logger: Logger;
-  google: O.Option<GoogleHelpers>;
+  google: GoogleHelpers;
   lastSync: (sheetId: string) => TE.TaskEither<string, O.Option<Date>>;
   storeSync: (sheetId: string, date: Date) => TE.TaskEither<string, void>;
   storeTrainingSheetRowsRead: (

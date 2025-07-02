@@ -42,8 +42,7 @@ const Config = t.strict({
     (30 * 60 * 1000) as t.Int
   ),
   GOOGLE_SERVICE_ACCOUNT_KEY_JSON: tt.NonEmptyString, // Don't default so we don't accidentally disable.
-  LEGACY_TRAINING_COMPLETE_SHEET: t.union([t.undefined, t.string]), // If not provided then don't do legacy import. Will be removed after legacy import working.
-  TROUBLE_TICKET_SHEET: t.union([t.undefined, t.null, t.string]), // If not provided then trouble ticket sync is disabled.
+  TROUBLE_TICKET_SHEET: t.string,
 });
 
 export type Config = t.TypeOf<typeof Config>;
