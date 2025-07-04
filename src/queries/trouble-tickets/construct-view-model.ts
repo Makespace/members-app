@@ -9,6 +9,10 @@ import {pipe} from 'fp-ts/lib/function';
 import {StatusCodes} from 'http-status-codes';
 import {Dependencies} from '../../dependencies';
 import {SharedReadModel} from '../../read-models/shared-state';
+import {DateTime, Duration} from 'luxon';
+import * as O from 'fp-ts/Option';
+
+const TROUBLE_TICKET_DISPLAY_RANGE = Duration.fromObject({month: 6});
 
 export const constructViewModel =
   (
@@ -34,7 +38,11 @@ export const constructViewModel =
       ),
       TE.flatMap(_user =>
         pipe(
-          getTroubleTicketData(),
+          getTroubleTicketData(
+            O.some(
+              DateTime.now().minus(TROUBLE_TICKET_DISPLAY_RANGE).toJSDate()
+            )
+          ),
           TE.mapLeft(msg =>
             failureWithStatus(msg, StatusCodes.INTERNAL_SERVER_ERROR)()
           )
