@@ -46,8 +46,7 @@ export type Dependencies = {
     sheetId: string,
     from: O.Option<Date>
   ) => TE.TaskEither<string, SheetDataTable['rows']>;
-  getTroubleTicketData: () => TE.TaskEither<
-    string,
-    O.Option<TroubleTicketDataTable['rows']>
-  >;
+  getTroubleTicketData: (
+    from: O.Option<Date>
+  ) => TE.TaskEither<string, O.Option<TroubleTicketDataTable['rows']>>;
 };

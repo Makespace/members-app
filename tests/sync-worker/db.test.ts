@@ -81,12 +81,14 @@ const randomTrainingSheetRows = (
 const randomTroubleTicketRow = (
   sheetId: string,
   sheetName: string,
-  rowIndex: number
+  rowIndex: number,
+  dateFrom: Date,
+  dateTo: Date
 ): TroubleTicketDataTable['rows'][0] => ({
   sheet_id: sheetId,
   sheet_name: sheetName,
   row_index: rowIndex,
-  response_submitted: faker.date.past(),
+  response_submitted: faker.date.between({from: dateFrom, to: dateTo}),
   cached_at: new Date(),
   submitted_email: faker.internet.email(),
   submitted_equipment: faker.airline.airplane().name,
@@ -101,7 +103,9 @@ const randomTroubleTicketRows = (
   sheetId: string,
   sheetName: string,
   count: number,
-  startRowIndex: O.Option<number>
+  startRowIndex: O.Option<number>,
+  dateFrom: Date,
+  dateTo: Date
 ): TroubleTicketDataTable['rows'] => {
   const res: TroubleTicketDataTable['rows'][0][] = [];
   for (
@@ -109,7 +113,9 @@ const randomTroubleTicketRows = (
     rowIndex <= count;
     rowIndex++
   ) {
-    res.push(randomTroubleTicketRow(sheetId, sheetName, rowIndex));
+    res.push(
+      randomTroubleTicketRow(sheetId, sheetName, rowIndex, dateFrom, dateTo)
+    );
   }
   return res;
 };
@@ -146,7 +152,7 @@ describe('Test sync worker db', () => {
     it('Get trouble ticket data returns nothing', async () =>
       expect(
         getRightOrFail(
-          await getTroubleTicketData(googleDB, O.some(sheetId))()()
+          await getTroubleTicketData(googleDB, O.some(sheetId))(O.none)()
         )
       ).toStrictEqual(O.some([])));
     it('Get training sheets to sync returns nothing', async () =>
@@ -459,19 +465,25 @@ describe('Test sync worker db', () => {
       sheetId,
       sheetName,
       4,
-      O.none
+      O.none,
+      faker.date.past(),
+      new Date()
     );
     const data1_2: TroubleTicketDataTable['rows'] = randomTroubleTicketRows(
       sheetId,
       sheetName,
       13,
-      O.some(data.length + 1) // +1 because we are generating the next set of rows.
+      O.some(data.length + 1), // +1 because we are generating the next set of rows.
+      faker.date.past(),
+      new Date()
     );
     const data2: TroubleTicketDataTable['rows'] = randomTroubleTicketRows(
       sheetId2,
       sheetName2,
       7,
-      O.none
+      O.none,
+      faker.date.past(),
+      new Date()
     );
     beforeEach(async () =>
       getRightOrFail(await storeTroubleTicketRowsRead(googleDB)(data)())
@@ -489,7 +501,7 @@ describe('Test sync worker db', () => {
         RA.sort(byTimestamp)(
           getSomeOrFail(
             getRightOrFail(
-              await getTroubleTicketData(googleDB, O.some(sheetId))()()
+              await getTroubleTicketData(googleDB, O.some(sheetId))(O.none)()
             )
           )
         )
@@ -505,7 +517,7 @@ describe('Test sync worker db', () => {
           RA.sort(byTimestamp)(
             getSomeOrFail(
               getRightOrFail(
-                await getTroubleTicketData(googleDB, O.some(sheetId))()()
+                await getTroubleTicketData(googleDB, O.some(sheetId))(O.none)()
               )
             )
           )
@@ -516,7 +528,7 @@ describe('Test sync worker db', () => {
           RA.sort(byTimestamp)(
             getSomeOrFail(
               getRightOrFail(
-                await getTroubleTicketData(googleDB, O.some(sheetId2))()()
+                await getTroubleTicketData(googleDB, O.some(sheetId2))(O.none)()
               )
             )
           )
@@ -530,7 +542,7 @@ describe('Test sync worker db', () => {
         it('Get trouble ticket data returns nothing', async () =>
           expect(
             getRightOrFail(
-              await getTroubleTicketData(googleDB, O.some(sheetId))()()
+              await getTroubleTicketData(googleDB, O.some(sheetId))(O.none)()
             )
           ).toStrictEqual(O.some([])));
 
@@ -544,7 +556,10 @@ describe('Test sync worker db', () => {
             RA.sort(byTimestamp)(
               getSomeOrFail(
                 getRightOrFail(
-                  await getTroubleTicketData(googleDB, O.some(sheetId2))()()
+                  await getTroubleTicketData(
+                    googleDB,
+                    O.some(sheetId2)
+                  )(O.none)()
                 )
               )
             )
@@ -568,12 +583,63 @@ describe('Test sync worker db', () => {
           RA.sort(byTimestamp)(
             getSomeOrFail(
               getRightOrFail(
-                await getTroubleTicketData(googleDB, O.some(sheetId))()()
+                await getTroubleTicketData(googleDB, O.some(sheetId))(O.none)()
               )
             )
           )
         ).toStrictEqual(pipe(data, RA.concat(data1_2), RA.sort(byTimestamp))));
     });
+  });
+
+  describe('Store old trouble ticket rows', () => {
+    const sheetId = faker.string.alphanumeric({length: 12});
+    const sheetName = faker.animal.fish();
+    const cutoffPoint = faker.date.past();
+    const old_data: TroubleTicketDataTable['rows'] = randomTroubleTicketRows(
+      sheetId,
+      sheetName,
+      4,
+      O.none,
+      faker.date.past({refDate: cutoffPoint}),
+      cutoffPoint
+    );
+    const new_data: TroubleTicketDataTable['rows'] = randomTroubleTicketRows(
+      sheetId,
+      sheetName,
+      13,
+      O.some(old_data.length + 1), // +1 because we are generating the next set of rows.
+      cutoffPoint,
+      new Date()
+    );
+    beforeEach(async () => {
+      getRightOrFail(await storeTroubleTicketRowsRead(googleDB)(old_data)());
+      getRightOrFail(await storeTroubleTicketRowsRead(googleDB)(new_data)());
+    });
+
+    it('Get only new trouble tickets', async () =>
+      expect(
+        RA.sort(byTimestamp)(
+          getSomeOrFail(
+            getRightOrFail(
+              await getTroubleTicketData(
+                googleDB,
+                O.some(sheetId)
+              )(O.some(cutoffPoint))()
+            )
+          )
+        )
+      ).toStrictEqual(RA.sort(byTimestamp)(new_data)));
+
+    it('Get all trouble tickets', async () =>
+      expect(
+        RA.sort(byTimestamp)(
+          getSomeOrFail(
+            getRightOrFail(
+              await getTroubleTicketData(googleDB, O.some(sheetId))(O.none)()
+            )
+          )
+        )
+      ).toStrictEqual(RA.sort(byTimestamp)(new_data.concat(old_data))));
   });
 
   describe('Store empty trouble ticket rows', () => {

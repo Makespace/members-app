@@ -25,7 +25,9 @@ import * as O from 'fp-ts/Option';
 const getTroubleTicketDataSorted = async (googleDB: Client, sheetId: string) =>
   RA.sort(byTimestamp)(
     getSomeOrFail(
-      getRightOrFail(await getTroubleTicketData(googleDB, O.some(sheetId))()())
+      getRightOrFail(
+        await getTroubleTicketData(googleDB, O.some(sheetId))(O.none)()
+      )
     )
   );
 

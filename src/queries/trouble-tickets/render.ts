@@ -48,7 +48,7 @@ export const render = (viewModel: ViewModel) =>
     O.isSome(viewModel.troubleTicketData)
       ? html`
           <div class="stack">
-            <h1>Trouble tickets</h1>
+            <h1>Trouble tickets (last 6 months)</h1>
             <table>
               <tr>
                 <th>Submitted</th>
