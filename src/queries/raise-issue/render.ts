@@ -104,7 +104,7 @@ export const render = (viewModel: ViewModel) => html`
       </li>
       <li>
         Membership issues, health and safety concerns, lost fobs etc.:
-        <a href="management@makespace.org">management@makespace.org</a>
+        <a href="mailto:management@makespace.org">management@makespace.org</a>
       </li>
     </ul>
   </div>
