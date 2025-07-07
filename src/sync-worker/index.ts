@@ -4,9 +4,11 @@ import {initDependencies} from './init-dependencies';
 import {GoogleHelpers} from './google/pull_sheet_data';
 import {setTimeout} from 'node:timers/promises';
 import {SyncWorkerDependencies} from './dependencies';
+import { trainingSummaryEmail } from './training_summary_email';
 
 const HEARTBEAT_INTERVAL_MS = 5 * 1000;
 const EQUIPMENT_SYNC_CHECK_INTERVAL_MS = 60 * 1000;
+const TRAINING_SUMMARY_EMAIL_CHECK_INTERVAL_MS = 20 * 60 * 1000;
 const EQUIPMENT_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 const TROUBLE_TICKET_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 
@@ -17,6 +19,7 @@ async function syncEquipmentTrainingSheetsPeriodically(
   let lastHeartbeat = Date.now();
   let lastEquipmentSyncCheck = Date.now();
   let lastTroubleTicketCheck = Date.now();
+  let lastTrainingSummaryEmailCheck = Date.now();
   // eslint-disable-next-line no-constant-condition
   while (true) {
     try {
@@ -24,6 +27,8 @@ async function syncEquipmentTrainingSheetsPeriodically(
       const lastHeartbeatAgoMs = now - lastHeartbeat;
       const lastEquipmentSyncCheckAgoMs = now - lastEquipmentSyncCheck;
       const lastTroubleTicketCheckAgoMs = now - lastTroubleTicketCheck;
+      const lastTrainingSummaryEmailCheckAgoMs =
+        now - lastTrainingSummaryEmailCheck;
 
       if (lastHeartbeatAgoMs > HEARTBEAT_INTERVAL_MS) {
         deps.logger.info(
@@ -50,6 +55,16 @@ async function syncEquipmentTrainingSheetsPeriodically(
         );
         lastTroubleTicketCheck = Date.now();
       }
+
+      if (
+        lastTrainingSummaryEmailCheckAgoMs >
+        TRAINING_SUMMARY_EMAIL_CHECK_INTERVAL_MS
+      ) {
+        await deps.sharedReadModel.asyncRefresh()();
+        await trainingSummaryEmail(deps);
+        lastTrainingSummaryEmailCheck = Date.now();
+      }
+
       await setTimeout(1000);
     } catch (err) {
       deps.logger.error(err, 'Equipment training sheet error');
