@@ -18,6 +18,11 @@ import {lastTroubleTicketRowRead} from './db/last_trouble_ticket_row_read';
 import {clearTroubleTicketCache} from './db/clear_trouble_ticket_cache';
 import {Logger} from 'pino';
 import {ensureGoogleDBTablesExist} from './google/ensure-sheet-data-tables-exist';
+import {sendEmail} from '../init-dependencies/send-email';
+import nodemailer from 'nodemailer';
+import smtp from 'nodemailer-smtp-transport';
+import {initSharedReadModel} from '../read-models/shared-state';
+import * as O from 'fp-ts/Option';
 
 const initDBCommands = (googleDB: Client, eventDB: Client, logger: Logger) => {
   return {
@@ -58,10 +63,38 @@ export const initDependencies = (): SyncWorkerDependencies => {
     pullGoogleSheetData: pullGoogleSheetData(googleAuth),
     pullGoogleSheetDataMetadata: pullGoogleSheetDataMetadata(googleAuth),
   };
+
+  logger.info(
+    'Setting up background SMTP connection for emails to %s:%s (TLS %s)',
+    conf.SMTP_HOST,
+    conf.SMTP_PORT,
+    conf.SMTP_TLS
+  );
+
+  const emailTransporter = nodemailer.createTransport(
+    smtp({
+      host: conf.SMTP_HOST,
+      port: conf.SMTP_PORT,
+      auth: {
+        user: conf.SMTP_USER,
+        pass: conf.SMTP_PASSWORD,
+      },
+      requireTLS: conf.SMTP_TLS,
+    })
+  );
+
+  const sharedReadModel = initSharedReadModel(
+    eventDB,
+    logger,
+    O.fromNullable(conf.RECURLY_TOKEN)
+  );
+
   return {
     conf,
     logger,
     google,
+    sharedReadModel,
+    sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
     ...initDBCommands(googleDB, eventDB, logger),
   };
 };

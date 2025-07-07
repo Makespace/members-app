@@ -45,6 +45,9 @@ export type SharedReadModel = {
   debug: {
     dump: () => SharedDatabaseDump;
   };
+  trainingStats: {
+    lastSummarySent: (memberNumber: number) => O.Option<Date>;
+  };
 };
 
 export const initSharedReadModel = (
