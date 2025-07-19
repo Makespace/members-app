@@ -1,6 +1,8 @@
 import * as O from 'fp-ts/Option';
-import {Actor, EmailAddress, GravatarHash} from '../../types';
+import {Actor, EmailAddress, GravatarHash, ResourceVersion} from '../../types';
 import {UUID} from 'io-ts-types';
+import {Resource} from '../../types/resource';
+import {DateTime} from 'luxon';
 
 export type TrainedMember = Pick<
   MemberCoreInfo,
@@ -96,4 +98,16 @@ export type Owner = Pick<
 export type Area = MinimalArea & {
   owners: ReadonlyArray<Owner>;
   equipment: ReadonlyArray<Equipment>;
+};
+
+export interface LastSummarySyncResource extends Resource {
+  type: 'LastTrainingSummaryEmail';
+}
+
+export type TrainingStatsNotificationSettings = {
+  lastEmailSent: O.Option<DateTime>;
+  resource: {
+    res: LastSummarySyncResource;
+    version: ResourceVersion;
+  };
 };
