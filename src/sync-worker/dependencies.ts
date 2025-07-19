@@ -12,6 +12,7 @@ import {UUID} from 'io-ts-types';
 import {DomainEvent, Email, Failure, ResourceVersion} from '../types';
 import {SharedReadModel} from '../read-models/shared-state';
 import {Resource} from '../types/resource';
+import {Dependencies} from '../dependencies';
 
 type SheetName = string;
 type RowIndex = number;
@@ -50,4 +51,6 @@ export interface SyncWorkerDependencies {
     lastKnownVersion: ResourceVersion
   ) => (event: DomainEvent) => TE.TaskEither<string, void>;
   sendEmail: (email: Email) => TE.TaskEither<Failure, string>;
+  lastQuizSync: Dependencies['lastQuizSync'];
+  getSheetData: Dependencies['getSheetData'];
 }

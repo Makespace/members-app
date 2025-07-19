@@ -4,7 +4,7 @@ import {initDependencies} from './init-dependencies';
 import {GoogleHelpers} from './google/pull_sheet_data';
 import {setTimeout} from 'node:timers/promises';
 import {SyncWorkerDependencies} from './dependencies';
-import { trainingSummaryEmail } from './training_summary_email';
+import {trainingSummaryEmail} from './training_summary_email';
 
 const HEARTBEAT_INTERVAL_MS = 5 * 1000;
 const EQUIPMENT_SYNC_CHECK_INTERVAL_MS = 60 * 1000;
@@ -61,8 +61,8 @@ async function syncEquipmentTrainingSheetsPeriodically(
         TRAINING_SUMMARY_EMAIL_CHECK_INTERVAL_MS
       ) {
         await deps.sharedReadModel.asyncRefresh()();
-        await trainingSummaryEmail(deps);
         lastTrainingSummaryEmailCheck = Date.now();
+        await trainingSummaryEmail(deps);
       }
 
       await setTimeout(1000);
