@@ -17,6 +17,7 @@ export const membersTable = sqliteTable('members', {
   superUserSince: integer('superUserSince', {mode: 'timestamp_ms'}),
   agreementSigned: integer('agreementSigned', {mode: 'timestamp_ms'}),
   status: text('status').notNull(),
+  joined: integer('joined', {mode: 'timestamp_ms'}).notNull(),
 });
 
 const createMembersTable = sql`
@@ -30,7 +31,8 @@ const createMembersTable = sql`
     isSuperUser INTEGER,
     superUserSince INTEGER,
     agreementSigned INTEGER,
-    status TEXT
+    status TEXT,
+    joined INTEGER
   );`;
 
 export const equipmentTable = sqliteTable('equipment', {

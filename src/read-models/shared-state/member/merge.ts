@@ -33,6 +33,13 @@ export const mergeMemberCore = (
       return prev;
     }, O.none);
   const memberNumber = Math.max(...memberNumbers);
+  const latestJoin = records
+    .map(m => m.joined)
+    .reduce(
+      (latest, current) =>
+        current.getTime() > latest.getTime() ? current : latest,
+      records[0].joined
+    );
   return {
     memberNumber,
     pastMemberNumbers: pipe(
@@ -50,5 +57,6 @@ export const mergeMemberCore = (
     superUserSince,
     gravatarHash: records[0].gravatarHash,
     status: records[0].status,
+    joined: latestJoin,
   };
 };

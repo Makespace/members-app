@@ -64,6 +64,7 @@ export type MemberCoreInfo = {
   superUserSince: O.Option<Date>;
   gravatarHash: GravatarHash;
   status: string;
+  joined: Date;
 };
 
 export const allMemberNumbers = (

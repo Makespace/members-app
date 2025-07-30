@@ -49,6 +49,7 @@ type EquipmentTrainingStats = {
 type EmailContent = {
   trainingStatsPerEquipment: ReadonlyArray<EquipmentTrainingStats>;
   totalActiveMembers: number;
+  membersJoinedWithin30Days: number;
 };
 
 const byName = pipe(
@@ -112,6 +113,11 @@ const gatherEmailContent = async (
     (total, member) => (member.status === 'active' ? total + 1 : total),
     0
   );
+  const cutoff30Days =
+    new Date().getTime() - Duration.fromObject({days: 30}).as('milliseconds');
+  const membersJoinedWithin30Days = members.filter(
+    member => member.joined.getTime() > cutoff30Days
+  ).length;
   for (const equipment of deps.sharedReadModel.equipment.getAll()) {
     // Sequential gather as we can afford to be slower.
     result.push(
@@ -121,6 +127,7 @@ const gatherEmailContent = async (
   return {
     trainingStatsPerEquipment: RA.sortBy([byName])(result),
     totalActiveMembers,
+    membersJoinedWithin30Days,
   };
 };
 
@@ -133,15 +140,7 @@ export const generateTrainingSummaryEmail = (
   text: `
       Hi,
 
-      Here are the latest training stats for makespace:
-
-      ${content.trainingStatsPerEquipment
-        .map(
-          stats =>
-            `${stats.name}: Waiting for training: ${O.getOrElse<string | number>(() => 'unknown')(stats.awaitingTraining)} Trained in last 30 days: ${stats.trainedLast30Days} Trained total: ${stats.trainedTotal} Registered Trainers: ${stats.trainerCount}`
-        )
-        .join('\n')}
-    
+      Here are the latest training stats for makespace.
       Thank you for voluneering to be an owner at makespace!
     `,
   html: mjml2html(`
@@ -149,38 +148,45 @@ export const generateTrainingSummaryEmail = (
   <mj-body width="800px">
     <mj-section background-color="#fa990e">
       <mj-column>
-        <mj-text align="center" color="#111" font-size="40px">MakeSpace</mj-text>
-        <mj-text font-style="italic" align="center" color="#111" font-size="30px">Member App</mj-text>
+        <mj-text align="center" color="#111" font-size="40px">MakeSpace Training Update</mj-text>
       </mj-column>
     </mj-section>
     <mj-section>
-      <mj-column width="400px">
-        Hi,
-        Here are the latest training stats for makespace. Thank you for voluneering to be an owner at makespace!
-
-        You are receiving this email because you opted in - contact 'database-owners@makespace.org' if you would like to opt out.
-
-        Current members: ${content.totalActiveMembers}
+      <mj-column width="800px">
+        <mj-text align="left" color="#111" font-size="12px">
+          Hi,
+        </mj-text>
+        <mj-text align="left" color="#111" font-size="12px">
+          Here are the latest training stats for makespace. Thank you for voluneering to be an owner at makespace!
+        </mj-text>
+        <mj-text align="left" color="#111" font-size="12px">
+          You are receiving this email because you opted in - contact 'database-owners@makespace.org' if you would like to opt out.
+        </mj-text>
+        <mj-text align="left" color="#111" font-size="12px">
+          Current members: ${content.totalActiveMembers} (+${content.membersJoinedWithin30Days} in last 30 days)
+        </mj-text>
 
         <mj-table>
           <tr style="border-bottom:1px solid #ecedee;text-align:left;padding:15px 0;">
-            <th style="padding: 0 15px 0 0;">Equipment</th>
-            <th style="padding: 0 15px;">Waiting for Training</th>
-            <th style="padding: 0 0 0 15px;">Trained in last 30 days</th>
-            <th style="padding: 0 0 0 15px;">Trained total</th>
-            <th style="padding: 0 0 0 15px;">% of membership trained</th>
-            <th style="padding: 0 0 0 15px;">Quick Link</th>
+            <th style="padding: 0 0 0 0">Equipment</th>
+            <th style="padding: 0 0 0 0">Waiting for Training</th>
+            <th style="padding: 0 0 0 0">Trained in last 30 days</th>
+            <th style="padding: 0 0 0 0">Trained total</th>
+            <th style="padding: 0 0 0 0">% of membership trained</th>
+            <th style="padding: 0 0 0 0">Quick Link</th>
           </tr>
           ${content.trainingStatsPerEquipment
             .map(
               stats =>
                 `
+              <tr>
                 <th>${stats.name}</th>
                 <th>${O.getOrElse<string | number>(() => '-')(stats.awaitingTraining)}</th>
                 <th>${stats.trainedLast30Days}</th>
                 <th>${stats.trainedTotal}</th>
                 <th>${stats.percentageOfActiveMembershipTrained}%</th>
                 <th><a href="${stats.equipmentLink.href}">Link</a></th>
+              </tr>
               `
             )
             .join('\n')}
