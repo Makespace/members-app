@@ -91,7 +91,7 @@ const gatherEmailContentForEquipment =
       trainedTotal: equipment.trainedMembers.length,
       trainedLast30Days: equipment.trainedMembers.filter(
         member =>
-          DateTime.fromJSDate(member.trainedSince).diffNow() <
+          DateTime.fromJSDate(member.trainedSince).diffNow().negate() <
           Duration.fromObject({days: 30})
       ).length,
       equipmentLink,
