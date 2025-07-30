@@ -11,7 +11,6 @@ const EQUIPMENT_SYNC_CHECK_INTERVAL_MS = 60 * 1000;
 const TRAINING_SUMMARY_EMAIL_CHECK_INTERVAL_MS = 20 * 60 * 1000;
 const EQUIPMENT_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 const TROUBLE_TICKET_SYNC_INTERVAL_MS = 20 * 60 * 1000;
-const RESYNC_INTERVAL_MS = 20 * 60 * 1000;
 
 async function syncEquipmentTrainingSheetsPeriodically(
   deps: SyncWorkerDependencies,
@@ -21,7 +20,6 @@ async function syncEquipmentTrainingSheetsPeriodically(
   let lastEquipmentSyncCheck = Date.now();
   let lastTroubleTicketCheck = Date.now();
   let lastTrainingSummaryEmailCheck = Date.now();
-  let lastResync = Date.now();
   // eslint-disable-next-line no-constant-condition
   while (true) {
     try {
@@ -31,11 +29,10 @@ async function syncEquipmentTrainingSheetsPeriodically(
       const lastTroubleTicketCheckAgoMs = now - lastTroubleTicketCheck;
       const lastTrainingSummaryEmailCheckAgoMs =
         now - lastTrainingSummaryEmailCheck;
-      const lastResyncAgoMs = now - lastResync;
 
       if (lastHeartbeatAgoMs > HEARTBEAT_INTERVAL_MS) {
         deps.logger.info(
-          `Last Heartbeat ${lastHeartbeatAgoMs}ms ago, Last Sync ${lastEquipmentSyncCheckAgoMs}ms ago, Last Trouble Ticket ${lastTroubleTicketCheckAgoMs}ms ago, Last Resync ${lastResyncAgoMs}ms ago, Last Training Summary Email Check ${lastTrainingSummaryEmailCheckAgoMs}ms ago`
+          `Last Heartbeat ${lastHeartbeatAgoMs}ms ago, Last Sync ${lastEquipmentSyncCheckAgoMs}ms ago, Last Trouble Ticket ${lastTroubleTicketCheckAgoMs}ms ago, Last Training Summary Email Check ${lastTrainingSummaryEmailCheckAgoMs}ms ago`
         );
         lastHeartbeat = Date.now();
       }
@@ -59,18 +56,14 @@ async function syncEquipmentTrainingSheetsPeriodically(
         lastTroubleTicketCheck = Date.now();
       }
 
-      if (lastResyncAgoMs > RESYNC_INTERVAL_MS) {
-        // The background sync worker is expected to always be looking at slightly stale data.
-        // If you need up to date data then use the events directly.
-        await deps.sharedReadModel.asyncApplyExternalEventSources()();
-        await deps.sharedReadModel.asyncRefresh()();
-        lastResync = Date.now();
-      }
-
       if (
         lastTrainingSummaryEmailCheckAgoMs >
         TRAINING_SUMMARY_EMAIL_CHECK_INTERVAL_MS
       ) {
+        // The background sync worker is expected to always be looking at slightly stale data.
+        // If you need up to date data then use the events directly.
+        await deps.sharedReadModel.asyncApplyExternalEventSources()();
+        await deps.sharedReadModel.asyncRefresh()();
         await trainingSummaryEmail(deps);
         lastTrainingSummaryEmailCheck = Date.now();
       }
