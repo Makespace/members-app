@@ -19,8 +19,7 @@ import {readModels} from '../read-models';
 const TRAINING_SUMMARY_EMAIL_ALLOWLIST: number[] = [1741];
 const TRAINING_SUMMARY_EMAIL_INTERVAL: Duration = Duration.fromObject({
   // week: 1,
-  // minutes: 30, // Temp for testing.
-  minutes: 1,
+  minutes: 30, // Temp for testing.
 });
 
 type TrainingSummaryDeps = Pick<
@@ -131,7 +130,7 @@ const gatherEmailContent = async (
   };
 };
 
-export const generateTrainingSummaryEmail = (
+const generateTrainingSummaryEmail = (
   emailAddress: EmailAddress,
   content: EmailContent
 ): Email => ({
