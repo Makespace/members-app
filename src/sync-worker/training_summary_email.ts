@@ -18,7 +18,8 @@ import {readModels} from '../read-models';
 // const TRAINING_SUMMARY_EMAIL_ALLOWLIST: number[] = [1741, 131, 1698, 1725];
 const TRAINING_SUMMARY_EMAIL_ALLOWLIST: number[] = [1741];
 const TRAINING_SUMMARY_EMAIL_INTERVAL: Duration = Duration.fromObject({
-  week: 1,
+  // week: 1,
+  minutes: 30, // Temp for testing.
 });
 
 type TrainingSummaryDeps = Pick<
