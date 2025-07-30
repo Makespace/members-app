@@ -17,6 +17,7 @@ export const membersTable = sqliteTable('members', {
   superUserSince: integer('superUserSince', {mode: 'timestamp_ms'}),
   agreementSigned: integer('agreementSigned', {mode: 'timestamp_ms'}),
   status: text('status').notNull(),
+  joined: integer('joined', {mode: 'timestamp_ms'}).notNull(),
 });
 
 const createMembersTable = sql`
@@ -30,7 +31,8 @@ const createMembersTable = sql`
     isSuperUser INTEGER,
     superUserSince INTEGER,
     agreementSigned INTEGER,
-    status TEXT
+    status TEXT,
+    joined INTEGER
   );`;
 
 export const equipmentTable = sqliteTable('equipment', {
@@ -131,6 +133,23 @@ const createOwnersTable = sql`
   )
 `;
 
+export const trainingStatsNotificationTable = sqliteTable(
+  'trainingStatsNotificationTable',
+  {
+    memberNumber: integer('memberNumber')
+      .notNull()
+      .references(() => membersTable.memberNumber),
+    lastEmailSent: integer('lastEmailSent', {mode: 'timestamp'}),
+  }
+);
+
+const createTrainingStatsNotificationTable = sql`
+  CREATE TABLE IF NOT EXISTS trainingStatsNotificationTable (
+    memberNumber INTEGER PRIMARY KEY,
+    lastEmailSent INTEGER
+  )
+`;
+
 export const createTables = [
   createMembersTable,
   createEquipmentTable,
@@ -138,4 +157,5 @@ export const createTables = [
   createTrainedMembersTable,
   createAreasTable,
   createOwnersTable,
+  createTrainingStatsNotificationTable,
 ];
