@@ -42,6 +42,7 @@ export const updateState =
             agreementSigned: undefined,
             superUserSince: undefined,
             status: 'inactive',
+            joined: event.recordedAt,
           })
           .run();
         break;
