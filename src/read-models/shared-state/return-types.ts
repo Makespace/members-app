@@ -1,5 +1,5 @@
 import * as O from 'fp-ts/Option';
-import {Actor, EmailAddress, GravatarHash, ResourceVersion} from '../../types';
+import {Actor, EmailAddress, GravatarHash} from '../../types';
 import {UUID} from 'io-ts-types';
 import {Resource} from '../../types/resource';
 import {DateTime} from 'luxon';
@@ -106,8 +106,4 @@ export interface LastSummarySyncResource extends Resource {
 
 export type TrainingStatsNotificationSettings = {
   lastEmailSent: O.Option<DateTime>;
-  resource: {
-    res: LastSummarySyncResource;
-    version: ResourceVersion;
-  };
 };

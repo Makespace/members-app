@@ -12,6 +12,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {contramap} from 'fp-ts/lib/Ord';
 import {Config} from '../configuration';
 import {SyncWorkerDependencies} from './dependencies';
+import {readModels} from '../read-models';
 
 // Temporary
 // const TRAINING_SUMMARY_EMAIL_ALLOWLIST: number[] = [1741, 131, 1698, 1725];
@@ -28,6 +29,7 @@ type TrainingSummaryDeps = Pick<
   | 'commitEvent'
   | 'lastQuizSync'
   | 'getSheetData'
+  | 'getResourceEvents'
 > & {
   conf: Config;
 };
@@ -158,25 +160,34 @@ const decideOwnersToEmail =
   (deps: TrainingSummaryDeps) =>
   async (allOwners: ReadonlyArray<Owner>): Promise<ReadonlyArray<Owner>> => {
     // Decides owners to email based on when we last sent an email.
-    // Also includes a concurrency check to make sure we have the latest information on when the last email was sent.
     const ownersToEmail = [];
     for (const owner of allOwners) {
       if (!TRAINING_SUMMARY_EMAIL_ALLOWLIST.includes(owner.memberNumber)) {
         continue;
       }
-      const notifSettings =
-        deps.sharedReadModel.trainingStats.getNotificationSettings(
-          owner.memberNumber
+      // TODO - Make this more efficient by avoiding as many db calls.
+      const lastEmailSent =
+        await readModels.trainingStatNotifications.getLastNotificationSent(
+          deps
+        )(owner.memberNumber)();
+      if (E.isLeft(lastEmailSent)) {
+        deps.logger.error(
+          "Failed to get last notification sent for owner %s - skipping: '%s'",
+          owner.memberNumber,
+          lastEmailSent.left.message
         );
+        continue;
+      }
+
       if (
-        O.isSome(notifSettings.lastEmailSent) &&
-        notifSettings.lastEmailSent.value.diffNow() <
+        O.isSome(lastEmailSent.right.lastNotification) &&
+        lastEmailSent.right.lastNotification.value.diffNow() <
           TRAINING_SUMMARY_EMAIL_INTERVAL
       ) {
         deps.logger.info(
           'Checked for training summary sync for %s - last sync %s was recent - skipping.',
           owner.memberNumber,
-          notifSettings.lastEmailSent.value.toISO()
+          lastEmailSent.right.lastNotification.value.toISO()
         );
         continue;
       }
@@ -184,10 +195,10 @@ const decideOwnersToEmail =
       // Initial simple version - we mark the email as sent before we send it. If this fails
       // (perhaps because something else sent an email in the meantime) we don't send the email.
       const emailSentEventResp = await deps.commitEvent(
-        notifSettings.resource.res,
-        notifSettings.resource.version
+        lastEmailSent.right.resource,
+        lastEmailSent.right.resourceVersion
       )(
-        constructEvent('TrainerTrainingSummarySent')({
+        constructEvent('TrainingStatNotificationSent')({
           actor: {
             tag: 'system',
           },

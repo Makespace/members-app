@@ -173,10 +173,13 @@ const MemberRejoinedWithExistingNumber = defineEvent(
   }
 );
 
-const TrainerTrainingSummarySent = defineEvent('TrainerTrainingSummarySent', {
-  toMemberNumber: t.number,
-  toMemberEmail: t.string,
-});
+const TrainingStatNotificationSent = defineEvent(
+  'TrainingStatNotificationSent',
+  {
+    toMemberNumber: t.number,
+    toMemberEmail: t.string,
+  }
+);
 
 export const events = [
   AreaCreated,
@@ -204,7 +207,7 @@ export const events = [
   RecurlySubscriptionUpdated,
   MemberRejoinedWithNewNumber,
   MemberRejoinedWithExistingNumber,
-  TrainerTrainingSummarySent,
+  TrainingStatNotificationSent,
 ];
 
 export const DomainEvent = t.union([
@@ -233,7 +236,7 @@ export const DomainEvent = t.union([
   RecurlySubscriptionUpdated.codec,
   MemberRejoinedWithNewNumber.codec,
   MemberRejoinedWithExistingNumber.codec,
-  TrainerTrainingSummarySent.codec,
+  TrainingStatNotificationSent.codec,
 ]);
 
 export type DomainEvent = t.TypeOf<typeof DomainEvent>;
@@ -258,7 +261,7 @@ export const filterByName =
     pipe(
       events,
       RA.filter(({type}) => names.includes(type)),
-      RA.map(filtered => filtered as SubsetOfDomainEvent<T>)
+      RA.map(filtered => filtered)
     );
 
 type EventBase<T> = {type: T; actor: Actor; recordedAt: Date};
