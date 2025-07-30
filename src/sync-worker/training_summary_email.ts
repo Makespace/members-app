@@ -19,7 +19,8 @@ import {readModels} from '../read-models';
 const TRAINING_SUMMARY_EMAIL_ALLOWLIST: number[] = [1741];
 const TRAINING_SUMMARY_EMAIL_INTERVAL: Duration = Duration.fromObject({
   // week: 1,
-  minutes: 30, // Temp for testing.
+  // minutes: 30, // Temp for testing.
+  minutes: 1,
 });
 
 type TrainingSummaryDeps = Pick<
@@ -42,10 +43,12 @@ type EquipmentTrainingStats = {
   trainedLast30Days: number;
   equipmentLink: URL;
   trainerCount: number;
+  percentageOfActiveMembershipTrained: number;
 };
 
 type EmailContent = {
   trainingStatsPerEquipment: ReadonlyArray<EquipmentTrainingStats>;
+  totalActiveMembers: number;
 };
 
 const byName = pipe(
@@ -58,7 +61,10 @@ const createEquipmentLink = (publicUrl: string, equipment: Equipment) =>
 
 const gatherEmailContentForEquipment =
   (deps: TrainingSummaryDeps) =>
-  async (equipment: Equipment): Promise<EquipmentTrainingStats> => {
+  async (
+    equipment: Equipment,
+    totalActiveMembers: number
+  ): Promise<EquipmentTrainingStats> => {
     const qzResults = O.isNone(equipment.trainingSheetId)
       ? E.left('No training sheet registered')
       : await getFullQuizResults(
@@ -90,6 +96,10 @@ const gatherEmailContentForEquipment =
       ).length,
       equipmentLink,
       trainerCount: equipment.trainers.length,
+      percentageOfActiveMembershipTrained:
+        totalActiveMembers > 0
+          ? Math.round(equipment.trainedMembers.length / totalActiveMembers)
+          : 0,
     };
   };
 
@@ -97,16 +107,24 @@ const gatherEmailContent = async (
   deps: TrainingSummaryDeps
 ): Promise<EmailContent> => {
   const result = [];
+  const members = deps.sharedReadModel.members.getAll();
+  const totalActiveMembers = members.reduce(
+    (total, member) => (member.status === 'active' ? total + 1 : total),
+    0
+  );
   for (const equipment of deps.sharedReadModel.equipment.getAll()) {
     // Sequential gather as we can afford to be slower.
-    result.push(await gatherEmailContentForEquipment(deps)(equipment));
+    result.push(
+      await gatherEmailContentForEquipment(deps)(equipment, totalActiveMembers)
+    );
   }
   return {
     trainingStatsPerEquipment: RA.sortBy([byName])(result),
+    totalActiveMembers,
   };
 };
 
-const generateTrainingSummaryEmail = (
+export const generateTrainingSummaryEmail = (
   emailAddress: EmailAddress,
   content: EmailContent
 ): Email => ({
@@ -137,19 +155,36 @@ const generateTrainingSummaryEmail = (
     </mj-section>
     <mj-section>
       <mj-column width="400px">
-        <mj-text font-size="20px" line-height="1.3" color="#111" align="center">Makespace training stats
-        </mj-text>
-        ${content.trainingStatsPerEquipment
-          .map(
-            stats =>
+        Hi,
+        Here are the latest training stats for makespace. Thank you for voluneering to be an owner at makespace!
+
+        You are receiving this email because you opted in - contact 'database-owners@makespace.org' if you would like to opt out.
+
+        Current members: ${content.totalActiveMembers}
+
+        <mj-table>
+          <tr style="border-bottom:1px solid #ecedee;text-align:left;padding:15px 0;">
+            <th style="padding: 0 15px 0 0;">Equipment</th>
+            <th style="padding: 0 15px;">Waiting for Training</th>
+            <th style="padding: 0 0 0 15px;">Trained in last 30 days</th>
+            <th style="padding: 0 0 0 15px;">Trained total</th>
+            <th style="padding: 0 0 0 15px;">% of membership trained</th>
+            <th style="padding: 0 0 0 15px;">Quick Link</th>
+          </tr>
+          ${content.trainingStatsPerEquipment
+            .map(
+              stats =>
+                `
+                <th>${stats.name}</th>
+                <th>${O.getOrElse<string | number>(() => '-')(stats.awaitingTraining)}</th>
+                <th>${stats.trainedLast30Days}</th>
+                <th>${stats.trainedTotal}</th>
+                <th>${stats.percentageOfActiveMembershipTrained}%</th>
+                <th><a href="${stats.equipmentLink.href}">Link</a></th>
               `
-                <mj-text color="#111">
-                    ${stats.name}: Waiting for training: ${O.getOrElse<string | number>(() => 'unknown')(stats.awaitingTraining)} Trained in last 30 days: ${stats.trainedLast30Days} Trained total: ${stats.trainedTotal}
-                </mj-text>
-                <mj-button color="#111" background-color="#7FC436" href="${stats.equipmentLink.href}" font-weight="800">${stats.equipmentLink.href}</mj-button>
-              `
-          )
-          .join('\n')}
+            )
+            .join('\n')}
+        </mj-table>
       </mj-column>
     </mj-section>
   </mj-body>
@@ -182,13 +217,14 @@ const decideOwnersToEmail =
 
       if (
         O.isSome(lastEmailSent.right.lastNotification) &&
-        lastEmailSent.right.lastNotification.value.diffNow() <
+        lastEmailSent.right.lastNotification.value.diffNow().negate() <
           TRAINING_SUMMARY_EMAIL_INTERVAL
       ) {
         deps.logger.info(
-          'Checked for training summary sync for %s - last sync %s was recent - skipping.',
+          'Checked for training summary sync for %s - last sync %s was recent (%s) - skipping.',
           owner.memberNumber,
-          lastEmailSent.right.lastNotification.value.toISO()
+          lastEmailSent.right.lastNotification.value.toISO(),
+          lastEmailSent.right.lastNotification.value.diffNow().toHuman()
         );
         continue;
       }
