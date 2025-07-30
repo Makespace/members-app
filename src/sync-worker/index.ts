@@ -35,7 +35,7 @@ async function syncEquipmentTrainingSheetsPeriodically(
 
       if (lastHeartbeatAgoMs > HEARTBEAT_INTERVAL_MS) {
         deps.logger.info(
-          `Last Heartbeat ${lastHeartbeatAgoMs}ms ago, Last Sync ${lastEquipmentSyncCheckAgoMs}ms ago, Last Trouble Ticket ${lastTroubleTicketCheckAgoMs}ms ago`
+          `Last Heartbeat ${lastHeartbeatAgoMs}ms ago, Last Sync ${lastEquipmentSyncCheckAgoMs}ms ago, Last Trouble Ticket ${lastTroubleTicketCheckAgoMs}ms ago, Last Resync ${lastResyncAgoMs}ms ago, Last Training Summary Email Check ${lastTrainingSummaryEmailCheckAgoMs}ms ago`
         );
         lastHeartbeat = Date.now();
       }
