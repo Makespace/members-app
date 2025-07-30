@@ -21,6 +21,8 @@ import {
 } from './member/helper';
 import {dumpCurrentState, SharedDatabaseDump} from './debug/dump';
 import {MemberLinking} from './member-linking';
+import {DateTime} from 'luxon';
+import {getLastSent} from './training-stat-notifications/get-last-sent';
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
@@ -44,6 +46,9 @@ export type SharedReadModel = {
   };
   debug: {
     dump: () => SharedDatabaseDump;
+  };
+  trainingStats: {
+    getLastSent: (memberNumber: number) => O.Option<DateTime>;
   };
 };
 
@@ -85,6 +90,9 @@ export const initSharedReadModel = (
     },
     debug: {
       dump: dumpCurrentState(readModelDb),
+    },
+    trainingStats: {
+      getLastSent: getLastSent(readModelDb, linking),
     },
   };
 };

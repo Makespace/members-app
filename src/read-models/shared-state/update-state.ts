@@ -9,9 +9,10 @@ import {
   ownersTable,
   trainedMemberstable,
   trainersTable,
+  trainingStatsNotificationTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {and, eq, inArray} from 'drizzle-orm';
+import {and, eq, inArray, sql} from 'drizzle-orm';
 import {isOwnerOfAreaContainingEquipment} from './area/helpers';
 import {pipe} from 'fp-ts/lib/function';
 import {MemberLinking} from './member-linking';
@@ -41,6 +42,7 @@ export const updateState =
             agreementSigned: undefined,
             superUserSince: undefined,
             status: 'inactive',
+            joined: event.recordedAt,
           })
           .run();
         break;
@@ -257,6 +259,22 @@ export const updateState =
         db.update(equipmentTable)
           .set({trainingSheetId: null})
           .where(eq(equipmentTable.id, event.equipmentId))
+          .run();
+        break;
+      }
+      case 'TrainingStatNotificationSent': {
+        db.insert(trainingStatsNotificationTable)
+          .values({
+            lastEmailSent: event.recordedAt,
+            memberNumber: event.toMemberNumber,
+          })
+          .onConflictDoUpdate({
+            target: trainingStatsNotificationTable.memberNumber,
+            set: {
+              lastEmailSent: event.recordedAt,
+            },
+            setWhere: sql`${trainingStatsNotificationTable.lastEmailSent} < ${event.recordedAt.getTime()}`,
+          })
           .run();
         break;
       }

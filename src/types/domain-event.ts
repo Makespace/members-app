@@ -173,6 +173,14 @@ const MemberRejoinedWithExistingNumber = defineEvent(
   }
 );
 
+const TrainingStatNotificationSent = defineEvent(
+  'TrainingStatNotificationSent',
+  {
+    toMemberNumber: t.number,
+    toMemberEmail: t.string,
+  }
+);
+
 export const events = [
   AreaCreated,
   AreaRemoved,
@@ -199,6 +207,7 @@ export const events = [
   RecurlySubscriptionUpdated,
   MemberRejoinedWithNewNumber,
   MemberRejoinedWithExistingNumber,
+  TrainingStatNotificationSent,
 ];
 
 export const DomainEvent = t.union([
@@ -227,6 +236,7 @@ export const DomainEvent = t.union([
   RecurlySubscriptionUpdated.codec,
   MemberRejoinedWithNewNumber.codec,
   MemberRejoinedWithExistingNumber.codec,
+  TrainingStatNotificationSent.codec,
 ]);
 
 export type DomainEvent = t.TypeOf<typeof DomainEvent>;
