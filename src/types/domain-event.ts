@@ -261,7 +261,7 @@ export const filterByName =
     pipe(
       events,
       RA.filter(({type}) => names.includes(type)),
-      RA.map(filtered => filtered)
+      RA.map(filtered => filtered as SubsetOfDomainEvent<T>)
     );
 
 type EventBase<T> = {type: T; actor: Actor; recordedAt: Date};
