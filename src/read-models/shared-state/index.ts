@@ -3,12 +3,7 @@ import * as O from 'fp-ts/Option';
 import {createTables} from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
-import {
-  Area,
-  Equipment,
-  Member,
-  TrainingStatsNotificationSettings,
-} from './return-types';
+import {Area, Equipment, Member} from './return-types';
 
 import {Client} from '@libsql/client/.';
 import {asyncRefresh} from './async-refresh';
@@ -26,7 +21,8 @@ import {
 } from './member/helper';
 import {dumpCurrentState, SharedDatabaseDump} from './debug/dump';
 import {MemberLinking} from './member-linking';
-import {getNotificationSettings} from './training-stats/getNotificationSettings';
+import {DateTime} from 'luxon';
+import {getLastSent} from './training-stat-notifications/get-last-sent';
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
@@ -52,9 +48,7 @@ export type SharedReadModel = {
     dump: () => SharedDatabaseDump;
   };
   trainingStats: {
-    getNotificationSettings: (
-      memberNumber: number
-    ) => TrainingStatsNotificationSettings;
+    getLastSent: (memberNumber: number) => O.Option<DateTime>;
   };
 };
 
@@ -98,7 +92,7 @@ export const initSharedReadModel = (
       dump: dumpCurrentState(readModelDb),
     },
     trainingStats: {
-      getNotificationSettings: getNotificationSettings(readModelDb),
+      getLastSent: getLastSent(readModelDb, linking),
     },
   };
 };

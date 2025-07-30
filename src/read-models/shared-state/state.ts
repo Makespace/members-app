@@ -131,6 +131,23 @@ const createOwnersTable = sql`
   )
 `;
 
+export const trainingStatsNotificationTable = sqliteTable(
+  'trainingStatsNotificationTable',
+  {
+    memberNumber: integer('memberNumber')
+      .notNull()
+      .references(() => membersTable.memberNumber),
+    lastEmailSent: integer('lastEmailSent', {mode: 'timestamp'}),
+  }
+);
+
+const createTrainingStatsNotificationTable = sql`
+  CREATE TABLE IF NOT EXISTS trainingStatsNotificationTable (
+    memberNumber INTEGER PRIMARY KEY,
+    lastEmailSent INTEGER
+  )
+`;
+
 export const createTables = [
   createMembersTable,
   createEquipmentTable,
@@ -138,4 +155,5 @@ export const createTables = [
   createTrainedMembersTable,
   createAreasTable,
   createOwnersTable,
+  createTrainingStatsNotificationTable,
 ];

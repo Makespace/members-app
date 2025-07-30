@@ -23,6 +23,9 @@ import nodemailer from 'nodemailer';
 import smtp from 'nodemailer-smtp-transport';
 import {initSharedReadModel} from '../read-models/shared-state';
 import * as O from 'fp-ts/Option';
+import {getResourceEvents} from '../init-dependencies/event-store/get-resource-events';
+import {commitEvent} from '../init-dependencies/event-store/commit-event';
+import {getSheetData} from './db/get_sheet_data';
 
 const initDBCommands = (googleDB: Client, eventDB: Client, logger: Logger) => {
   return {
@@ -95,6 +98,10 @@ export const initDependencies = (): SyncWorkerDependencies => {
     google,
     sharedReadModel,
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
+    getResourceEvents: getResourceEvents(eventDB),
+    lastQuizSync: lastSync(googleDB),
+    getSheetData: getSheetData(googleDB),
+    commitEvent: commitEvent(eventDB, logger, () => async () => {}),
     ...initDBCommands(googleDB, eventDB, logger),
   };
 };
