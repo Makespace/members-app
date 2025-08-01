@@ -15,7 +15,7 @@ import {TrainingSummaryDeps} from './training-summary-deps';
 const TRAINING_SUMMARY_EMAIL_ALLOWLIST: number[] = [1741];
 const TRAINING_SUMMARY_EMAIL_INTERVAL: Duration = Duration.fromObject({
   // week: 1,
-  minutes: 30, // Temp for testing.
+  hours: 12, // Temp for testing.
 });
 
 const generateTrainingSummaryEmail = (
