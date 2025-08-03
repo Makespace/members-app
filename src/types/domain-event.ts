@@ -75,6 +75,8 @@ const TrainerAdded = defineEvent('TrainerAdded', {
 const MemberNumberLinkedToEmail = defineEvent('MemberNumberLinkedToEmail', {
   memberNumber: t.number,
   email: EmailAddressCodec,
+  name: tt.withFallback(t.union([t.string, t.undefined]), undefined),
+  formOfAddress: tt.withFallback(t.union([t.string, t.undefined]), undefined),
 });
 
 const LinkingMemberNumberToAnAlreadyUsedEmailAttempted = defineEvent(

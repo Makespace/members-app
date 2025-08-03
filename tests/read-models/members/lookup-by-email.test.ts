@@ -32,6 +32,8 @@ describe('lookupByEmail', () => {
     const command = {
       memberNumber: faker.number.int(),
       email: faker.internet.email() as EmailAddress,
+      name: undefined,
+      formOfAddress: undefined,
     };
     beforeEach(async () => {
       await framework.commands.memberNumbers.linkNumberToEmail(command);
@@ -48,6 +50,8 @@ describe('lookupByEmail', () => {
     const command = {
       memberNumber: faker.number.int(),
       email: faker.internet.email() as EmailAddress,
+      name: undefined,
+      formOfAddress: undefined,
     };
     beforeEach(async () => {
       await framework.commands.memberNumbers.linkNumberToEmail(command);
@@ -88,6 +92,8 @@ describe('lookupByCaseInsensitiveEmail', () => {
     const command = {
       memberNumber: faker.number.int(),
       email: faker.internet.email() as EmailAddress,
+      name: undefined,
+      formOfAddress: undefined,
     };
     beforeEach(async () => {
       await framework.commands.memberNumbers.linkNumberToEmail(command);
@@ -115,6 +121,8 @@ describe('lookupByCaseInsensitiveEmail', () => {
     const command = {
       memberNumber: faker.number.int(),
       email: faker.internet.email() as EmailAddress,
+      name: undefined,
+      formOfAddress: undefined,
     };
     beforeEach(async () => {
       await framework.commands.memberNumbers.linkNumberToEmail(command);

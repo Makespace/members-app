@@ -16,10 +16,14 @@ describe('getFailedImports', () => {
     const previousLinking = {
       memberNumber: faker.number.int(),
       email: faker.internet.email() as EmailAddress,
+      name: undefined,
+      formOfAddress: undefined,
     };
     const attempt = {
       memberNumber: faker.number.int(),
       email: previousLinking.email,
+      name: undefined,
+      formOfAddress: undefined,
     };
 
     it('returns the attempted linking', async () => {
