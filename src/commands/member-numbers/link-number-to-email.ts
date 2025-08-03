@@ -11,6 +11,8 @@ import {EventOfType} from '../../types/domain-event';
 const codec = t.strict({
   email: EmailAddressCodec,
   memberNumber: tt.NumberFromString,
+  name: tt.withFallback(t.union([t.string, t.undefined]), undefined),
+  formOfAddress: tt.withFallback(t.union([t.string, t.undefined]), undefined),
 });
 
 export type LinkNumberToEmail = t.TypeOf<typeof codec>;
@@ -24,6 +26,7 @@ const isDuplicateOfPreviousCommand = (
   event: EventOfType<'MemberNumberLinkedToEmail'>,
   command: LinkNumberToEmail
 ) =>
+  // Different name != different event.
   event.email === command.email && event.memberNumber === command.memberNumber;
 
 const process: Command<LinkNumberToEmail>['process'] = input =>

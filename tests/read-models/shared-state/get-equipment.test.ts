@@ -18,10 +18,14 @@ describe('get', () => {
   const addTrainerMember = {
     memberNumber: faker.number.int(),
     email: faker.internet.email() as EmailAddress,
+    name: undefined,
+    formOfAddress: undefined,
   };
   const addTrainedMember = {
     memberNumber: faker.number.int() as Int,
     email: faker.internet.email() as EmailAddress,
+    name: undefined,
+    formOfAddress: undefined,
   };
   const createArea = {
     id: faker.string.uuid() as UUID,
@@ -231,6 +235,8 @@ describe('get', () => {
     const addTrainedMember = {
       memberNumber: faker.number.int() as Int,
       email: faker.internet.email() as EmailAddress,
+      name: undefined,
+      formOfAddress: undefined,
     };
     const createArea = {
       id: faker.string.uuid() as UUID,
@@ -286,6 +292,8 @@ describe('get', () => {
     const addTrainedMember = {
       memberNumber: faker.number.int() as Int,
       email: faker.internet.email() as EmailAddress,
+      name: undefined,
+      formOfAddress: undefined,
     };
     const createArea = {
       id: faker.string.uuid() as UUID,
@@ -341,10 +349,14 @@ describe('get', () => {
       const member = {
         memberNumber: faker.number.int() as Int,
         email: faker.internet.email() as EmailAddress,
+        name: undefined,
+        formOfAddress: undefined,
       };
       const trainer = {
         memberNumber: faker.number.int() as Int,
         email: faker.internet.email() as EmailAddress,
+        name: undefined,
+        formOfAddress: undefined,
       };
       const createArea = {
         id: faker.string.uuid() as UUID,

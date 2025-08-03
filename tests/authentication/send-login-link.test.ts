@@ -38,6 +38,8 @@ describe('send-log-in-link', () => {
       await framework.commands.memberNumbers.linkNumberToEmail({
         email: emailAddress,
         memberNumber,
+        name: undefined,
+        formOfAddress: undefined,
       });
       await sendLogInLink(deps, conf)(emailAddress)();
     });
@@ -92,6 +94,8 @@ describe('send-log-in-link', () => {
       await framework.commands.memberNumbers.linkNumberToEmail({
         email: emailAddress,
         memberNumber,
+        name: undefined,
+        formOfAddress: undefined,
       });
       result = await sendLogInLink(deps, conf)(emailAddress)();
     });

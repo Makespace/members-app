@@ -1,11 +1,11 @@
-import {getAll} from './get-all';
+// import {getAll} from './get-all';
 import {lookupByEmail, lookupByCaseInsensitiveEmail} from './lookup-by-email';
 import {getFailedImports} from './get-failed-imports';
 
 export const members = {
   lookupByEmail,
   lookupByCaseInsensitiveEmail,
-  getAll,
+  // getAll,
   getFailedImports,
 };
 
