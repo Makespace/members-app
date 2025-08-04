@@ -47,10 +47,14 @@ describe('Get equipment quiz', () => {
   const addTrainedMember = {
     memberNumber: faker.number.int() as Int,
     email: faker.internet.email() as EmailAddress,
+    name: undefined,
+    formOfAddress: undefined,
   };
   const addAwaitingTrainingMember = {
     memberNumber: faker.number.int({max: 10000}) as Int,
     email: faker.internet.email() as EmailAddress,
+    name: undefined,
+    formOfAddress: undefined,
   };
   const createArea = {
     id: faker.string.uuid() as UUID,

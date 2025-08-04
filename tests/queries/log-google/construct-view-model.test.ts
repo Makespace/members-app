@@ -25,10 +25,14 @@ describe('construct-view-model', () => {
     await framework.commands.memberNumbers.linkNumberToEmail({
       memberNumber: unprivilegedUser.memberNumber,
       email: unprivilegedUser.emailAddress,
+      name: undefined,
+      formOfAddress: undefined,
     });
     await framework.commands.memberNumbers.linkNumberToEmail({
       memberNumber: superUser.memberNumber,
       email: superUser.emailAddress,
+      name: undefined,
+      formOfAddress: undefined,
     });
     await framework.commands.superUser.declare({
       memberNumber: superUser.memberNumber,

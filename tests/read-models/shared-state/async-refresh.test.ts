@@ -8,6 +8,8 @@ import {updateState} from '../../../src/read-models/shared-state/update-state';
 const arbitraryLinkNumberCommand = () => ({
   memberNumber: faker.number.int(),
   email: faker.internet.email() as EmailAddress,
+  name: undefined,
+  formOfAddress: undefined,
 });
 
 describe('async-refresh', () => {

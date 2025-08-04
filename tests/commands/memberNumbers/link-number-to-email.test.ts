@@ -37,6 +37,8 @@ describe('linkNumberToEmail', () => {
   const command = {
     email: faker.internet.email() as EmailAddress,
     memberNumber: faker.number.int(),
+    name: undefined,
+    formOfAddress: undefined,
     actor: arbitraryActor(),
   };
 
@@ -58,6 +60,8 @@ describe('linkNumberToEmail', () => {
       constructEvent('MemberNumberLinkedToEmail')({
         memberNumber: command.memberNumber,
         email: faker.internet.email() as EmailAddress,
+        name: undefined,
+        formOfAddress: undefined,
       }),
     ];
     const result = linkNumberToEmail.process({command, events});
@@ -71,6 +75,8 @@ describe('linkNumberToEmail', () => {
       constructEvent('MemberNumberLinkedToEmail')({
         memberNumber: faker.number.int(),
         email: command.email,
+        name: undefined,
+        formOfAddress: undefined,
       }),
     ];
     const result = pipe(
