@@ -21,6 +21,8 @@ const arbitraryMemberNumberLinkedToEmailEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
     memberNumber: faker.number.int(),
     email: faker.internet.email() as EmailAddress,
+    name: undefined,
+    formOfAddress: undefined,
   });
 
 const testLogger = createLogger({level: 'silent'});

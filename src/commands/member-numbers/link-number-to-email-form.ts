@@ -17,6 +17,13 @@ const renderForm = () =>
         <input type="text" name="email" id="email" />
         <label for="memberNumber">Which member number should they get? </label>
         <input type="text" name="memberNumber" id="memberNumber" />
+        <label for="name">Whats the users name? </label>
+        <input type="text" name="name" id="name" />
+        <label for="formOfAddress"
+          >Whats the users prefered forms of address (i.e. he/him)? (leave blank
+          if not specified)
+        </label>
+        <input type="text" name="formOfAddress" id="formOfAddress" />
         <button type="submit">Confirm and send</button>
       </form>
     `,

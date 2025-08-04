@@ -221,10 +221,14 @@ describe('get-via-shared-read-model', () => {
       await framework.commands.memberNumbers.linkNumberToEmail({
         memberNumber,
         email: memberEmail,
+        name: undefined,
+        formOfAddress: undefined,
       });
       await framework.commands.memberNumbers.linkNumberToEmail({
         memberNumber: otherMemberNumber,
         email: faker.internet.email() as EmailAddress,
+        name: undefined,
+        formOfAddress: undefined,
       });
     });
 
@@ -397,6 +401,8 @@ describe('get-via-shared-read-model', () => {
                 await framework.commands.memberNumbers.linkNumberToEmail({
                   memberNumber: newMemberNumber,
                   email: newEmail,
+                  name: undefined,
+                  formOfAddress: undefined,
                 });
                 await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber(
                   {
@@ -651,6 +657,8 @@ describe('get-via-shared-read-model', () => {
           framework.commands.memberNumbers.linkNumberToEmail({
             memberNumber: newMemberNumber,
             email: newEmail,
+            name: undefined,
+            formOfAddress: undefined,
           });
 
         const markMemberRejoined = useExistingAccount
@@ -983,6 +991,8 @@ describe('get-via-shared-read-model', () => {
                 framework.commands.memberNumbers.linkNumberToEmail({
                   memberNumber: newestMemberNumber,
                   email: newestEmail,
+                  name: undefined,
+                  formOfAddress: undefined,
                 });
 
               const markMemberRejoinedAgain = useExistingAccount
@@ -1187,5 +1197,30 @@ describe('get-via-shared-read-model', () => {
         });
       });
     });
+  });
+
+  describe('when a member is created including name + form of address', () => {
+    const member = {
+      memberNumber,
+      email: memberEmail,
+      name: 'Bob Beans',
+      formOfAddress: 'he/him',
+    };
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(member);
+    });
+
+    const grabMember = () =>
+      pipe(memberNumber, framework.sharedReadModel.members.get, getSomeOrFail);
+
+    it('Member exists', () => expect(grabMember()).toBeDefined());
+
+    it('Member has name set', () =>
+      expect(getSomeOrFail(grabMember().name)).toStrictEqual(member.name));
+
+    it('Member has form of address set', () =>
+      expect(getSomeOrFail(grabMember().formOfAddress)).toStrictEqual(
+        member.formOfAddress
+      ));
   });
 });

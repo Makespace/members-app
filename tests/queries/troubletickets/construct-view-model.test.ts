@@ -24,6 +24,8 @@ describe('construct-view-model', () => {
     await framework.commands.memberNumbers.linkNumberToEmail({
       memberNumber: loggedInUser.memberNumber,
       email: loggedInUser.emailAddress,
+      name: undefined,
+      formOfAddress: undefined,
     });
   });
 
