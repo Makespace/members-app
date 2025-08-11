@@ -49,7 +49,7 @@ export const render = (viewModel: ViewModel) => html`
         <td>${renderMemberNumber(viewModel.member.memberNumber)}</td>
       </tr>
       <tr>
-        <th scope="row">Past Member Numbers</th>
+        <th scope="row">Other Member Numbers</th>
         <td>${renderMemberNumbers(viewModel.member.pastMemberNumbers)}</td>
       </tr>
       <tr>
