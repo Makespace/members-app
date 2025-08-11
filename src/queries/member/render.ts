@@ -10,6 +10,7 @@ import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
 import {renderOwnerStatus} from '../shared-render/owner-status';
 import {renderTrainerStatus} from '../shared-render/trainer-status';
 import {renderTrainingStatus} from '../shared-render/training-status';
+import {otherMemberNumbersTooltip} from '../shared-render/other-member-numbers-tooltip';
 
 const ownPageBanner = html`<h1>This is your profile!</h1>`;
 
@@ -49,7 +50,7 @@ export const render = (viewModel: ViewModel) => html`
         <td>${renderMemberNumber(viewModel.member.memberNumber)}</td>
       </tr>
       <tr>
-        <th scope="row">Other Member Numbers</th>
+        <th scope="row">Other Member Numbers ${otherMemberNumbersTooltip}</th>
         <td>${renderMemberNumbers(viewModel.member.pastMemberNumbers)}</td>
       </tr>
       <tr>
