@@ -44,7 +44,16 @@ const renderMembers = (viewModel: ViewModel) =>
             <tr>
               <th></th>
               <th>Member number</th>
-              <th>Other member numbers</th>
+              <th>
+                Other member numbers
+                <div class="tooltip">
+                  <i class="fa-regular fa-circle-question"></i>
+                  <span class="tooltiptext">
+                    Users may have multiple member numbers if they have left and
+                    then rejoined
+                  </span>
+                </div>
+              </th>
               <th>Full Name</th>
               <th>Preferred form of address</th>
               <th>Email</th>
