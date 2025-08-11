@@ -11,6 +11,7 @@ import {
 } from '../../templates/member-number';
 import {memberStatusTag} from '../../templates/member-status';
 import {MemberCoreInfo} from '../../read-models/shared-state/return-types';
+import {otherMemberNumbersTooltip} from '../shared-render/other-member-numbers-tooltip';
 
 const ordByMemberNumber: Ord<MemberCoreInfo> = pipe(
   N.Ord,
@@ -44,16 +45,7 @@ const renderMembers = (viewModel: ViewModel) =>
             <tr>
               <th></th>
               <th>Member number</th>
-              <th>
-                Other member numbers
-                <div class="tooltip">
-                  <i class="fa-regular fa-circle-question"></i>
-                  <span class="tooltiptext">
-                    Users may have multiple member numbers if they have left and
-                    then rejoined
-                  </span>
-                </div>
-              </th>
+              <th>Other member numbers ${otherMemberNumbersTooltip}</th>
               <th>Full Name</th>
               <th>Preferred form of address</th>
               <th>Email</th>
