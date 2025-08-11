@@ -6,6 +6,7 @@
   --focus-color: #ffdd00;
   --green-color: #00703c;
   --green-darkened-color: #005a30;
+  --tooltip-color: #d9dfe4a4;
 
   --grey-color: #505a5f;
   --red-color: #d4351c;
@@ -406,3 +407,36 @@ label img {
   background-color: color-mix(in oklch, white 50%, var(--red-color));
   color: color-mix(in oklch, black 50%, var(--red-color));
 }
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+/* Tooltip text */
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 220px;
+  background-color: var(--tooltip-color);
+  /* color: var(--text-color); */
+  font-weight: 700;
+  line-height: normal;
+  text-align: center;
+
+  /* Position the tooltip text */
+  position: absolute;
+  z-index: 1;
+  top: -40px;
+  left: 105%;
+
+  /* Fade in tooltip */
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+

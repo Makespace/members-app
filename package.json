@@ -46,6 +46,7 @@
   },
   "dependencies": {
     "@faker-js/faker": "^8.0.2",
+    "@fortawesome/fontawesome-free": "7.0.0",
     "@godaddy/terminus": "^4.12.1",
     "@googleapis/sheets": "^9.0.0",
     "@libsql/client": "^0.15.4",

@@ -56,5 +56,20 @@ export const head = (title: HtmlSubstitution) => html`
       integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8="
       crossorigin="anonymous"
     ></script>
+    <link
+      rel="preload"
+      href="/static/vendor/font-awesome/webfonts/fa-regular-400.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous"
+    />
+    <link
+      href="/static/vendor/font-awesome/css/fontawesome.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="/static/vendor/font-awesome/css/regular.min.css"
+      rel="stylesheet"
+    />
   </head>
 `;
