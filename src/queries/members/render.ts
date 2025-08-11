@@ -5,11 +5,14 @@ import {contramap, Ord} from 'fp-ts/Ord';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {ViewModel} from './view-model';
 import {getGravatarThumbnail} from '../../templates/avatar';
-import {renderMemberNumber} from '../../templates/member-number';
-import {Member} from '../../read-models/members';
+import {
+  renderMemberNumber,
+  renderMemberNumbers,
+} from '../../templates/member-number';
 import {memberStatusTag} from '../../templates/member-status';
+import {MemberCoreInfo} from '../../read-models/shared-state/return-types';
 
-const ordByMemberNumber: Ord<Member> = pipe(
+const ordByMemberNumber: Ord<MemberCoreInfo> = pipe(
   N.Ord,
   contramap(member => member.memberNumber)
 );
@@ -25,6 +28,7 @@ const renderMembers = (viewModel: ViewModel) =>
             ${getGravatarThumbnail(member.gravatarHash, member.memberNumber)}
           </td>
           <td>${renderMemberNumber(member.memberNumber)}</td>
+          <td>${renderMemberNumbers(member.pastMemberNumbers)}</td>
           <td>${sanitizeOption(member.name)}</td>
           <td>${sanitizeOption(member.formOfAddress)}</td>
           <td>${sanitizeString(member.emailAddress)}</td>
@@ -40,6 +44,7 @@ const renderMembers = (viewModel: ViewModel) =>
             <tr>
               <th></th>
               <th>Member number</th>
+              <th>Other member numbers</th>
               <th>Full Name</th>
               <th>Preferred form of address</th>
               <th>Email</th>
