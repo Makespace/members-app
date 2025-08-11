@@ -31,7 +31,7 @@ const getMergedMember =
                 superUserSince: O.fromNullable(row.superUserSince),
               })
             ),
-            mergeMemberCore,
+            records => mergeMemberCore(records, memberNumbers),
             O.some
           )
       )
