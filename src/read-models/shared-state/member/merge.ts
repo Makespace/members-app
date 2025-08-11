@@ -13,9 +13,10 @@ export type MemberCoreInfoPreMerge = Omit<
 
 export const mergeMemberCore = (
   // Array should be in order of priority with index = 0 being highest priority.
-  records: ReadonlyNonEmptyArray<MemberCoreInfoPreMerge>
+  records: ReadonlyNonEmptyArray<MemberCoreInfoPreMerge>,
+  // Undefined behaviour if mergeMemberCore is called with records that do not match the provided member numbers.
+  memberNumbers: number[]
 ): MemberCoreInfo => {
-  const memberNumbers = records.map(e => e.memberNumber);
   const emailAddress = records[0].emailAddress;
   const isSuperUser = records.map(r => r.isSuperUser).some(b => b);
   const superUserSince = records
