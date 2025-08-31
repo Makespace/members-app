@@ -9,7 +9,7 @@ import {Equipment} from '../../read-models/shared-state/return-types';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {memberNumberInputMinimal} from '../../templates/member-input-minimal';
-import { dateInput } from '../../templates/date-input';
+import {dateTimeInput} from '../../templates/date-time-input';
 
 type ViewModel = {
   equipment: Equipment;
@@ -42,13 +42,7 @@ const renderForm = (viewModel: ViewModel) =>
           'Select trainer',
           viewModel.equipment.trainers
         )}
-        ${
-            dateInput(
-                'trainedAt',
-                'When was the training?',
-
-            )
-        }
+        ${dateTimeInput('trainedAt', 'When was the training?', O.none, O.none)}
         ${memberNumberInputMinimal(
           'memberNumber',
           'Select newly trained member',
