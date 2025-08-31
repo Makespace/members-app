@@ -143,6 +143,15 @@ const MemberTrainedOnEquipment = defineEvent('MemberTrainedOnEquipment', {
   legacyImport: tt.withFallback(t.boolean, false),
 });
 
+// User impersonation version of MemberTrainedOnEquipment
+const MemberTrainedOnEquipmentBy = defineEvent('MemberTrainedOnEquipmentBy', {
+  equipmentId: tt.UUID,
+  memberNumber: t.number,
+  trainedByMemberNumber: t.number, // Cannot be by system.
+  trainedAt: tt.DateFromNumber,
+  markedTrainedBy: t.number, // The admin who marked the user as trained. Cannot be system.
+});
+
 const RevokeTrainedOnEquipment = defineEvent('RevokeTrainedOnEquipment', {
   equipmentId: tt.UUID,
   memberNumber: t.number,
@@ -201,6 +210,7 @@ export const events = [
   MemberDetailsUpdated,
   OwnerAgreementSigned,
   MemberTrainedOnEquipment,
+  MemberTrainedOnEquipmentBy,
   RevokeTrainedOnEquipment,
   MemberEmailChanged,
   EquipmentTrainingQuizMemberNumberUpdated,
@@ -230,6 +240,7 @@ export const DomainEvent = t.union([
   MemberDetailsUpdated.codec,
   OwnerAgreementSigned.codec,
   MemberTrainedOnEquipment.codec,
+  MemberTrainedOnEquipmentBy.codec,
   RevokeTrainedOnEquipment.codec,
   MemberEmailChanged.codec,
   EquipmentTrainingQuizMemberNumberUpdated.codec,
