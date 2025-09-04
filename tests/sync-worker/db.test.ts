@@ -170,7 +170,7 @@ describe('Test sync worker db', () => {
   });
 
   describe('Store last sync', () => {
-    const sheetId = faker.string.alphanumeric();
+    const sheetId = faker.string.alphanumeric(10);
     const date = faker.date.past();
     beforeEach(async () =>
       getRightOrFail(await storeSync(googleDB)(sheetId, date)())
@@ -183,7 +183,9 @@ describe('Test sync worker db', () => {
 
     it('Get last sync on a different sheet returns nothing', async () =>
       expect(
-        getRightOrFail(await lastSync(googleDB)(faker.string.alphanumeric())())
+        getRightOrFail(
+          await lastSync(googleDB)(faker.string.alphanumeric(11))()
+        )
       ).toStrictEqual(O.none));
 
     describe('Sync again on the same sheet', () => {
@@ -198,7 +200,7 @@ describe('Test sync worker db', () => {
     });
 
     describe('Sync again on a different sheet', () => {
-      const newSheetId = faker.string.alphanumeric();
+      const newSheetId = faker.string.alphanumeric(11);
       const newDate = faker.date.past();
       beforeEach(async () =>
         getRightOrFail(await storeSync(googleDB)(newSheetId, newDate)())
@@ -216,7 +218,7 @@ describe('Test sync worker db', () => {
 
   describe('Store training sheet rows', () => {
     const sheetId = faker.string.alphanumeric({length: 12});
-    const sheetId2 = faker.string.alphanumeric({length: 12});
+    const sheetId2 = faker.string.alphanumeric({length: 13});
     const sheetName = faker.animal.fish();
     const sheetName2 = faker.animal.bird();
     const data: SheetDataTable['rows'] = randomTrainingSheetRows(
