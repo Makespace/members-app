@@ -11,5 +11,5 @@ export type TrainingSummaryDeps = Pick<
   | 'getSheetData'
   | 'getResourceEvents'
 > & {
-  conf: Config;
+  conf: Pick<Config, 'PUBLIC_URL'>;
 };
