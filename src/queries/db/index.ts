@@ -103,7 +103,6 @@ function ensureSuperUser(args: Args): void {
 function renderQueryPage(q: string, content: Html): HttpResponse {
   return toLoggedInContent(safe('DB'))(html`
         <div class="stack-large">
-          <h1>Manage Areas and Owners</h1>
           <form action="/db" method="get">
             <label for="q">Query</label>
             <input id="q" name="q" value="${sanitizeString(q)}" />
