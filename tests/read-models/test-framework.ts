@@ -1,6 +1,7 @@
 import createLogger from 'pino';
 import * as T from 'fp-ts/Task';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {
   getAllEvents,
   getAllEventsByType,
@@ -24,6 +25,8 @@ import {storeTroubleTicketRowsRead} from '../../src/sync-worker/db/store_trouble
 import {SyncWorkerDependencies} from '../../src/sync-worker/dependencies';
 import {lastSync} from '../../src/sync-worker/db/last_sync';
 import {getSheetData} from '../../src/sync-worker/db/get_sheet_data';
+import {TrainingSummaryDeps} from '../../src/sync-worker/training-summary/training-summary-deps';
+import {NonEmptyString} from 'io-ts-types/lib/NonEmptyString';
 
 const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
 
@@ -59,6 +62,7 @@ export type TestFramework = {
   close: () => void;
   lastSync: SyncWorkerDependencies['lastSync'];
   getSheetData: Dependencies['getSheetData'];
+  trainingSummaryDeps: TrainingSummaryDeps;
 };
 
 export const initTestFramework = async (): Promise<TestFramework> => {
@@ -157,6 +161,18 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       superUser: {
         declare: frameworkify(commands.superUser.declare),
         revoke: frameworkify(commands.superUser.revoke),
+      },
+    },
+    trainingSummaryDeps: {
+      logger,
+      getResourceEvents: getResourceEvents(eventDB),
+      commitEvent: frameworkCommitEvent,
+      sharedReadModel,
+      getSheetData: getSheetData(googleDB),
+      sendEmail: jest.fn(() => TE.right('success')),
+      lastQuizSync: lastSync(googleDB),
+      conf: {
+        PUBLIC_URL: 'https://localhost' as NonEmptyString,
       },
     },
   };
