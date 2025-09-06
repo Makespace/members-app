@@ -73,7 +73,9 @@ const gatherEmailContentForEquipment =
       trainerCount: equipment.trainers.length,
       percentageOfActiveMembershipTrained:
         totalActiveMembers > 0
-          ? Math.round(equipment.trainedMembers.length / totalActiveMembers)
+          ? Math.round(
+              (equipment.trainedMembers.length / totalActiveMembers) * 100
+            )
           : 0,
     };
   };
