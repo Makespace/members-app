@@ -13,8 +13,8 @@ import {TrainingSummaryDeps} from './training-summary-deps';
 // Temporary
 const TRAINING_SUMMARY_EMAIL_ALLOWLIST: number[] = [1741, 131, 1698, 1725];
 const TRAINING_SUMMARY_EMAIL_INTERVAL: Duration = Duration.fromObject({
-  // week: 1,
-  hours: 12, // Temp for testing.
+  week: 1,
+  // hours: 12, // Temp for testing.
 });
 
 const generateTrainingSummaryEmail = (
