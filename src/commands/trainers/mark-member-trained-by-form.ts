@@ -1,7 +1,13 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
-import {html, safe, sanitizeString, toLoggedInContent} from '../../types/html';
+import {
+  html,
+  Safe,
+  safe,
+  sanitizeString,
+  toLoggedInContent,
+} from '../../types/html';
 import {Form} from '../../types/form';
 import {getEquipmentIdFromForm} from '../equipment/get-equipment-id-from-form';
 import {Member} from '../../read-models/members';
@@ -10,6 +16,7 @@ import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {memberNumberInputMinimal} from '../../templates/member-input-minimal';
 import {dateTimeInput} from '../../templates/date-time-input';
+import {DateTime} from 'luxon';
 
 type ViewModel = {
   equipment: Equipment;
@@ -42,7 +49,13 @@ const renderForm = (viewModel: ViewModel) =>
           'Select trainer',
           viewModel.equipment.trainers
         )}
-        ${dateTimeInput('trainedAt', 'When was the training?', O.none, O.none)}
+        ${dateTimeInput(
+          'trainedAt' as Safe,
+          'When was the training?' as Safe,
+          DateTime.now(),
+          O.none,
+          O.none
+        )}
         ${memberNumberInputMinimal(
           'memberNumber',
           'Select newly trained member',
@@ -69,7 +82,14 @@ const constructForm: Form<ViewModel>['constructForm'] =
         }
         return E.right(equipment.value);
       }),
-      E.let('members', () => readModel.members.getAll())
+      E.let('members', () => readModel.members.getAll()),
+      E.bind('membersNotAlreadyTrained', ({equipment_id, members}) =>
+        E.right(
+          members.filter(
+            member => !member.trainedOn.map(t => t.id).includes(equipment_id)
+          )
+        )
+      )
     );
 
 export const markMemberTrainedByForm: Form<ViewModel> = {
