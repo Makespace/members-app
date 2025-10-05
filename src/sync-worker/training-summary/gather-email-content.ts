@@ -23,6 +23,8 @@ type EquipmentTrainingStats = {
 export type EmailContent = {
   trainingStatsPerEquipment: ReadonlyArray<EquipmentTrainingStats>;
   totalActiveMembers: number;
+  totalTrainingsLast30Days: number;
+  totalTrainings: number;
   membersJoinedWithin30Days: number;
 };
 
@@ -73,7 +75,9 @@ const gatherEmailContentForEquipment =
       trainerCount: equipment.trainers.length,
       percentageOfActiveMembershipTrained:
         totalActiveMembers > 0
-          ? Math.round(equipment.trainedMembers.length / totalActiveMembers)
+          ? Math.round(
+              (equipment.trainedMembers.length / totalActiveMembers) * 100
+            )
           : 0,
     };
   };
@@ -101,6 +105,14 @@ export const gatherEmailContent = async (
   return {
     trainingStatsPerEquipment: RA.sortBy([byName])(result),
     totalActiveMembers,
+    totalTrainings: result.reduce(
+      (prev, current) => prev + current.trainedTotal,
+      0
+    ),
+    totalTrainingsLast30Days: result.reduce(
+      (prev, current) => prev + current.trainedLast30Days,
+      0
+    ),
     membersJoinedWithin30Days,
   };
 };

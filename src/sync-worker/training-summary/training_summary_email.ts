@@ -11,11 +11,10 @@ import {EmailContent, gatherEmailContent} from './gather-email-content';
 import {TrainingSummaryDeps} from './training-summary-deps';
 
 // Temporary
-// const TRAINING_SUMMARY_EMAIL_ALLOWLIST: number[] = [1741, 131, 1698, 1725];
-const TRAINING_SUMMARY_EMAIL_ALLOWLIST: number[] = [1741];
+const TRAINING_SUMMARY_EMAIL_ALLOWLIST: number[] = [1741, 131, 1698, 1725];
 const TRAINING_SUMMARY_EMAIL_INTERVAL: Duration = Duration.fromObject({
-  // week: 1,
-  hours: 12, // Temp for testing.
+  week: 1,
+  // hours: 12, // Temp for testing.
 });
 
 const generateTrainingSummaryEmail = (
@@ -57,8 +56,8 @@ const generateTrainingSummaryEmail = (
           <tr style="border-bottom:1px solid #ecedee;text-align:left;padding:15px 0;">
             <th style="padding: 0 0 0 0">Equipment</th>
             <th style="padding: 0 0 0 0">Waiting for Training</th>
-            <th style="padding: 0 0 0 0">Trained in last 30 days</th>
-            <th style="padding: 0 0 0 0">Trained total</th>
+            <th style="padding: 0 0 0 0">Trainings in last 30 days</th>
+            <th style="padding: 0 0 0 0">Total trainings</th>
             <th style="padding: 0 0 0 0">% of membership trained</th>
             <th style="padding: 0 0 0 0">Quick Link</th>
           </tr>
@@ -77,6 +76,14 @@ const generateTrainingSummaryEmail = (
               `
             )
             .join('\n')}
+          <tr>
+            <th>Total</th>
+            <th>-</th>
+            <th>${content.totalTrainingsLast30Days}</th>
+            <th>${content.totalTrainings}</th>
+            <th>-</th>
+            <th>-</th>
+          </tr>
         </mj-table>
       </mj-column>
     </mj-section>
