@@ -50,6 +50,11 @@ export const initRoutes = (
       'revoke-member-trained',
       commands.trainers.revokeTrained
     ),
+    ...command(
+      'equipment',
+      'mark-member-trained-by',
+      commands.trainers.markMemberTrainedBy
+    ),
     query('/equipment/:equipment', queries.equipment),
     query('/super-users', queries.superUsers),
     ...command('super-users', 'declare', commands.superUser.declare),
