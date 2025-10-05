@@ -109,6 +109,11 @@ select {
 
 /* End of reset */
 
+td > img {
+  max-width: unset;
+  display: inline-block;
+}
+
 body {
   color: var(--text-color);
   margin: 0 auto 5rem;
