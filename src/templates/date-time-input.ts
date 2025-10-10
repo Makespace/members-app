@@ -4,7 +4,7 @@ import {html, Html, HtmlSubstitution, safe, Safe} from '../types/html';
 import {DateTime} from 'luxon';
 
 const dateToString = (d: DateTime): Safe =>
-  safe(d.toFormat('YYYY-MM-DDTHH:mm'));
+  safe(d.toFormat("yyyy-MM-dd'T'HH:mm"));
 
 export const dateTimeInput = (
   field: Safe,

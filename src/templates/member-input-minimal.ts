@@ -8,10 +8,8 @@ export const memberNumberInputMinimal = (
 ): Html => {
   return html`
     <label for="${field}">${label}</label>
-      <div class="autocomplete" style="width:300px;">
-        <input type="text" name="${field}" id="${field}" />
-      </div>
-    </form>
-    
+    <div style="width:300px;">
+      <input type="text" name="${field}" id="${field}" />
+    </div>
   `;
 };
