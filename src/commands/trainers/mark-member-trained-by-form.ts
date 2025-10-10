@@ -45,8 +45,8 @@ const renderForm = (viewModel: ViewModel) =>
           value="${viewModel.equipment.id}"
         />
         ${memberNumberInputMinimal(
-          'trainedByMemberNumber',
-          'Select trainer',
+          'trainedByMemberNumber' as Safe,
+          'Select trainer' as Safe,
           viewModel.equipment.trainers
         )}
         ${dateTimeInput(
@@ -54,11 +54,14 @@ const renderForm = (viewModel: ViewModel) =>
           'When was the training?' as Safe,
           DateTime.now(),
           O.none,
-          O.none
+          O.some({
+            value: DateTime.now(),
+            tooltip: 'Training time cannot be in the future' as Safe,
+          })
         )}
         ${memberNumberInputMinimal(
-          'memberNumber',
-          'Select newly trained member',
+          'memberNumber' as Safe,
+          'Select newly trained member' as Safe,
           viewModel.membersNotAlreadyTrained
         )}
         <button type="submit">Confirm</button>
