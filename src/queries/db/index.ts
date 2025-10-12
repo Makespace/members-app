@@ -120,7 +120,7 @@ export const db: Query = imperativeAdaptor(async (args: Args) => {
     return renderQueryPage(q, html``);
   }
 
-  const db = args.deps.sharedReadModel.db;
+  const db = args.deps.sharedReadModel.readOnlyDb;
   let rows: {[k: string]: string}[];
   try {
     rows = db.all(sql.raw(q));

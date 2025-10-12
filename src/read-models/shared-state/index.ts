@@ -1,3 +1,7 @@
+import crypto from 'node:crypto';
+import path from 'node:path';
+import os from 'node:os';
+import fs from 'node:fs';
 import * as T from 'fp-ts/Task';
 import * as O from 'fp-ts/Option';
 import {createTables} from './state';
@@ -26,6 +30,7 @@ import {getLastSent} from './training-stat-notifications/get-last-sent';
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
+  readOnlyDb: BetterSQLite3Database;
   _underlyingReadModelDb: Database.Database; // This is exposed only to allow debug serialisation of the db.
   linking: MemberLinking;
   asyncRefresh: () => T.Task<void>;
@@ -57,14 +62,20 @@ export const initSharedReadModel = (
   logger: Logger,
   recurlyToken: O.Option<string>
 ): SharedReadModel => {
-  const _underlyingReadModelDb = new Database();
+  const randomFileName = crypto.randomBytes(16).toString('hex');
+  const uri = path.join(os.tmpdir(), `${randomFileName}.db`);
+  fs.rmSync(uri, {force: true});
+  const _underlyingReadModelDb = new Database(uri);
   const readModelDb = drizzle(_underlyingReadModelDb);
+  const readOnlyReadModelDb = drizzle(new Database(uri, {readonly: true}));
+
   createTables.forEach(statement => readModelDb.run(statement));
   const linking = new MemberLinking();
   const updateState_ = updateState(readModelDb, linking);
 
   return {
     db: readModelDb,
+    readOnlyDb: readOnlyReadModelDb,
     linking,
     _underlyingReadModelDb,
     asyncRefresh: asyncRefresh(eventStoreClient, updateState_),
