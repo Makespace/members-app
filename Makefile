@@ -1,4 +1,4 @@
-.phony: check clear-containers dev fix lint prod release smoketest test typecheck unused-exports watch-typecheck populate-local-dev populate-full update-vendor
+.phony: check clear-containers dev dev-all fix lint prod release smoketest test typecheck unused-exports watch-typecheck populate-local-dev populate-full update-vendor
 
 check: test lint typecheck unused-exports
 
