@@ -5,7 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Common Commands
 
 ### Development
-- `make dev` - Start local development server with Docker Compose
+- `make dev-all` - Start all dev processes (Docker, type checker, tests) in one command
+- `make dev` - Start local development server with Docker Compose only
 - `make populate-local-dev` - Populate local database with test users (foo@example.com, admin@example.com)
 - `./scripts/login.ts admin` - Automated login helper for dev server
 
