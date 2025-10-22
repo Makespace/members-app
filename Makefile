@@ -18,6 +18,9 @@ update-vendor: node_modules
 dev: .env
 	docker compose --file docker-compose.yaml --file docker-compose.dev.yaml up --build
 
+dev-all: .env
+	./scripts/dev-all.sh
+
 populate-local-dev:
 	bash ./scripts/populate-local-dev.sh
 
