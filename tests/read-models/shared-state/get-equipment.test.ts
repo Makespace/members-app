@@ -3,12 +3,19 @@ import {TestFramework, initTestFramework} from '../test-framework';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
-import {getSomeOrFail} from '../../helpers';
+import {getRightOrFail, getSomeOrFail} from '../../helpers';
 
-import {EmailAddress} from '../../../src/types';
+import {Actor, EmailAddress} from '../../../src/types';
 import {Int} from 'io-ts';
 import {updateState} from '../../../src/read-models/shared-state/update-state';
 import {EventOfType} from '../../../src/types/domain-event';
+import {
+  markMemberTrainedBy,
+  MarkMemberTrainedBy,
+} from '../../../src/commands/trainers/mark-member-trained-by';
+import {DateTime, Duration} from 'luxon';
+import {LinkNumberToEmail} from '../../../src/commands/member-numbers/link-number-to-email';
+import {applyToResource} from '../../../src/commands/apply-command-to-resource';
 
 describe('get', () => {
   let framework: TestFramework;
@@ -109,6 +116,68 @@ describe('get', () => {
     it('has no training sheet', () => {
       const equipment = runQuery();
       expect(equipment.trainingSheetId).toStrictEqual(O.none);
+    });
+
+    describe('a member is marked as trained by the trainer (via admin)', () => {
+      const newMember: LinkNumberToEmail = {
+        memberNumber: faker.number.int(),
+        email: faker.internet.email() as EmailAddress,
+        name: faker.company.buzzNoun(),
+        formOfAddress: undefined,
+      };
+      const markTrainedBy: MarkMemberTrainedBy = {
+        equipmentId: addEquipment.id,
+        trainedByMemberNumber: addTrainer.memberNumber as Int,
+        trainedAt: DateTime.now()
+          .minus(Duration.fromObject({hours: 1}))
+          .toJSDate(),
+        memberNumber: newMember.memberNumber as Int,
+      };
+      const markTrainedByActor: Actor = {
+        tag: 'user',
+        user: {
+          emailAddress: faker.internet.email() as EmailAddress,
+          memberNumber: faker.number.int(),
+        },
+      };
+      beforeEach(async () => {
+        getRightOrFail(
+          await applyToResource(
+            framework.depsForApplyToResource,
+            markMemberTrainedBy
+          )(markTrainedBy, markTrainedByActor)()
+        );
+      });
+
+      it('shows the user as trained', () => {
+        const equipment = runQuery();
+        const trainedMembers = equipment.trainedMembers.filter(
+          m => m.memberNumber === markTrainedBy.memberNumber
+        );
+        expect(trainedMembers).toHaveLength(1);
+        const trainedMember = trainedMembers[0];
+        expect(trainedMember.memberNumber).toStrictEqual(
+          markTrainedBy.memberNumber
+        );
+        expect(trainedMember.emailAddress).toStrictEqual(newMember.email);
+        expect(trainedMember.trainedByEmail).toStrictEqual(
+          addTrainerMember.email
+        );
+        expect(trainedMember.trainedByMemberNumber).toStrictEqual(
+          addTrainerMember.memberNumber
+        );
+        expect(trainedMember.trainedSince).toStrictEqual(
+          markTrainedBy.trainedAt
+        );
+        expect(trainedMember.legacyImport).toStrictEqual(false);
+        expect(trainedMember.name).toStrictEqual(newMember.name);
+        if (!O.isSome(trainedMember.markedTrainedByActor)) {
+          throw new Error('Missing marked trained by actor');
+        }
+        expect(trainedMember.markedTrainedByActor.value).toStrictEqual(
+          markTrainedByActor
+        );
+      });
     });
   });
 
