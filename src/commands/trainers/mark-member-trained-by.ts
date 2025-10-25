@@ -9,7 +9,7 @@ import {Actor} from '../../types/actor';
 const codec = t.strict({
   equipmentId: tt.UUID,
   trainedByMemberNumber: t.union([t.Int, tt.IntFromString]),
-  trainedAt: tt.DateFromNumber,
+  trainedAt: tt.DateFromISOString,
   memberNumber: t.union([t.Int, tt.IntFromString]),
 });
 
