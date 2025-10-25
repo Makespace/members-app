@@ -17,6 +17,7 @@ import {DateTime, Duration} from 'luxon';
 import {LinkNumberToEmail} from '../../../src/commands/member-numbers/link-number-to-email';
 import {applyToResource} from '../../../src/commands/apply-command-to-resource';
 import {RevokeMemberTrained} from '../../../src/commands/trainers/revoke-member-trained';
+import {AddTrainer} from '../../../src/commands/trainers/add-trainer';
 
 describe('get', () => {
   let framework: TestFramework;
@@ -261,6 +262,91 @@ describe('get', () => {
         expect(trainedMember.markedTrainedByActor.value).toStrictEqual(
           markTrainedByActor
         );
+      });
+    });
+
+    describe('add another trainer', () => {
+      const anotherTrainer: LinkNumberToEmail = {
+        email: faker.internet.email() as EmailAddress,
+        memberNumber: faker.number.int() as Int,
+        name: faker.animal.cat(),
+        formOfAddress: undefined,
+      };
+      const addAnotherTrainer: AddTrainer = {
+        equipmentId,
+        memberNumber: anotherTrainer.memberNumber,
+      };
+
+      beforeEach(async () => {
+        await framework.commands.memberNumbers.linkNumberToEmail(
+          anotherTrainer
+        );
+        await framework.commands.trainers.add(addAnotherTrainer);
+      });
+      describe('already trained member is marked as trained by a different trainer (via admin)', () => {
+        const markUserTrainedAgain: MarkMemberTrainedBy = {
+          equipmentId,
+          trainedByMemberNumber: anotherTrainer.memberNumber as Int,
+          trainedAt: DateTime.now()
+            .minus(Duration.fromObject({hours: 1}))
+            .toJSDate(),
+          memberNumber: markTrained.memberNumber, // User was already marked trained.
+        };
+        const markUserTrainedAgainActor: Actor = {
+          tag: 'user',
+          user: {
+            // An 'admin'
+            emailAddress: faker.internet.email() as EmailAddress,
+            memberNumber: faker.number.int(),
+          },
+        };
+
+        beforeEach(async () => {
+          getRightOrFail(
+            await applyToResource(
+              framework.depsForApplyToResource,
+              markMemberTrainedBy
+            )(markUserTrainedAgain, markUserTrainedAgainActor)()
+          );
+        });
+
+        it('shows the user as trained by the different trainer', () => {
+          const equipment = runQuery();
+          const trainedMembers = equipment.trainedMembers.filter(
+            m => m.memberNumber === markTrained.memberNumber
+          );
+          expect(trainedMembers).toHaveLength(1);
+          const trainedMember = trainedMembers[0];
+          expect(trainedMember.memberNumber).toStrictEqual(
+            markTrained.memberNumber
+          );
+          expect(trainedMember.emailAddress).toStrictEqual(
+            addTrainedMember.email
+          );
+          expect(trainedMember.trainedByEmail).toStrictEqual(
+            O.some(anotherTrainer.email)
+          );
+          expect(trainedMember.trainedByMemberNumber).toStrictEqual(
+            O.some(anotherTrainer.memberNumber)
+          );
+          expect(
+            // The database truncates milliseconds.
+            Math.floor(trainedMember.trainedSince.getUTCSeconds())
+          ).toStrictEqual(
+            Math.floor(markUserTrainedAgain.trainedAt.getUTCSeconds())
+          );
+          expect(trainedMember.legacyImport).toStrictEqual(false);
+          expect(trainedMember.name).toStrictEqual(
+            // Add trained member name isn't set so therefore its returned at None
+            addTrainedMember.name ? O.some(addTrainedMember.name) : O.none
+          );
+          if (!O.isSome(trainedMember.markedTrainedByActor)) {
+            throw new Error('Missing marked trained by actor');
+          }
+          expect(trainedMember.markedTrainedByActor.value).toStrictEqual(
+            markUserTrainedAgainActor
+          );
+        });
       });
     });
   });
