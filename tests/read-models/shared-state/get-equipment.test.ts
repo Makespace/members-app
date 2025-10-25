@@ -3,12 +3,21 @@ import {TestFramework, initTestFramework} from '../test-framework';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
-import {getSomeOrFail} from '../../helpers';
+import {getRightOrFail, getSomeOrFail} from '../../helpers';
 
-import {EmailAddress} from '../../../src/types';
+import {Actor, EmailAddress} from '../../../src/types';
 import {Int} from 'io-ts';
 import {updateState} from '../../../src/read-models/shared-state/update-state';
 import {EventOfType} from '../../../src/types/domain-event';
+import {
+  markMemberTrainedBy,
+  MarkMemberTrainedBy,
+} from '../../../src/commands/trainers/mark-member-trained-by';
+import {DateTime, Duration} from 'luxon';
+import {LinkNumberToEmail} from '../../../src/commands/member-numbers/link-number-to-email';
+import {applyToResource} from '../../../src/commands/apply-command-to-resource';
+import {RevokeMemberTrained} from '../../../src/commands/trainers/revoke-member-trained';
+import {AddTrainer} from '../../../src/commands/trainers/add-trainer';
 
 describe('get', () => {
   let framework: TestFramework;
@@ -109,6 +118,236 @@ describe('get', () => {
     it('has no training sheet', () => {
       const equipment = runQuery();
       expect(equipment.trainingSheetId).toStrictEqual(O.none);
+    });
+
+    describe('a member is marked as trained by the trainer (via admin)', () => {
+      const newMember: LinkNumberToEmail = {
+        memberNumber: faker.number.int(),
+        email: faker.internet.email() as EmailAddress,
+        name: faker.company.buzzNoun(),
+        formOfAddress: undefined,
+      };
+      const markTrainedBy: MarkMemberTrainedBy = {
+        equipmentId: addEquipment.id,
+        trainedByMemberNumber: addTrainer.memberNumber as Int,
+        trainedAt: DateTime.now()
+          .minus(Duration.fromObject({hours: 1}))
+          .toJSDate(),
+        memberNumber: newMember.memberNumber as Int,
+      };
+      const markTrainedByActor: Actor = {
+        tag: 'user',
+        user: {
+          emailAddress: faker.internet.email() as EmailAddress,
+          memberNumber: faker.number.int(),
+        },
+      };
+      beforeEach(async () => {
+        await framework.commands.memberNumbers.linkNumberToEmail(newMember);
+        getRightOrFail(
+          await applyToResource(
+            framework.depsForApplyToResource,
+            markMemberTrainedBy
+          )(markTrainedBy, markTrainedByActor)()
+        );
+      });
+
+      it('shows the user as trained', () => {
+        const equipment = runQuery();
+        const trainedMembers = equipment.trainedMembers.filter(
+          m => m.memberNumber === markTrainedBy.memberNumber
+        );
+        expect(trainedMembers).toHaveLength(1);
+        const trainedMember = trainedMembers[0];
+        expect(trainedMember.memberNumber).toStrictEqual(
+          markTrainedBy.memberNumber
+        );
+        expect(trainedMember.emailAddress).toStrictEqual(newMember.email);
+        expect(trainedMember.trainedByEmail).toStrictEqual(
+          O.some(addTrainerMember.email)
+        );
+        expect(trainedMember.trainedByMemberNumber).toStrictEqual(
+          O.some(addTrainerMember.memberNumber)
+        );
+        expect(
+          // The database truncates milliseconds.
+          Math.floor(trainedMember.trainedSince.getUTCSeconds())
+        ).toStrictEqual(Math.floor(markTrainedBy.trainedAt.getUTCSeconds()));
+        expect(trainedMember.legacyImport).toStrictEqual(false);
+        expect(trainedMember.name).toStrictEqual(O.some(newMember.name));
+        if (!O.isSome(trainedMember.markedTrainedByActor)) {
+          throw new Error('Missing marked trained by actor');
+        }
+        expect(trainedMember.markedTrainedByActor.value).toStrictEqual(
+          markTrainedByActor
+        );
+      });
+
+      describe('Training is revoked on user', () => {
+        const revokeTrained: RevokeMemberTrained = {
+          equipmentId,
+          memberNumber: markTrainedBy.memberNumber,
+        };
+        beforeEach(async () => {
+          await framework.commands.trainers.revokeTrained(revokeTrained);
+        });
+
+        it('member does not show as trained', () => {
+          const equipment = runQuery();
+          expect(
+            equipment.trainedMembers.map(m => m.memberNumber)
+          ).not.toContain(markTrainedBy.memberNumber);
+        });
+      });
+    });
+
+    describe('a member is marked as trained by a non-existant user (via admin)', () => {
+      const newMember: LinkNumberToEmail = {
+        memberNumber: faker.number.int(),
+        email: faker.internet.email() as EmailAddress,
+        name: faker.company.buzzNoun(),
+        formOfAddress: undefined,
+      };
+      const markTrainedBy: MarkMemberTrainedBy = {
+        equipmentId: addEquipment.id,
+        trainedByMemberNumber: faker.number.int() as Int, // non existant member number.
+        trainedAt: DateTime.now()
+          .minus(Duration.fromObject({hours: 1}))
+          .toJSDate(),
+        memberNumber: newMember.memberNumber as Int,
+      };
+      const markTrainedByActor: Actor = {
+        tag: 'user',
+        user: {
+          emailAddress: faker.internet.email() as EmailAddress,
+          memberNumber: faker.number.int(),
+        },
+      };
+      beforeEach(async () => {
+        await framework.commands.memberNumbers.linkNumberToEmail(newMember);
+        getRightOrFail(
+          await applyToResource(
+            framework.depsForApplyToResource,
+            markMemberTrainedBy
+          )(markTrainedBy, markTrainedByActor)()
+        );
+      });
+
+      it('shows the user as trained', () => {
+        const equipment = runQuery();
+        const trainedMembers = equipment.trainedMembers.filter(
+          m => m.memberNumber === markTrainedBy.memberNumber
+        );
+        expect(trainedMembers).toHaveLength(1);
+        const trainedMember = trainedMembers[0];
+        expect(trainedMember.memberNumber).toStrictEqual(
+          markTrainedBy.memberNumber
+        );
+        expect(trainedMember.emailAddress).toStrictEqual(newMember.email);
+
+        // The trained by member is fake so there won't be an email registered.
+        expect(trainedMember.trainedByEmail).toStrictEqual(O.none);
+        expect(trainedMember.trainedByMemberNumber).toStrictEqual(
+          O.some(markTrainedBy.trainedByMemberNumber)
+        );
+        expect(
+          // The database truncates milliseconds.
+          Math.floor(trainedMember.trainedSince.getUTCSeconds())
+        ).toStrictEqual(Math.floor(markTrainedBy.trainedAt.getUTCSeconds()));
+        expect(trainedMember.legacyImport).toStrictEqual(false);
+        expect(trainedMember.name).toStrictEqual(O.some(newMember.name));
+        if (!O.isSome(trainedMember.markedTrainedByActor)) {
+          throw new Error('Missing marked trained by actor');
+        }
+        expect(trainedMember.markedTrainedByActor.value).toStrictEqual(
+          markTrainedByActor
+        );
+      });
+    });
+
+    describe('add another trainer', () => {
+      const anotherTrainer: LinkNumberToEmail = {
+        email: faker.internet.email() as EmailAddress,
+        memberNumber: faker.number.int() as Int,
+        name: faker.animal.cat(),
+        formOfAddress: undefined,
+      };
+      const addAnotherTrainer: AddTrainer = {
+        equipmentId,
+        memberNumber: anotherTrainer.memberNumber,
+      };
+
+      beforeEach(async () => {
+        await framework.commands.memberNumbers.linkNumberToEmail(
+          anotherTrainer
+        );
+        await framework.commands.trainers.add(addAnotherTrainer);
+      });
+      describe('already trained member is marked as trained by a different trainer (via admin)', () => {
+        const markUserTrainedAgain: MarkMemberTrainedBy = {
+          equipmentId,
+          trainedByMemberNumber: anotherTrainer.memberNumber as Int,
+          trainedAt: DateTime.now()
+            .minus(Duration.fromObject({hours: 1}))
+            .toJSDate(),
+          memberNumber: markTrained.memberNumber, // User was already marked trained.
+        };
+        const markUserTrainedAgainActor: Actor = {
+          tag: 'user',
+          user: {
+            // An 'admin'
+            emailAddress: faker.internet.email() as EmailAddress,
+            memberNumber: faker.number.int(),
+          },
+        };
+
+        beforeEach(async () => {
+          getRightOrFail(
+            await applyToResource(
+              framework.depsForApplyToResource,
+              markMemberTrainedBy
+            )(markUserTrainedAgain, markUserTrainedAgainActor)()
+          );
+        });
+
+        it('shows the user as trained by the different trainer', () => {
+          const equipment = runQuery();
+          const trainedMembers = equipment.trainedMembers.filter(
+            m => m.memberNumber === markTrained.memberNumber
+          );
+          expect(trainedMembers).toHaveLength(1);
+          const trainedMember = trainedMembers[0];
+          expect(trainedMember.memberNumber).toStrictEqual(
+            markTrained.memberNumber
+          );
+          expect(trainedMember.emailAddress).toStrictEqual(
+            addTrainedMember.email
+          );
+          expect(trainedMember.trainedByEmail).toStrictEqual(
+            O.some(anotherTrainer.email)
+          );
+          expect(trainedMember.trainedByMemberNumber).toStrictEqual(
+            O.some(anotherTrainer.memberNumber)
+          );
+          expect(
+            // The database truncates milliseconds.
+            Math.floor(trainedMember.trainedSince.getUTCSeconds())
+          ).toStrictEqual(
+            Math.floor(markUserTrainedAgain.trainedAt.getUTCSeconds())
+          );
+          expect(trainedMember.legacyImport).toStrictEqual(false);
+          expect(trainedMember.name).toStrictEqual(
+            // Add trained member name isn't set so therefore its returned at None
+            addTrainedMember.name ? O.some(addTrainedMember.name) : O.none
+          );
+          if (!O.isSome(trainedMember.markedTrainedByActor)) {
+            throw new Error('Missing marked trained by actor');
+          }
+          expect(trainedMember.markedTrainedByActor.value).toStrictEqual(
+            markUserTrainedAgainActor
+          );
+        });
+      });
     });
   });
 
