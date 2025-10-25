@@ -5,6 +5,7 @@ import {
   Html,
   html,
   joinHtml,
+  safe,
   sanitizeOption,
   sanitizeString,
   toLoggedInContent,
@@ -21,6 +22,7 @@ import {
   MemberAwaitingTraining,
   OrphanedPassedQuiz,
 } from '../../read-models/external-state/equipment-quiz';
+import {tooltip} from '../shared-render/tool-tip';
 
 const trainersList = (trainers: ViewModel['equipment']['trainers']) =>
   pipe(
@@ -48,6 +50,24 @@ const trainMember = (viewModel: ViewModel) =>
           <a href="/equipment/mark-member-trained?equipmentId=${id}"
             >Mark member as trained</a
           >
+        </li>`
+    ),
+    O.getOrElse(() => html``)
+  );
+
+const adminMarkTrainedBy = (viewModel: ViewModel) =>
+  pipe(
+    viewModel,
+    O.of,
+    O.filter(viewModel => viewModel.isSuperUser),
+    O.map(viewModel => viewModel.equipment.id),
+    O.map(
+      id =>
+        html` <li>
+          <a href="/equipment/mark-member-trained-by?equipmentId=${id}"
+            >[Admin] Mark member as trained by</a
+          >
+          ${tooltip(safe('Only admins can mark people as trained by others'))}
         </li>`
     ),
     O.getOrElse(() => html``)
@@ -118,9 +138,9 @@ const removeTrainingSheet = (viewModel: ViewModel) =>
 
 const equipmentActions = (viewModel: ViewModel) => html`
   <ul>
-    ${trainMember(viewModel)} ${addTrainer(viewModel)}
-    ${registerSheet(viewModel)} ${currentSheet(viewModel)}
-    ${removeTrainingSheet(viewModel)}
+    ${trainMember(viewModel)} ${adminMarkTrainedBy(viewModel)}
+    ${addTrainer(viewModel)} ${registerSheet(viewModel)}
+    ${currentSheet(viewModel)} ${removeTrainingSheet(viewModel)}
   </ul>
 `;
 

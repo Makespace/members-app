@@ -167,6 +167,63 @@ export const updateState =
         }
         break;
       }
+      case 'MemberTrainedOnEquipmentBy': {
+        const existing = O.fromNullable(
+          db
+            .select()
+            .from(trainedMemberstable)
+            .where(
+              and(
+                eq(trainedMemberstable.equipmentId, event.equipmentId),
+                eq(trainedMemberstable.memberNumber, event.memberNumber)
+              )
+            )
+            .limit(1)
+            .get()
+        );
+        // A bug was previously found here because the trainedAt value from the database
+        // truncates the milliseconds in the date. This leads to 2 completely duplicate events
+        // appearing different because the times are different (by < 1000 milliseconds). To prevent
+        // this we decrease the trainedAt time value by 1000ms. This does mean 2 non-duplicate events
+        // within 1s of each other won't progress further but that doesn't matter for the use-case and
+        // the information to resolve is lost by the db milliseconds truncation anyway.
+        if (
+          O.isSome(existing) &&
+          existing.value.trainedAt.getTime() - 1000 < event.trainedAt.getTime()
+        ) {
+          // If we have already marked this member as trained in the past then
+          // don't re-mark them as this would refresh their 'trained since'.
+          break;
+        }
+        if (O.isSome(existing)) {
+          db.update(trainedMemberstable)
+            .set({
+              trainedAt: event.trainedAt,
+              trainedByMemberNumber: event.trainedByMemberNumber,
+              legacyImport: false,
+              markTrainedByActor: event.actor,
+            })
+            .where(
+              and(
+                eq(trainedMemberstable.equipmentId, event.equipmentId),
+                eq(trainedMemberstable.memberNumber, event.memberNumber)
+              )
+            )
+            .run();
+        } else {
+          db.insert(trainedMemberstable)
+            .values({
+              memberNumber: event.memberNumber,
+              equipmentId: event.equipmentId,
+              trainedAt: event.trainedAt,
+              trainedByMemberNumber: event.trainedByMemberNumber,
+              legacyImport: false,
+              markTrainedByActor: event.actor,
+            })
+            .run();
+        }
+        break;
+      }
       case 'OwnerAgreementSigned':
         db.update(membersTable)
           .set({agreementSigned: event.signedAt})
