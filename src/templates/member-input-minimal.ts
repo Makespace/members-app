@@ -11,7 +11,7 @@ export const memberNumberInputMinimal = (
   return html`
     <label for="${field}">${label}</label>
     <div style="width:300px;">
-      <input type="text" name="${field}" id="${field}" />
+      <input type="number" name="${field}" id="${field}" />
     </div>
   `;
 };
