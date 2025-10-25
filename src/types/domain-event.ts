@@ -291,12 +291,11 @@ type EventSpecificFields<T extends EventName> = Omit<
 // anymore but generally we wouldn't delete an event immediately after we stop producing it
 // so that read models can still use it for historical context.
 export const constructEvent =
-  <T extends EventName, A extends EventSpecificFields<T> & {actor?: Actor}>(
+  <T extends EventName, A extends EventSpecificFields<T> & {actor: Actor}>(
     type: T
   ) =>
   (args: A): EventBase<T> & A => ({
     type,
-    actor: args.actor ?? ({tag: 'system'} satisfies Actor),
     recordedAt: new Date(),
     ...args,
   });
