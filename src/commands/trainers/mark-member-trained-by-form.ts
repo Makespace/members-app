@@ -29,6 +29,10 @@ type ViewModel = {
 const renderForm = (viewModel: ViewModel) =>
   pipe(
     html`
+      <h3 style="color:red;">
+        This page is WIP - The datamodel is setup but the input's here aren't
+        particularly user friendly
+      </h1>
       <h1>
         [Admin] Mark a member as trained on
         ${sanitizeString(viewModel.equipment.name)} by a specific trainer
