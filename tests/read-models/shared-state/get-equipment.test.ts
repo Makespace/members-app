@@ -16,6 +16,7 @@ import {
 import {DateTime, Duration} from 'luxon';
 import {LinkNumberToEmail} from '../../../src/commands/member-numbers/link-number-to-email';
 import {applyToResource} from '../../../src/commands/apply-command-to-resource';
+import {RevokeMemberTrained} from '../../../src/commands/trainers/revoke-member-trained';
 
 describe('get', () => {
   let framework: TestFramework;
@@ -179,6 +180,23 @@ describe('get', () => {
         expect(trainedMember.markedTrainedByActor.value).toStrictEqual(
           markTrainedByActor
         );
+      });
+
+      describe('Training is revoked on user', () => {
+        const revokeTrained: RevokeMemberTrained = {
+          equipmentId,
+          memberNumber: markTrainedBy.memberNumber,
+        };
+        beforeEach(async () => {
+          await framework.commands.trainers.revokeTrained(revokeTrained);
+        });
+
+        it('member does not show as trained', () => {
+          const equipment = runQuery();
+          expect(
+            equipment.trainedMembers.map(m => m.memberNumber)
+          ).not.toContain(markTrainedBy.memberNumber);
+        });
       });
     });
 
