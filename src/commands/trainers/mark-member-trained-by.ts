@@ -28,6 +28,7 @@ const process = (input: {
           trainedAt: input.command.trainedAt,
           memberNumber: input.command.memberNumber,
           markedTrainedBy: input.command.actor.user.memberNumber,
+          actor: input.command.actor,
         })
       );
 

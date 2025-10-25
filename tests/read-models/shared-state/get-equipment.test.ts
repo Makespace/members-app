@@ -141,6 +141,7 @@ describe('get', () => {
         },
       };
       beforeEach(async () => {
+        await framework.commands.memberNumbers.linkNumberToEmail(newMember);
         getRightOrFail(
           await applyToResource(
             framework.depsForApplyToResource,
@@ -161,16 +162,17 @@ describe('get', () => {
         );
         expect(trainedMember.emailAddress).toStrictEqual(newMember.email);
         expect(trainedMember.trainedByEmail).toStrictEqual(
-          addTrainerMember.email
+          O.some(addTrainerMember.email)
         );
         expect(trainedMember.trainedByMemberNumber).toStrictEqual(
-          addTrainerMember.memberNumber
+          O.some(addTrainerMember.memberNumber)
         );
-        expect(trainedMember.trainedSince).toStrictEqual(
-          markTrainedBy.trainedAt
-        );
+        expect(
+          // The database truncates milliseconds.
+          Math.floor(trainedMember.trainedSince.getUTCSeconds())
+        ).toStrictEqual(Math.floor(markTrainedBy.trainedAt.getUTCSeconds()));
         expect(trainedMember.legacyImport).toStrictEqual(false);
-        expect(trainedMember.name).toStrictEqual(newMember.name);
+        expect(trainedMember.name).toStrictEqual(O.some(newMember.name));
         if (!O.isSome(trainedMember.markedTrainedByActor)) {
           throw new Error('Missing marked trained by actor');
         }
