@@ -39,6 +39,9 @@ smoketest: .env
 lint: node_modules
 	bun gts lint
 
+audit:
+	bun audit
+
 unused-exports: node_modules
 	bun ts-unused-exports ./tsconfig.json
 
