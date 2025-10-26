@@ -30,6 +30,7 @@ describe('revoke-super-user', () => {
       events: [
         constructEvent('SuperUserDeclared')({
           memberNumber,
+          actor: arbitraryActor(),
         }),
       ],
     });
@@ -53,12 +54,15 @@ describe('revoke-super-user', () => {
       events: [
         constructEvent('SuperUserDeclared')({
           memberNumber,
+          actor: arbitraryActor(),
         }),
         constructEvent('SuperUserRevoked')({
           memberNumber,
+          actor: arbitraryActor(),
         }),
         constructEvent('SuperUserDeclared')({
           memberNumber,
+          actor: arbitraryActor(),
         }),
       ],
     });

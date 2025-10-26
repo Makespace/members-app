@@ -26,6 +26,7 @@ const process = (input: {
       equipmentId: input.command.equipmentId,
       memberNumber: input.command.memberNumber,
       legacyImport: false,
+      actor: input.command.actor,
     })
   );
 

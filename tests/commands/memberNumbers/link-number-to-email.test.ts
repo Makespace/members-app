@@ -62,6 +62,7 @@ describe('linkNumberToEmail', () => {
         email: faker.internet.email() as EmailAddress,
         name: undefined,
         formOfAddress: undefined,
+        actor: arbitraryActor(),
       }),
     ];
     const result = linkNumberToEmail.process({command, events});
@@ -77,6 +78,7 @@ describe('linkNumberToEmail', () => {
         email: command.email,
         name: undefined,
         formOfAddress: undefined,
+        actor: arbitraryActor(),
       }),
     ];
     const result = pipe(

@@ -23,7 +23,7 @@ import {
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
 import {getResourceEvents} from '../../src/init-dependencies/event-store/get-resource-events';
 import {Resource} from '../../src/types/resource';
-import {getRightOrFail, getSomeOrFail} from '../helpers';
+import {arbitraryActor, getRightOrFail, getSomeOrFail} from '../helpers';
 import {SyncTroubleTicketDependencies} from '../../src/sync-worker/sync_trouble_ticket';
 import {storeTroubleTicketRowsRead} from '../../src/sync-worker/db/store_trouble_ticket_rows_read';
 import {lastTroubleTicketRowRead} from '../../src/sync-worker/db/last_trouble_ticket_row_read';
@@ -37,6 +37,7 @@ export const generateRegisterSheetEvent = (
   constructEvent('EquipmentTrainingSheetRegistered')({
     equipmentId,
     trainingSheetId,
+    actor: arbitraryActor(),
   });
 
 export const generateRemoveSheetEvent = (
@@ -44,6 +45,7 @@ export const generateRemoveSheetEvent = (
 ): EventOfType<'EquipmentTrainingSheetRemoved'> =>
   constructEvent('EquipmentTrainingSheetRemoved')({
     equipmentId,
+    actor: arbitraryActor(),
   });
 
 export const testLogger = () =>
