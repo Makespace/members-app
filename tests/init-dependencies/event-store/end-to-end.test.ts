@@ -11,7 +11,7 @@ import {
   initialVersionNumber,
 } from '../../../src/init-dependencies/event-store/commit-event';
 import {ensureEventTableExists} from '../../../src/init-dependencies/event-store/ensure-events-table-exists';
-import {getRightOrFail} from '../../helpers';
+import {arbitraryActor, getRightOrFail} from '../../helpers';
 import {Dependencies} from '../../../src/dependencies';
 import {getResourceEvents} from '../../../src/init-dependencies/event-store/get-resource-events';
 import {RightOfTaskEither} from '../../type-optics';
@@ -23,6 +23,7 @@ const arbitraryMemberNumberLinkedToEmailEvent = () =>
     email: faker.internet.email() as EmailAddress,
     name: undefined,
     formOfAddress: undefined,
+    actor: arbitraryActor(),
   });
 
 const testLogger = createLogger({level: 'silent'});

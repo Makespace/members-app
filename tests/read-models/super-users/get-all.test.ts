@@ -3,6 +3,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {constructEvent} from '../../../src/types';
 import {arbitraryUser} from '../../types/user.helper';
 import {getAll} from '../../../src/read-models/super-users/get-all';
+import {arbitraryActor} from '../../helpers';
 
 describe('get-all', () => {
   describe('when there are no super-users', () => {
@@ -18,6 +19,7 @@ describe('get-all', () => {
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: user.memberNumber,
+          actor: arbitraryActor(),
         }),
       ],
       getAll(),
@@ -36,12 +38,15 @@ describe('get-all', () => {
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: revokedUser.memberNumber,
+          actor: arbitraryActor(),
         }),
         constructEvent('SuperUserDeclared')({
           memberNumber: nonRevokedUser.memberNumber,
+          actor: arbitraryActor(),
         }),
         constructEvent('SuperUserRevoked')({
           memberNumber: revokedUser.memberNumber,
+          actor: arbitraryActor(),
         }),
       ],
       getAll(),

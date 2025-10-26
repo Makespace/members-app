@@ -32,6 +32,7 @@ describe('remove-area', () => {
         constructEvent('AreaCreated')({
           id: areaId,
           name: areaName,
+          actor: arbitraryActor(),
         }),
       ],
     });
@@ -58,8 +59,9 @@ describe('remove-area', () => {
         constructEvent('AreaCreated')({
           id: areaId,
           name: areaName,
+          actor: arbitraryActor(),
         }),
-        constructEvent('AreaRemoved')({id: areaId}),
+        constructEvent('AreaRemoved')({id: areaId, actor: arbitraryActor()}),
       ],
     });
 

@@ -19,12 +19,22 @@ describe('add-owner', () => {
   const areaCreated = constructEvent('AreaCreated')({
     id: areaId,
     name: areaName,
+    actor: arbitraryActor(),
   });
   const areaRemoved = constructEvent('AreaRemoved')({
     id: areaId,
+    actor: arbitraryActor(),
   });
-  const ownerAdded = constructEvent('OwnerAdded')({memberNumber, areaId});
-  const ownerRemoved = constructEvent('OwnerRemoved')({memberNumber, areaId});
+  const ownerAdded = constructEvent('OwnerAdded')({
+    memberNumber,
+    areaId,
+    actor: arbitraryActor(),
+  });
+  const ownerRemoved = constructEvent('OwnerRemoved')({
+    memberNumber,
+    areaId,
+    actor: arbitraryActor(),
+  });
 
   describe('when the area does not exist', () => {
     const result = addOwner.process({

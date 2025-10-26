@@ -41,6 +41,7 @@ describe('create-area', () => {
         constructEvent('AreaCreated')({
           id: v4() as UUID,
           name: areaName,
+          actor: arbitraryActor(),
         }),
       ],
     });

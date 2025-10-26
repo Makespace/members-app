@@ -68,6 +68,9 @@ async function asyncApplyRecurlyEvents(
           hasCanceledSubscription: hasCanceledSubscription ?? false,
           hasPausedSubscription: hasPausedSubscription ?? false,
           hasPastDueInvoice: hasPastDueInvoice ?? false,
+          actor: {
+            tag: 'system',
+          },
         });
 
         updateState(event);
