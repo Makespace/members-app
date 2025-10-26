@@ -1,6 +1,7 @@
 import {isSelfOrPrivileged} from '../../src/commands/is-self-or-privileged';
 import {constructEvent} from '../../src/types';
 import {Actor} from '../../src/types/actor';
+import {arbitraryActor} from '../helpers';
 import {arbitraryUser} from '../types/user.helper';
 
 describe('isSelfOrPrivileged', () => {
@@ -24,6 +25,7 @@ describe('isSelfOrPrivileged', () => {
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: userToBeSuperUser.memberNumber,
+          actor: arbitraryActor(),
         }),
       ],
       {
@@ -37,9 +39,11 @@ describe('isSelfOrPrivileged', () => {
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: userToBeSuperUser.memberNumber,
+          actor: arbitraryActor(),
         }),
         constructEvent('SuperUserRevoked')({
           memberNumber: userToBeSuperUser.memberNumber,
+          actor: arbitraryActor(),
         }),
       ],
       {
@@ -53,12 +57,15 @@ describe('isSelfOrPrivileged', () => {
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: userToBeSuperUser.memberNumber,
+          actor: arbitraryActor(),
         }),
         constructEvent('SuperUserRevoked')({
           memberNumber: userToBeSuperUser.memberNumber,
+          actor: arbitraryActor(),
         }),
         constructEvent('SuperUserDeclared')({
           memberNumber: userToBeSuperUser.memberNumber,
+          actor: arbitraryActor(),
         }),
       ],
       {

@@ -18,6 +18,7 @@ const process: Command<EditName>['process'] = input =>
       memberNumber: input.command.memberNumber,
       name: input.command.name,
       formOfAddress: undefined,
+      actor: input.command.actor,
     })
   );
 

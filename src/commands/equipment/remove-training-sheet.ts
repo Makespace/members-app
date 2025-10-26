@@ -3,7 +3,7 @@ import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import {DomainEvent, constructEvent} from '../../types';
 import {Actor} from '../../types/actor';
-import {Command} from '../command';
+import {Command, WithActor} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {isEquipmentTrainer} from '../is-equipment-trainer';
 import {isEquipmentOwner} from '../is-equipment-owner';
@@ -15,7 +15,7 @@ const codec = t.strict({
 type RemoveTrainingSheet = t.TypeOf<typeof codec>;
 
 const process = (input: {
-  command: RemoveTrainingSheet;
+  command: WithActor<RemoveTrainingSheet>;
   events: ReadonlyArray<DomainEvent>;
 }): O.Option<DomainEvent> =>
   O.some(constructEvent('EquipmentTrainingSheetRemoved')(input.command));

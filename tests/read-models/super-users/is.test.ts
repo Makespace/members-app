@@ -2,6 +2,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {constructEvent} from '../../../src/types';
 import {arbitraryUser} from '../../types/user.helper';
 import {is} from '../../../src/read-models/super-users/is';
+import {arbitraryActor} from '../../helpers';
 
 describe('is', () => {
   describe('when there are no super-users', () => {
@@ -17,6 +18,7 @@ describe('is', () => {
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: user.memberNumber,
+          actor: arbitraryActor(),
         }),
       ],
       is(user.memberNumber)
@@ -33,9 +35,11 @@ describe('is', () => {
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: revokedUser.memberNumber,
+          actor: arbitraryActor(),
         }),
         constructEvent('SuperUserRevoked')({
           memberNumber: revokedUser.memberNumber,
+          actor: arbitraryActor(),
         }),
       ],
       is(revokedUser.memberNumber)
