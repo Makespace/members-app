@@ -198,10 +198,10 @@ const pullTroubleTicketRows = async (
     )();
     if (E.isLeft(data)) {
       log.error(
-        data.left,
-        'Failed to pull data for trouble ticket responses rows %s to %s, skipping rest of sheet',
+        'Failed to pull data for trouble ticket responses rows %d to %d, skipping rest of sheet - error: %s',
         rowStart,
-        rowEnd
+        rowEnd,
+        data.left
       );
       return resultantRows;
     }
