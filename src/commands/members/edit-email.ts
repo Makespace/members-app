@@ -19,6 +19,7 @@ const process: Command<EditEmail>['process'] = input =>
     constructEvent('MemberEmailChanged')({
       memberNumber: input.command.memberNumber,
       newEmail: input.command.email,
+      actor: input.command.actor,
     })
   );
 

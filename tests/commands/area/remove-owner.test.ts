@@ -31,6 +31,7 @@ describe('remove-owner', () => {
     const areaCreated = constructEvent('AreaCreated')({
       id: areaId,
       name: areaName,
+      actor: arbitraryActor(),
     });
 
     describe('and the member is an owner of it', () => {
@@ -38,7 +39,11 @@ describe('remove-owner', () => {
         command,
         events: [
           areaCreated,
-          constructEvent('OwnerAdded')({memberNumber, areaId}),
+          constructEvent('OwnerAdded')({
+            memberNumber,
+            areaId,
+            actor: arbitraryActor(),
+          }),
         ],
       });
 
@@ -60,8 +65,12 @@ describe('remove-owner', () => {
         command,
         events: [
           areaCreated,
-          constructEvent('OwnerAdded')({memberNumber, areaId}),
-          constructEvent('AreaRemoved')({id: areaId}),
+          constructEvent('OwnerAdded')({
+            memberNumber,
+            areaId,
+            actor: arbitraryActor(),
+          }),
+          constructEvent('AreaRemoved')({id: areaId, actor: arbitraryActor()}),
         ],
       });
 
@@ -86,8 +95,16 @@ describe('remove-owner', () => {
         command,
         events: [
           areaCreated,
-          constructEvent('OwnerAdded')({memberNumber, areaId}),
-          constructEvent('OwnerRemoved')({memberNumber, areaId}),
+          constructEvent('OwnerAdded')({
+            memberNumber,
+            areaId,
+            actor: arbitraryActor(),
+          }),
+          constructEvent('OwnerRemoved')({
+            memberNumber,
+            areaId,
+            actor: arbitraryActor(),
+          }),
         ],
       });
 

@@ -4,6 +4,7 @@ import {Actor} from '../../src/types/actor';
 import {arbitraryUser} from '../types/user.helper';
 import {UUID} from 'io-ts-types';
 import {isEquipmentTrainer} from '../../src/commands/is-equipment-trainer';
+import {arbitraryActor} from '../helpers';
 
 describe('isEquipmentTrainer', () => {
   const userToBeSuperUser = arbitraryUser();
@@ -33,6 +34,7 @@ describe('isEquipmentTrainer', () => {
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: userToBeSuperUser.memberNumber,
+          actor: arbitraryActor(),
         }),
       ],
       equipmentId,
@@ -44,9 +46,11 @@ describe('isEquipmentTrainer', () => {
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: userToBeSuperUser.memberNumber,
+          actor: arbitraryActor(),
         }),
         constructEvent('SuperUserRevoked')({
           memberNumber: userToBeSuperUser.memberNumber,
+          actor: arbitraryActor(),
         }),
       ],
       equipmentId,
@@ -58,12 +62,15 @@ describe('isEquipmentTrainer', () => {
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: userToBeSuperUser.memberNumber,
+          actor: arbitraryActor(),
         }),
         constructEvent('SuperUserRevoked')({
           memberNumber: userToBeSuperUser.memberNumber,
+          actor: arbitraryActor(),
         }),
         constructEvent('SuperUserDeclared')({
           memberNumber: userToBeSuperUser.memberNumber,
+          actor: arbitraryActor(),
         }),
       ],
       equipmentId,
@@ -83,6 +90,7 @@ describe('isEquipmentTrainer', () => {
         constructEvent('OwnerAdded')({
           memberNumber: areaOwner.memberNumber,
           areaId,
+          actor: arbitraryActor(),
         }),
       ],
       equipmentId,
@@ -95,15 +103,18 @@ describe('isEquipmentTrainer', () => {
         constructEvent('AreaCreated')({
           name: 'area2',
           id: areaId2,
+          actor: arbitraryActor(),
         }),
         constructEvent('EquipmentAdded')({
           name: 'equipment2',
           id: equipmentId2,
           areaId: areaId2,
+          actor: arbitraryActor(),
         }),
         constructEvent('OwnerAdded')({
           memberNumber: areaOwner2.memberNumber,
           areaId: areaId2,
+          actor: arbitraryActor(),
         }),
       ],
       equipmentId,
@@ -116,10 +127,12 @@ describe('isEquipmentTrainer', () => {
         constructEvent('OwnerAdded')({
           memberNumber: trainerOnEquipment.memberNumber,
           areaId,
+          actor: arbitraryActor(),
         }),
         constructEvent('TrainerAdded')({
           memberNumber: trainerOnEquipment.memberNumber,
           equipmentId,
+          actor: arbitraryActor(),
         }),
       ],
       equipmentId,
@@ -132,19 +145,23 @@ describe('isEquipmentTrainer', () => {
         constructEvent('AreaCreated')({
           name: 'area2',
           id: areaId2,
+          actor: arbitraryActor(),
         }),
         constructEvent('EquipmentAdded')({
           name: 'equipment2',
           id: equipmentId2,
           areaId: areaId2,
+          actor: arbitraryActor(),
         }),
         constructEvent('OwnerAdded')({
           memberNumber: trainerOnEquipment2.memberNumber,
           areaId: areaId2,
+          actor: arbitraryActor(),
         }),
         constructEvent('TrainerAdded')({
           memberNumber: trainerOnEquipment2.memberNumber,
           equipmentId: equipmentId2,
+          actor: arbitraryActor(),
         }),
       ],
       equipmentId,
@@ -158,14 +175,17 @@ describe('isEquipmentTrainer', () => {
           name: 'equipment1_2',
           id: equipmentId1_2,
           areaId: areaId,
+          actor: arbitraryActor(),
         }),
         constructEvent('OwnerAdded')({
           memberNumber: trainerOnEquipment1_2.memberNumber,
           areaId: areaId,
+          actor: arbitraryActor(),
         }),
         constructEvent('TrainerAdded')({
           memberNumber: trainerOnEquipment1_2.memberNumber,
           equipmentId: equipmentId1_2,
+          actor: arbitraryActor(),
         }),
       ],
       equipmentId,
@@ -175,11 +195,13 @@ describe('isEquipmentTrainer', () => {
       constructEvent('AreaCreated')({
         name: 'area',
         id: areaId,
+        actor: arbitraryActor(),
       }),
       constructEvent('EquipmentAdded')({
         name: 'equipment',
         id: equipmentId,
         areaId,
+        actor: arbitraryActor(),
       }),
     ];
     expect(

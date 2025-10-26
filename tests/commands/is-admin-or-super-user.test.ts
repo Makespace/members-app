@@ -2,6 +2,7 @@ import {constructEvent} from '../../src/types';
 import {Actor} from '../../src/types/actor';
 import {arbitraryUser} from '../types/user.helper';
 import {isAdminOrSuperUser} from '../../src/commands/is-admin-or-super-user';
+import {arbitraryActor} from '../helpers';
 
 describe('isAdminOrSuperUser', () => {
   const userToBeSuperUser = arbitraryUser();
@@ -19,6 +20,7 @@ describe('isAdminOrSuperUser', () => {
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: userToBeSuperUser.memberNumber,
+          actor: arbitraryActor(),
         }),
       ],
     ],
@@ -29,9 +31,11 @@ describe('isAdminOrSuperUser', () => {
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: userToBeSuperUser.memberNumber,
+          actor: arbitraryActor(),
         }),
         constructEvent('SuperUserRevoked')({
           memberNumber: userToBeSuperUser.memberNumber,
+          actor: arbitraryActor(),
         }),
       ],
     ],
@@ -42,12 +46,15 @@ describe('isAdminOrSuperUser', () => {
       [
         constructEvent('SuperUserDeclared')({
           memberNumber: userToBeSuperUser.memberNumber,
+          actor: arbitraryActor(),
         }),
         constructEvent('SuperUserRevoked')({
           memberNumber: userToBeSuperUser.memberNumber,
+          actor: arbitraryActor(),
         }),
         constructEvent('SuperUserDeclared')({
           memberNumber: userToBeSuperUser.memberNumber,
+          actor: arbitraryActor(),
         }),
       ],
     ],
