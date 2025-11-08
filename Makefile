@@ -1,4 +1,4 @@
-.phony: check clear-containers dev fix lint prod release smoketest test typecheck unused-exports watch-typecheck populate-local-dev populate-full update-vendor
+.phony: check clear-containers dev dev-all fix lint prod release smoketest test typecheck unused-exports watch-typecheck populate-local-dev populate-full update-vendor
 
 check: test lint typecheck unused-exports
 
@@ -17,6 +17,9 @@ update-vendor: node_modules
 
 dev: .env
 	docker compose --file docker-compose.yaml --file docker-compose.dev.yaml up --build
+
+dev-all: .env
+	./scripts/dev-all.sh
 
 populate-local-dev:
 	bash ./scripts/populate-local-dev.sh
