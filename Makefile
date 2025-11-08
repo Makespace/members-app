@@ -1,6 +1,6 @@
 .phony: check clear-containers dev fix lint prod release smoketest test typecheck unused-exports watch-typecheck populate-local-dev populate-full update-vendor
 
-check: test lint typecheck unused-exports
+check: audit test lint typecheck unused-exports
 
 node_modules: package.json bun.lockb
 	bun install --frozen-lockfile
