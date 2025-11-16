@@ -154,7 +154,6 @@ const testOnUsersNumbers =
   };
 
 // Not yet implemented so no-op.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const stopMembership = async (_memberNumber: number) => {};
 
 describe('get-via-shared-read-model', () => {

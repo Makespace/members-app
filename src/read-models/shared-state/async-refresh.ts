@@ -1,4 +1,3 @@
-/* eslint-disable unused-imports/no-unused-vars */
 import {Client} from '@libsql/client';
 import {getAllEvents} from '../../init-dependencies/event-store/get-all-events';
 import {pipe} from 'fp-ts/lib/function';

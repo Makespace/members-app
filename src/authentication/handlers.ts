@@ -87,7 +87,6 @@ export const landing = (req: Request, res: Response<CompleteHtmlDocument>) => {
   );
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 export const callback = (invalidLinkPath: string) =>
   passport.authenticate(magicLink.name, {
     failureRedirect: invalidLinkPath,
