@@ -77,16 +77,15 @@ describe('register-training-sheet', () => {
       trainingSheetId: faker.string.alphanumeric(8),
     };
 
-    expect(command.trainingSheetId).not.toEqual(
-      diffTrainingSheet.trainingSheetId
-    );
-
     const result = pipe(
       registerTrainingSheet.process({command: diffTrainingSheet, events}),
       getSomeOrFail
     );
 
     it('It keeps the same training sheet registered', () => {
+      expect(command.trainingSheetId).not.toEqual( // Check that the test data itself is ok.
+        diffTrainingSheet.trainingSheetId
+      );
       expect(result).toStrictEqual(
         expect.objectContaining({
           type: 'EquipmentTrainingSheetRegistered',

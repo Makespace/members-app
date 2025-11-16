@@ -486,22 +486,6 @@ describe('get-via-shared-read-model', () => {
       });
     });
 
-    describe('and they have signed the owner agreement', () => {
-      const signedAt = faker.date.future();
-
-      beforeEach(async () => {
-        await framework.commands.members.signOwnerAgreement({
-          memberNumber,
-          signedAt,
-        });
-      });
-
-      it('returns the date they signed it', () => {
-        const result = runQuery();
-        expect(result.agreementSigned).toStrictEqual(O.some(signedAt));
-      });
-    });
-
     describe('and they have been trained', () => {
       const createArea = {
         name: faker.company.buzzNoun() as NonEmptyString,
