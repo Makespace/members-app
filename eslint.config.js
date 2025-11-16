@@ -62,6 +62,12 @@ module.exports = defineConfig(
     },
     {
         files: ['**/*.js', '**/*.mjs'],
-        extends: [tseslint.configs.disableTypeChecked],
+        extends: [
+            tseslint.configs.disableTypeChecked
+        ],
+        rules: {
+            "@typescript-eslint/no-require-imports": "off",
+            "no-undef": "off"
+        }
     }
 );
