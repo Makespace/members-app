@@ -49,6 +49,7 @@ module.exports = defineConfig(
                 args: "after-used",
                 argsIgnorePattern: "^_",
             }],
+            "jest/valid-title": "off",
         },
         languageOptions: {
             parserOptions: {
