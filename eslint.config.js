@@ -49,7 +49,10 @@ module.exports = defineConfig(
                 args: "after-used",
                 argsIgnorePattern: "^_",
             }],
-            "jest/valid-title": "off",
+            "jest/valid-title": "off", // Struggles to detect the title being a dynamic string from paramterized tests.
+            "jest/expect-expect": "off", // Too many false positives
+            "jest/no-disabled-tests": "off", // Some tests are supposed to be skipped.
+            "jest/valid-describe-callback": "off", // Doing something like describe('test', () => runTest()); is fine.
         },
         languageOptions: {
             parserOptions: {
