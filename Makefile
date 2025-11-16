@@ -28,7 +28,7 @@ populate-full:
 	bun ./scripts/populate-full.ts
 
 fix: node_modules
-	bun gts fix
+	bunx eslint --fix
 
 prod:
 	docker compose --file docker-compose.yaml up --build
@@ -40,7 +40,7 @@ smoketest: .env
 	./scripts/smoketest.sh
 
 lint: node_modules
-	bun gts lint
+	bunx eslint
 
 audit:
 	bun audit

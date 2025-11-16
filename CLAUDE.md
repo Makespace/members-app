@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `make unused-exports` - Find unused exports
 
 ### Other
-- `make fix` - Auto-fix linting issues with gts
+- `make fix` - Auto-fix linting issues
 - `make smoketest` - Run smoke tests
 - Local app: http://localhost:8080
 - Mailcatcher (dev emails): http://localhost:1080
@@ -114,7 +114,7 @@ The codebase maintains strict separation between commands and read models:
 - **Server**: Express.js with Passport for authentication
 - **Email**: MJML for templates, Nodemailer for sending
 - **Testing**: Jest with ts-jest
-- **Linting**: ESLint + gts (Google TypeScript Style)
+- **Linting**: ESLint
 
 ## Testing Guidelines
 
