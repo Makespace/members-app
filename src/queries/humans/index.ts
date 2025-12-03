@@ -1,9 +1,7 @@
 import * as TE from 'fp-ts/TaskEither';
 import {Query} from '../query';
-import {html, safe} from '../../types/html';
+import {html, toLoggedInContent, safe} from '../../types/html';
 import {pipe} from 'fp-ts/lib/function';
-import {render} from './render';
-import {toLoggedInContent, safe} from '../../types/html';
 
 export const humans: Query = () => user =>
   pipe(
@@ -17,11 +15,10 @@ type ViewModel = {
   memberNumber: number;
 };
 
-export const render = (viewModel: ViewModel) => html`
+const render = (_: ViewModel) => html`
   <div class="stack">
     <h1>I've worked on the app!</h1>
     <p>Add yourself below!</p>
-    <ul>
-    </ul>
+    <ul></ul>
   </div>
 `;
