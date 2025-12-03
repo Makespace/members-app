@@ -18,6 +18,7 @@ export const initRoutes = (
     query('/', queries.me),
     query('/admin', queries.admin),
     query('/raise-issue', queries.raiseIssue),
+    query('/humans', queries.humans),
     query('/event-log', queries.log),
     query('/event-log.csv', queries.logcsv),
     query('/training-status.csv', queries.trainingStatusCsv),
