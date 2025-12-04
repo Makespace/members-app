@@ -4,7 +4,9 @@ import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import {Command, WithActor} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
+import {isEquipmentTrainer} from '../is-equipment-trainer';
 import {Actor} from '../../types/actor';
+import {DateTime} from 'luxon';
 
 const codec = t.strict({
   equipmentId: tt.UUID,
@@ -37,10 +39,23 @@ const resource = (command: MarkMemberTrainedBy) => ({
   id: command.equipmentId,
 });
 
+const isWithinOneMonth = (date: Date): boolean => {
+  const oneMonthAgo = DateTime.now().minus({months: 1});
+  return DateTime.fromJSDate(date) >= oneMonthAgo;
+};
+
 const isAllowedToMarkTrainedBy = (input: {
   actor: Actor;
   events: ReadonlyArray<DomainEvent>;
-}): boolean => isAdminOrSuperUser(input) && input.actor.tag === 'user';
+  input: MarkMemberTrainedBy;
+}): boolean => {
+  return (
+    input.actor.tag === 'user' &&
+    (isAdminOrSuperUser(input) ||
+    (isEquipmentTrainer(input.input.equipmentId)(input.actor, input.events)
+     && isWithinOneMonth(input.input.trainedAt)))
+  )
+};
 
 export const markMemberTrainedBy: Command<MarkMemberTrainedBy> = {
   process,
