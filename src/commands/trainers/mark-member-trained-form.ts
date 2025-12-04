@@ -47,8 +47,9 @@ const renderForm = (viewModel: ViewModel) =>
             value: DateTime.now().minus({months: 1}),
             tooltip: 'Training date cannot be more than 1 month ago' as Safe,
           }),
-          O.some({                                // max date (now)
-            value: DateTime.now(),
+          O.some({
+            // Allow 5 mins as "now" is when the page is loaded
+            value: DateTime.now().plus({minutes: 5}),
             tooltip: 'Training time cannot be in the future' as Safe,
           })
         )}
