@@ -1,10 +1,17 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
-import {html, safe, sanitizeString, toLoggedInContent} from '../../types/html';
+import {
+  html,
+  Safe,
+  safe,
+  sanitizeString,
+  toLoggedInContent,
+} from '../../types/html';
 import {Form} from '../../types/form';
 import {getEquipmentIdFromForm} from '../equipment/get-equipment-id-from-form';
-import {memberInput} from '../../templates/member-input';
+import {memberSelector} from '../../templates/member-selector';
+import {memberSelectorJs} from '../../templates/member-selector-js';
 import {Member} from '../../read-models/members';
 import {Equipment} from '../../read-models/shared-state/return-types';
 import {failureWithStatus} from '../../types/failure-with-status';
@@ -15,7 +22,6 @@ type ViewModel = {
   members: ReadonlyArray<Member>;
 };
 
-// TODO - Drop down suggestion list of users.
 // TODO - Warning if you try and mark a member as trained who hasn't done the quiz (for now we allow this for flexibility).
 
 const renderForm = (viewModel: ViewModel) =>
@@ -30,11 +36,16 @@ const renderForm = (viewModel: ViewModel) =>
           name="equipmentId"
           value="${viewModel.equipment.id}"
         />
-        ${memberInput(viewModel.members)}
+        ${memberSelector(
+          'memberNumber' as Safe,
+          'Select a member' as Safe,
+          viewModel.members
+        )}
         <button type="submit">Confirm</button>
       </form>
+      ${memberSelectorJs()}
     `,
-    toLoggedInContent(safe('Member Training Complete'))
+    toLoggedInContent(safe('Mark Member Trained'))
   );
 
 const constructForm: Form<ViewModel>['constructForm'] =
