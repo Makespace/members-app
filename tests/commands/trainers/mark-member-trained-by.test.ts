@@ -41,6 +41,7 @@ describe('markMemberTrainedBy authorization', () => {
 
   const withinOneMonth = DateTime.now().minus({weeks: 1}).toJSDate();
   const moreThanOneMonthAgo = DateTime.now().minus({months: 1, days: 1}).toJSDate();
+  const inTheFuture = DateTime.now().plus({days: 1}).toJSDate();
 
   const adminActor: Actor = {tag: 'token', token: 'admin'};
   const trainerActor: Actor = {tag: 'user', user: trainerUser};
@@ -109,6 +110,33 @@ describe('markMemberTrainedBy authorization', () => {
         ...makeInput(withinOneMonth),
         trainedByMemberNumber: otherTrainer.memberNumber as Int,
       },
+    });
+    expect(result).toBe(false);
+  });
+
+  it('trainer cannot set date in the future', () => {
+    const result = markMemberTrainedBy.isAuthorized({
+      actor: trainerActor,
+      events: baseEvents,
+      input: makeInput(inTheFuture),
+    });
+    expect(result).toBe(false);
+  });
+
+  it('super user cannot set date in the future', () => {
+    const superUser = arbitraryUser();
+    const superUserActor: Actor = {tag: 'user', user: superUser};
+    const eventsWithSuperUser = [
+      ...baseEvents,
+      constructEvent('SuperUserDeclared')({
+        memberNumber: superUser.memberNumber,
+        actor: arbitraryActor(),
+      }),
+    ];
+    const result = markMemberTrainedBy.isAuthorized({
+      actor: superUserActor,
+      events: eventsWithSuperUser,
+      input: makeInput(inTheFuture),
     });
     expect(result).toBe(false);
   });

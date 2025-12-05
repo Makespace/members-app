@@ -44,18 +44,26 @@ const isWithinOneMonth = (date: Date): boolean => {
   return DateTime.fromJSDate(date) >= oneMonthAgo;
 };
 
+const isNotInFuture = (date: Date): boolean =>
+  DateTime.fromJSDate(date) <= DateTime.now();
+
 const isAllowedToMarkTrainedBy = (input: {
   actor: Actor;
   events: ReadonlyArray<DomainEvent>;
   input: MarkMemberTrainedBy;
 }): boolean => {
-  return (
-    input.actor.tag === 'user' &&
-    (isAdminOrSuperUser(input) ||
-      (isEquipmentTrainer(input.input.equipmentId)(input.actor, input.events) &&
-        isWithinOneMonth(input.input.trainedAt) &&
-        input.input.trainedByMemberNumber === input.actor.user.memberNumber))
-  );
+  if (input.actor.tag !== 'user')
+  {
+    return false;
+  }
+  const notInFuture = isNotInFuture(input.input.trainedAt);
+  const isPrivileged = isAdminOrSuperUser(input);
+  const isTrainerWithValidInput =
+    isEquipmentTrainer(input.input.equipmentId)(input.actor, input.events)
+    && isWithinOneMonth(input.input.trainedAt)
+    && input.input.trainedByMemberNumber === input.actor.user.memberNumber;
+
+  return notInFuture && (isPrivileged || isTrainerWithValidInput);
 };
 
 export const markMemberTrainedBy: Command<MarkMemberTrainedBy> = {

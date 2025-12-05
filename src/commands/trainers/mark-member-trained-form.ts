@@ -40,16 +40,15 @@ const renderForm = (viewModel: ViewModel) =>
         />
         ${memberInput(viewModel.members)}
         ${dateTimeInput(
-          'trainedAt' as Safe,                    // field name
-          'When was the training?' as Safe,       // label
-          DateTime.now(),                         // default value
-          O.some({                                // min date (1 month ago)
+          'trainedAt' as Safe,
+          'When was the training?' as Safe,
+          DateTime.now(),
+          O.some({
             value: DateTime.now().minus({months: 1}),
             tooltip: 'Training date cannot be more than 1 month ago' as Safe,
           }),
           O.some({
-            // Allow 5 mins as "now" is when the page is loaded
-            value: DateTime.now().plus({minutes: 5}),
+            value: DateTime.now(),
             tooltip: 'Training time cannot be in the future' as Safe,
           })
         )}
