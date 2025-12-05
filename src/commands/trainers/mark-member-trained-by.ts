@@ -52,9 +52,10 @@ const isAllowedToMarkTrainedBy = (input: {
   return (
     input.actor.tag === 'user' &&
     (isAdminOrSuperUser(input) ||
-    (isEquipmentTrainer(input.input.equipmentId)(input.actor, input.events)
-     && isWithinOneMonth(input.input.trainedAt)))
-  )
+      (isEquipmentTrainer(input.input.equipmentId)(input.actor, input.events) &&
+        isWithinOneMonth(input.input.trainedAt) &&
+        input.input.trainedByMemberNumber === input.actor.user.memberNumber))
+  );
 };
 
 export const markMemberTrainedBy: Command<MarkMemberTrainedBy> = {
