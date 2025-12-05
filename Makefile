@@ -1,4 +1,4 @@
-.phony: check clear-containers dev dev-all fix lint prod release smoketest test typecheck unused-exports watch-typecheck populate-local-dev populate-full update-vendor
+.phony: check clear-containers dev dev-all fix lint prod release smoketest test typecheck unused-exports watch-typecheck populate-local-dev populate-full update-vendor login login-admin login-trainer login-owner
 
 check: test lint typecheck unused-exports
 
@@ -58,3 +58,6 @@ release: export TAG = latest/$(shell date +%Y%m%d%H%M)
 release:
 	git tag $$TAG
 	git push origin $$TAG
+
+login-%:
+	./scripts/login.ts $*
