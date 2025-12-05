@@ -149,7 +149,7 @@ const MemberTrainedOnEquipmentBy = defineEvent('MemberTrainedOnEquipmentBy', {
   memberNumber: t.number,
   trainedByMemberNumber: t.number, // Cannot be by system.
   trainedAt: tt.DateFromISOString,
-  markedTrainedBy: t.number, // The admin who marked the user as trained. Cannot be system.
+  markedTrainedBy: t.number, // The admin or trainer who marked the user as trained. Cannot be system.
 });
 
 const RevokeTrainedOnEquipment = defineEvent('RevokeTrainedOnEquipment', {
