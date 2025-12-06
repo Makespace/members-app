@@ -15,7 +15,6 @@ import {Equipment} from '../../read-models/shared-state/return-types';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {memberSelector} from '../../templates/member-selector';
-import {memberSelectorJs} from '../../templates/member-selector-js';
 import {dateTimeInput} from '../../templates/date-time-input';
 import {DateTime} from 'luxon';
 
@@ -66,7 +65,6 @@ const renderForm = (viewModel: ViewModel) =>
         )}
         <button type="submit">Confirm</button>
       </form>
-      ${memberSelectorJs()}
     `,
     toLoggedInContent(safe('Mark Member Trained'))
   );

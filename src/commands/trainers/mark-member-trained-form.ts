@@ -11,7 +11,6 @@ import {
 import {Form} from '../../types/form';
 import {getEquipmentIdFromForm} from '../equipment/get-equipment-id-from-form';
 import {memberSelector} from '../../templates/member-selector';
-import {memberSelectorJs} from '../../templates/member-selector-js';
 import {Member} from '../../read-models/members';
 import {Equipment} from '../../read-models/shared-state/return-types';
 import {failureWithStatus} from '../../types/failure-with-status';
@@ -36,14 +35,9 @@ const renderForm = (viewModel: ViewModel) =>
           name="equipmentId"
           value="${viewModel.equipment.id}"
         />
-        ${memberSelector(
-          'memberNumber' as Safe,
-          'Select a member' as Safe,
-          viewModel.members
-        )}
+        ${memberSelector('memberNumber' as Safe, null, viewModel.members)}
         <button type="submit">Confirm</button>
       </form>
-      ${memberSelectorJs()}
     `,
     toLoggedInContent(safe('Mark Member Trained'))
   );
