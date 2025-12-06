@@ -150,11 +150,11 @@ const memberSelectorScript = () => html`
 
         searchInput.addEventListener('keydown', function (e) {
           var items = memberList.querySelectorAll('.member-selector__item');
-          if (e.key === 'ArrowDown') {
+          if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
             e.preventDefault();
             highlightedIndex = Math.min(highlightedIndex + 1, items.length - 1);
             highlightItem(highlightedIndex);
-          } else if (e.key === 'ArrowUp') {
+          } else if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
             e.preventDefault();
             highlightedIndex = Math.max(highlightedIndex - 1, 0);
             highlightItem(highlightedIndex);
