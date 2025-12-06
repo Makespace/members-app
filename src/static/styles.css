@@ -656,4 +656,3 @@ label img {
   background: color-mix(in oklch, white 85%, var(--green-color));
   border-color: color-mix(in oklch, white 30%, var(--green-color));
 }
-

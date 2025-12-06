@@ -32,7 +32,13 @@ const memberSelectorScript = () => html`
         var isSelected = false;
 
         function getGravatarUrl(hash, size) {
-          return 'https://www.gravatar.com/avatar/' + hash + '?s=' + size + '&d=identicon';
+          return (
+            'https://www.gravatar.com/avatar/' +
+            hash +
+            '?s=' +
+            size +
+            '&d=identicon'
+          );
         }
 
         function renderMemberItem(member) {
@@ -50,7 +56,7 @@ const memberSelectorScript = () => html`
           var info = document.createElement('span');
           info.className = 'member-selector__info';
           var displayName = member.name || 'Unknown';
-          info.textContent = displayName + ' (#' + member.memberNumber + ') ' + member.email;
+          info.textContent = displayName + ' (#' + member.memberNumber + ')';
 
           li.appendChild(img);
           li.appendChild(info);
@@ -60,13 +66,14 @@ const memberSelectorScript = () => html`
         function filterMembers(query) {
           var q = query.toLowerCase().trim();
           if (!q) return members.slice(0, 50);
-          return members.filter(function (m) {
-            return (
-              (m.name && m.name.toLowerCase().includes(q)) ||
-              m.email.toLowerCase().includes(q) ||
-              String(m.memberNumber).includes(q)
-            );
-          });
+          return members
+            .filter(function (m) {
+              return (
+                (m.name && m.name.toLowerCase().includes(q)) ||
+                String(m.memberNumber).includes(q)
+              );
+            })
+            .slice(0, 50);
         }
 
         function showDropdown(filtered) {
@@ -98,7 +105,7 @@ const memberSelectorScript = () => html`
         function selectMember(member) {
           var displayName = member.name || 'Unknown';
           valueInput.value = member.memberNumber;
-          searchInput.value = displayName + ' (#' + member.memberNumber + ') ' + member.email;
+          searchInput.value = displayName + ' (#' + member.memberNumber + ')';
           searchInput.classList.add('member-selector__search--selected');
           isSelected = true;
           hideDropdown();
@@ -114,7 +121,10 @@ const memberSelectorScript = () => html`
         function highlightItem(index) {
           var items = memberList.querySelectorAll('.member-selector__item');
           items.forEach(function (item, i) {
-            item.classList.toggle('member-selector__item--highlighted', i === index);
+            item.classList.toggle(
+              'member-selector__item--highlighted',
+              i === index
+            );
           });
           if (items[index]) {
             items[index].scrollIntoView({block: 'nearest'});
@@ -165,7 +175,12 @@ const memberSelectorScript = () => html`
         });
       }
 
-      document.querySelectorAll('[data-member-selector]').forEach(initMemberSelector);
+      document
+        .querySelectorAll('[data-member-selector]:not([data-initialized])')
+        .forEach(function (container) {
+          container.setAttribute('data-initialized', 'true');
+          initMemberSelector(container);
+        });
     })();
   </script>
 `;
@@ -178,7 +193,6 @@ export const memberSelector = (
   const membersJson = JSON.stringify(
     members.map(m => ({
       memberNumber: m.memberNumber,
-      email: m.emailAddress,
       name: O.isSome(m.name) ? m.name.value : null,
       gravatarHash: getGravatarHashString(m),
     }))
@@ -192,7 +206,7 @@ export const memberSelector = (
           type="text"
           id="${fieldName}-search"
           class="member-selector__search"
-          placeholder="Search by name, email, or member number..."
+          placeholder="Search by name or member number..."
           autocomplete="off"
           data-search-input
         />
