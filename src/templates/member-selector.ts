@@ -1,14 +1,14 @@
 import * as O from 'fp-ts/Option';
 import {gravatarHashFromEmail} from '../read-models/members/avatar';
+import {MemberCoreInfo} from '../read-models/shared-state/return-types';
 import {html, Html, Safe, sanitizeString} from '../types/html';
-import {EmailAddress, GravatarHash, isoGravatarHash} from '../types';
+import {isoGravatarHash} from '../types';
 
-type SelectableMember = {
-  memberNumber: number;
-  emailAddress: EmailAddress;
-  name: O.Option<string>;
-  gravatarHash?: GravatarHash;
-};
+type SelectableMember = Pick<
+  MemberCoreInfo,
+  'memberNumber' | 'emailAddress' | 'name'
+> &
+  Partial<Pick<MemberCoreInfo, 'formOfAddress' | 'gravatarHash'>>;
 
 const getGravatarHashString = (member: SelectableMember): string => {
   if (member.gravatarHash) {
@@ -41,6 +41,14 @@ const memberSelectorScript = () => html`
           );
         }
 
+        function formatDisplayName(member) {
+          var name = member.name || 'Unknown';
+          if (member.formOfAddress) {
+            return '(' + member.formOfAddress + ') ' + name;
+          }
+          return name;
+        }
+
         function renderMemberItem(member) {
           var li = document.createElement('li');
           li.className = 'member-selector__item';
@@ -55,7 +63,7 @@ const memberSelectorScript = () => html`
 
           var info = document.createElement('span');
           info.className = 'member-selector__info';
-          var displayName = member.name || 'Unknown';
+          var displayName = formatDisplayName(member);
           info.textContent = displayName + ' (#' + member.memberNumber + ')';
 
           li.appendChild(img);
@@ -103,7 +111,7 @@ const memberSelectorScript = () => html`
         }
 
         function selectMember(member) {
-          var displayName = member.name || 'Unknown';
+          var displayName = formatDisplayName(member);
           valueInput.value = member.memberNumber;
           searchInput.value = displayName + ' (#' + member.memberNumber + ')';
           searchInput.classList.add('member-selector__search--selected');
@@ -194,6 +202,10 @@ export const memberSelector = (
     members.map(m => ({
       memberNumber: m.memberNumber,
       name: O.isSome(m.name) ? m.name.value : null,
+      formOfAddress:
+        m.formOfAddress && O.isSome(m.formOfAddress)
+          ? m.formOfAddress.value
+          : null,
       gravatarHash: getGravatarHashString(m),
     }))
   );
