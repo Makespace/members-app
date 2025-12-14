@@ -43,7 +43,7 @@ lint: node_modules
 	bunx eslint
 
 audit:
-	bun audit
+	bun audit --audit-level=critical
 
 unused-exports: node_modules
 	bun ts-unused-exports ./tsconfig.json
