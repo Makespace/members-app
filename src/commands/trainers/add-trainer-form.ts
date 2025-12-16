@@ -9,13 +9,13 @@ import {
   sanitizeString,
   toLoggedInContent,
 } from '../../types/html';
-import {User} from '../../types';
 import {Form} from '../../types/form';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {renderMemberNumber} from '../../templates/member-number';
+import {EmailAddress} from '../../types';
 import {UUID} from 'io-ts-types';
 import {Equipment} from '../../read-models/shared-state/return-types';
 import {SharedReadModel} from '../../read-models/shared-state';
@@ -28,7 +28,11 @@ import {
 import {eq} from 'drizzle-orm';
 
 type ViewModel = {
-  areaOwnersThatAreNotTrainers: ReadonlyArray<User>;
+  areaOwnersThatAreNotTrainers: ReadonlyArray<{
+    name: O.Option<string>;
+    emailAddress: EmailAddress;
+    memberNumber: number;
+  }>;
   equipment: Equipment;
 };
 
@@ -46,6 +50,15 @@ const nobodyToAddAsTrainer = pipe(
   toLoggedInContent(safe('Add Trainer'))
 );
 
+const renderName = (name: O.Option<string>) =>
+  pipe(
+    name,
+    O.match(
+      () => html`-`,
+      n => html`${sanitizeString(n)}`
+    )
+  );
+
 const renderForm = (viewModel: ViewModel) => {
   if (viewModel.areaOwnersThatAreNotTrainers.length === 0) {
     return nobodyToAddAsTrainer;
@@ -56,6 +69,7 @@ const renderForm = (viewModel: ViewModel) => {
     RA.map(
       member =>
         html`<tr>
+          <td>${renderName(member.name)}</td>
           <td>${sanitizeString(member.emailAddress)}</td>
           <td>${renderMemberNumber(member.memberNumber)}</td>
           <td>
@@ -82,6 +96,7 @@ const renderForm = (viewModel: ViewModel) => {
       <table id="all-members" data-gridjs>
         <thead>
           <tr>
+            <th>Name</th>
             <th>E-Mail</th>
             <th>Member Number</th>
             <th>Action</th>
@@ -126,6 +141,7 @@ const getPotentialTrainers = (db: SharedReadModel['db'], equipmentId: UUID) => {
   );
   const owners = db
     .select({
+      name: membersTable.name,
       emailAddress: membersTable.emailAddress,
       memberNumber: membersTable.memberNumber,
     })
