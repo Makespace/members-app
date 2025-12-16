@@ -39,6 +39,7 @@
     "jest-date-mock": "^1.0.10",
     "jest-wip-reporter": "^2.1.0",
     "open": "^10.1.0",
+    "puppeteer": "^24.19.0",
     "ts-jest": "^29.1.1",
     "ts-unused-exports": "^10.0.1",
     "tsx": "^4.9.3",

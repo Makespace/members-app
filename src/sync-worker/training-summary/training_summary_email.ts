@@ -19,7 +19,7 @@ const TRAINING_SUMMARY_EMAIL_INTERVAL: Duration = Duration.fromObject({
   // hours: 12, // Temp for testing.
 });
 
-const generateTrainingSummaryEmail = (
+export const generateTrainingSummaryEmail = (
   emailAddress: EmailAddress,
   content: EmailContent
 ): Email => ({
