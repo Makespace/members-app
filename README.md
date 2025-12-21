@@ -157,3 +157,15 @@ Not verified
 
 ## Fly.io
 - Deployment URL [makespace-app.fly.dev](https://makespace-app.fly.dev/)
+
+# DevContainer
+Dev containers are a way to create a reproducible dev environment https://code.visualstudio.com/docs/devcontainers/containers.
+
+Setup (vscode):
+1. Install the dev container extension from Microsoft
+2. Ctrl+Shift+P then type 'Dev Containers: Rebuild and Reopen in Container'
+3. Vscode will reload into the dev container - you can now develop with all the required tools already installed
+4. Type `make start` to start the application to perform manual local testing.
+
+Each time you start the dev container the database will be reset to empty.
+

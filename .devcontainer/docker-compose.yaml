@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      context: ../
+      target: dev_container
+      dockerfile: Dockerfile
+    env_file: "../.env"
+    volumes:
+      - ../:/workspace:cached
+    command: sleep infinity
+    network_mode: service:mailcatcher
+
+  mailcatcher:
+    image: sj26/mailcatcher@sha256:238a915586b99dd957fed9dfc27fa36518e038b9d43368fbaf2e384968b6e36f
