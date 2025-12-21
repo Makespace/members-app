@@ -64,3 +64,9 @@ release:
 
 login-%:
 	./scripts/login.ts $*
+
+# For use with devcontainer
+start:
+	npx tsx watch ./src/index.ts &
+	npx tsx watch ./src/sync-worker/index.ts
+
