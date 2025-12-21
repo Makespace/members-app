@@ -48,3 +48,7 @@ COPY ./src/static build/src/static/
 COPY ./src/instrument.mjs ./
 COPY ./fly-run.sh ./
 CMD ["/bin/bash", "fly-run.sh"]
+
+FROM bun AS dev_container
+RUN apt-get update \
+    && apt-get install -y git make
