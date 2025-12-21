@@ -2,10 +2,11 @@ import {faker} from '@faker-js/faker';
 import {constructEvent, DomainEvent} from '../../../src/types';
 import {Actor} from '../../../src/types/actor';
 import {arbitraryUser} from '../../types/user.helper';
-import {Int, UUID} from 'io-ts-types';
+import {UUID} from 'io-ts-types';
 import {arbitraryActor} from '../../helpers';
 import {markMemberTrainedBy} from '../../../src/commands/trainers/mark-member-trained-by';
 import {DateTime} from 'luxon';
+import { Int } from 'io-ts';
 
 describe('markMemberTrainedBy authorization', () => {
   const equipmentId = faker.string.uuid() as UUID;
