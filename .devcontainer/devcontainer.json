@@ -6,7 +6,7 @@
 	"service": "app",
 	"workspaceFolder": "/workspace",
 	"shutdownAction": "stopCompose",
-	"forwardPorts": [8080, "mailcatcher:1080"],
+	"forwardPorts": [8080, 1080],
 	"postStartCommand": "rm -rf /db && mkdir -p /db",
 	"customizations": {
 		"vscode": {
