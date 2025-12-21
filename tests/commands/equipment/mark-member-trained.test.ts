@@ -43,8 +43,6 @@ describe('markMemberTrained', () => {
         )();
       });
 
-      [tokenActor()];
-
       it('Records the training as system', async () => {
         const events = await framework.getAllEventsByType(
           'MemberTrainedOnEquipment'

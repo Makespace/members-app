@@ -1,4 +1,4 @@
-import {Client} from '@libsql/client/.';
+import {Client} from '@libsql/client';
 import * as TE from 'fp-ts/TaskEither';
 import {failure} from '../../types';
 import {dbExecute} from '../../util';

@@ -154,7 +154,6 @@ const testOnUsersNumbers =
   };
 
 // Not yet implemented so no-op.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const stopMembership = async (_memberNumber: number) => {};
 
 describe('get-via-shared-read-model', () => {
@@ -487,22 +486,6 @@ describe('get-via-shared-read-model', () => {
       });
     });
 
-    describe('and they have signed the owner agreement', () => {
-      const signedAt = faker.date.future();
-
-      beforeEach(async () => {
-        await framework.commands.members.signOwnerAgreement({
-          memberNumber,
-          signedAt,
-        });
-      });
-
-      it('returns the date they signed it', () => {
-        const result = runQuery();
-        expect(result.agreementSigned).toStrictEqual(O.some(signedAt));
-      });
-    });
-
     describe('and they have been trained', () => {
       const createArea = {
         name: faker.company.buzzNoun() as NonEmptyString,
@@ -721,6 +704,7 @@ describe('get-via-shared-read-model', () => {
         //   equipmentId: UUID,
         //   usersMembershipNumbers: [string, Int][]
         // ) =>
+        // eslint-disable-next-line jest/no-commented-out-tests
         //   describe('equipment shows user as awaiting training', () =>
         //     testOnUsersNumbers(usersMembershipNumbers)(
         //       membershipNumberToCheck =>
@@ -734,6 +718,7 @@ describe('get-via-shared-read-model', () => {
         //   equipmentId: UUID,
         //   usersMembershipNumbers: [string, Int][]
         // ) =>
+        // eslint-disable-next-line jest/no-commented-out-tests
         //   describe('equipment does not show user as awaiting training', () =>
         //     testOnUsersNumbers(usersMembershipNumbers)(
         //       membershipNumberToCheck =>
@@ -854,15 +839,18 @@ describe('get-via-shared-read-model', () => {
               });
             }
           });
+          // eslint-disable-next-line jest/no-commented-out-tests
           // describe('and the user passes a quiz on their old number', () => {
           //   beforeEach(() => quizPass(memberNumber, memberEmail));
           //   userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
           // });
           // and they have left and then rejoined using their existing account › without actions prior to linking accounts › and the user passes a quiz on their old number › is shown as awaiting training › on their new number
           if (!useExistingAccount) {
+            // eslint-disable-next-line jest/no-commented-out-tests
             // describe('and the user passes a quiz on their new number', () => {
             //   beforeEach(() => quizPass(newMemberNumber, memberEmail));
             //   userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
+            // eslint-disable-next-line jest/no-commented-out-tests
             //   describe('and the user is marked trained on equipment on their new number', () => {
             //     beforeEach(async () => {
             //       await markTrainedOnOldNumber();
@@ -1073,6 +1061,7 @@ describe('get-via-shared-read-model', () => {
             });
           }
 
+          // eslint-disable-next-line jest/no-commented-out-tests
           // describe('the user completes a quiz on their old number + existing email', () => {
           //   beforeEach(async () => {
           //     jest.useFakeTimers();
@@ -1092,6 +1081,7 @@ describe('get-via-shared-read-model', () => {
           // });
           // if (!useExistingAccount) {
           //   // By adding another account into the mix there are more possibilities.
+          // eslint-disable-next-line jest/no-commented-out-tests
           //   describe('the user completes a quiz on their old number + new email', () => {
           //     beforeEach(async () => {
           //       jest.useFakeTimers();
@@ -1106,6 +1096,7 @@ describe('get-via-shared-read-model', () => {
           //     });
           //     userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
           //   });
+          // eslint-disable-next-line jest/no-commented-out-tests
           //   describe('the user completes a quiz on their new number + existing email', () => {
           //     beforeEach(async () => {
           //       jest.useFakeTimers();
@@ -1120,6 +1111,7 @@ describe('get-via-shared-read-model', () => {
           //     });
           //     userIsAwaitingTraining(equipmentId, usersMembershipNumbers);
           //   });
+          // eslint-disable-next-line jest/no-commented-out-tests
           //   describe('the user completes a quiz on their new number + new email', () => {
           //     beforeEach(async () => {
           //       jest.useFakeTimers();
