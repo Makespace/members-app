@@ -45,9 +45,6 @@ lint: node_modules
 audit:
 	bun audit --audit-level=critical
 
-audit:
-	bun audit
-
 unused-exports: node_modules
 	bun ts-unused-exports ./tsconfig.json
 
