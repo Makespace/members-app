@@ -2,6 +2,7 @@ export {areas} from './areas';
 export {admin} from './admin';
 export {db} from './db';
 export {raiseIssue} from './raise-issue';
+export {humans} from './humans';
 export {superUsers} from './super-users';
 export {allEquipment} from './all-equipment';
 export {equipment} from './equipment';

@@ -2,7 +2,7 @@
 
 check: test lint typecheck unused-exports audit
 
-node_modules: package.json bun.lockb
+node_modules: package.json bun.lock
 	bun install --frozen-lockfile
 
 update-vendor: node_modules
@@ -44,6 +44,9 @@ lint: node_modules
 
 audit:
 	bun audit --audit-level=critical
+
+audit:
+	bun audit
 
 unused-exports: node_modules
 	bun ts-unused-exports ./tsconfig.json
