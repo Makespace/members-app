@@ -6,7 +6,9 @@
 	"service": "app",
 	"workspaceFolder": "/workspace",
 	"shutdownAction": "stopCompose",
+	// Expose the application + the mailcatcher for checking emails.
 	"forwardPorts": [8080, 1080],
+	//  Wipes the database on every start.
 	"postStartCommand": "rm -rf /db && mkdir -p /db",
 	"customizations": {
 		"vscode": {
