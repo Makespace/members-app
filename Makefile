@@ -1,8 +1,8 @@
-.phony: check clear-containers dev dev-all fix lint prod release smoketest test typecheck unused-exports watch-typecheck populate-local-dev populate-full update-vendor
+.phony: check clear-containers dev dev-all fix lint prod release smoketest test typecheck unused-exports watch-typecheck populate-local-dev populate-full update-vendor audit login login-admin login-trainer login-owner
 
-check: test lint typecheck unused-exports
+check: test lint typecheck unused-exports audit
 
-node_modules: package.json bun.lockb
+node_modules: package.json bun.lock
 	bun install --frozen-lockfile
 
 update-vendor: node_modules
@@ -28,7 +28,7 @@ populate-full:
 	bun ./scripts/populate-full.ts
 
 fix: node_modules
-	bun gts fix
+	bunx eslint --fix
 
 prod:
 	docker compose --file docker-compose.yaml up --build
@@ -40,7 +40,10 @@ smoketest: .env
 	./scripts/smoketest.sh
 
 lint: node_modules
-	bun gts lint
+	bunx eslint
+
+audit:
+	bun audit --audit-level=critical
 
 unused-exports: node_modules
 	bun ts-unused-exports ./tsconfig.json
@@ -58,3 +61,6 @@ release: export TAG = latest/$(shell date +%Y%m%d%H%M)
 release:
 	git tag $$TAG
 	git push origin $$TAG
+
+login-%:
+	./scripts/login.ts $*

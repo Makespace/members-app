@@ -9,7 +9,7 @@ import * as TE from 'fp-ts/TaskEither';
 import {Dependencies} from '../../dependencies';
 import {pipe} from 'fp-ts/lib/function';
 import {v4 as uuidv4} from 'uuid';
-import {Client} from '@libsql/client/.';
+import {Client} from '@libsql/client';
 import {DomainEvent, ResourceVersion} from '../../types';
 import {Resource} from '../../types/resource';
 import {dbExecute} from '../../util';

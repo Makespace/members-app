@@ -17,7 +17,7 @@ RUN apt-get -y update &&  \
     &&  rm -rf /var/lib/apt/lists/*
 RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr bash
 COPY package.json ./
-COPY bun.lockb ./
+COPY bun.lock ./
 
 # DEV
 FROM bun AS dev-deps
@@ -40,6 +40,10 @@ RUN bun install --frozen-lockfile --production
 FROM dev AS prod-build
 COPY ./src src/
 RUN npx tsc
+
+FROM bun AS dev_container
+RUN apt-get update \
+    && apt-get install -y git make
 
 FROM node AS prod
 COPY --from=prod-deps /app/node_modules node_modules/

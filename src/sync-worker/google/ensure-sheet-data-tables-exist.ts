@@ -1,4 +1,4 @@
-import {Client} from '@libsql/client/.';
+import {Client} from '@libsql/client';
 import {dbExecute} from '../../util';
 import {SyncWorkerDependencies} from '../dependencies';
 

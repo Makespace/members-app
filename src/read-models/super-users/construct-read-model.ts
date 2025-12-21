@@ -27,5 +27,5 @@ export const constructReadModel = (
   pipe(
     events,
     filterByName(['SuperUserRevoked', 'SuperUserDeclared']),
-    RA.reduce(new Map(), updateSuperUsers)
+    RA.reduce(new Map() as SuperUsers, updateSuperUsers)
   );

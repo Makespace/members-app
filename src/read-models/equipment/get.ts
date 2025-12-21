@@ -79,7 +79,7 @@ export const get =
     pipe(
       events,
       filterByName(pertinentEvents),
-      RA.reduce(new Map(), updateState),
+      RA.reduce(new Map<string, EquipmentState>(), updateState),
       RM.lookup(stringEq)(equipmentId), // TODO - Do updateState lazily based on what is looked up.
       O.map(state => ({
         ...state,

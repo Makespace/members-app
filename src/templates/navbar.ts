@@ -2,7 +2,6 @@ import {User} from '../types';
 import {html} from '../types/html';
 import {loggedInUserSquare} from './logged-in-user-square';
 
-// eslint-disable-next-line unused-imports/no-unused-vars
 export const navBar = (user: User, isSuperUser: boolean) => html`
   <nav class="page-nav">
     <a class="jsonly page-nav__previous" href="#" onclick="history.back()"

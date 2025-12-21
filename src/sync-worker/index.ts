@@ -20,7 +20,6 @@ async function syncEquipmentTrainingSheetsPeriodically(
   let lastEquipmentSyncCheck = Date.now();
   let lastTroubleTicketCheck = Date.now();
   let lastTrainingSummaryEmailCheck = Date.now();
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     try {
       const now = Date.now();
