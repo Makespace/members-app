@@ -45,7 +45,7 @@ export const queryGet =
       TE.matchW(
         failure => {
           deps.logger.error(failure, 'Failed respond to a query');
-          failure.status === StatusCodes.UNAUTHORIZED
+          return failure.status === StatusCodes.UNAUTHORIZED
             ? res.redirect(logInPath)
             : res
                 .status(failure.status)

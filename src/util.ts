@@ -3,7 +3,7 @@ import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as E from 'fp-ts/Either';
 import {pipe} from 'fp-ts/lib/function';
-import {Client, InArgs} from '@libsql/client/.';
+import {Client, InArgs} from '@libsql/client';
 import {startSpan} from '@sentry/node';
 
 export const logPassThru =

@@ -7,7 +7,7 @@ import {
   syncTrainingSheet,
   SyncTrainingSheetDependencies,
 } from '../../src/sync-worker/sync_training_sheet';
-import {Client, createClient} from '@libsql/client/.';
+import {Client, createClient} from '@libsql/client';
 
 import {getRightOrFail, getSomeOrFail} from '../helpers';
 import {ensureGoogleDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';

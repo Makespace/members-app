@@ -5,7 +5,6 @@ import {sendEmail} from './send-email';
 import * as O from 'fp-ts/Option';
 import createLogger, {LoggerOptions} from 'pino';
 import nodemailer from 'nodemailer';
-import smtp from 'nodemailer-smtp-transport';
 import {commitEvent} from './event-store/commit-event';
 import {getAllEvents, getAllEventsByType} from './event-store/get-all-events';
 import {getResourceEvents} from './event-store/get-resource-events';
@@ -52,7 +51,7 @@ export const initDependencies = (
   const logger = initLogger(conf);
 
   const emailTransporter = nodemailer.createTransport(
-    smtp({
+    {
       host: conf.SMTP_HOST,
       port: conf.SMTP_PORT,
       auth: {
@@ -60,7 +59,7 @@ export const initDependencies = (
         pass: conf.SMTP_PASSWORD,
       },
       requireTLS: conf.SMTP_TLS,
-    })
+    }
   );
 
   const sharedReadModel = initSharedReadModel(

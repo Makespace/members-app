@@ -10,7 +10,7 @@ import {sequenceS} from 'fp-ts/lib/Apply';
 import {EventsTable} from './events-table';
 import {eventsFromRows} from './events-from-rows';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {Client} from '@libsql/client/.';
+import {Client} from '@libsql/client';
 import {StatusCodes} from 'http-status-codes';
 import {dbExecute} from '../../util';
 

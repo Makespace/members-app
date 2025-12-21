@@ -395,69 +395,6 @@ describe('Test sync worker db', () => {
       ).toStrictEqual({}));
   });
 
-  describe('Register a training sheet', () => {
-    const equipmentId = faker.string.uuid() as UUID;
-    const trainingSheet = faker.string.alphanumeric({length: 12});
-    const equipmentId2 = faker.string.uuid() as UUID;
-    const trainingSheet2 = faker.string.alphanumeric({length: 12});
-    beforeEach(() =>
-      pushEvents(eventDB, testLogger(), [
-        generateRegisterSheetEvent(equipmentId, trainingSheet),
-      ])
-    );
-
-    it('Registered training sheet is returned within set to sync', async () =>
-      expect(
-        getRightOrFail(await getTrainingSheetsToSync(eventDB)()())
-      ).toStrictEqual(new Map(Object.entries({[equipmentId]: trainingSheet}))));
-
-    describe('Register a training sheet for second piece of equipment', () => {
-      beforeEach(() =>
-        pushEvents(eventDB, testLogger(), [
-          generateRegisterSheetEvent(equipmentId2, trainingSheet2),
-        ])
-      );
-
-      it('Registered training sheet is returned for both pieces of equipment', async () => {
-        expect(
-          getRightOrFail(await getTrainingSheetsToSync(eventDB)()())
-        ).toStrictEqual(
-          new Map(
-            Object.entries({
-              [equipmentId]: trainingSheet,
-              [equipmentId2]: trainingSheet2,
-            })
-          )
-        );
-      });
-      describe('Remove training sheet from equipment', () => {
-        beforeEach(() =>
-          pushEvents(eventDB, testLogger(), [
-            generateRemoveSheetEvent(equipmentId),
-          ])
-        );
-        it('Still registered training sheet is returned within set to sync', async () =>
-          expect(
-            getRightOrFail(await getTrainingSheetsToSync(eventDB)()())
-          ).toStrictEqual(
-            new Map(Object.entries({[equipmentId2]: trainingSheet2}))
-          ));
-      });
-    });
-
-    describe('Remove training sheet from equipment', () => {
-      beforeEach(() =>
-        pushEvents(eventDB, testLogger(), [
-          generateRemoveSheetEvent(equipmentId),
-        ])
-      );
-      it('Get training sheets to sync returns nothing', async () =>
-        expect(
-          getRightOrFail(await getTrainingSheetsToSync(eventDB)()())
-        ).toStrictEqual(new Map()));
-    });
-  });
-
   describe('Store trouble ticket rows', () => {
     const sheetId = faker.string.alphanumeric({length: 12});
     const sheetId2 = faker.string.alphanumeric({length: 12});

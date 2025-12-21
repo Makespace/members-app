@@ -5,7 +5,7 @@ import {
 } from '../../src/sync-worker/sync_training_sheet';
 import {faker} from '@faker-js/faker';
 import {UUID} from 'io-ts-types';
-import {Client, createClient} from '@libsql/client/.';
+import {Client, createClient} from '@libsql/client';
 import {localGoogleHelpers as google} from '../init-dependencies/pull-local-google';
 import {EventOfType} from '../../src/types/domain-event';
 import {

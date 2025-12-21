@@ -17,7 +17,7 @@ RUN apt-get -y update &&  \
     &&  rm -rf /var/lib/apt/lists/*
 RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr bash
 COPY package.json ./
-COPY bun.lockb ./
+COPY bun.lock ./
 
 # DEV
 FROM bun AS dev-deps

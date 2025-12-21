@@ -9,7 +9,7 @@ import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import {Area, Equipment, Member} from './return-types';
 
-import {Client} from '@libsql/client/.';
+import {Client} from '@libsql/client';
 import {asyncRefresh} from './async-refresh';
 import {updateState} from './update-state';
 import {Logger} from 'pino';

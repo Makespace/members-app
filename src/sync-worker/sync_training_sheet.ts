@@ -205,10 +205,10 @@ const pullTrainingSheetRows = async (
     )();
     if (E.isLeft(data)) {
       log.error(
-        data.left,
-        'Failed to pull data for sheet rows %s to %s, skipping rest of sheet',
+        `Failed to pull data for sheet rows %s to %s, skipping rest of sheet: '%s'`,
         rowStart,
-        rowEnd
+        rowEnd,
+        data.left
       );
       return resultantRows;
     }

@@ -10,7 +10,7 @@ import {renderActor} from '../../types/actor';
 import * as qs from 'qs';
 
 const renderPayload = (event: DomainEvent) =>
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, unused-imports/no-unused-vars
+  // eslint-disable-next-line unused-imports/no-unused-vars
   pipe(event, ({type, actor, recordedAt, ...payload}) =>
     pipe(
       payload,
