@@ -8,7 +8,7 @@ import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import {EventsTable} from './events-table';
 import {eventsFromRows} from './events-from-rows';
-import {Client} from '@libsql/client/.';
+import {Client} from '@libsql/client';
 import {StatusCodes} from 'http-status-codes';
 import {DomainEvent} from '../../types';
 import {EventName, EventOfType} from '../../types/domain-event';

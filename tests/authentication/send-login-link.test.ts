@@ -48,6 +48,7 @@ describe('send-log-in-link', () => {
       expect(deps.sendEmail).toHaveBeenCalledWith(
         expect.objectContaining({
           recipient: emailAddress,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           text: expect.stringContaining('token='),
         })
       );

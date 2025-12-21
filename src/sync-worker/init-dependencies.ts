@@ -20,7 +20,6 @@ import {Logger} from 'pino';
 import {ensureGoogleDBTablesExist} from './google/ensure-sheet-data-tables-exist';
 import {sendEmail} from '../init-dependencies/send-email';
 import nodemailer from 'nodemailer';
-import smtp from 'nodemailer-smtp-transport';
 import {initSharedReadModel} from '../read-models/shared-state';
 import * as O from 'fp-ts/Option';
 import {getResourceEvents} from '../init-dependencies/event-store/get-resource-events';
@@ -74,8 +73,7 @@ export const initDependencies = (): SyncWorkerDependencies => {
     conf.SMTP_TLS
   );
 
-  const emailTransporter = nodemailer.createTransport(
-    smtp({
+  const emailTransporter = nodemailer.createTransport({
       host: conf.SMTP_HOST,
       port: conf.SMTP_PORT,
       auth: {
@@ -83,7 +81,7 @@ export const initDependencies = (): SyncWorkerDependencies => {
         pass: conf.SMTP_PASSWORD,
       },
       requireTLS: conf.SMTP_TLS,
-    })
+    }
   );
 
   const sharedReadModel = initSharedReadModel(

@@ -1,4 +1,3 @@
-/* eslint-disable unused-imports/no-unused-vars */
 import * as tt from 'io-ts-types';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
