@@ -30,6 +30,14 @@ jobs:
       - run: make node_modules
       - run: npx jest
 
+  audit:
+    timeout-minutes: 2
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - run: make audit
+
   smoketest:
     timeout-minutes: 2
     runs-on: ubuntu-latest
