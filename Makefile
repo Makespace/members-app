@@ -1,6 +1,6 @@
-.phony: check clear-containers dev dev-all fix lint prod release smoketest test typecheck unused-exports watch-typecheck populate-local-dev populate-full update-vendor
+.phony: check clear-containers dev dev-all fix lint prod release smoketest test typecheck unused-exports watch-typecheck populate-local-dev populate-full update-vendor audit
 
-check: test lint typecheck unused-exports
+check: audit test lint typecheck unused-exports
 
 node_modules: package.json bun.lockb
 	bun install --frozen-lockfile
@@ -41,6 +41,9 @@ smoketest: .env
 
 lint: node_modules
 	bun gts lint
+
+audit:
+	bun audit
 
 unused-exports: node_modules
 	bun ts-unused-exports ./tsconfig.json
