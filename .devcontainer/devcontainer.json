@@ -5,7 +5,16 @@
 	"dockerComposeFile": "docker-compose.yaml",
 	"service": "app",
 	"workspaceFolder": "/workspace",
-	"shutdownAction": "stopCompose"
+	"shutdownAction": "stopCompose",
+	"forwardPorts": [8080, "mailcatcher:1080"],
+	"postStartCommand": "rm -rf /db && mkdir -p /db",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"dbaeumer.vscode-eslint"
+			]
+		}
+	}
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {}
