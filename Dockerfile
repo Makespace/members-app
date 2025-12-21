@@ -41,6 +41,10 @@ FROM dev AS prod-build
 COPY ./src src/
 RUN npx tsc
 
+FROM bun AS dev_container
+RUN apt-get update \
+    && apt-get install -y git make
+
 FROM node AS prod
 COPY --from=prod-deps /app/node_modules node_modules/
 COPY --from=prod-build /app/build/ build/
@@ -48,7 +52,3 @@ COPY ./src/static build/src/static/
 COPY ./src/instrument.mjs ./
 COPY ./fly-run.sh ./
 CMD ["/bin/bash", "fly-run.sh"]
-
-FROM bun AS dev_container
-RUN apt-get update \
-    && apt-get install -y git make
