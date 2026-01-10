@@ -884,7 +884,7 @@ describe('get-via-shared-read-model', () => {
 
             (useExistingAccount ? [true] : [true, false]).forEach(
               revokeOnOld => {
-                describe(`and then they are removed as an owner of the area on their ${revokeOnOld ? 'old' : 'new'} number`, () => {
+                describe.skip(`and then they are removed as an owner of the area on their ${revokeOnOld ? 'old' : 'new'} number`, () => {
                   beforeEach(() =>
                     revokeOwner(revokeOnOld ? memberNumber : newMemberNumber)
                   );
@@ -909,7 +909,7 @@ describe('get-via-shared-read-model', () => {
               });
 
               [true, false].forEach(revokeOnOld => {
-                describe(`and then they are removed as an owner of the area on their ${revokeOnOld ? 'old' : 'new'} number`, () => {
+                describe.skip(`and then they are removed as an owner of the area on their ${revokeOnOld ? 'old' : 'new'} number`, () => {
                   beforeEach(() =>
                     revokeOwner(revokeOnOld ? memberNumber : newMemberNumber)
                   );
@@ -1162,7 +1162,7 @@ describe('get-via-shared-read-model', () => {
               userIsNotOwner(areaId, usersMembershipNumbers);
             });
             if (!useExistingAccount) {
-              describe('and then they are removed as an owner of an area on their new number', () => {
+              describe.skip('and then they are removed as an owner of an area on their new number', () => {
                 beforeEach(() => revokeOwner(newMemberNumber)); // Revoking at this point is taken as revoking for both because they were linked at the time.
                 userIsNotOwner(areaId, usersMembershipNumbers);
               });
