@@ -43,6 +43,11 @@ const AreaRemoved = defineEvent('AreaRemoved', {
   id: tt.UUID,
 });
 
+const AreaEmailUpdated = defineEvent('AreaEmailUpdated', {
+  id: tt.UUID,
+  email: t.union([EmailAddressCodec, t.null]),
+});
+
 const EquipmentAdded = defineEvent('EquipmentAdded', {
   name: t.string,
   id: tt.UUID,
@@ -195,6 +200,7 @@ const TrainingStatNotificationSent = defineEvent(
 export const events = [
   AreaCreated,
   AreaRemoved,
+  AreaEmailUpdated,
   EquipmentAdded,
   OwnerAdded,
   OwnerRemoved,
@@ -225,6 +231,7 @@ export const events = [
 export const DomainEvent = t.union([
   AreaCreated.codec,
   AreaRemoved.codec,
+  AreaEmailUpdated.codec,
   EquipmentAdded.codec,
   OwnerAdded.codec,
   OwnerRemoved.codec,

@@ -91,6 +91,9 @@ const renderEquipment = (equipment: ReadonlyArray<Equipment>) =>
 const renderArea = (area: Area) => html`
   <article>
     <h2>${sanitizeString(area.name)}</h2>
+    ${O.isSome(area.email)
+      ? html`<p><strong>Mailing list:</strong> ${safe(area.email.value)}</p>`
+      : html``}
     <div>${renderEquipment(area.equipment)}</div>
     ${renderOwnerTable(area.id, area.owners)}
     <div class="wrap">
@@ -99,6 +102,9 @@ const renderArea = (area: Area) => html`
       >
       <a class="button" href="/equipment/add?area=${safe(area.id)}"
         >Add RED equipment</a
+      >
+      <a class="button" href="/areas/set-mailing-list?area=${safe(area.id)}"
+        >Set mailing list</a
       >
       <a class="button" href="/areas/remove?area=${safe(area.id)}"
         >Remove area</a

@@ -7,7 +7,11 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {Area} from './area';
 import {UUID} from 'io-ts-types';
 
-const pertinentEvents = ['AreaCreated' as const, 'OwnerAdded' as const];
+const pertinentEvents = [
+  'AreaCreated' as const,
+  'OwnerAdded' as const,
+  'AreaEmailUpdated' as const,
+];
 
 const updateAreas = (
   state: Map<string, Area>,
@@ -15,7 +19,7 @@ const updateAreas = (
 ) => {
   switch (event.type) {
     case 'AreaCreated':
-      state.set(event.id, {...event, owners: []});
+      state.set(event.id, {...event, owners: [], email: O.none});
       return state;
     case 'OwnerAdded': {
       const current = state.get(event.areaId);
@@ -25,6 +29,17 @@ const updateAreas = (
       state.set(event.areaId, {
         ...current,
         owners: [...current.owners, event.memberNumber],
+      });
+      return state;
+    }
+    case 'AreaEmailUpdated': {
+      const current = state.get(event.id);
+      if (!current) {
+        return state;
+      }
+      state.set(event.id, {
+        ...current,
+        email: O.fromNullable(event.email),
       });
       return state;
     }
