@@ -344,6 +344,13 @@ export const render = (viewModel: ViewModel) =>
     (viewModel: ViewModel) => html`
       <div class="stack">
         <h1>${sanitizeString(viewModel.equipment.name)}</h1>
+        <p>
+          <strong>Area:</strong> ${sanitizeString(viewModel.equipment.area.name)}
+          ${O.isSome(viewModel.equipment.area.email)
+            ? html` | <strong>Mailing list:</strong>
+              ${safe(viewModel.equipment.area.email.value)}`
+            : html``}
+        </p>
         ${equipmentActions(viewModel)}
         <h2>Trainers</h2>
         ${trainersList(viewModel.equipment.trainers)}

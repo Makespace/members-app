@@ -236,6 +236,12 @@ export const updateState =
       case 'AreaRemoved':
         db.delete(areasTable).where(eq(areasTable.id, event.id)).run();
         break;
+      case 'AreaEmailUpdated':
+        db.update(areasTable)
+          .set({email: event.email})
+          .where(eq(areasTable.id, event.id))
+          .run();
+        break;
       case 'OwnerAdded':
         db.insert(ownersTable)
           .values({
