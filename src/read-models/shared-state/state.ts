@@ -102,12 +102,14 @@ const createTrainedMembersTable = sql`
 export const areasTable = sqliteTable('areas', {
   id: text('id').notNull().primaryKey(),
   name: text('name').notNull(),
+  email: text('email'),
 });
 
 const createAreasTable = sql`
   CREATE TABLE IF NOT EXISTS areas (
     id TEXT,
-    name TEXT
+    name TEXT,
+    email TEXT
   )
 `;
 
