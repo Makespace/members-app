@@ -1,15 +1,18 @@
-export {EmailAddress, EmailAddressCodec} from './email-address';
-export {Failure, failure} from './failure';
-export {Email} from './email';
+export type {EmailAddress} from './email-address';
+export {EmailAddressCodec} from './email-address';
+export type {Failure} from './failure';
+export {failure} from './failure';
+export type {Email} from './email';
 export {User} from './user';
 export {Actor} from './actor';
 export {HttpResponse} from './html';
-export {GravatarHash, isoGravatarHash} from './gravatar-hash';
+export type {GravatarHash} from './gravatar-hash';
+export {isoGravatarHash} from './gravatar-hash';
 export {
   DomainEvent,
   isEventOfType,
   constructEvent,
-  SubsetOfDomainEvent,
   filterByName,
 } from './domain-event';
-export {ResourceVersion} from './resource-version';
+export type {SubsetOfDomainEvent} from './domain-event';
+export type {ResourceVersion} from './resource-version';
