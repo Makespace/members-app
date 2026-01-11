@@ -9,5 +9,5 @@ export const members = {
   getFailedImports,
 };
 
-export {FailedLinking} from './failed-linking';
-export {Member} from './return-types';
+export type {FailedLinking} from './failed-linking';
+export type {Member} from './return-types';
