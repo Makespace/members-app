@@ -14,13 +14,31 @@ const codec = t.strict({
 
 type RemoveOwner = t.TypeOf<typeof codec>;
 
-const process: Command<RemoveOwner>['process'] = input =>
-  pipe(
+const process: Command<RemoveOwner>['process'] = input => {
+   if (pipe(input.events, RA.some(isEventOfType('AreaRemoved')))) {
+     return O.none;
+   }
+
+  return pipe(
     input.events,
+    RA.filter(e => {
+      const isAdded = isEventOfType('OwnerAdded')(e);
+      const isRemoved  = isEventOfType('OwnerRemoved')(e);
+      if (!isAdded && !isRemoved) {
+        return false;
+      }
+
+      if (e.areaId !== input.command.areaId || e.memberNumber !== input.command.memberNumber) {
+        return false;
+      }
+
+      return true;
+    }),
     RA.last,
     O.filter(isEventOfType('OwnerAdded')),
     O.map(() => constructEvent('OwnerRemoved')(input.command))
   );
+}
 
 const resource: Command<RemoveOwner>['resource'] = command => ({
   type: 'Area',
