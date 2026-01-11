@@ -18,7 +18,8 @@
     "forceConsistentCasingInFileNames": true,
     "composite": true,
     "allowUnusedLabels": false,
-    "allowUnreachableCode": false
+    "allowUnreachableCode": false,
+    "isolatedModules": true
   },
   "include": [
     "src/**/*.ts",
