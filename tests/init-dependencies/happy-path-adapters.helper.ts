@@ -28,4 +28,5 @@ export const happyPathAdapters: Dependencies = {
   lastQuizSync: (_sheetId: string) => TE.right(O.none),
   getSheetData: (_sheetId: string) => TE.right([]),
   getTroubleTicketData: () => TE.right(O.none),
+  getMeetupEvents: () => TE.right([]),
 };

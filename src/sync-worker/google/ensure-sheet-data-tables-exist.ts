@@ -87,6 +87,24 @@ const ensureTroubleTicketDataIndexesExists = (googleDB: Client) =>
     {}
   );
 
+const ensureMeetupEventDataTableExists = (googleDB: Client) =>
+  dbExecute(
+    googleDB,
+    `
+        CREATE TABLE IF NOT EXISTS meetup_event_data (
+          uid TEXT PRIMARY KEY,
+          summary TEXT NOT NULL,
+          description TEXT,
+          location TEXT,
+          dtstart INTEGER NOT NULL,
+          dtend INTEGER NOT NULL,
+          url TEXT,
+          cached_at INTEGER NOT NULL
+        );
+        `,
+    {}
+  );
+
 export const ensureGoogleDBTablesExist =
   (googleDB: Client): SyncWorkerDependencies['ensureGoogleDBTablesExist'] =>
   async () => {
@@ -94,6 +112,7 @@ export const ensureGoogleDBTablesExist =
       ensureSheetDataTableExists(googleDB),
       ensureSheetSyncMetadataTableExists(googleDB),
       ensureTroubleTicketDataTableExists(googleDB),
+      ensureMeetupEventDataTableExists(googleDB),
     ]);
     await Promise.all([
       ensureSheetDataSyncMetadataIndexesExists(googleDB),

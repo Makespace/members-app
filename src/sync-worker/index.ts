@@ -1,5 +1,6 @@
 import {syncTroubleTickets} from './sync_trouble_ticket';
 import {syncEquipmentTrainingSheets} from './sync_training_sheet';
+import {syncMeetupEvents} from './meetup/sync-meetup-events';
 import {initDependencies} from './init-dependencies';
 import {GoogleHelpers} from './google/pull_sheet_data';
 import {setTimeout} from 'node:timers/promises';
@@ -11,6 +12,8 @@ const EQUIPMENT_SYNC_CHECK_INTERVAL_MS = 60 * 1000;
 const TRAINING_SUMMARY_EMAIL_CHECK_INTERVAL_MS = 20 * 60 * 1000;
 const EQUIPMENT_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 const TROUBLE_TICKET_SYNC_INTERVAL_MS = 20 * 60 * 1000;
+const MEETUP_SYNC_CHECK_INTERVAL_MS = 60 * 1000;
+const MEETUP_SYNC_INTERVAL_MS = 30 * 60 * 1000;
 
 async function syncEquipmentTrainingSheetsPeriodically(
   deps: SyncWorkerDependencies,
@@ -20,6 +23,7 @@ async function syncEquipmentTrainingSheetsPeriodically(
   let lastEquipmentSyncCheck = Date.now();
   let lastTroubleTicketCheck = Date.now();
   let lastTrainingSummaryEmailCheck = Date.now();
+  let lastMeetupSyncCheck = Date.now();
   while (true) {
     try {
       const now = Date.now();
@@ -28,10 +32,11 @@ async function syncEquipmentTrainingSheetsPeriodically(
       const lastTroubleTicketCheckAgoMs = now - lastTroubleTicketCheck;
       const lastTrainingSummaryEmailCheckAgoMs =
         now - lastTrainingSummaryEmailCheck;
+      const lastMeetupSyncCheckAgoMs = now - lastMeetupSyncCheck;
 
       if (lastHeartbeatAgoMs > HEARTBEAT_INTERVAL_MS) {
         deps.logger.info(
-          `Last Heartbeat ${lastHeartbeatAgoMs}ms ago, Last Sync ${lastEquipmentSyncCheckAgoMs}ms ago, Last Trouble Ticket ${lastTroubleTicketCheckAgoMs}ms ago, Last Training Summary Email Check ${lastTrainingSummaryEmailCheckAgoMs}ms ago`
+          `Last Heartbeat ${lastHeartbeatAgoMs}ms ago, Last Sync ${lastEquipmentSyncCheckAgoMs}ms ago, Last Trouble Ticket ${lastTroubleTicketCheckAgoMs}ms ago, Last Training Summary Email Check ${lastTrainingSummaryEmailCheckAgoMs}ms ago, Last Meetup Sync ${lastMeetupSyncCheckAgoMs}ms ago`
         );
         lastHeartbeat = Date.now();
       }
@@ -53,6 +58,15 @@ async function syncEquipmentTrainingSheetsPeriodically(
           TROUBLE_TICKET_SYNC_INTERVAL_MS
         );
         lastTroubleTicketCheck = Date.now();
+      }
+
+      if (lastMeetupSyncCheckAgoMs > MEETUP_SYNC_CHECK_INTERVAL_MS) {
+        await syncMeetupEvents(
+          deps,
+          deps.conf.MEETUP_ICAL_URL,
+          MEETUP_SYNC_INTERVAL_MS
+        );
+        lastMeetupSyncCheck = Date.now();
       }
 
       if (

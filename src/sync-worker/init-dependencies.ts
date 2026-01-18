@@ -16,6 +16,8 @@ import {getTrainingSheetsToSync} from './db/get_training_sheets_to_sync';
 import {storeTroubleTicketRowsRead} from './db/store_trouble_ticket_rows_read';
 import {lastTroubleTicketRowRead} from './db/last_trouble_ticket_row_read';
 import {clearTroubleTicketCache} from './db/clear_trouble_ticket_cache';
+import {storeMeetupEvents} from './db/store-meetup-events';
+import {clearMeetupEvents} from './db/clear-meetup-events';
 import {Logger} from 'pino';
 import {ensureGoogleDBTablesExist} from './google/ensure-sheet-data-tables-exist';
 import {sendEmail} from '../init-dependencies/send-email';
@@ -37,6 +39,8 @@ const initDBCommands = (googleDB: Client, eventDB: Client, logger: Logger) => {
     storeTroubleTicketRowsRead: storeTroubleTicketRowsRead(googleDB),
     lastTroubleTicketRowRead: lastTroubleTicketRowRead(googleDB),
     clearTroubleTicketCache: clearTroubleTicketCache(googleDB),
+    storeMeetupEvents: storeMeetupEvents(googleDB),
+    clearMeetupEvents: clearMeetupEvents(googleDB),
     ensureGoogleDBTablesExist: ensureGoogleDBTablesExist(googleDB),
   };
 };
