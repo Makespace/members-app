@@ -7,6 +7,7 @@ import {
   SheetDataTable,
   TroubleTicketDataTable,
 } from './google/sheet-data-table';
+import {MeetupEvent} from './meetup/fetch-meetup-ical';
 import {ReadonlyRecord} from 'fp-ts/lib/ReadonlyRecord';
 import {UUID} from 'io-ts-types';
 import {DomainEvent, Email, Failure, ResourceVersion} from '../types';
@@ -58,4 +59,8 @@ export interface SyncWorkerDependencies {
       version: ResourceVersion;
     }
   >;
+  storeMeetupEvents: (
+    data: ReadonlyArray<MeetupEvent>
+  ) => TE.TaskEither<string, void>;
+  clearMeetupEvents: () => TE.TaskEither<string, void>;
 }

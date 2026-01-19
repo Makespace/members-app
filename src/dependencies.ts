@@ -12,6 +12,7 @@ import {
   SheetDataTable,
   TroubleTicketDataTable,
 } from './sync-worker/google/sheet-data-table';
+import {MeetupEventRow} from './sync-worker/db/get-meetup-events';
 
 export type Dependencies = {
   commitEvent: (
@@ -49,4 +50,5 @@ export type Dependencies = {
   getTroubleTicketData: (
     from: O.Option<Date>
   ) => TE.TaskEither<string, O.Option<TroubleTicketDataTable['rows']>>;
+  getMeetupEvents: () => TE.TaskEither<string, ReadonlyArray<MeetupEventRow>>;
 };

@@ -14,6 +14,7 @@ import {initSharedReadModel} from '../read-models/shared-state';
 import {lastSync} from '../sync-worker/db/last_sync';
 import {getSheetData} from '../sync-worker/db/get_sheet_data';
 import {getTroubleTicketData} from '../sync-worker/db/get_trouble_ticket_data';
+import {getMeetupEvents} from '../sync-worker/db/get-meetup-events';
 
 export const initLogger = (conf: Config) => {
   let loggerOptions: LoggerOptions;
@@ -83,6 +84,7 @@ export const initDependencies = (
       googleDB,
       O.fromNullable(conf.TROUBLE_TICKET_SHEET)
     ),
+    getMeetupEvents: getMeetupEvents(googleDB),
     // getPassedQuizResults: getPassedQuizResults(dbClient),
     // getFailedQuizResults: getFailedQuizResults(dbClient),
   };
