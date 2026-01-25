@@ -19,5 +19,5 @@ export const sendEmailCommands = {
   ownerAgreementInvite,
 };
 
-export {Command} from './command';
-export {SendEmail} from './send-email';
+export type {Command} from './command';
+export type {SendEmail} from './send-email';

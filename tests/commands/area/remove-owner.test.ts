@@ -9,12 +9,19 @@ import {removeOwner} from '../../../src/commands/area/remove-owner';
 describe('remove-owner', () => {
   const areaId = v4() as UUID;
   const areaName = faker.commerce.productName() as NonEmptyString;
+  const unrelatedAreaName = faker.commerce.productName() as NonEmptyString;
   const memberNumber = faker.number.int();
   const command = {
     areaId: areaId,
     memberNumber,
     actor: arbitraryActor(),
   };
+
+  const unreleatedEvent = constructEvent('AreaCreated')({
+    id: v4() as UUID,
+    name: unrelatedAreaName,
+    actor: arbitraryActor(),
+  });
 
   describe('when the area does not exist', () => {
     const result = removeOwner.process({
@@ -44,6 +51,7 @@ describe('remove-owner', () => {
             areaId,
             actor: arbitraryActor(),
           }),
+          unreleatedEvent,
         ],
       });
 

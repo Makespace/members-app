@@ -4,7 +4,12 @@ import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {eq} from 'drizzle-orm';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {trainedMemberstable, trainersTable} from '../state';
-import {MinimalEquipment, TrainedMember, TrainerInfo} from '../return-types';
+import {
+  MinimalArea,
+  MinimalEquipment,
+  TrainedMember,
+  TrainerInfo,
+} from '../return-types';
 import {Actor} from '../../../types';
 import {getAreaMinimal} from '../area/get';
 import {getMergedMemberSet} from '../member/get';
@@ -103,9 +108,10 @@ export const expandAll =
       expandTrainedMembers(db, linking),
       e => ({
         ...e,
-        area: O.getOrElse(() => ({
+        area: O.getOrElse<MinimalArea>(() => ({
           id: e.areaId,
           name: 'unknown',
+          email: O.none,
         }))(getAreaMinimal(db)(e.areaId)),
       })
     );

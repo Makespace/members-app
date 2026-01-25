@@ -80,6 +80,7 @@ export type Member = MemberCoreInfo & {
 export type MinimalArea = {
   id: UUID;
   name: string;
+  email: O.Option<EmailAddress>;
 };
 
 export type Owner = Pick<

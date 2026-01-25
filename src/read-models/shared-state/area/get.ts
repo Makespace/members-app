@@ -5,17 +5,21 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {pipe} from 'fp-ts/lib/function';
 import {areasTable} from '../state';
 import {UUID} from 'io-ts-types';
+import {EmailAddress} from '../../../types';
 import {MinimalArea} from '../return-types';
 
 const transformRow = <
   R extends {
     id: string;
+    name: string;
+    email: string | null;
   },
 >(
   row: R
-) => ({
-  ...row,
+): MinimalArea => ({
   id: row.id as UUID,
+  name: row.name,
+  email: O.fromNullable(row.email as EmailAddress | null),
 });
 
 export const getAreaMinimal =
