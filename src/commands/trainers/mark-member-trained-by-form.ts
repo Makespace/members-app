@@ -14,7 +14,7 @@ import {Member} from '../../read-models/members';
 import {Equipment} from '../../read-models/shared-state/return-types';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
-import {memberNumberInputMinimal} from '../../templates/member-input-minimal';
+import {memberSelector} from '../../templates/member-selector';
 import {dateTimeInput} from '../../templates/date-time-input';
 import {DateTime} from 'luxon';
 
@@ -23,16 +23,11 @@ type ViewModel = {
   membersNotAlreadyTrained: ReadonlyArray<Member>;
 };
 
-// TODO - Drop down suggestion list of users.
 // TODO - Warning if you try and mark a member as trained who hasn't done the quiz (for now we allow this for flexibility).
 
 const renderForm = (viewModel: ViewModel) =>
   pipe(
     html`
-      <h3 style="color:red;">
-        This page is WIP - The datamodel is setup but the input's here aren't
-        particularly user friendly
-      </h1>
       <h1>
         [Admin] Mark a member as trained on
         ${sanitizeString(viewModel.equipment.name)} by a specific trainer
@@ -48,7 +43,7 @@ const renderForm = (viewModel: ViewModel) =>
           name="equipmentId"
           value="${viewModel.equipment.id}"
         />
-        ${memberNumberInputMinimal(
+        ${memberSelector(
           'trainedByMemberNumber' as Safe,
           'Select trainer' as Safe,
           viewModel.equipment.trainers
@@ -63,7 +58,7 @@ const renderForm = (viewModel: ViewModel) =>
             tooltip: 'Training time cannot be in the future' as Safe,
           })
         )}
-        ${memberNumberInputMinimal(
+        ${memberSelector(
           'memberNumber' as Safe,
           'Select newly trained member' as Safe,
           viewModel.membersNotAlreadyTrained
@@ -71,7 +66,7 @@ const renderForm = (viewModel: ViewModel) =>
         <button type="submit">Confirm</button>
       </form>
     `,
-    toLoggedInContent(safe('Member Training Complete'))
+    toLoggedInContent(safe('Mark Member Trained'))
   );
 
 const constructForm: Form<ViewModel>['constructForm'] =
