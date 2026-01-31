@@ -4,6 +4,8 @@ import {registerTrainingSheet} from './register-training-sheet';
 import {registerTrainingSheetForm} from './register-training-sheet-form';
 import {removeTrainingSheet} from './remove-training-sheet';
 import {removeTrainingSheetForm} from './remove-training-sheet-form';
+import {removeEquipment} from './remove';
+import {removeEquipmentForm} from './remove-form';
 
 export const equipment = {
   add: {
@@ -17,5 +19,9 @@ export const equipment = {
   removeTrainingSheet: {
     ...removeTrainingSheet,
     ...removeTrainingSheetForm,
+  },
+  remove: {
+    ...removeEquipment,
+    ...removeEquipmentForm,
   },
 };
