@@ -11,7 +11,7 @@ import {User} from '../../types';
 import {UUID} from 'io-ts-types';
 import {StatusCodes} from 'http-status-codes';
 import {
-  FullQuizResults,
+  FullQuizResultsForEquipment,
   getFullQuizResultsForEquipment,
 } from '../../read-models/external-state/equipment-quiz';
 
@@ -64,7 +64,7 @@ export const constructViewModel =
         }
         return pipe(
           getFullQuizResultsForEquipment(deps, equipment.trainingSheetId.value, equipment),
-          TE.map<FullQuizResults, O.Option<FullQuizResults>>(O.some),
+          TE.map<FullQuizResultsForEquipment, O.Option<FullQuizResultsForEquipment>>(O.some),
           TE.mapLeft(err_str => {
             deps.logger.error(
               'Failed to read sheet sync metadata: %s',

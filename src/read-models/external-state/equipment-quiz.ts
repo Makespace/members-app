@@ -7,6 +7,8 @@ import {SheetDataTable} from '../../sync-worker/google/sheet-data-table';
 import {pipe} from 'fp-ts/lib/function';
 import {Equipment, MemberCoreInfo} from '../shared-state/return-types';
 import {DateTime, Duration} from 'luxon';
+import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
+import { UUID } from 'io-ts-types';
 
 export type EquipmentQuizResults = {
   passedQuizes: SheetDataTable['rows'];
@@ -70,7 +72,7 @@ const getQuizResults = (
   );
 };
 
-export type FullQuizResults = {
+export type FullQuizResultsForEquipment = {
   lastQuizSync: O.Option<Date>;
   membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>;
   unknownMembersAwaitingTraining: ReadonlyArray<OrphanedPassedQuiz>;
@@ -81,7 +83,7 @@ export const getFullQuizResultsForEquipment = (
   deps: Pick<Dependencies, 'sharedReadModel' | 'lastQuizSync' | 'getSheetData'>,
   sheetId: string,
   equipment: Equipment
-): TE.TaskEither<string, FullQuizResults> =>
+): TE.TaskEither<string, FullQuizResultsForEquipment> =>
   pipe(
     getQuizResults(deps, sheetId, equipment.trainedMembers),
     TE.map(qr => {
@@ -124,3 +126,22 @@ export const getFullQuizResultsForEquipment = (
       };
     })
   );
+
+export type FullQuizResultsForMember = {
+  equipmentQuizPassedAt: ReadonlyRecord<UUID, Date>,
+  equipmentQuizAttempted: ReadonlyRecord<UUID, {
+    response_submitted: Date,
+    sheet_id: string;
+    score: number;
+    max_score: number;
+    percentage: number;
+  }>
+};
+
+export const getFullQuizResultsForMember = (
+  deps: Pick<Dependencies, 'sharedReadModel' | 'getSheetData'>,
+  memberNumber: number
+): TE.TaskEither<string, FullQuizResultsForMember> => {
+  
+
+};

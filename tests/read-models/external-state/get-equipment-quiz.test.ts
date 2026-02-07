@@ -6,28 +6,43 @@ import {EmailAddress} from '../../../src/types';
 import {Int} from 'io-ts';
 import {getRightOrFail, getSomeOrFail} from '../../helpers';
 import {
-  FullQuizResults,
+  FullQuizResultsForEquipment,
+  FullQuizResultsForMember,
   getFullQuizResultsForEquipment,
+  getFullQuizResultsForMember,
 } from '../../../src/read-models/external-state/equipment-quiz';
 import {storeSync} from '../../../src/sync-worker/db/store_sync';
 import {SheetDataTable} from '../../../src/sync-worker/google/sheet-data-table';
+import { beforeEach } from 'node:test';
 
-const runGetQuizResults = async (
+const runGetQuizResultsByEquipment = async (
   framework: TestFramework,
   trainingSheetId: string,
-  equipmentId: UUID
-) =>
-  getRightOrFail(
-    await getFullQuizResultsForEquipment(
-      {
-        sharedReadModel: framework.sharedReadModel,
-        lastQuizSync: framework.lastSync,
-        getSheetData: framework.getSheetData,
-      },
-      trainingSheetId,
-      getSomeOrFail(framework.sharedReadModel.equipment.get(equipmentId))
-    )()
-  );
+  equipmentId: UUID,
+): Promise<FullQuizResultsForEquipment> => getRightOrFail(
+  await getFullQuizResultsForEquipment(
+    {
+      sharedReadModel: framework.sharedReadModel,
+      lastQuizSync: framework.lastSync,
+      getSheetData: framework.getSheetData,
+    },
+    trainingSheetId,
+    getSomeOrFail(framework.sharedReadModel.equipment.get(equipmentId))
+  )()
+);
+
+const runGetQuizResultsByMemberNumber = async (
+  framework: TestFramework,
+  memberNumber: number,
+): Promise<FullQuizResultsForMember> => getRightOrFail(
+  await getFullQuizResultsForMember(
+    {
+      sharedReadModel: framework.sharedReadModel,
+      getSheetData: framework.getSheetData,
+    },
+    memberNumber
+  )()
+);
 
 const populateQuizData = async (
   framework: TestFramework,
@@ -82,8 +97,33 @@ describe('Get equipment quiz', () => {
   });
 
   describe('when equipment has 1 trained member and 1 member awaiting training', () => {
-    let quizResults: FullQuizResults;
     let quizSyncDate: Date;
+
+    const trainedMemberQuizAttempt: SheetDataTable["rows"][0] = {
+      sheet_id: addTrainingSheet.trainingSheetId,
+      sheet_name: faker.animal.bear(),
+      row_index: 2, // 1 is the sheet headers.
+      response_submitted: faker.date.past(),
+      member_number_provided: addTrainedMember.memberNumber,
+      email_provided: addTrainedMember.email,
+      score: 10,
+      max_score: 10,
+      percentage: 100,
+      cached_at: new Date(),
+    };
+    const awaitingTrainingMemberQuizAttempt: SheetDataTable["rows"][0] = {
+      sheet_id: addTrainingSheet.trainingSheetId,
+      sheet_name: faker.animal.bear(),
+      row_index: 3,
+      response_submitted: faker.date.past(),
+      member_number_provided: addAwaitingTrainingMember.memberNumber,
+      email_provided: addAwaitingTrainingMember.email,
+      score: 10,
+      max_score: 10,
+      percentage: 100,
+      cached_at: new Date(),
+    };
+
     beforeEach(async () => {
       await framework.commands.memberNumbers.linkNumberToEmail(
         addTrainedMember
@@ -97,54 +137,69 @@ describe('Get equipment quiz', () => {
       await framework.commands.equipment.trainingSheet(addTrainingSheet);
       quizSyncDate = faker.date.past();
       await populateQuizData(framework, quizSyncDate, [
-        {
-          sheet_id: addTrainingSheet.trainingSheetId,
-          sheet_name: faker.animal.bear(),
-          row_index: 2, // 1 is the sheet headers.
-          response_submitted: faker.date.past(),
-          member_number_provided: addTrainedMember.memberNumber,
-          email_provided: addTrainedMember.email,
-          score: 10,
-          max_score: 10,
-          percentage: 100,
-          cached_at: new Date(),
-        },
-        {
-          sheet_id: addTrainingSheet.trainingSheetId,
-          sheet_name: faker.animal.bear(),
-          row_index: 3,
-          response_submitted: faker.date.past(),
-          member_number_provided: addAwaitingTrainingMember.memberNumber,
-          email_provided: addAwaitingTrainingMember.email,
-          score: 10,
-          max_score: 10,
-          percentage: 100,
-          cached_at: new Date(),
-        },
+        trainedMemberQuizAttempt,
+        awaitingTrainingMemberQuizAttempt
       ]);
-      quizResults = await runGetQuizResults(
-        framework,
-        addTrainingSheet.trainingSheetId,
-        addTrainingSheet.equipmentId
-      );
     });
 
-    it('only 1 member appears as awaiting training', () => {
-      expect(
-        quizResults.membersAwaitingTraining.map(m => m.memberNumber)
-      ).toStrictEqual([addAwaitingTrainingMember.memberNumber]);
-    });
-    it('last quiz sync matches expected', () => {
-      expect(getSomeOrFail(quizResults.lastQuizSync)).toStrictEqual(
-        quizSyncDate
-      );
+    describe('getFullQuizResultsForEquipment', () => {
+      let quizResultsByEquipment: FullQuizResultsForEquipment;
+      beforeEach(async () => {
+        quizResultsByEquipment = await runGetQuizResultsByEquipment(
+          framework,
+          addTrainingSheet.trainingSheetId,
+          addTrainingSheet.equipmentId
+        );
+      });
+      it('only 1 member appears as awaiting training', () => {
+        expect(
+          quizResultsByEquipment.membersAwaitingTraining.map(m => m.memberNumber)
+        ).toStrictEqual([addAwaitingTrainingMember.memberNumber]);
+      });
+      it('last quiz sync matches expected', () => {
+        expect(getSomeOrFail(quizResultsByEquipment.lastQuizSync)).toStrictEqual(
+          quizSyncDate
+        );
+      });
+
+      it('no failed quizes', () => {
+        expect(quizResultsByEquipment.failedQuizes).toStrictEqual([]);
+      });
+      it('no unknown member passes', () => {
+        expect(quizResultsByEquipment.unknownMembersAwaitingTraining).toStrictEqual([]);
+      });
     });
 
-    it('no failed quizes', () => {
-      expect(quizResults.failedQuizes).toStrictEqual([]);
-    });
-    it('no unknown member passes', () => {
-      expect(quizResults.unknownMembersAwaitingTraining).toStrictEqual([]);
+    describe('quizResultsByMember', () => {
+      let quizResultsForTrainedMember: FullQuizResultsForMember;
+      let quizResultsForMemberAwaitingTraining: FullQuizResultsForMember;
+
+      beforeEach(async () => {
+        quizResultsForTrainedMember = await runGetQuizResultsByMemberNumber(
+          framework,
+          addTrainedMember.memberNumber
+        );
+        quizResultsForMemberAwaitingTraining = await runGetQuizResultsByMemberNumber(
+          framework,
+          addAwaitingTrainingMember.memberNumber
+        );
+      });
+      it('shows the trained member as having passed the quiz', () => {
+        expect(quizResultsForTrainedMember.equipmentQuizPassedAt[addEquipment.id]).toStrictEqual(
+          trainedMemberQuizAttempt.response_submitted
+        );
+      });
+      it('shows the trained member as having no other quiz attempts', () => {
+        expect(quizResultsForTrainedMember.equipmentQuizAttempted).toStrictEqual({});
+      });
+      it('shows the member awaiting training as having passed the quiz', () => {
+        expect(quizResultsForMemberAwaitingTraining.equipmentQuizPassedAt[addEquipment.id]).toStrictEqual(
+          awaitingTrainingMemberQuizAttempt.response_submitted
+        );
+      });
+      it('shows the member awaiting training as having no other quiz attempts', () => {
+        expect(quizResultsForMemberAwaitingTraining.equipmentQuizAttempted).toStrictEqual({});
+      });
     });
   });
 });
