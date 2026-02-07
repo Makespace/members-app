@@ -12,7 +12,7 @@ import {UUID} from 'io-ts-types';
 import {StatusCodes} from 'http-status-codes';
 import {
   FullQuizResults,
-  getFullQuizResults,
+  getFullQuizResultsForEquipment,
 } from '../../read-models/external-state/equipment-quiz';
 
 export const constructViewModel =
@@ -63,7 +63,7 @@ export const constructViewModel =
           return TE.right(O.none);
         }
         return pipe(
-          getFullQuizResults(deps, equipment.trainingSheetId.value, equipment),
+          getFullQuizResultsForEquipment(deps, equipment.trainingSheetId.value, equipment),
           TE.map<FullQuizResults, O.Option<FullQuizResults>>(O.some),
           TE.mapLeft(err_str => {
             deps.logger.error(

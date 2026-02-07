@@ -7,7 +7,7 @@ import {Int} from 'io-ts';
 import {getRightOrFail, getSomeOrFail} from '../../helpers';
 import {
   FullQuizResults,
-  getFullQuizResults,
+  getFullQuizResultsForEquipment,
 } from '../../../src/read-models/external-state/equipment-quiz';
 import {storeSync} from '../../../src/sync-worker/db/store_sync';
 import {SheetDataTable} from '../../../src/sync-worker/google/sheet-data-table';
@@ -18,7 +18,7 @@ const runGetQuizResults = async (
   equipmentId: UUID
 ) =>
   getRightOrFail(
-    await getFullQuizResults(
+    await getFullQuizResultsForEquipment(
       {
         sharedReadModel: framework.sharedReadModel,
         lastQuizSync: framework.lastSync,

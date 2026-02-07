@@ -77,7 +77,7 @@ export type FullQuizResults = {
   failedQuizes: SheetDataTable['rows'];
 };
 
-export const getFullQuizResults = (
+export const getFullQuizResultsForEquipment = (
   deps: Pick<Dependencies, 'sharedReadModel' | 'lastQuizSync' | 'getSheetData'>,
   sheetId: string,
   equipment: Equipment
