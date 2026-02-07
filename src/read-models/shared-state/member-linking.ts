@@ -1,4 +1,4 @@
-type MemberNumber = number;
+import { MemberNumber } from "../../types/member-number";
 
 export class MemberLinking {
   // Stores the linking between member numbers.

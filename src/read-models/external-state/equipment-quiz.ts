@@ -1,6 +1,7 @@
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import * as RA from 'fp-ts/ReadonlyArray';
+import * as RR from 'fp-ts/ReadonlyRecord';
 
 import {Dependencies} from '../../dependencies';
 import {SheetDataTable} from '../../sync-worker/google/sheet-data-table';
@@ -8,7 +9,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {Equipment, MemberCoreInfo} from '../shared-state/return-types';
 import {DateTime, Duration} from 'luxon';
 import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
-import { UUID } from 'io-ts-types';
+import { EquipmentId } from '../../types/equipment-id';
 
 export type EquipmentQuizResults = {
   passedQuizes: SheetDataTable['rows'];
@@ -29,12 +30,15 @@ export type MemberAwaitingTraining = Pick<
   waitingSince: Date;
 };
 
+const isPassed = (row: SheetDataTable['rows'][0]) => row.percentage >= 100;
+const isFailed = (row: SheetDataTable['rows'][0]) => !isPassed(row);
+
 const extractPassedQuizes = (
   sheetData: SheetDataTable['rows']
 ): SheetDataTable['rows'] =>
   pipe(
     sheetData,
-    RA.filter(row => row.percentage === 100)
+    RA.filter(isPassed)
   );
 
 const extractFailedQuizes = (
@@ -42,7 +46,7 @@ const extractFailedQuizes = (
 ): SheetDataTable['rows'] =>
   pipe(
     sheetData,
-    RA.filter(row => row.percentage < 100)
+    RA.filter(isFailed)
   );
 
 const getQuizResults = (
@@ -128,20 +132,69 @@ export const getFullQuizResultsForEquipment = (
   );
 
 export type FullQuizResultsForMember = {
-  equipmentQuizPassedAt: ReadonlyRecord<UUID, Date>,
-  equipmentQuizAttempted: ReadonlyRecord<UUID, {
+  equipmentQuizPassedAt: ReadonlyRecord<EquipmentId, ReadonlyArray<Date>>,
+  equipmentQuizAttempted: ReadonlyRecord<EquipmentId, ReadonlyArray<{
     response_submitted: Date,
     sheet_id: string;
     score: number;
     max_score: number;
     percentage: number;
-  }>
+  }>>,
+  orphanedQuizAttempts: ReadonlyArray<{
+    response_submitted: Date,
+    sheet_id: string;
+    score: number;
+    max_score: number;
+    percentage: number;
+  }>,
 };
 
 export const getFullQuizResultsForMember = (
-  deps: Pick<Dependencies, 'sharedReadModel' | 'getSheetData'>,
+  deps: Pick<Dependencies, 'sharedReadModel' | 'getSheetDataByMemberNumber'>,
   memberNumber: number
-): TE.TaskEither<string, FullQuizResultsForMember> => {
-  
-
-};
+): TE.TaskEither<string, FullQuizResultsForMember> => pipe(
+  deps.getSheetDataByMemberNumber(memberNumber),
+  TE.map(
+    qr => {
+      const equipmentQuizPassedAt: Record<EquipmentId, Date[]> = {};
+      const equipmentQuizAttempted: Record<EquipmentId, {
+        response_submitted: Date,
+        sheet_id: string;
+        score: number;
+        max_score: number;
+        percentage: number;
+      }[]> = {};
+      const orphanedQuizAttempts: {
+        response_submitted: Date,
+        sheet_id: string;
+        score: number;
+        max_score: number;
+        percentage: number;
+      }[] = [];
+      const trainingSheetMapping = deps.sharedReadModel.equipment.getTrainingSheetIdMapping();
+      for (const row of qr) {
+        const equipmentId = RR.lookup(row.sheet_id)(trainingSheetMapping);
+        if (O.isNone(equipmentId)) {
+          orphanedQuizAttempts.push(row);
+        } else {
+          if (isPassed(row)) {
+            if (!equipmentQuizPassedAt[equipmentId.value]) {
+              equipmentQuizPassedAt[equipmentId.value] = [];
+            }
+            equipmentQuizPassedAt[equipmentId.value].push(row.response_submitted);
+          } else {
+            if (!equipmentQuizAttempted[equipmentId.value]) {
+              equipmentQuizAttempted[equipmentId.value] = [];
+            }
+            equipmentQuizAttempted[equipmentId.value].push(row);
+          }
+        }
+      }
+      return {
+        equipmentQuizPassedAt,
+        equipmentQuizAttempted,
+        orphanedQuizAttempts,
+      }
+    }
+  )
+);

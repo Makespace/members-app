@@ -38,7 +38,7 @@ const runGetQuizResultsByMemberNumber = async (
   await getFullQuizResultsForMember(
     {
       sharedReadModel: framework.sharedReadModel,
-      getSheetData: framework.getSheetData,
+      getSheetDataByMemberNumber: framework.getSheetDataByMemberNumber,
     },
     memberNumber
   )()
