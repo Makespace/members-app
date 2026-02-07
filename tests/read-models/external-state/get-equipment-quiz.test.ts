@@ -13,7 +13,6 @@ import {
 } from '../../../src/read-models/external-state/equipment-quiz';
 import {storeSync} from '../../../src/sync-worker/db/store_sync';
 import {SheetDataTable} from '../../../src/sync-worker/google/sheet-data-table';
-import { beforeEach } from 'node:test';
 
 const runGetQuizResultsByEquipment = async (
   framework: TestFramework,
@@ -186,7 +185,7 @@ describe('Get equipment quiz', () => {
       });
       it('shows the trained member as having passed the quiz', () => {
         expect(quizResultsForTrainedMember.equipmentQuizPassedAt[addEquipment.id]).toStrictEqual(
-          trainedMemberQuizAttempt.response_submitted
+          [trainedMemberQuizAttempt.response_submitted]
         );
       });
       it('shows the trained member as having no other quiz attempts', () => {
@@ -194,7 +193,7 @@ describe('Get equipment quiz', () => {
       });
       it('shows the member awaiting training as having passed the quiz', () => {
         expect(quizResultsForMemberAwaitingTraining.equipmentQuizPassedAt[addEquipment.id]).toStrictEqual(
-          awaitingTrainingMemberQuizAttempt.response_submitted
+          [awaitingTrainingMemberQuizAttempt.response_submitted]
         );
       });
       it('shows the member awaiting training as having no other quiz attempts', () => {
