@@ -159,19 +159,24 @@ const currentlyTrainedUsersTable = (viewModel: ViewModel) =>
               : renderMemberNumber(member.trainedByMemberNumber.value)}
           </td>
           <td>
-            <form action="/equipment/revoke-member-trained" method="post">
-              <input
-                type="hidden"
-                name="equipmentId"
-                value="${viewModel.equipment.id}"
-              />
-              <input
-                type="hidden"
-                name="memberNumber"
-                value="${member.memberNumber}"
-              />
-              <button type="submit">Revoke Training</button>
-            </form>
+            ${
+              isTrainerOrOwner(viewModel) ? html`
+                <form action="/equipment/revoke-member-trained" method="post">
+                  <input
+                    type="hidden"
+                    name="equipmentId"
+                    value="${viewModel.equipment.id}"
+                  />
+                  <input
+                    type="hidden"
+                    name="memberNumber"
+                    value="${member.memberNumber}"
+                  />
+                  <button type="submit">Revoke Training</button>
+                </form>
+              ` : html``
+            }
+            
           </td>
         </tr>`
     ),
