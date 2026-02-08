@@ -13,7 +13,8 @@
     "noEmitOnError": true,
     "module": "commonjs",
     "lib": [
-      "ES2023"
+      "ES2023",
+      "DOM"
     ],
     "forceConsistentCasingInFileNames": true,
     "composite": true,
