@@ -1,4 +1,4 @@
-import {FullQuizResults} from '../../read-models/external-state/equipment-quiz';
+import {FullQuizResultsForEquipment} from '../../read-models/external-state/equipment-quiz';
 import {Equipment} from '../../read-models/shared-state/return-types';
 import {User} from '../../types';
 import * as O from 'fp-ts/Option';
@@ -9,5 +9,5 @@ export type ViewModel = {
   isSuperUserOrTrainerOfArea: boolean;
   isSuperUser: boolean;
   equipment: Equipment;
-  quizResults: O.Option<FullQuizResults>;
+  quizResults: O.Option<FullQuizResultsForEquipment>;
 };
