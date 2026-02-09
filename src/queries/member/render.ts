@@ -1,3 +1,4 @@
+import * as O from 'fp-ts/Option';
 import {getGravatarProfile, getGravatarThumbnail} from '../../templates/avatar';
 import {Html, html, sanitizeOption, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
@@ -6,11 +7,9 @@ import {
   renderMemberNumbers,
 } from '../../templates/member-number';
 import {memberStatusTag} from '../../templates/member-status';
-import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
-import {renderOwnerStatus} from '../shared-render/owner-status';
-import {renderTrainerStatus} from '../shared-render/trainer-status';
-import {renderTrainingStatus} from '../shared-render/training-status';
 import {otherMemberNumbersTooltip} from '../shared-render/other-member-numbers-tooltip';
+import { renderTrainingMatrix } from '../shared-render/training-matrix';
+import { renderOwnerAgreementStatus } from '../shared-render/owner-agreement';
 
 const ownPageBanner = html`<h1>This is your profile!</h1>`;
 
@@ -91,29 +90,17 @@ export const render = (viewModel: ViewModel) => html`
           ${ifSelf(viewModel, editAvatar())}
         </td>
       </tr>
-      <tr>
-        <th scope="row">Owner of</th>
-        <td>${renderOwnerStatus(viewModel.member.ownerOf, true)}</td>
-      </tr>
-      ${viewModel.isSuperUser
-        ? html`<tr>
-            <th scope="row">Owner agreement</th>
-            <td>
-              ${renderOwnerAgreementStatus(
-                viewModel.member.agreementSigned,
-                true
-              )}
-            </td>
-          </tr>`
-        : html``}
-      <tr>
-        <th scope="row">Trainer for</th>
-        <td>${renderTrainerStatus(viewModel.member.trainerFor)}</td>
-      </tr>
-      <tr>
-        <th scope="row">Trained on</th>
-        <td>${renderTrainingStatus(viewModel.member.trainedOn, true)}</td>
-      </tr>
+      ${viewModel.isSuperUser ? html`<tr>
+          <th scope="row">Owner agreement</th>
+          <td>
+            ${renderOwnerAgreementStatus(
+              viewModel.member.agreementSigned,
+              true
+            )}
+          </td>
+        </tr>`
+      : html``}
+      ${O.isSome(viewModel.trainingMatrix) ? renderTrainingMatrix(viewModel.trainingMatrix.value) : html``}
     </tbody>
   </table>
 `;
