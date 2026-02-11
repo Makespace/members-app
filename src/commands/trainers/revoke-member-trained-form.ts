@@ -1,10 +1,16 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
-import {html, safe, sanitizeString, toLoggedInContent} from '../../types/html';
+import {
+  html,
+  Safe,
+  safe,
+  sanitizeString,
+  toLoggedInContent,
+} from '../../types/html';
 import {Form} from '../../types/form';
 import {getEquipmentIdFromForm} from '../equipment/get-equipment-id-from-form';
-import {memberInput} from '../../templates/member-input';
+import {memberSelector} from '../../templates/member-selector';
 import {Member} from '../../read-models/members';
 import {Equipment} from '../../read-models/shared-state/return-types';
 import {failureWithStatus} from '../../types/failure-with-status';
@@ -27,7 +33,7 @@ const renderForm = (viewModel: ViewModel) =>
           name="equipmentId"
           value="${viewModel.equipment.id}"
         />
-        ${memberInput(viewModel.members)}
+        ${memberSelector('memberNumber' as Safe, null, viewModel.members)}
         <button type="submit">Confirm</button>
       </form>
     `,
