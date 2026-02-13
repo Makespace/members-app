@@ -4,7 +4,7 @@ import {commands, sendEmailCommands} from './commands';
 import * as queries from './queries';
 import {Route, get} from './types/route';
 import {authRoutes} from './authentication';
-import {queryToHandler, commandToHandlers, ping} from './http';
+import {queryToHandler, commandToHandlers, ping, calendarIcsHandler} from './http';
 import {emailHandler} from './http/email-handler';
 
 export const initRoutes = (
@@ -89,6 +89,7 @@ export const initRoutes = (
     ),
     email('owner-agreement-invite', sendEmailCommands.ownerAgreementInvite),
     get('/ping', ping),
+    get('/calendar.ics', calendarIcsHandler(deps)),
     query('/db', queries.db),
     query('/debug/dump-shared-db/json', queries.dumpSharedDbAsJson),
     query('/debug/dump-shared-db/buffer', queries.dumpSharedDbAsBuffer),

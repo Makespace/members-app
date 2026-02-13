@@ -43,6 +43,10 @@ const Config = t.strict({
   ),
   GOOGLE_SERVICE_ACCOUNT_KEY_JSON: tt.NonEmptyString, // Don't default so we don't accidentally disable.
   TROUBLE_TICKET_SHEET: t.string,
+  MEETUP_ICAL_URL: withDefaultIfEmpty(
+    t.string,
+    'https://www.meetup.com/makespace/events/ical/'
+  ),
 });
 
 export type Config = t.TypeOf<typeof Config>;
