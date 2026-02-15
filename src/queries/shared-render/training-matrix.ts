@@ -1,7 +1,7 @@
 import * as O from 'fp-ts/Option';
 import { EquipmentId } from '../../types/equipment-id';
 import { html, joinHtml, Safe, sanitizeString } from '../../types/html';
-import {tooltip} from '../shared-render/tool-tip';
+import { tooltipWith} from '../shared-render/tool-tip';
 import { FullQuizResultsForMember } from '../../read-models/external-state/equipment-quiz';
 import { UUID } from 'io-ts-types';
 
@@ -9,7 +9,7 @@ const GREEN_TICK = '✅' as Safe;
 const WAVY_DASH = '〰️' as Safe;
 
 const renderYes = (when: O.Option<Date>) => O.isSome(when) ? html`
-  ${GREEN_TICK}${tooltip(when.value.toLocaleDateString() as Safe)}
+  ${tooltipWith(html`Since ${when.value.toLocaleDateString() as Safe}`, GREEN_TICK)}
 ` : html`-`;
 
 const renderTrainingMatrixRow = (row: TrainingMatrix[0]) => html`
@@ -22,9 +22,9 @@ const renderTrainingMatrixRow = (row: TrainingMatrix[0]) => html`
     <th scope="row">
       ${
         row.equipment_quiz.passedAt.length > 0 ? html`
-          ${GREEN_TICK}${tooltip(row.equipment_quiz.passedAt.map(d => d.toLocaleDateString()).join(',') as Safe)}
+          ${tooltipWith(row.equipment_quiz.passedAt.map(d => d.toLocaleDateString()).join(',') as Safe, GREEN_TICK)}
         ` : html`
-          ${WAVY_DASH}${tooltip(row.equipment_quiz.attempted.map(d => html`${d.percentage}% - ${d.response_submitted.toLocaleDateString() as Safe}`).join(',') as Safe)}
+          ${tooltipWith(row.equipment_quiz.attempted.map(d => html`${d.percentage}% - ${d.response_submitted.toLocaleDateString() as Safe}`).join(',') as Safe, WAVY_DASH)}
         `
       }
     </th>
@@ -51,16 +51,13 @@ export type TrainingMatrix = ReadonlyArray<{
 
 export const renderTrainingMatrix = (tm: TrainingMatrix) => html`
     <table>
-      <caption>
-        Training Matrix
-      </caption>
       <thead>
         <tr>
-          <th scope="Equipment"></th>
-          <th scope="Equipment Quiz Passed"></th>
-          <th scope="Training Complete"></th>
-          <th scope="Owner"></th>
-          <th scope="Trainer"></th>
+          <th scope="row">Equipment</th>
+          <th scope="row">Equipment Quiz Passed</th>
+          <th scope="row">Training Complete</th>
+          <th scope="row">Owner</th>
+          <th scope="row">Trainer</th>
         </tr>
       </thead>
       <tbody>
