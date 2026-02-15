@@ -3,6 +3,7 @@ import * as E from 'fp-ts/Either';
 import * as TE from 'fp-ts/TaskEither';
 import * as O from 'fp-ts/Option';
 import * as RR from 'fp-ts/ReadonlyRecord';
+import * as RA from 'fp-ts/ReadonlyArray';
 import {
   failureWithStatus,
   FailureWithStatus,
@@ -11,10 +12,11 @@ import {User} from '../../types/user';
 import {ViewModel} from './view-model';
 import {StatusCodes} from 'http-status-codes';
 import { TrainingMatrix } from '../shared-render/training-matrix';
-import { Member } from '../../read-models/members';
 import { EquipmentId } from '../../types/equipment-id';
 import { FullQuizResultsForMember, getFullQuizResultsForMember } from '../../read-models/external-state/equipment-quiz';
 import { UUID } from 'io-ts-types';
+import { Member } from '../../read-models/shared-state/return-types';
+import { pipe } from 'fp-ts/lib/function';
 
 const constructTrainingMatrix = (
   member: Member,
@@ -30,14 +32,24 @@ const constructTrainingMatrix = (
         equipment_id: equipmentId,
         equipment_name: equipment.value.name,
         equipment_quiz,
-        is_owner: O.none,
-        is_trained: O.none,
-        is_trainer: O.none,
+        is_owner: pipe(
+          member.ownerOf,
+          RA.findFirst(ownerOf => ownerOf.id === equipment.value.area.id),
+          O.map(o => o.ownershipRecordedAt)
+        ),
+        is_trained: pipe(
+          member.trainedOn,
+          RA.findFirst(entry => entry.id === equipmentId),
+          O.map(t => t.trainedAt)
+        ),
+        is_trainer: pipe(
+          member.trainerFor,
+          RA.findFirst(entry => entry.equipment_id === equipmentId),
+          O.map(t => t.since)
+        ),
       };
     }
   }
-
-  // return Object.values(matrix);
 
   return [
     {
