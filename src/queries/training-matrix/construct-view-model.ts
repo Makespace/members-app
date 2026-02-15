@@ -1,4 +1,3 @@
-import {Dependencies} from '../../dependencies';
 import * as O from 'fp-ts/Option';
 import * as RR from 'fp-ts/ReadonlyRecord';
 import * as RA from 'fp-ts/ReadonlyArray';
@@ -10,16 +9,17 @@ import { FullQuizResultsForMember } from '../../read-models/external-state/equip
 import { UUID } from 'io-ts-types';
 import { Member } from '../../read-models/shared-state/return-types';
 import { pipe } from 'fp-ts/lib/function';
+import { SharedReadModel } from '../../read-models/shared-state';
 
 export const constructTrainingMatrix = (
   member: Member,
-  deps: Dependencies,
+  sharedReadModel: SharedReadModel,
   quizData: FullQuizResultsForMember
 ): TrainingMatrix => {
   const matrix: Record<EquipmentId, TrainingMatrix[0]> = {};
 
   for (const [equipmentId, equipment_quiz] of RR.toEntries(quizData.equipmentQuiz)) {
-    const equipment = deps.sharedReadModel.equipment.get(equipmentId);
+    const equipment = sharedReadModel.equipment.get(equipmentId);
     if (O.isSome(equipment)) {
       matrix[equipmentId] = {
         equipment_id: equipmentId,

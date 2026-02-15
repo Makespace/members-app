@@ -27,6 +27,6 @@ export const constructViewModel =
 
     return E.right({
       member: member.value,
-      trainingMatrix: constructTrainingMatrix(member.value, deps, quizData.right),
+      trainingMatrix: constructTrainingMatrix(member.value, deps.sharedReadModel, quizData.right),
     });
   }

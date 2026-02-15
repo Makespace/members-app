@@ -13,11 +13,14 @@ import { getFullQuizResultsForMember } from '../../read-models/external-state/eq
 import { constructTrainingMatrix } from '../training-matrix/construct-view-model';
 
 export const constructViewModel =
-  (deps: Dependencies, user: User) =>
+  (
+    deps: Pick<Dependencies, 'sharedReadModel' | 'getSheetDataByMemberNumber'>,
+    user: User
+  ) =>
   (memberNumber: number): TE.TaskEither<FailureWithStatus, ViewModel> => async () => {
     const userDetails = deps.sharedReadModel.members.get(user.memberNumber);
     if (O.isNone(userDetails)) {
-      return E.left(failureWithStatus('No such member', StatusCodes.NOT_FOUND)());
+      return E.left(failureWithStatus('No such user', StatusCodes.NOT_FOUND)());
     }
 
     const memberScoped = deps.sharedReadModel.members.getAsActor(user)(memberNumber);
@@ -35,7 +38,7 @@ export const constructViewModel =
       isSelf: memberNumber === user.memberNumber,
       member: memberScoped.value,
       isSuperUser: O.isSome(userDetails) && userDetails.value.isSuperUser,
-      trainingMatrix: constructTrainingMatrix(memberScoped.value, deps, quizData.right),
+      trainingMatrix: constructTrainingMatrix(memberScoped.value, deps.sharedReadModel, quizData.right),
     });
   };
 

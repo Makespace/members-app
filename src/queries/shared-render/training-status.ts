@@ -1,9 +1,4 @@
-import {pipe} from 'fp-ts/lib/function';
-import * as RA from 'fp-ts/ReadonlyArray';
-import {html, safe, sanitizeString, joinHtml} from '../../types/html';
-import {displayDate} from '../../templates/display-date';
-import {DateTime} from 'luxon';
-import {TrainedOn} from '../../read-models/shared-state/return-types';
+import {html} from '../../types/html';
 
 export const howToGetTrained = html`<details>
   <summary>How to get trained</summary>
@@ -36,43 +31,3 @@ export const howToGetTrained = html`<details>
     </ul>
   </div>
 </details> `;
-
-export const renderTrainingStatus = (
-  trainedOn: ReadonlyArray<TrainedOn>,
-  third_person: boolean
-) =>
-  pipe(
-    trainedOn,
-    RA.map(
-      equipment =>
-        html`<li>
-          <a href="/equipment/${safe(equipment.id)}"
-            >${sanitizeString(equipment.name)}</a
-          >
-          (since ${displayDate(DateTime.fromJSDate(equipment.trainedAt))})
-        </li>`
-    ),
-    RA.match(
-      () =>
-        third_person
-          ? html``
-          : html`
-              <p>You are currently not allowed to use any RED equipment.</p>
-              ${howToGetTrained}
-            `,
-      listItems =>
-        third_person
-          ? html`
-              <ul>
-                ${joinHtml(listItems)}
-              </ul>
-            `
-          : html`
-              <p>You are permitted to use the following RED equipment:</p>
-              <ul>
-                ${joinHtml(listItems)}
-              </ul>
-              ${howToGetTrained}
-            `
-    )
-  );
