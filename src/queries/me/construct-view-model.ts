@@ -1,6 +1,6 @@
-import {pipe} from 'fp-ts/lib/function';
 import {Dependencies} from '../../dependencies';
 import * as E from 'fp-ts/Either';
+import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {
   failureWithStatus,
@@ -9,19 +9,24 @@ import {
 import {User} from '../../types/user';
 import {ViewModel} from './view-model';
 import {StatusCodes} from 'http-status-codes';
+import { constructTrainingMatrix } from '../training-matrix/construct-view-model';
+import { getFullQuizResultsForMember } from '../../read-models/external-state/equipment-quiz';
 
 export const constructViewModel =
-  (deps: Dependencies, user: User) =>
-  (memberNumber: number): TE.TaskEither<FailureWithStatus, ViewModel> =>
-    pipe(
-      pipe(
-        memberNumber,
-        deps.sharedReadModel.members.get,
-        E.fromOption(() =>
-          failureWithStatus('No such member', StatusCodes.NOT_FOUND)()
-        ),
-        E.bindTo('member'),
-        E.let('user', () => user),
-        TE.fromEither
-      )
-    );
+  (deps: Dependencies, _user: User) =>
+  (memberNumber: number): TE.TaskEither<FailureWithStatus, ViewModel> => async () => {
+    const member = deps.sharedReadModel.members.get(memberNumber);
+    if (O.isNone(member)) {
+      return E.left(failureWithStatus('No such member', StatusCodes.NOT_FOUND)());
+    }
+
+    const quizData = await getFullQuizResultsForMember(deps, memberNumber)();
+    if (E.isLeft(quizData)) {
+      return E.left(failureWithStatus('Failed to get training status', StatusCodes.INTERNAL_SERVER_ERROR)());
+    }
+
+    return E.right({
+      member: member.value,
+      trainingMatrix: constructTrainingMatrix(member.value, deps, quizData.right),
+    });
+  }

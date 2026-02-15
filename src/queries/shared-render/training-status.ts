@@ -5,7 +5,7 @@ import {displayDate} from '../../templates/display-date';
 import {DateTime} from 'luxon';
 import {TrainedOn} from '../../read-models/shared-state/return-types';
 
-const howToGetTrained = html`<details>
+export const howToGetTrained = html`<details>
   <summary>How to get trained</summary>
   <div>
     <ol>

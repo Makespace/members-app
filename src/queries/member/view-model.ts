@@ -1,6 +1,6 @@
 import {Member} from '../../read-models/shared-state/return-types';
 import {User} from '../../types';
-import { TrainingMatrix } from '../shared-render/training-matrix';
+import { TrainingMatrix } from '../training-matrix/render';
 
 export type ViewModel = {
   member: Readonly<Member>;

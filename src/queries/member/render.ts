@@ -7,7 +7,7 @@ import {
 } from '../../templates/member-number';
 import {memberStatusTag} from '../../templates/member-status';
 import {otherMemberNumbersTooltip} from '../shared-render/other-member-numbers-tooltip';
-import { renderTrainingMatrix } from '../shared-render/training-matrix';
+import { renderTrainingMatrix } from '../training-matrix/render';
 import { renderOwnerAgreementStatus } from '../shared-render/owner-agreement';
 
 const ownPageBanner = html`<h1>This is your profile!</h1>`;
