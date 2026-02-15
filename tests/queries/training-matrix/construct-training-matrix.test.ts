@@ -17,6 +17,9 @@ import { EquipmentId } from '../../../src/types/equipment-id';
 import { SheetDataTable } from '../../../src/sync-worker/google/sheet-data-table';
 import { RegisterTrainingSheet } from '../../../src/commands/equipment/register-training-sheet';
 import * as O from 'fp-ts/Option';
+import { Int } from 'io-ts';
+import { MarkMemberTrainedBy } from '../../../src/commands/trainers/mark-member-trained-by';
+import { DateTime, Duration } from 'luxon';
 
 const _getTrainingMatrix = (framework: TestFramework) => async (memberNumber: MemberNumber) => {
   return constructTrainingMatrix(
@@ -153,6 +156,32 @@ describe('construct-training-matrix', () => {
         expect(millRow.is_trainer).toStrictEqual(O.none);
         expect(millRow.equipment_quiz.attempted).toHaveLength(0);
         expect(millRow.equipment_quiz.passedAt).toStrictEqual([passedMetalMillQuiz.response_submitted]);
+      });
+
+      describe('user is marked as trained on the metal mill', () => {
+        const trainedOnMetalMill: MarkMemberTrainedBy = {
+          equipmentId: metalMill.id,
+          memberNumber: user.memberNumber as Int,
+          trainedByMemberNumber: faker.number.int() as Int,
+          trainedAt: DateTime.fromJSDate(passedMetalMillQuiz.response_submitted).plus(Duration.fromObject({days: 1})).toJSDate(),
+        };
+
+        beforeEach(async () => {
+          await framework.commands.trainers.markMemberTrainedBy(trainedOnMetalMill);
+        });
+
+        it('user appears as trained', async () => {
+          const matrix = await getTrainingMatrix(user.memberNumber);
+          expect(matrix[0].equipment_id).toStrictEqual(metalMill.id);
+          expect(matrix[0].is_trained).toStrictEqual(trainedOnMetalMill.trainedAt);
+        });
+
+        describe('user is marked as an owner for the area', () => {
+          const markedAsOwner = {
+
+          };
+          
+        });
       });
     });
   });
