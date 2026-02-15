@@ -1,4 +1,3 @@
-import * as O from 'fp-ts/Option';
 import {getGravatarProfile, getGravatarThumbnail} from '../../templates/avatar';
 import {Html, html, sanitizeOption, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
@@ -100,7 +99,7 @@ export const render = (viewModel: ViewModel) => html`
           </td>
         </tr>`
       : html``}
-      ${O.isSome(viewModel.trainingMatrix) ? renderTrainingMatrix(viewModel.trainingMatrix.value) : html``}
+      ${renderTrainingMatrix(viewModel.trainingMatrix)}
     </tbody>
   </table>
 `;

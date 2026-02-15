@@ -2,6 +2,8 @@ import * as O from 'fp-ts/Option';
 import { EquipmentId } from '../../types/equipment-id';
 import { html, joinHtml, Safe, sanitizeString } from '../../types/html';
 import {tooltip} from '../shared-render/tool-tip';
+import { FullQuizResultsForMember } from '../../read-models/external-state/equipment-quiz';
+import { UUID } from 'io-ts-types';
 
 const GREEN_TICK = '✅' as Safe;
 const WAVY_DASH = '〰️' as Safe;
@@ -19,10 +21,10 @@ const renderTrainingMatrixRow = (row: TrainingMatrix[0]) => html`
     </th>
     <th scope="row">
       ${
-        O.isSome(row.equipment_quiz_passed) ? html`
-          ${GREEN_TICK}${tooltip(row.equipment_quiz_passed.value.toLocaleDateString() as Safe)}
+        row.equipment_quiz.passedAt.length > 0 ? html`
+          ${GREEN_TICK}${tooltip(row.equipment_quiz.passedAt.map(d => d.toLocaleDateString()).join(',') as Safe)}
         ` : html`
-          ${WAVY_DASH}${tooltip(row.equipment_quiz_attempts.map(d => d.toLocaleDateString() as Safe).join(',') as Safe)}
+          ${WAVY_DASH}${tooltip(row.equipment_quiz.attempted.map(d => html`${d.percentage}% - ${d.response_submitted.toLocaleDateString() as Safe}`).join(',') as Safe)}
         `
       }
     </th>
@@ -44,8 +46,7 @@ export type TrainingMatrix = ReadonlyArray<{
   is_trainer: O.Option<Date>,
   is_owner: O.Option<Date>,
   is_trained: O.Option<Date>,
-  equipment_quiz_passed: O.Option<Date>,
-  equipment_quiz_attempts: Date[],
+  equipment_quiz: FullQuizResultsForMember['equipmentQuiz'][UUID]
 }>;
 
 export const renderTrainingMatrix = (tm: TrainingMatrix) => html`

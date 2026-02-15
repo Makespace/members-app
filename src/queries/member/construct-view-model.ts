@@ -2,6 +2,7 @@ import {Dependencies} from '../../dependencies';
 import * as E from 'fp-ts/Either';
 import * as TE from 'fp-ts/TaskEither';
 import * as O from 'fp-ts/Option';
+import * as RR from 'fp-ts/ReadonlyRecord';
 import {
   failureWithStatus,
   FailureWithStatus,
@@ -14,32 +15,28 @@ import { Member } from '../../read-models/members';
 import { EquipmentId } from '../../types/equipment-id';
 import { FullQuizResultsForMember, getFullQuizResultsForMember } from '../../read-models/external-state/equipment-quiz';
 
-export const constructTrainingMatrix = (
+const constructTrainingMatrix = (
   member: Member,
+  deps: Dependencies,
   quizData: FullQuizResultsForMember
-): O.Option<TrainingMatrix> => {
+): TrainingMatrix => {
   const matrix: Record<EquipmentId, TrainingMatrix[0]> = {};
 
-  for (const [equipmentId, attempts] of Object.entries(quizData.equipmentQuizAttempted)) {
-    if (!matrix[equipmentId]) {
+  for (const [equipmentId, equipment_quiz] of RR.toEntries(quizData.equipmentQuiz)) {
+    const equipment = deps.sharedReadModel.equipment.get(equipmentId);
+    if (O.isSome(equipment)) {
       matrix[equipmentId] = {
-        
+        equipment_id: equipmentId,
+        equipment_name: equipment.value.name,
+        equipment_quiz,
+        is_owner: O.none,
+        is_trained: O.none,
+        is_trainer: O.none,
       };
     }
-
-    matrix[equipmentId].
   }
 
-  matrix.push({
-    equipment_name: '',
-    equipment_id: undefined,
-    is_trainer: undefined,
-    is_owner: undefined,
-    is_trained: undefined,
-    equipment_quiz_passed: undefined
-  })
-
-  return O.some(matrix);
+  return Object.values(matrix);
 }
 
 export const constructViewModel =
@@ -65,7 +62,7 @@ export const constructViewModel =
       isSelf: memberNumber === user.memberNumber,
       member: memberScoped.value,
       isSuperUser: O.isSome(userDetails) && userDetails.value.isSuperUser,
-      trainingMatrix: constructTrainingMatrix(memberScoped.value, quizData.right),
+      trainingMatrix: constructTrainingMatrix(memberScoped.value, deps, quizData.right),
     });
   };
 
