@@ -3,7 +3,7 @@ import {
   TestFramework,
 } from '../../read-models/test-framework';
 import { getFullQuizResultsForMember } from '../../../src/read-models/external-state/equipment-quiz';
-import { getRightOrFail, getSomeOrFail } from '../../helpers';
+import { expectMatchSecondsPrecision, getRightOrFail, getSomeOrFail } from '../../helpers';
 import { constructTrainingMatrix } from '../../../src/queries/training-matrix/construct-view-model';
 import { faker } from '@faker-js/faker';
 import { LinkNumberToEmail } from '../../../src/commands/member-numbers/link-number-to-email';
@@ -20,6 +20,7 @@ import * as O from 'fp-ts/Option';
 import { Int } from 'io-ts';
 import { MarkMemberTrainedBy } from '../../../src/commands/trainers/mark-member-trained-by';
 import { DateTime, Duration } from 'luxon';
+import { AddOwner } from '../../../src/commands/area/add-owner';
 
 const _getTrainingMatrix = (framework: TestFramework) => async (memberNumber: MemberNumber) => {
   return constructTrainingMatrix(
@@ -50,6 +51,12 @@ describe('construct-training-matrix', () => {
     trainingSheetId: faker.string.hexadecimal({ length: 16 }),
     equipmentId: metalMill.id,
     sheetName: 'Form Responses 1',
+  };
+  const existingTrainerMetalMill: LinkNumberToEmail = {
+    memberNumber: faker.number.int(),
+    email: faker.internet.email() as EmailAddress,
+    name: faker.animal.cat(),
+    formOfAddress: faker.person.prefix(),
   };
   const metalCnc: AddEquipment = {
     id: faker.string.uuid() as EquipmentId,
@@ -100,6 +107,16 @@ describe('construct-training-matrix', () => {
     await framework.commands.equipment.trainingSheet(mitreSawSheet);
     await framework.commands.equipment.add(bandSaw);
     await framework.commands.equipment.trainingSheet(bandSawSheet);
+
+    await framework.commands.memberNumbers.linkNumberToEmail(existingTrainerMetalMill);
+    await framework.commands.area.addOwner({
+      areaId: metalshop.id,
+      memberNumber: existingTrainerMetalMill.memberNumber
+    });
+    await framework.commands.trainers.add({
+      equipmentId: metalMill.id,
+      memberNumber: existingTrainerMetalMill.memberNumber,
+    });
   });
   afterEach(() => {
     framework.close();
@@ -162,25 +179,42 @@ describe('construct-training-matrix', () => {
         const trainedOnMetalMill: MarkMemberTrainedBy = {
           equipmentId: metalMill.id,
           memberNumber: user.memberNumber as Int,
-          trainedByMemberNumber: faker.number.int() as Int,
+          trainedByMemberNumber: existingTrainerMetalMill.memberNumber as Int,
           trainedAt: DateTime.fromJSDate(passedMetalMillQuiz.response_submitted).plus(Duration.fromObject({days: 1})).toJSDate(),
         };
 
         beforeEach(async () => {
-          await framework.commands.trainers.markMemberTrainedBy(trainedOnMetalMill);
+          await framework.commands.trainers.markMemberTrainedBy({
+            ...trainedOnMetalMill,
+            actor: {
+              tag: "user",
+              user: {
+                emailAddress: existingTrainerMetalMill.email,
+                memberNumber: existingTrainerMetalMill.memberNumber,
+              }
+            },
+          });
         });
 
         it('user appears as trained', async () => {
           const matrix = await getTrainingMatrix(user.memberNumber);
           expect(matrix[0].equipment_id).toStrictEqual(metalMill.id);
-          expect(matrix[0].is_trained).toStrictEqual(trainedOnMetalMill.trainedAt);
+          expectMatchSecondsPrecision(trainedOnMetalMill.trainedAt)(getSomeOrFail(matrix[0].is_trained));
         });
 
-        describe('user is marked as an owner for the area', () => {
-          const markedAsOwner = {
-
+        describe('user is marked as an owner for the metal shop', () => {
+          const markedAsOwner: AddOwner = {
+            areaId: metalshop.id,
+            memberNumber: user.memberNumber
           };
-          
+          beforeEach(async () => {
+            await framework.commands.area.addOwner(markedAsOwner);
+          });
+
+          it('user appears as an owner', async () => {
+            const matrix = await getTrainingMatrix(user.memberNumber);
+            expect(O.isSome(matrix[0].is_owner)).toBeTruthy();
+          });
         });
       });
     });
