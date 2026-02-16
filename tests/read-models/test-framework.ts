@@ -7,7 +7,7 @@ import {
   getAllEventsByType,
 } from '../../src/init-dependencies/event-store/get-all-events';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
-import {DomainEvent} from '../../src/types';
+import {Actor, DomainEvent} from '../../src/types';
 import {pipe} from 'fp-ts/lib/function';
 import {commands, Command} from '../../src/commands';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
@@ -38,7 +38,7 @@ type ToFrameworkCommands<T> = {
         events: ReadonlyArray<DomainEvent>;
       }) => unknown;
     }
-      ? (c: Omit<C, 'actor'>) => Promise<void>
+      ? (c: Omit<C, 'actor'> & { actor?: Actor }) => Promise<void>
       : never;
   };
 };
@@ -89,7 +89,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
 
   const frameworkify =
     <T>(command: Command<T>) =>
-    async (commandPayload: T) => {
+    async (commandPayload: T & {actor?: Actor}) => {
       await pipe(
         applyToResource(
           {
@@ -97,7 +97,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
             getResourceEvents: getResourceEvents(eventDB),
           },
           command
-        )(commandPayload, arbitraryActor())
+        )(commandPayload, commandPayload.actor ?? arbitraryActor())
       )();
     };
 
