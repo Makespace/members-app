@@ -21,6 +21,7 @@ import { Int } from 'io-ts';
 import { MarkMemberTrainedBy } from '../../../src/commands/trainers/mark-member-trained-by';
 import { DateTime, Duration } from 'luxon';
 import { AddOwner } from '../../../src/commands/area/add-owner';
+import { AddTrainer } from '../../../src/commands/trainers/add-trainer';
 
 const _getTrainingMatrix = (framework: TestFramework) => async (memberNumber: MemberNumber) => {
   return constructTrainingMatrix(
@@ -214,6 +215,21 @@ describe('construct-training-matrix', () => {
           it('user appears as an owner', async () => {
             const matrix = await getTrainingMatrix(user.memberNumber);
             expect(O.isSome(matrix[0].is_owner)).toBeTruthy();
+          });
+
+          describe('user is marked as a trainer for the metal mill', () => {
+            const markedAsTrainer: AddTrainer = {
+              equipmentId: metalMill.id,
+              memberNumber: user.memberNumber
+            };
+            beforeEach(async () => {
+              await framework.commands.trainers.add(markedAsTrainer);
+            });
+
+            it('user appears as a trainer', async() => {
+              const matrix = await getTrainingMatrix(user.memberNumber);
+              expect(O.isSome(matrix[0].is_trainer)).toBeTruthy();
+            });
           });
         });
       });
