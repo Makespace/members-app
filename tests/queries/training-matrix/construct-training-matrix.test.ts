@@ -145,8 +145,6 @@ describe('construct-training-matrix', () => {
     });
 
     describe('user is marked as a trainer for a piece of equipment they aren\'t trained on', () => {
-      // User hasn't done the training at all!
-      // In future we can flag cases like this
       const markedAsTrainer: AddTrainer = {
         equipmentId: metalCnc.id,
         memberNumber: user.memberNumber
@@ -157,31 +155,114 @@ describe('construct-training-matrix', () => {
         trainingMatrix = await getTrainingMatrix(user.memberNumber);
       });
 
-      it('user only has a single bit of equipment shown', () => {
-        expect(trainingMatrix).toHaveLength(1);
+      // Since the user isn't an owner their trainer status isn't valid.
+
+      it('user has no equipment shown', () => {
+        expect(trainingMatrix).toHaveLength(0);
+      });
+    });
+
+    describe('user is marked as a trainer and owner for a piece of equipment they aren\'t trained on', () => {
+      // User hasn't done the training at all!
+      // In future we can flag cases like this
+      const markedAsOwner: AddOwner = {
+        areaId: metalshop.id,
+        memberNumber: user.memberNumber
+      };
+      const markedAsTrainer: AddTrainer = {
+        // user must be an owner to be a trainer.
+        equipmentId: metalCnc.id,
+        memberNumber: user.memberNumber
+      };
+      let trainingMatrix: TrainingMatrix;
+      beforeEach(async () => {
+        await framework.commands.area.addOwner(markedAsOwner);
+        await framework.commands.trainers.add(markedAsTrainer);
+        trainingMatrix = await getTrainingMatrix(user.memberNumber);
+      });
+
+      it('user has both bits of metal shop equipment shown sorted by equipment name', () => {
+        expect(trainingMatrix).toHaveLength(2);
         expect(trainingMatrix[0].equipment_name).toStrictEqual(metalCnc.name);
         expect(trainingMatrix[0].equipment_id).toStrictEqual(metalCnc.id);
+
+        expect(trainingMatrix[1].equipment_name).toStrictEqual(metalMill.name);
+        expect(trainingMatrix[1].equipment_id).toStrictEqual(metalMill.id);
       });
 
-      it('user appears as a trainer', () => {
-        expect(O.isSome(trainingMatrix[0].is_trainer)).toStrictEqual(true);
+      it('user appears as an owner for all the equipment', () => {
+        expect(trainingMatrix.every(r => O.isSome(r.is_owner))).toStrictEqual(true);
       });
 
-      it('user does not appear as trained', () => {
-        expect(O.isSome(trainingMatrix[0].is_trained)).toStrictEqual(false);
+      it('user does not appear as trained for any equipment', () => {
+        expect(trainingMatrix.some(r => O.isSome(r.is_trained))).toStrictEqual(false);
       });
 
-      it('user does not appear as an owner', () => {
-        expect(O.isSome(trainingMatrix[0].is_owner)).toStrictEqual(false);
+      it('user appears as a trainer for the metal cnc', () => {
+        const metalCncRow = trainingMatrix.find(r => r.equipment_id === metalCnc.id)!;
+        expect(O.isSome(metalCncRow.is_trainer)).toStrictEqual(true);
       });
 
-      it('user does not appear as having done the quiz', () => {
-        expect(trainingMatrix[0].equipment_quiz).toStrictEqual({
-          passedAt: [],
-          attempted: [],
-        });
+      it('user does not appear as having done the quiz for any equipment', () => {
+        for (const row of trainingMatrix) {
+          expect(row.equipment_quiz).toStrictEqual({
+            passedAt: [],
+            attempted: [],
+          });
+        }
+      });
+    });
+
+    describe('user is marked as an owner for metalshop and woodshop', () => {
+      const markedAsMetalOwner: AddOwner = {
+        areaId: metalshop.id,
+        memberNumber: user.memberNumber
+      };
+      const markedAsWoodOwner: AddOwner = {
+        areaId: woodshop.id,
+        memberNumber: user.memberNumber
+      };
+      let trainingMatrix: TrainingMatrix;
+      beforeEach(async () => {
+        await framework.commands.area.addOwner(markedAsMetalOwner);
+        await framework.commands.area.addOwner(markedAsWoodOwner);
+        trainingMatrix = await getTrainingMatrix(user.memberNumber);
+      });
+      it('user has all bits of metal and wood shop equipment shown sorted by area then equipment name', () => {
+        expect(trainingMatrix).toHaveLength(4);
+        expect(trainingMatrix[0].equipment_name).toStrictEqual(metalCnc.name);
+        expect(trainingMatrix[0].equipment_id).toStrictEqual(metalCnc.id);
+
+        expect(trainingMatrix[1].equipment_name).toStrictEqual(metalMill.name);
+        expect(trainingMatrix[1].equipment_id).toStrictEqual(metalMill.id);
+
+        expect(trainingMatrix[2].equipment_name).toStrictEqual(bandSaw.name);
+        expect(trainingMatrix[2].equipment_id).toStrictEqual(bandSaw.id);
+
+        expect(trainingMatrix[3].equipment_name).toStrictEqual(mitreSaw.name);
+        expect(trainingMatrix[3].equipment_id).toStrictEqual(mitreSaw.id);
       });
 
+      it('user appears as an owner for all the equipment', () => {
+        expect(trainingMatrix.every(r => O.isSome(r.is_owner))).toStrictEqual(true);
+      });
+
+      it('user does not appear as trained for any equipment', () => {
+        expect(trainingMatrix.some(r => O.isSome(r.is_trained))).toStrictEqual(false);
+      });
+
+      it('user does not appear as a trainer for any equipment', () => {
+        expect(trainingMatrix.some(r => O.isSome(r.is_trainer))).toStrictEqual(false);
+      });
+
+      it('user does not appear as having done the quiz for any equipment', () => {
+        for (const row of trainingMatrix) {
+          expect(row.equipment_quiz).toStrictEqual({
+            passedAt: [],
+            attempted: [],
+          });
+        }
+      });
     });
 
     describe('user is marked as trained without doing quiz', () => {
@@ -209,12 +290,12 @@ describe('construct-training-matrix', () => {
 
       it('user only has a single bit of equipment shown', () => {
         expect(trainingMatrix).toHaveLength(1);
-        expect(trainingMatrix[0].equipment_name).toStrictEqual(metalCnc.name);
-        expect(trainingMatrix[0].equipment_id).toStrictEqual(metalCnc.id);
+        expect(trainingMatrix[0].equipment_name).toStrictEqual(metalMill.name);
+        expect(trainingMatrix[0].equipment_id).toStrictEqual(metalMill.id);
       });
 
       it('user appears as trained', () => {
-        expect(getSomeOrFail(trainingMatrix[0].is_trained)).toStrictEqual(trainedOnMetalMill.trainedAt);
+        expectMatchSecondsPrecision(trainedOnMetalMill.trainedAt)(getSomeOrFail(trainingMatrix[0].is_trained));
       });
 
       it('user does not appear as a trainer', () => {
@@ -302,9 +383,9 @@ describe('construct-training-matrix', () => {
             await framework.commands.area.addOwner(markedAsOwner);
           });
 
-          it('user appears as an owner', async () => {
+          it('user appears as an owner for all pieces of metal shop equipment', async () => {
             const matrix = await getTrainingMatrix(user.memberNumber);
-            expect(O.isSome(matrix[0].is_owner)).toBeTruthy();
+            expect(matrix.every(r => O.isSome(r.is_owner))).toStrictEqual(true);
           });
 
           describe('user is marked as a trainer for the metal mill', () => {
@@ -318,7 +399,8 @@ describe('construct-training-matrix', () => {
 
             it('user appears as a trainer', async() => {
               const matrix = await getTrainingMatrix(user.memberNumber);
-              expect(O.isSome(matrix[0].is_trainer)).toBeTruthy();
+              const metalMillRow = matrix.find(r => r.equipment_id === metalMill.id)!;
+              expect(O.isSome(metalMillRow.is_trainer)).toBeTruthy();
             });
           });
         });
