@@ -1,8 +1,11 @@
-import {html, HtmlSubstitution} from '../../types/html';
+import {Html, html, HtmlSubstitution, Safe} from '../../types/html';
 
-export const tooltip = (text: HtmlSubstitution) => html`
+
+export const tooltipWith = (text: HtmlSubstitution, content: Html | Safe) => html`
   <div class="tooltip">
-    <i class="fa-regular fa-circle-question"></i>
+    ${content}
     <span class="tooltiptext"> ${text} </span>
   </div>
 `;
+
+export const tooltip = (text: HtmlSubstitution) => tooltipWith(text, html`<i class="fa-regular fa-circle-question"></i>`);

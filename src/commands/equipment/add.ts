@@ -13,7 +13,7 @@ const codec = t.strict({
   areaId: tt.UUID,
 });
 
-type AddEquipment = t.TypeOf<typeof codec>;
+export type AddEquipment = t.TypeOf<typeof codec>;
 
 const process: Command<AddEquipment>['process'] = input =>
   pipe(

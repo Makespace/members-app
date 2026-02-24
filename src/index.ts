@@ -44,7 +44,9 @@ passport.deserializeUser((user: Express.User, done) => {
 
 // Application setup
 const app: Application = express();
-app.use(httpLogger({logger: deps.logger, useLevel: 'debug'}));
+// The types from pino-http are broken https://github.com/pinojs/pino-http/issues/378
+// eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+app.use(httpLogger({logger: deps.logger, useLevel: 'debug'} as any));
 app.use(express.urlencoded({extended: true}));
 app.use(express.json());
 app.use(cookieSession(sessionConfig(conf)));

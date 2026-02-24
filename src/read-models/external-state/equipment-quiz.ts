@@ -132,20 +132,15 @@ export const getFullQuizResultsForEquipment = (
   );
 
 export type FullQuizResultsForMember = {
-  equipmentQuizPassedAt: ReadonlyRecord<EquipmentId, ReadonlyArray<Date>>,
-  equipmentQuizAttempted: ReadonlyRecord<EquipmentId, ReadonlyArray<{
-    response_submitted: Date,
-    sheet_id: string;
-    score: number;
-    max_score: number;
-    percentage: number;
-  }>>,
-  orphanedQuizAttempts: ReadonlyArray<{
-    response_submitted: Date,
-    sheet_id: string;
-    score: number;
-    max_score: number;
-    percentage: number;
+  equipmentQuiz: ReadonlyRecord<EquipmentId, {
+    passedAt: ReadonlyArray<Date>,
+    attempted: ReadonlyArray<{
+      response_submitted: Date,
+      sheet_id: string;
+      score: number;
+      max_score: number;
+      percentage: number;
+    }>
   }>,
 };
 
@@ -156,44 +151,35 @@ export const getFullQuizResultsForMember = (
   deps.getSheetDataByMemberNumber(memberNumber),
   TE.map(
     qr => {
-      const equipmentQuizPassedAt: Record<EquipmentId, Date[]> = {};
-      const equipmentQuizAttempted: Record<EquipmentId, {
-        response_submitted: Date,
-        sheet_id: string;
-        score: number;
-        max_score: number;
-        percentage: number;
-      }[]> = {};
-      const orphanedQuizAttempts: {
-        response_submitted: Date,
-        sheet_id: string;
-        score: number;
-        max_score: number;
-        percentage: number;
-      }[] = [];
+      const equipmentQuiz: Record<EquipmentId, {
+        passedAt: Date[],
+        attempted: {
+            response_submitted: Date;
+            sheet_id: string;
+            score: number;
+            max_score: number;
+            percentage: number;
+        }[],
+      }> = {};
       const trainingSheetMapping = deps.sharedReadModel.equipment.getTrainingSheetIdMapping();
       for (const row of qr) {
         const equipmentId = RR.lookup(row.sheet_id)(trainingSheetMapping);
-        if (O.isNone(equipmentId)) {
-          orphanedQuizAttempts.push(row);
-        } else {
+        if (O.isSome(equipmentId)) {
+          if (!equipmentQuiz[equipmentId.value]) {
+            equipmentQuiz[equipmentId.value] = {
+              passedAt: [],
+              attempted: [],
+            };
+          }
           if (isPassed(row)) {
-            if (!equipmentQuizPassedAt[equipmentId.value]) {
-              equipmentQuizPassedAt[equipmentId.value] = [];
-            }
-            equipmentQuizPassedAt[equipmentId.value].push(row.response_submitted);
+            equipmentQuiz[equipmentId.value].passedAt.push(row.response_submitted);
           } else {
-            if (!equipmentQuizAttempted[equipmentId.value]) {
-              equipmentQuizAttempted[equipmentId.value] = [];
-            }
-            equipmentQuizAttempted[equipmentId.value].push(row);
+            equipmentQuiz[equipmentId.value].attempted.push(row);
           }
         }
       }
       return {
-        equipmentQuizPassedAt,
-        equipmentQuizAttempted,
-        orphanedQuizAttempts,
+        equipmentQuiz
       }
     }
   )
