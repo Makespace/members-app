@@ -6,10 +6,10 @@ import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
 import {renderOwnerStatus} from '../shared-render/owner-status';
 import {
   howToBecomeATrainer,
-  renderTrainerStatus,
 } from '../shared-render/trainer-status';
-import {renderTrainingStatus} from '../shared-render/training-status';
+import {howToGetTrained} from '../shared-render/training-status';
 import {ownerResources} from './owner-resources';
+import { renderTrainingMatrix } from '../training-matrix/render';
 
 const editFormOfAddress = (viewModel: ViewModel) => html`
   <a
@@ -72,17 +72,15 @@ export const render = (viewModel: ViewModel) => html`
       ${renderMemberDetails(viewModel)}
     </section>
     <section>
-      <h2>Train members</h2>
-      ${renderTrainerStatus(viewModel.member.trainerFor)}${howToBecomeATrainer}
-    </section>
-    <section>
-      <h2>Your training record</h2>
-      ${renderTrainingStatus(viewModel.member.trainedOn, false)}
+      ${renderTrainingMatrix(viewModel.trainingMatrix)}
+      ${howToBecomeATrainer}
+      ${howToGetTrained}
     </section>
     <section>
       <h2>Area ownership</h2>
       ${renderOwnerAgreementStatus(viewModel.member.agreementSigned, false)}
       ${renderOwnerStatus(viewModel.member.ownerOf, false)} ${ownerResources}
     </section>
+    
   </div>
 `;

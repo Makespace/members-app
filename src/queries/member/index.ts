@@ -22,9 +22,9 @@ export const member: Query = deps => (user, params) =>
     t.strict({member: tt.NumberFromString}).decode,
     E.mapLeft(invalidParams),
     E.map(params => params.member),
-    E.map(constructViewModel(deps, user)),
-    E.flatten,
-    E.map(viewModel => render(viewModel)),
-    E.map(toLoggedInContent(safe('Member'))),
-    TE.fromEither
+    TE.fromEither,
+    TE.map(constructViewModel(deps, user)),
+    TE.flatten,
+    TE.map(viewModel => render(viewModel)),
+    TE.map(toLoggedInContent(safe('Member'))),
   );

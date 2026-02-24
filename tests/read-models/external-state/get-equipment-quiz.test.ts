@@ -184,20 +184,22 @@ describe('Get equipment quiz', () => {
         );
       });
       it('shows the trained member as having passed the quiz', () => {
-        expect(quizResultsForTrainedMember.equipmentQuizPassedAt[addEquipment.id]).toStrictEqual(
+        expect(quizResultsForTrainedMember.equipmentQuiz[addEquipment.id].passedAt).toStrictEqual(
           [trainedMemberQuizAttempt.response_submitted]
         );
       });
       it('shows the trained member as having no other quiz attempts', () => {
-        expect(quizResultsForTrainedMember.equipmentQuizAttempted).toStrictEqual({});
+        expect(Object.values(quizResultsForTrainedMember.equipmentQuiz)).toHaveLength(1);
+        expect(quizResultsForTrainedMember.equipmentQuiz[addEquipment.id].attempted).toHaveLength(0);
       });
       it('shows the member awaiting training as having passed the quiz', () => {
-        expect(quizResultsForMemberAwaitingTraining.equipmentQuizPassedAt[addEquipment.id]).toStrictEqual(
+        expect(quizResultsForMemberAwaitingTraining.equipmentQuiz[addEquipment.id].passedAt).toStrictEqual(
           [awaitingTrainingMemberQuizAttempt.response_submitted]
         );
       });
       it('shows the member awaiting training as having no other quiz attempts', () => {
-        expect(quizResultsForMemberAwaitingTraining.equipmentQuizAttempted).toStrictEqual({});
+        expect(Object.values(quizResultsForMemberAwaitingTraining.equipmentQuiz)).toHaveLength(1);
+        expect(quizResultsForMemberAwaitingTraining.equipmentQuiz[addEquipment.id].attempted).toHaveLength(0);
       });
     });
   });

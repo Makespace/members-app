@@ -13,7 +13,7 @@ const codec = t.strict({
   trainingSheetId: t.string,
 });
 
-type RegisterTrainingSheet = t.TypeOf<typeof codec>;
+export type RegisterTrainingSheet = t.TypeOf<typeof codec>;
 
 const process = (input: {
   command: WithActor<RegisterTrainingSheet>;

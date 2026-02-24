@@ -12,7 +12,7 @@ const codec = t.strict({
   name: tt.NonEmptyString,
 });
 
-type CreateArea = t.TypeOf<typeof codec>;
+export type CreateArea = t.TypeOf<typeof codec>;
 
 const process: Command<CreateArea>['process'] = input =>
   pipe(

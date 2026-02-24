@@ -12,7 +12,7 @@ const codec = t.strict({
   memberNumber: tt.NumberFromString,
 });
 
-type AddOwner = t.TypeOf<typeof codec>;
+export type AddOwner = t.TypeOf<typeof codec>;
 
 const process: Command<AddOwner>['process'] = input => {
   if (input.events.length === 0) {
