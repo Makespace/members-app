@@ -31,7 +31,10 @@ export const constructTrainingMatrix = (
       return [{
         equipment_id: equipment.id,
         equipment_name: equipment.name,
-        area: equipment.area,
+        area: {
+          ...equipment.area,
+          is_owner: pipe(isOwnerOfArea, O.map(o => o.ownershipRecordedAt)),
+        },
         equipment_quiz: pipe(
           quizResults,
           O.getOrElse<TrainingMatrix[0]['equipment'][0]['equipment_quiz']>(
