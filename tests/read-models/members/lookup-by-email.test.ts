@@ -6,6 +6,7 @@ import {
 import {faker} from '@faker-js/faker';
 import {DomainEvent, EmailAddress} from '../../../src/types';
 import {TestFramework, initTestFramework} from '../test-framework';
+import { EditEmail } from '../../../src/commands/members/edit-email';
 
 describe('lookupByEmail', () => {
   let events: ReadonlyArray<DomainEvent>;
@@ -43,6 +44,28 @@ describe('lookupByEmail', () => {
     it('returns their member number', () => {
       const result = lookupByEmail(command.email)(events);
       expect(result).toStrictEqual(O.some(command.memberNumber));
+    });
+
+    describe('when the member has changed their email', () => {
+      const editEmailCommand: EditEmail = {
+        memberNumber: command.memberNumber,
+        email: faker.internet.email() as EmailAddress,
+      };
+
+      beforeEach(async () => {
+        await framework.commands.members.editEmail(editEmailCommand);
+      });
+
+      it('returns their member number using the new email', () => {
+        const result = lookupByEmail(editEmailCommand.email)(events);
+        expect(result).toStrictEqual(O.some(command.memberNumber));
+      });
+
+      it('returns their member number using the old email', () => {
+        const result = lookupByEmail(command.email)(events);
+        expect(result).toStrictEqual(O.some(command.memberNumber));
+      });
+
     });
   });
 
@@ -114,6 +137,37 @@ describe('lookupByCaseInsensitiveEmail', () => {
       expect(result).toEqual([
         {emailAddress: command.email, memberNumber: command.memberNumber},
       ]);
+    });
+
+    describe('when the member has changed their email', () => {
+      const editEmailCommand: EditEmail = {
+        memberNumber: command.memberNumber,
+        email: faker.internet.email() as EmailAddress,
+      };
+
+      beforeEach(async () => {
+        await framework.commands.members.editEmail(editEmailCommand);
+      });
+
+      it('returns their member number using the new email', () => {
+        const result = lookupByEmail(editEmailCommand.email)(events);
+        expect(result).toStrictEqual(O.some(command.memberNumber));
+      });
+
+      it('returns their member number using the old email', () => {
+        const result = lookupByEmail(command.email)(events);
+        expect(result).toStrictEqual(O.some(command.memberNumber));
+      });
+
+      it('returns their member number using the new email even in wrong case', () => {
+        const result = lookupByEmail(editEmailCommand.email.toUpperCase())(events);
+        expect(result).toStrictEqual(O.some(command.memberNumber));
+      });
+
+      it('returns their member number using the old email even in wrong case', () => {
+        const result = lookupByEmail(command.email.toUpperCase())(events);
+        expect(result).toStrictEqual(O.some(command.memberNumber));
+      });
     });
   });
 

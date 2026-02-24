@@ -12,7 +12,7 @@ const codec = t.strict({
   email: EmailAddressCodec,
 });
 
-type EditEmail = t.TypeOf<typeof codec>;
+export type EditEmail = t.TypeOf<typeof codec>;
 
 const process: Command<EditEmail>['process'] = input =>
   O.some(
