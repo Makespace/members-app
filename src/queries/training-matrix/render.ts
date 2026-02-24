@@ -5,12 +5,21 @@ import { tooltipWith} from '../shared-render/tool-tip';
 import { FullQuizResultsForMember } from '../../read-models/external-state/equipment-quiz';
 import { UUID } from 'io-ts-types';
 
-const GREEN_TICK = '✅' as Safe;
-const WAVY_DASH = '〰️' as Safe;
+const GREEN_TICK = html`✅`;
+const WAVY_DASH = html`〰️`;
+const PLACEHOLDER = html`-`;
 
-const renderYes = (when: O.Option<Date>) => O.isSome(when) ? html`
-  ${tooltipWith(html`Since ${when.value.toLocaleDateString() as Safe}`, GREEN_TICK)}
-` : html`-`;
+const renderYes = (when: O.Option<Date>) => O.isSome(when) ? tooltipWith(html`Since ${when.value.toLocaleDateString() as Safe}`, GREEN_TICK) : PLACEHOLDER;
+
+const renderEquipmentQuizStatus = (equipment_quiz: TrainingMatrix[0]['equipment'][0]['equipment_quiz']) => {
+  if (equipment_quiz.passedAt.length > 0) {
+    return tooltipWith(equipment_quiz.passedAt.map(d => d.toLocaleDateString()).join(',') as Safe, GREEN_TICK);
+  }
+  if (equipment_quiz.attempted.length > 0) {
+    return tooltipWith(equipment_quiz.attempted.map(d => html`${d.percentage}% - ${d.response_submitted.toLocaleDateString() as Safe}`).join(',') as Safe, WAVY_DASH);
+  }
+  return PLACEHOLDER;
+};
 
 const renderTrainingMatrixRow = (areaColumn: HtmlSubstitution, ownerColumn: HtmlSubstitution, row: TrainingMatrix[0]['equipment'][0]) => html`
   <tr>
@@ -22,13 +31,7 @@ const renderTrainingMatrixRow = (areaColumn: HtmlSubstitution, ownerColumn: Html
       </a>
     </th>
     <th scope="row">
-      ${
-        row.equipment_quiz.passedAt.length > 0 ? html`
-          ${tooltipWith(row.equipment_quiz.passedAt.map(d => d.toLocaleDateString()).join(',') as Safe, GREEN_TICK)}
-        ` : html`
-          ${tooltipWith(row.equipment_quiz.attempted.map(d => html`${d.percentage}% - ${d.response_submitted.toLocaleDateString() as Safe}`).join(',') as Safe, WAVY_DASH)}
-        `
-      }
+      ${renderEquipmentQuizStatus(row.equipment_quiz)}
     </th>
     <th scope="row">
       ${renderYes(row.is_trained)}
