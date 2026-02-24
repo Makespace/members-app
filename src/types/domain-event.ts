@@ -168,6 +168,11 @@ const MemberEmailChanged = defineEvent('MemberEmailChanged', {
   newEmail: EmailAddressCodec,
 });
 
+const MemberEmailAdded = defineEvent('MemberEmailAdded', {
+  memberNumber: t.number,
+  newEmail: EmailAddressCodec,
+});
+
 const RecurlySubscriptionUpdated = defineEvent('RecurlySubscriptionUpdated', {
   email: EmailAddressCodec,
   hasActiveSubscription: t.boolean,
@@ -219,6 +224,7 @@ export const events = [
   MemberTrainedOnEquipmentBy,
   RevokeTrainedOnEquipment,
   MemberEmailChanged,
+  MemberEmailAdded,
   EquipmentTrainingQuizMemberNumberUpdated,
   EquipmentTrainingQuizEmailUpdated,
   TroubleTicketResponseSubmitted,
@@ -250,6 +256,7 @@ export const DomainEvent = t.union([
   MemberTrainedOnEquipmentBy.codec,
   RevokeTrainedOnEquipment.codec,
   MemberEmailChanged.codec,
+  MemberEmailAdded.codec,
   EquipmentTrainingQuizMemberNumberUpdated.codec,
   EquipmentTrainingQuizEmailUpdated.codec,
   TroubleTicketResponseSubmitted.codec,
