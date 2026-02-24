@@ -67,6 +67,7 @@ export const initRoutes = (
     query('/members', queries.members),
     ...command('members', 'create', commands.memberNumbers.linkNumberToEmail),
     ...command('members', 'edit-name', commands.members.editName),
+    ...command('members', 'edit-email', commands.members.editEmail),
     ...command(
       'members',
       'edit-form-of-address',

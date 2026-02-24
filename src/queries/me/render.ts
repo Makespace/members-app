@@ -1,5 +1,5 @@
 import {getGravatarThumbnail} from '../../templates/avatar';
-import {html, sanitizeOption, sanitizeString} from '../../types/html';
+import {html, joinHtml, sanitizeOption, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
 import {renderMemberNumber} from '../../templates/member-number';
 import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
@@ -19,6 +19,14 @@ const editFormOfAddress = (viewModel: ViewModel) => html`
   </a>
 `;
 
+const editEmail = (viewModel: ViewModel) => html`
+  <a
+    href="/members/edit-email?member=${viewModel.member.memberNumber}"
+  >
+    Edit
+  </a>
+`;
+
 const editAvatar = () =>
   html`<a href="https://gravatar.com/profile">Edit via Gravatar</a>`;
 
@@ -31,7 +39,16 @@ const renderMemberDetails = (viewModel: ViewModel) => html`
       </tr>
       <tr>
         <th scope="row">Email</th>
-        <td>${sanitizeString(viewModel.member.emailAddress)}</td>
+        <td>
+          ${sanitizeString(viewModel.member.emailAddress)}
+          ${editEmail(viewModel)}
+        </td>
+      </tr>
+      <tr>
+        <th scope="row">Past Emails</th>
+        <td>
+          ${joinHtml(viewModel.member.prevEmails.map(sanitizeString))}
+        </td>
       </tr>
       <tr>
         <th scope="row">

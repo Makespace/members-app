@@ -5,6 +5,7 @@ import {editFormOfAddress} from './edit-form-of-address';
 import {editFormOfAddressForm} from './edit-form-of-address-form';
 import {signOwnerAgreement} from './sign-owner-agreement';
 import {signOwnerAgreementForm} from './sign-owner-agreement-form';
+import { editEmailForm } from './edit-email-form';
 
 export const members = {
   editName: {
@@ -13,6 +14,7 @@ export const members = {
   },
   editEmail: {
     ...editEmail,
+    ...editEmailForm,
   },
   editFormOfAddress: {
     ...editFormOfAddress,

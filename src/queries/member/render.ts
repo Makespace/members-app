@@ -1,5 +1,5 @@
 import {getGravatarProfile, getGravatarThumbnail} from '../../templates/avatar';
-import {Html, html, sanitizeOption, sanitizeString} from '../../types/html';
+import {Html, html, joinHtml, sanitizeOption, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
 import {
   renderMemberNumber,
@@ -11,6 +11,11 @@ import { renderTrainingMatrix } from '../training-matrix/render';
 import { renderOwnerAgreementStatus } from '../shared-render/owner-agreement';
 
 const ownPageBanner = html`<h1>This is your profile!</h1>`;
+
+const editEmail = (viewModel: ViewModel) =>
+  html`<a href="/members/edit-email?member=${viewModel.member.memberNumber}">
+    Edit
+  </a>`;
 
 const editName = (viewModel: ViewModel) =>
   html`<a href="/members/edit-name?member=${viewModel.member.memberNumber}">
@@ -53,8 +58,21 @@ export const render = (viewModel: ViewModel) => html`
       </tr>
       <tr>
         <th scope="row">Email</th>
-        <td>${sanitizeString(viewModel.member.emailAddress)}</td>
+        <td>
+          ${sanitizeString(viewModel.member.emailAddress)}
+          ${viewModel.isSuperUser ? html`${editEmail(viewModel)}` : html``}
+        </td>
       </tr>
+      ${
+        viewModel.isSuperUser ? html`
+          <tr>
+          <th scope="row">Past Emails</th>
+          <td>
+            ${joinHtml(viewModel.member.prevEmails.map(sanitizeString))}
+          </td>
+        </tr>
+        ` : html``
+      }
       <tr>
         <th scope="row">
           <p>Name</p>
