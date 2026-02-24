@@ -24,7 +24,7 @@ import {storeTrainingSheetRowsRead} from '../../src/sync-worker/db/store_trainin
 import {storeTroubleTicketRowsRead} from '../../src/sync-worker/db/store_trouble_ticket_rows_read';
 import {SyncWorkerDependencies} from '../../src/sync-worker/dependencies';
 import {lastSync} from '../../src/sync-worker/db/last_sync';
-import {getSheetData} from '../../src/sync-worker/db/get_sheet_data';
+import {getSheetData, getSheetDataByMemberNumber} from '../../src/sync-worker/db/get_sheet_data';
 import {TrainingSummaryDeps} from '../../src/sync-worker/training-summary/training-summary-deps';
 import {NonEmptyString} from 'io-ts-types/lib/NonEmptyString';
 
@@ -62,6 +62,7 @@ export type TestFramework = {
   close: () => void;
   lastSync: SyncWorkerDependencies['lastSync'];
   getSheetData: Dependencies['getSheetData'];
+  getSheetDataByMemberNumber: Dependencies['getSheetDataByMemberNumber'];
   trainingSummaryDeps: TrainingSummaryDeps;
 };
 
@@ -122,6 +123,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     },
     lastSync: lastSync(googleDB),
     getSheetData: getSheetData(googleDB),
+    getSheetDataByMemberNumber: getSheetDataByMemberNumber(googleDB),
     commands: {
       area: {
         create: frameworkify(commands.area.create),

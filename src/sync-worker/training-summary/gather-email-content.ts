@@ -5,7 +5,7 @@ import * as S from 'fp-ts/string';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {Equipment} from '../../read-models/shared-state/return-types';
 import {SanitizedString, sanitizeString} from '../../types/html';
-import {getFullQuizResults} from '../../read-models/external-state/equipment-quiz';
+import {getFullQuizResultsForEquipment} from '../../read-models/external-state/equipment-quiz';
 import {pipe} from 'fp-ts/lib/function';
 import {contramap} from 'fp-ts/lib/Ord';
 import {TrainingSummaryDeps} from './training-summary-deps';
@@ -44,7 +44,7 @@ const gatherEmailContentForEquipment =
   ): Promise<EquipmentTrainingStats> => {
     const qzResults = O.isNone(equipment.trainingSheetId)
       ? E.left('No training sheet registered')
-      : await getFullQuizResults(
+      : await getFullQuizResultsForEquipment(
           deps,
           equipment.trainingSheetId.value,
           equipment

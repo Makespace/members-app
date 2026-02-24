@@ -27,6 +27,10 @@ import {dumpCurrentState, SharedDatabaseDump} from './debug/dump';
 import {MemberLinking} from './member-linking';
 import {DateTime} from 'luxon';
 import {getLastSent} from './training-stat-notifications/get-last-sent';
+import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
+import { TrainingSheetId } from '../../types/training-sheet';
+import { EquipmentId } from '../../types/equipment-id';
+import { getTrainingSheetIdMapping } from './equipment/get';
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
@@ -44,6 +48,7 @@ export type SharedReadModel = {
   equipment: {
     get: (id: UUID) => O.Option<Equipment>;
     getAll: () => ReadonlyArray<Equipment>;
+    getTrainingSheetIdMapping: () => ReadonlyRecord<TrainingSheetId, EquipmentId>;
   };
   area: {
     get: (id: UUID) => O.Option<Area>;
@@ -94,6 +99,7 @@ export const initSharedReadModel = (
     equipment: {
       get: getEquipmentFull(readModelDb, linking),
       getAll: getAllEquipmentFull(readModelDb, linking),
+      getTrainingSheetIdMapping: getTrainingSheetIdMapping(readModelDb),
     },
     area: {
       get: getAreaFull(readModelDb, linking),
