@@ -12,7 +12,7 @@ import {Client} from '@libsql/client';
 
 import {initSharedReadModel} from '../read-models/shared-state';
 import {lastSync} from '../sync-worker/db/last_sync';
-import {getSheetData} from '../sync-worker/db/get_sheet_data';
+import {getSheetData, getSheetDataByMemberNumber} from '../sync-worker/db/get_sheet_data';
 import {getTroubleTicketData} from '../sync-worker/db/get_trouble_ticket_data';
 
 export const initLogger = (conf: Config) => {
@@ -79,6 +79,7 @@ export const initDependencies = (
     logger,
     lastQuizSync: lastSync(googleDB),
     getSheetData: getSheetData(googleDB),
+    getSheetDataByMemberNumber: getSheetDataByMemberNumber(googleDB),
     getTroubleTicketData: getTroubleTicketData(
       googleDB,
       O.fromNullable(conf.TROUBLE_TICKET_SHEET)

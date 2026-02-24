@@ -15,8 +15,8 @@ import { Equipment, TrainedMember, TrainerInfo } from '../../../src/read-models/
 import { User } from '../../../src/types/user';
 import { faker } from '@faker-js/faker';
 import { EmailAddress } from '../../../src/types';
-import { FullQuizResults } from '../../../src/read-models/external-state/equipment-quiz';
 import { UUID } from 'io-ts-types';
+import { FullQuizResultsForEquipment } from '../../../src/read-models/external-state/equipment-quiz';
 
 describe('Render equipment page', () => {
     const renderPage = (vm: ViewModel) => {
@@ -74,7 +74,7 @@ describe('Render equipment page', () => {
             email: O.some(faker.internet.email() as EmailAddress),
         }
     };
-    const quizResults: Readonly<FullQuizResults> = {
+    const quizResults: Readonly<FullQuizResultsForEquipment> = {
         lastQuizSync: O.none,
         membersAwaitingTraining: [],
         unknownMembersAwaitingTraining: [],

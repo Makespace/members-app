@@ -49,3 +49,33 @@ export const getSheetData =
       ),
       TE.map(data => data.rows)
     );
+
+export const getSheetDataByMemberNumber =
+  (googleDB: Client) =>
+  (
+    memberNumber: number,
+  ): TE.TaskEither<string, SheetDataTable['rows']> =>
+    pipe(
+      TE.tryCatch<string, ResultSet>(
+        () => googleDB.execute(
+          ` SELECT *
+            FROM sheet_data
+            WHERE member_number_provided = ?
+          `, [memberNumber]
+        ),
+        reason =>
+          `Failed to get sheet data for memberNumber '${memberNumber}': ${(reason as Error).message}`
+      ),
+      TE.flatMapEither<ResultSet, string, SheetDataTable>(data =>
+        pipe(
+          data,
+          SheetDataTable.decode,
+          E.mapLeft(
+            e =>
+              'Failed to pull sheet data due to malformed data: ' +
+              formatValidationErrors(e).join(',')
+          )
+        )
+      ),
+      TE.map(data => data.rows)
+    );
