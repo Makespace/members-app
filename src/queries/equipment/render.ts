@@ -73,6 +73,24 @@ const adminMarkTrainedBy = (viewModel: ViewModel) =>
     O.getOrElse(() => html``)
   );
 
+const adminRemoveEquipment = (viewModel: ViewModel) =>
+  pipe(
+    viewModel,
+    O.of,
+    O.filter(viewModel => viewModel.isSuperUser),
+    O.map(viewModel => viewModel.equipment.id),
+    O.map(
+      id =>
+        html` <li>
+          <a href="/equipment/remove?equipmentId=${id}"
+            >[Admin] Remove equipment</a
+          >
+          ${tooltip(safe('Only admins can remove equipment'))}
+        </li>`
+    ),
+    O.getOrElse(() => html``)
+  );
+
 const addTrainer = (viewModel: ViewModel) =>
   pipe(
     viewModel,
@@ -141,6 +159,7 @@ const equipmentActions = (viewModel: ViewModel) => html`
     ${trainMember(viewModel)} ${adminMarkTrainedBy(viewModel)}
     ${addTrainer(viewModel)} ${registerSheet(viewModel)}
     ${currentSheet(viewModel)} ${removeTrainingSheet(viewModel)}
+    ${adminRemoveEquipment(viewModel)}
   </ul>
 `;
 

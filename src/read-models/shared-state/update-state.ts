@@ -92,6 +92,15 @@ export const updateState =
           .values({id: event.id, name: event.name, areaId: event.areaId})
           .run();
         break;
+      case 'EquipmentRemoved':
+        db.delete(trainersTable)
+          .where(eq(trainersTable.equipmentId, event.id))
+          .run();
+        db.delete(trainedMemberstable)
+          .where(eq(trainedMemberstable.equipmentId, event.id))
+          .run();
+        db.delete(equipmentTable).where(eq(equipmentTable.id, event.id)).run();
+        break;
       case 'TrainerAdded': {
         if (
           isOwnerOfAreaContainingEquipment(db, linking)(
