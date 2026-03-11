@@ -7,7 +7,7 @@ import * as O from 'fp-ts/Option';
 import {createTables} from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
-import {Area, Equipment, Member} from './return-types';
+import {Area, Equipment, Member, MemberCoreInfo} from './return-types';
 
 import {Client} from '@libsql/client';
 import {asyncRefresh} from './async-refresh';
@@ -15,7 +15,7 @@ import {updateState} from './update-state';
 import {Logger} from 'pino';
 import {asyncApplyExternalEventSources} from './async-apply-external-event-sources';
 import {UUID} from 'io-ts-types';
-import {User} from '../../types';
+import {EmailAddress, User} from '../../types';
 import {getAllEquipmentFull, getEquipmentFull} from './equipment/helpers';
 import {getAllAreaFull, getAreaFull} from './area/helpers';
 import {
@@ -44,6 +44,7 @@ export type SharedReadModel = {
     get: (memberNumber: number) => O.Option<Member>;
     getAll: () => ReadonlyArray<Member>;
     getAsActor: (user: User) => (memberNumber: number) => O.Option<Member>;
+    findByEmail: (email: EmailAddress) => ReadonlyArray<MemberCoreInfo>;
   };
   equipment: {
     get: (id: UUID) => O.Option<Equipment>;
