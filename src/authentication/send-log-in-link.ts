@@ -54,7 +54,10 @@ export const sendLogInLink: SendLogInLink = (deps, conf) => emailAddress => {
     deps.logger.error('While looking for email %s we found multiple users!', emailAddress);
     return TE.left(failure('Multiple members associated with that email. Please contact an administrator.')());
   }
-  const email = toEmail(emailAddress)(magicLink.create(conf)(members[0]));
+  // Note that we intentionally use the stored email address rather than the one provided.
+  // This prevents attacks where you specify an email address that somehow matches to an existing user but isn't
+  // actually treated the same by the mailserver(s) so gets routed differently (to the attacker).
+  const email = toEmail(members[0].emailAddress)(magicLink.create(conf)(members[0]));
   return pipe(
     deps.rateLimitSendingOfEmails(email),
     TE.chain(deps.sendEmail),

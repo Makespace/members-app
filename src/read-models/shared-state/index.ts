@@ -31,6 +31,7 @@ import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
 import { TrainingSheetId } from '../../types/training-sheet';
 import { EquipmentId } from '../../types/equipment-id';
 import { getTrainingSheetIdMapping } from './equipment/get';
+import { findByEmail } from './member/get';
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
@@ -96,6 +97,7 @@ export const initSharedReadModel = (
       get: getMemberFull(readModelDb, linking),
       getAll: getAllMemberFull(readModelDb, linking),
       getAsActor: getMemberAsActorFull(readModelDb, linking),
+      findByEmail: findByEmail(readModelDb, linking),
     },
     equipment: {
       get: getEquipmentFull(readModelDb, linking),
