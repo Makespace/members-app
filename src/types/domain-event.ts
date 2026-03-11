@@ -163,11 +163,6 @@ const RevokeTrainedOnEquipment = defineEvent('RevokeTrainedOnEquipment', {
   revokedByMemberNumber: t.union([t.number, t.null]), // Null to indicate system.
 });
 
-const MemberEmailChanged = defineEvent('MemberEmailChanged', {
-  memberNumber: t.number,
-  newEmail: EmailAddressCodec,
-});
-
 const RecurlySubscriptionUpdated = defineEvent('RecurlySubscriptionUpdated', {
   email: EmailAddressCodec,
   hasActiveSubscription: t.boolean,
@@ -218,7 +213,6 @@ export const events = [
   MemberTrainedOnEquipment,
   MemberTrainedOnEquipmentBy,
   RevokeTrainedOnEquipment,
-  MemberEmailChanged,
   EquipmentTrainingQuizMemberNumberUpdated,
   EquipmentTrainingQuizEmailUpdated,
   TroubleTicketResponseSubmitted,
@@ -249,7 +243,6 @@ export const DomainEvent = t.union([
   MemberTrainedOnEquipment.codec,
   MemberTrainedOnEquipmentBy.codec,
   RevokeTrainedOnEquipment.codec,
-  MemberEmailChanged.codec,
   EquipmentTrainingQuizMemberNumberUpdated.codec,
   EquipmentTrainingQuizEmailUpdated.codec,
   TroubleTicketResponseSubmitted.codec,

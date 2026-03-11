@@ -10,7 +10,6 @@ export type Member = {
   trainedOn: ReadonlyArray<TrainedOn>;
   memberNumber: number;
   emailAddress: EmailAddress;
-  prevEmails: ReadonlyArray<EmailAddress>;
   name: O.Option<string>;
   formOfAddress: O.Option<string>;
   agreementSigned: O.Option<Date>;

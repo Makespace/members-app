@@ -37,7 +37,6 @@ export const updateState =
             gravatarHash: gravatarHashFromEmail(event.email),
             name: O.fromNullable(event.name),
             formOfAddress: O.fromNullable(event.formOfAddress),
-            prevEmails: [],
             isSuperUser: false,
             agreementSigned: undefined,
             superUserSince: undefined,
@@ -60,24 +59,6 @@ export const updateState =
             .run();
         }
         break;
-      case 'MemberEmailChanged': {
-        const current = db
-          .select()
-          .from(membersTable)
-          .where(eq(membersTable.memberNumber, event.memberNumber))
-          .get();
-        if (current) {
-          db.update(membersTable)
-            .set({
-              emailAddress: event.newEmail,
-              prevEmails: [...current.prevEmails, current.emailAddress],
-              gravatarHash: gravatarHashFromEmail(event.newEmail),
-            })
-            .where(eq(membersTable.memberNumber, event.memberNumber))
-            .run();
-        }
-        break;
-      }
       case 'SuperUserDeclared':
         db.update(membersTable)
           .set({isSuperUser: true, superUserSince: event.recordedAt})
