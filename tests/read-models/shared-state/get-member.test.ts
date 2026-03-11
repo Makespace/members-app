@@ -283,33 +283,6 @@ describe('get-via-shared-read-model', () => {
       });
     });
 
-    describe('and their email has changed', () => {
-      beforeEach(async () => {
-        await framework.commands.members.editEmail({
-          memberNumber,
-          email: 'updated@example.com' as EmailAddress,
-        });
-      });
-
-      it('returns the latest email', () => {
-        const result = runQuery();
-        expect(result.emailAddress).toBe('updated@example.com');
-      });
-
-      it('returns a record of previous emails', () => {
-        const result = runQuery();
-        expect(result.prevEmails).toHaveLength(1);
-        expect(result.prevEmails[0]).toStrictEqual('foo@example.com');
-      });
-
-      it('returns gravatar hash based on latest email', () => {
-        const result = runQuery();
-        expect(result.gravatarHash).toStrictEqual(
-          gravatarHashFromEmail('updated@example.com')
-        );
-      });
-    });
-
     describe('and they have been declared a super user', () => {
       const firstMadeSuperUserAt = faker.date.anytime();
       const superUserRevokedAt = faker.date.future({

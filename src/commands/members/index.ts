@@ -1,4 +1,3 @@
-import {editEmail} from './edit-email';
 import {editName} from './edit-name';
 import {editNameForm} from './edit-name-form';
 import {editFormOfAddress} from './edit-form-of-address';
@@ -10,9 +9,6 @@ export const members = {
   editName: {
     ...editName,
     ...editNameForm,
-  },
-  editEmail: {
-    ...editEmail,
   },
   editFormOfAddress: {
     ...editFormOfAddress,
