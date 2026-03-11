@@ -48,9 +48,6 @@ export const mergeMemberCore = (
       RA.filter(m => m !== memberNumber)
     ),
     emailAddress,
-    prevEmails: records
-      .flatMap(e => [...e.prevEmails, e.emailAddress])
-      .filter(e => e !== emailAddress),
     name: records[0].name,
     formOfAddress: records[0].formOfAddress,
     agreementSigned: records[0].agreementSigned,

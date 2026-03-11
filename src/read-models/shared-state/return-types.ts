@@ -56,7 +56,6 @@ export type MemberCoreInfo = {
   memberNumber: number;
   pastMemberNumbers: ReadonlyArray<number>;
   emailAddress: EmailAddress;
-  prevEmails: ReadonlyArray<EmailAddress>;
   name: O.Option<string>;
   formOfAddress: O.Option<string>;
   agreementSigned: O.Option<Date>;

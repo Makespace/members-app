@@ -151,7 +151,6 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         editName: frameworkify(commands.members.editName),
         editFormOfAddress: frameworkify(commands.members.editFormOfAddress),
         signOwnerAgreement: frameworkify(commands.members.signOwnerAgreement),
-        editEmail: frameworkify(commands.members.editEmail),
       },
       memberNumbers: {
         linkNumberToEmail: frameworkify(
