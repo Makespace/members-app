@@ -7,91 +7,215 @@ import {sendLogInLink} from '../../src/authentication/send-log-in-link';
 import {Config} from '../../src/configuration';
 import {TestFramework, initTestFramework} from '../read-models/test-framework';
 import {Dependencies} from '../../src/dependencies';
-import {failureWithStatus} from '../../src/types/failure-with-status';
-import {StatusCodes} from 'http-status-codes';
+import {LinkNumberToEmail} from '../../src/commands/member-numbers/link-number-to-email';
+import {getRightOrFail} from '../helpers';
 
 describe('send-log-in-link', () => {
   const emailAddress = faker.internet.email() as EmailAddress;
   const memberNumber = faker.number.int();
-  const conf = {TOKEN_SECRET: 'secret'} as Config;
+  const conf = {
+    TOKEN_SECRET: 'secret',
+    PUBLIC_URL: 'https://members.makespace.example',
+  } as Config;
 
   let framework: TestFramework;
+  let deps: Pick<
+    Dependencies,
+    'sendEmail' | 'sharedReadModel' | 'rateLimitSendingOfEmails' | 'logger'
+  >;
   beforeEach(async () => {
     framework = await initTestFramework();
+    deps = {
+      ...happyPathAdapters,
+      sendEmail: jest.fn(() => TE.right('success')),
+      sharedReadModel: framework.sharedReadModel,
+    };
   });
 
   afterEach(() => {
     framework.close();
   });
 
-  const getAllEvents: Dependencies['getAllEvents'] = () => () =>
-    framework.getAllEvents().then(events => E.right(events));
-
-  describe('when the email is uniquely linked to a member number', () => {
-    const deps = {
-      ...happyPathAdapters,
-      getAllEvents,
-      sendEmail: jest.fn(() => TE.right('success')),
+  describe('when an email is uniquely linked to a member number', () => {
+    const member: LinkNumberToEmail = {
+      email: emailAddress,
+      memberNumber,
+      name: undefined,
+      formOfAddress: undefined,
     };
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(member);
+    });
+
+    describe('tried to login with the correct email address', () => {
+      let result: string;
+
+      beforeEach(async () => {
+        result = getRightOrFail(await sendLogInLink(deps, conf)(emailAddress)());
+      });
+
+      it('tries to send an email with a link', () => {
+        expect(deps.sendEmail).toHaveBeenCalledWith(
+          expect.objectContaining({
+            recipient: emailAddress,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            text: expect.stringContaining('token='),
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            html: expect.stringContaining(
+              `${conf.PUBLIC_URL}/auth/landing?token=`
+            ),
+          })
+        );
+      });
+
+      it('returns success message with the requested email address', () => {
+        expect(result).toStrictEqual(`Sent login link to ${emailAddress}`);
+      });
+    });
+
+    describe('when another email is linked to another member number', () => {
+      const member2: LinkNumberToEmail = {
+        email: faker.internet.email() as EmailAddress,
+        memberNumber: faker.number.int(),
+        name: undefined,
+        formOfAddress: undefined,
+      };
+      beforeEach(async () => {
+        await framework.commands.memberNumbers.linkNumberToEmail(member2);
+      });
+      describe('tried to login with the correct email address for the first member', () => {
+        beforeEach(async () => {
+          getRightOrFail(await sendLogInLink(deps, conf)(emailAddress)());
+        });
+        it('tries to send an email with a link', () => {
+          expect(deps.sendEmail).toHaveBeenCalledWith(
+            expect.objectContaining({
+              recipient: emailAddress,
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              text: expect.stringContaining('token='),
+            })
+          );
+        });
+      });
+      describe('tried to login with the correct email address for the second member', () => {
+        beforeEach(async () => {
+          getRightOrFail(await sendLogInLink(deps, conf)(member2.email)());
+        });
+        it('tries to send an email with a link', () => {
+          expect(deps.sendEmail).toHaveBeenCalledWith(
+            expect.objectContaining({
+              recipient: member2.email,
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              text: expect.stringContaining('token='),
+            })
+          );
+        });
+      });
+    });
+
+    describe('tried to login with the matching email address using different domain casing', () => {
+      const emailAddressWithUpperCaseDomain = emailAddress.replace(
+        /@(.+)$/,
+        (_, domain: string) => `@${domain.toUpperCase()}`
+      ) as EmailAddress;
+      let result: string;
+
+      beforeEach(async () => {
+        result = getRightOrFail(
+          await sendLogInLink(deps, conf)(emailAddressWithUpperCaseDomain)()
+        );
+      });
+
+      it('sends the email to the stored email address', () => {
+        expect(deps.sendEmail).toHaveBeenCalledWith(
+          expect.objectContaining({
+            recipient: emailAddress,
+          })
+        );
+      });
+
+      it('returns success message with the stored email address (not the different domain casing)', () => {
+        // This makes it more obvious to users that we normalise the email addresses.
+        expect(result).toStrictEqual(`Sent login link to ${emailAddress}`);
+      });
+    });
+
+    describe('when no member is associated with the email address', () => {
+      let result: E.Either<Failure, string>;
+
+      beforeEach(async () => {
+        result = await sendLogInLink(deps, conf)(faker.internet.email() as EmailAddress)();
+      });
+
+      it('returns Left describing the missing member', () => {
+        expect(result).toStrictEqual(
+          E.left(
+            expect.objectContaining({
+              message: 'No member associated with that email',
+            })
+          )
+        );
+      });
+
+      it('does not try to send an email', () => {
+        expect(deps.sendEmail).not.toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('when no member are setup', () => {
+    let result: E.Either<Failure, string>;
 
     beforeEach(async () => {
+      result = await sendLogInLink(deps, conf)(emailAddress)();
+    });
+
+    it('returns Left describing the missing member', () => {
+      expect(result).toStrictEqual(
+        E.left(
+          expect.objectContaining({
+            message: 'No member associated with that email',
+          })
+        )
+      );
+    });
+
+    it('does not try to send an email', () => {
+      expect(deps.sendEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('when rate limiting blocks the login email', () => {
+    const errorMsg = 'too many login emails sent';
+    let result: E.Either<Failure, string>;
+
+    beforeEach(async () => {
+      deps.rateLimitSendingOfEmails = () => TE.left(failure(errorMsg)());
       await framework.commands.memberNumbers.linkNumberToEmail({
         email: emailAddress,
         memberNumber,
         name: undefined,
         formOfAddress: undefined,
       });
-      await sendLogInLink(deps, conf)(emailAddress)();
-    });
-
-    it('tries to send an email with a link', () => {
-      expect(deps.sendEmail).toHaveBeenCalledWith(
-        expect.objectContaining({
-          recipient: emailAddress,
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          text: expect.stringContaining('token='),
-        })
-      );
-    });
-  });
-
-  describe('when database query fails', () => {
-    const errorMsg = 'db query failed';
-    const deps = {
-      ...happyPathAdapters,
-      getAllEvents: () =>
-        TE.left(
-          failureWithStatus(errorMsg, StatusCodes.INTERNAL_SERVER_ERROR)({})
-        ),
-      sendEmail: jest.fn(() => TE.right('success')),
-    };
-
-    let result: E.Either<Failure, string>;
-    beforeEach(async () => {
       result = await sendLogInLink(deps, conf)(emailAddress)();
     });
 
-    it('does not send any emails', () => {
-      expect(deps.sendEmail).not.toHaveBeenCalled();
-    });
-
-    it('return on Left with message from db adapter', () => {
+    it('returns Left with the rate limiting error', () => {
       expect(result).toStrictEqual(
         E.left(expect.objectContaining({message: errorMsg}))
       );
+    });
+
+    it('does not try to send an email', () => {
+      expect(deps.sendEmail).not.toHaveBeenCalled();
     });
   });
 
   describe('when email fails to send', () => {
     const errorMsg = 'sending of email failed';
-    const deps = {
-      ...happyPathAdapters,
-      getAllEvents,
-      sendEmail: () => TE.left(failure(errorMsg)()),
-    };
-
     let result: E.Either<Failure, string>;
     beforeEach(async () => {
+      deps.sendEmail = () => TE.left(failure(errorMsg)());
       await framework.commands.memberNumbers.linkNumberToEmail({
         email: emailAddress,
         memberNumber,
