@@ -209,10 +209,14 @@ describe('get-via-shared-read-model', () => {
     pipe(id, framework.sharedReadModel.members.get, getSomeOrFail);
 
   describe('when the member does not exist', () => {
-    it('returns none', () => {
+    it('get returns none', () => {
       const result = framework.sharedReadModel.members.get(memberNumber);
       expect(result).toStrictEqual(O.none);
     });
+    it('findByEmail returns none', () => {
+      const result = framework.sharedReadModel.members.findByEmail(memberEmail);
+      expect(result).toHaveLength(0);
+    })
   });
 
   describe('when the member exists', () => {
@@ -238,6 +242,31 @@ describe('get-via-shared-read-model', () => {
       expect(result.gravatarHash).toStrictEqual(
         gravatarHashFromEmail('foo@example.com')
       );
+    });
+
+    it('can find member by email', () => {
+      const result = framework.sharedReadModel.members.findByEmail(
+        memberEmail
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].memberNumber).toEqual(memberNumber);
+      expect(result[0].emailAddress).toEqual('foo@example.com');
+    });
+
+    it('can find member by email with case insensitive domain', () => {
+      const result = framework.sharedReadModel.members.findByEmail(
+        'foo@eXAMple.com' as EmailAddress
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].memberNumber).toEqual(memberNumber);
+      expect(result[0].emailAddress).toEqual('foo@example.com');
+    });
+
+    it('cannot find a non-existant email', () => {
+      const result = framework.sharedReadModel.members.findByEmail(
+        faker.internet.email() as EmailAddress
+      );
+      expect(result).toHaveLength(0);
     });
 
     describe('and their name has been recorded', () => {

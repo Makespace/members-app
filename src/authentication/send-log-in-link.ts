@@ -1,11 +1,9 @@
-import * as E from 'fp-ts/Either';
 import * as TE from 'fp-ts/TaskEither';
-import {flow, pipe} from 'fp-ts/lib/function';
+import {pipe} from 'fp-ts/lib/function';
 import {Dependencies} from '../dependencies';
 import {Email, EmailAddress, Failure, failure} from '../types';
 import {Config} from '../configuration';
 import {magicLink} from '.';
-import {readModels} from '../read-models';
 import mjml2html from 'mjml';
 
 const toEmail =
@@ -42,37 +40,25 @@ const toEmail =
     `).html,
   });
 
-const lookupMemberNumber = (emailAddress: string) =>
-  flow(
-    readModels.members.lookupByCaseInsensitiveEmail(emailAddress),
-    members => {
-      switch (members.length) {
-        case 0:
-          return E.left(failure('No member associated with that email')());
-        case 1:
-          return E.right(members[0]);
-        default:
-          return E.left(
-            failure(
-              'Multiple members associated with that email with diffrent capitalization. This is very likely to be a mistake.'
-            )()
-          );
-      }
-    }
-  );
-
-type SendLogInLink = (
-  deps: Dependencies,
+export const sendLogInLink = (
+  deps: Pick<Dependencies, 'sendEmail' | 'rateLimitSendingOfEmails' | 'sharedReadModel' | 'logger'>,
   conf: Config
-) => (emailAddress: EmailAddress) => TE.TaskEither<Failure, string>;
-
-export const sendLogInLink: SendLogInLink = (deps, conf) => emailAddress =>
-  pipe(
-    deps.getAllEvents(),
-    TE.chainEitherK(lookupMemberNumber(emailAddress)),
-    TE.map(magicLink.create(conf)),
-    TE.map(toEmail(emailAddress)),
-    TE.chain(deps.rateLimitSendingOfEmails),
+) => (emailAddress: EmailAddress): TE.TaskEither<Failure, string> => {
+  const members = deps.sharedReadModel.members.findByEmail(emailAddress);
+  if (members.length === 0) {
+    return TE.left(failure('No member associated with that email')());
+  }
+  if (members.length > 1) {
+    deps.logger.error('While looking for email %s we found multiple users!', emailAddress);
+    return TE.left(failure('Multiple members associated with that email. Please contact an administrator.')());
+  }
+  // Note that we intentionally use the stored email address rather than the one provided.
+  // This prevents attacks where you specify an email address that somehow matches to an existing user but isn't
+  // actually treated the same by the mailserver(s) so gets routed differently (to the attacker).
+  const email = toEmail(members[0].emailAddress)(magicLink.create(conf)(members[0]));
+  return pipe(
+    deps.rateLimitSendingOfEmails(email),
     TE.chain(deps.sendEmail),
-    TE.map(() => `Sent login link to ${emailAddress}`)
+    TE.map(() => `Sent login link to ${members[0].emailAddress}`)
   );
+}

@@ -1,5 +1,7 @@
 import { MemberNumber } from "../../types/member-number";
 
+// NOTE: MemberLinking is a slightly grim solution to the problem that initially it was assumed each 'person' had 1 member number but
+// actually users might have multiple.
 export class MemberLinking {
   // Stores the linking between member numbers.
   // This is much more effiently stored directly rather than using sqllite as its
@@ -43,6 +45,6 @@ export class MemberLinking {
   }
 
   mapAll(all: readonly MemberNumber[]): ReadonlySet<MemberNumber>[] {
-    return Array.from(new Set(all.map(this.map)));
+    return Array.from(new Set(all.map(this.map.bind(this))));
   }
 }
