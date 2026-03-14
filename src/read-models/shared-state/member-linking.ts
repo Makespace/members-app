@@ -45,6 +45,6 @@ export class MemberLinking {
   }
 
   mapAll(all: readonly MemberNumber[]): ReadonlySet<MemberNumber>[] {
-    return Array.from(new Set(all.map(this.map)));
+    return Array.from(new Set(all.map(this.map.bind(this))));
   }
 }

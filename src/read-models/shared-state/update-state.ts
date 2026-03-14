@@ -16,6 +16,7 @@ import {and, eq, inArray, sql} from 'drizzle-orm';
 import {isOwnerOfAreaContainingEquipment} from './area/helpers';
 import {pipe} from 'fp-ts/lib/function';
 import {MemberLinking} from './member-linking';
+import { normaliseEmailAddress } from './normalise-email-address';
 
 const revokeSuperuser = (db: BetterSQLite3Database, memberNumber: number) =>
   db
@@ -33,7 +34,7 @@ export const updateState =
         db.insert(membersTable)
           .values({
             memberNumber: event.memberNumber,
-            emailAddress: event.email,
+            emailAddress: normaliseEmailAddress(event.email),
             gravatarHash: gravatarHashFromEmail(event.email),
             name: O.fromNullable(event.name),
             formOfAddress: O.fromNullable(event.formOfAddress),
@@ -285,7 +286,7 @@ export const updateState =
           .set({
             status,
           })
-          .where(eq(membersTable.emailAddress, event.email))
+          .where(eq(membersTable.emailAddress, normaliseEmailAddress(event.email)))
           .run();
         break;
       }

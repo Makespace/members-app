@@ -40,12 +40,10 @@ const toEmail =
     `).html,
   });
 
-type SendLogInLink = (
-  deps: Dependencies,
+export const sendLogInLink = (
+  deps: Pick<Dependencies, 'sendEmail' | 'rateLimitSendingOfEmails' | 'sharedReadModel' | 'logger'>,
   conf: Config
-) => (emailAddress: EmailAddress) => TE.TaskEither<Failure, string>;
-
-export const sendLogInLink: SendLogInLink = (deps, conf) => emailAddress => {
+) => (emailAddress: EmailAddress): TE.TaskEither<Failure, string> => {
   const members = deps.sharedReadModel.members.findByEmail(emailAddress);
   if (members.length === 0) {
     return TE.left(failure('No member associated with that email')());

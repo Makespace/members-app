@@ -28,13 +28,14 @@ describe('send-log-in-link', () => {
     framework.getAllEvents().then(events => E.right(events));
 
   describe('when the email is uniquely linked to a member number', () => {
-    const deps = {
-      ...happyPathAdapters,
-      getAllEvents,
-      sendEmail: jest.fn(() => TE.right('success')),
-    };
+    let deps: Pick<Dependencies, 'sendEmail' | 'sharedReadModel' | 'rateLimitSendingOfEmails' | 'logger'>;
 
     beforeEach(async () => {
+      deps = {
+        ...happyPathAdapters,
+        sendEmail: jest.fn(() => TE.right('success')),
+        sharedReadModel: framework.sharedReadModel,
+      };
       await framework.commands.memberNumbers.linkNumberToEmail({
         email: emailAddress,
         memberNumber,
