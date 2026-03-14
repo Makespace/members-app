@@ -7,8 +7,6 @@ import {sendLogInLink} from '../../src/authentication/send-log-in-link';
 import {Config} from '../../src/configuration';
 import {TestFramework, initTestFramework} from '../read-models/test-framework';
 import {Dependencies} from '../../src/dependencies';
-import {failureWithStatus} from '../../src/types/failure-with-status';
-import {StatusCodes} from 'http-status-codes';
 
 describe('send-log-in-link', () => {
   const emailAddress = faker.internet.email() as EmailAddress;
@@ -16,26 +14,22 @@ describe('send-log-in-link', () => {
   const conf = {TOKEN_SECRET: 'secret'} as Config;
 
   let framework: TestFramework;
+  let deps: Pick<Dependencies, 'sendEmail' | 'sharedReadModel' | 'rateLimitSendingOfEmails' | 'logger'>;
   beforeEach(async () => {
     framework = await initTestFramework();
+    deps = {
+      ...happyPathAdapters,
+      sendEmail: jest.fn(() => TE.right('success')),
+      sharedReadModel: framework.sharedReadModel,
+    };
   });
 
   afterEach(() => {
     framework.close();
   });
 
-  const getAllEvents: Dependencies['getAllEvents'] = () => () =>
-    framework.getAllEvents().then(events => E.right(events));
-
   describe('when the email is uniquely linked to a member number', () => {
-    let deps: Pick<Dependencies, 'sendEmail' | 'sharedReadModel' | 'rateLimitSendingOfEmails' | 'logger'>;
-
     beforeEach(async () => {
-      deps = {
-        ...happyPathAdapters,
-        sendEmail: jest.fn(() => TE.right('success')),
-        sharedReadModel: framework.sharedReadModel,
-      };
       await framework.commands.memberNumbers.linkNumberToEmail({
         email: emailAddress,
         memberNumber,
@@ -56,43 +50,11 @@ describe('send-log-in-link', () => {
     });
   });
 
-  describe('when database query fails', () => {
-    const errorMsg = 'db query failed';
-    const deps = {
-      ...happyPathAdapters,
-      getAllEvents: () =>
-        TE.left(
-          failureWithStatus(errorMsg, StatusCodes.INTERNAL_SERVER_ERROR)({})
-        ),
-      sendEmail: jest.fn(() => TE.right('success')),
-    };
-
-    let result: E.Either<Failure, string>;
-    beforeEach(async () => {
-      result = await sendLogInLink(deps, conf)(emailAddress)();
-    });
-
-    it('does not send any emails', () => {
-      expect(deps.sendEmail).not.toHaveBeenCalled();
-    });
-
-    it('return on Left with message from db adapter', () => {
-      expect(result).toStrictEqual(
-        E.left(expect.objectContaining({message: errorMsg}))
-      );
-    });
-  });
-
   describe('when email fails to send', () => {
     const errorMsg = 'sending of email failed';
-    const deps = {
-      ...happyPathAdapters,
-      getAllEvents,
-      sendEmail: () => TE.left(failure(errorMsg)()),
-    };
-
     let result: E.Either<Failure, string>;
     beforeEach(async () => {
+      deps.sendEmail = () => TE.left(failure(errorMsg)());
       await framework.commands.memberNumbers.linkNumberToEmail({
         email: emailAddress,
         memberNumber,
