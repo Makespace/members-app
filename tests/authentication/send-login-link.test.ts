@@ -7,16 +7,22 @@ import {sendLogInLink} from '../../src/authentication/send-log-in-link';
 import {Config} from '../../src/configuration';
 import {TestFramework, initTestFramework} from '../read-models/test-framework';
 import {Dependencies} from '../../src/dependencies';
-import { LinkNumberToEmail } from '../../src/commands/member-numbers/link-number-to-email';
-import { getRightOrFail } from '../helpers';
+import {LinkNumberToEmail} from '../../src/commands/member-numbers/link-number-to-email';
+import {getRightOrFail} from '../helpers';
 
 describe('send-log-in-link', () => {
   const emailAddress = faker.internet.email() as EmailAddress;
   const memberNumber = faker.number.int();
-  const conf = {TOKEN_SECRET: 'secret'} as Config;
+  const conf = {
+    TOKEN_SECRET: 'secret',
+    PUBLIC_URL: 'https://members.makespace.example',
+  } as Config;
 
   let framework: TestFramework;
-  let deps: Pick<Dependencies, 'sendEmail' | 'sharedReadModel' | 'rateLimitSendingOfEmails' | 'logger'>;
+  let deps: Pick<
+    Dependencies,
+    'sendEmail' | 'sharedReadModel' | 'rateLimitSendingOfEmails' | 'logger'
+  >;
   beforeEach(async () => {
     framework = await initTestFramework();
     deps = {
@@ -42,17 +48,28 @@ describe('send-log-in-link', () => {
     });
 
     describe('tried to login with the correct email address', () => {
+      let result: string;
+
       beforeEach(async () => {
-        getRightOrFail(await sendLogInLink(deps, conf)(emailAddress)());
+        result = getRightOrFail(await sendLogInLink(deps, conf)(emailAddress)());
       });
-      it('tries to send an email with a link', async () => {
+
+      it('tries to send an email with a link', () => {
         expect(deps.sendEmail).toHaveBeenCalledWith(
           expect.objectContaining({
             recipient: emailAddress,
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             text: expect.stringContaining('token='),
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            html: expect.stringContaining(
+              `${conf.PUBLIC_URL}/auth/landing?token=`
+            ),
           })
         );
+      });
+
+      it('returns success message with the requested email address', () => {
+        expect(result).toStrictEqual(`Sent login link to ${emailAddress}`);
       });
     });
 
@@ -70,7 +87,7 @@ describe('send-log-in-link', () => {
         beforeEach(async () => {
           getRightOrFail(await sendLogInLink(deps, conf)(emailAddress)());
         });
-        it('tries to send an email with a link', async () => {
+        it('tries to send an email with a link', () => {
           expect(deps.sendEmail).toHaveBeenCalledWith(
             expect.objectContaining({
               recipient: emailAddress,
@@ -84,7 +101,7 @@ describe('send-log-in-link', () => {
         beforeEach(async () => {
           getRightOrFail(await sendLogInLink(deps, conf)(member2.email)());
         });
-        it('tries to send an email with a link', async () => {
+        it('tries to send an email with a link', () => {
           expect(deps.sendEmail).toHaveBeenCalledWith(
             expect.objectContaining({
               recipient: member2.email,
@@ -94,6 +111,103 @@ describe('send-log-in-link', () => {
           );
         });
       });
+    });
+
+    describe('tried to login with the matching email address using different domain casing', () => {
+      const emailAddressWithUpperCaseDomain = emailAddress.replace(
+        /@(.+)$/,
+        (_, domain: string) => `@${domain.toUpperCase()}`
+      ) as EmailAddress;
+      let result: string;
+
+      beforeEach(async () => {
+        result = getRightOrFail(
+          await sendLogInLink(deps, conf)(emailAddressWithUpperCaseDomain)()
+        );
+      });
+
+      it('sends the email to the stored email address', () => {
+        expect(deps.sendEmail).toHaveBeenCalledWith(
+          expect.objectContaining({
+            recipient: emailAddress,
+          })
+        );
+      });
+
+      it('returns success message with the stored email address (not the different domain casing)', () => {
+        // This makes it more obvious to users that we normalise the email addresses.
+        expect(result).toStrictEqual(`Sent login link to ${emailAddress}`);
+      });
+    });
+
+    describe('when no member is associated with the email address', () => {
+      let result: E.Either<Failure, string>;
+
+      beforeEach(async () => {
+        result = await sendLogInLink(deps, conf)(faker.internet.email() as EmailAddress)();
+      });
+
+      it('returns Left describing the missing member', () => {
+        expect(result).toStrictEqual(
+          E.left(
+            expect.objectContaining({
+              message: 'No member associated with that email',
+            })
+          )
+        );
+      });
+
+      it('does not try to send an email', () => {
+        expect(deps.sendEmail).not.toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('when no member are setup', () => {
+    let result: E.Either<Failure, string>;
+
+    beforeEach(async () => {
+      result = await sendLogInLink(deps, conf)(emailAddress)();
+    });
+
+    it('returns Left describing the missing member', () => {
+      expect(result).toStrictEqual(
+        E.left(
+          expect.objectContaining({
+            message: 'No member associated with that email',
+          })
+        )
+      );
+    });
+
+    it('does not try to send an email', () => {
+      expect(deps.sendEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('when rate limiting blocks the login email', () => {
+    const errorMsg = 'too many login emails sent';
+    let result: E.Either<Failure, string>;
+
+    beforeEach(async () => {
+      deps.rateLimitSendingOfEmails = () => TE.left(failure(errorMsg)());
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        email: emailAddress,
+        memberNumber,
+        name: undefined,
+        formOfAddress: undefined,
+      });
+      result = await sendLogInLink(deps, conf)(emailAddress)();
+    });
+
+    it('returns Left with the rate limiting error', () => {
+      expect(result).toStrictEqual(
+        E.left(expect.objectContaining({message: errorMsg}))
+      );
+    });
+
+    it('does not try to send an email', () => {
+      expect(deps.sendEmail).not.toHaveBeenCalled();
     });
   });
 
