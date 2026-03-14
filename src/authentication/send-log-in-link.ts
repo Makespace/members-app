@@ -59,6 +59,6 @@ export const sendLogInLink = (
   return pipe(
     deps.rateLimitSendingOfEmails(email),
     TE.chain(deps.sendEmail),
-    TE.map(() => `Sent login link to ${emailAddress}`)
+    TE.map(() => `Sent login link to ${members[0].emailAddress}`)
   );
 }
