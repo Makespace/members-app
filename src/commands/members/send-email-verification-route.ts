@@ -5,7 +5,7 @@ import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import * as t from 'io-ts';
 import {sequenceS} from 'fp-ts/lib/Apply';
-import {flow, pipe} from 'fp-ts/lib/function';
+import {pipe} from 'fp-ts/lib/function';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {StatusCodes} from 'http-status-codes';
 import {getUserFromSession} from '../../authentication';
