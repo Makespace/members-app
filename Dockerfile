@@ -43,7 +43,8 @@ RUN npx tsc
 
 FROM bun AS dev_container
 RUN apt-get update \
-    && apt-get install -y git make
+    && apt-get install -y git make \
+    && ln -s /workspace/.devcontainer/db /db
 
 FROM node AS prod
 COPY --from=prod-deps /app/node_modules node_modules/
