@@ -26,6 +26,7 @@ export const getUserFromSession =
       ),
       E.map(session => ({
         emailAddress: session.passport.user.emailAddress,
+        primaryEmailAddress: session.passport.user.primaryEmailAddress,
         memberNumber: session.passport.user.memberNumber,
       })),
       O.fromEither

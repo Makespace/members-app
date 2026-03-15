@@ -1,42 +1,73 @@
 import {pipe} from 'fp-ts/lib/function';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {inArray, desc, eq} from 'drizzle-orm';
+import {and, desc, eq, inArray, isNotNull} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as RAE from 'fp-ts/ReadonlyNonEmptyArray';
-import {MemberCoreInfo} from '../return-types';
-import {membersTable} from '../state';
+import {MemberCoreInfo, MemberEmail} from '../return-types';
+import {memberEmailsTable, membersTable} from '../state';
 import {MemberCoreInfoPreMerge, mergeMemberCore} from './merge';
 import {MemberLinking} from '../member-linking';
-import { EmailAddress } from '../../../types';
-import { normaliseEmailAddress } from '../normalise-email-address';
+import {EmailAddress} from '../../../types';
+import {normaliseEmailAddress} from '../normalise-email-address';
+
+const getMemberEmails =
+  (db: BetterSQLite3Database) =>
+  (memberNumbers: number[]): Map<number, ReadonlyArray<MemberEmail>> => {
+    const emails = db
+      .select()
+      .from(memberEmailsTable)
+      .where(inArray(memberEmailsTable.memberNumber, memberNumbers))
+      .orderBy(desc(memberEmailsTable.addedAt))
+      .all();
+    const byMemberNumber = new Map<number, Array<MemberEmail>>();
+    emails.forEach(email => {
+      byMemberNumber.set(email.memberNumber, [
+        ...(byMemberNumber.get(email.memberNumber) ?? []),
+        {
+          emailAddress: email.emailAddress,
+          addedAt: email.addedAt,
+          verifiedAt: O.fromNullable(email.verifiedAt),
+        },
+      ]);
+    });
+    return byMemberNumber;
+  };
 
 const getMergedMember =
   (db: BetterSQLite3Database) =>
   (memberNumbers: number[]): O.Option<MemberCoreInfo> =>
     pipe(
-      db
-        .select()
-        .from(membersTable)
-        .where(inArray(membersTable.memberNumber, memberNumbers))
-        .orderBy(desc(membersTable.memberNumber))
-        .all(),
-      RA.match(
-        () => O.none,
-        rows =>
-          pipe(
-            rows,
-            RAE.map(
-              (row): MemberCoreInfoPreMerge => ({
-                ...row,
-                agreementSigned: O.fromNullable(row.agreementSigned),
-                superUserSince: O.fromNullable(row.superUserSince),
-              })
-            ),
-            records => mergeMemberCore(records, memberNumbers),
-            O.some
+      {
+        rows: db
+          .select()
+          .from(membersTable)
+          .where(inArray(membersTable.memberNumber, memberNumbers))
+          .orderBy(desc(membersTable.memberNumber))
+          .all(),
+        emailsByMemberNumber: getMemberEmails(db)(memberNumbers),
+      },
+      ({rows, emailsByMemberNumber}) =>
+        pipe(
+          rows,
+          RA.match(
+            () => O.none,
+            memberRows =>
+              pipe(
+                memberRows,
+                RAE.map(
+                  (row): MemberCoreInfoPreMerge => ({
+                    ...row,
+                    agreementSigned: O.fromNullable(row.agreementSigned),
+                    superUserSince: O.fromNullable(row.superUserSince),
+                    emails: emailsByMemberNumber.get(row.memberNumber) ?? [],
+                  })
+                ),
+                records => mergeMemberCore(records, memberNumbers),
+                O.some
+              )
           )
-      )
+        )
     );
 
 export const getMergedMemberSet =
@@ -66,11 +97,16 @@ export const findByEmail = (
   // A potential solution would be to introduce a proper primary key that represents a single user
   // and then have member numbers map to the primary key 1:M.
   const foundMemberNumbers = db.select({
-      memberNumber: membersTable.memberNumber,
+      memberNumber: memberEmailsTable.memberNumber,
     })
-    .from(membersTable)
-    .where(eq(membersTable.emailAddress, normaliseEmailAddress(email)))
-    .orderBy(desc(membersTable.memberNumber))
+    .from(memberEmailsTable)
+    .where(
+      and(
+        eq(memberEmailsTable.emailAddress, normaliseEmailAddress(email)),
+        isNotNull(memberEmailsTable.verifiedAt)
+      )
+    )
+    .orderBy(desc(memberEmailsTable.memberNumber))
     .all()
     .map(row => row.memberNumber);
   const groupedMemberNumbers = linking.mapAll(foundMemberNumbers);

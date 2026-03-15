@@ -4,9 +4,7 @@ import {html, Html, Safe} from '../types/html';
 export const memberNumberInputMinimal = (
   field: Safe,
   label: Safe,
-  _members: ReadonlyArray<
-    Pick<Member, 'memberNumber' | 'name' | 'emailAddress'>
-  >
+  _members: ReadonlyArray<Pick<Member, 'memberNumber' | 'name'>>
 ): Html => {
   return html`
     <label for="${field}">${label}</label>

@@ -6,6 +6,7 @@ import {Route, get} from './types/route';
 import {authRoutes} from './authentication';
 import {queryToHandler, commandToHandlers, ping} from './http';
 import {emailHandler} from './http/email-handler';
+import {sendEmailVerificationRoutes} from './commands/members/send-email-verification-route';
 
 export const initRoutes = (
   deps: Dependencies,
@@ -67,6 +68,7 @@ export const initRoutes = (
     query('/members', queries.members),
     ...command('members', 'create', commands.memberNumbers.linkNumberToEmail),
     ...command('members', 'edit-name', commands.members.editName),
+    ...command('members', 'add-email', commands.members.addEmail),
     ...command(
       'members',
       'edit-form-of-address',
@@ -74,9 +76,15 @@ export const initRoutes = (
     ),
     ...command(
       'members',
+      'change-primary-email',
+      commands.members.changePrimaryEmail
+    ),
+    ...command(
+      'members',
       'sign-owner-agreement',
       commands.members.signOwnerAgreement
     ),
+    ...sendEmailVerificationRoutes(deps, conf),
     ...command(
       'members',
       'rejoined-with-new',
@@ -96,6 +104,6 @@ export const initRoutes = (
     // Temporary location for POC - may move under individual equipments eventually.
     query('/trouble-tickets', queries.troubleTickets),
     query('/google', queries.logGoogleJson),
-    ...authRoutes(deps),
+    ...authRoutes(deps, conf),
   ];
 };

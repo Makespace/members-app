@@ -32,7 +32,7 @@ const renderMembers = (viewModel: ViewModel) =>
           <td>${renderMemberNumbers(member.pastMemberNumbers)}</td>
           <td>${sanitizeOption(member.name)}</td>
           <td>${sanitizeOption(member.formOfAddress)}</td>
-          <td>${sanitizeString(member.emailAddress)}</td>
+          <td>${sanitizeString(member.primaryEmailAddress)}</td>
           <td>${memberStatusTag(member.status)}</td>
         </tr>
       `

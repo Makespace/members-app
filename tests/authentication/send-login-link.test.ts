@@ -161,6 +161,50 @@ describe('send-log-in-link', () => {
         expect(deps.sendEmail).not.toHaveBeenCalled();
       });
     });
+
+    describe('when the member has an additional email address', () => {
+      const secondaryEmail = faker.internet.email() as EmailAddress;
+
+      beforeEach(async () => {
+        await framework.commands.members.addEmail({
+          memberNumber,
+          email: secondaryEmail,
+        });
+      });
+
+      it('does not allow login with an unverified additional email', async () => {
+        const result = await sendLogInLink(deps, conf)(secondaryEmail)();
+        expect(result).toStrictEqual(
+          E.left(
+            expect.objectContaining({
+              message: 'No member associated with that email',
+            })
+          )
+        );
+      });
+
+      describe('and that additional email has been verified', () => {
+        beforeEach(async () => {
+          await framework.commands.members.verifyEmail({
+            memberNumber,
+            email: secondaryEmail,
+          });
+        });
+
+        it('sends the login email to the matched verified address', async () => {
+          const result = getRightOrFail(
+            await sendLogInLink(deps, conf)(secondaryEmail)()
+          );
+
+          expect(deps.sendEmail).toHaveBeenCalledWith(
+            expect.objectContaining({
+              recipient: secondaryEmail,
+            })
+          );
+          expect(result).toStrictEqual(`Sent login link to ${secondaryEmail}`);
+        });
+      });
+    });
   });
 
   describe('when no member are setup', () => {

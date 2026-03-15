@@ -1,8 +1,17 @@
 import {Actor} from '../../../types';
-import {Member, MultipleMembers} from '../../members/return-types';
+import {EmailAddress} from '../../../types';
+import {Member} from '../return-types';
+
+type MultipleMembers = Map<number, Member>;
 
 const redactEmail = (member: Member): Member =>
-  Object.assign({}, member, {emailAddress: '******'});
+  Object.assign({}, member, {
+    primaryEmailAddress: '******' as EmailAddress,
+    emails: member.emails.map(email => ({
+      ...email,
+      emailAddress: '******' as EmailAddress,
+    })),
+  });
 
 // If a given |actor|, with the context of |details| is viewing |member|
 // should sensitive details (email) about that member be redacted.

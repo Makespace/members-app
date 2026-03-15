@@ -9,6 +9,7 @@ describe('liftActorOrUser', () => {
       tag: 'user',
       user: {
         emailAddress: 'admin@example.com' as EmailAddress,
+        primaryEmailAddress: 'admin@example.com' as EmailAddress,
         memberNumber: 1337,
       },
     };
@@ -20,6 +21,7 @@ describe('liftActorOrUser', () => {
   it('lifts users', () => {
     const user = {
       emailAddress: 'admin@example.com' as EmailAddress,
+      primaryEmailAddress: 'admin@example.com' as EmailAddress,
       memberNumber: 1337,
     };
     expect(liftActorOrUser(user)).toEqual({

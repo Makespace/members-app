@@ -6,15 +6,43 @@ import {Strategy as CustomStrategy} from 'passport-custom';
 import jwt from 'jsonwebtoken';
 import {Config} from '../configuration';
 import {Dependencies} from '../dependencies';
+import {EmailAddressCodec} from '../types';
 import {User} from '../types/user';
 import {logPassThru} from '../util';
 import {Logger} from 'pino';
 
+const LoginTokenPayload = t.strict({
+  purpose: t.literal('log-in'),
+  user: User,
+});
+
+const VerifyEmailTokenPayload = t.strict({
+  purpose: t.literal('verify-email'),
+  memberNumber: t.number,
+  emailAddress: EmailAddressCodec,
+});
+
+export type VerifyEmailTokenPayload = t.TypeOf<typeof VerifyEmailTokenPayload>;
+
+const createSignedToken =
+  (conf: Config) =>
+  (payload: object): string =>
+    jwt.sign(payload, conf.TOKEN_SECRET, {expiresIn: '10m'});
+
 const createMagicLink = (conf: Config) => (user: User) =>
   pipe(
-    jwt.sign(user, conf.TOKEN_SECRET, {expiresIn: '10m'}),
+    LoginTokenPayload.encode({purpose: 'log-in', user}),
+    createSignedToken(conf),
     token => `${conf.PUBLIC_URL}/auth/landing?token=${token}`
   );
+
+const createEmailVerificationLink =
+  (conf: Config) => (payload: VerifyEmailTokenPayload) =>
+    pipe(
+      VerifyEmailTokenPayload.encode(payload),
+      createSignedToken(conf),
+      token => `${conf.PUBLIC_URL}/auth/verify-email/landing?token=${token}`
+    );
 
 const MagicLinkQuery = t.strict({
   token: t.string,
@@ -26,14 +54,30 @@ const verifyToken = (token: string, secret: Config['TOKEN_SECRET']) =>
     failure('Could not verify token')
   );
 
-const decodeMagicLinkFromQuery =
+const decodeTokenFromQuery =
   (logger: Logger, conf: Config) => (input: unknown) =>
     pipe(
       input,
       logPassThru(logger, 'Attempting to decode magic link from query'), // Logging is required as a basic form of auth enumeration detection.
       MagicLinkQuery.decode,
-      E.chainW(({token}) => verifyToken(token, conf.TOKEN_SECRET)),
-      E.chainW(User.decode)
+      E.chainW(({token}) => verifyToken(token, conf.TOKEN_SECRET))
+    );
+
+export const decodeMagicLinkFromQuery =
+  (logger: Logger, conf: Config) => (input: unknown) =>
+    pipe(
+      input,
+      decodeTokenFromQuery(logger, conf),
+      E.chainW(LoginTokenPayload.decode),
+      E.map(payload => payload.user)
+    );
+
+export const decodeEmailVerificationFromQuery =
+  (logger: Logger, conf: Config) => (input: unknown) =>
+    pipe(
+      input,
+      decodeTokenFromQuery(logger, conf),
+      E.chainW(VerifyEmailTokenPayload.decode)
     );
 
 const strategy = (deps: Dependencies, conf: Config) => {
@@ -59,4 +103,9 @@ export const magicLink = {
   name: 'magiclink',
   strategy,
   create: createMagicLink,
+};
+
+export const emailVerificationLink = {
+  create: createEmailVerificationLink,
+  decodeFromQuery: decodeEmailVerificationFromQuery,
 };

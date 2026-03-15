@@ -3,7 +3,7 @@ import * as E from 'fp-ts/Either';
 import {html, safe, toLoggedInContent} from '../../types/html';
 import {Form} from '../../types/form';
 import {memberInput} from '../../templates/member-input';
-import {Member} from '../../read-models/members';
+import {Member} from '../../read-models/shared-state/return-types';
 
 type ViewModel = {
   members: ReadonlyArray<Member>;

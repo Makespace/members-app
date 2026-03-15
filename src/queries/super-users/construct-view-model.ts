@@ -33,7 +33,12 @@ export const constructViewModel =
       TE.map(() => ({
         user: user,
         superUsers: sharedReadModel.db
-          .select()
+          .select({
+            memberNumber: membersTable.memberNumber,
+            name: membersTable.name,
+            primaryEmailAddress: membersTable.primaryEmailAddress,
+            superUserSince: membersTable.superUserSince,
+          })
           .from(membersTable)
           .where(eq(membersTable.isSuperUser, true))
           .all(),

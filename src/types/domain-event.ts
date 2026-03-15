@@ -84,6 +84,29 @@ const MemberNumberLinkedToEmail = defineEvent('MemberNumberLinkedToEmail', {
   formOfAddress: tt.withFallback(t.union([t.string, t.undefined]), undefined),
 });
 
+const MemberEmailAdded = defineEvent('MemberEmailAdded', {
+  memberNumber: t.number,
+  email: EmailAddressCodec,
+});
+
+const MemberEmailVerificationRequested = defineEvent(
+  'MemberEmailVerificationRequested',
+  {
+    memberNumber: t.number,
+    email: EmailAddressCodec,
+  }
+);
+
+const MemberEmailVerified = defineEvent('MemberEmailVerified', {
+  memberNumber: t.number,
+  email: EmailAddressCodec,
+});
+
+const MemberPrimaryEmailChanged = defineEvent('MemberPrimaryEmailChanged', {
+  memberNumber: t.number,
+  email: EmailAddressCodec,
+});
+
 const LinkingMemberNumberToAnAlreadyUsedEmailAttempted = defineEvent(
   'LinkingMemberNumberToAnAlreadyUsedEmailAttempted',
   {
@@ -203,6 +226,10 @@ export const events = [
   SuperUserRevoked,
   TrainerAdded,
   MemberNumberLinkedToEmail,
+  MemberEmailAdded,
+  MemberEmailVerificationRequested,
+  MemberEmailVerified,
+  MemberPrimaryEmailChanged,
   LinkingMemberNumberToAnAlreadyUsedEmailAttempted,
   EquipmentTrainingSheetRegistered,
   EquipmentTrainingSheetRemoved,
@@ -233,6 +260,10 @@ export const DomainEvent = t.union([
   SuperUserRevoked.codec,
   TrainerAdded.codec,
   MemberNumberLinkedToEmail.codec,
+  MemberEmailAdded.codec,
+  MemberEmailVerificationRequested.codec,
+  MemberEmailVerified.codec,
+  MemberPrimaryEmailChanged.codec,
   LinkingMemberNumberToAnAlreadyUsedEmailAttempted.codec,
   EquipmentTrainingSheetRegistered.codec,
   EquipmentTrainingSheetRemoved.codec,

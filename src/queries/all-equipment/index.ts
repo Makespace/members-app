@@ -28,7 +28,7 @@ const getAreas = (db: SharedReadModel['db']): ViewModel['areas'] => {
         .select({
           name: membersTable.name,
           memberNumber: membersTable.memberNumber,
-          email: membersTable.emailAddress,
+          email: membersTable.primaryEmailAddress,
           agreementSignedAt: membersTable.agreementSigned,
         })
         .from(ownersTable)

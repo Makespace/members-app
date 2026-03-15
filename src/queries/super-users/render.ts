@@ -15,7 +15,7 @@ const renderSuperUsers = (superUsers: ViewModel['superUsers']) =>
         <tr>
           <td>${renderMemberNumber(member.memberNumber)}</td>
           <td>${sanitizeString(O.getOrElse(() => '-')(member.name))}</td>
-          <td>${safe(member.emailAddress)}</td>
+          <td>${safe(member.primaryEmailAddress)}</td>
           <td>
             ${member.superUserSince
               ? displayDate(DateTime.fromJSDate(member.superUserSince))

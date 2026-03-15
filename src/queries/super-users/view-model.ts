@@ -6,7 +6,7 @@ export type ViewModel = {
   superUsers: ReadonlyArray<{
     memberNumber: number;
     name: O.Option<string>;
-    emailAddress: string;
+    primaryEmailAddress: string;
     superUserSince: Date | null;
   }>;
 };

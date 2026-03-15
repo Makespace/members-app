@@ -4,7 +4,9 @@ import * as O from 'fp-ts/Option';
 import {blob, integer, sqliteTable, text} from 'drizzle-orm/sqlite-core';
 export const membersTable = sqliteTable('members', {
   memberNumber: integer('memberNumber').notNull().primaryKey(),
-  emailAddress: text('emailAddress').notNull().$type<EmailAddress>(),
+  primaryEmailAddress: text('primaryEmailAddress')
+    .notNull()
+    .$type<EmailAddress>(),
   gravatarHash: text('gravatarHash').notNull().$type<GravatarHash>(),
   name: blob('name', {mode: 'json'}).notNull().$type<O.Option<string>>(),
   formOfAddress: blob('formOfAddress', {mode: 'json'})
@@ -20,7 +22,7 @@ export const membersTable = sqliteTable('members', {
 const createMembersTable = sql`
   CREATE TABLE IF NOT EXISTS members (
     memberNumber INTEGER,
-    emailAddress TEXT,
+    primaryEmailAddress TEXT,
     gravatarHash TEXT,
     name BLOB,
     formOfAddress BLOB,
@@ -30,6 +32,24 @@ const createMembersTable = sql`
     status TEXT,
     joined INTEGER
   );`;
+
+export const memberEmailsTable = sqliteTable('memberEmails', {
+  memberNumber: integer('memberNumber')
+    .notNull()
+    .references(() => membersTable.memberNumber),
+  emailAddress: text('emailAddress').notNull().$type<EmailAddress>(),
+  addedAt: integer('addedAt', {mode: 'timestamp_ms'}).notNull(),
+  verifiedAt: integer('verifiedAt', {mode: 'timestamp_ms'}),
+});
+
+const createMemberEmailsTable = sql`
+  CREATE TABLE IF NOT EXISTS memberEmails (
+    memberNumber INTEGER,
+    emailAddress TEXT,
+    addedAt INTEGER,
+    verifiedAt INTEGER
+  );
+`;
 
 export const equipmentTable = sqliteTable('equipment', {
   id: text('id').notNull().primaryKey(),
@@ -150,6 +170,7 @@ const createTrainingStatsNotificationTable = sql`
 
 export const createTables = [
   createMembersTable,
+  createMemberEmailsTable,
   createEquipmentTable,
   createTrainersTable,
   createTrainedMembersTable,

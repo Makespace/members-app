@@ -79,7 +79,7 @@ const getOwner = (db: SharedReadModel['db'], memberNumber: number) =>
       .select({
         name: membersTable.name,
         memberNumber: membersTable.memberNumber,
-        email: membersTable.emailAddress,
+        email: membersTable.primaryEmailAddress,
       })
       .from(membersTable)
       .where(eq(membersTable.memberNumber, memberNumber))

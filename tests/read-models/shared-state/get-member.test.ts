@@ -238,7 +238,7 @@ describe('get-via-shared-read-model', () => {
     it('returns member number, email and gravatar hash', () => {
       const result = runQuery();
       expect(result.memberNumber).toEqual(memberNumber);
-      expect(result.emailAddress).toEqual('foo@example.com');
+      expect(result.primaryEmailAddress).toEqual('foo@example.com');
       expect(result.gravatarHash).toStrictEqual(
         gravatarHashFromEmail('foo@example.com')
       );
@@ -250,7 +250,7 @@ describe('get-via-shared-read-model', () => {
       );
       expect(result).toHaveLength(1);
       expect(result[0].memberNumber).toEqual(memberNumber);
-      expect(result[0].emailAddress).toEqual('foo@example.com');
+      expect(result[0].primaryEmailAddress).toEqual('foo@example.com');
     });
 
     it('can find member by email with case insensitive domain', () => {
@@ -259,7 +259,7 @@ describe('get-via-shared-read-model', () => {
       );
       expect(result).toHaveLength(1);
       expect(result[0].memberNumber).toEqual(memberNumber);
-      expect(result[0].emailAddress).toEqual('foo@example.com');
+      expect(result[0].primaryEmailAddress).toEqual('foo@example.com');
     });
 
     it('cannot find a non-existant email', () => {
@@ -788,6 +788,7 @@ describe('get-via-shared-read-model', () => {
             it('Searching for the member by either number (as actor) shows the same base data', () => {
               const asSelf = framework.sharedReadModel.members.getAsActor({
                 emailAddress: memberEmail,
+                primaryEmailAddress: memberEmail,
                 memberNumber: memberNumber,
               });
               const old = asSelf(memberNumber);

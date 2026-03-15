@@ -6,7 +6,7 @@ import {getGravatarThumbnail} from './avatar';
 export const loggedInUserSquare = (member: User) => html`
   <a href="/me">
     ${getGravatarThumbnail(
-      gravatarHashFromEmail(member.emailAddress),
+      gravatarHashFromEmail(member.primaryEmailAddress),
       member.memberNumber
     )}
   </a>

@@ -139,6 +139,7 @@ describe('get', () => {
         tag: 'user',
         user: {
           emailAddress: faker.internet.email() as EmailAddress,
+          primaryEmailAddress: faker.internet.email() as EmailAddress,
           memberNumber: faker.number.int(),
         },
       };
@@ -162,7 +163,7 @@ describe('get', () => {
         expect(trainedMember.memberNumber).toStrictEqual(
           markTrainedBy.memberNumber
         );
-        expect(trainedMember.emailAddress).toStrictEqual(newMember.email);
+        expect(trainedMember.primaryEmailAddress).toStrictEqual(newMember.email);
         expect(trainedMember.trainedByEmail).toStrictEqual(
           O.some(addTrainerMember.email)
         );
@@ -220,6 +221,7 @@ describe('get', () => {
         tag: 'user',
         user: {
           emailAddress: faker.internet.email() as EmailAddress,
+          primaryEmailAddress: faker.internet.email() as EmailAddress,
           memberNumber: faker.number.int(),
         },
       };
@@ -243,7 +245,7 @@ describe('get', () => {
         expect(trainedMember.memberNumber).toStrictEqual(
           markTrainedBy.memberNumber
         );
-        expect(trainedMember.emailAddress).toStrictEqual(newMember.email);
+        expect(trainedMember.primaryEmailAddress).toStrictEqual(newMember.email);
 
         // The trained by member is fake so there won't be an email registered.
         expect(trainedMember.trainedByEmail).toStrictEqual(O.none);
@@ -297,6 +299,7 @@ describe('get', () => {
           user: {
             // An 'admin'
             emailAddress: faker.internet.email() as EmailAddress,
+            primaryEmailAddress: faker.internet.email() as EmailAddress,
             memberNumber: faker.number.int(),
           },
         };
@@ -320,7 +323,7 @@ describe('get', () => {
           expect(trainedMember.memberNumber).toStrictEqual(
             markTrained.memberNumber
           );
-          expect(trainedMember.emailAddress).toStrictEqual(
+          expect(trainedMember.primaryEmailAddress).toStrictEqual(
             addTrainedMember.email
           );
           expect(trainedMember.trainedByEmail).toStrictEqual(
