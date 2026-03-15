@@ -5,11 +5,14 @@
 	"dockerComposeFile": "docker-compose.yaml",
 	"service": "app",
 	"workspaceFolder": "/workspace",
+	"containerUser": "node",
+	"remoteUser": "node",
+	"updateRemoteUserUID": true,
 	"shutdownAction": "stopCompose",
 	// Expose the application + the mailcatcher for checking emails.
 	"forwardPorts": [8080, 1080],
 	//  Wipes the database on every start.
-	"postStartCommand": "rm -rf /db && mkdir -p /db",
+	"postStartCommand": "mkdir -p /workspace/.devcontainer/db && rm -rf /workspace/.devcontainer/db/*",
 	"customizations": {
 		"vscode": {
 			"extensions": [
