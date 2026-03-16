@@ -139,7 +139,6 @@ describe('get', () => {
         tag: 'user',
         user: {
           emailAddress: faker.internet.email() as EmailAddress,
-          primaryEmailAddress: faker.internet.email() as EmailAddress,
           memberNumber: faker.number.int(),
         },
       };
@@ -221,7 +220,6 @@ describe('get', () => {
         tag: 'user',
         user: {
           emailAddress: faker.internet.email() as EmailAddress,
-          primaryEmailAddress: faker.internet.email() as EmailAddress,
           memberNumber: faker.number.int(),
         },
       };
@@ -299,7 +297,6 @@ describe('get', () => {
           user: {
             // An 'admin'
             emailAddress: faker.internet.email() as EmailAddress,
-            primaryEmailAddress: faker.internet.email() as EmailAddress,
             memberNumber: faker.number.int(),
           },
         };

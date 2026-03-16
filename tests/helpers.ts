@@ -41,9 +41,6 @@ export const userActor = (): UserActor => ({
   tag: 'user',
   user: {
     emailAddress: getRightOrFail(EmailAddressCodec.decode('test@test.com')),
-    primaryEmailAddress: getRightOrFail(
-      EmailAddressCodec.decode('test@test.com')
-    ),
     memberNumber: 12,
   },
 });

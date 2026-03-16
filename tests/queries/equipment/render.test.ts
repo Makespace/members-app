@@ -87,7 +87,6 @@ describe('Render equipment page', () => {
     describe('regular member view', () => {
         const regularMember: User = {
             emailAddress: faker.internet.email() as EmailAddress,
-            primaryEmailAddress: faker.internet.email() as EmailAddress,
             memberNumber: faker.number.int({min: 1}),
         };
         const memberDetails: Pick<ViewModel, 'isSuperUser' | 'isSuperUserOrOwnerOfArea' | 'user' | 'isSuperUserOrTrainerOfArea'> = {
@@ -116,7 +115,6 @@ describe('Render equipment page', () => {
     describe('super user view', () => {
         const superUser: User = {
             emailAddress: faker.internet.email() as EmailAddress,
-            primaryEmailAddress: faker.internet.email() as EmailAddress,
             memberNumber: faker.number.int({min: 1}),
         };
         const memberDetails: Pick<ViewModel, 'isSuperUser' | 'isSuperUserOrOwnerOfArea' | 'user' | 'isSuperUserOrTrainerOfArea'> = {

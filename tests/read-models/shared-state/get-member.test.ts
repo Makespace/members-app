@@ -788,7 +788,6 @@ describe('get-via-shared-read-model', () => {
             it('Searching for the member by either number (as actor) shows the same base data', () => {
               const asSelf = framework.sharedReadModel.members.getAsActor({
                 emailAddress: memberEmail,
-                primaryEmailAddress: memberEmail,
                 memberNumber: memberNumber,
               });
               const old = asSelf(memberNumber);

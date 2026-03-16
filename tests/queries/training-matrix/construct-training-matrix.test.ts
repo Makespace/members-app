@@ -284,7 +284,6 @@ describe('construct-training-matrix', () => {
             tag: "user",
             user: {
               emailAddress: existingTrainerMetalMill.email,
-              primaryEmailAddress: existingTrainerMetalMill.email,
               memberNumber: existingTrainerMetalMill.memberNumber,
             }
           },
@@ -368,7 +367,6 @@ describe('construct-training-matrix', () => {
             tag: "user",
             user: {
               emailAddress: existingTrainerMetalMill.email,
-              primaryEmailAddress: existingTrainerMetalMill.email,
               memberNumber: existingTrainerMetalMill.memberNumber,
             }
           },

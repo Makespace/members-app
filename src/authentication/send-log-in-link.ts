@@ -73,7 +73,6 @@ export const sendLogInLink = (
   const email = toEmail(matchedEmail)(
     magicLink.create(conf)({
       emailAddress: matchedEmail,
-      primaryEmailAddress: members[0].primaryEmailAddress,
       memberNumber: members[0].memberNumber,
     })
   );
