@@ -22,7 +22,7 @@ const VerifyEmailTokenPayload = t.strict({
   emailAddress: EmailAddressCodec,
 });
 
-export type VerifyEmailTokenPayload = t.TypeOf<typeof VerifyEmailTokenPayload>;
+type VerifyEmailTokenPayload = t.TypeOf<typeof VerifyEmailTokenPayload>;
 
 const createSignedToken =
   (conf: Config) =>
@@ -63,7 +63,7 @@ const decodeTokenFromQuery =
       E.chainW(({token}) => verifyToken(token, conf.TOKEN_SECRET))
     );
 
-export const decodeMagicLinkFromQuery =
+const decodeMagicLinkFromQuery =
   (logger: Logger, conf: Config) => (input: unknown) =>
     pipe(
       input,
@@ -72,7 +72,7 @@ export const decodeMagicLinkFromQuery =
       E.map(payload => payload.user)
     );
 
-export const decodeEmailVerificationFromQuery =
+const decodeEmailVerificationFromQuery =
   (logger: Logger, conf: Config) => (input: unknown) =>
     pipe(
       input,

@@ -10,7 +10,7 @@ const codec = t.strict({
   email: EmailAddressCodec,
 });
 
-export type VerifyMemberEmail = t.TypeOf<typeof codec>;
+type VerifyMemberEmail = t.TypeOf<typeof codec>;
 
 const process: Command<VerifyMemberEmail>['process'] = input => {
   const state = projectMemberEmailStates(input.events).get(

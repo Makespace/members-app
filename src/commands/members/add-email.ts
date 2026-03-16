@@ -14,7 +14,7 @@ const codec = t.strict({
   email: EmailAddressCodec,
 });
 
-export type AddMemberEmail = t.TypeOf<typeof codec>;
+type AddMemberEmail = t.TypeOf<typeof codec>;
 
 const process: Command<AddMemberEmail>['process'] = input => {
   const states = projectMemberEmailStates(input.events);

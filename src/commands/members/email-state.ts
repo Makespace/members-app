@@ -6,7 +6,7 @@ type EmailDetails = {
   verified: boolean;
 };
 
-export type MemberEmailState = {
+type MemberEmailState = {
   memberNumber: number;
   primaryEmailAddress: EmailAddress;
   emails: Map<EmailAddress, EmailDetails>;

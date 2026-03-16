@@ -12,7 +12,7 @@ const codec = t.strict({
   email: EmailAddressCodec,
 });
 
-export type ChangeMemberPrimaryEmail = t.TypeOf<typeof codec>;
+type ChangeMemberPrimaryEmail = t.TypeOf<typeof codec>;
 
 const process: Command<ChangeMemberPrimaryEmail>['process'] = input => {
   const state = projectMemberEmailStates(input.events).get(

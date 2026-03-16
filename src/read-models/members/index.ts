@@ -5,4 +5,3 @@ export const members = {
 };
 
 export type {FailedLinking} from './failed-linking';
-export type {Member} from './return-types';
