@@ -10,15 +10,17 @@ import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 
 type ViewModel = {
-  user: User;
-  memberNumber: number;
+  user: User; // The user logged in
+  memberNumber: number; // The user we are updating the email for.
+
+  // TODO - Show the emails already registered for this user.
 };
 
 const renderForm = (viewModel: ViewModel) =>
   pipe(
     html`
       <h1>Add email</h1>
-      <form action="?next=/me" method="post">
+      <form action="?next=/member/${viewModel.memberNumber}" method="post">
         <label for="email">Email address</label>
         <input type="email" name="email" id="email" />
         <input
