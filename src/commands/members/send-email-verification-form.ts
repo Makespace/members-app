@@ -1,7 +1,7 @@
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
 import {html, safe, sanitizeString, toLoggedInContent} from '../../types/html';
-import {User} from '../../types';
+import {EmailAddressCodec, User} from '../../types';
 import {Form} from '../../types/form';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
@@ -40,7 +40,7 @@ const renderForm = (viewModel: ViewModel) =>
 
 const paramsCodec = t.strict({
   member: tt.NumberFromString,
-  email: t.string,
+  email: EmailAddressCodec,
 });
 
 const constructForm: Form<ViewModel>['constructForm'] =
