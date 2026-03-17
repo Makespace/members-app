@@ -13,7 +13,6 @@ import { renderTrainingMatrix } from '../training-matrix/render';
 import * as O from 'fp-ts/Option';
 import { MemberEmail } from '../../read-models/shared-state/return-types';
 import { EmailAddress } from '../../types';
-import { tooltip } from '../shared-render/tool-tip';
 
 const editFormOfAddress = (viewModel: ViewModel) => html`
   <a
@@ -23,9 +22,9 @@ const editFormOfAddress = (viewModel: ViewModel) => html`
   </a>
 `;
 
-const sendVerifyEmail = (email: EmailAddress) => html`
+const sendVerifyEmail = (memberNumber: number, email: EmailAddress) => html`
   <a
-    href="/members/send-email-verification?email=${sanitizeString(email)}"
+    href="/members/send-email-verification?email=${sanitizeString(email)}&member=${memberNumber}"
   >
     Send Verification Email
   </a>
@@ -89,7 +88,7 @@ const renderEmailAddresses = (viewModel: ViewModel) => {
     <tr>
       <td></td>
       <td>${sanitizeString(email.emailAddress)}${O.isSome(email.verifiedAt) ? html`✅` : html``}</td>
-      <td>${O.isSome(email.verifiedAt) ? setPrimaryEmail(email.emailAddress): sendVerifyEmail(email.emailAddress)}</td>
+      <td>${O.isSome(email.verifiedAt) ? setPrimaryEmail(email.emailAddress): sendVerifyEmail(viewModel.member.memberNumber, email.emailAddress)}</td>
     </tr>
     `;
   };

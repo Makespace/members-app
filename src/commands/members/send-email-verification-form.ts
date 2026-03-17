@@ -19,13 +19,17 @@ const renderForm = (viewModel: ViewModel) =>
   pipe(
     html`
       <h1>Send email verification</h1>
+      <p>
+        In order to finish adding an email to your profile it needs to be verified. Click the button below
+        to send an email with a verification link to '${sanitizeString(viewModel.emailAddress)}'
+      </p>
       <form action="?next=/me" method="post">
-        <label for="email">Email address</label>
         <input
-          type="email"
+          type="hidden"
           name="email"
           id="email"
           value="${sanitizeString(viewModel.emailAddress)}"
+          readonly
         />
         <input
           type="hidden"

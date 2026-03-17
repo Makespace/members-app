@@ -6,7 +6,6 @@ import {Route, get} from './types/route';
 import {authRoutes} from './authentication';
 import {queryToHandler, commandToHandlers, ping} from './http';
 import {emailHandler} from './http/email-handler';
-import {sendEmailVerificationRoutes} from './commands/members/send-email-verification-route';
 
 export const initRoutes = (
   deps: Dependencies,
@@ -84,7 +83,11 @@ export const initRoutes = (
       'sign-owner-agreement',
       commands.members.signOwnerAgreement
     ),
-    ...sendEmailVerificationRoutes(deps, conf),
+    ...command(
+      'members',
+      'send-email-verification',
+      commands.members.sendEmailVerification
+    ),
     ...command(
       'members',
       'rejoined-with-new',
