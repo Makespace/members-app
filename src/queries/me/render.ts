@@ -1,6 +1,5 @@
-import {pipe} from 'fp-ts/lib/function';
 import {getGravatarThumbnail} from '../../templates/avatar';
-import {Html, html, joinHtml, safe, sanitizeOption, sanitizeString} from '../../types/html';
+import {Html, html, joinHtml, sanitizeOption, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
 import {renderMemberNumber} from '../../templates/member-number';
 import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
@@ -12,8 +11,8 @@ import {howToGetTrained} from '../shared-render/training-status';
 import {ownerResources} from './owner-resources';
 import { renderTrainingMatrix } from '../training-matrix/render';
 import * as O from 'fp-ts/Option';
-import { tooltip } from '../shared-render/tool-tip';
 import { MemberEmail } from '../../read-models/shared-state/return-types';
+import { EmailAddress } from '../../types';
 
 const editFormOfAddress = (viewModel: ViewModel) => html`
   <a
@@ -23,21 +22,27 @@ const editFormOfAddress = (viewModel: ViewModel) => html`
   </a>
 `;
 
-// TODO - Hook this up to a form
-const validateEmail = (viewModel: ViewModel, email: MemberEmail) => html`
+const sendVerifyEmail = (email: EmailAddress) => html`
   <a
-    href="/members/send-email-verification?member=${viewModel.member.memberNumber}"
+    href="/members/send-email-verification?email=${sanitizeString(email)}"
   >
-    Send Validation Email
+    Send Verification Email
   </a>
 `;
 
-// TODO - Hook this up to a form
-const setPrimaryEmail = (viewModel: ViewModel, email: MemberEmail) => html`
+const setPrimaryEmail = (email: EmailAddress) => html`
   <a
-    href="/members/change-primary-email?member=${viewModel.member.memberNumber}"
+    href="/members/change-primary-email?email=${sanitizeString(email)}"
   >
     Set Primary Email
+  </a>
+`;
+
+const addEmail = () => html`
+  <a
+    href="/members/add-email"
+  >
+    Add New Email
   </a>
 `;
 
@@ -74,24 +79,33 @@ const sortMemberEmailByVerifiedThenAddedDate = (a: MemberEmail, b: MemberEmail):
 };
 
 const renderEmailAddresses = (viewModel: ViewModel) => {
-  const rows: Html[] = [];
-  rows.push(
-    html`- ${sanitizeString(viewModel.member.primaryEmailAddress)} <i class="fa-solid fa-check-double"></i> ${tooltip(safe('The primary email address for this member'))}`
-  );
+  const emails = viewModel.member.emails.filter(
+    email => email.emailAddress != viewModel.member.primaryEmailAddress
+  ).toSorted(sortMemberEmailByVerifiedThenAddedDate);
 
-  for (const email of viewModel.member.emails.toSorted(sortMemberEmailByVerifiedThenAddedDate)) {
-    if (O.isSome(email.verifiedAt)) {
-      rows.push(
-        html`- ${sanitizeString(email.emailAddress)} <i class="fa-solid fa-check"></i> ${setPrimaryEmail(viewModel, email)}`
-      );
-    } else {
-      rows.push(
-        html`- ${sanitizeString(email.emailAddress)} <i class="fa-solid fa-exclamation"></i> ${validateEmail(viewModel, email)}`
-      );
-    }
-  }
+  const renderEmailTableRow = (email: MemberEmail): Html => {
+    return html`
+    <tr>
+      <td></td>
+      <td>${sanitizeString(email.emailAddress)}${O.isSome(email.verifiedAt) ? html`✅` : html``}</td>
+      <td>${O.isSome(email.verifiedAt) ? setPrimaryEmail(email.emailAddress): sendVerifyEmail(email.emailAddress)}</td>
+    </tr>
+    `;
+  };
 
-  return joinHtml(rows);
+  return html`<table>
+    <tr>
+      <td>Primary</td>
+      <td>${sanitizeString(viewModel.member.primaryEmailAddress)} ✅</td>
+      <td></td>
+    </tr>
+    ${joinHtml(emails.toSorted(sortMemberEmailByVerifiedThenAddedDate).map(renderEmailTableRow))}
+    <tr>
+      <td colspan="3">
+        ${addEmail()}
+      </td>
+    </tr>
+  </table>`;
 };
 
 const renderMemberDetails = (viewModel: ViewModel) => html`
