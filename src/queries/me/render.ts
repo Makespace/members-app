@@ -13,6 +13,7 @@ import { renderTrainingMatrix } from '../training-matrix/render';
 import * as O from 'fp-ts/Option';
 import { MemberEmail } from '../../read-models/shared-state/return-types';
 import { EmailAddress } from '../../types';
+import { tooltip } from '../shared-render/tool-tip';
 
 const editFormOfAddress = (viewModel: ViewModel) => html`
   <a
@@ -38,9 +39,9 @@ const setPrimaryEmail = (email: EmailAddress) => html`
   </a>
 `;
 
-const addEmail = () => html`
+const addEmail = (memberNumber: number) => html`
   <a
-    href="/members/add-email"
+    href="/members/add-email?member=${memberNumber}"
   >
     Add New Email
   </a>
@@ -102,7 +103,7 @@ const renderEmailAddresses = (viewModel: ViewModel) => {
     ${joinHtml(emails.toSorted(sortMemberEmailByVerifiedThenAddedDate).map(renderEmailTableRow))}
     <tr>
       <td colspan="3">
-        ${addEmail()}
+        ${addEmail(viewModel.member.memberNumber)}
       </td>
     </tr>
   </table>`;
