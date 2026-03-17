@@ -1,6 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import {getGravatarThumbnail} from '../../templates/avatar';
-import {html, joinHtml, safe, sanitizeOption, sanitizeString} from '../../types/html';
+import {Html, html, joinHtml, safe, sanitizeOption, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
 import {renderMemberNumber} from '../../templates/member-number';
 import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
@@ -12,7 +12,8 @@ import {howToGetTrained} from '../shared-render/training-status';
 import {ownerResources} from './owner-resources';
 import { renderTrainingMatrix } from '../training-matrix/render';
 import * as O from 'fp-ts/Option';
-import * as RA from 'fp-ts/ReadonlyArray';
+import { tooltip } from '../shared-render/tool-tip';
+import { MemberEmail } from '../../read-models/shared-state/return-types';
 
 const editFormOfAddress = (viewModel: ViewModel) => html`
   <a
@@ -22,91 +23,76 @@ const editFormOfAddress = (viewModel: ViewModel) => html`
   </a>
 `;
 
+// TODO - Hook this up to a form
+const validateEmail = (viewModel: ViewModel, email: MemberEmail) => html`
+  <a
+    href="/members/send-email-verification?member=${viewModel.member.memberNumber}"
+  >
+    Send Validation Email
+  </a>
+`;
+
+// TODO - Hook this up to a form
+const setPrimaryEmail = (viewModel: ViewModel, email: MemberEmail) => html`
+  <a
+    href="/members/change-primary-email?member=${viewModel.member.memberNumber}"
+  >
+    Set Primary Email
+  </a>
+`;
+
 const editAvatar = () =>
   html`<a href="https://gravatar.com/profile">Edit via Gravatar</a>`;
 
-const emailActionForm = (
-  action: string,
-  label: string,
-  viewModel: ViewModel,
-  emailAddress: string
-) => html`
-  <form action="${safe(action)}?next=/me" method="post">
-    <input
-      type="hidden"
-      name="memberNumber"
-      value="${viewModel.member.memberNumber}"
-    />
-    <input type="hidden" name="email" value="${safe(emailAddress)}" />
-    <button type="submit">${safe(label)}</button>
-  </form>
-`;
-
-const renderEmailStatus = (verifiedAt: O.Option<Date>) =>
-  O.isSome(verifiedAt) ? 'Verified' : 'Unverified';
-
-const renderEmailActions = (
-  viewModel: ViewModel,
-  emailAddress: string,
-  verifiedAt: O.Option<Date>
-) => {
-  if (O.isNone(verifiedAt)) {
-    return emailActionForm(
-      '/members/send-email-verification',
-      'Send verification email',
-      viewModel,
-      emailAddress
-    );
+const sortMemberEmailByVerifiedThenAddedDate = (a: MemberEmail, b: MemberEmail): 1 | -1 | 0 => {
+  if (O.isSome(a.verifiedAt) && O.isSome(b.verifiedAt)) {
+    const aVerifiedTimestamp = a.verifiedAt.value.getTime();
+    const bVerifiedTimestamp = b.verifiedAt.value.getTime();
+    if (aVerifiedTimestamp > bVerifiedTimestamp) {
+      return 1;
+    }
+    if (aVerifiedTimestamp === bVerifiedTimestamp) {
+      return 0;
+    }
+    return -1;
   }
-  if (emailAddress !== viewModel.member.primaryEmailAddress) {
-    return emailActionForm(
-      '/members/change-primary-email',
-      'Make primary',
-      viewModel,
-      emailAddress
-    );
+  if (O.isSome(a.verifiedAt) && O.isNone(b.verifiedAt)) {
+    return 1;
   }
-  return html`Primary`;
+  if (O.isSome(b.verifiedAt) && O.isNone(a.verifiedAt)) {
+    return -1;
+  }
+  const aAddedTimestamp = a.addedAt.getTime();
+  const bAddedTimestamp = b.addedAt.getTime();
+  if (aAddedTimestamp > bAddedTimestamp) {
+    return 1;
+  }
+  if (aAddedTimestamp === bAddedTimestamp) {
+    return 0;
+  }
+  return -1;
 };
 
-const renderEmailAddresses = (viewModel: ViewModel) =>
-  pipe(
-    viewModel.member.emails,
-    RA.map(email => html`
-      <tr>
-        <td>${sanitizeString(email.emailAddress)}</td>
-        <td>${sanitizeString(renderEmailStatus(email.verifiedAt))}</td>
-        <td>${renderEmailActions(viewModel, email.emailAddress, email.verifiedAt)}</td>
-      </tr>
-    `),
-    rows => html`
-      <table>
-        <thead>
-          <tr>
-            <th>Email address</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${joinHtml(rows)}
-        </tbody>
-      </table>
-    `
+const renderEmailAddresses = (viewModel: ViewModel) => {
+  const rows: Html[] = [];
+  rows.push(
+    html`- ${sanitizeString(viewModel.member.primaryEmailAddress)} <i class="fa-solid fa-check-double"></i> ${tooltip(safe('The primary email address for this member'))}`
   );
 
-const renderAddEmailForm = (viewModel: ViewModel) => html`
-  <form action="/members/add-email?next=/me" method="post">
-    <label for="add-email-address">Add another email address</label>
-    <input type="email" id="add-email-address" name="email" />
-    <input
-      type="hidden"
-      name="memberNumber"
-      value="${viewModel.member.memberNumber}"
-    />
-    <button type="submit">Add email</button>
-  </form>
-`;
+  for (const email of viewModel.member.emails.toSorted(sortMemberEmailByVerifiedThenAddedDate)) {
+    if (O.isSome(email.verifiedAt)) {
+      rows.push(
+        html`- ${sanitizeString(email.emailAddress)} <i class="fa-solid fa-check"></i> ${setPrimaryEmail(viewModel, email)}`
+      );
+    } else {
+      rows.push(
+        html`- ${sanitizeString(email.emailAddress)} <i class="fa-solid fa-exclamation"></i> ${validateEmail(viewModel, email)}`
+      );
+    }
+  }
+
+  return joinHtml(rows);
+};
 
 const renderMemberDetails = (viewModel: ViewModel) => html`
   <table>
@@ -116,8 +102,8 @@ const renderMemberDetails = (viewModel: ViewModel) => html`
         <td>${renderMemberNumber(viewModel.member.memberNumber)}</td>
       </tr>
       <tr>
-        <th scope="row">Primary email</th>
-        <td>${sanitizeString(viewModel.member.primaryEmailAddress)}</td>
+        <th scope="row">Email addresses</th>
+        <td>${renderEmailAddresses(viewModel)}</td>
       </tr>
       <tr>
         <th scope="row">
@@ -156,11 +142,6 @@ export const render = (viewModel: ViewModel) => html`
     <section>
       <h2>Your details</h2>
       ${renderMemberDetails(viewModel)}
-    </section>
-    <section class="stack">
-      <h2>Email addresses</h2>
-      ${renderEmailAddresses(viewModel)}
-      ${renderAddEmailForm(viewModel)}
     </section>
     <section>
       ${renderTrainingMatrix(viewModel.trainingMatrix)}
