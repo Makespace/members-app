@@ -49,6 +49,7 @@ export type TrainerFor = {
 export type MemberEmail = {
   emailAddress: EmailAddress;
   verifiedAt: O.Option<Date>;
+  verificationLastSent: O.Option<Date>;
   addedAt: Date;
 };
 

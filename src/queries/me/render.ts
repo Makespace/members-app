@@ -13,6 +13,7 @@ import { renderTrainingMatrix } from '../training-matrix/render';
 import * as O from 'fp-ts/Option';
 import { MemberEmail } from '../../read-models/shared-state/return-types';
 import { EmailAddress } from '../../types';
+import { SEND_EMAIL_VERIFICATION_COOLDOWN_MS } from '../../commands/members/email-state';
 
 const editFormOfAddress = (viewModel: ViewModel) => html`
   <a
@@ -22,13 +23,22 @@ const editFormOfAddress = (viewModel: ViewModel) => html`
   </a>
 `;
 
-const sendVerifyEmail = (memberNumber: number, email: EmailAddress) => html`
-  <a
-    href="/members/send-email-verification?email=${sanitizeString(email)}&member=${memberNumber}"
-  >
-    Send Verification Email
-  </a>
-`;
+const sendVerifyEmail = (memberNumber: number, email: MemberEmail) => {
+  if (
+    O.isSome(email.verificationLastSent) && (
+      (Date.now() - email.verificationLastSent.value.getTime()) < SEND_EMAIL_VERIFICATION_COOLDOWN_MS
+    )
+  ) {
+    return html`Verification Email Sent!`
+  }
+  return html`
+    <a
+      href="/members/send-email-verification?email=${sanitizeString(email.emailAddress)}&member=${memberNumber}"
+    >
+      Send Verification Email
+    </a>
+  `;
+}
 
 const setPrimaryEmail = (email: EmailAddress) => html`
   <a
@@ -88,7 +98,11 @@ const renderEmailAddresses = (viewModel: ViewModel) => {
     <tr>
       <td></td>
       <td>${sanitizeString(email.emailAddress)}${O.isSome(email.verifiedAt) ? html`✅` : html``}</td>
-      <td>${O.isSome(email.verifiedAt) ? setPrimaryEmail(email.emailAddress): sendVerifyEmail(viewModel.member.memberNumber, email.emailAddress)}</td>
+      <td>${
+        O.isSome(email.verifiedAt)
+          ? setPrimaryEmail(email.emailAddress)
+          : sendVerifyEmail(viewModel.member.memberNumber, email)
+      }</td>
     </tr>
     `;
   };

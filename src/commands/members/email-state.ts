@@ -2,43 +2,17 @@ import {DomainEvent, EventOfType, isEventOfType} from '../../types/domain-event'
 import {EmailAddress} from '../../types';
 import {normaliseEmailAddress} from '../../read-models/shared-state/normalise-email-address';
 
+export const SEND_EMAIL_VERIFICATION_COOLDOWN_MS = 10 * 60 * 1000;
+
 type EmailDetails = {
   verified: boolean;
+  verificationLastSent: Date | undefined;
 };
 
 type MemberEmailState = {
   memberNumber: number;
   primaryEmailAddress: EmailAddress;
-  emails: Map<EmailAddress, EmailDetails>;
-};
-
-const ensureMemberState = (
-  states: Map<number, MemberEmailState>,
-  memberNumber: number,
-  primaryEmailAddress: EmailAddress
-): MemberEmailState => {
-  const existingState = states.get(memberNumber);
-  if (existingState !== undefined) {
-    return existingState;
-  }
-  const newState: MemberEmailState = {
-    memberNumber,
-    primaryEmailAddress,
-    emails: new Map(),
-  };
-  states.set(memberNumber, newState);
-  return newState;
-};
-
-const addOrUpdateEmail = (
-  state: MemberEmailState,
-  emailAddress: EmailAddress,
-  verified: boolean
-) => {
-  const existingEmail = state.emails.get(emailAddress);
-  state.emails.set(emailAddress, {
-    verified: existingEmail?.verified ?? verified,
-  });
+  emails: Record<EmailAddress, EmailDetails>;
 };
 
 const applyLegacyLinkedEmail = (
@@ -46,9 +20,22 @@ const applyLegacyLinkedEmail = (
   event: EventOfType<'MemberNumberLinkedToEmail'>
 ) => {
   const emailAddress = normaliseEmailAddress(event.email);
-  const state = ensureMemberState(states, event.memberNumber, emailAddress);
-  state.primaryEmailAddress = emailAddress;
-  addOrUpdateEmail(state, emailAddress, true);
+  const state = states.get(event.memberNumber);
+  if (state) {
+    state.primaryEmailAddress = emailAddress;
+    return;
+  }
+  states.set(event.memberNumber, {
+    memberNumber: event.memberNumber,
+    primaryEmailAddress: event.email,
+    emails: {
+      [emailAddress]: {
+        verified: true,
+        verificationLastSent: undefined,
+      }
+    }
+  });
+
 };
 
 const applyEmailAdded = (
@@ -57,10 +44,13 @@ const applyEmailAdded = (
 ) => {
   const emailAddress = normaliseEmailAddress(event.email);
   const state = states.get(event.memberNumber);
-  if (state === undefined) {
+  if (state === undefined || state.emails[emailAddress]) {
     return;
   }
-  addOrUpdateEmail(state, emailAddress, false);
+  state.emails[emailAddress] = {
+    verificationLastSent: undefined,
+    verified: false,
+  };
 };
 
 const applyEmailVerified = (
@@ -69,10 +59,33 @@ const applyEmailVerified = (
 ) => {
   const emailAddress = normaliseEmailAddress(event.email);
   const state = states.get(event.memberNumber);
-  if (state === undefined || !state.emails.has(emailAddress)) {
+  if (!state) {
     return;
   }
-  state.emails.set(emailAddress, {verified: true});
+  const emailInfo = state.emails[emailAddress];
+  if (!emailInfo) {
+    return;
+  }
+  emailInfo.verified = true;
+};
+
+const applyEmailVerificationRequested = (
+  states: Map<number, MemberEmailState>,
+  event: EventOfType<'MemberEmailVerificationRequested'>
+) => {
+  const emailAddress = normaliseEmailAddress(event.email);
+  const state = states.get(event.memberNumber);
+  if (!state) {
+    return;
+  }
+  const emailInfo = state.emails[emailAddress];
+  if (!emailInfo) {
+    return;
+  }
+  if (!emailInfo.verificationLastSent || emailInfo.verificationLastSent.getTime() < event.recordedAt.getTime()) {
+    emailInfo.verificationLastSent = event.recordedAt;
+    return;
+  }
 };
 
 const applyPrimaryEmailChanged = (
@@ -81,7 +94,7 @@ const applyPrimaryEmailChanged = (
 ) => {
   const emailAddress = normaliseEmailAddress(event.email);
   const state = states.get(event.memberNumber);
-  if (state === undefined || !state.emails.has(emailAddress)) {
+  if (state === undefined || !state.emails[emailAddress]) {
     return;
   }
   state.primaryEmailAddress = emailAddress;
@@ -106,6 +119,11 @@ export const projectMemberEmailStates = (
     }
     if (isEventOfType('MemberPrimaryEmailChanged')(event)) {
       applyPrimaryEmailChanged(states, event);
+      return;
+    }
+    if (isEventOfType('MemberEmailVerificationRequested')(event)) {
+      applyEmailVerificationRequested(states, event);
+      return;
     }
   });
   return states;
@@ -117,7 +135,7 @@ export const findMemberNumberByEmail = (
 ): number | undefined => {
   const normalisedEmailAddress = normaliseEmailAddress(emailAddress);
   for (const state of states.values()) {
-    if (state.emails.has(normalisedEmailAddress)) {
+    if (state.emails[normalisedEmailAddress]) {
       return state.memberNumber;
     }
   }

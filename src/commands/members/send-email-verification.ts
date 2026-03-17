@@ -4,8 +4,9 @@ import * as tt from 'io-ts-types';
 import {Command} from '../command';
 import {EmailAddressCodec, constructEvent} from '../../types';
 import {isSelfOrPrivileged} from '../is-self-or-privileged';
-import {projectMemberEmailStates} from './email-state';
+import {projectMemberEmailStates, SEND_EMAIL_VERIFICATION_COOLDOWN_MS} from './email-state';
 import {normaliseEmailAddress} from '../../read-models/shared-state/normalise-email-address';
+import { publish } from 'pubsub-js';
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,
@@ -23,10 +24,22 @@ const process: Command<SendMemberEmailVerification>['process'] = input => {
   }
 
   const emailAddress = normaliseEmailAddress(input.command.email);
-  const email = state.emails.get(emailAddress);
-  if (email === undefined || email.verified) {
+  const email = state.emails[emailAddress];
+  if (!email || email.verified) {
     return O.none;
   }
+
+  if (email.verificationLastSent) {
+    const sinceLastMs = Date.now() - email.verificationLastSent.getTime();
+    if (sinceLastMs < SEND_EMAIL_VERIFICATION_COOLDOWN_MS) {
+      return O.none;
+    }
+  }
+
+  publish('send-email-verification', {
+    member: input.command.memberNumber,
+    email: input.command.email,
+  });
 
   return O.some(
     constructEvent('MemberEmailVerificationRequested')({
