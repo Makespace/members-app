@@ -1,5 +1,5 @@
 import {Request, Response} from 'express';
-import {isolatedPageTemplate} from '../../templates';
+import {isolatedPageTemplate, oopsPage} from '../../templates';
 import {StatusCodes} from 'http-status-codes';
 import {
   html,
@@ -9,28 +9,43 @@ import {
 } from '../../types/html';
 import { Dependencies } from '../../dependencies';
 import { Config } from '../../configuration';
+import { decodeEmailVerificationLink } from './email-verification-link';
+import { pipe } from 'fp-ts/lib/function';
+import * as E from 'fp-ts/Either';
+import { verifyEmail } from '../../commands/members/verify-email';
+
+const invalidLink = () => oopsPage(
+  html`The link you have used is (no longer) valid. Go back to your
+    <a href=/me>homepage</a>.`
+);
 
 export const landing = 
     (deps: Dependencies, conf: Config) =>
     (req: Request, res: Response<CompleteHtmlDocument>) => {
-        req.query
+      pipe(
+        req,
+        decodeEmailVerificationLink(deps.logger, conf),
+        E.match(
+          error => {
+            deps.logger.error(
+              {error},
+              'Failed to decode verification link'
+            );
+            return invalidLink()
+          },
+          decoded => {
+            verifyEmail.process({
+              command: {
+                
+              }
+            })
+          }
+        )
+      );
 
-
-  const index = req.originalUrl.indexOf('?');
-  const suffix = index === -1 ? '' : req.originalUrl.slice(index);
-  const url = '/auth/callback' + suffix;
-  res.status(StatusCodes.OK).send(
-    isolatedPageTemplate(sanitizeString('Redirecting...'))(html`
-      <!doctype html>
-      <html>
-        <head>
-          <meta http-equiv="refresh" content="0; url='${safe(url)}'" />
-        </head>
-        <body></body>
-      </html>
-    `)
-  );
 };
+
+// TODO - Combine these.
 
 export const verifyEmailCallback =
   (deps: Dependencies, conf: Config, invalidLinkPath: string): RequestHandler =>

@@ -1,15 +1,13 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
 import * as t from 'io-ts';
-import {failure} from '../../types';
 import {Strategy as CustomStrategy} from 'passport-custom';
-import jwt from 'jsonwebtoken';
 import {Config} from '../../configuration';
 import {Dependencies} from '../../dependencies';
 import {User} from '../../types/user';
 import {logPassThru} from '../../util';
 import {Logger} from 'pino';
-import {createSignedToken} from '../create-signed-token';
+import {createSignedToken, verifyToken} from '../signed-token';
 
 const createMagicLink = (conf: Config) => (user: User) =>
   pipe(
@@ -21,12 +19,6 @@ const createMagicLink = (conf: Config) => (user: User) =>
 const MagicLinkQuery = t.strict({
   token: t.string,
 });
-
-const verifyToken = (token: string, secret: Config['TOKEN_SECRET']) =>
-  E.tryCatch(
-    () => jwt.verify(token, secret),
-    failure('Could not verify token')
-  );
 
 const decodeMagicLinkFromQuery =
   (logger: Logger, conf: Config) => (input: unknown) =>

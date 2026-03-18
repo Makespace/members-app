@@ -53,7 +53,6 @@ export const sendEmailVerification = (
 ) => (memberNumber: number, emailAddress: EmailAddress): TE.TaskEither<Failure, string> => {
   const email = toEmail(emailAddress)(
     emailVerificationLink.create(conf)({
-      purpose: 'verify-email',
       memberNumber,
       emailAddress,
     })
