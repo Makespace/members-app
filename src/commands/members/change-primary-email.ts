@@ -23,9 +23,9 @@ const process: Command<ChangeMemberPrimaryEmail>['process'] = input => {
   }
 
   const emailAddress = normaliseEmailAddress(input.command.email);
-  const email = state.emails.get(emailAddress);
+  const email = state.emails[emailAddress];
   if (
-    email === undefined ||
+    !email ||
     !email.verified ||
     state.primaryEmailAddress === emailAddress
   ) {

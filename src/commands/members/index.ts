@@ -37,5 +37,7 @@ export const members = {
     ...sendEmailVerification,
     ...sendEmailVerificationForm,
   },
-  verifyEmail,
+  verifyEmail: {
+    ...verifyEmail,
+  }
 };

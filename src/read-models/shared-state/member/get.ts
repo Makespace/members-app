@@ -28,6 +28,7 @@ const getMemberEmails =
           emailAddress: email.emailAddress,
           addedAt: email.addedAt,
           verifiedAt: O.fromNullable(email.verifiedAt),
+          verificationLastSent: O.fromNullable(email.verificationLastSent),
         },
       ]);
     });

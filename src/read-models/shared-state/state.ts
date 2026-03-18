@@ -40,6 +40,7 @@ export const memberEmailsTable = sqliteTable('memberEmails', {
   emailAddress: text('emailAddress').notNull().$type<EmailAddress>(),
   addedAt: integer('addedAt', {mode: 'timestamp_ms'}).notNull(),
   verifiedAt: integer('verifiedAt', {mode: 'timestamp_ms'}),
+  verificationLastSent: integer('verifiedAt', {mode: 'timestamp_ms'}),
 });
 
 const createMemberEmailsTable = sql`
@@ -47,7 +48,8 @@ const createMemberEmailsTable = sql`
     memberNumber INTEGER,
     emailAddress TEXT,
     addedAt INTEGER,
-    verifiedAt INTEGER
+    verifiedAt INTEGER,
+    verificationLastSent INTEGER
   );
 `;
 
