@@ -37,15 +37,18 @@ const process: Command<SendMemberEmailVerification>['process'] = input => {
   }
 
   publish('send-email-verification', {
-    member: input.command.memberNumber,
-    email: input.command.email,
+    memberNumber: input.command.memberNumber,
+
+    // We use the emailAddress we actually matched rather than the email input
+    // This prevents weirdness around the normalised vs raw address
+    emailAddress, 
   });
 
   return O.some(
     constructEvent('MemberEmailVerificationRequested')({
       actor: input.command.actor,
       memberNumber: input.command.memberNumber,
-      email: input.command.email,
+      email: emailAddress,
     })
   );
 };

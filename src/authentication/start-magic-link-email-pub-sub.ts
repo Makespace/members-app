@@ -7,6 +7,8 @@ import {EmailAddressCodec, failure} from '../types';
 import {Dependencies} from '../dependencies';
 import {sendLogInLink} from './send-log-in-link';
 import {Config} from '../configuration';
+import * as t from 'io-ts';
+import { sendEmailVerification } from './send-email-verification';
 
 const validateEmail = (input: unknown) =>
   pipe(
@@ -14,6 +16,19 @@ const validateEmail = (input: unknown) =>
     EmailAddressCodec.decode,
     E.mapLeft(formatValidationErrors),
     E.mapLeft(failure('Invalid Email'))
+  );
+
+const validateEmailVerificationCodec = t.strict({
+  memberNumber: t.Integer,
+  emailAddress: EmailAddressCodec,
+});
+
+const validateEmailVerification = (input: unknown) =>
+  pipe(
+    input,
+    validateEmailVerificationCodec.decode,
+    E.mapLeft(formatValidationErrors),
+    E.mapLeft(failure('Invalid validation request'))
   );
 
 export const startMagicLinkEmailPubSub = (deps: Dependencies, conf: Config) => {
@@ -33,4 +48,22 @@ export const startMagicLinkEmailPubSub = (deps: Dependencies, conf: Config) => {
         )
       )()
   );
+
+  PubSub.subscribe(
+    'send-email-verification',
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    async (topic, payload) => {
+      await pipe(
+        payload,
+        validateEmailVerification,
+        TE.fromEither,
+        TE.chain(({memberNumber, emailAddress}) => sendEmailVerification(deps, conf)(memberNumber, emailAddress)),
+        TE.match(
+          failure =>
+            deps.logger.error({topic, failure}, 'Failed to process message'),
+          successMsg => deps.logger.info({topic, result: successMsg})
+        )
+      )()
+    }
+  )
 };

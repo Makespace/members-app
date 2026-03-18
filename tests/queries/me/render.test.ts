@@ -28,16 +28,19 @@ describe('/me render', () => {
           emailAddress: primaryEmail,
           verifiedAt: O.some(new Date('2025-01-01T00:00:00.000Z')),
           addedAt: new Date('2025-01-01T00:00:00.000Z'),
+          verificationLastSent: O.none,
         },
         {
           emailAddress: unverifiedEmail,
           verifiedAt: O.none,
           addedAt: new Date('2025-01-02T00:00:00.000Z'),
+          verificationLastSent: O.none,
         },
         {
           emailAddress: verifiedSecondaryEmail,
           verifiedAt: O.some(new Date('2025-01-03T00:00:00.000Z')),
           addedAt: new Date('2025-01-03T00:00:00.000Z'),
+          verificationLastSent: O.none,
         },
       ],
       name: O.none,
@@ -57,7 +60,7 @@ describe('/me render', () => {
 
   it('shows the primary email and all email addresses', () => {
     const page = renderPage(viewModel);
-    expect(page.textContent).toContain('Primary email');
+    expect(page.textContent).toContain('Primary');
     expect(page.textContent).toContain(primaryEmail);
     expect(page.textContent).toContain(unverifiedEmail);
     expect(page.textContent).toContain(verifiedSecondaryEmail);
@@ -65,7 +68,7 @@ describe('/me render', () => {
 
   it('shows the right actions for unverified and verified non-primary emails', () => {
     const page = renderPage(viewModel);
-    expect(page.textContent).toContain('Send verification email');
-    expect(page.textContent).toContain('Make primary');
+    expect(page.textContent).toContain('Send Verification Email');
+    expect(page.textContent).toContain('Set Primary Email');
   });
 });
