@@ -4,7 +4,7 @@ import mjml2html from 'mjml';
 import {Config} from '../../configuration';
 import {Dependencies} from '../../dependencies';
 import {Email, EmailAddress, Failure} from '../../types';
-import {emailVerificationLink} from './email-verification-link';
+import { createEmailVerificationLink } from './email-verification-link';
 
 const toEmail =
   (emailAddress: EmailAddress) =>
@@ -52,7 +52,7 @@ export const sendEmailVerification = (
   conf: Config
 ) => (memberNumber: number, emailAddress: EmailAddress): TE.TaskEither<Failure, string> => {
   const email = toEmail(emailAddress)(
-    emailVerificationLink.create(conf)({
+    createEmailVerificationLink(conf)({
       memberNumber,
       emailAddress,
     })
