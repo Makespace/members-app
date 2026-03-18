@@ -1,9 +1,9 @@
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
-import {User} from '../types';
+import {User} from '../../types';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
-import {Dependencies} from '../dependencies';
+import {Dependencies} from '../../dependencies';
 import {formatValidationErrors} from 'io-ts-reporters';
 
 const SessionCodec = t.strict({

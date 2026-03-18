@@ -1,8 +1,8 @@
 import {pipe} from 'fp-ts/lib/function';
-import {isolatedPageTemplate} from '../templates/page-template';
-import {html, safe, sanitizeString} from '../types/html';
-import {EmailAddress} from '../types';
-import {normaliseEmailAddress} from '../read-models/shared-state/normalise-email-address';
+import {isolatedPageTemplate} from '../../templates/page-template';
+import {html, safe, sanitizeString} from '../../types/html';
+import {EmailAddress} from '../../types';
+import {normaliseEmailAddress} from '../../read-models/shared-state/normalise-email-address';
 
 export const checkYourMailPage = (submittedEmailAddress: EmailAddress) =>
   pipe(

@@ -1,6 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
-import {html, safe} from '../types/html';
-import {isolatedPageTemplate} from '../templates/page-template';
+import {html, safe} from '../../types/html';
+import {isolatedPageTemplate} from '../../templates/page-template';
 
 export const logInPage = pipe(
   html`

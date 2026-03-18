@@ -1,11 +1,11 @@
 import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
-import {Dependencies} from '../dependencies';
-import {Email, EmailAddress, Failure, failure} from '../types';
-import {Config} from '../configuration';
-import {magicLink} from '.';
+import {Dependencies} from '../../dependencies';
+import {Email, EmailAddress, Failure, failure} from '../../types';
+import {Config} from '../../configuration';
+import {magicLink} from '..';
 import mjml2html from 'mjml';
-import {normaliseEmailAddress} from '../read-models/shared-state/normalise-email-address';
+import {normaliseEmailAddress} from '../../read-models/shared-state/normalise-email-address';
 import * as O from 'fp-ts/Option';
 
 const toEmail =

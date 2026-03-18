@@ -3,20 +3,11 @@ import PubSub from 'pubsub-js';
 import * as TE from 'fp-ts/TaskEither';
 import {formatValidationErrors} from 'io-ts-reporters';
 import * as E from 'fp-ts/Either';
-import {EmailAddressCodec, failure} from '../types';
-import {Dependencies} from '../dependencies';
-import {sendLogInLink} from './send-log-in-link';
-import {Config} from '../configuration';
+import {EmailAddressCodec, failure} from '../../types';
+import {Dependencies} from '../../dependencies';
+import {Config} from '../../configuration';
 import * as t from 'io-ts';
 import { sendEmailVerification } from './send-email-verification';
-
-const validateEmail = (input: unknown) =>
-  pipe(
-    input,
-    EmailAddressCodec.decode,
-    E.mapLeft(formatValidationErrors),
-    E.mapLeft(failure('Invalid Email'))
-  );
 
 const validateEmailVerificationCodec = t.strict({
   memberNumber: t.Integer,
@@ -31,24 +22,7 @@ const validateEmailVerification = (input: unknown) =>
     E.mapLeft(failure('Invalid validation request'))
   );
 
-export const startMagicLinkEmailPubSub = (deps: Dependencies, conf: Config) => {
-  PubSub.subscribe(
-    'send-log-in-link',
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    async (topic, payload) =>
-      await pipe(
-        payload,
-        validateEmail,
-        TE.fromEither,
-        TE.chain(sendLogInLink(deps, conf)),
-        TE.match(
-          failure =>
-            deps.logger.error({topic, failure}, 'Failed to process message'),
-          successMsg => deps.logger.info({topic, result: successMsg})
-        )
-      )()
-  );
-
+export const startVerifyEmailPubSub = (deps: Dependencies, conf: Config) => {
   PubSub.subscribe(
     'send-email-verification',
     // eslint-disable-next-line @typescript-eslint/no-misused-promises

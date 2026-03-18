@@ -1,10 +1,10 @@
 import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
 import mjml2html from 'mjml';
-import {Config} from '../configuration';
-import {Dependencies} from '../dependencies';
-import {Email, EmailAddress, Failure} from '../types';
-import {emailVerificationLink} from './magic-link';
+import {Config} from '../../configuration';
+import {Dependencies} from '../../dependencies';
+import {Email, EmailAddress, Failure} from '../../types';
+import {emailVerificationLink} from './email-verification-link';
 
 const toEmail =
   (emailAddress: EmailAddress) =>
