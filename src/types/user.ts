@@ -1,5 +1,5 @@
 import * as t from 'io-ts';
-import {EmailAddressCodec} from '.';
+import {EmailAddressCodec} from './email-address';
 
 export const User = t.strict({
   emailAddress: EmailAddressCodec,
