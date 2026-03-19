@@ -44,7 +44,7 @@ const setPrimaryEmail = (email: EmailAddress) => html`
   <a
     href="/members/change-primary-email?email=${sanitizeString(email)}"
   >
-    Set Primary Email
+    Make Primary Email
   </a>
 `;
 

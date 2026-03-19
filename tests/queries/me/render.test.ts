@@ -69,6 +69,6 @@ describe('/me render', () => {
   it('shows the right actions for unverified and verified non-primary emails', () => {
     const page = renderPage(viewModel);
     expect(page.textContent).toContain('Send Verification Email');
-    expect(page.textContent).toContain('Set Primary Email');
+    expect(page.textContent).toContain('Make Primary Email');
   });
 });
