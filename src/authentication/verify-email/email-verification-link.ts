@@ -19,7 +19,7 @@ export const createEmailVerificationLink =
   (conf: Config) => (payload: VerifyEmailTokenPayload) =>
     pipe(
       VerifyEmailTokenPayload.encode(payload),
-      createSignedToken(conf),
+      createSignedToken(conf, '15m'),
       token => `${conf.PUBLIC_URL}/auth/verify-email/landing?token=${token}`
     );
 

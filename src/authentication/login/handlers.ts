@@ -15,7 +15,6 @@ import {getUserFromSession} from './get-user-from-session';
 import {Dependencies} from '../../dependencies';
 import {
   html,
-  HtmlSubstitution,
   CompleteHtmlDocument,
   sanitizeString,
   safe,

@@ -12,7 +12,7 @@ import {createSignedToken, verifyToken} from '../signed-token';
 const createMagicLink = (conf: Config) => (user: User) =>
   pipe(
     user,
-    createSignedToken(conf),
+    createSignedToken(conf, '10m'),
     token => `${conf.PUBLIC_URL}/auth/landing?token=${token}`
   );
 

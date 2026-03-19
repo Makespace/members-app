@@ -17,6 +17,8 @@ const toEmail =
       Verify this email address for your Makespace account by opening the link below:
 
       ${verificationLink}
+
+      This link will remain valid for 15 minutes.
     `,
     html: mjml2html(`
     <mjml>
@@ -30,7 +32,7 @@ const toEmail =
         <mj-section>
           <mj-column width="400px">
             <mj-text font-size="20px" line-height="1.3" color="#111" align="center">
-              Verify this email address for your Makespace account
+              Verify this email address for your Makespace account. This link will remain valid for 15 minutes.
             </mj-text>
             <mj-button
               color="#111"

@@ -1,10 +1,7 @@
 import {Dependencies} from '../../dependencies';
 import {Config} from '../../configuration';
-import {Safe, safe} from '../../types/html';
 import {Route, get} from '../../types/route';
-import {landing } from './landing-page';
-
-export const logInPath: Safe = safe('/log-in');
+import {landing} from './landing-page';
 
 export const routes = (
   deps: Dependencies,

@@ -8,7 +8,7 @@ import { isAdminOrSuperUser } from '../is-admin-or-super-user';
 
 const codec = t.strict({
   memberNumber: t.number,
-  email: EmailAddressCodec,
+  emailAddress: EmailAddressCodec,
 });
 
 type VerifyMemberEmail = t.TypeOf<typeof codec>;
@@ -21,7 +21,7 @@ const process: Command<VerifyMemberEmail>['process'] = input => {
     return O.none;
   }
 
-  const emailAddress = normaliseEmailAddress(input.command.email);
+  const emailAddress = normaliseEmailAddress(input.command.emailAddress);
   const email = state.emails[emailAddress];
   if (!email || email.verified) {
     return O.none;
@@ -31,7 +31,7 @@ const process: Command<VerifyMemberEmail>['process'] = input => {
     constructEvent('MemberEmailVerified')({
       actor: input.command.actor,
       memberNumber: input.command.memberNumber,
-      email: input.command.email,
+      email: input.command.emailAddress,
     })
   );
 };
@@ -45,5 +45,5 @@ export const verifyEmail: Command<VerifyMemberEmail> = {
   process,
   resource,
   decode: codec.decode,
-  isAuthorized: (args) => args.actor.tag === 'system' || isAdminOrSuperUser(args),
+  isAuthorized: (args) => isAdminOrSuperUser(args),
 };

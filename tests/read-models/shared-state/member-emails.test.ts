@@ -92,7 +92,7 @@ describe('member email projection', () => {
 
     await framework.commands.members.verifyEmail({
       memberNumber,
-      email: secondaryEmail,
+      emailAddress: secondaryEmail,
     });
 
     expect(
@@ -117,7 +117,7 @@ describe('member email projection', () => {
     });
     await framework.commands.members.verifyEmail({
       memberNumber,
-      email: secondaryEmail,
+      emailAddress: secondaryEmail,
     });
     await framework.commands.members.changePrimaryEmail({
       memberNumber,

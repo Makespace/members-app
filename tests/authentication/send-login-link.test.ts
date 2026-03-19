@@ -187,7 +187,7 @@ describe('send-log-in-link', () => {
         beforeEach(async () => {
           await framework.commands.members.verifyEmail({
             memberNumber,
-            email: secondaryEmail,
+            emailAddress: secondaryEmail,
           });
         });
 

@@ -101,7 +101,7 @@ describe('member email commands', () => {
     });
     await framework.commands.members.verifyEmail({
       memberNumber,
-      email: secondaryEmail,
+      emailAddress: secondaryEmail,
     });
     await framework.commands.members.changePrimaryEmail({
       memberNumber,
@@ -119,11 +119,11 @@ describe('member email commands', () => {
     });
     await framework.commands.members.verifyEmail({
       memberNumber,
-      email: secondaryEmail,
+      emailAddress: secondaryEmail,
     });
     await framework.commands.members.verifyEmail({
       memberNumber,
-      email: secondaryEmail,
+      emailAddress: secondaryEmail,
     });
 
     const events = await framework.getAllEventsByType('MemberEmailVerified');

@@ -1,5 +1,4 @@
 import {Dependencies} from '../../dependencies';
-import {Config} from '../../configuration';
 import {Safe, safe} from '../../types/html';
 import {Route, get, post} from '../../types/route';
 import {auth, landing as authLinkLanding, callback, logIn, logOut} from './handlers';
@@ -10,7 +9,6 @@ const invalidLinkPath = '/auth/invalid-magic-link';
 
 export const loginRoutes = (
   deps: Dependencies,
-  conf: Config
 ): ReadonlyArray<Route> => {
   return [
     get(logInPath, logIn(deps)),
