@@ -40,9 +40,9 @@ const sendVerifyEmail = (memberNumber: number, email: MemberEmail) => {
   `;
 }
 
-const setPrimaryEmail = (email: EmailAddress) => html`
+const setPrimaryEmail = (email: EmailAddress, memberNumber: number) => html`
   <a
-    href="/members/change-primary-email?email=${sanitizeString(email)}"
+    href="/members/change-primary-email?email=${sanitizeString(email)}&member=${memberNumber}"
   >
     Make Primary Email
   </a>
@@ -100,7 +100,7 @@ const renderEmailAddresses = (viewModel: ViewModel) => {
       <td>${sanitizeString(email.emailAddress)}${O.isSome(email.verifiedAt) ? html`✅` : html``}</td>
       <td>${
         O.isSome(email.verifiedAt)
-          ? setPrimaryEmail(email.emailAddress)
+          ? setPrimaryEmail(email.emailAddress, viewModel.member.memberNumber)
           : sendVerifyEmail(viewModel.member.memberNumber, email)
       }</td>
     </tr>
