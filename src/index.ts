@@ -18,6 +18,7 @@ import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
 import cookieSession from 'cookie-session';
 import {initRoutes} from './routes';
+import { startVerifyEmailPubSub } from './authentication/verify-email/start-verify-email-pub-sub';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -62,6 +63,7 @@ setInterval(() => {
 
 // Start application
 startMagicLinkEmailPubSub(deps, conf);
+startVerifyEmailPubSub(deps, conf);
 const server = http.createServer(app);
 createTerminus(server);
 

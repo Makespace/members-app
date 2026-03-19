@@ -18,7 +18,7 @@ const invalidLink = () => oopsPage(
     <a href=/me>homepage</a>.`
 );
 
-export const verificationSuccessful = pipe(
+const verificationSuccessful = pipe(
   html`
     <div class="container">
       <div class="max-w-md mx-auto">
@@ -48,14 +48,15 @@ export const verificationSuccessful = pipe(
 
 export const landing = 
     (deps: Dependencies, conf: Config) =>
-    async (req: Request, res: Response<CompleteHtmlDocument>) => {
+    async (req: Request, res: Response<CompleteHtmlDocument>): Promise<void> => {
       const decoded = decodeEmailVerificationLink(deps.logger, conf)(req);
       if (E.isLeft(decoded)) {
         deps.logger.error(
           decoded.left,
           'Failed to decode verification link'
         );
-        return res.send(invalidLink());
+        res.send(invalidLink());
+        return;
       }
       const resource = verifyEmail.resource(decoded.right);
       const resourceEvents = await deps.getResourceEvents(resource)();
@@ -64,7 +65,8 @@ export const landing =
           resourceEvents.left,
           'Failed to get resource events for email verification link'
         );
-        return res.send(invalidLink());
+        res.send(invalidLink());
+        return;
       }
 
       // Note that we don't need to check isAuthorized here because we are authorised
@@ -85,9 +87,11 @@ export const landing =
             commitEvent.left,
             'Failed to commit verification link event'
           );
-          return res.send(invalidLink());
+          res.send(invalidLink());
+          return;
         }
       }
       deps.logger.info(`Successfully verified email %o`, decoded.right);
-      return res.send(verificationSuccessful);
+      res.send(verificationSuccessful);
+      return;
     };
