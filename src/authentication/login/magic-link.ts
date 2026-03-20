@@ -20,7 +20,7 @@ const MagicLinkQuery = t.strict({
   token: t.string,
 });
 
-const decodeMagicLinkFromQuery =
+export const decodeMagicLinkFromQuery =
   (logger: Logger, conf: Config) => (input: unknown) =>
     pipe(
       input,
