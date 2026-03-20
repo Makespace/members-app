@@ -2,7 +2,7 @@ import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
 import * as t from 'io-ts';
 import {Config} from '../../configuration';
-import {EmailAddressCodec} from '../../types';
+import {EmailAddressCodec, User} from '../../types';
 import {Logger} from 'pino';
 import { createSignedToken, verifyToken } from '../signed-token';
 import {Request} from 'express'; 
@@ -11,15 +11,19 @@ import { logPassThru } from '../../util';
 const VerifyEmailTokenPayload = t.strict({
   memberNumber: t.number,
   emailAddress: EmailAddressCodec,
+  purpose: t.literal('VerifyEmailToken')
 });
 
 type VerifyEmailTokenPayload = t.TypeOf<typeof VerifyEmailTokenPayload>;
 
 export const createEmailVerificationLink =
-  (conf: Config) => (payload: VerifyEmailTokenPayload) =>
+  (conf: Config) => (user: User) =>
     pipe(
-      VerifyEmailTokenPayload.encode(payload),
-      createSignedToken(conf, '15m'),
+      {
+        ...user,
+        purpose: 'VerifyEmailToken',
+      },
+      createSignedToken<VerifyEmailTokenPayload>(conf, '15m'),
       token => `${conf.PUBLIC_URL}/auth/verify-email/landing?token=${token}`
     );
 

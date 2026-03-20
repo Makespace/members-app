@@ -8,11 +8,22 @@ import {User} from '../../types/user';
 import {logPassThru} from '../../util';
 import {Logger} from 'pino';
 import {createSignedToken, verifyToken} from '../signed-token';
+import { EmailAddressCodec } from '../../types';
+
+const MagicLinkTokenPayload = t.strict({
+  memberNumber: t.number,
+  emailAddress: EmailAddressCodec,
+  purpose: t.literal('MagicLinkToken')
+});
+type MagicLinkTokenPayload = t.TypeOf<typeof MagicLinkTokenPayload>;
 
 const createMagicLink = (conf: Config) => (user: User) =>
   pipe(
-    user,
-    createSignedToken(conf, '10m'),
+    {
+      ...user,
+      purpose: 'MagicLinkToken',
+    },
+    createSignedToken<MagicLinkTokenPayload>(conf, '10m'),
     token => `${conf.PUBLIC_URL}/auth/landing?token=${token}`
   );
 
@@ -27,7 +38,7 @@ export const decodeMagicLinkFromQuery =
       logPassThru(logger, 'Attempting to decode magic link from query'), // Logging is required as a basic form of auth enumeration detection.
       MagicLinkQuery.decode,
       E.chainW(({token}) => verifyToken(token, conf.TOKEN_SECRET)),
-      E.chainW(User.decode)
+      E.chainW(MagicLinkTokenPayload.decode)
     );
 
 const strategy = (deps: Dependencies, conf: Config) => {

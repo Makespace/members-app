@@ -45,12 +45,12 @@ describe('magic links', () => {
 
         it('login link does decode as an login link', () => {
             const req = reqWithQuery(loginLink);
-            expect(getRightOrFail(decodeMagicLinkFromQuery(logger, conf)(req.query))).toStrictEqual(user);
+            expect(getRightOrFail(decodeMagicLinkFromQuery(logger, conf)(req.query))).toMatchObject(user);
         });
 
         it('email verification link does decode as an email verification link', () => {
             const req = reqWithQuery(verificationLink);
-            expect(getRightOrFail(decodeEmailVerificationLink(logger, conf)(req))).toStrictEqual(user);
+            expect(getRightOrFail(decodeEmailVerificationLink(logger, conf)(req))).toMatchObject(user);
         });
     });
 

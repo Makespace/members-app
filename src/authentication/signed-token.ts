@@ -5,8 +5,8 @@ import { failure } from '../types/failure';
 import {StringValue} from 'ms';
 
 export const createSignedToken =
-  (conf: Config, expiresIn: StringValue) =>
-  (payload: object): string =>
+  <T extends object>(conf: Config, expiresIn: StringValue) =>
+  (payload: T): string =>
     jwt.sign(payload, conf.TOKEN_SECRET, {expiresIn});
 
 export const verifyToken = (token: string, secret: Config['TOKEN_SECRET']) =>
