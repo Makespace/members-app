@@ -1,5 +1,6 @@
 import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
+import {advanceTo} from 'jest-date-mock';
 import {EmailAddress} from '../../../src/types';
 import {Int} from 'io-ts';
 import {getSomeOrFail} from '../../helpers';
@@ -126,5 +127,39 @@ describe('member email projection', () => {
 
     const member = getSomeOrFail(framework.sharedReadModel.members.get(memberNumber));
     expect(member.primaryEmailAddress).toStrictEqual(secondaryEmail);
+  });
+
+  it('projects when an email verification was last requested', async () => {
+    const memberNumber = faker.number.int();
+    const primaryEmail = faker.internet.email() as EmailAddress;
+    const secondaryEmail = faker.internet.email() as EmailAddress;
+    const verificationRequestedAt = faker.date.recent();
+    verificationRequestedAt.setMilliseconds(0);
+
+    await framework.commands.memberNumbers.linkNumberToEmail({
+      memberNumber,
+      email: primaryEmail,
+      name: undefined,
+      formOfAddress: undefined,
+    });
+    await framework.commands.members.addEmail({
+      memberNumber,
+      email: secondaryEmail,
+    });
+
+    advanceTo(verificationRequestedAt);
+    await framework.commands.members.sendEmailVerification({
+      memberNumber,
+      email: secondaryEmail,
+    });
+
+    const member = getSomeOrFail(framework.sharedReadModel.members.get(memberNumber));
+    const requestedEmail = member.emails.find(
+      email => email.emailAddress === secondaryEmail
+    );
+    expect(requestedEmail).toBeDefined();
+    expect(requestedEmail?.verificationLastSent).toStrictEqual(
+      O.some(verificationRequestedAt)
+    );
   });
 });
