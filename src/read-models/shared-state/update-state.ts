@@ -166,7 +166,7 @@ export const updateState =
           .where(
             and(
               eq(memberEmailsTable.memberNumber, event.memberNumber),
-              eq(memberEmailsTable.emailAddress, event.email)
+              eq(memberEmailsTable.emailAddress, normaliseEmailAddress(event.email))
             )
           )
           .run();
