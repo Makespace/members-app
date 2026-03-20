@@ -159,6 +159,17 @@ export const updateState =
         );
         break;
       case 'MemberEmailVerificationRequested':
+        db.update(memberEmailsTable)
+          .set({
+            verificationLastSent: event.recordedAt
+          })
+          .where(
+            and(
+              eq(memberEmailsTable.memberNumber, event.memberNumber),
+              eq(memberEmailsTable.emailAddress, event.email)
+            )
+          )
+          .run();
         break;
       case 'MemberDetailsUpdated':
         if (event.name) {
