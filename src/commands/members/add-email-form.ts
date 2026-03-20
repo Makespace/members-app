@@ -24,7 +24,7 @@ const renderForm = (viewModel: ViewModel) =>
         <input
           type="hidden"
           name="memberNumber"
-          value="${viewModel.user.memberNumber}"
+          value="${viewModel.memberNumber}"
         />
         <button type="submit">Add email</button>
       </form>
