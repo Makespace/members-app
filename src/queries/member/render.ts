@@ -1,4 +1,3 @@
-import * as O from 'fp-ts/Option';
 import {getGravatarProfile, getGravatarThumbnail} from '../../templates/avatar';
 import {Html, html, sanitizeOption} from '../../types/html';
 import {ViewModel} from './view-model';
@@ -29,21 +28,12 @@ const editFormOfAddress = (viewModel: ViewModel) =>
 const editAvatar = () =>
   html`<a href="https://gravatar.com/profile">Edit via Gravatar</a>`;
 
-const addEmail = (memberNumber: number) => html`
-  <a href="/members/add-email?member=${memberNumber}">
-    Add New Email
-  </a>
-`;
-
 const renderEmails = (viewModel: ViewModel) =>
-  renderMemberEmails({
-    primaryEmailAddress: viewModel.member.primaryEmailAddress,
-    emails: viewModel.member.emails,
-    renderAction: () => html``,
-    addEmailAction: viewModel.isSuperUser
-      ? O.some(addEmail(viewModel.member.memberNumber))
-      : O.none,
-  });
+  renderMemberEmails(
+    viewModel.member.memberNumber,
+    viewModel.member.emails,
+    viewModel.member.primaryEmailAddress,
+  );
 
 const ifSelf = (viewModel: ViewModel, fragment: Html) =>
   viewModel.isSelf ? fragment : '';
@@ -69,10 +59,14 @@ export const render = (viewModel: ViewModel) => html`
         <th scope="row">Other Member Numbers ${otherMemberNumbersTooltip}</th>
         <td>${renderMemberNumbers(viewModel.member.pastMemberNumbers)}</td>
       </tr>
-      <tr>
-        <th scope="row">Email addresses</th>
-        <td>${renderEmails(viewModel)}</td>
-      </tr>
+      ${
+        viewModel.isSelf || viewModel.isSuperUser ? html`
+          <tr>
+            <th scope="row">Email addresses</th>
+            <td>${renderEmails(viewModel)}</td>
+          </tr>
+        ` : html``
+      }
       <tr>
         <th scope="row">
           <p>Name</p>

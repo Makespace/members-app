@@ -11,7 +11,7 @@ const primaryEmail = 'primary@example.com' as EmailAddress;
 const unverifiedEmail = 'extra@example.com' as EmailAddress;
 const verifiedSecondaryEmail = 'verified@example.com' as EmailAddress;
 
-const buildViewModel = (isSuperUser: boolean): ViewModel => ({
+const buildViewModel = (isSuperUser: boolean, isSelf: boolean): ViewModel => ({
   member: {
     memberNumber: 123,
     pastMemberNumbers: [122],
@@ -48,50 +48,81 @@ const buildViewModel = (isSuperUser: boolean): ViewModel => ({
     trainerFor: [],
     ownerOf: [],
   },
-  user: {
+  user: isSelf ? {
+    memberNumber: 123,
+    emailAddress: primaryEmail,
+  } : {
     memberNumber: 999,
     emailAddress: 'viewer@example.com' as EmailAddress,
   },
-  isSelf: false,
+  isSelf,
   isSuperUser,
   trainingMatrix: [],
 });
 
-const renderPage = (viewModel: ViewModel) => {
-  const rendered = render(viewModel);
+const renderPage = (viewModel: ViewModel): HTMLBodyElement => {
   const body = document.createElement('body');
-  body.innerHTML = rendered;
+  body.innerHTML = render(viewModel);
   return body;
 };
 
 describe('member render', () => {
-  it('shows the same email table shape used on /me', () => {
-    const page = renderPage(buildViewModel(true));
+  describe('as super user', () => {
+    let viewModel: ViewModel;
+    let page: HTMLBodyElement;
+    beforeEach(() => {
+      viewModel = buildViewModel(true, false);
+      page = renderPage(viewModel);
+    });
 
-    expect(page.textContent).toContain('Email addresses');
-    expect(page.textContent).toContain(primaryEmail);
-    expect(page.textContent).toContain(verifiedSecondaryEmail);
-    expect(page.textContent).toContain(unverifiedEmail);
-    expect(page.textContent).toContain('Primary');
-    expect(page.textContent).not.toContain('Send Verification Email');
-    expect(page.textContent).not.toContain('Make Primary Email');
+    it('shows the add email action', () => {
+      expect(
+        page.querySelector<HTMLAnchorElement>(
+          'a[href="/members/add-email?member=123"]'
+        )!.textContent
+      ).toContain('Add New Email');
+    });
+
+    it('shows the same email table shape used on /me', () => {
+      expect(page.textContent).toContain('Email addresses');
+      expect(page.textContent).toContain(primaryEmail);
+      expect(page.textContent).toContain(verifiedSecondaryEmail);
+      expect(page.textContent).toContain(unverifiedEmail);
+      expect(page.textContent).toContain('Primary');
+      expect(page.textContent).toContain('Send Verification Email');
+      expect(page.textContent).toContain('Make Primary Email');
+    });
   });
 
-  it('shows the add email action to super users', () => {
-    const page = renderPage(buildViewModel(true));
-    const addEmailLink = page.querySelector<HTMLAnchorElement>(
-      'a[href="/members/add-email?member=123"]'
-    );
+  describe('as self', () => {
+    let viewModel: ViewModel;
+    let page: HTMLBodyElement;
+    beforeEach(() => {
+      viewModel = buildViewModel(false, true);
+      page = renderPage(viewModel);
+    });
 
-    expect(addEmailLink?.textContent).toContain('Add New Email');
+    it('shows the add email action', () => {
+      expect(
+        page.querySelector<HTMLAnchorElement>(
+          'a[href="/members/add-email?member=123"]'
+        )!.textContent
+      ).toContain('Add New Email');
+    });
   });
 
-  it('does not show the add email action to non-super users', () => {
-    const page = renderPage(buildViewModel(false));
-    const addEmailLink = page.querySelector<HTMLAnchorElement>(
-      'a[href="/members/add-email?member=123"]'
-    );
+  describe('non-superuser non-self', () => {
+    let viewModel: ViewModel;
+    let page: HTMLBodyElement;
+    beforeEach(() => {
+      viewModel = buildViewModel(false, false);
+      page = renderPage(viewModel);
+    });
 
-    expect(addEmailLink).toBeNull();
+    it('does not show the add email action', () => {
+      expect(page.querySelector<HTMLAnchorElement>(
+        'a[href="/members/add-email?member=123"]'
+      )).toBeNull();
+    });
   });
 });

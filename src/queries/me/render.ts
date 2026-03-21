@@ -1,5 +1,5 @@
 import {getGravatarThumbnail} from '../../templates/avatar';
-import {html, sanitizeOption, sanitizeString} from '../../types/html';
+import {html, sanitizeOption} from '../../types/html';
 import {ViewModel} from './view-model';
 import {renderMemberNumber} from '../../templates/member-number';
 import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
@@ -10,10 +10,6 @@ import {
 import {howToGetTrained} from '../shared-render/training-status';
 import {ownerResources} from './owner-resources';
 import { renderTrainingMatrix } from '../training-matrix/render';
-import * as O from 'fp-ts/Option';
-import {MemberEmail} from '../../read-models/shared-state/return-types';
-import {EmailAddress} from '../../types';
-import {SEND_EMAIL_VERIFICATION_COOLDOWN_MS} from '../../commands/members/email-state';
 import {renderMemberEmails} from '../shared-render/member-emails';
 
 const editFormOfAddress = (viewModel: ViewModel) => html`
@@ -24,52 +20,15 @@ const editFormOfAddress = (viewModel: ViewModel) => html`
   </a>
 `;
 
-const sendVerifyEmail = (memberNumber: number, email: MemberEmail) => {
-  if (
-    O.isSome(email.verificationLastSent) && (
-      (Date.now() - email.verificationLastSent.value.getTime()) < SEND_EMAIL_VERIFICATION_COOLDOWN_MS
-    )
-  ) {
-    return html`Verification Email Sent At ${sanitizeString(email.verificationLastSent.value.toLocaleTimeString())}!`
-  }
-  return html`
-    <a
-      href="/members/send-email-verification?email=${sanitizeString(email.emailAddress)}&member=${memberNumber}"
-    >
-      Send Verification Email
-    </a>
-  `;
-}
-
-const setPrimaryEmail = (email: EmailAddress, memberNumber: number) => html`
-  <a
-    href="/members/change-primary-email?email=${sanitizeString(email)}&member=${memberNumber}"
-  >
-    Make Primary Email
-  </a>
-`;
-
-const addEmail = (memberNumber: number) => html`
-  <a
-    href="/members/add-email?member=${memberNumber}"
-  >
-    Add New Email
-  </a>
-`;
-
 const editAvatar = () =>
   html`<a href="https://gravatar.com/profile">Edit via Gravatar</a>`;
 
 const renderEmailAddresses = (viewModel: ViewModel) =>
-  renderMemberEmails({
-    primaryEmailAddress: viewModel.member.primaryEmailAddress,
-    emails: viewModel.member.emails,
-    renderAction: email =>
-      O.isSome(email.verifiedAt)
-        ? setPrimaryEmail(email.emailAddress, viewModel.member.memberNumber)
-        : sendVerifyEmail(viewModel.member.memberNumber, email),
-    addEmailAction: O.some(addEmail(viewModel.member.memberNumber)),
-  });
+  renderMemberEmails(
+    viewModel.member.memberNumber,
+    viewModel.member.emails,
+    viewModel.member.primaryEmailAddress,
+  );
 
 const renderMemberDetails = (viewModel: ViewModel) => html`
   <table>
