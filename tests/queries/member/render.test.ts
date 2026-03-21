@@ -65,7 +65,7 @@ const renderPage = (viewModel: ViewModel) => {
 };
 
 describe('member render', () => {
-  it('shows the full email list with primary and verification statuses', () => {
+  it('shows the same email table shape used on /me', () => {
     const page = renderPage(buildViewModel(true));
 
     expect(page.textContent).toContain('Email addresses');
@@ -73,8 +73,8 @@ describe('member render', () => {
     expect(page.textContent).toContain(verifiedSecondaryEmail);
     expect(page.textContent).toContain(unverifiedEmail);
     expect(page.textContent).toContain('Primary');
-    expect(page.textContent).toContain('Verified');
-    expect(page.textContent).toContain('Unverified');
+    expect(page.textContent).not.toContain('Send Verification Email');
+    expect(page.textContent).not.toContain('Make Primary Email');
   });
 
   it('shows the add email action to super users', () => {
@@ -83,7 +83,7 @@ describe('member render', () => {
       'a[href="/members/add-email?member=123"]'
     );
 
-    expect(addEmailLink?.textContent).toContain('Add email');
+    expect(addEmailLink?.textContent).toContain('Add New Email');
   });
 
   it('does not show the add email action to non-super users', () => {

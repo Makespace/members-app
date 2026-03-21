@@ -1,6 +1,6 @@
 import * as O from 'fp-ts/Option';
 import {getGravatarProfile, getGravatarThumbnail} from '../../templates/avatar';
-import {Html, html, joinHtml, sanitizeOption, sanitizeString} from '../../types/html';
+import {Html, html, sanitizeOption} from '../../types/html';
 import {ViewModel} from './view-model';
 import {
   renderMemberNumber,
@@ -10,7 +10,7 @@ import {memberStatusTag} from '../../templates/member-status';
 import {otherMemberNumbersTooltip} from '../shared-render/other-member-numbers-tooltip';
 import {renderTrainingMatrix} from '../training-matrix/render';
 import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
-import {MemberEmail} from '../../read-models/shared-state/return-types';
+import {renderMemberEmails} from '../shared-render/member-emails';
 
 const ownPageBanner = html`<h1>This is your profile!</h1>`;
 
@@ -31,71 +31,19 @@ const editAvatar = () =>
 
 const addEmail = (memberNumber: number) => html`
   <a href="/members/add-email?member=${memberNumber}">
-    Add email
+    Add New Email
   </a>
 `;
 
-const renderEmailStatus = (
-  email: MemberEmail,
-  primaryEmailAddress: string
-): string => {
-  if (email.emailAddress === primaryEmailAddress) {
-    return 'Primary';
-  }
-  if (O.isSome(email.verifiedAt)) {
-    return 'Verified';
-  }
-  return 'Unverified';
-};
-
-const renderEmails = (viewModel: ViewModel): Html => {
-  const emails = [...viewModel.member.emails].sort((a, b) => {
-    const aIsPrimary = a.emailAddress === viewModel.member.primaryEmailAddress;
-    const bIsPrimary = b.emailAddress === viewModel.member.primaryEmailAddress;
-    if (aIsPrimary && !bIsPrimary) {
-      return -1;
-    }
-    if (!aIsPrimary && bIsPrimary) {
-      return 1;
-    }
-    return a.emailAddress.localeCompare(b.emailAddress);
+const renderEmails = (viewModel: ViewModel) =>
+  renderMemberEmails({
+    primaryEmailAddress: viewModel.member.primaryEmailAddress,
+    emails: viewModel.member.emails,
+    renderAction: () => html``,
+    addEmailAction: viewModel.isSuperUser
+      ? O.some(addEmail(viewModel.member.memberNumber))
+      : O.none,
   });
-
-  return html`
-    <div>
-      <table>
-        <thead>
-          <tr>
-            <th scope="col">Email</th>
-            <th scope="col">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${joinHtml(
-            emails.map(
-              email => html`
-                <tr>
-                  <td>${sanitizeString(email.emailAddress)}</td>
-                  <td>
-                    ${sanitizeString(
-                      renderEmailStatus(
-                        email,
-                        viewModel.member.primaryEmailAddress
-                      )
-                    )}
-                  </td>
-                </tr>
-              `
-            )
-          )}
-        </tbody>
-      </table>
-      ${viewModel.isSuperUser
-        ? html`<p>${addEmail(viewModel.member.memberNumber)}</p>`
-        : html``}
-    </div>
-  `;
-};
 
 const ifSelf = (viewModel: ViewModel, fragment: Html) =>
   viewModel.isSelf ? fragment : '';
