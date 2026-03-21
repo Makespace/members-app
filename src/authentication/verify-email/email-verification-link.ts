@@ -23,7 +23,7 @@ export const createEmailVerificationLink =
         ...user,
         purpose: 'VerifyEmailToken',
       },
-      createSignedToken<VerifyEmailTokenPayload>(conf, '15m'),
+      createSignedToken<VerifyEmailTokenPayload>(conf, '24h'),
       token => `${conf.PUBLIC_URL}/auth/verify-email/landing?token=${token}`
     );
 
