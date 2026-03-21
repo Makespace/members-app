@@ -7,10 +7,11 @@ import {flow} from 'fp-ts/lib/function';
 import {formPost} from './form-post';
 import {formGet} from './form-get';
 import {apiToHandlers} from './api-to-handlers';
+import { Route } from '../types/route';
 
 export const commandToHandlers =
   (deps: Dependencies, conf: Config) =>
-  <C, V>(noun: string, verb: string, cmd: Command<C> & Form<V>) => [
+  <C, V>(noun: string, verb: string, cmd: Command<C> & Form<V>): Route[] => [
     {
       path: `/${noun}/${verb}`,
       handler: flow(formPost, expressAsyncHandler)(deps, cmd, `/${noun}`),

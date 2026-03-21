@@ -363,13 +363,13 @@ describe('construct-training-matrix', () => {
         beforeEach(async () => {
           await framework.commands.trainers.markMemberTrainedBy({
             ...trainedOnMetalMill,
-            actor: {
-              tag: "user",
-              user: {
-                emailAddress: existingTrainerMetalMill.email,
-                memberNumber: existingTrainerMetalMill.memberNumber,
-              }
-            },
+          actor: {
+            tag: "user",
+            user: {
+              emailAddress: existingTrainerMetalMill.email,
+              memberNumber: existingTrainerMetalMill.memberNumber,
+            }
+          },
           });
         });
 

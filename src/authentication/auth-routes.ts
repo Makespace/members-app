@@ -1,19 +1,15 @@
 import {Dependencies} from '../dependencies';
-import {Safe, safe} from '../types/html';
-import {Route, get, post} from '../types/route';
-import {auth, landing, callback, invalidLink, logIn, logOut} from './handlers';
+import {Config} from '../configuration';
+import {Route} from '../types/route';
+import { routes as verifyEmailRoutes } from './verify-email/routes';
+import { loginRoutes } from './login/routes';
 
-export const logInPath: Safe = safe('/log-in');
-const invalidLinkPath = '/auth/invalid-magic-link';
-
-export const authRoutes = (deps: Dependencies): ReadonlyArray<Route> => {
+export const authRoutes = (
+  deps: Dependencies,
+  conf: Config
+): ReadonlyArray<Route> => {
   return [
-    get(logInPath, logIn(deps)),
-    get('/log-out', logOut),
-    post('/auth', auth),
-    get('/auth', (_req, res) => res.redirect(logInPath)),
-    get('/auth/landing', landing),
-    get('/auth/callback', callback(invalidLinkPath)),
-    get(invalidLinkPath, invalidLink(logInPath)),
+    ...loginRoutes(deps),
+    ...verifyEmailRoutes(deps, conf),
   ];
 };

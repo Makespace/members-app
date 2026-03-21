@@ -1,10 +1,12 @@
 import {DomainEvent} from '../../types/domain-event';
+import {EmailAddress} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
 import {gravatarHashFromEmail} from '../members/avatar';
 import {
   areasTable,
   equipmentTable,
+  memberEmailsTable,
   membersTable,
   ownersTable,
   trainedMemberstable,
@@ -12,11 +14,11 @@ import {
   trainingStatsNotificationTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {and, eq, inArray, sql} from 'drizzle-orm';
+import {and, eq, inArray, isNotNull, sql} from 'drizzle-orm';
 import {isOwnerOfAreaContainingEquipment} from './area/helpers';
 import {pipe} from 'fp-ts/lib/function';
 import {MemberLinking} from './member-linking';
-import { normaliseEmailAddress } from './normalise-email-address';
+import {normaliseEmailAddress} from './normalise-email-address';
 
 const revokeSuperuser = (db: BetterSQLite3Database, memberNumber: number) =>
   db
@@ -25,25 +27,148 @@ const revokeSuperuser = (db: BetterSQLite3Database, memberNumber: number) =>
     .where(eq(membersTable.memberNumber, memberNumber))
     .run();
 
+const setPrimaryEmailAddress = (
+  db: BetterSQLite3Database,
+  memberNumber: number,
+  emailAddress: EmailAddress
+) =>
+  db
+    .update(membersTable)
+    .set({
+      primaryEmailAddress: emailAddress,
+      gravatarHash: gravatarHashFromEmail(emailAddress),
+    })
+    .where(eq(membersTable.memberNumber, memberNumber))
+    .run();
+
+const findMemberEmail = (
+  db: BetterSQLite3Database,
+  memberNumber: number,
+  emailAddress: EmailAddress
+) =>
+  O.fromNullable(
+    db
+      .select()
+      .from(memberEmailsTable)
+      .where(
+        and(
+          eq(memberEmailsTable.memberNumber, memberNumber),
+          eq(memberEmailsTable.emailAddress, emailAddress)
+        )
+      )
+      .limit(1)
+      .get()
+  );
+
+const insertMemberEmail = (
+  db: BetterSQLite3Database,
+  memberNumber: number,
+  emailAddress: EmailAddress,
+  addedAt: Date,
+  verifiedAt: Date | null
+) =>
+  db
+    .insert(memberEmailsTable)
+    .values({
+      memberNumber,
+      emailAddress,
+      addedAt,
+      verifiedAt: verifiedAt ?? undefined,
+    })
+    .run();
+
 export const updateState =
   (db: BetterSQLite3Database, linking: MemberLinking) =>
   (event: DomainEvent) => {
     switch (event.type) {
-      case 'MemberNumberLinkedToEmail':
+      case 'MemberNumberLinkedToEmail': {
+        const normalisedEmailAddress = normaliseEmailAddress(event.email);
         linking.link([event.memberNumber]);
-        db.insert(membersTable)
-          .values({
-            memberNumber: event.memberNumber,
-            emailAddress: normaliseEmailAddress(event.email),
-            gravatarHash: gravatarHashFromEmail(event.email),
-            name: O.fromNullable(event.name),
-            formOfAddress: O.fromNullable(event.formOfAddress),
-            isSuperUser: false,
-            agreementSigned: undefined,
-            superUserSince: undefined,
-            status: 'inactive',
-            joined: event.recordedAt,
+        const existingMember = O.fromNullable(
+          db
+            .select()
+            .from(membersTable)
+            .where(eq(membersTable.memberNumber, event.memberNumber))
+            .limit(1)
+            .get()
+        );
+        if (O.isNone(existingMember)) {
+          db.insert(membersTable)
+            .values({
+              memberNumber: event.memberNumber,
+              primaryEmailAddress: normalisedEmailAddress,
+              gravatarHash: gravatarHashFromEmail(normalisedEmailAddress),
+              name: O.fromNullable(event.name),
+              formOfAddress: O.fromNullable(event.formOfAddress),
+              isSuperUser: false,
+              agreementSigned: undefined,
+              superUserSince: undefined,
+              status: 'inactive',
+              joined: event.recordedAt,
+            })
+            .run();
+        }
+        if (
+          O.isNone(findMemberEmail(db, event.memberNumber, normalisedEmailAddress))
+        ) {
+          insertMemberEmail(
+            db,
+            event.memberNumber,
+            normalisedEmailAddress,
+            event.recordedAt,
+            event.recordedAt
+          );
+        }
+        setPrimaryEmailAddress(db, event.memberNumber, normalisedEmailAddress);
+        break;
+      }
+      case 'MemberEmailAdded': {
+        const normalisedEmailAddress = normaliseEmailAddress(event.email);
+        if (
+          O.isNone(findMemberEmail(db, event.memberNumber, normalisedEmailAddress))
+        ) {
+          insertMemberEmail(
+            db,
+            event.memberNumber,
+            normalisedEmailAddress,
+            event.recordedAt,
+            null
+          );
+        }
+        break;
+      }
+      case 'MemberEmailVerified':
+        db.update(memberEmailsTable)
+          .set({verifiedAt: event.recordedAt})
+          .where(
+            and(
+              eq(memberEmailsTable.memberNumber, event.memberNumber),
+              eq(
+                memberEmailsTable.emailAddress,
+                normaliseEmailAddress(event.email)
+              )
+            )
+          )
+          .run();
+        break;
+      case 'MemberPrimaryEmailChanged':
+        setPrimaryEmailAddress(
+          db,
+          event.memberNumber,
+          normaliseEmailAddress(event.email)
+        );
+        break;
+      case 'MemberEmailVerificationRequested':
+        db.update(memberEmailsTable)
+          .set({
+            verificationLastSent: event.recordedAt
           })
+          .where(
+            and(
+              eq(memberEmailsTable.memberNumber, event.memberNumber),
+              eq(memberEmailsTable.emailAddress, normaliseEmailAddress(event.email))
+            )
+          )
           .run();
         break;
       case 'MemberDetailsUpdated':
@@ -282,12 +407,30 @@ export const updateState =
         break;
       case 'RecurlySubscriptionUpdated': {
         const status = event.hasActiveSubscription ? 'active' : 'inactive';
-        db.update(membersTable)
-          .set({
-            status,
+        const memberNumbers = db
+          .select({
+            memberNumber: memberEmailsTable.memberNumber,
           })
-          .where(eq(membersTable.emailAddress, normaliseEmailAddress(event.email)))
-          .run();
+          .from(memberEmailsTable)
+          .where(
+            and(
+              eq(
+                memberEmailsTable.emailAddress,
+                normaliseEmailAddress(event.email)
+              ),
+              isNotNull(memberEmailsTable.verifiedAt)
+            )
+          )
+          .all()
+          .map(row => row.memberNumber);
+        if (memberNumbers.length > 0) {
+          db.update(membersTable)
+            .set({
+              status,
+            })
+            .where(inArray(membersTable.memberNumber, memberNumbers))
+            .run();
+        }
         break;
       }
       case 'MemberRejoinedWithNewNumber': {

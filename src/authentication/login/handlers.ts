@@ -9,17 +9,16 @@ import passport from 'passport';
 import {magicLink} from './magic-link';
 import {logInPage} from './log-in-page';
 import {checkYourMailPage} from './check-your-mail';
-import {oopsPage, isolatedPageTemplate} from '../templates';
+import {oopsPage, isolatedPageTemplate} from '../../templates';
 import {StatusCodes} from 'http-status-codes';
 import {getUserFromSession} from './get-user-from-session';
-import {Dependencies} from '../dependencies';
+import {Dependencies} from '../../dependencies';
 import {
   html,
-  HtmlSubstitution,
   CompleteHtmlDocument,
   sanitizeString,
   safe,
-} from '../types/html';
+} from '../../types/html';
 
 export const logIn =
   (deps: Dependencies) =>
@@ -56,19 +55,6 @@ export const auth = (req: Request, res: Response<CompleteHtmlDocument>) => {
     )
   );
 };
-
-export const invalidLink =
-  (logInPath: HtmlSubstitution) =>
-  (req: Request, res: Response<CompleteHtmlDocument>) => {
-    res
-      .status(StatusCodes.UNAUTHORIZED)
-      .send(
-        oopsPage(
-          html`The link you have used is (no longer) valid. Go back to the
-            <a href=${logInPath}>log in</a> page.`
-        )
-      );
-  };
 
 export const landing = (req: Request, res: Response<CompleteHtmlDocument>) => {
   const index = req.originalUrl.indexOf('?');

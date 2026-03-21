@@ -142,7 +142,7 @@ const decideOwnersToEmail =
             tag: 'system',
           },
           toMemberNumber: owner.memberNumber,
-          toMemberEmail: owner.emailAddress,
+          toMemberEmail: owner.primaryEmailAddress,
         })
       )();
       if (E.isLeft(emailSentEventResp)) {
@@ -184,10 +184,13 @@ export const trainingSummaryEmail = async (deps: TrainingSummaryDeps) => {
   for (const owner of ownersToEmail) {
     const logger = deps.logger.child({
       owner_membership_number: owner.memberNumber,
-      owner_email: owner.emailAddress,
+      owner_email: owner.primaryEmailAddress,
     });
     logger.info('Generating email body...');
-    const email = generateTrainingSummaryEmail(owner.emailAddress, content);
+    const email = generateTrainingSummaryEmail(
+      owner.primaryEmailAddress,
+      content
+    );
     logger.info('Sending email...');
     const sentEmailResp = await deps.sendEmail(email)();
     if (E.isLeft(sentEmailResp)) {

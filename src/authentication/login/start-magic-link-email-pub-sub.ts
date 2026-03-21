@@ -3,10 +3,10 @@ import PubSub from 'pubsub-js';
 import * as TE from 'fp-ts/TaskEither';
 import {formatValidationErrors} from 'io-ts-reporters';
 import * as E from 'fp-ts/Either';
-import {EmailAddressCodec, failure} from '../types';
-import {Dependencies} from '../dependencies';
+import {EmailAddressCodec, failure} from '../../types';
+import {Dependencies} from '../../dependencies';
 import {sendLogInLink} from './send-log-in-link';
-import {Config} from '../configuration';
+import {Config} from '../../configuration';
 
 const validateEmail = (input: unknown) =>
   pipe(

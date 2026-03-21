@@ -15,6 +15,7 @@ import {html, CompleteHtmlDocument, safe, sanitizeString} from '../types/html';
 import {SendEmail} from '../commands';
 import {Config} from '../configuration';
 import {isolatedPageTemplate} from '../templates/page-template';
+import { Route } from '../types/route';
 
 const getActorFrom = (session: unknown, deps: Dependencies) =>
   pipe(
@@ -88,7 +89,7 @@ const emailPost =
 
 export const emailHandler =
   (conf: Config, deps: Dependencies) =>
-  <T>(path: string, command: SendEmail<T>) => ({
+  <T>(path: string, command: SendEmail<T>): Route => ({
     path: `/send-email/${path}`,
     handler: flow(emailPost, expressAsyncHandler)(conf, deps, command),
     method: 'post' as const,

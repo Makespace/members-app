@@ -3,7 +3,7 @@ import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import {EmailAddress, Failure, failure} from '../../src/types';
 import {happyPathAdapters} from '../init-dependencies/happy-path-adapters.helper';
-import {sendLogInLink} from '../../src/authentication/send-log-in-link';
+import {sendLogInLink} from '../../src/authentication/login/send-log-in-link';
 import {Config} from '../../src/configuration';
 import {TestFramework, initTestFramework} from '../read-models/test-framework';
 import {Dependencies} from '../../src/dependencies';
@@ -159,6 +159,50 @@ describe('send-log-in-link', () => {
 
       it('does not try to send an email', () => {
         expect(deps.sendEmail).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('when the member has an additional email address', () => {
+      const secondaryEmail = faker.internet.email() as EmailAddress;
+
+      beforeEach(async () => {
+        await framework.commands.members.addEmail({
+          memberNumber,
+          email: secondaryEmail,
+        });
+      });
+
+      it('does not allow login with an unverified additional email', async () => {
+        const result = await sendLogInLink(deps, conf)(secondaryEmail)();
+        expect(result).toStrictEqual(
+          E.left(
+            expect.objectContaining({
+              message: 'No member associated with that email',
+            })
+          )
+        );
+      });
+
+      describe('and that additional email has been verified', () => {
+        beforeEach(async () => {
+          await framework.commands.members.verifyEmail({
+            memberNumber,
+            emailAddress: secondaryEmail,
+          });
+        });
+
+        it('sends the login email to the matched verified address', async () => {
+          const result = getRightOrFail(
+            await sendLogInLink(deps, conf)(secondaryEmail)()
+          );
+
+          expect(deps.sendEmail).toHaveBeenCalledWith(
+            expect.objectContaining({
+              recipient: secondaryEmail,
+            })
+          );
+          expect(result).toStrictEqual(`Sent login link to ${secondaryEmail}`);
+        });
       });
     });
   });

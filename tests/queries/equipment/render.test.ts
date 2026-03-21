@@ -29,12 +29,13 @@ describe('Render equipment page', () => {
     const trainer: Readonly<TrainerInfo> = {
         name: O.some(faker.animal.dog()),
         memberNumber: faker.number.int({min: 1}),
-        emailAddress: faker.internet.email() as EmailAddress,
+        primaryEmailAddress: faker.internet.email() as EmailAddress,
         pastMemberNumbers: [],
         markedTrainerByActor: O.some({
             tag: 'user',
             user: {
                 emailAddress: faker.internet.email() as EmailAddress,
+                primaryEmailAddress: faker.internet.email() as EmailAddress,
                 memberNumber: faker.number.int({min: 1}),
             }
         }),
@@ -43,17 +44,18 @@ describe('Render equipment page', () => {
     const trainedMember: Readonly<TrainedMember> = {
         name: O.some(faker.animal.dog()),
         memberNumber: faker.number.int({min: 1}),
-        emailAddress: faker.internet.email() as EmailAddress,
+        primaryEmailAddress: faker.internet.email() as EmailAddress,
         pastMemberNumbers: [],
         markedTrainedByActor: O.some({
             tag: 'user',
             user: {
                 memberNumber: trainer.memberNumber,
-                emailAddress: trainer.emailAddress,
+                emailAddress: trainer.primaryEmailAddress,
+                primaryEmailAddress: trainer.primaryEmailAddress,
             }
         }),
         trainedByMemberNumber: O.some(trainer.memberNumber),
-        trainedByEmail: O.some(trainer.emailAddress),
+        trainedByEmail: O.some(trainer.primaryEmailAddress),
         trainedSince: faker.date.between({from: trainer.trainerSince, to: new Date()}),
         legacyImport: false,
     };

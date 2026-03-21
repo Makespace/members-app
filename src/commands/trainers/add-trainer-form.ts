@@ -9,7 +9,7 @@ import {
   sanitizeString,
   toLoggedInContent,
 } from '../../types/html';
-import {User} from '../../types';
+import {EmailAddress} from '../../types';
 import {Form} from '../../types/form';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {failureWithStatus} from '../../types/failure-with-status';
@@ -28,7 +28,10 @@ import {
 import {eq} from 'drizzle-orm';
 
 type ViewModel = {
-  areaOwnersThatAreNotTrainers: ReadonlyArray<User>;
+  areaOwnersThatAreNotTrainers: ReadonlyArray<{
+    memberNumber: number;
+    primaryEmailAddress: EmailAddress;
+  }>;
   equipment: Equipment;
 };
 
@@ -56,7 +59,7 @@ const renderForm = (viewModel: ViewModel) => {
     RA.map(
       member =>
         html`<tr>
-          <td>${sanitizeString(member.emailAddress)}</td>
+          <td>${sanitizeString(member.primaryEmailAddress)}</td>
           <td>${renderMemberNumber(member.memberNumber)}</td>
           <td>
             <form action="#" method="post">
@@ -126,7 +129,7 @@ const getPotentialTrainers = (db: SharedReadModel['db'], equipmentId: UUID) => {
   );
   const owners = db
     .select({
-      emailAddress: membersTable.emailAddress,
+      primaryEmailAddress: membersTable.primaryEmailAddress,
       memberNumber: membersTable.memberNumber,
     })
     .from(ownersTable)

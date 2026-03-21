@@ -4,7 +4,7 @@ import {UUID} from 'io-ts-types';
 
 export type TrainedMember = Pick<
   MemberCoreInfo,
-  'name' | 'memberNumber' | 'emailAddress' | 'pastMemberNumbers'
+  'name' | 'memberNumber' | 'primaryEmailAddress' | 'pastMemberNumbers'
 > & {
   markedTrainedByActor: O.Option<Actor>;
   trainedByMemberNumber: O.Option<number>;
@@ -15,7 +15,7 @@ export type TrainedMember = Pick<
 
 export type TrainerInfo = Pick<
   MemberCoreInfo,
-  'name' | 'memberNumber' | 'emailAddress' | 'pastMemberNumbers'
+  'name' | 'memberNumber' | 'primaryEmailAddress' | 'pastMemberNumbers'
 > & {
   markedTrainerByActor: O.Option<Actor>;
   trainerSince: Date;
@@ -46,6 +46,13 @@ export type TrainerFor = {
   since: Date;
 };
 
+export type MemberEmail = {
+  emailAddress: EmailAddress;
+  verifiedAt: O.Option<Date>;
+  verificationLastSent: O.Option<Date>;
+  addedAt: Date;
+};
+
 export type OwnerOf = {
   id: string;
   name: string;
@@ -55,7 +62,8 @@ export type OwnerOf = {
 export type MemberCoreInfo = {
   memberNumber: number;
   pastMemberNumbers: ReadonlyArray<number>;
-  emailAddress: EmailAddress;
+  primaryEmailAddress: EmailAddress;
+  emails: ReadonlyArray<MemberEmail>;
   name: O.Option<string>;
   formOfAddress: O.Option<string>;
   agreementSigned: O.Option<Date>;
@@ -86,7 +94,7 @@ export type Owner = Pick<
   MemberCoreInfo,
   | 'memberNumber'
   | 'name'
-  | 'emailAddress'
+  | 'primaryEmailAddress'
   | 'pastMemberNumbers'
   | 'agreementSigned'
 > & {
