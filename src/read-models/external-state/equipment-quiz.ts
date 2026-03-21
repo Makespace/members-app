@@ -52,9 +52,7 @@ const extractFailedQuizes = (
 const getQuizResults = (
   deps: Pick<Dependencies, 'lastQuizSync' | 'getSheetData'>,
   sheetId: string,
-  _skip: ReadonlyArray<
-    Pick<MemberCoreInfo, 'memberNumber' | 'pastMemberNumbers' | 'emailAddress'>
-  >
+  _skip: ReadonlyArray<Pick<MemberCoreInfo, 'memberNumber' | 'pastMemberNumbers'>>
 ): TE.TaskEither<string, EquipmentQuizResults> => {
   return pipe(
     TE.Do,

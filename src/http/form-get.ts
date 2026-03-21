@@ -7,7 +7,7 @@ import {Dependencies} from '../dependencies';
 import {oopsPage, pageTemplate} from '../templates';
 import {Form} from '../types/form';
 import {CompleteHtmlDocument, sanitizeString} from '../types/html';
-import {logInPath} from '../authentication/auth-routes';
+import {logInPath} from '../authentication/login/routes';
 
 // See formPost for a more indepth discussion about the design decisions around why this is how it is.
 // formGet is like formPost but rather than processing a command formGet handles calling a read model to

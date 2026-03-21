@@ -6,9 +6,16 @@ import {EmailAddress} from '../types';
 
 type Member = {
   memberNumber: number;
-  emailAddress: EmailAddress;
   name: O.Option<string>;
-};
+} & (
+  | {emailAddress: EmailAddress}
+  | {primaryEmailAddress: EmailAddress}
+);
+
+const getDisplayEmailAddress = (member: Member) =>
+  'primaryEmailAddress' in member
+    ? member.primaryEmailAddress
+    : member.emailAddress;
 
 const renderMember = (member: Member) =>
   O.isSome(member.name)
@@ -16,7 +23,7 @@ const renderMember = (member: Member) =>
         >${sanitizeString(member.name.value)}<a></a
       ></a>`
     : html`<a href="/member/${member.memberNumber}"
-        >${sanitizeString(member.emailAddress)}<a></a
+        >${sanitizeString(getDisplayEmailAddress(member))}<a></a
       ></a>`;
 
 export const renderMembersAsList = (members: ReadonlyArray<Member>) =>

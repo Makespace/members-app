@@ -84,7 +84,7 @@ const expandTrainedMembers =
                 pipe(
                   linking.map(trainedByMemberNumber),
                   getMergedMemberSet(db),
-                  O.map(m => m.emailAddress)
+                  O.map(m => m.primaryEmailAddress)
                 )
               ),
               O.flatten

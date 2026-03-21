@@ -6,7 +6,7 @@ import {getUserFromSession} from '../authentication';
 import {StatusCodes} from 'http-status-codes';
 import {oopsPage, pageTemplate} from '../templates';
 import {Query, Params} from '../queries/query';
-import {logInPath} from '../authentication/auth-routes';
+import {logInPath} from '../authentication/login/routes';
 import {CompleteHtmlDocument, sanitizeString} from '../types/html';
 import * as O from 'fp-ts/Option';
 import {match} from '../types/tagged-union';

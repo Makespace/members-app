@@ -3,6 +3,8 @@ import {html} from '../types/html';
 import {gravatarHashFromEmail} from '../read-models/members/avatar';
 import {getGravatarThumbnail} from './avatar';
 
+// TODO consider allowing users to specify what email is used for gravatar.
+// For now we just use the email provided.
 export const loggedInUserSquare = (member: User) => html`
   <a href="/me">
     ${getGravatarThumbnail(

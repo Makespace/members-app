@@ -5,8 +5,7 @@ import {html, Safe, safe, sanitizeString, toLoggedInContent} from '../../types/h
 import {Form} from '../../types/form';
 import {getEquipmentIdFromForm} from '../equipment/get-equipment-id-from-form';
 import {memberInput} from '../../templates/member-input';
-import {Member} from '../../read-models/members';
-import {Equipment} from '../../read-models/shared-state/return-types';
+import {Equipment, Member} from '../../read-models/shared-state/return-types';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {dateTimeInput} from '../../templates/date-time-input';

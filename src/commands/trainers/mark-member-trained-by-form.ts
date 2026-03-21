@@ -10,8 +10,7 @@ import {
 } from '../../types/html';
 import {Form} from '../../types/form';
 import {getEquipmentIdFromForm} from '../equipment/get-equipment-id-from-form';
-import {Member} from '../../read-models/members';
-import {Equipment} from '../../read-models/shared-state/return-types';
+import {Equipment, Member} from '../../read-models/shared-state/return-types';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {memberNumberInputMinimal} from '../../templates/member-input-minimal';

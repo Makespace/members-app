@@ -50,7 +50,7 @@ const renderOwnerTable = (areaId: Area['id'], owners: ReadonlyArray<Owner>) =>
         <tr>
           <td>${renderMemberNumber(owner.memberNumber)}</td>
           <td>${sanitizeString(O.getOrElse(() => '-')(owner.name))}</td>
-          <td>${safe(owner.emailAddress)}</td>
+          <td>${safe(owner.primaryEmailAddress)}</td>
           <td>${renderSignedAt(owner)}</td>
           <td>${renderRemoveOwner(areaId, owner)}</td>
         </tr>

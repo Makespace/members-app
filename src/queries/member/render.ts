@@ -52,8 +52,8 @@ export const render = (viewModel: ViewModel) => html`
         <td>${renderMemberNumbers(viewModel.member.pastMemberNumbers)}</td>
       </tr>
       <tr>
-        <th scope="row">Email</th>
-        <td>${sanitizeString(viewModel.member.emailAddress)}</td>
+        <th scope="row">Primary email</th>
+        <td>${sanitizeString(viewModel.member.primaryEmailAddress)}</td>
       </tr>
       <tr>
         <th scope="row">

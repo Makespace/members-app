@@ -67,6 +67,7 @@ export const initRoutes = (
     query('/members', queries.members),
     ...command('members', 'create', commands.memberNumbers.linkNumberToEmail),
     ...command('members', 'edit-name', commands.members.editName),
+    ...command('members', 'add-email', commands.members.addEmail),
     ...command(
       'members',
       'edit-form-of-address',
@@ -74,8 +75,18 @@ export const initRoutes = (
     ),
     ...command(
       'members',
+      'change-primary-email',
+      commands.members.changePrimaryEmail
+    ),
+    ...command(
+      'members',
       'sign-owner-agreement',
       commands.members.signOwnerAgreement
+    ),
+    ...command(
+      'members',
+      'send-email-verification',
+      commands.members.sendEmailVerification
     ),
     ...command(
       'members',
@@ -96,6 +107,6 @@ export const initRoutes = (
     // Temporary location for POC - may move under individual equipments eventually.
     query('/trouble-tickets', queries.troubleTickets),
     query('/google', queries.logGoogleJson),
-    ...authRoutes(deps),
+    ...authRoutes(deps, conf),
   ];
 };

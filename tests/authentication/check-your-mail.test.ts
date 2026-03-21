@@ -1,5 +1,5 @@
 import {faker} from '@faker-js/faker';
-import {checkYourMailPage} from '../../src/authentication/check-your-mail';
+import {checkYourMailPage} from '../../src/authentication/login/check-your-mail';
 import {EmailAddress} from '../../src/types';
 
 describe('checkYourMailPage', () => {

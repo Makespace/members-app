@@ -1,7 +1,21 @@
-import {Member} from '../read-models/members';
 import {html, Html, sanitizeOption, sanitizeString} from '../types/html';
 import {getGravatarThumbnail} from './avatar';
 import {filterList} from './filter-list';
+
+type Member = {
+  memberNumber: number;
+  name: import('fp-ts/Option').Option<string>;
+  formOfAddress: import('fp-ts/Option').Option<string>;
+  gravatarHash: import('../types').GravatarHash;
+} & (
+  | {emailAddress: import('../types').EmailAddress}
+  | {primaryEmailAddress: import('../types').EmailAddress}
+);
+
+const getDisplayEmailAddress = (member: Member) =>
+  'primaryEmailAddress' in member
+    ? member.primaryEmailAddress
+    : member.emailAddress;
 
 const memberInputSelector = (member: Member): Html => html`
   <div class="fieldset-item">
@@ -15,7 +29,7 @@ const memberInputSelector = (member: Member): Html => html`
       ${getGravatarThumbnail(member.gravatarHash, member.memberNumber)}
       <span>
         ${sanitizeOption(member.name)} (${sanitizeOption(member.formOfAddress)})
-        (${sanitizeString(member.emailAddress)})
+        (${sanitizeString(getDisplayEmailAddress(member))})
       </span>
     </label>
   </div>

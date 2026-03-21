@@ -1,10 +1,12 @@
 import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
-import {Dependencies} from '../dependencies';
-import {Email, EmailAddress, Failure, failure} from '../types';
-import {Config} from '../configuration';
-import {magicLink} from '.';
+import {Dependencies} from '../../dependencies';
+import {Email, EmailAddress, Failure, failure} from '../../types';
+import {Config} from '../../configuration';
+import {magicLink} from '..';
 import mjml2html from 'mjml';
+import {normaliseEmailAddress} from '../../read-models/shared-state/normalise-email-address';
+import * as O from 'fp-ts/Option';
 
 const toEmail =
   (emailAddress: EmailAddress) =>
@@ -52,13 +54,31 @@ export const sendLogInLink = (
     deps.logger.error('While looking for email %s we found multiple users!', emailAddress);
     return TE.left(failure('Multiple members associated with that email. Please contact an administrator.')());
   }
+  const matchedEmail = pipe(
+    members[0].emails,
+    emails =>
+      emails.find(
+        memberEmail =>
+          memberEmail.emailAddress === normaliseEmailAddress(emailAddress)
+      ),
+    O.fromNullable,
+    O.getOrElseW(() => {
+      throw new Error('Expected matched verified email to be present on member');
+    }),
+    email => email.emailAddress
+  );
   // Note that we intentionally use the stored email address rather than the one provided.
   // This prevents attacks where you specify an email address that somehow matches to an existing user but isn't
   // actually treated the same by the mailserver(s) so gets routed differently (to the attacker).
-  const email = toEmail(members[0].emailAddress)(magicLink.create(conf)(members[0]));
+  const email = toEmail(matchedEmail)(
+    magicLink.create(conf)({
+      emailAddress: matchedEmail,
+      memberNumber: members[0].memberNumber,
+    })
+  );
   return pipe(
     deps.rateLimitSendingOfEmails(email),
     TE.chain(deps.sendEmail),
-    TE.map(() => `Sent login link to ${members[0].emailAddress}`)
+    TE.map(() => `Sent login link to ${matchedEmail}`)
   );
 }

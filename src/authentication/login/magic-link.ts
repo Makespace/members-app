@@ -1,18 +1,29 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
 import * as t from 'io-ts';
-import {failure} from '../types';
 import {Strategy as CustomStrategy} from 'passport-custom';
-import jwt from 'jsonwebtoken';
-import {Config} from '../configuration';
-import {Dependencies} from '../dependencies';
-import {User} from '../types/user';
-import {logPassThru} from '../util';
+import {Config} from '../../configuration';
+import {Dependencies} from '../../dependencies';
+import {User} from '../../types/user';
+import {logPassThru} from '../../util';
 import {Logger} from 'pino';
+import {createSignedToken, verifyToken} from '../signed-token';
+import { EmailAddressCodec } from '../../types';
+
+const MagicLinkTokenPayload = t.strict({
+  memberNumber: t.number,
+  emailAddress: EmailAddressCodec,
+  purpose: t.literal('MagicLinkToken')
+});
+type MagicLinkTokenPayload = t.TypeOf<typeof MagicLinkTokenPayload>;
 
 const createMagicLink = (conf: Config) => (user: User) =>
   pipe(
-    jwt.sign(user, conf.TOKEN_SECRET, {expiresIn: '10m'}),
+    {
+      ...user,
+      purpose: 'MagicLinkToken',
+    },
+    createSignedToken<MagicLinkTokenPayload>(conf, '10m'),
     token => `${conf.PUBLIC_URL}/auth/landing?token=${token}`
   );
 
@@ -20,20 +31,14 @@ const MagicLinkQuery = t.strict({
   token: t.string,
 });
 
-const verifyToken = (token: string, secret: Config['TOKEN_SECRET']) =>
-  E.tryCatch(
-    () => jwt.verify(token, secret),
-    failure('Could not verify token')
-  );
-
-const decodeMagicLinkFromQuery =
+export const decodeMagicLinkFromQuery =
   (logger: Logger, conf: Config) => (input: unknown) =>
     pipe(
       input,
       logPassThru(logger, 'Attempting to decode magic link from query'), // Logging is required as a basic form of auth enumeration detection.
       MagicLinkQuery.decode,
       E.chainW(({token}) => verifyToken(token, conf.TOKEN_SECRET)),
-      E.chainW(User.decode)
+      E.chainW(MagicLinkTokenPayload.decode)
     );
 
 const strategy = (deps: Dependencies, conf: Config) => {

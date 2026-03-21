@@ -1,6 +1,6 @@
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {MemberCoreInfo} from '../return-types';
+import {MemberCoreInfo, MemberEmail} from '../return-types';
 import {ReadonlyNonEmptyArray} from 'fp-ts/lib/ReadonlyNonEmptyArray';
 import {pipe} from 'fp-ts/lib/function';
 
@@ -17,7 +17,24 @@ export const mergeMemberCore = (
   // Undefined behaviour if mergeMemberCore is called with records that do not match the provided member numbers.
   memberNumbers: number[]
 ): MemberCoreInfo => {
-  const emailAddress = records[0].emailAddress;
+  const primaryEmailAddress = records[0].primaryEmailAddress;
+  const emails = pipe(
+    records,
+    RA.flatMap(record => record.emails),
+    RA.reduce([] as MemberEmail[], (merged, email) =>
+      merged.some(
+        existing => existing.emailAddress === email.emailAddress
+      )
+        ? merged
+        : [...merged, email]
+    ),
+    mergedEmails =>
+      pipe(
+        mergedEmails,
+        RA.partition(email => email.emailAddress === primaryEmailAddress),
+        ({left, right}) => [...right, ...left]
+      )
+  );
   const isSuperUser = records.map(r => r.isSuperUser).some(b => b);
   const superUserSince = records
     .map(r => r.superUserSince)
@@ -47,7 +64,8 @@ export const mergeMemberCore = (
       memberNumbers,
       RA.filter(m => m !== memberNumber)
     ),
-    emailAddress,
+    primaryEmailAddress,
+    emails,
     name: records[0].name,
     formOfAddress: records[0].formOfAddress,
     agreementSigned: records[0].agreementSigned,

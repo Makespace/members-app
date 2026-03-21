@@ -34,7 +34,7 @@ export const render = (viewModel: ViewModel) => {
           areaId,
           areaName,
           owner.memberNumber,
-          owner.emailAddress,
+          owner.primaryEmailAddress,
           O.getOrElse(() => '')(owner.name),
           owner.ownershipRecordedAt.toISOString(),
           O.isSome(owner.markedOwnerBy)
@@ -59,7 +59,7 @@ export const render = (viewModel: ViewModel) => {
             equipmentId,
             equipmentName,
             trainer.memberNumber,
-            trainer.emailAddress,
+            trainer.primaryEmailAddress,
             O.getOrElse(() => '')(trainer.name),
             trainer.trainerSince.toISOString(),
             O.isSome(trainer.markedTrainerByActor)
@@ -78,7 +78,7 @@ export const render = (viewModel: ViewModel) => {
             equipmentId,
             equipmentName,
             trained.memberNumber,
-            trained.emailAddress,
+            trained.primaryEmailAddress,
             trained.name,
             trained.trainedSince.toISOString(),
             trained.trainedByMemberNumber,

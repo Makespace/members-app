@@ -145,7 +145,7 @@ const getExistingAndPotentialOwners = (
   const existing = db
     .select({
       memberNumber: ownersTable.memberNumber,
-      emailAddress: membersTable.emailAddress,
+      emailAddress: membersTable.primaryEmailAddress,
       name: membersTable.name,
       agreementSigned: membersTable.agreementSigned,
     })
@@ -163,7 +163,7 @@ const getExistingAndPotentialOwners = (
   const potential = db
     .select({
       memberNumber: membersTable.memberNumber,
-      emailAddress: membersTable.emailAddress,
+      emailAddress: membersTable.primaryEmailAddress,
       name: membersTable.name,
       agreementSigned: membersTable.agreementSigned,
     })
