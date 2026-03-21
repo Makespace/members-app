@@ -1,5 +1,5 @@
 import {getGravatarProfile, getGravatarThumbnail} from '../../templates/avatar';
-import {Html, html, sanitizeOption, sanitizeString} from '../../types/html';
+import {Html, html, sanitizeOption} from '../../types/html';
 import {ViewModel} from './view-model';
 import {
   renderMemberNumber,
@@ -7,8 +7,9 @@ import {
 } from '../../templates/member-number';
 import {memberStatusTag} from '../../templates/member-status';
 import {otherMemberNumbersTooltip} from '../shared-render/other-member-numbers-tooltip';
-import { renderTrainingMatrix } from '../training-matrix/render';
-import { renderOwnerAgreementStatus } from '../shared-render/owner-agreement';
+import {renderTrainingMatrix} from '../training-matrix/render';
+import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
+import {renderMemberEmails} from '../shared-render/member-emails';
 
 const ownPageBanner = html`<h1>This is your profile!</h1>`;
 
@@ -26,6 +27,13 @@ const editFormOfAddress = (viewModel: ViewModel) =>
 
 const editAvatar = () =>
   html`<a href="https://gravatar.com/profile">Edit via Gravatar</a>`;
+
+const renderEmails = (viewModel: ViewModel) =>
+  renderMemberEmails(
+    viewModel.member.memberNumber,
+    viewModel.member.emails,
+    viewModel.member.primaryEmailAddress,
+  );
 
 const ifSelf = (viewModel: ViewModel, fragment: Html) =>
   viewModel.isSelf ? fragment : '';
@@ -51,10 +59,14 @@ export const render = (viewModel: ViewModel) => html`
         <th scope="row">Other Member Numbers ${otherMemberNumbersTooltip}</th>
         <td>${renderMemberNumbers(viewModel.member.pastMemberNumbers)}</td>
       </tr>
-      <tr>
-        <th scope="row">Primary email</th>
-        <td>${sanitizeString(viewModel.member.primaryEmailAddress)}</td>
-      </tr>
+      ${
+        viewModel.isSelf || viewModel.isSuperUser ? html`
+          <tr>
+            <th scope="row">Email addresses</th>
+            <td>${renderEmails(viewModel)}</td>
+          </tr>
+        ` : html``
+      }
       <tr>
         <th scope="row">
           <p>Name</p>
@@ -89,16 +101,17 @@ export const render = (viewModel: ViewModel) => html`
           ${ifSelf(viewModel, editAvatar())}
         </td>
       </tr>
-      ${viewModel.isSuperUser ? html`<tr>
-          <th scope="row">Owner agreement</th>
-          <td>
-            ${renderOwnerAgreementStatus(
-              viewModel.member.agreementSigned,
-              true
-            )}
-          </td>
-        </tr>`
-      : html``}
+      ${viewModel.isSuperUser
+        ? html`<tr>
+            <th scope="row">Owner agreement</th>
+            <td>
+              ${renderOwnerAgreementStatus(
+                viewModel.member.agreementSigned,
+                true
+              )}
+            </td>
+          </tr>`
+        : html``}
       ${renderTrainingMatrix(viewModel.trainingMatrix)}
     </tbody>
   </table>
