@@ -29,7 +29,7 @@ const sendVerifyEmail = (memberNumber: number, email: MemberEmail) => {
       (Date.now() - email.verificationLastSent.value.getTime()) < SEND_EMAIL_VERIFICATION_COOLDOWN_MS
     )
   ) {
-    return html`Verification Email Sent!`
+    return html`Verification Email Sent At ${sanitizeString(email.verificationLastSent.value.toLocaleTimeString())}!`
   }
   return html`
     <a
