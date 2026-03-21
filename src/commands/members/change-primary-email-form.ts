@@ -19,7 +19,7 @@ const renderForm = (viewModel: ViewModel) =>
   pipe(
     html`
       <h1>Change primary email</h1>
-      <form action="?next=/me" method="post">
+      <form action="?next=/member/${viewModel.memberNumber}" method="post">
         <label for="email">Email address</label>
         <input
           type="email"

@@ -13,17 +13,24 @@ type ViewModel = {
   user: User;
   memberNumber: number;
   emailAddress: string;
+  isSelf: boolean;
 };
 
 const renderForm = (viewModel: ViewModel) =>
   pipe(
-    html`
+    viewModel.isSelf
+    ? html`<p>
+      In order to finish adding an email to your profile it needs to be verified. Click the button below
+      to send an email with a verification link to '${sanitizeString(viewModel.emailAddress)}'
+    </p>`
+    : html`<p>
+      In order to finish adding an email to this profile (member number ${viewModel.memberNumber}) it needs to be verified.
+      Click the button below to send an email with a verification link to '${sanitizeString(viewModel.emailAddress)}'
+    </p>`,
+    (description) => html`
       <h1>Send email verification</h1>
-      <p>
-        In order to finish adding an email to your profile it needs to be verified. Click the button below
-        to send an email with a verification link to '${sanitizeString(viewModel.emailAddress)}'
-      </p>
-      <form action="?next=/me" method="post">
+      ${description}
+      <form action="?next=/member/${viewModel.memberNumber}" method="post">
         <input
           type="hidden"
           name="email"
@@ -66,6 +73,7 @@ const constructForm: Form<ViewModel>['constructForm'] =
         user,
         memberNumber: params.member,
         emailAddress: params.email,
+        isSelf: user.memberNumber === params.member
       }))
     );
 
