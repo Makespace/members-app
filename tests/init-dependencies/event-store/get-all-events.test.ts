@@ -97,7 +97,8 @@ describe('get all events', () => {
       await persistEvent(equipmentTrainingSheetRegistered);
     });
     it('returns all persisted events except EquipmentTrainingQuizResult', async () => {
-      expect(await initalisedGetAllEvents()).toStrictEqual([
+      const allEvents = await initalisedGetAllEvents();
+      expect(allEvents).toStrictEqual([
         memberNumberLinkedToEmail,
         equipmentTrainingSheetRegistered,
       ]);
@@ -203,12 +204,11 @@ describe('get all events', () => {
         await unPersistEvent(eventId, excludedBy, excludedByReason)
       });
       it('returns only events of the requested type excluding the excluded event', async () => {
-        expect(
-          await initalisedGetAllEventsByTypes(
-            'MemberNumberLinkedToEmail',
-            'EquipmentTrainingSheetRegistered'
-          )
-        ).toStrictEqual([
+        const events = await initalisedGetAllEventsByTypes(
+          'MemberNumberLinkedToEmail',
+          'EquipmentTrainingSheetRegistered'
+        );
+        expect(events).toStrictEqual([
           memberLinkedEvent,
         ]);
       });

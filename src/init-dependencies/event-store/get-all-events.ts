@@ -22,7 +22,13 @@ export const getAllEvents =
         () =>
           dbExecute(
             dbClient,
-            "SELECT * FROM events WHERE event_type != 'EquipmentTrainingQuizResult'",
+            `
+            SELECT events.*
+            FROM events
+            LEFT JOIN events_exclusions ON events.id = events_exclusions.event_id
+            WHERE events_exclusions.event_id IS NULL
+            AND events.event_type != 'EquipmentTrainingQuizResult'
+            `,
             {}
           ),
         failureWithStatus(
@@ -46,9 +52,19 @@ export const getAllEventsByType =
     pipe(
       TE.tryCatch(
         () =>
-          dbExecute(dbClient, 'SELECT * FROM events WHERE event_type = ?;', [
-            eventType,
-          ]),
+          dbExecute(
+            dbClient,
+            `
+            SELECT *
+            FROM events
+            LEFT JOIN events_exclusions ON events.id = events_exclusions.event_id
+            WHERE events_exclusions.event_id IS NULL
+            AND event_type = ?;
+            `,
+            [
+              eventType,
+            ]
+          ),
         failureWithStatus(
           `Failed to query database for events of type '${eventType}'`,
           StatusCodes.INTERNAL_SERVER_ERROR
@@ -82,7 +98,13 @@ export const getAllEventsByTypes =
         () =>
           dbExecute(
             dbClient,
-            'SELECT * FROM events WHERE event_type = ? OR event_type = ?',
+            `
+            SELECT *
+            FROM events
+            LEFT JOIN events_exclusions ON events.id = events_exclusions.event_id
+            WHERE events_exclusions.event_id IS NULL
+            AND (event_type = ? OR event_type = ?)
+            `,
             [eventType, eventType2]
           ),
         failureWithStatus(
