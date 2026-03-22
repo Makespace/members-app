@@ -14,6 +14,7 @@ import {initSharedReadModel} from '../read-models/shared-state';
 import {lastSync} from '../sync-worker/db/last_sync';
 import {getSheetData, getSheetDataByMemberNumber} from '../sync-worker/db/get_sheet_data';
 import {getTroubleTicketData} from '../sync-worker/db/get_trouble_ticket_data';
+import {excludeEvent} from './event-store/exclude-event';
 
 export const initLogger = (conf: Config) => {
   let loggerOptions: LoggerOptions;
@@ -70,6 +71,7 @@ export const initDependencies = (
 
   const deps: Dependencies = {
     commitEvent: commitEvent(eventDB, logger, sharedReadModel.asyncRefresh),
+    excludeEvent: excludeEvent(eventDB),
     getAllEvents: getAllEvents(eventDB),
     getAllEventsByType: getAllEventsByType(eventDB),
     getResourceEvents: getResourceEvents(eventDB),

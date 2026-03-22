@@ -13,3 +13,15 @@ export const EventsTable = t.strict({
   ),
 });
 export type EventsTable = t.TypeOf<typeof EventsTable>;
+
+export const EventExclusionsTable = t.strict({
+  rows: t.readonlyArray(
+    t.strict({
+      id: t.string,
+      event_id: t.string,
+      reverted_by_number: t.Int,
+      revert_reason: t.string,
+    })
+  ),
+});
+export type EventExclusionsTable = t.TypeOf<typeof EventExclusionsTable>;

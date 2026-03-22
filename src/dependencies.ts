@@ -23,6 +23,11 @@ export type Dependencies = {
     FailureWithStatus,
     {status: StatusCodes.CREATED; message: string}
   >;
+  excludeEvent: (
+    event_id: string,
+    reverted_by_number: number,
+    revert_reason: string
+  ) => TE.TaskEither<FailureWithStatus, unknown>;
   getAllEvents: () => TE.TaskEither<
     FailureWithStatus,
     ReadonlyArray<DomainEvent>

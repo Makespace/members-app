@@ -11,6 +11,7 @@ import * as libsqlClient from '@libsql/client';
 export const happyPathAdapters: Dependencies = {
   commitEvent: () => () =>
     TE.right({status: StatusCodes.CREATED, message: 'dummy create event'}),
+  excludeEvent: () => TE.right(null),
   getAllEvents: () => TE.right([]),
   getResourceEvents: () => TE.right({events: [], version: faker.number.int()}),
   sharedReadModel: initSharedReadModel(
