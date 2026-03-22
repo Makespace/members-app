@@ -6,13 +6,15 @@ import {
 } from '../../types/failure-with-status';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
-import {EventsTable} from './events-table';
+import * as RA from 'fp-ts/ReadonlyArray';
+import {EventExclusionsTable, EventsTable} from './events-table';
 import {eventsFromRows} from './events-from-rows';
 import {Client} from '@libsql/client';
 import {StatusCodes} from 'http-status-codes';
 import {DomainEvent} from '../../types';
 import {EventName, EventOfType} from '../../types/domain-event';
 import {dbExecute} from '../../util';
+import { exclusionEventsFromRows } from './exclusion-events-from-rows';
 
 export const getAllEvents =
   (dbClient: Client): Dependencies['getAllEvents'] =>
@@ -131,4 +133,33 @@ export const getAllEventsByTypes =
         ReadonlyArray<DomainEvent>,
         ReadonlyArray<EventOfType<T> | EventOfType<R>>
       >(es => es as ReadonlyArray<EventOfType<T> | EventOfType<R>>)
+    );
+
+export const getAllExclusionEvents = (dbClient: Client): Dependencies['getAllExclusionEvents'] =>
+  () =>
+    pipe(
+      TE.tryCatch(
+        () =>
+          dbExecute(
+            dbClient,
+            `
+            SELECT events_exclusions.*, events.payload, events.event_type
+            FROM events_exclusions
+            INNER JOIN events ON events.id = events_exclusions.event_id
+            `,
+            {}
+          ),
+        failureWithStatus(
+          'Failed to query database',
+          StatusCodes.INTERNAL_SERVER_ERROR
+        )
+      ),
+      TE.chainEitherK(
+        flow(
+          EventExclusionsTable.decode,
+          E.mapLeft(internalCodecFailure('Failed to decode event exclusions DB table'))
+        )
+      ),
+      TE.map(table => table.rows),
+      TE.map(exclusionEventsFromRows)
     );

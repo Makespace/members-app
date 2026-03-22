@@ -4,7 +4,6 @@ import * as TE from 'fp-ts/TaskEither';
 import * as O from 'fp-ts/Option';
 import {FailureWithStatus} from './types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
-
 import {Resource} from './types/resource';
 import {EventName, EventOfType} from './types/domain-event';
 import {SharedReadModel} from './read-models/shared-state';
@@ -12,6 +11,7 @@ import {
   SheetDataTable,
   TroubleTicketDataTable,
 } from './sync-worker/google/sheet-data-table';
+import { ExcludedEvent } from './init-dependencies/event-store/excluded-event';
 
 export type Dependencies = {
   commitEvent: (
@@ -31,6 +31,10 @@ export type Dependencies = {
   getAllEvents: () => TE.TaskEither<
     FailureWithStatus,
     ReadonlyArray<DomainEvent>
+  >;
+  getAllExclusionEvents: () => TE.TaskEither<
+    FailureWithStatus,
+    ReadonlyArray<ExcludedEvent>
   >;
   getAllEventsByType: <T extends EventName>(
     eventType: T

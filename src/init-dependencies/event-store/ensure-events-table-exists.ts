@@ -33,8 +33,9 @@ export const ensureEventTableExists = (eventDB: Client) =>
           CREATE TABLE IF NOT EXISTS events_exclusions (
             id TEXT PRIMARY KEY,
             event_id TEXT NOT NULL,
-            reverted_by_number number NOT NULL,
-            revert_reason TEXT NOT NULL
+            reverted_by_member_number INTEGER NOT NULL,
+            revert_reason TEXT NOT NULL,
+            reverted_at_timestamp_epoch_ms INTEGER NOT NULL
           );
           CREATE INDEX IF NOT EXISTS events_exclusions_event_id_idx
           ON events_exclusions (event_id);
