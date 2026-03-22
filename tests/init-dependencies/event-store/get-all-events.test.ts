@@ -120,13 +120,19 @@ describe('get all events', () => {
   });
 
   describe('getAllEventsByType', () => {
-    it('returns only events of the requested type', async () => {
-      const firstMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
-      const nonMatchingEvent = arbitraryEquipmentTrainingSheetRegisteredEvent();
-      const secondMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
+    const firstMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
+    const nonMatchingEvent = arbitraryEquipmentTrainingSheetRegisteredEvent();
+    const secondMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
+    const equipmentTrainingQuizResult = arbitraryEquipmentTrainingQuizResultEvent();
+
+    beforeEach(async () => {
       await persistEvent(firstMatchingEvent);
       await persistEvent(nonMatchingEvent);
       await persistEvent(secondMatchingEvent);
+      await persistEvent(equipmentTrainingQuizResult);
+    });
+
+    it('returns only events of the requested type', async () => {
       expect(await initalisedGetAllEventsByType('MemberNumberLinkedToEmail')).toStrictEqual([
         firstMatchingEvent,
         secondMatchingEvent,
@@ -134,12 +140,22 @@ describe('get all events', () => {
     });
 
     it('returns EquipmentTrainingQuizResult events when explicitly requested', async () => {
-      const equipmentTrainingQuizResult =
-        arbitraryEquipmentTrainingQuizResultEvent();
-      const nonMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
-      await persistEvent(equipmentTrainingQuizResult);
-      await persistEvent(nonMatchingEvent);
       expect(await initalisedGetAllEventsByType('EquipmentTrainingQuizResult')).toStrictEqual([equipmentTrainingQuizResult]);
+    });
+
+    describe('exclude an event', () => {
+      const excludedBy: number = faker.number.int();
+      const excludedByReason: string = faker.company.catchPhrase();
+      
+      beforeEach(async () => {
+        const eventId = (await dbClient.execute('SELECT id FROM events WHERE event_type = ?', [firstMatchingEvent.type])).rows[0]['id']! as string;
+        await unPersistEvent(eventId, excludedBy, excludedByReason)
+      });
+      it('returns only events of the requested type excluding the excluded event', async () => {
+        expect(await initalisedGetAllEventsByType('MemberNumberLinkedToEmail')).toStrictEqual([
+          secondMatchingEvent,
+        ]);
+      });
     });
   });
 
