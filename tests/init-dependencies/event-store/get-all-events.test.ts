@@ -160,36 +160,29 @@ describe('get all events', () => {
   });
 
   describe('getAllEventsByTypes', () => {
+    const memberLinkedEvent = arbitraryMemberNumberLinkedToEmailEvent();
+    const equipmentTrainingQuizResult = arbitraryEquipmentTrainingQuizResultEvent();
+    const trainingSheetRegisteredEvent = arbitraryEquipmentTrainingSheetRegisteredEvent();
+
+    beforeEach(async () => {
+      await persistEvent(memberLinkedEvent);
+      await persistEvent(equipmentTrainingQuizResult);
+      await persistEvent(trainingSheetRegisteredEvent);
+    });
+
     it('returns events matching either requested type', async () => {
-      const firstMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
-      const nonMatchingEvent = arbitraryEquipmentTrainingQuizResultEvent();
-      const secondMatchingEvent = arbitraryEquipmentTrainingSheetRegisteredEvent();
-
-      await persistEvent(firstMatchingEvent);
-      await persistEvent(nonMatchingEvent);
-      await persistEvent(secondMatchingEvent);
-
       expect(
         await initalisedGetAllEventsByTypes(
           'MemberNumberLinkedToEmail',
           'EquipmentTrainingSheetRegistered'
         )
       ).toStrictEqual([
-        firstMatchingEvent,
-        secondMatchingEvent,
+        memberLinkedEvent,
+        trainingSheetRegisteredEvent,
       ]);
     });
 
     it('returns EquipmentTrainingQuizResult events when one of the requested types matches', async () => {
-      const equipmentTrainingQuizResult =
-        arbitraryEquipmentTrainingQuizResultEvent();
-      const matchingEvent = arbitraryEquipmentTrainingSheetRegisteredEvent();
-      const nonMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
-
-      await persistEvent(equipmentTrainingQuizResult);
-      await persistEvent(matchingEvent);
-      await persistEvent(nonMatchingEvent);
-
       expect(
         await initalisedGetAllEventsByTypes(
           'EquipmentTrainingQuizResult',
@@ -197,8 +190,28 @@ describe('get all events', () => {
         )
       ).toStrictEqual([
         equipmentTrainingQuizResult,
-        matchingEvent,
+        trainingSheetRegisteredEvent,
       ]);
+    });
+
+    describe('exclude an event', () => {
+      const excludedBy: number = faker.number.int();
+      const excludedByReason: string = faker.company.catchPhrase();
+      
+      beforeEach(async () => {
+        const eventId = (await dbClient.execute('SELECT id FROM events WHERE event_type = ?', [trainingSheetRegisteredEvent.type])).rows[0]['id']! as string;
+        await unPersistEvent(eventId, excludedBy, excludedByReason)
+      });
+      it('returns only events of the requested type excluding the excluded event', async () => {
+        expect(
+          await initalisedGetAllEventsByTypes(
+            'MemberNumberLinkedToEmail',
+            'EquipmentTrainingSheetRegistered'
+          )
+        ).toStrictEqual([
+          memberLinkedEvent,
+        ]);
+      });
     });
   });
 });
