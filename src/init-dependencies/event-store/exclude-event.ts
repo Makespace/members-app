@@ -9,17 +9,15 @@ import {v4 as uuidv4} from 'uuid';
 import {Client} from '@libsql/client';
 import {dbExecute} from '../../util';
 
-const insertEventRow = `
+const insertEventExclusionRow = `
     INSERT INTO events_exclusions
     (id, event_id, reverted_by_number, revert_reason)
-    SELECT ?, ?, ?, ?, ?, ?
-    WHERE NOT EXISTS (
-      SELECT * FROM events
-      WHERE resource_id = ?
-        AND resource_type = ?
-        AND resource_version = ?
-    );
+    VALUES (?, ?, ?, ?);
   `;
+
+// This should only be used where an event needs to be 'deleted'.
+// This should not be used to 'undo' something. Its expected that there will only be a few
+// cases where this is used.
 export const excludeEvent =
   (
     eventDB: Client,
@@ -32,7 +30,7 @@ export const excludeEvent =
     () =>
       dbExecute(
         eventDB,
-        insertEventRow,
+        insertEventExclusionRow,
         [
           uuidv4(),
           event_id,
