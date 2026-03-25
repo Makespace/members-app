@@ -99,6 +99,11 @@ export const initRoutes = (
       'rejoined-with-existing',
       commands.memberNumbers.markMemberRejoinedWithExistingNumber
     ),
+    ...command(
+      'events',
+      'exclude-event',
+      commands.events.excludeEvent
+    ),
     email('owner-agreement-invite', sendEmailCommands.ownerAgreementInvite),
     get('/ping', ping),
     query('/db', queries.db),

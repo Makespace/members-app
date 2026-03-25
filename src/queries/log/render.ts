@@ -1,38 +1,14 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {html, safe, joinHtml, sanitizeString} from '../../types/html';
+import {html, safe, joinHtml} from '../../types/html';
 import {ViewModel, LogSearch} from './view-model';
-import {DomainEvent} from '../../types';
-import {inspect} from 'node:util';
-import {displayDate} from '../../templates/display-date';
-import {DateTime} from 'luxon';
-import {renderActor} from '../../types/actor';
 import * as qs from 'qs';
-
-const renderPayload = (event: DomainEvent) =>
-  // eslint-disable-next-line unused-imports/no-unused-vars
-  pipe(event, ({type, actor, recordedAt, ...payload}) =>
-    pipe(
-      payload,
-      Object.entries,
-      RA.map(([key, value]) => `${key}: ${inspect(value)}`),
-      RA.map(sanitizeString),
-      joinHtml
-    )
-  );
-
-const renderEntry = (event: ViewModel['events'][number]) => html`
-  <li>
-    <b>${sanitizeString(event.type)}</b> by ${renderActor(event.actor)} at
-    ${displayDate(DateTime.fromJSDate(event.recordedAt))}<br />
-    ${renderPayload(event)}
-  </li>
-`;
+import { renderEvent } from '../shared-render/render-domain-event';
 
 const renderLog = (log: ViewModel['events']) =>
   pipe(
     log,
-    RA.map(renderEntry),
+    RA.map(renderEvent),
     joinHtml,
     items => html`
       <ul>
