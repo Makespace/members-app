@@ -27,6 +27,7 @@ import {lastSync} from '../../src/sync-worker/db/last_sync';
 import {getSheetData, getSheetDataByMemberNumber} from '../../src/sync-worker/db/get_sheet_data';
 import {TrainingSummaryDeps} from '../../src/sync-worker/training-summary/training-summary-deps';
 import {NonEmptyString} from 'io-ts-types/lib/NonEmptyString';
+import { excludeEvent } from '../../src/init-dependencies/event-store/exclude-event';
 
 const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
 
@@ -87,6 +88,8 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   const frameworkGetAllEventsByType = <EN extends EventName>(eventType: EN) =>
     pipe(getAllEventsByType(eventDB)(eventType), T.map(getRightOrFail))();
 
+  const frameworkExcludeEvent = excludeEvent(eventDB);
+
   const frameworkify =
     <T>(command: Command<T>) =>
     async (commandPayload: T & {actor?: Actor}) => {
@@ -95,6 +98,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
           {
             commitEvent: frameworkCommitEvent,
             getResourceEvents: getResourceEvents(eventDB),
+            excludeEvent: frameworkExcludeEvent
           },
           command
         )(commandPayload, commandPayload.actor ?? arbitraryActor())

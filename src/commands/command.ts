@@ -7,6 +7,8 @@ import {Resource} from '../types/resource';
 import { FailureWithStatus } from '../types/failure-with-status';
 import { Dependencies } from '../dependencies';
 
+export type CommandDependencies = Pick<Dependencies, 'commitEvent' | 'getResourceEvents' | 'excludeEvent'>;
+
 export type WithActor<T> = T & {actor: Actor};
 
 export type Command<T> = {
@@ -14,7 +16,7 @@ export type Command<T> = {
   process: (input: {
     command: WithActor<T>;
     events: ReadonlyArray<DomainEvent>;
-    deps: Dependencies;
+    deps: CommandDependencies;
   }) => TE.TaskEither<FailureWithStatus, O.Option<DomainEvent>>;
   decode: Type<T, T, unknown>['decode'];
   isAuthorized: (input: {

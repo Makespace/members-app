@@ -1,18 +1,16 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
+import * as O from 'fp-ts/Option';
 import {Command} from '.';
-import {Dependencies} from '../dependencies';
 import {Actor} from '../types/actor';
 import {
   FailureWithStatus,
-  failureWithStatus,
 } from '../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
-
-type Deps = Pick<Dependencies, 'commitEvent' | 'getResourceEvents'>;
+import { CommandDependencies } from './command';
 
 export const applyToResource =
-  <T>(deps: Deps, command: Command<T>) =>
+  <T>(deps: CommandDependencies, command: Command<T>) =>
   (
     input: T,
     actor: Actor
@@ -26,13 +24,9 @@ export const applyToResource =
       resource,
       deps.getResourceEvents,
       TE.bind('event', ({events}) =>
-        pipe(
-          command.process({command: inputAndActor, events}),
-          TE.fromOption(() =>
-            failureWithStatus('no new event raised', StatusCodes.OK)()
-          )
-        )
+        command.process({command: inputAndActor, events, deps}),
       ),
-      TE.chain(({event, version}) => deps.commitEvent(resource, version)(event))
+      // If no event is raised then we still treat it as success to the user as they don't care about the difference -> if we want to raise an error then use TE.Left.
+      TE.chain(({event, version}) => O.isSome(event) ? deps.commitEvent(resource, version)(event.value) : TE.right({status: StatusCodes.CREATED, message: 'Success'}))
     );
   };
