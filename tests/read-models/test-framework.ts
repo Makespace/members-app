@@ -28,6 +28,7 @@ import {getSheetData, getSheetDataByMemberNumber} from '../../src/sync-worker/db
 import {TrainingSummaryDeps} from '../../src/sync-worker/training-summary/training-summary-deps';
 import {NonEmptyString} from 'io-ts-types/lib/NonEmptyString';
 import { excludeEvent } from '../../src/init-dependencies/event-store/exclude-event';
+import { CommandDependencies } from '../../src/commands/command';
 
 const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
 
@@ -37,6 +38,7 @@ type ToFrameworkCommands<T> = {
       process: (input: {
         command: infer C;
         events: ReadonlyArray<DomainEvent>;
+        deps: CommandDependencies;
       }) => unknown;
     }
       ? (c: Omit<C, 'actor'> & { actor?: Actor }) => Promise<void>

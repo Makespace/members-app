@@ -1,5 +1,6 @@
 import {constructEvent} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
+import * as TE from 'fp-ts/TaskEither';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
@@ -20,7 +21,8 @@ const process: Command<CreateArea>['process'] = input =>
     RA.match(
       () => O.some(constructEvent('AreaCreated')(input.command)),
       () => O.none
-    )
+    ),
+    TE.right,
   );
 
 const resource: Command<CreateArea>['resource'] = command => ({
