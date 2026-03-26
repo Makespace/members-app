@@ -40,7 +40,7 @@ export const excludeEvent =
         ]
       ),
     failureWithStatus(
-      'Failed to execlude event',
+      'Failed to exclude event',
       StatusCodes.INTERNAL_SERVER_ERROR
     )
   );
