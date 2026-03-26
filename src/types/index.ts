@@ -10,9 +10,13 @@ export type {GravatarHash} from './gravatar-hash';
 export {isoGravatarHash} from './gravatar-hash';
 export {
   DomainEvent,
+  StoredDomainEvent,
   isEventOfType,
   constructEvent,
   filterByName,
 } from './domain-event';
-export type {SubsetOfDomainEvent} from './domain-event';
+export type {
+  StoredEventOfType,
+  SubsetOfDomainEvent,
+} from './domain-event';
 export type {ResourceVersion} from './resource-version';

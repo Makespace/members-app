@@ -11,8 +11,8 @@ import {EventExclusionsTable, EventsTable} from './events-table';
 import {eventsFromRows} from './events-from-rows';
 import {Client} from '@libsql/client';
 import {StatusCodes} from 'http-status-codes';
-import {DomainEvent} from '../../types';
-import {EventName, EventOfType} from '../../types/domain-event';
+import {StoredDomainEvent, StoredEventOfType} from '../../types';
+import {EventName} from '../../types/domain-event';
 import {dbExecute} from '../../util';
 import { exclusionEventsFromRows } from './exclusion-events-from-rows';
 
@@ -87,8 +87,11 @@ export const getAllEventsByType =
       // This assumes that the DB has only returned events of the correct type.
       // This assumption avoids the need to do extra validation.
       // TODO - Pass codec to validate straight to eventsFromRows and get best of both.
-      TE.map<ReadonlyArray<DomainEvent>, ReadonlyArray<EventOfType<T>>>(
-        es => es as ReadonlyArray<EventOfType<T>>
+      TE.map<
+        ReadonlyArray<StoredDomainEvent>,
+        ReadonlyArray<StoredEventOfType<T>>
+      >(
+        es => es as ReadonlyArray<StoredEventOfType<T>>
       )
     );
 
@@ -130,9 +133,12 @@ export const getAllEventsByTypes =
       // This assumption avoids the need to do extra validation.
       // TODO - Pass codec to validate straight to eventsFromRows and get best of both.
       TE.map<
-        ReadonlyArray<DomainEvent>,
-        ReadonlyArray<EventOfType<T> | EventOfType<R>>
-      >(es => es as ReadonlyArray<EventOfType<T> | EventOfType<R>>)
+        ReadonlyArray<StoredDomainEvent>,
+        ReadonlyArray<StoredEventOfType<T> | StoredEventOfType<R>>
+      >(
+        es =>
+          es as ReadonlyArray<StoredEventOfType<T> | StoredEventOfType<R>>
+      )
     );
 
 export const getAllExclusionEvents = (dbClient: Client): Dependencies['getAllExclusionEvents'] =>
@@ -161,5 +167,5 @@ export const getAllExclusionEvents = (dbClient: Client): Dependencies['getAllExc
         )
       ),
       TE.map(table => table.rows),
-      TE.map(exclusionEventsFromRows)
+      TE.chainEitherK(exclusionEventsFromRows)
     );

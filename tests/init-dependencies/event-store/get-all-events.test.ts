@@ -6,6 +6,7 @@ import {randomUUID} from 'crypto';
 import {
   DomainEvent,
   EmailAddress,
+  StoredDomainEvent,
   constructEvent,
 } from '../../../src/types';
 import {commitEvent} from '../../../src/init-dependencies/event-store/commit-event';
@@ -50,12 +51,18 @@ describe('get all events', () => {
   const testLogger = createLogger({level: 'silent'});
   const dummyRefreshReadModel = () => T.of(undefined);
 
+  const expectStoredEvent = (event: DomainEvent) =>
+    expect.objectContaining({
+      ...event,
+      event_id: expect.any(String),
+    });
+
   let dbClient: libsqlClient.Client;
   let persistEvent: (event: DomainEvent) => Promise<void>;
   let unPersistEvent: (event_id: string, reverted_by_number: number, revert_reason: string) => Promise<void>;
-  let initalisedGetAllEvents: () => Promise<ReadonlyArray<DomainEvent>>;
-  let initalisedGetAllEventsByType: (type: EventName) => Promise<ReadonlyArray<DomainEvent>>;
-  let initalisedGetAllEventsByTypes: (type1: EventName, type2: EventName) => Promise<ReadonlyArray<DomainEvent>>;
+  let initalisedGetAllEvents: () => Promise<ReadonlyArray<StoredDomainEvent>>;
+  let initalisedGetAllEventsByType: (type: EventName) => Promise<ReadonlyArray<StoredDomainEvent>>;
+  let initalisedGetAllEventsByTypes: (type1: EventName, type2: EventName) => Promise<ReadonlyArray<StoredDomainEvent>>;
 
   beforeEach(async () => {
     dbClient = libsqlClient.createClient({url: ':memory:'});
@@ -98,9 +105,9 @@ describe('get all events', () => {
     });
     it('returns all persisted events except EquipmentTrainingQuizResult', async () => {
       const allEvents = await initalisedGetAllEvents();
-      expect(allEvents).toStrictEqual([
-        memberNumberLinkedToEmail,
-        equipmentTrainingSheetRegistered,
+      expect(allEvents).toEqual([
+        expectStoredEvent(memberNumberLinkedToEmail),
+        expectStoredEvent(equipmentTrainingSheetRegistered),
       ]);
     });
 
@@ -113,8 +120,8 @@ describe('get all events', () => {
         await unPersistEvent(eventId, excludedBy, excludedByReason)
       });
       it('returns all persisted events except EquipmentTrainingQuizResult and the excluded event', async () => {
-        expect(await initalisedGetAllEvents()).toStrictEqual([
-          equipmentTrainingSheetRegistered,
+        expect(await initalisedGetAllEvents()).toEqual([
+          expectStoredEvent(equipmentTrainingSheetRegistered),
         ]);
       });
     });
@@ -134,14 +141,16 @@ describe('get all events', () => {
     });
 
     it('returns only events of the requested type', async () => {
-      expect(await initalisedGetAllEventsByType('MemberNumberLinkedToEmail')).toStrictEqual([
-        firstMatchingEvent,
-        secondMatchingEvent,
+      expect(await initalisedGetAllEventsByType('MemberNumberLinkedToEmail')).toEqual([
+        expectStoredEvent(firstMatchingEvent),
+        expectStoredEvent(secondMatchingEvent),
       ]);
     });
 
     it('returns EquipmentTrainingQuizResult events when explicitly requested', async () => {
-      expect(await initalisedGetAllEventsByType('EquipmentTrainingQuizResult')).toStrictEqual([equipmentTrainingQuizResult]);
+      expect(await initalisedGetAllEventsByType('EquipmentTrainingQuizResult')).toEqual([
+        expectStoredEvent(equipmentTrainingQuizResult),
+      ]);
     });
 
     describe('exclude an event', () => {
@@ -153,8 +162,8 @@ describe('get all events', () => {
         await unPersistEvent(eventId, excludedBy, excludedByReason)
       });
       it('returns only events of the requested type excluding the excluded event', async () => {
-        expect(await initalisedGetAllEventsByType('MemberNumberLinkedToEmail')).toStrictEqual([
-          secondMatchingEvent,
+        expect(await initalisedGetAllEventsByType('MemberNumberLinkedToEmail')).toEqual([
+          expectStoredEvent(secondMatchingEvent),
         ]);
       });
     });
@@ -177,9 +186,9 @@ describe('get all events', () => {
           'MemberNumberLinkedToEmail',
           'EquipmentTrainingSheetRegistered'
         )
-      ).toStrictEqual([
-        memberLinkedEvent,
-        trainingSheetRegisteredEvent,
+      ).toEqual([
+        expectStoredEvent(memberLinkedEvent),
+        expectStoredEvent(trainingSheetRegisteredEvent),
       ]);
     });
 
@@ -189,9 +198,9 @@ describe('get all events', () => {
           'EquipmentTrainingQuizResult',
           'EquipmentTrainingSheetRegistered'
         )
-      ).toStrictEqual([
-        equipmentTrainingQuizResult,
-        trainingSheetRegisteredEvent,
+      ).toEqual([
+        expectStoredEvent(equipmentTrainingQuizResult),
+        expectStoredEvent(trainingSheetRegisteredEvent),
       ]);
     });
 
@@ -208,8 +217,8 @@ describe('get all events', () => {
           'MemberNumberLinkedToEmail',
           'EquipmentTrainingSheetRegistered'
         );
-        expect(events).toStrictEqual([
-          memberLinkedEvent,
+        expect(events).toEqual([
+          expectStoredEvent(memberLinkedEvent),
         ]);
       });
     });

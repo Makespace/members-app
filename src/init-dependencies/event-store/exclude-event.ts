@@ -11,8 +11,8 @@ import {dbExecute} from '../../util';
 
 const insertEventExclusionRow = `
     INSERT INTO events_exclusions
-    (id, event_id, reverted_by_number, revert_reason)
-    VALUES (?, ?, ?, ?);
+    (id, event_id, reverted_by_member_number, revert_reason, reverted_at_timestamp_epoch_ms)
+    VALUES (?, ?, ?, ?, ?);
   `;
 
 // This should only be used where an event needs to be 'deleted'.
@@ -36,6 +36,7 @@ export const excludeEvent =
           event_id,
           reverted_by_number,
           revert_reason,
+          Date.now(),
         ]
       ),
     failureWithStatus(

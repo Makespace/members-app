@@ -7,14 +7,14 @@ import {
   getAllEventsByType,
 } from '../../src/init-dependencies/event-store/get-all-events';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
-import {Actor, DomainEvent} from '../../src/types';
+import {Actor, DomainEvent, StoredDomainEvent, StoredEventOfType} from '../../src/types';
 import {pipe} from 'fp-ts/lib/function';
 import {commands, Command} from '../../src/commands';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
 import {arbitraryActor, getRightOrFail} from '../helpers';
 import * as libsqlClient from '@libsql/client';
 import {getResourceEvents} from '../../src/init-dependencies/event-store/get-resource-events';
-import {EventName, EventOfType} from '../../src/types/domain-event';
+import {EventName} from '../../src/types/domain-event';
 import {Dependencies} from '../../src/dependencies';
 import {applyToResource} from '../../src/commands/apply-command-to-resource';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
@@ -44,10 +44,10 @@ type ToFrameworkCommands<T> = {
 };
 
 export type TestFramework = {
-  getAllEvents: () => Promise<ReadonlyArray<DomainEvent>>;
+  getAllEvents: () => Promise<ReadonlyArray<StoredDomainEvent>>;
   getAllEventsByType: <T extends EventName>(
     eventType: T
-  ) => Promise<ReadonlyArray<EventOfType<T>>>;
+  ) => Promise<ReadonlyArray<StoredEventOfType<T>>>;
   commands: ToFrameworkCommands<typeof commands>;
   sharedReadModel: Dependencies['sharedReadModel'];
   depsForApplyToResource: {
@@ -172,6 +172,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       superUser: {
         declare: frameworkify(commands.superUser.declare),
         revoke: frameworkify(commands.superUser.revoke),
+      },
+      events: {
+        excludeEvent: frameworkify(commands.events.excludeEvent),
       },
     },
     trainingSummaryDeps: {

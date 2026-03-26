@@ -24,6 +24,9 @@ const renderEntry = (event: ViewModel['events'][number]) => html`
   <li>
     <b>EXCLUDED by ${renderMemberNumber(event.reverted_by_number)} at ${displayDate(DateTime.fromJSDate(event.revert_at))}
     because '${sanitizeString(event.revert_reason)}'.</b>
+    <br />
+    Event id: ${sanitizeString(event.event_id)}
+    <br />
     ${renderPayload(event.payload)}
   </li>
 `;

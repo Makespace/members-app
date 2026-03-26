@@ -2,7 +2,7 @@ import {flow, pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
 import {html, safe, toLoggedInContent} from '../../types/html';
 import {Form} from '../../types/form';
-import { DomainEvent } from '../../types';
+import {StoredDomainEvent} from '../../types';
 import { renderEvent } from '../../queries/shared-render/render-domain-event';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
@@ -12,7 +12,7 @@ import { StatusCodes } from 'http-status-codes';
 import * as O from 'fp-ts/Option';
 
 type ViewModel = {
-  event: O.Option<DomainEvent>,
+  event: O.Option<StoredDomainEvent>,
   event_id: tt.UUID,
 };
 
@@ -54,7 +54,12 @@ const constructForm: Form<ViewModel>['constructForm'] = input => ({events}) => p
     )
   ),
   E.map(params => params.event_id),
-  E.map(event_id => ({event_id, event: O.fromNullable(events.findLast((event) => event.event_id === event_id))}))
+  E.map(event_id => ({
+    event_id,
+    event: O.fromNullable(
+      events.findLast(event => event.event_id === event_id)
+    ),
+  }))
 );
 
 export const excludeEventForm: Form<ViewModel> = {
