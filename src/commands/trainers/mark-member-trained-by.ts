@@ -2,11 +2,14 @@ import {DomainEvent, constructEvent} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {Command, WithActor} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {isEquipmentTrainer} from '../is-equipment-trainer';
 import {Actor} from '../../types/actor';
 import {DateTime} from 'luxon';
+import { FailureWithStatus, failureWithStatus } from '../../types/failure-with-status';
+import { StatusCodes } from 'http-status-codes';
 
 const codec = t.strict({
   equipmentId: tt.UUID,
@@ -20,18 +23,20 @@ export type MarkMemberTrainedBy = t.TypeOf<typeof codec>;
 const process = (input: {
   command: WithActor<MarkMemberTrainedBy>;
   events: ReadonlyArray<DomainEvent>;
-}): O.Option<DomainEvent> =>
+}) =>
   input.command.actor.tag !== 'user'
-    ? O.none
-    : O.some(
-        constructEvent('MemberTrainedOnEquipmentBy')({
-          equipmentId: input.command.equipmentId,
-          trainedByMemberNumber: input.command.trainedByMemberNumber,
-          trainedAt: input.command.trainedAt,
-          memberNumber: input.command.memberNumber,
-          markedTrainedBy: input.command.actor.user.memberNumber,
-          actor: input.command.actor,
-        })
+    ? TE.left(failureWithStatus('Invalid Request', StatusCodes.BAD_REQUEST)())
+    : TE.right(
+        O.some(
+          constructEvent('MemberTrainedOnEquipmentBy')({
+            equipmentId: input.command.equipmentId,
+            trainedByMemberNumber: input.command.trainedByMemberNumber,
+            trainedAt: input.command.trainedAt,
+            memberNumber: input.command.memberNumber,
+            markedTrainedBy: input.command.actor.user.memberNumber,
+            actor: input.command.actor,
+          })
+        )
       );
 
 const resource = (command: MarkMemberTrainedBy) => ({
