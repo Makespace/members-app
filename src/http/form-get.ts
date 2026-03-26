@@ -1,5 +1,5 @@
 import {Request, Response} from 'express';
-import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import {getUserFromSession} from '../authentication';
@@ -30,13 +30,14 @@ export const formGet =
       {
         user: user.value,
         readModel: deps.sharedReadModel,
+        deps,
       },
       form.constructForm({...req.query, ...req.params}),
-      E.map(form.renderForm),
-      E.map(({title, body}) =>
+      TE.map(form.renderForm),
+      TE.map(({title, body}) =>
         pageTemplate(title, user.value, member.value.isSuperUser)(body)
       ),
-      E.matchW(
+      TE.matchW(
         failure => {
           deps.logger.error(failure, 'Failed to show form to a user');
           res

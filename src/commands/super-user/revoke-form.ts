@@ -2,6 +2,7 @@ import {flow, pipe} from 'fp-ts/lib/function';
 import * as tt from 'io-ts-types';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import {html, safe, toLoggedInContent} from '../../types/html';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
@@ -56,7 +57,8 @@ const constructForm: Form<ViewModel>['constructForm'] = input => () =>
     ),
     E.map(params => ({
       toBeRevoked: params.memberNumber,
-    }))
+    })),
+    TE.fromEither,
   );
 
 export const revokeForm: Form<ViewModel> = {

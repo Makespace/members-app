@@ -1,6 +1,7 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import {html, safe, sanitizeString, toLoggedInContent} from '../../types/html';
 import {v4} from 'uuid';
 import {Form} from '../../types/form';
@@ -55,7 +56,8 @@ const constructForm: Form<ViewModel>['constructForm'] =
     pipe(
       E.Do,
       E.bind('areaId', () => getAreaId(input)),
-      E.bind('areaName', ({areaId}) => getAreaName(readModel, areaId))
+      E.bind('areaName', ({areaId}) => getAreaName(readModel, areaId)),
+      TE.fromEither,
     );
 
 export const addForm: Form<ViewModel> = {

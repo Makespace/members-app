@@ -1,5 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import * as O from 'fp-ts/Option';
 import {
   html,
@@ -95,7 +96,8 @@ const constructForm: Form<ViewModel>['constructForm'] =
             member => !member.trainedOn.map(t => t.id).includes(equipment_id)
           )
         )
-      )
+      ),
+      TE.fromEither,
     );
 
 export const markMemberTrainedByForm: Form<ViewModel> = {

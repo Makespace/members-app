@@ -1,5 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import {html, safe, toLoggedInContent} from '../../types/html';
 import {Form} from '../../types/form';
 import {memberInput} from '../../templates/member-input';
@@ -31,7 +32,8 @@ const constructForm: Form<ViewModel>['constructForm'] =
       E.right,
       E.let('members', () =>
         readModel.members.getAll().filter(member => !member.isSuperUser)
-      )
+      ),
+      TE.fromEither,
     );
 
 export const declareForm: Form<ViewModel> = {

@@ -1,5 +1,6 @@
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import {html, safe, toLoggedInContent} from '../../types/html';
 import {Form} from '../../types/form';
 import {StoredDomainEvent} from '../../types';
@@ -13,7 +14,6 @@ import * as O from 'fp-ts/Option';
 
 type ViewModel = {
   event: O.Option<StoredDomainEvent>,
-  event_id: tt.UUID,
 };
 
 const renderForm = (viewModel: ViewModel) =>
@@ -25,14 +25,14 @@ const renderForm = (viewModel: ViewModel) =>
       </p>
       ${renderEvent(viewModel.event.value)}
       <form action="/events/exclude-event" method="post">
-        <input type="hidden" name="event_id" value="${viewModel.event_id}"/>
+        <input type="hidden" name="event_id" value="${viewModel.event.value.event_id}"/>
         <button type="submit">Confirm</button>
       </form>
     `,
     toLoggedInContent(safe('Exclude event'))
   ) : pipe(
     html`
-      <h1>Unknown event: ${viewModel.event_id}</h1>
+      <h1>Unknown event</h1>
     `,
     toLoggedInContent(safe('Exclude event'))
   );
@@ -41,7 +41,7 @@ const paramsCodec = t.strict({
   event_id: tt.UUID
 });
 
-const constructForm: Form<ViewModel>['constructForm'] = input => ({events}) => pipe(
+const constructForm: Form<ViewModel>['constructForm'] = input => ({deps}) => pipe(
   input,
   paramsCodec.decode,
   E.mapLeft(
@@ -54,12 +54,13 @@ const constructForm: Form<ViewModel>['constructForm'] = input => ({events}) => p
     )
   ),
   E.map(params => params.event_id),
-  E.map(event_id => ({
-    event_id,
-    event: O.fromNullable(
-      events.findLast(event => event.event_id === event_id)
-    ),
-  }))
+  TE.fromEither,
+  TE.chain(deps.getEventById),
+  TE.map(
+    event => ({
+      event,
+    })
+  ),
 );
 
 export const excludeEventForm: Form<ViewModel> = {

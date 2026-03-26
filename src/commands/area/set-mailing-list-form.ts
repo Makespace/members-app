@@ -1,5 +1,6 @@
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import * as t from 'io-ts';
 import {StatusCodes} from 'http-status-codes';
 import {formatValidationErrors} from 'io-ts-reporters';
@@ -88,7 +89,7 @@ const getAreaInfo = (db: SharedReadModel['db'], areaId: string) =>
 
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({readModel}): E.Either<FailureWithStatus, ViewModel> =>
+  ({readModel}) =>
     pipe(
       E.Do,
       E.bind('areaId', () => getAreaId(input)),
@@ -97,7 +98,8 @@ const constructForm: Form<ViewModel>['constructForm'] =
         areaId,
         areaName: areaInfo.areaName,
         currentEmail: areaInfo.currentEmail,
-      }))
+      })),
+      TE.fromEither,
     );
 
 export const setMailingListForm: Form<ViewModel> = {

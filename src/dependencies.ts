@@ -19,6 +19,7 @@ import {
   TroubleTicketDataTable,
 } from './sync-worker/google/sheet-data-table';
 import { ExcludedEvent } from './init-dependencies/event-store/excluded-event';
+import { UUID } from 'io-ts-types';
 
 export type Dependencies = {
   commitEvent: (
@@ -46,6 +47,10 @@ export type Dependencies = {
   getAllEventsByType: <T extends EventName>(
     eventType: T
   ) => TE.TaskEither<FailureWithStatus, ReadonlyArray<StoredEventOfType<T>>>;
+  getEventById: (event_id: UUID) => TE.TaskEither<
+    FailureWithStatus,
+    O.Option<StoredDomainEvent>
+  >;
   getResourceEvents: (resource: Resource) => TE.TaskEither<
     FailureWithStatus,
     {
