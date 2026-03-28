@@ -283,11 +283,22 @@ export const DomainEvent = t.union([
   TrainingStatNotificationSent.codec,
 ]);
 
+export const StoredDomainEvent = t.intersection([
+  DomainEvent,
+  t.strict({
+    event_id: tt.UUID,
+  }),
+]);
+
 export type DomainEvent = t.TypeOf<typeof DomainEvent>;
+export type StoredDomainEvent = t.TypeOf<typeof StoredDomainEvent>;
 
 export type EventName = DomainEvent['type'];
 
 export type EventOfType<T extends EventName> = DomainEvent & {type: T};
+export type StoredEventOfType<T extends EventName> = StoredDomainEvent & {
+  type: T;
+};
 
 export const isEventOfType =
   <T extends EventName>(name: T) =>

@@ -6,6 +6,7 @@ import {randomUUID} from 'crypto';
 import {
   DomainEvent,
   EmailAddress,
+  StoredDomainEvent,
   constructEvent,
 } from '../../../src/types';
 import {commitEvent} from '../../../src/init-dependencies/event-store/commit-event';
@@ -49,11 +50,24 @@ describe('get all events', () => {
   const testLogger = createLogger({level: 'silent'});
   const dummyRefreshReadModel = () => T.of(undefined);
 
+  const expectStoredEvent = (
+    actualEvent: StoredDomainEvent,
+    expectedEvent: DomainEvent
+  ) => {
+    expect(actualEvent).toMatchObject(expectedEvent);
+    expect(actualEvent.event_id).toEqual(expect.any(String));
+  };
+
   let dbClient: libsqlClient.Client;
   let persistEvent: (event: DomainEvent) => Promise<void>;
-  let initalisedGetAllEvents: () => Promise<ReadonlyArray<DomainEvent>>;
-  let initalisedGetAllEventsByType: (type: EventName) => Promise<ReadonlyArray<DomainEvent>>;
-  let initalisedGetAllEventsByTypes: (type1: EventName, type2: EventName) => Promise<ReadonlyArray<DomainEvent>>;
+  let initalisedGetAllEvents: () => Promise<ReadonlyArray<StoredDomainEvent>>;
+  let initalisedGetAllEventsByType: (
+    type: EventName
+  ) => Promise<ReadonlyArray<StoredDomainEvent>>;
+  let initalisedGetAllEventsByTypes: (
+    type1: EventName,
+    type2: EventName
+  ) => Promise<ReadonlyArray<StoredDomainEvent>>;
 
   beforeEach(async () => {
     dbClient = libsqlClient.createClient({url: ':memory:'});
@@ -87,10 +101,10 @@ describe('get all events', () => {
       await persistEvent(memberNumberLinkedToEmail);
       await persistEvent(equipmentTrainingQuizResult);
       await persistEvent(equipmentTrainingSheetRegistered);
-      expect(await initalisedGetAllEvents()).toStrictEqual([
-        memberNumberLinkedToEmail,
-        equipmentTrainingSheetRegistered,
-      ]);
+      const events = await initalisedGetAllEvents();
+      expect(events).toHaveLength(2);
+      expectStoredEvent(events[0], memberNumberLinkedToEmail);
+      expectStoredEvent(events[1], equipmentTrainingSheetRegistered);
     });
   });
 
@@ -102,10 +116,12 @@ describe('get all events', () => {
       await persistEvent(firstMatchingEvent);
       await persistEvent(nonMatchingEvent);
       await persistEvent(secondMatchingEvent);
-      expect(await initalisedGetAllEventsByType('MemberNumberLinkedToEmail')).toStrictEqual([
-        firstMatchingEvent,
-        secondMatchingEvent,
-      ]);
+      const events = await initalisedGetAllEventsByType(
+        'MemberNumberLinkedToEmail'
+      );
+      expect(events).toHaveLength(2);
+      expectStoredEvent(events[0], firstMatchingEvent);
+      expectStoredEvent(events[1], secondMatchingEvent);
     });
 
     it('returns EquipmentTrainingQuizResult events when explicitly requested', async () => {
@@ -114,7 +130,11 @@ describe('get all events', () => {
       const nonMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
       await persistEvent(equipmentTrainingQuizResult);
       await persistEvent(nonMatchingEvent);
-      expect(await initalisedGetAllEventsByType('EquipmentTrainingQuizResult')).toStrictEqual([equipmentTrainingQuizResult]);
+      const events = await initalisedGetAllEventsByType(
+        'EquipmentTrainingQuizResult'
+      );
+      expect(events).toHaveLength(1);
+      expectStoredEvent(events[0], equipmentTrainingQuizResult);
     });
   });
 
@@ -128,15 +148,13 @@ describe('get all events', () => {
       await persistEvent(nonMatchingEvent);
       await persistEvent(secondMatchingEvent);
 
-      expect(
-        await initalisedGetAllEventsByTypes(
-          'MemberNumberLinkedToEmail',
-          'EquipmentTrainingSheetRegistered'
-        )
-      ).toStrictEqual([
-        firstMatchingEvent,
-        secondMatchingEvent,
-      ]);
+      const events = await initalisedGetAllEventsByTypes(
+        'MemberNumberLinkedToEmail',
+        'EquipmentTrainingSheetRegistered'
+      );
+      expect(events).toHaveLength(2);
+      expectStoredEvent(events[0], firstMatchingEvent);
+      expectStoredEvent(events[1], secondMatchingEvent);
     });
 
     it('returns EquipmentTrainingQuizResult events when one of the requested types matches', async () => {
@@ -149,15 +167,13 @@ describe('get all events', () => {
       await persistEvent(matchingEvent);
       await persistEvent(nonMatchingEvent);
 
-      expect(
-        await initalisedGetAllEventsByTypes(
-          'EquipmentTrainingQuizResult',
-          'EquipmentTrainingSheetRegistered'
-        )
-      ).toStrictEqual([
-        equipmentTrainingQuizResult,
-        matchingEvent,
-      ]);
+      const events = await initalisedGetAllEventsByTypes(
+        'EquipmentTrainingQuizResult',
+        'EquipmentTrainingSheetRegistered'
+      );
+      expect(events).toHaveLength(2);
+      expectStoredEvent(events[0], equipmentTrainingQuizResult);
+      expectStoredEvent(events[1], matchingEvent);
     });
   });
 });
