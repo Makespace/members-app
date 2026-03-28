@@ -36,9 +36,11 @@ const dummyRefreshReadModel = () => T.of(undefined);
 
 const expectStoredEvent = (
   actualEvent: StoredDomainEvent,
-  expectedEvent: DomainEvent
+  expectedEvent: DomainEvent,
+  expectedIndex: number
 ) => {
   expect(actualEvent).toMatchObject(expectedEvent);
+  expect(actualEvent.event_index).toStrictEqual(expectedIndex);
   expect(actualEvent.event_id).toEqual(expect.any(String));
 };
 
@@ -97,7 +99,7 @@ describe('event-store end-to-end', () => {
       it('persists the event', async () => {
         const events = await getTestEvents();
         expect(events).toHaveLength(1);
-        expectStoredEvent(events[0], event);
+        expectStoredEvent(events[0], event, 1);
       });
 
       it('uses the initial version number', () => {
@@ -121,8 +123,8 @@ describe('event-store end-to-end', () => {
       it('persists the event', async () => {
         const events = await getTestEvents();
         expect(events).toHaveLength(2);
-        expectStoredEvent(events[0], event);
-        expectStoredEvent(events[1], event2);
+        expectStoredEvent(events[0], event, 1);
+        expectStoredEvent(events[1], event2, 2);
       });
 
       it('increments the version', () => {
@@ -153,8 +155,8 @@ describe('event-store end-to-end', () => {
       it('does not persist the event', async () => {
         const events = await getTestEvents();
         expect(events).toHaveLength(2);
-        expectStoredEvent(events[0], initialEvent);
-        expectStoredEvent(events[1], competingEvent);
+        expectStoredEvent(events[0], initialEvent, 1);
+        expectStoredEvent(events[1], competingEvent, 2);
       });
 
       it.failing('returns on left', () => {
@@ -193,7 +195,7 @@ describe('event-store end-to-end', () => {
       it('has independant events', async () => {
         expect(await getTestEvents()).toHaveLength(3);
         expect(resourceEvents.events).toHaveLength(1);
-        expectStoredEvent(resourceEvents.events[0], event);
+        expectStoredEvent(resourceEvents.events[0], event, 3);
       });
     });
   });

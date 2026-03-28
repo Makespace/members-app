@@ -52,9 +52,11 @@ describe('get all events', () => {
 
   const expectStoredEvent = (
     actualEvent: StoredDomainEvent,
-    expectedEvent: DomainEvent
+    expectedEvent: DomainEvent,
+    expectedIndex: number
   ) => {
     expect(actualEvent).toMatchObject(expectedEvent);
+    expect(actualEvent.event_index).toStrictEqual(expectedIndex);
     expect(actualEvent.event_id).toEqual(expect.any(String));
   };
 
@@ -103,8 +105,8 @@ describe('get all events', () => {
       await persistEvent(equipmentTrainingSheetRegistered);
       const events = await initalisedGetAllEvents();
       expect(events).toHaveLength(2);
-      expectStoredEvent(events[0], memberNumberLinkedToEmail);
-      expectStoredEvent(events[1], equipmentTrainingSheetRegistered);
+      expectStoredEvent(events[0], memberNumberLinkedToEmail, 1);
+      expectStoredEvent(events[1], equipmentTrainingSheetRegistered, 3);
     });
   });
 
@@ -120,8 +122,8 @@ describe('get all events', () => {
         'MemberNumberLinkedToEmail'
       );
       expect(events).toHaveLength(2);
-      expectStoredEvent(events[0], firstMatchingEvent);
-      expectStoredEvent(events[1], secondMatchingEvent);
+      expectStoredEvent(events[0], firstMatchingEvent, 1);
+      expectStoredEvent(events[1], secondMatchingEvent, 3);
     });
 
     it('returns EquipmentTrainingQuizResult events when explicitly requested', async () => {
@@ -134,7 +136,7 @@ describe('get all events', () => {
         'EquipmentTrainingQuizResult'
       );
       expect(events).toHaveLength(1);
-      expectStoredEvent(events[0], equipmentTrainingQuizResult);
+      expectStoredEvent(events[0], equipmentTrainingQuizResult, 1);
     });
   });
 
@@ -153,8 +155,8 @@ describe('get all events', () => {
         'EquipmentTrainingSheetRegistered'
       );
       expect(events).toHaveLength(2);
-      expectStoredEvent(events[0], firstMatchingEvent);
-      expectStoredEvent(events[1], secondMatchingEvent);
+      expectStoredEvent(events[0], firstMatchingEvent, 1);
+      expectStoredEvent(events[1], secondMatchingEvent, 3);
     });
 
     it('returns EquipmentTrainingQuizResult events when one of the requested types matches', async () => {
@@ -172,8 +174,8 @@ describe('get all events', () => {
         'EquipmentTrainingSheetRegistered'
       );
       expect(events).toHaveLength(2);
-      expectStoredEvent(events[0], equipmentTrainingQuizResult);
-      expectStoredEvent(events[1], matchingEvent);
+      expectStoredEvent(events[0], equipmentTrainingQuizResult, 1);
+      expectStoredEvent(events[1], matchingEvent, 2);
     });
   });
 });

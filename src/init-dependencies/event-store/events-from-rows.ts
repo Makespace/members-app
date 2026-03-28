@@ -12,6 +12,7 @@ const reshapeRowToEvent = (row: EventsTable['rows'][number]) =>
     tt.JsonFromString.decode,
     E.chain(tt.JsonRecord.decode),
     E.map(payload => ({
+      event_index: row.event_index,
       event_id: row.id,
       type: row.event_type,
       ...payload,

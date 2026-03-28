@@ -35,8 +35,15 @@ const constructArgsForNewEventRow = (
 
 const insertEventRow = `
     INSERT INTO events
-    (id, resource_id, resource_type, resource_version, event_type, payload)
-    SELECT ?, ?, ?, ?, ?, ?
+    (id, event_index, resource_id, resource_type, resource_version, event_type, payload)
+    SELECT
+      ?,
+      COALESCE((SELECT MAX(event_index) + 1 FROM events), 1),
+      ?,
+      ?,
+      ?,
+      ?,
+      ?
     WHERE NOT EXISTS (
       SELECT * FROM events
       WHERE resource_id = ?

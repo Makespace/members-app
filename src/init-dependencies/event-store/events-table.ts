@@ -3,6 +3,7 @@ import * as t from 'io-ts';
 export const EventsTable = t.strict({
   rows: t.readonlyArray(
     t.strict({
+      event_index: t.number,
       id: t.string,
       resource_id: t.string,
       resource_type: t.string,

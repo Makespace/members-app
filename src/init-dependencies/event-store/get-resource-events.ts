@@ -29,7 +29,7 @@ export const getResourceEvents =
         () =>
           dbExecute(
             dbClient,
-            'SELECT * FROM events WHERE resource_type = ? AND resource_id = ?;',
+            'SELECT * FROM events WHERE resource_type = ? AND resource_id = ? ORDER BY event_index ASC;',
             [resource.type, resource.id]
           ),
         failureWithStatus(

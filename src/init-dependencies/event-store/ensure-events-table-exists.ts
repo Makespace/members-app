@@ -11,6 +11,7 @@ export const ensureEventTableExists = (eventDB: Client) =>
         `
         CREATE TABLE IF NOT EXISTS events (
           id TEXT,
+          event_index number integer NOT NULL UNIQUE,
           resource_version number,
           resource_id TEXT,
           resource_type TEXT,
