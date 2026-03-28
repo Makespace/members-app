@@ -9,6 +9,7 @@ import {
 } from '../../read-models/test-framework';
 import {arbitraryUser} from '../../types/user.helper';
 import { FormDependencies } from '../../../src/types/form';
+import { faker } from '@faker-js/faker';
 
 describe('exclude event form', () => {
   let framework: TestFramework;
@@ -46,7 +47,7 @@ describe('exclude event form', () => {
   it('constructs a view model with no event when the event cannot be found', async () => {
     const result = getRightOrFail(
       await excludeEventForm.constructForm({
-        event_id: 'cb5bdc6d-f734-43e2-a025-b5d89a5ba3fc',
+        event_id: faker.string.uuid(),
       })({
         user: arbitraryUser(),
         readModel: framework.sharedReadModel,
