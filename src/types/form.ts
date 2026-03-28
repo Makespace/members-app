@@ -6,11 +6,13 @@ import {SharedReadModel} from '../read-models/shared-state';
 import {Member} from './tagged-union';
 import { Dependencies } from '../dependencies';
 
+export type FormDependencies = Pick<Dependencies, 'getEventById'>;
+
 export type Form<T> = {
   renderForm: (viewModel: T) => Member<HttpResponse, 'LoggedInContent'>;
   constructForm: (input: unknown) => (context: {
     user: User;
     readModel: SharedReadModel;
-    deps: Dependencies,
+    deps: FormDependencies,
   }) => TE.TaskEither<FailureWithStatus, T>;
 };
