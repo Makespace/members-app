@@ -1,7 +1,7 @@
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import {PathReporter} from 'io-ts/PathReporter';
-import {DomainEvent} from '../../src/types/domain-event';
+import {DomainEvent, StoredDomainEvent} from '../../src/types/domain-event';
 
 function unwrap<L extends t.Errors, R>(e: E.Either<L, R>): R {
   if (E.isRight(e)) {
@@ -46,6 +46,27 @@ describe('DomainEvent', () => {
       recordedAt: new Date(1991, 1, 20),
       memberNumber: 1337,
       name: 'Molly Millions',
+    });
+  });
+
+  it('validates stored events with event ids', () => {
+    const event: unknown = {
+      event_id: 'cb5bdc6d-f734-43e2-a025-b5d89a5ba3fc',
+      type: 'AreaCreated',
+      actor: {tag: 'system'},
+      recordedAt: '1991-02-20T00:00:00.000Z',
+      name: 'Craft room',
+      id: 'd1428735-0482-49c4-b16b-82503ccea74b',
+    };
+
+    const decoded = unwrap(StoredDomainEvent.decode(event));
+    expect(decoded).toEqual({
+      event_id: 'cb5bdc6d-f734-43e2-a025-b5d89a5ba3fc',
+      actor: {tag: 'system'},
+      id: 'd1428735-0482-49c4-b16b-82503ccea74b',
+      name: 'Craft room',
+      recordedAt: new Date(1991, 1, 20),
+      type: 'AreaCreated',
     });
   });
 });

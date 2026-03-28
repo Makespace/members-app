@@ -1,12 +1,19 @@
 import {Logger} from 'pino';
-import {Failure, Email, DomainEvent, ResourceVersion} from './types';
+import {
+  Failure,
+  Email,
+  DomainEvent,
+  ResourceVersion,
+  StoredDomainEvent,
+  StoredEventOfType,
+} from './types';
 import * as TE from 'fp-ts/TaskEither';
 import * as O from 'fp-ts/Option';
 import {FailureWithStatus} from './types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 
 import {Resource} from './types/resource';
-import {EventName, EventOfType} from './types/domain-event';
+import {EventName} from './types/domain-event';
 import {SharedReadModel} from './read-models/shared-state';
 import {
   SheetDataTable,
@@ -25,15 +32,15 @@ export type Dependencies = {
   >;
   getAllEvents: () => TE.TaskEither<
     FailureWithStatus,
-    ReadonlyArray<DomainEvent>
+    ReadonlyArray<StoredDomainEvent>
   >;
   getAllEventsByType: <T extends EventName>(
     eventType: T
-  ) => TE.TaskEither<FailureWithStatus, ReadonlyArray<EventOfType<T>>>;
+  ) => TE.TaskEither<FailureWithStatus, ReadonlyArray<StoredEventOfType<T>>>;
   getResourceEvents: (resource: Resource) => TE.TaskEither<
     FailureWithStatus,
     {
-      events: ReadonlyArray<DomainEvent>;
+      events: ReadonlyArray<StoredDomainEvent>;
       version: ResourceVersion;
     }
   >;
