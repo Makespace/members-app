@@ -24,6 +24,7 @@ describe('/event-log render', () => {
       },
       events: [
         {
+          event_index: 42,
           event_id: 'cb5bdc6d-f734-43e2-a025-b5d89a5ba3fc' as UUID,
           type: 'AreaCreated',
           actor: {tag: 'system'},
@@ -37,7 +38,10 @@ describe('/event-log render', () => {
     const page = renderPage(viewModel);
 
     expect(page.textContent).toContain('Event ID:');
+    expect(page.textContent).toContain('Event Index:');
+    expect(page.textContent).toContain('42');
     expect(page.textContent).toContain('cb5bdc6d-f734-43e2-a025-b5d89a5ba3fc');
     expect(page.textContent).not.toContain('event_id:');
+    expect(page.textContent).not.toContain('event_index:');
   });
 });

@@ -51,6 +51,7 @@ describe('DomainEvent', () => {
 
   it('validates stored events with event ids', () => {
     const event: unknown = {
+      event_index: 1,
       event_id: 'cb5bdc6d-f734-43e2-a025-b5d89a5ba3fc',
       type: 'AreaCreated',
       actor: {tag: 'system'},
@@ -61,6 +62,7 @@ describe('DomainEvent', () => {
 
     const decoded = unwrap(StoredDomainEvent.decode(event));
     expect(decoded).toEqual({
+      event_index: 1,
       event_id: 'cb5bdc6d-f734-43e2-a025-b5d89a5ba3fc',
       actor: {tag: 'system'},
       id: 'd1428735-0482-49c4-b16b-82503ccea74b',
