@@ -21,7 +21,7 @@ describe('markMemberTrained', () => {
   beforeEach(async () => {
     framework = await initTestFramework();
     applyMarkMemberTrained = applyToResource(
-      framework.depsForApplyToResource,
+      framework,
       markMemberTrained
     );
   });

@@ -2,7 +2,7 @@ import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
 import {DomainEvent, isEventOfType} from '../../../src/types';
 import {pipe} from 'fp-ts/lib/function';
-import {arbitraryActor, getSomeOrFail} from '../../helpers';
+import {arbitraryActor, getRightOrFail, getSomeOrFail} from '../../helpers';
 import {applyToResource} from '../../../src/commands/apply-command-to-resource';
 import {
   TestFramework,
@@ -22,7 +22,7 @@ describe('markMemberRejoinedWithNewNumber', () => {
   beforeEach(async () => {
     framework = await initTestFramework();
     applyMarkMemberRejoinedWithNewNumber = applyToResource(
-      framework.depsForApplyToResource,
+      framework,
       markMemberRejoinedWithNewNumber
     );
   });
@@ -53,14 +53,13 @@ describe('markMemberRejoinedWithNewNumber', () => {
 
   describe('link 2 memberships together', () => {
     const events: ReadonlyArray<DomainEvent> = [];
-    const event = pipe(
-      {command, events},
-      markMemberRejoinedWithNewNumber.process,
-      O.filter(isEventOfType('MemberRejoinedWithNewNumber')),
-      getSomeOrFail
-    );
-
-    it('raises an event linking the memberships', () => {
+    it('raises an event linking the memberships', async () => {
+      const event = pipe(
+        await markMemberRejoinedWithNewNumber.process({command, events, deps: framework})(),
+        getRightOrFail,
+        O.filter(isEventOfType('MemberRejoinedWithNewNumber')),
+        getSomeOrFail
+      );
       expect(event.oldMemberNumber).toStrictEqual(command.oldMemberNumber);
       expect(event.newMemberNumber).toStrictEqual(command.newMemberNumber);
       expect(event.actor).toStrictEqual(command.actor);
