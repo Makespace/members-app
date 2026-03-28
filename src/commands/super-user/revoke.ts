@@ -2,6 +2,7 @@ import {constructEvent} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
@@ -27,7 +28,8 @@ const process: Command<RevokeSuperUser>['process'] = input =>
         event.type === 'SuperUserDeclared'
           ? O.some(constructEvent('SuperUserRevoked')(input.command))
           : O.none
-    )
+    ),
+    TE.right
   );
 
 export const revoke: Command<RevokeSuperUser> = {

@@ -1,4 +1,5 @@
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import {Command} from '../command';
@@ -7,6 +8,8 @@ import {isSelfOrPrivileged} from '../is-self-or-privileged';
 import {projectMemberEmailStates, SEND_EMAIL_VERIFICATION_COOLDOWN_MS} from './email-state';
 import {normaliseEmailAddress} from '../../read-models/shared-state/normalise-email-address';
 import { publish } from 'pubsub-js';
+import { failureWithStatus } from '../../types/failure-with-status';
+import { StatusCodes } from 'http-status-codes';
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,
@@ -20,19 +23,19 @@ const process: Command<SendMemberEmailVerification>['process'] = input => {
     input.command.memberNumber
   );
   if (state === undefined) {
-    return O.none;
+    return TE.left(failureWithStatus('Bad Request', StatusCodes.BAD_REQUEST)());
   }
 
   const emailAddress = normaliseEmailAddress(input.command.email);
   const email = state.emails[emailAddress];
   if (!email || email.verified) {
-    return O.none;
+    return TE.left(failureWithStatus('Bad Request', StatusCodes.BAD_REQUEST)());
   }
 
   if (email.verificationLastSent) {
     const sinceLastMs = Date.now() - email.verificationLastSent.getTime();
     if (sinceLastMs < SEND_EMAIL_VERIFICATION_COOLDOWN_MS) {
-      return O.none;
+      return TE.left(failureWithStatus('Bad Request', StatusCodes.BAD_REQUEST)());
     }
   }
 
@@ -44,13 +47,13 @@ const process: Command<SendMemberEmailVerification>['process'] = input => {
     emailAddress, 
   });
 
-  return O.some(
+  return TE.right(O.some(
     constructEvent('MemberEmailVerificationRequested')({
       actor: input.command.actor,
       memberNumber: input.command.memberNumber,
       email: emailAddress,
     })
-  );
+  ));
 };
 
 const resource = () => ({

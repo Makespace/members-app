@@ -11,7 +11,7 @@ import {
   isEventOfType,
 } from '../../../src/types';
 import {pipe} from 'fp-ts/lib/function';
-import {arbitraryActor, getSomeOrFail} from '../../helpers';
+import {arbitraryActor, getRightOrFail, getSomeOrFail} from '../../helpers';
 import {applyToResource} from '../../../src/commands/apply-command-to-resource';
 import {
   TestFramework,
@@ -26,7 +26,7 @@ describe('linkNumberToEmail', () => {
   beforeEach(async () => {
     framework = await initTestFramework();
     applyLinkNumberToEmail = applyToResource(
-      framework.depsForApplyToResource,
+      framework,
       linkNumberToEmail
     );
   });
@@ -65,8 +65,11 @@ describe('linkNumberToEmail', () => {
         actor: arbitraryActor(),
       }),
     ];
-    const result = linkNumberToEmail.process({command, events});
-    it('returns none', () => {
+    it('returns none', async () => {
+      const result = pipe(
+        await linkNumberToEmail.process({command, events, deps: framework})(),
+        getRightOrFail,
+      );
       expect(result).toStrictEqual(O.none);
     });
   });
@@ -81,29 +84,29 @@ describe('linkNumberToEmail', () => {
         actor: arbitraryActor(),
       }),
     ];
-    const result = pipe(
-      {command, events},
-      linkNumberToEmail.process,
-      O.filter(
-        isEventOfType('LinkingMemberNumberToAnAlreadyUsedEmailAttempted')
-      ),
-      getSomeOrFail
-    );
-    it('raises an event documenting the attempt', () => {
+    it('raises an event documenting the attempt', async () => {
+      const result = pipe(
+        await linkNumberToEmail.process({command, events, deps: framework})(),
+        getRightOrFail,
+        O.filter(
+          isEventOfType('LinkingMemberNumberToAnAlreadyUsedEmailAttempted')
+        ),
+        getSomeOrFail
+      );
       expect(result.email).toStrictEqual(command.email);
     });
   });
 
   describe('when both the email and member number are new', () => {
     const events: ReadonlyArray<DomainEvent> = [];
-    const event = pipe(
-      {command, events},
-      linkNumberToEmail.process,
-      O.filter(isEventOfType('MemberNumberLinkedToEmail')),
-      getSomeOrFail
-    );
 
-    it('raises an event linking the number and email', () => {
+    it('raises an event linking the number and email', async () => {
+      const event = pipe(
+        await linkNumberToEmail.process({command, events, deps: framework})(),
+        getRightOrFail,
+        O.filter(isEventOfType('MemberNumberLinkedToEmail')),
+        getSomeOrFail
+      );
       expect(event.email).toStrictEqual(command.email);
       expect(event.memberNumber).toStrictEqual(command.memberNumber);
     });

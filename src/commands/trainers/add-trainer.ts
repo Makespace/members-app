@@ -2,6 +2,7 @@ import {DomainEvent, constructEvent} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
 import {Command} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
@@ -16,7 +17,7 @@ const codec = t.strict({
 export type AddTrainer = t.TypeOf<typeof codec>;
 
 const process: Command<AddTrainer>['process'] = input =>
-  O.some(constructEvent('TrainerAdded')(input.command));
+  TE.right(O.some(constructEvent('TrainerAdded')(input.command)));
 
 const resource: Command<AddTrainer>['resource'] = command => ({
   type: 'Trainers',

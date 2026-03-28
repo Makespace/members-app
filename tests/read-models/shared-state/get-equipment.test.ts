@@ -146,7 +146,7 @@ describe('get', () => {
         await framework.commands.memberNumbers.linkNumberToEmail(newMember);
         getRightOrFail(
           await applyToResource(
-            framework.depsForApplyToResource,
+            framework,
             markMemberTrainedBy
           )(markTrainedBy, markTrainedByActor)()
         );
@@ -227,7 +227,7 @@ describe('get', () => {
         await framework.commands.memberNumbers.linkNumberToEmail(newMember);
         getRightOrFail(
           await applyToResource(
-            framework.depsForApplyToResource,
+            framework,
             markMemberTrainedBy
           )(markTrainedBy, markTrainedByActor)()
         );
@@ -304,7 +304,7 @@ describe('get', () => {
         beforeEach(async () => {
           getRightOrFail(
             await applyToResource(
-              framework.depsForApplyToResource,
+              framework,
               markMemberTrainedBy
             )(markUserTrainedAgain, markUserTrainedAgainActor)()
           );

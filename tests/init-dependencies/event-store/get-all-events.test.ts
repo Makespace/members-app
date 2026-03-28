@@ -6,6 +6,7 @@ import {randomUUID} from 'crypto';
 import {
   DomainEvent,
   EmailAddress,
+  StoredDomainEvent,
   constructEvent,
 } from '../../../src/types';
 import {commitEvent} from '../../../src/init-dependencies/event-store/commit-event';
@@ -18,6 +19,7 @@ import {
 import {arbitraryActor, getRightOrFail} from '../../helpers';
 import { UUID } from 'io-ts-types';
 import { EventName } from '../../../src/types/domain-event';
+import { excludeEvent } from '../../../src/init-dependencies/event-store/exclude-event';
 
 const arbitraryMemberNumberLinkedToEmailEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
@@ -49,11 +51,18 @@ describe('get all events', () => {
   const testLogger = createLogger({level: 'silent'});
   const dummyRefreshReadModel = () => T.of(undefined);
 
+  const expectStoredEvent = (event: DomainEvent): jest.AsymmetricMatcher =>
+    expect.objectContaining({
+      ...event,
+      event_id: expect.any(String) as jest.AsymmetricMatcher,
+    }) as jest.AsymmetricMatcher;
+
   let dbClient: libsqlClient.Client;
   let persistEvent: (event: DomainEvent) => Promise<void>;
-  let initalisedGetAllEvents: () => Promise<ReadonlyArray<DomainEvent>>;
-  let initalisedGetAllEventsByType: (type: EventName) => Promise<ReadonlyArray<DomainEvent>>;
-  let initalisedGetAllEventsByTypes: (type1: EventName, type2: EventName) => Promise<ReadonlyArray<DomainEvent>>;
+  let unPersistEvent: (event_id: string, reverted_by_number: number, revert_reason: string) => Promise<void>;
+  let initalisedGetAllEvents: () => Promise<ReadonlyArray<StoredDomainEvent>>;
+  let initalisedGetAllEventsByType: (type: EventName) => Promise<ReadonlyArray<StoredDomainEvent>>;
+  let initalisedGetAllEventsByTypes: (type1: EventName, type2: EventName) => Promise<ReadonlyArray<StoredDomainEvent>>;
 
   beforeEach(async () => {
     dbClient = libsqlClient.createClient({url: ':memory:'});
@@ -67,6 +76,15 @@ describe('get all events', () => {
         )(arbitraryResource(), 'no-such-resource')(event)()
       )
     };
+    unPersistEvent = async (
+      event_id: string, reverted_by_number: number, revert_reason: string
+    ) => {
+      getRightOrFail(
+        await excludeEvent(
+          dbClient
+        )(event_id, reverted_by_number, revert_reason)()
+      )
+    };
     initalisedGetAllEvents = async () => getRightOrFail(await getAllEvents(dbClient)()());
     initalisedGetAllEventsByType = async (type: EventName) => getRightOrFail(await getAllEventsByType(dbClient)(type)());
     initalisedGetAllEventsByTypes = async (type1: EventName, type2: EventName) => getRightOrFail(await getAllEventsByTypes(dbClient)(type1, type2)());
@@ -77,87 +95,132 @@ describe('get all events', () => {
   });
 
   describe('getAllEvents', () => {
-    it('returns all persisted events except EquipmentTrainingQuizResult', async () => {
-      const memberNumberLinkedToEmail =
-        arbitraryMemberNumberLinkedToEmailEvent();
-      const equipmentTrainingQuizResult =
-        arbitraryEquipmentTrainingQuizResultEvent();
-      const equipmentTrainingSheetRegistered =
-        arbitraryEquipmentTrainingSheetRegisteredEvent();
+    const memberNumberLinkedToEmail = arbitraryMemberNumberLinkedToEmailEvent();
+    const equipmentTrainingQuizResult = arbitraryEquipmentTrainingQuizResultEvent();
+    const equipmentTrainingSheetRegistered = arbitraryEquipmentTrainingSheetRegisteredEvent();
+    beforeEach(async () => {
       await persistEvent(memberNumberLinkedToEmail);
       await persistEvent(equipmentTrainingQuizResult);
       await persistEvent(equipmentTrainingSheetRegistered);
-      expect(await initalisedGetAllEvents()).toStrictEqual([
-        memberNumberLinkedToEmail,
-        equipmentTrainingSheetRegistered,
+    });
+    it('returns all persisted events except EquipmentTrainingQuizResult', async () => {
+      const allEvents = await initalisedGetAllEvents();
+      expect(allEvents).toEqual([
+        expectStoredEvent(memberNumberLinkedToEmail),
+        expectStoredEvent(equipmentTrainingSheetRegistered),
       ]);
+    });
+
+    describe('exclude an event', () => {
+      const excludedBy: number = faker.number.int();
+      const excludedByReason: string = faker.company.catchPhrase();
+      
+      beforeEach(async () => {
+        const eventId = (await dbClient.execute('SELECT id FROM events WHERE event_type = ?', [memberNumberLinkedToEmail.type])).rows[0]['id']! as string;
+        await unPersistEvent(eventId, excludedBy, excludedByReason)
+      });
+      it('returns all persisted events except EquipmentTrainingQuizResult and the excluded event', async () => {
+        expect(await initalisedGetAllEvents()).toEqual([
+          expectStoredEvent(equipmentTrainingSheetRegistered),
+        ]);
+      });
     });
   });
 
   describe('getAllEventsByType', () => {
-    it('returns only events of the requested type', async () => {
-      const firstMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
-      const nonMatchingEvent = arbitraryEquipmentTrainingSheetRegisteredEvent();
-      const secondMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
+    const firstMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
+    const nonMatchingEvent = arbitraryEquipmentTrainingSheetRegisteredEvent();
+    const secondMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
+    const equipmentTrainingQuizResult = arbitraryEquipmentTrainingQuizResultEvent();
+
+    beforeEach(async () => {
       await persistEvent(firstMatchingEvent);
       await persistEvent(nonMatchingEvent);
       await persistEvent(secondMatchingEvent);
-      expect(await initalisedGetAllEventsByType('MemberNumberLinkedToEmail')).toStrictEqual([
-        firstMatchingEvent,
-        secondMatchingEvent,
+      await persistEvent(equipmentTrainingQuizResult);
+    });
+
+    it('returns only events of the requested type', async () => {
+      expect(await initalisedGetAllEventsByType('MemberNumberLinkedToEmail')).toEqual([
+        expectStoredEvent(firstMatchingEvent),
+        expectStoredEvent(secondMatchingEvent),
       ]);
     });
 
     it('returns EquipmentTrainingQuizResult events when explicitly requested', async () => {
-      const equipmentTrainingQuizResult =
-        arbitraryEquipmentTrainingQuizResultEvent();
-      const nonMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
-      await persistEvent(equipmentTrainingQuizResult);
-      await persistEvent(nonMatchingEvent);
-      expect(await initalisedGetAllEventsByType('EquipmentTrainingQuizResult')).toStrictEqual([equipmentTrainingQuizResult]);
+      expect(await initalisedGetAllEventsByType('EquipmentTrainingQuizResult')).toEqual([
+        expectStoredEvent(equipmentTrainingQuizResult),
+      ]);
+    });
+
+    describe('exclude an event', () => {
+      const excludedBy: number = faker.number.int();
+      const excludedByReason: string = faker.company.catchPhrase();
+      
+      beforeEach(async () => {
+        const eventId = (await dbClient.execute('SELECT id FROM events WHERE event_type = ?', [firstMatchingEvent.type])).rows[0]['id']! as string;
+        await unPersistEvent(eventId, excludedBy, excludedByReason)
+      });
+      it('returns only events of the requested type excluding the excluded event', async () => {
+        expect(await initalisedGetAllEventsByType('MemberNumberLinkedToEmail')).toEqual([
+          expectStoredEvent(secondMatchingEvent),
+        ]);
+      });
     });
   });
 
   describe('getAllEventsByTypes', () => {
+    const memberLinkedEvent = arbitraryMemberNumberLinkedToEmailEvent();
+    const equipmentTrainingQuizResult = arbitraryEquipmentTrainingQuizResultEvent();
+    const trainingSheetRegisteredEvent = arbitraryEquipmentTrainingSheetRegisteredEvent();
+
+    beforeEach(async () => {
+      await persistEvent(memberLinkedEvent);
+      await persistEvent(equipmentTrainingQuizResult);
+      await persistEvent(trainingSheetRegisteredEvent);
+    });
+
     it('returns events matching either requested type', async () => {
-      const firstMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
-      const nonMatchingEvent = arbitraryEquipmentTrainingQuizResultEvent();
-      const secondMatchingEvent = arbitraryEquipmentTrainingSheetRegisteredEvent();
-
-      await persistEvent(firstMatchingEvent);
-      await persistEvent(nonMatchingEvent);
-      await persistEvent(secondMatchingEvent);
-
       expect(
         await initalisedGetAllEventsByTypes(
           'MemberNumberLinkedToEmail',
           'EquipmentTrainingSheetRegistered'
         )
-      ).toStrictEqual([
-        firstMatchingEvent,
-        secondMatchingEvent,
+      ).toEqual([
+        expectStoredEvent(memberLinkedEvent),
+        expectStoredEvent(trainingSheetRegisteredEvent),
       ]);
     });
 
     it('returns EquipmentTrainingQuizResult events when one of the requested types matches', async () => {
-      const equipmentTrainingQuizResult =
-        arbitraryEquipmentTrainingQuizResultEvent();
-      const matchingEvent = arbitraryEquipmentTrainingSheetRegisteredEvent();
-      const nonMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
-
-      await persistEvent(equipmentTrainingQuizResult);
-      await persistEvent(matchingEvent);
-      await persistEvent(nonMatchingEvent);
-
       expect(
         await initalisedGetAllEventsByTypes(
           'EquipmentTrainingQuizResult',
           'EquipmentTrainingSheetRegistered'
         )
-      ).toStrictEqual([
-        equipmentTrainingQuizResult,
-        matchingEvent,
+      ).toEqual([
+        expectStoredEvent(equipmentTrainingQuizResult),
+        expectStoredEvent(trainingSheetRegisteredEvent),
       ]);
+    });
+
+    describe('exclude an event', () => {
+      const excludedBy: number = faker.number.int();
+      const excludedByReason: string = faker.company.catchPhrase();
+      
+      beforeEach(async () => {
+        const eventId = (await dbClient.execute('SELECT id FROM events WHERE event_type = ?', [trainingSheetRegisteredEvent.type])).rows[0]['id']! as string;
+        await unPersistEvent(eventId, excludedBy, excludedByReason)
+      });
+      it('returns only events of the requested type excluding the excluded event', async () => {
+        const events = await initalisedGetAllEventsByTypes(
+          'MemberNumberLinkedToEmail',
+          'EquipmentTrainingSheetRegistered'
+        );
+        expect(events).toEqual([
+          expectStoredEvent(memberLinkedEvent),
+        ]);
+      });
     });
   });
 });

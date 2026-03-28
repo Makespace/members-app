@@ -3,6 +3,7 @@ import {EmailAddressCodec, constructEvent, isEventOfType} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {pipe} from 'fp-ts/lib/function';
@@ -39,19 +40,19 @@ const process: Command<LinkNumberToEmail>['process'] = input =>
         event.memberNumber === input.command.memberNumber
     ),
     RA.matchW(
-      () => O.some(constructEvent('MemberNumberLinkedToEmail')(input.command)),
+      () => TE.right(O.some(constructEvent('MemberNumberLinkedToEmail')(input.command))),
       events => {
         if (isDuplicateOfPreviousCommand(events[0], input.command)) {
-          return O.none;
+          return TE.right(O.none);
         }
         if (isUsingAlreadyUsedEmail(events[0], input.command)) {
-          return O.some(
+          return TE.right(O.some(
             constructEvent('LinkingMemberNumberToAnAlreadyUsedEmailAttempted')(
               input.command
             )
-          );
+          ));
         }
-        return O.none;
+        return TE.right(O.none);
       }
     )
   );

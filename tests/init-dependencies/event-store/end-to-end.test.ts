@@ -3,7 +3,12 @@ import {faker} from '@faker-js/faker';
 import * as libsqlClient from '@libsql/client';
 import * as E from 'fp-ts/Either';
 import * as T from 'fp-ts/Task';
-import {DomainEvent, EmailAddress, constructEvent} from '../../../src/types';
+import {
+  DomainEvent,
+  EmailAddress,
+  StoredDomainEvent,
+  constructEvent,
+} from '../../../src/types';
 import {getAllEvents} from '../../../src/init-dependencies/event-store/get-all-events';
 import {pipe} from 'fp-ts/lib/function';
 import {
@@ -16,6 +21,7 @@ import {Dependencies} from '../../../src/dependencies';
 import {getResourceEvents} from '../../../src/init-dependencies/event-store/get-resource-events';
 import {RightOfTaskEither} from '../../type-optics';
 import {randomUUID} from 'crypto';
+import {excludeEvent} from '../../../src/init-dependencies/event-store/exclude-event';
 
 const arbitraryMemberNumberLinkedToEmailEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
@@ -29,12 +35,18 @@ const arbitraryMemberNumberLinkedToEmailEvent = () =>
 const testLogger = createLogger({level: 'silent'});
 const dummyRefreshReadModel = () => T.of(undefined);
 
+const expectStoredEvent = (event: DomainEvent): jest.AsymmetricMatcher =>
+  expect.objectContaining({
+    ...event,
+    event_id: expect.any(String) as jest.AsymmetricMatcher,
+  }) as jest.AsymmetricMatcher;
+
 describe('event-store end-to-end', () => {
   describe('setup event store', () => {
     const resource = {id: 'singleton', type: 'MemberNumberEmailPairings'};
     const event = arbitraryMemberNumberLinkedToEmailEvent();
     let dbClient: libsqlClient.Client;
-    let getTestEvents: () => Promise<ReadonlyArray<DomainEvent>>;
+    let getTestEvents: () => Promise<ReadonlyArray<StoredDomainEvent>>;
     let resourceEvents: RightOfTaskEither<
       ReturnType<Dependencies['getResourceEvents']>
     >;
@@ -82,7 +94,7 @@ describe('event-store end-to-end', () => {
       });
 
       it('persists the event', async () => {
-        expect(await getTestEvents()).toStrictEqual([event]);
+        expect(await getTestEvents()).toEqual([expectStoredEvent(event)]);
       });
 
       it('uses the initial version number', () => {
@@ -104,7 +116,10 @@ describe('event-store end-to-end', () => {
       });
 
       it('persists the event', async () => {
-        expect(await getTestEvents()).toStrictEqual([event, event2]);
+        expect(await getTestEvents()).toEqual([
+          expectStoredEvent(event),
+          expectStoredEvent(event2),
+        ]);
       });
 
       it('increments the version', () => {
@@ -135,7 +150,10 @@ describe('event-store end-to-end', () => {
       it('does not persist the event', async () => {
         const events = await getTestEvents();
         expect(events).toHaveLength(2);
-        expect(events).toStrictEqual([initialEvent, competingEvent]);
+        expect(events).toEqual([
+          expectStoredEvent(initialEvent),
+          expectStoredEvent(competingEvent),
+        ]);
       });
 
       it.failing('returns on left', () => {
@@ -173,7 +191,51 @@ describe('event-store end-to-end', () => {
 
       it('has independant events', async () => {
         expect(await getTestEvents()).toHaveLength(3);
-        expect(resourceEvents.events).toStrictEqual([event]);
+        expect(resourceEvents.events).toEqual([expectStoredEvent(event)]);
+      });
+
+      describe('with an excluded event', () => {
+        const excludedEvent = arbitraryMemberNumberLinkedToEmailEvent();
+        const remainingEvent = arbitraryMemberNumberLinkedToEmailEvent();
+
+        beforeEach(async () => {
+          await initialisedCommitEvent(resource, 'no-such-resource')(excludedEvent)();
+          await initialisedCommitEvent(resource, initialVersionNumber)(remainingEvent)();
+
+          const excludedEventId = (
+            await dbClient.execute(
+              `
+              SELECT id
+              FROM events
+              WHERE resource_id = ?
+              AND resource_type = ?
+              AND resource_version = ?
+              `,
+              [resource.id, resource.type, initialVersionNumber]
+            )
+          ).rows[0]['id']! as string;
+
+          await pipe(
+            excludeEvent(
+              dbClient
+            )(excludedEventId, faker.number.int(), faker.company.catchPhrase()),
+            T.map(getRightOrFail)
+          )();
+
+          resourceEvents = await pipe(
+            resource,
+            getResourceEvents(dbClient),
+            T.map(getRightOrFail)
+          )();
+        });
+
+        it('does not return the excluded event', () => {
+          expect(resourceEvents.events).toEqual([expectStoredEvent(remainingEvent)]);
+        });
+
+        it('keeps the latest stored version for the resource', () => {
+          expect(resourceEvents.version).toStrictEqual(initialVersionNumber + 1);
+        });
       });
     });
   });

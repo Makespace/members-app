@@ -3,10 +3,20 @@ import {faker} from '@faker-js/faker';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {constructEvent} from '../../../src/types';
 import {v4} from 'uuid';
-import {arbitraryActor} from '../../helpers';
+import {arbitraryActor, getRightOrFail} from '../../helpers';
 import {removeArea} from '../../../src/commands/area/remove-area';
+import { initTestFramework, TestFramework } from '../../read-models/test-framework';
+import { pipe } from 'fp-ts/lib/function';
 
 describe('remove-area', () => {
+  let framework: TestFramework;
+  beforeEach(async () => {
+    framework = await initTestFramework();
+  });
+  afterEach(() => {
+    framework.close();
+  });
+
   const areaId = v4() as UUID;
   const areaName = faker.commerce.productName() as NonEmptyString;
   const command = {
@@ -15,29 +25,36 @@ describe('remove-area', () => {
   };
 
   describe('when the area does not yet exist', () => {
-    const result = removeArea.process({
-      command,
-      events: [],
-    });
+    it('does nothing', async () => {
+      const result = pipe(
+        await removeArea.process({
+          command,
+          events: [],
+          deps: framework,
+        })(),
+        getRightOrFail,
+      );
 
-    it('does nothing', () => {
       expect(result).toStrictEqual(O.none);
     });
   });
 
   describe('when the area already exists', () => {
-    const result = removeArea.process({
-      command,
-      events: [
-        constructEvent('AreaCreated')({
-          id: areaId,
-          name: areaName,
-          actor: arbitraryActor(),
-        }),
-      ],
-    });
-
-    it('removes the area', () => {
+    it('removes the area', async () => {
+      const result = pipe(
+        await removeArea.process({
+          command,
+          events: [
+            constructEvent('AreaCreated')({
+              id: areaId,
+              name: areaName,
+              actor: arbitraryActor(),
+            }),
+          ],
+          deps: framework,
+        })(),
+        getRightOrFail,
+      );
       expect(result).toStrictEqual(
         O.some(
           expect.objectContaining({
@@ -50,22 +67,25 @@ describe('remove-area', () => {
   });
 
   describe('when the area is already removed', () => {
-    const result = removeArea.process({
-      command: {
-        id: areaId,
-        actor: arbitraryActor(),
-      },
-      events: [
-        constructEvent('AreaCreated')({
-          id: areaId,
-          name: areaName,
-          actor: arbitraryActor(),
-        }),
-        constructEvent('AreaRemoved')({id: areaId, actor: arbitraryActor()}),
-      ],
-    });
-
-    it('does nothing', () => {
+    it('does nothing', async () => {
+      const result = pipe(
+        await removeArea.process({
+          command: {
+            id: areaId,
+            actor: arbitraryActor(),
+          },
+          events: [
+            constructEvent('AreaCreated')({
+              id: areaId,
+              name: areaName,
+              actor: arbitraryActor(),
+            }),
+            constructEvent('AreaRemoved')({id: areaId, actor: arbitraryActor()}),
+          ],
+          deps: framework,
+        })(),
+        getRightOrFail,
+      );
       expect(result).toStrictEqual(O.none);
     });
   });

@@ -2,6 +2,7 @@ import {Actor, DomainEvent, constructEvent} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {Command, WithActor} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {isEquipmentTrainer} from '../is-equipment-trainer';
@@ -16,8 +17,8 @@ export type RevokeMemberTrained = t.TypeOf<typeof codec>;
 const process = (input: {
   command: WithActor<RevokeMemberTrained>;
   events: ReadonlyArray<DomainEvent>;
-}): O.Option<DomainEvent> =>
-  O.some(
+}) =>
+  TE.right(O.some(
     constructEvent('RevokeTrainedOnEquipment')({
       revokedByMemberNumber:
         input.command.actor.tag === 'user'
@@ -27,7 +28,7 @@ const process = (input: {
       memberNumber: input.command.memberNumber,
       actor: input.command.actor,
     })
-  );
+  ));
 
 const resource = (command: RevokeMemberTrained) => ({
   type: 'Equipment',

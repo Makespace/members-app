@@ -9,7 +9,7 @@ import {
 } from './google/sheet-data-table';
 import {ReadonlyRecord} from 'fp-ts/lib/ReadonlyRecord';
 import {UUID} from 'io-ts-types';
-import {DomainEvent, Email, Failure, ResourceVersion} from '../types';
+import {Email, Failure, ResourceVersion, StoredDomainEvent} from '../types';
 import {SharedReadModel} from '../read-models/shared-state';
 import {Resource} from '../types/resource';
 import {Dependencies} from '../dependencies';
@@ -54,7 +54,7 @@ export interface SyncWorkerDependencies {
   getResourceEvents: (resource: Resource) => TE.TaskEither<
     FailureWithStatus,
     {
-      events: ReadonlyArray<DomainEvent>;
+      events: ReadonlyArray<StoredDomainEvent>;
       version: ResourceVersion;
     }
   >;

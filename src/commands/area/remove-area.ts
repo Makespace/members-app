@@ -1,5 +1,6 @@
 import {constructEvent, isEventOfType} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
+import * as TE from 'fp-ts/TaskEither';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
@@ -15,7 +16,7 @@ type RemoveArea = t.TypeOf<typeof codec>;
 
 const process: Command<RemoveArea>['process'] = input => {
   if (input.events.length === 0) {
-    return O.none;
+    return TE.right(O.none);
   }
   return pipe(
     input.events,
@@ -23,7 +24,8 @@ const process: Command<RemoveArea>['process'] = input => {
     RA.match(
       () => O.some(constructEvent('AreaRemoved')(input.command)),
       () => O.none
-    )
+    ),
+    TE.right,
   );
 };
 

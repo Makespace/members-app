@@ -1,5 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import * as O from 'fp-ts/Option';
 import {html, Safe, safe, sanitizeString, toLoggedInContent} from '../../types/html';
 import {Form} from '../../types/form';
@@ -73,7 +74,8 @@ const constructForm: Form<ViewModel>['constructForm'] =
         return E.right(equipment.value);
       }),
       E.let('members', () => readModel.members.getAll()),
-      E.let('trainerMemberNumber', () => user.memberNumber)
+      E.let('trainerMemberNumber', () => user.memberNumber),
+      TE.fromEither,
     );
 
 export const markMemberTrainedForm: Form<ViewModel> = {

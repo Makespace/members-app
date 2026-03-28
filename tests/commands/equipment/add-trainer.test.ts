@@ -17,7 +17,7 @@ describe('addTrainer', () => {
   beforeEach(async () => {
     framework = await initTestFramework();
     applyAddTrainer = applyToResource(
-      framework.depsForApplyToResource,
+      framework,
       addTrainer
     );
   });

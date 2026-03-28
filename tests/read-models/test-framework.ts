@@ -1,20 +1,21 @@
-import createLogger from 'pino';
+import createLogger, { Logger } from 'pino';
 import * as T from 'fp-ts/Task';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {
   getAllEvents,
   getAllEventsByType,
+  getEventById,
 } from '../../src/init-dependencies/event-store/get-all-events';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
-import {Actor, DomainEvent} from '../../src/types';
+import {Actor, DomainEvent, StoredDomainEvent, StoredEventOfType} from '../../src/types';
 import {pipe} from 'fp-ts/lib/function';
 import {commands, Command} from '../../src/commands';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
 import {arbitraryActor, getRightOrFail} from '../helpers';
 import * as libsqlClient from '@libsql/client';
 import {getResourceEvents} from '../../src/init-dependencies/event-store/get-resource-events';
-import {EventName, EventOfType} from '../../src/types/domain-event';
+import {EventName} from '../../src/types/domain-event';
 import {Dependencies} from '../../src/dependencies';
 import {applyToResource} from '../../src/commands/apply-command-to-resource';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
@@ -27,6 +28,8 @@ import {lastSync} from '../../src/sync-worker/db/last_sync';
 import {getSheetData, getSheetDataByMemberNumber} from '../../src/sync-worker/db/get_sheet_data';
 import {TrainingSummaryDeps} from '../../src/sync-worker/training-summary/training-summary-deps';
 import {NonEmptyString} from 'io-ts-types/lib/NonEmptyString';
+import { excludeEvent } from '../../src/init-dependencies/event-store/exclude-event';
+import { CommandDependencies } from '../../src/commands/command';
 
 const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
 
@@ -36,6 +39,7 @@ type ToFrameworkCommands<T> = {
       process: (input: {
         command: infer C;
         events: ReadonlyArray<DomainEvent>;
+        deps: CommandDependencies;
       }) => unknown;
     }
       ? (c: Omit<C, 'actor'> & { actor?: Actor }) => Promise<void>
@@ -44,16 +48,17 @@ type ToFrameworkCommands<T> = {
 };
 
 export type TestFramework = {
-  getAllEvents: () => Promise<ReadonlyArray<DomainEvent>>;
+  logger: Logger;
+  getEventById: Dependencies['getEventById'];
+  getAllEvents: () => Promise<ReadonlyArray<StoredDomainEvent>>;
   getAllEventsByType: <T extends EventName>(
     eventType: T
-  ) => Promise<ReadonlyArray<EventOfType<T>>>;
+  ) => Promise<ReadonlyArray<StoredEventOfType<T>>>;
   commands: ToFrameworkCommands<typeof commands>;
   sharedReadModel: Dependencies['sharedReadModel'];
-  depsForApplyToResource: {
-    commitEvent: Dependencies['commitEvent'];
-    getResourceEvents: Dependencies['getResourceEvents'];
-  };
+  commitEvent: Dependencies['commitEvent'];
+  getResourceEvents: Dependencies['getResourceEvents'];
+  excludeEvent: Dependencies['excludeEvent'];
   eventStoreDb: libsqlClient.Client;
   googleDB: libsqlClient.Client;
   getTroubleTicketData: Dependencies['getTroubleTicketData'];
@@ -87,6 +92,8 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   const frameworkGetAllEventsByType = <EN extends EventName>(eventType: EN) =>
     pipe(getAllEventsByType(eventDB)(eventType), T.map(getRightOrFail))();
 
+  const frameworkExcludeEvent = excludeEvent(eventDB);
+
   const frameworkify =
     <T>(command: Command<T>) =>
     async (commandPayload: T & {actor?: Actor}) => {
@@ -95,6 +102,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
           {
             commitEvent: frameworkCommitEvent,
             getResourceEvents: getResourceEvents(eventDB),
+            excludeEvent: frameworkExcludeEvent
           },
           command
         )(commandPayload, commandPayload.actor ?? arbitraryActor())
@@ -102,6 +110,8 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     };
 
   return {
+    logger,
+    getEventById: getEventById(eventDB),
     getAllEvents: frameworkGetAllEvents,
     getAllEventsByType: frameworkGetAllEventsByType,
     getTroubleTicketData: getTroubleTicketData(
@@ -113,10 +123,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     eventStoreDb: eventDB,
     googleDB,
     sharedReadModel,
-    depsForApplyToResource: {
-      commitEvent: frameworkCommitEvent,
-      getResourceEvents: getResourceEvents(eventDB),
-    },
+    commitEvent: frameworkCommitEvent,
+    getResourceEvents: getResourceEvents(eventDB),
+    excludeEvent: excludeEvent(eventDB),
     close: () => {
       eventDB.close();
       googleDB.close();
@@ -172,6 +181,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       superUser: {
         declare: frameworkify(commands.superUser.declare),
         revoke: frameworkify(commands.superUser.revoke),
+      },
+      events: {
+        excludeEvent: frameworkify(commands.events.excludeEvent),
       },
     },
     trainingSummaryDeps: {

@@ -21,7 +21,7 @@ describe('revokeMemberTrained', () => {
   beforeEach(async () => {
     framework = await initTestFramework();
     applyRevokeMemberTrained = applyToResource(
-      framework.depsForApplyToResource,
+      framework,
       revokeMemberTrained
     );
   });

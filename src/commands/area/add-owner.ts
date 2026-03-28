@@ -3,6 +3,7 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
 import {Command} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
@@ -16,10 +17,10 @@ export type AddOwner = t.TypeOf<typeof codec>;
 
 const process: Command<AddOwner>['process'] = input => {
   if (input.events.length === 0) {
-    return O.none;
+    return TE.right(O.none);
   }
   if (pipe(input.events, RA.some(isEventOfType('AreaRemoved')))) {
-    return O.none;
+    return TE.right(O.none);
   }
 
   const happyPathEvent = pipe(
@@ -39,7 +40,8 @@ const process: Command<AddOwner>['process'] = input => {
         case 'OwnerRemoved':
           return happyPathEvent;
       }
-    })
+    }),
+    TE.right
   );
 };
 

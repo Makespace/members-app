@@ -4,10 +4,11 @@ import {renderActor} from '../../types/actor';
 
 export const render = (viewModel: ViewModel) => {
   const rows = [];
-  rows.push(['recordedAt', 'type', 'actor', 'payload'].join(','));
+  rows.push(['event_id', 'recordedAt', 'type', 'actor', 'payload'].join(','));
   for (const event of viewModel.events) {
-    const {recordedAt, type, actor, ...payload} = event;
+    const {event_id, recordedAt, type, actor, ...payload} = event;
     const row = [
+      event_id,
       recordedAt.toISOString(),
       type,
       renderActor(actor),

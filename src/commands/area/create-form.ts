@@ -1,4 +1,4 @@
-import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import {Form} from '../../types/form';
 import {pipe} from 'fp-ts/lib/function';
 import {html, safe, toLoggedInContent} from '../../types/html';
@@ -23,5 +23,5 @@ const renderForm = () =>
 
 export const createForm: Form<ViewModel> = {
   renderForm,
-  constructForm: () => () => E.right({}),
+  constructForm: () => () => TE.right({}),
 };

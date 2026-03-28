@@ -1,17 +1,25 @@
 import {Logger} from 'pino';
-import {Failure, Email, DomainEvent, ResourceVersion} from './types';
+import {
+  Failure,
+  Email,
+  DomainEvent,
+  ResourceVersion,
+  StoredDomainEvent,
+  StoredEventOfType,
+} from './types';
 import * as TE from 'fp-ts/TaskEither';
 import * as O from 'fp-ts/Option';
 import {FailureWithStatus} from './types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
-
 import {Resource} from './types/resource';
-import {EventName, EventOfType} from './types/domain-event';
+import {EventName} from './types/domain-event';
 import {SharedReadModel} from './read-models/shared-state';
 import {
   SheetDataTable,
   TroubleTicketDataTable,
 } from './sync-worker/google/sheet-data-table';
+import { ExcludedEvent } from './init-dependencies/event-store/excluded-event';
+import { UUID } from 'io-ts-types';
 
 export type Dependencies = {
   commitEvent: (
@@ -23,17 +31,30 @@ export type Dependencies = {
     FailureWithStatus,
     {status: StatusCodes.CREATED; message: string}
   >;
+  excludeEvent: (
+    event_id: string,
+    reverted_by_number: number,
+    revert_reason: string
+  ) => TE.TaskEither<FailureWithStatus, unknown>;
   getAllEvents: () => TE.TaskEither<
     FailureWithStatus,
-    ReadonlyArray<DomainEvent>
+    ReadonlyArray<StoredDomainEvent>
+  >;
+  getAllExclusionEvents: () => TE.TaskEither<
+    FailureWithStatus,
+    ReadonlyArray<ExcludedEvent>
   >;
   getAllEventsByType: <T extends EventName>(
     eventType: T
-  ) => TE.TaskEither<FailureWithStatus, ReadonlyArray<EventOfType<T>>>;
+  ) => TE.TaskEither<FailureWithStatus, ReadonlyArray<StoredEventOfType<T>>>;
+  getEventById: (event_id: UUID) => TE.TaskEither<
+    FailureWithStatus,
+    O.Option<StoredDomainEvent>
+  >;
   getResourceEvents: (resource: Resource) => TE.TaskEither<
     FailureWithStatus,
     {
-      events: ReadonlyArray<DomainEvent>;
+      events: ReadonlyArray<StoredDomainEvent>;
       version: ResourceVersion;
     }
   >;
