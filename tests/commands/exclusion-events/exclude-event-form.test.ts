@@ -44,6 +44,19 @@ describe('exclude event form', () => {
     });
   });
 
+  it('posts back to the event log after the exclusion is submitted', async () => {
+    await framework.commands.superUser.declare({
+      memberNumber: 1234,
+    });
+    const [event] = await framework.getAllEvents();
+
+    const rendered = excludeEventForm.renderForm({
+      event: O.some(event),
+    });
+
+    expect(rendered.body).toContain('<form action="?next=/event-log" method="post">');
+  });
+
   it('constructs a view model with no event when the event cannot be found', async () => {
     const result = getRightOrFail(
       await excludeEventForm.constructForm({

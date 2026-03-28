@@ -24,7 +24,7 @@ const renderForm = (viewModel: ViewModel) =>
       <p>Are you sure you want to exclude (delete) this event? This form should only be used in limited circumstances.
       </p>
       ${renderEvent(viewModel.event.value)}
-      <form action="/events/exclude-event" method="post">
+      <form action="?next=/event-log" method="post">
         <input type="hidden" name="event_id" value="${viewModel.event.value.event_id}"/>
         <label for="reason">Whats the reason for deleting this event?</label>
         <input type="text" name="reason" id="reason" value="" minlength="3" required/>
