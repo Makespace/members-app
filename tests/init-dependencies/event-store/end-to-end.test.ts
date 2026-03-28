@@ -21,6 +21,7 @@ import {Dependencies} from '../../../src/dependencies';
 import {getResourceEvents} from '../../../src/init-dependencies/event-store/get-resource-events';
 import {RightOfTaskEither} from '../../type-optics';
 import {randomUUID} from 'crypto';
+import {excludeEvent} from '../../../src/init-dependencies/event-store/exclude-event';
 
 const arbitraryMemberNumberLinkedToEmailEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
@@ -191,6 +192,50 @@ describe('event-store end-to-end', () => {
       it('has independant events', async () => {
         expect(await getTestEvents()).toHaveLength(3);
         expect(resourceEvents.events).toEqual([expectStoredEvent(event)]);
+      });
+
+      describe('with an excluded event', () => {
+        const excludedEvent = arbitraryMemberNumberLinkedToEmailEvent();
+        const remainingEvent = arbitraryMemberNumberLinkedToEmailEvent();
+
+        beforeEach(async () => {
+          await initialisedCommitEvent(resource, 'no-such-resource')(excludedEvent)();
+          await initialisedCommitEvent(resource, initialVersionNumber)(remainingEvent)();
+
+          const excludedEventId = (
+            await dbClient.execute(
+              `
+              SELECT id
+              FROM events
+              WHERE resource_id = ?
+              AND resource_type = ?
+              AND resource_version = ?
+              `,
+              [resource.id, resource.type, initialVersionNumber]
+            )
+          ).rows[0]['id']! as string;
+
+          await pipe(
+            excludeEvent(
+              dbClient
+            )(excludedEventId, faker.number.int(), faker.company.catchPhrase()),
+            T.map(getRightOrFail)
+          )();
+
+          resourceEvents = await pipe(
+            resource,
+            getResourceEvents(dbClient),
+            T.map(getRightOrFail)
+          )();
+        });
+
+        it('does not return the excluded event', () => {
+          expect(resourceEvents.events).toEqual([expectStoredEvent(remainingEvent)]);
+        });
+
+        it('keeps the latest stored version for the resource', () => {
+          expect(resourceEvents.version).toStrictEqual(initialVersionNumber + 1);
+        });
       });
     });
   });

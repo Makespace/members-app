@@ -1,4 +1,4 @@
-import {flow, pipe} from 'fp-ts/lib/function';
+import {pipe} from 'fp-ts/lib/function';
 import {Dependencies} from '../../dependencies';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
@@ -25,30 +25,55 @@ export const getResourceEvents =
   (dbClient: Client): Dependencies['getResourceEvents'] =>
   resource =>
     pipe(
-      TE.tryCatch(
-        () =>
-          dbExecute(
-            dbClient,
-            'SELECT * FROM events WHERE resource_type = ? AND resource_id = ?;',
-            [resource.type, resource.id]
-          ),
-        failureWithStatus(
-          'Failed to query database',
-          StatusCodes.INTERNAL_SERVER_ERROR
+      {
+        versionRows: TE.tryCatch(
+          () =>
+            dbExecute(
+              dbClient,
+              'SELECT * FROM events WHERE resource_type = ? AND resource_id = ?;',
+              [resource.type, resource.id]
+            ),
+          failureWithStatus(
+            'Failed to query database',
+            StatusCodes.INTERNAL_SERVER_ERROR
+          )
+        ),
+        eventRows: TE.tryCatch(
+          () =>
+            dbExecute(
+              dbClient,
+              `
+              SELECT events.*
+              FROM events
+              LEFT JOIN events_exclusions ON events.id = events_exclusions.event_id
+              WHERE events.resource_type = ?
+              AND events.resource_id = ?
+              AND events_exclusions.event_id IS NULL;
+              `,
+              [resource.type, resource.id]
+            ),
+          failureWithStatus(
+            'Failed to query database',
+            StatusCodes.INTERNAL_SERVER_ERROR
+          )
         )
-      ),
-      TE.chainEitherK(
-        flow(
-          EventsTable.decode,
-          E.mapLeft(internalCodecFailure('failed to decode db response'))
-        )
-      ),
-      TE.map(response => response.rows),
-      TE.chainEitherK(rows =>
+      },
+      sequenceS(TE.ApplyPar),
+      TE.chainEitherK(({versionRows, eventRows}) =>
         pipe(
           {
-            version: E.right(getLatestVersion(rows)),
-            events: eventsFromRows(rows),
+            version: pipe(
+              versionRows,
+              EventsTable.decode,
+              E.mapLeft(internalCodecFailure('failed to decode db response')),
+              E.map(response => getLatestVersion(response.rows))
+            ),
+            events: pipe(
+              eventRows,
+              EventsTable.decode,
+              E.mapLeft(internalCodecFailure('failed to decode db response')),
+              E.chain(response => eventsFromRows(response.rows))
+            ),
           },
           sequenceS(E.Apply)
         )
