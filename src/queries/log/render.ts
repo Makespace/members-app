@@ -2,16 +2,15 @@ import {pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {html, safe, joinHtml, sanitizeString} from '../../types/html';
 import {ViewModel, LogSearch} from './view-model';
-import {DomainEvent} from '../../types';
 import {inspect} from 'node:util';
 import {displayDate} from '../../templates/display-date';
 import {DateTime} from 'luxon';
 import {renderActor} from '../../types/actor';
 import * as qs from 'qs';
 
-const renderPayload = (event: DomainEvent) =>
+const renderPayload = (event: ViewModel['events'][number]) =>
   // eslint-disable-next-line unused-imports/no-unused-vars
-  pipe(event, ({type, actor, recordedAt, ...payload}) =>
+  pipe(event, ({type, actor, recordedAt, event_id, ...payload}) =>
     pipe(
       payload,
       Object.entries,
@@ -25,6 +24,7 @@ const renderEntry = (event: ViewModel['events'][number]) => html`
   <li>
     <b>${sanitizeString(event.type)}</b> by ${renderActor(event.actor)} at
     ${displayDate(DateTime.fromJSDate(event.recordedAt))}<br />
+    Event ID: ${sanitizeString(event.event_id)}<br />
     ${renderPayload(event)}
   </li>
 `;
