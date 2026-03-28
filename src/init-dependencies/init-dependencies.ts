@@ -6,7 +6,7 @@ import * as O from 'fp-ts/Option';
 import createLogger, {LoggerOptions} from 'pino';
 import nodemailer from 'nodemailer';
 import {commitEvent} from './event-store/commit-event';
-import {getAllEvents, getAllEventsByType, getAllExclusionEvents} from './event-store/get-all-events';
+import {getAllEvents, getAllEventsByType, getAllExclusionEvents, getEventById} from './event-store/get-all-events';
 import {getResourceEvents} from './event-store/get-resource-events';
 import {Client} from '@libsql/client';
 
@@ -75,6 +75,7 @@ export const initDependencies = (
     getAllEvents: getAllEvents(eventDB),
     getAllExclusionEvents: getAllExclusionEvents(eventDB),
     getAllEventsByType: getAllEventsByType(eventDB),
+    getEventById: getEventById(eventDB),
     getResourceEvents: getResourceEvents(eventDB),
     sharedReadModel,
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),

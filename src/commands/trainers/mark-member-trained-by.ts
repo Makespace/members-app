@@ -8,7 +8,7 @@ import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {isEquipmentTrainer} from '../is-equipment-trainer';
 import {Actor} from '../../types/actor';
 import {DateTime} from 'luxon';
-import { FailureWithStatus, failureWithStatus } from '../../types/failure-with-status';
+import { failureWithStatus } from '../../types/failure-with-status';
 import { StatusCodes } from 'http-status-codes';
 
 const codec = t.strict({

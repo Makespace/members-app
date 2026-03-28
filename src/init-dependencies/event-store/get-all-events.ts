@@ -6,6 +6,7 @@ import {
 } from '../../types/failure-with-status';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
+import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {EventExclusionsTable, EventsTable} from './events-table';
 import {eventsFromRows} from './events-from-rows';
@@ -15,6 +16,7 @@ import {StoredDomainEvent, StoredEventOfType} from '../../types';
 import {EventName} from '../../types/domain-event';
 import {dbExecute} from '../../util';
 import { exclusionEventsFromRows } from './exclusion-events-from-rows';
+import { UUID } from 'io-ts-types';
 
 export const getAllEvents =
   (dbClient: Client): Dependencies['getAllEvents'] =>
@@ -169,3 +171,38 @@ export const getAllExclusionEvents = (dbClient: Client): Dependencies['getAllExc
       TE.map(table => table.rows),
       TE.chainEitherK(exclusionEventsFromRows)
     );
+
+export const getEventById = (dbClient: Client): Dependencies['getEventById'] =>
+    (event_id: UUID) =>
+        pipe(
+          TE.tryCatch(
+            () =>
+              dbExecute(
+                dbClient,
+                `
+                SELECT events.*
+                FROM events
+                WHERE events.id = ?
+                `,
+                [event_id]
+              ),
+            failureWithStatus(
+              'Failed to query database',
+              StatusCodes.INTERNAL_SERVER_ERROR
+            )
+          ),
+          TE.chainEitherK(
+            flow(
+              EventsTable.decode,
+              E.mapLeft(internalCodecFailure('Failed to decode DB table'))
+            )
+          ),
+          TE.map(table => table.rows),
+          TE.chainEitherK(eventsFromRows),
+          TE.map(
+            RA.match(
+              () => O.none,
+              (events) => O.some(events[0])
+            )
+          )
+        );

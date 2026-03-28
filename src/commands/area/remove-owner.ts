@@ -1,6 +1,7 @@
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {pipe} from 'fp-ts/lib/function';
@@ -16,7 +17,7 @@ type RemoveOwner = t.TypeOf<typeof codec>;
 
 const process: Command<RemoveOwner>['process'] = input => {
    if (pipe(input.events, RA.some(isEventOfType('AreaRemoved')))) {
-     return O.none;
+     return TE.right(O.none);
    }
 
   return pipe(
@@ -36,7 +37,8 @@ const process: Command<RemoveOwner>['process'] = input => {
     }),
     RA.last,
     O.filter(isEventOfType('OwnerAdded')),
-    O.map(() => constructEvent('OwnerRemoved')(input.command))
+    O.map(() => constructEvent('OwnerRemoved')(input.command)),
+    TE.right,
   );
 }
 

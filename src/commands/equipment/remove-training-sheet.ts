@@ -1,6 +1,7 @@
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {DomainEvent, constructEvent} from '../../types';
 import {Actor} from '../../types/actor';
 import {Command, WithActor} from '../command';
@@ -17,8 +18,8 @@ type RemoveTrainingSheet = t.TypeOf<typeof codec>;
 const process = (input: {
   command: WithActor<RemoveTrainingSheet>;
   events: ReadonlyArray<DomainEvent>;
-}): O.Option<DomainEvent> =>
-  O.some(constructEvent('EquipmentTrainingSheetRemoved')(input.command));
+}) =>
+  TE.right(O.some(constructEvent('EquipmentTrainingSheetRemoved')(input.command)));
 
 const resource = (command: RemoveTrainingSheet) => ({
   type: 'Equipment',

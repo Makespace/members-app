@@ -1,4 +1,5 @@
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import * as t from 'io-ts';
 import {Command} from '../command';
 import {EmailAddressCodec, constructEvent} from '../../types';
@@ -18,22 +19,22 @@ const process: Command<VerifyMemberEmail>['process'] = input => {
     input.command.memberNumber
   );
   if (state === undefined) {
-    return O.none;
+    return TE.right(O.none);
   }
 
   const emailAddress = normaliseEmailAddress(input.command.emailAddress);
   const email = state.emails[emailAddress];
   if (!email || email.verified) {
-    return O.none;
+    return TE.right(O.none);
   }
 
-  return O.some(
+  return TE.right(O.some(
     constructEvent('MemberEmailVerified')({
       actor: input.command.actor,
       memberNumber: input.command.memberNumber,
       email: input.command.emailAddress,
     })
-  );
+  ));
 };
 
 const resource = () => ({
