@@ -21,8 +21,8 @@ const renderForm = (viewModel: ViewModel) =>
   pipe(
     html`
       <h1>Exclude an event</h1>
-      <p>Are you sure you want to exclude (delete) this event? This form should only be used in limited circumstances.
-      </p>
+      <p>Are you sure you want to exclude (delete) this event? This form should only be used in limited circumstances.</p>
+      <p>NOTE THIS WILL NOT TAKE EFFECT UNTIL THE APP IS RESTARTED</p>
       ${renderEvent(viewModel.event.value)}
       <form action="?next=/event-log" method="post">
         <input type="hidden" name="event_id" value="${viewModel.event.value.event_id}"/>

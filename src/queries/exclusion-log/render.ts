@@ -25,7 +25,9 @@ const renderEntry = (event: ViewModel['events'][number]) => html`
     <b>EXCLUDED by ${renderMemberNumber(event.reverted_by_number)} at ${displayDate(DateTime.fromJSDate(event.revert_at))}
     because '${sanitizeString(event.revert_reason)}'.</b>
     <br />
-    Event id: ${sanitizeString(event.event_id)}
+    Event Id: ${sanitizeString(event.event_id)}
+    <br />
+    Event Type: ${sanitizeString(event.payload.type)}
     <br />
     ${renderPayload(event.payload)}
   </li>
@@ -44,7 +46,7 @@ const renderLog = (log: ViewModel['events']) =>
   );
 
 export const render = (viewModel: ViewModel) => html`
-  <h1>Event log</h1>
-  <p>There are ${viewModel.events.length} excluded events</p>
+  <h1>Deleted Events</h1>
+  <p>There are ${viewModel.events.length} deleted events</p>
   ${renderLog(viewModel.events)}
 `;
