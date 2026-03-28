@@ -1,10 +1,11 @@
-import createLogger from 'pino';
+import createLogger, { Logger } from 'pino';
 import * as T from 'fp-ts/Task';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {
   getAllEvents,
   getAllEventsByType,
+  getEventById,
 } from '../../src/init-dependencies/event-store/get-all-events';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
 import {Actor, DomainEvent, StoredDomainEvent, StoredEventOfType} from '../../src/types';
@@ -47,6 +48,8 @@ type ToFrameworkCommands<T> = {
 };
 
 export type TestFramework = {
+  logger: Logger;
+  getEventById: Dependencies['getEventById'];
   getAllEvents: () => Promise<ReadonlyArray<StoredDomainEvent>>;
   getAllEventsByType: <T extends EventName>(
     eventType: T
@@ -107,6 +110,8 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     };
 
   return {
+    logger,
+    getEventById: getEventById(eventDB),
     getAllEvents: frameworkGetAllEvents,
     getAllEventsByType: frameworkGetAllEventsByType,
     getTroubleTicketData: getTroubleTicketData(

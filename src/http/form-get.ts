@@ -5,7 +5,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {getUserFromSession} from '../authentication';
 import {Dependencies} from '../dependencies';
 import {oopsPage, pageTemplate} from '../templates';
-import {Form} from '../types/form';
+import {Form, FormDependencies} from '../types/form';
 import {CompleteHtmlDocument, sanitizeString} from '../types/html';
 import {logInPath} from '../authentication/login/routes';
 
@@ -14,7 +14,7 @@ import {logInPath} from '../authentication/login/routes';
 // get a view of the current state of a resource. This should be completely pure because its read-only and
 // is where conflict resolution etc. is handled as described in form-post.
 export const formGet =
-  <T>(deps: Dependencies, form: Form<T>) =>
+  <T>(deps: FormDependencies, form: Form<T>) =>
   async (req: Request, res: Response<CompleteHtmlDocument>) => {
     const user = getUserFromSession(deps)(req.session);
     if (O.isNone(user)) {

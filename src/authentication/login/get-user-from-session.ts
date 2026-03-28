@@ -13,7 +13,7 @@ const SessionCodec = t.strict({
 });
 
 export const getUserFromSession =
-  (deps: Dependencies) =>
+  (deps: Pick<Dependencies, 'logger'>) =>
   (session: unknown): O.Option<User> =>
     pipe(
       session,
