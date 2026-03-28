@@ -1,6 +1,6 @@
 import {Params} from '../query';
 import {pipe} from 'fp-ts/lib/function';
-import {DomainEvent, User} from '../../types';
+import {StoredDomainEvent, User} from '../../types';
 import {Dependencies} from '../../dependencies';
 import * as TE from 'fp-ts/TaskEither';
 import {ViewModel, LogSearch} from './view-model';
@@ -26,7 +26,7 @@ function parseQueryToLogSearch(query: Params): LogSearch {
 }
 
 const applyLogSearch =
-  (search: LogSearch) => (events: ReadonlyArray<DomainEvent>) =>
+  (search: LogSearch) => (events: ReadonlyArray<StoredDomainEvent>) =>
     pipe(events, events => {
       const start = search.offset;
       const end = search.offset + search.limit;
