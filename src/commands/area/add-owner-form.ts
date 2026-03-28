@@ -8,7 +8,6 @@ import * as t from 'io-ts';
 import {StatusCodes} from 'http-status-codes';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {
-  FailureWithStatus,
   failureWithStatus,
 } from '../../types/failure-with-status';
 import {Form} from '../../types/form';

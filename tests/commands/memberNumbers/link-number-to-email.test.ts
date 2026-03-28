@@ -11,7 +11,7 @@ import {
   isEventOfType,
 } from '../../../src/types';
 import {pipe} from 'fp-ts/lib/function';
-import {arbitraryActor, getRightOrFail, getRightOrFailTE, getSomeOrFail} from '../../helpers';
+import {arbitraryActor, getRightOrFail, getSomeOrFail} from '../../helpers';
 import {applyToResource} from '../../../src/commands/apply-command-to-resource';
 import {
   TestFramework,
