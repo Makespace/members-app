@@ -3,10 +3,22 @@ import {faker} from '@faker-js/faker';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {constructEvent} from '../../../src/types';
 import {v4} from 'uuid';
-import {arbitraryActor} from '../../helpers';
+import {arbitraryActor, getRightOrFail} from '../../helpers';
 import {addOwner} from '../../../src/commands/area/add-owner';
+import { initTestFramework, TestFramework } from '../../read-models/test-framework';
+import { pipe } from 'fp-ts/lib/function';
 
 describe('add-owner', () => {
+  let framework: TestFramework;
+
+  beforeEach(async () => {
+    framework = await initTestFramework();
+  });
+  afterEach(() => {
+    framework.close();
+  });
+
+
   const areaId = v4() as UUID;
   const areaName = faker.commerce.productName() as NonEmptyString;
   const memberNumber = faker.number.int();
@@ -37,35 +49,45 @@ describe('add-owner', () => {
   });
 
   describe('when the area does not exist', () => {
-    const result = addOwner.process({
-      command,
-      events: [],
-    });
+    it('does nothing', async () => {
+      const result = pipe(
+        await addOwner.process({
+          command,
+          events: [],
+          deps: framework
+        })(),
+        getRightOrFail,
+      );
 
-    it('does nothing', () => {
       expect(result).toStrictEqual(O.none);
     });
   });
 
   describe('when the area has been removed', () => {
-    const result = addOwner.process({
-      command,
-      events: [areaCreated, areaRemoved],
-    });
-
-    it('does nothing', () => {
+    it('does nothing', async () => {
+      const result = pipe(
+        await addOwner.process({
+          command,
+          events: [areaCreated, areaRemoved],
+          deps: framework,
+        })(),
+        getRightOrFail
+      );
       expect(result).toStrictEqual(O.none);
     });
   });
 
   describe('when the area exists', () => {
     describe('and the member was never an owner of it', () => {
-      const result = addOwner.process({
-        command,
-        events: [areaCreated],
-      });
-
-      it('adds them as owner', () => {
+      it('adds them as owner', async () => {
+        const result = pipe(
+          await addOwner.process({
+            command,
+            events: [areaCreated],
+            deps: framework,
+          })(),
+          getRightOrFail
+        );
         expect(result).toStrictEqual(
           O.some(
             expect.objectContaining({
@@ -79,12 +101,15 @@ describe('add-owner', () => {
     });
 
     describe('and the member is no longer an owner of it', () => {
-      const result = addOwner.process({
-        command,
-        events: [areaCreated, ownerAdded, ownerRemoved],
-      });
-
-      it('adds them as owner', () => {
+      it('adds them as owner', async () => {
+        const result = pipe(
+          await addOwner.process({
+            command,
+            events: [areaCreated, ownerAdded, ownerRemoved],
+            deps: framework,
+          })(),
+          getRightOrFail
+        );
         expect(result).toStrictEqual(
           O.some(
             expect.objectContaining({
@@ -98,12 +123,15 @@ describe('add-owner', () => {
     });
 
     describe('and the member is an owner', () => {
-      const result = addOwner.process({
-        command,
-        events: [areaCreated, ownerAdded],
-      });
-
-      it('does nothing', () => {
+      it('does nothing', async () => {
+        const result = pipe(
+          await addOwner.process({
+            command,
+            events: [areaCreated, ownerAdded],
+            deps: framework,
+          })(),
+          getRightOrFail,
+        );
         expect(result).toStrictEqual(O.none);
       });
     });

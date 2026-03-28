@@ -1,6 +1,7 @@
 import {error} from 'console';
 import * as O from 'fp-ts/Option';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import {identity, pipe} from 'fp-ts/lib/function';
 import {Actor, UserActor} from '../src/types/actor';
 import {EmailAddressCodec} from '../src/types/email-address';
@@ -8,6 +9,15 @@ import {EmailAddressCodec} from '../src/types/email-address';
 export const getRightOrFail = <A>(input: E.Either<unknown, A>): A =>
   pipe(
     input,
+    E.getOrElseW(left => {
+      error(left);
+      throw new Error('unexpected Left');
+    })
+  );
+
+export const getRightOrFailTE = <A>(input: TE.TaskEither<unknown, A>) => async (): Promise<A> =>
+  pipe(
+    await input(),
     E.getOrElseW(left => {
       error(left);
       throw new Error('unexpected Left');

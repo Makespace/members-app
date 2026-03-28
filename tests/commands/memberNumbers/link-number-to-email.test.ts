@@ -11,7 +11,7 @@ import {
   isEventOfType,
 } from '../../../src/types';
 import {pipe} from 'fp-ts/lib/function';
-import {arbitraryActor, getSomeOrFail} from '../../helpers';
+import {arbitraryActor, getRightOrFail, getRightOrFailTE, getSomeOrFail} from '../../helpers';
 import {applyToResource} from '../../../src/commands/apply-command-to-resource';
 import {
   TestFramework,
@@ -26,7 +26,7 @@ describe('linkNumberToEmail', () => {
   beforeEach(async () => {
     framework = await initTestFramework();
     applyLinkNumberToEmail = applyToResource(
-      framework.depsForApplyToResource,
+      framework,
       linkNumberToEmail
     );
   });
@@ -65,13 +65,13 @@ describe('linkNumberToEmail', () => {
         actor: arbitraryActor(),
       }),
     ];
-    const result = linkNumberToEmail.process({command, events});
+    const result = linkNumberToEmail.process({command, events, deps: framework});
     it('returns none', () => {
       expect(result).toStrictEqual(O.none);
     });
   });
 
-  describe('when the email address is already in use', () => {
+  describe('when the email address is already in use', async () => {
     const events: ReadonlyArray<DomainEvent> = [
       constructEvent('MemberNumberLinkedToEmail')({
         memberNumber: faker.number.int(),
@@ -82,8 +82,8 @@ describe('linkNumberToEmail', () => {
       }),
     ];
     const result = pipe(
-      {command, events},
-      linkNumberToEmail.process,
+      await linkNumberToEmail.process({command, events, deps: framework})(),
+      getRightOrFail,
       O.filter(
         isEventOfType('LinkingMemberNumberToAnAlreadyUsedEmailAttempted')
       ),
@@ -94,11 +94,11 @@ describe('linkNumberToEmail', () => {
     });
   });
 
-  describe('when both the email and member number are new', () => {
+  describe('when both the email and member number are new', async () => {
     const events: ReadonlyArray<DomainEvent> = [];
     const event = pipe(
-      {command, events},
-      linkNumberToEmail.process,
+      await linkNumberToEmail.process({command, events, deps: framework})(),
+      getRightOrFail,
       O.filter(isEventOfType('MemberNumberLinkedToEmail')),
       getSomeOrFail
     );

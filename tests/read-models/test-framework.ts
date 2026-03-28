@@ -53,10 +53,9 @@ export type TestFramework = {
   ) => Promise<ReadonlyArray<StoredEventOfType<T>>>;
   commands: ToFrameworkCommands<typeof commands>;
   sharedReadModel: Dependencies['sharedReadModel'];
-  depsForApplyToResource: {
-    commitEvent: Dependencies['commitEvent'];
-    getResourceEvents: Dependencies['getResourceEvents'];
-  };
+  commitEvent: Dependencies['commitEvent'];
+  getResourceEvents: Dependencies['getResourceEvents'];
+  excludeEvent: Dependencies['excludeEvent'];
   eventStoreDb: libsqlClient.Client;
   googleDB: libsqlClient.Client;
   getTroubleTicketData: Dependencies['getTroubleTicketData'];
@@ -119,10 +118,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     eventStoreDb: eventDB,
     googleDB,
     sharedReadModel,
-    depsForApplyToResource: {
-      commitEvent: frameworkCommitEvent,
-      getResourceEvents: getResourceEvents(eventDB),
-    },
+    commitEvent: frameworkCommitEvent,
+    getResourceEvents: getResourceEvents(eventDB),
+    excludeEvent: excludeEvent(eventDB),
     close: () => {
       eventDB.close();
       googleDB.close();
