@@ -20,10 +20,8 @@ const renderPayload = (event: StoredDomainEvent) =>
   );
 
 export const renderEvent = (event: StoredDomainEvent) => html`
-  <li>
-    <b>${sanitizeString(event.type)}</b> by ${renderActor(event.actor)} at
-    ${displayDate(DateTime.fromJSDate(event.recordedAt))}
-    ${event.event_id ? html`<br />Event id: ${sanitizeString(event.event_id)}` : safe('')}<br />
-    ${renderPayload(event)}
-  </li>
+  <b>${sanitizeString(event.type)}</b> by ${renderActor(event.actor)} at
+  ${displayDate(DateTime.fromJSDate(event.recordedAt))}
+  ${event.event_id ? html`<br />Event id: ${sanitizeString(event.event_id)}` : safe('')}<br />
+  ${renderPayload(event)}
 `;

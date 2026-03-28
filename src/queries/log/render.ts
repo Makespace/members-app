@@ -8,7 +8,13 @@ import { renderEvent } from '../shared-render/render-domain-event';
 const renderLog = (log: ViewModel['events']) =>
   pipe(
     log,
-    RA.map(renderEvent),
+    RA.map(event => 
+      html`
+        <li>
+          [<a href=/events/exclude-event?event_id=${event.event_id}>Delete</a>] ${renderEvent(event)}
+        </li>
+      `
+    ),
     joinHtml,
     items => html`
       <ul>
