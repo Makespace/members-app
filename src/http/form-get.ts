@@ -15,7 +15,7 @@ import {logInPath} from '../authentication/login/routes';
 // is where conflict resolution etc. is handled as described in form-post.
 export const formGet =
   <T>(deps: Dependencies, form: Form<T>) =>
-  (req: Request, res: Response<CompleteHtmlDocument>) => {
+  async (req: Request, res: Response<CompleteHtmlDocument>) => {
     const user = getUserFromSession(deps)(req.session);
     if (O.isNone(user)) {
       res.redirect(logInPath);
@@ -26,7 +26,7 @@ export const formGet =
       res.redirect(logInPath);
       return;
     }
-    pipe(
+    await pipe(
       {
         user: user.value,
         readModel: deps.sharedReadModel,
@@ -46,5 +46,5 @@ export const formGet =
         },
         page => res.status(200).send(page)
       )
-    );
+    )();
   };
