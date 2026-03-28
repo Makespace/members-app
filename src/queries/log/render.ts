@@ -10,7 +10,7 @@ import * as qs from 'qs';
 
 const renderPayload = (event: ViewModel['events'][number]) =>
   // eslint-disable-next-line unused-imports/no-unused-vars
-  pipe(event, ({type, actor, recordedAt, event_id, ...payload}) =>
+  pipe(event, ({type, actor, recordedAt, event_index, event_id, ...payload}) =>
     pipe(
       payload,
       Object.entries,
@@ -24,6 +24,7 @@ const renderEntry = (event: ViewModel['events'][number]) => html`
   <li>
     <b>${sanitizeString(event.type)}</b> by ${renderActor(event.actor)} at
     ${displayDate(DateTime.fromJSDate(event.recordedAt))}<br />
+    Event Index: ${sanitizeString(String(event.event_index))}<br />
     Event ID: ${sanitizeString(event.event_id)}<br />
     ${renderPayload(event)}
   </li>
