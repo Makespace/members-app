@@ -1,12 +1,9 @@
 import {Request, Response} from 'express';
-import {faker} from '@faker-js/faker';
 import * as TE from 'fp-ts/TaskEither';
-import {Dependencies} from '../../src/dependencies';
 import {formGet} from '../../src/http/form-get';
 import {
   html,
   CompleteHtmlDocument,
-  safe,
   sanitizeString,
   toLoggedInContent,
 } from '../../src/types/html';
@@ -34,7 +31,8 @@ describe('formGet', () => {
 
   it('responds with a rendered page when the form loads successfully', async () => {
     const form: Form<{message: string}> = {
-      constructForm: input => _context => TE.right({message: (input as any).id}),
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      constructForm: input => _context => TE.right({message: (input as any)['id']}),
       renderForm: ({message}) => toLoggedInContent(html`Test form`)(html`<p>${sanitizeString(message)}</p>`),
     };
     const req = {

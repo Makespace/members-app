@@ -3,7 +3,6 @@ import * as TE from 'fp-ts/TaskEither';
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import {getUserFromSession} from '../authentication';
-import {Dependencies} from '../dependencies';
 import {oopsPage, pageTemplate} from '../templates';
 import {Form, FormDependencies} from '../types/form';
 import {CompleteHtmlDocument, sanitizeString} from '../types/html';

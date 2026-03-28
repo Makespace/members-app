@@ -1,25 +1,19 @@
 import * as O from 'fp-ts/Option';
 import {StatusCodes} from 'http-status-codes';
 import {excludeEventForm} from '../../../src/commands/exclusion-events/exclude-event-form';
-import {getEventById} from '../../../src/init-dependencies/event-store/get-all-events';
 import {getLeftOrFail, getRightOrFail} from '../../helpers';
 import {
   initTestFramework,
   TestFramework,
 } from '../../read-models/test-framework';
 import {arbitraryUser} from '../../types/user.helper';
-import { FormDependencies } from '../../../src/types/form';
 import { faker } from '@faker-js/faker';
 
 describe('exclude event form', () => {
   let framework: TestFramework;
-  let deps: FormDependencies;
 
   beforeEach(async () => {
     framework = await initTestFramework();
-    deps = {
-      getEventById: getEventById(framework.eventStoreDb),
-    };
   });
 
   afterEach(() => {
@@ -35,7 +29,7 @@ describe('exclude event form', () => {
       await excludeEventForm.constructForm({event_id: event.event_id})({
         user: arbitraryUser(),
         readModel: framework.sharedReadModel,
-        deps,
+        deps: framework,
       })()
     );
 
@@ -64,7 +58,7 @@ describe('exclude event form', () => {
       })({
         user: arbitraryUser(),
         readModel: framework.sharedReadModel,
-        deps,
+        deps: framework,
       })()
     );
 
@@ -78,7 +72,7 @@ describe('exclude event form', () => {
       await excludeEventForm.constructForm({event_id: 'not-a-uuid'})({
         user: arbitraryUser(),
         readModel: framework.sharedReadModel,
-        deps,
+        deps: framework,
       })()
     );
 
