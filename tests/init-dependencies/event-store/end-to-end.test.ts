@@ -34,11 +34,11 @@ const arbitraryMemberNumberLinkedToEmailEvent = () =>
 const testLogger = createLogger({level: 'silent'});
 const dummyRefreshReadModel = () => T.of(undefined);
 
-const expectStoredEvent = (event: DomainEvent) =>
+const expectStoredEvent = (event: DomainEvent): jest.AsymmetricMatcher =>
   expect.objectContaining({
     ...event,
-    event_id: expect.any(String),
-  });
+    event_id: expect.any(String) as jest.AsymmetricMatcher,
+  }) as jest.AsymmetricMatcher;
 
 describe('event-store end-to-end', () => {
   describe('setup event store', () => {

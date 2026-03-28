@@ -13,7 +13,7 @@ const codec = t.strict({
   reason: t.string,
 });
 
-export type ExcludeEvent = t.TypeOf<typeof codec>;
+type ExcludeEvent = t.TypeOf<typeof codec>;
 
 const process: Command<ExcludeEvent>['process'] = input => pipe(
   input.command.actor.tag === 'user'
