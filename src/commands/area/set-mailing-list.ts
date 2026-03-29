@@ -3,6 +3,7 @@ import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
 import {Command} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
@@ -16,21 +17,25 @@ const codec = t.strict({
 type SetMailingList = t.TypeOf<typeof codec>;
 
 const process: Command<SetMailingList>['process'] = input => {
-  return pipe(
-    input.command.email,
-    email => email === "" ? O.none : O.some(email),
-    O.map(EmailAddressCodec.decode),
-    O.getOrElseW(() => E.right(null)),
-    O.fromEither,
-    O.map(email => ({
-      ...input.command,
-      email,
-    })),
-    O.map(constructEvent('AreaEmailUpdated')),
+  return TE.right(
+    pipe(
+      input.command.email,
+      email => email === "" ? O.none : O.some(email),
+      O.map(EmailAddressCodec.decode),
+      O.getOrElseW(() => E.right(null)),
+      O.fromEither,
+      O.map(email => ({
+        ...input.command,
+        email,
+      })),
+      O.map(constructEvent('AreaEmailUpdated'))
+    )
   );
 };
 
-const resource: Command<SetMailingList>['resource'] = (command: SetMailingList) => ({
+const resource: Command<SetMailingList>['resource'] = (
+  command: SetMailingList
+) => ({
   type: 'Area',
   id: command.id,
 });
@@ -41,4 +46,3 @@ export const setMailingList: Command<SetMailingList> = {
   decode: codec.decode,
   isAuthorized: isAdminOrSuperUser,
 };
-

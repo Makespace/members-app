@@ -3,6 +3,7 @@ import {constructEvent, isEventOfType} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {pipe} from 'fp-ts/lib/function';
@@ -21,15 +22,17 @@ const isDuplicateOfPreviousCommand =
 
 const process: Command<MarkMemberRejoinedWithExistingNumber>['process'] =
   input =>
-    pipe(
-      input.events,
-      RA.filter(isEventOfType('MemberRejoinedWithExistingNumber')),
-      events =>
-        RA.some(isDuplicateOfPreviousCommand(input.command))(events)
-          ? O.none
-          : O.some(
-              constructEvent('MemberRejoinedWithExistingNumber')(input.command)
-            )
+    TE.right(
+      pipe(
+        input.events,
+        RA.filter(isEventOfType('MemberRejoinedWithExistingNumber')),
+        events =>
+          RA.some(isDuplicateOfPreviousCommand(input.command))(events)
+            ? O.none
+            : O.some(
+                constructEvent('MemberRejoinedWithExistingNumber')(input.command)
+              )
+      )
     );
 
 const resource: Command<MarkMemberRejoinedWithExistingNumber>['resource'] =

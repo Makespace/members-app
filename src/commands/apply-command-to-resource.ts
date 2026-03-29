@@ -28,9 +28,9 @@ export const applyToResource =
       TE.bind('event', ({events}) =>
         pipe(
           command.process({command: inputAndActor, events}),
-          TE.fromOption(() =>
+          TE.chain(TE.fromOption(() =>
             failureWithStatus('no new event raised', StatusCodes.OK)()
-          )
+          ))
         )
       ),
       TE.chain(({event, version}) => deps.commitEvent(resource, version)(event))

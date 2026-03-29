@@ -1,6 +1,10 @@
 import {faker} from '@faker-js/faker';
+import {StatusCodes} from 'http-status-codes';
+import {addEmail} from '../../../src/commands/members/add-email';
+import {changePrimaryEmail} from '../../../src/commands/members/change-primary-email';
+import {verifyEmail} from '../../../src/commands/members/verify-email';
 import {EmailAddress} from '../../../src/types';
-import {getSomeOrFail} from '../../helpers';
+import {arbitraryActor, getLeftOrFail, getSomeOrFail} from '../../helpers';
 import {
   TestFramework,
   initTestFramework,
@@ -94,6 +98,48 @@ describe('member email commands', () => {
     ).toStrictEqual(primaryEmail);
   });
 
+  it('returns a failure when adding an email to an unknown member', async () => {
+    const result = getLeftOrFail(
+      await addEmail.process({
+        command: {
+          memberNumber: faker.number.int({min: otherMemberNumber + 1}),
+          email: faker.internet.email() as EmailAddress,
+          actor: arbitraryActor(),
+        },
+        events: [],
+      })()
+    );
+
+    expect(result).toMatchObject({
+      message: 'The requested member does not exist',
+      status: StatusCodes.NOT_FOUND,
+    });
+  });
+
+  it('returns a failure when changing the primary email to an unverified email', async () => {
+    await framework.commands.members.addEmail({
+      memberNumber,
+      email: secondaryEmail,
+    });
+
+    const result = getLeftOrFail(
+      await changePrimaryEmail.process({
+        command: {
+          memberNumber,
+          email: secondaryEmail,
+          actor: arbitraryActor(),
+        },
+        events: await framework.getAllEvents(),
+      })()
+    );
+
+    expect(result).toMatchObject({
+      message:
+        'The requested email address must be verified before it can be made primary',
+      status: StatusCodes.BAD_REQUEST,
+    });
+  });
+
   it('allows changing the primary email to a verified email', async () => {
     await framework.commands.members.addEmail({
       memberNumber,
@@ -128,5 +174,32 @@ describe('member email commands', () => {
 
     const events = await framework.getAllEventsByType('MemberEmailVerified');
     expect(events).toHaveLength(1);
+  });
+
+  it('returns a failure when reusing an email verification link', async () => {
+    await framework.commands.members.addEmail({
+      memberNumber,
+      email: secondaryEmail,
+    });
+    await framework.commands.members.verifyEmail({
+      memberNumber,
+      emailAddress: secondaryEmail,
+    });
+
+    const result = getLeftOrFail(
+      await verifyEmail.process({
+        command: {
+          memberNumber,
+          emailAddress: secondaryEmail,
+          actor: arbitraryActor(),
+        },
+        events: await framework.getAllEvents(),
+      })()
+    );
+
+    expect(result).toMatchObject({
+      message: 'The email verification link is no longer valid',
+      status: StatusCodes.BAD_REQUEST,
+    });
   });
 });

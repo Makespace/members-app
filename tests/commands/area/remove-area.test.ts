@@ -1,9 +1,14 @@
 import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
+import {StatusCodes} from 'http-status-codes';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {constructEvent} from '../../../src/types';
 import {v4} from 'uuid';
-import {arbitraryActor} from '../../helpers';
+import {
+  arbitraryActor,
+  getLeftOrFail,
+  getTaskEitherRightOrFail,
+} from '../../helpers';
 import {removeArea} from '../../../src/commands/area/remove-area';
 
 describe('remove-area', () => {
@@ -15,29 +20,36 @@ describe('remove-area', () => {
   };
 
   describe('when the area does not yet exist', () => {
-    const result = removeArea.process({
-      command,
-      events: [],
-    });
+    it('fails', async () => {
+      const result = getLeftOrFail(
+        await removeArea.process({
+          command,
+          events: [],
+        })()
+      );
 
-    it('does nothing', () => {
-      expect(result).toStrictEqual(O.none);
+      expect(result).toMatchObject({
+        message: 'The requested area does not exist',
+        status: StatusCodes.NOT_FOUND,
+      });
     });
   });
 
   describe('when the area already exists', () => {
-    const result = removeArea.process({
-      command,
-      events: [
-        constructEvent('AreaCreated')({
-          id: areaId,
-          name: areaName,
-          actor: arbitraryActor(),
-        }),
-      ],
-    });
+    it('removes the area', async () => {
+      const result = await getTaskEitherRightOrFail(
+        removeArea.process({
+          command,
+          events: [
+            constructEvent('AreaCreated')({
+              id: areaId,
+              name: areaName,
+              actor: arbitraryActor(),
+            }),
+          ],
+        })
+      );
 
-    it('removes the area', () => {
       expect(result).toStrictEqual(
         O.some(
           expect.objectContaining({
@@ -50,23 +62,28 @@ describe('remove-area', () => {
   });
 
   describe('when the area is already removed', () => {
-    const result = removeArea.process({
-      command: {
-        id: areaId,
-        actor: arbitraryActor(),
-      },
-      events: [
-        constructEvent('AreaCreated')({
-          id: areaId,
-          name: areaName,
-          actor: arbitraryActor(),
-        }),
-        constructEvent('AreaRemoved')({id: areaId, actor: arbitraryActor()}),
-      ],
-    });
+    it('fails', async () => {
+      const result = getLeftOrFail(
+        await removeArea.process({
+          command: {
+            id: areaId,
+            actor: arbitraryActor(),
+          },
+          events: [
+            constructEvent('AreaCreated')({
+              id: areaId,
+              name: areaName,
+              actor: arbitraryActor(),
+            }),
+            constructEvent('AreaRemoved')({id: areaId, actor: arbitraryActor()}),
+          ],
+        })()
+      );
 
-    it('does nothing', () => {
-      expect(result).toStrictEqual(O.none);
+      expect(result).toMatchObject({
+        message: 'The requested area does not exist',
+        status: StatusCodes.NOT_FOUND,
+      });
     });
   });
 });
