@@ -3,10 +3,13 @@ import {EmailAddressCodec, constructEvent, isEventOfType} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {pipe} from 'fp-ts/lib/function';
 import {EventOfType} from '../../types/domain-event';
+import {StatusCodes} from 'http-status-codes';
+import {failureWithStatus} from '../../types/failure-with-status';
 
 const codec = t.strict({
   email: EmailAddressCodec,
@@ -39,19 +42,29 @@ const process: Command<LinkNumberToEmail>['process'] = input =>
         event.memberNumber === input.command.memberNumber
     ),
     RA.matchW(
-      () => O.some(constructEvent('MemberNumberLinkedToEmail')(input.command)),
+      () =>
+        TE.right(
+          O.some(constructEvent('MemberNumberLinkedToEmail')(input.command))
+        ),
       events => {
         if (isDuplicateOfPreviousCommand(events[0], input.command)) {
-          return O.none;
+          return TE.right(O.none);
         }
         if (isUsingAlreadyUsedEmail(events[0], input.command)) {
-          return O.some(
-            constructEvent('LinkingMemberNumberToAnAlreadyUsedEmailAttempted')(
-              input.command
+          return TE.right(
+            O.some(
+              constructEvent('LinkingMemberNumberToAnAlreadyUsedEmailAttempted')(
+                input.command
+              )
             )
           );
         }
-        return O.none;
+        return TE.left(
+          failureWithStatus(
+            'The requested member number is already linked to an email address',
+            StatusCodes.BAD_REQUEST
+          )()
+        );
       }
     )
   );

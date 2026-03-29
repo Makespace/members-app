@@ -1,9 +1,14 @@
 import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
+import {StatusCodes} from 'http-status-codes';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {constructEvent} from '../../../src/types';
 import {v4} from 'uuid';
-import {arbitraryActor} from '../../helpers';
+import {
+  arbitraryActor,
+  getLeftOrFail,
+  getTaskEitherRightOrFail,
+} from '../../helpers';
 import {removeOwner} from '../../../src/commands/area/remove-owner';
 
 describe('remove-owner', () => {
@@ -24,13 +29,18 @@ describe('remove-owner', () => {
   });
 
   describe('when the area does not exist', () => {
-    const result = removeOwner.process({
-      command,
-      events: [],
-    });
+    it('fails', async () => {
+      const result = getLeftOrFail(
+        await removeOwner.process({
+          command,
+          events: [],
+        })()
+      );
 
-    it('does nothing', () => {
-      expect(result).toStrictEqual(O.none);
+      expect(result).toMatchObject({
+        message: 'The requested area does not exist',
+        status: StatusCodes.NOT_FOUND,
+      });
     });
   });
 
@@ -42,20 +52,22 @@ describe('remove-owner', () => {
     });
 
     describe('and the member is an owner of it', () => {
-      const result = removeOwner.process({
-        command,
-        events: [
-          areaCreated,
-          constructEvent('OwnerAdded')({
-            memberNumber,
-            areaId,
-            actor: arbitraryActor(),
-          }),
-          unreleatedEvent,
-        ],
-      });
+      it('removes them as owner', async () => {
+        const result = await getTaskEitherRightOrFail(
+          removeOwner.process({
+            command,
+            events: [
+              areaCreated,
+              constructEvent('OwnerAdded')({
+                memberNumber,
+                areaId,
+                actor: arbitraryActor(),
+              }),
+              unreleatedEvent,
+            ],
+          })
+        );
 
-      it('removes them as owner', () => {
         expect(result).toStrictEqual(
           O.some(
             expect.objectContaining({
@@ -69,55 +81,73 @@ describe('remove-owner', () => {
     });
 
     describe('and the member was an owner before the area has been removed', () => {
-      const result = removeOwner.process({
-        command,
-        events: [
-          areaCreated,
-          constructEvent('OwnerAdded')({
-            memberNumber,
-            areaId,
-            actor: arbitraryActor(),
-          }),
-          constructEvent('AreaRemoved')({id: areaId, actor: arbitraryActor()}),
-        ],
-      });
+      it('fails', async () => {
+        const result = getLeftOrFail(
+          await removeOwner.process({
+            command,
+            events: [
+              areaCreated,
+              constructEvent('OwnerAdded')({
+                memberNumber,
+                areaId,
+                actor: arbitraryActor(),
+              }),
+              constructEvent('AreaRemoved')({
+                id: areaId,
+                actor: arbitraryActor(),
+              }),
+            ],
+          })()
+        );
 
-      it('does nothing', () => {
-        expect(result).toStrictEqual(O.none);
+        expect(result).toMatchObject({
+          message: 'The requested area does not exist',
+          status: StatusCodes.NOT_FOUND,
+        });
       });
     });
 
     describe('and the member was never an owner of it', () => {
-      const result = removeOwner.process({
-        command,
-        events: [areaCreated],
-      });
+      it('fails', async () => {
+        const result = getLeftOrFail(
+          await removeOwner.process({
+            command,
+            events: [areaCreated],
+          })()
+        );
 
-      it('does nothing', () => {
-        expect(result).toStrictEqual(O.none);
+        expect(result).toMatchObject({
+          message: 'The requested member is not an owner of the requested area',
+          status: StatusCodes.BAD_REQUEST,
+        });
       });
     });
 
     describe('and the member is no longer an owner of it', () => {
-      const result = removeOwner.process({
-        command,
-        events: [
-          areaCreated,
-          constructEvent('OwnerAdded')({
-            memberNumber,
-            areaId,
-            actor: arbitraryActor(),
-          }),
-          constructEvent('OwnerRemoved')({
-            memberNumber,
-            areaId,
-            actor: arbitraryActor(),
-          }),
-        ],
-      });
+      it('fails', async () => {
+        const result = getLeftOrFail(
+          await removeOwner.process({
+            command,
+            events: [
+              areaCreated,
+              constructEvent('OwnerAdded')({
+                memberNumber,
+                areaId,
+                actor: arbitraryActor(),
+              }),
+              constructEvent('OwnerRemoved')({
+                memberNumber,
+                areaId,
+                actor: arbitraryActor(),
+              }),
+            ],
+          })()
+        );
 
-      it('does nothing', () => {
-        expect(result).toStrictEqual(O.none);
+        expect(result).toMatchObject({
+          message: 'The requested member is not an owner of the requested area',
+          status: StatusCodes.BAD_REQUEST,
+        });
       });
     });
   });

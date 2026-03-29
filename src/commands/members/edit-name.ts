@@ -2,6 +2,7 @@ import {constructEvent} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 
@@ -13,13 +14,15 @@ const codec = t.strict({
 type EditName = t.TypeOf<typeof codec>;
 
 const process: Command<EditName>['process'] = input =>
-  O.some(
-    constructEvent('MemberDetailsUpdated')({
-      memberNumber: input.command.memberNumber,
-      name: input.command.name,
-      formOfAddress: undefined,
-      actor: input.command.actor,
-    })
+  TE.right(
+    O.some(
+      constructEvent('MemberDetailsUpdated')({
+        memberNumber: input.command.memberNumber,
+        name: input.command.name,
+        formOfAddress: undefined,
+        actor: input.command.actor,
+      })
+    )
   );
 
 const resource: Command<EditName>['resource'] = input => ({

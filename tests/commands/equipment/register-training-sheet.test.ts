@@ -4,7 +4,11 @@ import {pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
 
 import {registerTrainingSheet} from '../../../src/commands/equipment/register-training-sheet';
-import {arbitraryActor, getSomeOrFail} from '../../helpers';
+import {
+  arbitraryActor,
+  getSomeOrFail,
+  getTaskEitherRightOrFail,
+} from '../../helpers';
 
 describe('register-training-sheet', () => {
   describe('No training sheet registered', () => {
@@ -14,12 +18,14 @@ describe('register-training-sheet', () => {
       actor: arbitraryActor(),
     };
 
-    const result = pipe(
-      registerTrainingSheet.process({command, events: RA.empty}),
-      getSomeOrFail
-    );
+    it('Registers a new training sheet id', async () => {
+      const result = pipe(
+        await getTaskEitherRightOrFail(
+          registerTrainingSheet.process({command, events: RA.empty})
+        ),
+        getSomeOrFail
+      );
 
-    it('Registers a new training sheet id', () => {
       expect(result).toStrictEqual(
         expect.objectContaining({
           type: 'EquipmentTrainingSheetRegistered',
@@ -36,19 +42,23 @@ describe('register-training-sheet', () => {
       trainingSheetId: faker.string.alphanumeric(8),
       actor: arbitraryActor(),
     };
-    const events = RA.fromArray([
-      pipe(
-        registerTrainingSheet.process({command, events: RA.empty}),
+    it('A duplicate event is registered', async () => {
+      const events = RA.fromArray([
+        pipe(
+          await getTaskEitherRightOrFail(
+            registerTrainingSheet.process({command, events: RA.empty})
+          ),
+          getSomeOrFail
+        ),
+      ]);
+
+      const result = pipe(
+        await getTaskEitherRightOrFail(
+          registerTrainingSheet.process({command, events})
+        ),
         getSomeOrFail
-      ),
-    ]);
+      );
 
-    const result = pipe(
-      registerTrainingSheet.process({command, events}),
-      getSomeOrFail
-    );
-
-    it('A duplicate event is registered', () => {
       expect(result).toStrictEqual(
         expect.objectContaining({
           type: 'EquipmentTrainingSheetRegistered',
@@ -65,24 +75,28 @@ describe('register-training-sheet', () => {
       trainingSheetId: faker.string.alphanumeric(8),
       actor: arbitraryActor(),
     };
-    const events = RA.fromArray([
-      pipe(
-        registerTrainingSheet.process({command, events: RA.empty}),
-        getSomeOrFail
-      ),
-    ]);
-
     const diffTrainingSheet = {
       ...command,
       trainingSheetId: faker.string.alphanumeric(8),
     };
 
-    const result = pipe(
-      registerTrainingSheet.process({command: diffTrainingSheet, events}),
-      getSomeOrFail
-    );
+    it('It keeps the same training sheet registered', async () => {
+      const events = RA.fromArray([
+        pipe(
+          await getTaskEitherRightOrFail(
+            registerTrainingSheet.process({command, events: RA.empty})
+          ),
+          getSomeOrFail
+        ),
+      ]);
 
-    it('It keeps the same training sheet registered', () => {
+      const result = pipe(
+        await getTaskEitherRightOrFail(
+          registerTrainingSheet.process({command: diffTrainingSheet, events})
+        ),
+        getSomeOrFail
+      );
+
       expect(command.trainingSheetId).not.toEqual( // Check that the test data itself is ok.
         diffTrainingSheet.trainingSheetId
       );
