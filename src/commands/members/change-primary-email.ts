@@ -25,7 +25,7 @@ const process: Command<ChangeMemberPrimaryEmail>['process'] = input => {
     return TE.left(
       failureWithStatus(
         'Invalid request',
-        StatusCodes.NOT_FOUND
+        StatusCodes.BAD_REQUEST
       )()
     );
   }
