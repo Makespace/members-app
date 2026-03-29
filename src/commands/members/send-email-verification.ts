@@ -42,12 +42,7 @@ const process: Command<SendMemberEmailVerification>['process'] = input => {
     );
   }
   if (email.verified) {
-    return TE.left(
-      failureWithStatus(
-        'The requested email address is already verified',
-        StatusCodes.BAD_REQUEST
-      )()
-    );
+    return TE.right(O.none);
   }
 
   if (email.verificationLastSent) {
