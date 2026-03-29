@@ -24,7 +24,7 @@ const process: Command<ChangeMemberPrimaryEmail>['process'] = input => {
   if (state === undefined) {
     return TE.left(
       failureWithStatus(
-        'The requested member does not exist',
+        'Invalid request',
         StatusCodes.NOT_FOUND
       )()
     );
@@ -32,22 +32,18 @@ const process: Command<ChangeMemberPrimaryEmail>['process'] = input => {
 
   const emailAddress = normaliseEmailAddress(input.command.email);
   const email = state.emails[emailAddress];
-  if (!email) {
+  if (
+    !email ||
+    !email.verified
+  ) {
     return TE.left(
       failureWithStatus(
-        'The requested email address is not attached to this member',
+        'Invalid request',
         StatusCodes.BAD_REQUEST
       )()
     );
   }
-  if (!email.verified) {
-    return TE.left(
-      failureWithStatus(
-        'The requested email address must be verified before it can be made primary',
-        StatusCodes.BAD_REQUEST
-      )()
-    );
-  }
+
   if (state.primaryEmailAddress === emailAddress) {
     return TE.right(O.none);
   }

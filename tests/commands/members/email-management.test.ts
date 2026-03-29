@@ -135,7 +135,7 @@ describe('member email commands', () => {
 
     expect(result).toMatchObject({
       message:
-        'The requested email address must be verified before it can be made primary',
+        'Invalid request',
       status: StatusCodes.BAD_REQUEST,
     });
   });
