@@ -29,4 +29,5 @@ export const happyPathAdapters: Dependencies = {
   getSheetData: (_sheetId: string) => TE.right([]),
   getSheetDataByMemberNumber: (_memberNumber: number) => TE.right([]),
   getTroubleTicketData: () => TE.right(O.none),
+  getMeetupEvents: () => TE.right([]),
 };
