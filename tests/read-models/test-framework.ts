@@ -50,10 +50,7 @@ export type TestFramework = {
   ) => Promise<ReadonlyArray<EventOfType<T>>>;
   commands: ToFrameworkCommands<typeof commands>;
   sharedReadModel: Dependencies['sharedReadModel'];
-  depsForApplyToResource: {
-    commitEvent: Dependencies['commitEvent'];
-    getResourceEvents: Dependencies['getResourceEvents'];
-  };
+  depsForApplyToResource: Dependencies;
   eventStoreDb: libsqlClient.Client;
   googleDB: libsqlClient.Client;
   getTroubleTicketData: Dependencies['getTroubleTicketData'];
@@ -86,18 +83,32 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     pipe(getAllEvents(eventDB)(), T.map(getRightOrFail))();
   const frameworkGetAllEventsByType = <EN extends EventName>(eventType: EN) =>
     pipe(getAllEventsByType(eventDB)(eventType), T.map(getRightOrFail))();
+  const depsForApplyToResource: Dependencies = {
+    commitEvent: frameworkCommitEvent,
+    getAllEvents: getAllEvents(eventDB),
+    getAllEventsByType: getAllEventsByType(eventDB),
+    getResourceEvents: getResourceEvents(eventDB),
+    sharedReadModel,
+    logger,
+    rateLimitSendingOfEmails: TE.right,
+    sendEmail: () => TE.right('success'),
+    lastQuizSync: lastSync(googleDB),
+    getSheetData: getSheetData(googleDB),
+    getSheetDataByMemberNumber: getSheetDataByMemberNumber(googleDB),
+    getTroubleTicketData: getTroubleTicketData(
+      googleDB,
+      O.some(TROUBLE_TICKET_SHEET_ID)
+    ),
+  };
 
   const frameworkify =
     <T>(command: Command<T>) =>
     async (commandPayload: T & {actor?: Actor}) => {
       await pipe(
-        applyToResource(
-          {
-            commitEvent: frameworkCommitEvent,
-            getResourceEvents: getResourceEvents(eventDB),
-          },
-          command
-        )(commandPayload, commandPayload.actor ?? arbitraryActor())
+        applyToResource(depsForApplyToResource, command)(
+          commandPayload,
+          commandPayload.actor ?? arbitraryActor()
+        )
       )();
     };
 
@@ -113,10 +124,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     eventStoreDb: eventDB,
     googleDB,
     sharedReadModel,
-    depsForApplyToResource: {
-      commitEvent: frameworkCommitEvent,
-      getResourceEvents: getResourceEvents(eventDB),
-    },
+    depsForApplyToResource,
     close: () => {
       eventDB.close();
       googleDB.close();

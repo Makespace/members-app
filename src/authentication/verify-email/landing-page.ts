@@ -63,6 +63,7 @@ export const landing =
       // by the user clicking the verification link.
       const resultantEvent = await verifyEmail.process({
         events: resourceEvents.right.events,
+        deps,
         command: {
           emailAddress: decoded.right.emailAddress,
           memberNumber: decoded.right.memberNumber,
