@@ -1,11 +1,11 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
+import * as O from 'fp-ts/Option';
 import {Command} from '.';
 import {Dependencies} from '../dependencies';
 import {Actor} from '../types/actor';
 import {
   FailureWithStatus,
-  failureWithStatus,
 } from '../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 
@@ -25,14 +25,10 @@ export const applyToResource =
     return pipe(
       resource,
       deps.getResourceEvents,
-      TE.bind('event', ({events}) =>
-        pipe(
-          command.process({command: inputAndActor, events}),
-          TE.chain(TE.fromOption(() =>
-            failureWithStatus('no new event raised', StatusCodes.OK)()
-          ))
-        )
-      ),
-      TE.chain(({event, version}) => deps.commitEvent(resource, version)(event))
+      TE.bind('event', ({events}) => command.process({command: inputAndActor, events})),
+      TE.chain(({event, version}) => O.isSome(event) ? deps.commitEvent(resource, version)(event.value) : TE.right({
+        status: StatusCodes.CREATED as StatusCodes.CREATED,
+        message: 'Success'
+      }))
     );
   };
