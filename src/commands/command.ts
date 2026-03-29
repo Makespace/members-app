@@ -8,7 +8,7 @@ import {FailureWithStatus} from '../types/failure-with-status';
 import {Dependencies} from '../dependencies';
 
 export type WithActor<T> = T & {actor: Actor};
-export type CommandProcessInput<T> = {
+type CommandProcessInput<T> = {
   command: WithActor<T>;
   events: ReadonlyArray<DomainEvent>;
   deps?: Dependencies;
