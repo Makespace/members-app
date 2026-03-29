@@ -23,15 +23,14 @@ const isDuplicateOfPreviousCommand =
     event.newMemberNumber === command.newMemberNumber;
 
 const process: Command<MarkMemberRejoinedWithNewNumber>['process'] = input =>
-  TE.right(
-    pipe(
-      input.events,
-      RA.filter(isEventOfType('MemberRejoinedWithNewNumber')),
-      events =>
-        RA.some(isDuplicateOfPreviousCommand(input.command))(events)
-          ? O.none
-          : O.some(constructEvent('MemberRejoinedWithNewNumber')(input.command))
-    )
+  pipe(
+    input.events,
+    RA.filter(isEventOfType('MemberRejoinedWithNewNumber')),
+    events =>
+      RA.some(isDuplicateOfPreviousCommand(input.command))(events)
+        ? O.none
+        : O.some(constructEvent('MemberRejoinedWithNewNumber')(input.command)),
+    TE.right
   );
 
 const resource: Command<MarkMemberRejoinedWithNewNumber>['resource'] =

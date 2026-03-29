@@ -17,14 +17,14 @@ const codec = t.strict({
 export type AddEquipment = t.TypeOf<typeof codec>;
 
 const process: Command<AddEquipment>['process'] = input =>
-  TE.right(
-    pipe(
-      input.events,
-      RA.match(
-        () => O.some(constructEvent('EquipmentAdded')(input.command)),
-        () => O.none
-      )
+  pipe(
+    input.events,
+    RA.match(
+      () => O.some(constructEvent('EquipmentAdded')(input.command)),
+      () => O.none
     )
+    ,
+    TE.right
   );
 
 const resource: Command<AddEquipment>['resource'] = command => ({

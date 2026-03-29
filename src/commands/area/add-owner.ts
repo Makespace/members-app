@@ -41,20 +41,19 @@ const process: Command<AddOwner>['process'] = input => {
     O.some
   );
 
-  return TE.right(
-    pipe(
-      input.events,
-      filterByName(['OwnerAdded', 'OwnerRemoved']),
-      RA.filter(event => event.memberNumber === input.command.memberNumber),
-      RA.reduce(happyPathEvent, (_, event) => {
-        switch (event.type) {
-          case 'OwnerAdded':
-            return O.none;
-          case 'OwnerRemoved':
-            return happyPathEvent;
-        }
-      })
-    )
+  return pipe(
+    input.events,
+    filterByName(['OwnerAdded', 'OwnerRemoved']),
+    RA.filter(event => event.memberNumber === input.command.memberNumber),
+    RA.reduce(happyPathEvent, (_, event) => {
+      switch (event.type) {
+        case 'OwnerAdded':
+          return O.none;
+        case 'OwnerRemoved':
+          return happyPathEvent;
+      }
+    }),
+    TE.right
   );
 };
 

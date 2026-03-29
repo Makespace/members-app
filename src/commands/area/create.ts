@@ -16,14 +16,14 @@ const codec = t.strict({
 export type CreateArea = t.TypeOf<typeof codec>;
 
 const process: Command<CreateArea>['process'] = input =>
-  TE.right(
-    pipe(
-      input.events,
-      RA.match(
-        () => O.some(constructEvent('AreaCreated')(input.command)),
-        () => O.none
-      )
+  pipe(
+    input.events,
+    RA.match(
+      () => O.some(constructEvent('AreaCreated')(input.command)),
+      () => O.none
     )
+    ,
+    TE.right
   );
 
 const resource: Command<CreateArea>['resource'] = command => ({

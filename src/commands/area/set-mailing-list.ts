@@ -17,19 +17,18 @@ const codec = t.strict({
 type SetMailingList = t.TypeOf<typeof codec>;
 
 const process: Command<SetMailingList>['process'] = input => {
-  return TE.right(
-    pipe(
-      input.command.email,
-      email => email === "" ? O.none : O.some(email),
-      O.map(EmailAddressCodec.decode),
-      O.getOrElseW(() => E.right(null)),
-      O.fromEither,
-      O.map(email => ({
-        ...input.command,
-        email,
-      })),
-      O.map(constructEvent('AreaEmailUpdated'))
-    )
+  return pipe(
+    input.command.email,
+    email => email === "" ? O.none : O.some(email),
+    O.map(EmailAddressCodec.decode),
+    O.getOrElseW(() => E.right(null)),
+    O.fromEither,
+    O.map(email => ({
+      ...input.command,
+      email,
+    })),
+    O.map(constructEvent('AreaEmailUpdated')),
+    TE.right
   );
 };
 

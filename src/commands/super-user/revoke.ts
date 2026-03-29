@@ -17,20 +17,20 @@ const codec = t.strict({
 export type RevokeSuperUser = t.TypeOf<typeof codec>;
 
 const process: Command<RevokeSuperUser>['process'] = input =>
-  TE.right(
-    pipe(
-      input.events,
-      filterByName(['SuperUserDeclared', 'SuperUserRevoked']),
-      RA.filter(event => event.memberNumber === input.command.memberNumber),
-      RA.last,
-      O.match(
-        () => O.none,
-        event =>
-          event.type === 'SuperUserDeclared'
-            ? O.some(constructEvent('SuperUserRevoked')(input.command))
-            : O.none
-      )
+  pipe(
+    input.events,
+    filterByName(['SuperUserDeclared', 'SuperUserRevoked']),
+    RA.filter(event => event.memberNumber === input.command.memberNumber),
+    RA.last,
+    O.match(
+      () => O.none,
+      event =>
+        event.type === 'SuperUserDeclared'
+          ? O.some(constructEvent('SuperUserRevoked')(input.command))
+          : O.none
     )
+    ,
+    TE.right
   );
 
 export const revoke: Command<RevokeSuperUser> = {

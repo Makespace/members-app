@@ -15,9 +15,7 @@ const codec = t.strict({
 type SignOwnerAgreement = t.TypeOf<typeof codec>;
 
 const process: Command<SignOwnerAgreement>['process'] = input =>
-  TE.right(
-    pipe(input.command, constructEvent('OwnerAgreementSigned'), O.some)
-  );
+  pipe(input.command, constructEvent('OwnerAgreementSigned'), O.some, TE.right);
 
 const resource: Command<SignOwnerAgreement>['resource'] = input => ({
   type: 'OwnerAgreementSigning',
