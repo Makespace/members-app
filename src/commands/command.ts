@@ -5,8 +5,15 @@ import * as TE from 'fp-ts/TaskEither';
 import {Actor} from '../types/actor';
 import {Resource} from '../types/resource';
 import {FailureWithStatus} from '../types/failure-with-status';
+import {Dependencies} from '../dependencies';
 
 export type WithActor<T> = T & {actor: Actor};
+export type CommandProcessInput<T> = {
+  command: WithActor<T>;
+  events: ReadonlyArray<DomainEvent>;
+  deps?: Dependencies;
+};
+
 type CommandResult = TE.TaskEither<
   FailureWithStatus,
   O.Option<DomainEvent>
@@ -14,10 +21,7 @@ type CommandResult = TE.TaskEither<
 
 export type Command<T> = {
   resource: (command: T) => Resource;
-  process: (input: {
-    command: WithActor<T>;
-    events: ReadonlyArray<DomainEvent>;
-  }) => CommandResult;
+  process: (input: CommandProcessInput<T>) => CommandResult;
   decode: Type<T, T, unknown>['decode'];
   isAuthorized: (input: {
     actor: Actor;
