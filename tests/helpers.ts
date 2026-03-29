@@ -1,6 +1,7 @@
 import {error} from 'console';
 import * as O from 'fp-ts/Option';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import {identity, pipe} from 'fp-ts/lib/function';
 import {Actor, UserActor} from '../src/types/actor';
 import {EmailAddressCodec} from '../src/types/email-address';
@@ -29,6 +30,10 @@ export const getSomeOrFail = <A>(input: O.Option<A>): A =>
       throw new Error('unexpected None');
     })
   );
+
+export const getTaskEitherRightOrFail = async <E, A>(
+  input: TE.TaskEither<E, A>
+): Promise<A> => getRightOrFail(await input());
 
 export const arbitraryActor = (): Actor =>
   ({tag: 'token', token: 'admin'}) satisfies Actor;

@@ -4,7 +4,11 @@ import {pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
 
 import {removeTrainingSheet} from '../../../src/commands/equipment/remove-training-sheet';
-import {arbitraryActor, getSomeOrFail} from '../../helpers';
+import {
+  arbitraryActor,
+  getSomeOrFail,
+  getTaskEitherRightOrFail,
+} from '../../helpers';
 
 describe('remove-training-sheet', () => {
   const command = {
@@ -13,12 +17,14 @@ describe('remove-training-sheet', () => {
     actor: arbitraryActor(),
   };
 
-  const result = pipe(
-    removeTrainingSheet.process({command, events: RA.empty}),
-    getSomeOrFail
-  );
+  it('Records the remove training sheet event', async () => {
+    const result = pipe(
+      await getTaskEitherRightOrFail(
+        removeTrainingSheet.process({command, events: RA.empty})
+      ),
+      getSomeOrFail
+    );
 
-  it('Records the remove training sheet event', () => {
     expect(result).toStrictEqual(
       expect.objectContaining({
         type: 'EquipmentTrainingSheetRemoved',

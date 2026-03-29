@@ -61,17 +61,26 @@ export const landing =
 
       // Note that we don't need to check isAuthorized here because we are authorised
       // by the user clicking the verification link.
-      const resultantEvents = verifyEmail.process({
+      const resultantEvent = await verifyEmail.process({
         events: resourceEvents.right.events,
         command: {
           emailAddress: decoded.right.emailAddress,
           memberNumber: decoded.right.memberNumber,
           actor: {'tag': 'system'}
         }
-      });
+      })();
 
-      if (O.isSome(resultantEvents)) {
-        const commitEvent = await deps.commitEvent(resource, resourceEvents.right.version)(resultantEvents.value)();
+      if (E.isLeft(resultantEvent)) {
+        deps.logger.error(
+          resultantEvent.left,
+          'Failed to process verification link event'
+        );
+        res.send(invalidLink());
+        return;
+      }
+
+      if (O.isSome(resultantEvent.right)) {
+        const commitEvent = await deps.commitEvent(resource, resourceEvents.right.version)(resultantEvent.right.value)();
         if (E.isLeft(commitEvent)) {
           deps.logger.error(
             commitEvent.left,

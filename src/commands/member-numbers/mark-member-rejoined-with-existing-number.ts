@@ -3,6 +3,7 @@ import {constructEvent, isEventOfType} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
 import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {pipe} from 'fp-ts/lib/function';
@@ -29,7 +30,8 @@ const process: Command<MarkMemberRejoinedWithExistingNumber>['process'] =
           ? O.none
           : O.some(
               constructEvent('MemberRejoinedWithExistingNumber')(input.command)
-            )
+            ),
+      TE.right
     );
 
 const resource: Command<MarkMemberRejoinedWithExistingNumber>['resource'] =

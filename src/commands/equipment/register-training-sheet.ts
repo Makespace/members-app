@@ -1,6 +1,7 @@
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {DomainEvent, constructEvent} from '../../types';
 import {Actor} from '../../types/actor';
 import {Command, WithActor} from '../command';
@@ -18,9 +19,11 @@ export type RegisterTrainingSheet = t.TypeOf<typeof codec>;
 const process = (input: {
   command: WithActor<RegisterTrainingSheet>;
   events: ReadonlyArray<DomainEvent>;
-}): O.Option<DomainEvent> =>
+}) =>
   // No idempotency check required here currently. If the training sheet already matches the current then we still record the duplicate event.
-  O.some(constructEvent('EquipmentTrainingSheetRegistered')(input.command));
+  TE.right(
+    O.some(constructEvent('EquipmentTrainingSheetRegistered')(input.command))
+  );
 
 const resource = (command: RegisterTrainingSheet) => ({
   type: 'Equipment',

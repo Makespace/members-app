@@ -1,9 +1,14 @@
 import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
+import {StatusCodes} from 'http-status-codes';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {constructEvent} from '../../../src/types';
 import {v4} from 'uuid';
-import {arbitraryActor} from '../../helpers';
+import {
+  arbitraryActor,
+  getLeftOrFail,
+  getTaskEitherRightOrFail,
+} from '../../helpers';
 import {addOwner} from '../../../src/commands/area/add-owner';
 
 describe('add-owner', () => {
@@ -37,35 +42,47 @@ describe('add-owner', () => {
   });
 
   describe('when the area does not exist', () => {
-    const result = addOwner.process({
-      command,
-      events: [],
-    });
+    it('fails', async () => {
+      const result = getLeftOrFail(
+        await addOwner.process({
+          command,
+          events: [],
+        })()
+      );
 
-    it('does nothing', () => {
-      expect(result).toStrictEqual(O.none);
+      expect(result).toMatchObject({
+        message: 'The requested area does not exist',
+        status: StatusCodes.NOT_FOUND,
+      });
     });
   });
 
   describe('when the area has been removed', () => {
-    const result = addOwner.process({
-      command,
-      events: [areaCreated, areaRemoved],
-    });
+    it('fails', async () => {
+      const result = getLeftOrFail(
+        await addOwner.process({
+          command,
+          events: [areaCreated, areaRemoved],
+        })()
+      );
 
-    it('does nothing', () => {
-      expect(result).toStrictEqual(O.none);
+      expect(result).toMatchObject({
+        message: 'The requested area does not exist',
+        status: StatusCodes.NOT_FOUND,
+      });
     });
   });
 
   describe('when the area exists', () => {
     describe('and the member was never an owner of it', () => {
-      const result = addOwner.process({
-        command,
-        events: [areaCreated],
-      });
+      it('adds them as owner', async () => {
+        const result = await getTaskEitherRightOrFail(
+          addOwner.process({
+            command,
+            events: [areaCreated],
+          })
+        );
 
-      it('adds them as owner', () => {
         expect(result).toStrictEqual(
           O.some(
             expect.objectContaining({
@@ -79,12 +96,14 @@ describe('add-owner', () => {
     });
 
     describe('and the member is no longer an owner of it', () => {
-      const result = addOwner.process({
-        command,
-        events: [areaCreated, ownerAdded, ownerRemoved],
-      });
+      it('adds them as owner', async () => {
+        const result = await getTaskEitherRightOrFail(
+          addOwner.process({
+            command,
+            events: [areaCreated, ownerAdded, ownerRemoved],
+          })
+        );
 
-      it('adds them as owner', () => {
         expect(result).toStrictEqual(
           O.some(
             expect.objectContaining({
@@ -98,12 +117,14 @@ describe('add-owner', () => {
     });
 
     describe('and the member is an owner', () => {
-      const result = addOwner.process({
-        command,
-        events: [areaCreated, ownerAdded],
-      });
+      it('does nothing', async () => {
+        const result = await getTaskEitherRightOrFail(
+          addOwner.process({
+            command,
+            events: [areaCreated, ownerAdded],
+          })
+        );
 
-      it('does nothing', () => {
         expect(result).toStrictEqual(O.none);
       });
     });

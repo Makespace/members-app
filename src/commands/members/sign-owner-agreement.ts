@@ -1,6 +1,7 @@
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
 import {isSelfOrPrivileged} from '../is-self-or-privileged';
 import {constructEvent} from '../../types';
@@ -14,7 +15,7 @@ const codec = t.strict({
 type SignOwnerAgreement = t.TypeOf<typeof codec>;
 
 const process: Command<SignOwnerAgreement>['process'] = input =>
-  pipe(input.command, constructEvent('OwnerAgreementSigned'), O.some);
+  pipe(input.command, constructEvent('OwnerAgreementSigned'), O.some, TE.right);
 
 const resource: Command<SignOwnerAgreement>['resource'] = input => ({
   type: 'OwnerAgreementSigning',
