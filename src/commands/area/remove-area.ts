@@ -17,7 +17,10 @@ const codec = t.strict({
 type RemoveArea = t.TypeOf<typeof codec>;
 
 const process: Command<RemoveArea>['process'] = input => {
-  if (input.events.length === 0) {
+  if (
+    input.events.length === 0 ||
+    pipe(input.events, RA.some(isEventOfType('AreaRemoved')))
+  ) {
     return TE.left(
       failureWithStatus(
         'The requested area does not exist',
@@ -25,26 +28,8 @@ const process: Command<RemoveArea>['process'] = input => {
       )()
     );
   }
-  return pipe(
-    pipe(
-      input.events,
-      RA.filter(isEventOfType('AreaRemoved')),
-      RA.match(
-        () => O.some(constructEvent('AreaRemoved')(input.command)),
-        () => O.none
-      )
-    ),
-    O.match(
-      () =>
-        TE.left(
-          failureWithStatus(
-            'The requested area does not exist',
-            StatusCodes.NOT_FOUND
-          )()
-        ),
-      event => TE.right(O.some(event))
-    )
-  );
+
+  return TE.right(O.some(constructEvent('AreaRemoved')(input.command)));
 };
 
 const resource: Command<RemoveArea>['resource'] = command => ({
