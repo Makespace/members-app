@@ -6,6 +6,7 @@ import {
   getAllEvents,
   getAllEventsByType,
 } from '../../src/init-dependencies/event-store/get-all-events';
+import {getEventById} from '../../src/init-dependencies/event-store/get-event-by-id';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
 import {Actor, DomainEvent} from '../../src/types';
 import {pipe} from 'fp-ts/lib/function';
@@ -87,6 +88,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     commitEvent: frameworkCommitEvent,
     getAllEvents: getAllEvents(eventDB),
     getAllEventsByType: getAllEventsByType(eventDB),
+    getEventById: getEventById(eventDB),
     getResourceEvents: getResourceEvents(eventDB),
     sharedReadModel,
     logger,
