@@ -2,6 +2,7 @@ import {pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {
   html,
   joinHtml,
@@ -163,7 +164,8 @@ const constructForm: Form<ViewModel>['constructForm'] =
       }),
       E.bind('areaOwnersThatAreNotTrainers', ({equipmentId}) =>
         getPotentialTrainers(readModel.db, equipmentId)
-      )
+      ),
+      TE.fromEither
     );
 
 export const addTrainerForm: Form<ViewModel> = {

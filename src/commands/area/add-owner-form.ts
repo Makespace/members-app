@@ -2,12 +2,12 @@ import {flow, pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {EmailAddress} from '../../types';
 import * as t from 'io-ts';
 import {StatusCodes} from 'http-status-codes';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {
-  FailureWithStatus,
   failureWithStatus,
 } from '../../types/failure-with-status';
 import {Form} from '../../types/form';
@@ -203,14 +203,15 @@ const getAreaName = (db: SharedReadModel['db'], areaId: string) =>
 
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({readModel}): E.Either<FailureWithStatus, ViewModel> =>
+  ({readModel}) =>
     pipe(
       E.Do,
       E.bind('areaId', () => getAreaId(input)),
       E.bind('areaName', ({areaId}) => getAreaName(readModel.db, areaId)),
       E.bind('areaOwners', ({areaId}) =>
         E.right(getExistingAndPotentialOwners(readModel.db, areaId))
-      )
+      ),
+      TE.fromEither
     );
 
 export const addOwnerForm: Form<ViewModel> = {

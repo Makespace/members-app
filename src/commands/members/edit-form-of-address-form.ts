@@ -1,5 +1,6 @@
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import {html, safe, toLoggedInContent} from '../../types/html';
 import {User} from '../../types';
 import {Form} from '../../types/form';
@@ -55,7 +56,8 @@ const constructForm: Form<ViewModel>['constructForm'] =
       E.map(memberNumber => ({
         user,
         memberNumber,
-      }))
+      })),
+      TE.fromEither
     );
 
 export const editFormOfAddressForm: Form<ViewModel> = {

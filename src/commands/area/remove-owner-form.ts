@@ -1,6 +1,7 @@
 import * as tt from 'io-ts-types';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import {EmailAddress} from '../../types';
 import {Form} from '../../types/form';
 import {flow, pipe} from 'fp-ts/lib/function';
@@ -121,8 +122,7 @@ export const removeOwnerForm: Form<ViewModel> = {
         input,
         decodeParams,
         E.bind('areaName', ({areaId}) => getAreaName(readModel.db, areaId)),
-        E.bind('owner', ({memberNumber}) =>
-          getOwner(readModel.db, memberNumber)
-        )
+        E.bind('owner', ({memberNumber}) => getOwner(readModel.db, memberNumber)),
+        TE.fromEither
       ),
 };
