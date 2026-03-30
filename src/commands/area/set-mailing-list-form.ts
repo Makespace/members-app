@@ -1,10 +1,10 @@
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import * as t from 'io-ts';
 import {StatusCodes} from 'http-status-codes';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {
-  FailureWithStatus,
   failureWithStatus,
 } from '../../types/failure-with-status';
 import {Form} from '../../types/form';
@@ -88,16 +88,18 @@ const getAreaInfo = (db: SharedReadModel['db'], areaId: string) =>
 
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({readModel}): E.Either<FailureWithStatus, ViewModel> =>
-    pipe(
-      E.Do,
-      E.bind('areaId', () => getAreaId(input)),
-      E.bind('areaInfo', ({areaId}) => getAreaInfo(readModel.db, areaId)),
-      E.map(({areaId, areaInfo}) => ({
-        areaId,
-        areaName: areaInfo.areaName,
-        currentEmail: areaInfo.currentEmail,
-      }))
+  ({readModel}) =>
+    TE.fromEither(
+      pipe(
+        E.Do,
+        E.bind('areaId', () => getAreaId(input)),
+        E.bind('areaInfo', ({areaId}) => getAreaInfo(readModel.db, areaId)),
+        E.map(({areaId, areaInfo}) => ({
+          areaId,
+          areaName: areaInfo.areaName,
+          currentEmail: areaInfo.currentEmail,
+        }))
+      )
     );
 
 export const setMailingListForm: Form<ViewModel> = {

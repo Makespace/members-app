@@ -1,4 +1,5 @@
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import * as t from 'io-ts';
 import {Form} from '../../types/form';
 import {flow, pipe} from 'fp-ts/lib/function';
@@ -52,9 +53,11 @@ export const removeAreaForm: Form<ViewModel> = {
   constructForm:
     input =>
     ({readModel}) =>
-      pipe(
-        E.Do,
-        E.bind('areaId', () => getAreaId(input)),
-        E.bind('areaName', ({areaId}) => getAreaName(readModel.db, areaId))
+      TE.fromEither(
+        pipe(
+          E.Do,
+          E.bind('areaId', () => getAreaId(input)),
+          E.bind('areaName', ({areaId}) => getAreaName(readModel.db, areaId))
+        )
       ),
 };

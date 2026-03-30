@@ -1,5 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import {html, safe, toLoggedInContent} from '../../types/html';
 import {Form} from '../../types/form';
 import {User} from '../../types';
@@ -32,7 +33,7 @@ const renderForm = (viewModel: ViewModel) =>
 const constructForm: Form<ViewModel>['constructForm'] =
   () =>
   ({user}) =>
-    E.right({user});
+    TE.fromEither(E.right({user}));
 
 export const signOwnerAgreementForm: Form<ViewModel> = {
   renderForm,

@@ -1,5 +1,6 @@
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import {html, safe, toLoggedInContent} from '../../types/html';
 import {User} from '../../types';
 import {Form} from '../../types/form';
@@ -39,23 +40,25 @@ const paramsCodec = t.strict({
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
   ({user}) =>
-    pipe(
-      input,
-      paramsCodec.decode,
-      E.mapLeft(
-        flow(
-          formatValidationErrors,
-          failureWithStatus(
-            'Parameters submitted to the form were invalid',
-            StatusCodes.BAD_REQUEST
+    TE.fromEither(
+      pipe(
+        input,
+        paramsCodec.decode,
+        E.mapLeft(
+          flow(
+            formatValidationErrors,
+            failureWithStatus(
+              'Parameters submitted to the form were invalid',
+              StatusCodes.BAD_REQUEST
+            )
           )
-        )
-      ),
-      E.map(params => params.member),
-      E.map(memberNumber => ({
-        user,
-        memberNumber,
-      }))
+        ),
+        E.map(params => params.member),
+        E.map(memberNumber => ({
+          user,
+          memberNumber,
+        }))
+      )
     );
 
 export const editFormOfAddressForm: Form<ViewModel> = {

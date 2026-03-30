@@ -2,6 +2,7 @@ import {pipe} from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {
   html,
   joinHtml,
@@ -149,20 +150,22 @@ const getPotentialTrainers = (db: SharedReadModel['db'], equipmentId: UUID) => {
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
   ({readModel}) =>
-    pipe(
-      E.Do,
-      E.bind('equipmentId', () => getEquipmentId(input)),
-      E.bind('equipment', ({equipmentId}) => {
-        const equipment = readModel.equipment.get(equipmentId);
-        if (O.isNone(equipment)) {
-          return E.left(
-            failureWithStatus('Unknown equipment', StatusCodes.NOT_FOUND)()
-          );
-        }
-        return E.right(equipment.value);
-      }),
-      E.bind('areaOwnersThatAreNotTrainers', ({equipmentId}) =>
-        getPotentialTrainers(readModel.db, equipmentId)
+    TE.fromEither(
+      pipe(
+        E.Do,
+        E.bind('equipmentId', () => getEquipmentId(input)),
+        E.bind('equipment', ({equipmentId}) => {
+          const equipment = readModel.equipment.get(equipmentId);
+          if (O.isNone(equipment)) {
+            return E.left(
+              failureWithStatus('Unknown equipment', StatusCodes.NOT_FOUND)()
+            );
+          }
+          return E.right(equipment.value);
+        }),
+        E.bind('areaOwnersThatAreNotTrainers', ({equipmentId}) =>
+          getPotentialTrainers(readModel.db, equipmentId)
+        )
       )
     );
 

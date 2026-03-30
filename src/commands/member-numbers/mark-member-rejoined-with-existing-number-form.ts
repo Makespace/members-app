@@ -1,5 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import {html, safe, toLoggedInContent} from '../../types/html';
 import {Form} from '../../types/form';
 
@@ -23,7 +24,8 @@ const renderForm = () =>
     toLoggedInContent(safe('Mark a member as rejoining makespace'))
   );
 
-const constructForm: Form<ViewModel>['constructForm'] = () => () => E.right({});
+const constructForm: Form<ViewModel>['constructForm'] = () => () =>
+  TE.fromEither(E.right({}));
 
 export const markMemberRejoinedWithExistingNumberForm: Form<ViewModel> = {
   renderForm,

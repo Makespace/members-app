@@ -1,5 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import {html, safe, sanitizeString, toLoggedInContent} from '../../types/html';
 import {Form} from '../../types/form';
 import {getEquipmentIdFromForm} from './get-equipment-id-from-form';
@@ -40,27 +41,29 @@ const renderForm = (viewModel: ViewModel) =>
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
   ({readModel}) =>
-    pipe(
-      E.Do,
-      E.bind('equipmentId', () => getEquipmentIdFromForm(input)),
-      E.bind('equipment', ({equipmentId}) =>
-        pipe(
-          equipmentId,
-          readModel.equipment.get,
-          E.fromOption(() =>
-            failureWithStatus('No such equipment', StatusCodes.NOT_FOUND)()
+    TE.fromEither(
+      pipe(
+        E.Do,
+        E.bind('equipmentId', () => getEquipmentIdFromForm(input)),
+        E.bind('equipment', ({equipmentId}) =>
+          pipe(
+            equipmentId,
+            readModel.equipment.get,
+            E.fromOption(() =>
+              failureWithStatus('No such equipment', StatusCodes.NOT_FOUND)()
+            )
           )
-        )
-      ),
-      E.bind('equipmentName', ({equipment}) => E.right(equipment.name)),
-      E.bind('currentTrainingSheetId', ({equipment}) =>
-        pipe(
-          equipment.trainingSheetId,
-          E.fromOption(() =>
-            failureWithStatus(
-              'No training sheet currently registered',
-              StatusCodes.NOT_FOUND
-            )()
+        ),
+        E.bind('equipmentName', ({equipment}) => E.right(equipment.name)),
+        E.bind('currentTrainingSheetId', ({equipment}) =>
+          pipe(
+            equipment.trainingSheetId,
+            E.fromOption(() =>
+              failureWithStatus(
+                'No training sheet currently registered',
+                StatusCodes.NOT_FOUND
+              )()
+            )
           )
         )
       )

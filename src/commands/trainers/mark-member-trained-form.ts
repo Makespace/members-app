@@ -1,6 +1,7 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {html, Safe, safe, sanitizeString, toLoggedInContent} from '../../types/html';
 import {Form} from '../../types/form';
 import {getEquipmentIdFromForm} from '../equipment/get-equipment-id-from-form';
@@ -60,20 +61,22 @@ const renderForm = (viewModel: ViewModel) =>
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
   ({readModel, user}) =>
-    pipe(
-      E.Do,
-      E.bind('equipment_id', () => getEquipmentIdFromForm(input)),
-      E.bind('equipment', ({equipment_id}) => {
-        const equipment = readModel.equipment.get(equipment_id);
-        if (O.isNone(equipment)) {
-          return E.left(
-            failureWithStatus('Unknown equipment', StatusCodes.NOT_FOUND)()
-          );
-        }
-        return E.right(equipment.value);
-      }),
-      E.let('members', () => readModel.members.getAll()),
-      E.let('trainerMemberNumber', () => user.memberNumber)
+    TE.fromEither(
+      pipe(
+        E.Do,
+        E.bind('equipment_id', () => getEquipmentIdFromForm(input)),
+        E.bind('equipment', ({equipment_id}) => {
+          const equipment = readModel.equipment.get(equipment_id);
+          if (O.isNone(equipment)) {
+            return E.left(
+              failureWithStatus('Unknown equipment', StatusCodes.NOT_FOUND)()
+            );
+          }
+          return E.right(equipment.value);
+        }),
+        E.let('members', () => readModel.members.getAll()),
+        E.let('trainerMemberNumber', () => user.memberNumber)
+      )
     );
 
 export const markMemberTrainedForm: Form<ViewModel> = {

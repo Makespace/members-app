@@ -2,6 +2,7 @@ import {flow, pipe} from 'fp-ts/lib/function';
 import * as tt from 'io-ts-types';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import {html, safe, toLoggedInContent} from '../../types/html';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
@@ -41,23 +42,27 @@ const paramsCodec = t.strict({
   memberNumber: tt.IntFromString,
 });
 
-const constructForm: Form<ViewModel>['constructForm'] = input => () =>
-  pipe(
-    input,
-    paramsCodec.decode,
-    E.mapLeft(
-      flow(
-        formatValidationErrors,
-        failureWithStatus(
-          'Parameters submitted to the form were invalid',
-          StatusCodes.BAD_REQUEST
-        )
+const constructForm: Form<ViewModel>['constructForm'] =
+  input =>
+  () =>
+    TE.fromEither(
+      pipe(
+        input,
+        paramsCodec.decode,
+        E.mapLeft(
+          flow(
+            formatValidationErrors,
+            failureWithStatus(
+              'Parameters submitted to the form were invalid',
+              StatusCodes.BAD_REQUEST
+            )
+          )
+        ),
+        E.map(params => ({
+          toBeRevoked: params.memberNumber,
+        }))
       )
-    ),
-    E.map(params => ({
-      toBeRevoked: params.memberNumber,
-    }))
-  );
+    );
 
 export const revokeForm: Form<ViewModel> = {
   renderForm,

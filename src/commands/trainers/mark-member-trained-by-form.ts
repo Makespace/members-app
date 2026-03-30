@@ -1,6 +1,7 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {
   html,
   Safe,
@@ -76,23 +77,25 @@ const renderForm = (viewModel: ViewModel) =>
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
   ({readModel}) =>
-    pipe(
-      E.Do,
-      E.bind('equipment_id', () => getEquipmentIdFromForm(input)),
-      E.bind('equipment', ({equipment_id}) => {
-        const equipment = readModel.equipment.get(equipment_id);
-        if (O.isNone(equipment)) {
-          return E.left(
-            failureWithStatus('Unknown equipment', StatusCodes.NOT_FOUND)()
-          );
-        }
-        return E.right(equipment.value);
-      }),
-      E.let('members', () => readModel.members.getAll()),
-      E.bind('membersNotAlreadyTrained', ({equipment_id, members}) =>
-        E.right(
-          members.filter(
-            member => !member.trainedOn.map(t => t.id).includes(equipment_id)
+    TE.fromEither(
+      pipe(
+        E.Do,
+        E.bind('equipment_id', () => getEquipmentIdFromForm(input)),
+        E.bind('equipment', ({equipment_id}) => {
+          const equipment = readModel.equipment.get(equipment_id);
+          if (O.isNone(equipment)) {
+            return E.left(
+              failureWithStatus('Unknown equipment', StatusCodes.NOT_FOUND)()
+            );
+          }
+          return E.right(equipment.value);
+        }),
+        E.let('members', () => readModel.members.getAll()),
+        E.bind('membersNotAlreadyTrained', ({equipment_id, members}) =>
+          E.right(
+            members.filter(
+              member => !member.trainedOn.map(t => t.id).includes(equipment_id)
+            )
           )
         )
       )

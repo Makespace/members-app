@@ -1,5 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import {html, safe, sanitizeString, toLoggedInContent} from '../../types/html';
 import {Form} from '../../types/form';
 import {getEquipmentName} from './get-equipment-name';
@@ -34,11 +35,13 @@ const renderForm = (viewModel: ViewModel) =>
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
   ({readModel}) =>
-    pipe(
-      E.Do,
-      E.bind('equipmentId', () => getEquipmentIdFromForm(input)),
-      E.bind('equipmentName', ({equipmentId}) =>
-        getEquipmentName(readModel, equipmentId)
+    TE.fromEither(
+      pipe(
+        E.Do,
+        E.bind('equipmentId', () => getEquipmentIdFromForm(input)),
+        E.bind('equipmentName', ({equipmentId}) =>
+          getEquipmentName(readModel, equipmentId)
+        )
       )
     );
 
