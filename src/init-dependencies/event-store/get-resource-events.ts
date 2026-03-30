@@ -13,6 +13,7 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {Client} from '@libsql/client';
 import {StatusCodes} from 'http-status-codes';
 import {dbExecute} from '../../util';
+import {EventsWithDeletionsTable} from './events-with-deletions-table';
 
 const getLatestVersion = (rows: EventsTable['rows']) =>
   pipe(
@@ -29,7 +30,16 @@ export const getResourceEvents =
         () =>
           dbExecute(
             dbClient,
-            'SELECT * FROM events WHERE resource_type = ? AND resource_id = ? ORDER BY event_index ASC;',
+            `SELECT
+               events.*,
+               deleted_events.deleted_at,
+               deleted_events.deleted_by_member_number,
+               deleted_events.deletion_reason
+             FROM events
+             LEFT JOIN deleted_events
+               ON deleted_events.event_id = events.id
+             WHERE resource_type = ? AND resource_id = ?
+             ORDER BY event_index ASC;`,
             [resource.type, resource.id]
           ),
         failureWithStatus(
@@ -39,7 +49,7 @@ export const getResourceEvents =
       ),
       TE.chainEitherK(
         flow(
-          EventsTable.decode,
+          EventsWithDeletionsTable.decode,
           E.mapLeft(internalCodecFailure('failed to decode db response'))
         )
       ),
@@ -48,7 +58,9 @@ export const getResourceEvents =
         pipe(
           {
             version: E.right(getLatestVersion(rows)),
-            events: eventsFromRows(rows),
+            events: eventsFromRows(
+              rows.filter(row => row.deleted_at === null)
+            ),
           },
           sequenceS(E.Apply)
         )

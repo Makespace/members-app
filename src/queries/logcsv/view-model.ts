@@ -1,5 +1,5 @@
-import {DomainEvent} from '../../types';
+import type {StoredEventLogEntry} from '../../types/stored-event-log-entry';
 
 export type ViewModel = {
-  events: ReadonlyArray<DomainEvent>;
+  events: ReadonlyArray<StoredEventLogEntry>;
 };

@@ -1,6 +1,6 @@
 import {Params} from '../query';
 import {pipe} from 'fp-ts/lib/function';
-import {StoredDomainEvent, User} from '../../types';
+import {User} from '../../types';
 import {Dependencies} from '../../dependencies';
 import * as TE from 'fp-ts/TaskEither';
 import {ViewModel, LogSearch} from './view-model';
@@ -8,6 +8,7 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {readModels} from '../../read-models';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
+import type {StoredEventLogEntry} from '../../types/stored-event-log-entry';
 
 function parseQueryToLogSearch(query: Params): LogSearch {
   const rawOffset = query['offset'];
@@ -26,7 +27,7 @@ function parseQueryToLogSearch(query: Params): LogSearch {
 }
 
 const applyLogSearch =
-  (search: LogSearch) => (events: ReadonlyArray<StoredDomainEvent>) =>
+  (search: LogSearch) => (events: ReadonlyArray<StoredEventLogEntry>) =>
     pipe(events, events => {
       const start = search.offset;
       const end = search.offset + search.limit;
@@ -36,7 +37,7 @@ const applyLogSearch =
 export const constructViewModel =
   (deps: Dependencies) => (user: User) => (queryParams: Params) =>
     pipe(
-      deps.getAllEvents(),
+      deps.getAllEventsWithDeletionStatus(),
       TE.filterOrElse(readModels.superUsers.is(user.memberNumber), () =>
         failureWithStatus(
           'You do not have the necessary permission to see this page.',

@@ -6,15 +6,20 @@ import {ViewModel} from './view-model';
 import {readModels} from '../../read-models';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
+import {sequenceS} from 'fp-ts/lib/Apply';
 
 export const constructViewModel = (deps: Dependencies) => (user: User) =>
   pipe(
-    deps.getAllEvents(),
-    TE.filterOrElse(readModels.superUsers.is(user.memberNumber), () =>
+    {
+      authEvents: deps.getAllEvents(),
+      events: deps.getAllEventsWithDeletionStatus(),
+    },
+    sequenceS(TE.ApplyPar),
+    TE.filterOrElse(({authEvents}) => readModels.superUsers.is(user.memberNumber)(authEvents), () =>
       failureWithStatus(
         'You do not have the necessary permission to see this page.',
         StatusCodes.FORBIDDEN
       )()
     ),
-    TE.map(events => ({events}) satisfies ViewModel)
+    TE.map(({events}) => ({events}) satisfies ViewModel)
   );

@@ -12,7 +12,10 @@ export const happyPathAdapters: Dependencies = {
   commitEvent: () => () =>
     TE.right({status: StatusCodes.CREATED, message: 'dummy create event'}),
   getAllEvents: () => TE.right([]),
+  getAllEventsWithDeletionStatus: () => TE.right([]),
   getResourceEvents: () => TE.right({events: [], version: faker.number.int()}),
+  deleteStoredEvent: () =>
+    TE.right({status: StatusCodes.OK, message: 'Deleted stored event'}),
   sharedReadModel: initSharedReadModel(
     libsqlClient.createClient({url: ':memory:'}),
     pino({
@@ -21,7 +24,7 @@ export const happyPathAdapters: Dependencies = {
     }),
     O.none
   ),
-  logger: (() => undefined) as never as Logger,
+  logger: pino({level: 'silent'}) as Logger,
   rateLimitSendingOfEmails: TE.right,
   sendEmail: () => TE.right('success'),
   getAllEventsByType: <T extends EventName>(_eventType: T) => TE.right([]),

@@ -13,6 +13,16 @@ import {StatusCodes} from 'http-status-codes';
 import {StoredDomainEvent, StoredEventOfType} from '../../types';
 import {EventName} from '../../types/domain-event';
 import {dbExecute} from '../../util';
+import {EventsWithDeletionsTable} from './events-with-deletions-table';
+import {eventsWithDeletionsFromRows} from './events-with-deletions-from-rows';
+
+const activeEventsClause = `
+  NOT EXISTS (
+    SELECT 1
+    FROM deleted_events
+    WHERE deleted_events.event_id = events.id
+  )
+`;
 
 export const getAllEvents =
   (dbClient: Client): Dependencies['getAllEvents'] =>
@@ -22,7 +32,10 @@ export const getAllEvents =
         () =>
           dbExecute(
             dbClient,
-            "SELECT * FROM events WHERE event_type != 'EquipmentTrainingQuizResult' ORDER BY event_index ASC",
+            `SELECT * FROM events
+             WHERE event_type != 'EquipmentTrainingQuizResult'
+               AND ${activeEventsClause}
+             ORDER BY event_index ASC`,
             {}
           ),
         failureWithStatus(
@@ -40,6 +53,43 @@ export const getAllEvents =
       TE.chainEitherK(eventsFromRows)
     );
 
+export const getAllEventsWithDeletionStatus =
+  (dbClient: Client): Dependencies['getAllEventsWithDeletionStatus'] =>
+  () =>
+    pipe(
+      TE.tryCatch(
+        () =>
+          dbExecute(
+            dbClient,
+            `SELECT
+               events.*,
+               deleted_events.deleted_at,
+               deleted_events.deleted_by_member_number,
+               deleted_events.deletion_reason
+             FROM events
+             LEFT JOIN deleted_events
+               ON deleted_events.event_id = events.id
+             WHERE event_type != 'EquipmentTrainingQuizResult'
+             ORDER BY event_index ASC`,
+            {}
+          ),
+        failureWithStatus(
+          'Failed to query database',
+          StatusCodes.INTERNAL_SERVER_ERROR
+        )
+      ),
+      TE.chainEitherK(
+        flow(
+          EventsWithDeletionsTable.decode,
+          E.mapLeft(
+            internalCodecFailure('Failed to decode DB rows with deletion status')
+          )
+        )
+      ),
+      TE.map(table => table.rows),
+      TE.chainEitherK(eventsWithDeletionsFromRows)
+    );
+
 export const getAllEventsByType =
   (dbClient: Client): Dependencies['getAllEventsByType'] =>
   <T extends EventName>(eventType: T) =>
@@ -48,7 +98,10 @@ export const getAllEventsByType =
         () =>
           dbExecute(
             dbClient,
-            'SELECT * FROM events WHERE event_type = ? ORDER BY event_index ASC;',
+            `SELECT * FROM events
+             WHERE event_type = ?
+               AND ${activeEventsClause}
+             ORDER BY event_index ASC;`,
             [eventType]
           ),
         failureWithStatus(
@@ -87,7 +140,10 @@ export const getAllEventsByTypes =
         () =>
           dbExecute(
             dbClient,
-            'SELECT * FROM events WHERE event_type = ? OR event_type = ? ORDER BY event_index ASC',
+            `SELECT * FROM events
+             WHERE (event_type = ? OR event_type = ?)
+               AND ${activeEventsClause}
+             ORDER BY event_index ASC`,
             [eventType, eventType2]
           ),
         failureWithStatus(

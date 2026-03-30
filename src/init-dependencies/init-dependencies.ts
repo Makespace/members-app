@@ -6,9 +6,14 @@ import * as O from 'fp-ts/Option';
 import createLogger, {LoggerOptions} from 'pino';
 import nodemailer from 'nodemailer';
 import {commitEvent} from './event-store/commit-event';
-import {getAllEvents, getAllEventsByType} from './event-store/get-all-events';
+import {
+  getAllEvents,
+  getAllEventsByType,
+  getAllEventsWithDeletionStatus,
+} from './event-store/get-all-events';
 import {getResourceEvents} from './event-store/get-resource-events';
 import {Client} from '@libsql/client';
+import {deleteStoredEvent} from './event-store/delete-stored-event';
 
 import {initSharedReadModel} from '../read-models/shared-state';
 import {lastSync} from '../sync-worker/db/last_sync';
@@ -71,8 +76,14 @@ export const initDependencies = (
   const deps: Dependencies = {
     commitEvent: commitEvent(eventDB, logger, sharedReadModel.asyncRefresh),
     getAllEvents: getAllEvents(eventDB),
+    getAllEventsWithDeletionStatus: getAllEventsWithDeletionStatus(eventDB),
     getAllEventsByType: getAllEventsByType(eventDB),
     getResourceEvents: getResourceEvents(eventDB),
+    deleteStoredEvent: deleteStoredEvent(
+      eventDB,
+      logger,
+      sharedReadModel.asyncRefresh
+    ),
     sharedReadModel,
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),

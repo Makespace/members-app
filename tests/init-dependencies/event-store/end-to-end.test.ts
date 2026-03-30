@@ -21,6 +21,7 @@ import {Dependencies} from '../../../src/dependencies';
 import {getResourceEvents} from '../../../src/init-dependencies/event-store/get-resource-events';
 import {RightOfTaskEither} from '../../type-optics';
 import {randomUUID} from 'crypto';
+import {deleteStoredEvent} from '../../../src/init-dependencies/event-store/delete-stored-event';
 
 const arbitraryMemberNumberLinkedToEmailEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
@@ -54,6 +55,7 @@ describe('event-store end-to-end', () => {
       ReturnType<Dependencies['getResourceEvents']>
     >;
     let initialisedCommitEvent: ReturnType<typeof commitEvent>;
+    let initialisedDeleteStoredEvent: ReturnType<typeof deleteStoredEvent>;
 
     beforeEach(async () => {
       dbClient = libsqlClient.createClient({
@@ -68,6 +70,11 @@ describe('event-store end-to-end', () => {
         T.map(getRightOrFail)
       )();
       initialisedCommitEvent = commitEvent(
+        dbClient,
+        testLogger,
+        dummyRefreshReadModel
+      );
+      initialisedDeleteStoredEvent = deleteStoredEvent(
         dbClient,
         testLogger,
         dummyRefreshReadModel
@@ -196,6 +203,71 @@ describe('event-store end-to-end', () => {
         expect(await getTestEvents()).toHaveLength(3);
         expect(resourceEvents.events).toHaveLength(1);
         expectStoredEvent(resourceEvents.events[0], event, 3);
+      });
+    });
+
+    describe('deleting a stored event', () => {
+      it('keeps the resource version at the highest persisted version', async () => {
+        const firstEvent = arbitraryMemberNumberLinkedToEmailEvent();
+        const secondEvent = arbitraryMemberNumberLinkedToEmailEvent();
+
+        await initialisedCommitEvent(resource, 'no-such-resource')(firstEvent)();
+        await initialisedCommitEvent(resource, initialVersionNumber)(secondEvent)();
+
+        const storedEvents = await getTestEvents();
+        await pipe(
+          initialisedDeleteStoredEvent(
+            storedEvents[1].event_id,
+            1234,
+            'Incorrectly committed'
+          ),
+          T.map(getRightOrFail)
+        )();
+
+        resourceEvents = await pipe(
+          resource,
+          getResourceEvents(dbClient),
+          T.map(getRightOrFail)
+        )();
+
+        expect(resourceEvents.version).toStrictEqual(initialVersionNumber + 1);
+        expect(resourceEvents.events).toHaveLength(1);
+        expectStoredEvent(resourceEvents.events[0], firstEvent, 1);
+      });
+
+      it('allows a new event to be committed after deleting the latest event', async () => {
+        const firstEvent = arbitraryMemberNumberLinkedToEmailEvent();
+        const secondEvent = arbitraryMemberNumberLinkedToEmailEvent();
+        const thirdEvent = arbitraryMemberNumberLinkedToEmailEvent();
+
+        await initialisedCommitEvent(resource, 'no-such-resource')(firstEvent)();
+        await initialisedCommitEvent(resource, initialVersionNumber)(secondEvent)();
+
+        const storedEvents = await getTestEvents();
+        await pipe(
+          initialisedDeleteStoredEvent(
+            storedEvents[1].event_id,
+            1234,
+            'Incorrectly committed'
+          ),
+          T.map(getRightOrFail)
+        )();
+
+        await pipe(
+          initialisedCommitEvent(resource, initialVersionNumber + 1)(thirdEvent),
+          T.map(getRightOrFail)
+        )();
+
+        resourceEvents = await pipe(
+          resource,
+          getResourceEvents(dbClient),
+          T.map(getRightOrFail)
+        )();
+
+        expect(resourceEvents.version).toStrictEqual(initialVersionNumber + 2);
+        expect(resourceEvents.events).toHaveLength(2);
+        expectStoredEvent(resourceEvents.events[0], firstEvent, 1);
+        expectStoredEvent(resourceEvents.events[1], thirdEvent, 3);
       });
     });
   });

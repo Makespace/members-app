@@ -20,6 +20,7 @@ export const initRoutes = (
     query('/raise-issue', queries.raiseIssue),
     query('/humans', queries.humans),
     query('/event-log', queries.log),
+    ...command('event-log', 'delete', commands.eventLog.deleteStoredEvent),
     query('/event-log.csv', queries.logcsv),
     query('/training-status.csv', queries.trainingStatusCsv),
     query('/domain-events', queries.domainEvents),

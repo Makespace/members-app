@@ -7,6 +7,7 @@ import {
   StoredDomainEvent,
   StoredEventOfType,
 } from './types';
+import type {StoredEventLogEntry} from './types/stored-event-log-entry';
 import * as TE from 'fp-ts/TaskEither';
 import * as O from 'fp-ts/Option';
 import {FailureWithStatus} from './types/failure-with-status';
@@ -34,6 +35,10 @@ export type Dependencies = {
     FailureWithStatus,
     ReadonlyArray<StoredDomainEvent>
   >;
+  getAllEventsWithDeletionStatus: () => TE.TaskEither<
+    FailureWithStatus,
+    ReadonlyArray<StoredEventLogEntry>
+  >;
   getAllEventsByType: <T extends EventName>(
     eventType: T
   ) => TE.TaskEither<FailureWithStatus, ReadonlyArray<StoredEventOfType<T>>>;
@@ -43,6 +48,14 @@ export type Dependencies = {
       events: ReadonlyArray<StoredDomainEvent>;
       version: ResourceVersion;
     }
+  >;
+  deleteStoredEvent: (
+    eventId: string,
+    deletedByMemberNumber: number,
+    reason: string
+  ) => TE.TaskEither<
+    FailureWithStatus,
+    {status: StatusCodes.OK; message: string}
   >;
   sharedReadModel: SharedReadModel;
   logger: Logger;

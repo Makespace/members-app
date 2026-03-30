@@ -5,7 +5,7 @@
 import {render} from '../../../src/queries/log/render';
 import {ViewModel} from '../../../src/queries/log/view-model';
 import {arbitraryUser} from '../../types/user.helper';
-import {UUID} from 'io-ts-types';
+import {NonEmptyString, UUID} from 'io-ts-types';
 
 const renderPage = (viewModel: ViewModel) => {
   const body = document.createElement('body');
@@ -31,6 +31,7 @@ describe('/event-log render', () => {
           recordedAt: new Date('1991-02-20T00:00:00.000Z'),
           name: 'Craft room',
           id: 'd1428735-0482-49c4-b16b-82503ccea74b' as UUID,
+          deletion: null,
         },
       ],
     };
@@ -43,5 +44,42 @@ describe('/event-log render', () => {
     expect(page.textContent).toContain('cb5bdc6d-f734-43e2-a025-b5d89a5ba3fc');
     expect(page.textContent).not.toContain('event_id:');
     expect(page.textContent).not.toContain('event_index:');
+    expect(page.querySelector('a[href*="/event-log/delete?"]')?.textContent).toContain(
+      'Delete event'
+    );
+  });
+
+  it('shows deletion details instead of a delete form for deleted events', () => {
+    const viewModel: ViewModel = {
+      user: arbitraryUser(),
+      count: 1,
+      search: {
+        offset: 0,
+        limit: 10,
+      },
+      events: [
+        {
+          event_index: 42,
+          event_id: 'cb5bdc6d-f734-43e2-a025-b5d89a5ba3fc' as UUID,
+          type: 'AreaCreated',
+          actor: {tag: 'system'},
+          recordedAt: new Date('1991-02-20T00:00:00.000Z'),
+          name: 'Craft room',
+          id: 'd1428735-0482-49c4-b16b-82503ccea74b' as UUID,
+          deletion: {
+            eventId: 'cb5bdc6d-f734-43e2-a025-b5d89a5ba3fc' as UUID,
+            deletedAt: new Date('1991-02-21T00:00:00.000Z'),
+            deletedByMemberNumber: 1234,
+            reason: 'Incorrectly committed' as NonEmptyString,
+          },
+        },
+      ],
+    };
+
+    const page = renderPage(viewModel);
+
+    expect(page.textContent).toContain('Deleted');
+    expect(page.textContent).toContain('Incorrectly committed');
+    expect(page.textContent).not.toContain('Delete event');
   });
 });

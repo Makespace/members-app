@@ -5,6 +5,7 @@ import * as TE from 'fp-ts/TaskEither';
 import {
   getAllEvents,
   getAllEventsByType,
+  getAllEventsWithDeletionStatus,
 } from '../../src/init-dependencies/event-store/get-all-events';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
 import {Actor, DomainEvent} from '../../src/types';
@@ -27,6 +28,7 @@ import {lastSync} from '../../src/sync-worker/db/last_sync';
 import {getSheetData, getSheetDataByMemberNumber} from '../../src/sync-worker/db/get_sheet_data';
 import {TrainingSummaryDeps} from '../../src/sync-worker/training-summary/training-summary-deps';
 import {NonEmptyString} from 'io-ts-types/lib/NonEmptyString';
+import {deleteStoredEvent} from '../../src/init-dependencies/event-store/delete-stored-event';
 
 const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
 
@@ -86,8 +88,14 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   const depsForApplyToResource: Dependencies = {
     commitEvent: frameworkCommitEvent,
     getAllEvents: getAllEvents(eventDB),
+    getAllEventsWithDeletionStatus: getAllEventsWithDeletionStatus(eventDB),
     getAllEventsByType: getAllEventsByType(eventDB),
     getResourceEvents: getResourceEvents(eventDB),
+    deleteStoredEvent: deleteStoredEvent(
+      eventDB,
+      logger,
+      sharedReadModel.asyncRefresh
+    ),
     sharedReadModel,
     logger,
     rateLimitSendingOfEmails: TE.right,
@@ -180,6 +188,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       superUser: {
         declare: frameworkify(commands.superUser.declare),
         revoke: frameworkify(commands.superUser.revoke),
+      },
+      eventLog: {
+        deleteStoredEvent: frameworkify(commands.eventLog.deleteStoredEvent),
       },
     },
     trainingSummaryDeps: {

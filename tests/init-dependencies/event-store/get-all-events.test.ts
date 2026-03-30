@@ -15,10 +15,12 @@ import {
   getAllEvents,
   getAllEventsByType,
   getAllEventsByTypes,
+  getAllEventsWithDeletionStatus,
 } from '../../../src/init-dependencies/event-store/get-all-events';
 import {arbitraryActor, getRightOrFail} from '../../helpers';
 import { UUID } from 'io-ts-types';
 import { EventName } from '../../../src/types/domain-event';
+import {deleteStoredEvent} from '../../../src/init-dependencies/event-store/delete-stored-event';
 
 const arbitraryMemberNumberLinkedToEmailEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
@@ -70,6 +72,10 @@ describe('get all events', () => {
     type1: EventName,
     type2: EventName
   ) => Promise<ReadonlyArray<StoredDomainEvent>>;
+  let initalisedGetAllEventsWithDeletionStatus: ReturnType<
+    typeof getAllEventsWithDeletionStatus
+  >;
+  let deleteEvent: (eventId: string, deletedBy: number, reason: string) => Promise<void>;
 
   beforeEach(async () => {
     dbClient = libsqlClient.createClient({url: ':memory:'});
@@ -86,6 +92,17 @@ describe('get all events', () => {
     initalisedGetAllEvents = async () => getRightOrFail(await getAllEvents(dbClient)()());
     initalisedGetAllEventsByType = async (type: EventName) => getRightOrFail(await getAllEventsByType(dbClient)(type)());
     initalisedGetAllEventsByTypes = async (type1: EventName, type2: EventName) => getRightOrFail(await getAllEventsByTypes(dbClient)(type1, type2)());
+    initalisedGetAllEventsWithDeletionStatus =
+      getAllEventsWithDeletionStatus(dbClient);
+    deleteEvent = async (eventId, deletedBy, reason) => {
+      getRightOrFail(
+        await deleteStoredEvent(
+          dbClient,
+          testLogger,
+          dummyRefreshReadModel
+        )(eventId, deletedBy, reason)()
+      );
+    };
   });
 
   afterEach(() => {
@@ -107,6 +124,20 @@ describe('get all events', () => {
       expect(events).toHaveLength(2);
       expectStoredEvent(events[0], memberNumberLinkedToEmail, 1);
       expectStoredEvent(events[1], equipmentTrainingSheetRegistered, 3);
+    });
+
+    it('excludes deleted events from the returned events', async () => {
+      const firstEvent = arbitraryMemberNumberLinkedToEmailEvent();
+      const secondEvent = arbitraryEquipmentTrainingSheetRegisteredEvent();
+      await persistEvent(firstEvent);
+      await persistEvent(secondEvent);
+
+      const eventsBeforeDeletion = await initalisedGetAllEvents();
+      await deleteEvent(eventsBeforeDeletion[0].event_id, 1234, 'Incorrect import');
+
+      const eventsAfterDeletion = await initalisedGetAllEvents();
+      expect(eventsAfterDeletion).toHaveLength(1);
+      expectStoredEvent(eventsAfterDeletion[0], secondEvent, 2);
     });
   });
 
@@ -137,6 +168,28 @@ describe('get all events', () => {
       );
       expect(events).toHaveLength(1);
       expectStoredEvent(events[0], equipmentTrainingQuizResult, 1);
+    });
+
+    it('does not return deleted events of the requested type', async () => {
+      const firstMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
+      const secondMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
+      await persistEvent(firstMatchingEvent);
+      await persistEvent(secondMatchingEvent);
+
+      const storedEvents = await initalisedGetAllEventsByType(
+        'MemberNumberLinkedToEmail'
+      );
+      await deleteEvent(
+        storedEvents[0].event_id,
+        1234,
+        'Committed for the wrong member'
+      );
+
+      const events = await initalisedGetAllEventsByType(
+        'MemberNumberLinkedToEmail'
+      );
+      expect(events).toHaveLength(1);
+      expectStoredEvent(events[0], secondMatchingEvent, 2);
     });
   });
 
@@ -176,6 +229,31 @@ describe('get all events', () => {
       expect(events).toHaveLength(2);
       expectStoredEvent(events[0], equipmentTrainingQuizResult, 1);
       expectStoredEvent(events[1], matchingEvent, 2);
+    });
+  });
+
+  describe('getAllEventsWithDeletionStatus', () => {
+    it('returns deleted events with their deletion metadata', async () => {
+      const event = arbitraryMemberNumberLinkedToEmailEvent();
+      await persistEvent(event);
+
+      const storedEvents = await initalisedGetAllEvents();
+      await deleteEvent(storedEvents[0].event_id, 5678, 'Bad manual correction');
+
+      const events = getRightOrFail(
+        await initalisedGetAllEventsWithDeletionStatus()()
+      );
+
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({
+        event_id: storedEvents[0].event_id,
+        deletion: {
+          eventId: storedEvents[0].event_id,
+          deletedByMemberNumber: 5678,
+          reason: 'Bad manual correction',
+        },
+      });
+      expect(events[0].deletion?.deletedAt).toEqual(expect.any(Date));
     });
   });
 });
