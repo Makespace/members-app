@@ -48,32 +48,13 @@ const renderDeletion = (event: ViewModel['events'][number]) =>
     )
   );
 
-const renderDeleteForm = (
-  event: ViewModel['events'][number],
-  search: LogSearch
-) =>
+const renderDeleteForm = (event: ViewModel['events'][number]) =>
   event.deletion === null
     ? html`
         <a
           href="${safe(
             `/event-log/delete?${qs.stringify({
               eventId: event.event_id,
-              eventType: event.type,
-              eventActor: String(renderActor(event.actor)),
-              eventRecordedAt: event.recordedAt.toISOString(),
-              eventPayload: pipe(
-                event,
-                ({
-                  type: _type,
-                  actor: _actor,
-                  recordedAt: _recordedAt,
-                  event_index: _eventIndex,
-                  event_id: _eventId,
-                  deletion: _deletion,
-                  ...payload
-                }) => JSON.stringify(payload, null, 2)
-              ),
-              next: searchToLink(search),
             })}`
           )}"
           >Delete event</a
@@ -89,7 +70,7 @@ const renderEntry = (event: ViewModel['events'][number], search: LogSearch) => h
     Event ID: ${sanitizeString(event.event_id)}<br />
     ${renderPayload(event)}
     ${renderDeletion(event)}
-    ${renderDeleteForm(event, search)}
+    ${renderDeleteForm(event)}
   </li>
 `;
 

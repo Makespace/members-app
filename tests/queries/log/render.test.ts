@@ -44,9 +44,19 @@ describe('/event-log render', () => {
     expect(page.textContent).toContain('cb5bdc6d-f734-43e2-a025-b5d89a5ba3fc');
     expect(page.textContent).not.toContain('event_id:');
     expect(page.textContent).not.toContain('event_index:');
-    expect(page.querySelector('a[href*="/event-log/delete?"]')?.textContent).toContain(
-      'Delete event'
+    const deleteLink = page.querySelector(
+      'a[href*="/event-log/delete?"]'
+    )! as HTMLAnchorElement;
+
+    expect(deleteLink.textContent).toContain('Delete event');
+    expect(deleteLink.href).toContain(
+      'eventId=cb5bdc6d-f734-43e2-a025-b5d89a5ba3fc'
     );
+    expect(deleteLink.href).not.toContain('eventType=');
+    expect(deleteLink.href).not.toContain('eventActor=');
+    expect(deleteLink.href).not.toContain('eventRecordedAt=');
+    expect(deleteLink.href).not.toContain('eventPayload=');
+    expect(deleteLink.href).not.toContain('next=');
   });
 
   it('shows deletion details instead of a delete form for deleted events', () => {

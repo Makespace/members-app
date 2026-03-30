@@ -1,13 +1,19 @@
 import {Request, Response} from 'express';
-import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
 import {getUserFromSession} from '../authentication';
 import {Dependencies} from '../dependencies';
 import {oopsPage, pageTemplate} from '../templates';
-import {Form} from '../types/form';
+import {Form, FormResult} from '../types/form';
 import {CompleteHtmlDocument, sanitizeString} from '../types/html';
 import {logInPath} from '../authentication/login/routes';
+import {FailureWithStatus} from '../types/failure-with-status';
+
+const toTaskEither = <T>(
+  result: FormResult<T>
+): TE.TaskEither<FailureWithStatus, T> =>
+  typeof result === 'function' ? result : TE.fromEither(result);
 
 // See formPost for a more indepth discussion about the design decisions around why this is how it is.
 // formGet is like formPost but rather than processing a command formGet handles calling a read model to
@@ -26,17 +32,18 @@ export const formGet =
       res.redirect(logInPath);
       return;
     }
-    pipe(
-      {
-        user: user.value,
-        readModel: deps.sharedReadModel,
-      },
-      form.constructForm({...req.query, ...req.params}),
-      E.map(form.renderForm),
-      E.map(({title, body}) =>
+    const context = {
+      user: user.value,
+      readModel: deps.sharedReadModel,
+      deps,
+    };
+    void pipe(
+      toTaskEither(form.constructForm({...req.query, ...req.params})(context)),
+      TE.map(form.renderForm),
+      TE.map(({title, body}) =>
         pageTemplate(title, user.value, member.value.isSuperUser)(body)
       ),
-      E.matchW(
+      TE.matchW(
         failure => {
           deps.logger.error(failure, 'Failed to show form to a user');
           res
@@ -45,5 +52,5 @@ export const formGet =
         },
         page => res.status(200).send(page)
       )
-    );
+    )();
   };
