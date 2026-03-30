@@ -1,5 +1,6 @@
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import {html, safe, sanitizeString, toLoggedInContent} from '../../types/html';
 import {EmailAddressCodec, User} from '../../types';
 import {Form} from '../../types/form';
@@ -73,8 +74,9 @@ const constructForm: Form<ViewModel>['constructForm'] =
         user,
         memberNumber: params.member,
         emailAddress: params.email,
-        isSelf: user.memberNumber === params.member
-      }))
+        isSelf: user.memberNumber === params.member,
+      })),
+      TE.fromEither
     );
 
 export const sendEmailVerificationForm: Form<ViewModel> = {

@@ -1,6 +1,6 @@
 import {Request, Response} from 'express';
-import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
 import {getUserFromSession} from '../authentication';
 import {Dependencies} from '../dependencies';
@@ -15,7 +15,7 @@ import {logInPath} from '../authentication/login/routes';
 // is where conflict resolution etc. is handled as described in form-post.
 export const formGet =
   <T>(deps: Dependencies, form: Form<T>) =>
-  (req: Request, res: Response<CompleteHtmlDocument>) => {
+  async (req: Request, res: Response<CompleteHtmlDocument>) => {
     const user = getUserFromSession(deps)(req.session);
     if (O.isNone(user)) {
       res.redirect(logInPath);
@@ -26,17 +26,17 @@ export const formGet =
       res.redirect(logInPath);
       return;
     }
-    pipe(
+    await pipe(
       {
         user: user.value,
         readModel: deps.sharedReadModel,
       },
       form.constructForm({...req.query, ...req.params}),
-      E.map(form.renderForm),
-      E.map(({title, body}) =>
+      TE.map(form.renderForm),
+      TE.map(({title, body}) =>
         pageTemplate(title, user.value, member.value.isSuperUser)(body)
       ),
-      E.matchW(
+      TE.matchW(
         failure => {
           deps.logger.error(failure, 'Failed to show form to a user');
           res
@@ -45,5 +45,5 @@ export const formGet =
         },
         page => res.status(200).send(page)
       )
-    );
+    )();
   };

@@ -1,5 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
+import * as TE from 'fp-ts/TaskEither';
 import {html, safe, sanitizeString, toLoggedInContent} from '../../types/html';
 import {Form} from '../../types/form';
 import {getEquipmentIdFromForm} from './get-equipment-id-from-form';
@@ -63,7 +64,8 @@ const constructForm: Form<ViewModel>['constructForm'] =
             )()
           )
         )
-      )
+      ),
+      TE.fromEither
     );
 
 export const removeTrainingSheetForm: Form<ViewModel> = {
