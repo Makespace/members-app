@@ -89,17 +89,16 @@ const getAreaInfo = (db: SharedReadModel['db'], areaId: string) =>
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
   ({readModel}) =>
-    TE.fromEither(
-      pipe(
-        E.Do,
-        E.bind('areaId', () => getAreaId(input)),
-        E.bind('areaInfo', ({areaId}) => getAreaInfo(readModel.db, areaId)),
-        E.map(({areaId, areaInfo}) => ({
-          areaId,
-          areaName: areaInfo.areaName,
-          currentEmail: areaInfo.currentEmail,
-        }))
-      )
+    pipe(
+      E.Do,
+      E.bind('areaId', () => getAreaId(input)),
+      E.bind('areaInfo', ({areaId}) => getAreaInfo(readModel.db, areaId)),
+      E.map(({areaId, areaInfo}) => ({
+        areaId,
+        areaName: areaInfo.areaName,
+        currentEmail: areaInfo.currentEmail,
+      })),
+      TE.fromEither
     );
 
 export const setMailingListForm: Form<ViewModel> = {

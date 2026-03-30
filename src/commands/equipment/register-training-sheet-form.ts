@@ -35,14 +35,13 @@ const renderForm = (viewModel: ViewModel) =>
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
   ({readModel}) =>
-    TE.fromEither(
-      pipe(
-        E.Do,
-        E.bind('equipmentId', () => getEquipmentIdFromForm(input)),
-        E.bind('equipmentName', ({equipmentId}) =>
-          getEquipmentName(readModel, equipmentId)
-        )
-      )
+    pipe(
+      E.Do,
+      E.bind('equipmentId', () => getEquipmentIdFromForm(input)),
+      E.bind('equipmentName', ({equipmentId}) =>
+        getEquipmentName(readModel, equipmentId)
+      ),
+      TE.fromEither
     );
 
 export const registerTrainingSheetForm: Form<ViewModel> = {

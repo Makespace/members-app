@@ -47,25 +47,24 @@ const paramsCodec = t.strict({
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
   ({user}) =>
-    TE.fromEither(
-      pipe(
-        input,
-        paramsCodec.decode,
-        E.mapLeft(
-          flow(
-            formatValidationErrors,
-            failureWithStatus(
-              'Parameters submitted to the form were invalid',
-              StatusCodes.BAD_REQUEST
-            )
+    pipe(
+      input,
+      paramsCodec.decode,
+      E.mapLeft(
+        flow(
+          formatValidationErrors,
+          failureWithStatus(
+            'Parameters submitted to the form were invalid',
+            StatusCodes.BAD_REQUEST
           )
-        ),
-        E.map(params => ({
-          user,
-          memberNumber: params.member,
-          emailAddress: params.email,
-        }))
-      )
+        )
+      ),
+      E.map(params => ({
+        user,
+        memberNumber: params.member,
+        emailAddress: params.email,
+      })),
+      TE.fromEither
     );
 
 export const changePrimaryEmailForm: Form<ViewModel> = {

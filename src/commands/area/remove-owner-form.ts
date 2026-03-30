@@ -118,14 +118,11 @@ export const removeOwnerForm: Form<ViewModel> = {
   constructForm:
     input =>
     ({readModel}) =>
-      TE.fromEither(
-        pipe(
-          input,
-          decodeParams,
-          E.bind('areaName', ({areaId}) => getAreaName(readModel.db, areaId)),
-          E.bind('owner', ({memberNumber}) =>
-            getOwner(readModel.db, memberNumber)
-          )
-        )
+      pipe(
+        input,
+        decodeParams,
+        E.bind('areaName', ({areaId}) => getAreaName(readModel.db, areaId)),
+        E.bind('owner', ({memberNumber}) => getOwner(readModel.db, memberNumber)),
+        TE.fromEither
       ),
 };

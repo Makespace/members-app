@@ -150,23 +150,22 @@ const getPotentialTrainers = (db: SharedReadModel['db'], equipmentId: UUID) => {
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
   ({readModel}) =>
-    TE.fromEither(
-      pipe(
-        E.Do,
-        E.bind('equipmentId', () => getEquipmentId(input)),
-        E.bind('equipment', ({equipmentId}) => {
-          const equipment = readModel.equipment.get(equipmentId);
-          if (O.isNone(equipment)) {
-            return E.left(
-              failureWithStatus('Unknown equipment', StatusCodes.NOT_FOUND)()
-            );
-          }
-          return E.right(equipment.value);
-        }),
-        E.bind('areaOwnersThatAreNotTrainers', ({equipmentId}) =>
-          getPotentialTrainers(readModel.db, equipmentId)
-        )
-      )
+    pipe(
+      E.Do,
+      E.bind('equipmentId', () => getEquipmentId(input)),
+      E.bind('equipment', ({equipmentId}) => {
+        const equipment = readModel.equipment.get(equipmentId);
+        if (O.isNone(equipment)) {
+          return E.left(
+            failureWithStatus('Unknown equipment', StatusCodes.NOT_FOUND)()
+          );
+        }
+        return E.right(equipment.value);
+      }),
+      E.bind('areaOwnersThatAreNotTrainers', ({equipmentId}) =>
+        getPotentialTrainers(readModel.db, equipmentId)
+      ),
+      TE.fromEither
     );
 
 export const addTrainerForm: Form<ViewModel> = {

@@ -53,12 +53,11 @@ const getAreaName = (readModel: SharedReadModel, areaId: UUID) =>
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
   ({readModel}) =>
-    TE.fromEither(
-      pipe(
-        E.Do,
-        E.bind('areaId', () => getAreaId(input)),
-        E.bind('areaName', ({areaId}) => getAreaName(readModel, areaId))
-      )
+    pipe(
+      E.Do,
+      E.bind('areaId', () => getAreaId(input)),
+      E.bind('areaName', ({areaId}) => getAreaName(readModel, areaId)),
+      TE.fromEither
     );
 
 export const addForm: Form<ViewModel> = {

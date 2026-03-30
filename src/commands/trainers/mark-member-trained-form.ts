@@ -61,22 +61,21 @@ const renderForm = (viewModel: ViewModel) =>
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
   ({readModel, user}) =>
-    TE.fromEither(
-      pipe(
-        E.Do,
-        E.bind('equipment_id', () => getEquipmentIdFromForm(input)),
-        E.bind('equipment', ({equipment_id}) => {
-          const equipment = readModel.equipment.get(equipment_id);
-          if (O.isNone(equipment)) {
-            return E.left(
-              failureWithStatus('Unknown equipment', StatusCodes.NOT_FOUND)()
-            );
-          }
-          return E.right(equipment.value);
-        }),
-        E.let('members', () => readModel.members.getAll()),
-        E.let('trainerMemberNumber', () => user.memberNumber)
-      )
+    pipe(
+      E.Do,
+      E.bind('equipment_id', () => getEquipmentIdFromForm(input)),
+      E.bind('equipment', ({equipment_id}) => {
+        const equipment = readModel.equipment.get(equipment_id);
+        if (O.isNone(equipment)) {
+          return E.left(
+            failureWithStatus('Unknown equipment', StatusCodes.NOT_FOUND)()
+          );
+        }
+        return E.right(equipment.value);
+      }),
+      E.let('members', () => readModel.members.getAll()),
+      E.let('trainerMemberNumber', () => user.memberNumber),
+      TE.fromEither
     );
 
 export const markMemberTrainedForm: Form<ViewModel> = {

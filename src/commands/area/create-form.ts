@@ -24,5 +24,5 @@ const renderForm = () =>
 
 export const createForm: Form<ViewModel> = {
   renderForm,
-  constructForm: () => () => TE.fromEither(E.right({})),
+  constructForm: () => () => pipe(E.right({}), TE.fromEither),
 };

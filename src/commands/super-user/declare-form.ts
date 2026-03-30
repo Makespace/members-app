@@ -27,14 +27,13 @@ const renderForm = (viewModel: ViewModel) =>
 const constructForm: Form<ViewModel>['constructForm'] =
   () =>
   ({readModel, user}) =>
-    TE.fromEither(
-      pipe(
-        {user},
-        E.right,
-        E.let('members', () =>
-          readModel.members.getAll().filter(member => !member.isSuperUser)
-        )
-      )
+    pipe(
+      {user},
+      E.right,
+      E.let('members', () =>
+        readModel.members.getAll().filter(member => !member.isSuperUser)
+      ),
+      TE.fromEither
     );
 
 export const declareForm: Form<ViewModel> = {

@@ -32,7 +32,7 @@ const renderForm = () =>
   );
 
 const constructForm: Form<ViewModel>['constructForm'] = () => () =>
-  TE.fromEither(E.right({}));
+  pipe(E.right({}), TE.fromEither);
 
 export const linkNumberToEmailForm: Form<ViewModel> = {
   renderForm,

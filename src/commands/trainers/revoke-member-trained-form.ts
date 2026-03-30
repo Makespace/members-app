@@ -37,21 +37,20 @@ const renderForm = (viewModel: ViewModel) =>
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
   ({readModel}) =>
-    TE.fromEither(
-      pipe(
-        E.Do,
-        E.bind('equipment_id', () => getEquipmentIdFromForm(input)),
-        E.bind('equipment', ({equipment_id}) => {
-          const equipment = readModel.equipment.get(equipment_id);
-          if (O.isNone(equipment)) {
-            return E.left(
-              failureWithStatus('Unknown equipment', StatusCodes.NOT_FOUND)()
-            );
-          }
-          return E.right(equipment.value);
-        }),
-        E.let('members', () => readModel.members.getAll())
-      )
+    pipe(
+      E.Do,
+      E.bind('equipment_id', () => getEquipmentIdFromForm(input)),
+      E.bind('equipment', ({equipment_id}) => {
+        const equipment = readModel.equipment.get(equipment_id);
+        if (O.isNone(equipment)) {
+          return E.left(
+            failureWithStatus('Unknown equipment', StatusCodes.NOT_FOUND)()
+          );
+        }
+        return E.right(equipment.value);
+      }),
+      E.let('members', () => readModel.members.getAll()),
+      TE.fromEither
     );
 
 export const revokeMemberTrainedForm: Form<ViewModel> = {

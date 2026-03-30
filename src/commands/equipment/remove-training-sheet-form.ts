@@ -41,32 +41,31 @@ const renderForm = (viewModel: ViewModel) =>
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
   ({readModel}) =>
-    TE.fromEither(
-      pipe(
-        E.Do,
-        E.bind('equipmentId', () => getEquipmentIdFromForm(input)),
-        E.bind('equipment', ({equipmentId}) =>
-          pipe(
-            equipmentId,
-            readModel.equipment.get,
-            E.fromOption(() =>
-              failureWithStatus('No such equipment', StatusCodes.NOT_FOUND)()
-            )
-          )
-        ),
-        E.bind('equipmentName', ({equipment}) => E.right(equipment.name)),
-        E.bind('currentTrainingSheetId', ({equipment}) =>
-          pipe(
-            equipment.trainingSheetId,
-            E.fromOption(() =>
-              failureWithStatus(
-                'No training sheet currently registered',
-                StatusCodes.NOT_FOUND
-              )()
-            )
+    pipe(
+      E.Do,
+      E.bind('equipmentId', () => getEquipmentIdFromForm(input)),
+      E.bind('equipment', ({equipmentId}) =>
+        pipe(
+          equipmentId,
+          readModel.equipment.get,
+          E.fromOption(() =>
+            failureWithStatus('No such equipment', StatusCodes.NOT_FOUND)()
           )
         )
-      )
+      ),
+      E.bind('equipmentName', ({equipment}) => E.right(equipment.name)),
+      E.bind('currentTrainingSheetId', ({equipment}) =>
+        pipe(
+          equipment.trainingSheetId,
+          E.fromOption(() =>
+            failureWithStatus(
+              'No training sheet currently registered',
+              StatusCodes.NOT_FOUND
+            )()
+          )
+        )
+      ),
+      TE.fromEither
     );
 
 export const removeTrainingSheetForm: Form<ViewModel> = {

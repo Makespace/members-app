@@ -33,7 +33,7 @@ const renderForm = (viewModel: ViewModel) =>
 const constructForm: Form<ViewModel>['constructForm'] =
   () =>
   ({user}) =>
-    TE.fromEither(E.right({user}));
+    pipe(E.right({user}), TE.fromEither);
 
 export const signOwnerAgreementForm: Form<ViewModel> = {
   renderForm,

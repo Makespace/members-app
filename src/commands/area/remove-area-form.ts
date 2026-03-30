@@ -53,11 +53,10 @@ export const removeAreaForm: Form<ViewModel> = {
   constructForm:
     input =>
     ({readModel}) =>
-      TE.fromEither(
-        pipe(
-          E.Do,
-          E.bind('areaId', () => getAreaId(input)),
-          E.bind('areaName', ({areaId}) => getAreaName(readModel.db, areaId))
-        )
+      pipe(
+        E.Do,
+        E.bind('areaId', () => getAreaId(input)),
+        E.bind('areaName', ({areaId}) => getAreaName(readModel.db, areaId)),
+        TE.fromEither
       ),
 };
