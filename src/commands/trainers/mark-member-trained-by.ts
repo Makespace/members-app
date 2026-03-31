@@ -45,8 +45,8 @@ const resource = (command: MarkMemberTrainedBy) => ({
 export const TRAINED_BY_LIMIT = {years: 10};
 
 const isWithinTrainedByLimit = (date: Date): boolean => {
-  const tenYearsAgo = DateTime.now().minus(TRAINED_BY_LIMIT);
-  return DateTime.fromJSDate(date) >= tenYearsAgo;
+  const cutoffPoint = DateTime.now().minus(TRAINED_BY_LIMIT);
+  return DateTime.fromJSDate(date) >= cutoffPoint;
 };
 
 const isNotInFuture = (date: Date): boolean =>
