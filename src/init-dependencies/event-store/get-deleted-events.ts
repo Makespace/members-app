@@ -26,11 +26,15 @@ const decodeDeletedBy = (
 ): E.Either<FailureWithStatus, DeletedEvent['deletedBy']> =>
   pipe(
     E.tryCatch(
-      () => JSON.parse(deletedBy),
+      (): unknown => JSON.parse(deletedBy),
       error => deletedEventRowFailure(error)
     ),
     E.chain(value =>
-      pipe(value, Actor.decode, E.mapLeft(internalCodecFailure(deletedEventRowFailure().message)))
+      pipe(
+        value,
+        Actor.decode,
+        E.mapLeft(internalCodecFailure(deletedEventRowFailure().message))
+      )
     )
   );
 

@@ -82,7 +82,7 @@ const withoutDeletedEvents = (
   pipe(
     events,
     RA.filter(event => event.deleted === null),
-    RA.map(({deleted, ...event}) => event)
+    RA.map(({deleted: _deleted, ...event}) => event)
   );
 
 export const getAllEvents =

@@ -34,7 +34,14 @@ const paramsCodec = t.strict({
 const renderPayload = (event: StoredDomainEvent) =>
   pipe(
     event,
-    ({type, actor, recordedAt, event_index, event_id, ...payload}) =>
+    ({
+      type: _type,
+      actor: _actor,
+      recordedAt: _recordedAt,
+      event_index: _eventIndex,
+      event_id: _eventId,
+      ...payload
+    }) =>
       pipe(
         payload,
         Object.entries,

@@ -14,7 +14,7 @@ const codec = t.strict({
   reason: tt.NonEmptyString,
 });
 
-export type DeleteEventCommand = t.TypeOf<typeof codec>;
+type DeleteEventCommand = t.TypeOf<typeof codec>;
 
 const process: Command<DeleteEventCommand>['process'] = input =>
   pipe(

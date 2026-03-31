@@ -9,10 +9,17 @@ import {renderActor} from '../../types/actor';
 import * as qs from 'qs';
 
 const renderPayload = (event: ViewModel['events'][number]) =>
-  // eslint-disable-next-line unused-imports/no-unused-vars
   pipe(
     event,
-    ({type, actor, recordedAt, event_index, event_id, deleted, ...payload}) =>
+    ({
+      type: _type,
+      actor: _actor,
+      recordedAt: _recordedAt,
+      event_index: _eventIndex,
+      event_id: _eventId,
+      deleted: _deleted,
+      ...payload
+    }) =>
       pipe(
         payload,
         Object.entries,
