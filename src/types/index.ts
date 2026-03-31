@@ -1,5 +1,6 @@
 export type {EmailAddress} from './email-address';
 export {EmailAddressCodec} from './email-address';
+export type {DeletedEvent, StoredDomainEventWithDeletion} from './deleted-event';
 export type {Failure} from './failure';
 export {failure} from './failure';
 export type {Email} from './email';

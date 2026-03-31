@@ -5,8 +5,8 @@ import {dbExecute} from '../../util';
 
 export const ensureEventTableExists = (eventDB: Client) =>
   TE.tryCatch(
-    () =>
-      dbExecute(
+    async () => {
+      await dbExecute(
         eventDB,
         `
         CREATE TABLE IF NOT EXISTS events (
@@ -20,6 +20,19 @@ export const ensureEventTableExists = (eventDB: Client) =>
         );
         `,
         {}
-      ),
+      );
+      await dbExecute(
+        eventDB,
+        `
+        CREATE TABLE IF NOT EXISTS deleted_events (
+          event_id TEXT PRIMARY KEY,
+          deleted_at TEXT NOT NULL,
+          deleted_by TEXT NOT NULL,
+          reason TEXT NOT NULL
+        );
+        `,
+        {}
+      );
+    },
     failure('Event table does not exist and could not be created')
   );

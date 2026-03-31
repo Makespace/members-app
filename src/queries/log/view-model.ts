@@ -1,4 +1,4 @@
-import {StoredDomainEvent, User} from '../../types';
+import {StoredDomainEventWithDeletion, User} from '../../types';
 
 export interface LogSearch {
   offset: number;
@@ -9,5 +9,5 @@ export type ViewModel = {
   user: User;
   count: number;
   search: LogSearch;
-  events: ReadonlyArray<StoredDomainEvent>;
+  events: ReadonlyArray<StoredDomainEventWithDeletion>;
 };

@@ -5,7 +5,10 @@ import * as TE from 'fp-ts/TaskEither';
 import {
   getAllEvents,
   getAllEventsByType,
+  getAllEventsIncludingDeleted,
 } from '../../src/init-dependencies/event-store/get-all-events';
+import {deleteEvent} from '../../src/init-dependencies/event-store/delete-event';
+import {getDeletedEventById} from '../../src/init-dependencies/event-store/get-deleted-events';
 import {getEventById} from '../../src/init-dependencies/event-store/get-event-by-id';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
 import {Actor, DomainEvent} from '../../src/types';
@@ -87,7 +90,10 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   const depsForApplyToResource: Dependencies = {
     commitEvent: frameworkCommitEvent,
     getAllEvents: getAllEvents(eventDB),
+    getAllEventsIncludingDeleted: getAllEventsIncludingDeleted(eventDB),
     getAllEventsByType: getAllEventsByType(eventDB),
+    getDeletedEventById: getDeletedEventById(eventDB),
+    deleteEvent: deleteEvent(eventDB),
     getEventById: getEventById(eventDB),
     getResourceEvents: getResourceEvents(eventDB),
     sharedReadModel,
@@ -141,6 +147,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         addOwner: frameworkify(commands.area.addOwner),
         removeOwner: frameworkify(commands.area.removeOwner),
         setMailingList: frameworkify(commands.area.setMailingList),
+      },
+      events: {
+        delete: frameworkify(commands.events.delete),
       },
       equipment: {
         add: frameworkify(commands.equipment.add),
