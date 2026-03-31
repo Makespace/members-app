@@ -13,12 +13,13 @@ import {commitEvent} from '../../../src/init-dependencies/event-store/commit-eve
 import {ensureEventTableExists} from '../../../src/init-dependencies/event-store/ensure-events-table-exists';
 import {
   getAllEvents,
+  getAllEventsAfterEventIndex,
   getAllEventsByType,
   getAllEventsByTypes,
 } from '../../../src/init-dependencies/event-store/get-all-events';
 import {arbitraryActor, getRightOrFail} from '../../helpers';
-import { UUID } from 'io-ts-types';
-import { EventName } from '../../../src/types/domain-event';
+import {UUID} from 'io-ts-types';
+import {EventName} from '../../../src/types/domain-event';
 
 const arbitraryMemberNumberLinkedToEmailEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
@@ -63,6 +64,9 @@ describe('get all events', () => {
   let dbClient: libsqlClient.Client;
   let persistEvent: (event: DomainEvent) => Promise<void>;
   let initalisedGetAllEvents: () => Promise<ReadonlyArray<StoredDomainEvent>>;
+  let initalisedGetAllEventsAfterEventIndex: (
+    eventIndex: number
+  ) => Promise<ReadonlyArray<StoredDomainEvent>>;
   let initalisedGetAllEventsByType: (
     type: EventName
   ) => Promise<ReadonlyArray<StoredDomainEvent>>;
@@ -83,9 +87,16 @@ describe('get all events', () => {
         )(arbitraryResource(), 'no-such-resource')(event)()
       )
     };
-    initalisedGetAllEvents = async () => getRightOrFail(await getAllEvents(dbClient)()());
-    initalisedGetAllEventsByType = async (type: EventName) => getRightOrFail(await getAllEventsByType(dbClient)(type)());
-    initalisedGetAllEventsByTypes = async (type1: EventName, type2: EventName) => getRightOrFail(await getAllEventsByTypes(dbClient)(type1, type2)());
+    initalisedGetAllEvents = async () =>
+      getRightOrFail(await getAllEvents(dbClient)()());
+    initalisedGetAllEventsAfterEventIndex = async (eventIndex: number) =>
+      getRightOrFail(await getAllEventsAfterEventIndex(dbClient)(eventIndex)());
+    initalisedGetAllEventsByType = async (type: EventName) =>
+      getRightOrFail(await getAllEventsByType(dbClient)(type)());
+    initalisedGetAllEventsByTypes = async (
+      type1: EventName,
+      type2: EventName
+    ) => getRightOrFail(await getAllEventsByTypes(dbClient)(type1, type2)());
   });
 
   afterEach(() => {
@@ -107,6 +118,39 @@ describe('get all events', () => {
       expect(events).toHaveLength(2);
       expectStoredEvent(events[0], memberNumberLinkedToEmail, 1);
       expectStoredEvent(events[1], equipmentTrainingSheetRegistered, 3);
+    });
+  });
+
+  describe('getAllEventsAfterEventIndex', () => {
+    it('returns only events after the given event index', async () => {
+      const event1 = arbitraryMemberNumberLinkedToEmailEvent();
+      const event2 = arbitraryMemberNumberLinkedToEmailEvent();
+      const event3 = arbitraryMemberNumberLinkedToEmailEvent();
+
+      await persistEvent(event1);
+      await persistEvent(event2);
+      await persistEvent(event3);
+
+      const events = await initalisedGetAllEventsAfterEventIndex(1);
+
+      expect(events).toHaveLength(2);
+      expectStoredEvent(events[0], event2, 2);
+      expectStoredEvent(events[1], event3, 3);
+    });
+
+    it('returns only visible events after the given event index', async () => {
+      const event1 = arbitraryMemberNumberLinkedToEmailEvent();
+      const hiddenEvent = arbitraryEquipmentTrainingQuizResultEvent();
+      const event3 = arbitraryEquipmentTrainingSheetRegisteredEvent();
+
+      await persistEvent(event1);
+      await persistEvent(hiddenEvent);
+      await persistEvent(event3);
+
+      const events = await initalisedGetAllEventsAfterEventIndex(1);
+
+      expect(events).toHaveLength(1);
+      expectStoredEvent(events[0], event3, 3);
     });
   });
 

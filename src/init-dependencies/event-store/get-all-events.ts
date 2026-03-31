@@ -40,6 +40,31 @@ export const getAllEvents =
       TE.chainEitherK(eventsFromRows)
     );
 
+export const getAllEventsAfterEventIndex =
+  (dbClient: Client) => (eventIndex: number) =>
+    pipe(
+      TE.tryCatch(
+        () =>
+          dbExecute(
+            dbClient,
+            "SELECT * FROM events WHERE event_type != 'EquipmentTrainingQuizResult' AND event_index > ? ORDER BY event_index ASC",
+            [eventIndex]
+          ),
+        failureWithStatus(
+          'Failed to query database',
+          StatusCodes.INTERNAL_SERVER_ERROR
+        )
+      ),
+      TE.chainEitherK(
+        flow(
+          EventsTable.decode,
+          E.mapLeft(internalCodecFailure('Failed to decode DB table'))
+        )
+      ),
+      TE.map(table => table.rows),
+      TE.chainEitherK(eventsFromRows)
+    );
+
 export const getAllEventsByType =
   (dbClient: Client): Dependencies['getAllEventsByType'] =>
   <T extends EventName>(eventType: T) =>
