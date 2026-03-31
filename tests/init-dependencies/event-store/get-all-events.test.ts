@@ -122,19 +122,35 @@ describe('get all events', () => {
   });
 
   describe('getAllEventsAfterEventIndex', () => {
-    it('returns only visible events after the given event index', async () => {
-      const firstVisibleEvent = arbitraryMemberNumberLinkedToEmailEvent();
-      const filteredEvent = arbitraryEquipmentTrainingQuizResultEvent();
-      const secondVisibleEvent = arbitraryEquipmentTrainingSheetRegisteredEvent();
+    it('returns only events after the given event index', async () => {
+      const event1 = arbitraryMemberNumberLinkedToEmailEvent();
+      const event2 = arbitraryMemberNumberLinkedToEmailEvent();
+      const event3 = arbitraryMemberNumberLinkedToEmailEvent();
 
-      await persistEvent(firstVisibleEvent);
-      await persistEvent(filteredEvent);
-      await persistEvent(secondVisibleEvent);
+      await persistEvent(event1);
+      await persistEvent(event2);
+      await persistEvent(event3);
+
+      const events = await initalisedGetAllEventsAfterEventIndex(1);
+
+      expect(events).toHaveLength(2);
+      expectStoredEvent(events[0], event2, 2);
+      expectStoredEvent(events[1], event3, 3);
+    });
+
+    it('returns only visible events after the given event index', async () => {
+      const event1 = arbitraryMemberNumberLinkedToEmailEvent();
+      const hiddenEvent = arbitraryEquipmentTrainingQuizResultEvent();
+      const event3 = arbitraryEquipmentTrainingSheetRegisteredEvent();
+
+      await persistEvent(event1);
+      await persistEvent(hiddenEvent);
+      await persistEvent(event3);
 
       const events = await initalisedGetAllEventsAfterEventIndex(1);
 
       expect(events).toHaveLength(1);
-      expectStoredEvent(events[0], secondVisibleEvent, 3);
+      expectStoredEvent(events[0], event3, 3);
     });
   });
 
