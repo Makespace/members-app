@@ -9,7 +9,10 @@ import {
   EmailAddress,
   constructEvent,
 } from '../../../src/types';
-import {commitEvent} from '../../../src/init-dependencies/event-store/commit-event';
+import {
+  commitEvent,
+  initialVersionNumber,
+} from '../../../src/init-dependencies/event-store/commit-event';
 import {deleteEvent} from '../../../src/init-dependencies/event-store/delete-event';
 import {ensureEventTableExists} from '../../../src/init-dependencies/event-store/ensure-events-table-exists';
 import {getEventById} from '../../../src/init-dependencies/event-store/get-event-by-id';
@@ -103,5 +106,42 @@ describe('deleteEvent', () => {
         await getDeletedEventById(dbClient)(resourceEvents.events[0].event_id)()
       )
     ).toStrictEqual(O.none);
+  });
+
+  it('preserves the latest resource version when deleting the latest event', async () => {
+    const firstEvent = arbitraryMemberNumberLinkedToEmailEvent();
+    const secondEvent = arbitraryMemberNumberLinkedToEmailEvent();
+
+    getRightOrFail(
+      await commitEvent(
+        dbClient,
+        testLogger,
+        dummyRefreshReadModel
+      )(resource, 'no-such-resource')(firstEvent)()
+    );
+    getRightOrFail(
+      await commitEvent(
+        dbClient,
+        testLogger,
+        dummyRefreshReadModel
+      )(resource, initialVersionNumber)(secondEvent)()
+    );
+
+    const resourceEvents = getRightOrFail(
+      await getResourceEvents(dbClient)(resource)()
+    );
+
+    getRightOrFail(
+      await deleteEvent(
+        dbClient
+      )(resourceEvents.events[1].event_id, arbitraryActor(), 'cleanup')()
+    );
+
+    const stateAfterDelete = getRightOrFail(
+      await getResourceEvents(dbClient)(resource)()
+    );
+
+    expect(stateAfterDelete.events).toHaveLength(1);
+    expect(stateAfterDelete.version).toStrictEqual(initialVersionNumber + 1);
   });
 });
