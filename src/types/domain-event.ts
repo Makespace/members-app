@@ -54,6 +54,10 @@ const EquipmentAdded = defineEvent('EquipmentAdded', {
   areaId: tt.UUID,
 });
 
+const EquipmentRemoved = defineEvent('EquipmentRemoved', {
+  id: tt.UUID,
+});
+
 const OwnerAdded = defineEvent('OwnerAdded', {
   areaId: tt.UUID,
   memberNumber: t.number,
@@ -220,6 +224,7 @@ export const events = [
   AreaRemoved,
   AreaEmailUpdated,
   EquipmentAdded,
+  EquipmentRemoved,
   OwnerAdded,
   OwnerRemoved,
   SuperUserDeclared,
@@ -254,6 +259,7 @@ export const DomainEvent = t.union([
   AreaRemoved.codec,
   AreaEmailUpdated.codec,
   EquipmentAdded.codec,
+  EquipmentRemoved.codec,
   OwnerAdded.codec,
   OwnerRemoved.codec,
   SuperUserDeclared.codec,
