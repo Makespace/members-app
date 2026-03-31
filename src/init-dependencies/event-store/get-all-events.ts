@@ -110,6 +110,17 @@ export const getAllEventsIncludingDeleted =
       TE.map(withDeletionMetadata)
     );
 
+export const getAllEventsIncludingDeletedAfterEventIndex =
+  (dbClient: Client) => (eventIndex: number) =>
+    pipe(
+      getEvents(dbClient)(
+        "SELECT * FROM events WHERE event_type != 'EquipmentTrainingQuizResult' AND event_index > ? ORDER BY event_index ASC",
+        [eventIndex],
+        'Failed to query database'
+      ),
+      TE.map(withDeletionMetadata)
+    );
+
 export const getAllEventsByType =
   (dbClient: Client): Dependencies['getAllEventsByType'] =>
   <T extends EventName>(eventType: T) =>
