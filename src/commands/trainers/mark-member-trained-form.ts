@@ -11,6 +11,7 @@ import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {dateTimeInput} from '../../templates/date-time-input';
 import {DateTime} from 'luxon';
+import { TRAINED_BY_LIMIT } from './mark-member-trained-by';
 
 type ViewModel = {
   equipment: Equipment;
@@ -44,8 +45,8 @@ const renderForm = (viewModel: ViewModel) =>
           'When was the training?' as Safe,
           DateTime.now(),
           O.some({
-            value: DateTime.now().minus({months: 1}),
-            tooltip: 'Training date cannot be more than 1 month ago' as Safe,
+            value: DateTime.now().minus(TRAINED_BY_LIMIT),
+            tooltip: '' as Safe,
           }),
           O.some({
             value: DateTime.now(),

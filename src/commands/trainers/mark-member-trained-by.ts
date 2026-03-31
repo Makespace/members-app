@@ -42,9 +42,11 @@ const resource = (command: MarkMemberTrainedBy) => ({
   id: command.equipmentId,
 });
 
-const isWithinOneMonth = (date: Date): boolean => {
-  const oneMonthAgo = DateTime.now().minus({months: 1});
-  return DateTime.fromJSDate(date) >= oneMonthAgo;
+export const TRAINED_BY_LIMIT = {years: 10};
+
+const isWithinTrainedByLimit = (date: Date): boolean => {
+  const cutoffPoint = DateTime.now().minus(TRAINED_BY_LIMIT);
+  return DateTime.fromJSDate(date) >= cutoffPoint;
 };
 
 const isNotInFuture = (date: Date): boolean =>
@@ -63,7 +65,7 @@ const isAllowedToMarkTrainedBy = (input: {
   const isPrivileged = isAdminOrSuperUser(input);
   const isTrainerWithValidInput =
     isEquipmentTrainer(input.input.equipmentId)(input.actor, input.events)
-    && isWithinOneMonth(input.input.trainedAt)
+    && isWithinTrainedByLimit(input.input.trainedAt)
     && input.input.trainedByMemberNumber === input.actor.user.memberNumber;
 
   return notInFuture && (isPrivileged || isTrainerWithValidInput);

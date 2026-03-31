@@ -42,13 +42,14 @@ describe('markMemberTrainedBy authorization', () => {
 
   const withinOneMonth = DateTime.now().minus({weeks: 1}).toJSDate();
   const moreThanOneMonthAgo = DateTime.now().minus({months: 1, days: 1}).toJSDate();
+  const moreThan10YearsAgo = DateTime.now().minus({years: 10, days: 1}).toJSDate();
   const inTheFuture = DateTime.now().plus({days: 1}).toJSDate();
 
   const adminActor: Actor = {tag: 'token', token: 'admin'};
   const trainerActor: Actor = {tag: 'user', user: trainerUser};
   const randomActor: Actor = {tag: 'user', user: randomUser};
 
-  it('super user can set date more than 1 month ago', () => {
+  it('super user can set date more than 10 years ago', () => {
     const superUser = arbitraryUser();
     const superUserActor: Actor = {tag: 'user', user: superUser};
     const eventsWithSuperUser = [
@@ -61,7 +62,7 @@ describe('markMemberTrainedBy authorization', () => {
     const result = markMemberTrainedBy.isAuthorized({
       actor: superUserActor,
       events: eventsWithSuperUser,
-      input: makeInput(moreThanOneMonthAgo),
+      input: makeInput(moreThan10YearsAgo),
     });
     expect(result).toBe(true);
   });
@@ -84,11 +85,20 @@ describe('markMemberTrainedBy authorization', () => {
     expect(result).toBe(true);
   });
 
-  it('trainer cannot set date more than 1 month ago', () => {
+  it('trainer can set date more than 1 month ago', () => {
     const result = markMemberTrainedBy.isAuthorized({
       actor: trainerActor,
       events: baseEvents,
       input: makeInput(moreThanOneMonthAgo),
+    });
+    expect(result).toBe(true);
+  });
+
+  it('trainer cannot set date more than 10 years ago', () => {
+    const result = markMemberTrainedBy.isAuthorized({
+      actor: trainerActor,
+      events: baseEvents,
+      input: makeInput(moreThan10YearsAgo),
     });
     expect(result).toBe(false);
   });
