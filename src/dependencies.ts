@@ -1,10 +1,12 @@
 import {Logger} from 'pino';
 import {
+  DeletedEvent,
   Failure,
   Email,
   DomainEvent,
   ResourceVersion,
   StoredDomainEvent,
+  StoredDomainEventWithDeletion,
   StoredEventOfType,
 } from './types';
 import * as TE from 'fp-ts/TaskEither';
@@ -20,6 +22,7 @@ import {
   TroubleTicketDataTable,
 } from './sync-worker/google/sheet-data-table';
 import {UUID} from 'io-ts-types';
+import {Actor} from './types/actor';
 
 export type Dependencies = {
   commitEvent: (
@@ -35,9 +38,24 @@ export type Dependencies = {
     FailureWithStatus,
     ReadonlyArray<StoredDomainEvent>
   >;
+  getAllEventsIncludingDeleted: () => TE.TaskEither<
+    FailureWithStatus,
+    ReadonlyArray<StoredDomainEventWithDeletion>
+  >;
   getAllEventsByType: <T extends EventName>(
     eventType: T
   ) => TE.TaskEither<FailureWithStatus, ReadonlyArray<StoredEventOfType<T>>>;
+  getDeletedEventById: (
+    eventId: UUID
+  ) => TE.TaskEither<FailureWithStatus, O.Option<DeletedEvent>>;
+  deleteEvent: (
+    eventId: UUID,
+    deletedBy: Actor,
+    reason: string
+  ) => TE.TaskEither<
+    FailureWithStatus,
+    {status: StatusCodes.CREATED; message: string}
+  >;
   getEventById: (
     eventId: UUID
   ) => TE.TaskEither<FailureWithStatus, O.Option<StoredDomainEvent>>;

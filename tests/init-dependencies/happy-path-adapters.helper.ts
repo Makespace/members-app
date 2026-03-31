@@ -12,6 +12,10 @@ export const happyPathAdapters: Dependencies = {
   commitEvent: () => () =>
     TE.right({status: StatusCodes.CREATED, message: 'dummy create event'}),
   getAllEvents: () => TE.right([]),
+  getAllEventsIncludingDeleted: () => TE.right([]),
+  getDeletedEventById: () => TE.right(O.none),
+  deleteEvent: () =>
+    TE.right({status: StatusCodes.CREATED, message: 'dummy delete event'}),
   getEventById: () => TE.right(O.none),
   getResourceEvents: () => TE.right({events: [], version: faker.number.int()}),
   sharedReadModel: initSharedReadModel(

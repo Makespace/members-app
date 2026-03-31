@@ -1,4 +1,5 @@
 import {area} from './area';
+import {events} from './events';
 import {equipment} from './equipment';
 import {trainers} from './trainers';
 import {members} from './members';
@@ -8,6 +9,7 @@ import {ownerAgreementInvite} from './owner-agreement-invite';
 
 export const commands = {
   area,
+  events,
   equipment,
   trainers,
   superUser,

@@ -2,6 +2,7 @@ import {flow, pipe} from 'fp-ts/lib/function';
 import {Dependencies} from '../../dependencies';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
+import * as O from 'fp-ts/Option';
 import {
   failureWithStatus,
   internalCodecFailure,
@@ -13,6 +14,7 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {Client} from '@libsql/client';
 import {StatusCodes} from 'http-status-codes';
 import {dbExecute} from '../../util';
+import {getDeletedEvents} from './get-deleted-events';
 
 const getLatestVersion = (rows: EventsTable['rows']) =>
   pipe(
@@ -25,25 +27,44 @@ export const getResourceEvents =
   (dbClient: Client): Dependencies['getResourceEvents'] =>
   resource =>
     pipe(
-      TE.tryCatch(
-        () =>
-          dbExecute(
-            dbClient,
-            'SELECT * FROM events WHERE resource_type = ? AND resource_id = ? ORDER BY event_index ASC;',
-            [resource.type, resource.id]
+      {
+        deletedEvents: getDeletedEvents(dbClient),
+        rows: pipe(
+          TE.tryCatch(
+            () =>
+              dbExecute(
+                dbClient,
+                'SELECT * FROM events WHERE resource_type = ? AND resource_id = ? ORDER BY event_index ASC;',
+                [resource.type, resource.id]
+              ),
+            failureWithStatus(
+              'Failed to query database',
+              StatusCodes.INTERNAL_SERVER_ERROR
+            )
           ),
-        failureWithStatus(
-          'Failed to query database',
-          StatusCodes.INTERNAL_SERVER_ERROR
+          TE.chainEitherK(
+            flow(
+              EventsTable.decode,
+              E.mapLeft(internalCodecFailure('failed to decode db response'))
+            )
+          ),
+          TE.map(response => response.rows)
+        ),
+      },
+      sequenceS(TE.ApplyPar),
+      TE.map(({rows, deletedEvents}) =>
+        pipe(
+          rows,
+          RA.filter(
+            row =>
+              pipe(
+                deletedEvents,
+                RA.findFirst(deletedEvent => deletedEvent.event_id === row.id),
+                O.isNone
+              )
+          )
         )
       ),
-      TE.chainEitherK(
-        flow(
-          EventsTable.decode,
-          E.mapLeft(internalCodecFailure('failed to decode db response'))
-        )
-      ),
-      TE.map(response => response.rows),
       TE.chainEitherK(rows =>
         pipe(
           {

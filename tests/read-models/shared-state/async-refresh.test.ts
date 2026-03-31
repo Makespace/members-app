@@ -4,6 +4,8 @@ import {initTestFramework, TestFramework} from '../test-framework';
 import {EmailAddress} from '../../../src/types';
 import {sql} from 'drizzle-orm';
 import {updateState} from '../../../src/read-models/shared-state/update-state';
+import {getRightOrFail, getSomeOrFail} from '../../helpers';
+import {NonEmptyString} from 'io-ts-types';
 
 const arbitraryLinkNumberCommand = () => ({
   memberNumber: faker.number.int(),
@@ -80,6 +82,34 @@ describe('async-refresh', () => {
       );
       await refresh()();
       expect(updateStateSpy).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('when the number of visible events decreases after a refresh', () => {
+    it('still makes later member links visible in the shared read model', async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(
+        arbitraryLinkNumberCommand()
+      );
+      await refresh()();
+
+      const [event] = getRightOrFail(
+        await framework.depsForApplyToResource.getAllEvents()()
+      );
+      const laterMember = arbitraryLinkNumberCommand();
+
+      await framework.commands.events.delete({
+        eventId: event.event_id,
+        reason: 'cleanup' as NonEmptyString,
+      });
+      await framework.commands.memberNumbers.linkNumberToEmail(laterMember);
+
+      await refresh()();
+
+      expect(
+        getSomeOrFail(
+          framework.sharedReadModel.members.get(laterMember.memberNumber)
+        ).memberNumber
+      ).toStrictEqual(laterMember.memberNumber);
     });
   });
 });

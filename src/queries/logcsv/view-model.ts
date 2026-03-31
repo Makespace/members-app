@@ -1,5 +1,5 @@
-import {DomainEvent} from '../../types';
+import {StoredDomainEventWithDeletion} from '../../types';
 
 export type ViewModel = {
-  events: ReadonlyArray<DomainEvent>;
+  events: ReadonlyArray<StoredDomainEventWithDeletion>;
 };

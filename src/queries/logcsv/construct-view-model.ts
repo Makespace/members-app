@@ -9,7 +9,7 @@ import {StatusCodes} from 'http-status-codes';
 
 export const constructViewModel = (deps: Dependencies) => (user: User) =>
   pipe(
-    deps.getAllEvents(),
+    deps.getAllEventsIncludingDeleted(),
     TE.filterOrElse(readModels.superUsers.is(user.memberNumber), () =>
       failureWithStatus(
         'You do not have the necessary permission to see this page.',
