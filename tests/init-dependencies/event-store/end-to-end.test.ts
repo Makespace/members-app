@@ -13,7 +13,6 @@ import {getAllEvents} from '../../../src/init-dependencies/event-store/get-all-e
 import {pipe} from 'fp-ts/lib/function';
 import {
   commitEvent,
-  initialVersionNumber,
 } from '../../../src/init-dependencies/event-store/commit-event';
 import {ensureEventTableExists} from '../../../src/init-dependencies/event-store/ensure-events-table-exists';
 import {arbitraryActor, getRightOrFail} from '../../helpers';
@@ -21,6 +20,7 @@ import {Dependencies} from '../../../src/dependencies';
 import {getResourceEvents} from '../../../src/init-dependencies/event-store/get-resource-events';
 import {RightOfTaskEither} from '../../type-optics';
 import {randomUUID} from 'crypto';
+import { initialVersionNumber } from '../../../src/init-dependencies/event-store/insert-event-with-optimistic-concurrency-control';
 
 const arbitraryMemberNumberLinkedToEmailEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
@@ -159,9 +159,7 @@ describe('event-store end-to-end', () => {
         expectStoredEvent(events[1], competingEvent, 2);
       });
 
-      it.failing('returns on left', () => {
-        // Known failure.
-        // https://github.com/Makespace/members-app/issues/119
+      it('returns on left', () => {
         expect(result).toStrictEqual(E.left(expect.anything()));
       });
     });
