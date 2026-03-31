@@ -29,6 +29,7 @@ export const formGet =
     await pipe(
       {
         user: user.value,
+        deps,
         readModel: deps.sharedReadModel,
       },
       form.constructForm({...req.query, ...req.params}),
