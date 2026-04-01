@@ -45,7 +45,6 @@ export type Dependencies = {
     FailureWithStatus,
     {
       events: ReadonlyArray<StoredDomainEvent>;
-      version: ResourceVersion;
     }
   >;
   sharedReadModel: SharedReadModel;
