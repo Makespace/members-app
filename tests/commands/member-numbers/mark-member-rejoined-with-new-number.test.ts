@@ -60,7 +60,11 @@ describe('markMemberRejoinedWithNewNumber', () => {
     it('raises an event linking the memberships', async () => {
       const event = pipe(
         await getTaskEitherRightOrFail(
-          markMemberRejoinedWithNewNumber.process({command, events})
+          markMemberRejoinedWithNewNumber.process({
+            command,
+            events,
+            rm: framework.sharedReadModel,
+          })
         ),
         O.filter(isEventOfType('MemberRejoinedWithNewNumber')),
         getSomeOrFail

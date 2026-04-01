@@ -3,8 +3,22 @@ import {faker} from '@faker-js/faker';
 import {constructEvent} from '../../../src/types';
 import {revoke} from '../../../src/commands/super-user/revoke';
 import {arbitraryActor, getTaskEitherRightOrFail} from '../../helpers';
+import {
+  TestFramework,
+  initTestFramework,
+} from '../../read-models/test-framework';
 
 describe('revoke-super-user', () => {
+  let framework: TestFramework;
+
+  beforeEach(async () => {
+    framework = await initTestFramework();
+  });
+
+  afterEach(() => {
+    framework.close();
+  });
+
   describe('when the member is currently not a super user', () => {
     const memberNumber = faker.number.int();
     it('does nothing', async () => {
@@ -15,6 +29,7 @@ describe('revoke-super-user', () => {
             actor: arbitraryActor(),
           },
           events: [],
+          rm: framework.sharedReadModel,
         })
       );
 
@@ -37,6 +52,7 @@ describe('revoke-super-user', () => {
               actor: arbitraryActor(),
             }),
           ],
+          rm: framework.sharedReadModel,
         })
       );
 
@@ -71,6 +87,7 @@ describe('revoke-super-user', () => {
               actor: arbitraryActor(),
             }),
           ],
+          rm: framework.sharedReadModel,
         })
       );
 

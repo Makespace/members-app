@@ -9,8 +9,22 @@ import {
   getSomeOrFail,
   getTaskEitherRightOrFail,
 } from '../../helpers';
+import {
+  TestFramework,
+  initTestFramework,
+} from '../../read-models/test-framework';
 
 describe('remove-training-sheet', () => {
+  let framework: TestFramework;
+
+  beforeEach(async () => {
+    framework = await initTestFramework();
+  });
+
+  afterEach(() => {
+    framework.close();
+  });
+
   const command = {
     equipmentId: faker.string.uuid() as UUID,
     trainingSheetId: faker.string.alphanumeric(8),
@@ -20,7 +34,11 @@ describe('remove-training-sheet', () => {
   it('Records the remove training sheet event', async () => {
     const result = pipe(
       await getTaskEitherRightOrFail(
-        removeTrainingSheet.process({command, events: RA.empty})
+        removeTrainingSheet.process({
+          command,
+          events: RA.empty,
+          rm: framework.sharedReadModel,
+        })
       ),
       getSomeOrFail
     );

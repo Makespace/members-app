@@ -10,8 +10,22 @@ import {
   getTaskEitherRightOrFail,
 } from '../../helpers';
 import {removeArea} from '../../../src/commands/area/remove-area';
+import {
+  TestFramework,
+  initTestFramework,
+} from '../../read-models/test-framework';
 
 describe('remove-area', () => {
+  let framework: TestFramework;
+
+  beforeEach(async () => {
+    framework = await initTestFramework();
+  });
+
+  afterEach(() => {
+    framework.close();
+  });
+
   const areaId = v4() as UUID;
   const areaName = faker.commerce.productName() as NonEmptyString;
   const command = {
@@ -25,6 +39,7 @@ describe('remove-area', () => {
         await removeArea.process({
           command,
           events: [],
+          rm: framework.sharedReadModel,
         })()
       );
 
@@ -47,6 +62,7 @@ describe('remove-area', () => {
               actor: arbitraryActor(),
             }),
           ],
+          rm: framework.sharedReadModel,
         })
       );
 
@@ -77,6 +93,7 @@ describe('remove-area', () => {
             }),
             constructEvent('AreaRemoved')({id: areaId, actor: arbitraryActor()}),
           ],
+          rm: framework.sharedReadModel,
         })()
       );
 

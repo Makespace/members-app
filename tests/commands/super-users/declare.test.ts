@@ -3,8 +3,22 @@ import {faker} from '@faker-js/faker';
 import {declare} from '../../../src/commands/super-user/declare';
 import {constructEvent} from '../../../src/types';
 import {arbitraryActor, getTaskEitherRightOrFail} from '../../helpers';
+import {
+  TestFramework,
+  initTestFramework,
+} from '../../read-models/test-framework';
 
 describe('declare-super-user', () => {
+  let framework: TestFramework;
+
+  beforeEach(async () => {
+    framework = await initTestFramework();
+  });
+
+  afterEach(() => {
+    framework.close();
+  });
+
   describe('when the member is currently not a super user', () => {
     const memberNumber = faker.number.int();
     it('declares them to be super user', async () => {
@@ -15,6 +29,7 @@ describe('declare-super-user', () => {
             actor: arbitraryActor(),
           },
           events: [],
+          rm: framework.sharedReadModel,
         })
       );
 
@@ -45,6 +60,7 @@ describe('declare-super-user', () => {
               actor: arbitraryActor(),
             }),
           ],
+          rm: framework.sharedReadModel,
         })
       );
 
