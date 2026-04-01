@@ -1,4 +1,3 @@
-import {isSelfOrPrivileged} from '../../src/commands/is-self-or-privileged';
 import {constructEvent} from '../../src/types';
 import {Actor} from '../../src/types/actor';
 import {arbitraryActor} from '../helpers';

@@ -1,8 +1,8 @@
 import {constructEvent} from '../../src/types';
 import {Actor} from '../../src/types/actor';
 import {arbitraryUser} from '../types/user.helper';
-import {isAdminOrSuperUser} from '../../src/commands/is-admin-or-super-user';
 import {arbitraryActor} from '../helpers';
+import { isAdminOrSuperUser } from '../../src/commands/authentication-helpers/is-admin-or-super-user';
 
 describe('isAdminOrSuperUser', () => {
   const userToBeSuperUser = arbitraryUser();

@@ -4,8 +4,7 @@ import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {Command, WithActor} from '../command';
-import {isAdminOrSuperUser} from '../is-admin-or-super-user';
-import {isEquipmentTrainer} from '../is-equipment-trainer';
+import { isAdminSuperUserOrTrainerForEquipment } from '../authentication-helpers/is-admin-or-super-user-or-trainer';
 
 const codec = t.strict({
   equipmentId: tt.UUID,
@@ -36,14 +35,6 @@ const resource = (command: RevokeMemberTrained) => ({
   type: 'Equipment',
   id: command.equipmentId,
 });
-
-const isAdminSuperUserOrTrainerForEquipment = (input: {
-  actor: Actor;
-  events: ReadonlyArray<DomainEvent>;
-  input: RevokeMemberTrained;
-}) =>
-  isAdminOrSuperUser(input) ||
-  isEquipmentTrainer(input.input.equipmentId)(input.actor, input.events);
 
 export const revokeMemberTrained: Command<RevokeMemberTrained> = {
   process,

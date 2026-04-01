@@ -1,10 +1,10 @@
 import {faker} from '@faker-js/faker';
-import {isEquipmentOwner} from '../../src/commands/is-equipment-owner';
 import {constructEvent, DomainEvent} from '../../src/types';
 import {Actor} from '../../src/types/actor';
 import {arbitraryUser} from '../types/user.helper';
 import {UUID} from 'io-ts-types';
 import {arbitraryActor} from '../helpers';
+import { isEquipmentOwner } from '../../src/commands/authentication-helpers/is-equipment-owner';
 
 describe('isEquipmentOwner', () => {
   const userToBeSuperUser = arbitraryUser();

@@ -3,8 +3,8 @@ import {constructEvent, DomainEvent} from '../../src/types';
 import {Actor} from '../../src/types/actor';
 import {arbitraryUser} from '../types/user.helper';
 import {UUID} from 'io-ts-types';
-import {isEquipmentTrainer} from '../../src/commands/is-equipment-trainer';
 import {arbitraryActor} from '../helpers';
+import { isEquipmentTrainer } from '../../src/commands/authentication-helpers/is-equipment-trainer';
 
 describe('isEquipmentTrainer', () => {
   const userToBeSuperUser = arbitraryUser();

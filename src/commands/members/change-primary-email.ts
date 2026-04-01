@@ -5,10 +5,10 @@ import * as TE from 'fp-ts/TaskEither';
 import {StatusCodes} from 'http-status-codes';
 import {Command} from '../command';
 import {EmailAddressCodec, constructEvent} from '../../types';
-import {isSelfOrPrivileged} from '../is-self-or-privileged';
 import {projectMemberEmailStates} from './email-state';
 import {normaliseEmailAddress} from '../../read-models/shared-state/normalise-email-address';
 import {failureWithStatus} from '../../types/failure-with-status';
+import { isSelfOrPrivileged } from '../authentication-helpers/is-self-or-privileged';
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,

@@ -3,13 +3,13 @@ import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
-import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {constructEvent, isEventOfType} from '../../types';
 import {StatusCodes} from 'http-status-codes';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {filterByName} from '../../types/domain-event';
+import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,
