@@ -5,8 +5,22 @@ import {create} from '../../../src/commands/area/create';
 import {constructEvent} from '../../../src/types';
 import {v4} from 'uuid';
 import {arbitraryActor, getTaskEitherRightOrFail} from '../../helpers';
+import {
+  TestFramework,
+  initTestFramework,
+} from '../../read-models/test-framework';
 
 describe('create-area', () => {
+  let framework: TestFramework;
+
+  beforeEach(async () => {
+    framework = await initTestFramework();
+  });
+
+  afterEach(() => {
+    framework.close();
+  });
+
   describe('when the area does not yet exist', () => {
     const areaName = faker.commerce.productName() as NonEmptyString;
     it('creates the area', async () => {
@@ -18,6 +32,7 @@ describe('create-area', () => {
             actor: arbitraryActor(),
           },
           events: [],
+          rm: framework.sharedReadModel,
         })
       );
 
@@ -49,6 +64,7 @@ describe('create-area', () => {
               actor: arbitraryActor(),
             }),
           ],
+          rm: framework.sharedReadModel,
         })
       );
 

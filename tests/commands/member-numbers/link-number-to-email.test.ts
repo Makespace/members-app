@@ -73,7 +73,11 @@ describe('linkNumberToEmail', () => {
     ];
     it('fails', async () => {
       const result = getLeftOrFail(
-        await linkNumberToEmail.process({command, events})()
+        await linkNumberToEmail.process({
+          command,
+          events,
+          rm: framework.sharedReadModel,
+        })()
       );
 
       expect(result).toMatchObject({
@@ -96,7 +100,11 @@ describe('linkNumberToEmail', () => {
     it('raises an event documenting the attempt', async () => {
       const result = pipe(
         await getTaskEitherRightOrFail(
-          linkNumberToEmail.process({command, events})
+          linkNumberToEmail.process({
+            command,
+            events,
+            rm: framework.sharedReadModel,
+          })
         ),
         O.filter(
           isEventOfType('LinkingMemberNumberToAnAlreadyUsedEmailAttempted')
@@ -113,7 +121,11 @@ describe('linkNumberToEmail', () => {
     it('raises an event linking the number and email', async () => {
       const event = pipe(
         await getTaskEitherRightOrFail(
-          linkNumberToEmail.process({command, events})
+          linkNumberToEmail.process({
+            command,
+            events,
+            rm: framework.sharedReadModel,
+          })
         ),
         O.filter(isEventOfType('MemberNumberLinkedToEmail')),
         getSomeOrFail

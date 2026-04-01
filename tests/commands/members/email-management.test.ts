@@ -107,6 +107,7 @@ describe('member email commands', () => {
           actor: arbitraryActor(),
         },
         events: [],
+        rm: framework.sharedReadModel,
       })()
     );
 
@@ -130,6 +131,7 @@ describe('member email commands', () => {
           actor: arbitraryActor(),
         },
         events: await framework.getAllEvents(),
+        rm: framework.sharedReadModel,
       })()
     );
 
@@ -194,6 +196,7 @@ describe('member email commands', () => {
           actor: arbitraryActor(),
         },
         events: await framework.getAllEvents(),
+        rm: framework.sharedReadModel,
       })()
     );
 
