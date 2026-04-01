@@ -20,10 +20,11 @@ import {
   TroubleTicketDataTable,
 } from './sync-worker/google/sheet-data-table';
 import {UUID} from 'io-ts-types';
+import { Int } from 'io-ts';
 
 export type Dependencies = {
   commitEvent: (
-    lastSeenEventIndex: number,
+    lastSeenEventIndex: Int,
   ) => (
     event: DomainEvent,
   ) => TE.TaskEither<

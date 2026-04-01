@@ -15,7 +15,7 @@ import { FailureWithStatus } from '../../../src/types/failure-with-status';
 
 type OCCReturnType = E.Either<FailureWithStatus, 'raised-event' | 'last-known-version-out-of-date'>;
 
-const arbitraryMemberNumberLinkedToEmailEvent = () =>
+const arbitaryEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
     memberNumber: faker.number.int(),
     email: faker.internet.email() as EmailAddress,
@@ -39,7 +39,7 @@ describe('insertEventWithOptimisticConcurrencyControl', () => {
   });
 
   describe('inserts the first event', () => {
-    const event = arbitraryMemberNumberLinkedToEmailEvent();
+    const event = arbitaryEvent();
     let result: OCCReturnType;
     beforeEach(async () => {
       result = await insertEventWithOptimisticConcurrencyControl(
@@ -77,7 +77,7 @@ describe('insertEventWithOptimisticConcurrencyControl', () => {
     });
 
     describe('insert a second event', () => {
-      const event2 = arbitraryMemberNumberLinkedToEmailEvent();
+      const event2 = arbitaryEvent();
       let result: OCCReturnType;
       beforeEach(async () => {
         result = await insertEventWithOptimisticConcurrencyControl(
