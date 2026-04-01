@@ -37,6 +37,7 @@ type ToFrameworkCommands<T> = {
       process: (input: {
         command: infer C;
         events: ReadonlyArray<DomainEvent>;
+        rm: Dependencies['sharedReadModel'];
       }) => unknown;
     }
       ? (c: Omit<C, 'actor'> & { actor?: Actor }) => Promise<void>

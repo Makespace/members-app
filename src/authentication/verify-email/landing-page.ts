@@ -64,6 +64,7 @@ export const landing =
       const resultantEvent = await verifyEmail.process({
         events: resourceEvents.right.events,
         deps,
+        rm: deps.sharedReadModel,
         command: {
           emailAddress: decoded.right.emailAddress,
           memberNumber: decoded.right.memberNumber,

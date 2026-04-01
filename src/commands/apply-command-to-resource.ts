@@ -24,7 +24,7 @@ export const applyToResource =
       resource,
       deps.getResourceEvents,
       TE.bind('event', ({events}) =>
-        command.process({command: inputAndActor, events, deps})
+        command.process({command: inputAndActor, events, rm: deps.sharedReadModel, deps})
       ),
       TE.chain(({event, version}) => O.isSome(event) ? deps.commitEvent(resource, version)(event.value) : TE.right({
         status: StatusCodes.CREATED as StatusCodes.CREATED,
