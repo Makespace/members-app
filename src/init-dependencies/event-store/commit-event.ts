@@ -17,24 +17,17 @@ export const commitEvent =
     logger: Logger,
     refreshReadModel: Dependencies['sharedReadModel']['asyncRefresh']
   ): Dependencies['commitEvent'] =>
-  (resource, lastKnownVersion) =>
+  (
+    lastSeenEventIndex
+  ) =>
   (
     event
   ): TE.TaskEither<FailureWithStatus, {status: number; message: string}> => {
     return pipe(
-      TE.tryCatch(
-        () =>
-          insertEventWithOptimisticConcurrencyControl(
-            event,
-            resource,
-            lastKnownVersion,
-            eventDB,
-            logger
-          ),
-        failureWithStatus(
-          'Failed to commit event',
-          StatusCodes.INTERNAL_SERVER_ERROR
-        )
+      insertEventWithOptimisticConcurrencyControl(
+        event,
+        lastSeenEventIndex,
+        eventDB,
       ),
       TE.chainEitherK(result => {
         switch (result) {

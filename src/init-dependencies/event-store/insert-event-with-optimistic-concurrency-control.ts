@@ -1,67 +1,47 @@
 import {Logger} from 'pino';
-import {pipe} from 'fp-ts/lib/function';
 import {v4 as uuidv4} from 'uuid';
 import {Client} from '@libsql/client';
-import {DomainEvent, ResourceVersion} from '../../types';
-import {Resource} from '../../types/resource';
+import {DomainEvent} from '../../types';
 import {dbExecute} from '../../util';
-
-export const initialVersionNumber = 0;
-
-const constructArgsForNewEventRow = (
-  event: DomainEvent,
-  resource: Resource,
-  version: number
-) =>
-  pipe(event, ({type, ...payload}) => [
-    uuidv4(),
-    resource.id,
-    resource.type,
-    version,
-    type,
-    JSON.stringify(payload),
-    resource.id,
-    resource.type,
-    version,
-  ]);
+import * as TE from 'fp-ts/TaskEither';
+import { failureWithStatus, FailureWithStatus } from '../../types/failure-with-status';
+import { pipe } from 'fp-ts/lib/function';
+import { StatusCodes } from 'http-status-codes';
+import { Int } from 'io-ts';
 
 const insertEventRow = `
     INSERT INTO events
-    (id, event_index, resource_id, resource_type, resource_version, event_type, payload)
-    SELECT
-      ?,
-      COALESCE((SELECT MAX(event_index) + 1 FROM events), 1),
-      ?,
-      ?,
-      ?,
-      ?,
-      ?
-    WHERE NOT EXISTS (
-      SELECT * FROM events
-      WHERE resource_id = ?
-        AND resource_type = ?
-        AND resource_version = ?
-    );
+    (id, event_index, event_type, payload)
+    VALUES (?, ?, ?, ?);
   `;
 
-export const insertEventWithOptimisticConcurrencyControl = async (
+export const insertEventWithOptimisticConcurrencyControl = (
   event: DomainEvent,
-  resource: Resource,
-  lastKnownVersion: ResourceVersion,
-  eventDB: Client,
-  logger: Logger
-): Promise<'raised-event' | 'last-known-version-out-of-date'> => {
-  const newResourceVersion =
-    lastKnownVersion === 'no-such-resource'
-      ? initialVersionNumber
-      : lastKnownVersion + 1;
-  const result = await dbExecute(
-    eventDB,
-    insertEventRow,
-    constructArgsForNewEventRow(event, resource, newResourceVersion)
-  );
-  logger.debug({rowsAffected: result.rowsAffected}, 'OCC insert result');
-  return result.rowsAffected === 1
-    ? 'raised-event'
-    : 'last-known-version-out-of-date';
-};
+  lastSeenEventIndex: Int,
+  eventDB: Client
+): TE.TaskEither<FailureWithStatus, 'raised-event' | 'last-known-version-out-of-date'> => pipe(
+  TE.tryCatch<Error, 'raised-event' | 'last-known-version-out-of-date'>(
+    () => dbExecute(
+      eventDB,
+      insertEventRow,
+      [
+        uuidv4(),
+        lastSeenEventIndex + 1,
+        event.type,
+        JSON.stringify(event)
+      ]
+    ).then(_res => 'raised-event'),
+    (err) => {
+      return err as Error;
+    }
+  ),
+  TE.orElse<Error, 'raised-event' | 'last-known-version-out-of-date', FailureWithStatus>(err => {
+    if ('code' in err && err['code'] === 'SQLITE_CONSTRAINT_UNIQUE') {
+      return TE.right('last-known-version-out-of-date');
+    }
+    return TE.left(failureWithStatus(
+      'Failed to insert event into database',
+      StatusCodes.INTERNAL_SERVER_ERROR
+    )(err));
+  }),
+);

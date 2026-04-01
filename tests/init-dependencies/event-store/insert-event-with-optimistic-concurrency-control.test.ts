@@ -1,6 +1,7 @@
-import createLogger from 'pino';
 import {faker} from '@faker-js/faker';
 import * as libsqlClient from '@libsql/client';
+import * as E from 'fp-ts/Either';
+import * as t from 'io-ts';
 import {
   EmailAddress,
   StoredDomainEvent,
@@ -9,7 +10,10 @@ import {
 import {ensureEventTableExists} from '../../../src/init-dependencies/event-store/ensure-events-table-exists';
 import {getAllEvents} from '../../../src/init-dependencies/event-store/get-all-events';
 import {arbitraryActor, getRightOrFail} from '../../helpers';
-import { initialVersionNumber, insertEventWithOptimisticConcurrencyControl } from '../../../src/init-dependencies/event-store/insert-event-with-optimistic-concurrency-control';
+import { insertEventWithOptimisticConcurrencyControl } from '../../../src/init-dependencies/event-store/insert-event-with-optimistic-concurrency-control';
+import { FailureWithStatus } from '../../../src/types/failure-with-status';
+
+type OCCReturnType = E.Either<FailureWithStatus, 'raised-event' | 'last-known-version-out-of-date'>;
 
 const arbitraryMemberNumberLinkedToEmailEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
@@ -20,149 +24,80 @@ const arbitraryMemberNumberLinkedToEmailEvent = () =>
     actor: arbitraryActor(),
   });
 
-const testLogger = createLogger({level: 'silent'});
-
 describe('insertEventWithOptimisticConcurrencyControl', () => {
-  const resource = {id: 'singleton', type: 'MemberNumberEmailPairings'};
-
   let dbClient: libsqlClient.Client;
   let getStoredEvents: () => Promise<ReadonlyArray<StoredDomainEvent>>;
-  let getResourceVersions: () => Promise<ReadonlyArray<number>>;
 
   beforeEach(async () => {
     dbClient = libsqlClient.createClient({url: ':memory:'});
     getRightOrFail(await ensureEventTableExists(dbClient)());
     getStoredEvents = async () => getRightOrFail(await getAllEvents(dbClient)()());
-    getResourceVersions = async () => {
-      const result = await dbClient.execute(
-        'SELECT resource_version FROM events ORDER BY event_index ASC'
-      );
-      return result.rows.map(row => row.resource_version as number);
-    };
   });
 
   afterEach(() => {
     dbClient.close();
   });
 
-  it('inserts an event when the resource does not exist yet', async () => {
+  describe('inserts the first event', () => {
     const event = arbitraryMemberNumberLinkedToEmailEvent();
-
-    const result = await insertEventWithOptimisticConcurrencyControl(
-      event,
-      resource,
-      'no-such-resource',
-      dbClient,
-      testLogger
-    );
-
-    const storedEvents = await getStoredEvents();
-    const resourceVersions = await getResourceVersions();
-
-    expect(result).toStrictEqual('raised-event');
-    expect(storedEvents).toHaveLength(1);
-    expect(storedEvents[0]).toMatchObject({
-      ...event,
-      event_index: 1,
+    let result: OCCReturnType;
+    beforeEach(async () => {
+      result = await insertEventWithOptimisticConcurrencyControl(
+        event,
+        0 as t.Int,
+        dbClient
+      )();
     });
-    expect(resourceVersions).toStrictEqual([initialVersionNumber]);
-  });
 
-  it('inserts an event when the last known version is current', async () => {
-    const firstEvent = arbitraryMemberNumberLinkedToEmailEvent();
-    const secondEvent = arbitraryMemberNumberLinkedToEmailEvent();
-
-    await insertEventWithOptimisticConcurrencyControl(
-      firstEvent,
-      resource,
-      'no-such-resource',
-      dbClient,
-      testLogger
-    );
-
-    const result = await insertEventWithOptimisticConcurrencyControl(
-      secondEvent,
-      resource,
-      initialVersionNumber,
-      dbClient,
-      testLogger
-    );
-
-    const storedEvents = await getStoredEvents();
-    const resourceVersions = await getResourceVersions();
-
-    expect(result).toStrictEqual('raised-event');
-    expect(storedEvents).toHaveLength(2);
-    expect(storedEvents[1]).toMatchObject({
-      ...secondEvent,
-      event_index: 2,
+    it('event was raised successfully', () => {
+      expect(getRightOrFail(result)).toStrictEqual('raised-event');
     });
-    expect(resourceVersions).toStrictEqual([
-      initialVersionNumber,
-      initialVersionNumber + 1,
-    ]);
-  });
 
-  it('returns an out-of-date result when another event has already created the resource', async () => {
-    const firstEvent = arbitraryMemberNumberLinkedToEmailEvent();
-    const staleEvent = arbitraryMemberNumberLinkedToEmailEvent();
+    it('event was committed', async () => {
+      const storedEvents = await getStoredEvents();
+      expect(storedEvents).toHaveLength(1);
+      expect(storedEvents[0]).toMatchObject({
+        ...event,
+        event_index: 1,
+      });
+    });
 
-    await insertEventWithOptimisticConcurrencyControl(
-      firstEvent,
-      resource,
-      'no-such-resource',
-      dbClient,
-      testLogger
-    );
+    describe('tries to insert the first event again', () => {
+      let result: OCCReturnType;
+      beforeEach(async () => {
+        result = await insertEventWithOptimisticConcurrencyControl(
+          event,
+          0 as t.Int,
+          dbClient,
+        )();
+      });
+      it('event was rejected due to OCC conflict', () => {
+        expect(getRightOrFail(result)).toStrictEqual('last-known-version-out-of-date');
+      });
+    });
 
-    const result = await insertEventWithOptimisticConcurrencyControl(
-      staleEvent,
-      resource,
-      'no-such-resource',
-      dbClient,
-      testLogger
-    );
+    describe('insert a second event', () => {
+      const event2 = arbitraryMemberNumberLinkedToEmailEvent();
+      let result: OCCReturnType;
+      beforeEach(async () => {
+        result = await insertEventWithOptimisticConcurrencyControl(
+          event2,
+          1 as t.Int,
+          dbClient,
+        )();
+      });
+      it('event was raised successfully', () => {
+        expect(getRightOrFail(result)).toStrictEqual('raised-event');
+      });
 
-    const storedEvents = await getStoredEvents();
-
-    expect(result).toStrictEqual('last-known-version-out-of-date');
-    expect(storedEvents).toHaveLength(1);
-    expect(storedEvents[0]).toMatchObject(firstEvent);
-  });
-
-  it('returns an out-of-date result when another event has already advanced the version', async () => {
-    const initialEvent = arbitraryMemberNumberLinkedToEmailEvent();
-    const competingEvent = arbitraryMemberNumberLinkedToEmailEvent();
-    const staleEvent = arbitraryMemberNumberLinkedToEmailEvent();
-
-    await insertEventWithOptimisticConcurrencyControl(
-      initialEvent,
-      resource,
-      'no-such-resource',
-      dbClient,
-      testLogger
-    );
-    await insertEventWithOptimisticConcurrencyControl(
-      competingEvent,
-      resource,
-      initialVersionNumber,
-      dbClient,
-      testLogger
-    );
-
-    const result = await insertEventWithOptimisticConcurrencyControl(
-      staleEvent,
-      resource,
-      initialVersionNumber,
-      dbClient,
-      testLogger
-    );
-
-    const storedEvents = await getStoredEvents();
-
-    expect(result).toStrictEqual('last-known-version-out-of-date');
-    expect(storedEvents).toHaveLength(2);
-    expect(storedEvents[0]).toMatchObject(initialEvent);
-    expect(storedEvents[1]).toMatchObject(competingEvent);
+      it('event was committed', async () => {
+        const storedEvents = await getStoredEvents();
+        expect(storedEvents).toHaveLength(2);
+        expect(storedEvents[1]).toMatchObject({
+          ...event2,
+          event_index: 2,
+        });
+      });
+    });
   });
 });

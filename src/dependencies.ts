@@ -23,10 +23,9 @@ import {UUID} from 'io-ts-types';
 
 export type Dependencies = {
   commitEvent: (
-    resource: Resource,
-    lastKnownVersion: ResourceVersion
+    lastSeenEventIndex: number,
   ) => (
-    event: DomainEvent
+    event: DomainEvent,
   ) => TE.TaskEither<
     FailureWithStatus,
     {status: StatusCodes.CREATED; message: string}
