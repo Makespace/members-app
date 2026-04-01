@@ -11,6 +11,7 @@ export type WithActor<T> = T & {actor: Actor};
 type CommandProcessInput<T> = {
   command: WithActor<T>;
   events: ReadonlyArray<DomainEvent>;
+  rm: Dependencies['sharedReadModel'];
   deps?: Dependencies;
 };
 
