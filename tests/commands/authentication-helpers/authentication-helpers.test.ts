@@ -5,7 +5,6 @@ import { initTestFramework, TestFramework } from "../../read-models/test-framewo
 import { UUID } from "io-ts-types";
 import { arbitraryUser } from "../../types/user.helper";
 import { isEquipmentTrainer } from "../../../src/commands/authentication-helpers/is-equipment-trainer";
-import { framework } from "passport";
 import { isAdminSuperUserOrOwnerForEquipment } from "../../../src/commands/authentication-helpers/is-admin-or-super-user-or-owner";
 import { isAdminSuperUserOrTrainerForEquipment } from "../../../src/commands/authentication-helpers/is-admin-or-super-user-or-trainer";
 import { isAdminSuperUserOrTrainerOrOwnerForEquipment } from "../../../src/commands/authentication-helpers/is-admin-or-super-user-or-owner-trainer";
@@ -231,6 +230,18 @@ describe('authentication helpers', () => {
                 isEquipment1Trainer: false,
                 isSelfOrPrivileged: false,
                 isSelf: false
+            },
+            {
+                actorName: "equipment 1 trainer",
+                actor: {tag: 'user', user: equipment1Trainer} satisfies Actor,
+                isAdminSuperUserOrTrainerOrOwnerForEquipment1: true,
+                isAdminSuperUserOrTrainerForEquipment1: true,
+                isAdminSuperUserOrOwnerForEquipment1: true,
+                isAdminOrSuperUser: false,
+                isEquipment1Owner: true,
+                isEquipment1Trainer: true,
+                isSelfOrPrivileged: true,
+                isSelf: true
             }
         ]
     );

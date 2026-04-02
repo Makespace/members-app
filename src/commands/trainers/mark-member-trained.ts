@@ -1,4 +1,4 @@
-import {Actor, DomainEvent, constructEvent} from '../../types';
+import {DomainEvent, constructEvent} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
