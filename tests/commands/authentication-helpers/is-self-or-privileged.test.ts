@@ -1,9 +1,19 @@
-import {constructEvent} from '../../src/types';
-import {Actor} from '../../src/types/actor';
-import {arbitraryActor} from '../helpers';
-import {arbitraryUser} from '../types/user.helper';
+import { isSelfOrPrivileged } from '../../../src/commands/authentication-helpers/is-self-or-privileged';
+import {constructEvent} from '../../../src/types';
+import {Actor} from '../../../src/types/actor';
+import {arbitraryActor} from '../../helpers';
+import { initTestFramework, TestFramework } from '../../read-models/test-framework';
+import {arbitraryUser} from '../../types/user.helper';
 
 describe('isSelfOrPrivileged', () => {
+  let framework: TestFramework;
+  beforeEach(async () => {
+    framework = await initTestFramework();
+  });
+  afterEach(() => {
+    framework.close();
+  });
+
   const userToBeSuperUser = arbitraryUser();
   const self = arbitraryUser();
 
@@ -90,6 +100,6 @@ describe('isSelfOrPrivileged', () => {
       },
     ],
   ])('%s: %s', (_, expected, actor, events, input) => {
-    expect(isSelfOrPrivileged({actor, events, input})).toBe(expected);
+    expect(isSelfOrPrivileged({actor, rm: framework.sharedReadModel, input})).toBe(expected);
   });
 });
