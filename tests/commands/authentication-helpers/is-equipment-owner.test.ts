@@ -8,21 +8,101 @@ import { isEquipmentOwner } from '../../../src/commands/authentication-helpers/i
 import { initTestFramework, TestFramework } from '../../read-models/test-framework';
 
 describe('isEquipmentOwner', () => {
-  let framework: TestFramework;
-  beforeEach(async () => {
-    framework = await initTestFramework();
-  });
-  afterEach(() => {
-    framework.close();
-  });
-
   const userToBeSuperUser = arbitraryUser();
   const areaOwner = arbitraryUser();
   const areaOwner2 = arbitraryUser();
+  const randomUser = arbitraryUser();
   const areaId = faker.string.uuid() as UUID;
   const areaId2 = faker.string.uuid() as UUID;
   const equipmentId = faker.string.uuid() as UUID;
   const equipmentId2 = faker.string.uuid() as UUID;
+
+  const baseEvents = [
+    constructEvent('AreaCreated')({
+      name: 'area',
+      id: areaId,
+      actor: arbitraryActor(),
+    }),
+    constructEvent('EquipmentAdded')({
+      name: 'equipment',
+      id: equipmentId,
+      areaId,
+      actor: arbitraryActor(),
+    }),
+    constructEvent('AreaCreated')({
+      name: 'area',
+      id: areaId2,
+      actor: arbitraryActor(),
+    }),
+    constructEvent('EquipmentAdded')({
+      name: 'equipment',
+      id: equipmentId2,
+      areaId: areaId2,
+      actor: arbitraryActor(),
+    }),
+    constructEvent('MemberNumberLinkedToEmail')({
+      memberNumber: userToBeSuperUser.memberNumber,
+      email: userToBeSuperUser.emailAddress,
+      name: undefined,
+      formOfAddress: undefined,
+      actor: arbitraryActor()
+    }),
+    constructEvent('SuperUserDeclared')({
+      memberNumber: userToBeSuperUser.memberNumber,
+      actor: arbitraryActor(),
+    }),
+    constructEvent('MemberNumberLinkedToEmail')({
+      memberNumber: areaOwner.memberNumber,
+      email: areaOwner.emailAddress,
+      name: undefined,
+      formOfAddress: undefined,
+      actor: arbitraryActor()
+    }),
+    constructEvent('OwnerAdded')({
+      memberNumber: areaOwner.memberNumber,
+      actor: arbitraryActor(),
+      areaId,
+    }),
+    constructEvent('MemberNumberLinkedToEmail')({
+      memberNumber: areaOwner2.memberNumber,
+      email: areaOwner2.emailAddress,
+      name: undefined,
+      formOfAddress: undefined,
+      actor: arbitraryActor()
+    }),
+    constructEvent('AreaCreated')({
+      name: 'area2',
+      id: areaId2,
+      actor: arbitraryActor(),
+    }),
+    constructEvent('EquipmentAdded')({
+      name: 'equipment2',
+      id: equipmentId2,
+      areaId: areaId2,
+      actor: arbitraryActor(),
+    }),
+    constructEvent('OwnerAdded')({
+      memberNumber: areaOwner2.memberNumber,
+      areaId: areaId2,
+      actor: arbitraryActor(),
+    }),
+    constructEvent('MemberNumberLinkedToEmail')({
+      memberNumber: randomUser.memberNumber,
+      email: randomUser.emailAddress,
+      name: undefined,
+      formOfAddress: undefined,
+      actor: arbitraryActor()
+    })
+  ];
+
+  let framework: TestFramework;
+  beforeEach(async () => {
+    framework = await initTestFramework();
+    baseEvents.forEach(framework.sharedReadModel.updateState);
+  });
+  afterEach(() => {
+    framework.close();
+  });
 
   it.each([
     [
@@ -36,12 +116,7 @@ describe('isEquipmentOwner', () => {
       'super user',
       false,
       {tag: 'user', user: userToBeSuperUser} satisfies Actor,
-      [
-        constructEvent('SuperUserDeclared')({
-          memberNumber: userToBeSuperUser.memberNumber,
-          actor: arbitraryActor(),
-        }),
-      ],
+      [],
       equipmentId,
     ],
     [
@@ -49,10 +124,6 @@ describe('isEquipmentOwner', () => {
       false,
       {tag: 'user', user: userToBeSuperUser} satisfies Actor,
       [
-        constructEvent('SuperUserDeclared')({
-          memberNumber: userToBeSuperUser.memberNumber,
-          actor: arbitraryActor(),
-        }),
         constructEvent('SuperUserRevoked')({
           memberNumber: userToBeSuperUser.memberNumber,
           actor: arbitraryActor(),
@@ -65,10 +136,6 @@ describe('isEquipmentOwner', () => {
       false,
       {tag: 'user', user: userToBeSuperUser} satisfies Actor,
       [
-        constructEvent('SuperUserDeclared')({
-          memberNumber: userToBeSuperUser.memberNumber,
-          actor: arbitraryActor(),
-        }),
         constructEvent('SuperUserRevoked')({
           memberNumber: userToBeSuperUser.memberNumber,
           actor: arbitraryActor(),
@@ -83,7 +150,7 @@ describe('isEquipmentOwner', () => {
     [
       'other user',
       false,
-      {tag: 'user', user: arbitraryUser()} satisfies Actor,
+      {tag: 'user', user: randomUser} satisfies Actor,
       [],
       equipmentId,
     ],
@@ -91,55 +158,24 @@ describe('isEquipmentOwner', () => {
       'area owner',
       true,
       {tag: 'user', user: areaOwner} satisfies Actor,
-      [
-        constructEvent('OwnerAdded')({
-          memberNumber: areaOwner.memberNumber,
-          actor: arbitraryActor(),
-          areaId,
-        }),
-      ],
+      [],
       equipmentId,
     ],
     [
       'area owner on different area',
       false,
       {tag: 'user', user: areaOwner2} satisfies Actor,
-      [
-        constructEvent('AreaCreated')({
-          name: 'area2',
-          id: areaId2,
-          actor: arbitraryActor(),
-        }),
-        constructEvent('EquipmentAdded')({
-          name: 'equipment2',
-          id: equipmentId2,
-          areaId: areaId2,
-          actor: arbitraryActor(),
-        }),
-        constructEvent('OwnerAdded')({
-          memberNumber: areaOwner2.memberNumber,
-          areaId: areaId2,
-          actor: arbitraryActor(),
-        }),
-      ],
+      [],
       equipmentId,
     ],
   ])('%s: %s', (_, expected, actor, events: DomainEvent[], equipmentId) => {
-    const eventsWithEquipment: DomainEvent[] = [
-      constructEvent('AreaCreated')({
-        name: 'area',
-        id: areaId,
-        actor: arbitraryActor(),
-      }),
-      constructEvent('EquipmentAdded')({
-        name: 'equipment',
-        id: equipmentId,
-        areaId,
-        actor: arbitraryActor(),
-      }),
-    ];
+    events.forEach(framework.sharedReadModel.updateState);
     expect(
-      isEquipmentOwner(equipmentId)(actor, eventsWithEquipment.concat(events))
+      isEquipmentOwner({
+        actor,
+        rm: framework.sharedReadModel,
+        input: {equipmentId}
+      })
     ).toBe(expected);
   });
 });
