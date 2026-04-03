@@ -15,12 +15,13 @@ export const isEquipmentTrainer =
     if (input.actor.tag !== 'user') {
       return false;
     }
+    const actorMemberNumber = input.actor.user.memberNumber;
     return pipe(
-      input.actor.user.memberNumber,
-      input.rm.members.get,
+      input.input.equipmentId,
+      input.rm.equipment.get,
       O.match(
         () => false,
-        m => m.trainerFor.some(t => t.equipment_id === input.input.equipmentId)
-      ),
+        e => e.trainers.some(t => t.memberNumber === actorMemberNumber)
+      )
     );
   };

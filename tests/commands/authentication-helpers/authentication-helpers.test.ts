@@ -152,9 +152,7 @@ describe('authentication helpers', () => {
                 expect(isEquipmentTrainer({
                     actor: actorTestCase.actor,
                     rm: framework.sharedReadModel,
-                    input: {
-                        equipmentId: equipment1.id
-                    }
+                    input
                 })).toBe(actorTestCase.isEquipmentTrainer);
             });
             it('isSelfOrPrivileged', () => {
