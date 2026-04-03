@@ -1,4 +1,3 @@
-import { pipe } from "fp-ts/lib/function";
 import * as O from 'fp-ts/Option';
 import { SharedReadModel } from "../../read-models/shared-state";
 import { Actor } from "../../types";

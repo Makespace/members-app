@@ -341,7 +341,11 @@ export const updateState =
         db.insert(areasTable).values({id: event.id, name: event.name}).run();
         break;
       case 'AreaRemoved':
+        const areas = db.select().from(areasTable).all();
+        const equipment = db.select().from(equipmentTable).all();
         db.delete(areasTable).where(eq(areasTable.id, event.id)).run();
+        const areas2 = db.select().from(areasTable).all();
+        const equipment2 = db.select().from(equipmentTable).all();
         break;
       case 'AreaEmailUpdated':
         db.update(areasTable)
