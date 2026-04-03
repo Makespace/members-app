@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { Actor, constructEvent } from "../../../src/types";
-import { arbitraryActor } from "../../helpers";
+import { arbitraryActor, systemActor } from "../../helpers";
 import { initTestFramework, TestFramework } from "../../read-models/test-framework";
 import { UUID } from "io-ts-types";
 import { arbitraryUser } from "../../types/user.helper";
@@ -12,6 +12,7 @@ import { isAdminOrSuperUser } from "../../../src/commands/authentication-helpers
 import { isEquipmentOwner } from "../../../src/commands/authentication-helpers/is-equipment-owner";
 import { isSelfOrPrivileged } from "../../../src/commands/authentication-helpers/is-self-or-privileged";
 import { isSelf } from "../../../src/commands/authentication-helpers/is-self";
+import { EquipmentId } from "../../../src/types/equipment-id";
 
 
 describe('authentication helpers', () => {
@@ -40,6 +41,8 @@ describe('authentication helpers', () => {
 
     const userToBeSuperUser = arbitraryUser();
     const randomUser = arbitraryUser();
+    const unlinkedUser = arbitraryUser();
+    const missingEquipmentId = faker.string.uuid() as UUID;
 
     const baseEvents = [
         ...[
@@ -93,16 +96,19 @@ describe('authentication helpers', () => {
     });
 
     const authenticateHelperTest = (
-        memberNumber: number,
+        input: {
+            memberNumber: number,
+            equipmentId: EquipmentId,
+        },
         actors: {
             actorName: string,
             actor: Actor,
-            isAdminSuperUserOrTrainerOrOwnerForEquipment1: boolean,
-            isAdminSuperUserOrTrainerForEquipment1: boolean,
-            isAdminSuperUserOrOwnerForEquipment1: boolean,
+            isAdminSuperUserOrTrainerOrOwnerForEquipment: boolean,
+            isAdminSuperUserOrTrainerForEquipment: boolean,
+            isAdminSuperUserOrOwnerForEquipment: boolean,
             isAdminOrSuperUser: boolean,
-            isEquipment1Owner: boolean,
-            isEquipment1Trainer: boolean,
+            isEquipmentOwner: boolean,
+            isEquipmentTrainer: boolean,
             isSelfOrPrivileged: boolean,
             isSelf: boolean,
         }[]
@@ -112,28 +118,22 @@ describe('authentication helpers', () => {
                 expect(isAdminSuperUserOrTrainerOrOwnerForEquipment({
                     actor: actorTestCase.actor,
                     rm: framework.sharedReadModel,
-                    input: {
-                        equipmentId: equipment1.id
-                    }
-                })).toBe(actorTestCase.isAdminSuperUserOrTrainerOrOwnerForEquipment1);
+                    input
+                })).toBe(actorTestCase.isAdminSuperUserOrTrainerOrOwnerForEquipment);
             });
             it('isAdminSuperUserOrTrainerForEquipment', () => {
                 expect(isAdminSuperUserOrTrainerForEquipment({
                     actor: actorTestCase.actor,
                     rm: framework.sharedReadModel,
-                    input: {
-                        equipmentId: equipment1.id
-                    }
-                })).toBe(actorTestCase.isAdminSuperUserOrTrainerForEquipment1);
+                    input
+                })).toBe(actorTestCase.isAdminSuperUserOrTrainerForEquipment);
             });
             it('isAdminSuperUserOrOwnerForEquipment', () => {
                 expect(isAdminSuperUserOrOwnerForEquipment({
                     actor: actorTestCase.actor,
                     rm: framework.sharedReadModel,
-                    input: {
-                        equipmentId: equipment1.id
-                    }
-                })).toBe(actorTestCase.isAdminSuperUserOrOwnerForEquipment1);
+                    input
+                })).toBe(actorTestCase.isAdminSuperUserOrOwnerForEquipment);
             });
             it('isAdminOrSuperUser', () => {
                 expect(isAdminOrSuperUser({
@@ -145,10 +145,8 @@ describe('authentication helpers', () => {
                 expect(isEquipmentOwner({
                     actor: actorTestCase.actor,
                     rm: framework.sharedReadModel,
-                    input: {
-                        equipmentId: equipment1.id
-                    }
-                })).toBe(actorTestCase.isEquipment1Owner);
+                    input
+                })).toBe(actorTestCase.isEquipmentOwner);
             });
             it('isEquipmentTrainer', () => {
                 expect(isEquipmentTrainer({
@@ -157,94 +155,321 @@ describe('authentication helpers', () => {
                     input: {
                         equipmentId: equipment1.id
                     }
-                })).toBe(actorTestCase.isEquipment1Trainer);
+                })).toBe(actorTestCase.isEquipmentTrainer);
             });
             it('isSelfOrPrivileged', () => {
                 expect(isSelfOrPrivileged({
                     actor: actorTestCase.actor,
                     rm: framework.sharedReadModel,
-                    input: {
-                        memberNumber
-                    }
+                    input
                 })).toBe(actorTestCase.isSelfOrPrivileged);
             });
             it('isSelf', () => {
                 expect(isSelf({
                     actor: actorTestCase.actor,
                     rm: framework.sharedReadModel,
-                    input: {
-                        memberNumber
-                    },
+                    input
                 })).toBe(actorTestCase.isSelf);
             });
         })
     );
 
     authenticateHelperTest(
-        equipment1Trainer.memberNumber,
+        {
+            equipmentId: equipment1.id,
+            memberNumber: equipment1Trainer.memberNumber,
+        },
         [
             {
                 actorName: "admin via token",
                 actor: {tag: 'token', token: 'admin'} satisfies Actor,
-                isAdminSuperUserOrTrainerOrOwnerForEquipment1: true,
-                isAdminSuperUserOrTrainerForEquipment1: true,
-                isAdminSuperUserOrOwnerForEquipment1: true,
+                isAdminSuperUserOrTrainerOrOwnerForEquipment: true,
+                isAdminSuperUserOrTrainerForEquipment: true,
+                isAdminSuperUserOrOwnerForEquipment: true,
                 isAdminOrSuperUser: true,
-                isEquipment1Owner: false,
-                isEquipment1Trainer: false,
+                isEquipmentOwner: false,
+                isEquipmentTrainer: false,
                 isSelfOrPrivileged: true,
+                isSelf: false
+            },
+            {
+                actorName: "system",
+                actor: systemActor(),
+                isAdminSuperUserOrTrainerOrOwnerForEquipment: false,
+                isAdminSuperUserOrTrainerForEquipment: false,
+                isAdminSuperUserOrOwnerForEquipment: false,
+                isAdminOrSuperUser: false,
+                isEquipmentOwner: false,
+                isEquipmentTrainer: false,
+                isSelfOrPrivileged: false,
                 isSelf: false
             },
             {
                 actorName: "super user",
                 actor: {tag: 'user', user: userToBeSuperUser} satisfies Actor,
-                isAdminSuperUserOrTrainerOrOwnerForEquipment1: true,
-                isAdminSuperUserOrTrainerForEquipment1: true,
-                isAdminSuperUserOrOwnerForEquipment1: true,
+                isAdminSuperUserOrTrainerOrOwnerForEquipment: true,
+                isAdminSuperUserOrTrainerForEquipment: true,
+                isAdminSuperUserOrOwnerForEquipment: true,
                 isAdminOrSuperUser: true,
-                isEquipment1Owner: false,
-                isEquipment1Trainer: false,
+                isEquipmentOwner: false,
+                isEquipmentTrainer: false,
                 isSelfOrPrivileged: true,
                 isSelf: false
             },
             {
                 actorName: "random user",
                 actor: {tag: 'user', user: randomUser} satisfies Actor,
-                isAdminSuperUserOrTrainerOrOwnerForEquipment1: false,
-                isAdminSuperUserOrTrainerForEquipment1: false,
-                isAdminSuperUserOrOwnerForEquipment1: false,
+                isAdminSuperUserOrTrainerOrOwnerForEquipment: false,
+                isAdminSuperUserOrTrainerForEquipment: false,
+                isAdminSuperUserOrOwnerForEquipment: false,
                 isAdminOrSuperUser: false,
-                isEquipment1Owner: false,
-                isEquipment1Trainer: false,
+                isEquipmentOwner: false,
+                isEquipmentTrainer: false,
                 isSelfOrPrivileged: false,
                 isSelf: false
             },
             {
                 actorName: "area 1 owner",
                 actor: {tag: 'user', user: area1Owner} satisfies Actor,
-                isAdminSuperUserOrTrainerOrOwnerForEquipment1: true,
-                isAdminSuperUserOrTrainerForEquipment1: false,
-                isAdminSuperUserOrOwnerForEquipment1: true,
+                isAdminSuperUserOrTrainerOrOwnerForEquipment: true,
+                isAdminSuperUserOrTrainerForEquipment: false,
+                isAdminSuperUserOrOwnerForEquipment: true,
                 isAdminOrSuperUser: false,
-                isEquipment1Owner: true,
-                isEquipment1Trainer: false,
+                isEquipmentOwner: true,
+                isEquipmentTrainer: false,
+                isSelfOrPrivileged: false,
+                isSelf: false
+            },
+            {
+                actorName: "area 2 owner",
+                actor: {tag: 'user', user: area2Owner} satisfies Actor,
+                isAdminSuperUserOrTrainerOrOwnerForEquipment: false,
+                isAdminSuperUserOrTrainerForEquipment: false,
+                isAdminSuperUserOrOwnerForEquipment: false,
+                isAdminOrSuperUser: false,
+                isEquipmentOwner: false,
+                isEquipmentTrainer: false,
                 isSelfOrPrivileged: false,
                 isSelf: false
             },
             {
                 actorName: "equipment 1 trainer",
                 actor: {tag: 'user', user: equipment1Trainer} satisfies Actor,
-                isAdminSuperUserOrTrainerOrOwnerForEquipment1: true,
-                isAdminSuperUserOrTrainerForEquipment1: true,
-                isAdminSuperUserOrOwnerForEquipment1: true,
+                isAdminSuperUserOrTrainerOrOwnerForEquipment: true,
+                isAdminSuperUserOrTrainerForEquipment: true,
+                isAdminSuperUserOrOwnerForEquipment: true,
                 isAdminOrSuperUser: false,
-                isEquipment1Owner: true,
-                isEquipment1Trainer: true,
+                isEquipmentOwner: true,
+                isEquipmentTrainer: true,
                 isSelfOrPrivileged: true,
                 isSelf: true
             }
         ]
     );
+
+    authenticateHelperTest(
+        // Unregistered users should never return true when authing.
+        // Even if self.
+        {
+            equipmentId: equipment1.id,
+            memberNumber: unlinkedUser.memberNumber
+        },
+        [
+            {
+                actorName: "unlinked user as self",
+                actor: {tag: 'user', user: unlinkedUser} satisfies Actor,
+                isAdminSuperUserOrTrainerOrOwnerForEquipment: false,
+                isAdminSuperUserOrTrainerForEquipment: false,
+                isAdminSuperUserOrOwnerForEquipment: false,
+                isAdminOrSuperUser: false,
+                isEquipmentOwner: false,
+                isEquipmentTrainer: false,
+                isSelfOrPrivileged: false,
+                isSelf: false
+            }
+        ]
+    );
+
+    describe('missing equipment', () => {
+        authenticateHelperTest(
+            {
+                memberNumber: equipment1Trainer.memberNumber,
+                equipmentId: missingEquipmentId,
+            },
+            [
+                {
+                    actorName: "admin via token",
+                    actor: {tag: 'token', token: 'admin'} satisfies Actor,
+                    isAdminSuperUserOrTrainerOrOwnerForEquipment: true,
+                    isAdminSuperUserOrTrainerForEquipment: true,
+                    isAdminSuperUserOrOwnerForEquipment: true,
+                    isAdminOrSuperUser: true,
+                    isEquipmentOwner: false,
+                    isEquipmentTrainer: false,
+                    isSelfOrPrivileged: true,
+                    isSelf: false
+                },
+                {
+                    actorName: "system",
+                    actor: systemActor(),
+                    isAdminSuperUserOrTrainerOrOwnerForEquipment: false,
+                    isAdminSuperUserOrTrainerForEquipment: false,
+                    isAdminSuperUserOrOwnerForEquipment: false,
+                    isAdminOrSuperUser: false,
+                    isEquipmentOwner: false,
+                    isEquipmentTrainer: false,
+                    isSelfOrPrivileged: false,
+                    isSelf: false
+                },
+                {
+                    actorName: "super user",
+                    actor: {tag: 'user', user: userToBeSuperUser} satisfies Actor,
+                    isAdminSuperUserOrTrainerOrOwnerForEquipment: true,
+                    isAdminSuperUserOrTrainerForEquipment: true,
+                    isAdminSuperUserOrOwnerForEquipment: true,
+                    isAdminOrSuperUser: true,
+                    isEquipmentOwner: false,
+                    isEquipmentTrainer: false,
+                    isSelfOrPrivileged: true,
+                    isSelf: false
+                },
+                {
+                    actorName: "area 1 owner",
+                    actor: {tag: 'user', user: area1Owner} satisfies Actor,
+                    isAdminSuperUserOrTrainerOrOwnerForEquipment: false,
+                    isAdminSuperUserOrTrainerForEquipment: false,
+                    isAdminSuperUserOrOwnerForEquipment: false,
+                    isAdminOrSuperUser: false,
+                    isEquipmentOwner: false,
+                    isEquipmentTrainer: false,
+                    isSelfOrPrivileged: false,
+                    isSelf: false
+                },
+                {
+                    actorName: "equipment 1 trainer",
+                    actor: {tag: 'user', user: equipment1Trainer} satisfies Actor,
+                    isAdminSuperUserOrTrainerOrOwnerForEquipment: false,
+                    isAdminSuperUserOrTrainerForEquipment: false,
+                    isAdminSuperUserOrOwnerForEquipment: false,
+                    isAdminOrSuperUser: false,
+                    isEquipmentOwner: false,
+                    isEquipmentTrainer: false,
+                    isSelfOrPrivileged: true,
+                    isSelf: true
+                }
+            ]
+        );
+    });
+
+    describe('area 1 owner removed', () => {
+        beforeEach(() => {
+            framework.sharedReadModel.updateState(
+                constructEvent('OwnerRemoved')({
+                    memberNumber: area1Owner.memberNumber,
+                    actor: arbitraryActor(),
+                    areaId: area1.id,
+                })
+            );
+        });
+
+        authenticateHelperTest(
+            {
+                equipmentId: equipment1.id,
+                memberNumber: equipment1Trainer.memberNumber,
+            },
+            [
+                {
+                    actorName: "area 1 owner",
+                    actor: {tag: 'user', user: area1Owner} satisfies Actor,
+                    isAdminSuperUserOrTrainerOrOwnerForEquipment: false,
+                    isAdminSuperUserOrTrainerForEquipment: false,
+                    isAdminSuperUserOrOwnerForEquipment: false,
+                    isAdminOrSuperUser: false,
+                    isEquipmentOwner: false,
+                    isEquipmentTrainer: false,
+                    isSelfOrPrivileged: false,
+                    isSelf: false
+                },
+            ]
+        );
+    });
+
+    describe('equipment 1 trainer owner removed', () => {
+        beforeEach(() => {
+            framework.sharedReadModel.updateState(
+                constructEvent('OwnerRemoved')({
+                    memberNumber: equipment1Trainer.memberNumber,
+                    actor: arbitraryActor(),
+                    areaId: area1.id,
+                })
+            );
+        });
+
+        authenticateHelperTest(
+            {
+                equipmentId: equipment1.id,
+                memberNumber: equipment1Trainer.memberNumber,
+            },
+            [
+                {
+                    actorName: "equipment 1 trainer",
+                    actor: {tag: 'user', user: equipment1Trainer} satisfies Actor,
+                    isAdminSuperUserOrTrainerOrOwnerForEquipment: false,
+                    isAdminSuperUserOrTrainerForEquipment: false,
+                    isAdminSuperUserOrOwnerForEquipment: false,
+                    isAdminOrSuperUser: false,
+                    isEquipmentOwner: false,
+                    isEquipmentTrainer: false, // You must be an owner to be a trainer
+                    isSelfOrPrivileged: true,
+                    isSelf: true
+                },
+            ]
+        );
+    });
+
+    describe('area removed', () => {
+        beforeEach(() => {
+            framework.sharedReadModel.updateState(
+                constructEvent('AreaRemoved')({
+                    id: area1.id,
+                    actor: arbitraryActor(),
+                })
+            );
+        });
+
+        authenticateHelperTest(
+            {
+                equipmentId: equipment1.id,
+                memberNumber: equipment1Trainer.memberNumber,
+            },
+            [
+                {
+                    actorName: "area 1 owner",
+                    actor: {tag: 'user', user: area1Owner} satisfies Actor,
+                    isAdminSuperUserOrTrainerOrOwnerForEquipment: false,
+                    isAdminSuperUserOrTrainerForEquipment: false,
+                    isAdminSuperUserOrOwnerForEquipment: false,
+                    isAdminOrSuperUser: false,
+                    isEquipmentOwner: false,
+                    isEquipmentTrainer: false,
+                    isSelfOrPrivileged: false,
+                    isSelf: false
+                },
+                {
+                    actorName: "equipment 1 trainer",
+                    actor: {tag: 'user', user: equipment1Trainer} satisfies Actor,
+                    isAdminSuperUserOrTrainerOrOwnerForEquipment: false,
+                    isAdminSuperUserOrTrainerForEquipment: false,
+                    isAdminSuperUserOrOwnerForEquipment: false,
+                    isAdminOrSuperUser: false,
+                    isEquipmentOwner: false,
+                    isEquipmentTrainer: false,
+                    isSelfOrPrivileged: true,
+                    isSelf: true
+                },
+            ]
+        );
+    });
 
     describe('revoked super user', () => {
         beforeEach(() => {
@@ -257,17 +482,20 @@ describe('authentication helpers', () => {
         });
 
         authenticateHelperTest(
-            equipment1Trainer.memberNumber,
+            {
+                equipmentId: equipment1.id,
+                memberNumber: equipment1Trainer.memberNumber,
+            },
             [
                 {
                     actorName: "revoked super user",
                     actor: {tag: 'user', user: userToBeSuperUser} satisfies Actor,
-                    isAdminSuperUserOrTrainerOrOwnerForEquipment1: false,
-                    isAdminSuperUserOrTrainerForEquipment1: false,
-                    isAdminSuperUserOrOwnerForEquipment1: false,
+                    isAdminSuperUserOrTrainerOrOwnerForEquipment: false,
+                    isAdminSuperUserOrTrainerForEquipment: false,
+                    isAdminSuperUserOrOwnerForEquipment: false,
                     isAdminOrSuperUser: false,
-                    isEquipment1Owner: false,
-                    isEquipment1Trainer: false,
+                    isEquipmentOwner: false,
+                    isEquipmentTrainer: false,
                     isSelfOrPrivileged: false,
                     isSelf: false
                 },
@@ -285,17 +513,20 @@ describe('authentication helpers', () => {
             });
 
             authenticateHelperTest(
-                equipment1Trainer.memberNumber,
+                {
+                    equipmentId: equipment1.id,
+                    memberNumber: equipment1Trainer.memberNumber,
+                },
                 [
                     {
                         actorName: "reinstated super user",
                         actor: {tag: 'user', user: userToBeSuperUser} satisfies Actor,
-                        isAdminSuperUserOrTrainerOrOwnerForEquipment1: true,
-                        isAdminSuperUserOrTrainerForEquipment1: true,
-                        isAdminSuperUserOrOwnerForEquipment1: true,
+                        isAdminSuperUserOrTrainerOrOwnerForEquipment: true,
+                        isAdminSuperUserOrTrainerForEquipment: true,
+                        isAdminSuperUserOrOwnerForEquipment: true,
                         isAdminOrSuperUser: true,
-                        isEquipment1Owner: false,
-                        isEquipment1Trainer: false,
+                        isEquipmentOwner: false,
+                        isEquipmentTrainer: false,
                         isSelfOrPrivileged: true,
                         isSelf: false
                     },
