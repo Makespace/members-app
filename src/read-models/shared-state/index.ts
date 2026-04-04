@@ -78,7 +78,7 @@ export const initSharedReadModel = (
 
   createTables.forEach(statement => readModelDb.run(statement));
   const linking = new MemberLinking();
-  const updateState_ = updateState(readModelDb, linking);
+  const updateState_ = updateState(readModelDb, linking, logger);
 
   return {
     db: readModelDb,
