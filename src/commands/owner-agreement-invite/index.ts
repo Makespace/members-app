@@ -2,12 +2,12 @@ import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import * as tt from 'io-ts-types';
 import {SendEmail} from '../send-email';
-import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {pipe} from 'fp-ts/lib/function';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {Email} from '../../types';
 import {htmlEmailTemplate, textEmailTemplate} from './email-template';
+import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
 
 const codec = t.strict({
   recipient: tt.NumberFromString,

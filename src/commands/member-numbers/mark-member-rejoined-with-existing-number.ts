@@ -5,9 +5,9 @@ import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
-import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {pipe} from 'fp-ts/lib/function';
 import {EventOfType} from '../../types/domain-event';
+import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
 
 const codec = t.strict({
   memberNumber: tt.IntFromString,

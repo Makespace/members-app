@@ -6,8 +6,8 @@ import * as E from 'fp-ts/Either';
 import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
 import {Command} from '../command';
-import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {EmailAddressCodec} from '../../types/email-address';
+import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
 
 const codec = t.strict({
   id: tt.UUID,

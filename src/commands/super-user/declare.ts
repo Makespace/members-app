@@ -4,8 +4,8 @@ import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
-import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {resource} from './resource';
+import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,

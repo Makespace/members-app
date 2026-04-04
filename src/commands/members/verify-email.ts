@@ -6,8 +6,8 @@ import {Command} from '../command';
 import {EmailAddressCodec, constructEvent} from '../../types';
 import {projectMemberEmailStates} from './email-state';
 import {normaliseEmailAddress} from '../../read-models/shared-state/normalise-email-address';
-import { isAdminOrSuperUser } from '../is-admin-or-super-user';
 import {failureWithStatus} from '../../types/failure-with-status';
+import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
 
 const codec = t.strict({
   memberNumber: t.number,
@@ -60,5 +60,5 @@ export const verifyEmail: Command<VerifyMemberEmail> = {
   process,
   resource,
   decode: codec.decode,
-  isAuthorized: (args) => isAdminOrSuperUser(args),
+  isAuthorized: isAdminOrSuperUser,
 };

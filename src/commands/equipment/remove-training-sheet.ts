@@ -3,11 +3,8 @@ import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {DomainEvent, constructEvent} from '../../types';
-import {Actor} from '../../types/actor';
 import {Command, WithActor} from '../command';
-import {isAdminOrSuperUser} from '../is-admin-or-super-user';
-import {isEquipmentTrainer} from '../is-equipment-trainer';
-import {isEquipmentOwner} from '../is-equipment-owner';
+import { isAdminSuperUserOrTrainerOrOwnerForEquipment } from '../authentication-helpers/is-admin-or-super-user-or-owner-trainer';
 
 const codec = t.strict({
   equipmentId: tt.UUID,
@@ -28,18 +25,9 @@ const resource = (command: RemoveTrainingSheet) => ({
   id: command.equipmentId,
 });
 
-const isAuthorized = (input: {
-  actor: Actor;
-  events: ReadonlyArray<DomainEvent>;
-  input: RemoveTrainingSheet;
-}) =>
-  isAdminOrSuperUser(input) ||
-  isEquipmentTrainer(input.input.equipmentId)(input.actor, input.events) ||
-  isEquipmentOwner(input.input.equipmentId)(input.actor, input.events);
-
 export const removeTrainingSheet: Command<RemoveTrainingSheet> = {
   process,
   resource,
   decode: codec.decode,
-  isAuthorized,
+  isAuthorized: isAdminSuperUserOrTrainerOrOwnerForEquipment,
 };

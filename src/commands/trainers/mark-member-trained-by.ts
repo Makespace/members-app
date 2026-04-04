@@ -4,10 +4,11 @@ import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {Command, WithActor} from '../command';
-import {isAdminOrSuperUser} from '../is-admin-or-super-user';
-import {isEquipmentTrainer} from '../is-equipment-trainer';
 import {Actor} from '../../types/actor';
 import {DateTime} from 'luxon';
+import { SharedReadModel } from '../../read-models/shared-state';
+import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
+import { isEquipmentTrainer } from '../authentication-helpers/is-equipment-trainer';
 
 const codec = t.strict({
   equipmentId: tt.UUID,
@@ -54,7 +55,7 @@ const isNotInFuture = (date: Date): boolean =>
 
 const isAllowedToMarkTrainedBy = (input: {
   actor: Actor;
-  events: ReadonlyArray<DomainEvent>;
+  rm: SharedReadModel;
   input: MarkMemberTrainedBy;
 }): boolean => {
   if (input.actor.tag !== 'user')
@@ -64,7 +65,7 @@ const isAllowedToMarkTrainedBy = (input: {
   const notInFuture = isNotInFuture(input.input.trainedAt);
   const isPrivileged = isAdminOrSuperUser(input);
   const isTrainerWithValidInput =
-    isEquipmentTrainer(input.input.equipmentId)(input.actor, input.events)
+    isEquipmentTrainer(input)
     && isWithinTrainedByLimit(input.input.trainedAt)
     && input.input.trainedByMemberNumber === input.actor.user.memberNumber;
 
