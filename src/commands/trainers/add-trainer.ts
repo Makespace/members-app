@@ -1,13 +1,10 @@
-import {DomainEvent, constructEvent} from '../../types';
+import {constructEvent} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
-import {pipe} from 'fp-ts/lib/function';
 import {Command} from '../command';
-import {isAdminOrSuperUser} from '../is-admin-or-super-user';
-import {Actor} from '../../types/actor';
-import {readModels} from '../../read-models';
+import { isAdminSuperUserOrOwnerForEquipment } from '../authentication-helpers/is-admin-or-super-user-or-owner';
 
 const codec = t.strict({
   equipmentId: tt.UUID,
@@ -24,36 +21,9 @@ const resource: Command<AddTrainer>['resource'] = command => ({
   id: command.equipmentId,
 });
 
-const isOwnerOfEquipment = (
-  equipmentId: string,
-  actor: Actor,
-  events: ReadonlyArray<DomainEvent>
-) => {
-  if (actor.tag !== 'user') {
-    return false;
-  }
-  return pipe(
-    equipmentId,
-    readModels.equipment.get(events),
-    O.map(({areaId}) =>
-      readModels.areas.isOwner(events)(areaId, actor.user.memberNumber)
-    ),
-    foo => foo,
-    O.getOrElse(() => false)
-  );
-};
-
-const isAdminOrSuperUserOrEquipmentUser: Command<AddTrainer>['isAuthorized'] =
-  ({input, actor, events}) => {
-    return (
-      isAdminOrSuperUser({actor, events}) ||
-      isOwnerOfEquipment(input.equipmentId, actor, events)
-    );
-  };
-
 export const addTrainer: Command<AddTrainer> = {
   process,
   resource,
   decode: codec.decode,
-  isAuthorized: isAdminOrSuperUserOrEquipmentUser,
+  isAuthorized: isAdminSuperUserOrOwnerForEquipment,
 };

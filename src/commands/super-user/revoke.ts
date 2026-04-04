@@ -5,10 +5,10 @@ import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {pipe} from 'fp-ts/lib/function';
 import {filterByName} from '../../types/domain-event';
 import {resource} from './resource';
+import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,

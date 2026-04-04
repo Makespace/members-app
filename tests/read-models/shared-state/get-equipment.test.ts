@@ -670,18 +670,13 @@ describe('get', () => {
   });
 
   describe('Equipment added to non-existant area', () => {
-    beforeEach(async () => {
-      await framework.commands.equipment.add(addEquipment);
-    });
-
-    it('returns the equipment', () => {
-      const equipment = runQuery();
-      expect(equipment.id).toStrictEqual(addEquipment.id);
-    });
-    it('returns the area but with the name as unknown', () => {
-      const equipment = runQuery();
-      expect(equipment.area.id).toStrictEqual(createArea.id);
-      expect(equipment.area.name).toStrictEqual('unknown');
+    it('errors because equipment must have an area', async () => {
+      await expect(
+        () => framework.commands.equipment.add(addEquipment)
+      ).rejects.toThrow();
+      expect(
+        framework.sharedReadModel.equipment.get(addEquipment.id)
+      ).toStrictEqual(O.none);
     });
   });
 
