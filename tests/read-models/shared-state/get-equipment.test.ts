@@ -18,6 +18,7 @@ import {LinkNumberToEmail} from '../../../src/commands/member-numbers/link-numbe
 import {applyToResource} from '../../../src/commands/apply-command-to-resource';
 import {RevokeMemberTrained} from '../../../src/commands/trainers/revoke-member-trained';
 import {AddTrainer} from '../../../src/commands/trainers/add-trainer';
+import pino from 'pino';
 
 describe('get', () => {
   let framework: TestFramework;
@@ -628,7 +629,8 @@ describe('get', () => {
             // The legacy import inserts events directly
             const update = updateState(
               framework.sharedReadModel.db,
-              framework.sharedReadModel.linking
+              framework.sharedReadModel.linking,
+              pino({level: 'silent'})
             );
             const memberTrainedEvents: EventOfType<'MemberTrainedOnEquipment'>[] =
               [
@@ -670,10 +672,10 @@ describe('get', () => {
   });
 
   describe('Equipment added to non-existant area', () => {
-    it('errors because equipment must have an area', async () => {
-      await expect(
-        () => framework.commands.equipment.add(addEquipment)
-      ).rejects.toThrow();
+    beforeEach(async () => {
+      await framework.commands.equipment.add(addEquipment);
+    });
+    it('has no effect because equipment needs a valid area', async () => {
       expect(
         framework.sharedReadModel.equipment.get(addEquipment.id)
       ).toStrictEqual(O.none);
