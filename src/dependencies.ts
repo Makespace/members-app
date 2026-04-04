@@ -20,13 +20,13 @@ import {
   TroubleTicketDataTable,
 } from './sync-worker/google/sheet-data-table';
 import {UUID} from 'io-ts-types';
+import { Int } from 'io-ts';
 
 export type Dependencies = {
   commitEvent: (
-    resource: Resource,
-    lastKnownVersion: ResourceVersion
+    lastSeenEventIndex: Int,
   ) => (
-    event: DomainEvent
+    event: DomainEvent,
   ) => TE.TaskEither<
     FailureWithStatus,
     {status: StatusCodes.CREATED; message: string}
@@ -45,7 +45,6 @@ export type Dependencies = {
     FailureWithStatus,
     {
       events: ReadonlyArray<StoredDomainEvent>;
-      version: ResourceVersion;
     }
   >;
   sharedReadModel: SharedReadModel;
