@@ -189,7 +189,7 @@ export const eventStateTable = sqliteTable(
 
 const createEventStateTable = sql`
   CREATE TABLE IF NOT EXISTS eventStateTable (
-    currentEventIndex INTEGER NOT NULL,
+    currentEventIndex INTEGER NOT NULL
   )
 `;
 

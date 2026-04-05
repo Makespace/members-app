@@ -490,7 +490,7 @@ export function updateState (db: BetterSQLite3Database, linking: MemberLinking, 
     return (event: StoredDomainEvent) => {
       try {
         db.transaction(
-          async(tx: DatabaseTransaction) => {
+          (tx: DatabaseTransaction) => {
             _updateState(tx, linking, event);
             _updateEventState(tx, event);
           }
@@ -511,7 +511,7 @@ export function updateState (db: BetterSQLite3Database, linking: MemberLinking, 
   return (event: DomainEvent) => {
     try {
       db.transaction(
-        async(tx: DatabaseTransaction) => {
+        (tx: DatabaseTransaction) => {
           _updateState(tx, linking, event);
         }
       )
