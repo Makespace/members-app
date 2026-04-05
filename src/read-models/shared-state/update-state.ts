@@ -486,38 +486,21 @@ const _updateEventState = (tx: DatabaseTransaction, event: StoredDomainEvent) =>
 export function updateState (db: BetterSQLite3Database, linking: MemberLinking, logger: Logger, trackedEvent: true): (event: StoredDomainEvent) => void;
 export function updateState (db: BetterSQLite3Database, linking: MemberLinking, logger: Logger, trackedEvent: false): (event: DomainEvent) => void;
 export function updateState (db: BetterSQLite3Database, linking: MemberLinking, logger: Logger, trackedEvent: boolean) {
-  if (trackedEvent) {
-    return (event: StoredDomainEvent) => {
-      try {
-        db.transaction(
-          (tx: DatabaseTransaction) => {
-            _updateState(tx, linking, event);
-            _updateEventState(tx, event);
-          }
-        )
-      } catch (err) {
-        const errType = err as Error;
-        if ('code' in errType && ['SQLITE_CONSTRAINT_PRIMARYKEY', 'SQLITE_CONSTRAINT_FOREIGNKEY'].includes(errType.code as string)) {
-          logger.error(err, 'Failed to update state with event %o', event);
-          return;
-        }
-        throw err;
-      }
-    }
-  }
-
   // Update the state without updating the stored event state information
   // This should only be used for external information which isn't tracked within the main event stream.
-  return (event: DomainEvent) => {
+  return (event: StoredDomainEvent) => {
     try {
       db.transaction(
         (tx: DatabaseTransaction) => {
           _updateState(tx, linking, event);
+          if (trackedEvent) {
+            _updateEventState(tx, event);
+          }
         }
       )
     } catch (err) {
       const errType = err as Error;
-      if ('code' in errType && errType.code === 'SQLITE_CONSTRAINT_PRIMARYKEY') {
+      if ('code' in errType && ['SQLITE_CONSTRAINT_PRIMARYKEY', 'SQLITE_CONSTRAINT_FOREIGNKEY'].includes(errType.code as string)) {
         logger.error(err, 'Failed to update state with event %o', event);
         return;
       }
