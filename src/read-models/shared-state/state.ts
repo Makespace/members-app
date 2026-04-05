@@ -180,6 +180,19 @@ const createTrainingStatsNotificationTable = sql`
   )
 `;
 
+export const eventStateTable = sqliteTable(
+  'eventStateTable',
+  {
+    currentEventIndex: integer('currentEventIndex')
+  }
+);
+
+const createEventStateTable = sql`
+  CREATE TABLE IF NOT EXISTS eventStateTable (
+    currentEventIndex INTEGER,
+  )
+`;
+
 export const createTables = [
   createMembersTable,
   createMemberEmailsTable,
@@ -189,4 +202,5 @@ export const createTables = [
   createTrainedMembersTable,
   createOwnersTable,
   createTrainingStatsNotificationTable,
+  createEventStateTable,
 ];

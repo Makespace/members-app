@@ -32,6 +32,7 @@ import { TrainingSheetId } from '../../types/training-sheet';
 import { EquipmentId } from '../../types/equipment-id';
 import { getTrainingSheetIdMapping } from './equipment/get';
 import { findByEmail } from './member/get';
+import { setupEventStateTable } from './setup-event-state-table';
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
@@ -79,6 +80,8 @@ export const initSharedReadModel = (
   createTables.forEach(statement => readModelDb.run(statement));
   const linking = new MemberLinking();
   const updateState_ = updateState(readModelDb, linking, logger);
+
+  setupEventStateTable(readModelDb);
 
   return {
     db: readModelDb,
