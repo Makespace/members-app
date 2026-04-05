@@ -91,7 +91,7 @@ describe('markMemberTrainedBy authorization', () => {
   ];
 
   beforeEach(() => {
-    baseEvents.forEach(framework.sharedReadModel.updateState);
+    baseEvents.forEach(framework.insertIntoSharedReadModel);
   });
 
   it('super user can set date more than 10 years ago', () => {

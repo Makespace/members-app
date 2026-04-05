@@ -3,8 +3,6 @@ import {asyncRefresh} from '../../../src/read-models/shared-state/async-refresh'
 import {initTestFramework, TestFramework} from '../test-framework';
 import {EmailAddress} from '../../../src/types';
 import {sql} from 'drizzle-orm';
-import {updateState} from '../../../src/read-models/shared-state/update-state';
-import pino from 'pino';
 
 const arbitraryLinkNumberCommand = () => ({
   memberNumber: faker.number.int(),
@@ -21,11 +19,7 @@ describe('async-refresh', () => {
   beforeEach(async () => {
     framework = await initTestFramework();
     updateStateSpy = jest.fn(
-      updateState(
-        framework.sharedReadModel.db,
-        framework.sharedReadModel.linking,
-        pino({level: 'silent'})
-      )
+      framework.sharedReadModel.updateState
     );
     refresh = asyncRefresh(framework.eventStoreDb, updateStateSpy);
   });
