@@ -21,11 +21,7 @@ describe('async-refresh', () => {
   beforeEach(async () => {
     framework = await initTestFramework();
     updateStateSpy = jest.fn(
-      updateState(
-        framework.sharedReadModel.db,
-        framework.sharedReadModel.linking,
-        pino({level: 'silent'})
-      )
+      framework.sharedReadModel.updateState
     );
     refresh = asyncRefresh(framework.eventStoreDb, updateStateSpy);
   });

@@ -627,11 +627,6 @@ describe('get', () => {
         describe(`Duplicate events: ${name}`, () => {
           beforeEach(() => {
             // The legacy import inserts events directly
-            const update = updateState(
-              framework.sharedReadModel.db,
-              framework.sharedReadModel.linking,
-              pino({level: 'silent'})
-            );
             const memberTrainedEvents: EventOfType<'MemberTrainedOnEquipment'>[] =
               [
                 {
@@ -652,7 +647,7 @@ describe('get', () => {
                 recordedAt,
                 ...partialEvent,
               }));
-            memberTrainedEvents.forEach(update);
+            memberTrainedEvents.forEach(framework.insertIntoSharedReadModel);
           });
           const getEquipment = (id: UUID) =>
             getSomeOrFail(framework.sharedReadModel.equipment.get(id));

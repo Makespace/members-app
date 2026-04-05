@@ -183,13 +183,13 @@ const createTrainingStatsNotificationTable = sql`
 export const eventStateTable = sqliteTable(
   'eventStateTable',
   {
-    currentEventIndex: integer('currentEventIndex')
+    currentEventIndex: integer('currentEventIndex').notNull()
   }
 );
 
 const createEventStateTable = sql`
   CREATE TABLE IF NOT EXISTS eventStateTable (
-    currentEventIndex INTEGER,
+    currentEventIndex INTEGER NOT NULL,
   )
 `;
 

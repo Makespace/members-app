@@ -15,7 +15,7 @@ import {updateState} from './update-state';
 import {Logger} from 'pino';
 import {asyncApplyExternalEventSources} from './async-apply-external-event-sources';
 import {UUID} from 'io-ts-types';
-import {EmailAddress, User} from '../../types';
+import {EmailAddress, StoredDomainEvent, User} from '../../types';
 import {getAllEquipmentFull, getEquipmentFull} from './equipment/helpers';
 import {getAllAreaFull, getAreaFull} from './area/helpers';
 import {
@@ -33,6 +33,8 @@ import { EquipmentId } from '../../types/equipment-id';
 import { getTrainingSheetIdMapping } from './equipment/get';
 import { findByEmail } from './member/get';
 import { setupEventStateTable } from './setup-event-state-table';
+import { getCurrentEventIndex } from './get-current-event-index';
+import { Int } from 'io-ts';
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
@@ -41,7 +43,8 @@ export type SharedReadModel = {
   linking: MemberLinking;
   asyncRefresh: () => T.Task<void>;
   asyncApplyExternalEventSources: () => T.Task<void>;
-  updateState: ReturnType<typeof updateState>;
+  updateState: (event: StoredDomainEvent) => void;
+  getCurrentEventIndex: () => Int;
   members: {
     get: (memberNumber: number) => O.Option<Member>;
     getAll: () => ReadonlyArray<Member>;
@@ -79,7 +82,7 @@ export const initSharedReadModel = (
 
   createTables.forEach(statement => readModelDb.run(statement));
   const linking = new MemberLinking();
-  const updateState_ = updateState(readModelDb, linking, logger);
+  const updateState_ = updateState(readModelDb, linking, logger, true);
 
   setupEventStateTable(readModelDb);
 
@@ -93,9 +96,10 @@ export const initSharedReadModel = (
     asyncApplyExternalEventSources: asyncApplyExternalEventSources(
       logger,
       readModelDb,
-      updateState_,
+      updateState(readModelDb, linking, logger, false),
       recurlyToken
     ),
+    getCurrentEventIndex: getCurrentEventIndex(readModelDb),
     members: {
       get: getMemberFull(readModelDb, linking),
       getAll: getAllMemberFull(readModelDb, linking),
