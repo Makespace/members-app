@@ -98,11 +98,12 @@ const createTrainersTable = sql`
 
 export const trainedMemberstable = sqliteTable('trainedMembers', {
   memberNumber: integer('memberNumber')
-    .notNull()
-    .references(() => membersTable.memberNumber, { onDelete: 'cascade' }),
+    .notNull(),
+    // Temporarily disabled due to memberlinking complexity around the member number foreign key.
+    // .references(() => membersTable.memberNumber, { onDelete: 'cascade' }),
   equipmentId: text('equipmentId')
-    .notNull()
-    .references(() => equipmentTable.id, { onDelete: 'cascade' }),
+    .notNull(),
+    // .references(() => equipmentTable.id, { onDelete: 'cascade' }),
   trainedAt: integer('trainedAt', {mode: 'timestamp'}).notNull(),
   trainedByMemberNumber: integer('trainedByMemberNumber'),
   legacyImport: integer('legacyImport', {mode: 'boolean'})
@@ -118,9 +119,7 @@ const createTrainedMembersTable = sql`
     trainedAt INTEGER,
     trainedByMemberNumber INTEGER,
     legacyImport INTEGER,
-    markTrainedByActor TEXT,
-    FOREIGN KEY(memberNumber) REFERENCES members(memberNumber) ON DELETE CASCADE,
-    FOREIGN KEY(equipmentId) REFERENCES equipment(id) ON DELETE CASCADE
+    markTrainedByActor TEXT
   )
 `;
 
