@@ -89,7 +89,7 @@ describe('authentication helpers', () => {
     let framework: TestFramework;
     beforeEach(async () => {
         framework = await initTestFramework();
-        baseEvents.forEach(framework.sharedReadModel.updateState);
+        baseEvents.forEach(framework.insertIntoSharedReadModel);
     });
     afterEach(() => {
         framework.close();
@@ -361,7 +361,7 @@ describe('authentication helpers', () => {
 
     describe('area 1 owner removed', () => {
         beforeEach(() => {
-            framework.sharedReadModel.updateState(
+            framework.insertIntoSharedReadModel(
                 constructEvent('OwnerRemoved')({
                     memberNumber: area1Owner.memberNumber,
                     actor: arbitraryActor(),
@@ -394,7 +394,7 @@ describe('authentication helpers', () => {
 
     describe('equipment 1 trainer owner removed', () => {
         beforeEach(() => {
-            framework.sharedReadModel.updateState(
+            framework.insertIntoSharedReadModel(
                 constructEvent('OwnerRemoved')({
                     memberNumber: equipment1Trainer.memberNumber,
                     actor: arbitraryActor(),
@@ -427,7 +427,7 @@ describe('authentication helpers', () => {
 
     describe('area removed', () => {
         beforeEach(() => {
-            framework.sharedReadModel.updateState(
+            framework.insertIntoSharedReadModel(
                 constructEvent('AreaRemoved')({
                     id: area1.id,
                     actor: arbitraryActor(),
@@ -471,7 +471,7 @@ describe('authentication helpers', () => {
 
     describe('revoked super user', () => {
         beforeEach(() => {
-            framework.sharedReadModel.updateState(
+            framework.insertIntoSharedReadModel(
                 constructEvent('SuperUserRevoked')({
                     memberNumber: userToBeSuperUser.memberNumber,
                     actor: arbitraryActor(),
@@ -502,7 +502,7 @@ describe('authentication helpers', () => {
 
         describe('reinstated super user', () => {
             beforeEach(() => {
-                framework.sharedReadModel.updateState(
+                framework.insertIntoSharedReadModel(
                     constructEvent('SuperUserDeclared')({
                         memberNumber: userToBeSuperUser.memberNumber,
                         actor: arbitraryActor(),

@@ -15,7 +15,7 @@ import {commitEvent} from '../../src/init-dependencies/event-store/commit-event'
 import {arbitraryActor, getRightOrFail} from '../helpers';
 import * as libsqlClient from '@libsql/client';
 import {getResourceEvents} from '../../src/init-dependencies/event-store/get-resource-events';
-import {EventName, EventOfType} from '../../src/types/domain-event';
+import {EventName, EventOfType, StoredDomainEvent} from '../../src/types/domain-event';
 import {Dependencies} from '../../src/dependencies';
 import {applyToResource} from '../../src/commands/apply-command-to-resource';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
@@ -28,6 +28,8 @@ import {lastSync} from '../../src/sync-worker/db/last_sync';
 import {getSheetData, getSheetDataByMemberNumber} from '../../src/sync-worker/db/get_sheet_data';
 import {TrainingSummaryDeps} from '../../src/sync-worker/training-summary/training-summary-deps';
 import {NonEmptyString} from 'io-ts-types/lib/NonEmptyString';
+import { faker } from '@faker-js/faker';
+import { UUID } from 'io-ts-types';
 
 const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
 
@@ -63,7 +65,20 @@ export type TestFramework = {
   getSheetData: Dependencies['getSheetData'];
   getSheetDataByMemberNumber: Dependencies['getSheetDataByMemberNumber'];
   trainingSummaryDeps: TrainingSummaryDeps;
+  insertIntoSharedReadModel: (event: DomainEvent) => StoredDomainEvent;
 };
+
+const insertIntoSharedReadModel = (rm: Dependencies['sharedReadModel']) => (event: DomainEvent): StoredDomainEvent => {
+  // Test helper to update the shared read model with an event with the event index and id automatically generated.
+  // This essentially does a DomainEvent -> StoredDomainEvent conversion and then inserts the result.
+  const storedEvent = {
+    ...event,
+    event_id: faker.string.uuid() as UUID,
+    event_index: rm.getCurrentEventIndex() + 1,
+  };
+  rm.updateState(storedEvent);
+  return storedEvent;
+}
 
 export const initTestFramework = async (): Promise<TestFramework> => {
   const logger = createLogger({level: 'silent'});
@@ -197,5 +212,6 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         PUBLIC_URL: 'https://localhost' as NonEmptyString,
       },
     },
+    insertIntoSharedReadModel: insertIntoSharedReadModel(sharedReadModel),
   };
 };

@@ -7,7 +7,6 @@ import {getRightOrFail, getSomeOrFail} from '../../helpers';
 
 import {Actor, EmailAddress} from '../../../src/types';
 import {Int} from 'io-ts';
-import {updateState} from '../../../src/read-models/shared-state/update-state';
 import {EventOfType} from '../../../src/types/domain-event';
 import {
   markMemberTrainedBy,
@@ -18,7 +17,6 @@ import {LinkNumberToEmail} from '../../../src/commands/member-numbers/link-numbe
 import {applyToResource} from '../../../src/commands/apply-command-to-resource';
 import {RevokeMemberTrained} from '../../../src/commands/trainers/revoke-member-trained';
 import {AddTrainer} from '../../../src/commands/trainers/add-trainer';
-import pino from 'pino';
 
 describe('get', () => {
   let framework: TestFramework;
@@ -627,11 +625,6 @@ describe('get', () => {
         describe(`Duplicate events: ${name}`, () => {
           beforeEach(() => {
             // The legacy import inserts events directly
-            const update = updateState(
-              framework.sharedReadModel.db,
-              framework.sharedReadModel.linking,
-              pino({level: 'silent'})
-            );
             const memberTrainedEvents: EventOfType<'MemberTrainedOnEquipment'>[] =
               [
                 {
@@ -652,7 +645,7 @@ describe('get', () => {
                 recordedAt,
                 ...partialEvent,
               }));
-            memberTrainedEvents.forEach(update);
+            memberTrainedEvents.forEach(framework.insertIntoSharedReadModel);
           });
           const getEquipment = (id: UUID) =>
             getSomeOrFail(framework.sharedReadModel.equipment.get(id));
