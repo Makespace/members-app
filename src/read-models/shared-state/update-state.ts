@@ -7,6 +7,7 @@ import {
   areasTable,
   equipmentTable,
   eventStateTable,
+  failedEventsTable,
   memberEmailsTable,
   membersTable,
   ownersTable,
@@ -20,8 +21,8 @@ import {isOwnerOfAreaContainingEquipment} from './area/helpers';
 import {pipe} from 'fp-ts/lib/function';
 import {MemberLinking} from './member-linking';
 import {normaliseEmailAddress} from './normalise-email-address';
-import { Logger } from 'pino';
-import { SQLiteTransaction } from 'drizzle-orm/sqlite-core';
+import {Logger} from 'pino';
+import {SQLiteTransaction} from 'drizzle-orm/sqlite-core';
 import Database from 'better-sqlite3';
 
 type DatabaseTransaction = SQLiteTransaction<"sync", Database.RunResult, Record<string, never>, ExtractTablesWithRelations<Record<string, never>>>;
@@ -499,9 +500,25 @@ export function updateState (db: BetterSQLite3Database, linking: MemberLinking, 
         }
       )
     } catch (err) {
-      const errType = err as Error;
-      if ('code' in errType && ['SQLITE_CONSTRAINT_PRIMARYKEY', 'SQLITE_CONSTRAINT_FOREIGNKEY'].includes(errType.code as string)) {
+      const errType = err as Error & {code?: string};
+      if (
+        ['SQLITE_CONSTRAINT_PRIMARYKEY', 'SQLITE_CONSTRAINT_FOREIGNKEY'].includes(
+          errType.code ?? ''
+        )
+      ) {
         logger.error(err, 'Failed to update state with event %o', event);
+        db.transaction((tx: DatabaseTransaction) => {
+          tx.insert(failedEventsTable)
+            .values({
+              error: errType.code as string,
+              payload: event,
+            })
+            .onConflictDoNothing()
+            .run();
+          if (trackedEvent) {
+            _updateEventState(tx, event);
+          }
+        });        
         return;
       }
       throw err;

@@ -193,6 +193,21 @@ const createEventStateTable = sql`
   )
 `;
 
+export const failedEventsTable = sqliteTable(
+  'failedEventsTable',
+  {
+    error: text('error').notNull(),
+    payload: text('payload', {mode: 'json'}).notNull(),
+  }
+);
+
+const createFailedEventsTable = sql`
+  CREATE TABLE IF NOT EXISTS failedEventsTable (
+    error TEXT NOT NULL,
+    payload TEXT NOT NULL
+  )
+`;
+
 export const createTables = [
   createMembersTable,
   createMemberEmailsTable,
@@ -203,4 +218,5 @@ export const createTables = [
   createOwnersTable,
   createTrainingStatsNotificationTable,
   createEventStateTable,
+  createFailedEventsTable,
 ];

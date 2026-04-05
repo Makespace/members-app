@@ -82,6 +82,7 @@ export const initSharedReadModel = (
 
   createTables.forEach(statement => readModelDb.run(statement));
   const linking = new MemberLinking();
+  const getCurrentEventIndex_ = getCurrentEventIndex(readModelDb);
   const updateState_ = updateState(readModelDb, linking, logger, true);
 
   setupEventStateTable(readModelDb);
@@ -91,7 +92,7 @@ export const initSharedReadModel = (
     readOnlyDb: readOnlyReadModelDb,
     linking,
     _underlyingReadModelDb,
-    asyncRefresh: asyncRefresh(eventStoreClient, updateState_),
+    asyncRefresh: asyncRefresh(eventStoreClient, getCurrentEventIndex_, updateState_),
     updateState: updateState_,
     asyncApplyExternalEventSources: asyncApplyExternalEventSources(
       logger,
@@ -99,7 +100,7 @@ export const initSharedReadModel = (
       updateState(readModelDb, linking, logger, false),
       recurlyToken
     ),
-    getCurrentEventIndex: getCurrentEventIndex(readModelDb),
+    getCurrentEventIndex: getCurrentEventIndex_,
     members: {
       get: getMemberFull(readModelDb, linking),
       getAll: getAllMemberFull(readModelDb, linking),
