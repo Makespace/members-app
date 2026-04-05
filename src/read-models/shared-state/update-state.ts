@@ -497,7 +497,7 @@ export function updateState (db: BetterSQLite3Database, linking: MemberLinking, 
         )
       } catch (err) {
         const errType = err as Error;
-        if ('code' in errType && errType.code === 'SQLITE_CONSTRAINT_PRIMARYKEY') {
+        if ('code' in errType && ['SQLITE_CONSTRAINT_PRIMARYKEY', 'SQLITE_CONSTRAINT_FOREIGNKEY'].includes(errType.code as string)) {
           logger.error(err, 'Failed to update state with event %o', event);
           return;
         }
