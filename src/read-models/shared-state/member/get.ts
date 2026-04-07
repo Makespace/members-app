@@ -1,15 +1,16 @@
 import {pipe} from 'fp-ts/lib/function';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {and, desc, eq, inArray, isNotNull} from 'drizzle-orm';
+import {and, desc, eq, inArray, isNotNull, One} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as RAE from 'fp-ts/ReadonlyNonEmptyArray';
 import {MemberCoreInfo, MemberEmail} from '../return-types';
-import {memberEmailsTable, membersTable} from '../state';
+import {memberEmailsTable, memberNumbersTable, membersTable} from '../state';
 import {MemberCoreInfoPreMerge, mergeMemberCore} from './merge';
 import {MemberLinking} from '../member-linking';
-import {EmailAddress} from '../../../types';
+import {EmailAddress, UserId} from '../../../types';
 import {normaliseEmailAddress} from '../normalise-email-address';
+import { UUID } from 'io-ts-types';
 
 const getMemberEmails =
   (db: BetterSQLite3Database) =>
@@ -117,3 +118,17 @@ export const findByEmail = (
     m => O.isSome(m) ? [m.value] : []
   );
 }
+
+export const findUserId = (db: BetterSQLite3Database, memberNumber: number): O.Option<UserId> => pipe(
+  db
+    .select({
+      userId: memberNumbersTable.userId
+    })
+    .from(memberNumbersTable)
+    .where(eq(memberNumbersTable.memberNumber, memberNumber))
+    .all(),
+  RA.match(
+    () => O.none,
+    (rows) => O.some(rows[0].userId as UUID)
+  )
+);
