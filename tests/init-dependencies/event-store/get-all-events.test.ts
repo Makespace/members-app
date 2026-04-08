@@ -20,6 +20,7 @@ import {
 import {arbitraryActor, getRightOrFail} from '../../helpers';
 import {UUID} from 'io-ts-types';
 import {EventName} from '../../../src/types/domain-event';
+import { Int } from 'io-ts';
 
 const arbitraryMemberNumberLinkedToEmailEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
@@ -62,7 +63,7 @@ describe('get all events', () => {
   };
 
   let dbClient: libsqlClient.Client;
-  let persistEvent: (event: DomainEvent) => Promise<void>;
+  let persistEvent: (event: DomainEvent, lastSeenEventIndex: number) => Promise<void>;
   let initalisedGetAllEvents: () => Promise<ReadonlyArray<StoredDomainEvent>>;
   let initalisedGetAllEventsAfterEventIndex: (
     eventIndex: number
@@ -78,13 +79,13 @@ describe('get all events', () => {
   beforeEach(async () => {
     dbClient = libsqlClient.createClient({url: ':memory:'});
     getRightOrFail(await ensureEventTableExists(dbClient)());
-    persistEvent = async (event: DomainEvent) => {
+    persistEvent = async (event: DomainEvent, lastSeenEventIndex: number) => {
       getRightOrFail(
         await commitEvent(
           dbClient,
           testLogger,
           dummyRefreshReadModel
-        )(arbitraryResource(), 'no-such-resource')(event)()
+        )(lastSeenEventIndex as Int)(event)()
       )
     };
     initalisedGetAllEvents = async () =>
@@ -111,9 +112,9 @@ describe('get all events', () => {
         arbitraryEquipmentTrainingQuizResultEvent();
       const equipmentTrainingSheetRegistered =
         arbitraryEquipmentTrainingSheetRegisteredEvent();
-      await persistEvent(memberNumberLinkedToEmail);
-      await persistEvent(equipmentTrainingQuizResult);
-      await persistEvent(equipmentTrainingSheetRegistered);
+      await persistEvent(memberNumberLinkedToEmail, 0);
+      await persistEvent(equipmentTrainingQuizResult, 1);
+      await persistEvent(equipmentTrainingSheetRegistered, 2);
       const events = await initalisedGetAllEvents();
       expect(events).toHaveLength(2);
       expectStoredEvent(events[0], memberNumberLinkedToEmail, 1);
@@ -127,9 +128,9 @@ describe('get all events', () => {
       const event2 = arbitraryMemberNumberLinkedToEmailEvent();
       const event3 = arbitraryMemberNumberLinkedToEmailEvent();
 
-      await persistEvent(event1);
-      await persistEvent(event2);
-      await persistEvent(event3);
+      await persistEvent(event1, 0);
+      await persistEvent(event2, 1);
+      await persistEvent(event3, 2);
 
       const events = await initalisedGetAllEventsAfterEventIndex(1);
 
@@ -143,9 +144,9 @@ describe('get all events', () => {
       const hiddenEvent = arbitraryEquipmentTrainingQuizResultEvent();
       const event3 = arbitraryEquipmentTrainingSheetRegisteredEvent();
 
-      await persistEvent(event1);
-      await persistEvent(hiddenEvent);
-      await persistEvent(event3);
+      await persistEvent(event1, 0);
+      await persistEvent(hiddenEvent, 1);
+      await persistEvent(event3, 2);
 
       const events = await initalisedGetAllEventsAfterEventIndex(1);
 
@@ -159,9 +160,9 @@ describe('get all events', () => {
       const firstMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
       const nonMatchingEvent = arbitraryEquipmentTrainingSheetRegisteredEvent();
       const secondMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
-      await persistEvent(firstMatchingEvent);
-      await persistEvent(nonMatchingEvent);
-      await persistEvent(secondMatchingEvent);
+      await persistEvent(firstMatchingEvent, 0);
+      await persistEvent(nonMatchingEvent, 1);
+      await persistEvent(secondMatchingEvent, 2);
       const events = await initalisedGetAllEventsByType(
         'MemberNumberLinkedToEmail'
       );
@@ -174,8 +175,8 @@ describe('get all events', () => {
       const equipmentTrainingQuizResult =
         arbitraryEquipmentTrainingQuizResultEvent();
       const nonMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
-      await persistEvent(equipmentTrainingQuizResult);
-      await persistEvent(nonMatchingEvent);
+      await persistEvent(equipmentTrainingQuizResult, 0);
+      await persistEvent(nonMatchingEvent, 1);
       const events = await initalisedGetAllEventsByType(
         'EquipmentTrainingQuizResult'
       );
@@ -190,9 +191,9 @@ describe('get all events', () => {
       const nonMatchingEvent = arbitraryEquipmentTrainingQuizResultEvent();
       const secondMatchingEvent = arbitraryEquipmentTrainingSheetRegisteredEvent();
 
-      await persistEvent(firstMatchingEvent);
-      await persistEvent(nonMatchingEvent);
-      await persistEvent(secondMatchingEvent);
+      await persistEvent(firstMatchingEvent, 0);
+      await persistEvent(nonMatchingEvent, 1);
+      await persistEvent(secondMatchingEvent, 2);
 
       const events = await initalisedGetAllEventsByTypes(
         'MemberNumberLinkedToEmail',
@@ -209,9 +210,9 @@ describe('get all events', () => {
       const matchingEvent = arbitraryEquipmentTrainingSheetRegisteredEvent();
       const nonMatchingEvent = arbitraryMemberNumberLinkedToEmailEvent();
 
-      await persistEvent(equipmentTrainingQuizResult);
-      await persistEvent(matchingEvent);
-      await persistEvent(nonMatchingEvent);
+      await persistEvent(equipmentTrainingQuizResult, 0);
+      await persistEvent(matchingEvent, 1);
+      await persistEvent(nonMatchingEvent, 2);
 
       const events = await initalisedGetAllEventsByTypes(
         'EquipmentTrainingQuizResult',
