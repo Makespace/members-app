@@ -35,7 +35,6 @@ export type SyncTrainingSheetDependencies = Pick<
   | 'storeSync'
   | 'lastSync'
   | 'storeTrainingSheetRowsRead'
-  | 'lastTrainingSheetRowRead'
 >;
 
 export const columnBoundsRequired = (
@@ -203,15 +202,6 @@ const pullTrainingSheetRows = async (
       minCol,
       maxCol
     )();
-    if (E.isLeft(data)) {
-      log.error(
-        `Failed to pull data for sheet rows %s to %s, skipping rest of sheet: '%s'`,
-        rowStart,
-        rowEnd,
-        data.left
-      );
-      return resultantRows;
-    }
     log.info('Pulled data from google, extracting...');
     resultantRows.push(
       ...extractGoogleSheetData(
@@ -232,7 +222,7 @@ export const syncTrainingSheet = async (
   deps: SyncTrainingSheetDependencies,
   google: GoogleHelpers,
   trainingSheetId: string
-) => {
+): Promise<void> => {
   const storeSyncResult = await deps.storeSync(trainingSheetId, new Date())();
   if (E.isLeft(storeSyncResult)) {
     log.warn(`Failed to record sync time - ${storeSyncResult.left}`);
@@ -291,38 +281,35 @@ export const syncTrainingSheet = async (
     sheets.push(meta.value);
   }
 
-  log.info('Getting last row read...');
-
-  const lastRowRead = await deps.lastTrainingSheetRowRead(trainingSheetId)();
-
-  if (E.isLeft(lastRowRead)) {
-    log.warn('Failed to get last row read data');
-    log.warn(lastRowRead.left);
-    return;
-  }
-
-  log.info('Got last row read data: %o', lastRowRead.right);
-
+  // We now go through all the sheets within the spreadsheet to build up all the rows.
+  // These then get atomically stored into the google sheet cache which can be used by the frontend.
+  const rows: SheetDataTable["rows"] = [];
   for (const sheet of sheets) {
     const sheetLog = log.child({sheet_name: sheet.name});
-    const rows = await pullTrainingSheetRows(
-      sheetLog,
-      google,
-      trainingSheetId,
-      sheet,
-      initialMeta.right.properties.timeZone,
-      O.getOrElse(() => 1)(RR.lookup(sheet.name)(lastRowRead.right)) + 1 // 1-indexed and first row is headers.
+    rows.concat(
+      await pullTrainingSheetRows(
+        sheetLog,
+        google,
+        trainingSheetId,
+        sheet,
+        initialMeta.right.properties.timeZone,
+
+        // 1-indexed and first row is headers.
+        // We used to keep track of the last row that had been scanned and only scan later rows but this
+        // broke down as google forms sometimes inserts rows into the middle of the document.
+        // https://github.com/Makespace/members-app/issues/208
+        2
+      )
     );
-    log.info(
-      'Finished pulling training sheet rows, pulled %s new rows',
-      rows.length
-    );
-    const rowsReadResult = await deps.storeTrainingSheetRowsRead(rows)();
-    if (E.isLeft(rowsReadResult)) {
-      sheetLog.info(
-        `Failed to store rows read: ${rowsReadResult.left}, continuing anyway...`
-      );
-    }
+  }
+
+  log.info(
+    'Finished pulling training sheet, pulled %s new rows. Updating cache...',
+    rows.length
+  );
+  const rowsReadResult = await deps.storeTrainingSheetRowsRead(rows)();
+  if (E.isLeft(rowsReadResult)) {
+    log.error(`Failed to update cache: %s`, rowsReadResult.left);
   }
 
   log.info('Finished processing training sheet');
@@ -355,11 +342,15 @@ export const syncEquipmentTrainingSheets = async (
       continue;
     }
 
-    await syncTrainingSheet(
-      deps.logger.child({equipmentId, trainingSheetId}),
-      deps,
-      google,
-      trainingSheetId
-    );
+    try {
+      await syncTrainingSheet(
+        deps.logger.child({equipmentId, trainingSheetId}),
+        deps,
+        google,
+        trainingSheetId
+      );
+    } catch (err) {
+      deps.logger.error(err, 'Failed to sync training sheet %s for equipment %s', trainingSheetId, equipmentId);
+    }
   }
 };

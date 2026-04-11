@@ -27,7 +27,6 @@ export type SyncTroubleTicketDependencies = Pick<
   | 'storeSync'
   | 'lastSync'
   | 'storeTroubleTicketRowsRead'
-  | 'lastTroubleTicketRowRead'
 >;
 
 const grabColumn =
@@ -251,19 +250,6 @@ const syncTroubleTicketSheet = async (
     return;
   }
 
-  log.info('Getting last row read...');
-
-  const lastRowRead =
-    await deps.lastTroubleTicketRowRead(troubleTicketSheetId)();
-
-  if (E.isLeft(lastRowRead)) {
-    log.warn('Failed to get last row read data');
-    log.warn(lastRowRead.left);
-    return;
-  }
-
-  log.info('Got last row read data: %o', lastRowRead.right);
-
   for (const sheet of initialMeta.right.sheets) {
     const sheetLog = log.child({sheet_name: sheet.properties.title});
     if (!shouldPullFromSheet(sheet)) {
@@ -279,9 +265,8 @@ const syncTroubleTicketSheet = async (
       troubleTicketSheetId,
       sheet,
       initialMeta.right.properties.timeZone,
-      O.getOrElse(() => 1)(
-        RR.lookup(sheet.properties.title)(lastRowRead.right)
-      ) + 1 // 1-indexed and first row is headers.
+      // Pulling the entire sheet 
+      2 // 1-indexed and first row is headers.
     );
     log.info(
       'Finished pulling trouble sheet rows, pulled %s new rows',
