@@ -9,13 +9,9 @@ import {createClient, Client} from '@libsql/client';
 import {GoogleAuth} from 'google-auth-library';
 import {lastSync} from './db/last_sync';
 import {storeSync} from './db/store_sync';
-import {lastTrainingSheetRowRead} from './db/last_training_sheet_row_read';
 import {storeTrainingSheetRowsRead} from './db/store_training_sheet_rows_read';
-import {clearTrainingSheetCache} from './db/clear_training_sheet_cache';
 import {getTrainingSheetsToSync} from './db/get_training_sheets_to_sync';
 import {storeTroubleTicketRowsRead} from './db/store_trouble_ticket_rows_read';
-import {lastTroubleTicketRowRead} from './db/last_trouble_ticket_row_read';
-import {clearTroubleTicketCache} from './db/clear_trouble_ticket_cache';
 import {Logger} from 'pino';
 import {ensureGoogleDBTablesExist} from './google/ensure-sheet-data-tables-exist';
 import {sendEmail} from '../init-dependencies/send-email';
@@ -30,13 +26,9 @@ const initDBCommands = (googleDB: Client, eventDB: Client, logger: Logger) => {
   return {
     lastSync: lastSync(googleDB),
     storeSync: storeSync(googleDB),
-    lastTrainingSheetRowRead: lastTrainingSheetRowRead(googleDB),
     storeTrainingSheetRowsRead: storeTrainingSheetRowsRead(googleDB, logger),
-    clearTrainingSheetCache: clearTrainingSheetCache(googleDB),
     getTrainingSheetsToSync: getTrainingSheetsToSync(eventDB),
     storeTroubleTicketRowsRead: storeTroubleTicketRowsRead(googleDB),
-    lastTroubleTicketRowRead: lastTroubleTicketRowRead(googleDB),
-    clearTroubleTicketCache: clearTroubleTicketCache(googleDB),
     ensureGoogleDBTablesExist: ensureGoogleDBTablesExist(googleDB),
   };
 };

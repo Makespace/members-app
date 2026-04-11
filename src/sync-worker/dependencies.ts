@@ -26,21 +26,12 @@ export interface SyncWorkerDependencies {
   sharedReadModel: SharedReadModel; // Unlike for the web worker we update this infrequently when required only.
   lastSync: (sheetId: string) => TE.TaskEither<string, O.Option<Date>>;
   storeSync: (sheetId: string, date: Date) => TE.TaskEither<string, void>;
-  storeTrainingSheetRowsRead: (
-    data: ReadonlyArray<SheetDataTable['rows'][0]>
+  updateTrainingSheetCache: (
+    sheetId: string,
+    data: SheetDataTable['rows']
   ) => TE.TaskEither<string, void>;
-  storeTroubleTicketRowsRead: (
-    data: ReadonlyArray<TroubleTicketDataTable['rows'][0]>
-  ) => TE.TaskEither<string, void>;
-  lastTrainingSheetRowRead: (
-    sheetId: string
-  ) => TE.TaskEither<string, LastRowRead>;
-  lastTroubleTicketRowRead: (
-    troubleTicketSheetId: string
-  ) => TE.TaskEither<string, LastRowRead>;
-  clearTrainingSheetCache: (sheetId: string) => TE.TaskEither<string, void>;
-  clearTroubleTicketCache: (
-    troubleTicketSheetId: string
+  updateTroubleTicketCache: (
+    data: TroubleTicketDataTable['rows']
   ) => TE.TaskEither<string, void>;
   getTrainingSheetsToSync: () => TE.TaskEither<
     string,
