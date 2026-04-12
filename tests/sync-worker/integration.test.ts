@@ -18,11 +18,14 @@ import {GoogleAuth} from 'google-auth-library';
 import {pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
+import parse from 'dotenv';
+import { readFileSync } from 'fs';
 
-const CREDENTIALS_PATH = '../test-google/credentials_new.json.ignore';
 const TEST_USER = 1741;
 
 describe('Google training sheet integration', () => {
+  const env = parse.parse(readFileSync('./.env'));
+
   // These tests should be used sparingly because they actually query the real
   // google api for data.
   let googleDB: Client;
@@ -36,14 +39,14 @@ describe('Google training sheet integration', () => {
     deps = createSyncTrainingSheetDependencies(googleDB, eventDB, testLogger());
     getRightOrFail(await ensureEventTableExists(eventDB)());
     await ensureGoogleDBTablesExist(googleDB)();
-
     const auth = new GoogleAuth({
-      keyFile: CREDENTIALS_PATH,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      credentials: JSON.parse(env.GOOGLE_SERVICE_ACCOUNT_KEY_JSON),
       scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
     });
     google = {
-      pullGoogleSheetData: pullGoogleSheetData(auth),
-      pullGoogleSheetDataMetadata: pullGoogleSheetDataMetadata(auth),
+      pullGoogleSheetData: pullGoogleSheetData(undefined as any),
+      pullGoogleSheetDataMetadata: pullGoogleSheetDataMetadata(undefined as any),
     };
   });
 
@@ -52,7 +55,17 @@ describe('Google training sheet integration', () => {
     eventDB.close();
   });
 
-  it.skip('Form 3 Resin Printer', async () => {
+  const testIfCreds = (testname: string, fn: jest.ProvidesCallback) => {
+    // Only run the test if the credentials have been configured.
+    if (env.GOOGLE_SERVICE_ACCOUNT_KEY_JSON) {
+      it(testname, fn);
+    } else {
+      it.skip(testname, fn);
+    }
+  };
+  
+
+  testIfCreds('Form 3 Resin Printer', async () => {
     const sheetId = '1rnG8qvYXL5CucsS7swr9ajGYvHndBG1TKIbyG3KioHc';
     await syncTrainingSheet(testLogger(), deps, google, sheetId);
     const producedData = getRightOrFail(
