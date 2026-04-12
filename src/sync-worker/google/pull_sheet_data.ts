@@ -1,5 +1,4 @@
 import {Logger} from 'pino';
-import * as TE from 'fp-ts/TaskEither';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as E from 'fp-ts/Either';
@@ -81,44 +80,27 @@ export type GoogleSpreadsheetDataForSheet = t.TypeOf<
 
 export const pullGoogleSheetDataMetadata =
   (auth: GoogleAuth) =>
-  (
-    logger: Logger,
+  async (
     trainingSheetId: string
-  ): TE.TaskEither<string, GoogleSpreadsheetInitialMetadata> =>
-    pipe(
-      TE.tryCatch(
-        () =>
-          sheets({
-            version: 'v4',
-            auth,
-          }).spreadsheets.get({
-            spreadsheetId: trainingSheetId,
-            includeGridData: false, // Only the metadata.
-            fields: 'sheets(properties),properties(timeZone)', // Only the metadata about the sheets.
-          }),
-        reason => {
-          logger.error(reason, 'Failed to get spreadsheet metadata');
-          return `Failed to get training spreadsheet metadata ${trainingSheetId}`;
-        }
-      ),
-      TE.map(resp => resp.data),
-      TE.chain(data =>
-        TE.fromEither(
-          pipe(
-            data,
-            GoogleSpreadsheetInitialMetadata.decode,
-            E.mapLeft(
-              e =>
-                `Failed to get google spreadsheet metadata from API response: ${formatValidationErrors(e).join(',')}`
-            )
-          )
-        )
-      )
-    );
+  ): Promise<GoogleSpreadsheetInitialMetadata> => {
+    const metadata = await sheets({
+      version: 'v4',
+      auth,
+    }).spreadsheets.get({
+      spreadsheetId: trainingSheetId,
+      includeGridData: false, // Only the metadata.
+      fields: 'sheets(properties),properties(timeZone)', // Only the metadata about the sheets.
+    });
+    const decodedData = GoogleSpreadsheetInitialMetadata.decode(metadata.data);
+    if (E.isLeft(decodedData)) {
+      throw new Error(`Failed to get google spreadsheet metadata from API response: ${formatValidationErrors(decodedData.left).join(',')}`);
+    }
+    return decodedData.right;
+  };
 
 export const pullGoogleSheetData =
   (auth: GoogleAuth) =>
-  (
+  async (
     logger: Logger,
     trainingSheetId: string,
     sheetName: string,
@@ -126,52 +108,31 @@ export const pullGoogleSheetData =
     rowEnd: number, // Inclusive
     columnStartIndex: number, // 0 indexed, converted to a letter.
     columnEndIndex: number
-  ): TE.TaskEither<string, GoogleSpreadsheetDataForSheet> =>
-    pipe(
-      TE.tryCatch(
-        () => {
-          const ranges = [
-            `${sheetName}!${columnIndexToLetter(columnStartIndex)}${rowStart}:${columnIndexToLetter(columnEndIndex)}${rowEnd}`,
-          ];
-          const fields = 'sheets(data(rowData(values(formattedValue))))';
-          logger.info(
-            'Querying sheet %s for fields %s range %s',
-            trainingSheetId,
-            fields,
-            ranges
-          );
-          return sheets({
-            version: 'v4',
-            auth,
-          }).spreadsheets.get({
-            spreadsheetId: trainingSheetId,
-            fields,
-            ranges,
-          });
-        },
-        reason => {
-          logger.error(
-            reason,
-            'Failed to get training spreadsheet %s',
-            trainingSheetId
-          );
-          return `Failed to get training spreadsheet ${trainingSheetId}`;
-        }
-      ),
-      TE.map(resp => resp.data),
-      TE.chain(data =>
-        TE.fromEither(
-          pipe(
-            data,
-            GoogleSpreadsheetDataForSheet.decode,
-            E.mapLeft(
-              e =>
-                `Failed to get all required google spreadsheet data from API response: ${formatValidationErrors(e).join(',')}`
-            )
-          )
-        )
-      )
+  ): Promise<GoogleSpreadsheetDataForSheet> => {
+    const ranges = [
+      `${sheetName}!${columnIndexToLetter(columnStartIndex)}${rowStart}:${columnIndexToLetter(columnEndIndex)}${rowEnd}`,
+    ];
+    const fields = 'sheets(data(rowData(values(formattedValue))))';
+    logger.info(
+      'Querying sheet %s for fields %s range %s',
+      trainingSheetId,
+      fields,
+      ranges
     );
+    const raw = await sheets({
+      version: 'v4',
+      auth,
+    }).spreadsheets.get({
+      spreadsheetId: trainingSheetId,
+      fields,
+      ranges,
+    });
+    const decodedData = GoogleSpreadsheetDataForSheet.decode(raw.data);
+    if (E.isLeft(decodedData)) {
+      throw Error(formatValidationErrors(decodedData.left).join(','))
+    }
+    return decodedData.right;
+  };
 
 export interface GoogleHelpers {
   pullGoogleSheetData: ReturnType<typeof pullGoogleSheetData>;

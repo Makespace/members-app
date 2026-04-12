@@ -34,7 +34,7 @@ export type SyncTrainingSheetDependencies = Pick<
   | 'getTrainingSheetsToSync'
   | 'storeSync'
   | 'lastSync'
-  | 'storeTrainingSheetRowsRead'
+  | 'updateTrainingSheetCache'
 >;
 
 export const columnBoundsRequired = (
@@ -201,7 +201,7 @@ const pullTrainingSheetRows = async (
       rowEnd,
       minCol,
       maxCol
-    )();
+    );
     log.info('Pulled data from google, extracting...');
     resultantRows.push(
       ...extractGoogleSheetData(
@@ -209,7 +209,7 @@ const pullTrainingSheetRows = async (
         trainingSheetId,
         sheet,
         timezone,
-        data.right,
+        data,
         rowStart
       )
     );
@@ -223,6 +223,7 @@ export const syncTrainingSheet = async (
   google: GoogleHelpers,
   trainingSheetId: string
 ): Promise<void> => {
+  // Even if the attempt fails we store the attempt so we don't retry too quickly.
   const storeSyncResult = await deps.storeSync(trainingSheetId, new Date())();
   if (E.isLeft(storeSyncResult)) {
     log.warn(`Failed to record sync time - ${storeSyncResult.left}`);
@@ -230,19 +231,11 @@ export const syncTrainingSheet = async (
   }
 
   log.info('Syncing training sheet, getting meta data...');
-  const initialMeta = await google.pullGoogleSheetDataMetadata(
-    log,
-    trainingSheetId
-  )();
-  if (E.isLeft(initialMeta)) {
-    log.warn(initialMeta.left);
-    return;
-  }
-
+  const initialMeta = await google.pullGoogleSheetDataMetadata(trainingSheetId);
   log.info('Got meta data for sheet, scanning sheets within sheet...');
 
   const sheets: GoogleSheetMetadata[] = [];
-  for (const sheet of initialMeta.right.sheets) {
+  for (const sheet of initialMeta.sheets) {
     if (!shouldPullFromSheet(trainingSheetId, sheet)) {
       log.warn(
         "Skipping sheet '%s' as doesn't match expected for form responses",
@@ -259,16 +252,9 @@ export const syncTrainingSheet = async (
       1,
       0,
       MAX_COLUMN_INDEX
-    )();
-    if (E.isLeft(firstRowData)) {
-      log.warn(
-        'Failed to get google sheet first row data for sheet %s, skipping',
-        sheet.properties.title
-      );
-      continue;
-    }
+    );
 
-    const meta = extractGoogleSheetMetadata(log, sheet, firstRowData.right);
+    const meta = extractGoogleSheetMetadata(log, sheet, firstRowData);
     if (O.isNone(meta)) {
       continue;
     }
@@ -292,7 +278,7 @@ export const syncTrainingSheet = async (
         google,
         trainingSheetId,
         sheet,
-        initialMeta.right.properties.timeZone,
+        initialMeta.properties.timeZone,
 
         // 1-indexed and first row is headers.
         // We used to keep track of the last row that had been scanned and only scan later rows but this
@@ -307,11 +293,7 @@ export const syncTrainingSheet = async (
     'Finished pulling training sheet, pulled %s new rows. Updating cache...',
     rows.length
   );
-  const rowsReadResult = await deps.storeTrainingSheetRowsRead(rows)();
-  if (E.isLeft(rowsReadResult)) {
-    log.error(`Failed to update cache: %s`, rowsReadResult.left);
-  }
-
+  await deps.updateTrainingSheetCache(trainingSheetId, rows);
   log.info('Finished processing training sheet');
 };
 

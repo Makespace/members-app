@@ -25,7 +25,7 @@ import {getResourceEvents} from '../../src/init-dependencies/event-store/get-res
 import {Resource} from '../../src/types/resource';
 import {arbitraryActor, getRightOrFail, getSomeOrFail} from '../helpers';
 import {SyncTroubleTicketDependencies} from '../../src/sync-worker/sync_trouble_ticket';
-import {storeTroubleTicketRowsRead} from '../../src/sync-worker/db/store_trouble_ticket_rows_read';
+import {updateTroubleTicketCache} from '../../src/sync-worker/db/store_trouble_ticket_rows_read';
 import {lastTroubleTicketRowRead} from '../../src/sync-worker/db/last_trouble_ticket_row_read';
 import * as O from 'fp-ts/Option';
 import {SyncWorkerDependencies} from '../../src/sync-worker/dependencies';
@@ -73,7 +73,7 @@ export const createSyncTroubleTicketDependencies = (
   logger: testLogger(),
   storeSync: storeSync(googleDB),
   lastSync: lastSync(googleDB),
-  storeTroubleTicketRowsRead: storeTroubleTicketRowsRead(googleDB),
+  storeTroubleTicketRowsRead: updateTroubleTicketCache(googleDB),
   lastTroubleTicketRowRead: lastTroubleTicketRowRead(googleDB),
 });
 

@@ -5,16 +5,11 @@ import {getRightOrFail, getSomeOrFail} from '../helpers';
 import {faker} from '@faker-js/faker';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
-import {clearTrainingSheetCache} from '../../src/sync-worker/db/clear_training_sheet_cache';
-import {clearTroubleTicketCache} from '../../src/sync-worker/db/clear_trouble_ticket_cache';
 import {getSheetData} from '../../src/sync-worker/db/get_sheet_data';
 import {lastSync} from '../../src/sync-worker/db/last_sync';
 import {getTrainingSheetsToSync} from '../../src/sync-worker/db/get_training_sheets_to_sync';
 import {getTroubleTicketData} from '../../src/sync-worker/db/get_trouble_ticket_data';
-import {lastTrainingSheetRowRead} from '../../src/sync-worker/db/last_training_sheet_row_read';
-import {lastTroubleTicketRowRead} from '../../src/sync-worker/db/last_trouble_ticket_row_read';
 import {storeSync} from '../../src/sync-worker/db/store_sync';
-import {storeTrainingSheetRowsRead} from '../../src/sync-worker/db/store_training_sheet_rows_read';
 import {
   SheetDataTable,
   TroubleTicketDataTable,
@@ -28,8 +23,9 @@ import {
   testLogger,
 } from './util';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {storeTroubleTicketRowsRead} from '../../src/sync-worker/db/store_trouble_ticket_rows_read';
+import {updateTroubleTicketCache} from '../../src/sync-worker/db/update_trouble_ticket_cache';
 import {pipe} from 'fp-ts/lib/function';
+import { updateTrainingSheetCache } from '../../src/sync-worker/db/update_training_sheet_cache';
 
 const expectToBeRight = async <T>(task: TE.TaskEither<T, void>) =>
   expect(getRightOrFail(await task())).toBeUndefined();
@@ -141,10 +137,6 @@ describe('Test sync worker db', () => {
       expect(getRightOrFail(await lastSync(googleDB)(sheetId)())).toStrictEqual(
         O.none
       ));
-    it('Clear training sheet data reports success', () =>
-      expectToBeRight(clearTrainingSheetCache(googleDB)(sheetId)));
-    it('Clear trouble ticket data reports success', () =>
-      expectToBeRight(clearTroubleTicketCache(googleDB)(sheetId)));
     it('Get sheet data returns nothing', async () =>
       expect(
         getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
@@ -158,15 +150,8 @@ describe('Test sync worker db', () => {
     it('Get training sheets to sync returns nothing', async () =>
       expect(
         getRightOrFail(await getTrainingSheetsToSync(eventDB)()())
-      ).toStrictEqual(new Map()));
-    it('Last training sheet row read is none', async () =>
-      expect(
-        getRightOrFail(await lastTrainingSheetRowRead(googleDB)(sheetId)())
-      ).toStrictEqual({}));
-    it('Last trouble ticket row read is none', async () =>
-      expect(
-        getRightOrFail(await lastTroubleTicketRowRead(googleDB)(sheetId)())
-      ).toStrictEqual({}));
+      ).toStrictEqual(new Map())
+    );
   });
 
   describe('Store last sync', () => {
@@ -216,7 +201,7 @@ describe('Test sync worker db', () => {
     });
   });
 
-  describe('Store training sheet rows', () => {
+  describe('Update training sheet cache', () => {
     const sheetId = faker.string.alphanumeric({length: 12});
     const sheetId2 = faker.string.alphanumeric({length: 13});
     const sheetName = faker.animal.fish();
@@ -229,14 +214,6 @@ describe('Test sync worker db', () => {
       faker.date.past(),
       new Date()
     );
-    const data1_2: SheetDataTable['rows'] = randomTrainingSheetRows(
-      sheetId,
-      sheetName,
-      13,
-      O.some(data.length + 1), // +1 because we are generating the next set of rows.
-      faker.date.past(),
-      new Date()
-    );
     const data2: SheetDataTable['rows'] = randomTrainingSheetRows(
       sheetId2,
       sheetName2,
@@ -246,17 +223,8 @@ describe('Test sync worker db', () => {
       new Date()
     );
     beforeEach(async () =>
-      getRightOrFail(
-        await storeTrainingSheetRowsRead(googleDB, testLogger())(data)()
-      )
+      await updateTrainingSheetCache(googleDB)(sheetId, data)
     );
-
-    it('Last training sheet row read indicates all data read', async () =>
-      expect(
-        getRightOrFail(await lastTrainingSheetRowRead(googleDB)(sheetId)())
-      ).toStrictEqual({
-        [sheetName]: data.length,
-      }));
 
     it('Get training ticket data', async () =>
       expect(
@@ -265,11 +233,9 @@ describe('Test sync worker db', () => {
         )
       ).toStrictEqual(RA.sort(byTimestamp)(data)));
 
-    describe('Add more training data for another sheet', () => {
+    describe('Add training data for another sheet', () => {
       beforeEach(async () =>
-        getRightOrFail(
-          await storeTrainingSheetRowsRead(googleDB, testLogger())(data2)()
-        )
+        await updateTrainingSheetCache(googleDB)(sheetId2, data2)
       );
 
       it('Get training ticket data for sheet 1 correctly', async () =>
@@ -285,50 +251,28 @@ describe('Test sync worker db', () => {
             getRightOrFail(await getSheetData(googleDB)(sheetId2, O.none)())
           )
         ).toStrictEqual(RA.sort(byTimestamp)(data2)));
-
-      describe('Clear training sheet data for sheet 1', () => {
-        beforeEach(async () =>
-          getRightOrFail(await clearTrainingSheetCache(googleDB)(sheetId)())
-        );
-
-        it('Get sheet data returns nothing', async () =>
-          expect(
-            getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
-          ).toStrictEqual([]));
-
-        it('Last training sheet row read is none', async () =>
-          expect(
-            getRightOrFail(await lastTrainingSheetRowRead(googleDB)(sheetId)())
-          ).toStrictEqual({}));
-
-        it('Data for sheet2 is still present', async () =>
-          expect(
-            RA.sort(byTimestamp)(
-              getRightOrFail(await getSheetData(googleDB)(sheetId2, O.none)())
-            )
-          ).toStrictEqual(RA.sort(byTimestamp)(data2)));
-      });
     });
 
-    describe('Add more training data for the same sheet', () => {
-      beforeEach(async () =>
-        getRightOrFail(
-          await storeTrainingSheetRowsRead(googleDB, testLogger())(data1_2)()
-        )
+    describe('Update cache for the same sheet', () => {
+      const new_data: SheetDataTable['rows'] = randomTrainingSheetRows(
+        sheetId,
+        sheetName,
+        4,
+        O.none,
+        faker.date.past(),
+        new Date()
       );
-      it('Last training data row read indicates all data read', async () =>
-        expect(
-          getRightOrFail(await lastTrainingSheetRowRead(googleDB)(sheetId)())
-        ).toStrictEqual({
-          [sheetName]: data.length + data1_2.length,
-        }));
+      beforeEach(async () =>
+        await updateTrainingSheetCache(googleDB)(sheetId, new_data)
+      );
 
-      it('Sheet data contains all the data', async () =>
+      it('Sheet data contains the new data', async () =>
         expect(
           RA.sort(byTimestamp)(
             getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
           )
-        ).toStrictEqual(pipe(data, RA.concat(data1_2), RA.sort(byTimestamp))));
+        ).toStrictEqual(new_data)
+      );
     });
   });
 
@@ -425,7 +369,7 @@ describe('Test sync worker db', () => {
       new Date()
     );
     beforeEach(async () =>
-      getRightOrFail(await storeTroubleTicketRowsRead(googleDB)(data)())
+      getRightOrFail(await updateTroubleTicketCache(googleDB)(data)())
     );
 
     it('Last trouble ticket row read indicates all data read', async () =>
@@ -448,7 +392,7 @@ describe('Test sync worker db', () => {
 
     describe('Add more trouble ticket data for another sheet', () => {
       beforeEach(async () =>
-        getRightOrFail(await storeTroubleTicketRowsRead(googleDB)(data2)())
+        getRightOrFail(await updateTroubleTicketCache(googleDB)(data2)())
       );
 
       it('Get trouble ticket data for sheet 1 correctly', async () =>
@@ -508,7 +452,7 @@ describe('Test sync worker db', () => {
 
     describe('Add more trouble ticket data for the same sheet', () => {
       beforeEach(async () =>
-        getRightOrFail(await storeTroubleTicketRowsRead(googleDB)(data1_2)())
+        getRightOrFail(await updateTroubleTicketCache(googleDB)(data1_2)())
       );
       it('Last trouble ticket row read indicates all data read', async () =>
         expect(
@@ -551,8 +495,8 @@ describe('Test sync worker db', () => {
       new Date()
     );
     beforeEach(async () => {
-      getRightOrFail(await storeTroubleTicketRowsRead(googleDB)(old_data)());
-      getRightOrFail(await storeTroubleTicketRowsRead(googleDB)(new_data)());
+      getRightOrFail(await updateTroubleTicketCache(googleDB)(old_data)());
+      getRightOrFail(await updateTroubleTicketCache(googleDB)(new_data)());
     });
 
     it('Get only new trouble tickets', async () =>
@@ -585,7 +529,7 @@ describe('Test sync worker db', () => {
     const sheetId = faker.string.alphanumeric({length: 12});
     const data: TroubleTicketDataTable['rows'] = [];
     beforeEach(async () =>
-      getRightOrFail(await storeTroubleTicketRowsRead(googleDB)(data)())
+      getRightOrFail(await updateTroubleTicketCache(googleDB)(data)())
     );
 
     it('Last trouble ticket row read is none', async () =>
