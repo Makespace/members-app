@@ -45,8 +45,8 @@ describe('Google training sheet integration', () => {
       scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
     });
     google = {
-      pullGoogleSheetData: pullGoogleSheetData(undefined as any),
-      pullGoogleSheetDataMetadata: pullGoogleSheetDataMetadata(undefined as any),
+      pullGoogleSheetData: pullGoogleSheetData(auth),
+      pullGoogleSheetDataMetadata: pullGoogleSheetDataMetadata(auth),
     };
   });
 

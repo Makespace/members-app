@@ -4,7 +4,6 @@ import {ensureGoogleDBTablesExist} from '../../src/sync-worker/google/ensure-she
 import {getRightOrFail, getSomeOrFail} from '../helpers';
 import {faker} from '@faker-js/faker';
 import * as O from 'fp-ts/Option';
-import * as TE from 'fp-ts/TaskEither';
 import {getSheetData} from '../../src/sync-worker/db/get_sheet_data';
 import {lastSync} from '../../src/sync-worker/db/last_sync';
 import {getTrainingSheetsToSync} from '../../src/sync-worker/db/get_training_sheets_to_sync';
@@ -24,11 +23,7 @@ import {
 } from './util';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {updateTroubleTicketCache} from '../../src/sync-worker/db/update_trouble_ticket_cache';
-import {pipe} from 'fp-ts/lib/function';
-import { updateTrainingSheetCache } from '../../src/sync-worker/db/update_training_sheet_cache';
-
-const expectToBeRight = async <T>(task: TE.TaskEither<T, void>) =>
-  expect(getRightOrFail(await task())).toBeUndefined();
+import {updateTrainingSheetCache} from '../../src/sync-worker/db/update_training_sheet_cache';
 
 const randomTrainingSheetRow = (
   sheetId: string,
@@ -271,7 +266,7 @@ describe('Test sync worker db', () => {
           RA.sort(byTimestamp)(
             getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
           )
-        ).toStrictEqual(new_data)
+        ).toStrictEqual(RA.sort(byTimestamp)(new_data))
       );
     });
   });

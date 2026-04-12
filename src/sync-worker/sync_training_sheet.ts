@@ -2,7 +2,6 @@ import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
 import * as A from 'fp-ts/Array';
 import * as RA from 'fp-ts/ReadonlyArray';
-import * as RR from 'fp-ts/ReadonlyRecord';
 import {Logger} from 'pino';
 import {
   GoogleHelpers,
@@ -269,24 +268,23 @@ export const syncTrainingSheet = async (
 
   // We now go through all the sheets within the spreadsheet to build up all the rows.
   // These then get atomically stored into the google sheet cache which can be used by the frontend.
-  const rows: SheetDataTable["rows"] = [];
+  const rows: SheetDataTable['rows'][0][] = [];
   for (const sheet of sheets) {
     const sheetLog = log.child({sheet_name: sheet.name});
-    rows.concat(
-      await pullTrainingSheetRows(
-        sheetLog,
-        google,
-        trainingSheetId,
-        sheet,
-        initialMeta.properties.timeZone,
+    const sheetRows = await pullTrainingSheetRows(
+      sheetLog,
+      google,
+      trainingSheetId,
+      sheet,
+      initialMeta.properties.timeZone,
 
-        // 1-indexed and first row is headers.
-        // We used to keep track of the last row that had been scanned and only scan later rows but this
-        // broke down as google forms sometimes inserts rows into the middle of the document.
-        // https://github.com/Makespace/members-app/issues/208
-        2
-      )
+      // 1-indexed and first row is headers.
+      // We used to keep track of the last row that had been scanned and only scan later rows but this
+      // broke down as google forms sometimes inserts rows into the middle of the document.
+      // https://github.com/Makespace/members-app/issues/208
+      2
     );
+    rows.push(...sheetRows);
   }
 
   log.info(

@@ -12,7 +12,6 @@ import {storeSync} from './db/store_sync';
 import {updateTrainingSheetCache} from './db/update_training_sheet_cache';
 import {getTrainingSheetsToSync} from './db/get_training_sheets_to_sync';
 import {updateTroubleTicketCache} from './db/update_trouble_ticket_cache';
-import {Logger} from 'pino';
 import {ensureGoogleDBTablesExist} from './google/ensure-sheet-data-tables-exist';
 import {sendEmail} from '../init-dependencies/send-email';
 import nodemailer from 'nodemailer';
@@ -22,7 +21,7 @@ import {getResourceEvents} from '../init-dependencies/event-store/get-resource-e
 import {commitEvent} from '../init-dependencies/event-store/commit-event';
 import {getSheetData} from './db/get_sheet_data';
 
-const initDBCommands = (googleDB: Client, eventDB: Client, logger: Logger) => {
+const initDBCommands = (googleDB: Client, eventDB: Client) => {
   return {
     lastSync: lastSync(googleDB),
     storeSync: storeSync(googleDB),
@@ -92,6 +91,6 @@ export const initDependencies = (): SyncWorkerDependencies => {
     lastQuizSync: lastSync(googleDB),
     getSheetData: getSheetData(googleDB),
     commitEvent: commitEvent(eventDB, logger, () => async () => {}),
-    ...initDBCommands(googleDB, eventDB, logger),
+    ...initDBCommands(googleDB, eventDB),
   };
 };

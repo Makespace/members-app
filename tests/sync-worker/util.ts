@@ -25,8 +25,8 @@ import {arbitraryActor, getRightOrFail, getSomeOrFail} from '../helpers';
 import {SyncTroubleTicketDependencies} from '../../src/sync-worker/sync_trouble_ticket';
 import * as O from 'fp-ts/Option';
 import {SyncWorkerDependencies} from '../../src/sync-worker/dependencies';
-import { updateTrainingSheetCache } from '../../src/sync-worker/db/update_training_sheet_cache';
-import { updateTroubleTicketCache } from '../../src/sync-worker/db/update_trouble_ticket_cache';
+import {updateTrainingSheetCache} from '../../src/sync-worker/db/update_training_sheet_cache';
+import {updateTroubleTicketCache} from '../../src/sync-worker/db/update_trouble_ticket_cache';
 
 export const generateRegisterSheetEvent = (
   equipmentId: UUID,
@@ -57,7 +57,7 @@ export const createSyncTrainingSheetDependencies = (
   eventDB: Client,
   logger: Logger
 ): SyncTrainingSheetDependencies => ({
-  logger: testLogger(),
+  logger,
   getTrainingSheetsToSync: getTrainingSheetsToSync(eventDB),
   storeSync: storeSync(googleDB),
   lastSync: lastSync(googleDB),
