@@ -7,8 +7,6 @@ import {Client} from '@libsql/client';
 import {getTrainingSheetsToSync} from '../../src/sync-worker/db/get_training_sheets_to_sync';
 import {storeSync} from '../../src/sync-worker/db/store_sync';
 import {lastSync} from '../../src/sync-worker/db/last_sync';
-import {storeTrainingSheetRowsRead} from '../../src/sync-worker/db/store_training_sheet_rows_read';
-import {lastTrainingSheetRowRead} from '../../src/sync-worker/db/last_training_sheet_row_read';
 import {pipe} from 'fp-ts/lib/function';
 import * as N from 'fp-ts/number';
 import {contramap} from 'fp-ts/lib/Ord';
@@ -25,10 +23,10 @@ import {getResourceEvents} from '../../src/init-dependencies/event-store/get-res
 import {Resource} from '../../src/types/resource';
 import {arbitraryActor, getRightOrFail, getSomeOrFail} from '../helpers';
 import {SyncTroubleTicketDependencies} from '../../src/sync-worker/sync_trouble_ticket';
-import {updateTroubleTicketCache} from '../../src/sync-worker/db/store_trouble_ticket_rows_read';
-import {lastTroubleTicketRowRead} from '../../src/sync-worker/db/last_trouble_ticket_row_read';
 import * as O from 'fp-ts/Option';
 import {SyncWorkerDependencies} from '../../src/sync-worker/dependencies';
+import { updateTrainingSheetCache } from '../../src/sync-worker/db/update_training_sheet_cache';
+import { updateTroubleTicketCache } from '../../src/sync-worker/db/update_trouble_ticket_cache';
 
 export const generateRegisterSheetEvent = (
   equipmentId: UUID,
@@ -63,8 +61,7 @@ export const createSyncTrainingSheetDependencies = (
   getTrainingSheetsToSync: getTrainingSheetsToSync(eventDB),
   storeSync: storeSync(googleDB),
   lastSync: lastSync(googleDB),
-  storeTrainingSheetRowsRead: storeTrainingSheetRowsRead(googleDB, logger),
-  lastTrainingSheetRowRead: lastTrainingSheetRowRead(googleDB),
+  updateTrainingSheetCache: updateTrainingSheetCache(googleDB),
 });
 
 export const createSyncTroubleTicketDependencies = (
@@ -73,8 +70,7 @@ export const createSyncTroubleTicketDependencies = (
   logger: testLogger(),
   storeSync: storeSync(googleDB),
   lastSync: lastSync(googleDB),
-  storeTroubleTicketRowsRead: updateTroubleTicketCache(googleDB),
-  lastTroubleTicketRowRead: lastTroubleTicketRowRead(googleDB),
+  updateTroubleTicketCache: updateTroubleTicketCache(googleDB),
 });
 
 export const byTimestamp = pipe(
