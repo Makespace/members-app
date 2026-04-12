@@ -55,11 +55,18 @@ describe('Google sheet integration', () => {
       0,
       4
     );
-    const rows = data.sheets[0].data[0].rowData as any;
-    expect(rows[0].values[0].formattedValue).toStrictEqual('Timestamp');
-    expect(rows[0].values[1].formattedValue).toStrictEqual('Email');
-    expect(rows[0].values[2].formattedValue).toStrictEqual('Score');
-    expect(rows[1].values[0].formattedValue).toStrictEqual('24/02/2026 16:57:25');
-    expect(rows[2].values[0].formattedValue).toStrictEqual('15/05/2026 18:24:45');
+    const rows = data.sheets[0].data[0].rowData;
+    if (!rows || rows.length !== 3) {
+      throw new Error('Expected three rows from Google sheets');
+    }
+    const [header, firstRow, secondRow] = rows;
+    if (!('values' in header) || !('values' in firstRow) || !('values' in secondRow)) {
+      throw new Error('Expected row values from Google sheets');
+    }
+    expect(header.values[0].formattedValue).toStrictEqual('Timestamp');
+    expect(header.values[1].formattedValue).toStrictEqual('Email');
+    expect(header.values[2].formattedValue).toStrictEqual('Score');
+    expect(firstRow.values[0].formattedValue).toStrictEqual('24/02/2026 16:57:25');
+    expect(secondRow.values[0].formattedValue).toStrictEqual('15/05/2026 18:24:45');
   });
 });
