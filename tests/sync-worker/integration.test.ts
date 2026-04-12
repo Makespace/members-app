@@ -6,13 +6,13 @@ import {
 import {testLogger} from './util';
 import {GoogleAuth} from 'google-auth-library';
 import parse from 'dotenv';
-import {readFileSync} from 'fs';
+import {existsSync, readFileSync} from 'fs';
 
 // This is setup for testing within the makespace google drive structure.
 const STAGING_TEST_SHEET_ID = '19e610we8nSzo3QO-T76RzdVoCNjq75my4Fkc0eDgmSo';
 
 describe('Google sheet integration', () => {
-  const env = parse.parse(readFileSync('./.env'));
+  const env = existsSync('./.env') ? parse.parse(readFileSync('./.env')) : null;
 
   // These tests should be used sparingly because they actually query the real
   // google api for data.
@@ -21,7 +21,7 @@ describe('Google sheet integration', () => {
   beforeEach(() => {
     const auth = new GoogleAuth({
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      credentials: JSON.parse(env.GOOGLE_SERVICE_ACCOUNT_KEY_JSON),
+      credentials: JSON.parse(env!.GOOGLE_SERVICE_ACCOUNT_KEY_JSON),
       clientOptions: {transporterOptions: {fetchImplementation: fetch}},
       scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
     });
@@ -33,7 +33,7 @@ describe('Google sheet integration', () => {
 
   const testIfCreds = (testname: string, fn: jest.ProvidesCallback) => {
     // Only run the test if the credentials have been configured.
-    if (env.GOOGLE_SERVICE_ACCOUNT_KEY_JSON && env.GOOGLE_SERVICE_ACCOUNT_KEY_JSON !== "{}") {
+    if (env && env.GOOGLE_SERVICE_ACCOUNT_KEY_JSON && env.GOOGLE_SERVICE_ACCOUNT_KEY_JSON !== "{}") {
       it(testname, fn);
     } else {
       it.skip(testname, fn);
