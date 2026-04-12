@@ -50,6 +50,7 @@ export const initDependencies = (): SyncWorkerDependencies => {
     // Google issues the credentials file and validates it.
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     credentials: JSON.parse(conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON),
+    clientOptions: {transporterOptions: {fetchImplementation: fetch}},
     scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
   });
   const google = {

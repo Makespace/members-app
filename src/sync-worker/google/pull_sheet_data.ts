@@ -86,6 +86,7 @@ export const pullGoogleSheetDataMetadata =
     const metadata = await sheets({
       version: 'v4',
       auth,
+      fetchImplementation: fetch,
     }).spreadsheets.get({
       spreadsheetId: trainingSheetId,
       includeGridData: false, // Only the metadata.
@@ -122,6 +123,7 @@ export const pullGoogleSheetData =
     const raw = await sheets({
       version: 'v4',
       auth,
+      fetchImplementation: fetch,
     }).spreadsheets.get({
       spreadsheetId: trainingSheetId,
       fields,

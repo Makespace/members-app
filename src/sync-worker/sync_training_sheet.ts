@@ -216,7 +216,7 @@ const pullTrainingSheetRows = async (
   return resultantRows;
 };
 
-export const syncTrainingSheet = async (
+const syncTrainingSheet = async (
   log: Logger,
   deps: SyncTrainingSheetDependencies,
   google: GoogleHelpers,
