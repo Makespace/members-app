@@ -279,5 +279,9 @@ export const syncTroubleTickets = async (
     );
     return;
   }
-  await syncTroubleTicketSheet(log, deps, google, troubleTicketSheetId);
+  try {
+      await syncTroubleTicketSheet(log, deps, google, troubleTicketSheetId);
+  } catch (err) {
+    deps.logger.error(err, 'Failed to sync trouble tickets');
+  }
 };
