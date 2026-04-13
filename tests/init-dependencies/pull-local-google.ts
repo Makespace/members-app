@@ -8,8 +8,10 @@ import {
 import {NonEmptyArray} from 'fp-ts/lib/NonEmptyArray';
 
 const localPullGoogleSheetDataMetadata = async (
+  logger: Logger,
   trainingSheetId: string
 ): Promise<GoogleSpreadsheetInitialMetadata> => {
+  logger.debug(`Pulling local google sheet metadata '${trainingSheetId}'`);
   const sheet = gsheetData.GOOGLE_SHEETS[trainingSheetId].metadata;
   if (!sheet) {
     throw new Error('Spreadsheet not found');

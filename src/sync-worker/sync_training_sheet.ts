@@ -230,7 +230,10 @@ const syncTrainingSheet = async (
   }
 
   log.info('Syncing training sheet, getting meta data...');
-  const initialMeta = await google.pullGoogleSheetDataMetadata(trainingSheetId);
+  const initialMeta = await google.pullGoogleSheetDataMetadata(
+    log,
+    trainingSheetId
+  );
   log.info('Got meta data for sheet, scanning sheets within sheet...');
 
   const sheets: GoogleSheetMetadata[] = [];

@@ -229,7 +229,10 @@ const syncTroubleTicketSheet = async (
     return;
   }
   log.info('Syncing trouble ticket sheet, getting meta data...');
-  const initialMeta = await google.pullGoogleSheetDataMetadata(troubleTicketSheetId);
+  const initialMeta = await google.pullGoogleSheetDataMetadata(
+    log,
+    troubleTicketSheetId
+  );
   for (const sheet of initialMeta.sheets) {
     const sheetLog = log.child({sheet_name: sheet.properties.title});
     if (!shouldPullFromSheet(sheet)) {

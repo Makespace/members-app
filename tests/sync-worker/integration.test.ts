@@ -41,7 +41,10 @@ describe('Google sheet integration', () => {
   };
 
   testIfCreds('pulls metadata and row data from Google sheets', async () => {
-    const metadata = await google.pullGoogleSheetDataMetadata(STAGING_TEST_SHEET_ID);
+    const metadata = await google.pullGoogleSheetDataMetadata(
+      testLogger(),
+      STAGING_TEST_SHEET_ID
+    );
     expect(metadata.sheets.map(sheet => sheet.properties.title)).toContain(
       'Form Responses 1'
     );

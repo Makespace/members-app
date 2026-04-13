@@ -9,6 +9,7 @@ import {GoogleAuth} from 'google-auth-library';
 import {columnIndexToLetter} from './extract-metadata';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {DateTime} from 'luxon';
+import {withGoogleRateLimitRetry} from './google-rate-limit-retry';
 
 const DEFAULT_TIMEZONE = 'Europe/London';
 
@@ -81,17 +82,23 @@ export type GoogleSpreadsheetDataForSheet = t.TypeOf<
 export const pullGoogleSheetDataMetadata =
   (auth: GoogleAuth) =>
   async (
+    logger: Logger,
     trainingSheetId: string
   ): Promise<GoogleSpreadsheetInitialMetadata> => {
-    const metadata = await sheets({
-      version: 'v4',
-      auth,
-      fetchImplementation: fetch,
-    }).spreadsheets.get({
-      spreadsheetId: trainingSheetId,
-      includeGridData: false, // Only the metadata.
-      fields: 'sheets(properties),properties(timeZone)', // Only the metadata about the sheets.
-    });
+    const metadata = await withGoogleRateLimitRetry(
+      logger,
+      `getting spreadsheet metadata for ${trainingSheetId}`,
+      () =>
+        sheets({
+          version: 'v4',
+          auth,
+          fetchImplementation: fetch,
+        }).spreadsheets.get({
+          spreadsheetId: trainingSheetId,
+          includeGridData: false, // Only the metadata.
+          fields: 'sheets(properties),properties(timeZone)', // Only the metadata about the sheets.
+        })
+    );
     const decodedData = GoogleSpreadsheetInitialMetadata.decode(metadata.data);
     if (E.isLeft(decodedData)) {
       throw new Error(`Failed to get google spreadsheet metadata from API response: ${formatValidationErrors(decodedData.left).join(',')}`);
@@ -120,15 +127,20 @@ export const pullGoogleSheetData =
       fields,
       ranges
     );
-    const raw = await sheets({
-      version: 'v4',
-      auth,
-      fetchImplementation: fetch,
-    }).spreadsheets.get({
-      spreadsheetId: trainingSheetId,
-      fields,
-      ranges,
-    });
+    const raw = await withGoogleRateLimitRetry(
+      logger,
+      `getting spreadsheet ${trainingSheetId} range ${ranges.join(', ')}`,
+      () =>
+        sheets({
+          version: 'v4',
+          auth,
+          fetchImplementation: fetch,
+        }).spreadsheets.get({
+          spreadsheetId: trainingSheetId,
+          fields,
+          ranges,
+        })
+    );
     const decodedData = GoogleSpreadsheetDataForSheet.decode(raw.data);
     if (E.isLeft(decodedData)) {
       throw Error(formatValidationErrors(decodedData.left).join(','))
