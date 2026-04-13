@@ -1,5 +1,5 @@
 import {DomainEvent, StoredDomainEvent} from '../../types/domain-event';
-import {EmailAddress} from '../../types';
+import {EmailAddress, UserId} from '../../types';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
 import {gravatarHashFromEmail} from '../members/avatar';
@@ -9,6 +9,7 @@ import {
   eventStateTable,
   failedEventsTable,
   memberEmailsTable,
+  memberNumbersTable,
   membersTable,
   ownersTable,
   trainedMemberstable,
@@ -19,38 +20,77 @@ import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, eq, ExtractTablesWithRelations, inArray, isNotNull, sql} from 'drizzle-orm';
 import {isOwnerOfAreaContainingEquipment} from './area/helpers';
 import {pipe} from 'fp-ts/lib/function';
-import {MemberLinking} from './member-linking';
 import {normaliseEmailAddress} from './normalise-email-address';
 import {Logger} from 'pino';
 import {SQLiteTransaction} from 'drizzle-orm/sqlite-core';
 import Database from 'better-sqlite3';
+import {userIdFromMemberNumber} from './user-id';
 
 type DatabaseTransaction = SQLiteTransaction<"sync", Database.RunResult, Record<string, never>, ExtractTablesWithRelations<Record<string, never>>>;
 
-const revokeSuperuser = (tx: DatabaseTransaction, memberNumber: number) =>
+const findUserId = (tx: DatabaseTransaction, memberNumber: number): O.Option<UserId> =>
+  pipe(
+    tx
+      .select({userId: memberNumbersTable.userId})
+      .from(memberNumbersTable)
+      .where(eq(memberNumbersTable.memberNumber, memberNumber))
+      .get(),
+    row => O.fromNullable(row?.userId)
+  );
+
+const withUserId = (
+  tx: DatabaseTransaction,
+  memberNumber: number,
+  f: (userId: UserId) => void
+) =>
+  pipe(
+    findUserId(tx, memberNumber),
+    O.match(() => undefined, f)
+  );
+
+const insertMemberNumber = (
+  tx: DatabaseTransaction,
+  memberNumber: number,
+  userId: UserId
+) =>
+  tx
+    .insert(memberNumbersTable)
+    .values({memberNumber, userId})
+    .onConflictDoUpdate({
+      target: memberNumbersTable.memberNumber,
+      set: {userId},
+    })
+    .run();
+
+const revokeSuperuserByUserId = (tx: DatabaseTransaction, userId: UserId) =>
   tx
     .update(membersTable)
     .set({isSuperUser: false, superUserSince: null})
-    .where(eq(membersTable.memberNumber, memberNumber))
+    .where(eq(membersTable.userId, userId))
     .run();
+
+const revokeSuperuser = (tx: DatabaseTransaction, memberNumber: number) =>
+  withUserId(tx, memberNumber, userId => revokeSuperuserByUserId(tx, userId));
 
 const setPrimaryEmailAddress = (
   tx: DatabaseTransaction,
   memberNumber: number,
   emailAddress: EmailAddress
 ) =>
-  tx
-    .update(membersTable)
-    .set({
-      primaryEmailAddress: emailAddress,
-      gravatarHash: gravatarHashFromEmail(emailAddress),
-    })
-    .where(eq(membersTable.memberNumber, memberNumber))
-    .run();
+  withUserId(tx, memberNumber, userId =>
+    tx
+      .update(membersTable)
+      .set({
+        primaryEmailAddress: emailAddress,
+        gravatarHash: gravatarHashFromEmail(emailAddress),
+      })
+      .where(eq(membersTable.userId, userId))
+      .run()
+  );
 
 const findMemberEmail = (
   tx: DatabaseTransaction,
-  memberNumber: number,
+  userId: UserId,
   emailAddress: EmailAddress
 ) =>
   O.fromNullable(
@@ -59,7 +99,7 @@ const findMemberEmail = (
       .from(memberEmailsTable)
       .where(
         and(
-          eq(memberEmailsTable.memberNumber, memberNumber),
+          eq(memberEmailsTable.userId, userId),
           eq(memberEmailsTable.emailAddress, emailAddress)
         )
       )
@@ -69,7 +109,7 @@ const findMemberEmail = (
 
 const insertMemberEmail = (
   tx: DatabaseTransaction,
-  memberNumber: number,
+  userId: UserId,
   emailAddress: EmailAddress,
   addedAt: Date,
   verifiedAt: Date | null
@@ -77,31 +117,168 @@ const insertMemberEmail = (
   tx
     .insert(memberEmailsTable)
     .values({
-      memberNumber,
+      userId,
       emailAddress,
       addedAt,
       verifiedAt: verifiedAt ?? undefined,
     })
     .run();
 
+const earliest = (a: Date | null, b: Date | null) => {
+  if (!a) {
+    return b;
+  }
+  if (!b) {
+    return a;
+  }
+  return a < b ? a : b;
+};
+
+const latest = (a: Date, b: Date) => (a > b ? a : b);
+
+const mergeTrainingStatNotification = (
+  tx: DatabaseTransaction,
+  sourceUserId: UserId,
+  targetUserId: UserId
+) => {
+  const source = tx
+    .select()
+    .from(trainingStatsNotificationTable)
+    .where(eq(trainingStatsNotificationTable.userId, sourceUserId))
+    .get();
+  const target = tx
+    .select()
+    .from(trainingStatsNotificationTable)
+    .where(eq(trainingStatsNotificationTable.userId, targetUserId))
+    .get();
+
+  if (source && target) {
+    const sourceLastSent = source.lastEmailSent?.getTime() ?? 0;
+    const targetLastSent = target.lastEmailSent?.getTime() ?? 0;
+    if (sourceLastSent > targetLastSent) {
+      tx.update(trainingStatsNotificationTable)
+        .set({lastEmailSent: source.lastEmailSent})
+        .where(eq(trainingStatsNotificationTable.userId, targetUserId))
+        .run();
+    }
+    tx.delete(trainingStatsNotificationTable)
+      .where(eq(trainingStatsNotificationTable.userId, sourceUserId))
+      .run();
+  } else if (source) {
+    tx.update(trainingStatsNotificationTable)
+      .set({userId: targetUserId})
+      .where(eq(trainingStatsNotificationTable.userId, sourceUserId))
+      .run();
+  }
+};
+
+const mergeUsers = (
+  tx: DatabaseTransaction,
+  sourceUserId: UserId,
+  targetUserId: UserId
+) => {
+  if (sourceUserId === targetUserId) {
+    return;
+  }
+
+  const source = tx
+    .select()
+    .from(membersTable)
+    .where(eq(membersTable.userId, sourceUserId))
+    .get();
+  const target = tx
+    .select()
+    .from(membersTable)
+    .where(eq(membersTable.userId, targetUserId))
+    .get();
+
+  if (!source || !target) {
+    return;
+  }
+
+  tx.update(membersTable)
+    .set({
+      isSuperUser: source.isSuperUser || target.isSuperUser,
+      superUserSince: earliest(source.superUserSince, target.superUserSince),
+      joined: latest(source.joined, target.joined),
+    })
+    .where(eq(membersTable.userId, targetUserId))
+    .run();
+
+  tx.update(memberEmailsTable)
+    .set({userId: targetUserId})
+    .where(eq(memberEmailsTable.userId, sourceUserId))
+    .run();
+  tx.update(memberNumbersTable)
+    .set({userId: targetUserId})
+    .where(eq(memberNumbersTable.userId, sourceUserId))
+    .run();
+  tx.update(ownersTable)
+    .set({userId: targetUserId})
+    .where(eq(ownersTable.userId, sourceUserId))
+    .run();
+  tx.update(trainersTable)
+    .set({userId: targetUserId})
+    .where(eq(trainersTable.userId, sourceUserId))
+    .run();
+  tx.update(trainedMemberstable)
+    .set({userId: targetUserId})
+    .where(eq(trainedMemberstable.userId, sourceUserId))
+    .run();
+  mergeTrainingStatNotification(tx, sourceUserId, targetUserId);
+
+  tx.delete(membersTable)
+    .where(eq(membersTable.userId, sourceUserId))
+    .run();
+};
+
+const linkMemberNumbers = (
+  tx: DatabaseTransaction,
+  oldMemberNumber: number,
+  newMemberNumber: number
+) => {
+  const oldUserId = findUserId(tx, oldMemberNumber);
+  const newUserId = findUserId(tx, newMemberNumber);
+
+  if (O.isSome(oldUserId) && O.isSome(newUserId)) {
+    mergeUsers(tx, oldUserId.value, newUserId.value);
+    insertMemberNumber(tx, oldMemberNumber, newUserId.value);
+    insertMemberNumber(tx, newMemberNumber, newUserId.value);
+    revokeSuperuserByUserId(tx, newUserId.value);
+    return;
+  }
+  if (O.isSome(oldUserId)) {
+    insertMemberNumber(tx, newMemberNumber, oldUserId.value);
+    revokeSuperuserByUserId(tx, oldUserId.value);
+    return;
+  }
+  if (O.isSome(newUserId)) {
+    insertMemberNumber(tx, oldMemberNumber, newUserId.value);
+    revokeSuperuserByUserId(tx, newUserId.value);
+  }
+};
+
 const _updateState =
-  (tx: DatabaseTransaction, linking: MemberLinking, event: DomainEvent) => {
+  (tx: DatabaseTransaction, event: DomainEvent) => {
     switch (event.type) {
       case 'MemberNumberLinkedToEmail': {
         const normalisedEmailAddress = normaliseEmailAddress(event.email);
-        linking.link([event.memberNumber]);
+        const userId = pipe(
+          findUserId(tx, event.memberNumber),
+          O.getOrElse(() => userIdFromMemberNumber(event.memberNumber))
+        );
         const existingMember = O.fromNullable(
           tx
             .select()
             .from(membersTable)
-            .where(eq(membersTable.memberNumber, event.memberNumber))
+            .where(eq(membersTable.userId, userId))
             .limit(1)
             .get()
         );
         if (O.isNone(existingMember)) {
           tx.insert(membersTable)
             .values({
-              memberNumber: event.memberNumber,
+              userId,
               primaryEmailAddress: normalisedEmailAddress,
               gravatarHash: gravatarHashFromEmail(normalisedEmailAddress),
               name: O.fromNullable(event.name),
@@ -114,12 +291,11 @@ const _updateState =
             })
             .run();
         }
-        if (
-          O.isNone(findMemberEmail(tx, event.memberNumber, normalisedEmailAddress))
-        ) {
+        insertMemberNumber(tx, event.memberNumber, userId);
+        if (O.isNone(findMemberEmail(tx, userId, normalisedEmailAddress))) {
           insertMemberEmail(
             tx,
-            event.memberNumber,
+            userId,
             normalisedEmailAddress,
             event.recordedAt,
             event.recordedAt
@@ -130,32 +306,34 @@ const _updateState =
       }
       case 'MemberEmailAdded': {
         const normalisedEmailAddress = normaliseEmailAddress(event.email);
-        if (
-          O.isNone(findMemberEmail(tx, event.memberNumber, normalisedEmailAddress))
-        ) {
-          insertMemberEmail(
-            tx,
-            event.memberNumber,
-            normalisedEmailAddress,
-            event.recordedAt,
-            null
-          );
-        }
+        withUserId(tx, event.memberNumber, userId => {
+          if (O.isNone(findMemberEmail(tx, userId, normalisedEmailAddress))) {
+            insertMemberEmail(
+              tx,
+              userId,
+              normalisedEmailAddress,
+              event.recordedAt,
+              null
+            );
+          }
+        });
         break;
       }
       case 'MemberEmailVerified':
-        tx.update(memberEmailsTable)
-          .set({verifiedAt: event.recordedAt})
-          .where(
-            and(
-              eq(memberEmailsTable.memberNumber, event.memberNumber),
-              eq(
-                memberEmailsTable.emailAddress,
-                normaliseEmailAddress(event.email)
+        withUserId(tx, event.memberNumber, userId =>
+          tx.update(memberEmailsTable)
+            .set({verifiedAt: event.recordedAt})
+            .where(
+              and(
+                eq(memberEmailsTable.userId, userId),
+                eq(
+                  memberEmailsTable.emailAddress,
+                  normaliseEmailAddress(event.email)
+                )
               )
             )
-          )
-          .run();
+            .run()
+        );
         break;
       case 'MemberPrimaryEmailChanged':
         setPrimaryEmailAddress(
@@ -165,37 +343,43 @@ const _updateState =
         );
         break;
       case 'MemberEmailVerificationRequested':
-        tx.update(memberEmailsTable)
-          .set({
-            verificationLastSent: event.recordedAt
-          })
-          .where(
-            and(
-              eq(memberEmailsTable.memberNumber, event.memberNumber),
-              eq(memberEmailsTable.emailAddress, normaliseEmailAddress(event.email))
+        withUserId(tx, event.memberNumber, userId =>
+          tx.update(memberEmailsTable)
+            .set({
+              verificationLastSent: event.recordedAt
+            })
+            .where(
+              and(
+                eq(memberEmailsTable.userId, userId),
+                eq(memberEmailsTable.emailAddress, normaliseEmailAddress(event.email))
+              )
             )
-          )
-          .run();
+            .run()
+        );
         break;
       case 'MemberDetailsUpdated':
-        if (event.name) {
-          tx.update(membersTable)
-            .set({name: O.some(event.name)})
-            .where(eq(membersTable.memberNumber, event.memberNumber))
-            .run();
-        }
-        if (event.formOfAddress) {
-          tx.update(membersTable)
-            .set({formOfAddress: O.some(event.formOfAddress)})
-            .where(eq(membersTable.memberNumber, event.memberNumber))
-            .run();
-        }
+        withUserId(tx, event.memberNumber, userId => {
+          if (event.name) {
+            tx.update(membersTable)
+              .set({name: O.some(event.name)})
+              .where(eq(membersTable.userId, userId))
+              .run();
+          }
+          if (event.formOfAddress) {
+            tx.update(membersTable)
+              .set({formOfAddress: O.some(event.formOfAddress)})
+              .where(eq(membersTable.userId, userId))
+              .run();
+          }
+        });
         break;
       case 'SuperUserDeclared':
-        tx.update(membersTable)
-          .set({isSuperUser: true, superUserSince: event.recordedAt})
-          .where(eq(membersTable.memberNumber, event.memberNumber))
-          .run();
+        withUserId(tx, event.memberNumber, userId =>
+          tx.update(membersTable)
+            .set({isSuperUser: true, superUserSince: event.recordedAt})
+            .where(eq(membersTable.userId, userId))
+            .run()
+        );
         break;
       case 'SuperUserRevoked':
         revokeSuperuser(tx, event.memberNumber);
@@ -205,143 +389,127 @@ const _updateState =
           .values({id: event.id, name: event.name, areaId: event.areaId})
           .run();
         break;
-      case 'TrainerAdded': {
-        if (
-          isOwnerOfAreaContainingEquipment(tx, linking)(
-            event.equipmentId,
-            event.memberNumber
-          )
-        ) {
-          tx.insert(trainersTable)
-            .values({
-              memberNumber: event.memberNumber,
-              equipmentId: event.equipmentId,
-              since: event.recordedAt,
-              markedTrainerByActor: event.actor,
-            })
-            .run();
-        }
+      case 'TrainerAdded':
+        withUserId(tx, event.memberNumber, userId => {
+          if (isOwnerOfAreaContainingEquipment(tx)(event.equipmentId, event.memberNumber)) {
+            tx.insert(trainersTable)
+              .values({
+                userId,
+                equipmentId: event.equipmentId,
+                since: event.recordedAt,
+                markedTrainerByActor: event.actor,
+              })
+              .run();
+          }
+        });
         break;
-      }
-      case 'MemberTrainedOnEquipment': {
-        const existing = O.fromNullable(
-          tx
-            .select()
-            .from(trainedMemberstable)
-            .where(
-              and(
-                eq(trainedMemberstable.equipmentId, event.equipmentId),
-                eq(trainedMemberstable.memberNumber, event.memberNumber)
+      case 'MemberTrainedOnEquipment':
+        withUserId(tx, event.memberNumber, userId => {
+          const existing = O.fromNullable(
+            tx
+              .select()
+              .from(trainedMemberstable)
+              .where(
+                and(
+                  eq(trainedMemberstable.equipmentId, event.equipmentId),
+                  eq(trainedMemberstable.userId, userId)
+                )
               )
-            )
-            .limit(1)
-            .get()
-        );
-        // A bug was previously found here because the trainedAt value from the database
-        // truncates the milliseconds in the date. This leads to 2 completely duplicate events
-        // appearing different because the times are different (by < 1000 milliseconds). To prevent
-        // this we decrease the trainedAt time value by 1000ms. This does mean 2 non-duplicate events
-        // within 1s of each other won't progress further but that doesn't matter for the use-case and
-        // the information to resolve is lost by the db milliseconds truncation anyway.
-        if (
-          O.isSome(existing) &&
-          existing.value.trainedAt.getTime() - 1000 < event.recordedAt.getTime()
-        ) {
-          // If we have already marked this member as trained in the past then
-          // don't re-mark them as this would refresh their 'trained since'.
-          break;
-        }
-        if (O.isSome(existing)) {
-          tx.update(trainedMemberstable)
-            .set({
-              trainedAt: event.recordedAt,
-              trainedByMemberNumber: event.trainedByMemberNumber,
-              legacyImport: event.legacyImport,
-              markTrainedByActor: event.actor,
-            })
-            .where(
-              and(
-                eq(trainedMemberstable.equipmentId, event.equipmentId),
-                eq(trainedMemberstable.memberNumber, event.memberNumber)
+              .limit(1)
+              .get()
+          );
+          if (
+            O.isSome(existing) &&
+            existing.value.trainedAt.getTime() - 1000 < event.recordedAt.getTime()
+          ) {
+            return;
+          }
+          if (O.isSome(existing)) {
+            tx.update(trainedMemberstable)
+              .set({
+                trainedAt: event.recordedAt,
+                trainedByMemberNumber: event.trainedByMemberNumber,
+                legacyImport: event.legacyImport,
+                markTrainedByActor: event.actor,
+              })
+              .where(
+                and(
+                  eq(trainedMemberstable.equipmentId, event.equipmentId),
+                  eq(trainedMemberstable.userId, userId)
+                )
               )
-            )
-            .run();
-        } else {
-          tx.insert(trainedMemberstable)
-            .values({
-              memberNumber: event.memberNumber,
-              equipmentId: event.equipmentId,
-              trainedAt: event.recordedAt,
-              trainedByMemberNumber: event.trainedByMemberNumber,
-              legacyImport: event.legacyImport,
-              markTrainedByActor: event.actor,
-            })
-            .run();
-        }
+              .run();
+          } else {
+            tx.insert(trainedMemberstable)
+              .values({
+                userId,
+                equipmentId: event.equipmentId,
+                trainedAt: event.recordedAt,
+                trainedByMemberNumber: event.trainedByMemberNumber,
+                legacyImport: event.legacyImport,
+                markTrainedByActor: event.actor,
+              })
+              .run();
+          }
+        });
         break;
-      }
-      case 'MemberTrainedOnEquipmentBy': {
-        const existing = O.fromNullable(
-          tx
-            .select()
-            .from(trainedMemberstable)
-            .where(
-              and(
-                eq(trainedMemberstable.equipmentId, event.equipmentId),
-                eq(trainedMemberstable.memberNumber, event.memberNumber)
+      case 'MemberTrainedOnEquipmentBy':
+        withUserId(tx, event.memberNumber, userId => {
+          const existing = O.fromNullable(
+            tx
+              .select()
+              .from(trainedMemberstable)
+              .where(
+                and(
+                  eq(trainedMemberstable.equipmentId, event.equipmentId),
+                  eq(trainedMemberstable.userId, userId)
+                )
               )
-            )
-            .limit(1)
-            .get()
-        );
-        // A bug was previously found here because the trainedAt value from the database
-        // truncates the milliseconds in the date. This leads to 2 completely duplicate events
-        // appearing different because the times are different (by < 1000 milliseconds). To prevent
-        // this we decrease the trainedAt time value by 1000ms. This does mean 2 non-duplicate events
-        // within 1s of each other won't progress further but that doesn't matter for the use-case and
-        // the information to resolve is lost by the db milliseconds truncation anyway.
-        if (
-          O.isSome(existing) &&
-          existing.value.trainedAt.getTime() - 1000 < event.trainedAt.getTime()
-        ) {
-          // If we have already marked this member as trained in the past then
-          // don't re-mark them as this would refresh their 'trained since'.
-          break;
-        }
-        if (O.isSome(existing)) {
-          tx.update(trainedMemberstable)
-            .set({
-              trainedAt: event.trainedAt,
-              trainedByMemberNumber: event.trainedByMemberNumber,
-              legacyImport: false,
-              markTrainedByActor: event.actor,
-            })
-            .where(
-              and(
-                eq(trainedMemberstable.equipmentId, event.equipmentId),
-                eq(trainedMemberstable.memberNumber, event.memberNumber)
+              .limit(1)
+              .get()
+          );
+          if (
+            O.isSome(existing) &&
+            existing.value.trainedAt.getTime() - 1000 < event.trainedAt.getTime()
+          ) {
+            return;
+          }
+          if (O.isSome(existing)) {
+            tx.update(trainedMemberstable)
+              .set({
+                trainedAt: event.trainedAt,
+                trainedByMemberNumber: event.trainedByMemberNumber,
+                legacyImport: false,
+                markTrainedByActor: event.actor,
+              })
+              .where(
+                and(
+                  eq(trainedMemberstable.equipmentId, event.equipmentId),
+                  eq(trainedMemberstable.userId, userId)
+                )
               )
-            )
-            .run();
-        } else {
-          tx.insert(trainedMemberstable)
-            .values({
-              memberNumber: event.memberNumber,
-              equipmentId: event.equipmentId,
-              trainedAt: event.trainedAt,
-              trainedByMemberNumber: event.trainedByMemberNumber,
-              legacyImport: false,
-              markTrainedByActor: event.actor,
-            })
-            .run();
-        }
+              .run();
+          } else {
+            tx.insert(trainedMemberstable)
+              .values({
+                userId,
+                equipmentId: event.equipmentId,
+                trainedAt: event.trainedAt,
+                trainedByMemberNumber: event.trainedByMemberNumber,
+                legacyImport: false,
+                markTrainedByActor: event.actor,
+              })
+              .run();
+          }
+        });
         break;
-      }
       case 'OwnerAgreementSigned':
-        tx.update(membersTable)
-          .set({agreementSigned: event.signedAt})
-          .where(eq(membersTable.memberNumber, event.memberNumber))
-          .run();
+        withUserId(tx, event.memberNumber, userId =>
+          tx.update(membersTable)
+            .set({agreementSigned: event.signedAt})
+            .where(eq(membersTable.userId, userId))
+            .run()
+        );
         break;
       case 'AreaCreated':
         tx.insert(areasTable).values({id: event.id, name: event.name}).run();
@@ -358,43 +526,44 @@ const _updateState =
       case 'OwnerAdded':
         tx.insert(ownersTable)
           .values({
-            memberNumber: event.memberNumber,
+            userId: pipe(
+              findUserId(tx, event.memberNumber),
+              O.getOrElse(() => userIdFromMemberNumber(event.memberNumber))
+            ),
             areaId: event.areaId,
             ownershipRecordedAt: event.recordedAt,
             markedOwnerByActor: event.actor,
           })
           .run();
         break;
-      case 'OwnerRemoved': {
-        tx.delete(ownersTable)
-          .where(
-            and(
-              inArray(
-                ownersTable.memberNumber,
-                Array.from(linking.map(event.memberNumber))
-              ),
-              eq(ownersTable.areaId, event.areaId)
+      case 'OwnerRemoved':
+        withUserId(tx, event.memberNumber, userId => {
+          tx.delete(ownersTable)
+            .where(
+              and(
+                eq(ownersTable.userId, userId),
+                eq(ownersTable.areaId, event.areaId)
+              )
             )
-          )
-          .run();
-        const equipmentInArea = pipe(
-          tx
-            .select({equipmentId: equipmentTable.id})
-            .from(equipmentTable)
-            .where(eq(equipmentTable.areaId, event.areaId))
-            .all(),
-          RA.map(({equipmentId}) => equipmentId)
-        );
-        tx.delete(trainersTable)
-          .where(
-            and(
-              inArray(trainersTable.equipmentId, [...equipmentInArea]),
-              eq(trainersTable.memberNumber, event.memberNumber)
+            .run();
+          const equipmentInArea = pipe(
+            tx
+              .select({equipmentId: equipmentTable.id})
+              .from(equipmentTable)
+              .where(eq(equipmentTable.areaId, event.areaId))
+              .all(),
+            RA.map(({equipmentId}) => equipmentId)
+          );
+          tx.delete(trainersTable)
+            .where(
+              and(
+                inArray(trainersTable.equipmentId, [...equipmentInArea]),
+                eq(trainersTable.userId, userId)
+              )
             )
-          )
-          .run();
+            .run();
+        });
         break;
-      }
       case 'EquipmentTrainingSheetRegistered':
         tx.update(equipmentTable)
           .set({trainingSheetId: event.trainingSheetId})
@@ -402,20 +571,22 @@ const _updateState =
           .run();
         break;
       case 'RevokeTrainedOnEquipment':
-        tx.delete(trainedMemberstable)
-          .where(
-            and(
-              eq(trainedMemberstable.equipmentId, event.equipmentId),
-              eq(trainedMemberstable.memberNumber, event.memberNumber)
+        withUserId(tx, event.memberNumber, userId =>
+          tx.delete(trainedMemberstable)
+            .where(
+              and(
+                eq(trainedMemberstable.equipmentId, event.equipmentId),
+                eq(trainedMemberstable.userId, userId)
+              )
             )
-          )
-          .run();
+            .run()
+        );
         break;
       case 'RecurlySubscriptionUpdated': {
         const status = event.hasActiveSubscription ? 'active' : 'inactive';
-        const memberNumbers = tx
+        const userIds = tx
           .select({
-            memberNumber: memberEmailsTable.memberNumber,
+            userId: memberEmailsTable.userId,
           })
           .from(memberEmailsTable)
           .where(
@@ -428,27 +599,21 @@ const _updateState =
             )
           )
           .all()
-          .map(row => row.memberNumber);
-        if (memberNumbers.length > 0) {
+          .map(row => row.userId);
+        if (userIds.length > 0) {
           tx.update(membersTable)
-            .set({
-              status,
-            })
-            .where(inArray(membersTable.memberNumber, memberNumbers))
+            .set({status})
+            .where(inArray(membersTable.userId, userIds))
             .run();
         }
         break;
       }
-      case 'MemberRejoinedWithNewNumber': {
-        linking.link([event.oldMemberNumber, event.newMemberNumber]);
-        revokeSuperuser(tx, event.oldMemberNumber);
-        revokeSuperuser(tx, event.newMemberNumber);
+      case 'MemberRejoinedWithNewNumber':
+        linkMemberNumbers(tx, event.oldMemberNumber, event.newMemberNumber);
         break;
-      }
-      case 'MemberRejoinedWithExistingNumber': {
+      case 'MemberRejoinedWithExistingNumber':
         revokeSuperuser(tx, event.memberNumber);
         break;
-      }
       case 'EquipmentTrainingSheetRemoved': {
         tx.update(equipmentTable)
           .set({trainingSheetId: null})
@@ -456,22 +621,23 @@ const _updateState =
           .run();
         break;
       }
-      case 'TrainingStatNotificationSent': {
-        tx.insert(trainingStatsNotificationTable)
-          .values({
-            lastEmailSent: event.recordedAt,
-            memberNumber: event.toMemberNumber,
-          })
-          .onConflictDoUpdate({
-            target: trainingStatsNotificationTable.memberNumber,
-            set: {
+      case 'TrainingStatNotificationSent':
+        withUserId(tx, event.toMemberNumber, userId =>
+          tx.insert(trainingStatsNotificationTable)
+            .values({
               lastEmailSent: event.recordedAt,
-            },
-            setWhere: sql`${trainingStatsNotificationTable.lastEmailSent} < ${event.recordedAt.getTime()}`,
-          })
-          .run();
+              userId,
+            })
+            .onConflictDoUpdate({
+              target: trainingStatsNotificationTable.userId,
+              set: {
+                lastEmailSent: event.recordedAt,
+              },
+              setWhere: sql`${trainingStatsNotificationTable.lastEmailSent} < ${event.recordedAt.getTime()}`,
+            })
+            .run()
+        );
         break;
-      }
       default:
         break;
     }
@@ -484,16 +650,16 @@ const _updateEventState = (tx: DatabaseTransaction, event: StoredDomainEvent) =>
   .run();
 
 
-export function updateState (db: BetterSQLite3Database, linking: MemberLinking, logger: Logger, trackedEvent: true): (event: StoredDomainEvent) => void;
-export function updateState (db: BetterSQLite3Database, linking: MemberLinking, logger: Logger, trackedEvent: false): (event: DomainEvent) => void;
-export function updateState (db: BetterSQLite3Database, linking: MemberLinking, logger: Logger, trackedEvent: boolean) {
+export function updateState (db: BetterSQLite3Database, logger: Logger, trackedEvent: true): (event: StoredDomainEvent) => void;
+export function updateState (db: BetterSQLite3Database, logger: Logger, trackedEvent: false): (event: DomainEvent) => void;
+export function updateState (db: BetterSQLite3Database, logger: Logger, trackedEvent: boolean) {
   // Update the state without updating the stored event state information
   // This should only be used for external information which isn't tracked within the main event stream.
   return (event: StoredDomainEvent) => {
     try {
       db.transaction(
         (tx: DatabaseTransaction) => {
-          _updateState(tx, linking, event);
+          _updateState(tx, event);
           if (trackedEvent) {
             _updateEventState(tx, event);
           }

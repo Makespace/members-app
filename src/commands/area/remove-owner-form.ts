@@ -10,8 +10,6 @@ import {StatusCodes} from 'http-status-codes';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {getAreaName} from './get-area-name';
-import {membersTable} from '../../read-models/shared-state/state';
-import {eq} from 'drizzle-orm';
 import {SharedReadModel} from '../../read-models/shared-state';
 import * as O from 'fp-ts/Option';
 
@@ -74,23 +72,21 @@ const renderForm = (viewModel: ViewModel) =>
     toLoggedInContent(safe('Remove Owner'))
   );
 
-const getOwner = (db: SharedReadModel['db'], memberNumber: number) =>
+const getOwner = (readModel: SharedReadModel, memberNumber: number) =>
   pipe(
-    db
-      .select({
-        name: membersTable.name,
-        memberNumber: membersTable.memberNumber,
-        email: membersTable.primaryEmailAddress,
-      })
-      .from(membersTable)
-      .where(eq(membersTable.memberNumber, memberNumber))
-      .get(),
-    E.fromNullable(
-      failureWithStatus(
-        'The requested member does not exist',
-        StatusCodes.NOT_FOUND
-      )()
-    )
+    readModel.members.get(memberNumber),
+    E.fromOption(
+      () =>
+        failureWithStatus(
+          'The requested member does not exist',
+          StatusCodes.NOT_FOUND
+        )()
+    ),
+    E.map(member => ({
+      memberNumber: member.memberNumber,
+      name: member.name,
+      email: member.primaryEmailAddress,
+    }))
   );
 
 const paramsCodec = t.strict({
@@ -122,7 +118,7 @@ export const removeOwnerForm: Form<ViewModel> = {
         input,
         decodeParams,
         E.bind('areaName', ({areaId}) => getAreaName(readModel.db, areaId)),
-        E.bind('owner', ({memberNumber}) => getOwner(readModel.db, memberNumber)),
+        E.bind('owner', ({memberNumber}) => getOwner(readModel, memberNumber)),
         TE.fromEither
       ),
 };

@@ -22,11 +22,11 @@ import {Equipment} from '../../read-models/shared-state/return-types';
 import {SharedReadModel} from '../../read-models/shared-state';
 import {
   equipmentTable,
-  membersTable,
   ownersTable,
   trainersTable,
 } from '../../read-models/shared-state/state';
 import {eq} from 'drizzle-orm';
+import {getMemberByUserId} from '../../read-models/shared-state/member/get';
 
 type ViewModel = {
   areaOwnersThatAreNotTrainers: ReadonlyArray<{
@@ -122,24 +122,25 @@ const getPotentialTrainers = (db: SharedReadModel['db'], equipmentId: UUID) => {
   }
   const existingTrainers = pipe(
     db
-      .select({memberNumber: trainersTable.memberNumber})
+      .select({userId: trainersTable.userId})
       .from(trainersTable)
       .where(eq(trainersTable.equipmentId, equipmentId))
       .all(),
-    RA.map(({memberNumber}) => memberNumber)
+    RA.filterMap(({userId}) => getMemberByUserId(db)(userId)),
+    RA.map(member => member.memberNumber)
   );
-  const owners = db
-    .select({
-      primaryEmailAddress: membersTable.primaryEmailAddress,
-      memberNumber: membersTable.memberNumber,
-    })
-    .from(ownersTable)
-    .innerJoin(
-      membersTable,
-      eq(ownersTable.memberNumber, membersTable.memberNumber)
-    )
-    .where(eq(ownersTable.areaId, areaId.value))
-    .all();
+  const owners = pipe(
+    db
+      .select({userId: ownersTable.userId})
+      .from(ownersTable)
+      .where(eq(ownersTable.areaId, areaId.value))
+      .all(),
+    RA.filterMap(({userId}) => getMemberByUserId(db)(userId)),
+    RA.map(member => ({
+      primaryEmailAddress: member.primaryEmailAddress,
+      memberNumber: member.memberNumber,
+    }))
+  );
   return pipe(
     owners,
     RA.filter(owner => !existingTrainers.includes(owner.memberNumber)),

@@ -12,18 +12,17 @@ import {
 } from '../return-types';
 import {Actor} from '../../../types';
 import {getAreaMinimal} from '../area/get';
-import {getMergedMemberSet} from '../member/get';
-import {MemberLinking} from '../member-linking';
+import {getMemberByUserId, getMemberCore} from '../member/get';
 
 const expandTrainers =
-  (db: BetterSQLite3Database, linking: MemberLinking) =>
+  (db: BetterSQLite3Database) =>
   <T extends MinimalEquipment>(
     equipment: T
   ): T & {trainers: ReadonlyArray<TrainerInfo>} =>
     pipe(
       db
         .select({
-          memberNumber: trainersTable.memberNumber,
+          userId: trainersTable.userId,
           trainerSince: trainersTable.since,
           markedTrainerByActor: trainersTable.markedTrainerByActor,
         })
@@ -32,10 +31,8 @@ const expandTrainers =
         .all(),
       RA.filterMap(trainer =>
         pipe(
-          linking.map(trainer.memberNumber),
-          getMergedMemberSet(db),
+          getMemberByUserId(db)(trainer.userId),
           O.map(member => ({
-            // Order is important here otherwise the trainedMember memberNumber overwrites the member memberNumber which might not match due to memberNumber linking.
             ...trainer,
             ...member,
             markedTrainerByActor: O.fromEither(
@@ -51,7 +48,7 @@ const expandTrainers =
     );
 
 const expandTrainedMembers =
-  (db: BetterSQLite3Database, linking: MemberLinking) =>
+  (db: BetterSQLite3Database) =>
   <T extends MinimalEquipment>(
     equipment: T
   ): T & {trainedMembers: ReadonlyArray<TrainedMember>} =>
@@ -67,10 +64,8 @@ const expandTrainedMembers =
           trainedMember.trainedByMemberNumber
         );
         return pipe(
-          linking.map(trainedMember.memberNumber),
-          getMergedMemberSet(db),
+          getMemberByUserId(db)(trainedMember.userId),
           O.map(member => ({
-            // Order is important here otherwise the trainedMember memberNumber overwrites the member memberNumber which might not match due to memberNumber linking.
             ...trainedMember,
             ...member,
             trainedSince: trainedMember.trainedAt,
@@ -81,11 +76,7 @@ const expandTrainedMembers =
             trainedByEmail: pipe(
               trainedByMemberNumber,
               O.map(trainedByMemberNumber =>
-                pipe(
-                  linking.map(trainedByMemberNumber),
-                  getMergedMemberSet(db),
-                  O.map(m => m.primaryEmailAddress)
-                )
+                pipe(trainedByMemberNumber, getMemberCore(db), O.map(m => m.primaryEmailAddress))
               ),
               O.flatten
             ),
@@ -100,12 +91,12 @@ const expandTrainedMembers =
     );
 
 export const expandAll =
-  (db: BetterSQLite3Database, linking: MemberLinking) =>
+  (db: BetterSQLite3Database) =>
   <T extends MinimalEquipment>(equipment: T) => {
     return pipe(
       equipment,
-      expandTrainers(db, linking),
-      expandTrainedMembers(db, linking),
+      expandTrainers(db),
+      expandTrainedMembers(db),
       e => ({
         ...e,
         area: O.getOrElse<MinimalArea>(() => ({

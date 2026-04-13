@@ -10,27 +10,20 @@ import {redactDetailsForActor} from './redact';
 import {liftActorOrUser} from '../../members/get-all';
 import {expandAll} from './expand';
 import {getAllMemberCore, getMemberCore} from './get';
-import {MemberLinking} from '../member-linking';
 
 export const getMemberAsActorFull =
-  (
-    db: BetterSQLite3Database,
-    linking: MemberLinking
-  ): SharedReadModel['members']['getAsActor'] =>
+  (db: BetterSQLite3Database): SharedReadModel['members']['getAsActor'] =>
   (actorOrUser: Actor | User) =>
   (memberNumber: number): O.Option<Member> =>
     pipe(
       memberNumber,
-      getMemberFull(db, linking),
+      getMemberFull(db),
       O.chain(member => {
         const actor = liftActorOrUser(actorOrUser);
         const members = new Map<number, Member>();
         members.set(member.memberNumber, member);
         if (actor.tag === 'user') {
-          const actorDetails = getMemberFull(
-            db,
-            linking
-          )(actor.user.memberNumber);
+          const actorDetails = getMemberFull(db)(actor.user.memberNumber);
           if (O.isSome(actorDetails)) {
             members.set(actor.user.memberNumber, actorDetails.value);
           }
@@ -42,11 +35,11 @@ export const getMemberAsActorFull =
     );
 
 export const getAllMemberFull =
-  (db: BetterSQLite3Database, linking: MemberLinking) =>
+  (db: BetterSQLite3Database) =>
   (): ReadonlyArray<Member> =>
-    pipe(getAllMemberCore(db, linking), RA.map(expandAll(db)));
+    pipe(getAllMemberCore(db), RA.map(expandAll(db)));
 
 export const getMemberFull =
-  (db: BetterSQLite3Database, linking: MemberLinking) =>
+  (db: BetterSQLite3Database) =>
   (memberNumber: number): O.Option<Member> =>
-    pipe(memberNumber, getMemberCore(db, linking), O.map(expandAll(db)));
+    pipe(memberNumber, getMemberCore(db), O.map(expandAll(db)));

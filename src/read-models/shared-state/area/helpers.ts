@@ -7,21 +7,21 @@ import {expandAll} from './expand';
 import {Area} from '../return-types';
 import {UUID} from 'io-ts-types';
 import {equipmentTable, ownersTable} from '../state';
-import {and, eq, inArray} from 'drizzle-orm';
-import {MemberLinking} from '../member-linking';
+import {and, eq} from 'drizzle-orm';
+import {findUserId} from '../member/get';
 
 export const getAllAreaFull =
-  (db: BetterSQLite3Database, linking: MemberLinking) =>
+  (db: BetterSQLite3Database) =>
   (): ReadonlyArray<Area> =>
-    pipe(getAllAreaMinimal(db), RA.map(expandAll(db, linking)));
+    pipe(getAllAreaMinimal(db), RA.map(expandAll(db)));
 
 export const getAreaFull =
-  (db: BetterSQLite3Database, linking: MemberLinking) =>
+  (db: BetterSQLite3Database) =>
   (id: UUID): O.Option<Area> =>
-    pipe(id, getAreaMinimal(db), O.map(expandAll(db, linking)));
+    pipe(id, getAreaMinimal(db), O.map(expandAll(db)));
 
 export const isOwnerOfAreaContainingEquipment =
-  (db: BetterSQLite3Database, linking: MemberLinking) =>
+  (db: BetterSQLite3Database) =>
   (equipmentId: UUID, memberNumber: number) => {
     const area = db
       .select()
@@ -30,19 +30,20 @@ export const isOwnerOfAreaContainingEquipment =
       .get();
 
     if (area) {
-      const ownerOf = db
-        .select()
-        .from(ownersTable)
-        .where(
-          and(
-            inArray(
-              ownersTable.memberNumber,
-              Array.from(linking.map(memberNumber))
-            ),
-            eq(ownersTable.areaId, area.areaId)
-          )
+      const ownerOf = pipe(
+        findUserId(db, memberNumber),
+        O.match(
+          () => [],
+          userId =>
+            db
+              .select()
+              .from(ownersTable)
+              .where(
+                and(eq(ownersTable.userId, userId), eq(ownersTable.areaId, area.areaId))
+              )
+              .all()
         )
-        .all();
+      );
       if (ownerOf.length > 0) {
         return true;
       }

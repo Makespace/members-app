@@ -8,8 +8,7 @@ import {
   failureWithStatus,
 } from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
-import {membersTable} from '../../read-models/shared-state/state';
-import {eq} from 'drizzle-orm';
+import * as O from 'fp-ts/Option';
 
 export const constructViewModel =
   (sharedReadModel: Dependencies['sharedReadModel']) =>
@@ -32,15 +31,14 @@ export const constructViewModel =
       ),
       TE.map(() => ({
         user: user,
-        superUsers: sharedReadModel.db
-          .select({
-            memberNumber: membersTable.memberNumber,
-            name: membersTable.name,
-            primaryEmailAddress: membersTable.primaryEmailAddress,
-            superUserSince: membersTable.superUserSince,
-          })
-          .from(membersTable)
-          .where(eq(membersTable.isSuperUser, true))
-          .all(),
+        superUsers: sharedReadModel.members
+          .getAll()
+          .filter(member => member.isSuperUser)
+          .map(member => ({
+            memberNumber: member.memberNumber,
+            name: member.name,
+            primaryEmailAddress: member.primaryEmailAddress,
+            superUserSince: O.toNullable(member.superUserSince),
+          })),
       }))
     );
