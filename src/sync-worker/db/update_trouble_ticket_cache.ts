@@ -3,8 +3,7 @@ import {SyncWorkerDependencies} from '../dependencies';
 
 export const updateTroubleTicketCache =
   (googleDB: Client): SyncWorkerDependencies['updateTroubleTicketCache'] =>
-  async data => {
-    const sheetIds = [...new Set(data.map(row => row.sheet_id))];
+  async (sheetId, data) => {
     const insertStatements: InStatement[] = data.map(row => ({
       sql: `
         INSERT INTO trouble_ticket_data (
@@ -35,10 +34,10 @@ export const updateTroubleTicketCache =
     }));
     await googleDB.batch(
       [
-        ...sheetIds.map(sheetId => ({
+        {
           sql: 'DELETE FROM trouble_ticket_data WHERE sheet_id = ?',
           args: [sheetId],
-        })),
+        },
         ...insertStatements,
       ],
       'write'

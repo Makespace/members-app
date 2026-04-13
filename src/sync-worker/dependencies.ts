@@ -26,6 +26,7 @@ export interface SyncWorkerDependencies {
     data: SheetDataTable['rows']
   ) => Promise<void>;
   updateTroubleTicketCache: (
+    sheetId: string,
     data: TroubleTicketDataTable['rows']
   ) => Promise<void>;
   getTrainingSheetsToSync: () => TE.TaskEither<

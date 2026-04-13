@@ -269,6 +269,17 @@ describe('Test sync worker db', () => {
         ).toStrictEqual(RA.sort(byTimestamp)(new_data))
       );
     });
+
+    describe('Update cache for the same sheet with no rows', () => {
+      beforeEach(async () =>
+        await updateTrainingSheetCache(googleDB)(sheetId, [])
+      );
+
+      it('clears existing sheet data', async () =>
+        expect(
+          getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
+        ).toStrictEqual([]));
+    });
   });
 
   describe('Store old training sheet rows', () => {
@@ -357,7 +368,7 @@ describe('Test sync worker db', () => {
       new Date()
     );
     beforeEach(async () =>
-      await updateTroubleTicketCache(googleDB)(data)
+      await updateTroubleTicketCache(googleDB)(sheetId, data)
     );
 
     it('Get trouble ticket data', async () =>
@@ -373,7 +384,7 @@ describe('Test sync worker db', () => {
 
     describe('Add more trouble ticket data for another sheet', () => {
       beforeEach(async () =>
-        await updateTroubleTicketCache(googleDB)(data2)
+        await updateTroubleTicketCache(googleDB)(sheetId2, data2)
       );
 
       it('Get trouble ticket data for sheet 1 correctly', async () =>
@@ -401,7 +412,7 @@ describe('Test sync worker db', () => {
 
     describe('Update trouble ticket data', () => {
       beforeEach(async () =>
-        await updateTroubleTicketCache(googleDB)(data1_2)
+        await updateTroubleTicketCache(googleDB)(sheetId, data1_2)
       );
 
       it('Trouble ticket data contains the new data', async () =>
@@ -414,6 +425,21 @@ describe('Test sync worker db', () => {
             )
           )
         ).toStrictEqual(RA.sort(byTimestamp)(data1_2)));
+    });
+
+    describe('Update trouble ticket data with no rows', () => {
+      beforeEach(async () =>
+        await updateTroubleTicketCache(googleDB)(sheetId, [])
+      );
+
+      it('clears existing trouble ticket data', async () =>
+        expect(
+          getSomeOrFail(
+            getRightOrFail(
+              await getTroubleTicketData(googleDB, O.some(sheetId))(O.none)()
+            )
+          )
+        ).toStrictEqual([]));
     });
   });
 
@@ -438,7 +464,10 @@ describe('Test sync worker db', () => {
       new Date()
     );
     beforeEach(async () => {
-      await updateTroubleTicketCache(googleDB)(old_data.concat(new_data));
+      await updateTroubleTicketCache(googleDB)(
+        sheetId,
+        old_data.concat(new_data)
+      );
     });
 
     it('Get only new trouble tickets', async () =>
@@ -471,7 +500,7 @@ describe('Test sync worker db', () => {
     const sheetId = faker.string.alphanumeric({length: 12});
     const data: TroubleTicketDataTable['rows'] = [];
     beforeEach(async () =>
-      await updateTroubleTicketCache(googleDB)(data)
+      await updateTroubleTicketCache(googleDB)(sheetId, data)
     );
 
     it('No data returned', async () =>

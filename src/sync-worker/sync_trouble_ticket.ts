@@ -252,7 +252,7 @@ const syncTroubleTicketSheet = async (
       'Finished pulling trouble sheet rows, pulled %s new rows',
       rows.length
     );
-    await deps.updateTroubleTicketCache(rows);
+    await deps.updateTroubleTicketCache(troubleTicketSheetId, rows);
   }
   log.info('Finished processing trouble ticket sheet');
 };
