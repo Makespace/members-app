@@ -86,11 +86,6 @@ describe('Sync trouble ticket sheets', () => {
       expectTroubleTicketDataMatches(googleDB, sheetId, EMPTY.entries));
     it('sync recorded', () =>
       expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
-    it('no last trouble ticket row read', async () => {
-      expect(
-        getRightOrFail(await deps.lastTroubleTicketRowRead(sheetId)())
-      ).toStrictEqual({});
-    });
     describe('re-sync run again within sync interval', () => {
       let beforeResync: Date;
       beforeEach(async () => {
@@ -138,14 +133,6 @@ describe('Sync trouble ticket sheets', () => {
       ));
     it('sync recorded', () =>
       expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
-    it('last trouble ticket row read points at end of sheet', async () => {
-      expect(
-        getRightOrFail(await deps.lastTroubleTicketRowRead(sheetId)())
-      ).toStrictEqual({
-        [TROUBLE_TICKETS_EXAMPLE.metadata.sheets[0].properties.title]:
-          TROUBLE_TICKETS_EXAMPLE.entries.length + 1, // The entries don't include the row header.
-      });
-    });
     describe('re-sync run again within sync interval', () => {
       let beforeResync: Date;
       beforeEach(async () => {
@@ -173,15 +160,6 @@ describe('Sync trouble ticket sheets', () => {
 
       it('sync recorded', () =>
         expectSyncBetween(deps, sheetId, beforeResync, O.none));
-
-      it('last training sheet row read still points at end of sheet', async () => {
-        expect(
-          getRightOrFail(await deps.lastTroubleTicketRowRead(sheetId)())
-        ).toStrictEqual({
-          [TROUBLE_TICKETS_EXAMPLE.metadata.sheets[0].properties.title]:
-            TROUBLE_TICKETS_EXAMPLE.entries.length + 1, // The entries don't include the row header.
-        });
-      });
     });
   });
 });

@@ -7,17 +7,12 @@ import {
   SheetDataTable,
   TroubleTicketDataTable,
 } from './google/sheet-data-table';
-import {ReadonlyRecord} from 'fp-ts/lib/ReadonlyRecord';
 import {UUID} from 'io-ts-types';
 import {Email, Failure, ResourceVersion, StoredDomainEvent} from '../types';
 import {SharedReadModel} from '../read-models/shared-state';
 import {Resource} from '../types/resource';
 import {Dependencies} from '../dependencies';
 import {FailureWithStatus} from '../types/failure-with-status';
-
-type SheetName = string;
-type RowIndex = number;
-type LastRowRead = ReadonlyRecord<SheetName, RowIndex>;
 
 export interface SyncWorkerDependencies {
   conf: Config;
@@ -26,22 +21,14 @@ export interface SyncWorkerDependencies {
   sharedReadModel: SharedReadModel; // Unlike for the web worker we update this infrequently when required only.
   lastSync: (sheetId: string) => TE.TaskEither<string, O.Option<Date>>;
   storeSync: (sheetId: string, date: Date) => TE.TaskEither<string, void>;
-  storeTrainingSheetRowsRead: (
-    data: ReadonlyArray<SheetDataTable['rows'][0]>
-  ) => TE.TaskEither<string, void>;
-  storeTroubleTicketRowsRead: (
-    data: ReadonlyArray<TroubleTicketDataTable['rows'][0]>
-  ) => TE.TaskEither<string, void>;
-  lastTrainingSheetRowRead: (
-    sheetId: string
-  ) => TE.TaskEither<string, LastRowRead>;
-  lastTroubleTicketRowRead: (
-    troubleTicketSheetId: string
-  ) => TE.TaskEither<string, LastRowRead>;
-  clearTrainingSheetCache: (sheetId: string) => TE.TaskEither<string, void>;
-  clearTroubleTicketCache: (
-    troubleTicketSheetId: string
-  ) => TE.TaskEither<string, void>;
+  updateTrainingSheetCache: (
+    sheetId: string,
+    data: SheetDataTable['rows']
+  ) => Promise<void>;
+  updateTroubleTicketCache: (
+    sheetId: string,
+    data: TroubleTicketDataTable['rows']
+  ) => Promise<void>;
   getTrainingSheetsToSync: () => TE.TaskEither<
     string,
     ReadonlyMap<UUID, string>

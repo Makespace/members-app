@@ -9,14 +9,9 @@ import {createClient, Client} from '@libsql/client';
 import {GoogleAuth} from 'google-auth-library';
 import {lastSync} from './db/last_sync';
 import {storeSync} from './db/store_sync';
-import {lastTrainingSheetRowRead} from './db/last_training_sheet_row_read';
-import {storeTrainingSheetRowsRead} from './db/store_training_sheet_rows_read';
-import {clearTrainingSheetCache} from './db/clear_training_sheet_cache';
+import {updateTrainingSheetCache} from './db/update_training_sheet_cache';
 import {getTrainingSheetsToSync} from './db/get_training_sheets_to_sync';
-import {storeTroubleTicketRowsRead} from './db/store_trouble_ticket_rows_read';
-import {lastTroubleTicketRowRead} from './db/last_trouble_ticket_row_read';
-import {clearTroubleTicketCache} from './db/clear_trouble_ticket_cache';
-import {Logger} from 'pino';
+import {updateTroubleTicketCache} from './db/update_trouble_ticket_cache';
 import {ensureGoogleDBTablesExist} from './google/ensure-sheet-data-tables-exist';
 import {sendEmail} from '../init-dependencies/send-email';
 import nodemailer from 'nodemailer';
@@ -26,17 +21,13 @@ import {getResourceEvents} from '../init-dependencies/event-store/get-resource-e
 import {commitEvent} from '../init-dependencies/event-store/commit-event';
 import {getSheetData} from './db/get_sheet_data';
 
-const initDBCommands = (googleDB: Client, eventDB: Client, logger: Logger) => {
+const initDBCommands = (googleDB: Client, eventDB: Client) => {
   return {
     lastSync: lastSync(googleDB),
     storeSync: storeSync(googleDB),
-    lastTrainingSheetRowRead: lastTrainingSheetRowRead(googleDB),
-    storeTrainingSheetRowsRead: storeTrainingSheetRowsRead(googleDB, logger),
-    clearTrainingSheetCache: clearTrainingSheetCache(googleDB),
+    updateTrainingSheetCache: updateTrainingSheetCache(googleDB),
     getTrainingSheetsToSync: getTrainingSheetsToSync(eventDB),
-    storeTroubleTicketRowsRead: storeTroubleTicketRowsRead(googleDB),
-    lastTroubleTicketRowRead: lastTroubleTicketRowRead(googleDB),
-    clearTroubleTicketCache: clearTroubleTicketCache(googleDB),
+    updateTroubleTicketCache: updateTroubleTicketCache(googleDB),
     ensureGoogleDBTablesExist: ensureGoogleDBTablesExist(googleDB),
   };
 };
@@ -59,6 +50,7 @@ export const initDependencies = (): SyncWorkerDependencies => {
     // Google issues the credentials file and validates it.
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     credentials: JSON.parse(conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON),
+    clientOptions: {transporterOptions: {fetchImplementation: fetch}},
     scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
   });
   const google = {
@@ -100,6 +92,6 @@ export const initDependencies = (): SyncWorkerDependencies => {
     lastQuizSync: lastSync(googleDB),
     getSheetData: getSheetData(googleDB),
     commitEvent: commitEvent(eventDB, logger, () => async () => {}),
-    ...initDBCommands(googleDB, eventDB, logger),
+    ...initDBCommands(googleDB, eventDB),
   };
 };

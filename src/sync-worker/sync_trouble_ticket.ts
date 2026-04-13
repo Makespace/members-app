@@ -2,7 +2,6 @@ import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
 import * as A from 'fp-ts/Array';
 import * as RA from 'fp-ts/ReadonlyArray';
-import * as RR from 'fp-ts/ReadonlyRecord';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import {SyncWorkerDependencies} from './dependencies';
@@ -26,8 +25,7 @@ export type SyncTroubleTicketDependencies = Pick<
   | 'logger'
   | 'storeSync'
   | 'lastSync'
-  | 'storeTroubleTicketRowsRead'
-  | 'lastTroubleTicketRowRead'
+  | 'updateTroubleTicketCache'
 >;
 
 const grabColumn =
@@ -195,16 +193,7 @@ const pullTroubleTicketRows = async (
       rowEnd,
       minCol,
       maxCol
-    )();
-    if (E.isLeft(data)) {
-      log.error(
-        `Failed to pull data for trouble ticket responses rows %s to %s, skipping rest of sheet: '%s'`,
-        rowStart,
-        rowEnd,
-        data.left
-      );
-      return resultantRows;
-    }
+    );
     log.info('Pulled data from google, extracting...');
     resultantRows.push(
       ...extractTroubleTicketResponseRows(
@@ -212,7 +201,7 @@ const pullTroubleTicketRows = async (
         troubleTicketSheetId,
         sheet.properties.title,
         timezone,
-        data.right,
+        data,
         rowStart
       )
     );
@@ -243,28 +232,8 @@ const syncTroubleTicketSheet = async (
   const initialMeta = await google.pullGoogleSheetDataMetadata(
     log,
     troubleTicketSheetId
-  )();
-  if (E.isLeft(initialMeta)) {
-    log.error(
-      `Failed to get trouble ticket response sheet metadata. Not continuing: ${initialMeta.left}`
-    );
-    return;
-  }
-
-  log.info('Getting last row read...');
-
-  const lastRowRead =
-    await deps.lastTroubleTicketRowRead(troubleTicketSheetId)();
-
-  if (E.isLeft(lastRowRead)) {
-    log.warn('Failed to get last row read data');
-    log.warn(lastRowRead.left);
-    return;
-  }
-
-  log.info('Got last row read data: %o', lastRowRead.right);
-
-  for (const sheet of initialMeta.right.sheets) {
+  );
+  for (const sheet of initialMeta.sheets) {
     const sheetLog = log.child({sheet_name: sheet.properties.title});
     if (!shouldPullFromSheet(sheet)) {
       sheetLog.warn(
@@ -278,21 +247,15 @@ const syncTroubleTicketSheet = async (
       google,
       troubleTicketSheetId,
       sheet,
-      initialMeta.right.properties.timeZone,
-      O.getOrElse(() => 1)(
-        RR.lookup(sheet.properties.title)(lastRowRead.right)
-      ) + 1 // 1-indexed and first row is headers.
+      initialMeta.properties.timeZone,
+      // Pulling the entire sheet 
+      2 // 1-indexed and first row is headers.
     );
     log.info(
       'Finished pulling trouble sheet rows, pulled %s new rows',
       rows.length
     );
-    const rowsReadResult = await deps.storeTroubleTicketRowsRead(rows)();
-    if (E.isLeft(rowsReadResult)) {
-      sheetLog.info(
-        `Failed to store rows read: ${rowsReadResult.left}, continuing anyway...`
-      );
-    }
+    await deps.updateTroubleTicketCache(troubleTicketSheetId, rows);
   }
   log.info('Finished processing trouble ticket sheet');
 };

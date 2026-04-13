@@ -111,11 +111,6 @@ describe('Sync equipment training sheets', () => {
       expectSheetDataMatches(googleDB, sheetId, EMPTY.entries));
     it('sync recorded', () =>
       expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
-    it('no last training sheet row read', async () => {
-      expect(
-        getRightOrFail(await deps.lastTrainingSheetRowRead(sheetId)())
-      ).toStrictEqual({});
-    });
     describe('re-sync run again within sync interval', () => {
       let beforeResync: Date;
       beforeEach(async () => {
@@ -177,14 +172,6 @@ describe('Sync equipment training sheets', () => {
       expectSheetDataMatches(googleDB, sheetId, METAL_LATHE.entries));
     it('sync recorded', () =>
       expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
-    it('last training sheet row read points at end of sheet', async () => {
-      expect(
-        getRightOrFail(await deps.lastTrainingSheetRowRead(sheetId)())
-      ).toStrictEqual({
-        [METAL_LATHE.metadata.sheets[0].properties.title]:
-          METAL_LATHE.entries.length + 1, // The entries don't include the row header.
-      });
-    });
     describe('re-sync run again within sync interval', () => {
       let beforeResync: Date;
       beforeEach(async () => {
@@ -224,15 +211,6 @@ describe('Sync equipment training sheets', () => {
 
       it('sync recorded', () =>
         expectSyncBetween(deps, sheetId, beforeResync, O.none));
-
-      it('last training sheet row read still points at end of sheet', async () => {
-        expect(
-          getRightOrFail(await deps.lastTrainingSheetRowRead(sheetId)())
-        ).toStrictEqual({
-          [METAL_LATHE.metadata.sheets[0].properties.title]:
-            METAL_LATHE.entries.length + 1, // The entries don't include the row header.
-        });
-      });
     });
   });
 
@@ -255,14 +233,6 @@ describe('Sync equipment training sheets', () => {
       expectSheetDataMatches(googleDB, sheetId, LASER_CUTTER.entries));
     it('sync recorded', () =>
       expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
-    it('last training sheet row read points at end of sheet', async () => {
-      expect(
-        getRightOrFail(await deps.lastTrainingSheetRowRead(sheetId)())
-      ).toStrictEqual({
-        [LASER_CUTTER.metadata.sheets[0].properties.title]:
-          LASER_CUTTER.entries.length + 1, // The entries don't include the row header.
-      });
-    });
   });
 
   describe('training sheet with multiple response pages (different quiz questions)', () => {
@@ -284,14 +254,5 @@ describe('Sync equipment training sheets', () => {
       expectSheetDataMatches(googleDB, sheetId, BAMBU.entries));
     it('sync recorded', () =>
       expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
-    it('last training sheet row read points at end of sheet', async () => {
-      expect(
-        getRightOrFail(await deps.lastTrainingSheetRowRead(sheetId)())
-      ).toStrictEqual({
-        'Form responses 3': 3,
-        'Form responses 2': 3,
-        // 'Form responses 1': 1, This is omitted because there are not actual rows just the headers.
-      });
-    });
   });
 });

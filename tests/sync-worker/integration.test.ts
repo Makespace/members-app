@@ -3,42 +3,26 @@ import {
   pullGoogleSheetData,
   pullGoogleSheetDataMetadata,
 } from '../../src/sync-worker/google/pull_sheet_data';
-import {
-  syncTrainingSheet,
-  SyncTrainingSheetDependencies,
-} from '../../src/sync-worker/sync_training_sheet';
-import {Client, createClient} from '@libsql/client';
-
-import {getRightOrFail, getSomeOrFail} from '../helpers';
-import {ensureGoogleDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
-import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
-import {getSheetData} from '../../src/sync-worker/db/get_sheet_data';
-import {createSyncTrainingSheetDependencies, testLogger} from './util';
+import {testLogger} from './util';
 import {GoogleAuth} from 'google-auth-library';
-import {pipe} from 'fp-ts/lib/function';
-import * as RA from 'fp-ts/ReadonlyArray';
-import * as O from 'fp-ts/Option';
+import parse from 'dotenv';
+import {existsSync, readFileSync} from 'fs';
 
-const CREDENTIALS_PATH = '../test-google/credentials_new.json.ignore';
-const TEST_USER = 1741;
+// This is setup for testing within the makespace google drive structure.
+const STAGING_TEST_SHEET_ID = '19e610we8nSzo3QO-T76RzdVoCNjq75my4Fkc0eDgmSo';
 
-describe('Google training sheet integration', () => {
+describe('Google sheet integration', () => {
+  const env = existsSync('./.env') ? parse.parse(readFileSync('./.env')) : null;
+
   // These tests should be used sparingly because they actually query the real
   // google api for data.
-  let googleDB: Client;
-  let eventDB: Client;
-  let deps: SyncTrainingSheetDependencies;
   let google: GoogleHelpers;
 
-  beforeEach(async () => {
-    googleDB = createClient({url: ':memory:'});
-    eventDB = createClient({url: ':memory:'});
-    deps = createSyncTrainingSheetDependencies(googleDB, eventDB, testLogger());
-    getRightOrFail(await ensureEventTableExists(eventDB)());
-    await ensureGoogleDBTablesExist(googleDB)();
-
+  beforeEach(() => {
     const auth = new GoogleAuth({
-      keyFile: CREDENTIALS_PATH,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      credentials: JSON.parse(env!.GOOGLE_SERVICE_ACCOUNT_KEY_JSON),
+      clientOptions: {transporterOptions: {fetchImplementation: fetch}},
       scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
     });
     google = {
@@ -47,26 +31,45 @@ describe('Google training sheet integration', () => {
     };
   });
 
-  afterEach(() => {
-    googleDB.close();
-    eventDB.close();
-  });
+  const testIfCreds = (testname: string, fn: jest.ProvidesCallback) => {
+    // Only run the test if the credentials have been configured.
+    if (env && env.GOOGLE_SERVICE_ACCOUNT_KEY_JSON && env.GOOGLE_SERVICE_ACCOUNT_KEY_JSON !== "{}") {
+      it(testname, fn);
+    } else {
+      it.skip(testname, fn);
+    }
+  };
 
-  it.skip('Form 3 Resin Printer', async () => {
-    const sheetId = '1rnG8qvYXL5CucsS7swr9ajGYvHndBG1TKIbyG3KioHc';
-    await syncTrainingSheet(testLogger(), deps, google, sheetId);
-    const producedData = getRightOrFail(
-      await getSheetData(googleDB)(sheetId, O.none)()
+  testIfCreds('pulls metadata and row data from Google sheets', async () => {
+    const metadata = await google.pullGoogleSheetDataMetadata(
+      testLogger(),
+      STAGING_TEST_SHEET_ID
     );
-    const userEvent = getSomeOrFail(
-      pipe(
-        producedData,
-        RA.findFirst(
-          row =>
-            row.member_number_provided === TEST_USER && row.percentage === 100
-        )
-      )
+    expect(metadata.sheets.map(sheet => sheet.properties.title)).toContain(
+      'Form Responses 1'
     );
-    expect(userEvent.response_submitted.getTime()).toStrictEqual(1726008048000);
+
+    const data = await google.pullGoogleSheetData(
+      testLogger(),
+      STAGING_TEST_SHEET_ID,
+      'Form Responses 1',
+      1,
+      3,
+      0,
+      4
+    );
+    const rows = data.sheets[0].data[0].rowData;
+    if (!rows || rows.length !== 3) {
+      throw new Error('Expected three rows from Google sheets');
+    }
+    const [header, firstRow, secondRow] = rows;
+    if (!('values' in header) || !('values' in firstRow) || !('values' in secondRow)) {
+      throw new Error('Expected row values from Google sheets');
+    }
+    expect(header.values[0].formattedValue).toStrictEqual('Timestamp');
+    expect(header.values[1].formattedValue).toStrictEqual('Email');
+    expect(header.values[2].formattedValue).toStrictEqual('Score');
+    expect(firstRow.values[0].formattedValue).toStrictEqual('24/02/2026 16:57:25');
+    expect(secondRow.values[0].formattedValue).toStrictEqual('15/05/2026 18:24:45');
   });
 });
