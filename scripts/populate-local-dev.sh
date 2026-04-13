@@ -14,7 +14,7 @@ event 'api/areas/set-mailing-List' '{"id": "eeaf7f8b-77a3-429d-ae9d-2f7ade53736e
 
 # Metal lathe
 event 'api/equipment/add' '{"id": "4224ee94-09b0-47d4-ae60-fac46b8ca93e", "name": "Metal Lathe", "areaId": "eeaf7f8b-77a3-429d-ae9d-2f7ade53736e"}'
-event 'api/equipment/add-training-sheet' '{"equipmentId": "4224ee94-09b0-47d4-ae60-fac46b8ca93e", "trainingSheetId": "fakeTrainingSheetId"}'
+event 'api/equipment/add-training-sheet' '{"equipmentId": "4224ee94-09b0-47d4-ae60-fac46b8ca93e", "trainingSheetId": "19e610we8nSzo3QO-T76RzdVoCNjq75my4Fkc0eDgmSo"}'
 
 # Ada Admin (superuser)
 event 'api/members/create' '{"memberNumber": "1337", "email": "admin@example.com"}'

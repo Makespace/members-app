@@ -21,8 +21,6 @@ import {applyToResource} from '../../src/commands/apply-command-to-resource';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
 import {ensureGoogleDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
 import {getTroubleTicketData} from '../../src/sync-worker/db/get_trouble_ticket_data';
-import {storeTrainingSheetRowsRead} from '../../src/sync-worker/db/store_training_sheet_rows_read';
-import {storeTroubleTicketRowsRead} from '../../src/sync-worker/db/store_trouble_ticket_rows_read';
 import {SyncWorkerDependencies} from '../../src/sync-worker/dependencies';
 import {lastSync} from '../../src/sync-worker/db/last_sync';
 import {getSheetData, getSheetDataByMemberNumber} from '../../src/sync-worker/db/get_sheet_data';
@@ -30,6 +28,8 @@ import {TrainingSummaryDeps} from '../../src/sync-worker/training-summary/traini
 import {NonEmptyString} from 'io-ts-types/lib/NonEmptyString';
 import { faker } from '@faker-js/faker';
 import { UUID } from 'io-ts-types';
+import { updateTrainingSheetCache } from '../../src/sync-worker/db/update_training_sheet_cache';
+import { updateTroubleTicketCache } from '../../src/sync-worker/db/update_trouble_ticket_cache';
 
 const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
 
@@ -58,8 +58,8 @@ export type TestFramework = {
   eventStoreDb: libsqlClient.Client;
   googleDB: libsqlClient.Client;
   getTroubleTicketData: Dependencies['getTroubleTicketData'];
-  storeTrainingSheetRowsRead: SyncWorkerDependencies['storeTrainingSheetRowsRead'];
-  storeTroubleTicketRowsRead: SyncWorkerDependencies['storeTroubleTicketRowsRead'];
+  updateTrainingSheetCache: SyncWorkerDependencies['updateTrainingSheetCache'];
+  updateTroubleTicketCache: SyncWorkerDependencies['updateTroubleTicketCache'];
   close: () => void;
   lastSync: SyncWorkerDependencies['lastSync'];
   getSheetData: Dependencies['getSheetData'];
@@ -137,8 +137,8 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       googleDB,
       O.some(TROUBLE_TICKET_SHEET_ID)
     ),
-    storeTrainingSheetRowsRead: storeTrainingSheetRowsRead(googleDB, logger),
-    storeTroubleTicketRowsRead: storeTroubleTicketRowsRead(googleDB),
+    updateTrainingSheetCache: updateTrainingSheetCache(googleDB),
+    updateTroubleTicketCache: updateTroubleTicketCache(googleDB),
     eventStoreDb: eventDB,
     googleDB,
     sharedReadModel,
