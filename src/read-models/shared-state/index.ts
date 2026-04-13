@@ -30,7 +30,7 @@ import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
 import { TrainingSheetId } from '../../types/training-sheet';
 import { EquipmentId } from '../../types/equipment-id';
 import { getTrainingSheetIdMapping } from './equipment/get';
-import { findByEmail } from './member/get';
+import { findAllSuperUsers, findByEmail } from './member/get';
 import { setupEventStateTable } from './setup-event-state-table';
 import { getCurrentEventIndex } from './get-current-event-index';
 import { Int } from 'io-ts';
@@ -48,6 +48,7 @@ export type SharedReadModel = {
     getAll: () => ReadonlyArray<Member>;
     getAsActor: (user: User) => (memberNumber: number) => O.Option<Member>;
     findByEmail: (email: EmailAddress) => ReadonlyArray<MemberCoreInfo>;
+    findAllSuperUsers: () => ReadonlyArray<MemberCoreInfo>;
   };
   equipment: {
     get: (id: UUID) => O.Option<Equipment>;
@@ -102,6 +103,7 @@ export const initSharedReadModel = (
       getAll: getAllMemberFull(readModelDb),
       getAsActor: getMemberAsActorFull(readModelDb),
       findByEmail: findByEmail(readModelDb),
+      findAllSuperUsers: () => findAllSuperUsers(readModelDb),
     },
     equipment: {
       get: getEquipmentFull(readModelDb),

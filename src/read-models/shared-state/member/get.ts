@@ -103,6 +103,18 @@ export const getAllMemberCore = (
     RA.filterMap(row => getMemberByUserId(db)(row.userId as UserId))
   );
 
+export const findAllSuperUsers = (
+  db: BetterSQLite3Database
+): ReadonlyArray<MemberCoreInfo> =>
+  pipe(
+    db
+      .select({userId: membersTable.userId})
+      .from(membersTable)
+      .where(eq(membersTable.isSuperUser, true))
+      .all(),
+    RA.filterMap(row => getMemberByUserId(db)(row.userId as UserId))
+  );
+
 export const findByEmail =
   (db: BetterSQLite3Database) =>
   (email: EmailAddress): ReadonlyArray<MemberCoreInfo> =>

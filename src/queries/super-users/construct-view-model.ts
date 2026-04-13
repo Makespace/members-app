@@ -32,8 +32,7 @@ export const constructViewModel =
       TE.map(() => ({
         user: user,
         superUsers: sharedReadModel.members
-          .getAll()
-          .filter(member => member.isSuperUser)
+          .findAllSuperUsers()
           .map(member => ({
             memberNumber: member.memberNumber,
             name: member.name,
