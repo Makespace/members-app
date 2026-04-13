@@ -64,7 +64,8 @@ const expandTrainedMembers =
           trainedMember.trainedByMemberNumber
         );
         return pipe(
-          getMemberByUserId(db)(trainedMember.userId),
+          O.fromNullable(trainedMember.userId),
+          O.chain(getMemberByUserId(db)),
           O.map(member => ({
             ...trainedMember,
             ...member,

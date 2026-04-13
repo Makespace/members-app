@@ -118,9 +118,9 @@ const createTrainersTable = sql`
 
 export const trainedMemberstable = sqliteTable('trainedMembers', {
   userId: text('userId')
-    .notNull()
     .$type<UserId>()
     .references(() => membersTable.userId, { onDelete: 'cascade' }),
+  memberNumber: integer('memberNumber').notNull(),
   equipmentId: text('equipmentId')
     .notNull(),
     // .references(() => equipmentTable.id, { onDelete: 'cascade' }),
@@ -134,7 +134,8 @@ export const trainedMemberstable = sqliteTable('trainedMembers', {
 
 const createTrainedMembersTable = sql`
   CREATE TABLE IF NOT EXISTS trainedMembers (
-    userId TEXT NOT NULL,
+    userId TEXT,
+    memberNumber INTEGER NOT NULL,
     equipmentId TEXT NOT NULL,
     trainedAt INTEGER NOT NULL,
     trainedByMemberNumber INTEGER,

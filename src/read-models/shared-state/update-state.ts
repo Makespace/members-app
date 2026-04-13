@@ -17,7 +17,7 @@ import {
   trainingStatsNotificationTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {and, eq, ExtractTablesWithRelations, inArray, isNotNull, sql} from 'drizzle-orm';
+import {and, eq, ExtractTablesWithRelations, inArray, isNotNull, isNull, sql} from 'drizzle-orm';
 import {isOwnerOfAreaContainingEquipment} from './area/helpers';
 import {pipe} from 'fp-ts/lib/function';
 import {normaliseEmailAddress} from './normalise-email-address';
@@ -52,7 +52,7 @@ const insertMemberNumber = (
   tx: DatabaseTransaction,
   memberNumber: number,
   userId: UserId
-) =>
+) => {
   tx
     .insert(memberNumbersTable)
     .values({memberNumber, userId})
@@ -61,6 +61,82 @@ const insertMemberNumber = (
       set: {userId},
     })
     .run();
+  tx.update(trainedMemberstable)
+    .set({userId})
+    .where(
+      and(
+        eq(trainedMemberstable.memberNumber, memberNumber),
+        isNull(trainedMemberstable.userId)
+      )
+    )
+    .run();
+};
+
+const trainedMemberWhere = (
+  userId: O.Option<UserId>,
+  memberNumber: number,
+  equipmentId: string
+) =>
+  and(
+    eq(trainedMemberstable.equipmentId, equipmentId),
+    O.isSome(userId)
+      ? eq(trainedMemberstable.userId, userId.value)
+      : and(
+          eq(trainedMemberstable.memberNumber, memberNumber),
+          isNull(trainedMemberstable.userId)
+        )
+  );
+
+const upsertTrainedMember = (
+  tx: DatabaseTransaction,
+  input: {
+    memberNumber: number;
+    equipmentId: string;
+    trainedAt: Date;
+    trainedByMemberNumber: number | null;
+    legacyImport: boolean;
+    actor: DomainEvent['actor'];
+  }
+) => {
+  const userId = findUserId(tx, input.memberNumber);
+  const where = trainedMemberWhere(
+    userId,
+    input.memberNumber,
+    input.equipmentId
+  );
+  const existing = O.fromNullable(
+    tx.select().from(trainedMemberstable).where(where).limit(1).get()
+  );
+  if (
+    O.isSome(existing) &&
+    existing.value.trainedAt.getTime() - 1000 < input.trainedAt.getTime()
+  ) {
+    return;
+  }
+  if (O.isSome(existing)) {
+    tx.update(trainedMemberstable)
+      .set({
+        trainedAt: input.trainedAt,
+        trainedByMemberNumber: input.trainedByMemberNumber,
+        legacyImport: input.legacyImport,
+        markTrainedByActor: input.actor,
+      })
+      .where(where)
+      .run();
+  } else {
+    tx.insert(trainedMemberstable)
+      .values({
+        userId: O.toNullable(userId),
+        memberNumber: input.memberNumber,
+        equipmentId: input.equipmentId,
+        trainedAt: input.trainedAt,
+        trainedByMemberNumber: input.trainedByMemberNumber,
+        legacyImport: input.legacyImport,
+        markTrainedByActor: input.actor,
+      })
+      .run();
+  }
+};
 
 const revokeSuperuserByUserId = (tx: DatabaseTransaction, userId: UserId) =>
   tx
@@ -404,103 +480,23 @@ const _updateState =
         });
         break;
       case 'MemberTrainedOnEquipment':
-        withUserId(tx, event.memberNumber, userId => {
-          const existing = O.fromNullable(
-            tx
-              .select()
-              .from(trainedMemberstable)
-              .where(
-                and(
-                  eq(trainedMemberstable.equipmentId, event.equipmentId),
-                  eq(trainedMemberstable.userId, userId)
-                )
-              )
-              .limit(1)
-              .get()
-          );
-          if (
-            O.isSome(existing) &&
-            existing.value.trainedAt.getTime() - 1000 < event.recordedAt.getTime()
-          ) {
-            return;
-          }
-          if (O.isSome(existing)) {
-            tx.update(trainedMemberstable)
-              .set({
-                trainedAt: event.recordedAt,
-                trainedByMemberNumber: event.trainedByMemberNumber,
-                legacyImport: event.legacyImport,
-                markTrainedByActor: event.actor,
-              })
-              .where(
-                and(
-                  eq(trainedMemberstable.equipmentId, event.equipmentId),
-                  eq(trainedMemberstable.userId, userId)
-                )
-              )
-              .run();
-          } else {
-            tx.insert(trainedMemberstable)
-              .values({
-                userId,
-                equipmentId: event.equipmentId,
-                trainedAt: event.recordedAt,
-                trainedByMemberNumber: event.trainedByMemberNumber,
-                legacyImport: event.legacyImport,
-                markTrainedByActor: event.actor,
-              })
-              .run();
-          }
+        upsertTrainedMember(tx, {
+          memberNumber: event.memberNumber,
+          equipmentId: event.equipmentId,
+          trainedAt: event.recordedAt,
+          trainedByMemberNumber: event.trainedByMemberNumber,
+          legacyImport: event.legacyImport,
+          actor: event.actor,
         });
         break;
       case 'MemberTrainedOnEquipmentBy':
-        withUserId(tx, event.memberNumber, userId => {
-          const existing = O.fromNullable(
-            tx
-              .select()
-              .from(trainedMemberstable)
-              .where(
-                and(
-                  eq(trainedMemberstable.equipmentId, event.equipmentId),
-                  eq(trainedMemberstable.userId, userId)
-                )
-              )
-              .limit(1)
-              .get()
-          );
-          if (
-            O.isSome(existing) &&
-            existing.value.trainedAt.getTime() - 1000 < event.trainedAt.getTime()
-          ) {
-            return;
-          }
-          if (O.isSome(existing)) {
-            tx.update(trainedMemberstable)
-              .set({
-                trainedAt: event.trainedAt,
-                trainedByMemberNumber: event.trainedByMemberNumber,
-                legacyImport: false,
-                markTrainedByActor: event.actor,
-              })
-              .where(
-                and(
-                  eq(trainedMemberstable.equipmentId, event.equipmentId),
-                  eq(trainedMemberstable.userId, userId)
-                )
-              )
-              .run();
-          } else {
-            tx.insert(trainedMemberstable)
-              .values({
-                userId,
-                equipmentId: event.equipmentId,
-                trainedAt: event.trainedAt,
-                trainedByMemberNumber: event.trainedByMemberNumber,
-                legacyImport: false,
-                markTrainedByActor: event.actor,
-              })
-              .run();
-          }
+        upsertTrainedMember(tx, {
+          memberNumber: event.memberNumber,
+          equipmentId: event.equipmentId,
+          trainedAt: event.trainedAt,
+          trainedByMemberNumber: event.trainedByMemberNumber,
+          legacyImport: false,
+          actor: event.actor,
         });
         break;
       case 'OwnerAgreementSigned':
@@ -571,16 +567,15 @@ const _updateState =
           .run();
         break;
       case 'RevokeTrainedOnEquipment':
-        withUserId(tx, event.memberNumber, userId =>
-          tx.delete(trainedMemberstable)
-            .where(
-              and(
-                eq(trainedMemberstable.equipmentId, event.equipmentId),
-                eq(trainedMemberstable.userId, userId)
-              )
+        tx.delete(trainedMemberstable)
+          .where(
+            trainedMemberWhere(
+              findUserId(tx, event.memberNumber),
+              event.memberNumber,
+              event.equipmentId
             )
-            .run()
-        );
+          )
+          .run();
         break;
       case 'RecurlySubscriptionUpdated': {
         const status = event.hasActiveSubscription ? 'active' : 'inactive';

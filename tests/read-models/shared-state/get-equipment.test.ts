@@ -582,6 +582,50 @@ describe('get', () => {
     // These are required to check resolution of bugs on the write side or to handle things that insert with different
     // rules that the usual UI triggered insertions - for example: legacy training import.
 
+    describe('Member is marked trained before their member number is linked', () => {
+      const member = {
+        memberNumber: faker.number.int() as Int,
+        email: faker.internet.email() as EmailAddress,
+        name: undefined,
+        formOfAddress: undefined,
+      };
+      const createArea = {
+        id: faker.string.uuid() as UUID,
+        name: faker.company.buzzNoun() as NonEmptyString,
+      };
+      const equipment = {
+        id: faker.string.uuid() as UUID,
+        name: faker.company.buzzNoun() as NonEmptyString,
+        areaId: createArea.id,
+      };
+
+      beforeEach(async () => {
+        await framework.commands.area.create(createArea);
+        await framework.commands.equipment.add(equipment);
+        await framework.commands.trainers.markTrained({
+          memberNumber: member.memberNumber,
+          equipmentId: equipment.id,
+        });
+        await framework.commands.memberNumbers.linkNumberToEmail(member);
+      });
+
+      it('shows the linked member as trained', () => {
+        const memberDetails = getSomeOrFail(
+          framework.sharedReadModel.members.get(member.memberNumber)
+        );
+        const equipmentDetails = getSomeOrFail(
+          framework.sharedReadModel.equipment.get(equipment.id)
+        );
+
+        expect(memberDetails.trainedOn).toHaveLength(1);
+        expect(memberDetails.trainedOn[0].id).toStrictEqual(equipment.id);
+        expect(equipmentDetails.trainedMembers).toHaveLength(1);
+        expect(equipmentDetails.trainedMembers[0].memberNumber).toStrictEqual(
+          member.memberNumber
+        );
+      });
+    });
+
     describe('Member is marked as trained twice on a piece of equipment by the legacy import', () => {
       // This is a specific test case derived from a bug reported during QA after the legacy import.
       const member = {
