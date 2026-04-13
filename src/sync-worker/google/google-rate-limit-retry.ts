@@ -12,8 +12,8 @@ export const withGoogleRateLimitRetry = async <T>(
     numOfAttempts: 10,
     startingDelay: 2_000,
     timeMultiple: 2,
-    retry: (err, _attempt) => {
-      if ('code' in err && err.code === 429) {
+    retry: (err: unknown, _attempt) => {
+      if (typeof err === 'object' && err !== null && 'code' in err && err.code === 429) {
         logger.info(`Hit rate limit for %s - retrying...`, description);
         return true;
       }
