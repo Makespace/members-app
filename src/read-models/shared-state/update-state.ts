@@ -207,25 +207,30 @@ const _updateState =
         revokeSuperuser(tx, userId.value);
         break;
       }
-      case 'EquipmentAdded':
+      case 'EquipmentAdded': {
         tx.insert(equipmentTable)
           .values({id: event.id, name: event.name, areaId: event.areaId})
           .run();
         break;
-      case 'TrainerAdded':
-        withUserId(tx, event.memberNumber, userId => {
-          if (isOwnerOfAreaContainingEquipment(tx)(event.equipmentId, event.memberNumber)) {
-            tx.insert(trainersTable)
-              .values({
-                userId,
-                equipmentId: event.equipmentId,
-                since: event.recordedAt,
-                markedTrainerByActor: event.actor,
-              })
-              .run();
-          }
-        });
+      }
+      case 'TrainerAdded': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to add trainer, unknown member number: '${event.memberNumber}'`);
+        }
+        if (!isOwnerOfAreaContainingEquipment(tx)(event.equipmentId, userId.value)) {
+          throw new InconsistentEventError(`Unable to add trainer, user '${userId.value}' is not an owner of the equipment '${event.equipmentId}'`);
+        }
+        tx.insert(trainersTable)
+          .values({
+            userId: userId.value,
+            equipmentId: event.equipmentId,
+            since: event.recordedAt,
+            markedTrainerByActor: event.actor,
+          })
+          .run();
         break;
+      }
       case 'MemberTrainedOnEquipment':
         upsertTrainedMember(tx, {
           memberNumber: event.memberNumber,

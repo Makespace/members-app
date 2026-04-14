@@ -8,7 +8,7 @@ import {Area} from '../return-types';
 import {UUID} from 'io-ts-types';
 import {equipmentTable, ownersTable} from '../state';
 import {and, eq} from 'drizzle-orm';
-import {findUserId} from '../member/get';
+import { UserId } from '../../../types';
 
 export const getAllAreaFull =
   (db: BetterSQLite3Database) =>
@@ -22,7 +22,7 @@ export const getAreaFull =
 
 export const isOwnerOfAreaContainingEquipment =
   (db: BetterSQLite3Database) =>
-  (equipmentId: UUID, memberNumber: number) => {
+  (equipmentId: UUID, userId: UserId) => {
     const area = db
       .select()
       .from(equipmentTable)
