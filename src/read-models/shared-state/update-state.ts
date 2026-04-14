@@ -122,7 +122,7 @@ const _updateState =
         break;
       }
       case 'MemberPrimaryEmailChanged': {
-        const userId = findUserIdByMemberNumber(tx, event.memberNumber);
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
         if (O.isNone(userId)) {
           throw new InconsistentEventError(`Unable to set primary email to '${event.email}', unknown member number: '${event.memberNumber}'`);
         }
@@ -146,48 +146,67 @@ const _updateState =
         );
         break;
       }
-      case 'MemberEmailVerificationRequested':
-        withUserId(tx, event.memberNumber, userId =>
-          tx.update(memberEmailsTable)
-            .set({
-              verificationLastSent: event.recordedAt
-            })
-            .where(
-              and(
-                eq(memberEmailsTable.userId, userId),
-                eq(memberEmailsTable.emailAddress, normaliseEmailAddress(event.email))
-              )
+      case 'MemberEmailVerificationRequested': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to update email verification requested for '${event.email}', unknown member number: '${event.memberNumber}'`);
+        }
+        const rows = tx.update(memberEmailsTable)
+          .set({
+            verificationLastSent: event.recordedAt
+          })
+          .where(
+            and(
+              eq(memberEmailsTable.userId, userId.value),
+              eq(memberEmailsTable.emailAddress, normaliseEmailAddress(event.email))
             )
-            .run()
-        );
+          )
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(
+            `Unable to update email verification requested '${event.email}' for member number: '${event.memberNumber}' - unknown email address`
+          )
+        }
         break;
-      case 'MemberDetailsUpdated':
-        withUserId(tx, event.memberNumber, userId => {
-          if (event.name) {
-            tx.update(membersTable)
-              .set({name: O.some(event.name)})
-              .where(eq(membersTable.userId, userId))
-              .run();
-          }
-          if (event.formOfAddress) {
-            tx.update(membersTable)
-              .set({formOfAddress: O.some(event.formOfAddress)})
-              .where(eq(membersTable.userId, userId))
-              .run();
-          }
-        });
-        break;
-      case 'SuperUserDeclared':
-        withUserId(tx, event.memberNumber, userId =>
+      }
+      case 'MemberDetailsUpdated': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to update member details, unknown member number: '${event.memberNumber}'`);
+        }
+        if (event.name) {
           tx.update(membersTable)
-            .set({isSuperUser: true, superUserSince: event.recordedAt})
-            .where(eq(membersTable.userId, userId))
-            .run()
-        );
+            .set({name: O.some(event.name)})
+            .where(eq(membersTable.userId, userId.value))
+            .run();
+        }
+        if (event.formOfAddress) {
+          tx.update(membersTable)
+            .set({formOfAddress: O.some(event.formOfAddress)})
+            .where(eq(membersTable.userId, userId.value))
+            .run();
+        }
         break;
-      case 'SuperUserRevoked':
-        revokeSuperuser(tx, event.memberNumber);
+      }
+      case 'SuperUserDeclared': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to set as superuser, unknown member number: '${event.memberNumber}'`);
+        }
+        tx.update(membersTable)
+          .set({isSuperUser: true, superUserSince: event.recordedAt})
+          .where(eq(membersTable.userId, userId.value))
+          .run();
         break;
+      }
+      case 'SuperUserRevoked': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to revoke superuser, unknown member number: '${event.memberNumber}'`);
+        }
+        revokeSuperuser(tx, userId.value);
+        break;
+      }
       case 'EquipmentAdded':
         tx.insert(equipmentTable)
           .values({id: event.id, name: event.name, areaId: event.areaId})
