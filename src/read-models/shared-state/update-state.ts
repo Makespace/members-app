@@ -9,7 +9,6 @@ import {
   eventStateTable,
   failedEventsTable,
   memberEmailsTable,
-  memberNumbersTable,
   membersTable,
   ownersTable,
   trainedMemberstable,
@@ -17,59 +16,14 @@ import {
   trainingStatsNotificationTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {and, eq, ExtractTablesWithRelations, inArray, isNotNull, isNull, sql} from 'drizzle-orm';
+import {and, eq, inArray, isNotNull, isNull, sql} from 'drizzle-orm';
 import {isOwnerOfAreaContainingEquipment} from './area/helpers';
 import {pipe} from 'fp-ts/lib/function';
 import {normaliseEmailAddress} from './normalise-email-address';
 import {Logger} from 'pino';
-import {SQLiteTransaction} from 'drizzle-orm/sqlite-core';
-import Database from 'better-sqlite3';
-
-type DatabaseTransaction = SQLiteTransaction<"sync", Database.RunResult, Record<string, never>, ExtractTablesWithRelations<Record<string, never>>>;
-
-const findUserId = (tx: DatabaseTransaction, memberNumber: number): O.Option<UserId> =>
-  pipe(
-    tx
-      .select({userId: memberNumbersTable.userId})
-      .from(memberNumbersTable)
-      .where(eq(memberNumbersTable.memberNumber, memberNumber))
-      .get(),
-    row => O.fromNullable(row?.userId)
-  );
-
-const withUserId = (
-  tx: DatabaseTransaction,
-  memberNumber: number,
-  f: (userId: UserId) => void
-) =>
-  pipe(
-    findUserId(tx, memberNumber),
-    O.match(() => undefined, f)
-  );
-
-const insertMemberNumber = (
-  tx: DatabaseTransaction,
-  memberNumber: number,
-  userId: UserId
-) => {
-  tx
-    .insert(memberNumbersTable)
-    .values({memberNumber, userId})
-    .onConflictDoUpdate({
-      target: memberNumbersTable.memberNumber,
-      set: {userId},
-    })
-    .run();
-  tx.update(trainedMemberstable)
-    .set({userId})
-    .where(
-      and(
-        eq(trainedMemberstable.memberNumber, memberNumber),
-        isNull(trainedMemberstable.userId)
-      )
-    )
-    .run();
-};
+import { DatabaseTransaction } from './database-transaction';
+import { addMemberNumberToExisting } from './add-member-number-to-existing';
+import { revokeSuperuser } from './revoke-super-user';
 
 const trainedMemberWhere = (
   userId: O.Option<UserId>,
@@ -137,16 +91,6 @@ const upsertTrainedMember = (
   }
 };
 
-const revokeSuperuserByUserId = (tx: DatabaseTransaction, userId: UserId) =>
-  tx
-    .update(membersTable)
-    .set({isSuperUser: false, superUserSince: null})
-    .where(eq(membersTable.userId, userId))
-    .run();
-
-const revokeSuperuser = (tx: DatabaseTransaction, memberNumber: number) =>
-  withUserId(tx, memberNumber, userId => revokeSuperuserByUserId(tx, userId));
-
 const setPrimaryEmailAddress = (
   tx: DatabaseTransaction,
   memberNumber: number,
@@ -198,140 +142,6 @@ const insertMemberEmail = (
       verifiedAt: verifiedAt ?? undefined,
     })
     .run();
-
-const earliest = (a: Date | null, b: Date | null) => {
-  if (!a) {
-    return b;
-  }
-  if (!b) {
-    return a;
-  }
-  return a < b ? a : b;
-};
-
-const latest = (a: Date, b: Date) => (a > b ? a : b);
-
-const mergeTrainingStatNotification = (
-  tx: DatabaseTransaction,
-  sourceUserId: UserId,
-  targetUserId: UserId
-) => {
-  const source = tx
-    .select()
-    .from(trainingStatsNotificationTable)
-    .where(eq(trainingStatsNotificationTable.userId, sourceUserId))
-    .get();
-  const target = tx
-    .select()
-    .from(trainingStatsNotificationTable)
-    .where(eq(trainingStatsNotificationTable.userId, targetUserId))
-    .get();
-
-  if (source && target) {
-    const sourceLastSent = source.lastEmailSent?.getTime() ?? 0;
-    const targetLastSent = target.lastEmailSent?.getTime() ?? 0;
-    if (sourceLastSent > targetLastSent) {
-      tx.update(trainingStatsNotificationTable)
-        .set({lastEmailSent: source.lastEmailSent})
-        .where(eq(trainingStatsNotificationTable.userId, targetUserId))
-        .run();
-    }
-    tx.delete(trainingStatsNotificationTable)
-      .where(eq(trainingStatsNotificationTable.userId, sourceUserId))
-      .run();
-  } else if (source) {
-    tx.update(trainingStatsNotificationTable)
-      .set({userId: targetUserId})
-      .where(eq(trainingStatsNotificationTable.userId, sourceUserId))
-      .run();
-  }
-};
-
-const mergeUsers = (
-  tx: DatabaseTransaction,
-  sourceUserId: UserId,
-  targetUserId: UserId
-) => {
-  if (sourceUserId === targetUserId) {
-    return;
-  }
-
-  const source = tx
-    .select()
-    .from(membersTable)
-    .where(eq(membersTable.userId, sourceUserId))
-    .get();
-  const target = tx
-    .select()
-    .from(membersTable)
-    .where(eq(membersTable.userId, targetUserId))
-    .get();
-
-  if (!source || !target) {
-    return;
-  }
-
-  tx.update(membersTable)
-    .set({
-      isSuperUser: source.isSuperUser || target.isSuperUser,
-      superUserSince: earliest(source.superUserSince, target.superUserSince),
-      joined: latest(source.joined, target.joined),
-    })
-    .where(eq(membersTable.userId, targetUserId))
-    .run();
-
-  tx.update(memberEmailsTable)
-    .set({userId: targetUserId})
-    .where(eq(memberEmailsTable.userId, sourceUserId))
-    .run();
-  tx.update(memberNumbersTable)
-    .set({userId: targetUserId})
-    .where(eq(memberNumbersTable.userId, sourceUserId))
-    .run();
-  tx.update(ownersTable)
-    .set({userId: targetUserId})
-    .where(eq(ownersTable.userId, sourceUserId))
-    .run();
-  tx.update(trainersTable)
-    .set({userId: targetUserId})
-    .where(eq(trainersTable.userId, sourceUserId))
-    .run();
-  tx.update(trainedMemberstable)
-    .set({userId: targetUserId})
-    .where(eq(trainedMemberstable.userId, sourceUserId))
-    .run();
-  mergeTrainingStatNotification(tx, sourceUserId, targetUserId);
-
-  tx.delete(membersTable)
-    .where(eq(membersTable.userId, sourceUserId))
-    .run();
-};
-
-const linkMemberNumbers = (
-  tx: DatabaseTransaction,
-  oldMemberNumber: number,
-  newMemberNumber: number
-) => {
-  const oldUserId = findUserId(tx, oldMemberNumber);
-  const newUserId = findUserId(tx, newMemberNumber);
-
-  if (O.isSome(oldUserId) && O.isSome(newUserId)) {
-    mergeUsers(tx, oldUserId.value, newUserId.value);
-    insertMemberNumber(tx, oldMemberNumber, newUserId.value);
-    insertMemberNumber(tx, newMemberNumber, newUserId.value);
-    revokeSuperuserByUserId(tx, newUserId.value);
-    return;
-  }
-  if (O.isSome(oldUserId)) {
-    insertMemberNumber(tx, newMemberNumber, oldUserId.value);
-    revokeSuperuserByUserId(tx, oldUserId.value);
-    return;
-  }
-  if (O.isSome(newUserId)) {
-    insertMemberNumber(tx, oldMemberNumber, newUserId.value);
-    revokeSuperuserByUserId(tx, newUserId.value);
-  }
-};
 
 const _updateState =
   (tx: DatabaseTransaction, event: DomainEvent) => {
@@ -603,7 +413,7 @@ const _updateState =
         break;
       }
       case 'MemberRejoinedWithNewNumber':
-        linkMemberNumbers(tx, event.oldMemberNumber, event.newMemberNumber);
+        addMemberNumberToExisting(tx, event.oldMemberNumber, event.newMemberNumber);
         break;
       case 'MemberRejoinedWithExistingNumber':
         revokeSuperuser(tx, event.memberNumber);
@@ -662,7 +472,8 @@ export function updateState (db: BetterSQLite3Database, logger: Logger, trackedE
     } catch (err) {
       const errType = err as Error & {code?: string};
       if (
-        ['SQLITE_CONSTRAINT_PRIMARYKEY', 'SQLITE_CONSTRAINT_FOREIGNKEY'].includes(
+        err instanceof InconsistentEventError
+        || ['SQLITE_CONSTRAINT_PRIMARYKEY', 'SQLITE_CONSTRAINT_FOREIGNKEY'].includes(
           errType.code ?? ''
         )
       ) {
