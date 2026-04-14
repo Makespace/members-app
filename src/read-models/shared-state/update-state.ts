@@ -37,7 +37,7 @@ const _updateState =
     switch (event.type) {
       case 'MemberNumberLinkedToEmail': {
         const normalisedEmailAddress = normaliseEmailAddress(event.email);
-        const existingUserId = findUserIdByMemberNumber(tx, event.memberNumber);
+        const existingUserId = findUserIdByMemberNumber(tx)(event.memberNumber);
         if (O.isSome(existingUserId)) {
           throw new InconsistentEventError(
             `Attempted to link email '${event.email}' to '${event.memberNumber}' but that member number already exists as user id '${existingUserId.value}'`
@@ -78,21 +78,27 @@ const _updateState =
       }
       case 'MemberEmailAdded': {
         const normalisedEmailAddress = normaliseEmailAddress(event.email);
-        withUserId(tx, event.memberNumber, userId => {
-          if (O.isNone(findMemberEmail(tx, userId, normalisedEmailAddress))) {
-            insertMemberEmail(
-              tx,
-              userId,
-              normalisedEmailAddress,
-              event.recordedAt,
-              null
-            );
-          }
-        });
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to add email '${normalisedEmailAddress}', unknown member number: '${event.memberNumber}'`);
+        }
+        const existingEmailUsage = findUserIdByEmail(tx)(normalisedEmailAddress, false);
+        if (O.isSome(existingEmailUsage)) {
+          throw new InconsistentEventError(
+            `Attempted to link email '${event.email}' to ${event.memberNumber} but that email already exists on user id '${existingEmailUsage.value}'`
+          );
+        }
+        insertMemberEmail(
+          tx,
+          userId.value,
+          normalisedEmailAddress,
+          event.recordedAt,
+          null,
+        );
         break;
       }
       case 'MemberEmailVerified': {
-        const userId = findUserIdByMemberNumber(tx, event.memberNumber);
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
         if (O.isNone(userId)) {
           throw new InconsistentEventError(`Unable to verify email, unknown member number: '${event.memberNumber}'`);
         }
