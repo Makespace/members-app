@@ -31,6 +31,7 @@ import { UUID } from 'io-ts-types';
 import { insertMemberNumber } from './insert-member-number';
 import { insertMemberEmail } from './insert-member-email';
 import { setPrimaryEmailAddress } from './set-primary-email';
+import { getEquipmentMinimal } from './equipment/get';
 
 const _updateState =
   (tx: DatabaseTransaction, event: DomainEvent) => {
@@ -231,26 +232,101 @@ const _updateState =
           .run();
         break;
       }
-      case 'MemberTrainedOnEquipment':
-        upsertTrainedMember(tx, {
-          memberNumber: event.memberNumber,
-          equipmentId: event.equipmentId,
-          trainedAt: event.recordedAt,
-          trainedByMemberNumber: event.trainedByMemberNumber,
-          legacyImport: event.legacyImport,
-          actor: event.actor,
-        });
+      case 'MemberTrainedOnEquipment': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to mark member trained on equipment '${event.equipmentId}', unknown member number: '${event.memberNumber}'`);
+        }
+        if (O.isNone(getEquipmentMinimal(tx)(event.equipmentId))) {
+          throw new InconsistentEventError(`Unable to mark member trained on equipment '${event.equipmentId}', unknown equipment`);
+        }
+        const existing = O.fromNullable(
+          tx
+            .select()
+            .from(trainedMemberstable)
+            .where(
+              and(
+                eq(trainedMemberstable.equipmentId, event.equipmentId),
+                eq(trainedMemberstable.userId, userId.value)
+              )
+            )
+            .limit(1)
+            .get()
+        );
+        // A bug was previously found here because the trainedAt value from the database
+        // truncates the milliseconds in the date. This leads to 2 completely duplicate events
+        // appearing different because the times are different (by < 1000 milliseconds). To prevent
+        // this we decrease the trainedAt time value by 1000ms. This does mean 2 non-duplicate events
+        // within 1s of each other won't progress further but that doesn't matter for the use-case and
+        // the information to resolve is lost by the db milliseconds truncation anyway.
+        if (
+          O.isSome(existing) &&
+          existing.value.trainedAt.getTime() - 1000 < event.recordedAt.getTime()
+        ) {
+          // If we have already marked this member as trained in the past then
+          // don't re-mark them as this would refresh their 'trained since'.
+          break;
+        }
+
+        tx.insert(trainedMemberstable)
+          .values({
+            userId: userId.value,
+            equipmentId: event.equipmentId,
+            trainedAt: event.recordedAt,
+            trainedByMemberNumber: event.trainedByMemberNumber,
+            legacyImport: event.legacyImport,
+            markTrainedByActor: event.actor,
+          })
+          .run();
         break;
-      case 'MemberTrainedOnEquipmentBy':
-        upsertTrainedMember(tx, {
-          memberNumber: event.memberNumber,
-          equipmentId: event.equipmentId,
-          trainedAt: event.trainedAt,
-          trainedByMemberNumber: event.trainedByMemberNumber,
-          legacyImport: false,
-          actor: event.actor,
-        });
+      }
+      case 'MemberTrainedOnEquipmentBy': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to mark member trained on equipment '${event.equipmentId}', unknown member number: '${event.memberNumber}'`);
+        }
+        if (O.isNone(getEquipmentMinimal(tx)(event.equipmentId))) {
+          throw new InconsistentEventError(`Unable to mark member trained on equipment '${event.equipmentId}', unknown equipment`);
+        }
+        const existing = O.fromNullable(
+          tx
+            .select()
+            .from(trainedMemberstable)
+            .where(
+              and(
+                eq(trainedMemberstable.equipmentId, event.equipmentId),
+                eq(trainedMemberstable.userId, userId.value)
+              )
+            )
+            .limit(1)
+            .get()
+        );
+        // A bug was previously found here because the trainedAt value from the database
+        // truncates the milliseconds in the date. This leads to 2 completely duplicate events
+        // appearing different because the times are different (by < 1000 milliseconds). To prevent
+        // this we decrease the trainedAt time value by 1000ms. This does mean 2 non-duplicate events
+        // within 1s of each other won't progress further but that doesn't matter for the use-case and
+        // the information to resolve is lost by the db milliseconds truncation anyway.
+        if (
+          O.isSome(existing) &&
+          existing.value.trainedAt.getTime() - 1000 < event.trainedAt.getTime()
+        ) {
+          // If we have already marked this member as trained in the past then
+          // don't re-mark them as this would refresh their 'trained since'.
+          break;
+        }
+        tx.insert(trainedMemberstable)
+          .values({
+            userId: userId.value,
+            equipmentId: event.equipmentId,
+            trainedAt: event.trainedAt,
+            trainedByMemberNumber: event.trainedByMemberNumber,
+            legacyImport: false,
+            markTrainedByActor: event.actor,
+          })
+          .run();
         break;
+      }
       case 'OwnerAgreementSigned':
         withUserId(tx, event.memberNumber, userId =>
           tx.update(membersTable)
