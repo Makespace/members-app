@@ -39,7 +39,7 @@ export const memberEmailsTable = sqliteTable('memberEmails', {
     .notNull()
     .$type<UserId>()
     .references(() => membersTable.userId, { onDelete: 'cascade' }),
-  emailAddress: text('emailAddress').notNull().$type<EmailAddress>(),
+  emailAddress: text('emailAddress').primaryKey().$type<EmailAddress>(),
   addedAt: integer('addedAt', {mode: 'timestamp_ms'}).notNull(),
   verifiedAt: integer('verifiedAt', {mode: 'timestamp_ms'}),
   verificationLastSent: integer('verificationLastSent', {mode: 'timestamp_ms'}),
@@ -48,7 +48,7 @@ export const memberEmailsTable = sqliteTable('memberEmails', {
 const createMemberEmailsTable = sql`
   CREATE TABLE IF NOT EXISTS memberEmails (
     userId TEXT NOT NULL,
-    emailAddress TEXT NOT NULL,
+    emailAddress TEXT PRIMARY KEY,
     addedAt INTEGER NOT NULL,
     verifiedAt INTEGER,
     verificationLastSent INTEGER,

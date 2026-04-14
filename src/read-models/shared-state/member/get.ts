@@ -46,7 +46,7 @@ const getMemberEmails =
       )
     );
 
-export const findUserId = (
+export const findUserIdByMemberNumber = (
   db: BetterSQLite3Database,
   memberNumber: number
 ): O.Option<UserId> =>
@@ -58,7 +58,27 @@ export const findUserId = (
       .from(memberNumbersTable)
       .where(eq(memberNumbersTable.memberNumber, memberNumber))
       .get(),
-    row => O.fromNullable(row?.userId as UserId | undefined)
+    row => O.fromNullable(row?.userId)
+  );
+
+export const findUserIdByEmail =
+  (db: BetterSQLite3Database) =>
+  (
+    email: EmailAddress,
+    mustBeVerified: boolean
+): O.Option<UserId> =>
+  pipe(
+    db
+      .select({userId: memberEmailsTable.userId})
+      .from(memberEmailsTable)
+      .where(
+        mustBeVerified ? and(
+          eq(memberEmailsTable.emailAddress, normaliseEmailAddress(email)),
+          isNotNull(memberEmailsTable.verifiedAt)
+        ) : eq(memberEmailsTable.emailAddress, normaliseEmailAddress(email))
+      )
+      .get(),
+    row => O.fromNullable(row?.userId)
   );
 
 export const getMemberByUserId =
@@ -114,21 +134,4 @@ export const findAllSuperUsers = (
       .all(),
     RA.filterMap(row => getMemberByUserId(db)(row.userId as UserId))
   );
-
-export const findByEmail =
-  (db: BetterSQLite3Database) =>
-  (email: EmailAddress): ReadonlyArray<MemberCoreInfo> =>
-    pipe(
-      db
-        .select({userId: memberEmailsTable.userId})
-        .from(memberEmailsTable)
-        .where(
-          and(
-            eq(memberEmailsTable.emailAddress, normaliseEmailAddress(email)),
-            isNotNull(memberEmailsTable.verifiedAt)
-          )
-        )
-        .all(),
-      rows => Array.from(new Set(rows.map(row => row.userId as UserId))),
-      RA.filterMap(getMemberByUserId(db))
-    );
+    

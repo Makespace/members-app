@@ -24,6 +24,14 @@ import {Logger} from 'pino';
 import { DatabaseTransaction } from './database-transaction';
 import { addMemberNumberToExisting } from './add-member-number-to-existing';
 import { revokeSuperuser } from './revoke-super-user';
+import { findByEmail, findUserId, findUserIdByEmail } from './member/get';
+import { InconsistentEventError } from './inconsistent-event-error';
+import { randomUUID } from 'node:crypto';
+import { UUID } from 'io-ts-types';
+import { insertMemberNumber } from './insert-member-number';
+import { findMemberNumberByEmail } from '../../commands/members/email-state';
+import { insertMemberEmail } from './insert-member-email';
+import { setPrimaryEmailAddress } from './set-primary-email';
 
 const trainedMemberWhere = (
   userId: O.Option<UserId>,
@@ -91,102 +99,48 @@ const upsertTrainedMember = (
   }
 };
 
-const setPrimaryEmailAddress = (
-  tx: DatabaseTransaction,
-  memberNumber: number,
-  emailAddress: EmailAddress
-) =>
-  withUserId(tx, memberNumber, userId =>
-    tx
-      .update(membersTable)
-      .set({
-        primaryEmailAddress: emailAddress,
-        gravatarHash: gravatarHashFromEmail(emailAddress),
-      })
-      .where(eq(membersTable.userId, userId))
-      .run()
-  );
-
-const findMemberEmail = (
-  tx: DatabaseTransaction,
-  userId: UserId,
-  emailAddress: EmailAddress
-) =>
-  O.fromNullable(
-    tx
-      .select()
-      .from(memberEmailsTable)
-      .where(
-        and(
-          eq(memberEmailsTable.userId, userId),
-          eq(memberEmailsTable.emailAddress, emailAddress)
-        )
-      )
-      .limit(1)
-      .get()
-  );
-
-const insertMemberEmail = (
-  tx: DatabaseTransaction,
-  userId: UserId,
-  emailAddress: EmailAddress,
-  addedAt: Date,
-  verifiedAt: Date | null
-) =>
-  tx
-    .insert(memberEmailsTable)
-    .values({
-      userId,
-      emailAddress,
-      addedAt,
-      verifiedAt: verifiedAt ?? undefined,
-    })
-    .run();
-
 const _updateState =
   (tx: DatabaseTransaction, event: DomainEvent) => {
     switch (event.type) {
       case 'MemberNumberLinkedToEmail': {
         const normalisedEmailAddress = normaliseEmailAddress(event.email);
-        const userId = pipe(
-          findUserId(tx, event.memberNumber),
-          O.getOrElse(() => userIdFromMemberNumber(event.memberNumber))
-        );
-        const existingMember = O.fromNullable(
-          tx
-            .select()
-            .from(membersTable)
-            .where(eq(membersTable.userId, userId))
-            .limit(1)
-            .get()
-        );
-        if (O.isNone(existingMember)) {
-          tx.insert(membersTable)
-            .values({
-              userId,
-              primaryEmailAddress: normalisedEmailAddress,
-              gravatarHash: gravatarHashFromEmail(normalisedEmailAddress),
-              name: O.fromNullable(event.name),
-              formOfAddress: O.fromNullable(event.formOfAddress),
-              isSuperUser: false,
-              agreementSigned: undefined,
-              superUserSince: undefined,
-              status: 'inactive',
-              joined: event.recordedAt,
-            })
-            .run();
-        }
-        insertMemberNumber(tx, event.memberNumber, userId);
-        if (O.isNone(findMemberEmail(tx, userId, normalisedEmailAddress))) {
-          insertMemberEmail(
-            tx,
-            userId,
-            normalisedEmailAddress,
-            event.recordedAt,
-            event.recordedAt
+        const existingUserId = findUserId(tx, event.memberNumber);
+        if (O.isSome(existingUserId)) {
+          throw new InconsistentEventError(
+            `Attempted to link email '${event.email}' to '${event.memberNumber}' but that member number already exists as user id '${existingUserId.value}'`
           );
         }
-        setPrimaryEmailAddress(tx, event.memberNumber, normalisedEmailAddress);
+        const existingMember = findUserIdByEmail(tx)(normalisedEmailAddress, false);
+        if (O.isSome(existingMember)) {
+          throw new InconsistentEventError(
+            `Attempted to link email '${event.email}' to ${event.memberNumber} but that email already exists as user id '${existingMember.value}'`
+          );
+        }
+
+        const newUserId = randomUUID() as UUID;
+        tx.insert(membersTable)
+          .values({
+            userId: newUserId,
+            primaryEmailAddress: normalisedEmailAddress,
+            gravatarHash: gravatarHashFromEmail(normalisedEmailAddress),
+            name: O.fromNullable(event.name),
+            formOfAddress: O.fromNullable(event.formOfAddress),
+            isSuperUser: false,
+            agreementSigned: undefined,
+            superUserSince: undefined,
+            status: 'inactive',
+            joined: event.recordedAt,
+          })
+          .run();
+        insertMemberNumber(tx, event.memberNumber, newUserId);
+        insertMemberEmail(
+          tx,
+          newUserId,
+          normalisedEmailAddress,
+          event.recordedAt,
+          event.recordedAt,
+        );
+        setPrimaryEmailAddress(tx, newUserId, normalisedEmailAddress);
         break;
       }
       case 'MemberEmailAdded': {
@@ -204,29 +158,55 @@ const _updateState =
         });
         break;
       }
-      case 'MemberEmailVerified':
-        withUserId(tx, event.memberNumber, userId =>
-          tx.update(memberEmailsTable)
-            .set({verifiedAt: event.recordedAt})
-            .where(
-              and(
-                eq(memberEmailsTable.userId, userId),
-                eq(
-                  memberEmailsTable.emailAddress,
-                  normaliseEmailAddress(event.email)
-                )
+      case 'MemberEmailVerified': {
+        const userId = findUserId(tx, event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to verify email, unknown member number: '${event.memberNumber}'`);
+        }
+        const rows = tx.update(memberEmailsTable)
+          .set({verifiedAt: event.recordedAt})
+          .where(
+            and(
+              eq(memberEmailsTable.userId, userId.value),
+              eq(
+                memberEmailsTable.emailAddress,
+                normaliseEmailAddress(event.email)
               )
             )
-            .run()
-        );
+          )
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(
+            `Unable to verify email '${event.email}' for member number: '${event.memberNumber}' - unknown email address`
+          )
+        }
         break;
-      case 'MemberPrimaryEmailChanged':
+      }
+      case 'MemberPrimaryEmailChanged': {
+        const userId = findUserId(tx, event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to set primary email to '${event.email}', unknown member number: '${event.memberNumber}'`);
+        }
+        const normalisedEmailAddress = normaliseEmailAddress(event.email);
+        const userIdByEmail = findUserIdByEmail(tx)(normalisedEmailAddress, false);
+        if (O.isSome(userIdByEmail)) {
+          if (userIdByEmail.value !== userId) {
+            throw new InconsistentEventError(
+              `Attempted to set email '${event.email}' as primary email for ${userId} when its registered to ${userIdByEmail.value} already`
+            )
+          }
+        } else {
+          throw new InconsistentEventError(
+            `Attempted to set unknown email '${event.email}' as primary email for ${userId}`
+          )
+        }
         setPrimaryEmailAddress(
           tx,
-          event.memberNumber,
-          normaliseEmailAddress(event.email)
+          userId.value,
+          normalisedEmailAddress
         );
         break;
+      }
       case 'MemberEmailVerificationRequested':
         withUserId(tx, event.memberNumber, userId =>
           tx.update(memberEmailsTable)
