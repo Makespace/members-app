@@ -23,15 +23,15 @@ export const membersTable = sqliteTable('members', {
 const createMembersTable = sql`
   CREATE TABLE IF NOT EXISTS members (
     userId TEXT PRIMARY KEY,
-    primaryEmailAddress TEXT NOT NULL,
-    gravatarHash TEXT NOT NULL,
-    name BLOB NOT NULL,
-    formOfAddress BLOB NOT NULL,
-    isSuperUser INTEGER NOT NULL,
+    primaryEmailAddress TEXT,
+    gravatarHash TEXT,
+    name BLOB,
+    formOfAddress BLOB,
+    isSuperUser INTEGER,
     superUserSince INTEGER,
     agreementSigned INTEGER,
-    status TEXT NOT NULL,
-    joined INTEGER NOT NULL
+    status TEXT,
+    joined INTEGER
   );`;
 
 export const memberEmailsTable = sqliteTable('memberEmails', {
@@ -120,7 +120,6 @@ export const trainedMemberstable = sqliteTable('trainedMembers', {
   userId: text('userId')
     .$type<UserId>()
     .references(() => membersTable.userId, { onDelete: 'cascade' }),
-  memberNumber: integer('memberNumber').notNull(),
   equipmentId: text('equipmentId')
     .notNull(),
     // .references(() => equipmentTable.id, { onDelete: 'cascade' }),
@@ -134,8 +133,7 @@ export const trainedMemberstable = sqliteTable('trainedMembers', {
 
 const createTrainedMembersTable = sql`
   CREATE TABLE IF NOT EXISTS trainedMembers (
-    userId TEXT,
-    memberNumber INTEGER NOT NULL,
+    userId TEXT NOT NULL,
     equipmentId TEXT NOT NULL,
     trainedAt INTEGER NOT NULL,
     trainedByMemberNumber INTEGER,
