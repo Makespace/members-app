@@ -47,7 +47,8 @@ const getMemberEmails =
     );
 
 export const findUserIdByMemberNumber = (
-  db: BetterSQLite3Database,
+  db: BetterSQLite3Database
+) => (
   memberNumber: number
 ): O.Option<UserId> =>
   pipe(

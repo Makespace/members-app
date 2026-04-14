@@ -24,87 +24,20 @@ import {Logger} from 'pino';
 import { DatabaseTransaction } from './database-transaction';
 import { addMemberNumberToExisting } from './add-member-number-to-existing';
 import { revokeSuperuser } from './revoke-super-user';
-import { findByEmail, findUserId, findUserIdByEmail } from './member/get';
+import { findUserIdByMemberNumber, findUserIdByEmail } from './member/get';
 import { InconsistentEventError } from './inconsistent-event-error';
 import { randomUUID } from 'node:crypto';
 import { UUID } from 'io-ts-types';
 import { insertMemberNumber } from './insert-member-number';
-import { findMemberNumberByEmail } from '../../commands/members/email-state';
 import { insertMemberEmail } from './insert-member-email';
 import { setPrimaryEmailAddress } from './set-primary-email';
-
-const trainedMemberWhere = (
-  userId: O.Option<UserId>,
-  memberNumber: number,
-  equipmentId: string
-) =>
-  and(
-    eq(trainedMemberstable.equipmentId, equipmentId),
-    O.isSome(userId)
-      ? eq(trainedMemberstable.userId, userId.value)
-      : and(
-          eq(trainedMemberstable.memberNumber, memberNumber),
-          isNull(trainedMemberstable.userId)
-        )
-  );
-
-const upsertTrainedMember = (
-  tx: DatabaseTransaction,
-  input: {
-    memberNumber: number;
-    equipmentId: string;
-    trainedAt: Date;
-    trainedByMemberNumber: number | null;
-    legacyImport: boolean;
-    actor: DomainEvent['actor'];
-  }
-) => {
-  const userId = findUserId(tx, input.memberNumber);
-  const where = trainedMemberWhere(
-    userId,
-    input.memberNumber,
-    input.equipmentId
-  );
-  const existing = O.fromNullable(
-    tx.select().from(trainedMemberstable).where(where).limit(1).get()
-  );
-  if (
-    O.isSome(existing) &&
-    existing.value.trainedAt.getTime() - 1000 < input.trainedAt.getTime()
-  ) {
-    return;
-  }
-  if (O.isSome(existing)) {
-    tx.update(trainedMemberstable)
-      .set({
-        trainedAt: input.trainedAt,
-        trainedByMemberNumber: input.trainedByMemberNumber,
-        legacyImport: input.legacyImport,
-        markTrainedByActor: input.actor,
-      })
-      .where(where)
-      .run();
-  } else {
-    tx.insert(trainedMemberstable)
-      .values({
-        userId: O.toNullable(userId),
-        memberNumber: input.memberNumber,
-        equipmentId: input.equipmentId,
-        trainedAt: input.trainedAt,
-        trainedByMemberNumber: input.trainedByMemberNumber,
-        legacyImport: input.legacyImport,
-        markTrainedByActor: input.actor,
-      })
-      .run();
-  }
-};
 
 const _updateState =
   (tx: DatabaseTransaction, event: DomainEvent) => {
     switch (event.type) {
       case 'MemberNumberLinkedToEmail': {
         const normalisedEmailAddress = normaliseEmailAddress(event.email);
-        const existingUserId = findUserId(tx, event.memberNumber);
+        const existingUserId = findUserIdByMemberNumber(tx, event.memberNumber);
         if (O.isSome(existingUserId)) {
           throw new InconsistentEventError(
             `Attempted to link email '${event.email}' to '${event.memberNumber}' but that member number already exists as user id '${existingUserId.value}'`
@@ -159,7 +92,7 @@ const _updateState =
         break;
       }
       case 'MemberEmailVerified': {
-        const userId = findUserId(tx, event.memberNumber);
+        const userId = findUserIdByMemberNumber(tx, event.memberNumber);
         if (O.isNone(userId)) {
           throw new InconsistentEventError(`Unable to verify email, unknown member number: '${event.memberNumber}'`);
         }
@@ -183,21 +116,21 @@ const _updateState =
         break;
       }
       case 'MemberPrimaryEmailChanged': {
-        const userId = findUserId(tx, event.memberNumber);
+        const userId = findUserIdByMemberNumber(tx, event.memberNumber);
         if (O.isNone(userId)) {
           throw new InconsistentEventError(`Unable to set primary email to '${event.email}', unknown member number: '${event.memberNumber}'`);
         }
         const normalisedEmailAddress = normaliseEmailAddress(event.email);
         const userIdByEmail = findUserIdByEmail(tx)(normalisedEmailAddress, false);
         if (O.isSome(userIdByEmail)) {
-          if (userIdByEmail.value !== userId) {
+          if (userIdByEmail.value !== userId.value) {
             throw new InconsistentEventError(
-              `Attempted to set email '${event.email}' as primary email for ${userId} when its registered to ${userIdByEmail.value} already`
+              `Attempted to set email '${event.email}' as primary email for ${userId.value} when its registered to ${userIdByEmail.value} already`
             )
           }
         } else {
           throw new InconsistentEventError(
-            `Attempted to set unknown email '${event.email}' as primary email for ${userId}`
+            `Attempted to set unknown email '${event.email}' as primary email for ${userId.value}`
           )
         }
         setPrimaryEmailAddress(

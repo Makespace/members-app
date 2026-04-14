@@ -15,7 +15,7 @@ import {updateState} from './update-state';
 import {Logger} from 'pino';
 import {asyncApplyExternalEventSources} from './async-apply-external-event-sources';
 import {UUID} from 'io-ts-types';
-import {EmailAddress, StoredDomainEvent, User} from '../../types';
+import {EmailAddress, StoredDomainEvent, User, UserId} from '../../types';
 import {getAllEquipmentFull, getEquipmentFull} from './equipment/helpers';
 import {getAllAreaFull, getAreaFull} from './area/helpers';
 import {
@@ -30,7 +30,7 @@ import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
 import { TrainingSheetId } from '../../types/training-sheet';
 import { EquipmentId } from '../../types/equipment-id';
 import { getTrainingSheetIdMapping } from './equipment/get';
-import { findAllSuperUsers, findByEmail } from './member/get';
+import { findAllSuperUsers, findUserIdByEmail, findUserIdByMemberNumber } from './member/get';
 import { setupEventStateTable } from './setup-event-state-table';
 import { getCurrentEventIndex } from './get-current-event-index';
 import { Int } from 'io-ts';
@@ -47,7 +47,8 @@ export type SharedReadModel = {
     get: (memberNumber: number) => O.Option<Member>;
     getAll: () => ReadonlyArray<Member>;
     getAsActor: (user: User) => (memberNumber: number) => O.Option<Member>;
-    findByEmail: (email: EmailAddress) => ReadonlyArray<MemberCoreInfo>;
+    findUserIdByEmail: (email: EmailAddress, mustBeVerified: boolean) => O.Option<UserId>;
+    findUserIdByMemberNumber: (memberNumber: number) => O.Option<UserId>;
     findAllSuperUsers: () => ReadonlyArray<MemberCoreInfo>;
   };
   equipment: {
@@ -102,7 +103,8 @@ export const initSharedReadModel = (
       get: getMemberFull(readModelDb),
       getAll: getAllMemberFull(readModelDb),
       getAsActor: getMemberAsActorFull(readModelDb),
-      findByEmail: findByEmail(readModelDb),
+      findUserIdByEmail: findUserIdByEmail(readModelDb),
+      findUserIdByMemberNumber: findUserIdByMemberNumber(readModelDb),
       findAllSuperUsers: () => findAllSuperUsers(readModelDb),
     },
     equipment: {
