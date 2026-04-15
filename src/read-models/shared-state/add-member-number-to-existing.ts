@@ -2,12 +2,12 @@ import { UserId } from "../../types";
 import { DatabaseTransaction } from "./database-transaction";
 import { InconsistentEventError } from "./inconsistent-event-error";
 import { insertMemberNumber } from "./insert-member-number";
-import { findUserId } from "./member/get";
 import * as O from 'fp-ts/Option';
 import { revokeSuperuser } from "./revoke-super-user";
 import { memberEmailsTable, memberNumbersTable, ownersTable, trainedMemberstable, trainersTable, trainingStatsNotificationTable } from "./state";
 import {eq} from 'drizzle-orm';
 import { dropRecordsByUserId } from "./drop-records";
+import { findUserIdByMemberNumber } from "./member/get";
 
 const mergeTrainingStatNotification = (
   tx: DatabaseTransaction,
@@ -97,8 +97,8 @@ export const addMemberNumberToExisting = (
     throw new InconsistentEventError(`Cannot add new member number '${newMemberNumber}' to old member record '${oldMemberNumber}' as old number is later than new number`);
   }
 
-  const oldUserId = findUserId(tx, oldMemberNumber);
-  const newUserId = findUserId(tx, newMemberNumber);
+  const oldUserId = findUserIdByMemberNumber(tx)(oldMemberNumber);
+  const newUserId = findUserIdByMemberNumber(tx)(newMemberNumber);
 
   if (O.isNone(oldUserId)) {
     throw new InconsistentEventError(`Cannot add member number '${newMemberNumber}' to unknown existing user '${oldMemberNumber}'`);

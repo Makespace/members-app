@@ -82,7 +82,7 @@ export const findUserIdByEmail =
     row => O.fromNullable(row?.userId)
   );
 
-export const getMemberByUserId =
+export const getMemberCoreByUserId =
   (db: BetterSQLite3Database) =>
   (userId: UserId): O.Option<MemberCoreInfo> => {
     const row = db
@@ -96,6 +96,7 @@ export const getMemberByUserId =
     }
     const memberNumber = memberNumbers[0];
     return O.some({
+      userId,
       memberNumber,
       pastMemberNumbers: memberNumbers.filter(n => n !== memberNumber),
       primaryEmailAddress: row.primaryEmailAddress,
@@ -111,17 +112,12 @@ export const getMemberByUserId =
     });
   };
 
-export const getMemberCore =
-  (db: BetterSQLite3Database) =>
-  (memberNumber: number): O.Option<MemberCoreInfo> =>
-    pipe(findUserId(db, memberNumber), O.chain(getMemberByUserId(db)));
-
 export const getAllMemberCore = (
   db: BetterSQLite3Database
 ): ReadonlyArray<MemberCoreInfo> =>
   pipe(
     db.select({userId: membersTable.userId}).from(membersTable).all(),
-    RA.filterMap(row => getMemberByUserId(db)(row.userId as UserId))
+    RA.filterMap(row => getMemberCoreByUserId(db)(row.userId))
   );
 
 export const findAllSuperUsers = (
@@ -133,6 +129,6 @@ export const findAllSuperUsers = (
       .from(membersTable)
       .where(eq(membersTable.isSuperUser, true))
       .all(),
-    RA.filterMap(row => getMemberByUserId(db)(row.userId as UserId))
+    RA.filterMap(row => getMemberCoreByUserId(db)(row.userId))
   );
     

@@ -18,7 +18,6 @@ import {
 } from '../return-types';
 import {Actor} from '../../../types';
 import {fieldIsNotNull, fieldIsUUID} from '../../../util';
-import {findUserId} from './get';
 
 const expandTrainedOn =
   (db: BetterSQLite3Database) =>
@@ -26,27 +25,20 @@ const expandTrainedOn =
     member: T
   ): T & {trainedOn: ReadonlyArray<TrainedOn>} =>
     pipe(
-      pipe(
-        findUserId(db, member.memberNumber),
-        O.match(
-          () => [],
-          userId =>
-            db
-              .select({
-                id: trainedMemberstable.equipmentId,
-                name: equipmentTable.name,
-                trainedAt: trainedMemberstable.trainedAt,
-                trainedByActor: trainedMemberstable.markTrainedByActor,
-              })
-              .from(trainedMemberstable)
-              .innerJoin(
-                equipmentTable,
-                eq(equipmentTable.id, trainedMemberstable.equipmentId)
-              )
-              .where(eq(trainedMemberstable.userId, userId))
-              .all()
+      db
+        .select({
+          id: trainedMemberstable.equipmentId,
+          name: equipmentTable.name,
+          trainedAt: trainedMemberstable.trainedAt,
+          trainedByActor: trainedMemberstable.markTrainedByActor,
+        })
+        .from(trainedMemberstable)
+        .innerJoin(
+          equipmentTable,
+          eq(equipmentTable.id, trainedMemberstable.equipmentId)
         )
-      ),
+        .where(eq(trainedMemberstable.userId, member.userId))
+        .all(),
       RA.map(row => ({
         ...row,
         markedTrainedByActor: O.fromEither(Actor.decode(row.trainedByActor)),
@@ -63,23 +55,16 @@ const expandOwnerOf =
     member: T
   ): T & {ownerOf: ReadonlyArray<OwnerOf>} =>
     pipe(
-      pipe(
-        findUserId(db, member.memberNumber),
-        O.match(
-          () => [],
-          userId =>
-            db
-              .select({
-                id: ownersTable.areaId,
-                name: areasTable.name,
-                ownershipRecordedAt: ownersTable.ownershipRecordedAt,
-              })
-              .from(ownersTable)
-              .leftJoin(areasTable, eq(areasTable.id, ownersTable.areaId))
-              .where(eq(ownersTable.userId, userId))
-              .all()
-        )
-      ),
+      db
+        .select({
+          id: ownersTable.areaId,
+          name: areasTable.name,
+          ownershipRecordedAt: ownersTable.ownershipRecordedAt,
+        })
+        .from(ownersTable)
+        .leftJoin(areasTable, eq(areasTable.id, ownersTable.areaId))
+        .where(eq(ownersTable.userId, member.userId))
+        .all(),
       RA.filter(fieldIsNotNull('name')),
       ownerOf => ({
         ...member,
@@ -93,26 +78,19 @@ const expandTrainerFor =
     member: T
   ): T & {trainerFor: ReadonlyArray<TrainerFor>} =>
     pipe(
-      pipe(
-        findUserId(db, member.memberNumber),
-        O.match(
-          () => [],
-          userId =>
-            db
-              .select({
-                equipment_id: trainersTable.equipmentId,
-                equipment_name: equipmentTable.name,
-                since: trainersTable.since,
-              })
-              .from(trainersTable)
-              .leftJoin(
-                equipmentTable,
-                eq(trainersTable.equipmentId, equipmentTable.id)
-              )
-              .where(eq(trainersTable.userId, userId))
-              .all()
+      db
+        .select({
+          equipment_id: trainersTable.equipmentId,
+          equipment_name: equipmentTable.name,
+          since: trainersTable.since,
+        })
+        .from(trainersTable)
+        .leftJoin(
+          equipmentTable,
+          eq(trainersTable.equipmentId, equipmentTable.id)
         )
-      ),
+        .where(eq(trainersTable.userId, member.userId))
+        .all(),
       RA.filter(fieldIsNotNull('equipment_name')),
       RA.filter(fieldIsUUID('equipment_id')),
       trainerFor => ({

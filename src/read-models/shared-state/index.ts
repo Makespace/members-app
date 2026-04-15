@@ -20,8 +20,10 @@ import {getAllEquipmentFull, getEquipmentFull} from './equipment/helpers';
 import {getAllAreaFull, getAreaFull} from './area/helpers';
 import {
   getAllMemberFull,
-  getMemberFull,
   getMemberAsActorFull,
+  getMemberFullByMemberNumber,
+  getMemberFullByEmail,
+  getMemberFullById,
 } from './member/helper';
 import {dumpCurrentState, SharedDatabaseDump} from './debug/dump';
 import {DateTime} from 'luxon';
@@ -44,7 +46,9 @@ export type SharedReadModel = {
   updateState: (event: StoredDomainEvent) => void;
   getCurrentEventIndex: () => Int;
   members: {
-    get: (memberNumber: number) => O.Option<Member>;
+    getById: (userId: UserId) => O.Option<Member>;
+    getByMemberNumber: (memberNumber: number) => O.Option<Member>;
+    getByEmail: (email: EmailAddress, mustBeVerified: boolean) => O.Option<Member>;
     getAll: () => ReadonlyArray<Member>;
     getAsActor: (user: User) => (memberNumber: number) => O.Option<Member>;
     findUserIdByEmail: (email: EmailAddress, mustBeVerified: boolean) => O.Option<UserId>;
@@ -100,7 +104,9 @@ export const initSharedReadModel = (
     ),
     getCurrentEventIndex: getCurrentEventIndex_,
     members: {
-      get: getMemberFull(readModelDb),
+      getByMemberNumber: getMemberFullByMemberNumber(readModelDb),
+      getByEmail: getMemberFullByEmail(readModelDb),
+      getById: getMemberFullById(readModelDb),
       getAll: getAllMemberFull(readModelDb),
       getAsActor: getMemberAsActorFull(readModelDb),
       findUserIdByEmail: findUserIdByEmail(readModelDb),
