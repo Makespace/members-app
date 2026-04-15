@@ -8,7 +8,7 @@ import {ownersTable} from '../state';
 import * as O from 'fp-ts/Option';
 import {Actor} from '../../../types';
 import {expandAll as expandAllEquipment} from '../equipment/expand';
-import {getMemberByUserId} from '../member/get';
+import { getMemberCoreByUserId } from '../member/get';
 
 const expandOwners =
   (db: BetterSQLite3Database) =>
@@ -21,7 +21,7 @@ const expandOwners =
         .all(),
       RA.filterMap(owner =>
         pipe(
-          getMemberByUserId(db)(owner.userId),
+          getMemberCoreByUserId(db)(owner.userId),
           O.map(member => ({
             ...member,
             agreementSigned: member.agreementSigned,

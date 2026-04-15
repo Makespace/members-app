@@ -30,20 +30,16 @@ export const isOwnerOfAreaContainingEquipment =
       .get();
 
     if (area) {
-      const ownerOf = pipe(
-        findUserId(db, memberNumber),
-        O.match(
-          () => [],
-          userId =>
-            db
-              .select()
-              .from(ownersTable)
-              .where(
-                and(eq(ownersTable.userId, userId), eq(ownersTable.areaId, area.areaId))
-              )
-              .all()
+      const ownerOf = db
+        .select()
+        .from(ownersTable)
+        .where(
+          and(
+            eq(ownersTable.userId, userId),
+            eq(ownersTable.areaId, area.areaId)
+          )
         )
-      );
+        .all();
       if (ownerOf.length > 0) {
         return true;
       }
