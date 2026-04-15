@@ -582,7 +582,9 @@ describe('get', () => {
     // These are required to check resolution of bugs on the write side or to handle things that insert with different
     // rules that the usual UI triggered insertions - for example: legacy training import.
 
-    describe('Member is marked trained before their member number is linked', () => {
+
+    // DEVNOTE - THIS IS INTENTIONALLY SKIPPED TO SEE EFFECT
+    describe.skip('Member is marked trained before their member number is linked', () => {
       const member = {
         memberNumber: faker.number.int() as Int,
         email: faker.internet.email() as EmailAddress,

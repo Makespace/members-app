@@ -14,7 +14,7 @@ import {
   trainingStatsNotificationTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {and, eq, inArray, sql} from 'drizzle-orm';
+import {and, eq, inArray, isNull, sql} from 'drizzle-orm';
 import {isOwnerOfAreaContainingEquipment} from './area/helpers';
 import {normaliseEmailAddress} from './normalise-email-address';
 import {Logger} from 'pino';
@@ -71,6 +71,20 @@ const _updateState =
           event.recordedAt,
         );
         setPrimaryEmailAddress(tx, newUserId, normalisedEmailAddress);
+
+        // DEVNOTE - THIS IS INTENTIONALLY DISABLED TO SEE EFFECT
+        // Grab any member trained on records that were created before the user was registered.
+        // This is needed due to the legacy training import.
+        // tx.update(trainedMemberstable)
+        //   .set({userId: newUserId})
+        //   .where(
+        //     and(
+        //       eq(trainedMemberstable.memberNumber, event.memberNumber),
+        //       isNull(trainedMemberstable.userId)
+        //     )
+        //   )
+        //   .run();
+        // 
         break;
       }
       case 'MemberEmailAdded': {
@@ -230,22 +244,33 @@ const _updateState =
       }
       case 'MemberTrainedOnEquipment': {
         const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+
+        // DEVNOTE - THIS IS INTENTIONALLY ENABLED TO SEE EFFECT
         if (O.isNone(userId)) {
           throw new InconsistentEventError(`Unable to mark member trained on equipment '${event.equipmentId}', unknown member number: '${event.memberNumber}'`);
         }
+        // This invalidates the memberClause bit below because userId will always be Some.
+
         if (O.isNone(getEquipmentMinimal(tx)(event.equipmentId))) {
           throw new InconsistentEventError(`Unable to mark member trained on equipment '${event.equipmentId}', unknown equipment`);
         }
+        // We allow creating 'orphaned' member trained on events to handle the case that a member was marked trained before
+        // their record was created during legacy import.
+        const memberClause = O.isSome(userId)
+          ? eq(trainedMemberstable.userId, userId.value)
+          : and(
+              isNull(trainedMemberstable.userId),
+              eq(trainedMemberstable.memberNumber, event.memberNumber)
+            );
+        const existingRowClause = and(
+          eq(trainedMemberstable.equipmentId, event.equipmentId),
+          memberClause
+        );
         const existing = O.fromNullable(
           tx
             .select()
             .from(trainedMemberstable)
-            .where(
-              and(
-                eq(trainedMemberstable.equipmentId, event.equipmentId),
-                eq(trainedMemberstable.userId, userId.value)
-              )
-            )
+            .where(existingRowClause)
             .limit(1)
             .get()
         );
@@ -264,9 +289,23 @@ const _updateState =
           break;
         }
 
+        if (O.isSome(existing)) {
+          tx.update(trainedMemberstable)
+            .set({
+              trainedAt: event.recordedAt,
+              trainedByMemberNumber: event.trainedByMemberNumber,
+              legacyImport: event.legacyImport,
+              markTrainedByActor: event.actor,
+            })
+            .where(existingRowClause)
+            .run();
+          break;
+        }
+
         tx.insert(trainedMemberstable)
           .values({
-            userId: userId.value,
+            userId: O.toNullable(userId),
+            memberNumber: event.memberNumber,
             equipmentId: event.equipmentId,
             trainedAt: event.recordedAt,
             trainedByMemberNumber: event.trainedByMemberNumber,
@@ -284,16 +323,18 @@ const _updateState =
         if (O.isNone(getEquipmentMinimal(tx)(event.equipmentId))) {
           throw new InconsistentEventError(`Unable to mark member trained on equipment '${event.equipmentId}', unknown equipment`);
         }
+
+        // Note that we don't have any legacy 'MemberTrainedOnEquipmentBy' imports so therefore don't need to handle the case of an orphaned
+        // MemberTrainedOnEquipmentBy events.
+        const existingRowClause = and(
+          eq(trainedMemberstable.equipmentId, event.equipmentId),
+          eq(trainedMemberstable.userId, userId.value)
+        );
         const existing = O.fromNullable(
           tx
             .select()
             .from(trainedMemberstable)
-            .where(
-              and(
-                eq(trainedMemberstable.equipmentId, event.equipmentId),
-                eq(trainedMemberstable.userId, userId.value)
-              )
-            )
+            .where(existingRowClause)
             .limit(1)
             .get()
         );
@@ -311,9 +352,22 @@ const _updateState =
           // don't re-mark them as this would refresh their 'trained since'.
           break;
         }
+        if (O.isSome(existing)) {
+          tx.update(trainedMemberstable)
+            .set({
+              trainedAt: event.trainedAt,
+              trainedByMemberNumber: event.trainedByMemberNumber,
+              legacyImport: false,
+              markTrainedByActor: event.actor,
+            })
+            .where(existingRowClause)
+            .run();
+          break;
+        }
         tx.insert(trainedMemberstable)
           .values({
             userId: userId.value,
+            memberNumber: event.memberNumber,
             equipmentId: event.equipmentId,
             trainedAt: event.trainedAt,
             trainedByMemberNumber: event.trainedByMemberNumber,

@@ -4,7 +4,7 @@ import { InconsistentEventError } from "./inconsistent-event-error";
 import { insertMemberNumber } from "./insert-member-number";
 import * as O from 'fp-ts/Option';
 import { revokeSuperuser } from "./revoke-super-user";
-import { memberEmailsTable, memberNumbersTable, ownersTable, trainedMemberstable, trainersTable, trainingStatsNotificationTable } from "./state";
+import { memberEmailsTable, memberNumbersTable, membersTable, ownersTable, trainedMemberstable, trainersTable, trainingStatsNotificationTable } from "./state";
 import {eq} from 'drizzle-orm';
 import { dropRecordsByUserId } from "./drop-records";
 import { findUserIdByMemberNumber } from "./member/get";
@@ -60,6 +60,27 @@ const mergeUsers = (
     return;
   }
 
+  const newMember = tx
+    .select()
+    .from(membersTable)
+    .where(eq(membersTable.userId, newUserId))
+    .get();
+
+  if (newMember) {
+    // Member details are updated with some of the details from the newer
+    // account.
+    tx.update(membersTable)
+      .set({
+        primaryEmailAddress: newMember.primaryEmailAddress,
+        gravatarHash: newMember.gravatarHash,
+        name: newMember.name,
+        formOfAddress: newMember.formOfAddress,
+        status: newMember.status,
+      })
+      .where(eq(membersTable.userId, oldUserId))
+      .run();
+  }
+
   tx.update(memberEmailsTable)
     .set({userId: oldUserId})
     .where(eq(memberEmailsTable.userId, newUserId))
@@ -93,9 +114,9 @@ export const addMemberNumberToExisting = (
   // If a user has 2 different membership numbers then we move all the records from the new member
   // and add it onto their old record.
 
-  if (oldMemberNumber > newMemberNumber) {
-    throw new InconsistentEventError(`Cannot add new member number '${newMemberNumber}' to old member record '${oldMemberNumber}' as old number is later than new number`);
-  }
+  // if (oldMemberNumber > newMemberNumber) {
+  //   throw new InconsistentEventError(`Cannot add new member number '${newMemberNumber}' to old member record '${oldMemberNumber}' as old number is later than new number`);
+  // }
 
   const oldUserId = findUserIdByMemberNumber(tx)(oldMemberNumber);
   const newUserId = findUserIdByMemberNumber(tx)(newMemberNumber);
@@ -107,6 +128,18 @@ export const addMemberNumberToExisting = (
   if (O.isNone(newUserId)) {
     // Simple case as nothing to move over.
     insertMemberNumber(tx, newMemberNumber, oldUserId.value);
+    // Grab any orphaned training records that now have a parent.
+    // DEVNOTE - THIS IS INTENTIONALLY DISABLED TO SEE EFFECT
+    // tx.update(trainedMemberstable)
+    //   .set({userId: oldUserId.value})
+    //   .where(
+    //     and(
+    //       eq(trainedMemberstable.memberNumber, newMemberNumber),
+    //       isNull(trainedMemberstable.userId)
+    //     )
+    //   )
+    //   .run();
+    // // 
     return;
   }
 

@@ -120,6 +120,9 @@ export const trainedMemberstable = sqliteTable('trainedMembers', {
   userId: text('userId')
     .$type<UserId>()
     .references(() => membersTable.userId, { onDelete: 'cascade' }),
+  // Old records may have been brought into the app before the associated member was
+  // so we mark them as 'orphaned'.
+  memberNumber: integer('memberNumber'),
   equipmentId: text('equipmentId')
     .notNull(),
     // .references(() => equipmentTable.id, { onDelete: 'cascade' }),
@@ -133,7 +136,8 @@ export const trainedMemberstable = sqliteTable('trainedMembers', {
 
 const createTrainedMembersTable = sql`
   CREATE TABLE IF NOT EXISTS trainedMembers (
-    userId TEXT NOT NULL,
+    userId TEXT,
+    memberNumber INTEGER,
     equipmentId TEXT NOT NULL,
     trainedAt INTEGER NOT NULL,
     trainedByMemberNumber INTEGER,

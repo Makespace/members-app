@@ -54,10 +54,10 @@ export const getMemberFullByMemberNumber =
   (memberNumber: number): O.Option<Member> =>
     pipe(memberNumber, findUserIdByMemberNumber(db), O.flatMap(getMemberFullByUserId(db)));
 
-export const getMemberCoreByEmail =
-  (db: BetterSQLite3Database) =>
-  (email: EmailAddress, mustBeVerified: boolean): O.Option<MemberCoreInfo> =>
-    pipe(findUserIdByEmail(db)(email, mustBeVerified), O.flatMap(getMemberCoreByUserId(db)));
+// export const getMemberCoreByEmail =
+//   (db: BetterSQLite3Database) =>
+//   (email: EmailAddress, mustBeVerified: boolean): O.Option<MemberCoreInfo> =>
+//     pipe(findUserIdByEmail(db)(email, mustBeVerified), O.flatMap(getMemberCoreByUserId(db)));
 
 export const getMemberFullByEmail =
   (db: BetterSQLite3Database) =>
