@@ -12,7 +12,8 @@ import {
 } from '../return-types';
 import {Actor} from '../../../types';
 import {getAreaMinimal} from '../area/get';
-import {getMemberByUserId, getMemberCore} from '../member/get';
+import { getMemberCoreByUserId } from '../member/get';
+import { getMemberCoreByMemberNumber } from '../member/helper';
 
 const expandTrainers =
   (db: BetterSQLite3Database) =>
@@ -31,7 +32,7 @@ const expandTrainers =
         .all(),
       RA.filterMap(trainer =>
         pipe(
-          getMemberByUserId(db)(trainer.userId),
+          getMemberCoreByUserId(db)(trainer.userId),
           O.map(member => ({
             ...trainer,
             ...member,
@@ -65,7 +66,7 @@ const expandTrainedMembers =
         );
         return pipe(
           O.fromNullable(trainedMember.userId),
-          O.chain(getMemberByUserId(db)),
+          O.chain(getMemberCoreByUserId(db)),
           O.map(member => ({
             ...trainedMember,
             ...member,
@@ -77,7 +78,7 @@ const expandTrainedMembers =
             trainedByEmail: pipe(
               trainedByMemberNumber,
               O.map(trainedByMemberNumber =>
-                pipe(trainedByMemberNumber, getMemberCore(db), O.map(m => m.primaryEmailAddress))
+                pipe(trainedByMemberNumber, getMemberCoreByMemberNumber(db), O.map(m => m.primaryEmailAddress))
               ),
               O.flatten
             ),

@@ -4,7 +4,7 @@ import * as O from 'fp-ts/Option';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {SharedReadModel} from '..';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {Member} from '../return-types';
+import {Member, MemberCoreInfo} from '../return-types';
 import {Actor, EmailAddress, User, UserId} from '../../../types';
 import {redactDetailsForActor} from './redact';
 import {liftActorOrUser} from '../../members/get-all';
@@ -39,17 +39,27 @@ export const getAllMemberFull =
   (): ReadonlyArray<Member> =>
     pipe(getAllMemberCore(db), RA.map(expandAll(db)));
 
-export const getMemberFullById =
+export const getMemberFullByUserId =
   (db: BetterSQLite3Database) =>
   (userId: UserId): O.Option<Member> =>
     pipe(userId, getMemberCoreByUserId(db), O.map(expandAll(db)));
 
+export const getMemberCoreByMemberNumber =
+  (db: BetterSQLite3Database) =>
+  (memberNumber: number): O.Option<MemberCoreInfo> =>
+    pipe(memberNumber, findUserIdByMemberNumber(db), O.flatMap(getMemberCoreByUserId(db)));
+
 export const getMemberFullByMemberNumber =
   (db: BetterSQLite3Database) =>
   (memberNumber: number): O.Option<Member> =>
-    pipe(memberNumber, findUserIdByMemberNumber(db), O.flatMap(getMemberFullById(db)));
+    pipe(memberNumber, findUserIdByMemberNumber(db), O.flatMap(getMemberFullByUserId(db)));
+
+export const getMemberCoreByEmail =
+  (db: BetterSQLite3Database) =>
+  (email: EmailAddress, mustBeVerified: boolean): O.Option<MemberCoreInfo> =>
+    pipe(findUserIdByEmail(db)(email, mustBeVerified), O.flatMap(getMemberCoreByUserId(db)));
 
 export const getMemberFullByEmail =
   (db: BetterSQLite3Database) =>
   (email: EmailAddress, mustBeVerified: boolean): O.Option<Member> =>
-    pipe(findUserIdByEmail(db)(email, mustBeVerified), O.flatMap(getMemberFullById(db)));
+    pipe(findUserIdByEmail(db)(email, mustBeVerified), O.flatMap(getMemberFullByUserId(db)));

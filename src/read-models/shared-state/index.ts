@@ -23,7 +23,7 @@ import {
   getMemberAsActorFull,
   getMemberFullByMemberNumber,
   getMemberFullByEmail,
-  getMemberFullById,
+  getMemberFullByUserId,
 } from './member/helper';
 import {dumpCurrentState, SharedDatabaseDump} from './debug/dump';
 import {DateTime} from 'luxon';
@@ -106,7 +106,7 @@ export const initSharedReadModel = (
     members: {
       getByMemberNumber: getMemberFullByMemberNumber(readModelDb),
       getByEmail: getMemberFullByEmail(readModelDb),
-      getById: getMemberFullById(readModelDb),
+      getById: getMemberFullByUserId(readModelDb),
       getAll: getAllMemberFull(readModelDb),
       getAsActor: getMemberAsActorFull(readModelDb),
       findUserIdByEmail: findUserIdByEmail(readModelDb),
