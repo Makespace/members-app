@@ -504,6 +504,10 @@ export function updateState (db: BetterSQLite3Database, logger: Logger, trackedE
         }
       )
     } catch (err) {
+      // Errors related to an inconsistent event stream should not normally be fatal.
+      // Instead they are logged as failed events which admins can check and workout why the record
+      // is inconsistent.
+      // This is better than just crashing because in most cases the inconsistency only affects a small part of the record.
       let reason: string | null = null;
       if (err instanceof InconsistentEventError) {
         reason = err.message;
