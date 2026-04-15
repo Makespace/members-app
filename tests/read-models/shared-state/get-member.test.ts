@@ -216,7 +216,7 @@ describe('get-via-shared-read-model', () => {
     [true, false].forEach(
       mustBeVerified => it(`getMemberNumberByEmail returns none - must be verified: ${mustBeVerified}`, () => {
         const result = framework.sharedReadModel.members.getByEmail(memberEmail, mustBeVerified);
-        expect(result).toHaveLength(0);
+        expect(result).toStrictEqual(O.none);
       })
     );
   });

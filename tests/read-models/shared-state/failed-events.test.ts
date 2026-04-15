@@ -47,17 +47,17 @@ describe('failed-events', () => {
     expect(framework.sharedReadModel.getCurrentEventIndex()).toStrictEqual(
       failedEvent.event_index
     );
-    expect(rows).toStrictEqual([
+    expect(rows).toHaveLength(1);
+    expect(rows[0].error).toContain(
+      'Unable to add owner, unknown member number'
+    );
+    expect(rows[0].payload).toStrictEqual(
       expect.objectContaining({
-        error: 'SQLITE_CONSTRAINT_FOREIGNKEY',
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        payload: expect.objectContaining({
-          event_id: failedEvent.event_id,
-          event_index: failedEvent.event_index,
-          type: 'OwnerAdded',
-        }),
-      }),
-    ]);
+        event_id: failedEvent.event_id,
+        event_index: failedEvent.event_index,
+        type: 'OwnerAdded',
+      })
+    );
   });
 
   it('continues applying later tracked events after a failure', () => {

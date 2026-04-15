@@ -68,16 +68,16 @@ describe('construct-view-model', () => {
     )();
 
     expect(result.count).toStrictEqual(2);
-    expect(result.failures).toStrictEqual([
+    expect(result.failures).toHaveLength(1);
+    expect(result.failures[0].error).toContain(
+      'Unable to add owner, unknown member number'
+    );
+    expect(result.failures[0].payload).toStrictEqual(
       expect.objectContaining({
-        error: expect.stringContaining('Unable to add owner, unknown member number'),
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        payload: expect.objectContaining({
-          event_id: secondFailedEvent.event_id,
-          event_index: secondFailedEvent.event_index,
-        }),
-      }),
-    ]);
+        event_id: secondFailedEvent.event_id,
+        event_index: secondFailedEvent.event_index,
+      })
+    );
   });
 
   it('fails if the logged in user is not a super user', async () => {

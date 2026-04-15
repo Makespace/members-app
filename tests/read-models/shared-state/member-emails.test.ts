@@ -89,7 +89,7 @@ describe('member email projection', () => {
 
     expect(
       framework.sharedReadModel.members.getByEmail(secondaryEmail, true)
-    ).toHaveLength(0);
+    ).toStrictEqual(O.none);
 
     await framework.commands.members.verifyEmail({
       memberNumber,
@@ -97,8 +97,8 @@ describe('member email projection', () => {
     });
 
     expect(
-      framework.sharedReadModel.members.getByEmail(secondaryEmail, true)
-    ).toHaveLength(1);
+      O.isSome(framework.sharedReadModel.members.getByEmail(secondaryEmail, true))
+    ).toBe(true);
   });
 
   it('returns member via any email when requested', async () => {
@@ -118,8 +118,8 @@ describe('member email projection', () => {
     });
 
     expect(
-      framework.sharedReadModel.members.getByEmail(secondaryEmail, false)
-    ).toHaveLength(1);
+      O.isSome(framework.sharedReadModel.members.getByEmail(secondaryEmail, false))
+    ).toBe(true);
 
     await framework.commands.members.verifyEmail({
       memberNumber,
@@ -127,8 +127,8 @@ describe('member email projection', () => {
     });
 
     expect(
-      framework.sharedReadModel.members.getByEmail(secondaryEmail, false)
-    ).toHaveLength(1);
+      O.isSome(framework.sharedReadModel.members.getByEmail(secondaryEmail, false))
+    ).toBe(true);
   });
 
   it('updates the projected primary email after a primary change', async () => {
