@@ -70,7 +70,7 @@ describe('construct-view-model', () => {
     expect(result.count).toStrictEqual(2);
     expect(result.failures).toStrictEqual([
       expect.objectContaining({
-        error: 'SQLITE_CONSTRAINT_FOREIGNKEY',
+        error: expect.stringContaining('Unable to add owner, unknown member number'),
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         payload: expect.objectContaining({
           event_id: secondFailedEvent.event_id,
