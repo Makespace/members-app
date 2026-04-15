@@ -504,18 +504,23 @@ export function updateState (db: BetterSQLite3Database, logger: Logger, trackedE
         }
       )
     } catch (err) {
-      const errType = err as Error & {code?: string};
-      if (
-        err instanceof InconsistentEventError
-        || ['SQLITE_CONSTRAINT_PRIMARYKEY', 'SQLITE_CONSTRAINT_FOREIGNKEY'].includes(
-          errType.code ?? ''
-        )
-      ) {
-        logger.error(err, 'Failed to update state with event %o', event);
+      let reason: string | null = null;
+      if (err instanceof InconsistentEventError) {
+        reason = err.message;
+      } else if (err instanceof Error){
+        const errType = err as Error & {code?: string};
+        const code = errType.code ?? '';
+        if (['SQLITE_CONSTRAINT_PRIMARYKEY', 'SQLITE_CONSTRAINT_FOREIGNKEY'].includes(code)) {
+          reason = code;
+        }
+      }
+
+      if (reason) {
+        logger.error(err, 'Failed to update state \'%s\' with event %o', reason, event);
         db.transaction((tx: DatabaseTransaction) => {
           tx.insert(failedEventsTable)
             .values({
-              error: errType.code as string,
+              error: reason,
               payload: event,
             })
             .onConflictDoNothing()
