@@ -74,7 +74,7 @@ const renderForm = (viewModel: ViewModel) =>
 
 const getOwner = (readModel: SharedReadModel, memberNumber: number) =>
   pipe(
-    readModel.members.get(memberNumber),
+    readModel.members.getByMemberNumber(memberNumber),
     E.fromOption(
       () =>
         failureWithStatus(

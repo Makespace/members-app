@@ -21,7 +21,7 @@ export const constructViewModel =
   ) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> =>
     pipe(
-      sharedReadModel.members.get(user.memberNumber),
+      sharedReadModel.members.getByMemberNumber(user.memberNumber),
       TE.fromOption(
         failureWithStatus(
           'Only super-users can see this page',

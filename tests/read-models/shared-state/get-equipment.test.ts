@@ -363,7 +363,7 @@ describe('get', () => {
     it('returns that they are not an owner', () => {
       const member = pipe(
         addTrainer.memberNumber,
-        framework.sharedReadModel.members.get,
+        framework.sharedReadModel.members.getByMemberNumber,
         getSomeOrFail
       );
       expect(member.ownerOf).toHaveLength(0);
@@ -372,7 +372,7 @@ describe('get', () => {
     it('returns that they are not a trainer', () => {
       const member = pipe(
         addTrainer.memberNumber,
-        framework.sharedReadModel.members.get,
+        framework.sharedReadModel.members.getByMemberNumber,
         getSomeOrFail
       );
       expect(member.trainerFor).toHaveLength(0);
@@ -394,7 +394,7 @@ describe('get', () => {
     it('returns that they are not an owner', () => {
       const member = pipe(
         addTrainer.memberNumber,
-        framework.sharedReadModel.members.get,
+        framework.sharedReadModel.members.getByMemberNumber,
         getSomeOrFail
       );
       expect(member.ownerOf).toHaveLength(0);
@@ -403,7 +403,7 @@ describe('get', () => {
     it('returns that they are not a trainer', () => {
       const member = pipe(
         addTrainer.memberNumber,
-        framework.sharedReadModel.members.get,
+        framework.sharedReadModel.members.getByMemberNumber,
         getSomeOrFail
       );
       expect(member.trainerFor).toHaveLength(0);
@@ -449,7 +449,7 @@ describe('get', () => {
     it('returns that they are only an owner of the other area', () => {
       const member = pipe(
         addTrainer.memberNumber,
-        framework.sharedReadModel.members.get,
+        framework.sharedReadModel.members.getByMemberNumber,
         getSomeOrFail
       );
       expect(member.ownerOf).toHaveLength(1);
@@ -459,7 +459,7 @@ describe('get', () => {
     it('returns that they are only a trainer of the equipment in the other area', () => {
       const member = pipe(
         addTrainer.memberNumber,
-        framework.sharedReadModel.members.get,
+        framework.sharedReadModel.members.getByMemberNumber,
         getSomeOrFail
       );
       expect(member.trainerFor).toHaveLength(1);
@@ -511,7 +511,7 @@ describe('get', () => {
     it('member only shows trained once', () => {
       const member = pipe(
         markTrained.memberNumber,
-        framework.sharedReadModel.members.get,
+        framework.sharedReadModel.members.getByMemberNumber,
         getSomeOrFail
       );
       expect(member.trainedOn).toHaveLength(1);
@@ -611,7 +611,7 @@ describe('get', () => {
 
       it('shows the linked member as trained', () => {
         const memberDetails = getSomeOrFail(
-          framework.sharedReadModel.members.get(member.memberNumber)
+          framework.sharedReadModel.members.getByMemberNumber(member.memberNumber)
         );
         const equipmentDetails = getSomeOrFail(
           framework.sharedReadModel.equipment.get(equipment.id)
@@ -695,7 +695,7 @@ describe('get', () => {
             getSomeOrFail(framework.sharedReadModel.equipment.get(id));
 
           const getMember = (memberNumber: number) =>
-            getSomeOrFail(framework.sharedReadModel.members.get(memberNumber));
+            getSomeOrFail(framework.sharedReadModel.members.getByMemberNumber(memberNumber));
 
           it('The member is only marked as trained on the piece of equipment once', () => {
             const m = getMember(member.memberNumber);

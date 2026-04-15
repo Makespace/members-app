@@ -31,7 +31,7 @@ export const constructViewModel =
         return TE.right(equipment.value);
       }),
       TE.let('member', () =>
-        deps.sharedReadModel.members.get(user.memberNumber)
+        deps.sharedReadModel.members.getByMemberNumber(user.memberNumber)
       ),
       TE.let('isSuperUser', ({member}) =>
         O.isNone(member) ? false : member.value.isSuperUser

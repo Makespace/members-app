@@ -13,7 +13,7 @@ export const constructViewModel =
   (sharedReadModel: Dependencies['sharedReadModel']) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> =>
     pipe(
-      sharedReadModel.members.get(user.memberNumber),
+      sharedReadModel.members.getByMemberNumber(user.memberNumber),
       TE.fromOption(
         failureWithStatus(
           'You do not have the necessary permission to see this page.',

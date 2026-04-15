@@ -7,7 +7,7 @@ import {User} from '../types';
 
 export const mustBeSuperuser = (sharedReadModel: SharedReadModel, user: User) =>
   pipe(
-    sharedReadModel.members.get(user.memberNumber),
+    sharedReadModel.members.getByMemberNumber(user.memberNumber),
     TE.fromOption(
       failureWithStatus(
         'Cannot find sufficent information about you to determine if you can access this page',

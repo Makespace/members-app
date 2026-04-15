@@ -12,7 +12,7 @@ export const isSelf = (input: {
   if (input.actor.tag !== 'user') {
     return false;
   }
-  const member = input.rm.members.get(input.actor.user.memberNumber);
+  const member = input.rm.members.getByMemberNumber(input.actor.user.memberNumber);
   if (O.isNone(member)) {
     return false;
   }

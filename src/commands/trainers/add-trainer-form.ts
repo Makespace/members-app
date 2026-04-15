@@ -26,7 +26,7 @@ import {
   trainersTable,
 } from '../../read-models/shared-state/state';
 import {eq} from 'drizzle-orm';
-import {getMemberByUserId} from '../../read-models/shared-state/member/get';
+import { getMemberCoreByUserId } from '../../read-models/shared-state/member/get';
 
 type ViewModel = {
   areaOwnersThatAreNotTrainers: ReadonlyArray<{
@@ -126,7 +126,7 @@ const getPotentialTrainers = (db: SharedReadModel['db'], equipmentId: UUID) => {
       .from(trainersTable)
       .where(eq(trainersTable.equipmentId, equipmentId))
       .all(),
-    RA.filterMap(({userId}) => getMemberByUserId(db)(userId)),
+    RA.filterMap(({userId}) => getMemberCoreByUserId(db)(userId)),
     RA.map(member => member.memberNumber)
   );
   const owners = pipe(
@@ -135,7 +135,7 @@ const getPotentialTrainers = (db: SharedReadModel['db'], equipmentId: UUID) => {
       .from(ownersTable)
       .where(eq(ownersTable.areaId, areaId.value))
       .all(),
-    RA.filterMap(({userId}) => getMemberByUserId(db)(userId)),
+    RA.filterMap(({userId}) => getMemberCoreByUserId(db)(userId)),
     RA.map(member => ({
       primaryEmailAddress: member.primaryEmailAddress,
       memberNumber: member.memberNumber,

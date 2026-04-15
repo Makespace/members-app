@@ -16,7 +16,7 @@ const expectUserIsTrainedOnEquipmentAt =
   (memberNumber: number, equipmentId: string, expectTrainedAt: Date) =>
     pipe(
       memberNumber,
-      framework.sharedReadModel.members.get,
+      framework.sharedReadModel.members.getByMemberNumber,
       getSomeOrFail,
       member => member.trainedOn,
       RA.findFirst(e => e.id === equipmentId),
@@ -30,7 +30,7 @@ const expectUserIsTrainedOnEquipment =
     expect(
       pipe(
         memberNumber,
-        framework.sharedReadModel.members.get,
+        framework.sharedReadModel.members.getByMemberNumber,
         getSomeOrFail,
         member => member.trainedOn,
         RA.map(e => e.id)
@@ -90,7 +90,7 @@ const expectUserIsOwner =
     expect(
       pipe(
         memberNumber,
-        framework.sharedReadModel.members.get,
+        framework.sharedReadModel.members.getByMemberNumber,
         getSomeOrFail,
         m => m.ownerOf,
         RA.map(a => a.id)
@@ -102,7 +102,7 @@ const expectUserIsNotOwner =
     expect(
       pipe(
         memberNumber,
-        framework.sharedReadModel.members.get,
+        framework.sharedReadModel.members.getByMemberNumber,
         getSomeOrFail,
         m => m.ownerOf,
         RA.map(a => a.id)
@@ -138,7 +138,7 @@ const expectUserIsTrainerFor =
     expect(
       pipe(
         memberNumber,
-        framework.sharedReadModel.members.get,
+        framework.sharedReadModel.members.getByMemberNumber,
         getSomeOrFail,
         m => m.trainerFor,
         RA.map(t => t.equipment_id)
@@ -206,17 +206,19 @@ describe('get-via-shared-read-model', () => {
   const memberEmail = 'foo@example.com' as EmailAddress;
   const otherMemberNumber = faker.number.int() as Int;
   const runQuery = (id = memberNumber) =>
-    pipe(id, framework.sharedReadModel.members.get, getSomeOrFail);
+    pipe(id, framework.sharedReadModel.members.getByMemberNumber, getSomeOrFail);
 
   describe('when the member does not exist', () => {
     it('get returns none', () => {
-      const result = framework.sharedReadModel.members.get(memberNumber);
+      const result = framework.sharedReadModel.members.getByMemberNumber(memberNumber);
       expect(result).toStrictEqual(O.none);
     });
-    it('findByEmail returns none', () => {
-      const result = framework.sharedReadModel.members.findByEmail(memberEmail);
-      expect(result).toHaveLength(0);
-    })
+    [true, false].forEach(
+      mustBeVerified => it(`getMemberNumberByEmail returns none - must be verified: ${mustBeVerified}`, () => {
+        const result = framework.sharedReadModel.members.getByEmail(memberEmail, mustBeVerified);
+        expect(result).toHaveLength(0);
+      })
+    );
   });
 
   describe('when the member exists', () => {
@@ -245,29 +247,31 @@ describe('get-via-shared-read-model', () => {
     });
 
     it('can find member by email', () => {
-      const result = framework.sharedReadModel.members.findByEmail(
-        memberEmail
-      );
-      expect(result).toHaveLength(1);
-      expect(result[0].memberNumber).toEqual(memberNumber);
-      expect(result[0].primaryEmailAddress).toEqual('foo@example.com');
+      const result = getSomeOrFail(framework.sharedReadModel.members.getByEmail(
+        memberEmail, true
+      ));
+      expect(result.memberNumber).toEqual(memberNumber);
+      expect(result.primaryEmailAddress).toEqual('foo@example.com');
     });
 
     it('can find member by email with case insensitive domain', () => {
-      const result = framework.sharedReadModel.members.findByEmail(
-        'foo@eXAMple.com' as EmailAddress
-      );
-      expect(result).toHaveLength(1);
-      expect(result[0].memberNumber).toEqual(memberNumber);
-      expect(result[0].primaryEmailAddress).toEqual('foo@example.com');
+      const result = getSomeOrFail(framework.sharedReadModel.members.getByEmail(
+        'foo@eXAMple.com' as EmailAddress, true
+      ));
+      expect(result.memberNumber).toEqual(memberNumber);
+      expect(result.primaryEmailAddress).toEqual('foo@example.com');
     });
 
-    it('cannot find a non-existant email', () => {
-      const result = framework.sharedReadModel.members.findByEmail(
-        faker.internet.email() as EmailAddress
-      );
-      expect(result).toHaveLength(0);
-    });
+    [true, false].forEach(
+      mustBeVerified => {
+        it(`cannot find a non-existant email - must be verified: ${mustBeVerified}`, () => {
+          const result = framework.sharedReadModel.members.getByEmail(
+            faker.internet.email() as EmailAddress, mustBeVerified
+          );
+          expect(result).toStrictEqual(O.none);
+        });
+      }
+    );
 
     describe('and their name has been recorded', () => {
       const name = faker.person.fullName();
@@ -779,9 +783,9 @@ describe('get-via-shared-read-model', () => {
 
           if (!useExistingAccount) {
             it('Searching for the member by either number shows the same base data', () => {
-              const old = framework.sharedReadModel.members.get(memberNumber);
+              const old = framework.sharedReadModel.members.getByMemberNumber(memberNumber);
               const newData =
-                framework.sharedReadModel.members.get(newMemberNumber);
+                framework.sharedReadModel.members.getByMemberNumber(newMemberNumber);
               expect(getSomeOrFail(old)).toStrictEqual(getSomeOrFail(newData));
             });
 
@@ -1205,7 +1209,7 @@ describe('get-via-shared-read-model', () => {
     });
 
     const grabMember = () =>
-      pipe(memberNumber, framework.sharedReadModel.members.get, getSomeOrFail);
+      pipe(memberNumber, framework.sharedReadModel.members.getByMemberNumber, getSomeOrFail);
 
     it('Member exists', () => expect(grabMember()).toBeDefined());
 

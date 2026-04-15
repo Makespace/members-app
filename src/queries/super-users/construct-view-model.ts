@@ -14,7 +14,7 @@ export const constructViewModel =
   (sharedReadModel: Dependencies['sharedReadModel']) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> =>
     pipe(
-      sharedReadModel.members.get(user.memberNumber),
+      sharedReadModel.members.getByMemberNumber(user.memberNumber),
       TE.fromOption(
         failureWithStatus(
           'Cannot find sufficent information about you to determine if you can access this page',

@@ -23,7 +23,7 @@ const constructEmail: SendEmail<OwnerAgreementInvite>['constructEmail'] = (
 ) =>
   pipe(
     input.recipient,
-    deps.sharedReadModel.members.get,
+    deps.sharedReadModel.members.getByMemberNumber,
     E.fromOption(() =>
       failureWithStatus(
         'Recipient is not a known member',
