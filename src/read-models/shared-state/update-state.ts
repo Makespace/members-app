@@ -1,6 +1,4 @@
 import {DomainEvent, StoredDomainEvent} from '../../types/domain-event';
-import {EmailAddress, UserId} from '../../types';
-import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
 import {gravatarHashFromEmail} from '../members/avatar';
 import {
@@ -16,9 +14,8 @@ import {
   trainingStatsNotificationTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {and, eq, inArray, isNotNull, isNull, sql} from 'drizzle-orm';
+import {and, eq, inArray, sql} from 'drizzle-orm';
 import {isOwnerOfAreaContainingEquipment} from './area/helpers';
-import {pipe} from 'fp-ts/lib/function';
 import {normaliseEmailAddress} from './normalise-email-address';
 import {Logger} from 'pino';
 import { DatabaseTransaction } from './database-transaction';
@@ -26,12 +23,11 @@ import { addMemberNumberToExisting } from './add-member-number-to-existing';
 import { revokeSuperuser } from './revoke-super-user';
 import { findUserIdByMemberNumber, findUserIdByEmail } from './member/get';
 import { InconsistentEventError } from './inconsistent-event-error';
-import { randomUUID } from 'node:crypto';
-import { UUID } from 'io-ts-types';
 import { insertMemberNumber } from './insert-member-number';
 import { insertMemberEmail } from './insert-member-email';
 import { setPrimaryEmailAddress } from './set-primary-email';
 import { getEquipmentMinimal } from './equipment/get';
+import { generateUserId } from './member/generate-user-id';
 
 const _updateState =
   (tx: DatabaseTransaction, event: DomainEvent) => {
@@ -51,7 +47,7 @@ const _updateState =
           );
         }
 
-        const newUserId = randomUUID() as UUID;
+        const newUserId = generateUserId(event.memberNumber);
         tx.insert(membersTable)
           .values({
             userId: newUserId,
