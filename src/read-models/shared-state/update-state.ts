@@ -327,142 +327,161 @@ const _updateState =
           .run();
         break;
       }
-      case 'OwnerAgreementSigned':
-        withUserId(tx, event.memberNumber, userId =>
-          tx.update(membersTable)
-            .set({agreementSigned: event.signedAt})
-            .where(eq(membersTable.userId, userId))
-            .run()
-        );
+      case 'OwnerAgreementSigned': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to mark owner agreement signed, unknown member number: '${event.memberNumber}'`);
+        }
+        tx.update(membersTable)
+          .set({agreementSigned: event.signedAt})
+          .where(eq(membersTable.userId, userId.value))
+          .run();
         break;
-      case 'AreaCreated':
+      }
+      case 'AreaCreated': {
         tx.insert(areasTable).values({id: event.id, name: event.name}).run();
         break;
-      case 'AreaRemoved':
+      }
+      case 'AreaRemoved': {
         tx.delete(areasTable).where(eq(areasTable.id, event.id)).run();
         break;
-      case 'AreaEmailUpdated':
-        tx.update(areasTable)
+      }
+      case 'AreaEmailUpdated': {
+        const rows = tx.update(areasTable)
           .set({email: event.email})
           .where(eq(areasTable.id, event.id))
           .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to mark area email updated for ${event.id} - unknown area`);
+        }
         break;
-      case 'OwnerAdded':
+      }
+      case 'OwnerAdded': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to add owner, unknown member number: '${event.memberNumber}'`);
+        }
         tx.insert(ownersTable)
           .values({
-            userId: pipe(
-              findUserId(tx, event.memberNumber),
-              O.getOrElse(() => userIdFromMemberNumber(event.memberNumber))
-            ),
+            userId: userId.value,
             areaId: event.areaId,
             ownershipRecordedAt: event.recordedAt,
             markedOwnerByActor: event.actor,
           })
           .run();
         break;
-      case 'OwnerRemoved':
-        withUserId(tx, event.memberNumber, userId => {
-          tx.delete(ownersTable)
-            .where(
-              and(
-                eq(ownersTable.userId, userId),
-                eq(ownersTable.areaId, event.areaId)
-              )
+      }
+      case 'OwnerRemoved': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to remove owner, unknown member number: '${event.memberNumber}'`);
+        }
+        tx.delete(ownersTable)
+          .where(
+            and(
+              eq(ownersTable.userId, userId.value),
+              eq(ownersTable.areaId, event.areaId)
             )
-            .run();
-          const equipmentInArea = pipe(
-            tx
-              .select({equipmentId: equipmentTable.id})
-              .from(equipmentTable)
-              .where(eq(equipmentTable.areaId, event.areaId))
-              .all(),
-            RA.map(({equipmentId}) => equipmentId)
-          );
-          tx.delete(trainersTable)
-            .where(
-              and(
-                inArray(trainersTable.equipmentId, [...equipmentInArea]),
-                eq(trainersTable.userId, userId)
-              )
+          )
+          .run();
+        const equipmentInArea = tx
+            .select({equipmentId: equipmentTable.id})
+            .from(equipmentTable)
+            .where(eq(equipmentTable.areaId, event.areaId))
+            .all()
+            .map(({equipmentId}) => equipmentId);
+        tx.delete(trainersTable)
+          .where(
+            and(
+              inArray(trainersTable.equipmentId, equipmentInArea),
+              eq(trainersTable.userId, userId.value)
             )
-            .run();
-        });
+          )
+          .run();
         break;
-      case 'EquipmentTrainingSheetRegistered':
-        tx.update(equipmentTable)
+      }
+      case 'EquipmentTrainingSheetRegistered': {
+        const rows = tx.update(equipmentTable)
           .set({trainingSheetId: event.trainingSheetId})
           .where(eq(equipmentTable.id, event.equipmentId))
           .run();
-        break;
-      case 'RevokeTrainedOnEquipment':
-        tx.delete(trainedMemberstable)
-          .where(
-            trainedMemberWhere(
-              findUserId(tx, event.memberNumber),
-              event.memberNumber,
-              event.equipmentId
-            )
-          )
-          .run();
-        break;
-      case 'RecurlySubscriptionUpdated': {
-        const status = event.hasActiveSubscription ? 'active' : 'inactive';
-        const userIds = tx
-          .select({
-            userId: memberEmailsTable.userId,
-          })
-          .from(memberEmailsTable)
-          .where(
-            and(
-              eq(
-                memberEmailsTable.emailAddress,
-                normaliseEmailAddress(event.email)
-              ),
-              isNotNull(memberEmailsTable.verifiedAt)
-            )
-          )
-          .all()
-          .map(row => row.userId);
-        if (userIds.length > 0) {
-          tx.update(membersTable)
-            .set({status})
-            .where(inArray(membersTable.userId, userIds))
-            .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to update training sheet for equipment '${event.equipmentId}' - unknown equipment`);
         }
         break;
       }
-      case 'MemberRejoinedWithNewNumber':
-        addMemberNumberToExisting(tx, event.oldMemberNumber, event.newMemberNumber);
-        break;
-      case 'MemberRejoinedWithExistingNumber':
-        revokeSuperuser(tx, event.memberNumber);
-        break;
-      case 'EquipmentTrainingSheetRemoved': {
-        tx.update(equipmentTable)
-          .set({trainingSheetId: null})
-          .where(eq(equipmentTable.id, event.equipmentId))
+      case 'RevokeTrainedOnEquipment': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to revoke training, unknown member number: '${event.memberNumber}'`);
+        }
+        tx.delete(trainedMemberstable)
+          .where(
+            and(
+              eq(trainedMemberstable.userId, userId.value),
+              eq(trainedMemberstable.equipmentId, event.equipmentId)
+            )
+          )
           .run();
         break;
       }
-      case 'TrainingStatNotificationSent':
-        withUserId(tx, event.toMemberNumber, userId =>
-          tx.insert(trainingStatsNotificationTable)
-            .values({
+      case 'RecurlySubscriptionUpdated': {
+        const status = event.hasActiveSubscription ? 'active' : 'inactive';
+        const userId = findUserIdByEmail(tx)(event.email, true);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to mark recurly subscription updated, unknown member email: '${event.email}'`);
+        }
+        tx.update(membersTable)
+          .set({status})
+          .where(eq(membersTable.userId, userId.value))
+          .run();
+        break;
+      }
+      case 'MemberRejoinedWithNewNumber': {
+        addMemberNumberToExisting(tx, event.oldMemberNumber, event.newMemberNumber);
+        break;
+      }
+      case 'MemberRejoinedWithExistingNumber': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to process member rejoining with same member number, unknown member number: '${event.memberNumber}'`);
+        }
+        revokeSuperuser(tx, userId.value);
+        break;
+      }
+      case 'EquipmentTrainingSheetRemoved': {
+        const rows = tx.update(equipmentTable)
+          .set({trainingSheetId: null})
+          .where(eq(equipmentTable.id, event.equipmentId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to remove training sheet for equipment '${event.equipmentId}' - unknown equipment`);
+        }
+        break;;
+      }
+      case 'TrainingStatNotificationSent': {
+        const userId = findUserIdByMemberNumber(tx)(event.toMemberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to update training state notification sent, unknown member number: '${event.toMemberNumber}'`);
+        }
+        tx.insert(trainingStatsNotificationTable)
+          .values({
+            lastEmailSent: event.recordedAt,
+            userId: userId.value,
+          })
+          .onConflictDoUpdate({
+            target: trainingStatsNotificationTable.userId,
+            set: {
               lastEmailSent: event.recordedAt,
-              userId,
-            })
-            .onConflictDoUpdate({
-              target: trainingStatsNotificationTable.userId,
-              set: {
-                lastEmailSent: event.recordedAt,
-              },
-              setWhere: sql`${trainingStatsNotificationTable.lastEmailSent} < ${event.recordedAt.getTime()}`,
-            })
-            .run()
-        );
+            },
+            setWhere: sql`${trainingStatsNotificationTable.lastEmailSent} < ${event.recordedAt.getTime()}`,
+          })
+          .run()
         break;
-      default:
+      }
+      default: {
         break;
+      }
     }
   };
 
