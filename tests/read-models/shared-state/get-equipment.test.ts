@@ -17,6 +17,7 @@ import {LinkNumberToEmail} from '../../../src/commands/member-numbers/link-numbe
 import {applyToResource} from '../../../src/commands/apply-command-to-resource';
 import {RevokeMemberTrained} from '../../../src/commands/trainers/revoke-member-trained';
 import {AddTrainer} from '../../../src/commands/trainers/add-trainer';
+import {failedEventsTable} from '../../../src/read-models/shared-state/state';
 
 describe('get', () => {
   let framework: TestFramework;
@@ -583,8 +584,7 @@ describe('get', () => {
     // rules that the usual UI triggered insertions - for example: legacy training import.
 
 
-    // DEVNOTE - THIS IS INTENTIONALLY SKIPPED TO SEE EFFECT
-    describe.skip('Member is marked trained before their member number is linked', () => {
+    describe('Member is marked trained before their member number is linked', () => {
       const member = {
         memberNumber: faker.number.int() as Int,
         email: faker.internet.email() as EmailAddress,
@@ -611,7 +611,28 @@ describe('get', () => {
         await framework.commands.memberNumbers.linkNumberToEmail(member);
       });
 
-      it('shows the linked member as trained', () => {
+      it('records the orphaned training event as failed and does not backfill it', () => {
+        const memberDetails = getSomeOrFail(
+          framework.sharedReadModel.members.getByMemberNumber(member.memberNumber)
+        );
+        const equipmentDetails = getSomeOrFail(
+          framework.sharedReadModel.equipment.get(equipment.id)
+        );
+        const failedEvents = framework.sharedReadModel.db
+          .select()
+          .from(failedEventsTable)
+          .all();
+
+        expect(failedEvents).toHaveLength(1);
+        expect(failedEvents[0].error).toContain(
+          'unknown member number'
+        );
+        expect(memberDetails.trainedOn).toHaveLength(0);
+        expect(equipmentDetails.trainedMembers).toHaveLength(0);
+      });
+
+      // DEVNOTE - THIS IS INTENTIONALLY SKIPPED TO SEE EFFECT
+      it.skip('shows the linked member as trained', () => {
         const memberDetails = getSomeOrFail(
           framework.sharedReadModel.members.getByMemberNumber(member.memberNumber)
         );
