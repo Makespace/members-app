@@ -606,7 +606,9 @@ describe('get-via-shared-read-model', () => {
     // Note that the 'normal' order of operations is that the new and old accounts are linked immediately - i.e. there are no actions prior to linking the accounts.
     [true, false].forEach(useExistingAccount => {
       describe(`and they have left and then rejoined ${useExistingAccount ? 'using their existing account' : 'using a new account'}`, () => {
-        const newMemberNumber = faker.number.int() as Int;
+        const newMemberNumber = faker.number.int({
+          min: memberNumber + 1,
+        }) as Int;
         const newEmail = faker.internet.email() as EmailAddress;
 
         // Helper for easily checking both old and new accounts.
