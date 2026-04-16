@@ -131,6 +131,7 @@ export const addMemberNumberToExisting = (
   if (O.isNone(newUserId)) {
     // Simple case as nothing to move over.
     insertMemberNumber(tx, newMemberNumber, oldUserId.value);
+    revokeSuperuser(tx, oldUserId.value);
     // Grab any orphaned training records that now have a parent.
     // DEVNOTE - THIS IS INTENTIONALLY DISABLED TO SEE EFFECT
     // tx.update(trainedMemberstable)
