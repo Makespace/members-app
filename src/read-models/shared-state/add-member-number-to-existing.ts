@@ -113,6 +113,9 @@ export const addMemberNumberToExisting = (
 ) => {
   // If a user has 2 different membership numbers then we move all the records from the new member
   // and add it onto their old record.
+  if (oldMemberNumber === newMemberNumber) {
+    return;
+  }
 
   if (oldMemberNumber > newMemberNumber) {
     throw new InconsistentEventError(`Cannot add new member number '${newMemberNumber}' to old member record '${oldMemberNumber}' as old number is later than new number`);
