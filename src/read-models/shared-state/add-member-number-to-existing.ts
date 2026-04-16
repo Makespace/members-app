@@ -28,26 +28,28 @@ const mergeTrainingStatNotification = (
     // Nothing to update.
     return;
   }
+
   if (!oldRecordNotifications) {
     // We just need to update the new record.
     tx.update(trainingStatsNotificationTable)
-        .set({userId: oldUserId})
-        .where(eq(trainingStatsNotificationTable.userId, newUserId))
-        .run();
+      .set({userId: oldUserId})
+      .where(eq(trainingStatsNotificationTable.userId, newUserId))
+      .run();
     return;
   }
-  // We need to find the latest last email sent time and update that.
-  const oldRecordLastSent = oldRecordNotifications.lastEmailSent?.getTime() ?? 0;
-  const newRecordLastSent = newRecordNotifications.lastEmailSent?.getTime() ?? 0;
 
-  if (oldRecordLastSent > newRecordLastSent) {
-    // The old record already has the latest time so nothing to update.
-    return;
+  if (
+    (newRecordNotifications.lastEmailSent?.getTime() ?? 0) >
+    (oldRecordNotifications.lastEmailSent?.getTime() ?? 0)
+  ) {
+    tx.update(trainingStatsNotificationTable)
+      .set({lastEmailSent: newRecordNotifications.lastEmailSent})
+      .where(eq(trainingStatsNotificationTable.userId, oldUserId))
+      .run();
   }
-  // The old record needs to be updated with the latest time.
-  tx.update(trainingStatsNotificationTable)
-    .set({lastEmailSent: newRecordNotifications.lastEmailSent})
-    .where(eq(trainingStatsNotificationTable.userId, oldUserId))
+
+  tx.delete(trainingStatsNotificationTable)
+    .where(eq(trainingStatsNotificationTable.userId, newUserId))
     .run();
 };
 

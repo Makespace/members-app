@@ -12,9 +12,12 @@ export const isSelf = (input: {
   if (input.actor.tag !== 'user') {
     return false;
   }
-  const member = input.rm.members.getByMemberNumber(input.actor.user.memberNumber);
+  const member = input.rm.members.findUserIdByMemberNumber(input.actor.user.memberNumber);
   if (O.isNone(member)) {
     return false;
   }
-  return input.actor.user.memberNumber === input.input.memberNumber;
+  const requestedMember = input.rm.members.findUserIdByMemberNumber(
+    input.input.memberNumber
+  );
+  return O.isSome(requestedMember) && member.value === requestedMember.value;
 };
