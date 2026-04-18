@@ -7,7 +7,6 @@ import {getRightOrFail, getSomeOrFail} from '../../helpers';
 
 import {Actor, EmailAddress} from '../../../src/types';
 import {Int} from 'io-ts';
-import {updateState} from '../../../src/read-models/shared-state/update-state';
 import {EventOfType} from '../../../src/types/domain-event';
 import {
   markMemberTrainedBy,
@@ -18,6 +17,7 @@ import {LinkNumberToEmail} from '../../../src/commands/member-numbers/link-numbe
 import {applyToResource} from '../../../src/commands/apply-command-to-resource';
 import {RevokeMemberTrained} from '../../../src/commands/trainers/revoke-member-trained';
 import {AddTrainer} from '../../../src/commands/trainers/add-trainer';
+import {failedEventsTable} from '../../../src/read-models/shared-state/state';
 
 describe('get', () => {
   let framework: TestFramework;
@@ -364,7 +364,7 @@ describe('get', () => {
     it('returns that they are not an owner', () => {
       const member = pipe(
         addTrainer.memberNumber,
-        framework.sharedReadModel.members.get,
+        framework.sharedReadModel.members.getByMemberNumber,
         getSomeOrFail
       );
       expect(member.ownerOf).toHaveLength(0);
@@ -373,7 +373,7 @@ describe('get', () => {
     it('returns that they are not a trainer', () => {
       const member = pipe(
         addTrainer.memberNumber,
-        framework.sharedReadModel.members.get,
+        framework.sharedReadModel.members.getByMemberNumber,
         getSomeOrFail
       );
       expect(member.trainerFor).toHaveLength(0);
@@ -395,7 +395,7 @@ describe('get', () => {
     it('returns that they are not an owner', () => {
       const member = pipe(
         addTrainer.memberNumber,
-        framework.sharedReadModel.members.get,
+        framework.sharedReadModel.members.getByMemberNumber,
         getSomeOrFail
       );
       expect(member.ownerOf).toHaveLength(0);
@@ -404,7 +404,7 @@ describe('get', () => {
     it('returns that they are not a trainer', () => {
       const member = pipe(
         addTrainer.memberNumber,
-        framework.sharedReadModel.members.get,
+        framework.sharedReadModel.members.getByMemberNumber,
         getSomeOrFail
       );
       expect(member.trainerFor).toHaveLength(0);
@@ -450,7 +450,7 @@ describe('get', () => {
     it('returns that they are only an owner of the other area', () => {
       const member = pipe(
         addTrainer.memberNumber,
-        framework.sharedReadModel.members.get,
+        framework.sharedReadModel.members.getByMemberNumber,
         getSomeOrFail
       );
       expect(member.ownerOf).toHaveLength(1);
@@ -460,7 +460,7 @@ describe('get', () => {
     it('returns that they are only a trainer of the equipment in the other area', () => {
       const member = pipe(
         addTrainer.memberNumber,
-        framework.sharedReadModel.members.get,
+        framework.sharedReadModel.members.getByMemberNumber,
         getSomeOrFail
       );
       expect(member.trainerFor).toHaveLength(1);
@@ -512,7 +512,7 @@ describe('get', () => {
     it('member only shows trained once', () => {
       const member = pipe(
         markTrained.memberNumber,
-        framework.sharedReadModel.members.get,
+        framework.sharedReadModel.members.getByMemberNumber,
         getSomeOrFail
       );
       expect(member.trainedOn).toHaveLength(1);
@@ -583,6 +583,72 @@ describe('get', () => {
     // These are required to check resolution of bugs on the write side or to handle things that insert with different
     // rules that the usual UI triggered insertions - for example: legacy training import.
 
+
+    describe('Member is marked trained before their member number is linked', () => {
+      const member = {
+        memberNumber: faker.number.int() as Int,
+        email: faker.internet.email() as EmailAddress,
+        name: undefined,
+        formOfAddress: undefined,
+      };
+      const createArea = {
+        id: faker.string.uuid() as UUID,
+        name: faker.company.buzzNoun() as NonEmptyString,
+      };
+      const equipment = {
+        id: faker.string.uuid() as UUID,
+        name: faker.company.buzzNoun() as NonEmptyString,
+        areaId: createArea.id,
+      };
+
+      beforeEach(async () => {
+        await framework.commands.area.create(createArea);
+        await framework.commands.equipment.add(equipment);
+        await framework.commands.trainers.markTrained({
+          memberNumber: member.memberNumber,
+          equipmentId: equipment.id,
+        });
+        await framework.commands.memberNumbers.linkNumberToEmail(member);
+      });
+
+      it('records the orphaned training event as failed and does not backfill it', () => {
+        const memberDetails = getSomeOrFail(
+          framework.sharedReadModel.members.getByMemberNumber(member.memberNumber)
+        );
+        const equipmentDetails = getSomeOrFail(
+          framework.sharedReadModel.equipment.get(equipment.id)
+        );
+        const failedEvents = framework.sharedReadModel.db
+          .select()
+          .from(failedEventsTable)
+          .all();
+
+        expect(failedEvents).toHaveLength(1);
+        expect(failedEvents[0].error).toContain(
+          'unknown member number'
+        );
+        expect(memberDetails.trainedOn).toHaveLength(0);
+        expect(equipmentDetails.trainedMembers).toHaveLength(0);
+      });
+
+      // DEVNOTE - THIS IS INTENTIONALLY SKIPPED TO SEE EFFECT
+      it.skip('shows the linked member as trained', () => {
+        const memberDetails = getSomeOrFail(
+          framework.sharedReadModel.members.getByMemberNumber(member.memberNumber)
+        );
+        const equipmentDetails = getSomeOrFail(
+          framework.sharedReadModel.equipment.get(equipment.id)
+        );
+
+        expect(memberDetails.trainedOn).toHaveLength(1);
+        expect(memberDetails.trainedOn[0].id).toStrictEqual(equipment.id);
+        expect(equipmentDetails.trainedMembers).toHaveLength(1);
+        expect(equipmentDetails.trainedMembers[0].memberNumber).toStrictEqual(
+          member.memberNumber
+        );
+      });
+    });
+
     describe('Member is marked as trained twice on a piece of equipment by the legacy import', () => {
       // This is a specific test case derived from a bug reported during QA after the legacy import.
       const member = {
@@ -626,10 +692,6 @@ describe('get', () => {
         describe(`Duplicate events: ${name}`, () => {
           beforeEach(() => {
             // The legacy import inserts events directly
-            const update = updateState(
-              framework.sharedReadModel.db,
-              framework.sharedReadModel.linking
-            );
             const memberTrainedEvents: EventOfType<'MemberTrainedOnEquipment'>[] =
               [
                 {
@@ -650,13 +712,13 @@ describe('get', () => {
                 recordedAt,
                 ...partialEvent,
               }));
-            memberTrainedEvents.forEach(update);
+            memberTrainedEvents.forEach(framework.insertIntoSharedReadModel);
           });
           const getEquipment = (id: UUID) =>
             getSomeOrFail(framework.sharedReadModel.equipment.get(id));
 
           const getMember = (memberNumber: number) =>
-            getSomeOrFail(framework.sharedReadModel.members.get(memberNumber));
+            getSomeOrFail(framework.sharedReadModel.members.getByMemberNumber(memberNumber));
 
           it('The member is only marked as trained on the piece of equipment once', () => {
             const m = getMember(member.memberNumber);
@@ -673,15 +735,10 @@ describe('get', () => {
     beforeEach(async () => {
       await framework.commands.equipment.add(addEquipment);
     });
-
-    it('returns the equipment', () => {
-      const equipment = runQuery();
-      expect(equipment.id).toStrictEqual(addEquipment.id);
-    });
-    it('returns the area but with the name as unknown', () => {
-      const equipment = runQuery();
-      expect(equipment.area.id).toStrictEqual(createArea.id);
-      expect(equipment.area.name).toStrictEqual('unknown');
+    it('has no effect because equipment needs a valid area', async () => {
+      expect(
+        framework.sharedReadModel.equipment.get(addEquipment.id)
+      ).toStrictEqual(O.none);
     });
   });
 

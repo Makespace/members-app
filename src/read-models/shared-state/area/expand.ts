@@ -8,11 +8,10 @@ import {ownersTable} from '../state';
 import * as O from 'fp-ts/Option';
 import {Actor} from '../../../types';
 import {expandAll as expandAllEquipment} from '../equipment/expand';
-import {MemberLinking} from '../member-linking';
-import {getMergedMemberSet} from '../member/get';
+import { getMemberCoreByUserId } from '../member/get';
 
 const expandOwners =
-  (db: BetterSQLite3Database, linking: MemberLinking) =>
+  (db: BetterSQLite3Database) =>
   <T extends MinimalArea>(area: T): T & {owners: ReadonlyArray<Owner>} =>
     pipe(
       db
@@ -22,8 +21,7 @@ const expandOwners =
         .all(),
       RA.filterMap(owner =>
         pipe(
-          linking.map(owner.memberNumber),
-          getMergedMemberSet(db),
+          getMemberCoreByUserId(db)(owner.userId),
           O.map(member => ({
             ...member,
             agreementSigned: member.agreementSigned,
@@ -40,12 +38,12 @@ const expandOwners =
     );
 
 const expandEquipment =
-  (db: BetterSQLite3Database, linking: MemberLinking) =>
+  (db: BetterSQLite3Database) =>
   <T extends MinimalArea>(area: T): T & {equipment: ReadonlyArray<Equipment>} =>
     pipe(
       area.id,
       getEquipmentForAreaMinimal(db),
-      RA.map(expandAllEquipment(db, linking)),
+      RA.map(expandAllEquipment(db)),
       equipment => ({
         ...area,
         equipment,
@@ -53,7 +51,7 @@ const expandEquipment =
     );
 
 export const expandAll =
-  (db: BetterSQLite3Database, linking: MemberLinking) =>
+  (db: BetterSQLite3Database) =>
   <T extends MinimalArea>(area: T) => {
-    return pipe(area, expandEquipment(db, linking), expandOwners(db, linking));
+    return pipe(area, expandEquipment(db), expandOwners(db));
   };

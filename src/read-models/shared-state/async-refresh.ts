@@ -1,7 +1,7 @@
 import {Client} from '@libsql/client';
 import {getAllEventsAfterEventIndex} from '../../init-dependencies/event-store/get-all-events';
 import {pipe} from 'fp-ts/lib/function';
-import {DomainEvent} from '../../types';
+import {StoredDomainEvent} from '../../types';
 import * as TE from 'fp-ts/TaskEither';
 
 function payloadToString(payload: unknown): string {
@@ -10,21 +10,19 @@ function payloadToString(payload: unknown): string {
 
 export const asyncRefresh = (
   eventStoreDb: Client,
-  updateState: (event: DomainEvent) => void
+  getCurrentEventIndex: () => number,
+  updateState: (event: StoredDomainEvent) => void
 ) => {
-  let lastSeenEventIndex = 0;
   return () => async () => {
     const events = await pipe(
-      getAllEventsAfterEventIndex(eventStoreDb)(lastSeenEventIndex),
+      getCurrentEventIndex(),
+      getAllEventsAfterEventIndex(eventStoreDb),
       TE.getOrElse(failure => {
         throw new Error(
           `unexpected Left from getAllEvents: ${failure.message} ${payloadToString(failure.payload)}`
         );
       })
     )();
-    if (events.length > 0) {
-      events.forEach(updateState);
-      lastSeenEventIndex = events[events.length - 1].event_index;
-    }
+    events.forEach(updateState);
   };
 };

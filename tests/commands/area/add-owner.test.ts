@@ -10,8 +10,22 @@ import {
   getTaskEitherRightOrFail,
 } from '../../helpers';
 import {addOwner} from '../../../src/commands/area/add-owner';
+import {
+  TestFramework,
+  initTestFramework,
+} from '../../read-models/test-framework';
 
 describe('add-owner', () => {
+  let framework: TestFramework;
+
+  beforeEach(async () => {
+    framework = await initTestFramework();
+  });
+
+  afterEach(() => {
+    framework.close();
+  });
+
   const areaId = v4() as UUID;
   const areaName = faker.commerce.productName() as NonEmptyString;
   const memberNumber = faker.number.int();
@@ -47,6 +61,7 @@ describe('add-owner', () => {
         await addOwner.process({
           command,
           events: [],
+          rm: framework.sharedReadModel,
         })()
       );
 
@@ -63,6 +78,7 @@ describe('add-owner', () => {
         await addOwner.process({
           command,
           events: [areaCreated, areaRemoved],
+          rm: framework.sharedReadModel,
         })()
       );
 
@@ -80,6 +96,7 @@ describe('add-owner', () => {
           addOwner.process({
             command,
             events: [areaCreated],
+            rm: framework.sharedReadModel,
           })
         );
 
@@ -101,6 +118,7 @@ describe('add-owner', () => {
           addOwner.process({
             command,
             events: [areaCreated, ownerAdded, ownerRemoved],
+            rm: framework.sharedReadModel,
           })
         );
 
@@ -122,6 +140,7 @@ describe('add-owner', () => {
           addOwner.process({
             command,
             events: [areaCreated, ownerAdded],
+            rm: framework.sharedReadModel,
           })
         );
 

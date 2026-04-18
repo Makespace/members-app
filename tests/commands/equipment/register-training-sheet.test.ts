@@ -9,8 +9,22 @@ import {
   getSomeOrFail,
   getTaskEitherRightOrFail,
 } from '../../helpers';
+import {
+  TestFramework,
+  initTestFramework,
+} from '../../read-models/test-framework';
 
 describe('register-training-sheet', () => {
+  let framework: TestFramework;
+
+  beforeEach(async () => {
+    framework = await initTestFramework();
+  });
+
+  afterEach(() => {
+    framework.close();
+  });
+
   describe('No training sheet registered', () => {
     const command = {
       equipmentId: faker.string.uuid() as UUID,
@@ -21,7 +35,11 @@ describe('register-training-sheet', () => {
     it('Registers a new training sheet id', async () => {
       const result = pipe(
         await getTaskEitherRightOrFail(
-          registerTrainingSheet.process({command, events: RA.empty})
+          registerTrainingSheet.process({
+            command,
+            events: RA.empty,
+            rm: framework.sharedReadModel,
+          })
         ),
         getSomeOrFail
       );
@@ -46,7 +64,11 @@ describe('register-training-sheet', () => {
       const events = RA.fromArray([
         pipe(
           await getTaskEitherRightOrFail(
-            registerTrainingSheet.process({command, events: RA.empty})
+            registerTrainingSheet.process({
+              command,
+              events: RA.empty,
+              rm: framework.sharedReadModel,
+            })
           ),
           getSomeOrFail
         ),
@@ -54,7 +76,11 @@ describe('register-training-sheet', () => {
 
       const result = pipe(
         await getTaskEitherRightOrFail(
-          registerTrainingSheet.process({command, events})
+          registerTrainingSheet.process({
+            command,
+            events,
+            rm: framework.sharedReadModel,
+          })
         ),
         getSomeOrFail
       );
@@ -84,7 +110,11 @@ describe('register-training-sheet', () => {
       const events = RA.fromArray([
         pipe(
           await getTaskEitherRightOrFail(
-            registerTrainingSheet.process({command, events: RA.empty})
+            registerTrainingSheet.process({
+              command,
+              events: RA.empty,
+              rm: framework.sharedReadModel,
+            })
           ),
           getSomeOrFail
         ),
@@ -92,7 +122,11 @@ describe('register-training-sheet', () => {
 
       const result = pipe(
         await getTaskEitherRightOrFail(
-          registerTrainingSheet.process({command: diffTrainingSheet, events})
+          registerTrainingSheet.process({
+            command: diffTrainingSheet,
+            events,
+            rm: framework.sharedReadModel,
+          })
         ),
         getSomeOrFail
       );

@@ -46,9 +46,10 @@ const runGetQuizResultsByMemberNumber = async (
 const populateQuizData = async (
   framework: TestFramework,
   syncDate: Date,
+  sheetId: string,
   entries: SheetDataTable['rows']
 ) => {
-  getRightOrFail(await framework.storeTrainingSheetRowsRead(entries)());
+  await framework.updateTrainingSheetCache(sheetId, entries);
   for (const trainingSheetId of new Set(entries.map(m => m.sheet_id))) {
     getRightOrFail(
       await storeSync(framework.googleDB)(trainingSheetId, syncDate)()
@@ -135,7 +136,7 @@ describe('Get equipment quiz', () => {
       await framework.commands.trainers.markTrained(markTrained);
       await framework.commands.equipment.trainingSheet(addTrainingSheet);
       quizSyncDate = faker.date.past();
-      await populateQuizData(framework, quizSyncDate, [
+      await populateQuizData(framework, quizSyncDate, addTrainingSheet.trainingSheetId, [
         trainedMemberQuizAttempt,
         awaitingTrainingMemberQuizAttempt
       ]);

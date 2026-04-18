@@ -6,11 +6,13 @@ import {Actor} from '../types/actor';
 import {Resource} from '../types/resource';
 import {FailureWithStatus} from '../types/failure-with-status';
 import {Dependencies} from '../dependencies';
+import { SharedReadModel } from '../read-models/shared-state';
 
 export type WithActor<T> = T & {actor: Actor};
 type CommandProcessInput<T> = {
   command: WithActor<T>;
   events: ReadonlyArray<DomainEvent>;
+  rm: SharedReadModel;
   deps?: Dependencies;
 };
 
@@ -25,7 +27,7 @@ export type Command<T> = {
   decode: Type<T, T, unknown>['decode'];
   isAuthorized: (input: {
     actor: Actor;
-    events: ReadonlyArray<DomainEvent>;
+    rm: SharedReadModel;
     input: T;
   }) => boolean;
 };

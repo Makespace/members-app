@@ -25,7 +25,7 @@ import { AddTrainer } from '../../../src/commands/trainers/add-trainer';
 
 const _getTrainingMatrix = (framework: TestFramework) => async (memberNumber: MemberNumber) => {
   return constructTrainingMatrix(
-    getSomeOrFail(framework.sharedReadModel.members.get(memberNumber)),
+    getSomeOrFail(framework.sharedReadModel.members.getByMemberNumber(memberNumber)),
     framework.sharedReadModel,
     getRightOrFail(
       await getFullQuizResultsForMember(framework, memberNumber)()
@@ -333,9 +333,9 @@ describe('construct-training-matrix', () => {
         cached_at: new Date(),
       };
       beforeEach(async () => {
-        await framework.storeTrainingSheetRowsRead([
+        await framework.updateTrainingSheetCache(metalCncSheet.trainingSheetId, [
           passedMetalMillQuiz
-        ])();
+        ]);
       });
 
       it('training matrix contains a row for the metal mill', async () => {

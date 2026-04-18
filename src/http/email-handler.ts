@@ -45,10 +45,9 @@ const emailPost =
       {
         actor: getActorFrom(req.session, deps),
         input: getInput(req.body, command),
-        events: deps.getAllEvents(),
       },
       sequenceS(TE.ApplySeq),
-      TE.filterOrElse(command.isAuthorized, () =>
+      TE.filterOrElse(({actor, input}) => command.isAuthorized({actor, input, rm: deps.sharedReadModel}), () =>
         failureWithStatus(
           'You are not authorized to perform this action',
           StatusCodes.FORBIDDEN

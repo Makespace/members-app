@@ -31,7 +31,7 @@ describe('member email projection', () => {
       formOfAddress: undefined,
     });
 
-    const member = getSomeOrFail(framework.sharedReadModel.members.get(memberNumber));
+    const member = getSomeOrFail(framework.sharedReadModel.members.getByMemberNumber(memberNumber));
     expect(member.primaryEmailAddress).toStrictEqual(email);
     expect(member.emails).toHaveLength(1);
     expect(O.isSome(member.emails[0].verifiedAt)).toBe(true);
@@ -63,7 +63,7 @@ describe('member email projection', () => {
     });
 
     const member = getSomeOrFail(
-      framework.sharedReadModel.members.get(oldMemberNumber)
+      framework.sharedReadModel.members.getByMemberNumber(oldMemberNumber)
     );
     expect(member.primaryEmailAddress).toStrictEqual(newEmail);
     expect(member.emails.map(email => email.emailAddress).sort()).toStrictEqual(
@@ -71,7 +71,7 @@ describe('member email projection', () => {
     );
   });
 
-  it('only returns verified emails from findByEmail', async () => {
+  it('only returns member via verified email when requested', async () => {
     const memberNumber = faker.number.int();
     const primaryEmail = faker.internet.email() as EmailAddress;
     const secondaryEmail = faker.internet.email() as EmailAddress;
@@ -88,8 +88,8 @@ describe('member email projection', () => {
     });
 
     expect(
-      framework.sharedReadModel.members.findByEmail(secondaryEmail)
-    ).toHaveLength(0);
+      framework.sharedReadModel.members.getByEmail(secondaryEmail, true)
+    ).toStrictEqual(O.none);
 
     await framework.commands.members.verifyEmail({
       memberNumber,
@@ -97,8 +97,38 @@ describe('member email projection', () => {
     });
 
     expect(
-      framework.sharedReadModel.members.findByEmail(secondaryEmail)
-    ).toHaveLength(1);
+      O.isSome(framework.sharedReadModel.members.getByEmail(secondaryEmail, true))
+    ).toBe(true);
+  });
+
+  it('returns member via any email when requested', async () => {
+    const memberNumber = faker.number.int();
+    const primaryEmail = faker.internet.email() as EmailAddress;
+    const secondaryEmail = faker.internet.email() as EmailAddress;
+
+    await framework.commands.memberNumbers.linkNumberToEmail({
+      memberNumber,
+      email: primaryEmail,
+      name: undefined,
+      formOfAddress: undefined,
+    });
+    await framework.commands.members.addEmail({
+      memberNumber,
+      email: secondaryEmail,
+    });
+
+    expect(
+      O.isSome(framework.sharedReadModel.members.getByEmail(secondaryEmail, false))
+    ).toBe(true);
+
+    await framework.commands.members.verifyEmail({
+      memberNumber,
+      emailAddress: secondaryEmail,
+    });
+
+    expect(
+      O.isSome(framework.sharedReadModel.members.getByEmail(secondaryEmail, false))
+    ).toBe(true);
   });
 
   it('updates the projected primary email after a primary change', async () => {
@@ -125,7 +155,7 @@ describe('member email projection', () => {
       email: secondaryEmail,
     });
 
-    const member = getSomeOrFail(framework.sharedReadModel.members.get(memberNumber));
+    const member = getSomeOrFail(framework.sharedReadModel.members.getByMemberNumber(memberNumber));
     expect(member.primaryEmailAddress).toStrictEqual(secondaryEmail);
   });
 
@@ -153,7 +183,7 @@ describe('member email projection', () => {
       email: secondaryEmail,
     });
 
-    const member = getSomeOrFail(framework.sharedReadModel.members.get(memberNumber));
+    const member = getSomeOrFail(framework.sharedReadModel.members.getByMemberNumber(memberNumber));
     const requestedEmail = member.emails.find(
       email => email.emailAddress === secondaryEmail
     );

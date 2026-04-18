@@ -10,8 +10,22 @@ import {
   getTaskEitherRightOrFail,
 } from '../../helpers';
 import {removeOwner} from '../../../src/commands/area/remove-owner';
+import {
+  TestFramework,
+  initTestFramework,
+} from '../../read-models/test-framework';
 
 describe('remove-owner', () => {
+  let framework: TestFramework;
+
+  beforeEach(async () => {
+    framework = await initTestFramework();
+  });
+
+  afterEach(() => {
+    framework.close();
+  });
+
   const areaId = v4() as UUID;
   const areaName = faker.commerce.productName() as NonEmptyString;
   const unrelatedAreaName = faker.commerce.productName() as NonEmptyString;
@@ -34,6 +48,7 @@ describe('remove-owner', () => {
         await removeOwner.process({
           command,
           events: [],
+          rm: framework.sharedReadModel,
         })()
       );
 
@@ -65,6 +80,7 @@ describe('remove-owner', () => {
               }),
               unreleatedEvent,
             ],
+            rm: framework.sharedReadModel,
           })
         );
 
@@ -97,6 +113,7 @@ describe('remove-owner', () => {
                 actor: arbitraryActor(),
               }),
             ],
+            rm: framework.sharedReadModel,
           })()
         );
 
@@ -113,6 +130,7 @@ describe('remove-owner', () => {
           await removeOwner.process({
             command,
             events: [areaCreated],
+            rm: framework.sharedReadModel,
           })()
         );
 
@@ -141,6 +159,7 @@ describe('remove-owner', () => {
                 actor: arbitraryActor(),
               }),
             ],
+            rm: framework.sharedReadModel,
           })()
         );
 

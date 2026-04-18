@@ -55,6 +55,14 @@ export const render = (viewModel: ViewModel) => html`
         <th scope="row">Member number</th>
         <td>${renderMemberNumber(viewModel.member.memberNumber)}</td>
       </tr>
+      ${
+        viewModel.isSuperUser ? html`
+          <tr>
+            <th scope="row">User ID</th>
+            <td>${viewModel.member.userId}</td>
+          </tr>
+        ` : html``
+      }
       <tr>
         <th scope="row">Other Member Numbers ${otherMemberNumbersTooltip}</th>
         <td>${renderMemberNumbers(viewModel.member.pastMemberNumbers)}</td>

@@ -15,37 +15,45 @@ import {updateState} from './update-state';
 import {Logger} from 'pino';
 import {asyncApplyExternalEventSources} from './async-apply-external-event-sources';
 import {UUID} from 'io-ts-types';
-import {EmailAddress, User} from '../../types';
+import {EmailAddress, StoredDomainEvent, User, UserId} from '../../types';
 import {getAllEquipmentFull, getEquipmentFull} from './equipment/helpers';
 import {getAllAreaFull, getAreaFull} from './area/helpers';
 import {
   getAllMemberFull,
-  getMemberFull,
   getMemberAsActorFull,
+  getMemberFullByMemberNumber,
+  getMemberFullByEmail,
+  getMemberFullByUserId,
 } from './member/helper';
 import {dumpCurrentState, SharedDatabaseDump} from './debug/dump';
-import {MemberLinking} from './member-linking';
 import {DateTime} from 'luxon';
 import {getLastSent} from './training-stat-notifications/get-last-sent';
 import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
 import { TrainingSheetId } from '../../types/training-sheet';
 import { EquipmentId } from '../../types/equipment-id';
 import { getTrainingSheetIdMapping } from './equipment/get';
-import { findByEmail } from './member/get';
+import { findAllSuperUsers, findUserIdByEmail, findUserIdByMemberNumber } from './member/get';
+import { setupEventStateTable } from './setup-event-state-table';
+import { getCurrentEventIndex } from './get-current-event-index';
+import { Int } from 'io-ts';
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
   readOnlyDb: BetterSQLite3Database;
   _underlyingReadModelDb: Database.Database; // This is exposed only to allow debug serialisation of the db.
-  linking: MemberLinking;
   asyncRefresh: () => T.Task<void>;
   asyncApplyExternalEventSources: () => T.Task<void>;
-  updateState: ReturnType<typeof updateState>;
+  updateState: (event: StoredDomainEvent) => void;
+  getCurrentEventIndex: () => Int;
   members: {
-    get: (memberNumber: number) => O.Option<Member>;
+    getById: (userId: UserId) => O.Option<Member>;
+    getByMemberNumber: (memberNumber: number) => O.Option<Member>;
+    getByEmail: (email: EmailAddress, mustBeVerified: boolean) => O.Option<Member>;
     getAll: () => ReadonlyArray<Member>;
     getAsActor: (user: User) => (memberNumber: number) => O.Option<Member>;
-    findByEmail: (email: EmailAddress) => ReadonlyArray<MemberCoreInfo>;
+    findUserIdByEmail: (email: EmailAddress, mustBeVerified: boolean) => O.Option<UserId>;
+    findUserIdByMemberNumber: (memberNumber: number) => O.Option<UserId>;
+    findAllSuperUsers: () => ReadonlyArray<MemberCoreInfo>;
   };
   equipment: {
     get: (id: UUID) => O.Option<Equipment>;
@@ -77,42 +85,48 @@ export const initSharedReadModel = (
   const readOnlyReadModelDb = drizzle(new Database(uri, {readonly: true}));
 
   createTables.forEach(statement => readModelDb.run(statement));
-  const linking = new MemberLinking();
-  const updateState_ = updateState(readModelDb, linking);
+  const getCurrentEventIndex_ = getCurrentEventIndex(readModelDb);
+  const updateState_ = updateState(readModelDb, logger, true);
+
+  setupEventStateTable(readModelDb);
 
   return {
     db: readModelDb,
     readOnlyDb: readOnlyReadModelDb,
-    linking,
     _underlyingReadModelDb,
-    asyncRefresh: asyncRefresh(eventStoreClient, updateState_),
+    asyncRefresh: asyncRefresh(eventStoreClient, getCurrentEventIndex_, updateState_),
     updateState: updateState_,
     asyncApplyExternalEventSources: asyncApplyExternalEventSources(
       logger,
       readModelDb,
-      updateState_,
+      updateState(readModelDb, logger, false),
       recurlyToken
     ),
+    getCurrentEventIndex: getCurrentEventIndex_,
     members: {
-      get: getMemberFull(readModelDb, linking),
-      getAll: getAllMemberFull(readModelDb, linking),
-      getAsActor: getMemberAsActorFull(readModelDb, linking),
-      findByEmail: findByEmail(readModelDb, linking),
+      getByMemberNumber: getMemberFullByMemberNumber(readModelDb),
+      getByEmail: getMemberFullByEmail(readModelDb),
+      getById: getMemberFullByUserId(readModelDb),
+      getAll: getAllMemberFull(readModelDb),
+      getAsActor: getMemberAsActorFull(readModelDb),
+      findUserIdByEmail: findUserIdByEmail(readModelDb),
+      findUserIdByMemberNumber: findUserIdByMemberNumber(readModelDb),
+      findAllSuperUsers: () => findAllSuperUsers(readModelDb),
     },
     equipment: {
-      get: getEquipmentFull(readModelDb, linking),
-      getAll: getAllEquipmentFull(readModelDb, linking),
+      get: getEquipmentFull(readModelDb),
+      getAll: getAllEquipmentFull(readModelDb),
       getTrainingSheetIdMapping: getTrainingSheetIdMapping(readModelDb),
     },
     area: {
-      get: getAreaFull(readModelDb, linking),
-      getAll: getAllAreaFull(readModelDb, linking),
+      get: getAreaFull(readModelDb),
+      getAll: getAllAreaFull(readModelDb),
     },
     debug: {
       dump: dumpCurrentState(readModelDb),
     },
     trainingStats: {
-      getLastSent: getLastSent(readModelDb, linking),
+      getLastSent: getLastSent(readModelDb),
     },
   };
 };

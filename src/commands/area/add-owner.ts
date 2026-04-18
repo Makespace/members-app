@@ -7,8 +7,8 @@ import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
 import {StatusCodes} from 'http-status-codes';
 import {Command} from '../command';
-import {isAdminOrSuperUser} from '../is-admin-or-super-user';
 import {failureWithStatus} from '../../types/failure-with-status';
+import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
 
 const codec = t.strict({
   areaId: tt.UUID,

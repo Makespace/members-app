@@ -76,7 +76,7 @@ export const formPost =
         events: deps.getAllEvents(),
       },
       sequenceS(TE.ApplySeq),
-      TE.filterOrElse(command.isAuthorized, () =>
+      TE.filterOrElse(({actor, input}) => command.isAuthorized({actor, rm: deps.sharedReadModel, input}), () =>
         failureWithStatus(
           'You are not authorized to perform this action',
           StatusCodes.FORBIDDEN

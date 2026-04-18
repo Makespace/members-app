@@ -6,6 +6,8 @@ import * as O from 'fp-ts/Option';
 import {render} from '../../../src/queries/member/render';
 import {ViewModel} from '../../../src/queries/member/view-model';
 import {EmailAddress, GravatarHash} from '../../../src/types';
+import { faker } from '@faker-js/faker/locale/af_ZA';
+import { UUID } from 'io-ts-types';
 
 const primaryEmail = 'primary@example.com' as EmailAddress;
 const unverifiedEmail = 'extra@example.com' as EmailAddress;
@@ -13,6 +15,7 @@ const verifiedSecondaryEmail = 'verified@example.com' as EmailAddress;
 
 const buildViewModel = (isSuperUser: boolean, isSelf: boolean): ViewModel => ({
   member: {
+    userId: faker.string.uuid() as UUID,
     memberNumber: 123,
     pastMemberNumbers: [122],
     primaryEmailAddress: primaryEmail,

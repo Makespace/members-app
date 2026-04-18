@@ -3,9 +3,9 @@ import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
-import {isSelfOrPrivileged} from '../is-self-or-privileged';
 import {constructEvent} from '../../types';
 import {pipe} from 'fp-ts/lib/function';
+import { isSelfOrPrivileged } from '../authentication-helpers/is-self-or-privileged';
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,

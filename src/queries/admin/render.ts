@@ -16,6 +16,9 @@ export const render = () => html`
         <a href="/event-log">View a log of all actions taken</a>
       </li>
       <li>
+        <a href="/event-log/failed">View events that failed to apply</a>
+      </li>
+      <li>
         <a href="/event-log.csv">Download a log of all actions taken</a>
       </li>
       <li><a href="/members/create">Link an email and number</a></li>
