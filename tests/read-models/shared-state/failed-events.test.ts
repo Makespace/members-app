@@ -63,6 +63,22 @@ describe('failed-events', () => {
     );
   });
 
+  it("doesn't duplicate a failed event when applied more than once", () => {
+    const failedEvent = framework.insertIntoSharedReadModel(
+      arbitraryFailingOwnerAddedEvent()
+    );
+
+    framework.sharedReadModel.updateState(failedEvent);
+
+    const rows = framework.sharedReadModel.db
+      .select()
+      .from(failedEventsTable)
+      .all();
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0].eventId).toStrictEqual(failedEvent.event_id);
+  });
+
   it('continues applying later tracked events after a failure', () => {
     framework.insertIntoSharedReadModel(arbitraryFailingOwnerAddedEvent());
     const successfulEvent = framework.insertIntoSharedReadModel(
