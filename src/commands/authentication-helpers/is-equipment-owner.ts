@@ -3,6 +3,7 @@ import {pipe} from 'fp-ts/lib/function';
 import { Actor } from '../../types';
 import { EquipmentId } from '../../types/equipment-id';
 import { SharedReadModel } from '../../read-models/shared-state';
+import {allMemberNumbers} from '../../read-models/shared-state/return-types';
 
 export const isEquipmentOwner = (input: {
   actor: Actor;
@@ -21,7 +22,7 @@ export const isEquipmentOwner = (input: {
       O.flatMap(e => input.rm.area.get(e.area.id)),
       O.match(
         () => false,
-        area => area.owners.some(o => o.memberNumber === actorMemberNumber)
+        area => area.owners.some(o => allMemberNumbers(o).includes(actorMemberNumber))
       )
     );
   };

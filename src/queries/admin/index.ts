@@ -13,7 +13,7 @@ const isSuperUser =
   (sharedReadModel: Dependencies['sharedReadModel']) => (user: User) =>
     pipe(
       user.memberNumber,
-      sharedReadModel.members.get,
+      sharedReadModel.members.getByMemberNumber,
       O.filter(member => member.isSuperUser),
       O.getOrElseW(() => false)
     );

@@ -8,10 +8,9 @@ import {
   trainedMemberstable,
 } from '../state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {eq, inArray} from 'drizzle-orm';
+import {eq} from 'drizzle-orm';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {
-  allMemberNumbers,
   MemberCoreInfo,
   OwnerOf,
   TrainedOn,
@@ -38,12 +37,7 @@ const expandTrainedOn =
           equipmentTable,
           eq(equipmentTable.id, trainedMemberstable.equipmentId)
         )
-        .where(
-          inArray(
-            trainedMemberstable.memberNumber,
-            allMemberNumbers(member) as number[]
-          )
-        )
+        .where(eq(trainedMemberstable.userId, member.userId))
         .all(),
       RA.map(row => ({
         ...row,
@@ -69,12 +63,7 @@ const expandOwnerOf =
         })
         .from(ownersTable)
         .leftJoin(areasTable, eq(areasTable.id, ownersTable.areaId))
-        .where(
-          inArray(
-            ownersTable.memberNumber,
-            allMemberNumbers(member) as number[]
-          )
-        )
+        .where(eq(ownersTable.userId, member.userId))
         .all(),
       RA.filter(fieldIsNotNull('name')),
       ownerOf => ({
@@ -100,12 +89,7 @@ const expandTrainerFor =
           equipmentTable,
           eq(trainersTable.equipmentId, equipmentTable.id)
         )
-        .where(
-          inArray(
-            trainersTable.memberNumber,
-            allMemberNumbers(member) as number[]
-          )
-        )
+        .where(eq(trainersTable.userId, member.userId))
         .all(),
       RA.filter(fieldIsNotNull('equipment_name')),
       RA.filter(fieldIsUUID('equipment_id')),

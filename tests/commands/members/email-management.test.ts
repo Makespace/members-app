@@ -44,7 +44,7 @@ describe('member email commands', () => {
       email: secondaryEmail,
     });
 
-    const member = getSomeOrFail(framework.sharedReadModel.members.get(memberNumber));
+    const member = getSomeOrFail(framework.sharedReadModel.members.getByMemberNumber(memberNumber));
     const addedEmail = member.emails.find(
       email => email.emailAddress === secondaryEmail
     );
@@ -93,7 +93,7 @@ describe('member email commands', () => {
     const events = await framework.getAllEventsByType('MemberPrimaryEmailChanged');
     expect(events).toHaveLength(0);
     expect(
-      getSomeOrFail(framework.sharedReadModel.members.get(memberNumber))
+      getSomeOrFail(framework.sharedReadModel.members.getByMemberNumber(memberNumber))
         .primaryEmailAddress
     ).toStrictEqual(primaryEmail);
   });
@@ -156,7 +156,7 @@ describe('member email commands', () => {
       email: secondaryEmail,
     });
 
-    const member = getSomeOrFail(framework.sharedReadModel.members.get(memberNumber));
+    const member = getSomeOrFail(framework.sharedReadModel.members.getByMemberNumber(memberNumber));
     expect(member.primaryEmailAddress).toStrictEqual(secondaryEmail);
   });
 

@@ -1,5 +1,5 @@
 import * as O from 'fp-ts/Option';
-import {Actor, EmailAddress, GravatarHash} from '../../types';
+import {Actor, EmailAddress, GravatarHash, UserId} from '../../types';
 import {UUID} from 'io-ts-types';
 
 export type TrainedMember = Pick<
@@ -60,6 +60,7 @@ export type OwnerOf = {
 };
 
 export type MemberCoreInfo = {
+  userId: UserId;
   memberNumber: number;
   pastMemberNumbers: ReadonlyArray<number>;
   primaryEmailAddress: EmailAddress;

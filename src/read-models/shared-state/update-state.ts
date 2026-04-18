@@ -1,6 +1,4 @@
 import {DomainEvent, StoredDomainEvent} from '../../types/domain-event';
-import {EmailAddress} from '../../types';
-import * as RA from 'fp-ts/ReadonlyArray';
 import * as O from 'fp-ts/Option';
 import {gravatarHashFromEmail} from '../members/avatar';
 import {
@@ -16,139 +14,110 @@ import {
   trainingStatsNotificationTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {and, eq, ExtractTablesWithRelations, inArray, isNotNull, sql} from 'drizzle-orm';
+import {and, eq, inArray, isNull, sql} from 'drizzle-orm';
 import {isOwnerOfAreaContainingEquipment} from './area/helpers';
-import {pipe} from 'fp-ts/lib/function';
-import {MemberLinking} from './member-linking';
 import {normaliseEmailAddress} from './normalise-email-address';
 import {Logger} from 'pino';
-import {SQLiteTransaction} from 'drizzle-orm/sqlite-core';
-import Database from 'better-sqlite3';
-
-type DatabaseTransaction = SQLiteTransaction<"sync", Database.RunResult, Record<string, never>, ExtractTablesWithRelations<Record<string, never>>>;
-
-const revokeSuperuser = (tx: DatabaseTransaction, memberNumber: number) =>
-  tx
-    .update(membersTable)
-    .set({isSuperUser: false, superUserSince: null})
-    .where(eq(membersTable.memberNumber, memberNumber))
-    .run();
-
-const setPrimaryEmailAddress = (
-  tx: DatabaseTransaction,
-  memberNumber: number,
-  emailAddress: EmailAddress
-) =>
-  tx
-    .update(membersTable)
-    .set({
-      primaryEmailAddress: emailAddress,
-      gravatarHash: gravatarHashFromEmail(emailAddress),
-    })
-    .where(eq(membersTable.memberNumber, memberNumber))
-    .run();
-
-const findMemberEmail = (
-  tx: DatabaseTransaction,
-  memberNumber: number,
-  emailAddress: EmailAddress
-) =>
-  O.fromNullable(
-    tx
-      .select()
-      .from(memberEmailsTable)
-      .where(
-        and(
-          eq(memberEmailsTable.memberNumber, memberNumber),
-          eq(memberEmailsTable.emailAddress, emailAddress)
-        )
-      )
-      .limit(1)
-      .get()
-  );
-
-const insertMemberEmail = (
-  tx: DatabaseTransaction,
-  memberNumber: number,
-  emailAddress: EmailAddress,
-  addedAt: Date,
-  verifiedAt: Date | null
-) =>
-  tx
-    .insert(memberEmailsTable)
-    .values({
-      memberNumber,
-      emailAddress,
-      addedAt,
-      verifiedAt: verifiedAt ?? undefined,
-    })
-    .run();
+import { DatabaseTransaction } from './database-transaction';
+import { addMemberNumberToExisting } from './add-member-number-to-existing';
+import { revokeSuperuser } from './revoke-super-user';
+import { findUserIdByMemberNumber, findUserIdByEmail } from './member/get';
+import { InconsistentEventError } from './inconsistent-event-error';
+import { insertMemberNumber } from './insert-member-number';
+import { insertMemberEmail } from './insert-member-email';
+import { setPrimaryEmailAddress } from './set-primary-email';
+import { getEquipmentMinimal } from './equipment/get';
+import { generateUserId } from './member/generate-user-id';
 
 const _updateState =
-  (tx: DatabaseTransaction, linking: MemberLinking, event: DomainEvent) => {
+  (tx: DatabaseTransaction, event: DomainEvent) => {
     switch (event.type) {
       case 'MemberNumberLinkedToEmail': {
         const normalisedEmailAddress = normaliseEmailAddress(event.email);
-        linking.link([event.memberNumber]);
-        const existingMember = O.fromNullable(
-          tx
-            .select()
-            .from(membersTable)
-            .where(eq(membersTable.memberNumber, event.memberNumber))
-            .limit(1)
-            .get()
-        );
-        if (O.isNone(existingMember)) {
-          tx.insert(membersTable)
-            .values({
-              memberNumber: event.memberNumber,
-              primaryEmailAddress: normalisedEmailAddress,
-              gravatarHash: gravatarHashFromEmail(normalisedEmailAddress),
-              name: O.fromNullable(event.name),
-              formOfAddress: O.fromNullable(event.formOfAddress),
-              isSuperUser: false,
-              agreementSigned: undefined,
-              superUserSince: undefined,
-              status: 'inactive',
-              joined: event.recordedAt,
-            })
-            .run();
-        }
-        if (
-          O.isNone(findMemberEmail(tx, event.memberNumber, normalisedEmailAddress))
-        ) {
-          insertMemberEmail(
-            tx,
-            event.memberNumber,
-            normalisedEmailAddress,
-            event.recordedAt,
-            event.recordedAt
+        const existingUserId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isSome(existingUserId)) {
+          throw new InconsistentEventError(
+            `Attempted to link email '${event.email}' to '${event.memberNumber}' but that member number already exists as user id '${existingUserId.value}'`
           );
         }
-        setPrimaryEmailAddress(tx, event.memberNumber, normalisedEmailAddress);
+        const existingMember = findUserIdByEmail(tx)(normalisedEmailAddress, false);
+        if (O.isSome(existingMember)) {
+          throw new InconsistentEventError(
+            `Attempted to link email '${event.email}' to ${event.memberNumber} but that email already exists as user id '${existingMember.value}'`
+          );
+        }
+
+        const newUserId = generateUserId(event.memberNumber);
+        tx.insert(membersTable)
+          .values({
+            userId: newUserId,
+            primaryEmailAddress: normalisedEmailAddress,
+            gravatarHash: gravatarHashFromEmail(normalisedEmailAddress),
+            name: O.fromNullable(event.name),
+            formOfAddress: O.fromNullable(event.formOfAddress),
+            isSuperUser: false,
+            agreementSigned: undefined,
+            superUserSince: undefined,
+            status: 'inactive',
+            joined: event.recordedAt,
+          })
+          .run();
+        insertMemberNumber(tx, event.memberNumber, newUserId);
+        insertMemberEmail(
+          tx,
+          newUserId,
+          normalisedEmailAddress,
+          event.recordedAt,
+          event.recordedAt,
+        );
+        setPrimaryEmailAddress(tx, newUserId, normalisedEmailAddress);
+
+        // DEVNOTE - THIS IS INTENTIONALLY DISABLED TO SEE EFFECT
+        // Grab any member trained on records that were created before the user was registered.
+        // This is needed due to the legacy training import.
+        // tx.update(trainedMemberstable)
+        //   .set({userId: newUserId})
+        //   .where(
+        //     and(
+        //       eq(trainedMemberstable.memberNumber, event.memberNumber),
+        //       isNull(trainedMemberstable.userId)
+        //     )
+        //   )
+        //   .run();
+        // 
         break;
       }
       case 'MemberEmailAdded': {
         const normalisedEmailAddress = normaliseEmailAddress(event.email);
-        if (
-          O.isNone(findMemberEmail(tx, event.memberNumber, normalisedEmailAddress))
-        ) {
-          insertMemberEmail(
-            tx,
-            event.memberNumber,
-            normalisedEmailAddress,
-            event.recordedAt,
-            null
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to add email '${normalisedEmailAddress}', unknown member number: '${event.memberNumber}'`);
+        }
+        const existingEmailUsage = findUserIdByEmail(tx)(normalisedEmailAddress, false);
+        if (O.isSome(existingEmailUsage)) {
+          throw new InconsistentEventError(
+            `Attempted to link email '${event.email}' to ${event.memberNumber} but that email already exists on user id '${existingEmailUsage.value}'`
           );
         }
+        insertMemberEmail(
+          tx,
+          userId.value,
+          normalisedEmailAddress,
+          event.recordedAt,
+          null,
+        );
         break;
       }
-      case 'MemberEmailVerified':
-        tx.update(memberEmailsTable)
+      case 'MemberEmailVerified': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to verify email, unknown member number: '${event.memberNumber}'`);
+        }
+        const rows = tx.update(memberEmailsTable)
           .set({verifiedAt: event.recordedAt})
           .where(
             and(
-              eq(memberEmailsTable.memberNumber, event.memberNumber),
+              eq(memberEmailsTable.userId, userId.value),
               eq(
                 memberEmailsTable.emailAddress,
                 normaliseEmailAddress(event.email)
@@ -156,84 +125,152 @@ const _updateState =
             )
           )
           .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(
+            `Unable to verify email '${event.email}' for member number: '${event.memberNumber}' - unknown email address`
+          )
+        }
         break;
-      case 'MemberPrimaryEmailChanged':
+      }
+      case 'MemberPrimaryEmailChanged': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to set primary email to '${event.email}', unknown member number: '${event.memberNumber}'`);
+        }
+        const normalisedEmailAddress = normaliseEmailAddress(event.email);
+        const userIdByEmail = findUserIdByEmail(tx)(normalisedEmailAddress, false);
+        if (O.isSome(userIdByEmail)) {
+          if (userIdByEmail.value !== userId.value) {
+            throw new InconsistentEventError(
+              `Attempted to set email '${event.email}' as primary email for ${userId.value} when its registered to ${userIdByEmail.value} already`
+            )
+          }
+        } else {
+          throw new InconsistentEventError(
+            `Attempted to set unknown email '${event.email}' as primary email for ${userId.value}`
+          )
+        }
         setPrimaryEmailAddress(
           tx,
-          event.memberNumber,
-          normaliseEmailAddress(event.email)
+          userId.value,
+          normalisedEmailAddress
         );
         break;
-      case 'MemberEmailVerificationRequested':
-        tx.update(memberEmailsTable)
+      }
+      case 'MemberEmailVerificationRequested': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to update email verification requested for '${event.email}', unknown member number: '${event.memberNumber}'`);
+        }
+        const rows = tx.update(memberEmailsTable)
           .set({
             verificationLastSent: event.recordedAt
           })
           .where(
             and(
-              eq(memberEmailsTable.memberNumber, event.memberNumber),
+              eq(memberEmailsTable.userId, userId.value),
               eq(memberEmailsTable.emailAddress, normaliseEmailAddress(event.email))
             )
           )
           .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(
+            `Unable to update email verification requested '${event.email}' for member number: '${event.memberNumber}' - unknown email address`
+          )
+        }
         break;
-      case 'MemberDetailsUpdated':
+      }
+      case 'MemberDetailsUpdated': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to update member details, unknown member number: '${event.memberNumber}'`);
+        }
         if (event.name) {
           tx.update(membersTable)
             .set({name: O.some(event.name)})
-            .where(eq(membersTable.memberNumber, event.memberNumber))
+            .where(eq(membersTable.userId, userId.value))
             .run();
         }
         if (event.formOfAddress) {
           tx.update(membersTable)
             .set({formOfAddress: O.some(event.formOfAddress)})
-            .where(eq(membersTable.memberNumber, event.memberNumber))
-            .run();
-        }
-        break;
-      case 'SuperUserDeclared':
-        tx.update(membersTable)
-          .set({isSuperUser: true, superUserSince: event.recordedAt})
-          .where(eq(membersTable.memberNumber, event.memberNumber))
-          .run();
-        break;
-      case 'SuperUserRevoked':
-        revokeSuperuser(tx, event.memberNumber);
-        break;
-      case 'EquipmentAdded':
-        tx.insert(equipmentTable)
-          .values({id: event.id, name: event.name, areaId: event.areaId})
-          .run();
-        break;
-      case 'TrainerAdded': {
-        if (
-          isOwnerOfAreaContainingEquipment(tx, linking)(
-            event.equipmentId,
-            event.memberNumber
-          )
-        ) {
-          tx.insert(trainersTable)
-            .values({
-              memberNumber: event.memberNumber,
-              equipmentId: event.equipmentId,
-              since: event.recordedAt,
-              markedTrainerByActor: event.actor,
-            })
+            .where(eq(membersTable.userId, userId.value))
             .run();
         }
         break;
       }
+      case 'SuperUserDeclared': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to set as superuser, unknown member number: '${event.memberNumber}'`);
+        }
+        tx.update(membersTable)
+          .set({isSuperUser: true, superUserSince: event.recordedAt})
+          .where(eq(membersTable.userId, userId.value))
+          .run();
+        break;
+      }
+      case 'SuperUserRevoked': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to revoke superuser, unknown member number: '${event.memberNumber}'`);
+        }
+        revokeSuperuser(tx, userId.value);
+        break;
+      }
+      case 'EquipmentAdded': {
+        tx.insert(equipmentTable)
+          .values({id: event.id, name: event.name, areaId: event.areaId})
+          .run();
+        break;
+      }
+      case 'TrainerAdded': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to add trainer, unknown member number: '${event.memberNumber}'`);
+        }
+        if (!isOwnerOfAreaContainingEquipment(tx)(event.equipmentId, userId.value)) {
+          throw new InconsistentEventError(`Unable to add trainer, user '${userId.value}' is not an owner of the equipment '${event.equipmentId}'`);
+        }
+        tx.insert(trainersTable)
+          .values({
+            userId: userId.value,
+            equipmentId: event.equipmentId,
+            since: event.recordedAt,
+            markedTrainerByActor: event.actor,
+          })
+          .run();
+        break;
+      }
       case 'MemberTrainedOnEquipment': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+
+        // DEVNOTE - THIS IS INTENTIONALLY ENABLED TO SEE EFFECT
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to mark member trained on equipment '${event.equipmentId}', unknown member number: '${event.memberNumber}'`);
+        }
+        // This invalidates the memberClause bit below because userId will always be Some.
+
+        if (O.isNone(getEquipmentMinimal(tx)(event.equipmentId))) {
+          throw new InconsistentEventError(`Unable to mark member trained on equipment '${event.equipmentId}', unknown equipment`);
+        }
+        // We allow creating 'orphaned' member trained on events to handle the case that a member was marked trained before
+        // their record was created during legacy import.
+        const memberClause = O.isSome(userId)
+          ? eq(trainedMemberstable.userId, userId.value)
+          : and(
+              isNull(trainedMemberstable.userId),
+              eq(trainedMemberstable.memberNumber, event.memberNumber)
+            );
+        const existingRowClause = and(
+          eq(trainedMemberstable.equipmentId, event.equipmentId),
+          memberClause
+        );
         const existing = O.fromNullable(
           tx
             .select()
             .from(trainedMemberstable)
-            .where(
-              and(
-                eq(trainedMemberstable.equipmentId, event.equipmentId),
-                eq(trainedMemberstable.memberNumber, event.memberNumber)
-              )
-            )
+            .where(existingRowClause)
             .limit(1)
             .get()
         );
@@ -251,6 +288,7 @@ const _updateState =
           // don't re-mark them as this would refresh their 'trained since'.
           break;
         }
+
         if (O.isSome(existing)) {
           tx.update(trainedMemberstable)
             .set({
@@ -259,38 +297,44 @@ const _updateState =
               legacyImport: event.legacyImport,
               markTrainedByActor: event.actor,
             })
-            .where(
-              and(
-                eq(trainedMemberstable.equipmentId, event.equipmentId),
-                eq(trainedMemberstable.memberNumber, event.memberNumber)
-              )
-            )
+            .where(existingRowClause)
             .run();
-        } else {
-          tx.insert(trainedMemberstable)
-            .values({
-              memberNumber: event.memberNumber,
-              equipmentId: event.equipmentId,
-              trainedAt: event.recordedAt,
-              trainedByMemberNumber: event.trainedByMemberNumber,
-              legacyImport: event.legacyImport,
-              markTrainedByActor: event.actor,
-            })
-            .run();
+          break;
         }
+
+        tx.insert(trainedMemberstable)
+          .values({
+            userId: O.toNullable(userId),
+            memberNumber: event.memberNumber,
+            equipmentId: event.equipmentId,
+            trainedAt: event.recordedAt,
+            trainedByMemberNumber: event.trainedByMemberNumber,
+            legacyImport: event.legacyImport,
+            markTrainedByActor: event.actor,
+          })
+          .run();
         break;
       }
       case 'MemberTrainedOnEquipmentBy': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to mark member trained on equipment '${event.equipmentId}', unknown member number: '${event.memberNumber}'`);
+        }
+        if (O.isNone(getEquipmentMinimal(tx)(event.equipmentId))) {
+          throw new InconsistentEventError(`Unable to mark member trained on equipment '${event.equipmentId}', unknown equipment`);
+        }
+
+        // Note that we don't have any legacy 'MemberTrainedOnEquipmentBy' imports so therefore don't need to handle the case of an orphaned
+        // MemberTrainedOnEquipmentBy events.
+        const existingRowClause = and(
+          eq(trainedMemberstable.equipmentId, event.equipmentId),
+          eq(trainedMemberstable.userId, userId.value)
+        );
         const existing = O.fromNullable(
           tx
             .select()
             .from(trainedMemberstable)
-            .where(
-              and(
-                eq(trainedMemberstable.equipmentId, event.equipmentId),
-                eq(trainedMemberstable.memberNumber, event.memberNumber)
-              )
-            )
+            .where(existingRowClause)
             .limit(1)
             .get()
         );
@@ -316,164 +360,178 @@ const _updateState =
               legacyImport: false,
               markTrainedByActor: event.actor,
             })
-            .where(
-              and(
-                eq(trainedMemberstable.equipmentId, event.equipmentId),
-                eq(trainedMemberstable.memberNumber, event.memberNumber)
-              )
-            )
+            .where(existingRowClause)
             .run();
-        } else {
-          tx.insert(trainedMemberstable)
-            .values({
-              memberNumber: event.memberNumber,
-              equipmentId: event.equipmentId,
-              trainedAt: event.trainedAt,
-              trainedByMemberNumber: event.trainedByMemberNumber,
-              legacyImport: false,
-              markTrainedByActor: event.actor,
-            })
-            .run();
+          break;
         }
-        break;
-      }
-      case 'OwnerAgreementSigned':
-        tx.update(membersTable)
-          .set({agreementSigned: event.signedAt})
-          .where(eq(membersTable.memberNumber, event.memberNumber))
+        tx.insert(trainedMemberstable)
+          .values({
+            userId: userId.value,
+            memberNumber: event.memberNumber,
+            equipmentId: event.equipmentId,
+            trainedAt: event.trainedAt,
+            trainedByMemberNumber: event.trainedByMemberNumber,
+            legacyImport: false,
+            markTrainedByActor: event.actor,
+          })
           .run();
         break;
-      case 'AreaCreated':
+      }
+      case 'OwnerAgreementSigned': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to mark owner agreement signed, unknown member number: '${event.memberNumber}'`);
+        }
+        tx.update(membersTable)
+          .set({agreementSigned: event.signedAt})
+          .where(eq(membersTable.userId, userId.value))
+          .run();
+        break;
+      }
+      case 'AreaCreated': {
         tx.insert(areasTable).values({id: event.id, name: event.name}).run();
         break;
-      case 'AreaRemoved':
+      }
+      case 'AreaRemoved': {
         tx.delete(areasTable).where(eq(areasTable.id, event.id)).run();
         break;
-      case 'AreaEmailUpdated':
-        tx.update(areasTable)
+      }
+      case 'AreaEmailUpdated': {
+        const rows = tx.update(areasTable)
           .set({email: event.email})
           .where(eq(areasTable.id, event.id))
           .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to mark area email updated for ${event.id} - unknown area`);
+        }
         break;
-      case 'OwnerAdded':
+      }
+      case 'OwnerAdded': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to add owner, unknown member number: '${event.memberNumber}'`);
+        }
         tx.insert(ownersTable)
           .values({
-            memberNumber: event.memberNumber,
+            userId: userId.value,
             areaId: event.areaId,
             ownershipRecordedAt: event.recordedAt,
             markedOwnerByActor: event.actor,
           })
           .run();
         break;
+      }
       case 'OwnerRemoved': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to remove owner, unknown member number: '${event.memberNumber}'`);
+        }
         tx.delete(ownersTable)
           .where(
             and(
-              inArray(
-                ownersTable.memberNumber,
-                Array.from(linking.map(event.memberNumber))
-              ),
+              eq(ownersTable.userId, userId.value),
               eq(ownersTable.areaId, event.areaId)
             )
           )
           .run();
-        const equipmentInArea = pipe(
-          tx
+        const equipmentInArea = tx
             .select({equipmentId: equipmentTable.id})
             .from(equipmentTable)
             .where(eq(equipmentTable.areaId, event.areaId))
-            .all(),
-          RA.map(({equipmentId}) => equipmentId)
-        );
+            .all()
+            .map(({equipmentId}) => equipmentId);
         tx.delete(trainersTable)
           .where(
             and(
-              inArray(trainersTable.equipmentId, [...equipmentInArea]),
-              eq(trainersTable.memberNumber, event.memberNumber)
+              inArray(trainersTable.equipmentId, equipmentInArea),
+              eq(trainersTable.userId, userId.value)
             )
           )
           .run();
         break;
       }
-      case 'EquipmentTrainingSheetRegistered':
-        tx.update(equipmentTable)
+      case 'EquipmentTrainingSheetRegistered': {
+        const rows = tx.update(equipmentTable)
           .set({trainingSheetId: event.trainingSheetId})
           .where(eq(equipmentTable.id, event.equipmentId))
           .run();
-        break;
-      case 'RevokeTrainedOnEquipment':
-        tx.delete(trainedMemberstable)
-          .where(
-            and(
-              eq(trainedMemberstable.equipmentId, event.equipmentId),
-              eq(trainedMemberstable.memberNumber, event.memberNumber)
-            )
-          )
-          .run();
-        break;
-      case 'RecurlySubscriptionUpdated': {
-        const status = event.hasActiveSubscription ? 'active' : 'inactive';
-        const memberNumbers = tx
-          .select({
-            memberNumber: memberEmailsTable.memberNumber,
-          })
-          .from(memberEmailsTable)
-          .where(
-            and(
-              eq(
-                memberEmailsTable.emailAddress,
-                normaliseEmailAddress(event.email)
-              ),
-              isNotNull(memberEmailsTable.verifiedAt)
-            )
-          )
-          .all()
-          .map(row => row.memberNumber);
-        if (memberNumbers.length > 0) {
-          tx.update(membersTable)
-            .set({
-              status,
-            })
-            .where(inArray(membersTable.memberNumber, memberNumbers))
-            .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to update training sheet for equipment '${event.equipmentId}' - unknown equipment`);
         }
         break;
       }
-      case 'MemberRejoinedWithNewNumber': {
-        linking.link([event.oldMemberNumber, event.newMemberNumber]);
-        revokeSuperuser(tx, event.oldMemberNumber);
-        revokeSuperuser(tx, event.newMemberNumber);
-        break;
-      }
-      case 'MemberRejoinedWithExistingNumber': {
-        revokeSuperuser(tx, event.memberNumber);
-        break;
-      }
-      case 'EquipmentTrainingSheetRemoved': {
-        tx.update(equipmentTable)
-          .set({trainingSheetId: null})
-          .where(eq(equipmentTable.id, event.equipmentId))
+      case 'RevokeTrainedOnEquipment': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to revoke training, unknown member number: '${event.memberNumber}'`);
+        }
+        tx.delete(trainedMemberstable)
+          .where(
+            and(
+              eq(trainedMemberstable.userId, userId.value),
+              eq(trainedMemberstable.equipmentId, event.equipmentId)
+            )
+          )
           .run();
         break;
       }
+      case 'RecurlySubscriptionUpdated': {
+        const status = event.hasActiveSubscription ? 'active' : 'inactive';
+        const userId = findUserIdByEmail(tx)(event.email, true);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to mark recurly subscription updated, unknown member email: '${event.email}'`);
+        }
+        tx.update(membersTable)
+          .set({status})
+          .where(eq(membersTable.userId, userId.value))
+          .run();
+        break;
+      }
+      case 'MemberRejoinedWithNewNumber': {
+        addMemberNumberToExisting(tx, event.oldMemberNumber, event.newMemberNumber);
+        break;
+      }
+      case 'MemberRejoinedWithExistingNumber': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to process member rejoining with same member number, unknown member number: '${event.memberNumber}'`);
+        }
+        revokeSuperuser(tx, userId.value);
+        break;
+      }
+      case 'EquipmentTrainingSheetRemoved': {
+        const rows = tx.update(equipmentTable)
+          .set({trainingSheetId: null})
+          .where(eq(equipmentTable.id, event.equipmentId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to remove training sheet for equipment '${event.equipmentId}' - unknown equipment`);
+        }
+        break;;
+      }
       case 'TrainingStatNotificationSent': {
+        const userId = findUserIdByMemberNumber(tx)(event.toMemberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to update training state notification sent, unknown member number: '${event.toMemberNumber}'`);
+        }
         tx.insert(trainingStatsNotificationTable)
           .values({
             lastEmailSent: event.recordedAt,
-            memberNumber: event.toMemberNumber,
+            userId: userId.value,
           })
           .onConflictDoUpdate({
-            target: trainingStatsNotificationTable.memberNumber,
+            target: trainingStatsNotificationTable.userId,
             set: {
               lastEmailSent: event.recordedAt,
             },
             setWhere: sql`${trainingStatsNotificationTable.lastEmailSent} < ${event.recordedAt.getTime()}`,
           })
-          .run();
+          .run()
         break;
       }
-      default:
+      default: {
         break;
+      }
     }
   };
 
@@ -484,33 +542,43 @@ const _updateEventState = (tx: DatabaseTransaction, event: StoredDomainEvent) =>
   .run();
 
 
-export function updateState (db: BetterSQLite3Database, linking: MemberLinking, logger: Logger, trackedEvent: true): (event: StoredDomainEvent) => void;
-export function updateState (db: BetterSQLite3Database, linking: MemberLinking, logger: Logger, trackedEvent: false): (event: DomainEvent) => void;
-export function updateState (db: BetterSQLite3Database, linking: MemberLinking, logger: Logger, trackedEvent: boolean) {
+export function updateState (db: BetterSQLite3Database, logger: Logger, trackedEvent: true): (event: StoredDomainEvent) => void;
+export function updateState (db: BetterSQLite3Database, logger: Logger, trackedEvent: false): (event: DomainEvent) => void;
+export function updateState (db: BetterSQLite3Database, logger: Logger, trackedEvent: boolean) {
   // Update the state without updating the stored event state information
   // This should only be used for external information which isn't tracked within the main event stream.
   return (event: StoredDomainEvent) => {
     try {
       db.transaction(
         (tx: DatabaseTransaction) => {
-          _updateState(tx, linking, event);
+          _updateState(tx, event);
           if (trackedEvent) {
             _updateEventState(tx, event);
           }
         }
       )
     } catch (err) {
-      const errType = err as Error & {code?: string};
-      if (
-        ['SQLITE_CONSTRAINT_PRIMARYKEY', 'SQLITE_CONSTRAINT_FOREIGNKEY'].includes(
-          errType.code ?? ''
-        )
-      ) {
-        logger.error(err, 'Failed to update state with event %o', event);
+      // Errors related to an inconsistent event stream should not normally be fatal.
+      // Instead they are logged as failed events which admins can check and workout why the record
+      // is inconsistent.
+      // This is better than just crashing because in most cases the inconsistency only affects a small part of the record.
+      let reason: string | null = null;
+      if (err instanceof InconsistentEventError) {
+        reason = err.message;
+      } else if (err instanceof Error){
+        const errType = err as Error & {code?: string};
+        const code = errType.code ?? '';
+        if (['SQLITE_CONSTRAINT_PRIMARYKEY', 'SQLITE_CONSTRAINT_FOREIGNKEY'].includes(code)) {
+          reason = code;
+        }
+      }
+
+      if (reason) {
+        logger.error(err, 'Failed to update state \'%s\' with event %o', reason, event);
         db.transaction((tx: DatabaseTransaction) => {
           tx.insert(failedEventsTable)
             .values({
-              error: errType.code as string,
+              error: reason,
               payload: event,
             })
             .onConflictDoNothing()

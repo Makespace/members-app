@@ -1,7 +1,7 @@
 import {faker} from '@faker-js/faker';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
-import {EmailAddress, Failure, failure} from '../../src/types';
+import {Email, EmailAddress, Failure, failure} from '../../src/types';
 import {happyPathAdapters} from '../init-dependencies/happy-path-adapters.helper';
 import {sendLogInLink} from '../../src/authentication/login/send-log-in-link';
 import {Config} from '../../src/configuration';
@@ -9,6 +9,9 @@ import {TestFramework, initTestFramework} from '../read-models/test-framework';
 import {Dependencies} from '../../src/dependencies';
 import {LinkNumberToEmail} from '../../src/commands/member-numbers/link-number-to-email';
 import {getRightOrFail} from '../helpers';
+import {decodeMagicLinkFromQuery} from '../../src/authentication/login/magic-link';
+import {Int} from 'io-ts';
+import { testLogger } from '../sync-worker/util';
 
 describe('send-log-in-link', () => {
   const emailAddress = faker.internet.email() as EmailAddress;
@@ -19,15 +22,17 @@ describe('send-log-in-link', () => {
   } as Config;
 
   let framework: TestFramework;
+  let sendEmail: jest.MockedFunction<Dependencies['sendEmail']>;
   let deps: Pick<
     Dependencies,
     'sendEmail' | 'sharedReadModel' | 'rateLimitSendingOfEmails' | 'logger'
   >;
   beforeEach(async () => {
     framework = await initTestFramework();
+    sendEmail = jest.fn((_email: Email) => TE.right('success'));
     deps = {
       ...happyPathAdapters,
-      sendEmail: jest.fn(() => TE.right('success')),
+      sendEmail,
       sharedReadModel: framework.sharedReadModel,
     };
   });
@@ -205,6 +210,56 @@ describe('send-log-in-link', () => {
         });
       });
     });
+  });
+
+  describe('when a member has rejoined with a new number', () => {
+    const oldMemberNumber = faker.number.int() as Int;
+    const newMemberNumber = (oldMemberNumber + 1) as Int;
+    const oldEmail = faker.internet.email() as EmailAddress;
+    const newEmail = faker.internet.email() as EmailAddress;
+
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        memberNumber: oldMemberNumber,
+        email: oldEmail,
+        name: undefined,
+        formOfAddress: undefined,
+      });
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        memberNumber: newMemberNumber,
+        email: newEmail,
+        name: undefined,
+        formOfAddress: undefined,
+      });
+      await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
+        oldMemberNumber,
+        newMemberNumber,
+      });
+    });
+
+    it.each([
+      ['old', oldEmail],
+      ['new', newEmail],
+    ])(
+      'sends login for the canonical member number via the %s verified email',
+      async (_name, email) => {
+        const result = getRightOrFail(await sendLogInLink(deps, conf)(email)());
+        const sentEmail: Email = sendEmail.mock.calls[0][0];
+        const link = String(sentEmail.text).match(/https:\/\/\S+/)?.[0];
+        if (!link) {
+          throw new Error('missing login link');
+        }
+        const token = new URL(link).searchParams.get('token');
+        const user = getRightOrFail(
+          decodeMagicLinkFromQuery(testLogger(), conf)({token})
+        );
+
+        expect(sentEmail.recipient).toStrictEqual(email);
+        expect(result).toStrictEqual(`Sent login link to ${email}`);
+        expect(user.memberNumber).toStrictEqual(newMemberNumber);
+        expect(user.emailAddress).toStrictEqual(email);
+      }
+    );
   });
 
   describe('when no member are setup', () => {

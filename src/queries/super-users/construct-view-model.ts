@@ -8,14 +8,13 @@ import {
   failureWithStatus,
 } from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
-import {membersTable} from '../../read-models/shared-state/state';
-import {eq} from 'drizzle-orm';
+import * as O from 'fp-ts/Option';
 
 export const constructViewModel =
   (sharedReadModel: Dependencies['sharedReadModel']) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> =>
     pipe(
-      sharedReadModel.members.get(user.memberNumber),
+      sharedReadModel.members.getByMemberNumber(user.memberNumber),
       TE.fromOption(
         failureWithStatus(
           'Cannot find sufficent information about you to determine if you can access this page',
@@ -32,15 +31,13 @@ export const constructViewModel =
       ),
       TE.map(() => ({
         user: user,
-        superUsers: sharedReadModel.db
-          .select({
-            memberNumber: membersTable.memberNumber,
-            name: membersTable.name,
-            primaryEmailAddress: membersTable.primaryEmailAddress,
-            superUserSince: membersTable.superUserSince,
-          })
-          .from(membersTable)
-          .where(eq(membersTable.isSuperUser, true))
-          .all(),
+        superUsers: sharedReadModel.members
+          .findAllSuperUsers()
+          .map(member => ({
+            memberNumber: member.memberNumber,
+            name: member.name,
+            primaryEmailAddress: member.primaryEmailAddress,
+            superUserSince: O.toNullable(member.superUserSince),
+          })),
       }))
     );

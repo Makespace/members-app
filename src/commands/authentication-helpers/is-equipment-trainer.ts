@@ -3,6 +3,7 @@ import {pipe} from 'fp-ts/lib/function';
 import { Actor } from '../../types';
 import { SharedReadModel } from '../../read-models/shared-state';
 import { EquipmentId } from '../../types/equipment-id';
+import {allMemberNumbers} from '../../read-models/shared-state/return-types';
 
 export const isEquipmentTrainer =
   (input: {
@@ -21,7 +22,7 @@ export const isEquipmentTrainer =
       input.rm.equipment.get,
       O.match(
         () => false,
-        e => e.trainers.some(t => t.memberNumber === actorMemberNumber)
+        e => e.trainers.some(t => allMemberNumbers(t).includes(actorMemberNumber))
       )
     );
   };

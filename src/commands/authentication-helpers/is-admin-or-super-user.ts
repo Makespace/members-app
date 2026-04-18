@@ -13,7 +13,7 @@ export const isAdminOrSuperUser = (input: {
     case 'user':
       return pipe(
         input.actor.user.memberNumber,
-        input.rm.members.get,
+        input.rm.members.getByMemberNumber,
         O.match(
           () => false,
           m => m.isSuperUser

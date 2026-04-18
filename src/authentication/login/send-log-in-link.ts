@@ -46,16 +46,12 @@ export const sendLogInLink = (
   deps: Pick<Dependencies, 'sendEmail' | 'rateLimitSendingOfEmails' | 'sharedReadModel' | 'logger'>,
   conf: Config
 ) => (emailAddress: EmailAddress): TE.TaskEither<Failure, string> => {
-  const members = deps.sharedReadModel.members.findByEmail(emailAddress);
-  if (members.length === 0) {
+  const member = deps.sharedReadModel.members.getByEmail(emailAddress, true);
+  if (O.isNone(member)) {
     return TE.left(failure('No member associated with that email')());
   }
-  if (members.length > 1) {
-    deps.logger.error('While looking for email %s we found multiple users!', emailAddress);
-    return TE.left(failure('Multiple members associated with that email. Please contact an administrator.')());
-  }
   const matchedEmail = pipe(
-    members[0].emails,
+    member.value.emails,
     emails =>
       emails.find(
         memberEmail =>
@@ -73,7 +69,7 @@ export const sendLogInLink = (
   const email = toEmail(matchedEmail)(
     magicLink.create(conf)({
       emailAddress: matchedEmail,
-      memberNumber: members[0].memberNumber,
+      memberNumber: member.value.memberNumber,
     })
   );
   return pipe(

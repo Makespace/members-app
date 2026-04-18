@@ -1,3 +1,5 @@
+import { UUID } from 'io-ts-types';
+
 export type {EmailAddress} from './email-address';
 export {EmailAddressCodec} from './email-address';
 export type {Failure} from './failure';
@@ -20,3 +22,4 @@ export type {
   SubsetOfDomainEvent,
 } from './domain-event';
 export type {ResourceVersion} from './resource-version';
+export type UserId = UUID;

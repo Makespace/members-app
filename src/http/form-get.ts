@@ -21,7 +21,7 @@ export const formGet =
       res.redirect(logInPath);
       return;
     }
-    const member = deps.sharedReadModel.members.get(user.value.memberNumber);
+    const member = deps.sharedReadModel.members.getByMemberNumber(user.value.memberNumber);
     if (O.isNone(member)) {
       res.redirect(logInPath);
       return;

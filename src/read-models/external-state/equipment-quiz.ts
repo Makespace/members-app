@@ -103,7 +103,7 @@ export const getFullQuizResultsForEquipment = (
         ) {
           continue;
         }
-        const member = deps.sharedReadModel.members.get(
+        const member = deps.sharedReadModel.members.getByMemberNumber(
           row.member_number_provided
         );
         if (O.isNone(member)) {

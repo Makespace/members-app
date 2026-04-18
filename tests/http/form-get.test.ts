@@ -33,7 +33,7 @@ describe('formGet', () => {
       },
       sharedReadModel: {
         members: {
-          get: () => O.some({isSuperUser: false}),
+          getByMemberNumber: () => O.some({isSuperUser: false}),
         },
       },
     } as unknown as Dependencies;

@@ -1,10 +1,10 @@
 import {sql} from 'drizzle-orm';
-import {EmailAddress, GravatarHash} from '../../types';
+import {EmailAddress, GravatarHash, UserId} from '../../types';
 import * as O from 'fp-ts/Option';
 import {blob, integer, sqliteTable, text} from 'drizzle-orm/sqlite-core';
 
 export const membersTable = sqliteTable('members', {
-  memberNumber: integer('memberNumber').notNull().primaryKey(),
+  userId: text('userId').primaryKey().$type<UserId>(),
   primaryEmailAddress: text('primaryEmailAddress')
     .notNull()
     .$type<EmailAddress>(),
@@ -22,7 +22,7 @@ export const membersTable = sqliteTable('members', {
 
 const createMembersTable = sql`
   CREATE TABLE IF NOT EXISTS members (
-    memberNumber INTEGER PRIMARY KEY,
+    userId TEXT PRIMARY KEY,
     primaryEmailAddress TEXT,
     gravatarHash TEXT,
     name BLOB,
@@ -35,10 +35,11 @@ const createMembersTable = sql`
   );`;
 
 export const memberEmailsTable = sqliteTable('memberEmails', {
-  memberNumber: integer('memberNumber')
+  userId: text('userId')
     .notNull()
-    .references(() => membersTable.memberNumber, { onDelete: 'cascade' }),
-  emailAddress: text('emailAddress').notNull().$type<EmailAddress>(),
+    .$type<UserId>()
+    .references(() => membersTable.userId, { onDelete: 'cascade' }),
+  emailAddress: text('emailAddress').primaryKey().$type<EmailAddress>(),
   addedAt: integer('addedAt', {mode: 'timestamp_ms'}).notNull(),
   verifiedAt: integer('verifiedAt', {mode: 'timestamp_ms'}),
   verificationLastSent: integer('verificationLastSent', {mode: 'timestamp_ms'}),
@@ -46,14 +47,32 @@ export const memberEmailsTable = sqliteTable('memberEmails', {
 
 const createMemberEmailsTable = sql`
   CREATE TABLE IF NOT EXISTS memberEmails (
-    memberNumber INTEGER,
-    emailAddress TEXT,
-    addedAt INTEGER,
+    userId TEXT NOT NULL,
+    emailAddress TEXT PRIMARY KEY,
+    addedAt INTEGER NOT NULL,
     verifiedAt INTEGER,
     verificationLastSent INTEGER,
-    FOREIGN KEY(memberNumber) REFERENCES members(memberNumber) ON DELETE CASCADE
+    FOREIGN KEY (userId) REFERENCES members(userId) ON DELETE CASCADE
   );
 `;
+
+export const memberNumbersTable = sqliteTable('memberNumbers', {
+  userId: text('userId')
+    .notNull()
+    .$type<UserId>()
+    .references(() => membersTable.userId, { onDelete: 'cascade' }),
+  memberNumber: integer('memberNumber')
+    .primaryKey(),
+});
+
+// Individual members may have multiple member numbers so we give each member a unique id
+// and then member numbers map to this.
+const createMemberNumbersTable = sql`
+  CREATE TABLE IF NOT EXISTS memberNumbers (
+    memberNumber INTEGER PRIMARY KEY,
+    userId TEXT NOT NULL,
+    FOREIGN KEY (userId) REFERENCES members(userId) ON DELETE CASCADE
+  );`;
 
 export const equipmentTable = sqliteTable('equipment', {
   id: text('id').notNull().primaryKey(),
@@ -75,9 +94,10 @@ const createEquipmentTable = sql`
 `;
 
 export const trainersTable = sqliteTable('trainers', {
-  memberNumber: integer('memberNumber')
+  userId: text('userId')
     .notNull()
-    .references(() => membersTable.memberNumber, { onDelete: 'cascade' }),
+    .$type<UserId>()
+    .references(() => membersTable.userId, { onDelete: 'cascade' }),
   equipmentId: text('equipmentId')
     .notNull()
     .references(() => equipmentTable.id, { onDelete: 'cascade' }),
@@ -87,20 +107,22 @@ export const trainersTable = sqliteTable('trainers', {
 
 const createTrainersTable = sql`
   CREATE TABLE IF NOT EXISTS trainers (
-    memberNumber INTEGER,
-    equipmentId TEXT,
-    since INTEGER,
-    markedTrainerByActor TEXT,
-    FOREIGN KEY(memberNumber) REFERENCES members(memberNumber) ON DELETE CASCADE,
+    userId TEXT NOT NULL,
+    equipmentId TEXT NOT NULL,
+    since INTEGER NOT NULL,
+    markedTrainerByActor TEXT NOT NULL,
+    FOREIGN KEY (userId) REFERENCES members(userId) ON DELETE CASCADE,
     FOREIGN KEY(equipmentId) REFERENCES equipment(id) ON DELETE CASCADE
   )
 `;
 
 export const trainedMemberstable = sqliteTable('trainedMembers', {
-  memberNumber: integer('memberNumber')
-    .notNull(),
-    // Temporarily disabled due to memberlinking complexity around the member number foreign key.
-    // .references(() => membersTable.memberNumber, { onDelete: 'cascade' }),
+  userId: text('userId')
+    .$type<UserId>()
+    .references(() => membersTable.userId, { onDelete: 'cascade' }),
+  // Old records may have been brought into the app before the associated member was
+  // so we mark them as 'orphaned'.
+  memberNumber: integer('memberNumber'),
   equipmentId: text('equipmentId')
     .notNull(),
     // .references(() => equipmentTable.id, { onDelete: 'cascade' }),
@@ -114,12 +136,14 @@ export const trainedMemberstable = sqliteTable('trainedMembers', {
 
 const createTrainedMembersTable = sql`
   CREATE TABLE IF NOT EXISTS trainedMembers (
+    userId TEXT,
     memberNumber INTEGER,
-    equipmentId TEXT,
-    trainedAt INTEGER,
+    equipmentId TEXT NOT NULL,
+    trainedAt INTEGER NOT NULL,
     trainedByMemberNumber INTEGER,
-    legacyImport INTEGER,
-    markTrainedByActor TEXT
+    legacyImport INTEGER NOT NULL,
+    markTrainedByActor TEXT NOT NULL,
+    FOREIGN KEY (userId) REFERENCES members(userId) ON DELETE CASCADE
   )
 `;
 
@@ -138,9 +162,10 @@ const createAreasTable = sql`
 `;
 
 export const ownersTable = sqliteTable('owners', {
-  memberNumber: integer('memberNumber')
+  userId: text('userId')
     .notNull()
-    .references(() => membersTable.memberNumber, { onDelete: 'cascade' }),
+    .$type<UserId>()
+    .references(() => membersTable.userId, { onDelete: 'cascade' }),
   areaId: text('areaId')
     .notNull()
     .references(() => areasTable.id, { onDelete: 'cascade' }),
@@ -152,11 +177,11 @@ export const ownersTable = sqliteTable('owners', {
 
 const createOwnersTable = sql`
   CREATE TABLE IF NOT EXISTS owners (
-    memberNumber INTEGER,
-    areaId TEXT,
-    ownershipRecordedAt INTEGER,
-    markedOwnerByActor TEXT,
-    FOREIGN KEY(memberNumber) REFERENCES members(memberNumber) ON DELETE CASCADE,
+    userId TEXT NOT NULL,
+    areaId TEXT NOT NULL,
+    ownershipRecordedAt INTEGER NOT NULL,
+    markedOwnerByActor TEXT NOT NULL,
+    FOREIGN KEY (userId) REFERENCES members(userId) ON DELETE CASCADE,
     FOREIGN KEY(areaId) REFERENCES areas(id) ON DELETE CASCADE
   )
 `;
@@ -164,18 +189,19 @@ const createOwnersTable = sql`
 export const trainingStatsNotificationTable = sqliteTable(
   'trainingStatsNotificationTable',
   {
-    memberNumber: integer('memberNumber')
+    userId: text('userId')
       .notNull()
-      .references(() => membersTable.memberNumber, { onDelete: 'cascade' }),
+      .$type<UserId>()
+      .references(() => membersTable.userId, { onDelete: 'cascade' }),
     lastEmailSent: integer('lastEmailSent', {mode: 'timestamp'}),
   }
 );
 
 const createTrainingStatsNotificationTable = sql`
   CREATE TABLE IF NOT EXISTS trainingStatsNotificationTable (
-    memberNumber INTEGER PRIMARY KEY,
+    userId TEXT PRIMARY KEY,
     lastEmailSent INTEGER,
-    FOREIGN KEY(memberNumber) REFERENCES members(memberNumber) ON DELETE CASCADE
+    FOREIGN KEY (userId) REFERENCES members(userId) ON DELETE CASCADE
   )
 `;
 
@@ -210,6 +236,7 @@ const createFailedEventsTable = sql`
 export const createTables = [
   createMembersTable,
   createMemberEmailsTable,
+  createMemberNumbersTable,
   createAreasTable,
   createEquipmentTable,
   createTrainersTable,

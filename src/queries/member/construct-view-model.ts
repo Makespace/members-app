@@ -18,7 +18,7 @@ export const constructViewModel =
     user: User
   ) =>
   (memberNumber: number): TE.TaskEither<FailureWithStatus, ViewModel> => async () => {
-    const userDetails = deps.sharedReadModel.members.get(user.memberNumber);
+    const userDetails = deps.sharedReadModel.members.getByMemberNumber(user.memberNumber);
     if (O.isNone(userDetails)) {
       return E.left(failureWithStatus('No such user', StatusCodes.NOT_FOUND)());
     }

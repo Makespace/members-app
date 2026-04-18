@@ -15,7 +15,7 @@ import { getFullQuizResultsForMember } from '../../read-models/external-state/eq
 export const constructViewModel =
   (deps: Dependencies, _user: User) =>
   (memberNumber: number): TE.TaskEither<FailureWithStatus, ViewModel> => async () => {
-    const member = deps.sharedReadModel.members.get(memberNumber);
+    const member = deps.sharedReadModel.members.getByMemberNumber(memberNumber);
     if (O.isNone(member)) {
       return E.left(failureWithStatus('No such member', StatusCodes.NOT_FOUND)());
     }
