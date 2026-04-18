@@ -3,6 +3,7 @@ import {Int} from 'io-ts';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {constructEvent, EmailAddress} from '../../../src/types';
 import {
+  failedEventsTable,
   memberNumbersTable,
   trainingStatsNotificationTable,
 } from '../../../src/read-models/shared-state/state';
@@ -143,6 +144,138 @@ describe('rejoined members', () => {
           )
         )
     ).toHaveLength(1);
+  });
+
+  it('applies member details updates through the new number after rejoining', async () => {
+    const oldMemberNumber = faker.number.int() as Int;
+    const newMemberNumber = faker.number.int({
+      min: oldMemberNumber + 1,
+    }) as Int;
+    const name = faker.person.fullName();
+
+    await addMember(framework, oldMemberNumber);
+    await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
+      oldMemberNumber,
+      newMemberNumber,
+    });
+    await framework.commands.members.editName({
+      memberNumber: newMemberNumber,
+      name,
+    });
+
+    [oldMemberNumber, newMemberNumber].forEach(memberNumber => {
+      const member = getSomeOrFail(
+        framework.sharedReadModel.members.getByMemberNumber(memberNumber)
+      );
+
+      expect(getSomeOrFail(member.name)).toStrictEqual(name);
+    });
+  });
+
+  it('applies member details updates recorded before the rejoin is linked', async () => {
+    const oldMemberNumber = faker.number.int() as Int;
+    const newMemberNumber = faker.number.int({
+      min: oldMemberNumber + 1,
+    }) as Int;
+    const name = faker.person.fullName();
+    const formOfAddress = faker.helpers.arrayElement([
+      'he/him',
+      'she/her',
+      'they/them',
+    ]);
+
+    await addMember(framework, oldMemberNumber);
+    await framework.commands.members.editName({
+      memberNumber: newMemberNumber,
+      name,
+    });
+    await framework.commands.members.editFormOfAddress({
+      memberNumber: newMemberNumber,
+      formOfAddress,
+    });
+    await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
+      oldMemberNumber,
+      newMemberNumber,
+    });
+
+    [oldMemberNumber, newMemberNumber].forEach(memberNumber => {
+      const member = getSomeOrFail(
+        framework.sharedReadModel.members.getByMemberNumber(memberNumber)
+      );
+
+      expect(getSomeOrFail(member.name)).toStrictEqual(name);
+      expect(getSomeOrFail(member.formOfAddress)).toStrictEqual(formOfAddress);
+    });
+    expect(
+      framework.sharedReadModel.db.select().from(failedEventsTable).all()
+    ).toHaveLength(0);
+  });
+
+  it('does not let stale failed member details overwrite newer details when rejoining', async () => {
+    const oldMemberNumber = faker.number.int() as Int;
+    const newMemberNumber = faker.number.int({
+      min: oldMemberNumber + 1,
+    }) as Int;
+    const staleName = faker.person.fullName();
+    const latestName = faker.person.fullName();
+
+    await addMember(framework, oldMemberNumber);
+    await framework.commands.members.editName({
+      memberNumber: newMemberNumber,
+      name: staleName,
+    });
+    await framework.commands.members.editName({
+      memberNumber: oldMemberNumber,
+      name: latestName,
+    });
+    await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
+      oldMemberNumber,
+      newMemberNumber,
+    });
+
+    [oldMemberNumber, newMemberNumber].forEach(memberNumber => {
+      const member = getSomeOrFail(
+        framework.sharedReadModel.members.getByMemberNumber(memberNumber)
+      );
+
+      expect(getSomeOrFail(member.name)).toStrictEqual(latestName);
+    });
+    expect(
+      framework.sharedReadModel.db.select().from(failedEventsTable).all()
+    ).toHaveLength(0);
+  });
+
+  it('keeps newer old-record member details when merging an existing new record', async () => {
+    const oldMemberNumber = faker.number.int() as Int;
+    const newMemberNumber = faker.number.int({
+      min: oldMemberNumber + 1,
+    }) as Int;
+    const staleName = faker.person.fullName();
+    const latestName = faker.person.fullName();
+
+    await addMember(framework, oldMemberNumber);
+    await framework.commands.memberNumbers.linkNumberToEmail({
+      memberNumber: newMemberNumber,
+      email: faker.internet.email() as EmailAddress,
+      name: staleName,
+      formOfAddress: undefined,
+    });
+    await framework.commands.members.editName({
+      memberNumber: oldMemberNumber,
+      name: latestName,
+    });
+    await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
+      oldMemberNumber,
+      newMemberNumber,
+    });
+
+    [oldMemberNumber, newMemberNumber].forEach(memberNumber => {
+      const member = getSomeOrFail(
+        framework.sharedReadModel.members.getByMemberNumber(memberNumber)
+      );
+
+      expect(getSomeOrFail(member.name)).toStrictEqual(latestName);
+    });
   });
 
   it.each([

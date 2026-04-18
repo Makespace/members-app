@@ -10,9 +10,11 @@ export const membersTable = sqliteTable('members', {
     .$type<EmailAddress>(),
   gravatarHash: text('gravatarHash').notNull().$type<GravatarHash>(),
   name: blob('name', {mode: 'json'}).notNull().$type<O.Option<string>>(),
+  nameUpdatedEventIndex: integer('nameUpdatedEventIndex'),
   formOfAddress: blob('formOfAddress', {mode: 'json'})
     .notNull()
     .$type<O.Option<string>>(),
+  formOfAddressUpdatedEventIndex: integer('formOfAddressUpdatedEventIndex'),
   isSuperUser: integer('isSuperUser', {mode: 'boolean'}).notNull(),
   superUserSince: integer('superUserSince', {mode: 'timestamp_ms'}),
   agreementSigned: integer('agreementSigned', {mode: 'timestamp_ms'}),
@@ -26,7 +28,9 @@ const createMembersTable = sql`
     primaryEmailAddress TEXT,
     gravatarHash TEXT,
     name BLOB,
+    nameUpdatedEventIndex INTEGER,
     formOfAddress BLOB,
+    formOfAddressUpdatedEventIndex INTEGER,
     isSuperUser INTEGER,
     superUserSince INTEGER,
     agreementSigned INTEGER,

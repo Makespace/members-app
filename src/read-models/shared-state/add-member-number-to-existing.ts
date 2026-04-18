@@ -67,16 +67,50 @@ const mergeUsers = (
     .from(membersTable)
     .where(eq(membersTable.userId, newUserId))
     .get();
+  const oldMember = tx
+    .select()
+    .from(membersTable)
+    .where(eq(membersTable.userId, oldUserId))
+    .get();
 
   if (newMember) {
+    const newNameIsCurrent =
+      O.isSome(newMember.name) &&
+      (
+        oldMember?.nameUpdatedEventIndex === null ||
+        oldMember?.nameUpdatedEventIndex === undefined ||
+        (
+          newMember.nameUpdatedEventIndex !== null &&
+          newMember.nameUpdatedEventIndex >= oldMember.nameUpdatedEventIndex
+        )
+      );
+    const newFormOfAddressIsCurrent =
+      O.isSome(newMember.formOfAddress) &&
+      (
+        oldMember?.formOfAddressUpdatedEventIndex === null ||
+        oldMember?.formOfAddressUpdatedEventIndex === undefined ||
+        (
+          newMember.formOfAddressUpdatedEventIndex !== null &&
+          newMember.formOfAddressUpdatedEventIndex >= oldMember.formOfAddressUpdatedEventIndex
+        )
+      );
+
     // Member details are updated with some of the details from the newer
     // account.
     tx.update(membersTable)
       .set({
         primaryEmailAddress: newMember.primaryEmailAddress,
         gravatarHash: newMember.gravatarHash,
-        name: newMember.name,
-        formOfAddress: newMember.formOfAddress,
+        name: newNameIsCurrent ? newMember.name : oldMember?.name,
+        nameUpdatedEventIndex: newNameIsCurrent
+          ? newMember.nameUpdatedEventIndex
+          : oldMember?.nameUpdatedEventIndex,
+        formOfAddress: newFormOfAddressIsCurrent
+          ? newMember.formOfAddress
+          : oldMember?.formOfAddress,
+        formOfAddressUpdatedEventIndex: newFormOfAddressIsCurrent
+          ? newMember.formOfAddressUpdatedEventIndex
+          : oldMember?.formOfAddressUpdatedEventIndex,
         status: newMember.status,
       })
       .where(eq(membersTable.userId, oldUserId))

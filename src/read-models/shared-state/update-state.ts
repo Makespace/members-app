@@ -29,6 +29,80 @@ import { setPrimaryEmailAddress } from './set-primary-email';
 import { getEquipmentMinimal } from './equipment/get';
 import { generateUserId } from './member/generate-user-id';
 
+const updateMemberDetails = (
+  tx: DatabaseTransaction,
+  event: Extract<DomainEvent, {type: 'MemberDetailsUpdated'}> & {
+    event_index?: number;
+  }
+) => {
+  const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+  if (O.isNone(userId)) {
+    throw new InconsistentEventError(`Unable to update member details, unknown member number: '${event.memberNumber}'`);
+  }
+  const member = tx.select()
+    .from(membersTable)
+    .where(eq(membersTable.userId, userId.value))
+    .get();
+  const eventIsCurrent = (lastEventIndex: number | null) =>
+    event.event_index === undefined ||
+    lastEventIndex === null ||
+    event.event_index >= lastEventIndex;
+  if (event.name) {
+    if (eventIsCurrent(member?.nameUpdatedEventIndex ?? null)) {
+      tx.update(membersTable)
+        .set({
+          name: O.some(event.name),
+          nameUpdatedEventIndex: event.event_index,
+        })
+        .where(eq(membersTable.userId, userId.value))
+        .run();
+    }
+  }
+  if (event.formOfAddress) {
+    if (eventIsCurrent(member?.formOfAddressUpdatedEventIndex ?? null)) {
+      tx.update(membersTable)
+        .set({
+          formOfAddress: O.some(event.formOfAddress),
+          formOfAddressUpdatedEventIndex: event.event_index,
+        })
+        .where(eq(membersTable.userId, userId.value))
+        .run();
+    }
+  }
+};
+
+const retryFailedMemberDetailsUpdates = (
+  tx: DatabaseTransaction,
+  memberNumbers: ReadonlyArray<number>
+) => {
+  tx.select()
+    .from(failedEventsTable)
+    .all()
+    .map(row => ({
+      ...row,
+      payload: row.payload as StoredDomainEvent,
+    }))
+    .filter(row =>
+      row.payload.type === 'MemberDetailsUpdated' &&
+      memberNumbers.includes(row.payload.memberNumber)
+    )
+    .sort((a, b) => a.payload.event_index - b.payload.event_index)
+    .forEach(row => {
+      updateMemberDetails(
+        tx,
+        row.payload as Extract<StoredDomainEvent, {type: 'MemberDetailsUpdated'}>
+      );
+      tx.delete(failedEventsTable)
+        .where(
+          and(
+            eq(failedEventsTable.error, row.error),
+            eq(failedEventsTable.payload, row.payload)
+          )
+        )
+        .run();
+    });
+};
+
 const _updateState =
   (tx: DatabaseTransaction, event: DomainEvent) => {
     switch (event.type) {
@@ -48,13 +122,16 @@ const _updateState =
         }
 
         const newUserId = generateUserId(event.memberNumber);
+        const eventIndex = (event as Partial<StoredDomainEvent>).event_index;
         tx.insert(membersTable)
           .values({
             userId: newUserId,
             primaryEmailAddress: normalisedEmailAddress,
             gravatarHash: gravatarHashFromEmail(normalisedEmailAddress),
             name: O.fromNullable(event.name),
+            nameUpdatedEventIndex: event.name ? eventIndex : undefined,
             formOfAddress: O.fromNullable(event.formOfAddress),
+            formOfAddressUpdatedEventIndex: event.formOfAddress ? eventIndex : undefined,
             isSuperUser: false,
             agreementSigned: undefined,
             superUserSince: undefined,
@@ -181,22 +258,7 @@ const _updateState =
         break;
       }
       case 'MemberDetailsUpdated': {
-        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
-        if (O.isNone(userId)) {
-          throw new InconsistentEventError(`Unable to update member details, unknown member number: '${event.memberNumber}'`);
-        }
-        if (event.name) {
-          tx.update(membersTable)
-            .set({name: O.some(event.name)})
-            .where(eq(membersTable.userId, userId.value))
-            .run();
-        }
-        if (event.formOfAddress) {
-          tx.update(membersTable)
-            .set({formOfAddress: O.some(event.formOfAddress)})
-            .where(eq(membersTable.userId, userId.value))
-            .run();
-        }
+        updateMemberDetails(tx, event);
         break;
       }
       case 'SuperUserDeclared': {
@@ -489,6 +551,10 @@ const _updateState =
       }
       case 'MemberRejoinedWithNewNumber': {
         addMemberNumberToExisting(tx, event.oldMemberNumber, event.newMemberNumber);
+        retryFailedMemberDetailsUpdates(tx, [
+          event.oldMemberNumber,
+          event.newMemberNumber,
+        ]);
         break;
       }
       case 'MemberRejoinedWithExistingNumber': {
