@@ -14,7 +14,7 @@ export const constructViewModel =
   (deps: Pick<Dependencies, 'getSheetData' | 'sharedReadModel'>) =>
   (user: User) =>
   async (): Promise<E.Either<FailureWithStatus, ViewModel>> => {
-    const requestUser = deps.sharedReadModel.members.get(user.memberNumber);
+    const requestUser = deps.sharedReadModel.members.getByMemberNumber(user.memberNumber);
     if (O.isNone(requestUser) || !requestUser.value.isSuperUser) {
       return E.left(
         failureWithStatus(

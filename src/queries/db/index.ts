@@ -86,7 +86,7 @@ function imperativeAdaptor(handler: Handler): Query {
 function isSuperUser(args: Args): boolean {
   const {user, deps} = args;
   const member = O.toUndefined(
-    deps.sharedReadModel.members.get(user.memberNumber)
+    deps.sharedReadModel.members.getByMemberNumber(user.memberNumber)
   );
   return member !== undefined && member.isSuperUser;
 }

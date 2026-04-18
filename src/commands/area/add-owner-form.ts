@@ -22,11 +22,10 @@ import {renderMemberNumber} from '../../templates/member-number';
 import {SharedReadModel} from '../../read-models/shared-state';
 import {
   areasTable,
-  membersTable,
-  ownersTable,
 } from '../../read-models/shared-state/state';
-import {eq, notInArray} from 'drizzle-orm';
+import {eq} from 'drizzle-orm';
 import {renderMembersAsList} from '../../templates/member-link-list';
+import {UUID} from 'io-ts-types';
 
 type Member = {
   memberNumber: number;
@@ -139,46 +138,30 @@ const getAreaId = (input: unknown) =>
   );
 
 const getExistingAndPotentialOwners = (
-  db: SharedReadModel['db'],
+  readModel: SharedReadModel,
   areaId: string
 ): ViewModel['areaOwners'] => {
-  const existing = db
-    .select({
-      memberNumber: ownersTable.memberNumber,
-      emailAddress: membersTable.primaryEmailAddress,
-      name: membersTable.name,
-      agreementSigned: membersTable.agreementSigned,
-    })
-    .from(ownersTable)
-    .innerJoin(
-      membersTable,
-      eq(membersTable.memberNumber, ownersTable.memberNumber)
-    )
-    .where(eq(ownersTable.areaId, areaId))
-    .all()
-    .map(member => ({
-      ...member,
-      agreementSigned: O.fromNullable(member.agreementSigned),
-    }));
-  const potential = db
-    .select({
-      memberNumber: membersTable.memberNumber,
-      emailAddress: membersTable.primaryEmailAddress,
-      name: membersTable.name,
-      agreementSigned: membersTable.agreementSigned,
-    })
-    .from(membersTable)
-    .where(
-      notInArray(
-        membersTable.memberNumber,
-        existing.map(({memberNumber}) => memberNumber)
-      )
-    )
-    .all()
-    .map(member => ({
-      ...member,
-      agreementSigned: O.fromNullable(member.agreementSigned),
-    }));
+  const toMember = (member: {
+    memberNumber: number;
+    primaryEmailAddress: EmailAddress;
+    name: O.Option<string>;
+    agreementSigned: O.Option<Date>;
+  }) => ({
+    memberNumber: member.memberNumber,
+    emailAddress: member.primaryEmailAddress,
+    name: member.name,
+    agreementSigned: member.agreementSigned,
+  });
+  const existing = pipe(
+    readModel.area.get(areaId as UUID),
+    O.map(area => area.owners.map(toMember)),
+    O.getOrElse<ReadonlyArray<Member>>(() => [])
+  );
+  const existingMemberNumbers = existing.map(member => member.memberNumber);
+  const potential = readModel.members
+    .getAll()
+    .filter(member => !existingMemberNumbers.includes(member.memberNumber))
+    .map(toMember);
   return {
     existing,
     potential,
@@ -209,7 +192,7 @@ const constructForm: Form<ViewModel>['constructForm'] =
       E.bind('areaId', () => getAreaId(input)),
       E.bind('areaName', ({areaId}) => getAreaName(readModel.db, areaId)),
       E.bind('areaOwners', ({areaId}) =>
-        E.right(getExistingAndPotentialOwners(readModel.db, areaId))
+        E.right(getExistingAndPotentialOwners(readModel, areaId))
       ),
       TE.fromEither
     );
