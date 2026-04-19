@@ -30,7 +30,7 @@ const groupFailures = (failures: ViewModel['failures']): ReadonlyArray<FailureSe
     }
   }
 
-  sections.sort((a, b) => a.eventType.localeCompare(b.eventType))
+  sections.sort((a, b) => a.eventType.localeCompare(b.eventType));
 
   return sections;
 };
@@ -49,8 +49,12 @@ const renderEntries = (failures: ViewModel['failures']) =>
 
 const renderSection = (section: FailureSection) => html`
   <section>
-    <h2>${sanitizeString(section.eventType)}</h2>
-    ${renderEntries(section.failures)}
+    <details class="failed-event-log__section">
+      <summary class="failed-event-log__summary">
+        <h2>${sanitizeString(section.eventType)}</h2>
+      </summary>
+      ${renderEntries(section.failures)}
+    </details>
   </section>
 `;
 
