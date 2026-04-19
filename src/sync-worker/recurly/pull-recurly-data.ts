@@ -2,25 +2,18 @@ import {Logger} from 'pino';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
 import recurly from 'recurly';
-import {DomainEvent} from '../../types';
-import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {EmailAddressCodec} from '../../types/email-address';
-
-import {constructEvent} from '../../types/domain-event';
-
 import {DateTime, Duration} from 'luxon';
-import {startSpan} from '@sentry/node';
 import { ExternalStateDB } from '../external-state-db';
 import { recurlySubscriptionTable } from './recurly-data-table';
 
-const pullRecurlyData = (
+export const pullRecurlyData = (
   logger: Logger,
   extDB: ExternalStateDB,
   recurlyToken: string,
-  recurlySyncInterval: Duration = Duration.fromMillis(1000 * 60 * 20),
 ) => {
     let lastRecurlySync: O.Option<DateTime> = O.none;
-    return async () => {
+    return async (recurlySyncInterval: Duration = Duration.fromMillis(1000 * 60 * 20)) => {
         if (
             O.isSome(lastRecurlySync) &&
             lastRecurlySync.value.diffNow().negate() < recurlySyncInterval

@@ -20,6 +20,8 @@ import {getResourceEvents} from '../init-dependencies/event-store/get-resource-e
 import {commitEvent} from '../init-dependencies/event-store/commit-event';
 import {getSheetData} from './db/get_sheet_data';
 import {ensureExtDBTablesExist, ExternalStateDB, initExternalStateDB} from './external-state-db';
+import { pullRecurlyData } from './recurly/pull-recurly-data';
+import { Duration } from 'luxon';
 
 const initDBCommands = (extDB: ExternalStateDB, eventDB: Client) => {
   return {
@@ -93,6 +95,7 @@ export const initDependencies = (): SyncWorkerDependencies => {
     lastQuizSync: lastSync(extDB),
     getSheetData: getSheetData(extDB),
     commitEvent: commitEvent(eventDB, logger, () => async () => {}),
+    pullRecurlyData: conf.RECURLY_TOKEN ?  pullRecurlyData(logger, extDB, conf.RECURLY_TOKEN) : async (_interval: Duration) => {},
     ...initDBCommands(extDB, eventDB),
   };
 };

@@ -13,6 +13,7 @@ import {SharedReadModel} from '../read-models/shared-state';
 import {Resource} from '../types/resource';
 import {Dependencies} from '../dependencies';
 import {FailureWithStatus} from '../types/failure-with-status';
+import { Duration } from 'luxon';
 
 export interface SyncWorkerDependencies {
   conf: Config;
@@ -45,4 +46,5 @@ export interface SyncWorkerDependencies {
       version: ResourceVersion;
     }
   >;
+  pullRecurlyData: (syncInterval: Duration) => Promise<void>;
 }

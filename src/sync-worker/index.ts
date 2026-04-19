@@ -5,14 +5,16 @@ import {GoogleHelpers} from './google/pull_sheet_data';
 import {setTimeout} from 'node:timers/promises';
 import {SyncWorkerDependencies} from './dependencies';
 import {trainingSummaryEmail} from './training-summary/training_summary_email';
+import { Duration } from 'luxon';
 
 const HEARTBEAT_INTERVAL_MS = 5 * 1000;
 const EQUIPMENT_SYNC_CHECK_INTERVAL_MS = 60 * 1000;
 const TRAINING_SUMMARY_EMAIL_CHECK_INTERVAL_MS = 20 * 60 * 1000;
 const EQUIPMENT_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 const TROUBLE_TICKET_SYNC_INTERVAL_MS = 20 * 60 * 1000;
+const RECURLY_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 
-async function syncEquipmentTrainingSheetsPeriodically(
+async function syncExternDataPeriodically(
   deps: SyncWorkerDependencies,
   google: GoogleHelpers
 ): Promise<never> {
@@ -61,11 +63,12 @@ async function syncEquipmentTrainingSheetsPeriodically(
       ) {
         // The background sync worker is expected to always be looking at slightly stale data.
         // If you need up to date data then use the events directly.
-        await deps.sharedReadModel.asyncApplyExternalEventSources()();
         await deps.sharedReadModel.asyncRefresh()();
         await trainingSummaryEmail(deps);
         lastTrainingSummaryEmailCheck = Date.now();
       }
+
+      await deps.pullRecurlyData(Duration.fromMillis(RECURLY_SYNC_INTERVAL_MS));
 
       await setTimeout(1000);
     } catch (err) {
@@ -81,7 +84,7 @@ async function run() {
   );
   await deps.ensureExtDBTablesExist();
   deps.logger.info('All data tables exist, starting...');
-  await syncEquipmentTrainingSheetsPeriodically(deps, deps.google);
+  await syncExternDataPeriodically(deps, deps.google);
 }
 
 run()

@@ -13,7 +13,6 @@ import {Client} from '@libsql/client';
 import {asyncRefresh} from './async-refresh';
 import {updateState} from './update-state';
 import {Logger} from 'pino';
-import {asyncApplyExternalEventSources} from './async-apply-external-event-sources';
 import {UUID} from 'io-ts-types';
 import {EmailAddress, StoredDomainEvent, User, UserId} from '../../types';
 import {getAllEquipmentFull, getEquipmentFull} from './equipment/helpers';
@@ -42,7 +41,6 @@ export type SharedReadModel = {
   readOnlyDb: BetterSQLite3Database;
   _underlyingReadModelDb: Database.Database; // This is exposed only to allow debug serialisation of the db.
   asyncRefresh: () => T.Task<void>;
-  asyncApplyExternalEventSources: () => T.Task<void>;
   updateState: (event: StoredDomainEvent) => void;
   getCurrentEventIndex: () => Int;
   members: {
@@ -96,12 +94,6 @@ export const initSharedReadModel = (
     _underlyingReadModelDb,
     asyncRefresh: asyncRefresh(eventStoreClient, getCurrentEventIndex_, updateState_),
     updateState: updateState_,
-    asyncApplyExternalEventSources: asyncApplyExternalEventSources(
-      logger,
-      readModelDb,
-      updateState(readModelDb, logger, false),
-      recurlyToken
-    ),
     getCurrentEventIndex: getCurrentEventIndex_,
     members: {
       getByMemberNumber: getMemberFullByMemberNumber(readModelDb),
