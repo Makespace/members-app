@@ -580,6 +580,7 @@ export function updateState (db: BetterSQLite3Database, logger: Logger, trackedE
             .values({
               eventId: event.event_id,
               eventIndex: event.event_index,
+              eventType: event.type,
               error: reason,
               payload: event,
             })

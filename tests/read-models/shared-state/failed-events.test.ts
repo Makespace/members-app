@@ -54,6 +54,9 @@ describe('failed-events', () => {
     expect(rows[0].error).toContain(
       'Unable to add owner, unknown member number'
     );
+    expect(rows[0].eventId).toStrictEqual(failedEvent.event_id);
+    expect(rows[0].eventIndex).toStrictEqual(failedEvent.event_index);
+    expect(rows[0].eventType).toStrictEqual(failedEvent.type);
     expect(rows[0].payload).toStrictEqual(
       expect.objectContaining({
         event_id: failedEvent.event_id,
