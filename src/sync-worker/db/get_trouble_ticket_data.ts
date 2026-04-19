@@ -6,10 +6,10 @@ import {
   TroubleTicketDataTable,
   troubleTicketDataTable,
 } from '../google/sheet-data-table';
-import {GoogleDB} from '../google/db';
+import {ExternalStateDB} from '../external-state-db';
 
 export const getTroubleTicketData =
-  (googleDB: GoogleDB, sheetId: O.Option<string>) =>
+  (extDB: ExternalStateDB, sheetId: O.Option<string>) =>
   (
     from: O.Option<Date>
   ): TE.TaskEither<string, O.Option<TroubleTicketDataTable['rows']>> => {
@@ -19,7 +19,7 @@ export const getTroubleTicketData =
     return pipe(
       TE.tryCatch(
         () =>
-          googleDB
+          extDB
             .select()
             .from(troubleTicketDataTable)
             .where(

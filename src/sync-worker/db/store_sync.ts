@@ -2,15 +2,15 @@ import * as TE from 'fp-ts/TaskEither';
 import {SyncWorkerDependencies} from '../dependencies';
 import {pipe} from 'fp-ts/lib/function';
 import {sheetSyncMetadataTable} from '../google/sheet-data-table';
-import {GoogleDB} from '../google/db';
+import {ExternalStateDB} from '../external-state-db';
 
 export const storeSync =
-  (googleDB: GoogleDB): SyncWorkerDependencies['storeSync'] =>
+  (extDB: ExternalStateDB): SyncWorkerDependencies['storeSync'] =>
   (sheetId, date) =>
     pipe(
       TE.tryCatch(
         () =>
-          googleDB
+          extDB
             .insert(sheetSyncMetadataTable)
             .values({sheet_id: sheetId, last_sync: date})
             .onConflictDoUpdate({

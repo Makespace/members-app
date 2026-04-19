@@ -52,7 +52,7 @@ const populateQuizData = async (
   await framework.updateTrainingSheetCache(sheetId, entries);
   for (const trainingSheetId of new Set(entries.map(m => m.sheet_id))) {
     getRightOrFail(
-      await storeSync(framework.googleDB)(trainingSheetId, syncDate)()
+      await storeSync(framework.extDB)(trainingSheetId, syncDate)()
     );
   }
 };

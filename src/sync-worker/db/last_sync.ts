@@ -5,15 +5,15 @@ import * as O from 'fp-ts/Option';
 import {SyncWorkerDependencies} from '../dependencies';
 import {pipe} from 'fp-ts/lib/function';
 import {sheetSyncMetadataTable} from '../google/sheet-data-table';
-import {GoogleDB} from '../google/db';
+import {ExternalStateDB} from '../external-state-db';
 
 export const lastSync =
-  (googleDB: GoogleDB): SyncWorkerDependencies['lastSync'] =>
+  (extDB: ExternalStateDB): SyncWorkerDependencies['lastSync'] =>
   sheetId =>
     pipe(
       TE.tryCatch(
         () =>
-          googleDB
+          extDB
             .select()
             .from(sheetSyncMetadataTable)
             .where(eq(sheetSyncMetadataTable.sheet_id, sheetId)),

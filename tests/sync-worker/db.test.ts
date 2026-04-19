@@ -1,6 +1,5 @@
 import {Client, createClient} from '@libsql/client';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
-import {ensureGoogleDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
 import {getRightOrFail, getSomeOrFail} from '../helpers';
 import {faker} from '@faker-js/faker';
 import * as O from 'fp-ts/Option';
@@ -24,7 +23,7 @@ import {
 import * as RA from 'fp-ts/ReadonlyArray';
 import {updateTroubleTicketCache} from '../../src/sync-worker/db/update_trouble_ticket_cache';
 import {updateTrainingSheetCache} from '../../src/sync-worker/db/update_training_sheet_cache';
-import {GoogleDB, initGoogleDB} from '../../src/sync-worker/google/db';
+import { ensureExtDBTablesExist, ExternalStateDB, initExternalStateDB } from '../../src/sync-worker/external-state-db';
 
 const randomTrainingSheetRow = (
   sheetId: string,
@@ -113,36 +112,36 @@ const randomTroubleTicketRows = (
 };
 
 describe('Test sync worker db', () => {
-  let googleDBClient: Client;
-  let googleDB: GoogleDB;
+  let extDBClient: Client;
+  let extDB: ExternalStateDB;
   let eventDB: Client;
   beforeEach(async () => {
-    googleDBClient = createClient({url: ':memory:'});
-    googleDB = initGoogleDB(googleDBClient);
+    extDBClient = createClient({url: ':memory:'});
+    extDB = initExternalStateDB(extDBClient);
     eventDB = createClient({url: ':memory:'});
     getRightOrFail(await ensureEventTableExists(eventDB)());
-    await ensureGoogleDBTablesExist(googleDB)();
+    await ensureExtDBTablesExist(extDB)();
   });
 
   afterEach(() => {
-    googleDBClient.close();
+    extDBClient.close();
     eventDB.close();
   });
 
   describe('Empty database', () => {
     const sheetId = faker.string.alphanumeric();
     it('Get last sync returns none', async () =>
-      expect(getRightOrFail(await lastSync(googleDB)(sheetId)())).toStrictEqual(
+      expect(getRightOrFail(await lastSync(extDB)(sheetId)())).toStrictEqual(
         O.none
       ));
     it('Get sheet data returns nothing', async () =>
       expect(
-        getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
+        getRightOrFail(await getSheetData(extDB)(sheetId, O.none)())
       ).toStrictEqual([]));
     it('Get trouble ticket data returns nothing', async () =>
       expect(
         getRightOrFail(
-          await getTroubleTicketData(googleDB, O.some(sheetId))(O.none)()
+          await getTroubleTicketData(extDB, O.some(sheetId))(O.none)()
         )
       ).toStrictEqual(O.some([])));
     it('Get training sheets to sync returns nothing', async () =>
@@ -156,29 +155,29 @@ describe('Test sync worker db', () => {
     const sheetId = faker.string.alphanumeric(10);
     const date = faker.date.past();
     beforeEach(async () =>
-      getRightOrFail(await storeSync(googleDB)(sheetId, date)())
+      getRightOrFail(await storeSync(extDB)(sheetId, date)())
     );
 
     it('Get last sync returns the sync date', async () =>
-      expect(getRightOrFail(await lastSync(googleDB)(sheetId)())).toStrictEqual(
+      expect(getRightOrFail(await lastSync(extDB)(sheetId)())).toStrictEqual(
         O.some(date)
       ));
 
     it('Get last sync on a different sheet returns nothing', async () =>
       expect(
         getRightOrFail(
-          await lastSync(googleDB)(faker.string.alphanumeric(11))()
+          await lastSync(extDB)(faker.string.alphanumeric(11))()
         )
       ).toStrictEqual(O.none));
 
     describe('Sync again on the same sheet', () => {
       const newDate = faker.date.future({refDate: date});
       beforeEach(async () =>
-        getRightOrFail(await storeSync(googleDB)(sheetId, newDate)())
+        getRightOrFail(await storeSync(extDB)(sheetId, newDate)())
       );
       it('Get last sync returns the new sync date', async () =>
         expect(
-          getRightOrFail(await lastSync(googleDB)(sheetId)())
+          getRightOrFail(await lastSync(extDB)(sheetId)())
         ).toStrictEqual(O.some(newDate)));
     });
 
@@ -186,15 +185,15 @@ describe('Test sync worker db', () => {
       const newSheetId = faker.string.alphanumeric(11);
       const newDate = faker.date.past();
       beforeEach(async () =>
-        getRightOrFail(await storeSync(googleDB)(newSheetId, newDate)())
+        getRightOrFail(await storeSync(extDB)(newSheetId, newDate)())
       );
       it('Existing sheet sync data is unchanged', async () =>
         expect(
-          getRightOrFail(await lastSync(googleDB)(sheetId)())
+          getRightOrFail(await lastSync(extDB)(sheetId)())
         ).toStrictEqual(O.some(date)));
       it('Get last sync returns the new sheet sync date', async () =>
         expect(
-          getRightOrFail(await lastSync(googleDB)(newSheetId)())
+          getRightOrFail(await lastSync(extDB)(newSheetId)())
         ).toStrictEqual(O.some(newDate)));
     });
   });
@@ -221,32 +220,32 @@ describe('Test sync worker db', () => {
       new Date()
     );
     beforeEach(async () =>
-      await updateTrainingSheetCache(googleDB)(sheetId, data)
+      await updateTrainingSheetCache(extDB)(sheetId, data)
     );
 
     it('Get training ticket data', async () =>
       expect(
         RA.sort(byTimestamp)(
-          getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
+          getRightOrFail(await getSheetData(extDB)(sheetId, O.none)())
         )
       ).toStrictEqual(RA.sort(byTimestamp)(data)));
 
     describe('Add training data for another sheet', () => {
       beforeEach(async () =>
-        await updateTrainingSheetCache(googleDB)(sheetId2, data2)
+        await updateTrainingSheetCache(extDB)(sheetId2, data2)
       );
 
       it('Get training ticket data for sheet 1 correctly', async () =>
         expect(
           RA.sort(byTimestamp)(
-            getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
+            getRightOrFail(await getSheetData(extDB)(sheetId, O.none)())
           )
         ).toStrictEqual(RA.sort(byTimestamp)(data)));
 
       it('Get training ticket data for sheet 2 correctly', async () =>
         expect(
           RA.sort(byTimestamp)(
-            getRightOrFail(await getSheetData(googleDB)(sheetId2, O.none)())
+            getRightOrFail(await getSheetData(extDB)(sheetId2, O.none)())
           )
         ).toStrictEqual(RA.sort(byTimestamp)(data2)));
     });
@@ -261,13 +260,13 @@ describe('Test sync worker db', () => {
         new Date()
       );
       beforeEach(async () =>
-        await updateTrainingSheetCache(googleDB)(sheetId, new_data)
+        await updateTrainingSheetCache(extDB)(sheetId, new_data)
       );
 
       it('Sheet data contains the new data', async () =>
         expect(
           RA.sort(byTimestamp)(
-            getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
+            getRightOrFail(await getSheetData(extDB)(sheetId, O.none)())
           )
         ).toStrictEqual(RA.sort(byTimestamp)(new_data))
       );
@@ -275,12 +274,12 @@ describe('Test sync worker db', () => {
 
     describe('Update cache for the same sheet with no rows', () => {
       beforeEach(async () =>
-        await updateTrainingSheetCache(googleDB)(sheetId, [])
+        await updateTrainingSheetCache(extDB)(sheetId, [])
       );
 
       it('clears existing sheet data', async () =>
         expect(
-          getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
+          getRightOrFail(await getSheetData(extDB)(sheetId, O.none)())
         ).toStrictEqual([]));
     });
   });
@@ -308,14 +307,14 @@ describe('Test sync worker db', () => {
       new Date()
     );
     beforeEach(async () => {
-      await updateTrainingSheetCache(googleDB)(sheetId, old_data.concat(new_data));
+      await updateTrainingSheetCache(extDB)(sheetId, old_data.concat(new_data));
     });
 
     it('Get only new quiz results', async () =>
       expect(
         RA.sort(byTimestamp)(
           getRightOrFail(
-            await getSheetData(googleDB)(sheetId, O.some(cutoffPoint))()
+            await getSheetData(extDB)(sheetId, O.some(cutoffPoint))()
           )
         )
       ).toStrictEqual(RA.sort(byTimestamp)(new_data)));
@@ -323,7 +322,7 @@ describe('Test sync worker db', () => {
     it('Get all quiz results', async () =>
       expect(
         RA.sort(byTimestamp)(
-          getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
+          getRightOrFail(await getSheetData(extDB)(sheetId, O.none)())
         )
       ).toStrictEqual(RA.sort(byTimestamp)(new_data.concat(old_data))));
   });
@@ -332,12 +331,12 @@ describe('Test sync worker db', () => {
     const sheetId = faker.string.alphanumeric({length: 12});
     const data: SheetDataTable['rows'] = [];
     beforeEach(async () =>
-      await updateTrainingSheetCache(googleDB)(sheetId, data)
+      await updateTrainingSheetCache(extDB)(sheetId, data)
     );
 
     it('No data is returned', async () =>
       expect(
-        getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
+        getRightOrFail(await getSheetData(extDB)(sheetId, O.none)())
       ).toStrictEqual([]));
   });
 
@@ -371,7 +370,7 @@ describe('Test sync worker db', () => {
       new Date()
     );
     beforeEach(async () =>
-      await updateTroubleTicketCache(googleDB)(sheetId, data)
+      await updateTroubleTicketCache(extDB)(sheetId, data)
     );
 
     it('Get trouble ticket data', async () =>
@@ -379,7 +378,7 @@ describe('Test sync worker db', () => {
         RA.sort(byTimestamp)(
           getSomeOrFail(
             getRightOrFail(
-              await getTroubleTicketData(googleDB, O.some(sheetId))(O.none)()
+              await getTroubleTicketData(extDB, O.some(sheetId))(O.none)()
             )
           )
         )
@@ -387,7 +386,7 @@ describe('Test sync worker db', () => {
 
     describe('Add more trouble ticket data for another sheet', () => {
       beforeEach(async () =>
-        await updateTroubleTicketCache(googleDB)(sheetId2, data2)
+        await updateTroubleTicketCache(extDB)(sheetId2, data2)
       );
 
       it('Get trouble ticket data for sheet 1 correctly', async () =>
@@ -395,7 +394,7 @@ describe('Test sync worker db', () => {
           RA.sort(byTimestamp)(
             getSomeOrFail(
               getRightOrFail(
-                await getTroubleTicketData(googleDB, O.some(sheetId))(O.none)()
+                await getTroubleTicketData(extDB, O.some(sheetId))(O.none)()
               )
             )
           )
@@ -406,7 +405,7 @@ describe('Test sync worker db', () => {
           RA.sort(byTimestamp)(
             getSomeOrFail(
               getRightOrFail(
-                await getTroubleTicketData(googleDB, O.some(sheetId2))(O.none)()
+                await getTroubleTicketData(extDB, O.some(sheetId2))(O.none)()
               )
             )
           )
@@ -415,7 +414,7 @@ describe('Test sync worker db', () => {
 
     describe('Update trouble ticket data', () => {
       beforeEach(async () =>
-        await updateTroubleTicketCache(googleDB)(sheetId, data1_2)
+        await updateTroubleTicketCache(extDB)(sheetId, data1_2)
       );
 
       it('Trouble ticket data contains the new data', async () =>
@@ -423,7 +422,7 @@ describe('Test sync worker db', () => {
           RA.sort(byTimestamp)(
             getSomeOrFail(
               getRightOrFail(
-                await getTroubleTicketData(googleDB, O.some(sheetId))(O.none)()
+                await getTroubleTicketData(extDB, O.some(sheetId))(O.none)()
               )
             )
           )
@@ -432,14 +431,14 @@ describe('Test sync worker db', () => {
 
     describe('Update trouble ticket data with no rows', () => {
       beforeEach(async () =>
-        await updateTroubleTicketCache(googleDB)(sheetId, [])
+        await updateTroubleTicketCache(extDB)(sheetId, [])
       );
 
       it('clears existing trouble ticket data', async () =>
         expect(
           getSomeOrFail(
             getRightOrFail(
-              await getTroubleTicketData(googleDB, O.some(sheetId))(O.none)()
+              await getTroubleTicketData(extDB, O.some(sheetId))(O.none)()
             )
           )
         ).toStrictEqual([]));
@@ -467,7 +466,7 @@ describe('Test sync worker db', () => {
       new Date()
     );
     beforeEach(async () => {
-      await updateTroubleTicketCache(googleDB)(
+      await updateTroubleTicketCache(extDB)(
         sheetId,
         old_data.concat(new_data)
       );
@@ -479,7 +478,7 @@ describe('Test sync worker db', () => {
           getSomeOrFail(
             getRightOrFail(
               await getTroubleTicketData(
-                googleDB,
+                extDB,
                 O.some(sheetId)
               )(O.some(cutoffPoint))()
             )
@@ -492,7 +491,7 @@ describe('Test sync worker db', () => {
         RA.sort(byTimestamp)(
           getSomeOrFail(
             getRightOrFail(
-              await getTroubleTicketData(googleDB, O.some(sheetId))(O.none)()
+              await getTroubleTicketData(extDB, O.some(sheetId))(O.none)()
             )
           )
         )
@@ -503,14 +502,14 @@ describe('Test sync worker db', () => {
     const sheetId = faker.string.alphanumeric({length: 12});
     const data: TroubleTicketDataTable['rows'] = [];
     beforeEach(async () =>
-      await updateTroubleTicketCache(googleDB)(sheetId, data)
+      await updateTroubleTicketCache(extDB)(sheetId, data)
     );
 
     it('No data returned', async () =>
       expect(
         getSomeOrFail(
           getRightOrFail(
-            await getTroubleTicketData(googleDB, O.some(sheetId))(O.none)()
+            await getTroubleTicketData(extDB, O.some(sheetId))(O.none)()
           )
         )
       ).toStrictEqual([]));

@@ -27,7 +27,7 @@ import * as O from 'fp-ts/Option';
 import {SyncWorkerDependencies} from '../../src/sync-worker/dependencies';
 import {updateTrainingSheetCache} from '../../src/sync-worker/db/update_training_sheet_cache';
 import {updateTroubleTicketCache} from '../../src/sync-worker/db/update_trouble_ticket_cache';
-import {GoogleDB} from '../../src/sync-worker/google/db';
+import { ExternalStateDB } from '../../src/sync-worker/external-state-db';
 
 export const generateRegisterSheetEvent = (
   equipmentId: UUID,
@@ -54,24 +54,24 @@ export const testLogger = () =>
   });
 
 export const createSyncTrainingSheetDependencies = (
-  googleDB: GoogleDB,
+  extDB: ExternalStateDB,
   eventDB: Client,
   logger: Logger
 ): SyncTrainingSheetDependencies => ({
   logger,
   getTrainingSheetsToSync: getTrainingSheetsToSync(eventDB),
-  storeSync: storeSync(googleDB),
-  lastSync: lastSync(googleDB),
-  updateTrainingSheetCache: updateTrainingSheetCache(googleDB),
+  storeSync: storeSync(extDB),
+  lastSync: lastSync(extDB),
+  updateTrainingSheetCache: updateTrainingSheetCache(extDB),
 });
 
 export const createSyncTroubleTicketDependencies = (
-  googleDB: GoogleDB
+  extDB: ExternalStateDB
 ): SyncTroubleTicketDependencies => ({
   logger: testLogger(),
-  storeSync: storeSync(googleDB),
-  lastSync: lastSync(googleDB),
-  updateTroubleTicketCache: updateTroubleTicketCache(googleDB),
+  storeSync: storeSync(extDB),
+  lastSync: lastSync(extDB),
+  updateTroubleTicketCache: updateTroubleTicketCache(extDB),
 });
 
 export const byTimestamp = pipe(

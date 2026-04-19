@@ -16,7 +16,6 @@ import {
   METAL_LATHE,
 } from '../data/google_sheet_data';
 import {getRightOrFail, getSomeOrFail} from '../helpers';
-import {ensureGoogleDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
 import {setTimeout} from 'node:timers/promises';
 import {getSheetData} from '../../src/sync-worker/db/get_sheet_data';
@@ -30,7 +29,7 @@ import {
   pushEvents,
   testLogger,
 } from './util';
-import {GoogleDB, initGoogleDB} from '../../src/sync-worker/google/db';
+import { ensureExtDBTablesExist, ExternalStateDB, initExternalStateDB } from '../../src/sync-worker/external-state-db';
 
 const runSyncEquipmentTrainingSheets = async (
   deps: SyncTrainingSheetDependencies,
@@ -46,17 +45,17 @@ const runSyncEquipmentTrainingSheets = async (
   await syncEquipmentTrainingSheets(deps, google, syncIntervalMs);
 };
 
-const getSheetDataSorted = async (googleDB: GoogleDB, sheetId: string) =>
+const getSheetDataSorted = async (extDB: ExternalStateDB, sheetId: string) =>
   RA.sort(byTimestamp)(
-    getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
+    getRightOrFail(await getSheetData(extDB)(sheetId, O.none)())
   );
 
 const expectSheetDataMatches = async (
-  googleDB: GoogleDB,
+  extDB: ExternalStateDB,
   sheetId: string,
   expectedData: ReadonlyArray<ManualParsedTrainingSheetEntry>
 ) => {
-  const rows = await getSheetDataSorted(googleDB, sheetId);
+  const rows = await getSheetDataSorted(extDB, sheetId);
   expect(rows).toHaveLength(expectedData.length);
   for (const [actual, expected] of RA.zip(RA.sort(byTimestamp)(expectedData))(
     rows
@@ -75,23 +74,23 @@ const expectSheetDataMatches = async (
 };
 
 describe('Sync equipment training sheets', () => {
-  let googleDBClient: Client;
-  let googleDB: GoogleDB;
+  let extDBClient: Client;
+  let extDB: ExternalStateDB;
   let eventDB: Client;
   let deps: SyncTrainingSheetDependencies;
   const equipmentId = faker.string.uuid() as UUID;
 
   beforeEach(async () => {
-    googleDBClient = createClient({url: ':memory:'});
-    googleDB = initGoogleDB(googleDBClient);
+    extDBClient = createClient({url: ':memory:'});
+    extDB = initExternalStateDB(extDBClient);
     eventDB = createClient({url: ':memory:'});
-    deps = createSyncTrainingSheetDependencies(googleDB, eventDB, testLogger());
+    deps = createSyncTrainingSheetDependencies(extDB, eventDB, testLogger());
     getRightOrFail(await ensureEventTableExists(eventDB)());
-    await ensureGoogleDBTablesExist(googleDB)();
+    await ensureExtDBTablesExist(extDB)();
   });
 
   afterEach(() => {
-    googleDBClient.close();
+    extDBClient.close();
     eventDB.close();
   });
 
@@ -111,7 +110,7 @@ describe('Sync equipment training sheets', () => {
       endTime = new Date();
     });
     it('produces no rows', () =>
-      expectSheetDataMatches(googleDB, sheetId, EMPTY.entries));
+      expectSheetDataMatches(extDB, sheetId, EMPTY.entries));
     it('sync recorded', () =>
       expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
     describe('re-sync run again within sync interval', () => {
@@ -172,7 +171,7 @@ describe('Sync equipment training sheets', () => {
       endTime = new Date();
     });
     it('produces expected rows for a full sync', () =>
-      expectSheetDataMatches(googleDB, sheetId, METAL_LATHE.entries));
+      expectSheetDataMatches(extDB, sheetId, METAL_LATHE.entries));
     it('sync recorded', () =>
       expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
     describe('re-sync run again within sync interval', () => {
@@ -233,7 +232,7 @@ describe('Sync equipment training sheets', () => {
       endTime = new Date();
     });
     it('produces expected rows for a full sync', () =>
-      expectSheetDataMatches(googleDB, sheetId, LASER_CUTTER.entries));
+      expectSheetDataMatches(extDB, sheetId, LASER_CUTTER.entries));
     it('sync recorded', () =>
       expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
   });
@@ -254,7 +253,7 @@ describe('Sync equipment training sheets', () => {
       endTime = new Date();
     });
     it('produces expected rows for a full sync', () =>
-      expectSheetDataMatches(googleDB, sheetId, BAMBU.entries));
+      expectSheetDataMatches(extDB, sheetId, BAMBU.entries));
     it('sync recorded', () =>
       expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
   });

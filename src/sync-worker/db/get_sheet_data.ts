@@ -3,10 +3,10 @@ import * as TE from 'fp-ts/TaskEither';
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import {SheetDataTable, sheetDataTable} from '../google/sheet-data-table';
-import {GoogleDB} from '../google/db';
+import {ExternalStateDB} from '../external-state-db';
 
 export const getSheetData =
-  (googleDB: GoogleDB) =>
+  (extDB: ExternalStateDB) =>
   (
     sheetId: string,
     from: O.Option<Date>
@@ -15,7 +15,7 @@ export const getSheetData =
       TE.tryCatch(
         () =>
           O.isSome(from)
-            ? googleDB
+            ? extDB
                 .select()
                 .from(sheetDataTable)
                 .where(
@@ -24,7 +24,7 @@ export const getSheetData =
                     gt(sheetDataTable.response_submitted, from.value)
                   )
                 )
-            : googleDB
+            : extDB
                 .select()
                 .from(sheetDataTable)
                 .where(eq(sheetDataTable.sheet_id, sheetId)),
@@ -34,14 +34,14 @@ export const getSheetData =
     );
 
 export const getSheetDataByMemberNumber =
-  (googleDB: GoogleDB) =>
+  (extDB: ExternalStateDB) =>
   (
     memberNumber: number,
   ): TE.TaskEither<string, SheetDataTable['rows']> =>
     pipe(
       TE.tryCatch(
         () =>
-          googleDB
+          extDB
             .select()
             .from(sheetDataTable)
             .where(eq(sheetDataTable.member_number_provided, memberNumber)),
