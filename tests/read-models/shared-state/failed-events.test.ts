@@ -54,6 +54,9 @@ describe('failed-events', () => {
     expect(rows[0].error).toContain(
       'Unable to add owner, unknown member number'
     );
+    expect(rows[0].eventId).toStrictEqual(failedEvent.event_id);
+    expect(rows[0].eventIndex).toStrictEqual(failedEvent.event_index);
+    expect(rows[0].eventType).toStrictEqual(failedEvent.type);
     expect(rows[0].payload).toStrictEqual(
       expect.objectContaining({
         event_id: failedEvent.event_id,
@@ -61,6 +64,22 @@ describe('failed-events', () => {
         type: 'OwnerAdded',
       })
     );
+  });
+
+  it("doesn't duplicate a failed event when applied more than once", () => {
+    const failedEvent = framework.insertIntoSharedReadModel(
+      arbitraryFailingOwnerAddedEvent()
+    );
+
+    framework.sharedReadModel.updateState(failedEvent);
+
+    const rows = framework.sharedReadModel.db
+      .select()
+      .from(failedEventsTable)
+      .all();
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0].eventId).toStrictEqual(failedEvent.event_id);
   });
 
   it('continues applying later tracked events after a failure', () => {

@@ -53,8 +53,8 @@ describe('construct-view-model', () => {
     });
   });
 
-  it('shows failed events to super users', async () => {
-    framework.insertIntoSharedReadModel(
+  it('shows all failed events to super users', async () => {
+    const firstFailedEvent = framework.insertIntoSharedReadModel(
       arbitraryFailingOwnerAddedEvent()
     );
     const secondFailedEvent = framework.insertIntoSharedReadModel(
@@ -68,14 +68,21 @@ describe('construct-view-model', () => {
     )();
 
     expect(result.count).toStrictEqual(2);
-    expect(result.failures).toHaveLength(1);
+    expect(result.failures).toHaveLength(2);
     expect(result.failures[0].error).toContain(
       'Unable to add owner, unknown member number'
     );
+    expect(result.failures[0].eventType).toStrictEqual('OwnerAdded');
     expect(result.failures[0].payload).toStrictEqual(
       expect.objectContaining({
         event_id: secondFailedEvent.event_id,
         event_index: secondFailedEvent.event_index,
+      })
+    );
+    expect(result.failures[1].payload).toStrictEqual(
+      expect.objectContaining({
+        event_id: firstFailedEvent.event_id,
+        event_index: firstFailedEvent.event_index,
       })
     );
   });
