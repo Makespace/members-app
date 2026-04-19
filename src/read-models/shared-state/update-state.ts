@@ -578,6 +578,8 @@ export function updateState (db: BetterSQLite3Database, logger: Logger, trackedE
         db.transaction((tx: DatabaseTransaction) => {
           tx.insert(failedEventsTable)
             .values({
+              eventId: event.event_id,
+              eventIndex: event.event_index,
               error: reason,
               payload: event,
             })
