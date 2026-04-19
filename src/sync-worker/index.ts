@@ -79,7 +79,7 @@ async function run() {
   deps.logger.info(
     'Background sync worker ensuring sheet data tables exist...'
   );
-  await deps.ensureGoogleDBTablesExist();
+  await deps.ensureExtDBTablesExist();
   deps.logger.info('All data tables exist, starting...');
   await syncEquipmentTrainingSheetsPeriodically(deps, deps.google);
 }
