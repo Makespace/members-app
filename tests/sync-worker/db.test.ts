@@ -24,6 +24,7 @@ import {
 import * as RA from 'fp-ts/ReadonlyArray';
 import {updateTroubleTicketCache} from '../../src/sync-worker/db/update_trouble_ticket_cache';
 import {updateTrainingSheetCache} from '../../src/sync-worker/db/update_training_sheet_cache';
+import {GoogleDB, initGoogleDB} from '../../src/sync-worker/google/db';
 
 const randomTrainingSheetRow = (
   sheetId: string,
@@ -112,17 +113,19 @@ const randomTroubleTicketRows = (
 };
 
 describe('Test sync worker db', () => {
-  let googleDB: Client;
+  let googleDBClient: Client;
+  let googleDB: GoogleDB;
   let eventDB: Client;
   beforeEach(async () => {
-    googleDB = createClient({url: ':memory:'});
+    googleDBClient = createClient({url: ':memory:'});
+    googleDB = initGoogleDB(googleDBClient);
     eventDB = createClient({url: ':memory:'});
     getRightOrFail(await ensureEventTableExists(eventDB)());
     await ensureGoogleDBTablesExist(googleDB)();
   });
 
   afterEach(() => {
-    googleDB.close();
+    googleDBClient.close();
     eventDB.close();
   });
 

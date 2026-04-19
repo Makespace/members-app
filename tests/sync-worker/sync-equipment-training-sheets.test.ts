@@ -30,6 +30,7 @@ import {
   pushEvents,
   testLogger,
 } from './util';
+import {GoogleDB, initGoogleDB} from '../../src/sync-worker/google/db';
 
 const runSyncEquipmentTrainingSheets = async (
   deps: SyncTrainingSheetDependencies,
@@ -45,13 +46,13 @@ const runSyncEquipmentTrainingSheets = async (
   await syncEquipmentTrainingSheets(deps, google, syncIntervalMs);
 };
 
-const getSheetDataSorted = async (googleDB: Client, sheetId: string) =>
+const getSheetDataSorted = async (googleDB: GoogleDB, sheetId: string) =>
   RA.sort(byTimestamp)(
     getRightOrFail(await getSheetData(googleDB)(sheetId, O.none)())
   );
 
 const expectSheetDataMatches = async (
-  googleDB: Client,
+  googleDB: GoogleDB,
   sheetId: string,
   expectedData: ReadonlyArray<ManualParsedTrainingSheetEntry>
 ) => {
@@ -74,13 +75,15 @@ const expectSheetDataMatches = async (
 };
 
 describe('Sync equipment training sheets', () => {
-  let googleDB: Client;
+  let googleDBClient: Client;
+  let googleDB: GoogleDB;
   let eventDB: Client;
   let deps: SyncTrainingSheetDependencies;
   const equipmentId = faker.string.uuid() as UUID;
 
   beforeEach(async () => {
-    googleDB = createClient({url: ':memory:'});
+    googleDBClient = createClient({url: ':memory:'});
+    googleDB = initGoogleDB(googleDBClient);
     eventDB = createClient({url: ':memory:'});
     deps = createSyncTrainingSheetDependencies(googleDB, eventDB, testLogger());
     getRightOrFail(await ensureEventTableExists(eventDB)());
@@ -88,7 +91,7 @@ describe('Sync equipment training sheets', () => {
   });
 
   afterEach(() => {
-    googleDB.close();
+    googleDBClient.close();
     eventDB.close();
   });
 

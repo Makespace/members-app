@@ -20,8 +20,9 @@ import * as O from 'fp-ts/Option';
 import {getResourceEvents} from '../init-dependencies/event-store/get-resource-events';
 import {commitEvent} from '../init-dependencies/event-store/commit-event';
 import {getSheetData} from './db/get_sheet_data';
+import {GoogleDB, initGoogleDB} from './google/db';
 
-const initDBCommands = (googleDB: Client, eventDB: Client) => {
+const initDBCommands = (googleDB: GoogleDB, eventDB: Client) => {
   return {
     lastSync: lastSync(googleDB),
     storeSync: storeSync(googleDB),
@@ -40,11 +41,12 @@ export const initDependencies = (): SyncWorkerDependencies => {
     url: conf.TURSO_EVENTDB_SYNC_URL,
     authToken: conf.TURSO_TOKEN,
   });
-  const googleDB = createClient({
+  const googleDBClient = createClient({
     url: conf.GOOGLE_DB_URL,
     // syncUrl: conf.TURSO_GOOGLEDB_SYNC_URL,
     // authToken: conf.TURSO_GOOGLE_DB_TOKEN,
   });
+  const googleDB = initGoogleDB(googleDBClient);
 
   const googleAuth = new GoogleAuth({
     // Google issues the credentials file and validates it.
