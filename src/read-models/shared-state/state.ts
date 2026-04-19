@@ -222,6 +222,8 @@ export const failedEventsTable = sqliteTable(
   'failedEventsTable',
   {
     error: text('error').notNull(),
+    eventId: text('eventId').unique().notNull(),
+    eventIndex: integer('eventIndex').notNull(),
     payload: text('payload', {mode: 'json'}).notNull(),
   }
 );
@@ -229,6 +231,8 @@ export const failedEventsTable = sqliteTable(
 const createFailedEventsTable = sql`
   CREATE TABLE IF NOT EXISTS failedEventsTable (
     error TEXT NOT NULL,
+    eventId TEXT NOT NULL UNIQUE,
+    eventIndex INTEGER NOT NULL,
     payload TEXT NOT NULL
   )
 `;
