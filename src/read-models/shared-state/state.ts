@@ -224,6 +224,7 @@ export const failedEventsTable = sqliteTable(
     error: text('error').notNull(),
     eventId: text('eventId').unique().notNull(),
     eventIndex: integer('eventIndex').notNull(),
+    eventType: text('eventType').notNull(),
     payload: text('payload', {mode: 'json'}).notNull(),
   }
 );
@@ -233,6 +234,7 @@ const createFailedEventsTable = sql`
     error TEXT NOT NULL,
     eventId TEXT NOT NULL UNIQUE,
     eventIndex INTEGER NOT NULL,
+    eventType TEXT NOT NULL,
     payload TEXT NOT NULL
   )
 `;
