@@ -256,6 +256,18 @@ details > *:not(summary) {
   padding-bottom: 0.5rem;
 }
 
+.failed-event-log__section {
+  margin-block-start: 1.5rem;
+}
+
+.failed-event-log__summary {
+  cursor: pointer;
+
+  h2 {
+    display: inline;
+  }
+}
+
 .page-nav {
   display: flex;
   align-items: center;
@@ -588,4 +600,3 @@ label img {
   justify-content: center;
   padding: 2rem 0;
 }
-
