@@ -21,8 +21,12 @@ import {setTimeout} from 'node:timers/promises';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {getTroubleTicketData} from '../../src/sync-worker/db/get_trouble_ticket_data';
 import * as O from 'fp-ts/Option';
+import {GoogleDB, initGoogleDB} from '../../src/sync-worker/google/db';
 
-const getTroubleTicketDataSorted = async (googleDB: Client, sheetId: string) =>
+const getTroubleTicketDataSorted = async (
+  googleDB: GoogleDB,
+  sheetId: string
+) =>
   RA.sort(byTimestamp)(
     getSomeOrFail(
       getRightOrFail(
@@ -32,7 +36,7 @@ const getTroubleTicketDataSorted = async (googleDB: Client, sheetId: string) =>
   );
 
 const expectTroubleTicketDataMatches = async (
-  googleDB: Client,
+  googleDB: GoogleDB,
   sheetId: string,
   expectedData: ReadonlyArray<ManualParsedTroubleTicketEntry>
 ) => {
@@ -56,12 +60,14 @@ const expectTroubleTicketDataMatches = async (
 };
 
 describe('Sync trouble ticket sheets', () => {
-  let googleDB: Client;
+  let googleDBClient: Client;
+  let googleDB: GoogleDB;
   let eventDB: Client;
   let deps: SyncTroubleTicketDependencies;
 
   beforeEach(async () => {
-    googleDB = createClient({url: ':memory:'});
+    googleDBClient = createClient({url: ':memory:'});
+    googleDB = initGoogleDB(googleDBClient);
     eventDB = createClient({url: ':memory:'});
     deps = createSyncTroubleTicketDependencies(googleDB);
     getRightOrFail(await ensureEventTableExists(eventDB)());
@@ -69,7 +75,7 @@ describe('Sync trouble ticket sheets', () => {
   });
 
   afterEach(() => {
-    googleDB.close();
+    googleDBClient.close();
     eventDB.close();
   });
 

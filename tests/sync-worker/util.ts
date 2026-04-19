@@ -27,6 +27,7 @@ import * as O from 'fp-ts/Option';
 import {SyncWorkerDependencies} from '../../src/sync-worker/dependencies';
 import {updateTrainingSheetCache} from '../../src/sync-worker/db/update_training_sheet_cache';
 import {updateTroubleTicketCache} from '../../src/sync-worker/db/update_trouble_ticket_cache';
+import {GoogleDB} from '../../src/sync-worker/google/db';
 
 export const generateRegisterSheetEvent = (
   equipmentId: UUID,
@@ -53,7 +54,7 @@ export const testLogger = () =>
   });
 
 export const createSyncTrainingSheetDependencies = (
-  googleDB: Client,
+  googleDB: GoogleDB,
   eventDB: Client,
   logger: Logger
 ): SyncTrainingSheetDependencies => ({
@@ -65,7 +66,7 @@ export const createSyncTrainingSheetDependencies = (
 });
 
 export const createSyncTroubleTicketDependencies = (
-  googleDB: Client
+  googleDB: GoogleDB
 ): SyncTroubleTicketDependencies => ({
   logger: testLogger(),
   storeSync: storeSync(googleDB),

@@ -1,81 +1,51 @@
-import {Client, ResultSet} from '@libsql/client';
+import {and, eq, gt} from 'drizzle-orm';
 import * as TE from 'fp-ts/TaskEither';
-import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
-import {formatValidationErrors} from 'io-ts-reporters';
-import {SheetDataTable} from '../google/sheet-data-table';
+import {SheetDataTable, sheetDataTable} from '../google/sheet-data-table';
+import {GoogleDB} from '../google/db';
 
 export const getSheetData =
-  (googleDB: Client) =>
+  (googleDB: GoogleDB) =>
   (
     sheetId: string,
     from: O.Option<Date>
   ): TE.TaskEither<string, SheetDataTable['rows']> =>
     pipe(
-      TE.tryCatch<string, ResultSet>(
+      TE.tryCatch(
         () =>
           O.isSome(from)
-            ? googleDB.execute(
-                `
-            SELECT *
-            FROM sheet_data
-            WHERE sheet_id = ?
-            AND response_submitted > ?
-            `,
-                [sheetId, from.value]
-              )
-            : googleDB.execute(
-                `
-            SELECT *
-            FROM sheet_data
-            WHERE sheet_id = ?
-            `,
-                [sheetId]
-              ),
+            ? googleDB
+                .select()
+                .from(sheetDataTable)
+                .where(
+                  and(
+                    eq(sheetDataTable.sheet_id, sheetId),
+                    gt(sheetDataTable.response_submitted, from.value)
+                  )
+                )
+            : googleDB
+                .select()
+                .from(sheetDataTable)
+                .where(eq(sheetDataTable.sheet_id, sheetId)),
         reason =>
           `Failed to get sheet data for sheet '${sheetId}': ${(reason as Error).message}`
-      ),
-      TE.flatMapEither<ResultSet, string, SheetDataTable>(data =>
-        pipe(
-          data,
-          SheetDataTable.decode,
-          E.mapLeft(
-            e =>
-              'Failed to pull sheet data due to malformed data: ' +
-              formatValidationErrors(e).join(',')
-          )
-        )
-      ),
-      TE.map(data => data.rows)
+      )
     );
 
 export const getSheetDataByMemberNumber =
-  (googleDB: Client) =>
+  (googleDB: GoogleDB) =>
   (
     memberNumber: number,
   ): TE.TaskEither<string, SheetDataTable['rows']> =>
     pipe(
-      TE.tryCatch<string, ResultSet>(
-        () => googleDB.execute(
-          ` SELECT *
-            FROM sheet_data
-            WHERE member_number_provided = ?
-          `, [memberNumber]
-        ),
+      TE.tryCatch(
+        () =>
+          googleDB
+            .select()
+            .from(sheetDataTable)
+            .where(eq(sheetDataTable.member_number_provided, memberNumber)),
         reason =>
           `Failed to get sheet data for memberNumber '${memberNumber}': ${(reason as Error).message}`
-      ),
-      TE.flatMapEither<ResultSet, string, SheetDataTable>(data =>
-        pipe(
-          data,
-          SheetDataTable.decode,
-          E.mapLeft(
-            e =>
-              'Failed to pull sheet data due to malformed data: ' +
-              formatValidationErrors(e).join(',')
-          )
-        )
-      ),
-      TE.map(data => data.rows)
+      )
     );

@@ -15,6 +15,7 @@ import {initSharedReadModel} from '../read-models/shared-state';
 import {lastSync} from '../sync-worker/db/last_sync';
 import {getSheetData, getSheetDataByMemberNumber} from '../sync-worker/db/get_sheet_data';
 import {getTroubleTicketData} from '../sync-worker/db/get_trouble_ticket_data';
+import {initGoogleDB} from '../sync-worker/google/db';
 
 export const initLogger = (conf: Config) => {
   let loggerOptions: LoggerOptions;
@@ -46,7 +47,7 @@ export const initLogger = (conf: Config) => {
 
 export const initDependencies = (
   eventDB: Client,
-  googleDB: Client,
+  googleDBClient: Client,
   conf: Config
 ): Dependencies => {
   const logger = initLogger(conf);
@@ -68,6 +69,7 @@ export const initDependencies = (
     logger,
     O.fromNullable(conf.RECURLY_TOKEN)
   );
+  const googleDB = initGoogleDB(googleDBClient);
 
   const deps: Dependencies = {
     commitEvent: commitEvent(eventDB, logger, sharedReadModel.asyncRefresh),
