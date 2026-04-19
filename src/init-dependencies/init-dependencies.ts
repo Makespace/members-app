@@ -77,6 +77,7 @@ export const initDependencies = (
     getEventById: getEventById(eventDB),
     getResourceEvents: getResourceEvents(eventDB),
     sharedReadModel,
+    extDB,
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
     logger,
