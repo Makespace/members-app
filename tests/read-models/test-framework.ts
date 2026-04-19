@@ -30,6 +30,7 @@ import { faker } from '@faker-js/faker';
 import { UUID } from 'io-ts-types';
 import { updateTrainingSheetCache } from '../../src/sync-worker/db/update_training_sheet_cache';
 import { updateTroubleTicketCache } from '../../src/sync-worker/db/update_trouble_ticket_cache';
+import {GoogleDB, initGoogleDB} from '../../src/sync-worker/google/db';
 
 const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
 
@@ -56,7 +57,7 @@ export type TestFramework = {
   sharedReadModel: Dependencies['sharedReadModel'];
   depsForApplyToResource: Dependencies;
   eventStoreDb: libsqlClient.Client;
-  googleDB: libsqlClient.Client;
+  googleDB: GoogleDB;
   getTroubleTicketData: Dependencies['getTroubleTicketData'];
   updateTrainingSheetCache: SyncWorkerDependencies['updateTrainingSheetCache'];
   updateTroubleTicketCache: SyncWorkerDependencies['updateTroubleTicketCache'];
@@ -85,9 +86,10 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   const eventDB = libsqlClient.createClient({
     url: ':memory:',
   });
-  const googleDB = libsqlClient.createClient({
+  const googleDBClient = libsqlClient.createClient({
     url: ':memory:',
   });
+  const googleDBDrizzle = initGoogleDB(googleDBClient);
   const sharedReadModel = initSharedReadModel(eventDB, logger, O.none);
   const frameworkCommitEvent = commitEvent(
     eventDB,
@@ -95,7 +97,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     sharedReadModel.asyncRefresh
   );
   getRightOrFail(await ensureEventTableExists(eventDB)());
-  await ensureGoogleDBTablesExist(googleDB)();
+  await ensureGoogleDBTablesExist(googleDBDrizzle)();
   const frameworkGetAllEvents = () =>
     pipe(getAllEvents(eventDB)(), T.map(getRightOrFail))();
   const frameworkGetAllEventsByType = <EN extends EventName>(eventType: EN) =>
@@ -110,11 +112,11 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     logger,
     rateLimitSendingOfEmails: TE.right,
     sendEmail: () => TE.right('success'),
-    lastQuizSync: lastSync(googleDB),
-    getSheetData: getSheetData(googleDB),
-    getSheetDataByMemberNumber: getSheetDataByMemberNumber(googleDB),
+    lastQuizSync: lastSync(googleDBDrizzle),
+    getSheetData: getSheetData(googleDBDrizzle),
+    getSheetDataByMemberNumber: getSheetDataByMemberNumber(googleDBDrizzle),
     getTroubleTicketData: getTroubleTicketData(
-      googleDB,
+      googleDBDrizzle,
       O.some(TROUBLE_TICKET_SHEET_ID)
     ),
   };
@@ -134,22 +136,22 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     getAllEvents: frameworkGetAllEvents,
     getAllEventsByType: frameworkGetAllEventsByType,
     getTroubleTicketData: getTroubleTicketData(
-      googleDB,
+      googleDBDrizzle,
       O.some(TROUBLE_TICKET_SHEET_ID)
     ),
-    updateTrainingSheetCache: updateTrainingSheetCache(googleDB),
-    updateTroubleTicketCache: updateTroubleTicketCache(googleDB),
+    updateTrainingSheetCache: updateTrainingSheetCache(googleDBDrizzle),
+    updateTroubleTicketCache: updateTroubleTicketCache(googleDBDrizzle),
     eventStoreDb: eventDB,
-    googleDB,
+    googleDB: googleDBDrizzle,
     sharedReadModel,
     depsForApplyToResource,
     close: () => {
       eventDB.close();
-      googleDB.close();
+      googleDBClient.close();
     },
-    lastSync: lastSync(googleDB),
-    getSheetData: getSheetData(googleDB),
-    getSheetDataByMemberNumber: getSheetDataByMemberNumber(googleDB),
+    lastSync: lastSync(googleDBDrizzle),
+    getSheetData: getSheetData(googleDBDrizzle),
+    getSheetDataByMemberNumber: getSheetDataByMemberNumber(googleDBDrizzle),
     commands: {
       area: {
         create: frameworkify(commands.area.create),
@@ -205,9 +207,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       getResourceEvents: getResourceEvents(eventDB),
       commitEvent: frameworkCommitEvent,
       sharedReadModel,
-      getSheetData: getSheetData(googleDB),
+      getSheetData: getSheetData(googleDBDrizzle),
       sendEmail: jest.fn(() => TE.right('success')),
-      lastQuizSync: lastSync(googleDB),
+      lastQuizSync: lastSync(googleDBDrizzle),
       conf: {
         PUBLIC_URL: 'https://localhost' as NonEmptyString,
       },
