@@ -50,7 +50,7 @@ export const pullRecurlyData = (
                 continue;
             }
 
-            extDB.insert(
+            await extDB.insert(
                 recurlySubscriptionTable
             ).values({
                 email: maybeEmail,

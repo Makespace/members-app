@@ -73,7 +73,6 @@ export type SharedReadModel = {
 export const initSharedReadModel = (
   eventStoreClient: Client,
   logger: Logger,
-  recurlyToken: O.Option<string>
 ): SharedReadModel => {
   const randomFileName = crypto.randomBytes(16).toString('hex');
   const uri = path.join(os.tmpdir(), `${randomFileName}.db`);

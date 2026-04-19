@@ -67,7 +67,6 @@ export const initDependencies = (
   const sharedReadModel = initSharedReadModel(
     eventDB,
     logger,
-    O.fromNullable(conf.RECURLY_TOKEN)
   );
   const extDB = initExternalStateDB(extDBClient);
 

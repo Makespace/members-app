@@ -20,7 +20,6 @@ export const happyPathAdapters: Dependencies = {
       level: 'fatal',
       timestamp: pino.stdTimeFunctions.isoTime,
     }),
-    O.none
   ),
   logger: (() => undefined) as never as Logger,
   rateLimitSendingOfEmails: TE.right,

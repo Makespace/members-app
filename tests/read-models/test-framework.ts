@@ -89,7 +89,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     url: ':memory:',
   });
   const extDBDrizzle = initExternalStateDB(extDBClient);
-  const sharedReadModel = initSharedReadModel(eventDB, logger, O.none);
+  const sharedReadModel = initSharedReadModel(eventDB, logger);
   const frameworkCommitEvent = commitEvent(
     eventDB,
     logger,
