@@ -34,6 +34,7 @@ export interface SyncWorkerDependencies {
     ReadonlyMap<UUID, string>
   >;
   ensureGoogleDBTablesExist: () => Promise<void>;
+  ensureRecurlyDBTablesExist: () => Promise<void>;
   commitEvent: Dependencies['commitEvent'];
   sendEmail: (email: Email) => TE.TaskEither<Failure, string>;
   lastQuizSync: Dependencies['lastQuizSync'];

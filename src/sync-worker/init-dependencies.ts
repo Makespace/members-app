@@ -20,6 +20,7 @@ import * as O from 'fp-ts/Option';
 import {getResourceEvents} from '../init-dependencies/event-store/get-resource-events';
 import {commitEvent} from '../init-dependencies/event-store/commit-event';
 import {getSheetData} from './db/get_sheet_data';
+import { ensureRecurlyDBTablesExist } from './recurly/ensure-recurly-tables-exist';
 
 const initDBCommands = (googleDB: Client, eventDB: Client) => {
   return {
@@ -29,6 +30,9 @@ const initDBCommands = (googleDB: Client, eventDB: Client) => {
     getTrainingSheetsToSync: getTrainingSheetsToSync(eventDB),
     updateTroubleTicketCache: updateTroubleTicketCache(googleDB),
     ensureGoogleDBTablesExist: ensureGoogleDBTablesExist(googleDB),
+
+    // Note that we use the google DB for this aswell because there is little value splitting them at this point.
+    ensureRecurlyDBTablesExist: ensureRecurlyDBTablesExist(googleDB),
   };
 };
 
