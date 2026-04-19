@@ -26,12 +26,12 @@ const eventDB = libsqlClient.createClient({
   url: conf.TURSO_EVENTDB_SYNC_URL,
   authToken: conf.TURSO_TOKEN,
 });
-const googleDB = libsqlClient.createClient({
+const extDB = libsqlClient.createClient({
   url: conf.GOOGLE_DB_URL,
   // syncUrl: conf.TURSO_GOOGLEDB_SYNC_URL,
   // authToken: conf.TURSO_GOOGLE_DB_TOKEN,
 });
-const deps = initDependencies(eventDB, googleDB, conf);
+const deps = initDependencies(eventDB, extDB, conf);
 const routes = initRoutes(deps, conf);
 
 // Passport Setup

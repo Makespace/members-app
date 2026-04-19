@@ -1,18 +1,18 @@
 import {eq} from 'drizzle-orm';
 import {SyncWorkerDependencies} from '../dependencies';
 import {sheetDataTable} from '../google/sheet-data-table';
-import {GoogleDB} from '../google/db';
+import {ExternalStateDB} from '../external-state-db';
 
 export const updateTrainingSheetCache =
   (
-    googleDB: GoogleDB
+    extDB: ExternalStateDB
   ): SyncWorkerDependencies['updateTrainingSheetCache'] =>
   async (sheetId, newData) => {
     // libsql executes batches atomically, preserving the old cache replacement semantics.
-    await googleDB.batch([
-      googleDB
+    await extDB.batch([
+      extDB
         .delete(sheetDataTable)
         .where(eq(sheetDataTable.sheet_id, sheetId)),
-      ...newData.map(row => googleDB.insert(sheetDataTable).values(row)),
+      ...newData.map(row => extDB.insert(sheetDataTable).values(row)),
     ]);
   };
