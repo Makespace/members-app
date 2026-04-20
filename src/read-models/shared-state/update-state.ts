@@ -516,6 +516,9 @@ const _updateState =
           .run()
         break;
       }
+      case 'LinkingMemberNumberToAnAlreadyUsedEmailAttempted': {
+        throw new InconsistentEventError(`Tried to link member number '${event.memberNumber}' to email '${event.email}' but it was already in use`);
+      }
       default: {
         break;
       }
