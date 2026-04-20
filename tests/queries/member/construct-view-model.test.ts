@@ -11,6 +11,7 @@ import {
 import { faker } from '@faker-js/faker';
 import { FailureWithStatus } from '../../../src/types/failure-with-status';
 import { User } from '../../../src/types/user';
+import {insertRecurlySubscription} from '../../helpers';
 
 describe('construct-view-model', () => {
   let framework: TestFramework;
@@ -40,6 +41,27 @@ describe('construct-view-model', () => {
     await framework.commands.superUser.declare({
       memberNumber: superUser.memberNumber,
     });
+  });
+
+  it('returns the recurly status for the member being viewed', async () => {
+    const anotherUser = arbitraryUser();
+    await framework.commands.memberNumbers.linkNumberToEmail({
+      memberNumber: anotherUser.memberNumber,
+      email: anotherUser.emailAddress,
+      name: undefined,
+      formOfAddress: undefined,
+    });
+    await insertRecurlySubscription(framework.extDB, {
+      email: anotherUser.emailAddress,
+      hasActiveSubscription: true,
+    });
+
+    const viewModel = await constructViewModel(
+      framework,
+      superUser
+    )(anotherUser.memberNumber)();
+
+    expect(getRightOrFail(viewModel).recurlyStatus).toStrictEqual('active');
   });
 
   ([

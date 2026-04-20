@@ -7,6 +7,7 @@ import {faker} from '@faker-js/faker';
 import {EventName} from '../../src/types/domain-event';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
 import * as libsqlClient from '@libsql/client';
+import { initExternalStateDB } from '../../src/sync-worker/external-state-db';
 
 export const happyPathAdapters: Dependencies = {
   commitEvent: () => () =>
@@ -20,8 +21,8 @@ export const happyPathAdapters: Dependencies = {
       level: 'fatal',
       timestamp: pino.stdTimeFunctions.isoTime,
     }),
-    O.none
   ),
+  extDB: initExternalStateDB(libsqlClient.createClient({url: ':memory:'})),
   logger: (() => undefined) as never as Logger,
   rateLimitSendingOfEmails: TE.right,
   sendEmail: () => TE.right('success'),

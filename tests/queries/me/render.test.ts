@@ -52,7 +52,6 @@ describe('/me render', () => {
       isSuperUser: false,
       superUserSince: O.none,
       gravatarHash: 'hash' as unknown as GravatarHash,
-      status: 'active',
       joined: new Date('2025-01-01T00:00:00.000Z'),
       trainedOn: [],
       trainerFor: [],

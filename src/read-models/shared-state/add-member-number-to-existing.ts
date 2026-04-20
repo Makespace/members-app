@@ -77,7 +77,6 @@ const mergeUsers = (
         gravatarHash: newMember.gravatarHash,
         name: newMember.name,
         formOfAddress: newMember.formOfAddress,
-        status: newMember.status,
       })
       .where(eq(membersTable.userId, oldUserId))
       .run();

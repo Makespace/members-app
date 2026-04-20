@@ -8,6 +8,7 @@ import {
   initTestFramework,
   TestFramework,
 } from '../../read-models/test-framework';
+import {insertRecurlySubscription} from '../../helpers';
 
 describe('construct-view-model', () => {
   let framework: TestFramework;
@@ -42,16 +43,40 @@ describe('construct-view-model', () => {
   it('succeeds if the logged in user is a super user', async () => {
     const result = await pipe(
       superUser,
-      constructViewModel(framework.sharedReadModel),
+      constructViewModel(framework.sharedReadModel, framework.extDB),
       T.map(getRightOrFail)
     )();
     expect(result.members).toBeDefined();
   });
 
+  it('includes recurly status for each member', async () => {
+    await insertRecurlySubscription(framework.extDB, {
+      email: unprivilegedUser.emailAddress,
+      hasActiveSubscription: true,
+    });
+
+    const result = await pipe(
+      superUser,
+      constructViewModel(framework.sharedReadModel, framework.extDB),
+      T.map(getRightOrFail)
+    )();
+
+    expect(result.members).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        memberNumber: unprivilegedUser.memberNumber,
+        recurlyStatus: 'active',
+      }),
+      expect.objectContaining({
+        memberNumber: superUser.memberNumber,
+        recurlyStatus: 'inactive',
+      }),
+    ]));
+  });
+
   it('fails if the logged in user is not a super user', async () => {
     const result = await pipe(
       unprivilegedUser,
-      constructViewModel(framework.sharedReadModel)
+      constructViewModel(framework.sharedReadModel, framework.extDB)
     )();
     expect(result).toStrictEqual(E.left(expect.anything()));
   });
@@ -59,7 +84,7 @@ describe('construct-view-model', () => {
   it("fails if the logged in user isn't known to the shared state", async () => {
     const result = await pipe(
       unregisteredUser,
-      constructViewModel(framework.sharedReadModel)
+      constructViewModel(framework.sharedReadModel, framework.extDB)
     )();
     expect(result).toStrictEqual(E.left(expect.anything()));
   });

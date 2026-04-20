@@ -45,7 +45,6 @@ const buildViewModel = (isSuperUser: boolean, isSelf: boolean): ViewModel => ({
     isSuperUser,
     superUserSince: O.none,
     gravatarHash: 'hash' as unknown as GravatarHash,
-    status: 'active',
     joined: new Date('2025-01-01T00:00:00.000Z'),
     trainedOn: [],
     trainerFor: [],
@@ -61,6 +60,7 @@ const buildViewModel = (isSuperUser: boolean, isSelf: boolean): ViewModel => ({
   isSelf,
   isSuperUser,
   trainingMatrix: [],
+  recurlyStatus: 'active',
 });
 
 const renderPage = (viewModel: ViewModel): HTMLBodyElement => {
@@ -94,6 +94,12 @@ describe('member render', () => {
       expect(page.textContent).toContain('Primary');
       expect(page.textContent).toContain('Send Verification Email');
       expect(page.textContent).toContain('Make Primary Email');
+    });
+
+    it('shows the recurly status', () => {
+      expect(page.querySelector('.tag--green')!.textContent).toStrictEqual(
+        'active'
+      );
     });
   });
 

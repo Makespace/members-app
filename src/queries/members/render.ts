@@ -33,7 +33,7 @@ const renderMembers = (viewModel: ViewModel) =>
           <td>${sanitizeOption(member.name)}</td>
           <td>${sanitizeOption(member.formOfAddress)}</td>
           <td>${sanitizeString(member.primaryEmailAddress)}</td>
-          <td>${memberStatusTag(member.status)}</td>
+          <td>${memberStatusTag(member.recurlyStatus)}</td>
         </tr>
       `
     ),

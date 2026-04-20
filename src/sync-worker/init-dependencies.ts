@@ -15,11 +15,12 @@ import {updateTroubleTicketCache} from './db/update_trouble_ticket_cache';
 import {sendEmail} from '../init-dependencies/send-email';
 import nodemailer from 'nodemailer';
 import {initSharedReadModel} from '../read-models/shared-state';
-import * as O from 'fp-ts/Option';
 import {getResourceEvents} from '../init-dependencies/event-store/get-resource-events';
 import {commitEvent} from '../init-dependencies/event-store/commit-event';
 import {getSheetData} from './db/get_sheet_data';
 import {ensureExtDBTablesExist, ExternalStateDB, initExternalStateDB} from './external-state-db';
+import { pullRecurlyData } from './recurly/pull-recurly-data';
+import { Duration } from 'luxon';
 
 const initDBCommands = (extDB: ExternalStateDB, eventDB: Client) => {
   return {
@@ -80,7 +81,6 @@ export const initDependencies = (): SyncWorkerDependencies => {
   const sharedReadModel = initSharedReadModel(
     eventDB,
     logger,
-    O.fromNullable(conf.RECURLY_TOKEN)
   );
 
   return {
@@ -88,11 +88,13 @@ export const initDependencies = (): SyncWorkerDependencies => {
     logger,
     google,
     sharedReadModel,
+    extDB,
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
     getResourceEvents: getResourceEvents(eventDB),
     lastQuizSync: lastSync(extDB),
     getSheetData: getSheetData(extDB),
     commitEvent: commitEvent(eventDB, logger, () => async () => {}),
+    pullRecurlyData: conf.RECURLY_TOKEN ?  pullRecurlyData(logger, extDB, conf.RECURLY_TOKEN) : async (_interval: Duration) => {},
     ...initDBCommands(extDB, eventDB),
   };
 };

@@ -11,10 +11,11 @@ import {ViewModel} from './view-model';
 import {StatusCodes} from 'http-status-codes';
 import { getFullQuizResultsForMember } from '../../read-models/external-state/equipment-quiz';
 import { constructTrainingMatrix } from '../training-matrix/construct-view-model';
+import { getRecurlyStatusForMember } from '../../read-models/external-state/recurly-status';
 
 export const constructViewModel =
   (
-    deps: Pick<Dependencies, 'sharedReadModel' | 'getSheetDataByMemberNumber'>,
+    deps: Pick<Dependencies, 'sharedReadModel' | 'getSheetDataByMemberNumber' | 'extDB'>,
     user: User
   ) =>
   (memberNumber: number): TE.TaskEither<FailureWithStatus, ViewModel> => async () => {
@@ -39,6 +40,7 @@ export const constructViewModel =
       member: memberScoped.value,
       isSuperUser: O.isSome(userDetails) && userDetails.value.isSuperUser,
       trainingMatrix: constructTrainingMatrix(memberScoped.value, deps.sharedReadModel, quizData.right),
+      recurlyStatus: await getRecurlyStatusForMember(deps.extDB)(memberScoped.value),
     });
   };
 

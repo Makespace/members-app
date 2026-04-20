@@ -13,7 +13,6 @@ import {Client} from '@libsql/client';
 import {asyncRefresh} from './async-refresh';
 import {updateState} from './update-state';
 import {Logger} from 'pino';
-import {asyncApplyExternalEventSources} from './async-apply-external-event-sources';
 import {UUID} from 'io-ts-types';
 import {EmailAddress, StoredDomainEvent, User, UserId} from '../../types';
 import {getAllEquipmentFull, getEquipmentFull} from './equipment/helpers';
@@ -32,7 +31,7 @@ import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
 import { TrainingSheetId } from '../../types/training-sheet';
 import { EquipmentId } from '../../types/equipment-id';
 import { getTrainingSheetIdMapping } from './equipment/get';
-import { findAllSuperUsers, findUserIdByEmail, findUserIdByMemberNumber } from './member/get';
+import { findAllSuperUsers, findUserIdByEmail, findUserIdByMemberNumber, getAllMemberCore } from './member/get';
 import { setupEventStateTable } from './setup-event-state-table';
 import { getCurrentEventIndex } from './get-current-event-index';
 import { Int } from 'io-ts';
@@ -42,7 +41,6 @@ export type SharedReadModel = {
   readOnlyDb: BetterSQLite3Database;
   _underlyingReadModelDb: Database.Database; // This is exposed only to allow debug serialisation of the db.
   asyncRefresh: () => T.Task<void>;
-  asyncApplyExternalEventSources: () => T.Task<void>;
   updateState: (event: StoredDomainEvent) => void;
   getCurrentEventIndex: () => Int;
   members: {
@@ -50,6 +48,7 @@ export type SharedReadModel = {
     getByMemberNumber: (memberNumber: number) => O.Option<Member>;
     getByEmail: (email: EmailAddress, mustBeVerified: boolean) => O.Option<Member>;
     getAll: () => ReadonlyArray<Member>;
+    getAllCore: () => ReadonlyArray<MemberCoreInfo>;
     getAsActor: (user: User) => (memberNumber: number) => O.Option<Member>;
     findUserIdByEmail: (email: EmailAddress, mustBeVerified: boolean) => O.Option<UserId>;
     findUserIdByMemberNumber: (memberNumber: number) => O.Option<UserId>;
@@ -75,7 +74,6 @@ export type SharedReadModel = {
 export const initSharedReadModel = (
   eventStoreClient: Client,
   logger: Logger,
-  recurlyToken: O.Option<string>
 ): SharedReadModel => {
   const randomFileName = crypto.randomBytes(16).toString('hex');
   const uri = path.join(os.tmpdir(), `${randomFileName}.db`);
@@ -96,18 +94,13 @@ export const initSharedReadModel = (
     _underlyingReadModelDb,
     asyncRefresh: asyncRefresh(eventStoreClient, getCurrentEventIndex_, updateState_),
     updateState: updateState_,
-    asyncApplyExternalEventSources: asyncApplyExternalEventSources(
-      logger,
-      readModelDb,
-      updateState(readModelDb, logger, false),
-      recurlyToken
-    ),
     getCurrentEventIndex: getCurrentEventIndex_,
     members: {
       getByMemberNumber: getMemberFullByMemberNumber(readModelDb),
       getByEmail: getMemberFullByEmail(readModelDb),
       getById: getMemberFullByUserId(readModelDb),
       getAll: getAllMemberFull(readModelDb),
+      getAllCore: () => getAllMemberCore(readModelDb),
       getAsActor: getMemberAsActorFull(readModelDb),
       findUserIdByEmail: findUserIdByEmail(readModelDb),
       findUserIdByMemberNumber: findUserIdByMemberNumber(readModelDb),

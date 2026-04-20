@@ -8,7 +8,7 @@ import {safe, toLoggedInContent} from '../../types/html';
 export const members: Query = deps => user =>
   pipe(
     user,
-    constructViewModel(deps.sharedReadModel),
+    constructViewModel(deps.sharedReadModel, deps.extDB),
     TE.map(render),
     TE.map(toLoggedInContent(safe('Members')))
   );

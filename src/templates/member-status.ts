@@ -1,9 +1,10 @@
+import { RecurlyStatus } from '../read-models/external-state/recurly-status';
 import {Html, html, sanitizeString, safe} from '../types/html';
 
 const tag = (fragment: Html, color: string) =>
   html`<strong class="tag tag--${safe(color)}">${fragment}</strong>`;
 
-export const memberStatusTag = (status: string) => {
+export const memberStatusTag = (status: RecurlyStatus) => {
   switch (status) {
     case 'active':
       return tag(html`active`, 'green');

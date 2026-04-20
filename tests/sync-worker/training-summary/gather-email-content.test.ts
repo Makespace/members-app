@@ -12,6 +12,7 @@ import {EmailAddress} from '../../../src/types/email-address';
 import {Int} from 'io-ts';
 import {NonEmptyString} from 'io-ts-types';
 import * as O from 'fp-ts/Option';
+import {insertRecurlySubscription} from '../../helpers';
 
 describe('Training summary', () => {
   let framework: TestFramework;
@@ -84,6 +85,14 @@ describe('Training summary', () => {
         await framework.commands.memberNumbers.linkNumberToEmail(
           addTrainedMember
         );
+        await insertRecurlySubscription(framework.extDB, {
+          email: addTrainerMember.email,
+          hasActiveSubscription: true,
+        });
+        await insertRecurlySubscription(framework.extDB, {
+          email: addTrainedMember.email,
+          hasActiveSubscription: true,
+        });
         await framework.commands.area.create(createArea);
         await framework.commands.equipment.add(addEquipment);
         await framework.commands.area.addOwner(addOwner);
@@ -96,7 +105,14 @@ describe('Training summary', () => {
       it('members joined within 30 days to be 2', () => {
         expect(content.membersJoinedWithin30Days).toStrictEqual(2);
       });
-      it.todo('total active members to be 2'); // expect(content.totalActiveMembers).toStrictEqual(2); // Needs recurly mock
+      it('total active members to be 2', () => {
+        expect(content.totalActiveMembers).toStrictEqual(2);
+      });
+      it('calculates equipment training coverage from active member count', () => {
+        expect(
+          content.trainingStatsPerEquipment[0].percentageOfActiveMembershipTrained
+        ).toStrictEqual(50);
+      });
       it('the equipment shows no members awaiting training because there is no training sheet', () => {
         expect(content.trainingStatsPerEquipment[0].awaitingTraining).toBe(
           O.none

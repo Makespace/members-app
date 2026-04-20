@@ -58,7 +58,6 @@ const _updateState =
             isSuperUser: false,
             agreementSigned: undefined,
             superUserSince: undefined,
-            status: 'inactive',
             joined: event.recordedAt,
           })
           .run();
@@ -472,18 +471,6 @@ const _updateState =
               eq(trainedMemberstable.equipmentId, event.equipmentId)
             )
           )
-          .run();
-        break;
-      }
-      case 'RecurlySubscriptionUpdated': {
-        const status = event.hasActiveSubscription ? 'active' : 'inactive';
-        const userId = findUserIdByEmail(tx)(event.email, true);
-        if (O.isNone(userId)) {
-          throw new InconsistentEventError(`Unable to mark recurly subscription updated, unknown member email: '${event.email}'`);
-        }
-        tx.update(membersTable)
-          .set({status})
-          .where(eq(membersTable.userId, userId.value))
           .run();
         break;
       }

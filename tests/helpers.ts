@@ -4,7 +4,9 @@ import * as E from 'fp-ts/Either';
 import * as TE from 'fp-ts/TaskEither';
 import {identity, pipe} from 'fp-ts/lib/function';
 import {Actor, UserActor} from '../src/types/actor';
-import {EmailAddressCodec} from '../src/types/email-address';
+import {EmailAddress, EmailAddressCodec} from '../src/types/email-address';
+import {ExternalStateDB} from '../src/sync-worker/external-state-db';
+import {recurlySubscriptionTable} from '../src/sync-worker/recurly/recurly-data-table';
 
 export const getRightOrFail = <A>(input: E.Either<unknown, A>): A =>
   pipe(
@@ -55,3 +57,27 @@ export const expectMatchSecondsPrecision = (expected: Date) => (actual: Date) =>
   expect(Math.floor(actual.getTime() / 1000)).toStrictEqual(
     Math.floor(expected.getTime() / 1000)
   );
+
+export const insertRecurlySubscription = (
+  extDB: ExternalStateDB,
+  values: {
+    email: EmailAddress;
+    hasActiveSubscription: boolean;
+    cacheLastUpdated?: Date;
+    hasFutureSubscription?: boolean;
+    hasCanceledSubscription?: boolean;
+    hasPausedSubscription?: boolean;
+    hasPastDueInvoice?: boolean;
+  }
+) =>
+  extDB
+    .insert(recurlySubscriptionTable)
+    .values({
+      cacheLastUpdated: new Date(),
+      hasFutureSubscription: false,
+      hasCanceledSubscription: false,
+      hasPausedSubscription: false,
+      hasPastDueInvoice: false,
+      ...values,
+    })
+    .run();
