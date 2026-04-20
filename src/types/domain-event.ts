@@ -305,7 +305,7 @@ export const isEventOfType =
   (event: DomainEvent): event is EventOfType<T> =>
     event.type === name;
 
-export type SubsetOfDomainEvent<Names extends Array<EventName>> = Extract<
+type SubsetOfDomainEvent<Names extends Array<EventName>> = Extract<
   DomainEvent,
   {type: Names[number]}
 >;
