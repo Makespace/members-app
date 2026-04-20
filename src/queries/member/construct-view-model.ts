@@ -40,7 +40,7 @@ export const constructViewModel =
       member: memberScoped.value,
       isSuperUser: O.isSome(userDetails) && userDetails.value.isSuperUser,
       trainingMatrix: constructTrainingMatrix(memberScoped.value, deps.sharedReadModel, quizData.right),
-      recurlyStatus: await getRecurlyStatusForMember(deps.extDB)(userDetails.value),
+      recurlyStatus: await getRecurlyStatusForMember(deps.extDB)(memberScoped.value),
     });
   };
 

@@ -95,6 +95,12 @@ describe('member render', () => {
       expect(page.textContent).toContain('Send Verification Email');
       expect(page.textContent).toContain('Make Primary Email');
     });
+
+    it('shows the recurly status', () => {
+      expect(page.querySelector('.tag--green')!.textContent).toStrictEqual(
+        'active'
+      );
+    });
   });
 
   describe('as self', () => {
