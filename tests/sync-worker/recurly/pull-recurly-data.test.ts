@@ -2,42 +2,41 @@ import {createClient, Client} from '@libsql/client';
 import createLogger from 'pino';
 import {Duration} from 'luxon';
 import {eq} from 'drizzle-orm';
-import recurly from 'recurly';
 import {
   ensureExtDBTablesExist,
   ExternalStateDB,
   initExternalStateDB,
 } from '../../../src/sync-worker/external-state-db';
 import {pullRecurlyData} from '../../../src/sync-worker/recurly/pull-recurly-data';
+import type {RecurlyClientFactory} from '../../../src/sync-worker/recurly/pull-recurly-data';
 import {recurlySubscriptionTable} from '../../../src/sync-worker/recurly/recurly-data-table';
 import {EmailAddress} from '../../../src/types/email-address';
 
-jest.mock('recurly', () => ({
-  __esModule: true,
-  default: {
-    Client: jest.fn(),
-  },
-}));
-
-let mockEach: jest.Mock;
-let mockListAccounts: jest.Mock;
-
-const mockClient = recurly.Client as unknown as jest.Mock;
+type RecurlyTestAccount = {
+  email: string;
+  hasActiveSubscription?: boolean | null;
+  hasFutureSubscription?: boolean | null;
+  hasCanceledSubscription?: boolean | null;
+  hasPausedSubscription?: boolean | null;
+  hasPastDueInvoice?: boolean | null;
+};
 
 async function* accounts(
-  rows: ReadonlyArray<{
-    email: string;
-    hasActiveSubscription?: boolean;
-    hasFutureSubscription?: boolean;
-    hasCanceledSubscription?: boolean;
-    hasPausedSubscription?: boolean;
-    hasPastDueInvoice?: boolean;
-  }>
+  rows: ReadonlyArray<RecurlyTestAccount>
 ) {
   for (const row of rows) {
     yield row;
   }
 }
+
+const recurlyClientFactory = (
+  rows: ReadonlyArray<RecurlyTestAccount>
+): [RecurlyClientFactory, jest.Mock] => {
+  const listAccounts = jest.fn(() => ({
+    each: () => accounts(rows),
+  }));
+  return [jest.fn(() => ({listAccounts})), listAccounts];
+};
 
 describe('pull recurly data', () => {
   let extDBClient: Client;
@@ -46,17 +45,13 @@ describe('pull recurly data', () => {
     extDBClient = createClient({url: ':memory:'});
     extDB = initExternalStateDB(extDBClient);
     await ensureExtDBTablesExist(extDB)();
-    mockEach = jest.fn();
-    mockListAccounts = jest.fn(() => ({each: mockEach}));
-    mockClient.mockReset();
-    mockClient.mockImplementation(() => ({listAccounts: mockListAccounts}));
   });
   afterEach(() => {
     extDBClient.close();
   });
 
   it('pulls Recurly account status fields into the subscription cache', async () => {
-    mockEach.mockReturnValue(accounts([
+    const [createRecurlyClient] = recurlyClientFactory([
       {
         email: 'active@example.com',
         hasActiveSubscription: true,
@@ -69,13 +64,16 @@ describe('pull recurly data', () => {
         email: 'not an email',
         hasActiveSubscription: true,
       },
-    ]));
+    ]);
 
-    await pullRecurlyData(createLogger({level: 'silent'}), extDB, 'token')(
-      Duration.fromMillis(0)
-    );
+    await pullRecurlyData(
+      createLogger({level: 'silent'}),
+      extDB,
+      'token',
+      createRecurlyClient
+    )(Duration.fromMillis(0));
 
-    expect(mockClient).toHaveBeenCalledWith('token');
+    expect(createRecurlyClient).toHaveBeenCalledWith('token');
     const rows = await extDB.select().from(recurlySubscriptionTable).all();
     expect(rows).toHaveLength(1);
     expect(rows[0]?.cacheLastUpdated).toBeInstanceOf(Date);
@@ -90,11 +88,16 @@ describe('pull recurly data', () => {
   });
 
   it('defaults missing Recurly status fields to false', async () => {
-    mockEach.mockReturnValue(accounts([{email: 'missing@example.com'}]));
+    const [createRecurlyClient] = recurlyClientFactory([
+      {email: 'missing@example.com'},
+    ]);
 
-    await pullRecurlyData(createLogger({level: 'silent'}), extDB, 'token')(
-      Duration.fromMillis(0)
-    );
+    await pullRecurlyData(
+      createLogger({level: 'silent'}),
+      extDB,
+      'token',
+      createRecurlyClient
+    )(Duration.fromMillis(0));
 
     const row = await extDB
       .select()
@@ -126,7 +129,7 @@ describe('pull recurly data', () => {
         hasPastDueInvoice: true,
       })
       .run();
-    mockEach.mockReturnValue(accounts([
+    const [createRecurlyClient] = recurlyClientFactory([
       {
         email,
         hasActiveSubscription: true,
@@ -135,11 +138,14 @@ describe('pull recurly data', () => {
         hasPausedSubscription: false,
         hasPastDueInvoice: false,
       },
-    ]));
+    ]);
 
-    await pullRecurlyData(createLogger({level: 'silent'}), extDB, 'token')(
-      Duration.fromMillis(0)
-    );
+    await pullRecurlyData(
+      createLogger({level: 'silent'}),
+      extDB,
+      'token',
+      createRecurlyClient
+    )(Duration.fromMillis(0));
 
     const row = await extDB
       .select()
@@ -158,12 +164,17 @@ describe('pull recurly data', () => {
   });
 
   it('skips pulling again before the requested sync interval has elapsed', async () => {
-    mockEach.mockReturnValue(accounts([]));
-    const pull = pullRecurlyData(createLogger({level: 'silent'}), extDB, 'token');
+    const [createRecurlyClient, listAccounts] = recurlyClientFactory([]);
+    const pull = pullRecurlyData(
+      createLogger({level: 'silent'}),
+      extDB,
+      'token',
+      createRecurlyClient
+    );
 
     await pull(Duration.fromMillis(1000));
     await pull(Duration.fromMillis(1000));
 
-    expect(mockListAccounts).toHaveBeenCalledTimes(1);
+    expect(listAccounts).toHaveBeenCalledTimes(1);
   });
 });
