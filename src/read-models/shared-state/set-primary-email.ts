@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 import { EmailAddress, UserId } from "../../types";
-import { gravatarHashFromEmail } from "../members/avatar";
 import { DatabaseTransaction } from "./database-transaction";
 import { membersTable } from "./state";
+import { gravatarHashFromEmail } from "../avatar";
 
 export const setPrimaryEmailAddress = (
   tx: DatabaseTransaction,

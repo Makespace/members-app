@@ -1,5 +1,5 @@
 import {createHash} from 'crypto';
-import {GravatarHash, isoGravatarHash} from '../../types';
+import { GravatarHash, isoGravatarHash } from '../types/gravatar-hash';
 
 export function gravatarHashFromEmail(email: string): GravatarHash {
   const trimmedEmail = email.trim().toLowerCase();

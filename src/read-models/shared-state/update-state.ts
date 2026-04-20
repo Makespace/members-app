@@ -1,6 +1,5 @@
 import {DomainEvent, StoredDomainEvent} from '../../types/domain-event';
 import * as O from 'fp-ts/Option';
-import {gravatarHashFromEmail} from '../members/avatar';
 import {
   areasTable,
   equipmentTable,
@@ -28,6 +27,7 @@ import { insertMemberEmail } from './insert-member-email';
 import { setPrimaryEmailAddress } from './set-primary-email';
 import { getEquipmentMinimal } from './equipment/get';
 import { generateUserId } from './member/generate-user-id';
+import { gravatarHashFromEmail } from '../avatar';
 
 const _updateState =
   (tx: DatabaseTransaction, event: DomainEvent) => {

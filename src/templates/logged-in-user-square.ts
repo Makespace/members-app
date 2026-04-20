@@ -1,6 +1,6 @@
+import { gravatarHashFromEmail } from '../read-models/avatar';
 import {User} from '../types';
 import {html} from '../types/html';
-import {gravatarHashFromEmail} from '../read-models/members/avatar';
 import {getGravatarThumbnail} from './avatar';
 
 // TODO consider allowing users to specify what email is used for gravatar.
