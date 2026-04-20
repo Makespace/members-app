@@ -1,11 +1,12 @@
 import {Client} from '@libsql/client';
 import {drizzle} from 'drizzle-orm/libsql';
 import {
-    createTables,
+  createTables as createGoogleTables,
   sheetDataTable,
   sheetSyncMetadataTable,
   troubleTicketDataTable,
 } from './google/sheet-data-table';
+import { createTables as createRecurlyTables, recurlySubscriptionTable } from './recurly/recurly-data-table';
 import { SyncWorkerDependencies } from './dependencies';
 
 
@@ -16,7 +17,14 @@ import { SyncWorkerDependencies } from './dependencies';
 // do incremental pulls (parsing data is slow), only pull 1 bit of equipment at a time (otherwise it blocks the event loop).
 const ensureGoogleDBTablesExist =
   async (extDB: ExternalStateDB) => {
-    for (const statement of createTables) {
+    for (const statement of createGoogleTables) {
+      await extDB.run(statement);
+    }
+  };
+
+const ensureRecurlyDBTablesExist =
+  async (extDB: ExternalStateDB) => {
+    for (const statement of createRecurlyTables) {
       await extDB.run(statement);
     }
   };
@@ -26,10 +34,12 @@ export const initExternalStateDB = (client: Client) =>
     sheetDataTable,
     sheetSyncMetadataTable,
     troubleTicketDataTable,
+    recurlySubscriptionTable,
   }});
 
 export type ExternalStateDB = ReturnType<typeof initExternalStateDB>;
 
 export const ensureExtDBTablesExist = (extDB: ExternalStateDB): SyncWorkerDependencies['ensureExtDBTablesExist'] => async () => {
     await ensureGoogleDBTablesExist(extDB);
+    await ensureRecurlyDBTablesExist(extDB);
 }

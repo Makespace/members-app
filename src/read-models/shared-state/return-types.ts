@@ -71,7 +71,6 @@ export type MemberCoreInfo = {
   isSuperUser: boolean;
   superUserSince: O.Option<Date>;
   gravatarHash: GravatarHash;
-  status: string;
   joined: Date;
 };
 

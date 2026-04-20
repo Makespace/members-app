@@ -1,3 +1,4 @@
+import { RecurlyStatus } from '../../read-models/external-state/recurly-status';
 import {Member} from '../../read-models/shared-state/return-types';
 import {User} from '../../types';
 import { TrainingMatrix } from '../training-matrix/render';
@@ -8,4 +9,5 @@ export type ViewModel = {
   isSelf: boolean;
   isSuperUser: boolean;
   trainingMatrix: TrainingMatrix;
+  recurlyStatus: RecurlyStatus;
 };

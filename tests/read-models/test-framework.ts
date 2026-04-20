@@ -89,7 +89,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     url: ':memory:',
   });
   const extDBDrizzle = initExternalStateDB(extDBClient);
-  const sharedReadModel = initSharedReadModel(eventDB, logger, O.none);
+  const sharedReadModel = initSharedReadModel(eventDB, logger);
   const frameworkCommitEvent = commitEvent(
     eventDB,
     logger,
@@ -109,6 +109,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     getResourceEvents: getResourceEvents(eventDB),
     sharedReadModel,
     logger,
+    extDB: extDBDrizzle,
     rateLimitSendingOfEmails: TE.right,
     sendEmail: () => TE.right('success'),
     lastQuizSync: lastSync(extDBDrizzle),
@@ -212,6 +213,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       conf: {
         PUBLIC_URL: 'https://localhost' as NonEmptyString,
       },
+      extDB: extDBDrizzle,
     },
     insertIntoSharedReadModel: insertIntoSharedReadModel(sharedReadModel),
   };
