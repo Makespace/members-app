@@ -87,7 +87,7 @@ export const render = (viewModel: ViewModel) => html`
       </tr>
       <tr>
         <th scope="row">Status</th>
-        <td>${memberStatusTag(viewModel.member.status)}</td>
+        <td>${memberStatusTag(viewModel.recurlyStatus)}</td>
       </tr>
       <tr>
         <th scope="row">

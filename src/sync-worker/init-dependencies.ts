@@ -88,6 +88,7 @@ export const initDependencies = (): SyncWorkerDependencies => {
     logger,
     google,
     sharedReadModel,
+    extDB,
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
     getResourceEvents: getResourceEvents(eventDB),
     lastQuizSync: lastSync(extDB),

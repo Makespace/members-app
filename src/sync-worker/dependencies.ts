@@ -19,6 +19,7 @@ export interface SyncWorkerDependencies {
   conf: Config;
   logger: Logger;
   google: GoogleHelpers;
+  extDB: Dependencies['extDB'];
   sharedReadModel: SharedReadModel; // Unlike for the web worker we update this infrequently when required only.
   lastSync: (sheetId: string) => TE.TaskEither<string, O.Option<Date>>;
   storeSync: (sheetId: string, date: Date) => TE.TaskEither<string, void>;

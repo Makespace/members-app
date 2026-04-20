@@ -42,7 +42,7 @@ describe('construct-view-model', () => {
   it('succeeds if the logged in user is a super user', async () => {
     const result = await pipe(
       superUser,
-      constructViewModel(framework.sharedReadModel),
+      constructViewModel(framework.sharedReadModel, framework.extDB),
       T.map(getRightOrFail)
     )();
     expect(result.members).toBeDefined();
@@ -51,7 +51,7 @@ describe('construct-view-model', () => {
   it('fails if the logged in user is not a super user', async () => {
     const result = await pipe(
       unprivilegedUser,
-      constructViewModel(framework.sharedReadModel)
+      constructViewModel(framework.sharedReadModel, framework.extDB)
     )();
     expect(result).toStrictEqual(E.left(expect.anything()));
   });
@@ -59,7 +59,7 @@ describe('construct-view-model', () => {
   it("fails if the logged in user isn't known to the shared state", async () => {
     const result = await pipe(
       unregisteredUser,
-      constructViewModel(framework.sharedReadModel)
+      constructViewModel(framework.sharedReadModel, framework.extDB)
     )();
     expect(result).toStrictEqual(E.left(expect.anything()));
   });

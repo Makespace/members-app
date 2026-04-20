@@ -9,6 +9,7 @@ import {getFullQuizResultsForEquipment} from '../../read-models/external-state/e
 import {pipe} from 'fp-ts/lib/function';
 import {contramap} from 'fp-ts/lib/Ord';
 import {TrainingSummaryDeps} from './training-summary-deps';
+import { getRecurlyStatusForMember } from '../../read-models/external-state/recurly-status';
 
 type EquipmentTrainingStats = {
   name: SanitizedString;
@@ -86,11 +87,14 @@ export const gatherEmailContent = async (
   deps: TrainingSummaryDeps
 ): Promise<EmailContent> => {
   const result = [];
-  const members = deps.sharedReadModel.members.getAll();
-  const totalActiveMembers = members.reduce(
-    (total, member) => (member.status === 'active' ? total + 1 : total),
-    0
-  );
+  const members = deps.sharedReadModel.members.getAll(); 
+  let totalActiveMembers = 0;
+  for (const member of members) {
+    const status = await getRecurlyStatusForMember(deps.extDB)(member);
+    if (status === 'active') {
+      totalActiveMembers += 1;
+    }
+  }
   const cutoff30Days =
     new Date().getTime() - Duration.fromObject({days: 30}).as('milliseconds');
   const membersJoinedWithin30Days = members.filter(
