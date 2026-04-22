@@ -7,9 +7,9 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {Member, MemberCoreInfo} from '../return-types';
 import {Actor, EmailAddress, User, UserId} from '../../../types';
 import {redactDetailsForActor} from './redact';
-import {liftActorOrUser} from '../../members/get-all';
 import {expandAll} from './expand';
 import {findUserIdByEmail, findUserIdByMemberNumber, getAllMemberCore, getMemberCoreByUserId} from './get';
+import { liftActorOrUser } from '../../lift-actor-or-user';
 
 export const getMemberAsActorFull =
   (db: BetterSQLite3Database): SharedReadModel['members']['getAsActor'] =>
