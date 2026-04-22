@@ -1,4 +1,4 @@
-import {liftActorOrUser} from '../../../src/read-models/members/get-all';
+import { liftActorOrUser } from '../../../src/read-models/lift-actor-or-user';
 import {Actor, EmailAddress} from '../../../src/types';
 
 describe('liftActorOrUser', () => {

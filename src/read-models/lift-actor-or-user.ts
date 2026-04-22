@@ -1,4 +1,5 @@
-import {Actor, User} from '../../types';
+import { Actor, User } from "../types";
+
 
 export const liftActorOrUser = (actorOrUser: Actor | User) =>
   Actor.is(actorOrUser)
