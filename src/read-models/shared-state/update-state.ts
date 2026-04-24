@@ -238,6 +238,9 @@ const _updateState =
             since: event.recordedAt,
             markedTrainerByActor: event.actor,
           })
+          .onConflictDoNothing({
+            target: [trainersTable.userId, trainersTable.equipmentId],
+          })
           .run();
         break;
       }
