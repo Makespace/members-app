@@ -1,7 +1,7 @@
 import {sql} from 'drizzle-orm';
 import {EmailAddress, GravatarHash, UserId} from '../../types';
 import * as O from 'fp-ts/Option';
-import {blob, integer, sqliteTable, text} from 'drizzle-orm/sqlite-core';
+import {blob, integer, sqliteTable, text, uniqueIndex} from 'drizzle-orm/sqlite-core';
 
 export const membersTable = sqliteTable('members', {
   userId: text('userId').primaryKey().$type<UserId>(),
@@ -91,17 +91,26 @@ const createEquipmentTable = sql`
   );
 `;
 
-export const trainersTable = sqliteTable('trainers', {
-  userId: text('userId')
-    .notNull()
-    .$type<UserId>()
-    .references(() => membersTable.userId, { onDelete: 'cascade' }),
-  equipmentId: text('equipmentId')
-    .notNull()
-    .references(() => equipmentTable.id, { onDelete: 'cascade' }),
-  since: integer('since', {mode: 'timestamp'}).notNull(),
-  markedTrainerByActor: text('markedTrainerByActor', {mode: 'json'}).notNull(),
-});
+export const trainersTable = sqliteTable(
+  'trainers',
+  {
+    userId: text('userId')
+      .notNull()
+      .$type<UserId>()
+      .references(() => membersTable.userId, { onDelete: 'cascade' }),
+    equipmentId: text('equipmentId')
+      .notNull()
+      .references(() => equipmentTable.id, { onDelete: 'cascade' }),
+    since: integer('since', {mode: 'timestamp'}).notNull(),
+    markedTrainerByActor: text('markedTrainerByActor', {mode: 'json'}).notNull(),
+  },
+  table => ({
+    uniqueTrainer: uniqueIndex('trainers_user_id_equipment_id_unique').on(
+      table.userId,
+      table.equipmentId
+    ),
+  })
+);
 
 const createTrainersTable = sql`
   CREATE TABLE IF NOT EXISTS trainers (
@@ -109,6 +118,7 @@ const createTrainersTable = sql`
     equipmentId TEXT NOT NULL,
     since INTEGER NOT NULL,
     markedTrainerByActor TEXT NOT NULL,
+    UNIQUE(userId, equipmentId),
     FOREIGN KEY (userId) REFERENCES members(userId) ON DELETE CASCADE,
     FOREIGN KEY(equipmentId) REFERENCES equipment(id) ON DELETE CASCADE
   )

@@ -470,6 +470,57 @@ describe('get', () => {
     });
   });
 
+  describe('When equipment has a trainer added twice in the event log', () => {
+    // Note this tests events already in the event-log so it doesn't call the framework
+    // to add a trainer.
+    const duplicateTrainerEvents: EventOfType<'TrainerAdded'>[] = [
+      {
+        actor: {tag: 'system'},
+        equipmentId,
+        memberNumber: addTrainer.memberNumber,
+        recordedAt: new Date('2024-12-02T23:12:23.323Z'),
+        type: 'TrainerAdded',
+      },
+      {
+        actor: {tag: 'system'},
+        equipmentId,
+        memberNumber: addTrainer.memberNumber,
+        recordedAt: new Date('2024-12-02T23:12:24.323Z'),
+        type: 'TrainerAdded',
+      },
+    ];
+
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(
+        addTrainerMember
+      );
+      await framework.commands.area.create(createArea);
+      await framework.commands.equipment.add(addEquipment);
+      await framework.commands.area.addOwner(addOwner);
+      duplicateTrainerEvents.forEach(framework.insertIntoSharedReadModel);
+    });
+
+    it('equipment shows the trainer once', () => {
+      const equipment = runQuery();
+      expect(equipment.trainers).toHaveLength(1);
+      expect(
+        equipment.trainers.map(trainer => trainer.memberNumber)
+      ).toStrictEqual([addTrainer.memberNumber]);
+    });
+
+    it('member shows the equipment once in trainer for', () => {
+      const member = pipe(
+        addTrainer.memberNumber,
+        framework.sharedReadModel.members.getByMemberNumber,
+        getSomeOrFail
+      );
+      expect(member.trainerFor).toHaveLength(1);
+      expect(
+        member.trainerFor.map(trainer => trainer.equipment_id)
+      ).toStrictEqual([addTrainer.equipmentId]);
+    });
+  });
+
   describe('When equipment has a member marked as trained twice', () => {
     const addTrainedMember = {
       memberNumber: faker.number.int() as Int,
