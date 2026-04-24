@@ -82,6 +82,16 @@ describe('Render equipment page', () => {
         unknownMembersAwaitingTraining: [],
         failedQuizes: []
     };
+    const quizResultsWithMemberAwaitingTraining: Readonly<FullQuizResultsForEquipment> = {
+        ...quizResults,
+        membersAwaitingTraining: [{
+            memberNumber: faker.number.int({min: 1}),
+            name: O.some(faker.animal.dog()),
+            pastMemberNumbers: [],
+            waitingSince: faker.date.recent(),
+        }]
+    };
+    const findMarkAsTrainedButton = (dom: HTMLElement) => O.fromNullable(queryByText(dom, 'Mark as trained'));
     const findRevokeTrainingButton = (dom: HTMLElement) => O.fromNullable(queryByText(dom, 'Revoke Training'));
 
     describe('regular member view', () => {
@@ -147,6 +157,58 @@ describe('Render equipment page', () => {
         });
 
         
+    });
+
+    describe('owner view', () => {
+        const owner: User = {
+            emailAddress: faker.internet.email() as EmailAddress,
+            memberNumber: faker.number.int({min: 1}),
+        };
+
+        const viewmodel: Readonly<ViewModel> = {
+            isSuperUser: false,
+            isSuperUserOrOwnerOfArea: true,
+            user: owner,
+            isSuperUserOrTrainerOfArea: false,
+            equipment,
+            quizResults: O.some(quizResultsWithMemberAwaitingTraining)
+        };
+        let renderedDom: HTMLElement;
+
+        beforeEach(() => {
+            renderedDom = renderPage(viewmodel);
+        });
+
+        it('does not show the mark as trained and revoke training buttons', () => {
+            expect(O.isNone(findMarkAsTrainedButton(renderedDom))).toBeTruthy();
+            expect(O.isNone(findRevokeTrainingButton(renderedDom))).toBeTruthy();
+        });
+    });
+
+    describe('trainer view', () => {
+        const trainerUser: User = {
+            emailAddress: faker.internet.email() as EmailAddress,
+            memberNumber: trainer.memberNumber,
+        };
+
+        const viewmodel: Readonly<ViewModel> = {
+            isSuperUser: false,
+            isSuperUserOrOwnerOfArea: false,
+            user: trainerUser,
+            isSuperUserOrTrainerOfArea: true,
+            equipment,
+            quizResults: O.some(quizResultsWithMemberAwaitingTraining)
+        };
+        let renderedDom: HTMLElement;
+
+        beforeEach(() => {
+            renderedDom = renderPage(viewmodel);
+        });
+
+        it('shows the mark as trained and revoke training buttons', () => {
+            expect(O.isSome(findMarkAsTrainedButton(renderedDom))).toBeTruthy();
+            expect(O.isSome(findRevokeTrainingButton(renderedDom))).toBeTruthy();
+        });
     });
 
 

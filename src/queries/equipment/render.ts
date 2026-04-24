@@ -35,14 +35,16 @@ const trainersList = (trainers: ViewModel['equipment']['trainers']) =>
 
 const isOwner = (viewModel: ViewModel) => viewModel.isSuperUserOrOwnerOfArea;
 
-const isTrainerOrOwner = (viewModel: ViewModel) =>
-  viewModel.isSuperUserOrTrainerOfArea || viewModel.isSuperUserOrOwnerOfArea;
+const isTrainer = (viewModel: ViewModel) =>
+  viewModel.isSuperUserOrTrainerOfArea;
+
+const isTrainerOrOwner = (viewModel: ViewModel) => isTrainer(viewModel) || viewModel.isSuperUserOrOwnerOfArea;
 
 const trainMember = (viewModel: ViewModel) =>
   pipe(
     viewModel,
     O.of,
-    O.filter(isTrainerOrOwner),
+    O.filter(isTrainer),
     O.map(viewModel => viewModel.equipment.id),
     O.map(
       id =>
@@ -160,7 +162,7 @@ const currentlyTrainedUsersTable = (viewModel: ViewModel) =>
           </td>
           <td>
             ${
-              isTrainerOrOwner(viewModel) ? html`
+              isTrainer(viewModel) ? html`
                 <form action="/equipment/revoke-member-trained" method="post">
                   <input
                     type="hidden"
@@ -197,21 +199,28 @@ const currentlyTrainedUsersTable = (viewModel: ViewModel) =>
   );
 
 const waitingForTrainingRow =
-  (equipmentId: UUID) => (member: MemberAwaitingTraining) => html`
+  (input: {equipmentId: UUID; canMarkMemberTrained: boolean}) =>
+  (member: MemberAwaitingTraining) => html`
     <tr class="passed_training_quiz_row">
       <td>${sanitizeString(O.getOrElse(() => 'unknown')(member.name))}</td>
       <td>${renderMemberNumber(member.memberNumber)}</td>
       <td>${displayDate(DateTime.fromJSDate(member.waitingSince))}</td>
       <td>
-        <form action="/equipment/mark-member-trained" method="post">
-          <input type="hidden" name="equipmentId" value="${equipmentId}" />
-          <input
-            type="hidden"
-            name="memberNumber"
-            value="${member.memberNumber}"
-          />
-          <button type="submit">Mark as trained</button>
-        </form>
+        ${input.canMarkMemberTrained
+          ? html`<form action="/equipment/mark-member-trained" method="post">
+              <input
+                type="hidden"
+                name="equipmentId"
+                value="${input.equipmentId}"
+              />
+              <input
+                type="hidden"
+                name="memberNumber"
+                value="${member.memberNumber}"
+              />
+              <button type="submit">Mark as trained</button>
+            </form>`
+          : html``}
       </td>
     </tr>
   `;
@@ -222,7 +231,12 @@ const waitingForTrainingTable = (viewModel: ViewModel) =>
     O.map(r =>
       pipe(
         r.membersAwaitingTraining,
-        RA.map(waitingForTrainingRow(viewModel.equipment.id)),
+        RA.map(
+          waitingForTrainingRow({
+            equipmentId: viewModel.equipment.id,
+            canMarkMemberTrained: isTrainer(viewModel),
+          })
+        ),
         RA.match(
           () => html`<p>No one is waiting for training</p>`,
           rows => html`
