@@ -3,6 +3,7 @@ import {faker} from '@faker-js/faker';
 import {StatusCodes} from 'http-status-codes';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {constructEvent} from '../../../src/types';
+import {EmailAddress} from '../../../src/types/email-address';
 import {v4} from 'uuid';
 import {
   arbitraryActor,
@@ -54,6 +55,13 @@ describe('add-owner', () => {
     areaId,
     actor: arbitraryActor(),
   });
+  const ownerMember = constructEvent('MemberNumberLinkedToEmail')({
+    memberNumber,
+    email: faker.internet.email() as EmailAddress,
+    name: undefined,
+    formOfAddress: undefined,
+    actor: arbitraryActor(),
+  });
 
   describe('when the area does not exist', () => {
     it('fails', async () => {
@@ -74,10 +82,13 @@ describe('add-owner', () => {
 
   describe('when the area has been removed', () => {
     it('fails', async () => {
+      framework.insertIntoSharedReadModel(areaCreated);
+      framework.insertIntoSharedReadModel(areaRemoved);
+
       const result = getLeftOrFail(
         await addOwner.process({
           command,
-          events: [areaCreated, areaRemoved],
+          events: [],
           rm: framework.sharedReadModel,
         })()
       );
@@ -92,10 +103,12 @@ describe('add-owner', () => {
   describe('when the area exists', () => {
     describe('and the member was never an owner of it', () => {
       it('adds them as owner', async () => {
+        framework.insertIntoSharedReadModel(areaCreated);
+
         const result = await getTaskEitherRightOrFail(
           addOwner.process({
             command,
-            events: [areaCreated],
+            events: [],
             rm: framework.sharedReadModel,
           })
         );
@@ -114,10 +127,15 @@ describe('add-owner', () => {
 
     describe('and the member is no longer an owner of it', () => {
       it('adds them as owner', async () => {
+        framework.insertIntoSharedReadModel(ownerMember);
+        framework.insertIntoSharedReadModel(areaCreated);
+        framework.insertIntoSharedReadModel(ownerAdded);
+        framework.insertIntoSharedReadModel(ownerRemoved);
+
         const result = await getTaskEitherRightOrFail(
           addOwner.process({
             command,
-            events: [areaCreated, ownerAdded, ownerRemoved],
+            events: [],
             rm: framework.sharedReadModel,
           })
         );
@@ -136,10 +154,14 @@ describe('add-owner', () => {
 
     describe('and the member is an owner', () => {
       it('does nothing', async () => {
+        framework.insertIntoSharedReadModel(ownerMember);
+        framework.insertIntoSharedReadModel(areaCreated);
+        framework.insertIntoSharedReadModel(ownerAdded);
+
         const result = await getTaskEitherRightOrFail(
           addOwner.process({
             command,
-            events: [areaCreated, ownerAdded],
+            events: [],
             rm: framework.sharedReadModel,
           })
         );
