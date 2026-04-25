@@ -15,7 +15,6 @@ export {
   StoredDomainEvent,
   isEventOfType,
   constructEvent,
-  filterByName,
 } from './domain-event';
 export type {
   StoredEventOfType,
