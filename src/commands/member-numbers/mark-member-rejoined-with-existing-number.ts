@@ -1,12 +1,10 @@
-import * as RA from 'fp-ts/ReadonlyArray';
-import {constructEvent, isEventOfType} from '../../types';
+import {constructEvent} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
 import {pipe} from 'fp-ts/lib/function';
-import {EventOfType} from '../../types/domain-event';
 import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
 
 const codec = t.strict({
@@ -15,23 +13,16 @@ const codec = t.strict({
 
 type MarkMemberRejoinedWithExistingNumber = t.TypeOf<typeof codec>;
 
-const isDuplicateOfPreviousCommand =
-  (command: MarkMemberRejoinedWithExistingNumber) =>
-  (event: EventOfType<'MemberRejoinedWithExistingNumber'>) =>
-    event.memberNumber === command.memberNumber;
-
 const process: Command<MarkMemberRejoinedWithExistingNumber>['process'] =
   input =>
-    pipe(
-      input.events,
-      RA.filter(isEventOfType('MemberRejoinedWithExistingNumber')),
-      events =>
-        RA.some(isDuplicateOfPreviousCommand(input.command))(events)
-          ? O.none
-          : O.some(
-              constructEvent('MemberRejoinedWithExistingNumber')(input.command)
-            ),
-      TE.right
+    TE.right(
+      pipe(
+        input.rm.members.getByMemberNumber(input.command.memberNumber),
+        O.filter(member => member.isSuperUser),
+        O.map(() =>
+          constructEvent('MemberRejoinedWithExistingNumber')(input.command)
+        )
+      )
     );
 
 const resource: Command<MarkMemberRejoinedWithExistingNumber>['resource'] =
