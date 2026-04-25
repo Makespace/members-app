@@ -1,12 +1,9 @@
-import * as RA from 'fp-ts/ReadonlyArray';
-import {constructEvent, isEventOfType} from '../../types';
+import {constructEvent} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
-import {pipe} from 'fp-ts/lib/function';
-import {EventOfType} from '../../types/domain-event';
 import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
 
 const codec = t.strict({
@@ -16,22 +13,22 @@ const codec = t.strict({
 
 export type MarkMemberRejoinedWithNewNumber = t.TypeOf<typeof codec>;
 
-const isDuplicateOfPreviousCommand =
-  (command: MarkMemberRejoinedWithNewNumber) =>
-  (event: EventOfType<'MemberRejoinedWithNewNumber'>) =>
-    event.oldMemberNumber === command.oldMemberNumber &&
-    event.newMemberNumber === command.newMemberNumber;
-
-const process: Command<MarkMemberRejoinedWithNewNumber>['process'] = input =>
-  pipe(
-    input.events,
-    RA.filter(isEventOfType('MemberRejoinedWithNewNumber')),
-    events =>
-      RA.some(isDuplicateOfPreviousCommand(input.command))(events)
-        ? O.none
-        : O.some(constructEvent('MemberRejoinedWithNewNumber')(input.command)),
-    TE.right
+const process: Command<MarkMemberRejoinedWithNewNumber>['process'] = input => {
+  const oldUserId = input.rm.members.findUserIdByMemberNumber(
+    input.command.oldMemberNumber
   );
+  const newUserId = input.rm.members.findUserIdByMemberNumber(
+    input.command.newMemberNumber
+  );
+
+  return TE.right(
+    O.isSome(oldUserId) &&
+      O.isSome(newUserId) &&
+      oldUserId.value === newUserId.value
+      ? O.none
+      : O.some(constructEvent('MemberRejoinedWithNewNumber')(input.command))
+  );
+};
 
 const resource: Command<MarkMemberRejoinedWithNewNumber>['resource'] =
   input => ({
