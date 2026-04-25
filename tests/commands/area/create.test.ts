@@ -50,20 +50,23 @@ describe('create-area', () => {
   describe('when the area already exists', () => {
     const areaName = faker.commerce.productName() as NonEmptyString;
     it('does nothing', async () => {
+      const id = v4() as UUID;
+      framework.insertIntoSharedReadModel(
+        constructEvent('AreaCreated')({
+          id,
+          name: areaName,
+          actor: arbitraryActor(),
+        })
+      );
+
       const result = await getTaskEitherRightOrFail(
         create.process({
           command: {
-            id: v4() as UUID,
+            id,
             name: areaName,
             actor: arbitraryActor(),
           },
-          events: [
-            constructEvent('AreaCreated')({
-              id: v4() as UUID,
-              name: areaName,
-              actor: arbitraryActor(),
-            }),
-          ],
+          events: [],
           rm: framework.sharedReadModel,
         })
       );
