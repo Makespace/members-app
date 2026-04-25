@@ -24,6 +24,7 @@ export const initRoutes = (
     query('/event-log.csv', queries.logcsv),
     query('/training-status.csv', queries.trainingStatusCsv),
     query('/domain-events', queries.domainEvents),
+    query('/unlinked-recurly', queries.unlinkedRecurly),
     query('/areas', queries.areas),
     ...command('areas', 'create', commands.area.create),
     ...command('areas', 'add-owner', commands.area.addOwner),

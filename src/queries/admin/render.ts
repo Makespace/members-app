@@ -23,6 +23,7 @@ export const render = () => html`
       <li><a href="/trouble-tickets">View all trouble tickets (prototype)</li>
       <li><a href="/members/rejoined-with-new">Mark member rejoined with new number</a></li>
       <li><a href="/members/rejoined-with-existing">Mark a user as rejoined</a></li>
+      <li><a href="/unlinked-recurly">View Recurly emails not linked to members</a></li>
     </ul>
   </nav>
   </div>
