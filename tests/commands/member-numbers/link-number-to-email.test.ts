@@ -6,7 +6,6 @@ import {
 } from '../../../src/commands/member-numbers/link-number-to-email';
 import {faker} from '@faker-js/faker';
 import {
-  DomainEvent,
   EmailAddress,
   constructEvent,
   isEventOfType,
@@ -62,20 +61,21 @@ describe('linkNumberToEmail', () => {
   });
 
   describe('when the member number already exists', () => {
-    const events: ReadonlyArray<DomainEvent> = [
-      constructEvent('MemberNumberLinkedToEmail')({
+    it('fails', async () => {
+      framework.insertIntoSharedReadModel(
+        constructEvent('MemberNumberLinkedToEmail')({
         memberNumber: command.memberNumber,
         email: faker.internet.email() as EmailAddress,
         name: undefined,
         formOfAddress: undefined,
         actor: arbitraryActor(),
-      }),
-    ];
-    it('fails', async () => {
+        })
+      );
+
       const result = getLeftOrFail(
         await linkNumberToEmail.process({
           command,
-          events,
+          events: [],
           rm: framework.sharedReadModel,
         })()
       );
@@ -88,21 +88,22 @@ describe('linkNumberToEmail', () => {
   });
 
   describe('when the email address is already in use', () => {
-    const events: ReadonlyArray<DomainEvent> = [
-      constructEvent('MemberNumberLinkedToEmail')({
+    it('raises an event documenting the attempt', async () => {
+      framework.insertIntoSharedReadModel(
+        constructEvent('MemberNumberLinkedToEmail')({
         memberNumber: faker.number.int(),
         email: command.email,
         name: undefined,
         formOfAddress: undefined,
         actor: arbitraryActor(),
-      }),
-    ];
-    it('raises an event documenting the attempt', async () => {
+        })
+      );
+
       const result = pipe(
         await getTaskEitherRightOrFail(
           linkNumberToEmail.process({
             command,
-            events,
+            events: [],
             rm: framework.sharedReadModel,
           })
         ),
@@ -117,13 +118,12 @@ describe('linkNumberToEmail', () => {
   });
 
   describe('when both the email and member number are new', () => {
-    const events: ReadonlyArray<DomainEvent> = [];
     it('raises an event linking the number and email', async () => {
       const event = pipe(
         await getTaskEitherRightOrFail(
           linkNumberToEmail.process({
             command,
-            events,
+            events: [],
             rm: framework.sharedReadModel,
           })
         ),
