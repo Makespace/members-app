@@ -1,5 +1,4 @@
-import {constructEvent, isEventOfType} from '../../types';
-import * as RA from 'fp-ts/ReadonlyArray';
+import {constructEvent} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
@@ -16,21 +15,17 @@ const codec = t.strict({
 
 type RemoveArea = t.TypeOf<typeof codec>;
 
-const process: Command<RemoveArea>['process'] = input => {
-  if (
-    input.events.length === 0 ||
-    pipe(input.events, RA.some(isEventOfType('AreaRemoved')))
-  ) {
-    return TE.left(
+const process: Command<RemoveArea>['process'] = input =>
+  pipe(
+    input.rm.area.get(input.command.id),
+    TE.fromOption(() =>
       failureWithStatus(
         'The requested area does not exist',
         StatusCodes.NOT_FOUND
       )()
-    );
-  }
-
-  return TE.right(O.some(constructEvent('AreaRemoved')(input.command)));
-};
+    ),
+    TE.map(() => O.some(constructEvent('AreaRemoved')(input.command)))
+  );
 
 const resource: Command<RemoveArea>['resource'] = command => ({
   type: 'Area',

@@ -52,16 +52,18 @@ describe('remove-area', () => {
 
   describe('when the area already exists', () => {
     it('removes the area', async () => {
+      framework.insertIntoSharedReadModel(
+        constructEvent('AreaCreated')({
+          id: areaId,
+          name: areaName,
+          actor: arbitraryActor(),
+        })
+      );
+
       const result = await getTaskEitherRightOrFail(
         removeArea.process({
           command,
-          events: [
-            constructEvent('AreaCreated')({
-              id: areaId,
-              name: areaName,
-              actor: arbitraryActor(),
-            }),
-          ],
+          events: [],
           rm: framework.sharedReadModel,
         })
       );
@@ -79,20 +81,24 @@ describe('remove-area', () => {
 
   describe('when the area is already removed', () => {
     it('fails', async () => {
+      framework.insertIntoSharedReadModel(
+        constructEvent('AreaCreated')({
+          id: areaId,
+          name: areaName,
+          actor: arbitraryActor(),
+        })
+      );
+      framework.insertIntoSharedReadModel(
+        constructEvent('AreaRemoved')({id: areaId, actor: arbitraryActor()})
+      );
+
       const result = getLeftOrFail(
         await removeArea.process({
           command: {
             id: areaId,
             actor: arbitraryActor(),
           },
-          events: [
-            constructEvent('AreaCreated')({
-              id: areaId,
-              name: areaName,
-              actor: arbitraryActor(),
-            }),
-            constructEvent('AreaRemoved')({id: areaId, actor: arbitraryActor()}),
-          ],
+          events: [],
           rm: framework.sharedReadModel,
         })()
       );
