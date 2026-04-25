@@ -1,44 +1,18 @@
-import {Client, InStatement} from '@libsql/client';
+import {eq} from 'drizzle-orm';
 import {SyncWorkerDependencies} from '../dependencies';
+import {sheetDataTable} from '../google/sheet-data-table';
+import {ExternalStateDB} from '../external-state-db';
 
 export const updateTrainingSheetCache =
   (
-    googleDB: Client
+    extDB: ExternalStateDB
   ): SyncWorkerDependencies['updateTrainingSheetCache'] =>
   async (sheetId, newData) => {
-    const insertStatements: InStatement[] = newData.map(row => ({
-      sql: `
-        INSERT INTO sheet_data (
-          sheet_id,
-          sheet_name,
-          row_index,
-          response_submitted,
-          member_number_provided,
-          email_provided,
-          score,
-          max_score,
-          percentage,
-          cached_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `,
-      args: [
-        row.sheet_id,
-        row.sheet_name,
-        row.row_index,
-        row.response_submitted,
-        row.member_number_provided,
-        row.email_provided,
-        row.score,
-        row.max_score,
-        row.percentage,
-        row.cached_at,
-      ],
-    }));
-    await googleDB.batch(
-      [
-        {sql: 'DELETE FROM sheet_data WHERE sheet_id = ?', args: [sheetId]},
-        ...insertStatements,
-      ],
-      'write'
-    );
+    // libsql executes batches atomically, preserving the old cache replacement semantics.
+    await extDB.batch([
+      extDB
+        .delete(sheetDataTable)
+        .where(eq(sheetDataTable.sheet_id, sheetId)),
+      ...newData.map(row => extDB.insert(sheetDataTable).values(row)),
+    ]);
   };

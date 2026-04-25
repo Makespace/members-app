@@ -1,6 +1,5 @@
 import {DomainEvent, StoredDomainEvent} from '../../types/domain-event';
 import * as O from 'fp-ts/Option';
-import {gravatarHashFromEmail} from '../members/avatar';
 import {
   areasTable,
   equipmentTable,
@@ -28,6 +27,7 @@ import { insertMemberEmail } from './insert-member-email';
 import { setPrimaryEmailAddress } from './set-primary-email';
 import { getEquipmentMinimal } from './equipment/get';
 import { generateUserId } from './member/generate-user-id';
+import { gravatarHashFromEmail } from '../avatar';
 
 const _updateState =
   (tx: DatabaseTransaction, event: DomainEvent) => {
@@ -58,7 +58,6 @@ const _updateState =
             isSuperUser: false,
             agreementSigned: undefined,
             superUserSince: undefined,
-            status: 'inactive',
             joined: event.recordedAt,
           })
           .run();
@@ -238,6 +237,9 @@ const _updateState =
             equipmentId: event.equipmentId,
             since: event.recordedAt,
             markedTrainerByActor: event.actor,
+          })
+          .onConflictDoNothing({
+            target: [trainersTable.userId, trainersTable.equipmentId],
           })
           .run();
         break;
@@ -475,18 +477,6 @@ const _updateState =
           .run();
         break;
       }
-      case 'RecurlySubscriptionUpdated': {
-        const status = event.hasActiveSubscription ? 'active' : 'inactive';
-        const userId = findUserIdByEmail(tx)(event.email, true);
-        if (O.isNone(userId)) {
-          throw new InconsistentEventError(`Unable to mark recurly subscription updated, unknown member email: '${event.email}'`);
-        }
-        tx.update(membersTable)
-          .set({status})
-          .where(eq(membersTable.userId, userId.value))
-          .run();
-        break;
-      }
       case 'MemberRejoinedWithNewNumber': {
         addMemberNumberToExisting(tx, event.oldMemberNumber, event.newMemberNumber);
         break;
@@ -528,6 +518,9 @@ const _updateState =
           })
           .run()
         break;
+      }
+      case 'LinkingMemberNumberToAnAlreadyUsedEmailAttempted': {
+        throw new InconsistentEventError(`Tried to link member number '${event.memberNumber}' to email '${event.email}' but it was already in use`);
       }
       default: {
         break;

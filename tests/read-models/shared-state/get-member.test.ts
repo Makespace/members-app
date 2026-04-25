@@ -6,10 +6,10 @@ import {TestFramework, initTestFramework} from '../test-framework';
 import {faker} from '@faker-js/faker';
 import {expectMatchSecondsPrecision, getSomeOrFail} from '../../helpers';
 import {pipe} from 'fp-ts/lib/function';
-import {gravatarHashFromEmail} from '../../../src/read-models/members/avatar';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {Int} from 'io-ts';
 import {allMemberNumbers} from '../../../src/read-models/shared-state/return-types';
+import { gravatarHashFromEmail } from '../../../src/read-models/avatar';
 
 const expectUserIsTrainedOnEquipmentAt =
   (framework: TestFramework) =>

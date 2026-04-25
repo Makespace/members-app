@@ -26,12 +26,12 @@ const eventDB = libsqlClient.createClient({
   url: conf.TURSO_EVENTDB_SYNC_URL,
   authToken: conf.TURSO_TOKEN,
 });
-const googleDB = libsqlClient.createClient({
+const extDB = libsqlClient.createClient({
   url: conf.GOOGLE_DB_URL,
   // syncUrl: conf.TURSO_GOOGLEDB_SYNC_URL,
   // authToken: conf.TURSO_GOOGLE_DB_TOKEN,
 });
-const deps = initDependencies(eventDB, googleDB, conf);
+const deps = initDependencies(eventDB, extDB, conf);
 const routes = initRoutes(deps, conf);
 
 // Passport Setup
@@ -75,22 +75,8 @@ const periodicReadModelRefresh = setInterval(() => {
       deps.logger.error(err, 'Unexpected error when refreshing read model')
     );
 }, 10000);
-const periodicExternalReadModelRefresh = setInterval(() => {
-  deps.sharedReadModel
-    .asyncApplyExternalEventSources()()
-    .then(() =>
-      deps.logger.info('Refreshed read model with external event sources')
-    )
-    .catch(err =>
-      deps.logger.error(
-        err,
-        'Unexpected error when refreshing read model with external sources'
-      )
-    );
-}, 60_000);
 server.on('close', () => {
   clearInterval(periodicReadModelRefresh);
-  clearInterval(periodicExternalReadModelRefresh);
 });
 
 // Readmodels are used to get the current status of the background tasks via the

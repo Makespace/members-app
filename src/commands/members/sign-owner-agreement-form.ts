@@ -12,7 +12,7 @@ const renderForm = (viewModel: ViewModel) =>
     html`
       <h1>Sign the Owner Agreement</h1>
       ${ownerAgreement}
-      <form action="#" method="post">
+      <form action="?next=/me" method="post">
         <input
           type="hidden"
           name="memberNumber"

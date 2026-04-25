@@ -19,7 +19,6 @@ import {EventName, EventOfType, StoredDomainEvent} from '../../src/types/domain-
 import {Dependencies} from '../../src/dependencies';
 import {applyToResource} from '../../src/commands/apply-command-to-resource';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
-import {ensureGoogleDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
 import {getTroubleTicketData} from '../../src/sync-worker/db/get_trouble_ticket_data';
 import {SyncWorkerDependencies} from '../../src/sync-worker/dependencies';
 import {lastSync} from '../../src/sync-worker/db/last_sync';
@@ -30,6 +29,7 @@ import { faker } from '@faker-js/faker';
 import { UUID } from 'io-ts-types';
 import { updateTrainingSheetCache } from '../../src/sync-worker/db/update_training_sheet_cache';
 import { updateTroubleTicketCache } from '../../src/sync-worker/db/update_trouble_ticket_cache';
+import { ensureExtDBTablesExist, ExternalStateDB, initExternalStateDB } from '../../src/sync-worker/external-state-db';
 
 const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
 
@@ -56,7 +56,7 @@ export type TestFramework = {
   sharedReadModel: Dependencies['sharedReadModel'];
   depsForApplyToResource: Dependencies;
   eventStoreDb: libsqlClient.Client;
-  googleDB: libsqlClient.Client;
+  extDB: ExternalStateDB;
   getTroubleTicketData: Dependencies['getTroubleTicketData'];
   updateTrainingSheetCache: SyncWorkerDependencies['updateTrainingSheetCache'];
   updateTroubleTicketCache: SyncWorkerDependencies['updateTroubleTicketCache'];
@@ -85,17 +85,18 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   const eventDB = libsqlClient.createClient({
     url: ':memory:',
   });
-  const googleDB = libsqlClient.createClient({
+  const extDBClient = libsqlClient.createClient({
     url: ':memory:',
   });
-  const sharedReadModel = initSharedReadModel(eventDB, logger, O.none);
+  const extDBDrizzle = initExternalStateDB(extDBClient);
+  const sharedReadModel = initSharedReadModel(eventDB, logger);
   const frameworkCommitEvent = commitEvent(
     eventDB,
     logger,
     sharedReadModel.asyncRefresh
   );
   getRightOrFail(await ensureEventTableExists(eventDB)());
-  await ensureGoogleDBTablesExist(googleDB)();
+  await ensureExtDBTablesExist(extDBDrizzle)();
   const frameworkGetAllEvents = () =>
     pipe(getAllEvents(eventDB)(), T.map(getRightOrFail))();
   const frameworkGetAllEventsByType = <EN extends EventName>(eventType: EN) =>
@@ -108,13 +109,14 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     getResourceEvents: getResourceEvents(eventDB),
     sharedReadModel,
     logger,
+    extDB: extDBDrizzle,
     rateLimitSendingOfEmails: TE.right,
     sendEmail: () => TE.right('success'),
-    lastQuizSync: lastSync(googleDB),
-    getSheetData: getSheetData(googleDB),
-    getSheetDataByMemberNumber: getSheetDataByMemberNumber(googleDB),
+    lastQuizSync: lastSync(extDBDrizzle),
+    getSheetData: getSheetData(extDBDrizzle),
+    getSheetDataByMemberNumber: getSheetDataByMemberNumber(extDBDrizzle),
     getTroubleTicketData: getTroubleTicketData(
-      googleDB,
+      extDBDrizzle,
       O.some(TROUBLE_TICKET_SHEET_ID)
     ),
   };
@@ -134,22 +136,22 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     getAllEvents: frameworkGetAllEvents,
     getAllEventsByType: frameworkGetAllEventsByType,
     getTroubleTicketData: getTroubleTicketData(
-      googleDB,
+      extDBDrizzle,
       O.some(TROUBLE_TICKET_SHEET_ID)
     ),
-    updateTrainingSheetCache: updateTrainingSheetCache(googleDB),
-    updateTroubleTicketCache: updateTroubleTicketCache(googleDB),
+    updateTrainingSheetCache: updateTrainingSheetCache(extDBDrizzle),
+    updateTroubleTicketCache: updateTroubleTicketCache(extDBDrizzle),
     eventStoreDb: eventDB,
-    googleDB,
+    extDB: extDBDrizzle,
     sharedReadModel,
     depsForApplyToResource,
     close: () => {
       eventDB.close();
-      googleDB.close();
+      extDBClient.close();
     },
-    lastSync: lastSync(googleDB),
-    getSheetData: getSheetData(googleDB),
-    getSheetDataByMemberNumber: getSheetDataByMemberNumber(googleDB),
+    lastSync: lastSync(extDBDrizzle),
+    getSheetData: getSheetData(extDBDrizzle),
+    getSheetDataByMemberNumber: getSheetDataByMemberNumber(extDBDrizzle),
     commands: {
       area: {
         create: frameworkify(commands.area.create),
@@ -205,12 +207,13 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       getResourceEvents: getResourceEvents(eventDB),
       commitEvent: frameworkCommitEvent,
       sharedReadModel,
-      getSheetData: getSheetData(googleDB),
+      getSheetData: getSheetData(extDBDrizzle),
       sendEmail: jest.fn(() => TE.right('success')),
-      lastQuizSync: lastSync(googleDB),
+      lastQuizSync: lastSync(extDBDrizzle),
       conf: {
         PUBLIC_URL: 'https://localhost' as NonEmptyString,
       },
+      extDB: extDBDrizzle,
     },
     insertIntoSharedReadModel: insertIntoSharedReadModel(sharedReadModel),
   };

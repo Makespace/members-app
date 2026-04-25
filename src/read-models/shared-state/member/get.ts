@@ -107,7 +107,6 @@ export const getMemberCoreByUserId =
       isSuperUser: row.isSuperUser,
       superUserSince: O.fromNullable(row.superUserSince),
       gravatarHash: row.gravatarHash,
-      status: row.status,
       joined: row.joined,
     });
   };

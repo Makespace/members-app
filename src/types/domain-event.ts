@@ -186,14 +186,15 @@ const RevokeTrainedOnEquipment = defineEvent('RevokeTrainedOnEquipment', {
   revokedByMemberNumber: t.union([t.number, t.null]), // Null to indicate system.
 });
 
-const RecurlySubscriptionUpdated = defineEvent('RecurlySubscriptionUpdated', {
-  email: EmailAddressCodec,
-  hasActiveSubscription: t.boolean,
-  hasPausedSubscription: t.boolean,
-  hasFutureSubscription: t.boolean,
-  hasCanceledSubscription: t.boolean,
-  hasPastDueInvoice: t.boolean,
-});
+// Deprecated in favour of the recurly cache tables.
+// const RecurlySubscriptionUpdated = defineEvent('RecurlySubscriptionUpdated', {
+//   email: EmailAddressCodec,
+//   hasActiveSubscription: t.boolean,
+//   hasPausedSubscription: t.boolean,
+//   hasFutureSubscription: t.boolean,
+//   hasCanceledSubscription: t.boolean,
+//   hasPastDueInvoice: t.boolean,
+// });
 
 const MemberRejoinedWithNewNumber = defineEvent('MemberRejoinedWithNewNumber', {
   oldMemberNumber: t.number,
@@ -243,7 +244,6 @@ export const events = [
   EquipmentTrainingQuizMemberNumberUpdated,
   EquipmentTrainingQuizEmailUpdated,
   TroubleTicketResponseSubmitted,
-  RecurlySubscriptionUpdated,
   MemberRejoinedWithNewNumber,
   MemberRejoinedWithExistingNumber,
   TrainingStatNotificationSent,
@@ -277,7 +277,6 @@ export const DomainEvent = t.union([
   EquipmentTrainingQuizMemberNumberUpdated.codec,
   EquipmentTrainingQuizEmailUpdated.codec,
   TroubleTicketResponseSubmitted.codec,
-  RecurlySubscriptionUpdated.codec,
   MemberRejoinedWithNewNumber.codec,
   MemberRejoinedWithExistingNumber.codec,
   TrainingStatNotificationSent.codec,
@@ -306,7 +305,7 @@ export const isEventOfType =
   (event: DomainEvent): event is EventOfType<T> =>
     event.type === name;
 
-export type SubsetOfDomainEvent<Names extends Array<EventName>> = Extract<
+type SubsetOfDomainEvent<Names extends Array<EventName>> = Extract<
   DomainEvent,
   {type: Names[number]}
 >;

@@ -1,6 +1,5 @@
 import {createClient, Client} from '@libsql/client';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
-import {ensureGoogleDBTablesExist} from '../../src/sync-worker/google/ensure-sheet-data-tables-exist';
 import {
   SyncTroubleTicketDependencies,
   syncTroubleTickets,
@@ -21,22 +20,26 @@ import {setTimeout} from 'node:timers/promises';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {getTroubleTicketData} from '../../src/sync-worker/db/get_trouble_ticket_data';
 import * as O from 'fp-ts/Option';
+import { ensureExtDBTablesExist, ExternalStateDB, initExternalStateDB } from '../../src/sync-worker/external-state-db';
 
-const getTroubleTicketDataSorted = async (googleDB: Client, sheetId: string) =>
+const getTroubleTicketDataSorted = async (
+  extDB: ExternalStateDB,
+  sheetId: string
+) =>
   RA.sort(byTimestamp)(
     getSomeOrFail(
       getRightOrFail(
-        await getTroubleTicketData(googleDB, O.some(sheetId))(O.none)()
+        await getTroubleTicketData(extDB, O.some(sheetId))(O.none)()
       )
     )
   );
 
 const expectTroubleTicketDataMatches = async (
-  googleDB: Client,
+  extDB: ExternalStateDB,
   sheetId: string,
   expectedData: ReadonlyArray<ManualParsedTroubleTicketEntry>
 ) => {
-  const rows = await getTroubleTicketDataSorted(googleDB, sheetId);
+  const rows = await getTroubleTicketDataSorted(extDB, sheetId);
   expect(rows).toHaveLength(expectedData.length);
   for (const [actual, expected] of RA.zip(RA.sort(byTimestamp)(expectedData))(
     rows
@@ -56,20 +59,22 @@ const expectTroubleTicketDataMatches = async (
 };
 
 describe('Sync trouble ticket sheets', () => {
-  let googleDB: Client;
+  let extDBClient: Client;
+  let extDB: ExternalStateDB;
   let eventDB: Client;
   let deps: SyncTroubleTicketDependencies;
 
   beforeEach(async () => {
-    googleDB = createClient({url: ':memory:'});
+    extDBClient = createClient({url: ':memory:'});
+    extDB = initExternalStateDB(extDBClient);
     eventDB = createClient({url: ':memory:'});
-    deps = createSyncTroubleTicketDependencies(googleDB);
+    deps = createSyncTroubleTicketDependencies(extDB);
     getRightOrFail(await ensureEventTableExists(eventDB)());
-    await ensureGoogleDBTablesExist(googleDB)();
+    await ensureExtDBTablesExist(extDB)();
   });
 
   afterEach(() => {
-    googleDB.close();
+    extDBClient.close();
     eventDB.close();
   });
 
@@ -83,7 +88,7 @@ describe('Sync trouble ticket sheets', () => {
       endTime = new Date();
     });
     it('produces no rows', () =>
-      expectTroubleTicketDataMatches(googleDB, sheetId, EMPTY.entries));
+      expectTroubleTicketDataMatches(extDB, sheetId, EMPTY.entries));
     it('sync recorded', () =>
       expectSyncBetween(deps, sheetId, startTime, O.some(endTime)));
     describe('re-sync run again within sync interval', () => {
@@ -127,7 +132,7 @@ describe('Sync trouble ticket sheets', () => {
     });
     it('produces expected rows for a full sync', () =>
       expectTroubleTicketDataMatches(
-        googleDB,
+        extDB,
         sheetId,
         TROUBLE_TICKETS_EXAMPLE.entries
       ));

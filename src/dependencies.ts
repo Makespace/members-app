@@ -21,6 +21,7 @@ import {
 } from './sync-worker/google/sheet-data-table';
 import {UUID} from 'io-ts-types';
 import { Int } from 'io-ts';
+import { ExternalStateDB } from './sync-worker/external-state-db';
 
 export type Dependencies = {
   commitEvent: (
@@ -48,6 +49,7 @@ export type Dependencies = {
     }
   >;
   sharedReadModel: SharedReadModel;
+  extDB: ExternalStateDB;
   logger: Logger;
   rateLimitSendingOfEmails: (email: Email) => TE.TaskEither<Failure, Email>;
   sendEmail: (email: Email) => TE.TaskEither<Failure, string>;

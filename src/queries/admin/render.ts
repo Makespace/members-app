@@ -10,9 +10,6 @@ export const render = () => html`
       <li><a href="/areas">Manage areas and owners</a></li>
       <li><a href="/super-users">Manage super-users</a></li>
       <li>
-        <a href="/members/failed-imports">View failed member number imports</a>
-      </li>
-      <li>
         <a href="/event-log">View a log of all actions taken</a>
       </li>
       <li>

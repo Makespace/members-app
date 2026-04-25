@@ -19,7 +19,6 @@ export {
 } from './domain-event';
 export type {
   StoredEventOfType,
-  SubsetOfDomainEvent,
 } from './domain-event';
 export type {ResourceVersion} from './resource-version';
 export type UserId = UUID;
