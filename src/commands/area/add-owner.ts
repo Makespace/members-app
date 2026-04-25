@@ -1,5 +1,4 @@
-import {constructEvent, filterByName, isEventOfType} from '../../types';
-import * as RA from 'fp-ts/ReadonlyArray';
+import {constructEvent} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
@@ -9,6 +8,7 @@ import {StatusCodes} from 'http-status-codes';
 import {Command} from '../command';
 import {failureWithStatus} from '../../types/failure-with-status';
 import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
+import {allMemberNumbers} from '../../read-models/shared-state/return-types';
 
 const codec = t.strict({
   areaId: tt.UUID,
@@ -17,45 +17,23 @@ const codec = t.strict({
 
 export type AddOwner = t.TypeOf<typeof codec>;
 
-const process: Command<AddOwner>['process'] = input => {
-  if (input.events.length === 0) {
-    return TE.left(
+const process: Command<AddOwner>['process'] = input =>
+  pipe(
+    input.rm.area.get(input.command.areaId),
+    TE.fromOption(() =>
       failureWithStatus(
         'The requested area does not exist',
         StatusCodes.NOT_FOUND
       )()
-    );
-  }
-  if (pipe(input.events, RA.some(isEventOfType('AreaRemoved')))) {
-    return TE.left(
-      failureWithStatus(
-        'The requested area does not exist',
-        StatusCodes.NOT_FOUND
-      )()
-    );
-  }
-
-  const happyPathEvent = pipe(
-    input.command,
-    constructEvent('OwnerAdded'),
-    O.some
+    ),
+    TE.map(area =>
+      area.owners.some(owner =>
+        allMemberNumbers(owner).includes(input.command.memberNumber)
+      )
+        ? O.none
+        : O.some(constructEvent('OwnerAdded')(input.command))
+    )
   );
-
-  return pipe(
-    input.events,
-    filterByName(['OwnerAdded', 'OwnerRemoved']),
-    RA.filter(event => event.memberNumber === input.command.memberNumber),
-    RA.reduce(happyPathEvent, (_, event) => {
-      switch (event.type) {
-        case 'OwnerAdded':
-          return O.none;
-        case 'OwnerRemoved':
-          return happyPathEvent;
-      }
-    }),
-    TE.right
-  );
-};
 
 const resource: Command<AddOwner>['resource'] = (command: AddOwner) => ({
   type: 'Area',
