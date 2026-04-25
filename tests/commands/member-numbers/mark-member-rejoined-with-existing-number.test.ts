@@ -1,7 +1,7 @@
 import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
 import {Int} from 'io-ts';
-import {constructEvent, EmailAddress} from '../../../src/types';
+import {EmailAddress} from '../../../src/types';
 import {
   markMemberRejoinedWithExistingNumber,
 } from '../../../src/commands/member-numbers/mark-member-rejoined-with-existing-number';
@@ -35,29 +35,8 @@ describe('markMemberRejoinedWithExistingNumber', () => {
       formOfAddress: undefined,
     });
 
-  it('does nothing when the member is not currently a super user', async () => {
+  it('raises an event', async () => {
     await linkMember();
-
-    const result = await getTaskEitherRightOrFail(
-      markMemberRejoinedWithExistingNumber.process({
-        command,
-        events: [],
-        rm: framework.sharedReadModel,
-      })
-    );
-
-    expect(result).toStrictEqual(O.none);
-  });
-
-  it('raises an event when the member is currently a super user', async () => {
-    await linkMember();
-    framework.insertIntoSharedReadModel(
-      constructEvent('SuperUserDeclared')({
-        memberNumber,
-        actor: arbitraryActor(),
-      })
-    );
-
     const result = await getTaskEitherRightOrFail(
       markMemberRejoinedWithExistingNumber.process({
         command,
@@ -74,31 +53,5 @@ describe('markMemberRejoinedWithExistingNumber', () => {
         })
       )
     );
-  });
-
-  it('does nothing once the member has already been marked as rejoined', async () => {
-    await linkMember();
-    framework.insertIntoSharedReadModel(
-      constructEvent('SuperUserDeclared')({
-        memberNumber,
-        actor: arbitraryActor(),
-      })
-    );
-    framework.insertIntoSharedReadModel(
-      constructEvent('MemberRejoinedWithExistingNumber')({
-        memberNumber,
-        actor: arbitraryActor(),
-      })
-    );
-
-    const result = await getTaskEitherRightOrFail(
-      markMemberRejoinedWithExistingNumber.process({
-        command,
-        events: [],
-        rm: framework.sharedReadModel,
-      })
-    );
-
-    expect(result).toStrictEqual(O.none);
   });
 });

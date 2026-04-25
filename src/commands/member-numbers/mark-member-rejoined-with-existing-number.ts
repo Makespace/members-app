@@ -4,7 +4,6 @@ import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
-import {pipe} from 'fp-ts/lib/function';
 import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
 
 const codec = t.strict({
@@ -15,15 +14,9 @@ type MarkMemberRejoinedWithExistingNumber = t.TypeOf<typeof codec>;
 
 const process: Command<MarkMemberRejoinedWithExistingNumber>['process'] =
   input =>
-    TE.right(
-      pipe(
-        input.rm.members.getByMemberNumber(input.command.memberNumber),
-        O.filter(member => member.isSuperUser),
-        O.map(() =>
-          constructEvent('MemberRejoinedWithExistingNumber')(input.command)
-        )
-      )
-    );
+    TE.right(O.some(
+      constructEvent('MemberRejoinedWithExistingNumber')(input.command)
+    ));
 
 const resource: Command<MarkMemberRejoinedWithExistingNumber>['resource'] =
   input => ({
