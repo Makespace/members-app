@@ -11,6 +11,8 @@ if (SENTRY_DSN) {
   Sentry.init({
     dsn: SENTRY_DSN,
     tracesSampleRate: 1.0,
+    enableLogs: true,
+    integrations: [Sentry.pinoIntegration()],
   });
 } else {
   console.log('Skipped sentry setup, SENTRY_DSN not provided');
