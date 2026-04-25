@@ -1,10 +1,8 @@
 import {constructEvent} from '../../types';
-import * as RA from 'fp-ts/ReadonlyArray';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
-import {pipe} from 'fp-ts/lib/function';
 import {Command} from '../command';
 import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
 
@@ -16,14 +14,10 @@ const codec = t.strict({
 export type CreateArea = t.TypeOf<typeof codec>;
 
 const process: Command<CreateArea>['process'] = input =>
-  pipe(
-    input.events,
-    RA.match(
-      () => O.some(constructEvent('AreaCreated')(input.command)),
-      () => O.none
-    )
-    ,
-    TE.right
+  TE.right(
+    O.isSome(input.rm.area.get(input.command.id))
+      ? O.none
+      : O.some(constructEvent('AreaCreated')(input.command))
   );
 
 const resource: Command<CreateArea>['resource'] = command => ({
