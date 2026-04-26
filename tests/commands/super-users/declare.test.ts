@@ -1,8 +1,8 @@
 import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
 import {declare} from '../../../src/commands/super-user/declare';
-import {constructEvent} from '../../../src/types';
-import {arbitraryActor, getTaskEitherRightOrFail} from '../../helpers';
+import { DomainEvent, EmailAddress} from '../../../src/types';
+import {arbitraryActor, getLeftOrFail, getSomeOrFail, getTaskEitherRightOrFail} from '../../helpers';
 import {
   TestFramework,
   initTestFramework,
@@ -18,56 +18,89 @@ describe('declare-super-user', () => {
   afterEach(() => {
     framework.close();
   });
+  const memberNumber = faker.number.int();
+  beforeEach(async () => {
+    await framework.commands.memberNumbers.linkNumberToEmail({
+      memberNumber,
+      email: faker.internet.email() as EmailAddress,
+      name: undefined,
+      formOfAddress: undefined
+    });
+  });
+
+  it('declaring a non-existent member fails', async () => {
+    getLeftOrFail(await declare.process({
+        command: {
+          memberNumber: faker.number.int({min: memberNumber + 1}),
+          actor: arbitraryActor(),
+        },
+        rm: framework.sharedReadModel,
+      })()
+    );
+  });
 
   describe('when the member is currently not a super user', () => {
-    const memberNumber = faker.number.int();
-    it('declares them to be super user', async () => {
-      const result = await getTaskEitherRightOrFail(
-        declare.process({
-          command: {
-            memberNumber,
-            actor: arbitraryActor(),
-          },
-          rm: framework.sharedReadModel,
-        })
-      );
+    describe('declares them to be a super user', () => {
+      let result: DomainEvent;
+      beforeEach(async () => {
 
-      expect(result).toStrictEqual(
-        O.some(
+        result = getSomeOrFail(await getTaskEitherRightOrFail(
+          declare.process({
+            command: {
+              memberNumber,
+              actor: arbitraryActor(),
+            },
+            rm: framework.sharedReadModel,
+          })
+        ));
+        framework.insertIntoSharedReadModel(result);
+      });
+
+      it('generates a declared event', () => {
+        expect(result).toStrictEqual(
           expect.objectContaining({type: 'SuperUserDeclared', memberNumber})
-        )
-      );
+        );
+      });
+
+      it('declaring them again is a no-op', async () => {
+        const resultAgain = await getTaskEitherRightOrFail(
+          declare.process({
+            command: {
+              memberNumber,
+              actor: arbitraryActor(),
+            },
+            rm: framework.sharedReadModel,
+          })
+        );
+        expect(resultAgain).toStrictEqual(O.none);
+      });
+
+      describe('revokes them as a super user', () => {
+        beforeEach(async () => {
+          await framework.commands.superUser.revoke({
+            memberNumber
+          });
+        });
+
+        it('declares again produces a declare event', async () => {
+          const resultAfterRevoke = await getTaskEitherRightOrFail(
+            declare.process({
+              command: {
+                memberNumber,
+                actor: arbitraryActor(),
+              },
+              rm: framework.sharedReadModel,
+            })
+          );
+
+          expect(resultAfterRevoke).toStrictEqual(
+            O.some(
+              expect.objectContaining({type: 'SuperUserDeclared', memberNumber})
+            )
+          );
+        });
+      });
     });
   });
 
-  describe('when the member was previously a super user', () => {
-    const memberNumber = faker.number.int();
-    it('declares them to be super user', async () => {
-      const result = await getTaskEitherRightOrFail(
-        declare.process({
-          command: {
-            memberNumber,
-            actor: arbitraryActor(),
-          },
-          events: [
-            constructEvent('SuperUserDeclared')({
-              memberNumber,
-              actor: arbitraryActor(),
-            }),
-            constructEvent('SuperUserRevoked')({
-              memberNumber,
-              actor: arbitraryActor(),
-            }),
-          ],
-          rm: framework.sharedReadModel,
-        })
-      );
-
-      expect(result).toStrictEqual(
-        O.some(
-          expect.objectContaining({type: 'SuperUserDeclared', memberNumber})
-        )
-      );
-    });
-  });
 });
