@@ -6,6 +6,7 @@ import {
   failureWithStatus,
 } from '../../types/failure-with-status';
 import * as TE from 'fp-ts/TaskEither';
+import * as T from 'fp-ts/Task';
 import {Dependencies} from '../../dependencies';
 import {pipe} from 'fp-ts/lib/function';
 import {Client} from '@libsql/client';
@@ -46,6 +47,12 @@ export const commitEvent =
             );
         }
       }),
-      TE.tapTask(() => refreshReadModel())
+      TE.matchW(E.left, E.right),
+      T.chain(result =>
+        pipe(
+          refreshReadModel(),
+          T.map(() => result)
+        )
+      )
     );
   };

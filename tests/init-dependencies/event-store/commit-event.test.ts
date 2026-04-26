@@ -10,6 +10,8 @@ import * as E from 'fp-ts/Either';
 import pino from "pino";
 import { FailureWithStatus } from "../../../src/types/failure-with-status";
 import { StatusCodes } from "http-status-codes";
+import { initSharedReadModel } from "../../../src/read-models/shared-state";
+import { insertEventWithOptimisticConcurrencyControl } from "../../../src/init-dependencies/event-store/insert-event-with-optimistic-concurrency-control";
 
 const arbitaryEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
@@ -94,5 +96,49 @@ describe('commit-event', () => {
             });
         });
     });
-});
 
+    describe('when the read model cursor is stale', () => {
+        const committedElsewhere = arbitaryEvent();
+        const rejectedEvent = arbitaryEvent();
+        const nextEvent = arbitaryEvent();
+        let sharedReadModel: ReturnType<typeof initSharedReadModel>;
+        let conflictResult: CommitEventReturn;
+        let nextResult: CommitEventReturn;
+
+        beforeEach(async () => {
+            sharedReadModel = initSharedReadModel(dbClient, logger);
+
+            getRightOrFail(await insertEventWithOptimisticConcurrencyControl(
+                committedElsewhere,
+                0 as Int,
+                dbClient,
+            )());
+
+            conflictResult = await commitEvent(dbClient, logger, sharedReadModel.asyncRefresh)(
+                sharedReadModel.getCurrentEventIndex()
+            )(rejectedEvent)();
+
+            nextResult = await commitEvent(dbClient, logger, sharedReadModel.asyncRefresh)(
+                sharedReadModel.getCurrentEventIndex()
+            )(nextEvent)();
+        });
+
+        it('refreshes the read model after the conflict', () => {
+            expect(getLeftOrFail(conflictResult).message).toStrictEqual('Resource has changes since the event to be committed was computed');
+            expect(sharedReadModel.getCurrentEventIndex()).toStrictEqual(2);
+        });
+
+        it('allows the next write to succeed with the refreshed cursor', async () => {
+            const right = getRightOrFail(nextResult);
+            expect(right.message).toStrictEqual('Raised event');
+            expect(right.status).toStrictEqual(StatusCodes.CREATED);
+
+            const storedEvents = await getStoredEvents();
+            expect(storedEvents).toHaveLength(2);
+            expect(storedEvents[1]).toMatchObject({
+                ...nextEvent,
+                event_index: 2,
+            });
+        });
+    });
+});
