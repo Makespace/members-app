@@ -4,7 +4,6 @@ import * as TE from 'fp-ts/TaskEither';
 import {StatusCodes} from 'http-status-codes';
 import {Command} from '../command';
 import {EmailAddressCodec, constructEvent} from '../../types';
-import {projectMemberEmailStates} from './email-state';
 import {normaliseEmailAddress} from '../../read-models/shared-state/normalise-email-address';
 import {failureWithStatus} from '../../types/failure-with-status';
 import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
@@ -17,10 +16,10 @@ const codec = t.strict({
 type VerifyMemberEmail = t.TypeOf<typeof codec>;
 
 const process: Command<VerifyMemberEmail>['process'] = input => {
-  const state = projectMemberEmailStates(input.events).get(
+  const member = input.rm.members.getByMemberNumber(
     input.command.memberNumber
   );
-  if (state === undefined) {
+  if (O.isNone(member)) {
     return TE.left(
       failureWithStatus(
         'The email verification link is no longer valid',
@@ -30,8 +29,10 @@ const process: Command<VerifyMemberEmail>['process'] = input => {
   }
 
   const emailAddress = normaliseEmailAddress(input.command.emailAddress);
-  const email = state.emails[emailAddress];
-  if (!email || email.verified) {
+  const email = member.value.emails.find(
+    currentEmail => currentEmail.emailAddress === emailAddress
+  );
+  if (!email || O.isSome(email.verifiedAt)) {
     return TE.left(
       failureWithStatus(
         'The email verification link is no longer valid',

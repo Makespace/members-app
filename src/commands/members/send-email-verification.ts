@@ -5,11 +5,11 @@ import * as TE from 'fp-ts/TaskEither';
 import {StatusCodes} from 'http-status-codes';
 import {Command} from '../command';
 import {EmailAddressCodec, constructEvent} from '../../types';
-import {projectMemberEmailStates, SEND_EMAIL_VERIFICATION_COOLDOWN_MS} from './email-state';
 import {normaliseEmailAddress} from '../../read-models/shared-state/normalise-email-address';
 import { publish } from 'pubsub-js';
 import {failureWithStatus} from '../../types/failure-with-status';
 import { isSelfOrPrivileged } from '../authentication-helpers/is-self-or-privileged';
+import { SEND_EMAIL_VERIFICATION_COOLDOWN_MS } from '../../configuration';
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,
@@ -19,10 +19,10 @@ const codec = t.strict({
 type SendMemberEmailVerification = t.TypeOf<typeof codec>;
 
 const process: Command<SendMemberEmailVerification>['process'] = input => {
-  const state = projectMemberEmailStates(input.events).get(
+  const member = input.rm.members.getByMemberNumber(
     input.command.memberNumber
   );
-  if (state === undefined) {
+  if (O.isNone(member)) {
     return TE.left(
       failureWithStatus(
         'The requested member does not exist',
@@ -32,7 +32,9 @@ const process: Command<SendMemberEmailVerification>['process'] = input => {
   }
 
   const emailAddress = normaliseEmailAddress(input.command.email);
-  const email = state.emails[emailAddress];
+  const email = member.value.emails.find(
+    currentEmail => currentEmail.emailAddress === emailAddress
+  );
   if (!email) {
     return TE.left(
       failureWithStatus(
@@ -41,12 +43,12 @@ const process: Command<SendMemberEmailVerification>['process'] = input => {
       )()
     );
   }
-  if (email.verified) {
+  if (O.isSome(email.verifiedAt)) {
     return TE.right(O.none);
   }
 
-  if (email.verificationLastSent) {
-    const sinceLastMs = Date.now() - email.verificationLastSent.getTime();
+  if (O.isSome(email.verificationLastSent)) {
+    const sinceLastMs = Date.now() - email.verificationLastSent.value.getTime();
     if (sinceLastMs < SEND_EMAIL_VERIFICATION_COOLDOWN_MS) {
       return TE.right(O.none);
     }

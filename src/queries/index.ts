@@ -17,4 +17,5 @@ export {dumpSharedDbAsJson, dumpSharedDbAsBuffer} from './debug';
 export {domainEvents} from './domain-events';
 export {troubleTickets} from './trouble-tickets';
 export {logGoogleJson} from './log-google';
+export {unlinkedRecurly} from './unlinked-recurly';
 export type {Query} from './query';
