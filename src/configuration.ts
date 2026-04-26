@@ -5,6 +5,8 @@ import {pipe} from 'fp-ts/lib/function';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {withDefaultIfEmpty} from './util';
 
+export const SEND_EMAIL_VERIFICATION_COOLDOWN_MS = 10 * 60 * 1000;
+
 const LogLevel = t.keyof({
   trace: null,
   debug: null,
