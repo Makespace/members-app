@@ -131,7 +131,6 @@ describe('member email commands', () => {
           email: secondaryEmail,
           actor: arbitraryActor(),
         },
-        events: await framework.getAllEvents(),
         rm: framework.sharedReadModel,
       })()
     );
