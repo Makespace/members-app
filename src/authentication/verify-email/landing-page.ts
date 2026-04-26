@@ -48,16 +48,6 @@ export const landing =
         res.send(invalidLink());
         return;
       }
-      const resource = verifyEmail.resource(decoded.right);
-      const resourceEvents = await deps.getResourceEvents(resource)();
-      if (E.isLeft(resourceEvents)) {
-        deps.logger.error(
-          resourceEvents.left,
-          'Failed to get resource events for email verification link'
-        );
-        res.send(invalidLink());
-        return;
-      }
 
       // Note that we don't need to check isAuthorized here because we are authorised
       // by the user clicking the verification link.
@@ -81,7 +71,7 @@ export const landing =
       }
 
       if (O.isSome(resultantEvent.right)) {
-        const commitEvent = await deps.commitEvent(resource, resourceEvents.right.version)(resultantEvent.right.value)();
+        const commitEvent = await deps.commitEvent(deps.sharedReadModel.getCurrentEventIndex())(resultantEvent.right.value)();
         if (E.isLeft(commitEvent)) {
           deps.logger.error(
             commitEvent.left,

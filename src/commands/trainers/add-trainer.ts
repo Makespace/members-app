@@ -16,14 +16,8 @@ export type AddTrainer = t.TypeOf<typeof codec>;
 const process: Command<AddTrainer>['process'] = input =>
   TE.right(O.some(constructEvent('TrainerAdded')(input.command)));
 
-const resource: Command<AddTrainer>['resource'] = command => ({
-  type: 'Trainers',
-  id: command.equipmentId,
-});
-
 export const addTrainer: Command<AddTrainer> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isAdminSuperUserOrOwnerForEquipment,
 };

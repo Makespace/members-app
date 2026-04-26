@@ -20,14 +20,8 @@ const process: Command<CreateArea>['process'] = input =>
       : O.some(constructEvent('AreaCreated')(input.command))
   );
 
-const resource: Command<CreateArea>['resource'] = command => ({
-  type: 'Area',
-  id: command.id,
-});
-
 export const create: Command<CreateArea> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isAdminOrSuperUser,
 };

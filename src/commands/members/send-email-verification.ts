@@ -73,14 +73,8 @@ const process: Command<SendMemberEmailVerification>['process'] = input => {
   );
 };
 
-const resource = () => ({
-  type: 'MemberNumberEmailPairings',
-  id: 'MemberNumberEmailPairings',
-});
-
 export const sendEmailVerification: Command<SendMemberEmailVerification> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isSelfOrPrivileged,
 };

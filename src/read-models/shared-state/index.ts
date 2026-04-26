@@ -67,7 +67,7 @@ export type SharedReadModel = {
     dump: () => SharedDatabaseDump;
   };
   trainingStats: {
-    getLastSent: (memberNumber: number) => O.Option<DateTime>;
+    getLastSent: (userId: UserId) => O.Option<DateTime>;
   };
 };
 

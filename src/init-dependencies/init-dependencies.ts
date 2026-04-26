@@ -8,7 +8,6 @@ import nodemailer from 'nodemailer';
 import {commitEvent} from './event-store/commit-event';
 import {getAllEvents, getAllEventsByType} from './event-store/get-all-events';
 import {getEventById} from './event-store/get-event-by-id';
-import {getResourceEvents} from './event-store/get-resource-events';
 import {Client} from '@libsql/client';
 
 import {initSharedReadModel} from '../read-models/shared-state';
@@ -75,7 +74,6 @@ export const initDependencies = (
     getAllEvents: getAllEvents(eventDB),
     getAllEventsByType: getAllEventsByType(eventDB),
     getEventById: getEventById(eventDB),
-    getResourceEvents: getResourceEvents(eventDB),
     sharedReadModel,
     extDB,
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),

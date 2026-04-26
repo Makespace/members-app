@@ -19,5 +19,4 @@ export {
 export type {
   StoredEventOfType,
 } from './domain-event';
-export type {ResourceVersion} from './resource-version';
 export type UserId = UUID;

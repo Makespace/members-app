@@ -35,14 +35,8 @@ const process: Command<AddOwner>['process'] = input =>
     )
   );
 
-const resource: Command<AddOwner>['resource'] = (command: AddOwner) => ({
-  type: 'Area',
-  id: command.areaId,
-});
-
 export const addOwner: Command<AddOwner> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isAdminOrSuperUser,
 };

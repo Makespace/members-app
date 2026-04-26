@@ -6,7 +6,6 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {Owner} from '../../read-models/shared-state/return-types';
 import mjml2html from 'mjml';
 import {pipe} from 'fp-ts/lib/function';
-import {readModels} from '../../read-models';
 import {EmailContent, gatherEmailContent} from './gather-email-content';
 import {TrainingSummaryDeps} from './training-summary-deps';
 
@@ -103,30 +102,17 @@ const decideOwnersToEmail =
       if (!TRAINING_SUMMARY_EMAIL_ALLOWLIST.includes(owner.memberNumber)) {
         continue;
       }
-      // TODO - Make this more efficient by avoiding as many db calls.
-      const lastEmailSent =
-        await readModels.trainingStatNotifications.getLastNotificationSent(
-          deps
-        )(owner.memberNumber)();
-      if (E.isLeft(lastEmailSent)) {
-        deps.logger.error(
-          "Failed to get last notification sent for owner %s - skipping: '%s'",
-          owner.memberNumber,
-          lastEmailSent.left.message
-        );
-        continue;
-      }
-
+      const lastEmailSent = deps.sharedReadModel.trainingStats.getLastSent(owner.userId);
       if (
-        O.isSome(lastEmailSent.right.lastNotification) &&
-        lastEmailSent.right.lastNotification.value.diffNow().negate() <
+        O.isSome(lastEmailSent) &&
+        lastEmailSent.value.diffNow().negate() <
           TRAINING_SUMMARY_EMAIL_INTERVAL
       ) {
         deps.logger.info(
           'Checked for training summary sync for %s - last sync %s was recent (%s) - skipping.',
           owner.memberNumber,
-          lastEmailSent.right.lastNotification.value.toISO(),
-          lastEmailSent.right.lastNotification.value.diffNow().toHuman()
+          lastEmailSent.value.toISO(),
+          lastEmailSent.value.diffNow().toHuman()
         );
         continue;
       }
@@ -134,8 +120,7 @@ const decideOwnersToEmail =
       // Initial simple version - we mark the email as sent before we send it. If this fails
       // (perhaps because something else sent an email in the meantime) we don't send the email.
       const emailSentEventResp = await deps.commitEvent(
-        lastEmailSent.right.resource,
-        lastEmailSent.right.resourceVersion
+        deps.sharedReadModel.getCurrentEventIndex()
       )(
         constructEvent('TrainingStatNotificationSent')({
           actor: {

@@ -14,7 +14,6 @@ import {commands, Command} from '../../src/commands';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
 import {arbitraryActor, getRightOrFail} from '../helpers';
 import * as libsqlClient from '@libsql/client';
-import {getResourceEvents} from '../../src/init-dependencies/event-store/get-resource-events';
 import {EventName, EventOfType, StoredDomainEvent} from '../../src/types/domain-event';
 import {Dependencies} from '../../src/dependencies';
 import {applyToResource} from '../../src/commands/apply-command-to-resource';
@@ -106,7 +105,6 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     getAllEvents: getAllEvents(eventDB),
     getAllEventsByType: getAllEventsByType(eventDB),
     getEventById: getEventById(eventDB),
-    getResourceEvents: getResourceEvents(eventDB),
     sharedReadModel,
     logger,
     extDB: extDBDrizzle,
@@ -204,7 +202,6 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     },
     trainingSummaryDeps: {
       logger,
-      getResourceEvents: getResourceEvents(eventDB),
       commitEvent: frameworkCommitEvent,
       sharedReadModel,
       getSheetData: getSheetData(extDBDrizzle),

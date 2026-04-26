@@ -32,16 +32,8 @@ const process: Command<SetMailingList>['process'] = input => {
   );
 };
 
-const resource: Command<SetMailingList>['resource'] = (
-  command: SetMailingList
-) => ({
-  type: 'Area',
-  id: command.id,
-});
-
 export const setMailingList: Command<SetMailingList> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isAdminOrSuperUser,
 };

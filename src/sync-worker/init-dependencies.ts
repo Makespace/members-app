@@ -15,7 +15,6 @@ import {updateTroubleTicketCache} from './db/update_trouble_ticket_cache';
 import {sendEmail} from '../init-dependencies/send-email';
 import nodemailer from 'nodemailer';
 import {initSharedReadModel} from '../read-models/shared-state';
-import {getResourceEvents} from '../init-dependencies/event-store/get-resource-events';
 import {commitEvent} from '../init-dependencies/event-store/commit-event';
 import {getSheetData} from './db/get_sheet_data';
 import {ensureExtDBTablesExist, ExternalStateDB, initExternalStateDB} from './external-state-db';
@@ -90,10 +89,9 @@ export const initDependencies = (): SyncWorkerDependencies => {
     sharedReadModel,
     extDB,
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
-    getResourceEvents: getResourceEvents(eventDB),
     lastQuizSync: lastSync(extDB),
     getSheetData: getSheetData(extDB),
-    commitEvent: commitEvent(eventDB, logger, () => async () => {}),
+    commitEvent: commitEvent(eventDB, logger, sharedReadModel.asyncRefresh),
     pullRecurlyData: conf.RECURLY_TOKEN ?  pullRecurlyData(logger, extDB, conf.RECURLY_TOKEN) : async (_interval: Duration) => {},
     ...initDBCommands(extDB, eventDB),
   };
