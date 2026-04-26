@@ -23,8 +23,8 @@ export const applyToResource =
     return pipe(
       resource,
       deps.getResourceEvents,
-      TE.bind('event', ({events}) =>
-        command.process({command: inputAndActor, events, rm: deps.sharedReadModel, deps})
+      TE.bind('event', () =>
+        command.process({command: inputAndActor, rm: deps.sharedReadModel, deps})
       ),
       TE.chain(({event, version}) => O.isSome(event) ? deps.commitEvent(resource, version)(event.value) : TE.right({
         status: StatusCodes.CREATED as StatusCodes.CREATED,

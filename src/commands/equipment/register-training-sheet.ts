@@ -15,7 +15,6 @@ export type RegisterTrainingSheet = t.TypeOf<typeof codec>;
 
 const process = (input: {
   command: WithActor<RegisterTrainingSheet>;
-  events: ReadonlyArray<DomainEvent>;
 }) =>
   // No idempotency check required here currently. If the training sheet already matches the current then we still record the duplicate event.
   TE.right(

@@ -15,7 +15,6 @@ export type MarkMemberTrained = t.TypeOf<typeof codec>;
 
 const process = (input: {
   command: WithActor<MarkMemberTrained>;
-  events: ReadonlyArray<DomainEvent>;
 }) =>
   TE.right(
     O.some(

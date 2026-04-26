@@ -37,7 +37,6 @@ describe('register-training-sheet', () => {
         await getTaskEitherRightOrFail(
           registerTrainingSheet.process({
             command,
-            events: RA.empty,
             rm: framework.sharedReadModel,
           })
         ),
@@ -66,7 +65,6 @@ describe('register-training-sheet', () => {
           await getTaskEitherRightOrFail(
             registerTrainingSheet.process({
               command,
-              events: RA.empty,
               rm: framework.sharedReadModel,
             })
           ),
@@ -112,7 +110,6 @@ describe('register-training-sheet', () => {
           await getTaskEitherRightOrFail(
             registerTrainingSheet.process({
               command,
-              events: RA.empty,
               rm: framework.sharedReadModel,
             })
           ),

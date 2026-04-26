@@ -36,7 +36,6 @@ describe('revoke-super-user', () => {
             memberNumber,
             actor: arbitraryActor(),
           },
-          events: [],
           rm: framework.sharedReadModel,
         })
       );
@@ -62,7 +61,6 @@ describe('revoke-super-user', () => {
             memberNumber,
             actor: arbitraryActor(),
           },
-          events: [],
           rm: framework.sharedReadModel,
         })
       );
@@ -104,7 +102,6 @@ describe('revoke-super-user', () => {
             memberNumber,
             actor: arbitraryActor(),
           },
-          events: [],
           rm: framework.sharedReadModel,
         })
       );

@@ -14,7 +14,6 @@ type RemoveTrainingSheet = t.TypeOf<typeof codec>;
 
 const process = (input: {
   command: WithActor<RemoveTrainingSheet>;
-  events: ReadonlyArray<DomainEvent>;
 }) =>
   TE.right(
     O.some(constructEvent('EquipmentTrainingSheetRemoved')(input.command))

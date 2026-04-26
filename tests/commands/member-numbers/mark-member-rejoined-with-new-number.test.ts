@@ -75,7 +75,6 @@ describe('markMemberRejoinedWithNewNumber', () => {
         await getTaskEitherRightOrFail(
           markMemberRejoinedWithNewNumber.process({
             command,
-            events: [],
             rm: framework.sharedReadModel,
           })
         ),
@@ -113,7 +112,6 @@ describe('markMemberRejoinedWithNewNumber', () => {
     const result = await getTaskEitherRightOrFail(
       markMemberRejoinedWithNewNumber.process({
         command,
-        events: [],
         rm: framework.sharedReadModel,
       })
     );

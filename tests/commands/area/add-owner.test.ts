@@ -68,7 +68,6 @@ describe('add-owner', () => {
       const result = getLeftOrFail(
         await addOwner.process({
           command,
-          events: [],
           rm: framework.sharedReadModel,
         })()
       );
@@ -88,7 +87,6 @@ describe('add-owner', () => {
       const result = getLeftOrFail(
         await addOwner.process({
           command,
-          events: [],
           rm: framework.sharedReadModel,
         })()
       );
@@ -108,7 +106,6 @@ describe('add-owner', () => {
         const result = await getTaskEitherRightOrFail(
           addOwner.process({
             command,
-            events: [],
             rm: framework.sharedReadModel,
           })
         );
@@ -135,7 +132,6 @@ describe('add-owner', () => {
         const result = await getTaskEitherRightOrFail(
           addOwner.process({
             command,
-            events: [],
             rm: framework.sharedReadModel,
           })
         );
@@ -161,7 +157,6 @@ describe('add-owner', () => {
         const result = await getTaskEitherRightOrFail(
           addOwner.process({
             command,
-            events: [],
             rm: framework.sharedReadModel,
           })
         );

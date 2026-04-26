@@ -15,7 +15,6 @@ export type RevokeMemberTrained = t.TypeOf<typeof codec>;
 
 const process = (input: {
   command: WithActor<RevokeMemberTrained>;
-  events: ReadonlyArray<DomainEvent>;
 }) =>
   TE.right(
     O.some(

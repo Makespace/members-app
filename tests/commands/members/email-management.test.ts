@@ -108,7 +108,6 @@ describe('member email commands', () => {
           email: faker.internet.email() as EmailAddress,
           actor: arbitraryActor(),
         },
-        events: [],
         rm: framework.sharedReadModel,
       })()
     );
@@ -306,7 +305,6 @@ describe('member email commands', () => {
           emailAddress: secondaryEmail,
           actor: arbitraryActor(),
         },
-        events: [],
         rm: framework.sharedReadModel,
       })()
     );

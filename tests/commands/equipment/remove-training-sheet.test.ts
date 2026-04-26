@@ -36,7 +36,6 @@ describe('remove-training-sheet', () => {
       await getTaskEitherRightOrFail(
         removeTrainingSheet.process({
           command,
-          events: RA.empty,
           rm: framework.sharedReadModel,
         })
       ),

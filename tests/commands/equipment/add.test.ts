@@ -36,7 +36,6 @@ describe('add-equipment', () => {
     const result = await getTaskEitherRightOrFail(
       add.process({
         command,
-        events: [],
         rm: framework.sharedReadModel,
       })
     );
@@ -73,7 +72,6 @@ describe('add-equipment', () => {
     const result = await getTaskEitherRightOrFail(
       add.process({
         command,
-        events: [],
         rm: framework.sharedReadModel,
       })
     );

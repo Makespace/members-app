@@ -28,7 +28,6 @@ describe('declare-super-user', () => {
             memberNumber,
             actor: arbitraryActor(),
           },
-          events: [],
           rm: framework.sharedReadModel,
         })
       );

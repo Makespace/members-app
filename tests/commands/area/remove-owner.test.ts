@@ -48,7 +48,6 @@ describe('remove-owner', () => {
       const result = getLeftOrFail(
         await removeOwner.process({
           command,
-          events: [],
           rm: framework.sharedReadModel,
         })()
       );
@@ -82,7 +81,6 @@ describe('remove-owner', () => {
         const result = await getTaskEitherRightOrFail(
           removeOwner.process({
             command,
-            events: [],
             rm: framework.sharedReadModel,
           })
         );
@@ -120,7 +118,6 @@ describe('remove-owner', () => {
         const result = getLeftOrFail(
           await removeOwner.process({
             command,
-            events: [],
             rm: framework.sharedReadModel,
           })()
         );
@@ -139,7 +136,6 @@ describe('remove-owner', () => {
         const result = getLeftOrFail(
           await removeOwner.process({
             command,
-            events: [],
             rm: framework.sharedReadModel,
           })()
         );
@@ -173,7 +169,6 @@ describe('remove-owner', () => {
         const result = getLeftOrFail(
           await removeOwner.process({
             command,
-            events: [],
             rm: framework.sharedReadModel,
           })()
         );

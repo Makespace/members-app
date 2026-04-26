@@ -11,7 +11,6 @@ import { SharedReadModel } from '../read-models/shared-state';
 export type WithActor<T> = T & {actor: Actor};
 type CommandProcessInput<T> = {
   command: WithActor<T>;
-  events: ReadonlyArray<DomainEvent>;
   rm: SharedReadModel;
   deps?: Dependencies;
 };
