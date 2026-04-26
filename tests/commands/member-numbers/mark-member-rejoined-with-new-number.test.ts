@@ -1,6 +1,6 @@
 import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
-import {DomainEvent, isEventOfType} from '../../../src/types';
+import {EmailAddress, constructEvent, isEventOfType} from '../../../src/types';
 import {pipe} from 'fp-ts/lib/function';
 import {
   arbitraryActor,
@@ -34,35 +34,47 @@ describe('markMemberRejoinedWithNewNumber', () => {
     framework.close();
   });
 
+  const oldMemberNumber = faker.number.int() as Int;
   const command = {
-    oldMemberNumber: faker.number.int() as Int,
-    newMemberNumber: faker.number.int() as Int,
+    oldMemberNumber,
+    newMemberNumber: faker.number.int({
+      min: oldMemberNumber + 1,
+    }) as Int,
     actor: arbitraryActor(),
   };
 
   describe('when give the same command multiple times', () => {
     beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        memberNumber: command.oldMemberNumber,
+        email: faker.internet.email() as EmailAddress,
+        name: undefined,
+        formOfAddress: undefined,
+      });
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        memberNumber: command.newMemberNumber,
+        email: faker.internet.email() as EmailAddress,
+        name: undefined,
+        formOfAddress: undefined,
+      });
       await applyMarkMemberRejoinedWithNewNumber(command, arbitraryActor())();
       await applyMarkMemberRejoinedWithNewNumber(command, arbitraryActor())();
     });
 
     it('only raises one event', async () => {
-      const events = await framework.getAllEvents();
-      expect(events).toHaveLength(1);
-      expect(isEventOfType('MemberRejoinedWithNewNumber')(events[0])).toBe(
-        true
+      const events = await framework.getAllEventsByType(
+        'MemberRejoinedWithNewNumber'
       );
+      expect(events).toHaveLength(1);
     });
   });
 
   describe('link 2 memberships together', () => {
-    const events: ReadonlyArray<DomainEvent> = [];
     it('raises an event linking the memberships', async () => {
       const event = pipe(
         await getTaskEitherRightOrFail(
           markMemberRejoinedWithNewNumber.process({
             command,
-            events,
             rm: framework.sharedReadModel,
           })
         ),
@@ -74,5 +86,36 @@ describe('markMemberRejoinedWithNewNumber', () => {
       expect(event.newMemberNumber).toStrictEqual(command.newMemberNumber);
       expect(event.actor).toStrictEqual(command.actor);
     });
+  });
+
+  it('does nothing once the member numbers already resolve to the same user', async () => {
+    await framework.commands.memberNumbers.linkNumberToEmail({
+      memberNumber: command.oldMemberNumber,
+      email: faker.internet.email() as EmailAddress,
+      name: undefined,
+      formOfAddress: undefined,
+    });
+    await framework.commands.memberNumbers.linkNumberToEmail({
+      memberNumber: command.newMemberNumber,
+      email: faker.internet.email() as EmailAddress,
+      name: undefined,
+      formOfAddress: undefined,
+    });
+    framework.insertIntoSharedReadModel(
+      constructEvent('MemberRejoinedWithNewNumber')({
+        oldMemberNumber: command.oldMemberNumber,
+        newMemberNumber: command.newMemberNumber,
+        actor: arbitraryActor(),
+      })
+    );
+
+    const result = await getTaskEitherRightOrFail(
+      markMemberRejoinedWithNewNumber.process({
+        command,
+        rm: framework.sharedReadModel,
+      })
+    );
+
+    expect(result).toStrictEqual(O.none);
   });
 });

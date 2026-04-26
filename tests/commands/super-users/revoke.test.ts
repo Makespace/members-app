@@ -1,6 +1,7 @@
 import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
 import {constructEvent} from '../../../src/types';
+import {EmailAddress} from '../../../src/types/email-address';
 import {revoke} from '../../../src/commands/super-user/revoke';
 import {arbitraryActor, getTaskEitherRightOrFail} from '../../helpers';
 import {
@@ -10,6 +11,13 @@ import {
 
 describe('revoke-super-user', () => {
   let framework: TestFramework;
+  const linkMember = (memberNumber: number) =>
+    framework.commands.memberNumbers.linkNumberToEmail({
+      memberNumber,
+      email: faker.internet.email() as EmailAddress,
+      name: undefined,
+      formOfAddress: undefined,
+    });
 
   beforeEach(async () => {
     framework = await initTestFramework();
@@ -28,7 +36,6 @@ describe('revoke-super-user', () => {
             memberNumber,
             actor: arbitraryActor(),
           },
-          events: [],
           rm: framework.sharedReadModel,
         })
       );
@@ -40,18 +47,20 @@ describe('revoke-super-user', () => {
   describe('when the member is already a super user', () => {
     const memberNumber = faker.number.int();
     it('revokes their status', async () => {
+      await linkMember(memberNumber);
+      framework.insertIntoSharedReadModel(
+        constructEvent('SuperUserDeclared')({
+          memberNumber,
+          actor: arbitraryActor(),
+        })
+      );
+
       const result = await getTaskEitherRightOrFail(
         revoke.process({
           command: {
             memberNumber,
             actor: arbitraryActor(),
           },
-          events: [
-            constructEvent('SuperUserDeclared')({
-              memberNumber,
-              actor: arbitraryActor(),
-            }),
-          ],
           rm: framework.sharedReadModel,
         })
       );
@@ -67,26 +76,32 @@ describe('revoke-super-user', () => {
   describe('when the member was re-declared as a super user', () => {
     const memberNumber = faker.number.int();
     it('revokes their status', async () => {
+      await linkMember(memberNumber);
+      framework.insertIntoSharedReadModel(
+        constructEvent('SuperUserDeclared')({
+          memberNumber,
+          actor: arbitraryActor(),
+        })
+      );
+      framework.insertIntoSharedReadModel(
+        constructEvent('SuperUserRevoked')({
+          memberNumber,
+          actor: arbitraryActor(),
+        })
+      );
+      framework.insertIntoSharedReadModel(
+        constructEvent('SuperUserDeclared')({
+          memberNumber,
+          actor: arbitraryActor(),
+        })
+      );
+
       const result = await getTaskEitherRightOrFail(
         revoke.process({
           command: {
             memberNumber,
             actor: arbitraryActor(),
           },
-          events: [
-            constructEvent('SuperUserDeclared')({
-              memberNumber,
-              actor: arbitraryActor(),
-            }),
-            constructEvent('SuperUserRevoked')({
-              memberNumber,
-              actor: arbitraryActor(),
-            }),
-            constructEvent('SuperUserDeclared')({
-              memberNumber,
-              actor: arbitraryActor(),
-            }),
-          ],
           rm: framework.sharedReadModel,
         })
       );

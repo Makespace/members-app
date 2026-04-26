@@ -112,6 +112,12 @@ Helpful test utilities already used in the repo:
 - `tests/helpers.ts` for shared test helpers
 - `tests/data/` for external-data fixtures
 
+When adding or updating tests:
+
+- Prefer concrete, explicit test cases over callback-driven table tests when there are only a small number of scenarios.
+- Prefer a nested `describe` with shared `beforeEach` setup for closely related scenarios instead of selector/helper functions inside the test cases.
+- Keep test setup and assertions locally readable; avoid introducing indirection in tests unless it removes substantial duplication.
+
 ## Working norms for agents
 
 - Prefer `rg` for searching the codebase.

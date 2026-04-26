@@ -3,6 +3,7 @@ import {faker} from '@faker-js/faker';
 import {StatusCodes} from 'http-status-codes';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {constructEvent} from '../../../src/types';
+import {EmailAddress} from '../../../src/types/email-address';
 import {v4} from 'uuid';
 import {
   arbitraryActor,
@@ -28,26 +29,25 @@ describe('remove-owner', () => {
 
   const areaId = v4() as UUID;
   const areaName = faker.commerce.productName() as NonEmptyString;
-  const unrelatedAreaName = faker.commerce.productName() as NonEmptyString;
   const memberNumber = faker.number.int();
   const command = {
     areaId: areaId,
     memberNumber,
     actor: arbitraryActor(),
   };
-
-  const unreleatedEvent = constructEvent('AreaCreated')({
-    id: v4() as UUID,
-    name: unrelatedAreaName,
-    actor: arbitraryActor(),
-  });
+  const linkMember = () =>
+    framework.commands.memberNumbers.linkNumberToEmail({
+      memberNumber,
+      email: faker.internet.email() as EmailAddress,
+      name: undefined,
+      formOfAddress: undefined,
+    });
 
   describe('when the area does not exist', () => {
     it('fails', async () => {
       const result = getLeftOrFail(
         await removeOwner.process({
           command,
-          events: [],
           rm: framework.sharedReadModel,
         })()
       );
@@ -68,18 +68,19 @@ describe('remove-owner', () => {
 
     describe('and the member is an owner of it', () => {
       it('removes them as owner', async () => {
+        await linkMember();
+        framework.insertIntoSharedReadModel(areaCreated);
+        framework.insertIntoSharedReadModel(
+          constructEvent('OwnerAdded')({
+            memberNumber,
+            areaId,
+            actor: arbitraryActor(),
+          })
+        );
+
         const result = await getTaskEitherRightOrFail(
           removeOwner.process({
             command,
-            events: [
-              areaCreated,
-              constructEvent('OwnerAdded')({
-                memberNumber,
-                areaId,
-                actor: arbitraryActor(),
-              }),
-              unreleatedEvent,
-            ],
             rm: framework.sharedReadModel,
           })
         );
@@ -98,21 +99,25 @@ describe('remove-owner', () => {
 
     describe('and the member was an owner before the area has been removed', () => {
       it('fails', async () => {
+        await linkMember();
+        framework.insertIntoSharedReadModel(areaCreated);
+        framework.insertIntoSharedReadModel(
+          constructEvent('OwnerAdded')({
+            memberNumber,
+            areaId,
+            actor: arbitraryActor(),
+          })
+        );
+        framework.insertIntoSharedReadModel(
+          constructEvent('AreaRemoved')({
+            id: areaId,
+            actor: arbitraryActor(),
+          })
+        );
+
         const result = getLeftOrFail(
           await removeOwner.process({
             command,
-            events: [
-              areaCreated,
-              constructEvent('OwnerAdded')({
-                memberNumber,
-                areaId,
-                actor: arbitraryActor(),
-              }),
-              constructEvent('AreaRemoved')({
-                id: areaId,
-                actor: arbitraryActor(),
-              }),
-            ],
             rm: framework.sharedReadModel,
           })()
         );
@@ -126,10 +131,11 @@ describe('remove-owner', () => {
 
     describe('and the member was never an owner of it', () => {
       it('fails', async () => {
+        framework.insertIntoSharedReadModel(areaCreated);
+
         const result = getLeftOrFail(
           await removeOwner.process({
             command,
-            events: [areaCreated],
             rm: framework.sharedReadModel,
           })()
         );
@@ -143,22 +149,26 @@ describe('remove-owner', () => {
 
     describe('and the member is no longer an owner of it', () => {
       it('fails', async () => {
+        await linkMember();
+        framework.insertIntoSharedReadModel(areaCreated);
+        framework.insertIntoSharedReadModel(
+          constructEvent('OwnerAdded')({
+            memberNumber,
+            areaId,
+            actor: arbitraryActor(),
+          })
+        );
+        framework.insertIntoSharedReadModel(
+          constructEvent('OwnerRemoved')({
+            memberNumber,
+            areaId,
+            actor: arbitraryActor(),
+          })
+        );
+
         const result = getLeftOrFail(
           await removeOwner.process({
             command,
-            events: [
-              areaCreated,
-              constructEvent('OwnerAdded')({
-                memberNumber,
-                areaId,
-                actor: arbitraryActor(),
-              }),
-              constructEvent('OwnerRemoved')({
-                memberNumber,
-                areaId,
-                actor: arbitraryActor(),
-              }),
-            ],
             rm: framework.sharedReadModel,
           })()
         );
