@@ -204,7 +204,6 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     },
     trainingSummaryDeps: {
       logger,
-      getResourceEvents: getResourceEvents(eventDB),
       commitEvent: frameworkCommitEvent,
       sharedReadModel,
       getSheetData: getSheetData(extDBDrizzle),

@@ -66,14 +66,6 @@ export const formPost =
         // First we use getCommandFrom to statelessly check the input is sensical and in a sense this can be thought of
         // as a fast path to minimise processing for garbage.
         input: getCommandFrom(req.body, command),
-        // Second we get all the events. This is because we need all the events to get the authorisation of the command
-        // since there are addOwner events we need to read.
-        // There are 2 optimisations here we could take if required (but we haven't yet because they aren't needed):
-        // 1. Only get the events if the first step (stateslessly validating the command input) actually succeeds. This
-        //    would minimise the DDOS potential of a malicious or malformed component spamming the service with crap.
-        // 2. We actually only need some events and if we only got those events there would be significantly less data
-        //    to process.
-        events: deps.getAllEvents(),
       },
       sequenceS(TE.ApplySeq),
       TE.filterOrElse(({actor, input}) => command.isAuthorized({actor, rm: deps.sharedReadModel, input}), () =>
