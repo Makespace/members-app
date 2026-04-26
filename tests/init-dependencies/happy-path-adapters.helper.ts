@@ -3,7 +3,6 @@ import * as TE from 'fp-ts/TaskEither';
 import * as O from 'fp-ts/Option';
 import pino, {Logger} from 'pino';
 import {StatusCodes} from 'http-status-codes';
-import {faker} from '@faker-js/faker';
 import {EventName} from '../../src/types/domain-event';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
 import * as libsqlClient from '@libsql/client';

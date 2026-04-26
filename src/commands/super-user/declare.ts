@@ -12,7 +12,7 @@ const codec = t.strict({
   memberNumber: tt.NumberFromString,
 });
 
-export type DeclareSuperUserCommand = t.TypeOf<typeof codec>;
+type DeclareSuperUserCommand = t.TypeOf<typeof codec>;
 
 const process: Command<DeclareSuperUserCommand>['process'] = input => {
   const member = input.rm.members.getByMemberNumber(input.command.memberNumber);

@@ -11,7 +11,7 @@ const codec = t.strict({
   memberNumber: tt.NumberFromString,
 });
 
-export type RevokeSuperUser = t.TypeOf<typeof codec>;
+type RevokeSuperUser = t.TypeOf<typeof codec>;
 
 const process: Command<RevokeSuperUser>['process'] = input =>
   TE.right(

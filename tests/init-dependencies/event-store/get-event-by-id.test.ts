@@ -2,7 +2,6 @@ import createLogger from 'pino';
 import {faker} from '@faker-js/faker';
 import * as libsqlClient from '@libsql/client';
 import * as O from 'fp-ts/Option';
-import {randomUUID} from 'crypto';
 import {
   EmailAddress,
   StoredDomainEvent,

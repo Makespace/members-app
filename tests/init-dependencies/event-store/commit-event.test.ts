@@ -8,7 +8,6 @@ import { commitEvent } from "../../../src/init-dependencies/event-store/commit-e
 import { Int } from "io-ts";
 import * as E from 'fp-ts/Either';
 import pino from "pino";
-import { Dependencies } from "../../../src/dependencies";
 import { FailureWithStatus } from "../../../src/types/failure-with-status";
 import { StatusCodes } from "http-status-codes";
 
@@ -27,13 +26,12 @@ describe('commit-event', () => {
     const logger = pino({level: 'silent'});
     let dbClient: libsqlClient.Client;
     let getStoredEvents: () => Promise<ReadonlyArray<StoredDomainEvent>>;
-    let asyncRefreshPlaceholder: Dependencies['sharedReadModel']['asyncRefresh'] = () => async () => {};
     let initialisedCommitEvent: ReturnType<typeof commitEvent>;
     beforeEach(async () => {
         dbClient = libsqlClient.createClient({url: ':memory:'});
         getRightOrFail(await ensureEventTableExists(dbClient)());
         getStoredEvents = async () => getRightOrFail(await getAllEvents(dbClient)()());
-        initialisedCommitEvent = commitEvent(dbClient, logger, asyncRefreshPlaceholder);
+        initialisedCommitEvent = commitEvent(dbClient, logger, () => async () => {});
     });
 
     afterEach(() => {
