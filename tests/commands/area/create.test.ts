@@ -31,7 +31,6 @@ describe('create-area', () => {
             name: areaName,
             actor: arbitraryActor(),
           },
-          events: [],
           rm: framework.sharedReadModel,
         })
       );
@@ -66,7 +65,6 @@ describe('create-area', () => {
             name: areaName,
             actor: arbitraryActor(),
           },
-          events: [],
           rm: framework.sharedReadModel,
         })
       );

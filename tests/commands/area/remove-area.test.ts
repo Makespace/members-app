@@ -38,7 +38,6 @@ describe('remove-area', () => {
       const result = getLeftOrFail(
         await removeArea.process({
           command,
-          events: [],
           rm: framework.sharedReadModel,
         })()
       );
@@ -63,7 +62,6 @@ describe('remove-area', () => {
       const result = await getTaskEitherRightOrFail(
         removeArea.process({
           command,
-          events: [],
           rm: framework.sharedReadModel,
         })
       );
@@ -98,7 +96,6 @@ describe('remove-area', () => {
             id: areaId,
             actor: arbitraryActor(),
           },
-          events: [],
           rm: framework.sharedReadModel,
         })()
       );

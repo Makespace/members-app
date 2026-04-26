@@ -75,7 +75,6 @@ describe('linkNumberToEmail', () => {
       const result = getLeftOrFail(
         await linkNumberToEmail.process({
           command,
-          events: [],
           rm: framework.sharedReadModel,
         })()
       );
@@ -103,7 +102,6 @@ describe('linkNumberToEmail', () => {
         await getTaskEitherRightOrFail(
           linkNumberToEmail.process({
             command,
-            events: [],
             rm: framework.sharedReadModel,
           })
         ),
@@ -123,7 +121,6 @@ describe('linkNumberToEmail', () => {
         await getTaskEitherRightOrFail(
           linkNumberToEmail.process({
             command,
-            events: [],
             rm: framework.sharedReadModel,
           })
         ),

@@ -62,7 +62,6 @@ export const landing =
       // Note that we don't need to check isAuthorized here because we are authorised
       // by the user clicking the verification link.
       const resultantEvent = await verifyEmail.process({
-        events: resourceEvents.right.events,
         deps,
         rm: deps.sharedReadModel,
         command: {

@@ -54,7 +54,6 @@ describe('send-email-verification', () => {
           ...command,
           memberNumber: faker.number.int({min: memberNumber + 1}),
         },
-        events: [],
         rm: framework.sharedReadModel,
       })()
     );
@@ -72,7 +71,6 @@ describe('send-email-verification', () => {
           ...command,
           email: faker.internet.email() as EmailAddress,
         },
-        events: [],
         rm: framework.sharedReadModel,
       })()
     );
@@ -92,7 +90,6 @@ describe('send-email-verification', () => {
     const result = await getTaskEitherRightOrFail(
       sendEmailVerification.process({
         command,
-        events: [],
         rm: framework.sharedReadModel,
       })
     );
@@ -118,7 +115,6 @@ describe('send-email-verification', () => {
     const result = await getTaskEitherRightOrFail(
       sendEmailVerification.process({
         command,
-        events: [],
         rm: framework.sharedReadModel,
       })
     );
@@ -131,7 +127,6 @@ describe('send-email-verification', () => {
       await getTaskEitherRightOrFail(
         sendEmailVerification.process({
           command,
-          events: [],
           rm: framework.sharedReadModel,
         })
       ),

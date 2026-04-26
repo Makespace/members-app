@@ -1,4 +1,4 @@
-import {DomainEvent, constructEvent} from '../../types';
+import {constructEvent} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
@@ -21,7 +21,6 @@ export type MarkMemberTrainedBy = t.TypeOf<typeof codec>;
 
 const process = (input: {
   command: WithActor<MarkMemberTrainedBy>;
-  events: ReadonlyArray<DomainEvent>;
 }) =>
   TE.right(
     input.command.actor.tag !== 'user'
