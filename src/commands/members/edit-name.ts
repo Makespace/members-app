@@ -25,14 +25,8 @@ const process: Command<EditName>['process'] = input =>
     )
   );
 
-const resource: Command<EditName>['resource'] = input => ({
-  type: 'MemberDetails',
-  id: input.memberNumber.toString(),
-});
-
 export const editName: Command<EditName> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isAdminOrSuperUser,
 };

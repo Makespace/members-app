@@ -25,14 +25,8 @@ const process: Command<EditFormOfAddress>['process'] = input =>
     )
   );
 
-const resource: Command<EditFormOfAddress>['resource'] = input => ({
-  type: 'MemberDetails',
-  id: input.memberNumber.toString(),
-});
-
 export const editFormOfAddress: Command<EditFormOfAddress> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isSelfOrPrivileged,
 };

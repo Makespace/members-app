@@ -52,14 +52,8 @@ const process: Command<VerifyMemberEmail>['process'] = input => {
   );
 };
 
-const resource = () => ({
-  type: 'MemberNumberEmailPairings',
-  id: 'MemberNumberEmailPairings',
-});
-
 export const verifyEmail: Command<VerifyMemberEmail> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isAdminOrSuperUser,
 };

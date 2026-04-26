@@ -5,7 +5,6 @@ import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
 import {pipe} from 'fp-ts/lib/function';
-import {resource} from './resource';
 import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
 
 const codec = t.strict({
@@ -25,7 +24,6 @@ const process: Command<RevokeSuperUser>['process'] = input =>
 
 export const revoke: Command<RevokeSuperUser> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isAdminOrSuperUser,
 };

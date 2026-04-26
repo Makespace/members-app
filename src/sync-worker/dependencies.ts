@@ -8,11 +8,9 @@ import {
   TroubleTicketDataTable,
 } from './google/sheet-data-table';
 import {UUID} from 'io-ts-types';
-import {Email, Failure, ResourceVersion, StoredDomainEvent} from '../types';
+import {Email, Failure} from '../types';
 import {SharedReadModel} from '../read-models/shared-state';
-import {Resource} from '../types/resource';
 import {Dependencies} from '../dependencies';
-import {FailureWithStatus} from '../types/failure-with-status';
 import { Duration } from 'luxon';
 
 export interface SyncWorkerDependencies {

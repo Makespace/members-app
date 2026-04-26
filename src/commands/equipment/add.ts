@@ -21,14 +21,8 @@ const process: Command<AddEquipment>['process'] = input =>
       : O.some(constructEvent('EquipmentAdded')(input.command))
   );
 
-const resource: Command<AddEquipment>['resource'] = command => ({
-  type: 'Equipment',
-  id: command.id,
-});
-
 export const add: Command<AddEquipment> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isAdminOrSuperUser,
 };

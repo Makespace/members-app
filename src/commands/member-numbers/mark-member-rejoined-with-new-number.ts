@@ -30,16 +30,9 @@ const process: Command<MarkMemberRejoinedWithNewNumber>['process'] = input => {
   );
 };
 
-const resource: Command<MarkMemberRejoinedWithNewNumber>['resource'] =
-  input => ({
-    type: 'Member',
-    id: input.oldMemberNumber.toString(),
-  });
-
 export const markMemberRejoinedWithNewNumber: Command<MarkMemberRejoinedWithNewNumber> =
   {
     process,
-    resource,
     decode: codec.decode,
     isAuthorized: isAdminOrSuperUser,
   };

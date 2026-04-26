@@ -4,7 +4,6 @@ import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
-import {resource} from './resource';
 import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
 import { failureWithStatus } from '../../types/failure-with-status';
 import { StatusCodes } from 'http-status-codes';
@@ -33,7 +32,6 @@ const process: Command<DeclareSuperUserCommand>['process'] = input => {
 
 export const declare: Command<DeclareSuperUserCommand> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isAdminOrSuperUser,
 };

@@ -37,11 +37,6 @@ const process = (input: {
         )
   );
 
-const resource = (command: MarkMemberTrainedBy) => ({
-  type: 'Equipment',
-  id: command.equipmentId,
-});
-
 export const TRAINED_BY_LIMIT = {years: 10};
 
 const isWithinTrainedByLimit = (date: Date): boolean => {
@@ -73,7 +68,6 @@ const isAllowedToMarkTrainedBy = (input: {
 
 export const markMemberTrainedBy: Command<MarkMemberTrainedBy> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isAllowedToMarkTrainedBy,
 };

@@ -3,7 +3,6 @@ import {
   Failure,
   Email,
   DomainEvent,
-  ResourceVersion,
   StoredDomainEvent,
   StoredEventOfType,
 } from './types';
@@ -12,7 +11,6 @@ import * as O from 'fp-ts/Option';
 import {FailureWithStatus} from './types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 
-import {Resource} from './types/resource';
 import {EventName} from './types/domain-event';
 import {SharedReadModel} from './read-models/shared-state';
 import {

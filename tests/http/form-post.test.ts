@@ -12,7 +12,6 @@ import {arbitraryUser} from '../types/user.helper';
 const alwaysOkCommand: Command<Record<string, never>> = {
   decode: t.strict({}).decode,
   isAuthorized: () => true,
-  resource: () => ({type: 'Test', id: 'x'}),
   process: () => TE.right(O.none),
 };
 
