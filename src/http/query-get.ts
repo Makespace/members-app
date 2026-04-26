@@ -11,6 +11,7 @@ import {CompleteHtmlDocument, sanitizeString} from '../types/html';
 import * as O from 'fp-ts/Option';
 import {match} from '../types/tagged-union';
 import {ParsedQs} from 'qs';
+import {startSpan} from '@sentry/node';
 
 // req.query has a complicated type:
 // type ParsedQs = { [key: string]: undefined | string | string[] | ParsedQs | ParsedQs[] };
@@ -29,44 +30,55 @@ const simplifyExpressQuery = (qs: ParsedQs) => {
 export const queryGet =
   (deps: Dependencies, query: Query) =>
   async (req: Request, res: Response<CompleteHtmlDocument>) => {
-    const user = getUserFromSession(deps)(req.session);
-    if (O.isNone(user)) {
-      deps.logger.info('Did not respond to query as user was not logged in.');
-      res.redirect(logInPath);
-      return;
-    }
-    const member = deps.sharedReadModel.members.getByMemberNumber(user.value.memberNumber);
-    if (O.isNone(member)) {
-      res.redirect(logInPath);
-      return;
-    }
-    await pipe(
-      query(deps)(user.value, req.params, simplifyExpressQuery(req.query)),
-      TE.matchW(
-        failure => {
-          deps.logger.error(failure, 'Failed respond to a query');
-          return failure.status === StatusCodes.UNAUTHORIZED
-            ? res.redirect(logInPath)
-            : res
-                .status(failure.status)
-                .send(oopsPage(sanitizeString(failure.message)));
+    await startSpan(
+      {
+        name: `Query ${req.path}`,
+        op: 'query.get',
+        attributes: {
+          'http.route': req.path,
         },
-        match({
-          CompleteHtmlPage: ({rendered}) => res.status(200).send(rendered),
-          LoggedInContent: ({title, body}) =>
-            res
-              .status(200)
-              .send(
-                pageTemplate(title, user.value, member.value.isSuperUser)(body)
-              ),
-          Redirect: ({url}) => res.redirect(url),
-          Raw: ({body, contentType}) => {
-            res.status(200);
-            res.setHeader('content-type', contentType);
-            res.send(body as CompleteHtmlDocument);
-            return res;
-          },
-        })
-      )
-    )();
+      },
+      async () => {
+        const user = getUserFromSession(deps)(req.session);
+        if (O.isNone(user)) {
+          deps.logger.info('Did not respond to query as user was not logged in.');
+          res.redirect(logInPath);
+          return;
+        }
+        const member = deps.sharedReadModel.members.getByMemberNumber(user.value.memberNumber);
+        if (O.isNone(member)) {
+          res.redirect(logInPath);
+          return;
+        }
+        await pipe(
+          query(deps)(user.value, req.params, simplifyExpressQuery(req.query)),
+          TE.matchW(
+            failure => {
+              deps.logger.error(failure, 'Failed respond to a query');
+              return failure.status === StatusCodes.UNAUTHORIZED
+                ? res.redirect(logInPath)
+                : res
+                    .status(failure.status)
+                    .send(oopsPage(sanitizeString(failure.message)));
+            },
+            match({
+              CompleteHtmlPage: ({rendered}) => res.status(200).send(rendered),
+              LoggedInContent: ({title, body}) =>
+                res
+                  .status(200)
+                  .send(
+                    pageTemplate(title, user.value, member.value.isSuperUser)(body)
+                  ),
+              Redirect: ({url}) => res.redirect(url),
+              Raw: ({body, contentType}) => {
+                res.status(200);
+                res.setHeader('content-type', contentType);
+                res.send(body as CompleteHtmlDocument);
+                return res;
+              },
+            })
+          )
+        )();
+      }
+    );
   };

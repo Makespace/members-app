@@ -12,6 +12,7 @@ import {sequenceS} from 'fp-ts/lib/Apply';
 import {Command} from '../commands';
 import {Actor} from '../types/actor';
 import {applyToResource} from '../commands/apply-command-to-resource';
+import {startSpan} from '@sentry/node';
 
 const getCommandFrom = <T>(body: unknown, command: Command<T>) =>
   pipe(
@@ -48,28 +49,41 @@ const getActorFrom = (authorization: unknown, conf: Config) =>
 export const apiPost =
   <T>(deps: Dependencies, conf: Config, command: Command<T>) =>
   async (req: Request, res: Response) => {
-    await pipe(
+    const commandName = command.decode.name || 'unknown';
+    await startSpan(
       {
-        actor: getActorFrom(req.headers.authorization, conf),
-        input: getCommandFrom(req.body, command),
-        events: deps.getAllEvents(),
-      },
-      sequenceS(TE.ApplySeq),
-      TE.filterOrElse(({actor, input}) => command.isAuthorized({actor, input, rm: deps.sharedReadModel}), () =>
-        failureWithStatus(
-          'You are not authorized to perform this action',
-          StatusCodes.FORBIDDEN
-        )()
-      ),
-      TE.chain(({input, actor}) =>
-        applyToResource(deps, command)(input, actor)
-      ),
-      TE.match(
-        failure => {
-          deps.logger.error(failure, 'API call failed');
-          res.status(failure.status).send(failure);
+        name: `POST command ${commandName}`,
+        op: 'command.post',
+        attributes: {
+          'command.name': commandName,
+          'http.route': req.path,
         },
-        ({status, message}) => res.status(status).send({message})
-      )
-    )();
+      },
+      async () => {
+        await pipe(
+          {
+            actor: getActorFrom(req.headers.authorization, conf),
+            input: getCommandFrom(req.body, command),
+            events: deps.getAllEvents(),
+          },
+          sequenceS(TE.ApplySeq),
+          TE.filterOrElse(({actor, input}) => command.isAuthorized({actor, input, rm: deps.sharedReadModel}), () =>
+            failureWithStatus(
+              'You are not authorized to perform this action',
+              StatusCodes.FORBIDDEN
+            )()
+          ),
+          TE.chain(({input, actor}) =>
+            applyToResource(deps, command)(input, actor)
+          ),
+          TE.match(
+            failure => {
+              deps.logger.error(failure, 'API call failed');
+              res.status(failure.status).send(failure);
+            },
+            ({status, message}) => res.status(status).send({message})
+          )
+        )();
+      }
+    );
   };
