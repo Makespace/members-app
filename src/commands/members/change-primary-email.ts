@@ -5,7 +5,6 @@ import * as TE from 'fp-ts/TaskEither';
 import {StatusCodes} from 'http-status-codes';
 import {Command} from '../command';
 import {EmailAddressCodec, constructEvent} from '../../types';
-import {projectMemberEmailStates} from './email-state';
 import {normaliseEmailAddress} from '../../read-models/shared-state/normalise-email-address';
 import {failureWithStatus} from '../../types/failure-with-status';
 import { isSelfOrPrivileged } from '../authentication-helpers/is-self-or-privileged';
@@ -18,10 +17,10 @@ const codec = t.strict({
 type ChangeMemberPrimaryEmail = t.TypeOf<typeof codec>;
 
 const process: Command<ChangeMemberPrimaryEmail>['process'] = input => {
-  const state = projectMemberEmailStates(input.events).get(
+  const member = input.rm.members.getByMemberNumber(
     input.command.memberNumber
   );
-  if (state === undefined) {
+  if (O.isNone(member)) {
     return TE.left(
       failureWithStatus(
         'Invalid request',
@@ -31,10 +30,12 @@ const process: Command<ChangeMemberPrimaryEmail>['process'] = input => {
   }
 
   const emailAddress = normaliseEmailAddress(input.command.email);
-  const email = state.emails[emailAddress];
+  const email = member.value.emails.find(
+    currentEmail => currentEmail.emailAddress === emailAddress
+  );
   if (
     !email ||
-    !email.verified
+    O.isNone(email.verifiedAt)
   ) {
     return TE.left(
       failureWithStatus(
@@ -44,7 +45,7 @@ const process: Command<ChangeMemberPrimaryEmail>['process'] = input => {
     );
   }
 
-  if (state.primaryEmailAddress === emailAddress) {
+  if (member.value.primaryEmailAddress === emailAddress) {
     return TE.right(O.none);
   }
 

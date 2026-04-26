@@ -1,5 +1,6 @@
 import {faker} from '@faker-js/faker';
 import {StatusCodes} from 'http-status-codes';
+import {Int} from 'io-ts';
 import {addEmail} from '../../../src/commands/members/add-email';
 import {changePrimaryEmail} from '../../../src/commands/members/change-primary-email';
 import {verifyEmail} from '../../../src/commands/members/verify-email';
@@ -158,6 +159,55 @@ describe('member email commands', () => {
 
     const member = getSomeOrFail(framework.sharedReadModel.members.getByMemberNumber(memberNumber));
     expect(member.primaryEmailAddress).toStrictEqual(secondaryEmail);
+  });
+
+  describe('changing the primary email for a rejoined member', () => {
+    const oldMemberNumber = faker.number.int() as Int;
+    const newMemberNumber = faker.number.int({
+      min: oldMemberNumber + 1,
+    }) as Int;
+    const oldEmail = faker.internet.email() as EmailAddress;
+    const newEmail = faker.internet.email() as EmailAddress;
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        memberNumber: oldMemberNumber,
+        email: oldEmail,
+        name: undefined,
+        formOfAddress: undefined,
+      });
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        memberNumber: newMemberNumber,
+        email: newEmail,
+        name: undefined,
+        formOfAddress: undefined,
+      });
+      await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
+        oldMemberNumber,
+        newMemberNumber,
+      });
+    });
+
+    it('via the new number', async () => {
+      await framework.commands.members.changePrimaryEmail({
+        memberNumber: newMemberNumber,
+        email: oldEmail,
+      });
+      const member = getSomeOrFail(
+        framework.sharedReadModel.members.getByMemberNumber(newMemberNumber)
+      );
+      expect(member.primaryEmailAddress).toStrictEqual(oldEmail);
+    });
+
+    it('via the old number', async () => {
+      await framework.commands.members.changePrimaryEmail({
+        memberNumber: oldMemberNumber,
+        email: oldEmail,
+      });
+      const member = getSomeOrFail(
+        framework.sharedReadModel.members.getByMemberNumber(newMemberNumber)
+      );
+      expect(member.primaryEmailAddress).toStrictEqual(oldEmail);
+    });
   });
 
   it('treats verification as idempotent', async () => {
