@@ -5,10 +5,6 @@ import * as TE from 'fp-ts/TaskEither';
 import {StatusCodes} from 'http-status-codes';
 import {Command} from '../command';
 import {EmailAddressCodec, constructEvent} from '../../types';
-import {
-  findMemberNumberByEmail,
-  projectMemberEmailStates,
-} from './email-state';
 import {failureWithStatus} from '../../types/failure-with-status';
 import { isSelfOrPrivileged } from '../authentication-helpers/is-self-or-privileged';
 
@@ -20,9 +16,10 @@ const codec = t.strict({
 type AddMemberEmail = t.TypeOf<typeof codec>;
 
 const process: Command<AddMemberEmail>['process'] = input => {
-  const states = projectMemberEmailStates(input.events);
-  const currentMember = states.get(input.command.memberNumber);
-  if (currentMember === undefined) {
+  const currentMember = input.rm.members.getByMemberNumber(
+    input.command.memberNumber
+  );
+  if (O.isNone(currentMember)) {
     return TE.left(
       failureWithStatus(
         'The requested member does not exist',
@@ -31,11 +28,14 @@ const process: Command<AddMemberEmail>['process'] = input => {
     );
   }
 
-  const ownerOfEmail = findMemberNumberByEmail(states, input.command.email);
-  if (ownerOfEmail === input.command.memberNumber) {
+  const ownerOfEmail = input.rm.members.getByEmail(input.command.email, false);
+  if (
+    O.isSome(ownerOfEmail) &&
+    ownerOfEmail.value.userId === currentMember.value.userId
+  ) {
     return TE.right(O.none);
   }
-  if (ownerOfEmail !== undefined) {
+  if (O.isSome(ownerOfEmail)) {
     return TE.right(
       O.some(
         constructEvent('LinkingMemberNumberToAnAlreadyUsedEmailAttempted')({
