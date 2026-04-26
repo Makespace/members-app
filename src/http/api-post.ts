@@ -11,7 +11,7 @@ import {Dependencies} from '../dependencies';
 import {sequenceS} from 'fp-ts/lib/Apply';
 import {Command} from '../commands';
 import {Actor} from '../types/actor';
-import {applyToResource} from '../commands/apply-command-to-resource';
+import {applyCommand} from '../commands/apply-command';
 
 const getCommandFrom = <T>(body: unknown, command: Command<T>) =>
   pipe(
@@ -61,7 +61,7 @@ export const apiPost =
         )()
       ),
       TE.chain(({input, actor}) =>
-        applyToResource(deps, command)(input, actor)
+        applyCommand(deps, command)(input, actor)
       ),
       TE.match(
         failure => {

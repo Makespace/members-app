@@ -15,7 +15,7 @@ import {arbitraryActor, getRightOrFail} from '../helpers';
 import * as libsqlClient from '@libsql/client';
 import {EventName, EventOfType, StoredDomainEvent} from '../../src/types/domain-event';
 import {Dependencies} from '../../src/dependencies';
-import {applyToResource} from '../../src/commands/apply-command-to-resource';
+import {applyCommand} from '../../src/commands/apply-command';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
 import {getTroubleTicketData} from '../../src/sync-worker/db/get_trouble_ticket_data';
 import {SyncWorkerDependencies} from '../../src/sync-worker/dependencies';
@@ -52,7 +52,7 @@ export type TestFramework = {
   ) => Promise<ReadonlyArray<EventOfType<T>>>;
   commands: ToFrameworkCommands<typeof commands>;
   sharedReadModel: Dependencies['sharedReadModel'];
-  depsForApplyToResource: Dependencies;
+  depsForCommands: Dependencies;
   eventStoreDb: libsqlClient.Client;
   extDB: ExternalStateDB;
   getTroubleTicketData: Dependencies['getTroubleTicketData'];
@@ -99,7 +99,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     pipe(getAllEvents(eventDB)(), T.map(getRightOrFail))();
   const frameworkGetAllEventsByType = <EN extends EventName>(eventType: EN) =>
     pipe(getAllEventsByType(eventDB)(eventType), T.map(getRightOrFail))();
-  const depsForApplyToResource: Dependencies = {
+  const depsForCommands: Dependencies = {
     commitEvent: frameworkCommitEvent,
     getAllEvents: getAllEvents(eventDB),
     getAllEventsByType: getAllEventsByType(eventDB),
@@ -121,7 +121,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     <T>(command: Command<T>) =>
     async (commandPayload: T & {actor?: Actor}) => {
       await pipe(
-        applyToResource(depsForApplyToResource, command)(
+        applyCommand(depsForCommands, command)(
           commandPayload,
           commandPayload.actor ?? arbitraryActor()
         )
@@ -140,7 +140,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     eventStoreDb: eventDB,
     extDB: extDBDrizzle,
     sharedReadModel,
-    depsForApplyToResource,
+    depsForCommands,
     close: () => {
       eventDB.close();
       extDBClient.close();

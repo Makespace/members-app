@@ -14,7 +14,7 @@ import {
 } from '../../../src/commands/trainers/mark-member-trained-by';
 import {DateTime, Duration} from 'luxon';
 import {LinkNumberToEmail} from '../../../src/commands/member-numbers/link-number-to-email';
-import {applyToResource} from '../../../src/commands/apply-command-to-resource';
+import {applyCommand} from '../../../src/commands/apply-command';
 import {RevokeMemberTrained} from '../../../src/commands/trainers/revoke-member-trained';
 import {AddTrainer} from '../../../src/commands/trainers/add-trainer';
 import {failedEventsTable} from '../../../src/read-models/shared-state/state';
@@ -145,8 +145,8 @@ describe('get', () => {
       beforeEach(async () => {
         await framework.commands.memberNumbers.linkNumberToEmail(newMember);
         getRightOrFail(
-          await applyToResource(
-            framework.depsForApplyToResource,
+          await applyCommand(
+            framework.depsForCommands,
             markMemberTrainedBy
           )(markTrainedBy, markTrainedByActor)()
         );
@@ -226,8 +226,8 @@ describe('get', () => {
       beforeEach(async () => {
         await framework.commands.memberNumbers.linkNumberToEmail(newMember);
         getRightOrFail(
-          await applyToResource(
-            framework.depsForApplyToResource,
+          await applyCommand(
+            framework.depsForCommands,
             markMemberTrainedBy
           )(markTrainedBy, markTrainedByActor)()
         );
@@ -303,8 +303,8 @@ describe('get', () => {
 
         beforeEach(async () => {
           getRightOrFail(
-            await applyToResource(
-              framework.depsForApplyToResource,
+            await applyCommand(
+              framework.depsForCommands,
               markMemberTrainedBy
             )(markUserTrainedAgain, markUserTrainedAgainActor)()
           );

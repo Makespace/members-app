@@ -9,7 +9,7 @@ import {
 } from '../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 
-export const applyToResource =
+export const applyCommand =
   <T>(deps: Dependencies, command: Command<T>) =>
   (
     input: T,
