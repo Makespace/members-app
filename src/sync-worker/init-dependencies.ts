@@ -91,7 +91,7 @@ export const initDependencies = (): SyncWorkerDependencies => {
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
     lastQuizSync: lastSync(extDB),
     getSheetData: getSheetData(extDB),
-    commitEvent: commitEvent(eventDB, logger, () => async () => {}),
+    commitEvent: commitEvent(eventDB, logger, sharedReadModel.asyncRefresh),
     pullRecurlyData: conf.RECURLY_TOKEN ?  pullRecurlyData(logger, extDB, conf.RECURLY_TOKEN) : async (_interval: Duration) => {},
     ...initDBCommands(extDB, eventDB),
   };
