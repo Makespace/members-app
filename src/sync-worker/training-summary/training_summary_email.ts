@@ -120,8 +120,7 @@ const decideOwnersToEmail =
       // Initial simple version - we mark the email as sent before we send it. If this fails
       // (perhaps because something else sent an email in the meantime) we don't send the email.
       const emailSentEventResp = await deps.commitEvent(
-        lastEmailSent.right.resource,
-        lastEmailSent.right.resourceVersion
+        deps.sharedReadModel.getCurrentEventIndex()
       )(
         constructEvent('TrainingStatNotificationSent')({
           actor: {

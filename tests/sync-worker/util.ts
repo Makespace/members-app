@@ -91,7 +91,7 @@ export const byTimestamp = pipe(
 
 const getCurrentEventIndex = async (dbClient: Client): Promise<Int> => {
   const result = await dbClient.execute("SELECT MAX(event_index) AS current_index FROM events");
-  return result.rows[0]['current_index'] as Int;
+  return (result.rows[0]['current_index'] ?? 0) as Int;
 }
 
 export const pushEvents = async (
@@ -102,7 +102,7 @@ export const pushEvents = async (
   // Helper to add events to the event log.
   const currentEventIndex = await getCurrentEventIndex(eventDB);
   for (let i = 0; i < events.length; i++) {
-    await getTaskEitherRightOrFail(commitEvent(eventDB, logger, () => async () => {})(currentEventIndex + 1 + i as Int)(events[i]));
+    await getTaskEitherRightOrFail(commitEvent(eventDB, logger, () => async () => {})(currentEventIndex + i as Int)(events[i]));
   }
 }
 
