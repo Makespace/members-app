@@ -90,7 +90,6 @@ export const initDependencies = (): SyncWorkerDependencies => {
     sharedReadModel,
     extDB,
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
-    getResourceEvents: getResourceEvents(eventDB),
     lastQuizSync: lastSync(extDB),
     getSheetData: getSheetData(extDB),
     commitEvent: commitEvent(eventDB, logger, () => async () => {}),
