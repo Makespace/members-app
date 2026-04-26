@@ -1,7 +1,7 @@
 import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
 import {declare} from '../../../src/commands/super-user/declare';
-import { DomainEvent, EmailAddress} from '../../../src/types';
+import {constructEvent, DomainEvent, EmailAddress} from '../../../src/types';
 import {arbitraryActor, getLeftOrFail, getSomeOrFail, getTaskEitherRightOrFail} from '../../helpers';
 import {
   TestFramework,
@@ -77,9 +77,12 @@ describe('declare-super-user', () => {
 
       describe('revokes them as a super user', () => {
         beforeEach(async () => {
-          await framework.commands.superUser.revoke({
-            memberNumber
-          });
+          framework.insertIntoSharedReadModel(
+            constructEvent('SuperUserRevoked')({
+              memberNumber,
+              actor: arbitraryActor(),
+            })
+          );
         });
 
         it('declares again produces a declare event', async () => {
