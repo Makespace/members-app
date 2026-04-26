@@ -17,7 +17,6 @@ import {
   SheetDataTable,
   TroubleTicketDataTable,
 } from './sync-worker/google/sheet-data-table';
-import {UUID} from 'io-ts-types';
 import { Int } from 'io-ts';
 import { ExternalStateDB } from './sync-worker/external-state-db';
 
@@ -37,9 +36,6 @@ export type Dependencies = {
   getAllEventsByType: <T extends EventName>(
     eventType: T
   ) => TE.TaskEither<FailureWithStatus, ReadonlyArray<StoredEventOfType<T>>>;
-  getEventById: (
-    eventId: UUID
-  ) => TE.TaskEither<FailureWithStatus, O.Option<StoredDomainEvent>>;
   sharedReadModel: SharedReadModel;
   extDB: ExternalStateDB;
   logger: Logger;
