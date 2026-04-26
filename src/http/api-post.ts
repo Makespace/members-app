@@ -52,7 +52,6 @@ export const apiPost =
       {
         actor: getActorFrom(req.headers.authorization, conf),
         input: getCommandFrom(req.body, command),
-        events: deps.getAllEvents(),
       },
       sequenceS(TE.ApplySeq),
       TE.filterOrElse(({actor, input}) => command.isAuthorized({actor, input, rm: deps.sharedReadModel}), () =>

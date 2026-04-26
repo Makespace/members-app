@@ -18,16 +18,9 @@ const process: Command<MarkMemberRejoinedWithExistingNumber>['process'] =
       constructEvent('MemberRejoinedWithExistingNumber')(input.command)
     ));
 
-const resource: Command<MarkMemberRejoinedWithExistingNumber>['resource'] =
-  input => ({
-    type: 'Member',
-    id: input.memberNumber.toString(),
-  });
-
 export const markMemberRejoinedWithExistingNumber: Command<MarkMemberRejoinedWithExistingNumber> =
   {
     process,
-    resource,
     decode: codec.decode,
     isAuthorized: isAdminOrSuperUser,
   };

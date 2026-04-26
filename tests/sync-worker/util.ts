@@ -1,6 +1,6 @@
 import {UUID} from 'io-ts-types/lib/UUID';
 import {constructEvent} from '../../src/types';
-import {EventOfType} from '../../src/types/domain-event';
+import {DomainEvent, EventOfType} from '../../src/types/domain-event';
 import pino, {Logger} from 'pino';
 import {SyncTrainingSheetDependencies} from '../../src/sync-worker/sync_training_sheet';
 import {Client} from '@libsql/client';
@@ -18,16 +18,15 @@ import {
   SheetDataTable,
   TroubleTicketDataTable,
 } from '../../src/sync-worker/google/sheet-data-table';
-import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
-import {getResourceEvents} from '../../src/init-dependencies/event-store/get-resource-events';
-import {Resource} from '../../src/types/resource';
-import {arbitraryActor, getRightOrFail, getSomeOrFail} from '../helpers';
+import {arbitraryActor, getRightOrFail, getSomeOrFail, getTaskEitherRightOrFail} from '../helpers';
 import {SyncTroubleTicketDependencies} from '../../src/sync-worker/sync_trouble_ticket';
 import * as O from 'fp-ts/Option';
 import {SyncWorkerDependencies} from '../../src/sync-worker/dependencies';
 import {updateTrainingSheetCache} from '../../src/sync-worker/db/update_training_sheet_cache';
 import {updateTroubleTicketCache} from '../../src/sync-worker/db/update_trouble_ticket_cache';
 import { ExternalStateDB } from '../../src/sync-worker/external-state-db';
+import { Int } from 'io-ts';
+import { commitEvent } from '../../src/init-dependencies/event-store/commit-event';
 
 export const generateRegisterSheetEvent = (
   equipmentId: UUID,
@@ -90,25 +89,22 @@ export const byTimestamp = pipe(
   )
 );
 
+const getCurrentEventIndex = async (dbClient: Client): Promise<Int> => {
+  const result = await dbClient.execute("SELECT MAX(event_index) AS current_index FROM events");
+  return (result.rows[0]['current_index'] ?? 0) as Int;
+}
+
 export const pushEvents = async (
   eventDB: Client,
   logger: Logger,
-  events: ReadonlyArray<
-    | EventOfType<'EquipmentTrainingSheetRegistered'>
-    | EventOfType<'EquipmentTrainingSheetRemoved'>
-  >
+  events: ReadonlyArray<DomainEvent>
 ) => {
-  const resource: Resource = {
-    type: 'equipment',
-    id: '0', // For the purpose of these tests we can just use the same 'equipment' for concurrency control.
-  };
-  for (const event of events) {
-    await commitEvent(eventDB, logger, () => async () => {})(
-      resource,
-      getRightOrFail(await getResourceEvents(eventDB)(resource)()).version
-    )(event)();
+  // Helper to add events to the event log.
+  const currentEventIndex = await getCurrentEventIndex(eventDB);
+  for (let i = 0; i < events.length; i++) {
+    await getTaskEitherRightOrFail(commitEvent(eventDB, logger, () => async () => {})(currentEventIndex + i as Int)(events[i]));
   }
-};
+}
 
 export const expectSyncBetween = async (
   deps: Pick<SyncWorkerDependencies, 'lastSync'>,

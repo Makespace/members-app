@@ -17,14 +17,8 @@ type SignOwnerAgreement = t.TypeOf<typeof codec>;
 const process: Command<SignOwnerAgreement>['process'] = input =>
   pipe(input.command, constructEvent('OwnerAgreementSigned'), O.some, TE.right);
 
-const resource: Command<SignOwnerAgreement>['resource'] = input => ({
-  type: 'OwnerAgreementSigning',
-  id: input.memberNumber.toString(),
-});
-
 export const signOwnerAgreement: Command<SignOwnerAgreement> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isSelfOrPrivileged,
 };

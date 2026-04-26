@@ -3,7 +3,6 @@ import {
   Failure,
   Email,
   DomainEvent,
-  ResourceVersion,
   StoredDomainEvent,
   StoredEventOfType,
 } from './types';
@@ -12,7 +11,6 @@ import * as O from 'fp-ts/Option';
 import {FailureWithStatus} from './types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 
-import {Resource} from './types/resource';
 import {EventName} from './types/domain-event';
 import {SharedReadModel} from './read-models/shared-state';
 import {
@@ -20,14 +18,14 @@ import {
   TroubleTicketDataTable,
 } from './sync-worker/google/sheet-data-table';
 import {UUID} from 'io-ts-types';
+import { Int } from 'io-ts';
 import { ExternalStateDB } from './sync-worker/external-state-db';
 
 export type Dependencies = {
   commitEvent: (
-    resource: Resource,
-    lastKnownVersion: ResourceVersion
+    lastSeenEventIndex: Int,
   ) => (
-    event: DomainEvent
+    event: DomainEvent,
   ) => TE.TaskEither<
     FailureWithStatus,
     {status: StatusCodes.CREATED; message: string}
@@ -42,13 +40,6 @@ export type Dependencies = {
   getEventById: (
     eventId: UUID
   ) => TE.TaskEither<FailureWithStatus, O.Option<StoredDomainEvent>>;
-  getResourceEvents: (resource: Resource) => TE.TaskEither<
-    FailureWithStatus,
-    {
-      events: ReadonlyArray<StoredDomainEvent>;
-      version: ResourceVersion;
-    }
-  >;
   sharedReadModel: SharedReadModel;
   extDB: ExternalStateDB;
   logger: Logger;

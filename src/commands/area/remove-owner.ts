@@ -40,14 +40,8 @@ const process: Command<RemoveOwner>['process'] = input =>
     ),
   );
 
-const resource: Command<RemoveOwner>['resource'] = command => ({
-  type: 'Area',
-  id: command.areaId,
-});
-
 export const removeOwner: Command<RemoveOwner> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isAdminOrSuperUser,
 };

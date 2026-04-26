@@ -19,14 +19,8 @@ const process = (input: {
     O.some(constructEvent('EquipmentTrainingSheetRemoved')(input.command))
   );
 
-const resource = (command: RemoveTrainingSheet) => ({
-  type: 'Equipment',
-  id: command.equipmentId,
-});
-
 export const removeTrainingSheet: Command<RemoveTrainingSheet> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isAdminSuperUserOrTrainerOrOwnerForEquipment,
 };

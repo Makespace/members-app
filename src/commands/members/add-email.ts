@@ -58,14 +58,8 @@ const process: Command<AddMemberEmail>['process'] = input => {
   );
 };
 
-const resource = () => ({
-  type: 'MemberNumberEmailPairings',
-  id: 'MemberNumberEmailPairings',
-});
-
 export const addEmail: Command<AddMemberEmail> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isSelfOrPrivileged,
 };

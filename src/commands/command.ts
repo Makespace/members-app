@@ -3,7 +3,6 @@ import {DomainEvent} from '../types/domain-event';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {Actor} from '../types/actor';
-import {Resource} from '../types/resource';
 import {FailureWithStatus} from '../types/failure-with-status';
 import {Dependencies} from '../dependencies';
 import { SharedReadModel } from '../read-models/shared-state';
@@ -21,7 +20,6 @@ type CommandResult = TE.TaskEither<
 >;
 
 export type Command<T> = {
-  resource: (command: T) => Resource;
   process: (input: CommandProcessInput<T>) => CommandResult;
   decode: Type<T, T, unknown>['decode'];
   isAuthorized: (input: {

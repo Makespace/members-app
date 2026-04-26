@@ -3,7 +3,6 @@ import * as TE from 'fp-ts/TaskEither';
 import * as O from 'fp-ts/Option';
 import pino, {Logger} from 'pino';
 import {StatusCodes} from 'http-status-codes';
-import {faker} from '@faker-js/faker';
 import {EventName} from '../../src/types/domain-event';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
 import * as libsqlClient from '@libsql/client';
@@ -14,7 +13,6 @@ export const happyPathAdapters: Dependencies = {
     TE.right({status: StatusCodes.CREATED, message: 'dummy create event'}),
   getAllEvents: () => TE.right([]),
   getEventById: () => TE.right(O.none),
-  getResourceEvents: () => TE.right({events: [], version: faker.number.int()}),
   sharedReadModel: initSharedReadModel(
     libsqlClient.createClient({url: ':memory:'}),
     pino({

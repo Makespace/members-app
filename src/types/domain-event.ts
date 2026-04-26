@@ -1,7 +1,5 @@
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
-import * as RA from 'fp-ts/ReadonlyArray';
-import {pipe} from 'fp-ts/lib/function';
 import {EmailAddressCodec} from './email-address';
 import {Actor} from './actor';
 
@@ -304,20 +302,6 @@ export const isEventOfType =
   <T extends EventName>(name: T) =>
   (event: DomainEvent): event is EventOfType<T> =>
     event.type === name;
-
-type SubsetOfDomainEvent<Names extends Array<EventName>> = Extract<
-  DomainEvent,
-  {type: Names[number]}
->;
-
-export const filterByName =
-  <T extends Array<EventName>>(names: T) =>
-  (events: ReadonlyArray<DomainEvent>): ReadonlyArray<SubsetOfDomainEvent<T>> =>
-    pipe(
-      events,
-      RA.filter(({type}) => names.includes(type)),
-      RA.map(filtered => filtered as SubsetOfDomainEvent<T>)
-    );
 
 type EventBase<T> = {type: T; actor: Actor; recordedAt: Date};
 

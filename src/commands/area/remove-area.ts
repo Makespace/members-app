@@ -27,14 +27,8 @@ const process: Command<RemoveArea>['process'] = input =>
     TE.map(() => O.some(constructEvent('AreaRemoved')(input.command)))
   );
 
-const resource: Command<RemoveArea>['resource'] = command => ({
-  type: 'Area',
-  id: command.id,
-});
-
 export const removeArea: Command<RemoveArea> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isAdminOrSuperUser,
 };

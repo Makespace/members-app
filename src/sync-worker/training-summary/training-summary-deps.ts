@@ -9,7 +9,6 @@ export type TrainingSummaryDeps = Pick<
   | 'commitEvent'
   | 'lastQuizSync'
   | 'getSheetData'
-  | 'getResourceEvents'
   | 'extDB'
 > & {
   conf: Pick<Config, 'PUBLIC_URL'>;

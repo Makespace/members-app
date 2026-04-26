@@ -31,14 +31,8 @@ const process = (input: {
     )
   );
 
-const resource = (command: MarkMemberTrained) => ({
-  type: 'Equipment',
-  id: command.equipmentId,
-});
-
 export const markMemberTrained: Command<MarkMemberTrained> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isAdminSuperUserOrTrainerForEquipment,
 };

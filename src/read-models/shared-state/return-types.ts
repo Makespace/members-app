@@ -92,6 +92,7 @@ export type MinimalArea = {
 
 export type Owner = Pick<
   MemberCoreInfo,
+  | 'userId'
   | 'memberNumber'
   | 'name'
   | 'primaryEmailAddress'

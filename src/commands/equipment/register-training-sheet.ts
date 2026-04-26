@@ -21,14 +21,8 @@ const process = (input: {
     O.some(constructEvent('EquipmentTrainingSheetRegistered')(input.command))
   );
 
-const resource = (command: RegisterTrainingSheet) => ({
-  type: 'Equipment',
-  id: command.equipmentId,
-});
-
 export const registerTrainingSheet: Command<RegisterTrainingSheet> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isAdminSuperUserOrTrainerOrOwnerForEquipment,
 };

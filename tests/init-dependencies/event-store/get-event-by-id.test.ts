@@ -1,21 +1,18 @@
 import createLogger from 'pino';
 import {faker} from '@faker-js/faker';
 import * as libsqlClient from '@libsql/client';
-import * as T from 'fp-ts/Task';
 import * as O from 'fp-ts/Option';
-import {randomUUID} from 'crypto';
 import {
-  DomainEvent,
   EmailAddress,
   StoredDomainEvent,
   constructEvent,
 } from '../../../src/types';
-import {commitEvent} from '../../../src/init-dependencies/event-store/commit-event';
 import {ensureEventTableExists} from '../../../src/init-dependencies/event-store/ensure-events-table-exists';
 import {getAllEvents} from '../../../src/init-dependencies/event-store/get-all-events';
 import {getEventById} from '../../../src/init-dependencies/event-store/get-event-by-id';
 import {arbitraryActor, getRightOrFail, getSomeOrFail} from '../../helpers';
 import {UUID} from 'io-ts-types';
+import { pushEvents } from '../../sync-worker/util';
 
 const arbitraryMemberNumberLinkedToEmailEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
@@ -26,16 +23,9 @@ const arbitraryMemberNumberLinkedToEmailEvent = () =>
     actor: arbitraryActor(),
   });
 
-const arbitraryResource = () => ({
-  id: randomUUID(),
-  type: 'test-resource',
-});
-
 describe('getEventById', () => {
   const testLogger = createLogger({level: 'silent'});
-  const dummyRefreshReadModel = () => T.of(undefined);
   let dbClient: libsqlClient.Client;
-  let persistEvent: (event: DomainEvent) => Promise<void>;
   let initialisedGetAllEvents: () => Promise<ReadonlyArray<StoredDomainEvent>>;
   let initialisedGetEventById: (
     eventId: UUID
@@ -44,15 +34,6 @@ describe('getEventById', () => {
   beforeEach(async () => {
     dbClient = libsqlClient.createClient({url: ':memory:'});
     getRightOrFail(await ensureEventTableExists(dbClient)());
-    persistEvent = async (event: DomainEvent) => {
-      getRightOrFail(
-        await commitEvent(
-          dbClient,
-          testLogger,
-          dummyRefreshReadModel
-        )(arbitraryResource(), 'no-such-resource')(event)()
-      );
-    };
     initialisedGetAllEvents = async () =>
       getRightOrFail(await getAllEvents(dbClient)()());
     initialisedGetEventById = async (eventId: UUID) =>
@@ -67,8 +48,9 @@ describe('getEventById', () => {
     const firstEvent = arbitraryMemberNumberLinkedToEmailEvent();
     const secondEvent = arbitraryMemberNumberLinkedToEmailEvent();
 
-    await persistEvent(firstEvent);
-    await persistEvent(secondEvent);
+    await pushEvents(dbClient, testLogger, [
+      firstEvent, secondEvent
+    ]);
 
     const storedEvents = await initialisedGetAllEvents();
     const actualEvent = getSomeOrFail(

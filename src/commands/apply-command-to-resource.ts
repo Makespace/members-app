@@ -18,15 +18,10 @@ export const applyToResource =
     FailureWithStatus,
     {status: StatusCodes.CREATED; message: string}
   > => {
-    const resource = command.resource(input);
     const inputAndActor = {...input, actor};
     return pipe(
-      resource,
-      deps.getResourceEvents,
-      TE.bind('event', () =>
-        command.process({command: inputAndActor, rm: deps.sharedReadModel, deps})
-      ),
-      TE.chain(({event, version}) => O.isSome(event) ? deps.commitEvent(resource, version)(event.value) : TE.right({
+      command.process({command: inputAndActor, rm: deps.sharedReadModel, deps}),
+      TE.chain((event) => O.isSome(event) ? deps.commitEvent(deps.sharedReadModel.getCurrentEventIndex())(event.value) : TE.right({
         status: StatusCodes.CREATED as StatusCodes.CREATED,
         message: 'Success'
       }))

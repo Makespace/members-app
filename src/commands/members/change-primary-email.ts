@@ -60,14 +60,8 @@ const process: Command<ChangeMemberPrimaryEmail>['process'] = input => {
   );
 };
 
-const resource = () => ({
-  type: 'MemberNumberEmailPairings',
-  id: 'MemberNumberEmailPairings',
-});
-
 export const changePrimaryEmail: Command<ChangeMemberPrimaryEmail> = {
   process,
-  resource,
   decode: codec.decode,
   isAuthorized: isSelfOrPrivileged,
 };
