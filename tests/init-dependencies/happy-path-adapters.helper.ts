@@ -12,7 +12,6 @@ export const happyPathAdapters: Dependencies = {
   commitEvent: () => () =>
     TE.right({status: StatusCodes.CREATED, message: 'dummy create event'}),
   getAllEvents: () => TE.right([]),
-  getEventById: () => TE.right(O.none),
   sharedReadModel: initSharedReadModel(
     libsqlClient.createClient({url: ':memory:'}),
     pino({
