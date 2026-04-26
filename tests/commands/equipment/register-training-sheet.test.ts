@@ -1,7 +1,6 @@
 import {faker} from '@faker-js/faker';
 import {UUID} from 'io-ts-types';
 import {pipe} from 'fp-ts/lib/function';
-import * as RA from 'fp-ts/ReadonlyArray';
 
 import {registerTrainingSheet} from '../../../src/commands/equipment/register-training-sheet';
 import {
