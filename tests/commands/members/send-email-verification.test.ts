@@ -3,9 +3,6 @@ import {advanceTo, clear} from 'jest-date-mock';
 import {faker} from '@faker-js/faker';
 import {StatusCodes} from 'http-status-codes';
 import {EmailAddress, constructEvent, isEventOfType} from '../../../src/types';
-import {
-  SEND_EMAIL_VERIFICATION_COOLDOWN_MS,
-} from '../../../src/commands/members/email-state';
 import {sendEmailVerification} from '../../../src/commands/members/send-email-verification';
 import {
   arbitraryActor,
