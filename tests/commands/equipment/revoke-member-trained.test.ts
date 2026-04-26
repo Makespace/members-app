@@ -1,4 +1,4 @@
-import {applyToResource} from '../../../src/commands/apply-command-to-resource';
+import {applyCommand} from '../../../src/commands/apply-command';
 import {
   TestFramework,
   initTestFramework,
@@ -16,12 +16,12 @@ import {
 describe('revokeMemberTrained', () => {
   let framework: TestFramework;
   let applyRevokeMemberTrained: ReturnType<
-    typeof applyToResource<RevokeMemberTrained>
+    typeof applyCommand<RevokeMemberTrained>
   >;
   beforeEach(async () => {
     framework = await initTestFramework();
-    applyRevokeMemberTrained = applyToResource(
-      framework.depsForApplyToResource,
+    applyRevokeMemberTrained = applyCommand(
+      framework.depsForCommands,
       revokeMemberTrained
     );
   });
