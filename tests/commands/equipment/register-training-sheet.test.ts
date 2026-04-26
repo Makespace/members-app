@@ -13,6 +13,7 @@ import {
   TestFramework,
   initTestFramework,
 } from '../../read-models/test-framework';
+import { constructEvent } from '../../../src/types';
 
 describe('register-training-sheet', () => {
   let framework: TestFramework;
@@ -60,23 +61,13 @@ describe('register-training-sheet', () => {
       actor: arbitraryActor(),
     };
     it('A duplicate event is registered', async () => {
-      const events = RA.fromArray([
-        pipe(
-          await getTaskEitherRightOrFail(
-            registerTrainingSheet.process({
-              command,
-              rm: framework.sharedReadModel,
-            })
-          ),
-          getSomeOrFail
-        ),
-      ]);
-
+      framework.insertIntoSharedReadModel(
+        constructEvent('EquipmentTrainingSheetRegistered')(command)
+      );
       const result = pipe(
         await getTaskEitherRightOrFail(
           registerTrainingSheet.process({
             command,
-            events,
             rm: framework.sharedReadModel,
           })
         ),
@@ -96,40 +87,24 @@ describe('register-training-sheet', () => {
   describe('Different training sheet registered', () => {
     const command = {
       equipmentId: faker.string.uuid() as UUID,
-      trainingSheetId: faker.string.alphanumeric(8),
+      trainingSheetId: faker.string.alphanumeric(32),
       actor: arbitraryActor(),
     };
     const diffTrainingSheet = {
       ...command,
-      trainingSheetId: faker.string.alphanumeric(8),
+      trainingSheetId: faker.string.alphanumeric(32),
     };
 
-    it('It keeps the same training sheet registered', async () => {
-      const events = RA.fromArray([
-        pipe(
-          await getTaskEitherRightOrFail(
-            registerTrainingSheet.process({
-              command,
-              rm: framework.sharedReadModel,
-            })
-          ),
-          getSomeOrFail
-        ),
-      ]);
-
+    it('updates the training sheet registered', async () => {
+      framework.insertIntoSharedReadModel(constructEvent('EquipmentTrainingSheetRegistered')(command));
       const result = pipe(
         await getTaskEitherRightOrFail(
           registerTrainingSheet.process({
             command: diffTrainingSheet,
-            events,
             rm: framework.sharedReadModel,
           })
         ),
         getSomeOrFail
-      );
-
-      expect(command.trainingSheetId).not.toEqual( // Check that the test data itself is ok.
-        diffTrainingSheet.trainingSheetId
       );
       expect(result).toStrictEqual(
         expect.objectContaining({
