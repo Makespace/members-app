@@ -77,8 +77,6 @@ export const formPost =
       TE.chain(({input, actor}) =>
         pipe(
           {
-            resource: TE.right(command.resource(input)),
-            resourceState: deps.getResourceEvents(command.resource(input)),
             input: TE.right(input),
             actor: TE.right(actor),
           },

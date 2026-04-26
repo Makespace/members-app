@@ -42,12 +42,6 @@ export type Dependencies = {
   getEventById: (
     eventId: UUID
   ) => TE.TaskEither<FailureWithStatus, O.Option<StoredDomainEvent>>;
-  getResourceEvents: (resource: Resource) => TE.TaskEither<
-    FailureWithStatus,
-    {
-      events: ReadonlyArray<StoredDomainEvent>;
-    }
-  >;
   sharedReadModel: SharedReadModel;
   extDB: ExternalStateDB;
   logger: Logger;

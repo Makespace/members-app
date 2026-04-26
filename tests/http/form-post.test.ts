@@ -20,7 +20,6 @@ const makeDeps = (): Dependencies =>
   ({
     logger: {error: jest.fn(), debug: jest.fn()},
     getAllEvents: () => TE.right([]),
-    getResourceEvents: () => TE.right({events: [], version: 0}),
     commitEvent: () => () =>
       TE.right({status: StatusCodes.CREATED, message: ''}),
     sharedReadModel: {},
