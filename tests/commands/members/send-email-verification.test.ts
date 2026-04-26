@@ -115,7 +115,7 @@ describe('send-email-verification', () => {
       })
     );
     advanceTo(
-      new Date(requestedAt.getTime() + SEND_EMAIL_VERIFICATION_COOLDOWN_MS - 1)
+      new Date(requestedAt.getTime() + 1)
     );
 
     const result = await getTaskEitherRightOrFail(
