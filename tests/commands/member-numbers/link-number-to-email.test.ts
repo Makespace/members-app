@@ -17,7 +17,7 @@ import {
   getSomeOrFail,
   getTaskEitherRightOrFail,
 } from '../../helpers';
-import {applyToResource} from '../../../src/commands/apply-command-to-resource';
+import {applyCommand} from '../../../src/commands/apply-command';
 import {
   TestFramework,
   initTestFramework,
@@ -26,12 +26,12 @@ import {
 describe('linkNumberToEmail', () => {
   let framework: TestFramework;
   let applyLinkNumberToEmail: ReturnType<
-    typeof applyToResource<LinkNumberToEmail>
+    typeof applyCommand<LinkNumberToEmail>
   >;
   beforeEach(async () => {
     framework = await initTestFramework();
-    applyLinkNumberToEmail = applyToResource(
-      framework.depsForApplyToResource,
+    applyLinkNumberToEmail = applyCommand(
+      framework.depsForCommands,
       linkNumberToEmail
     );
   });

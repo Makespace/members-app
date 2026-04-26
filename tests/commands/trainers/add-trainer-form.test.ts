@@ -63,7 +63,7 @@ describe('add trainer form', () => {
     const viewModel = getRightOrFail(
       await addTrainerForm.constructForm({equipment: equipment.id})({
         user: arbitraryUser(),
-        deps: framework.depsForApplyToResource,
+        deps: framework.depsForCommands,
         readModel: framework.sharedReadModel,
       })()
     );
@@ -112,7 +112,7 @@ describe('add trainer form', () => {
     const viewModel = getRightOrFail(
       await addTrainerForm.constructForm({equipment: equipment.id})({
         user: arbitraryUser(),
-        deps: framework.depsForApplyToResource,
+        deps: framework.depsForCommands,
         readModel: framework.sharedReadModel,
       })()
     );

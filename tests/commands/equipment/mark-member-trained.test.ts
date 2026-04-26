@@ -1,4 +1,4 @@
-import {applyToResource} from '../../../src/commands/apply-command-to-resource';
+import {applyCommand} from '../../../src/commands/apply-command';
 import {
   TestFramework,
   initTestFramework,
@@ -36,12 +36,12 @@ describe('markMemberTrained', () => {
 
   let framework: TestFramework;
   let applyMarkMemberTrained: ReturnType<
-    typeof applyToResource<MarkMemberTrained>
+    typeof applyCommand<MarkMemberTrained>
   >;
   beforeEach(async () => {
     framework = await initTestFramework();
-    applyMarkMemberTrained = applyToResource(
-      framework.depsForApplyToResource,
+    applyMarkMemberTrained = applyCommand(
+      framework.depsForCommands,
       markMemberTrained
     );
     await framework.commands.memberNumbers.linkNumberToEmail(member);

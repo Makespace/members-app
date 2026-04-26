@@ -7,7 +7,7 @@ import {
   getSomeOrFail,
   getTaskEitherRightOrFail,
 } from '../../helpers';
-import {applyToResource} from '../../../src/commands/apply-command-to-resource';
+import {applyCommand} from '../../../src/commands/apply-command';
 import {
   TestFramework,
   initTestFramework,
@@ -21,12 +21,12 @@ import {Int} from 'io-ts';
 describe('markMemberRejoinedWithNewNumber', () => {
   let framework: TestFramework;
   let applyMarkMemberRejoinedWithNewNumber: ReturnType<
-    typeof applyToResource<MarkMemberRejoinedWithNewNumber>
+    typeof applyCommand<MarkMemberRejoinedWithNewNumber>
   >;
   beforeEach(async () => {
     framework = await initTestFramework();
-    applyMarkMemberRejoinedWithNewNumber = applyToResource(
-      framework.depsForApplyToResource,
+    applyMarkMemberRejoinedWithNewNumber = applyCommand(
+      framework.depsForCommands,
       markMemberRejoinedWithNewNumber
     );
   });

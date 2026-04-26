@@ -53,7 +53,7 @@ describe('add owner form', () => {
     const viewModel = getRightOrFail(
       await addOwnerForm.constructForm({area: area.id})({
         user: arbitraryUser(),
-        deps: framework.depsForApplyToResource,
+        deps: framework.depsForCommands,
         readModel: framework.sharedReadModel,
       })()
     );

@@ -1,4 +1,4 @@
-import {applyToResource} from '../../../src/commands/apply-command-to-resource';
+import {applyCommand} from '../../../src/commands/apply-command';
 import {
   TestFramework,
   initTestFramework,
@@ -13,11 +13,11 @@ import {UUID} from 'io-ts-types';
 
 describe('addTrainer', () => {
   let framework: TestFramework;
-  let applyAddTrainer: ReturnType<typeof applyToResource<AddTrainer>>;
+  let applyAddTrainer: ReturnType<typeof applyCommand<AddTrainer>>;
   beforeEach(async () => {
     framework = await initTestFramework();
-    applyAddTrainer = applyToResource(
-      framework.depsForApplyToResource,
+    applyAddTrainer = applyCommand(
+      framework.depsForCommands,
       addTrainer
     );
   });

@@ -12,7 +12,7 @@ import {Command} from '../commands';
 import {Actor} from '../types/actor';
 import {getUserFromSession} from '../authentication';
 import {oopsPage} from '../templates';
-import {applyToResource} from '../commands/apply-command-to-resource';
+import {applyCommand} from '../commands/apply-command';
 import {CompleteHtmlDocument, sanitizeString} from '../types/html';
 
 const getCommandFrom = <T>(body: unknown, command: Command<T>) =>
@@ -75,7 +75,7 @@ export const formPost =
         )()
       ),
       TE.chain(({input, actor}) =>
-        applyToResource(deps, command)(input, actor)
+        applyCommand(deps, command)(input, actor)
       ),
       TE.match(
         failure => {

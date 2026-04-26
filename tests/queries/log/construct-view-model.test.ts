@@ -35,7 +35,7 @@ describe('construct-view-model', () => {
     it('does not show the event log', async () => {
       const failure = await pipe(
         {},
-        constructViewModel(framework.depsForApplyToResource)(user),
+        constructViewModel(framework.depsForCommands)(user),
         T.map(getLeftOrFail)
       )();
 
