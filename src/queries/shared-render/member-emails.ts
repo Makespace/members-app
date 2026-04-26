@@ -2,7 +2,7 @@ import * as O from 'fp-ts/Option';
 import {MemberEmail} from '../../read-models/shared-state/return-types';
 import {Html, html, joinHtml, sanitizeString} from '../../types/html';
 import { EmailAddress } from '../../types/email-address';
-import { SEND_EMAIL_VERIFICATION_COOLDOWN_MS } from '../../commands/members/email-state';
+import { SEND_EMAIL_VERIFICATION_COOLDOWN_MS } from '../../configuration';
 
 const sortMemberEmailByVerifiedThenAddedDate = (
   a: MemberEmail,
