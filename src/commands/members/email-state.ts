@@ -128,16 +128,3 @@ export const projectMemberEmailStates = (
   });
   return states;
 };
-
-export const findMemberNumberByEmail = (
-  states: Map<number, MemberEmailState>,
-  emailAddress: EmailAddress
-): number | undefined => {
-  const normalisedEmailAddress = normaliseEmailAddress(emailAddress);
-  for (const state of states.values()) {
-    if (state.emails[normalisedEmailAddress]) {
-      return state.memberNumber;
-    }
-  }
-  return undefined;
-};

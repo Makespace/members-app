@@ -10,6 +10,7 @@ import {
   TestFramework,
   initTestFramework,
 } from '../../read-models/test-framework';
+import * as O from 'fp-ts/Option';
 
 describe('member email commands', () => {
   let framework: TestFramework;
@@ -207,6 +208,66 @@ describe('member email commands', () => {
         framework.sharedReadModel.members.getByMemberNumber(newMemberNumber)
       );
       expect(member.primaryEmailAddress).toStrictEqual(oldEmail);
+    });
+  });
+
+  describe('adding an email for a rejoined member', () => {
+    const oldMemberNumber = faker.number.int() as Int;
+    const newMemberNumber = faker.number.int({
+      min: oldMemberNumber + 1,
+    }) as Int;
+    const oldEmail = faker.internet.email() as EmailAddress;
+    const newEmail = faker.internet.email() as EmailAddress;
+    const additionalEmail = faker.internet.email() as EmailAddress;
+
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        memberNumber: oldMemberNumber,
+        email: oldEmail,
+        name: undefined,
+        formOfAddress: undefined,
+      });
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        memberNumber: newMemberNumber,
+        email: newEmail,
+        name: undefined,
+        formOfAddress: undefined,
+      });
+      await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
+        oldMemberNumber,
+        newMemberNumber,
+      });
+    });
+
+    it('adds a new email when called with the old member number', async () => {
+      await framework.commands.members.addEmail({
+        memberNumber: oldMemberNumber,
+        email: additionalEmail,
+      });
+
+      const member = getSomeOrFail(
+        framework.sharedReadModel.members.getByMemberNumber(newMemberNumber)
+      );
+      const addedEmail = getSomeOrFail(O.fromNullable(member.emails.find(
+        email => email.emailAddress === additionalEmail
+      )));
+      expect(addedEmail.verifiedAt).toStrictEqual(O.none);
+    });
+
+    it('is a no-op when re-adding the linked member email via the old member number', async () => {
+      await framework.commands.members.addEmail({
+        memberNumber: oldMemberNumber,
+        email: newEmail,
+      });
+
+      expect(
+        await framework.getAllEventsByType(
+          'LinkingMemberNumberToAnAlreadyUsedEmailAttempted'
+        )
+      ).toHaveLength(0);
+      expect(await framework.getAllEventsByType('MemberEmailAdded')).toHaveLength(
+        0
+      );
     });
   });
 
