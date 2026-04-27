@@ -1,6 +1,6 @@
 import * as RA from 'fp-ts/ReadonlyArray';
 import {pipe} from 'fp-ts/lib/function';
-import {html, joinHtml, sanitizeString} from '../../types/html';
+import {html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
 
 type FailureSection = {
@@ -8,10 +8,20 @@ type FailureSection = {
   failures: ViewModel['failures'][number][];
 };
 
+const renderDeleteForm = (eventIndex: number) => html`
+  <form action="/event-log/delete?next=/event-log/failed" method="post">
+    <input type="hidden" name="eventIndex" value="${eventIndex}" />
+    <button type="submit">Delete event</button>
+  </form>
+`;
+
 const renderEntry = (failure: ViewModel['failures'][number]) => html`
   <li>
     <b>${sanitizeString(failure.error)}</b><br/>
+    Event Index: ${failure.eventIndex}<br/>
+    Event ID: ${sanitizeString(failure.eventId)}<br/>
     ${sanitizeString(JSON.stringify(failure.payload))}
+    ${renderDeleteForm(failure.eventIndex)}
   </li>
 `;
 
@@ -69,5 +79,6 @@ const renderLog = (failures: ViewModel['failures']) =>
 export const render = (viewModel: ViewModel) => html`
   <h1>Failed event log</h1>
   <p>Showing ${viewModel.count} failed events.</p>
+  <p><a href=${safe('/event-log/deleted')}>View deleted events</a></p>
   ${renderLog(viewModel.failures)}
 `;

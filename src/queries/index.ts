@@ -10,6 +10,7 @@ export {members} from './members';
 export {member} from './member';
 export {log} from './log';
 export {failedEventLog} from './failed-event-log';
+export {deletedEvents} from './deleted-events';
 export {logcsv} from './logcsv';
 export {trainingStatusCsv} from './training-status-csv';
 export {me} from './me';

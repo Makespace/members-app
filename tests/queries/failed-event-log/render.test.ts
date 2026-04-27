@@ -21,6 +21,8 @@ describe('/event-log/failed render', () => {
       failures: [
         {
           error: 'SQLITE_CONSTRAINT_FOREIGNKEY',
+          eventId: 'cb5bdc6d-f734-43e2-a025-b5d89a5ba3fc' as UUID,
+          eventIndex: 42,
           eventType: 'AreaCreated',
           payload: {
             event_index: 42,
@@ -34,6 +36,8 @@ describe('/event-log/failed render', () => {
         },
         {
           error: 'Unable to add owner, unknown member number 23',
+          eventId: '94e57593-0ee3-405b-9edb-30940c14d446' as UUID,
+          eventIndex: 43,
           eventType: 'OwnerAdded',
           payload: {
             event_index: 43,
@@ -57,6 +61,7 @@ describe('/event-log/failed render', () => {
     expect(page.textContent).toContain('42');
     expect(page.textContent).toContain('cb5bdc6d-f734-43e2-a025-b5d89a5ba3fc');
     expect(page.textContent).toContain('SQLITE_CONSTRAINT_FOREIGNKEY');
+    expect(page.textContent).toContain('Delete event');
     expect(page.querySelectorAll('details')).toHaveLength(2);
     expect(sectionHeaders).toStrictEqual(['AreaCreated', 'OwnerAdded']);
     expect(page.textContent).not.toContain('event_id:');

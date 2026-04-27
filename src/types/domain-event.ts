@@ -290,6 +290,7 @@ export const StoredDomainEvent = t.intersection([
 
 export type DomainEvent = t.TypeOf<typeof DomainEvent>;
 export type StoredDomainEvent = t.TypeOf<typeof StoredDomainEvent>;
+export type DeletedStoredDomainEvent = StoredDomainEvent & {deletedAt: Date};
 
 export type EventName = DomainEvent['type'];
 

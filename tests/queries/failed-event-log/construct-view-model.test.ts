@@ -11,6 +11,7 @@ import {
 } from '../../read-models/test-framework';
 import {arbitraryActor} from '../../helpers';
 import {arbitraryUser} from '../../types/user.helper';
+import {failedEventsTable} from '../../../src/read-models/shared-state/state';
 
 const arbitraryFailingOwnerAddedEvent = () => ({
   type: 'OwnerAdded' as const,
@@ -63,7 +64,7 @@ describe('construct-view-model', () => {
 
     const result = await pipe(
       {offset: '0', limit: '1'},
-      constructViewModel(framework.sharedReadModel)(superUser),
+      constructViewModel(framework.depsForCommands)(superUser),
       T.map(getRightOrFail)
     )();
 
@@ -71,6 +72,10 @@ describe('construct-view-model', () => {
     expect(result.failures).toHaveLength(2);
     expect(result.failures[0].error).toContain(
       'Unable to add owner, unknown member number'
+    );
+    expect(result.failures[0].eventId).toStrictEqual(secondFailedEvent.event_id);
+    expect(result.failures[0].eventIndex).toStrictEqual(
+      secondFailedEvent.event_index
     );
     expect(result.failures[0].eventType).toStrictEqual('OwnerAdded');
     expect(result.failures[0].payload).toStrictEqual(
@@ -87,10 +92,46 @@ describe('construct-view-model', () => {
     );
   });
 
+  it('hides deleted failed events', async () => {
+    const anotherUser = arbitraryUser();
+
+    await framework.commands.memberNumbers.linkNumberToEmail({
+      memberNumber: anotherUser.memberNumber,
+      email: anotherUser.emailAddress,
+      name: undefined,
+      formOfAddress: undefined,
+    });
+
+    const event = (await framework.getAllEvents()).at(-1);
+
+    if (!event) {
+      throw new Error('expected an event');
+    }
+
+    framework.sharedReadModel.db.insert(failedEventsTable).values({
+      error: 'Unable to add owner, unknown member number',
+      eventId: event.event_id,
+      eventIndex: event.event_index,
+      eventType: event.type,
+      payload: event,
+    }).run();
+
+    await framework.setEventDeletedState(event.event_index, true);
+
+    const result = await pipe(
+      {},
+      constructViewModel(framework.depsForCommands)(superUser),
+      T.map(getRightOrFail)
+    )();
+
+    expect(result.count).toStrictEqual(0);
+    expect(result.failures).toHaveLength(0);
+  });
+
   it('fails if the logged in user is not a super user', async () => {
     const result = await pipe(
       {},
-      constructViewModel(framework.sharedReadModel)(unprivilegedUser)
+      constructViewModel(framework.depsForCommands)(unprivilegedUser)
     )();
 
     expect(result).toStrictEqual(E.left(expect.anything()));
@@ -99,7 +140,7 @@ describe('construct-view-model', () => {
   it("fails if the logged in user isn't known to the shared state", async () => {
     const result = await pipe(
       {},
-      constructViewModel(framework.sharedReadModel)(unregisteredUser)
+      constructViewModel(framework.depsForCommands)(unregisteredUser)
     )();
 
     expect(result).toStrictEqual(E.left(expect.anything()));

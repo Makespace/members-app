@@ -7,12 +7,23 @@ import {
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import {EventsTable} from './events-table';
-import {eventsFromRows} from './events-from-rows';
+import {deletedEventsFromRows, eventsFromRows} from './events-from-rows';
 import {Client} from '@libsql/client';
 import {StatusCodes} from 'http-status-codes';
-import {StoredDomainEvent, StoredEventOfType} from '../../types';
+import {
+  StoredDomainEvent,
+  StoredEventOfType,
+} from '../../types';
 import {EventName} from '../../types/domain-event';
 import {dbExecute} from '../../util';
+
+const ACTIVE_EVENTS_FROM = `
+  FROM events
+  LEFT JOIN deleted_events
+    ON deleted_events.event_index = events.event_index
+  WHERE event_type != 'EquipmentTrainingQuizResult'
+    AND deleted_events.event_index IS NULL
+`;
 
 export const getAllEvents =
   (dbClient: Client): Dependencies['getAllEvents'] =>
@@ -22,7 +33,7 @@ export const getAllEvents =
         () =>
           dbExecute(
             dbClient,
-            "SELECT * FROM events WHERE event_type != 'EquipmentTrainingQuizResult' ORDER BY event_index ASC",
+            `SELECT events.*, NULL as deleted_at ${ACTIVE_EVENTS_FROM} ORDER BY events.event_index ASC`,
             {}
           ),
         failureWithStatus(
@@ -47,7 +58,7 @@ export const getAllEventsAfterEventIndex =
         () =>
           dbExecute(
             dbClient,
-            "SELECT * FROM events WHERE event_type != 'EquipmentTrainingQuizResult' AND event_index > ? ORDER BY event_index ASC",
+            `SELECT events.*, NULL as deleted_at ${ACTIVE_EVENTS_FROM} AND events.event_index > ? ORDER BY events.event_index ASC`,
             [eventIndex]
           ),
         failureWithStatus(
@@ -65,6 +76,39 @@ export const getAllEventsAfterEventIndex =
       TE.chainEitherK(eventsFromRows)
     );
 
+export const getDeletedEvents =
+  (dbClient: Client): Dependencies['getDeletedEvents'] =>
+  () =>
+    pipe(
+      TE.tryCatch(
+        () =>
+          dbExecute(
+            dbClient,
+            `
+            SELECT events.*, deleted_events.deleted_at
+            FROM events
+            INNER JOIN deleted_events
+              ON deleted_events.event_index = events.event_index
+            WHERE event_type != 'EquipmentTrainingQuizResult'
+            ORDER BY events.event_index ASC
+            `,
+            {}
+          ),
+        failureWithStatus(
+          'Failed to query deleted events from database',
+          StatusCodes.INTERNAL_SERVER_ERROR
+        )
+      ),
+      TE.chainEitherK(
+        flow(
+          EventsTable.decode,
+          E.mapLeft(internalCodecFailure('Failed to decode DB table'))
+        )
+      ),
+      TE.map(table => table.rows),
+      TE.chainEitherK(deletedEventsFromRows)
+    );
+
 export const getAllEventsByType =
   (dbClient: Client): Dependencies['getAllEventsByType'] =>
   <T extends EventName>(eventType: T) =>
@@ -73,7 +117,15 @@ export const getAllEventsByType =
         () =>
           dbExecute(
             dbClient,
-            'SELECT * FROM events WHERE event_type = ? ORDER BY event_index ASC;',
+            `
+            SELECT events.*, NULL as deleted_at
+            FROM events
+            LEFT JOIN deleted_events
+              ON deleted_events.event_index = events.event_index
+            WHERE deleted_events.event_index IS NULL
+              AND event_type = ?
+            ORDER BY events.event_index ASC;
+            `,
             [eventType]
           ),
         failureWithStatus(
@@ -112,7 +164,15 @@ export const getAllEventsByTypes =
         () =>
           dbExecute(
             dbClient,
-            'SELECT * FROM events WHERE event_type = ? OR event_type = ? ORDER BY event_index ASC',
+            `
+            SELECT events.*, NULL as deleted_at
+            FROM events
+            LEFT JOIN deleted_events
+              ON deleted_events.event_index = events.event_index
+            WHERE deleted_events.event_index IS NULL
+              AND (event_type = ? OR event_type = ?)
+            ORDER BY events.event_index ASC
+            `,
             [eventType, eventType2]
           ),
         failureWithStatus(

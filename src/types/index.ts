@@ -17,6 +17,7 @@ export {
   constructEvent,
 } from './domain-event';
 export type {
+  DeletedStoredDomainEvent,
   StoredEventOfType,
 } from './domain-event';
 export type UserId = UUID;

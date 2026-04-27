@@ -6,6 +6,8 @@ import {Route, get} from './types/route';
 import {authRoutes} from './authentication';
 import {queryToHandler, commandToHandlers, ping} from './http';
 import {emailHandler} from './http/email-handler';
+import {post} from './types/route';
+import {eventLogDeletedStatePost} from './http/event-log-deleted-state-post';
 
 export const initRoutes = (
   deps: Dependencies,
@@ -21,6 +23,15 @@ export const initRoutes = (
     query('/humans', queries.humans),
     query('/event-log', queries.log),
     query('/event-log/failed', queries.failedEventLog),
+    query('/event-log/deleted', queries.deletedEvents),
+    post(
+      '/event-log/delete',
+      eventLogDeletedStatePost(deps, true, '/event-log')
+    ),
+    post(
+      '/event-log/undelete',
+      eventLogDeletedStatePost(deps, false, '/event-log/deleted')
+    ),
     query('/event-log.csv', queries.logcsv),
     query('/training-status.csv', queries.trainingStatusCsv),
     query('/domain-events', queries.domainEvents),

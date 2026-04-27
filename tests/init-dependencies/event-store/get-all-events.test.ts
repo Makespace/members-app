@@ -13,11 +13,14 @@ import {
   getAllEventsAfterEventIndex,
   getAllEventsByType,
   getAllEventsByTypes,
+  getDeletedEvents,
 } from '../../../src/init-dependencies/event-store/get-all-events';
 import {arbitraryActor, getRightOrFail} from '../../helpers';
 import {UUID} from 'io-ts-types';
 import {EventName} from '../../../src/types/domain-event';
 import { pushEvents } from '../../sync-worker/util';
+import {setEventDeletedState} from '../../../src/init-dependencies/event-store/set-event-deleted-state';
+import {Int} from 'io-ts';
 
 const arbitraryMemberNumberLinkedToEmailEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
@@ -65,6 +68,9 @@ describe('get all events', () => {
     type1: EventName,
     type2: EventName
   ) => Promise<ReadonlyArray<StoredDomainEvent>>;
+  let initialisedGetDeletedEvents: () => Promise<
+    ReadonlyArray<StoredDomainEvent & {deletedAt: Date}>
+  >;
 
   beforeEach(async () => {
     dbClient = libsqlClient.createClient({url: ':memory:'});
@@ -79,6 +85,8 @@ describe('get all events', () => {
       type1: EventName,
       type2: EventName
     ) => getRightOrFail(await getAllEventsByTypes(dbClient)(type1, type2)());
+    initialisedGetDeletedEvents = async () =>
+      getRightOrFail(await getDeletedEvents(dbClient)()());
   });
 
   afterEach(() => {
@@ -102,6 +110,21 @@ describe('get all events', () => {
       expect(events).toHaveLength(2);
       expectStoredEvent(events[0], memberNumberLinkedToEmail, 1);
       expectStoredEvent(events[1], equipmentTrainingSheetRegistered, 3);
+    });
+
+    it('does not return deleted events', async () => {
+      const deletedEvent = arbitraryMemberNumberLinkedToEmailEvent();
+      const visibleEvent = arbitraryEquipmentTrainingSheetRegisteredEvent();
+
+      await pushEvents(dbClient, testLogger, [deletedEvent, visibleEvent]);
+      getRightOrFail(
+        await setEventDeletedState(dbClient)(1 as Int, true)()
+      );
+
+      const events = await initalisedGetAllEvents();
+
+      expect(events).toHaveLength(1);
+      expectStoredEvent(events[0], visibleEvent, 2);
     });
   });
 
@@ -174,6 +197,23 @@ describe('get all events', () => {
       expect(events).toHaveLength(1);
       expectStoredEvent(events[0], equipmentTrainingQuizResult, 1);
     });
+
+    it('does not return deleted events of the requested type', async () => {
+      const deletedEvent = arbitraryMemberNumberLinkedToEmailEvent();
+      const visibleEvent = arbitraryMemberNumberLinkedToEmailEvent();
+
+      await pushEvents(dbClient, testLogger, [deletedEvent, visibleEvent]);
+      getRightOrFail(
+        await setEventDeletedState(dbClient)(1 as Int, true)()
+      );
+
+      const events = await initalisedGetAllEventsByType(
+        'MemberNumberLinkedToEmail'
+      );
+
+      expect(events).toHaveLength(1);
+      expectStoredEvent(events[0], visibleEvent, 2);
+    });
   });
 
   describe('getAllEventsByTypes', () => {
@@ -216,6 +256,24 @@ describe('get all events', () => {
       expect(events).toHaveLength(2);
       expectStoredEvent(events[0], equipmentTrainingQuizResult, 1);
       expectStoredEvent(events[1], matchingEvent, 2);
+    });
+  });
+
+  describe('getDeletedEvents', () => {
+    it('returns deleted events', async () => {
+      const deletedEvent = arbitraryMemberNumberLinkedToEmailEvent();
+      const visibleEvent = arbitraryEquipmentTrainingSheetRegisteredEvent();
+
+      await pushEvents(dbClient, testLogger, [deletedEvent, visibleEvent]);
+      getRightOrFail(
+        await setEventDeletedState(dbClient)(1 as Int, true)()
+      );
+
+      const events = await initialisedGetDeletedEvents();
+
+      expect(events).toHaveLength(1);
+      expectStoredEvent(events[0], deletedEvent, 1);
+      expect(events[0].deletedAt).toEqual(expect.any(Date));
     });
   });
 });

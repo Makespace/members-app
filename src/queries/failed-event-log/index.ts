@@ -8,7 +8,7 @@ import {render} from './render';
 export const failedEventLog: Query = deps => (user, _params, query) =>
   pipe(
     query,
-    constructViewModel(deps.sharedReadModel)(user),
+    constructViewModel(deps)(user),
     TE.map(render),
     TE.map(toLoggedInContent(safe('Failed Event Log')))
   );
