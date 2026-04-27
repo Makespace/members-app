@@ -17,39 +17,9 @@ import {
 import {EventName} from '../../types/domain-event';
 import {dbExecute} from '../../util';
 
-const ACTIVE_EVENTS_FROM = `
-  FROM events
-  LEFT JOIN deleted_events
-    ON deleted_events.event_index = events.event_index
-  WHERE event_type != 'EquipmentTrainingQuizResult'
-    AND deleted_events.event_index IS NULL
-`;
 
 export const getAllEvents =
-  (dbClient: Client): Dependencies['getAllEvents'] =>
-  () =>
-    pipe(
-      TE.tryCatch(
-        () =>
-          dbExecute(
-            dbClient,
-            `SELECT events.*, NULL as deleted_at ${ACTIVE_EVENTS_FROM} ORDER BY events.event_index ASC`,
-            {}
-          ),
-        failureWithStatus(
-          'Failed to query database',
-          StatusCodes.INTERNAL_SERVER_ERROR
-        )
-      ),
-      TE.chainEitherK(
-        flow(
-          EventsTable.decode,
-          E.mapLeft(internalCodecFailure('Failed to decode DB table'))
-        )
-      ),
-      TE.map(table => table.rows),
-      TE.chainEitherK(eventsFromRows)
-    );
+  (dbClient: Client): Dependencies['getAllEvents'] => () => getAllEventsAfterEventIndex(dbClient)(0);
 
 export const getAllEventsAfterEventIndex =
   (dbClient: Client) => (eventIndex: number) =>
@@ -58,7 +28,15 @@ export const getAllEventsAfterEventIndex =
         () =>
           dbExecute(
             dbClient,
-            `SELECT events.*, NULL as deleted_at ${ACTIVE_EVENTS_FROM} AND events.event_index > ? ORDER BY events.event_index ASC`,
+            `SELECT
+              events.*
+            FROM events
+              LEFT JOIN deleted_events
+                ON deleted_events.event_index = events.event_index
+              WHERE event_type != 'EquipmentTrainingQuizResult'
+                AND deleted_events.event_index IS NULL
+                AND events.event_index > ?
+            ORDER BY events.event_index ASC`,
             [eventIndex]
           ),
         failureWithStatus(
@@ -118,7 +96,7 @@ export const getAllEventsByType =
           dbExecute(
             dbClient,
             `
-            SELECT events.*, NULL as deleted_at
+            SELECT events.*
             FROM events
             LEFT JOIN deleted_events
               ON deleted_events.event_index = events.event_index
@@ -165,7 +143,7 @@ export const getAllEventsByTypes =
           dbExecute(
             dbClient,
             `
-            SELECT events.*, NULL as deleted_at
+            SELECT events.*
             FROM events
             LEFT JOIN deleted_events
               ON deleted_events.event_index = events.event_index
