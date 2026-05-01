@@ -283,7 +283,7 @@ export const DomainEvent = t.union([
 export const StoredDomainEvent = t.intersection([
   DomainEvent,
   t.strict({
-    event_index: t.number,
+    event_index: t.Int,
     event_id: tt.UUID,
   }),
   t.union(
