@@ -14,7 +14,8 @@ const ensureDeletedEventsTableExists = (eventDB: Client) =>
           event_index INTEGER NOT NULL UNIQUE,
           deleted_at TEXT NOT NULL,
           delete_reason TEXT NOT NULL,
-          mark_deleted_by_member_number INTEGER NOT NULL
+          mark_deleted_by_member_number INTEGER NOT NULL,
+          FOREIGN KEY(event_index) REFERENCES events(event_index)
         );
         `,
         {}

@@ -1,5 +1,4 @@
 import * as t from 'io-ts';
-import {Int} from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
@@ -26,7 +25,7 @@ const process =
     }
 
     return pipe(
-      input.deps.setEventDeletedState(input.command.eventIndex as Int, deleted),
+      input.deps.setEventDeletedState(input.command.eventIndex, deleted),
       TE.map(() => O.none)
     );
   };
