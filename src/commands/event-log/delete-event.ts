@@ -11,7 +11,6 @@ import {failureWithStatus} from '../../types/failure-with-status';
 const codec = t.strict({
   eventIndex: tt.IntFromString,
   deleteReason: t.string,
-  markDeletedByMemberNumber: t.Int,
 });
 type DeleteEvent = t.TypeOf<typeof codec>;
 
@@ -24,12 +23,20 @@ const process: Command<DeleteEvent>['process'] = input => {
         )()
       );
     }
+    if (input.command.actor.tag !== 'user') {
+      return TE.left(
+        failureWithStatus(
+          'Only users can delete events',
+          StatusCodes.INTERNAL_SERVER_ERROR
+        )()
+      );
+    }
 
     return pipe(
       input.deps.deleteEvent(
         input.command.eventIndex,
         input.command.deleteReason,
-        input.command.markDeletedByMemberNumber
+        input.command.actor.user.memberNumber as t.Int,
       ),
       TE.map(() => O.none)
     );
