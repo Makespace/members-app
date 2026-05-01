@@ -544,7 +544,9 @@ export function updateState (db: BetterSQLite3Database, logger: Logger, trackedE
     try {
       db.transaction(
         (tx: DatabaseTransaction) => {
-          _updateState(tx, event);
+          if (event.deletedAt === null) {
+            _updateState(tx, event);
+          }
           if (trackedEvent) {
             _updateEventState(tx, event);
           }
