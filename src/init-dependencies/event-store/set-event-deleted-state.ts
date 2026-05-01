@@ -5,27 +5,37 @@ import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {dbExecute} from '../../util';
 
-export const setEventDeletedState =
-  (dbClient: Client): Dependencies['setEventDeletedState'] =>
-  (eventIndex, deleted) => TE.tryCatch(
+export const deleteEvent =
+  (dbClient: Client): Dependencies['deleteEvent'] =>
+  (eventIndex, deleteReason, markDeletedByMemberNumber) => TE.tryCatch(
     async () => {
-      deleted
-      ? await dbExecute(
-          dbClient,
-          `
-          INSERT OR REPLACE INTO deleted_events (event_index, deleted_at)
-          VALUES (?, ?);
-          `,
-          [eventIndex, new Date().toISOString()]
-        )
-      : await dbExecute(
+      await dbExecute(
+        dbClient,
+        `
+        INSERT OR REPLACE INTO deleted_events (event_index, deleted_at, delete_reason, mark_deleted_by_member_number)
+        VALUES (?, ?, ?, ?);
+        `,
+        [eventIndex, new Date().toISOString(), deleteReason, markDeletedByMemberNumber]
+      );
+    },
+    failureWithStatus(
+      'Failed to update deleted state for event',
+      StatusCodes.INTERNAL_SERVER_ERROR
+    )
+  );
+
+export const unDeleteEvent =
+  (dbClient: Client): Dependencies['unDeleteEvent'] =>
+  (eventIndex) => TE.tryCatch(
+    async () => {
+      await dbExecute(
           dbClient,
           'DELETE FROM deleted_events WHERE event_index = ?;',
           [eventIndex]
       );
     },
     failureWithStatus(
-      'Failed to update deleted state for event',
+      `Failed to undelete event ${eventIndex}`,
       StatusCodes.INTERNAL_SERVER_ERROR
     )
   );

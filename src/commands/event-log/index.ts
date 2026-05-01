@@ -1,6 +1,7 @@
-import {deleteEvent, undeleteEvent} from './set-event-deleted-state';
+import { deleteEvent } from "./delete-event";
+import { unDeleteEvent } from "./undelete-event";
 
 export const eventLog = {
   delete: deleteEvent,
-  undelete: undeleteEvent,
+  undelete: unDeleteEvent,
 };

@@ -41,10 +41,12 @@ export type Dependencies = {
   getAllEventsByType: <T extends EventName>(
     eventType: T
   ) => TE.TaskEither<FailureWithStatus, ReadonlyArray<StoredEventOfType<T>>>;
-  setEventDeletedState: (
+  deleteEvent: (
     eventIndex: Int,
-    deleted: boolean,
+    deleteReason: string,
+    markDeletedByMemberNumber: Int,
   ) => TE.TaskEither<FailureWithStatus, void>;
+  unDeleteEvent: (eventIndex: Int) => TE.TaskEither<FailureWithStatus, void>;
   sharedReadModel: SharedReadModel;
   extDB: ExternalStateDB;
   logger: Logger;

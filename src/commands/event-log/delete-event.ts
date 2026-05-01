@@ -10,11 +10,12 @@ import {failureWithStatus} from '../../types/failure-with-status';
 
 const codec = t.strict({
   eventIndex: tt.IntFromString,
+  deleteReason: t.string,
+  markDeletedByMemberNumber: t.Int,
 });
+type DeleteEvent = t.TypeOf<typeof codec>;
 
-const process =
-  (deleted: boolean): Command<t.TypeOf<typeof codec>>['process'] =>
-  input => {
+const process: Command<DeleteEvent>['process'] = input => {
     if (input.deps === undefined) {
       return TE.left(
         failureWithStatus(
@@ -25,16 +26,17 @@ const process =
     }
 
     return pipe(
-      input.deps.setEventDeletedState(input.command.eventIndex, deleted),
+      input.deps.deleteEvent(
+        input.command.eventIndex,
+        input.command.deleteReason,
+        input.command.markDeletedByMemberNumber
+      ),
       TE.map(() => O.none)
     );
   };
 
-const buildCommand = (deleted: boolean): Command<t.TypeOf<typeof codec>> => ({
-  process: process(deleted),
+export const deleteEvent: Command<DeleteEvent> = {
+  process,
   decode: codec.decode,
   isAuthorized: isAdminOrSuperUser,
-});
-
-export const deleteEvent = buildCommand(true);
-export const undeleteEvent = buildCommand(false);
+};
