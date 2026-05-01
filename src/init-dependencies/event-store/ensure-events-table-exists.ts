@@ -12,38 +12,14 @@ const ensureDeletedEventsTableExists = (eventDB: Client) =>
         `
         CREATE TABLE IF NOT EXISTS deleted_events (
           event_index INTEGER NOT NULL UNIQUE,
-          deleted_at TEXT NOT NULL
+          deleted_at TEXT NOT NULL,
+          delete_reason TEXT NOT NULL,
+          mark_deleted_by_member_number INTEGER NOT NULL
         );
         `,
         {}
-      ).then(() => undefined),
+      ),
     failure('Failed to create deleted_events table')
-  );
-
-const migrateDeletedAtColumnIntoDeletedEventsTable = (eventDB: Client) =>
-  pipe(
-    TE.tryCatch(
-      () => dbExecute(eventDB, 'PRAGMA table_info(events);', {}),
-      failure('Failed to inspect events table')
-    ),
-    TE.chain(result =>
-      result.rows.some(row => row['name'] === 'deleted_at')
-        ? TE.tryCatch(
-            () =>
-              dbExecute(
-                eventDB,
-                `
-                INSERT OR IGNORE INTO deleted_events (event_index, deleted_at)
-                SELECT event_index, deleted_at
-                FROM events
-                WHERE deleted_at IS NOT NULL;
-                `,
-                {}
-              ).then(() => undefined),
-            failure('Failed to migrate deleted events into deleted_events table')
-          )
-        : TE.right(undefined)
-    )
   );
 
 export const ensureEventTableExists = (eventDB: Client) =>
@@ -68,5 +44,4 @@ export const ensureEventTableExists = (eventDB: Client) =>
       failure('Event table does not exist and could not be created')
     ),
     TE.chain(() => ensureDeletedEventsTableExists(eventDB)),
-    TE.chain(() => migrateDeletedAtColumnIntoDeletedEventsTable(eventDB))
   );
