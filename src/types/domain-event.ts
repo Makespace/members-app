@@ -286,6 +286,20 @@ export const StoredDomainEvent = t.intersection([
     event_index: t.number,
     event_id: tt.UUID,
   }),
+  t.union(
+    [
+      t.strict({
+        deletedAt: tt.DateFromUnixTime,
+        deletedReason: t.string,
+        markDeletedByMemberNumber: t.Int,
+      }),
+      t.strict({
+        deletedAt: t.null,
+        deletedReason: t.null,
+        markDeletedByMemberNumber: t.null,
+      })
+    ]
+  )
 ]);
 
 export type DomainEvent = t.TypeOf<typeof DomainEvent>;

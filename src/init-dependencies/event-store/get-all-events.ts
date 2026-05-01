@@ -1,22 +1,29 @@
 import {pipe, flow} from 'fp-ts/lib/function';
 import {Dependencies} from '../../dependencies';
 import {
+  FailureWithStatus,
   failureWithStatus,
   internalCodecFailure,
 } from '../../types/failure-with-status';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import {EventsTable} from './events-table';
-import {deletedEventsFromRows, eventsFromRows} from './events-from-rows';
+import {eventsFromRows} from './events-from-rows';
 import {Client} from '@libsql/client';
 import {StatusCodes} from 'http-status-codes';
 import {
   StoredDomainEvent,
   StoredEventOfType,
 } from '../../types';
-import {EventName} from '../../types/domain-event';
+import {DeletedStoredDomainEvent, EventName} from '../../types/domain-event';
 import {dbExecute} from '../../util';
 
+const SELECT_EVENTS = `SELECT
+  events.*,
+  deleted_events.deleted_at,
+  deleted_events.delete_reason,
+  deleted_events.mark_deleted_by_member_number
+FROM events`;
 
 export const getAllEvents =
   (dbClient: Client): Dependencies['getAllEvents'] => () => getAllEventsAfterEventIndex(dbClient)(0);
@@ -28,13 +35,10 @@ export const getAllEventsAfterEventIndex =
         () =>
           dbExecute(
             dbClient,
-            `SELECT
-              events.*
-            FROM events
+            `${SELECT_EVENTS}
               LEFT JOIN deleted_events
                 ON deleted_events.event_index = events.event_index
               WHERE event_type != 'EquipmentTrainingQuizResult'
-                AND deleted_events.event_index IS NULL
                 AND events.event_index > ?
             ORDER BY events.event_index ASC`,
             [eventIndex]
@@ -63,8 +67,7 @@ export const getDeletedEvents =
           dbExecute(
             dbClient,
             `
-            SELECT events.*, deleted_events.deleted_at
-            FROM events
+            ${SELECT_EVENTS}
             INNER JOIN deleted_events
               ON deleted_events.event_index = events.event_index
             WHERE event_type != 'EquipmentTrainingQuizResult'
@@ -84,7 +87,7 @@ export const getDeletedEvents =
         )
       ),
       TE.map(table => table.rows),
-      TE.chainEitherK(deletedEventsFromRows)
+      TE.chainEitherK(events => eventsFromRows(events) as E.Either<FailureWithStatus, ReadonlyArray<DeletedStoredDomainEvent>>),
     );
 
 export const getAllEventsByType =
@@ -96,12 +99,10 @@ export const getAllEventsByType =
           dbExecute(
             dbClient,
             `
-            SELECT events.*
-            FROM events
+            ${SELECT_EVENTS}
             LEFT JOIN deleted_events
               ON deleted_events.event_index = events.event_index
-            WHERE deleted_events.event_index IS NULL
-              AND event_type = ?
+            WHERE event_type = ?
             ORDER BY events.event_index ASC;
             `,
             [eventType]
@@ -143,12 +144,10 @@ export const getAllEventsByTypes =
           dbExecute(
             dbClient,
             `
-            SELECT events.*
-            FROM events
+            ${SELECT_EVENTS}
             LEFT JOIN deleted_events
               ON deleted_events.event_index = events.event_index
-            WHERE deleted_events.event_index IS NULL
-              AND (event_type = ? OR event_type = ?)
+            WHERE event_type = ? OR event_type = ?
             ORDER BY events.event_index ASC
             `,
             [eventType, eventType2]
