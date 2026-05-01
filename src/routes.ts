@@ -1,13 +1,15 @@
 import {Dependencies} from './dependencies';
 import {Config} from './configuration';
 import {commands, sendEmailCommands} from './commands';
+import expressAsyncHandler from 'express-async-handler';
+import {flow} from 'fp-ts/lib/function';
 import * as queries from './queries';
 import {Route, get} from './types/route';
 import {authRoutes} from './authentication';
 import {queryToHandler, commandToHandlers, ping} from './http';
 import {emailHandler} from './http/email-handler';
+import {formPost} from './http/form-post';
 import {post} from './types/route';
-import {eventLogDeletedStatePost} from './http/event-log-deleted-state-post';
 
 export const initRoutes = (
   deps: Dependencies,
@@ -26,11 +28,19 @@ export const initRoutes = (
     query('/event-log/deleted', queries.deletedEvents),
     post(
       '/event-log/delete',
-      eventLogDeletedStatePost(deps, true, '/event-log')
+      flow(formPost, expressAsyncHandler)(
+        deps,
+        commands.eventLog.delete,
+        '/event-log'
+      )
     ),
     post(
       '/event-log/undelete',
-      eventLogDeletedStatePost(deps, false, '/event-log/deleted')
+      flow(formPost, expressAsyncHandler)(
+        deps,
+        commands.eventLog.undelete,
+        '/event-log/deleted'
+      )
     ),
     query('/event-log.csv', queries.logcsv),
     query('/training-status.csv', queries.trainingStatusCsv),

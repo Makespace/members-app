@@ -213,6 +213,10 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         declare: frameworkify(commands.superUser.declare),
         revoke: frameworkify(commands.superUser.revoke),
       },
+      eventLog: {
+        delete: frameworkify(commands.eventLog.delete),
+        undelete: frameworkify(commands.eventLog.undelete),
+      },
     },
     trainingSummaryDeps: {
       logger,
