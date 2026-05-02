@@ -1,5 +1,6 @@
 import {faker} from '@faker-js/faker';
 import * as O from 'fp-ts/Option';
+import * as TE from 'fp-ts/TaskEither';
 import {Int} from 'io-ts';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {StatusCodes} from 'http-status-codes';
@@ -35,7 +36,7 @@ describe('delete-event', () => {
           deleteReason: faker.lorem.sentence(),
           actor: userActor(),
         },
-        rm: {} as Dependencies['sharedReadModel'],
+        rm: framework.sharedReadModel,
       })()
     );
 
@@ -52,7 +53,7 @@ describe('delete-event', () => {
           eventIndex: 1 as Int,
           actor: arbitraryActor(),
         },
-        rm: {} as Dependencies['sharedReadModel'],
+        rm: framework.sharedReadModel,
       })()
     );
 
@@ -63,6 +64,10 @@ describe('delete-event', () => {
   });
 
   it('delete event fails when the actor is not a user', async () => {
+    const deps = {
+      ...framework.depsForCommands,
+      deleteEvent: jest.fn((eventIndex, deleteReason, markDeletedByMemberNumber) => {throw Error('Placeholder')}),
+    };
     const result = getLeftOrFail(
       await deleteEvent.process({
         command: {
@@ -70,8 +75,8 @@ describe('delete-event', () => {
           deleteReason: faker.lorem.sentence(),
           actor: arbitraryActor(),
         },
-        rm: {} as Dependencies['sharedReadModel'],
-        deps: framework.depsForCommands,
+        rm: framework.sharedReadModel,
+        deps
       })()
     );
 
@@ -79,7 +84,7 @@ describe('delete-event', () => {
       message: 'Only users can delete events',
       status: StatusCodes.INTERNAL_SERVER_ERROR,
     });
-    expect(framework.depsForCommands.deleteEvent).not.toHaveBeenCalled();
+    expect(deps.deleteEvent).not.toHaveBeenCalled();
   });
 
   describe('marks the event as deleted', () => {

@@ -8,7 +8,7 @@ import {
   getDeletedEvents,
 } from '../../src/init-dependencies/event-store/get-all-events';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
-import {Actor, DeletedStoredDomainEvent, DomainEvent} from '../../src/types';
+import {Actor, DomainEvent} from '../../src/types';
 import {pipe} from 'fp-ts/lib/function';
 import {commands, Command} from '../../src/commands';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
@@ -29,8 +29,8 @@ import { UUID } from 'io-ts-types';
 import { updateTrainingSheetCache } from '../../src/sync-worker/db/update_training_sheet_cache';
 import { updateTroubleTicketCache } from '../../src/sync-worker/db/update_trouble_ticket_cache';
 import { ensureExtDBTablesExist, ExternalStateDB, initExternalStateDB } from '../../src/sync-worker/external-state-db';
-import {setEventDeletedState} from '../../src/init-dependencies/event-store/set-event-deleted-state';
 import {Int} from 'io-ts';
+import { deleteEvent, unDeleteEvent } from '../../src/init-dependencies/event-store/set-event-deleted-state';
 
 const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
 
@@ -53,8 +53,6 @@ export type TestFramework = {
   getAllEventsByType: <T extends EventName>(
     eventType: T
   ) => Promise<ReadonlyArray<EventOfType<T>>>;
-  getDeletedEvents: () => Promise<ReadonlyArray<DeletedStoredDomainEvent>>;
-  setEventDeletedState: (eventIndex: number, deleted: boolean) => Promise<void>;
   commands: ToFrameworkCommands<typeof commands>;
   sharedReadModel: Dependencies['sharedReadModel'];
   depsForCommands: Dependencies;
@@ -74,10 +72,13 @@ export type TestFramework = {
 const insertIntoSharedReadModel = (rm: Dependencies['sharedReadModel']) => (event: DomainEvent): StoredDomainEvent => {
   // Test helper to update the shared read model with an event with the event index and id automatically generated.
   // This essentially does a DomainEvent -> StoredDomainEvent conversion and then inserts the result.
-  const storedEvent = {
+  const storedEvent: StoredDomainEvent = {
     ...event,
     event_id: faker.string.uuid() as UUID,
-    event_index: rm.getCurrentEventIndex() + 1,
+    event_index: (rm.getCurrentEventIndex() + 1) as Int,
+    deletedAt: null,
+    deletedReason: null,
+    markDeletedByMemberNumber: null,
   };
   rm.updateState(storedEvent);
   return storedEvent;
@@ -104,19 +105,13 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     pipe(getAllEvents(eventDB)(), T.map(getRightOrFail))();
   const frameworkGetAllEventsByType = <EN extends EventName>(eventType: EN) =>
     pipe(getAllEventsByType(eventDB)(eventType), T.map(getRightOrFail))();
-  const frameworkGetDeletedEvents = () =>
-    pipe(getDeletedEvents(eventDB)(), T.map(getRightOrFail))();
-  const frameworkSetEventDeletedState = async (
-    eventIndex: number,
-    deleted: boolean
-  ) =>
-    getRightOrFail(await setEventDeletedState(eventDB)(eventIndex as Int, deleted)());
   const depsForCommands: Dependencies = {
     commitEvent: frameworkCommitEvent,
     getAllEvents: getAllEvents(eventDB),
     getDeletedEvents: getDeletedEvents(eventDB),
     getAllEventsByType: getAllEventsByType(eventDB),
-    setEventDeletedState: setEventDeletedState(eventDB),
+    deleteEvent: deleteEvent(eventDB),
+    unDeleteEvent: unDeleteEvent(eventDB),
     sharedReadModel,
     logger,
     extDB: extDBDrizzle,
@@ -145,8 +140,6 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   return {
     getAllEvents: frameworkGetAllEvents,
     getAllEventsByType: frameworkGetAllEventsByType,
-    getDeletedEvents: frameworkGetDeletedEvents,
-    setEventDeletedState: frameworkSetEventDeletedState,
     getTroubleTicketData: getTroubleTicketData(
       extDBDrizzle,
       O.some(TROUBLE_TICKET_SHEET_ID)
