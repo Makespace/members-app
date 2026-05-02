@@ -1,13 +1,11 @@
 import {faker} from '@faker-js/faker';
 import * as O from 'fp-ts/Option';
-import * as TE from 'fp-ts/TaskEither';
 import {Int} from 'io-ts';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {StatusCodes} from 'http-status-codes';
 import {v4} from 'uuid';
 import {deleteEvent} from '../../../src/commands/event-log/delete-event';
 import {unDeleteEvent} from '../../../src/commands/event-log/undelete-event';
-import {Dependencies} from '../../../src/dependencies';
 import {constructEvent, DomainEvent, StoredDomainEvent} from '../../../src/types';
 import {
   arbitraryActor,
@@ -66,7 +64,7 @@ describe('delete-event', () => {
   it('delete event fails when the actor is not a user', async () => {
     const deps = {
       ...framework.depsForCommands,
-      deleteEvent: jest.fn((eventIndex, deleteReason, markDeletedByMemberNumber) => {throw Error('Placeholder')}),
+      deleteEvent: jest.fn((_eventIndex, _deleteReason, _markDeletedByMemberNumber) => {throw Error('Placeholder')}),
     };
     const result = getLeftOrFail(
       await deleteEvent.process({
@@ -87,6 +85,18 @@ describe('delete-event', () => {
     expect(deps.deleteEvent).not.toHaveBeenCalled();
   });
 
+  it('delete event fails for a non-existent event', async() => {
+    getLeftOrFail(await deleteEvent.process({
+      command: {
+        eventIndex: 1 as Int,
+        deleteReason: faker.lorem.sentence(),
+        actor: userActor(),
+      },
+      rm: framework.sharedReadModel,
+      deps: framework.depsForCommands,
+    })());
+  });
+
   describe('marks the event as deleted', () => {
     const deletedBy = userActor();
     const deleteReason = faker.lorem.sentence();
@@ -95,15 +105,16 @@ describe('delete-event', () => {
       name: faker.commerce.productName() as NonEmptyString,
       actor: arbitraryActor(),
     });
-    let storedArbitaryEvent: StoredDomainEvent;
+    const eventIndex = 1 as Int;
     let deleteEventResult: O.Option<DomainEvent>;
 
     beforeEach(async () => {
-      storedArbitaryEvent = framework.insertIntoSharedReadModel(arbitaryEvent);
+      // Note that we must commit the event because it needs to exist in the eventDB otherwise it would violate the foreign key constraint.
+      await getTaskEitherRightOrFail(framework.depsForCommands.commitEvent(eventIndex - 1 as Int)(arbitaryEvent));
       deleteEventResult = await getTaskEitherRightOrFail(
         deleteEvent.process({
           command: {
-            eventIndex: storedArbitaryEvent.event_index,
+            eventIndex,
             deleteReason,
             actor: deletedBy,
           },
@@ -123,7 +134,7 @@ describe('delete-event', () => {
       );
       expect(deletedEvents.rows).toHaveLength(1);
       expect(deletedEvents.rows[0]).toMatchObject({
-        event_index: storedArbitaryEvent.event_index,
+        event_index: eventIndex,
         delete_reason: deleteReason,
         mark_deleted_by_member_number: deletedBy.user.memberNumber,
       });
@@ -136,7 +147,7 @@ describe('delete-event', () => {
         undeleteResult = await getTaskEitherRightOrFail(
           unDeleteEvent.process({
             command: {
-              eventIndex: storedArbitaryEvent.event_index,
+              eventIndex,
               actor: arbitraryActor(),
             },
             rm: framework.sharedReadModel,
