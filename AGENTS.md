@@ -99,6 +99,7 @@ Tests live under `tests/` and usually mirror the source layout.
 - It is acceptable in read-model tests to use `command.process()` only to generate events for setup.
 - Avoid calling read models from command tests.
 - Tests should follow a behaviour-driven style.
+- Tests should use the TestFramework rather then defining their own versions of Dependencies.
 
 Directory mapping notes:
 
