@@ -1,13 +1,15 @@
 import {constructViewModel} from '../../../src/queries/deleted-events/construct-view-model';
-import {pipe} from 'fp-ts/lib/function';
 import {arbitraryUser} from '../../types/user.helper';
-import {getLeftOrFail, getRightOrFail} from '../../helpers';
-import * as T from 'fp-ts/Task';
+import {arbitraryActor, getLeftOrFail, getTaskEitherRightOrFail, userActor} from '../../helpers';
 import {StatusCodes} from 'http-status-codes';
 import {
   initTestFramework,
   TestFramework,
 } from '../../read-models/test-framework';
+import { faker } from '@faker-js/faker';
+import { Int } from 'io-ts';
+import { constructEvent } from '../../../src/types';
+import { UUID } from 'io-ts-types';
 
 describe('deleted-events construct-view-model', () => {
   let framework: TestFramework;
@@ -33,20 +35,17 @@ describe('deleted-events construct-view-model', () => {
     });
 
     it('does not show deleted events', async () => {
-      const failure = await pipe(
-        {},
-        constructViewModel(framework.depsForCommands)(user),
-        T.map(getLeftOrFail)
-      )();
-
+      const failure = getLeftOrFail(
+        await constructViewModel(
+          framework.depsForCommands, user
+        )()
+      );
       expect(failure.status).toStrictEqual(StatusCodes.FORBIDDEN);
     });
   });
 
   it('shows deleted events to super users', async () => {
     const superUser = arbitraryUser();
-    const firstMember = arbitraryUser();
-    const secondMember = arbitraryUser();
 
     await framework.commands.memberNumbers.linkNumberToEmail({
       memberNumber: superUser.memberNumber,
@@ -57,30 +56,25 @@ describe('deleted-events construct-view-model', () => {
     await framework.commands.superUser.declare({
       memberNumber: superUser.memberNumber,
     });
-    await framework.commands.memberNumbers.linkNumberToEmail({
-      memberNumber: firstMember.memberNumber,
-      email: firstMember.emailAddress,
-      name: undefined,
-      formOfAddress: undefined,
-    });
-    await framework.commands.memberNumbers.linkNumberToEmail({
-      memberNumber: secondMember.memberNumber,
-      email: secondMember.emailAddress,
-      name: undefined,
-      formOfAddress: undefined,
-    });
 
-    await framework.setEventDeletedState(1, true);
+    // Commit event index 3.
+    framework.depsForCommands.commitEvent(2 as Int)(
+      constructEvent('AreaCreated')({
+        id: faker.string.uuid() as UUID,
+        name: faker.animal.dog(),
+        actor: arbitraryActor(),
+      })
+    );
 
-    const result = await pipe(
-      {offset: '0', limit: '10'},
-      constructViewModel(framework.depsForCommands)(superUser),
-      T.map(getRightOrFail)
-    )();
+    framework.depsForCommands.deleteEvent(3 as Int, faker.lorem.sentence(), faker.number.int() as Int);
 
-    expect(result.count).toStrictEqual(1);
+    const result = await getTaskEitherRightOrFail(
+      constructViewModel(framework.depsForCommands, superUser)
+    );
+
     expect(result.events).toHaveLength(1);
-    expect(result.events[0].event_index).toStrictEqual(1);
+    expect(result.events[0].event_index).toStrictEqual(3);
+    expect(result.events[0].type).toStrictEqual('AreaCreated');
     expect(result.events[0].deletedAt).toEqual(expect.any(Date));
   });
 });
