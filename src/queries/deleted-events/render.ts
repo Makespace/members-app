@@ -1,6 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {html, joinHtml, safe, sanitizeString} from '../../types/html';
+import {Html, html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {ViewModel} from './view-model';
 import {inspect} from 'node:util';
 import {displayDate} from '../../templates/display-date';
@@ -53,7 +53,7 @@ const renderLog = (log: ViewModel['events']) =>
     `
   );
 
-export const render = (viewModel: ViewModel) => html`
+export const render = (viewModel: ViewModel): Html => html`
   <h1>Deleted events</h1>
   <p>Showing ${viewModel.events.length} deleted events.</p>
   <p><a href=${safe('/event-log')}>View active event log</a></p>

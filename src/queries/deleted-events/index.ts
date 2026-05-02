@@ -6,11 +6,10 @@ import {Query, Params} from '../query';
 import {safe, toLoggedInContent} from '../../types/html';
 import {User} from '../../types';
 
-export const deletedEvents: Query =
-  deps => (user: User, _params: Params, query: Params) =>
+export const deletedEvents: Query = 
+  deps => (user: User, _params: Params, _query: Params) =>
     pipe(
-      query,
-      constructViewModel(deps)(user),
+      constructViewModel(deps, user),
       TE.map(render),
       TE.map(toLoggedInContent(safe('Deleted Events')))
     );

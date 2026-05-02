@@ -1,4 +1,3 @@
-import {Params} from '../query';
 import {pipe} from 'fp-ts/lib/function';
 import {User} from '../../types';
 import {Dependencies} from '../../dependencies';
@@ -9,7 +8,7 @@ import {mustBeSuperuser} from '../util';
 import { FailureWithStatus } from '../../types/failure-with-status';
 
 export const constructViewModel =
-  (deps: Dependencies) => (user: User): TE.TaskEither<FailureWithStatus, ViewModel> =>
+  (deps: Dependencies, user: User): TE.TaskEither<FailureWithStatus, ViewModel> =>
     pipe(
       mustBeSuperuser(deps.sharedReadModel, user),
       TE.chain(() => deps.getDeletedEvents()),
