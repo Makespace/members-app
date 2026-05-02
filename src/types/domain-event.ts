@@ -290,12 +290,12 @@ export const StoredDomainEvent = t.intersection([
     [
       t.strict({
         deletedAt: tt.DateFromUnixTime,
-        deletedReason: t.string,
+        deleteReason: t.string,
         markDeletedByMemberNumber: t.Int,
       }),
       t.strict({
         deletedAt: t.null,
-        deletedReason: t.null,
+        deleteReason: t.null,
         markDeletedByMemberNumber: t.null,
       })
     ]

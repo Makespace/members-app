@@ -77,7 +77,7 @@ const insertIntoSharedReadModel = (rm: Dependencies['sharedReadModel']) => (even
     event_id: faker.string.uuid() as UUID,
     event_index: (rm.getCurrentEventIndex() + 1) as Int,
     deletedAt: null,
-    deletedReason: null,
+    deleteReason: null,
     markDeletedByMemberNumber: null,
   };
   rm.updateState(storedEvent);
