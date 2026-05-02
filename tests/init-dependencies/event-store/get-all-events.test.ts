@@ -19,8 +19,8 @@ import {arbitraryActor, getRightOrFail} from '../../helpers';
 import {UUID} from 'io-ts-types';
 import {EventName} from '../../../src/types/domain-event';
 import { pushEvents } from '../../sync-worker/util';
-import {setEventDeletedState} from '../../../src/init-dependencies/event-store/set-event-deleted-state';
 import {Int} from 'io-ts';
+import { deleteEvent } from '../../../src/init-dependencies/event-store/set-event-deleted-state';
 
 const arbitraryMemberNumberLinkedToEmailEvent = () =>
   constructEvent('MemberNumberLinkedToEmail')({
@@ -71,6 +71,7 @@ describe('get all events', () => {
   let initialisedGetDeletedEvents: () => Promise<
     ReadonlyArray<StoredDomainEvent & {deletedAt: Date}>
   >;
+  let initialisedDeleteEvent: (eventIndex: Int, deleteReason: string, markDeletedByMemberNumber: Int) => Promise<void>;
 
   beforeEach(async () => {
     dbClient = libsqlClient.createClient({url: ':memory:'});
@@ -87,6 +88,9 @@ describe('get all events', () => {
     ) => getRightOrFail(await getAllEventsByTypes(dbClient)(type1, type2)());
     initialisedGetDeletedEvents = async () =>
       getRightOrFail(await getDeletedEvents(dbClient)()());
+    initialisedDeleteEvent = async (eventIndex, deleteReason, markDeletedByMemberNumber) => getRightOrFail(
+      await deleteEvent(dbClient)(eventIndex, deleteReason, markDeletedByMemberNumber)()
+    );
   });
 
   afterEach(() => {
@@ -112,19 +116,23 @@ describe('get all events', () => {
       expectStoredEvent(events[1], equipmentTrainingSheetRegistered, 3);
     });
 
-    it('does not return deleted events', async () => {
+    it('does return deleted events', async () => {
       const deletedEvent = arbitraryMemberNumberLinkedToEmailEvent();
+      const deleteReason = faker.lorem.sentence();
+      const deletedBy = faker.number.int() as Int;
       const visibleEvent = arbitraryEquipmentTrainingSheetRegisteredEvent();
 
       await pushEvents(dbClient, testLogger, [deletedEvent, visibleEvent]);
-      getRightOrFail(
-        await setEventDeletedState(dbClient)(1 as Int, true)()
-      );
+      await initialisedDeleteEvent(1 as Int, deleteReason, deletedBy);
 
       const events = await initalisedGetAllEvents();
 
-      expect(events).toHaveLength(1);
-      expectStoredEvent(events[0], visibleEvent, 2);
+      expect(events).toHaveLength(2);
+      expectStoredEvent(events[0], deletedEvent, 1);
+      expect(events[0].deletedAt).toEqual(expect.any(Date));
+      expect(events[0].deleteReason).toStrictEqual(deleteReason);
+      expect(events[0].markDeletedByMemberNumber).toStrictEqual(deletedBy);
+      expectStoredEvent(events[1], visibleEvent, 2);
     });
   });
 
@@ -198,21 +206,25 @@ describe('get all events', () => {
       expectStoredEvent(events[0], equipmentTrainingQuizResult, 1);
     });
 
-    it('does not return deleted events of the requested type', async () => {
+    it('does return deleted events of the requested type', async () => {
       const deletedEvent = arbitraryMemberNumberLinkedToEmailEvent();
+      const deleteReason = faker.lorem.sentence();
+      const deletedBy = faker.number.int() as Int;
       const visibleEvent = arbitraryMemberNumberLinkedToEmailEvent();
 
       await pushEvents(dbClient, testLogger, [deletedEvent, visibleEvent]);
-      getRightOrFail(
-        await setEventDeletedState(dbClient)(1 as Int, true)()
-      );
+      await initialisedDeleteEvent(1 as Int, deleteReason, deletedBy);
 
       const events = await initalisedGetAllEventsByType(
         'MemberNumberLinkedToEmail'
       );
 
-      expect(events).toHaveLength(1);
-      expectStoredEvent(events[0], visibleEvent, 2);
+      expect(events).toHaveLength(2);
+      expectStoredEvent(events[0], deletedEvent, 2);
+      expect(events[0].deletedAt).toEqual(expect.any(Date));
+      expect(events[0].deleteReason).toStrictEqual(deleteReason);
+      expect(events[0].markDeletedByMemberNumber).toStrictEqual(deletedBy);
+      expectStoredEvent(events[1], visibleEvent, 2);
     });
   });
 
@@ -262,12 +274,12 @@ describe('get all events', () => {
   describe('getDeletedEvents', () => {
     it('returns deleted events', async () => {
       const deletedEvent = arbitraryMemberNumberLinkedToEmailEvent();
+      const deleteReason = faker.lorem.sentence();
+      const deletedBy = faker.number.int() as Int;
       const visibleEvent = arbitraryEquipmentTrainingSheetRegisteredEvent();
 
       await pushEvents(dbClient, testLogger, [deletedEvent, visibleEvent]);
-      getRightOrFail(
-        await setEventDeletedState(dbClient)(1 as Int, true)()
-      );
+      await initialisedDeleteEvent(1 as Int, deleteReason, deletedBy);
 
       const events = await initialisedGetDeletedEvents();
 
