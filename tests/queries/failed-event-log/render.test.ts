@@ -21,8 +21,6 @@ describe('/event-log/failed render', () => {
       failures: [
         {
           error: 'SQLITE_CONSTRAINT_FOREIGNKEY',
-          eventId: 'cb5bdc6d-f734-43e2-a025-b5d89a5ba3fc' as UUID,
-          eventIndex: 42,
           eventType: 'AreaCreated',
           payload: {
             event_index: 42,
@@ -36,8 +34,6 @@ describe('/event-log/failed render', () => {
         },
         {
           error: 'Unable to add owner, unknown member number 23',
-          eventId: '94e57593-0ee3-405b-9edb-30940c14d446' as UUID,
-          eventIndex: 43,
           eventType: 'OwnerAdded',
           payload: {
             event_index: 43,

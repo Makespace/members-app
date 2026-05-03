@@ -1,17 +1,15 @@
-import * as E from 'fp-ts/Either';
 import {pipe} from 'fp-ts/lib/function';
 import * as T from 'fp-ts/Task';
 import {faker} from '@faker-js/faker';
 import {UUID} from 'io-ts-types';
 import {constructViewModel} from '../../../src/queries/failed-event-log/construct-view-model';
-import {getRightOrFail} from '../../helpers';
+import {getLeftOrFail, getRightOrFail} from '../../helpers';
 import {
   initTestFramework,
   TestFramework,
 } from '../../read-models/test-framework';
 import {arbitraryActor} from '../../helpers';
 import {arbitraryUser} from '../../types/user.helper';
-import {failedEventsTable} from '../../../src/read-models/shared-state/state';
 
 const arbitraryFailingOwnerAddedEvent = () => ({
   type: 'OwnerAdded' as const,
@@ -64,7 +62,7 @@ describe('construct-view-model', () => {
 
     const result = await pipe(
       {offset: '0', limit: '1'},
-      constructViewModel(framework.depsForCommands)(superUser),
+      constructViewModel(framework.sharedReadModel)(superUser),
       T.map(getRightOrFail)
     )();
 
@@ -72,10 +70,6 @@ describe('construct-view-model', () => {
     expect(result.failures).toHaveLength(2);
     expect(result.failures[0].error).toContain(
       'Unable to add owner, unknown member number'
-    );
-    expect(result.failures[0].eventId).toStrictEqual(secondFailedEvent.event_id);
-    expect(result.failures[0].eventIndex).toStrictEqual(
-      secondFailedEvent.event_index
     );
     expect(result.failures[0].eventType).toStrictEqual('OwnerAdded');
     expect(result.failures[0].payload).toStrictEqual(
@@ -93,34 +87,17 @@ describe('construct-view-model', () => {
   });
 
   it('hides deleted failed events', async () => {
-    const anotherUser = arbitraryUser();
-
-    await framework.commands.memberNumbers.linkNumberToEmail({
-      memberNumber: anotherUser.memberNumber,
-      email: anotherUser.emailAddress,
-      name: undefined,
-      formOfAddress: undefined,
+    const failedEvent = framework.insertIntoSharedReadModel(
+      arbitraryFailingOwnerAddedEvent()
+    );
+    await framework.commands.eventLog.delete({
+      eventIndex: failedEvent.event_index,
+      deleteReason: faker.lorem.sentence(),
     });
-
-    const event = (await framework.getAllEvents()).at(-1);
-
-    if (!event) {
-      throw new Error('expected an event');
-    }
-
-    framework.sharedReadModel.db.insert(failedEventsTable).values({
-      error: 'Unable to add owner, unknown member number',
-      eventId: event.event_id,
-      eventIndex: event.event_index,
-      eventType: event.type,
-      payload: event,
-    }).run();
-
-    await framework.setEventDeletedState(event.event_index, true);
 
     const result = await pipe(
       {},
-      constructViewModel(framework.depsForCommands)(superUser),
+      constructViewModel(framework.sharedReadModel)(superUser),
       T.map(getRightOrFail)
     )();
 
@@ -129,20 +106,14 @@ describe('construct-view-model', () => {
   });
 
   it('fails if the logged in user is not a super user', async () => {
-    const result = await pipe(
-      {},
-      constructViewModel(framework.depsForCommands)(unprivilegedUser)
-    )();
-
-    expect(result).toStrictEqual(E.left(expect.anything()));
+    getLeftOrFail(
+      await constructViewModel(framework.sharedReadModel)(unprivilegedUser)({})()
+    );
   });
 
   it("fails if the logged in user isn't known to the shared state", async () => {
-    const result = await pipe(
-      {},
-      constructViewModel(framework.depsForCommands)(unregisteredUser)
-    )();
-
-    expect(result).toStrictEqual(E.left(expect.anything()));
+    getLeftOrFail(
+      await constructViewModel(framework.sharedReadModel)(unregisteredUser)({})()
+    );
   });
 });
