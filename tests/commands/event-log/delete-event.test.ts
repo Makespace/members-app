@@ -138,7 +138,8 @@ describe('delete-event', () => {
         delete_reason: deleteReason,
         mark_deleted_by_member_number: deletedBy.user.memberNumber,
       });
-      expect(deletedEvents.rows[0].deleted_at_unix_ms).toEqual(expect.any(Int));
+      // Check within 10 seconds.
+      expect(deletedEvents.rows[0].deleted_at_unix_ms).toBeGreaterThanOrEqual(Date.now() - 1000 * 10);
     });
 
     describe('undeletes an event', () => {
