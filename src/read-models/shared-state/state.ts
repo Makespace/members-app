@@ -1,25 +1,23 @@
-import {sql} from 'drizzle-orm';
+import {SQL, sql} from 'drizzle-orm';
 import {EmailAddress, GravatarHash, UserId} from '../../types';
 import * as O from 'fp-ts/Option';
-import {blob, integer, sqliteTable, text, uniqueIndex} from 'drizzle-orm/sqlite-core';
+import {blob, integer, SQLiteColumnBuilderBase, sqliteTable, SQLiteTableWithColumns, TableConfig, text, uniqueIndex} from 'drizzle-orm/sqlite-core';
 
-export const membersTable = sqliteTable('members', {
-  userId: text('userId').primaryKey().$type<UserId>(),
-  primaryEmailAddress: text('primaryEmailAddress')
-    .notNull()
-    .$type<EmailAddress>(),
-  gravatarHash: text('gravatarHash').notNull().$type<GravatarHash>(),
-  name: blob('name', {mode: 'json'}).notNull().$type<O.Option<string>>(),
-  formOfAddress: blob('formOfAddress', {mode: 'json'})
-    .notNull()
-    .$type<O.Option<string>>(),
-  isSuperUser: integer('isSuperUser', {mode: 'boolean'}).notNull(),
-  superUserSince: integer('superUserSince', {mode: 'timestamp_ms'}),
-  agreementSigned: integer('agreementSigned', {mode: 'timestamp_ms'}),
-  joined: integer('joined', {mode: 'timestamp_ms'}).notNull(),
-});
+export const createTables: SQL[] = [];
+export const truncateTables: SQL[] = [];
 
-const createMembersTable = sql`
+const defineTable = <TTableName extends string, TColumnsMap extends Record<string, SQLiteColumnBuilderBase>>(
+  create: SQL,
+  tableName: TTableName,
+  schema: TColumnsMap,
+) => {
+  createTables.push(create);
+  truncateTables.push(sql`TRUNCATE TABLE ${tableName};`);
+  return sqliteTable(tableName, schema);
+};
+
+export const membersTable = defineTable(
+  sql`
   CREATE TABLE IF NOT EXISTS members (
     userId TEXT PRIMARY KEY,
     primaryEmailAddress TEXT,
@@ -30,7 +28,24 @@ const createMembersTable = sql`
     superUserSince INTEGER,
     agreementSigned INTEGER,
     joined INTEGER
-  );`;
+  );`,
+  'members' as const,
+  {
+    userId: text('userId').primaryKey().$type<UserId>(),
+    primaryEmailAddress: text('primaryEmailAddress')
+      .notNull()
+      .$type<EmailAddress>(),
+    gravatarHash: text('gravatarHash').notNull().$type<GravatarHash>(),
+    name: blob('name', {mode: 'json'}).notNull().$type<O.Option<string>>(),
+    formOfAddress: blob('formOfAddress', {mode: 'json'})
+      .notNull()
+      .$type<O.Option<string>>(),
+    isSuperUser: integer('isSuperUser', {mode: 'boolean'}).notNull(),
+    superUserSince: integer('superUserSince', {mode: 'timestamp_ms'}),
+    agreementSigned: integer('agreementSigned', {mode: 'timestamp_ms'}),
+    joined: integer('joined', {mode: 'timestamp_ms'}).notNull(),
+  }
+);
 
 export const memberEmailsTable = sqliteTable('memberEmails', {
   userId: text('userId')
@@ -246,17 +261,3 @@ const createFailedEventsTable = sql`
     payload TEXT NOT NULL
   )
 `;
-
-export const createTables = [
-  createMembersTable,
-  createMemberEmailsTable,
-  createMemberNumbersTable,
-  createAreasTable,
-  createEquipmentTable,
-  createTrainersTable,
-  createTrainedMembersTable,
-  createOwnersTable,
-  createTrainingStatsNotificationTable,
-  createEventStateTable,
-  createFailedEventsTable,
-];

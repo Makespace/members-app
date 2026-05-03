@@ -35,6 +35,7 @@ import { findAllSuperUsers, findUserIdByEmail, findUserIdByMemberNumber, getAllM
 import { setupEventStateTable } from './setup-event-state-table';
 import { getCurrentEventIndex } from './get-current-event-index';
 import { Int } from 'io-ts';
+import { reset } from './reset';
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
@@ -43,6 +44,7 @@ export type SharedReadModel = {
   asyncRefresh: () => T.Task<void>;
   updateState: (event: StoredDomainEvent) => void;
   getCurrentEventIndex: () => Int;
+  reset: () => Promise<void>;
   members: {
     getById: (userId: UserId) => O.Option<Member>;
     getByMemberNumber: (memberNumber: number) => O.Option<Member>;
@@ -85,6 +87,8 @@ export const initSharedReadModel = (
   createTables.forEach(statement => readModelDb.run(statement));
   const getCurrentEventIndex_ = getCurrentEventIndex(readModelDb);
   const updateState_ = updateState(readModelDb, logger, true);
+  const asyncRefresh_ =  asyncRefresh(eventStoreClient, getCurrentEventIndex_, updateState_);
+  const reset_ = reset(readModelDb, logger, asyncRefresh_);
 
   setupEventStateTable(readModelDb);
 
@@ -92,8 +96,9 @@ export const initSharedReadModel = (
     db: readModelDb,
     readOnlyDb: readOnlyReadModelDb,
     _underlyingReadModelDb,
-    asyncRefresh: asyncRefresh(eventStoreClient, getCurrentEventIndex_, updateState_),
+    asyncRefresh:asyncRefresh_,
     updateState: updateState_,
+    reset: reset_,
     getCurrentEventIndex: getCurrentEventIndex_,
     members: {
       getByMemberNumber: getMemberFullByMemberNumber(readModelDb),
