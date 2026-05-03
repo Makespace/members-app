@@ -12,7 +12,7 @@ const ensureDeletedEventsTableExists = (eventDB: Client) =>
         `
         CREATE TABLE IF NOT EXISTS deleted_events (
           event_index INTEGER NOT NULL UNIQUE,
-          deleted_at TEXT NOT NULL,
+          deleted_at_unix_ms INTEGER NOT NULL,
           delete_reason TEXT NOT NULL,
           mark_deleted_by_member_number INTEGER NOT NULL,
           FOREIGN KEY(event_index) REFERENCES events(event_index)

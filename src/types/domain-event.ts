@@ -289,7 +289,7 @@ export const StoredDomainEvent = t.intersection([
   t.union(
     [
       t.strict({
-        deletedAt: tt.DateFromUnixTime,
+        deletedAt: tt.DateFromNumber,
         deleteReason: t.string,
         markDeletedByMemberNumber: t.Int,
       }),

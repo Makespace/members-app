@@ -15,7 +15,7 @@ const reshapeRowToEvent = (row: EventsTable['rows'][number]) =>
       event_index: row.event_index,
       event_id: row.id,
       type: row.event_type,
-      deletedAt: row.deleted_at_unix_s,
+      deletedAt: row.deleted_at_unix_ms,
       deleteReason: row.delete_reason,
       markDeletedByMemberNumber: row.mark_deleted_by_member_number,
       ...payload,

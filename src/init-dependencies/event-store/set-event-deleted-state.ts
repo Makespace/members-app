@@ -12,10 +12,10 @@ export const deleteEvent =
       await dbExecute(
         dbClient,
         `
-        INSERT OR REPLACE INTO deleted_events (event_index, deleted_at, delete_reason, mark_deleted_by_member_number)
+        INSERT OR REPLACE INTO deleted_events (event_index, deleted_at_unix_ms, delete_reason, mark_deleted_by_member_number)
         VALUES (?, ?, ?, ?);
         `,
-        [eventIndex, new Date().toISOString(), deleteReason, markDeletedByMemberNumber]
+        [eventIndex, Date.now(), deleteReason, markDeletedByMemberNumber]
       );
     },
     failureWithStatus(

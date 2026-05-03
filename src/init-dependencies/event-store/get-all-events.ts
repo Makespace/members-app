@@ -20,7 +20,7 @@ import {dbExecute} from '../../util';
 
 const SELECT_EVENTS = `SELECT
   events.*,
-  deleted_events.deleted_at,
+  deleted_events.deleted_at_unix_ms,
   deleted_events.delete_reason,
   deleted_events.mark_deleted_by_member_number
 FROM events`;

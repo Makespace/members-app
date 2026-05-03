@@ -130,7 +130,7 @@ describe('delete-event', () => {
 
     it('adds the event to the deleted_events table', async () => {
       const deletedEvents = await framework.eventStoreDb.execute(
-        'SELECT event_index, delete_reason, mark_deleted_by_member_number, deleted_at FROM deleted_events'
+        'SELECT event_index, delete_reason, mark_deleted_by_member_number, deleted_at_unix_ms FROM deleted_events'
       );
       expect(deletedEvents.rows).toHaveLength(1);
       expect(deletedEvents.rows[0]).toMatchObject({
@@ -138,7 +138,7 @@ describe('delete-event', () => {
         delete_reason: deleteReason,
         mark_deleted_by_member_number: deletedBy.user.memberNumber,
       });
-      expect(deletedEvents.rows[0].deleted_at).toEqual(expect.any(String));
+      expect(deletedEvents.rows[0].deleted_at_unix_ms).toEqual(expect.any(Int));
     });
 
     describe('undeletes an event', () => {
