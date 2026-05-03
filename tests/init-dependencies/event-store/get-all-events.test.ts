@@ -220,7 +220,7 @@ describe('get all events', () => {
       );
 
       expect(events).toHaveLength(2);
-      expectStoredEvent(events[0], deletedEvent, 2);
+      expectStoredEvent(events[0], deletedEvent, 1);
       expect(events[0].deletedAt).toEqual(expect.any(Date));
       expect(events[0].deleteReason).toStrictEqual(deleteReason);
       expect(events[0].markDeletedByMemberNumber).toStrictEqual(deletedBy);

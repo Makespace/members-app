@@ -16,16 +16,18 @@ describe('ensure-events-table-exists', () => {
 
   it('creates the deleted_events table', async () => {
     getRightOrFail(await ensureEventTableExists(dbClient)());
-
-    await expect(
-      dbExecute(
-        dbClient,
-        `
-        INSERT INTO deleted_events (event_index, deleted_at_unix_ms)
-        VALUES (?, ?);
-        `,
-        [1, Date.now()]
-      )
-    ).resolves.toEqual(expect.anything());
+    const rows = await dbExecute(
+      dbClient,
+      `
+      SELECT * FROM deleted_events;
+      `,
+      []
+    );
+    expect(rows.columns).toStrictEqual([
+      'event_index',
+      'deleted_at_unix_ms',
+      'delete_reason',
+      'mark_deleted_by_member_number'
+    ]);
   });
 });
