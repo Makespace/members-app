@@ -58,15 +58,21 @@ describe('deleted-events construct-view-model', () => {
     });
 
     // Commit event index 3.
-    framework.depsForCommands.commitEvent(2 as Int)(
+    await getTaskEitherRightOrFail(framework.depsForCommands.commitEvent(2 as Int)(
       constructEvent('AreaCreated')({
         id: faker.string.uuid() as UUID,
         name: faker.animal.dog(),
         actor: arbitraryActor(),
       })
-    );
+    ));
 
-    framework.depsForCommands.deleteEvent(3 as Int, faker.lorem.sentence(), faker.number.int() as Int);
+    await getTaskEitherRightOrFail(
+      framework.depsForCommands.deleteEvent(
+        3 as Int,
+        faker.lorem.sentence(),
+        faker.number.int() as Int
+      )
+    );
 
     const result = await getTaskEitherRightOrFail(
       constructViewModel(framework.depsForCommands, superUser)
