@@ -42,7 +42,7 @@ describe('/event-log/deleted render', () => {
     expect(page.textContent).toContain('cb5bdc6d-f734-43e2-a025-b5d89a5ba3fc');
     expect(page.textContent).toContain('Un-delete event');
     expect(page.textContent).toContain('Deleted at');
-    expect(page.textContent).toContain('Delete reason');
+    expect(page.textContent).toContain('Reason');
     expect(page.textContent).toContain('Deleted by');
     expect(page.textContent).not.toContain('event_id:');
     expect(page.textContent).not.toContain('event_index:');

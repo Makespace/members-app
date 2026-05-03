@@ -8,6 +8,7 @@ import {DateTime} from 'luxon';
 import {renderActor} from '../../types/actor';
 import * as qs from 'qs';
 import { Int } from 'io-ts';
+import { renderMemberNumber } from '../../templates/member-number';
 
 const renderPayload = (event: ViewModel['events'][number]) =>
   pipe(
@@ -31,6 +32,8 @@ const renderEntry =
       <b>${sanitizeString(event.type)}</b> by ${renderActor(event.actor)} at
       ${displayDate(DateTime.fromJSDate(event.recordedAt))}<br />
       Deleted at ${displayDate(DateTime.fromJSDate(event.deletedAt))}<br />
+      Deleted by ${renderMemberNumber(event.markDeletedByMemberNumber)}<br />
+      Reason '${sanitizeString(event.deleteReason)}'<br />
       Event Index: ${sanitizeString(String(event.event_index))}<br />
       Event ID: ${sanitizeString(event.event_id)}<br />
       ${renderPayload(event)}
