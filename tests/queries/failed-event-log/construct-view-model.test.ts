@@ -1,10 +1,9 @@
-import * as E from 'fp-ts/Either';
 import {pipe} from 'fp-ts/lib/function';
 import * as T from 'fp-ts/Task';
 import {faker} from '@faker-js/faker';
 import {UUID} from 'io-ts-types';
 import {constructViewModel} from '../../../src/queries/failed-event-log/construct-view-model';
-import {getRightOrFail} from '../../helpers';
+import {getLeftOrFail, getRightOrFail} from '../../helpers';
 import {
   initTestFramework,
   TestFramework,
@@ -87,21 +86,34 @@ describe('construct-view-model', () => {
     );
   });
 
-  it('fails if the logged in user is not a super user', async () => {
+  it('hides deleted failed events', async () => {
+    const failedEvent = framework.insertIntoSharedReadModel(
+      arbitraryFailingOwnerAddedEvent()
+    );
+    await framework.commands.eventLog.delete({
+      eventIndex: failedEvent.event_index,
+      deleteReason: faker.lorem.sentence(),
+    });
+
     const result = await pipe(
       {},
-      constructViewModel(framework.sharedReadModel)(unprivilegedUser)
+      constructViewModel(framework.sharedReadModel)(superUser),
+      T.map(getRightOrFail)
     )();
 
-    expect(result).toStrictEqual(E.left(expect.anything()));
+    expect(result.count).toStrictEqual(0);
+    expect(result.failures).toHaveLength(0);
+  });
+
+  it('fails if the logged in user is not a super user', async () => {
+    getLeftOrFail(
+      await constructViewModel(framework.sharedReadModel)(unprivilegedUser)({})()
+    );
   });
 
   it("fails if the logged in user isn't known to the shared state", async () => {
-    const result = await pipe(
-      {},
-      constructViewModel(framework.sharedReadModel)(unregisteredUser)
-    )();
-
-    expect(result).toStrictEqual(E.left(expect.anything()));
+    getLeftOrFail(
+      await constructViewModel(framework.sharedReadModel)(unregisteredUser)({})()
+    );
   });
 });

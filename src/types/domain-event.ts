@@ -283,13 +283,28 @@ export const DomainEvent = t.union([
 export const StoredDomainEvent = t.intersection([
   DomainEvent,
   t.strict({
-    event_index: t.number,
+    event_index: t.Int,
     event_id: tt.UUID,
   }),
+  t.union(
+    [
+      t.strict({
+        deletedAt: tt.DateFromNumber,
+        deleteReason: t.string,
+        markDeletedByMemberNumber: t.Int,
+      }),
+      t.strict({
+        deletedAt: t.null,
+        deleteReason: t.null,
+        markDeletedByMemberNumber: t.null,
+      })
+    ]
+  )
 ]);
 
 export type DomainEvent = t.TypeOf<typeof DomainEvent>;
 export type StoredDomainEvent = t.TypeOf<typeof StoredDomainEvent>;
+export type DeletedStoredDomainEvent = StoredDomainEvent & {deletedAt: Date};
 
 export type EventName = DomainEvent['type'];
 

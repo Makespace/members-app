@@ -12,6 +12,7 @@ export const happyPathAdapters: Dependencies = {
   commitEvent: () => () =>
     TE.right({status: StatusCodes.CREATED, message: 'dummy create event'}),
   getAllEvents: () => TE.right([]),
+  getDeletedEvents: () => TE.right([]),
   sharedReadModel: initSharedReadModel(
     libsqlClient.createClient({url: ':memory:'}),
     pino({
@@ -24,6 +25,8 @@ export const happyPathAdapters: Dependencies = {
   rateLimitSendingOfEmails: TE.right,
   sendEmail: () => TE.right('success'),
   getAllEventsByType: <T extends EventName>(_eventType: T) => TE.right([]),
+  deleteEvent: (_eventIndex, _deleteReason, _markDeletedByMemberNumber) => TE.right(undefined),
+  unDeleteEvent: (_eventIndex) => TE.right(undefined),
   lastQuizSync: (_sheetId: string) => TE.right(O.none),
   getSheetData: (_sheetId: string) => TE.right([]),
   getSheetDataByMemberNumber: (_memberNumber: number) => TE.right([]),

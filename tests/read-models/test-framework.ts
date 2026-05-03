@@ -5,6 +5,7 @@ import * as TE from 'fp-ts/TaskEither';
 import {
   getAllEvents,
   getAllEventsByType,
+  getDeletedEvents,
 } from '../../src/init-dependencies/event-store/get-all-events';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
 import {Actor, DomainEvent} from '../../src/types';
@@ -28,6 +29,8 @@ import { UUID } from 'io-ts-types';
 import { updateTrainingSheetCache } from '../../src/sync-worker/db/update_training_sheet_cache';
 import { updateTroubleTicketCache } from '../../src/sync-worker/db/update_trouble_ticket_cache';
 import { ensureExtDBTablesExist, ExternalStateDB, initExternalStateDB } from '../../src/sync-worker/external-state-db';
+import {Int} from 'io-ts';
+import { deleteEvent, unDeleteEvent } from '../../src/init-dependencies/event-store/set-event-deleted-state';
 
 const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
 
@@ -46,7 +49,7 @@ type ToFrameworkCommands<T> = {
 };
 
 export type TestFramework = {
-  getAllEvents: () => Promise<ReadonlyArray<DomainEvent>>;
+  getAllEvents: () => Promise<ReadonlyArray<StoredDomainEvent>>;
   getAllEventsByType: <T extends EventName>(
     eventType: T
   ) => Promise<ReadonlyArray<EventOfType<T>>>;
@@ -69,10 +72,13 @@ export type TestFramework = {
 const insertIntoSharedReadModel = (rm: Dependencies['sharedReadModel']) => (event: DomainEvent): StoredDomainEvent => {
   // Test helper to update the shared read model with an event with the event index and id automatically generated.
   // This essentially does a DomainEvent -> StoredDomainEvent conversion and then inserts the result.
-  const storedEvent = {
+  const storedEvent: StoredDomainEvent = {
     ...event,
     event_id: faker.string.uuid() as UUID,
-    event_index: rm.getCurrentEventIndex() + 1,
+    event_index: (rm.getCurrentEventIndex() + 1) as Int,
+    deletedAt: null,
+    deleteReason: null,
+    markDeletedByMemberNumber: null,
   };
   rm.updateState(storedEvent);
   return storedEvent;
@@ -102,7 +108,10 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   const depsForCommands: Dependencies = {
     commitEvent: frameworkCommitEvent,
     getAllEvents: getAllEvents(eventDB),
+    getDeletedEvents: getDeletedEvents(eventDB),
     getAllEventsByType: getAllEventsByType(eventDB),
+    deleteEvent: deleteEvent(eventDB),
+    unDeleteEvent: unDeleteEvent(eventDB),
     sharedReadModel,
     logger,
     extDB: extDBDrizzle,
@@ -196,6 +205,10 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       superUser: {
         declare: frameworkify(commands.superUser.declare),
         revoke: frameworkify(commands.superUser.revoke),
+      },
+      eventLog: {
+        delete: frameworkify(commands.eventLog.delete),
+        undelete: frameworkify(commands.eventLog.undelete),
       },
     },
     trainingSummaryDeps: {
