@@ -2,23 +2,11 @@ import {pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {html, safe, joinHtml, sanitizeString} from '../../types/html';
 import {ViewModel, LogSearch} from './view-model';
-import {inspect} from 'node:util';
 import {displayDate} from '../../templates/display-date';
 import {DateTime} from 'luxon';
 import {renderActor} from '../../types/actor';
 import * as qs from 'qs';
-
-const renderPayload = (event: ViewModel['events'][number]) =>
-  // eslint-disable-next-line unused-imports/no-unused-vars
-  pipe(event, ({type, actor, recordedAt, event_index, event_id, ...payload}) =>
-    pipe(
-      payload,
-      Object.entries,
-      RA.map(([key, value]) => `${key}: ${inspect(value)}`),
-      RA.map(sanitizeString),
-      joinHtml
-    )
-  );
+import { renderPayload } from '../shared-render/render-payload';
 
 const renderEntry =
   (search: LogSearch) => (event: ViewModel['events'][number]) => html`
@@ -28,7 +16,7 @@ const renderEntry =
     Event Index: ${sanitizeString(String(event.event_index))}<br />
     Event ID: ${sanitizeString(event.event_id)}<br />
     ${renderPayload(event)}
-    <form action=${deletePath(search)} method="post">
+    <form action=${deletePath(search)} method="get">
       <input type="hidden" name="eventIndex" value="${event.event_index}" />
       <button type="submit">Delete event</button>
     </form>

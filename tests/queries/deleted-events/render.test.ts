@@ -46,5 +46,11 @@ describe('/event-log/deleted render', () => {
     expect(page.textContent).toContain('Deleted by');
     expect(page.textContent).not.toContain('event_id:');
     expect(page.textContent).not.toContain('event_index:');
+    expect(page.querySelector('form')?.getAttribute('method')).toStrictEqual(
+      'get'
+    );
+    expect(page.querySelector('form')?.getAttribute('action')).toContain(
+      '/event-log/undelete?eventIndex=42'
+    );
   });
 });

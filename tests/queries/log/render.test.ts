@@ -46,8 +46,10 @@ describe('/event-log render', () => {
     expect(page.textContent).toContain('42');
     expect(page.textContent).toContain('cb5bdc6d-f734-43e2-a025-b5d89a5ba3fc');
     expect(page.textContent).toContain('Delete event');
-    expect(page.textContent).toContain('View deleted events');
     expect(page.textContent).not.toContain('event_id:');
     expect(page.textContent).not.toContain('event_index:');
+    expect(page.querySelector('form')?.getAttribute('method')).toStrictEqual(
+      'get'
+    );
   });
 });

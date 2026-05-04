@@ -9,22 +9,15 @@ import {renderActor} from '../../types/actor';
 import * as qs from 'qs';
 import { Int } from 'io-ts';
 import { renderMemberNumber } from '../../templates/member-number';
-
-const renderPayload = (event: ViewModel['events'][number]) =>
-  pipe(
-    event,
-    ({type, actor, recordedAt, event_index, event_id, deletedAt, ...payload}) =>
-      pipe(
-        payload,
-        Object.entries,
-        RA.map(([key, value]) => `${key}: ${inspect(value)}`),
-        RA.map(sanitizeString),
-        joinHtml
-      )
-  );
+import { renderPayload } from '../shared-render/render-payload';
 
 const undeletePath = (eventIndex: Int) =>
-  safe(`/event-log/undelete?${qs.stringify({eventIndex})}}`);
+  safe(
+    `/event-log/undelete?${qs.stringify({
+      eventIndex,
+      next: '/event-log/deleted',
+    })}`
+  );
 
 const renderEntry =
   (event: ViewModel['events'][number]) => html`
@@ -37,8 +30,7 @@ const renderEntry =
       Event Index: ${sanitizeString(String(event.event_index))}<br />
       Event ID: ${sanitizeString(event.event_id)}<br />
       ${renderPayload(event)}
-      <form action=${undeletePath(event.event_index)} method="post">
-        <input type="hidden" name="eventIndex" value="${event.event_index}" />
+      <form action=${undeletePath(event.event_index)} method="get">
         <button type="submit">Un-delete event</button>
       </form>
     </li>

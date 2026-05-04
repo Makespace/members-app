@@ -3,6 +3,7 @@
  */
 
 import {UUID} from 'io-ts-types';
+import {Int} from 'io-ts';
 import {render} from '../../../src/queries/failed-event-log/render';
 import {ViewModel} from '../../../src/queries/failed-event-log/view-model';
 import {arbitraryUser} from '../../types/user.helper';
@@ -22,6 +23,7 @@ describe('/event-log/failed render', () => {
         {
           error: 'SQLITE_CONSTRAINT_FOREIGNKEY',
           eventType: 'AreaCreated',
+          eventIndex: 42 as Int,
           payload: {
             event_index: 42,
             event_id: 'cb5bdc6d-f734-43e2-a025-b5d89a5ba3fc' as UUID,
@@ -35,6 +37,7 @@ describe('/event-log/failed render', () => {
         {
           error: 'Unable to add owner, unknown member number 23',
           eventType: 'OwnerAdded',
+          eventIndex: 43 as Int,
           payload: {
             event_index: 43,
             event_id: '94e57593-0ee3-405b-9edb-30940c14d446' as UUID,
