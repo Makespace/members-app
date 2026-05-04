@@ -1,6 +1,5 @@
 import { Int } from 'io-ts';
 import {User} from '../../types';
-import { UUID } from 'io-ts-types';
 
 export type ViewModel = {
   user: User;
@@ -8,6 +7,7 @@ export type ViewModel = {
   failures: ReadonlyArray<{
     error: string;
     eventType: string;
+    eventIndex: Int;
     payload: unknown;
   }>;
 };
