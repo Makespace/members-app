@@ -6,14 +6,14 @@ import {blob, integer, SQLiteColumnBuilderBase, sqliteTable, SQLiteTableExtraCon
 export const createTables: SQL[] = [];
 export const truncateTables: SQL[] = [];
 
-const defineTable = <TTableName extends string, TColumnsMap extends Record<string, SQLiteColumnBuilderBase>>(
+const defineTable = <const TTableName extends string, TColumnsMap extends Record<string, SQLiteColumnBuilderBase>>(
   create: SQL,
   tableName: TTableName,
   schema: TColumnsMap,
   extra?: (self: BuildColumns<TTableName, TColumnsMap, 'sqlite'>) => SQLiteTableExtraConfig,
 ) => {
   createTables.push(create);
-  truncateTables.push(sql`TRUNCATE TABLE ${tableName};`);
+  truncateTables.push(sql.raw(`DELETE FROM ${tableName};`));
   return sqliteTable(tableName, schema, extra);
 };
 
