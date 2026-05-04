@@ -17,6 +17,7 @@ import {
 import {failureWithStatus} from '../../types/failure-with-status';
 import {path} from '../../types/path';
 import { DeletedStoredDomainEvent } from '../../types';
+import { renderPayload } from '../../queries/shared-render/render-payload';
 
 type ViewModel = {
   eventIndex: number;
@@ -35,6 +36,7 @@ const renderForm = (viewModel: ViewModel) =>
           <b>${sanitizeString(viewModel.eventType)}</b><br />
           Event ID: ${sanitizeString(viewModel.eventId)}
         </p>
+        ${renderPayload(viewModel.payload)}
         <form
           action="${safe(`?${qs.stringify({next: viewModel.next})}`)}"
           method="post"
