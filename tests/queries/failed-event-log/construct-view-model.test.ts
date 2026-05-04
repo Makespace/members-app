@@ -94,6 +94,7 @@ describe('construct-view-model', () => {
       eventIndex: failedEvent.event_index,
       deleteReason: faker.lorem.sentence(),
     });
+    await framework.sharedReadModel.reset();
 
     const result = await pipe(
       {},
