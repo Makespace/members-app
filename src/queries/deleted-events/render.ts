@@ -1,38 +1,13 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {Html, html, joinHtml, safe, sanitizeString} from '../../types/html';
+import {Html, html, joinHtml} from '../../types/html';
 import {ViewModel} from './view-model';
-import {inspect} from 'node:util';
-import {displayDate} from '../../templates/display-date';
-import {DateTime} from 'luxon';
-import {renderActor} from '../../types/actor';
-import * as qs from 'qs';
-import { Int } from 'io-ts';
-import { renderMemberNumber } from '../../templates/member-number';
-import { renderPayload } from '../shared-render/render-payload';
-
-const undeletePath = (eventIndex: Int) =>
-  safe(
-    `/event-log/undelete?${qs.stringify({
-      eventIndex,
-      next: '/event-log/deleted',
-    })}`
-  );
+import { renderDeletedEvent } from '../shared-render/render-deleted-event';
 
 const renderEntry =
   (event: ViewModel['events'][number]) => html`
     <li>
-      <b>${sanitizeString(event.type)}</b> by ${renderActor(event.actor)} at
-      ${displayDate(DateTime.fromJSDate(event.recordedAt))}<br />
-      Deleted at ${displayDate(DateTime.fromJSDate(event.deletedAt))}<br />
-      Deleted by ${renderMemberNumber(event.markDeletedByMemberNumber)}<br />
-      Reason '${sanitizeString(event.deleteReason)}'<br />
-      Event Index: ${sanitizeString(String(event.event_index))}<br />
-      Event ID: ${sanitizeString(event.event_id)}<br />
-      ${renderPayload(event)}
-      <form action=${undeletePath(event.event_index)} method="get">
-        <button type="submit">Un-delete event</button>
-      </form>
+      ${renderDeletedEvent(event, {undeleteButton: {next: '/event-log/deleted'}})}
     </li>
   `;
 

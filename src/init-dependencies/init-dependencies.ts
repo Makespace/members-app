@@ -9,7 +9,9 @@ import {commitEvent} from './event-store/commit-event';
 import {
   getAllEvents,
   getAllEventsByType,
+  getDeletedEventByIndex,
   getDeletedEvents,
+  getEventByIndex,
 } from './event-store/get-all-events';
 import {Client} from '@libsql/client';
 import {deleteEvent, unDeleteEvent} from './event-store/set-event-deleted-state';
@@ -76,7 +78,9 @@ export const initDependencies = (
   const deps: Dependencies = {
     commitEvent: commitEvent(eventDB, logger, sharedReadModel.asyncRefresh),
     getAllEvents: getAllEvents(eventDB),
+    getEventByIndex: getEventByIndex(eventDB),
     getDeletedEvents: getDeletedEvents(eventDB),
+    getDeletedEventByIndex: getDeletedEventByIndex(eventDB),
     getAllEventsByType: getAllEventsByType(eventDB),
     deleteEvent: deleteEvent(eventDB),
     unDeleteEvent: unDeleteEvent(eventDB),

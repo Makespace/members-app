@@ -34,10 +34,12 @@ export type Dependencies = {
     FailureWithStatus,
     ReadonlyArray<StoredDomainEvent>
   >;
+  getEventByIndex: (eventIndex: Int) => TE.TaskEither<FailureWithStatus, O.Option<StoredDomainEvent>>; 
   getDeletedEvents: () => TE.TaskEither<
     FailureWithStatus,
     ReadonlyArray<DeletedStoredDomainEvent>
   >;
+  getDeletedEventByIndex: (eventIndex: Int) => TE.TaskEither<FailureWithStatus, O.Option<DeletedStoredDomainEvent>>;
   getAllEventsByType: <T extends EventName>(
     eventType: T
   ) => TE.TaskEither<FailureWithStatus, ReadonlyArray<StoredEventOfType<T>>>;

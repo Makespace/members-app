@@ -18,11 +18,9 @@ import {failureWithStatus} from '../../types/failure-with-status';
 import {path} from '../../types/path';
 import { DeletedStoredDomainEvent } from '../../types';
 import { renderPayload } from '../../queries/shared-render/render-payload';
+import { renderDeletedEvent } from '../../queries/shared-render/render-deleted-event';
 
 type ViewModel = {
-  eventIndex: number;
-  eventType: string;
-  eventId: string;
   payload: DeletedStoredDomainEvent;
   next: string;
 };
@@ -31,11 +29,8 @@ const renderForm = (viewModel: ViewModel) =>
   pipe(
     html`
       <div class="stack-large">
-        <h1>Un-delete event ${viewModel.eventIndex}?</h1>
-        <p>
-          <b>${sanitizeString(viewModel.eventType)}</b><br />
-          Event ID: ${sanitizeString(viewModel.eventId)}
-        </p>
+        <h1>Un-delete event ${viewModel.payload.event_index}?</h1>
+        ${renderDeletedEvent(viewModel.payload, {undeleteButton: false})}
         ${renderPayload(viewModel.payload)}
         <form
           action="${safe(`?${qs.stringify({next: viewModel.next})}`)}"
@@ -44,7 +39,7 @@ const renderForm = (viewModel: ViewModel) =>
           <input
             type="hidden"
             name="eventIndex"
-            value="${safe(String(viewModel.eventIndex))}"
+            value="${safe(String(viewModel.payload.event_index))}"
           />
           <button type="submit">Un-delete event</button>
         </form>
@@ -80,17 +75,13 @@ const constructForm: Form<ViewModel>['constructForm'] =
       TE.fromEither,
       TE.chain(({eventIndex, next}) =>
         pipe(
-          deps.getDeletedEvents(),
-          TE.chain(events =>
-            pipe(
-              events.find(event => event.event_index === eventIndex),
-              O.fromNullable,
-              TE.fromOption(() =>
-                failureWithStatus(
-                  'The requested event does not exist',
-                  StatusCodes.NOT_FOUND
-                )()
-              )
+          deps.getDeletedEventByIndex(eventIndex),
+          TE.chain(
+            TE.fromOption(
+              () => failureWithStatus(
+                'Event not found',
+                StatusCodes.NOT_FOUND
+              )({})
             )
           ),
           TE.map(event => ({
@@ -98,6 +89,7 @@ const constructForm: Form<ViewModel>['constructForm'] =
             eventType: event.type,
             eventId: event.event_id,
             next: next ?? '/event-log/deleted',
+            payload: event,
           }))
         )
       )

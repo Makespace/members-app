@@ -58,6 +58,10 @@ export const getAllEventsAfterEventIndex =
       TE.chainEitherK(eventsFromRows)
     );
 
+export const getEventByIndex = (dbExecute: Client): Dependencies['getEventByIndex'] => {
+
+}
+
 export const getDeletedEvents =
   (dbClient: Client): Dependencies['getDeletedEvents'] =>
   () =>
@@ -89,6 +93,10 @@ export const getDeletedEvents =
       TE.map(table => table.rows),
       TE.chainEitherK(events => eventsFromRows(events) as E.Either<FailureWithStatus, ReadonlyArray<DeletedStoredDomainEvent>>),
     );
+
+export const getDeletedEventByIndex = (dbExecute: Client): Dependencies['getDeletedEventByIndex'] => {
+  
+}
 
 export const getAllEventsByType =
   (dbClient: Client): Dependencies['getAllEventsByType'] =>
