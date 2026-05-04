@@ -81,7 +81,6 @@ const renderNextLink = (viewModel: ViewModel) =>
 export const render = (viewModel: ViewModel) => html`
   <h1>Event log</h1>
   <p>Showing ${viewModel.events.length} of ${viewModel.count} events.</p>
-  <p><a href=${safe('/event-log/deleted')}>View deleted events</a></p>
   ${renderLog(viewModel.search)(viewModel.events)}
   <p>${renderPrevLink(viewModel)}</p>
   <p>${renderNextLink(viewModel)}</p>

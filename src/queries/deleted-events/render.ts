@@ -59,6 +59,5 @@ const renderLog = (log: ViewModel['events']) =>
 export const render = (viewModel: ViewModel): Html => html`
   <h1>Deleted events</h1>
   <p>Showing ${viewModel.events.length} deleted events.</p>
-  <p><a href=${safe('/event-log')}>View active event log</a></p>
   ${renderLog(viewModel.events)}
 `;
