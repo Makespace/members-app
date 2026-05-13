@@ -5,8 +5,8 @@ import qs from "qs";
 import { renderPayload } from "./render-payload";
 import { renderActor } from "../../types/actor";
 import { displayDate } from "../../templates/display-date";
-import { DateTime } from "luxon/src/datetime";
 import { renderMemberNumber } from "../../templates/member-number";
+import { DateTime } from "luxon";
 
 const undeletePath = <const T extends String>(eventIndex: Int, next: T) =>
   safe(

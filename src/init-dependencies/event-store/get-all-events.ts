@@ -7,6 +7,8 @@ import {
 } from '../../types/failure-with-status';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
+import * as RA from 'fp-ts/ReadonlyArray';
+import * as O from 'fp-ts/Option';
 import {EventsTable} from './events-table';
 import {eventsFromRows} from './events-from-rows';
 import {Client} from '@libsql/client';
@@ -17,6 +19,7 @@ import {
 } from '../../types';
 import {DeletedStoredDomainEvent, EventName} from '../../types/domain-event';
 import {dbExecute} from '../../util';
+import { Int } from 'io-ts';
 
 const SELECT_EVENTS = `SELECT
   events.*,
@@ -58,9 +61,33 @@ export const getAllEventsAfterEventIndex =
       TE.chainEitherK(eventsFromRows)
     );
 
-export const getEventByIndex = (dbExecute: Client): Dependencies['getEventByIndex'] => {
-
-}
+export const getEventByIndex = (dbClient: Client): Dependencies['getEventByIndex'] => (eventIndex: Int) => pipe(
+    TE.tryCatch(
+      () =>
+        dbExecute(
+          dbClient,
+          `${SELECT_EVENTS}
+            LEFT JOIN deleted_events
+              ON deleted_events.event_index = events.event_index
+            WHERE events.event_index = ?
+            LIMIT 1`,
+          [eventIndex]
+        ),
+      failureWithStatus(
+        'Failed to query database',
+        StatusCodes.INTERNAL_SERVER_ERROR
+      )
+    ),
+    TE.chainEitherK(
+      flow(
+        EventsTable.decode,
+        E.mapLeft(internalCodecFailure('Failed to decode DB table'))
+      )
+    ),
+    TE.map(table => table.rows),
+    TE.chainEitherK(eventsFromRows),
+    TE.map(RA.head)
+  );
 
 export const getDeletedEvents =
   (dbClient: Client): Dependencies['getDeletedEvents'] =>
@@ -94,9 +121,33 @@ export const getDeletedEvents =
       TE.chainEitherK(events => eventsFromRows(events) as E.Either<FailureWithStatus, ReadonlyArray<DeletedStoredDomainEvent>>),
     );
 
-export const getDeletedEventByIndex = (dbExecute: Client): Dependencies['getDeletedEventByIndex'] => {
-  
-}
+export const getDeletedEventByIndex = (dbClient: Client): Dependencies['getDeletedEventByIndex'] => (eventIndex: Int) => pipe(
+    TE.tryCatch(
+      () =>
+        dbExecute(
+          dbClient,
+          `${SELECT_EVENTS}
+            INNER JOIN deleted_events
+              ON deleted_events.event_index = events.event_index
+            WHERE events.event_index = ?
+            LIMIT 1`,
+          [eventIndex]
+        ),
+      failureWithStatus(
+        'Failed to query database',
+        StatusCodes.INTERNAL_SERVER_ERROR
+      )
+    ),
+    TE.chainEitherK(
+      flow(
+        EventsTable.decode,
+        E.mapLeft(internalCodecFailure('Failed to decode DB table'))
+      )
+    ),
+    TE.map(table => table.rows),
+    TE.chainEitherK(eventsFromRows),
+    TE.map(rows => RA.head(rows) as O.Option<DeletedStoredDomainEvent>)
+  );
 
 export const getAllEventsByType =
   (dbClient: Client): Dependencies['getAllEventsByType'] =>
