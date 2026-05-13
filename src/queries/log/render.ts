@@ -11,15 +11,21 @@ import { renderPayload } from '../shared-render/render-payload';
 const renderEntry =
   (search: LogSearch) => (event: ViewModel['events'][number]) => html`
   <li>
+    ${
+      event.deletedAt ? html`DELETED: ` : html``
+    }
     <b>${sanitizeString(event.type)}</b> by ${renderActor(event.actor)} at
     ${displayDate(DateTime.fromJSDate(event.recordedAt))}<br />
     Event Index: ${sanitizeString(String(event.event_index))}<br />
     Event ID: ${sanitizeString(event.event_id)}<br />
     ${renderPayload(event)}
-    <form action=${deletePath(search)} method="get">
-      <input type="hidden" name="eventIndex" value="${event.event_index}" />
-      <button type="submit">Delete event</button>
-    </form>
+    ${
+      event.deletedAt === null ?
+        html`<form action=${deletePath(search)} method="get">
+          <input type="hidden" name="eventIndex" value="${event.event_index}" />
+          <button type="submit">Delete event</button>
+        </form>` : html``
+    }
   </li>
 `;
 
