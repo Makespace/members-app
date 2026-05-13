@@ -24,6 +24,7 @@ describe('formGet', () => {
           constructFormWasAwaited = true;
           return E.right({message: 'Loaded asynchronously'});
         },
+      formIsAuthorized: null,
     };
 
     const deps = {

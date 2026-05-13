@@ -59,4 +59,5 @@ export const removeAreaForm: Form<ViewModel> = {
         E.bind('areaName', ({areaId}) => getAreaName(readModel.db, areaId)),
         TE.fromEither
       ),
+  formIsAuthorized: null,
 };

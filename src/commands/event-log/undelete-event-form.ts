@@ -19,6 +19,7 @@ import {path} from '../../types/path';
 import { DeletedStoredDomainEvent } from '../../types';
 import { renderPayload } from '../../queries/shared-render/render-payload';
 import { renderDeletedEvent } from '../../queries/shared-render/render-deleted-event';
+import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
 
 type ViewModel = {
   payload: DeletedStoredDomainEvent;
@@ -98,4 +99,5 @@ const constructForm: Form<ViewModel>['constructForm'] =
 export const undeleteEventForm: Form<ViewModel> = {
   renderForm,
   constructForm,
+  formIsAuthorized: isAdminOrSuperUser,
 };

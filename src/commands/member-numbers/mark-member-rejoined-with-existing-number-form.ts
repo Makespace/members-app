@@ -29,4 +29,5 @@ const constructForm: Form<ViewModel>['constructForm'] = () => () =>
 export const markMemberRejoinedWithExistingNumberForm: Form<ViewModel> = {
   renderForm,
   constructForm,
+  formIsAuthorized: null,
 };

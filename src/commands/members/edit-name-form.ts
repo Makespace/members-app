@@ -63,4 +63,5 @@ const constructForm: Form<ViewModel>['constructForm'] =
 export const editNameForm: Form<ViewModel> = {
   renderForm,
   constructForm,
+  formIsAuthorized: null,
 };

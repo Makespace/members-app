@@ -82,4 +82,5 @@ const constructForm: Form<ViewModel>['constructForm'] =
 export const markMemberTrainedForm: Form<ViewModel> = {
   renderForm,
   constructForm,
+  formIsAuthorized: null,
 };

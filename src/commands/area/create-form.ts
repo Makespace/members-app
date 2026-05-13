@@ -24,4 +24,5 @@ const renderForm = () =>
 export const createForm: Form<ViewModel> = {
   renderForm,
   constructForm: () => () => TE.right({}),
+  formIsAuthorized: null,
 };

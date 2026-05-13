@@ -18,6 +18,7 @@ import {failureWithStatus} from '../../types/failure-with-status';
 import {path} from '../../types/path';
 import { StoredDomainEvent } from '../../types';
 import { renderPayload } from '../../queries/shared-render/render-payload';
+import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
 
 type ViewModel = {
   payload: StoredDomainEvent;
@@ -113,4 +114,5 @@ const constructForm: Form<ViewModel>['constructForm'] =
 export const deleteEventForm: Form<ViewModel> = {
   renderForm,
   constructForm,
+  formIsAuthorized: isAdminOrSuperUser,
 };
