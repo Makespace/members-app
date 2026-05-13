@@ -8,7 +8,7 @@ import { displayDate } from "../../templates/display-date";
 import { renderMemberNumber } from "../../templates/member-number";
 import { DateTime } from "luxon";
 
-const undeletePath = <const T extends String>(eventIndex: Int, next: T) =>
+const undeletePath = <const T extends string>(eventIndex: Int, next: T) =>
   safe(
     `/event-log/undelete?${qs.stringify({
       eventIndex,
@@ -16,7 +16,7 @@ const undeletePath = <const T extends String>(eventIndex: Int, next: T) =>
     })}`
   );
 
-export const renderDeletedEvent = <const T extends String>(
+export const renderDeletedEvent = <const T extends string>(
     event: DeletedStoredDomainEvent,
     opts: {
         undeleteButton: false | {

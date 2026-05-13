@@ -16,7 +16,7 @@ import {commands, Command} from '../../src/commands';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
 import {arbitraryActor, getRightOrFail} from '../helpers';
 import * as libsqlClient from '@libsql/client';
-import {DeletedStoredDomainEvent, EventName, EventOfType, StoredDomainEvent} from '../../src/types/domain-event';
+import {EventName, EventOfType, StoredDomainEvent} from '../../src/types/domain-event';
 import {Dependencies} from '../../src/dependencies';
 import {applyCommand} from '../../src/commands/apply-command';
 import {initSharedReadModel} from '../../src/read-models/shared-state';
@@ -33,7 +33,6 @@ import { updateTroubleTicketCache } from '../../src/sync-worker/db/update_troubl
 import { ensureExtDBTablesExist, ExternalStateDB, initExternalStateDB } from '../../src/sync-worker/external-state-db';
 import {Int} from 'io-ts';
 import { deleteEvent, unDeleteEvent } from '../../src/init-dependencies/event-store/set-event-deleted-state';
-import { FailureWithStatus } from '../../src/types/failure-with-status';
 
 const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
 

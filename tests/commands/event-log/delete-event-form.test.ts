@@ -43,7 +43,7 @@ describe('event log forms', () => {
     expect(viewModel).toMatchObject({
       eventIndex: 1,
       eventType: 'AreaCreated',
-      eventId: expect.any(String),
+      eventId: expect.any(String) as unknown,
       next: '/event-log?offset=10&limit=10',
     });
   });
@@ -78,7 +78,7 @@ describe('event log forms', () => {
     expect(viewModel).toMatchObject({
       eventIndex: 1,
       eventType: 'AreaCreated',
-      eventId: expect.any(String),
+      eventId: expect.any(String) as unknown,
       next: '/event-log/deleted',
     });
   });

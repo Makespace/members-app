@@ -6,7 +6,7 @@ import {StatusCodes} from 'http-status-codes';
 import {v4} from 'uuid';
 import {deleteEvent} from '../../../src/commands/event-log/delete-event';
 import {unDeleteEvent} from '../../../src/commands/event-log/undelete-event';
-import {constructEvent, DomainEvent, StoredDomainEvent} from '../../../src/types';
+import {constructEvent, DomainEvent} from '../../../src/types';
 import {
   arbitraryActor,
   getLeftOrFail,

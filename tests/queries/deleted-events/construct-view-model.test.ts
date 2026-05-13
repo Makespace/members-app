@@ -1,6 +1,6 @@
 import {constructViewModel} from '../../../src/queries/deleted-events/construct-view-model';
 import {arbitraryUser} from '../../types/user.helper';
-import {arbitraryActor, getLeftOrFail, getTaskEitherRightOrFail, userActor} from '../../helpers';
+import {arbitraryActor, getLeftOrFail, getTaskEitherRightOrFail} from '../../helpers';
 import {StatusCodes} from 'http-status-codes';
 import {
   initTestFramework,
