@@ -95,8 +95,6 @@ describe('shared-read-model reset', () => {
       )
     );
 
-    await framework.sharedReadModel.reset();
-
     expect(
       framework.sharedReadModel.db.select().from(failedEventsTable).all()
     ).toHaveLength(0);

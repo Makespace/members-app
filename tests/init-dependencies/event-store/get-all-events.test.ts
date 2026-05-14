@@ -100,7 +100,7 @@ describe('get all events', () => {
     initialisedGetDeletedEventByIndex = async (eventIndex: Int) =>
       getRightOrFail(await getDeletedEventByIndex(dbClient)(eventIndex)());
     initialisedDeleteEvent = async (eventIndex, deleteReason, markDeletedByMemberNumber) => getRightOrFail(
-      await deleteEvent(dbClient)(eventIndex, deleteReason, markDeletedByMemberNumber)()
+      await deleteEvent(dbClient, async () => {})(eventIndex, deleteReason, markDeletedByMemberNumber)()
     );
   });
 

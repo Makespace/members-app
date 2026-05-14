@@ -6,7 +6,7 @@ import {StatusCodes} from 'http-status-codes';
 import {dbExecute} from '../../util';
 
 export const deleteEvent =
-  (dbClient: Client): Dependencies['deleteEvent'] =>
+  (dbClient: Client, resetReadModel: Dependencies['sharedReadModel']['reset']): Dependencies['deleteEvent'] =>
   (eventIndex, deleteReason, markDeletedByMemberNumber) => TE.tryCatch(
     async () => {
       await dbExecute(
@@ -17,6 +17,7 @@ export const deleteEvent =
         `,
         [eventIndex, Date.now(), deleteReason, markDeletedByMemberNumber]
       );
+      await resetReadModel();
     },
     failureWithStatus(
       'Failed to update deleted state for event',
@@ -25,7 +26,7 @@ export const deleteEvent =
   );
 
 export const unDeleteEvent =
-  (dbClient: Client): Dependencies['unDeleteEvent'] =>
+  (dbClient: Client, resetReadModel: Dependencies['sharedReadModel']['reset']): Dependencies['unDeleteEvent'] =>
   (eventIndex) => TE.tryCatch(
     async () => {
       await dbExecute(
@@ -33,6 +34,7 @@ export const unDeleteEvent =
           'DELETE FROM deleted_events WHERE event_index = ?;',
           [eventIndex]
       );
+      await resetReadModel();
     },
     failureWithStatus(
       `Failed to undelete event ${eventIndex}`,
