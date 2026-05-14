@@ -14,7 +14,7 @@ import {Actor, DomainEvent} from '../../src/types';
 import {pipe} from 'fp-ts/lib/function';
 import {commands, Command} from '../../src/commands';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
-import {arbitraryActor, getRightOrFail} from '../helpers';
+import {arbitraryActor, getRightOrFail, getTaskEitherRightOrFail} from '../helpers';
 import * as libsqlClient from '@libsql/client';
 import {EventName, EventOfType, StoredDomainEvent} from '../../src/types/domain-event';
 import {Dependencies} from '../../src/dependencies';
@@ -133,12 +133,12 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   const frameworkify =
     <T>(command: Command<T>) =>
     async (commandPayload: T & {actor?: Actor}) => {
-      await pipe(
+      await getTaskEitherRightOrFail(
         applyCommand(depsForCommands, command)(
           commandPayload,
           commandPayload.actor ?? arbitraryActor()
         )
-      )();
+      );
     };
 
   return {
