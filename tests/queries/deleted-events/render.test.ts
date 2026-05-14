@@ -2,12 +2,12 @@
  * @jest-environment jsdom
  */
 
-import { faker } from '@faker-js/faker/locale/af_ZA';
+import {faker} from '@faker-js/faker/locale/af_ZA';
 import {render} from '../../../src/queries/deleted-events/render';
 import {ViewModel} from '../../../src/queries/deleted-events/view-model';
 import {arbitraryUser} from '../../types/user.helper';
 import {UUID} from 'io-ts-types';
-import { Int } from 'io-ts';
+import {Int} from 'io-ts';
 
 const renderPage = (viewModel: ViewModel) => {
   const body = document.createElement('body');
@@ -49,8 +49,13 @@ describe('/event-log/deleted render', () => {
     expect(page.querySelector('form')?.getAttribute('method')).toStrictEqual(
       'get'
     );
-    expect(page.querySelector('form')?.getAttribute('action')).toContain(
-      '/event-log/undelete?eventIndex=42'
+    expect(page.querySelector('form')?.getAttribute('action')).toStrictEqual(
+      '/event-log/undelete'
     );
+    expect(
+      page.querySelector('input[name="eventIndex"]')?.getAttribute('value')
+    ).toStrictEqual('42');
+    expect(page.querySelector('input[name="next"]')?.getAttribute('value'))
+      .toStrictEqual('/event-log/deleted');
   });
 });
