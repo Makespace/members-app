@@ -8,6 +8,7 @@ import {FailureWithStatus} from '../../types/failure-with-status';
 import {Params} from '../query';
 import {mustBeSuperuser} from '../util';
 import {ViewModel} from './view-model';
+import { Int } from 'io-ts';
 
 export const constructViewModel =
   (sharedReadModel: SharedReadModel) =>
@@ -18,10 +19,11 @@ export const constructViewModel =
       TE.map(() => {
         const allFailures = pipe(
           sharedReadModel.readOnlyDb.select().from(failedEventsTable).all(),
-          RA.map(({error, eventType, payload}) => ({
+          RA.map(({error, eventType, payload, eventIndex}) => ({
             error,
             eventType,
             payload: payload,
+            eventIndex: eventIndex as Int,
           })),
           RA.reverse
         );

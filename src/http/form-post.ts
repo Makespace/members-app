@@ -14,6 +14,7 @@ import {getUserFromSession} from '../authentication';
 import {oopsPage} from '../templates';
 import {applyCommand} from '../commands/apply-command';
 import {CompleteHtmlDocument, sanitizeString} from '../types/html';
+import {path} from '../types/path';
 
 const getCommandFrom = <T>(body: unknown, command: Command<T>) =>
   pipe(
@@ -39,20 +40,6 @@ const getActorFrom = (session: unknown, deps: Dependencies) =>
     ),
     TE.map(user => ({tag: 'user', user}) satisfies Actor)
   );
-
-class PathType extends t.Type<string> {
-  readonly _tag = 'PathType' as const;
-
-  constructor() {
-    super(
-      'string',
-      (m): m is string => typeof m === 'string' && m.startsWith('/'),
-      (m, c) => (this.is(m) ? t.success(m) : t.failure(m, c)),
-      t.identity
-    );
-  }
-}
-const path = new PathType();
 
 const nextCodec = t.strict({next: path});
 

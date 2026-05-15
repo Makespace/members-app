@@ -4,7 +4,7 @@ import * as tt from 'io-ts-types';
 import {EventsTable} from './events-table';
 import * as t from 'io-ts';
 import {StoredDomainEvent} from '../../types';
-import {internalCodecFailure} from '../../types/failure-with-status';
+import {FailureWithStatus, internalCodecFailure} from '../../types/failure-with-status';
 
 const reshapeRowToEvent = (row: EventsTable['rows'][number]) =>
   pipe(
@@ -15,11 +15,14 @@ const reshapeRowToEvent = (row: EventsTable['rows'][number]) =>
       event_index: row.event_index,
       event_id: row.id,
       type: row.event_type,
+      deletedAt: row.deleted_at_unix_ms,
+      deleteReason: row.delete_reason,
+      markDeletedByMemberNumber: row.mark_deleted_by_member_number,
       ...payload,
     }))
   );
 
-export const eventsFromRows = (rows: EventsTable['rows']) =>
+export const eventsFromRows = (rows: EventsTable['rows']): E.Either<FailureWithStatus, ReadonlyArray<StoredDomainEvent>> =>
   pipe(
     rows,
     E.traverseArray(reshapeRowToEvent),

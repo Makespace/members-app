@@ -104,4 +104,5 @@ const constructForm: Form<ViewModel>['constructForm'] =
 export const setMailingListForm: Form<ViewModel> = {
   renderForm,
   constructForm,
+  formIsAuthorized: null,
 };

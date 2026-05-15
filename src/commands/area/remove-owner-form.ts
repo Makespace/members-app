@@ -121,4 +121,5 @@ export const removeOwnerForm: Form<ViewModel> = {
         E.bind('owner', ({memberNumber}) => getOwner(readModel, memberNumber)),
         TE.fromEither
       ),
+  formIsAuthorized: null,
 };

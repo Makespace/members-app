@@ -103,4 +103,5 @@ const constructForm: Form<ViewModel>['constructForm'] =
 export const markMemberTrainedByForm: Form<ViewModel> = {
   renderForm,
   constructForm,
+  formIsAuthorized: null,
 };

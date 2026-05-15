@@ -1,4 +1,4 @@
-import {User} from '.';
+import {Actor, User} from '.';
 import {FailureWithStatus} from './failure-with-status';
 import * as TE from 'fp-ts/TaskEither';
 import {HttpResponse} from './html';
@@ -14,4 +14,8 @@ export type Form<T> = {
     // events: ReadonlyArray<DomainEvent>;
     readModel: SharedReadModel;
   }) => TE.TaskEither<FailureWithStatus, T>;
+  formIsAuthorized: ((input: {
+    actor: Actor;
+    rm: SharedReadModel;
+  }) => boolean) | null;
 };
