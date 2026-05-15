@@ -3,13 +3,15 @@ import * as T from 'fp-ts/Task';
 import {faker} from '@faker-js/faker';
 import {UUID} from 'io-ts-types';
 import {constructViewModel} from '../../../src/queries/failed-event-log/construct-view-model';
-import {getLeftOrFail, getRightOrFail} from '../../helpers';
+import {getLeftOrFail, getRightOrFail, getTaskEitherRightOrFail} from '../../helpers';
 import {
   initTestFramework,
   TestFramework,
 } from '../../read-models/test-framework';
 import {arbitraryActor} from '../../helpers';
 import {arbitraryUser} from '../../types/user.helper';
+import { liftActorOrUser } from '../../../src/read-models/lift-actor-or-user';
+import { Int } from 'io-ts';
 
 const arbitraryFailingOwnerAddedEvent = () => ({
   type: 'OwnerAdded' as const,
@@ -87,12 +89,11 @@ describe('construct-view-model', () => {
   });
 
   it('hides deleted failed events', async () => {
-    const failedEvent = framework.insertIntoSharedReadModel(
-      arbitraryFailingOwnerAddedEvent()
-    );
+    await getTaskEitherRightOrFail(framework.depsForCommands.commitEvent(3 as Int)(arbitraryFailingOwnerAddedEvent()));
     await framework.commands.eventLog.delete({
-      eventIndex: failedEvent.event_index,
+      eventIndex: 4 as Int, // Last seen index (3) + 1.
       deleteReason: faker.lorem.sentence(),
+      actor: liftActorOrUser(superUser),
     });
 
     const result = await pipe(
