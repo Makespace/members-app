@@ -200,4 +200,5 @@ const constructForm: Form<ViewModel>['constructForm'] =
 export const addOwnerForm: Form<ViewModel> = {
   renderForm,
   constructForm,
+  formIsAuthorized: null,
 };

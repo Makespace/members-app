@@ -36,4 +36,5 @@ const constructForm: Form<ViewModel>['constructForm'] = () => () =>
 export const linkNumberToEmailForm: Form<ViewModel> = {
   renderForm,
   constructForm,
+  formIsAuthorized: null,
 };

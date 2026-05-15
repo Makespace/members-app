@@ -47,4 +47,5 @@ const constructForm: Form<ViewModel>['constructForm'] =
 export const registerTrainingSheetForm: Form<ViewModel> = {
   renderForm,
   constructForm,
+  formIsAuthorized: null,
 };

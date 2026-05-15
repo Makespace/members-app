@@ -1,5 +1,6 @@
 import {Logger} from 'pino';
 import {
+  DeletedStoredDomainEvent,
   Failure,
   Email,
   DomainEvent,
@@ -33,9 +34,21 @@ export type Dependencies = {
     FailureWithStatus,
     ReadonlyArray<StoredDomainEvent>
   >;
+  getEventByIndex: (eventIndex: Int) => TE.TaskEither<FailureWithStatus, O.Option<StoredDomainEvent>>; 
+  getDeletedEvents: () => TE.TaskEither<
+    FailureWithStatus,
+    ReadonlyArray<DeletedStoredDomainEvent>
+  >;
+  getDeletedEventByIndex: (eventIndex: Int) => TE.TaskEither<FailureWithStatus, O.Option<DeletedStoredDomainEvent>>;
   getAllEventsByType: <T extends EventName>(
     eventType: T
   ) => TE.TaskEither<FailureWithStatus, ReadonlyArray<StoredEventOfType<T>>>;
+  deleteEvent: (
+    eventIndex: Int,
+    deleteReason: string,
+    markDeletedByMemberNumber: Int,
+  ) => TE.TaskEither<FailureWithStatus, void>;
+  unDeleteEvent: (eventIndex: Int) => TE.TaskEither<FailureWithStatus, void>;
   sharedReadModel: SharedReadModel;
   extDB: ExternalStateDB;
   logger: Logger;

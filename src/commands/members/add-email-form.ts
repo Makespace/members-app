@@ -62,4 +62,5 @@ const constructForm: Form<ViewModel>['constructForm'] =
 export const addEmailForm: Form<ViewModel> = {
   renderForm,
   constructForm,
+  formIsAuthorized: null,
 };

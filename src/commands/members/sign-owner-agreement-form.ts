@@ -37,4 +37,5 @@ const constructForm: Form<ViewModel>['constructForm'] =
 export const signOwnerAgreementForm: Form<ViewModel> = {
   renderForm,
   constructForm,
+  formIsAuthorized: null,
 };

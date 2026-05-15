@@ -87,10 +87,10 @@ describe('member email commands', () => {
       memberNumber,
       email: secondaryEmail,
     });
-    await framework.commands.members.changePrimaryEmail({
+    await expect(framework.commands.members.changePrimaryEmail({
       memberNumber,
       email: secondaryEmail,
-    });
+    })).rejects.toThrow();
 
     const events = await framework.getAllEventsByType('MemberPrimaryEmailChanged');
     expect(events).toHaveLength(0);
@@ -269,7 +269,7 @@ describe('member email commands', () => {
     });
   });
 
-  it('treats verification as idempotent', async () => {
+  it('prevent duplicate verify', async () => {
     await framework.commands.members.addEmail({
       memberNumber,
       email: secondaryEmail,
@@ -278,10 +278,10 @@ describe('member email commands', () => {
       memberNumber,
       emailAddress: secondaryEmail,
     });
-    await framework.commands.members.verifyEmail({
+    await expect(framework.commands.members.verifyEmail({
       memberNumber,
       emailAddress: secondaryEmail,
-    });
+    })).rejects.toThrow();
 
     const events = await framework.getAllEventsByType('MemberEmailVerified');
     expect(events).toHaveLength(1);
