@@ -12,12 +12,13 @@ const renderEntry = (failure: ViewModel['failures'][number]) => html`
   <li>
     <b>${sanitizeString(failure.error)}</b><br/>
     ${sanitizeString(JSON.stringify(failure.payload))}
-    <form action=/event-log/delete?next=/event-log/failed method="get">
-      <input type="hidden" name="eventIndex" value="${failure.eventIndex}" />
-      <button type="submit">Delete event</button>
-    </form>
   </li>
 `;
+// Temporarily disabled due to performance impact of reload
+// <form action=/event-log/delete?next=/event-log/failed method="get">
+//   <input type="hidden" name="eventIndex" value="${failure.eventIndex}" />
+//   <button type="submit">Delete event</button>
+// </form>
 
 const groupFailures = (failures: ViewModel['failures']): ReadonlyArray<FailureSection> => {
   const sections: FailureSection[] = [];

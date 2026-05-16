@@ -1,16 +1,16 @@
 import {DateTime} from 'luxon';
 import {DeletedStoredDomainEvent} from '../../types';
 import {renderActor} from '../../types/actor';
-import {html, safe, sanitizeString} from '../../types/html';
+import {html, sanitizeString} from '../../types/html';
 import {displayDate} from '../../templates/display-date';
 import {renderMemberNumber} from '../../templates/member-number';
 import {renderPayload} from './render-payload';
 
-const undeletePath = safe('/event-log/undelete');
+// const undeletePath = safe('/event-log/undelete');
 
 export const renderDeletedEvent = <const T extends string>(
   event: DeletedStoredDomainEvent,
-  opts: {
+  _opts: {
     undeleteButton: false | {
       next: T;
     };
@@ -25,12 +25,14 @@ export const renderDeletedEvent = <const T extends string>(
   Event ID: ${sanitizeString(event.event_id)}<br />
   ${renderPayload(event)}
   ${
-    opts.undeleteButton ? html`
-      <form action="${undeletePath}" method="get">
-        <input type="hidden" name="eventIndex" value="${event.event_index}" />
-        <input type="hidden" name="next" value="${safe(opts.undeleteButton.next)}" />
-        <button type="submit">Un-delete event</button>
-      </form>
-    ` : html``
+    // Temporarily disabled due to performance impact of the reload
+    html``
+    // opts.undeleteButton ? html`
+    //   <form action="${undeletePath}" method="get">
+    //     <input type="hidden" name="eventIndex" value="${event.event_index}" />
+    //     <input type="hidden" name="next" value="${safe(opts.undeleteButton.next)}" />
+    //     <button type="submit">Un-delete event</button>
+    //   </form>
+    // ` : html``
     }
 `;
