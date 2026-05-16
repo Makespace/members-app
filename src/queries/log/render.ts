@@ -9,7 +9,7 @@ import * as qs from 'qs';
 import { renderPayload } from '../shared-render/render-payload';
 
 const renderEntry =
-  (search: LogSearch) => (event: ViewModel['events'][number]) => html`
+  (_search: LogSearch) => (event: ViewModel['events'][number]) => html`
   <li>
     ${
       event.deletedAt ? html`DELETED: ` : html``
@@ -20,11 +20,13 @@ const renderEntry =
     Event ID: ${sanitizeString(event.event_id)}<br />
     ${renderPayload(event)}
     ${
-      event.deletedAt === null ?
-        html`<form action=${deletePath(search)} method="get">
-          <input type="hidden" name="eventIndex" value="${event.event_index}" />
-          <button type="submit">Delete event</button>
-        </form>` : html``
+      html``
+      // Temporarily disabled due to performance impact of reload
+      // event.deletedAt === null ?
+      //   html`<form action=${deletePath(search)} method="get">
+      //     <input type="hidden" name="eventIndex" value="${event.event_index}" />
+      //     <button type="submit">Delete event</button>
+      //   </form>` : html``
     }
   </li>
 `;
@@ -45,8 +47,8 @@ const searchToLink = (search: LogSearch) => {
   return safe(`/event-log?${qs.stringify(search)}`);
 };
 
-const deletePath = (search: LogSearch) =>
-  safe(`/event-log/delete?${qs.stringify({next: searchToLink(search)})}`);
+// const deletePath = (search: LogSearch) =>
+//   safe(`/event-log/delete?${qs.stringify({next: searchToLink(search)})}`);
 
 const paginationAmount = (viewModel: ViewModel) => viewModel.search.limit ?? 10;
 
