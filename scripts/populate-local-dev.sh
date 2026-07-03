@@ -49,3 +49,7 @@ event 'api/members/edit-forms-of-address' '{"memberNumber": "9999", "formsOfAddr
 
 # foo@example.com
 event 'api/members/create' '{"memberNumber": "1234", "email": "foo@example.com"}'
+
+# Mixed-case local part (for testing case-insensitive email login, issue #260)
+# Stored as "Joe@example.com"; logging in with "joe@example.com" should still work.
+event 'api/members/create' '{"memberNumber": "4321", "email": "Joe@example.com"}'

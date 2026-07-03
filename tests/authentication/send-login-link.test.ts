@@ -262,6 +262,106 @@ describe('send-log-in-link', () => {
     );
   });
 
+  // Issue #260: the local-part of an email (before the @) was compared
+  // case-sensitively, so a member stored as "Joe@x.com" could not log in by
+  // typing "joe@x.com" and silently received no link. Matching is now
+  // case-insensitive, but the link is always sent to the stored address.
+  describe('when the typed email differs from the stored one only by local-part casing', () => {
+    describe('member registered with a lowercase local part', () => {
+      const storedEmail = 'joe@example.com' as EmailAddress;
+
+      beforeEach(async () => {
+        await framework.commands.memberNumbers.linkNumberToEmail({
+          email: storedEmail,
+          memberNumber: faker.number.int(),
+          name: undefined,
+          formOfAddress: undefined,
+        });
+      });
+
+      it('logs in with an uppercased local part and sends to the stored address', async () => {
+        const result = getRightOrFail(
+          await sendLogInLink(deps, conf)('Joe@example.com' as EmailAddress)()
+        );
+        expect(deps.sendEmail).toHaveBeenCalledWith(
+          expect.objectContaining({recipient: storedEmail})
+        );
+        expect(result).toStrictEqual(`Sent login link to ${storedEmail}`);
+      });
+    });
+
+    describe('member registered with a capitalised local part (e.g. Google Forms auto-capitalisation)', () => {
+      const storedEmail = 'Joe@example.com' as EmailAddress;
+
+      beforeEach(async () => {
+        await framework.commands.memberNumbers.linkNumberToEmail({
+          email: storedEmail,
+          memberNumber: faker.number.int(),
+          name: undefined,
+          formOfAddress: undefined,
+        });
+      });
+
+      it('logs in with a lowercased local part but still sends to the stored (capitalised) address', async () => {
+        const result = getRightOrFail(
+          await sendLogInLink(deps, conf)('joe@example.com' as EmailAddress)()
+        );
+        expect(deps.sendEmail).toHaveBeenCalledWith(
+          expect.objectContaining({recipient: storedEmail})
+        );
+        expect(result).toStrictEqual(`Sent login link to ${storedEmail}`);
+      });
+    });
+  });
+
+  // If two distinct members have emails differing only by local-part casing, a
+  // case-insensitive match is ambiguous - matching either one risks sending a
+  // login link (and thus account access) to the wrong person. In that case we
+  // fall back to requiring an exact match, and send nothing if none matches.
+  describe('when two members share an email differing only by local-part casing', () => {
+    const lowerEmail = 'sam@example.com' as EmailAddress;
+    const upperEmail = 'Sam@example.com' as EmailAddress;
+
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        email: lowerEmail,
+        memberNumber: faker.number.int(),
+        name: undefined,
+        formOfAddress: undefined,
+      });
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        email: upperEmail,
+        memberNumber: faker.number.int(),
+        name: undefined,
+        formOfAddress: undefined,
+      });
+    });
+
+    it('sends to the exact match when the typed casing matches one exactly', async () => {
+      const result = getRightOrFail(
+        await sendLogInLink(deps, conf)(upperEmail)()
+      );
+      expect(deps.sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({recipient: upperEmail})
+      );
+      expect(result).toStrictEqual(`Sent login link to ${upperEmail}`);
+    });
+
+    it('does not send a link when the typed casing matches neither exactly', async () => {
+      const result = await sendLogInLink(deps, conf)(
+        'SAM@example.com' as EmailAddress
+      )();
+      expect(result).toStrictEqual(
+        E.left(
+          expect.objectContaining({
+            message: 'No member associated with that email',
+          })
+        )
+      );
+      expect(deps.sendEmail).not.toHaveBeenCalled();
+    });
+  });
+
   describe('when no member are setup', () => {
     let result: E.Either<Failure, string>;
 
