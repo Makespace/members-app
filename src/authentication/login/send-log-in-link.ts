@@ -5,7 +5,6 @@ import {Email, EmailAddress, Failure, failure} from '../../types';
 import {Config} from '../../configuration';
 import {magicLink} from '..';
 import mjml2html from 'mjml';
-import {normaliseEmailAddress} from '../../read-models/shared-state/normalise-email-address';
 import * as O from 'fp-ts/Option';
 
 const toEmail =
@@ -46,26 +45,24 @@ export const sendLogInLink = (
   deps: Pick<Dependencies, 'sendEmail' | 'rateLimitSendingOfEmails' | 'sharedReadModel' | 'logger'>,
   conf: Config
 ) => (emailAddress: EmailAddress): TE.TaskEither<Failure, string> => {
-  const member = deps.sharedReadModel.members.getByEmail(emailAddress, true);
-  if (O.isNone(member)) {
+  // Match the typed email to a stored one case-insensitively (e.g. "joe@x.com"
+  // finds a member registered as "Joe@x.com"). resolveEmailForLogin returns the
+  // address exactly as stored, so we always send to the on-file casing.
+  const storedEmail = deps.sharedReadModel.members.resolveEmailForLogin(
+    emailAddress,
+    true
+  );
+  if (O.isNone(storedEmail)) {
     return TE.left(failure('No member associated with that email')());
   }
-  const matchedEmail = pipe(
-    member.value.emails,
-    emails =>
-      emails.find(
-        memberEmail =>
-          memberEmail.emailAddress === normaliseEmailAddress(emailAddress)
-      ),
-    O.fromNullable,
-    O.getOrElseW(() => {
-      throw new Error('Expected matched verified email to be present on member');
-    }),
-    email => email.emailAddress
-  );
   // Note that we intentionally use the stored email address rather than the one provided.
   // This prevents attacks where you specify an email address that somehow matches to an existing user but isn't
   // actually treated the same by the mailserver(s) so gets routed differently (to the attacker).
+  const matchedEmail = storedEmail.value;
+  const member = deps.sharedReadModel.members.getByEmail(matchedEmail, true);
+  if (O.isNone(member)) {
+    return TE.left(failure('No member associated with that email')());
+  }
   const email = toEmail(matchedEmail)(
     magicLink.create(conf)({
       emailAddress: matchedEmail,
