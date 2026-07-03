@@ -31,7 +31,7 @@ import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
 import { TrainingSheetId } from '../../types/training-sheet';
 import { EquipmentId } from '../../types/equipment-id';
 import { getTrainingSheetIdMapping } from './equipment/get';
-import { findAllSuperUsers, findUserIdByEmail, findUserIdByMemberNumber, getAllMemberCore } from './member/get';
+import { findAllSuperUsers, findStoredEmailForLogin, findUserIdByEmail, findUserIdByMemberNumber, getAllMemberCore } from './member/get';
 import { setupEventStateTable } from './setup-event-state-table';
 import { getCurrentEventIndex } from './get-current-event-index';
 import { Int } from 'io-ts';
@@ -49,6 +49,10 @@ export type SharedReadModel = {
     getById: (userId: UserId) => O.Option<Member>;
     getByMemberNumber: (memberNumber: number) => O.Option<Member>;
     getByEmail: (email: EmailAddress, mustBeVerified: boolean) => O.Option<Member>;
+    resolveEmailForLogin: (
+      email: EmailAddress,
+      mustBeVerified: boolean
+    ) => O.Option<EmailAddress>;
     getAll: () => ReadonlyArray<Member>;
     getAllCore: () => ReadonlyArray<MemberCoreInfo>;
     getAsActor: (user: User) => (memberNumber: number) => O.Option<Member>;
@@ -101,6 +105,7 @@ export const initSharedReadModel = (
     members: {
       getByMemberNumber: getMemberFullByMemberNumber(readModelDb),
       getByEmail: getMemberFullByEmail(readModelDb),
+      resolveEmailForLogin: findStoredEmailForLogin(readModelDb),
       getById: getMemberFullByUserId(readModelDb),
       getAll: getAllMemberFull(readModelDb),
       getAllCore: () => getAllMemberCore(readModelDb),
