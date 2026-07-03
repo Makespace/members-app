@@ -60,5 +60,3 @@ to the database owners.
 
 ## Discord Webhooks
 This repo will also mention any changes in the discord app contributors channel so that people can see all the work that is being done!
-
-Test
