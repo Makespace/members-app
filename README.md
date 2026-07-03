@@ -57,3 +57,6 @@ Each time you start the dev container the database will be reset to empty.
 ## Testing Google Intergration
 To test the google integration populate `GOOGLE_SERVICE_ACCOUNT_KEY_JSON` within `.env`. The credentials can be found by speaking
 to the database owners.
+
+## Discord Webhooks
+This repo will also mention any changes in the discord app contributors channel so that people can see all the work that is being done!
