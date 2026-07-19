@@ -21,6 +21,7 @@ import {
   Equipment,
   Owner,
 } from '../../read-models/shared-state/return-types';
+import { mailTo } from '../../templates/mailto';
 
 
 const renderSignedAt = (owner: Owner) => {
@@ -214,7 +215,7 @@ const renderArea =
   <article id="area-${safe(area.id)}">
     <h2>${sanitizeString(area.name)}</h2>
     ${O.isSome(area.email)
-      ? html`<p><strong>Mailing list:</strong> ${safe(area.email.value)}</p>`
+      ? html`<p><strong>Mailing list:</strong> ${mailTo(area.email.value, O.none, O.none)}</p>`
       : html``}
     <div>${renderEquipment(area.equipment)}</div>
     ${renderActiveOwners(

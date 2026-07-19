@@ -1,35 +1,32 @@
-import {html, safe} from '../../types/html';
+import * as O from 'fp-ts/Option';
+import { mailTo } from '../../templates/mailto';
+import { EmailAddress } from '../../types';
+import {html, sanitizeString} from '../../types/html';
 
 type ViewModel = {
   memberNumber: number;
 };
 
-const appOwnersGroupEmailAddress = safe('database-owners@makespace.org');
+const appOwnersGroupEmailAddress = 'database-owners@makespace.org' as EmailAddress;
 
-const mailtoLink = (emailAddress: string, subject: string, body: string) =>
-  safe(
-    `mailto:${emailAddress}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-  );
-
-const badRecordsMailtoLink = (memberNumber: ViewModel['memberNumber']) =>
-  mailtoLink(
+const badRecordsMailto = (memberNumber: ViewModel['memberNumber']) =>
+  mailTo(
     appOwnersGroupEmailAddress,
-    'ISSUE with member records',
-    `Hi,
+    O.some('ISSUE with member records'),
+    O.some(`Hi,
 
 My member number is ${memberNumber}.
 
 I have the following issue with my records:
 
 ...
-`
-  );
+`));
 
-const newContributorMailToLink = (memberNumber: ViewModel['memberNumber']) =>
-  mailtoLink(
+const newContributorMailTo = (memberNumber: ViewModel['memberNumber']) =>
+  mailTo(
     appOwnersGroupEmailAddress,
-    'ISSUE New contributor',
-    `Hi,
+    O.some('ISSUE New contributor'),
+    O.some(`Hi,
 
 My member number is ${memberNumber}.
 
@@ -37,7 +34,7 @@ I'm interested in contributing to, or have a suggestion about, app.makespace.org
 
 ...
 `
-  );
+  ));
 
 export const render = (viewModel: ViewModel) => html`
   <div class="stack">
@@ -47,9 +44,7 @@ export const render = (viewModel: ViewModel) => html`
     <h2 id="bad-records">If your records are wrong</h2>
     <p>
       Send the app and records team an email:
-      <a href="${badRecordsMailtoLink(viewModel.memberNumber)}"
-        >${appOwnersGroupEmailAddress}</a
-      >
+      ${badRecordsMailto(viewModel.memberNumber)}
     </p>
     <p>
       Please include your member number (${viewModel.memberNumber}) in the
@@ -78,15 +73,13 @@ export const render = (viewModel: ViewModel) => html`
       </li>
       <li>
         Coordination happens on the
-        <code>${appOwnersGroupEmailAddress}</code> mailing list and the WhatsApp
+        <code>${sanitizeString(appOwnersGroupEmailAddress)}</code> mailing list and the WhatsApp
         group chat.
       </li>
     </ul>
     <p>
       To contribute, please email
-      <a href="${newContributorMailToLink(viewModel.memberNumber)}"
-        >${appOwnersGroupEmailAddress}</a
-      >.
+      ${newContributorMailTo(viewModel.memberNumber)}.
     </p>
 
     <h2 id="contact">Contact</h2>
@@ -98,13 +91,11 @@ export const render = (viewModel: ViewModel) => html`
         >.
         <br />
         You can also start a thread by emailing:
-        <a href="mailto:cammakespace@googlegroups.com"
-          >cammakespace@googlegroups.com</a
-        >
+        ${mailTo("cammakespace@googlegroups.com" as EmailAddress, O.none, O.none)}
       </li>
       <li>
         Membership issues, health and safety concerns, lost fobs etc.:
-        <a href="mailto:management@makespace.org">management@makespace.org</a>
+        ${mailTo("management@makespace.org" as EmailAddress, O.none, O.none)}
       </li>
     </ul>
   </div>

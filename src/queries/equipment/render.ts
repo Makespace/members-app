@@ -23,6 +23,7 @@ import {
   OrphanedPassedQuiz,
 } from '../../read-models/external-state/equipment-quiz';
 import {tooltip} from '../shared-render/tool-tip';
+import { mailTo } from '../../templates/mailto';
 
 const trainersList = (trainers: ViewModel['equipment']['trainers']) =>
   pipe(
@@ -370,7 +371,7 @@ export const render = (viewModel: ViewModel) =>
           </a>
           ${O.isSome(viewModel.equipment.area.email)
             ? html` | <strong>Mailing list:</strong>
-              ${safe(viewModel.equipment.area.email.value)}`
+              ${mailTo(viewModel.equipment.area.email.value, O.none, O.none)}`
             : html``}
         </p>
         ${equipmentActions(viewModel)}
