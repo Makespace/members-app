@@ -268,6 +268,30 @@ describe('construct-training-matrix', () => {
       });
     });
 
+    describe('user is marked as an owner for an area without equipment', () => {
+      const emptyArea: CreateArea = {
+        id: faker.string.uuid() as UUID,
+        name: 'Empty Area' as NonEmptyString,
+      };
+      let trainingMatrix: TrainingMatrix;
+
+      beforeEach(async () => {
+        await framework.commands.area.create(emptyArea);
+        await framework.commands.area.addOwner({
+          areaId: emptyArea.id,
+          memberNumber: user.memberNumber,
+        });
+        trainingMatrix = await getTrainingMatrix(user.memberNumber);
+      });
+
+      it('shows the area with no equipment', () => {
+        expect(trainingMatrix).toHaveLength(1);
+        expect(trainingMatrix[0].area.id).toStrictEqual(emptyArea.id);
+        expect(trainingMatrix[0].area.name).toStrictEqual(emptyArea.name);
+        expect(trainingMatrix[0].equipment).toHaveLength(0);
+      });
+    });
+
     describe('user is marked as trained without doing quiz', () => {
       // In future we can flag cases like this
       const trainedOnMetalMill: MarkMemberTrainedBy = {

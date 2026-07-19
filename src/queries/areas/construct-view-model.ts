@@ -5,7 +5,6 @@ import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
 import {FailureWithStatus} from '../../types/failure-with-status';
 import {AreaViewModel, OwnerViewModel, ViewModel} from './view-model';
-import {mustBeSuperuser} from '../util';
 import {ExternalStateDB} from '../../sync-worker/external-state-db';
 import {
   getRecurlyReasonsForMember,
@@ -53,11 +52,14 @@ export const constructViewModel =
   (sharedReadModel: Dependencies['sharedReadModel'], extDB: ExternalStateDB) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> =>
   async () => {
-    const superUserCheck = await mustBeSuperuser(sharedReadModel, user)();
-    if (E.isLeft(superUserCheck)) {
-      return superUserCheck;
-    }
+    const member = sharedReadModel.members.getByMemberNumber(user.memberNumber);
+    const isSuperUser = O.isSome(member) && member.value.isSuperUser;
+    const isOwnerOfAnyArea =
+      O.isSome(member) && member.value.ownerOf.length > 0;
+
     return E.right({
+      canManageAreas: isSuperUser,
+      canSeeOwnerPrivateDetails: isSuperUser || isOwnerOfAnyArea,
       areas: await Promise.all(
         sharedReadModel.area.getAll().map(expandArea(sharedReadModel, extDB))
       ),

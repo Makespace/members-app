@@ -120,6 +120,14 @@ describe('Render equipment page', () => {
         it('cannot see revoke training button', () => {
             expect(findRevokeTrainingButton(renderedDom)).toStrictEqual(O.none);
         });
+
+        it('links to the equipment area', () => {
+            expect(
+                renderedDom.querySelector(
+                    `a[href="/areas#area-${equipment.area.id}"]`
+                )!.textContent
+            ).toContain(equipment.area.name);
+        });
     });
 
     describe('super user view', () => {
