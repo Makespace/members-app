@@ -79,7 +79,7 @@ export const head = (title: HtmlSubstitution) => html`
           event.target.closest && event.target.closest('.copy-text');
         if (!el || !navigator.clipboard || el.dataset.copying) return;
         navigator.clipboard
-          .writeText((el.getAttribute('data-copy') || el.textContent).trim())
+          .writeText(el.textContent.trim())
           .then(function () {
             el.dataset.copying = '1';
             var original = el.textContent;
