@@ -3,14 +3,13 @@ import {html, sanitizeOption} from '../../types/html';
 import {ViewModel} from './view-model';
 import {renderMemberNumber} from '../../templates/member-number';
 import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
-import {renderOwnerStatus} from '../shared-render/owner-status';
 import {
   howToBecomeATrainer,
 } from '../shared-render/trainer-status';
 import {howToGetTrained} from '../shared-render/training-status';
-import {ownerResources} from './owner-resources';
 import { renderTrainingMatrix } from '../training-matrix/render';
 import {renderMemberEmails} from '../shared-render/member-emails';
+import { ownerResources } from './owner-resources';
 
 const editFormOfAddress = (viewModel: ViewModel) => html`
   <a
@@ -83,11 +82,11 @@ export const render = (viewModel: ViewModel) => html`
       ${renderTrainingMatrix(viewModel.trainingMatrix)}
       ${howToBecomeATrainer}
       ${howToGetTrained}
+      ${ownerResources}
     </section>
     <section>
       <h2>Area ownership</h2>
       ${renderOwnerAgreementStatus(viewModel.member.agreementSigned, false)}
-      ${renderOwnerStatus(viewModel.member.ownerOf, false)} ${ownerResources}
     </section>
     
   </div>
