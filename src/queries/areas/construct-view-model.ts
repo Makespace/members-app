@@ -1,18 +1,65 @@
-import {pipe} from 'fp-ts/lib/function';
 import {User} from '../../types';
 import {Dependencies} from '../../dependencies';
 import * as TE from 'fp-ts/TaskEither';
+import * as E from 'fp-ts/Either';
+import * as O from 'fp-ts/Option';
 import {FailureWithStatus} from '../../types/failure-with-status';
-import {ViewModel} from './view-model';
-
+import {AreaViewModel, OwnerViewModel, ViewModel} from './view-model';
 import {mustBeSuperuser} from '../util';
+import {ExternalStateDB} from '../../sync-worker/external-state-db';
+import {
+  getRecurlyReasonsForMember,
+  RecurlyFlags,
+  RecurlyReason,
+} from '../../read-models/external-state/recurly-status';
+import {Area, Owner} from '../../read-models/shared-state/return-types';
+
+const NO_RECURLY_DATA: {
+  flags: O.Option<RecurlyFlags>;
+  reasons: ReadonlyArray<RecurlyReason>;
+} = {flags: O.none, reasons: ['no-data']};
+
+const expandOwner =
+  (sharedReadModel: Dependencies['sharedReadModel'], extDB: ExternalStateDB) =>
+  async (owner: Owner): Promise<OwnerViewModel> => {
+    // Owners don't carry their email list, so resolve the full member for the
+    // recurly lookup (which matches on verified emails).
+    const member = sharedReadModel.members.getById(owner.userId);
+    const {flags, reasons} = O.isSome(member)
+      ? await getRecurlyReasonsForMember(extDB)(member.value)
+      : NO_RECURLY_DATA;
+
+    // Active-for-ownership is a rule local to this page: a past-due invoice
+    // counts as inactive, since cancelling payment is a common way members
+    // self-deactivate. The shared 'active'/'inactive' status calc is unchanged.
+    const isActiveOwner =
+      O.isSome(flags) &&
+      flags.value.hasActiveSubscription &&
+      !flags.value.hasPastDueInvoice;
+
+    return {...owner, isActiveOwner, reasons};
+  };
+
+const expandArea =
+  (sharedReadModel: Dependencies['sharedReadModel'], extDB: ExternalStateDB) =>
+  async (area: Area): Promise<AreaViewModel> => ({
+    ...area,
+    owners: await Promise.all(
+      area.owners.map(expandOwner(sharedReadModel, extDB))
+    ),
+  });
 
 export const constructViewModel =
-  (sharedReadModel: Dependencies['sharedReadModel']) =>
+  (sharedReadModel: Dependencies['sharedReadModel'], extDB: ExternalStateDB) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> =>
-    pipe(
-      mustBeSuperuser(sharedReadModel, user),
-      TE.map(() => ({
-        areas: sharedReadModel.area.getAll(),
-      }))
-    );
+  async () => {
+    const superUserCheck = await mustBeSuperuser(sharedReadModel, user)();
+    if (E.isLeft(superUserCheck)) {
+      return superUserCheck;
+    }
+    return E.right({
+      areas: await Promise.all(
+        sharedReadModel.area.getAll().map(expandArea(sharedReadModel, extDB))
+      ),
+    });
+  };
