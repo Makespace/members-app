@@ -9,6 +9,7 @@ import {ViewModel} from '../../../src/queries/areas/view-model';
 import {Equipment} from '../../../src/read-models/shared-state/return-types';
 import {EmailAddress, UserId} from '../../../src/types';
 import { getSomeOrFail } from '../../helpers';
+import { html } from '../../../src/types/html';
 
 const areaId = '11111111-1111-4111-8111-111111111111' as UUID;
 const equipmentId = '22222222-2222-4222-8222-222222222222' as UUID;
@@ -46,10 +47,10 @@ const area = {
       isActiveOwner: true,
       reasons: [],
       trainingsByQuarter: [
-        {label: 'Q4 2025', count: 0},
-        {label: 'Q1 2026', count: 0},
-        {label: 'Q2 2026', count: 1},
-        {label: 'Q3 2026', count: 2},
+        {label: html`Q4 2025`, count: 0},
+        {label: html`Q1 2026`, count: 0},
+        {label: html`Q2 2026`, count: 1},
+        {label: html`Q3 2026`, count: 2},
       ],
     },
   ],
