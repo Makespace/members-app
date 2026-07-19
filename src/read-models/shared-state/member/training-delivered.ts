@@ -4,9 +4,12 @@ import {DateTime} from 'luxon';
 import {UUID} from 'io-ts-types';
 import {trainedMemberstable} from '../state';
 
-// All timestamps at which this member delivered training to someone (i.e. ran a
-// session) on the given equipment, excluding bulk legacy imports. `equipmentIds`
-// scopes the result to a single area's equipment - pass that area's equipment.
+// All timestamps at which a member delivered training to someone (i.e. ran a
+// session) on the given equipment, excluding bulk legacy imports.
+// `trainerMemberNumbers` should include the owner's current AND past member
+// numbers, because trainings delivered before a rejoin stay filed under the old
+// `trainedByMemberNumber`. `equipmentIds` scopes the result to a single area's
+// equipment - pass that area's equipment.
 //
 // Caveat: the trainedMembers table holds only the *current* trainer-of-record
 // per (trainee, equipment), so a training drops off this list if that trainee is
@@ -17,10 +20,10 @@ import {trainedMemberstable} from '../state';
 export const trainingsDeliveredBy =
   (db: BetterSQLite3Database) =>
   (
-    trainerMemberNumber: number,
+    trainerMemberNumbers: ReadonlyArray<number>,
     equipmentIds: ReadonlyArray<UUID>
   ): ReadonlyArray<Date> => {
-    if (equipmentIds.length === 0) {
+    if (equipmentIds.length === 0 || trainerMemberNumbers.length === 0) {
       return [];
     }
     return db
@@ -28,7 +31,9 @@ export const trainingsDeliveredBy =
       .from(trainedMemberstable)
       .where(
         and(
-          eq(trainedMemberstable.trainedByMemberNumber, trainerMemberNumber),
+          inArray(trainedMemberstable.trainedByMemberNumber, [
+            ...trainerMemberNumbers,
+          ]),
           inArray(trainedMemberstable.equipmentId, [...equipmentIds]),
           eq(trainedMemberstable.legacyImport, false)
         )

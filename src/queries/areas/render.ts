@@ -10,6 +10,8 @@ import {
 import * as RA from 'fp-ts/ReadonlyArray';
 import {AreaViewModel, OwnerViewModel, ViewModel} from './view-model';
 import {renderReasonChips} from '../../templates/recurly-reasons';
+import {renderMember} from '../../templates/member';
+import {renderTrainingSparkline} from '../../templates/training-sparkline';
 import * as O from 'fp-ts/Option';
 import {displayDate, displayDateShort} from '../../templates/display-date';
 import {DateTime} from 'luxon';
@@ -18,8 +20,11 @@ import {
   Equipment,
   Owner,
 } from '../../read-models/shared-state/return-types';
+<<<<<<< HEAD
 import {QuarterCount} from '../../read-models/shared-state/member/training-delivered';
 import { renderMemberNumber } from '../../templates/member-number';
+=======
+>>>>>>> b358c86 (Address PR review: shared member/email/sparkline templates, escaping, rejoin)
 
 const renderSignedAt = (owner: Owner) => {
   if (O.isSome(owner.agreementSigned)) {
@@ -56,74 +61,9 @@ const renderRemoveOwner = (
   >
 `;
 
-// Email shown under the name to save a column. It's a button so it can be
-// click-to-copied (progressive enhancement - the address is still readable and
-// selectable without JS). See the copy handler in templates/head.ts.
-const renderCopyableEmail = (email: string) => html`
-  <button
-    type="button"
-    class="copy-text"
-    data-copy="${safe(email)}"
-    title="Copy email address"
-  >
-    ${safe(email)}
-  </button>
-`;
-
-// Tufte-style sparkline: one small green bar per quarter (oldest left, current
-// quarter at the right), bar height scaled to the number of trainings that
-// owner delivered. Hovering a bar shows the count via a native SVG <title>.
-const SPARK_BAR_WIDTH = 6;
-const SPARK_BAR_GAP = 3;
-const SPARK_HEIGHT = 16;
-const SPARK_MAX_BAR = 13;
-
+// Sum of trainings delivered across the shown quarters - used to sort owners.
 const trainingsTotal = (owner: OwnerViewModel): number =>
   owner.trainingsByQuarter.reduce((sum, quarter) => sum + quarter.count, 0);
-
-const renderTrainingSparkline = (quarters: ReadonlyArray<QuarterCount>) => {
-  const maxCount = Math.max(1, ...quarters.map(q => q.count));
-  const width =
-    quarters.length * SPARK_BAR_WIDTH + (quarters.length - 1) * SPARK_BAR_GAP;
-  const total = quarters.reduce((sum, q) => sum + q.count, 0);
-  const bars = quarters.map((quarter, i) => {
-    // Zero quarters get a 1px baseline tick so the quarter is still visible.
-    const barHeight =
-      quarter.count === 0
-        ? 1
-        : Math.max(2, Math.round((SPARK_MAX_BAR * quarter.count) / maxCount));
-    const x = i * (SPARK_BAR_WIDTH + SPARK_BAR_GAP);
-    const barClass =
-      quarter.count === 0 ? 'spark-bar spark-bar--empty' : 'spark-bar';
-    return html`<rect
-      class="${safe(barClass)}"
-      x="${x}"
-      y="${SPARK_HEIGHT - barHeight}"
-      width="${SPARK_BAR_WIDTH}"
-      height="${barHeight}"
-    >
-      <title>
-        ${safe(
-          `${quarter.label}: ${quarter.count} training${
-            quarter.count === 1 ? '' : 's'
-          }`
-        )}
-      </title>
-    </rect>`;
-  });
-  return html`<svg
-    class="sparkline"
-    width="${width}"
-    height="${SPARK_HEIGHT}"
-    viewBox="0 0 ${width} ${SPARK_HEIGHT}"
-    role="img"
-    aria-label="${safe(
-      `${total} trainings delivered over the last ${quarters.length} quarters`
-    )}"
-  >
-    ${joinHtml(bars)}
-  </svg>`;
-};
 
 const ownerRow = (
   areaId: Area['id'],
@@ -134,6 +74,7 @@ const ownerRow = (
   reasonCell: Html = html``
 ) => html`
   <tr>
+<<<<<<< HEAD
     <td>
       <div>
         ${sanitizeString(O.getOrElse(() => '-')(owner.name))}
@@ -142,6 +83,10 @@ const ownerRow = (
       ${canSeeOwnerPrivateDetails ? renderCopyableEmail(owner.primaryEmailAddress) : html``}
     </td>
     ${canManageAreas ? reasonCell : html``}
+=======
+    <td>${renderMember(owner)}</td>
+    ${reasonCell}
+>>>>>>> b358c86 (Address PR review: shared member/email/sparkline templates, escaping, rejoin)
     ${showTrainings
       ? html`<td>${renderTrainingSparkline(owner.trainingsByQuarter)}</td>`
       : html``}

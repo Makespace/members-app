@@ -48,10 +48,11 @@ const expandOwner =
       flags.value.hasActiveSubscription &&
       !flags.value.hasPastDueInvoice;
 
-    // Scope trainings to this area's equipment only.
+    // Scope trainings to this area's equipment only, and include the owner's
+    // past member numbers so trainings delivered before a rejoin still count.
     const trainings = trainingsByQuarter(
       sharedReadModel.members.trainingsDeliveredBy(
-        owner.memberNumber,
+        [owner.memberNumber, ...owner.pastMemberNumbers],
         equipmentIds
       ),
       now

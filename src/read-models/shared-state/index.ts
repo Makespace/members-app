@@ -61,7 +61,7 @@ export type SharedReadModel = {
     findUserIdByMemberNumber: (memberNumber: number) => O.Option<UserId>;
     findAllSuperUsers: () => ReadonlyArray<MemberCoreInfo>;
     trainingsDeliveredBy: (
-      trainerMemberNumber: number,
+      trainerMemberNumbers: ReadonlyArray<number>,
       equipmentIds: ReadonlyArray<UUID>
     ) => ReadonlyArray<Date>;
   };

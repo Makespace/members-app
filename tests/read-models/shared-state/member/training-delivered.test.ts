@@ -51,7 +51,12 @@ describe('trainingsDeliveredBy', () => {
     memberNumber: faker.number.int() as Int,
     email: faker.internet.email() as EmailAddress,
   };
+  const trainerPastNumber = faker.number.int() as Int;
   const trainee = {
+    memberNumber: faker.number.int() as Int,
+    email: faker.internet.email() as EmailAddress,
+  };
+  const trainee2 = {
     memberNumber: faker.number.int() as Int,
     email: faker.internet.email() as EmailAddress,
   };
@@ -70,6 +75,12 @@ describe('trainingsDeliveredBy', () => {
     await framework.commands.memberNumbers.linkNumberToEmail({
       memberNumber: trainee.memberNumber,
       email: trainee.email,
+      name: undefined,
+      formOfAddress: undefined,
+    });
+    await framework.commands.memberNumbers.linkNumberToEmail({
+      memberNumber: trainee2.memberNumber,
+      email: trainee2.email,
       name: undefined,
       formOfAddress: undefined,
     });
@@ -105,27 +116,53 @@ describe('trainingsDeliveredBy', () => {
       trainedAt: new Date('2026-06-20T10:00:00Z'),
       actor,
     });
+    // Delivered earlier under a past (pre-rejoin) member number.
+    await framework.commands.trainers.markMemberTrainedBy({
+      equipmentId: equipmentA,
+      memberNumber: trainee2.memberNumber,
+      trainedByMemberNumber: trainerPastNumber,
+      trainedAt: new Date('2026-04-10T10:00:00Z'),
+      actor,
+    });
   });
 
   afterEach(() => framework.close());
 
-  const run = (memberNumber: number, equipmentIds: ReadonlyArray<UUID>) =>
+  const run = (
+    memberNumbers: ReadonlyArray<number>,
+    equipmentIds: ReadonlyArray<UUID>
+  ) =>
     trainingsDeliveredBy(framework.sharedReadModel.db)(
-      memberNumber,
+      memberNumbers,
       equipmentIds
     );
 
   it('returns nothing when no equipment is supplied (short-circuit)', () => {
-    expect(run(trainer.memberNumber, [])).toStrictEqual([]);
+    expect(run([trainer.memberNumber], [])).toStrictEqual([]);
+  });
+
+  it('returns nothing when no member numbers are supplied', () => {
+    expect(run([], [equipmentA, equipmentB])).toStrictEqual([]);
   });
 
   it("scopes to the given area's equipment", () => {
-    expect(run(trainer.memberNumber, [equipmentA])).toHaveLength(1);
-    expect(run(trainer.memberNumber, [equipmentA, equipmentB])).toHaveLength(2);
+    expect(run([trainer.memberNumber], [equipmentA])).toHaveLength(1);
+    expect(run([trainer.memberNumber], [equipmentA, equipmentB])).toHaveLength(
+      2
+    );
+  });
+
+  it('includes trainings delivered under a past member number', () => {
+    expect(run([trainer.memberNumber], [equipmentA, equipmentB])).toHaveLength(
+      2
+    );
+    expect(
+      run([trainer.memberNumber, trainerPastNumber], [equipmentA, equipmentB])
+    ).toHaveLength(3);
   });
 
   it('does not count trainings delivered by someone else', () => {
-    expect(run(trainee.memberNumber, [equipmentA, equipmentB])).toStrictEqual(
+    expect(run([trainee.memberNumber], [equipmentA, equipmentB])).toStrictEqual(
       []
     );
   });
