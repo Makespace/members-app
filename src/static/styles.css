@@ -425,6 +425,48 @@ label img {
   color: color-mix(in oklch, black 50%, var(--red-color));
 }
 
+/* Click-to-copy text (e.g. email under the owner's name).
+   Overrides the global green button styling - it should read as a link. */
+.copy-text {
+  font: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  overflow-wrap: anywhere;
+  color: color-mix(in oklch, white 35%, var(--link-color));
+  text-decoration: underline;
+}
+
+.copy-text:hover {
+  color: var(--link-color);
+  background: none;
+}
+
+.copy-text:active {
+  top: 0;
+}
+
+.copy-text.copied {
+  color: var(--grey-color);
+  background: none;
+}
+
+/* Tufte-style trainings-delivered sparkline */
+.sparkline {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.sparkline .spark-bar {
+  fill: var(--green-color);
+}
+
+.sparkline .spark-bar--empty {
+  fill: var(--border-color);
+}
+
 .tooltip {
   position: relative;
   display: inline-block;

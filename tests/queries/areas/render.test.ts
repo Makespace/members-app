@@ -8,6 +8,8 @@ import {render} from '../../../src/queries/areas/render';
 import {ViewModel} from '../../../src/queries/areas/view-model';
 import {Equipment} from '../../../src/read-models/shared-state/return-types';
 import {EmailAddress, UserId} from '../../../src/types';
+import { getSomeOrFail } from '../../helpers';
+import { html } from '../../../src/types/html';
 
 const areaId = '11111111-1111-4111-8111-111111111111' as UUID;
 const equipmentId = '22222222-2222-4222-8222-222222222222' as UUID;
@@ -44,9 +46,16 @@ const area = {
       markedOwnerBy: O.none,
       isActiveOwner: true,
       reasons: [],
+      trainingsByQuarter: [
+        {label: html`Q4 2025`, count: 0},
+        {label: html`Q1 2026`, count: 0},
+        {label: html`Q2 2026`, count: 1},
+        {label: html`Q3 2026`, count: 2},
+      ],
     },
   ],
 } satisfies ViewModel['areas'][number];
+
 
 const renderPage = (viewModel: ViewModel): HTMLBodyElement => {
   const body = document.createElement('body');
@@ -63,6 +72,7 @@ describe('areas render', () => {
       areas: [area],
       canManageAreas: false,
       canSeeOwnerPrivateDetails: false,
+      canSeeTrainings: false,
     });
 
     expect(page.textContent).toContain('Areas');
@@ -83,11 +93,12 @@ describe('areas render', () => {
       areas: [area],
       canManageAreas: false,
       canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: false,
     });
 
     expect(page.textContent).toContain(ownerEmail);
     expect(page.textContent).toContain('Agreement Signed');
-    expect(page.textContent).toContain('02/01/2025');
+    expect(page.textContent).toContain('2 Jan 25');
     expect(page.textContent).not.toContain('Ask to sign');
     expect(page.textContent).not.toContain('Add owner');
     expect(page.textContent).not.toContain('Remove area');
@@ -98,6 +109,7 @@ describe('areas render', () => {
       areas: [area],
       canManageAreas: true,
       canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: false,
     });
 
     expect(page.textContent).toContain('Add area of responsibility');
@@ -113,6 +125,7 @@ describe('areas render', () => {
       areas: [{...area, equipment: []}],
       canManageAreas: false,
       canSeeOwnerPrivateDetails: false,
+      canSeeTrainings: false,
     });
 
     expect(page.textContent).toContain('No equipment currently assigned to this area.');
@@ -128,6 +141,7 @@ describe('areas render', () => {
       ],
       canManageAreas: false,
       canSeeOwnerPrivateDetails: false,
+      canSeeTrainings: false,
     });
 
     expect(page.textContent).toContain('Area Owner');
@@ -151,6 +165,7 @@ describe('areas render', () => {
       ],
       canManageAreas: false,
       canSeeOwnerPrivateDetails: false,
+      canSeeTrainings: false,
     });
 
     expect(normalizedText(page)).toContain(
@@ -168,6 +183,7 @@ describe('areas render', () => {
       ],
       canManageAreas: false,
       canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: false,
     });
 
     expect(normalizedText(page)).toContain(
@@ -185,10 +201,72 @@ describe('areas render', () => {
       ],
       canManageAreas: true,
       canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: false,
     });
 
     expect(page.textContent).toContain(
       'No active owners — see inactive owners below.'
     );
+  });
+
+  it('shows the trainings column (with header tooltip) and sparkline for an area with red equipment', () => {
+    const page = renderPage({
+      areas: [area],
+      canManageAreas: true,
+      canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: true,
+    });
+    expect(page.textContent).toContain('Trainings');
+    expect(page.textContent).toContain('Shows trainings completed within this area');
+    expect(page.querySelectorAll(".sparkline")).toHaveLength(1);
+  });
+
+  it('hides the trainings column for an area with no red equipment', () => {
+    const page = renderPage({
+      areas: [{
+        ...area,
+        equipment: [],
+      }],
+      canManageAreas: true,
+      canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: true,
+    });
+    expect(page.textContent).not.toContain('Shows trainings completed within this area');
+    expect(page.querySelectorAll(".sparkline")).toHaveLength(0);
+  });
+
+  it('consolidates the member number into a single "Member" column', () => {
+    const page = renderPage({
+      areas: [area],
+      canManageAreas: true,
+      canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: true,
+    });
+    const tableHeaders = Array.from(page.querySelectorAll("th")).map(node => node.textContent);
+
+    expect(tableHeaders).toContain('Member');
+    expect(tableHeaders).not.toContain('Member Number');
+    expect(page.textContent).toContain(getSomeOrFail(area.owners[0].name));
+    expect(page.textContent).toContain(`(${area.owners[0].memberNumber})`);
+  });
+
+  it('lists inactive owners with reason chips in a collapsible section', () => {
+    const page = renderPage({
+      areas: [{
+        ...area,
+        owners: [{
+          ...area.owners[0],
+          isActiveOwner: false,
+          reasons: ['cancelled-in-term', 'past-due'],
+        }]
+      }],
+      canManageAreas: true,
+      canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: true,
+    });
+    const detailsSections = Array.from(page.querySelectorAll("details"));
+    expect(detailsSections).toHaveLength(1);
+    expect(detailsSections[0].textContent).toContain('Cancelled – still has access');
+    expect(detailsSections[0].textContent).toContain('Payment overdue');
   });
 });
