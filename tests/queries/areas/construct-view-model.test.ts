@@ -1,6 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import {arbitraryUser} from '../../types/user.helper';
-import {getRightOrFail} from '../../helpers';
+import {getLeftOrFail, getRightOrFail} from '../../helpers';
 import * as T from 'fp-ts/Task';
 import {constructViewModel} from '../../../src/queries/areas/construct-view-model';
 import {
@@ -60,14 +60,12 @@ describe('construct-view-model', () => {
     expect(result.canSeeOwnerPrivateDetails).toStrictEqual(false);
   });
 
-  it("succeeds without management permissions if the logged in user isn't known to the shared state", async () => {
+  it("fails if the logged in user isn't known to the shared state", async () => {
     const result = await pipe(
       unregisteredUser,
       constructViewModel(framework.sharedReadModel, framework.extDB),
-      T.map(getRightOrFail)
+      T.map(getLeftOrFail)
     )();
-    expect(result.areas).toBeDefined();
-    expect(result.canManageAreas).toStrictEqual(false);
-    expect(result.canSeeOwnerPrivateDetails).toStrictEqual(false);
+    expect(result.status).toStrictEqual(401);
   });
 });

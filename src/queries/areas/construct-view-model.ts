@@ -3,7 +3,10 @@ import {Dependencies} from '../../dependencies';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
-import {FailureWithStatus} from '../../types/failure-with-status';
+import {
+  failureWithStatus,
+  FailureWithStatus,
+} from '../../types/failure-with-status';
 import {AreaViewModel, OwnerViewModel, ViewModel} from './view-model';
 import {ExternalStateDB} from '../../sync-worker/external-state-db';
 import {
@@ -12,6 +15,7 @@ import {
   RecurlyReason,
 } from '../../read-models/external-state/recurly-status';
 import {Area, Owner} from '../../read-models/shared-state/return-types';
+import {StatusCodes} from 'http-status-codes';
 
 const NO_RECURLY_DATA: {
   flags: O.Option<RecurlyFlags>;
@@ -53,9 +57,17 @@ export const constructViewModel =
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> =>
   async () => {
     const member = sharedReadModel.members.getByMemberNumber(user.memberNumber);
-    const isSuperUser = O.isSome(member) && member.value.isSuperUser;
-    const isOwnerOfAnyArea =
-      O.isSome(member) && member.value.ownerOf.length > 0;
+    if (O.isNone(member)) {
+      return E.left(
+        failureWithStatus(
+          'Cannot find sufficient information about you to determine if you can access this page',
+          StatusCodes.UNAUTHORIZED
+        )()
+      );
+    }
+
+    const isSuperUser = member.value.isSuperUser;
+    const isOwnerOfAnyArea = member.value.ownerOf.length > 0;
 
     return E.right({
       canManageAreas: isSuperUser,
