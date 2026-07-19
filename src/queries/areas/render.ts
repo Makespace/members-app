@@ -121,7 +121,7 @@ const renderActiveOwners = (
     <table>
       <thead>
         <tr>
-          <th>Member</th>
+          <th>Owner</th>
           ${showTrainings ? trainingsHeader : html``}
           ${canSeeOwnerPrivateDetails
             ? html`<th>Agreement Signed</th>`
