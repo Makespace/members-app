@@ -98,7 +98,7 @@ export const constructViewModel =
     return E.right({
       canManageAreas: isSuperUser,
       canSeeOwnerPrivateDetails: isSuperUser || isOwnerOfAnyArea,
-      canSeeTrainings: isOwnerOfAnyArea,
+      canSeeTrainings: isSuperUser || isOwnerOfAnyArea,
       areas: await Promise.all(
         sharedReadModel.area.getAll().map(expandArea(sharedReadModel, extDB, now))
       ),
