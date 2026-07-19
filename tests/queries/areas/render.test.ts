@@ -209,19 +209,19 @@ describe('areas render', () => {
   });
 
   it('shows the trainings column (with header tooltip) and sparkline for an area with red equipment', () => {
-    const out = renderPage({
+    const page = renderPage({
       areas: [area],
       canManageAreas: true,
       canSeeOwnerPrivateDetails: true,
       canSeeTrainings: true,
     });
-    expect(out).toContain('Trainings');
-    expect(out).toContain('Shows trainings completed within this area');
-    expect(out).toContain('class="sparkline"');
+    expect(page.textContent).toContain('Trainings');
+    expect(page.textContent).toContain('Shows trainings completed within this area');
+    expect(page.textContent).toContain('class="sparkline"');
   });
 
   it('hides the trainings column for an area with no red equipment', () => {
-    const out = renderPage({
+    const page = renderPage({
       areas: [{
         ...area,
         equipment: [],
@@ -230,25 +230,25 @@ describe('areas render', () => {
       canSeeOwnerPrivateDetails: true,
       canSeeTrainings: true,
     });
-    expect(out).not.toContain('Shows trainings completed within this area');
-    expect(out).not.toContain('class="sparkline"');
+    expect(page.textContent).not.toContain('Shows trainings completed within this area');
+    expect(page.textContent).not.toContain('class="sparkline"');
   });
 
   it('consolidates the member number into a single "Member" column', () => {
-    const out = renderPage({
+    const page = renderPage({
       areas: [area],
       canManageAreas: true,
       canSeeOwnerPrivateDetails: true,
       canSeeTrainings: true,
     });
-    expect(out).toContain('<th>Member</th>');
-    expect(out).not.toContain('<th>Member Number</th>');
-    expect(out).toContain('Owen Owner');
-    expect(out).toContain('/member/4150/');
+    expect(page.textContent).toContain('<th>Member</th>');
+    expect(page.textContent).not.toContain('<th>Member Number</th>');
+    expect(page.textContent).toContain('Owen Owner');
+    expect(page.textContent).toContain('/member/4150/');
   });
 
   it('lists inactive owners with reason chips in a collapsible section', () => {
-    const out = renderPage({
+    const page = renderPage({
       areas: [{
         ...area,
         owners: [{
@@ -261,8 +261,8 @@ describe('areas render', () => {
       canSeeOwnerPrivateDetails: true,
       canSeeTrainings: true,
     });
-    expect(out).toContain('<details>');
-    expect(out).toContain('Cancelled – still has access');
-    expect(out).toContain('Payment overdue');
+    expect(page.textContent).toContain('<details>');
+    expect(page.textContent).toContain('Cancelled – still has access');
+    expect(page.textContent).toContain('Payment overdue');
   });
 });
