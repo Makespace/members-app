@@ -158,6 +158,23 @@ describe('areas render', () => {
     );
   });
 
+  it("shows the public get-involved message to non-super users who can see owner private details", () => {
+    const page = renderPage({
+      areas: [
+        {
+          ...area,
+          owners: [],
+        },
+      ],
+      canManageAreas: false,
+      canSeeOwnerPrivateDetails: true,
+    });
+
+    expect(normalizedText(page)).toContain(
+      "This area doesn't have any owners currently - email owners@makespace.org to get involved!"
+    );
+  });
+
   it('keeps the inactive-owner hint for super users', () => {
     const page = renderPage({
       areas: [
