@@ -97,8 +97,8 @@ const renderActiveOwners = (
     <table>
       <thead>
         <tr>
-          <th>Member Number</th>
-          <th>Name</th>
+          <th>Owner Member Number</th>
+          <th>Owner Name</th>
           ${canSeeOwnerPrivateDetails ? html`<th>Email</th>` : html``}
           ${canSeeOwnerPrivateDetails
             ? html`<th>Agreement Signed</th>`
