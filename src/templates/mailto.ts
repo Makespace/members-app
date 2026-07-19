@@ -7,7 +7,7 @@ const mailtoLink = (
   subject: O.Option<string>,
   body: O.Option<string>
 ): Html => {
-  const escapedEmail = sanitizeString(email);
+  const encodedEmail = safe(encodeURIComponent(email));
   const query: Html[] = [];
 
   if (O.isSome(subject)) {
@@ -22,7 +22,7 @@ const mailtoLink = (
     O.isSome(subject) || O.isSome(body) ? html`?` : html``;
   const queryPart = safe(query.join('&'));
 
-  return html`mailto:${escapedEmail}${querySeperator}${queryPart}`;
+  return html`mailto:${encodedEmail}${querySeperator}${queryPart}`;
 };
 
 export const mailTo = (
