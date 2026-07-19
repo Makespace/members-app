@@ -8,7 +8,6 @@ import {render} from '../../../src/queries/areas/render';
 import {ViewModel} from '../../../src/queries/areas/view-model';
 import {Equipment} from '../../../src/read-models/shared-state/return-types';
 import {EmailAddress, UserId} from '../../../src/types';
-import { fa } from '@faker-js/faker';
 import { getSomeOrFail } from '../../helpers';
 
 const areaId = '11111111-1111-4111-8111-111111111111' as UUID;
