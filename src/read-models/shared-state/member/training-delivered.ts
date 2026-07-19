@@ -3,6 +3,7 @@ import {and, eq, inArray} from 'drizzle-orm';
 import {DateTime} from 'luxon';
 import {UUID} from 'io-ts-types';
 import {trainedMemberstable} from '../state';
+import { html, Html } from '../../../types/html';
 
 // All timestamps at which a member delivered training to someone (i.e. ran a
 // session) on the given equipment, excluding bulk legacy imports.
@@ -42,7 +43,7 @@ export const trainingsDeliveredBy =
       .map(row => row.trainedAt);
   };
 
-export type QuarterCount = {label: string; count: number};
+export type QuarterCount = {label: Html; count: number};
 
 // Buckets delivery timestamps into the most recent `quarters` quarters, oldest
 // first so the current quarter renders on the right. `now` is injected for
@@ -60,6 +61,6 @@ export const trainingsByQuarter = (
       const dt = DateTime.fromJSDate(d);
       return dt >= start && dt < end;
     }).length;
-    return {label: `Q${start.quarter} ${start.year}`, count};
+    return {label: html`Q${start.quarter} ${start.year}`, count};
   });
 };

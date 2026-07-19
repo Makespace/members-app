@@ -24,20 +24,18 @@ export const renderTrainingSparkline = (
         : Math.max(2, Math.round((SPARK_MAX_BAR * quarter.count) / maxCount));
     const x = i * (SPARK_BAR_WIDTH + SPARK_BAR_GAP);
     const barClass =
-      quarter.count === 0 ? 'spark-bar spark-bar--empty' : 'spark-bar';
+      quarter.count === 0 ? html`spark-bar spark-bar--empty` : html`spark-bar`;
     return html`<rect
-      class="${safe(barClass)}"
+      class="${barClass}"
       x="${x}"
       y="${SPARK_HEIGHT - barHeight}"
       width="${SPARK_BAR_WIDTH}"
       height="${barHeight}"
     >
       <title>
-        ${safe(
-          `${quarter.label}: ${quarter.count} training${
-            quarter.count === 1 ? '' : 's'
-          }`
-        )}
+        ${quarter.label}: ${quarter.count} training${
+          quarter.count === 1 ? html`` : html`s`
+        }
       </title>
     </rect>`;
   });
