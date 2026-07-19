@@ -34,7 +34,6 @@ export const initRoutes = (
     ...command('areas', 'remove-owner', commands.area.removeOwner),
     ...command('areas', 'remove', commands.area.remove),
     ...command('areas', 'set-mailing-List', commands.area.setMailingList),
-    query('/equipment', queries.allEquipment),
     ...command('equipment', 'add', commands.equipment.add),
     ...command('equipment', 'add-trainer', commands.trainers.add),
     ...command(
@@ -62,6 +61,7 @@ export const initRoutes = (
       'mark-member-trained-by',
       commands.trainers.markMemberTrainedBy
     ),
+    get('/equipment', (_req, res) => res.redirect('/areas')),
     query('/equipment/:equipment', queries.equipment),
     query('/super-users', queries.superUsers),
     ...command('super-users', 'declare', commands.superUser.declare),
