@@ -364,7 +364,10 @@ export const render = (viewModel: ViewModel) =>
       <div class="stack">
         <h1>${sanitizeString(viewModel.equipment.name)}</h1>
         <p>
-          <strong>Area:</strong> ${sanitizeString(viewModel.equipment.area.name)}
+          <strong>Area:</strong>
+          <a href="/areas#area-${safe(viewModel.equipment.area.id)}">
+            ${sanitizeString(viewModel.equipment.area.name)}
+          </a>
           ${O.isSome(viewModel.equipment.area.email)
             ? html` | <strong>Mailing list:</strong>
               ${safe(viewModel.equipment.area.email.value)}`

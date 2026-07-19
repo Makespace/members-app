@@ -10,5 +10,5 @@ export const areas: Query = deps => user =>
     user,
     constructViewModel(deps.sharedReadModel, deps.extDB),
     TE.map(render),
-    TE.map(toLoggedInContent(safe('Manage Areas and Owners')))
+    TE.map(toLoggedInContent(safe('Areas')))
   );

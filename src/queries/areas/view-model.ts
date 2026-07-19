@@ -16,4 +16,6 @@ export type AreaViewModel = Omit<Area, 'owners'> & {
 
 export type ViewModel = {
   areas: ReadonlyArray<AreaViewModel>;
+  canManageAreas: boolean;
+  canSeeOwnerPrivateDetails: boolean;
 };

@@ -24,6 +24,13 @@ const renderSignedAt = (owner: Owner) => {
   if (O.isSome(owner.agreementSigned)) {
     return pipe(owner.agreementSigned.value, DateTime.fromJSDate, displayDate);
   }
+  return html`Not signed`;
+};
+
+const renderSignedAtForManager = (owner: Owner) => {
+  if (O.isSome(owner.agreementSigned)) {
+    return renderSignedAt(owner);
+  }
   return html`
     <form action="/send-email/owner-agreement-invite" method="post">
       <input type="hidden" name="recipient" value="${owner.memberNumber}" />
@@ -47,24 +54,41 @@ const renderRemoveOwner = (
 const ownerRow = (
   areaId: Area['id'],
   owner: OwnerViewModel,
+  canManageAreas: boolean,
+  canSeeOwnerPrivateDetails: boolean,
   reasonCell: Html = html``
 ) => html`
   <tr>
     <td>${renderMemberNumber(owner.memberNumber)}</td>
     <td>${sanitizeString(O.getOrElse(() => '-')(owner.name))}</td>
-    <td>${safe(owner.primaryEmailAddress)}</td>
-    ${reasonCell}
-    <td>${renderSignedAt(owner)}</td>
-    <td>${renderRemoveOwner(areaId, owner)}</td>
+    ${canSeeOwnerPrivateDetails
+      ? html`<td>${safe(owner.primaryEmailAddress)}</td>`
+      : html``}
+    ${canManageAreas ? reasonCell : html``}
+    ${canSeeOwnerPrivateDetails
+      ? html`<td>${
+          canManageAreas ? renderSignedAtForManager(owner) : renderSignedAt(owner)
+        }</td>`
+      : html``}
+    ${canManageAreas ? html`<td>${renderRemoveOwner(areaId, owner)}</td>` : html``}
   </tr>
 `;
 
 const renderActiveOwners = (
   areaId: Area['id'],
   owners: ReadonlyArray<OwnerViewModel>,
-  hasInactiveOwners: boolean
+  hasInactiveOwners: boolean,
+  canManageAreas: boolean,
+  canSeeOwnerPrivateDetails: boolean
 ) => {
   if (owners.length === 0) {
+    if (!canManageAreas) {
+      return html`<p>
+        This area doesn't have any owners currently - email
+        owners@makespace.org to get involved!
+      </p>`;
+    }
+
     return hasInactiveOwners
       ? html` <p>No active owners — see inactive owners below.</p> `
       : html` <p>Owners needed!</p> `;
@@ -73,15 +97,26 @@ const renderActiveOwners = (
     <table>
       <thead>
         <tr>
-          <th>Member Number</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Agreement Signed</th>
-          <th></th>
+          <th>Owner Member Number</th>
+          <th>Owner Name</th>
+          ${canSeeOwnerPrivateDetails ? html`<th>Email</th>` : html``}
+          ${canSeeOwnerPrivateDetails
+            ? html`<th>Agreement Signed</th>`
+            : html``}
+          ${canManageAreas ? html`<th></th>` : html``}
         </tr>
       </thead>
       <tbody>
-        ${joinHtml(owners.map(owner => ownerRow(areaId, owner)))}
+        ${joinHtml(
+          owners.map(owner =>
+            ownerRow(
+              areaId,
+              owner,
+              canManageAreas,
+              canSeeOwnerPrivateDetails
+            )
+          )
+        )}
       </tbody>
     </table>
   `;
@@ -89,9 +124,10 @@ const renderActiveOwners = (
 
 const renderInactiveOwners = (
   areaId: Area['id'],
-  owners: ReadonlyArray<OwnerViewModel>
+  owners: ReadonlyArray<OwnerViewModel>,
+  canManageAreas: boolean
 ) => {
-  if (owners.length === 0) {
+  if (!canManageAreas || owners.length === 0) {
     return html``;
   }
   return html`
@@ -114,6 +150,8 @@ const renderInactiveOwners = (
               ownerRow(
                 areaId,
                 owner,
+                canManageAreas,
+                true,
                 html`<td>${renderReasonChips(owner.reasons)}</td>`
               )
             )
@@ -124,30 +162,47 @@ const renderInactiveOwners = (
   `;
 };
 
-const renderEquipment = (equipment: ReadonlyArray<Equipment>) =>
-  pipe(
+const renderEquipment = (equipment: ReadonlyArray<Equipment>) => {
+  if (equipment.length === 0) {
+    return html`<p>No equipment currently assigned to this area.</p>`;
+  }
+
+  return pipe(
     equipment,
     RA.map(
       item => html`
         <a href="/equipment/${safe(item.id)}">${sanitizeString(item.name)}</a>
       `
     ),
-    items => html`RED equipment: ${commaHtml(items)}`
+    items => html`<p><strong>RED equipment:</strong> ${commaHtml(items)}</p>`
   );
+};
 
-const renderArea = (area: AreaViewModel) => {
+const renderArea =
+  (viewModel: ViewModel) =>
+  (area: AreaViewModel) => {
   const activeOwners = area.owners.filter(owner => owner.isActiveOwner);
   const inactiveOwners = area.owners.filter(owner => !owner.isActiveOwner);
+  const publiclyVisibleOwners = viewModel.canManageAreas
+    ? activeOwners
+    : area.owners;
   return html`
-  <article>
+  <article id="area-${safe(area.id)}">
     <h2>${sanitizeString(area.name)}</h2>
     ${O.isSome(area.email)
       ? html`<p><strong>Mailing list:</strong> ${safe(area.email.value)}</p>`
       : html``}
     <div>${renderEquipment(area.equipment)}</div>
-    ${renderActiveOwners(area.id, activeOwners, inactiveOwners.length > 0)}
-    ${renderInactiveOwners(area.id, inactiveOwners)}
-    <div class="wrap">
+    ${renderActiveOwners(
+      area.id,
+      publiclyVisibleOwners,
+      viewModel.canManageAreas && inactiveOwners.length > 0,
+      viewModel.canManageAreas,
+      viewModel.canSeeOwnerPrivateDetails
+    )}
+    ${renderInactiveOwners(area.id, inactiveOwners, viewModel.canManageAreas)}
+    ${
+      viewModel.canManageAreas ? html`<div class="wrap">
       <a class="button" href="/areas/add-owner?area=${safe(area.id)}"
         >Add owner</a
       >
@@ -160,16 +215,17 @@ const renderArea = (area: AreaViewModel) => {
       <a class="button" href="/areas/remove?area=${safe(area.id)}"
         >Remove area</a
       >
-    </div>
+    </div>` : html``
+    }
   </article>
 `;
 };
 
-const renderAreas = (areas: ViewModel['areas']) => {
-  if (areas.length === 0) {
+const renderAreas = (viewModel: ViewModel) => {
+  if (viewModel.areas.length === 0) {
     return html`<p>Currently no Areas</p> `;
   }
-  return pipe(areas, RA.map(renderArea), joinHtml);
+  return pipe(viewModel.areas, RA.map(renderArea(viewModel)), joinHtml);
 };
 
 const addAreaCallToAction = html`
@@ -178,8 +234,8 @@ const addAreaCallToAction = html`
 
 export const render = (viewModel: ViewModel) => html`
   <div class="stack-large">
-    <h1>Manage Areas and Owners</h1>
-    <div>${addAreaCallToAction}</div>
-    <section class="stack-large">${renderAreas(viewModel.areas)}</section>
+    <h1>Areas</h1>
+    ${viewModel.canManageAreas ? html`<div>${addAreaCallToAction}</div>` : html``}
+    <section class="stack-large">${renderAreas(viewModel)}</section>
   </div>
 `;
