@@ -9,6 +9,7 @@ import {ViewModel} from '../../../src/queries/areas/view-model';
 import {Equipment} from '../../../src/read-models/shared-state/return-types';
 import {EmailAddress, UserId} from '../../../src/types';
 import { fa } from '@faker-js/faker';
+import { getSomeOrFail } from '../../helpers';
 
 const areaId = '11111111-1111-4111-8111-111111111111' as UUID;
 const equipmentId = '22222222-2222-4222-8222-222222222222' as UUID;
@@ -245,8 +246,8 @@ describe('areas render', () => {
 
     expect(tableHeaders).toContain('Member');
     expect(tableHeaders).not.toContain('Member Number');
-    expect(page.textContent).toContain('Owen Owner');
-    expect(page.textContent).toContain('/member/4150/');
+    expect(page.textContent).toContain(getSomeOrFail(area.owners[0].name));
+    expect(page.textContent).toContain(`(${area.owners[0].memberNumber})`);
   });
 
   it('lists inactive owners with reason chips in a collapsible section', () => {
