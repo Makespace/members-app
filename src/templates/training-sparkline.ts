@@ -1,4 +1,4 @@
-import {html, joinHtml, safe} from '../types/html';
+import {html, joinHtml} from '../types/html';
 import {QuarterCount} from '../read-models/shared-state/member/training-delivered';
 
 // Tufte-style sparkline: one small green bar per quarter (oldest left, current
