@@ -77,6 +77,7 @@ export const render = (viewModel: ViewModel) => html`
     <section>
       <h2>Your details</h2>
       ${renderMemberDetails(viewModel)}
+      ${renderOwnerAgreementStatus(viewModel.member.agreementSigned, false)}
     </section>
     <section>
       ${renderTrainingMatrix(viewModel.trainingMatrix)}
@@ -84,10 +85,5 @@ export const render = (viewModel: ViewModel) => html`
       ${howToGetTrained}
       ${ownerResources}
     </section>
-    <section>
-      <h2>Area ownership</h2>
-      ${renderOwnerAgreementStatus(viewModel.member.agreementSigned, false)}
-    </section>
-    
   </div>
 `;
