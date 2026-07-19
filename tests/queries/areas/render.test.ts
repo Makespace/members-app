@@ -230,15 +230,16 @@ const anArea = (overrides: Partial<AreaViewModel> = {}): AreaViewModel => ({
 const renderAreas = (viewModel: ViewModel): string => render(viewModel);
 
 describe('areas render', () => {
-  it('shows the trainings column and sparkline for an area with red equipment', () => {
+  it('shows the trainings column (with header tooltip) and sparkline for an area with red equipment', () => {
     const out = renderAreas({areas: [anArea()]});
-    expect(out).toContain('<th>Trainings</th>');
+    expect(out).toContain('Trainings');
+    expect(out).toContain('Shows trainings completed within this area');
     expect(out).toContain('class="sparkline"');
   });
 
   it('hides the trainings column for an area with no red equipment', () => {
     const out = renderAreas({areas: [anArea({equipment: []})]});
-    expect(out).not.toContain('<th>Trainings</th>');
+    expect(out).not.toContain('Shows trainings completed within this area');
     expect(out).not.toContain('class="sparkline"');
   });
 

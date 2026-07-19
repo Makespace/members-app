@@ -12,6 +12,7 @@ import {AreaViewModel, OwnerViewModel, ViewModel} from './view-model';
 import {renderReasonChips} from '../../templates/recurly-reasons';
 import {renderMember} from '../../templates/member';
 import {renderTrainingSparkline} from '../../templates/training-sparkline';
+import {tooltip} from '../shared-render/tool-tip';
 import * as O from 'fp-ts/Option';
 import {displayDate, displayDateShort} from '../../templates/display-date';
 import {DateTime} from 'luxon';
@@ -20,11 +21,7 @@ import {
   Equipment,
   Owner,
 } from '../../read-models/shared-state/return-types';
-<<<<<<< HEAD
-import {QuarterCount} from '../../read-models/shared-state/member/training-delivered';
-import { renderMemberNumber } from '../../templates/member-number';
-=======
->>>>>>> b358c86 (Address PR review: shared member/email/sparkline templates, escaping, rejoin)
+
 
 const renderSignedAt = (owner: Owner) => {
   if (O.isSome(owner.agreementSigned)) {
@@ -65,6 +62,15 @@ const renderRemoveOwner = (
 const trainingsTotal = (owner: OwnerViewModel): number =>
   owner.trainingsByQuarter.reduce((sum, quarter) => sum + quarter.count, 0);
 
+const trainingsHeader = html`<th>
+  Trainings
+  ${tooltip(
+    safe(
+      'Shows trainings completed within this area, in the last four quarters (most recent quarter is to the right)'
+    )
+  )}
+</th>`;
+
 const ownerRow = (
   areaId: Area['id'],
   owner: OwnerViewModel,
@@ -74,19 +80,8 @@ const ownerRow = (
   reasonCell: Html = html``
 ) => html`
   <tr>
-<<<<<<< HEAD
-    <td>
-      <div>
-        ${sanitizeString(O.getOrElse(() => '-')(owner.name))}
-        (${renderMemberNumber(owner.memberNumber)})
-      </div>
-      ${canSeeOwnerPrivateDetails ? renderCopyableEmail(owner.primaryEmailAddress) : html``}
-    </td>
+    <td>${renderMember(owner, canSeeOwnerPrivateDetails)}</td>
     ${canManageAreas ? reasonCell : html``}
-=======
-    <td>${renderMember(owner)}</td>
-    ${reasonCell}
->>>>>>> b358c86 (Address PR review: shared member/email/sparkline templates, escaping, rejoin)
     ${showTrainings
       ? html`<td>${renderTrainingSparkline(owner.trainingsByQuarter)}</td>`
       : html``}
@@ -130,7 +125,7 @@ const renderActiveOwners = (
           ${canSeeOwnerPrivateDetails
             ? html`<th>Agreement Signed</th>`
             : html``}
-          ${showTrainings ? html`<th>Trainings</th>` : html``}
+          ${showTrainings ? trainingsHeader : html``}
           ${canManageAreas ? html`<th></th>` : html``}
         </tr>
       </thead>
@@ -164,7 +159,7 @@ const renderInactiveOwners = (
           <tr>
             <th>Member</th>
             <th>Reason</th>
-            ${showTrainings ? html`<th>Trainings</th>` : html``}
+            ${showTrainings ? trainingsHeader : html``}
             <th>Agreement Signed</th>
             <th></th>
           </tr>
