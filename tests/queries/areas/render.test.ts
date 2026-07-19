@@ -217,7 +217,7 @@ describe('areas render', () => {
     });
     expect(page.textContent).toContain('Trainings');
     expect(page.textContent).toContain('Shows trainings completed within this area');
-    expect(page.textContent).toContain('class="sparkline"');
+    expect(page.querySelectorAll(".sparkline")).toHaveLength(1);
   });
 
   it('hides the trainings column for an area with no red equipment', () => {
@@ -231,7 +231,7 @@ describe('areas render', () => {
       canSeeTrainings: true,
     });
     expect(page.textContent).not.toContain('Shows trainings completed within this area');
-    expect(page.textContent).not.toContain('class="sparkline"');
+    expect(page.querySelectorAll(".sparkline")).toHaveLength(0);
   });
 
   it('consolidates the member number into a single "Member" column', () => {
@@ -241,8 +241,10 @@ describe('areas render', () => {
       canSeeOwnerPrivateDetails: true,
       canSeeTrainings: true,
     });
-    expect(page.textContent).toContain('<th>Member</th>');
-    expect(page.textContent).not.toContain('<th>Member Number</th>');
+    const tableHeaders = Array.from(page.querySelectorAll("th")).map(node => node.textContent);
+
+    expect(tableHeaders).toContain('Member');
+    expect(tableHeaders).not.toContain('Member Number');
     expect(page.textContent).toContain('Owen Owner');
     expect(page.textContent).toContain('/member/4150/');
   });
@@ -261,8 +263,9 @@ describe('areas render', () => {
       canSeeOwnerPrivateDetails: true,
       canSeeTrainings: true,
     });
-    expect(page.textContent).toContain('<details>');
-    expect(page.textContent).toContain('Cancelled – still has access');
-    expect(page.textContent).toContain('Payment overdue');
+    const detailsSections = Array.from(page.querySelectorAll("details"));
+    expect(detailsSections).toHaveLength(1);
+    expect(detailsSections[0].textContent).toContain('Cancelled – still has access');
+    expect(detailsSections[0].textContent).toContain('Payment overdue');
   });
 });
