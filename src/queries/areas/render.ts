@@ -82,6 +82,13 @@ const renderActiveOwners = (
   canSeeOwnerPrivateDetails: boolean
 ) => {
   if (owners.length === 0) {
+    if (!canManageAreas) {
+      return html`<p>
+        This area doesn't have any owners currently - email
+        owners@makespace.org to get involved!
+      </p>`;
+    }
+
     return hasInactiveOwners
       ? html` <p>No active owners — see inactive owners below.</p> `
       : html` <p>Owners needed!</p> `;

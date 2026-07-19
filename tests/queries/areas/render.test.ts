@@ -54,6 +54,9 @@ const renderPage = (viewModel: ViewModel): HTMLBodyElement => {
   return body;
 };
 
+const normalizedText = (page: HTMLElement): string =>
+  page.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+
 describe('areas render', () => {
   it('shows normal members equipment and only public owner details', () => {
     const page = renderPage({
@@ -113,5 +116,42 @@ describe('areas render', () => {
     });
 
     expect(page.textContent).toContain('No equipment currently assigned to this area.');
+  });
+
+  it('shows a public get-involved message when there are no active owners', () => {
+    const page = renderPage({
+      areas: [
+        {
+          ...area,
+          owners: [{...area.owners[0], isActiveOwner: false}],
+        },
+      ],
+      canManageAreas: false,
+      canSeeOwnerPrivateDetails: false,
+    });
+
+    expect(normalizedText(page)).toContain(
+      "This area doesn't have any owners currently - email owners@makespace.org to get involved!"
+    );
+    expect(page.textContent).not.toContain(
+      'No active owners — see inactive owners below.'
+    );
+  });
+
+  it('keeps the inactive-owner hint for super users', () => {
+    const page = renderPage({
+      areas: [
+        {
+          ...area,
+          owners: [{...area.owners[0], isActiveOwner: false}],
+        },
+      ],
+      canManageAreas: true,
+      canSeeOwnerPrivateDetails: true,
+    });
+
+    expect(page.textContent).toContain(
+      'No active owners — see inactive owners below.'
+    );
   });
 });
