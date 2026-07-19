@@ -32,6 +32,7 @@ import { TrainingSheetId } from '../../types/training-sheet';
 import { EquipmentId } from '../../types/equipment-id';
 import { getTrainingSheetIdMapping } from './equipment/get';
 import { findAllSuperUsers, findStoredEmailForLogin, findUserIdByEmail, findUserIdByMemberNumber, getAllMemberCore } from './member/get';
+import { trainingsDeliveredBy } from './member/training-delivered';
 import { setupEventStateTable } from './setup-event-state-table';
 import { getCurrentEventIndex } from './get-current-event-index';
 import { Int } from 'io-ts';
@@ -59,6 +60,10 @@ export type SharedReadModel = {
     findUserIdByEmail: (email: EmailAddress, mustBeVerified: boolean) => O.Option<UserId>;
     findUserIdByMemberNumber: (memberNumber: number) => O.Option<UserId>;
     findAllSuperUsers: () => ReadonlyArray<MemberCoreInfo>;
+    trainingsDeliveredBy: (
+      trainerMemberNumbers: ReadonlyArray<number>,
+      equipmentIds: ReadonlyArray<UUID>
+    ) => ReadonlyArray<Date>;
   };
   equipment: {
     get: (id: UUID) => O.Option<Equipment>;
@@ -113,6 +118,7 @@ export const initSharedReadModel = (
       findUserIdByEmail: findUserIdByEmail(readModelDb),
       findUserIdByMemberNumber: findUserIdByMemberNumber(readModelDb),
       findAllSuperUsers: () => findAllSuperUsers(readModelDb),
+      trainingsDeliveredBy: trainingsDeliveredBy(readModelDb),
     },
     equipment: {
       get: getEquipmentFull(readModelDb),

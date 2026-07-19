@@ -71,5 +71,27 @@ export const head = (title: HtmlSubstitution) => html`
       href="/static/vendor/font-awesome/css/regular.min.css"
       rel="stylesheet"
     />
+    <script>
+      // Click-to-copy for [class=copy-text] elements (e.g. email addresses).
+      // Progressive enhancement: without JS the text is still readable.
+      document.addEventListener('click', function (event) {
+        var el =
+          event.target.closest && event.target.closest('.copy-text');
+        if (!el || !navigator.clipboard || el.dataset.copying) return;
+        navigator.clipboard
+          .writeText(el.textContent.trim())
+          .then(function () {
+            el.dataset.copying = '1';
+            var original = el.textContent;
+            el.classList.add('copied');
+            el.textContent = 'Copied!';
+            setTimeout(function () {
+              el.textContent = original;
+              el.classList.remove('copied');
+              delete el.dataset.copying;
+            }, 1000);
+          });
+      });
+    </script>
   </head>
 `;
