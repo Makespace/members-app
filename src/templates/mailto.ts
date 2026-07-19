@@ -20,7 +20,7 @@ export const mailTo = (
     subject: O.Option<string>,
     body: O.Option<string>
 ): Html => html`
-    <a href="mailto:${mailtoLink(email, subject, body)}">
+    <a href="${mailtoLink(email, subject, body)}">
         ${sanitizeString(email)}
     </a>
 `;
