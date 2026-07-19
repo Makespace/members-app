@@ -122,10 +122,10 @@ const renderActiveOwners = (
       <thead>
         <tr>
           <th>Member</th>
+          ${showTrainings ? trainingsHeader : html``}
           ${canSeeOwnerPrivateDetails
             ? html`<th>Agreement Signed</th>`
             : html``}
-          ${showTrainings ? trainingsHeader : html``}
           ${canManageAreas ? html`<th></th>` : html``}
         </tr>
       </thead>
