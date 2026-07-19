@@ -235,7 +235,7 @@ describe('areas render', () => {
     expect(page.querySelectorAll(".sparkline")).toHaveLength(0);
   });
 
-  it('consolidates the member number into a single "Member" column', () => {
+  it('consolidates the member number into a single "Owner" column', () => {
     const page = renderPage({
       areas: [area],
       canManageAreas: true,
@@ -244,7 +244,7 @@ describe('areas render', () => {
     });
     const tableHeaders = Array.from(page.querySelectorAll("th")).map(node => node.textContent);
 
-    expect(tableHeaders).toContain('Member');
+    expect(tableHeaders).toContain('Owner');
     expect(tableHeaders).not.toContain('Member Number');
     expect(page.textContent).toContain(getSomeOrFail(area.owners[0].name));
     expect(page.textContent).toContain(`(${area.owners[0].memberNumber})`);

@@ -61,6 +61,7 @@ export const initRoutes = (
       'mark-member-trained-by',
       commands.trainers.markMemberTrainedBy
     ),
+    get('/equipment', (_req, res) => res.redirect('/areas')),
     query('/equipment/:equipment', queries.equipment),
     query('/super-users', queries.superUsers),
     ...command('super-users', 'declare', commands.superUser.declare),
