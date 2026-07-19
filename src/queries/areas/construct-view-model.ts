@@ -16,6 +16,9 @@ import {
 } from '../../read-models/external-state/recurly-status';
 import {Area, Owner} from '../../read-models/shared-state/return-types';
 import {StatusCodes} from 'http-status-codes';
+import {trainingsByQuarter} from '../../read-models/shared-state/member/training-delivered';
+import {DateTime} from 'luxon';
+import {UUID} from 'io-ts-types';
 
 const NO_RECURLY_DATA: {
   flags: O.Option<RecurlyFlags>;
@@ -23,7 +26,12 @@ const NO_RECURLY_DATA: {
 } = {flags: O.none, reasons: ['no-data']};
 
 const expandOwner =
-  (sharedReadModel: Dependencies['sharedReadModel'], extDB: ExternalStateDB) =>
+  (
+    sharedReadModel: Dependencies['sharedReadModel'],
+    extDB: ExternalStateDB,
+    now: DateTime,
+    equipmentIds: ReadonlyArray<UUID>
+  ) =>
   async (owner: Owner): Promise<OwnerViewModel> => {
     // Owners don't carry their email list, so resolve the full member for the
     // recurly lookup (which matches on verified emails).
@@ -40,17 +48,33 @@ const expandOwner =
       flags.value.hasActiveSubscription &&
       !flags.value.hasPastDueInvoice;
 
-    return {...owner, isActiveOwner, reasons};
+    // Scope trainings to this area's equipment only.
+    const trainings = trainingsByQuarter(
+      sharedReadModel.members.trainingsDeliveredBy(
+        owner.memberNumber,
+        equipmentIds
+      ),
+      now
+    );
+
+    return {...owner, isActiveOwner, reasons, trainingsByQuarter: trainings};
   };
 
 const expandArea =
-  (sharedReadModel: Dependencies['sharedReadModel'], extDB: ExternalStateDB) =>
-  async (area: Area): Promise<AreaViewModel> => ({
-    ...area,
-    owners: await Promise.all(
-      area.owners.map(expandOwner(sharedReadModel, extDB))
-    ),
-  });
+  (
+    sharedReadModel: Dependencies['sharedReadModel'],
+    extDB: ExternalStateDB,
+    now: DateTime
+  ) =>
+  async (area: Area): Promise<AreaViewModel> => {
+    const equipmentIds = area.equipment.map(equipment => equipment.id);
+    return {
+      ...area,
+      owners: await Promise.all(
+        area.owners.map(expandOwner(sharedReadModel, extDB, now, equipmentIds))
+      ),
+    };
+  };
 
 export const constructViewModel =
   (sharedReadModel: Dependencies['sharedReadModel'], extDB: ExternalStateDB) =>
@@ -69,11 +93,12 @@ export const constructViewModel =
     const isSuperUser = member.value.isSuperUser;
     const isOwnerOfAnyArea = member.value.ownerOf.length > 0;
 
+    const now = DateTime.now();
     return E.right({
       canManageAreas: isSuperUser,
       canSeeOwnerPrivateDetails: isSuperUser || isOwnerOfAnyArea,
       areas: await Promise.all(
-        sharedReadModel.area.getAll().map(expandArea(sharedReadModel, extDB))
+        sharedReadModel.area.getAll().map(expandArea(sharedReadModel, extDB, now))
       ),
     });
   };

@@ -9,20 +9,25 @@ import {
 } from '../../types/html';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {AreaViewModel, OwnerViewModel, ViewModel} from './view-model';
-import {renderMemberNumber} from '../../templates/member-number';
 import {renderReasonChips} from '../../templates/recurly-reasons';
 import * as O from 'fp-ts/Option';
-import {displayDate} from '../../templates/display-date';
+import {displayDate, displayDateShort} from '../../templates/display-date';
 import {DateTime} from 'luxon';
 import {
   Area,
   Equipment,
   Owner,
 } from '../../read-models/shared-state/return-types';
+import {QuarterCount} from '../../read-models/shared-state/member/training-delivered';
+import { renderMemberNumber } from '../../templates/member-number';
 
 const renderSignedAt = (owner: Owner) => {
   if (O.isSome(owner.agreementSigned)) {
-    return pipe(owner.agreementSigned.value, DateTime.fromJSDate, displayDate);
+    const signedAt = DateTime.fromJSDate(owner.agreementSigned.value);
+    // Compact date in the cell; full timestamp on hover.
+    return html`<span title="${displayDate(signedAt)}"
+      >${displayDateShort(signedAt)}</span
+    >`;
   }
   return html`Not signed`;
 };
@@ -51,20 +56,95 @@ const renderRemoveOwner = (
   >
 `;
 
+// Email shown under the name to save a column. It's a button so it can be
+// click-to-copied (progressive enhancement - the address is still readable and
+// selectable without JS). See the copy handler in templates/head.ts.
+const renderCopyableEmail = (email: string) => html`
+  <button
+    type="button"
+    class="copy-text"
+    data-copy="${safe(email)}"
+    title="Copy email address"
+  >
+    ${safe(email)}
+  </button>
+`;
+
+// Tufte-style sparkline: one small green bar per quarter (oldest left, current
+// quarter at the right), bar height scaled to the number of trainings that
+// owner delivered. Hovering a bar shows the count via a native SVG <title>.
+const SPARK_BAR_WIDTH = 6;
+const SPARK_BAR_GAP = 3;
+const SPARK_HEIGHT = 16;
+const SPARK_MAX_BAR = 13;
+
+const trainingsTotal = (owner: OwnerViewModel): number =>
+  owner.trainingsByQuarter.reduce((sum, quarter) => sum + quarter.count, 0);
+
+const renderTrainingSparkline = (quarters: ReadonlyArray<QuarterCount>) => {
+  const maxCount = Math.max(1, ...quarters.map(q => q.count));
+  const width =
+    quarters.length * SPARK_BAR_WIDTH + (quarters.length - 1) * SPARK_BAR_GAP;
+  const total = quarters.reduce((sum, q) => sum + q.count, 0);
+  const bars = quarters.map((quarter, i) => {
+    // Zero quarters get a 1px baseline tick so the quarter is still visible.
+    const barHeight =
+      quarter.count === 0
+        ? 1
+        : Math.max(2, Math.round((SPARK_MAX_BAR * quarter.count) / maxCount));
+    const x = i * (SPARK_BAR_WIDTH + SPARK_BAR_GAP);
+    const barClass =
+      quarter.count === 0 ? 'spark-bar spark-bar--empty' : 'spark-bar';
+    return html`<rect
+      class="${safe(barClass)}"
+      x="${x}"
+      y="${SPARK_HEIGHT - barHeight}"
+      width="${SPARK_BAR_WIDTH}"
+      height="${barHeight}"
+    >
+      <title>
+        ${safe(
+          `${quarter.label}: ${quarter.count} training${
+            quarter.count === 1 ? '' : 's'
+          }`
+        )}
+      </title>
+    </rect>`;
+  });
+  return html`<svg
+    class="sparkline"
+    width="${width}"
+    height="${SPARK_HEIGHT}"
+    viewBox="0 0 ${width} ${SPARK_HEIGHT}"
+    role="img"
+    aria-label="${safe(
+      `${total} trainings delivered over the last ${quarters.length} quarters`
+    )}"
+  >
+    ${joinHtml(bars)}
+  </svg>`;
+};
+
 const ownerRow = (
   areaId: Area['id'],
   owner: OwnerViewModel,
   canManageAreas: boolean,
   canSeeOwnerPrivateDetails: boolean,
+  showTrainings: boolean,
   reasonCell: Html = html``
 ) => html`
   <tr>
-    <td>${renderMemberNumber(owner.memberNumber)}</td>
-    <td>${sanitizeString(O.getOrElse(() => '-')(owner.name))}</td>
-    ${canSeeOwnerPrivateDetails
-      ? html`<td>${safe(owner.primaryEmailAddress)}</td>`
-      : html``}
+    <td>
+      <div>
+        ${sanitizeString(O.getOrElse(() => '-')(owner.name))}
+        (${renderMemberNumber(owner.memberNumber)})
+      </div>
+      ${canSeeOwnerPrivateDetails ? renderCopyableEmail(owner.primaryEmailAddress) : html``}
+    </td>
     ${canManageAreas ? reasonCell : html``}
+    ${showTrainings
+      ? html`<td>${renderTrainingSparkline(owner.trainingsByQuarter)}</td>`
+      : html``}
     ${canSeeOwnerPrivateDetails
       ? html`<td>${
           canManageAreas ? renderSignedAtForManager(owner) : renderSignedAt(owner)
@@ -79,7 +159,8 @@ const renderActiveOwners = (
   owners: ReadonlyArray<OwnerViewModel>,
   hasInactiveOwners: boolean,
   canManageAreas: boolean,
-  canSeeOwnerPrivateDetails: boolean
+  canSeeOwnerPrivateDetails: boolean,
+  showTrainings: boolean
 ) => {
   if (owners.length === 0) {
     if (!canManageAreas) {
@@ -93,29 +174,24 @@ const renderActiveOwners = (
       ? html` <p>No active owners — see inactive owners below.</p> `
       : html` <p>Owners needed!</p> `;
   }
+  const sorted = showTrainings
+    ? [...owners].sort((a, b) => trainingsTotal(b) - trainingsTotal(a))
+    : owners;
   return html`
     <table>
       <thead>
         <tr>
-          <th>Owner Member Number</th>
-          <th>Owner Name</th>
-          ${canSeeOwnerPrivateDetails ? html`<th>Email</th>` : html``}
+          <th>Member</th>
           ${canSeeOwnerPrivateDetails
             ? html`<th>Agreement Signed</th>`
             : html``}
+          ${showTrainings ? html`<th>Trainings</th>` : html``}
           ${canManageAreas ? html`<th></th>` : html``}
         </tr>
       </thead>
       <tbody>
         ${joinHtml(
-          owners.map(owner =>
-            ownerRow(
-              areaId,
-              owner,
-              canManageAreas,
-              canSeeOwnerPrivateDetails
-            )
-          )
+          sorted.map(owner => ownerRow(areaId, owner, canManageAreas, canSeeOwnerPrivateDetails, showTrainings))
         )}
       </tbody>
     </table>
@@ -125,33 +201,38 @@ const renderActiveOwners = (
 const renderInactiveOwners = (
   areaId: Area['id'],
   owners: ReadonlyArray<OwnerViewModel>,
-  canManageAreas: boolean
+  canManageAreas: boolean,
+  canSeeOwnerPrivateDetails: boolean,
+  showTrainings: boolean
 ) => {
   if (!canManageAreas || owners.length === 0) {
     return html``;
   }
+  const sorted = showTrainings
+    ? [...owners].sort((a, b) => trainingsTotal(b) - trainingsTotal(a))
+    : owners;
   return html`
     <details>
       <summary>Inactive owners (${safe(owners.length.toString())})</summary>
       <table>
         <thead>
           <tr>
-            <th>Member Number</th>
-            <th>Name</th>
-            <th>Email</th>
+            <th>Member</th>
             <th>Reason</th>
+            ${showTrainings ? html`<th>Trainings</th>` : html``}
             <th>Agreement Signed</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           ${joinHtml(
-            owners.map(owner =>
+            sorted.map(owner =>
               ownerRow(
                 areaId,
                 owner,
                 canManageAreas,
-                true,
+                canSeeOwnerPrivateDetails,
+                showTrainings,
                 html`<td>${renderReasonChips(owner.reasons)}</td>`
               )
             )
@@ -186,6 +267,9 @@ const renderArea =
   const publiclyVisibleOwners = viewModel.canManageAreas
     ? activeOwners
     : area.owners;
+  // Only areas with red equipment have anything to train on, so only they get
+  // the trainings column.
+  const showTrainings = area.equipment.length > 0;
   return html`
   <article id="area-${safe(area.id)}">
     <h2>${sanitizeString(area.name)}</h2>
@@ -198,9 +282,10 @@ const renderArea =
       publiclyVisibleOwners,
       viewModel.canManageAreas && inactiveOwners.length > 0,
       viewModel.canManageAreas,
-      viewModel.canSeeOwnerPrivateDetails
+      viewModel.canSeeOwnerPrivateDetails,
+      showTrainings
     )}
-    ${renderInactiveOwners(area.id, inactiveOwners, viewModel.canManageAreas)}
+    ${viewModel.canManageAreas ? renderInactiveOwners(area.id, inactiveOwners, viewModel.canManageAreas, viewModel.canSeeOwnerPrivateDetails, showTrainings) : html``}
     ${
       viewModel.canManageAreas ? html`<div class="wrap">
       <a class="button" href="/areas/add-owner?area=${safe(area.id)}"
