@@ -183,6 +183,9 @@ const renderArea =
   (area: AreaViewModel) => {
   const activeOwners = area.owners.filter(owner => owner.isActiveOwner);
   const inactiveOwners = area.owners.filter(owner => !owner.isActiveOwner);
+  const publiclyVisibleOwners = viewModel.canManageAreas
+    ? activeOwners
+    : area.owners;
   return html`
   <article id="area-${safe(area.id)}">
     <h2>${sanitizeString(area.name)}</h2>
@@ -192,8 +195,8 @@ const renderArea =
     <div>${renderEquipment(area.equipment)}</div>
     ${renderActiveOwners(
       area.id,
-      activeOwners,
-      inactiveOwners.length > 0,
+      publiclyVisibleOwners,
+      viewModel.canManageAreas && inactiveOwners.length > 0,
       viewModel.canManageAreas,
       viewModel.canSeeOwnerPrivateDetails
     )}

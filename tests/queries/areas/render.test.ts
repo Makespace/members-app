@@ -118,7 +118,7 @@ describe('areas render', () => {
     expect(page.textContent).toContain('No equipment currently assigned to this area.');
   });
 
-  it('shows a public get-involved message when there are no active owners', () => {
+  it('shows inactive owners to normal members as public owner details', () => {
     const page = renderPage({
       areas: [
         {
@@ -130,11 +130,31 @@ describe('areas render', () => {
       canSeeOwnerPrivateDetails: false,
     });
 
-    expect(normalizedText(page)).toContain(
+    expect(page.textContent).toContain('Area Owner');
+    expect(page.textContent).toContain('123');
+    expect(page.textContent).not.toContain(ownerEmail);
+    expect(normalizedText(page)).not.toContain(
       "This area doesn't have any owners currently - email owners@makespace.org to get involved!"
     );
     expect(page.textContent).not.toContain(
       'No active owners — see inactive owners below.'
+    );
+  });
+
+  it("shows a public get-involved message when an area doesn't have any owners", () => {
+    const page = renderPage({
+      areas: [
+        {
+          ...area,
+          owners: [],
+        },
+      ],
+      canManageAreas: false,
+      canSeeOwnerPrivateDetails: false,
+    });
+
+    expect(normalizedText(page)).toContain(
+      "This area doesn't have any owners currently - email owners@makespace.org to get involved!"
     );
   });
 
