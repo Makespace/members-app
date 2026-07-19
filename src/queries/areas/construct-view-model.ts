@@ -3,9 +3,11 @@ import {Dependencies} from '../../dependencies';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
-import {FailureWithStatus} from '../../types/failure-with-status';
+import {
+  failureWithStatus,
+  FailureWithStatus,
+} from '../../types/failure-with-status';
 import {AreaViewModel, OwnerViewModel, ViewModel} from './view-model';
-import {mustBeSuperuser} from '../util';
 import {ExternalStateDB} from '../../sync-worker/external-state-db';
 import {
   getRecurlyReasonsForMember,
@@ -13,6 +15,7 @@ import {
   RecurlyReason,
 } from '../../read-models/external-state/recurly-status';
 import {Area, Owner} from '../../read-models/shared-state/return-types';
+import {StatusCodes} from 'http-status-codes';
 
 const NO_RECURLY_DATA: {
   flags: O.Option<RecurlyFlags>;
@@ -53,11 +56,22 @@ export const constructViewModel =
   (sharedReadModel: Dependencies['sharedReadModel'], extDB: ExternalStateDB) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> =>
   async () => {
-    const superUserCheck = await mustBeSuperuser(sharedReadModel, user)();
-    if (E.isLeft(superUserCheck)) {
-      return superUserCheck;
+    const member = sharedReadModel.members.getByMemberNumber(user.memberNumber);
+    if (O.isNone(member)) {
+      return E.left(
+        failureWithStatus(
+          'Cannot find sufficient information about you to determine if you can access this page',
+          StatusCodes.UNAUTHORIZED
+        )()
+      );
     }
+
+    const isSuperUser = member.value.isSuperUser;
+    const isOwnerOfAnyArea = member.value.ownerOf.length > 0;
+
     return E.right({
+      canManageAreas: isSuperUser,
+      canSeeOwnerPrivateDetails: isSuperUser || isOwnerOfAnyArea,
       areas: await Promise.all(
         sharedReadModel.area.getAll().map(expandArea(sharedReadModel, extDB))
       ),

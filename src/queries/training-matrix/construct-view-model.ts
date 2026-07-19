@@ -100,5 +100,20 @@ export const constructTrainingMatrix = (
     result.push(currentArea.value);
   }
 
-  return result;
+  for (const ownerOfArea of member.ownerOf) {
+    if (result.some(area => area.area.id === ownerOfArea.id)) {
+      continue;
+    }
+
+    result.push({
+      area: {
+        id: ownerOfArea.id as TrainingMatrix[0]['area']['id'],
+        name: ownerOfArea.name,
+        is_owner: O.some(ownerOfArea.ownershipRecordedAt),
+      },
+      equipment: [],
+    });
+  }
+
+  return result.toSorted((a, b) => a.area.name.localeCompare(b.area.name, ['en-US']));
 }
