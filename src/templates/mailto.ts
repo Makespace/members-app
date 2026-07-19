@@ -2,7 +2,7 @@ import * as O from 'fp-ts/Option';
 import { EmailAddress } from "../types";
 import { html, Html, safe, sanitizeString } from "../types/html";
 
-export const mailtoLink = (
+const mailtoLink = (
     email: EmailAddress,
     subject: O.Option<string>,
     body: O.Option<string>

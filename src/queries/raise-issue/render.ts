@@ -1,7 +1,7 @@
 import * as O from 'fp-ts/Option';
-import { mailTo, mailtoLink } from '../../templates/mailto';
+import { mailTo } from '../../templates/mailto';
 import { EmailAddress } from '../../types';
-import {html, safe, sanitizeString} from '../../types/html';
+import {html, sanitizeString} from '../../types/html';
 
 type ViewModel = {
   memberNumber: number;
