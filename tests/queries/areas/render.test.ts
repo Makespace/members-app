@@ -5,7 +5,7 @@
 import * as O from 'fp-ts/Option';
 import {UUID} from 'io-ts-types';
 import {render} from '../../../src/queries/areas/render';
-import {AreaViewModel, OwnerViewModel, ViewModel} from '../../../src/queries/areas/view-model';
+import {ViewModel} from '../../../src/queries/areas/view-model';
 import {Equipment} from '../../../src/read-models/shared-state/return-types';
 import {EmailAddress, UserId} from '../../../src/types';
 
@@ -44,9 +44,16 @@ const area = {
       markedOwnerBy: O.none,
       isActiveOwner: true,
       reasons: [],
+      trainingsByQuarter: [
+        {label: 'Q4 2025', count: 0},
+        {label: 'Q1 2026', count: 0},
+        {label: 'Q2 2026', count: 1},
+        {label: 'Q3 2026', count: 2},
+      ],
     },
   ],
 } satisfies ViewModel['areas'][number];
+
 
 const renderPage = (viewModel: ViewModel): HTMLBodyElement => {
   const body = document.createElement('body');
@@ -191,60 +198,37 @@ describe('areas render', () => {
       'No active owners — see inactive owners below.'
     );
   });
-});
 
-const anOwner = (overrides: Partial<OwnerViewModel> = {}): OwnerViewModel => ({
-  userId: 'user-1' as UserId,
-  memberNumber: 4150,
-  name: O.some('Owen Owner'),
-  primaryEmailAddress: 'owner@example.com' as EmailAddress,
-  pastMemberNumbers: [],
-  agreementSigned: O.none,
-  ownershipRecordedAt: new Date('2026-01-01T00:00:00Z'),
-  markedOwnerBy: O.none,
-  isActiveOwner: true,
-  reasons: [],
-  trainingsByQuarter: [
-    {label: 'Q4 2025', count: 0},
-    {label: 'Q1 2026', count: 0},
-    {label: 'Q2 2026', count: 1},
-    {label: 'Q3 2026', count: 2},
-  ],
-  ...overrides,
-});
-
-const anEquipment = {
-  id: 'equip-1' as UUID,
-  name: 'Lathe',
-} as unknown as Equipment;
-
-const anArea = (overrides: Partial<AreaViewModel> = {}): AreaViewModel => ({
-  id: 'area-1' as UUID,
-  name: 'Metal Shop',
-  email: O.none,
-  equipment: [anEquipment],
-  owners: [anOwner()],
-  ...overrides,
-});
-
-const renderAreas = (viewModel: ViewModel): string => render(viewModel);
-
-describe('areas render', () => {
   it('shows the trainings column (with header tooltip) and sparkline for an area with red equipment', () => {
-    const out = renderAreas({areas: [anArea()]});
+    const out = renderPage({
+      areas: [area],
+      canManageAreas: true,
+      canSeeOwnerPrivateDetails: true
+    });
     expect(out).toContain('Trainings');
     expect(out).toContain('Shows trainings completed within this area');
     expect(out).toContain('class="sparkline"');
   });
 
   it('hides the trainings column for an area with no red equipment', () => {
-    const out = renderAreas({areas: [anArea({equipment: []})]});
+    const out = renderPage({
+      areas: [{
+        ...area,
+        equipment: [],
+      }],
+      canManageAreas: true,
+      canSeeOwnerPrivateDetails: true
+    });
     expect(out).not.toContain('Shows trainings completed within this area');
     expect(out).not.toContain('class="sparkline"');
   });
 
   it('consolidates the member number into a single "Member" column', () => {
-    const out = renderAreas({areas: [anArea()]});
+    const out = renderPage({
+      areas: [area],
+      canManageAreas: true,
+      canSeeOwnerPrivateDetails: true
+    });
     expect(out).toContain('<th>Member</th>');
     expect(out).not.toContain('<th>Member Number</th>');
     expect(out).toContain('Owen Owner');
@@ -252,11 +236,18 @@ describe('areas render', () => {
   });
 
   it('lists inactive owners with reason chips in a collapsible section', () => {
-    const inactiveOwner = anOwner({
-      isActiveOwner: false,
-      reasons: ['cancelled-in-term', 'past-due'],
+    const out = renderPage({
+      areas: [{
+        ...area,
+        owners: [{
+          ...area.owners[0],
+          isActiveOwner: false,
+          reasons: ['cancelled-in-term', 'past-due'],
+        }]
+      }],
+      canManageAreas: true,
+      canSeeOwnerPrivateDetails: true,
     });
-    const out = renderAreas({areas: [anArea({owners: [inactiveOwner]})]});
     expect(out).toContain('<details>');
     expect(out).toContain('Cancelled – still has access');
     expect(out).toContain('Payment overdue');
