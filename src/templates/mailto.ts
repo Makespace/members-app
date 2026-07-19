@@ -8,11 +8,16 @@ const mailtoLink = (
     body: O.Option<string>
 ): Html => {
     const escapedEmail = sanitizeString(email);
-    const subjectPart = O.isSome(subject) ? html`subject=${safe(encodeURIComponent(subject.value))}` : html``;
-    const bodyPart = O.isSome(body) ? html`body=${safe(encodeURIComponent(body.value))}` : html``;
+    let query: Html[] = [];
+    if (O.isSome(subject)) {
+        query.push(html`subject=${safe(encodeURIComponent(subject.value))}`);
+    }
+    if (O.isSome(body)) {
+        query.push(html`body=${safe(encodeURIComponent(body.value))}`);
+    }
     const querySeperator = O.isSome(subject) || O.isSome(body) ? html`?` : html``;
-    const query = safe([subjectPart, bodyPart].join('&'));
-    return html`mailto:${escapedEmail}${querySeperator}${query}"`;
+    const queryPart = safe(query.join('&'));
+    return html`mailto:${escapedEmail}${querySeperator}${queryPart}"`;
 }
 
 export const mailTo = (
