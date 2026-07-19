@@ -209,7 +209,7 @@ const renderArea =
     : area.owners;
   // Only areas with red equipment have anything to train on, so only they get
   // the trainings column.
-  const showTrainings = area.equipment.length > 0;
+  const showTrainings = area.equipment.length > 0 && viewModel.canSeeTrainings;
   return html`
   <article id="area-${safe(area.id)}">
     <h2>${sanitizeString(area.name)}</h2>

@@ -21,4 +21,5 @@ export type ViewModel = {
   areas: ReadonlyArray<AreaViewModel>;
   canManageAreas: boolean;
   canSeeOwnerPrivateDetails: boolean;
+  canSeeTrainings: boolean;
 };

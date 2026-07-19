@@ -8,6 +8,7 @@ import {render} from '../../../src/queries/areas/render';
 import {ViewModel} from '../../../src/queries/areas/view-model';
 import {Equipment} from '../../../src/read-models/shared-state/return-types';
 import {EmailAddress, UserId} from '../../../src/types';
+import { fa } from '@faker-js/faker';
 
 const areaId = '11111111-1111-4111-8111-111111111111' as UUID;
 const equipmentId = '22222222-2222-4222-8222-222222222222' as UUID;
@@ -70,6 +71,7 @@ describe('areas render', () => {
       areas: [area],
       canManageAreas: false,
       canSeeOwnerPrivateDetails: false,
+      canSeeTrainings: false,
     });
 
     expect(page.textContent).toContain('Areas');
@@ -90,11 +92,12 @@ describe('areas render', () => {
       areas: [area],
       canManageAreas: false,
       canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: false,
     });
 
     expect(page.textContent).toContain(ownerEmail);
     expect(page.textContent).toContain('Agreement Signed');
-    expect(page.textContent).toContain('02/01/2025');
+    expect(page.textContent).toContain('2 Jan 25');
     expect(page.textContent).not.toContain('Ask to sign');
     expect(page.textContent).not.toContain('Add owner');
     expect(page.textContent).not.toContain('Remove area');
@@ -105,6 +108,7 @@ describe('areas render', () => {
       areas: [area],
       canManageAreas: true,
       canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: false,
     });
 
     expect(page.textContent).toContain('Add area of responsibility');
@@ -120,6 +124,7 @@ describe('areas render', () => {
       areas: [{...area, equipment: []}],
       canManageAreas: false,
       canSeeOwnerPrivateDetails: false,
+      canSeeTrainings: false,
     });
 
     expect(page.textContent).toContain('No equipment currently assigned to this area.');
@@ -135,6 +140,7 @@ describe('areas render', () => {
       ],
       canManageAreas: false,
       canSeeOwnerPrivateDetails: false,
+      canSeeTrainings: false,
     });
 
     expect(page.textContent).toContain('Area Owner');
@@ -158,6 +164,7 @@ describe('areas render', () => {
       ],
       canManageAreas: false,
       canSeeOwnerPrivateDetails: false,
+      canSeeTrainings: false,
     });
 
     expect(normalizedText(page)).toContain(
@@ -175,6 +182,7 @@ describe('areas render', () => {
       ],
       canManageAreas: false,
       canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: false,
     });
 
     expect(normalizedText(page)).toContain(
@@ -192,6 +200,7 @@ describe('areas render', () => {
       ],
       canManageAreas: true,
       canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: false,
     });
 
     expect(page.textContent).toContain(
@@ -203,7 +212,8 @@ describe('areas render', () => {
     const out = renderPage({
       areas: [area],
       canManageAreas: true,
-      canSeeOwnerPrivateDetails: true
+      canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: true,
     });
     expect(out).toContain('Trainings');
     expect(out).toContain('Shows trainings completed within this area');
@@ -217,7 +227,8 @@ describe('areas render', () => {
         equipment: [],
       }],
       canManageAreas: true,
-      canSeeOwnerPrivateDetails: true
+      canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: true,
     });
     expect(out).not.toContain('Shows trainings completed within this area');
     expect(out).not.toContain('class="sparkline"');
@@ -227,7 +238,8 @@ describe('areas render', () => {
     const out = renderPage({
       areas: [area],
       canManageAreas: true,
-      canSeeOwnerPrivateDetails: true
+      canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: true,
     });
     expect(out).toContain('<th>Member</th>');
     expect(out).not.toContain('<th>Member Number</th>');
@@ -247,6 +259,7 @@ describe('areas render', () => {
       }],
       canManageAreas: true,
       canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: true,
     });
     expect(out).toContain('<details>');
     expect(out).toContain('Cancelled – still has access');
