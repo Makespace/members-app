@@ -45,9 +45,7 @@ export const renderTrainingSparkline = (
     height="${SPARK_HEIGHT}"
     viewBox="0 0 ${width} ${SPARK_HEIGHT}"
     role="img"
-    aria-label="${safe(
-      `${total} trainings delivered over the last ${quarters.length} quarters`
-    )}"
+    aria-label="${total} trainings delivered over the last ${quarters.length} quarters"
   >
     ${joinHtml(bars)}
   </svg>`;
