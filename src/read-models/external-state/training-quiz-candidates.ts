@@ -27,7 +27,7 @@ const SEP = '';
 // Stable hash of the identifying fields of a quiz row, used to dedup: the same
 // row always hashes the same, while a retake (different timestamp/score) hashes
 // differently. Reproducible from both the migration and the going-forward sync.
-export const hashQuizRow = (input: {
+const hashQuizRow = (input: {
   sheetId: string;
   completedAt: Date;
   email: O.Option<string>;
