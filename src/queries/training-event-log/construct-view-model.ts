@@ -4,8 +4,6 @@ import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
-import {ReadonlyRecord} from 'fp-ts/ReadonlyRecord';
-import {UUID} from 'io-ts-types';
 import {FailureWithStatus} from '../../types/failure-with-status';
 import {ResolvedMember, ViewModel} from './view-model';
 import {mustBeSuperuser} from '../util';
@@ -44,10 +42,7 @@ export const constructViewModel =
       );
 
     const sheetToEquipment =
-      sharedReadModel.equipment.getTrainingSheetIdMapping() as ReadonlyRecord<
-        string,
-        UUID
-      >;
+      sharedReadModel.equipment.getTrainingSheetIdMapping();
     const candidates = await getTrainingQuizCandidates(extDB)(sheetToEquipment);
     return E.right({
       candidates: candidates.map(candidate => ({
