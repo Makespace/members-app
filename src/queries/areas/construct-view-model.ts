@@ -8,6 +8,7 @@ import {
   FailureWithStatus,
 } from '../../types/failure-with-status';
 import {AreaViewModel, OwnerViewModel, ViewModel} from './view-model';
+import {partitionAreas} from './systems';
 import {ExternalStateDB} from '../../sync-worker/external-state-db';
 import {
   getRecurlyReasonsForMember,
@@ -95,12 +96,21 @@ export const constructViewModel =
     const isOwnerOfAnyArea = member.value.ownerOf.length > 0;
 
     const now = DateTime.now();
+    const expanded = await Promise.all(
+      sharedReadModel.area.getAll().map(expandArea(sharedReadModel, extDB, now))
+    );
+    const ownedAreaIds = new Set(member.value.ownerOf.map(owned => owned.id));
+    const {myAreas, makespaceAreas, systems} = partitionAreas(
+      expanded,
+      ownedAreaIds
+    );
+
     return E.right({
       canManageAreas: isSuperUser,
       canSeeOwnerPrivateDetails: isSuperUser || isOwnerOfAnyArea,
       canSeeTrainings: isSuperUser || isOwnerOfAnyArea,
-      areas: await Promise.all(
-        sharedReadModel.area.getAll().map(expandArea(sharedReadModel, extDB, now))
-      ),
+      myAreas,
+      makespaceAreas,
+      systems,
     });
   };

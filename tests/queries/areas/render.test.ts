@@ -5,7 +5,7 @@
 import * as O from 'fp-ts/Option';
 import {UUID} from 'io-ts-types';
 import {render} from '../../../src/queries/areas/render';
-import {ViewModel} from '../../../src/queries/areas/view-model';
+import {AreaViewModel, ViewModel} from '../../../src/queries/areas/view-model';
 import {Equipment} from '../../../src/read-models/shared-state/return-types';
 import {EmailAddress, UserId} from '../../../src/types';
 import { getSomeOrFail } from '../../helpers';
@@ -54,12 +54,26 @@ const area = {
       ],
     },
   ],
-} satisfies ViewModel['areas'][number];
+} satisfies AreaViewModel;
 
 
-const renderPage = (viewModel: ViewModel): HTMLBodyElement => {
+// The existing tests below exercise the per-area card, not the grouping, so this
+// helper drops the given areas into the "Makespace Areas" section and renders.
+const renderPage = (vm: {
+  areas: ReadonlyArray<AreaViewModel>;
+  canManageAreas: boolean;
+  canSeeOwnerPrivateDetails: boolean;
+  canSeeTrainings: boolean;
+}): HTMLBodyElement => {
   const body = document.createElement('body');
-  body.innerHTML = render(viewModel);
+  body.innerHTML = render({
+    myAreas: [],
+    makespaceAreas: vm.areas,
+    systems: [],
+    canManageAreas: vm.canManageAreas,
+    canSeeOwnerPrivateDetails: vm.canSeeOwnerPrivateDetails,
+    canSeeTrainings: vm.canSeeTrainings,
+  });
   return body;
 };
 
@@ -268,5 +282,48 @@ describe('areas render', () => {
     expect(detailsSections).toHaveLength(1);
     expect(detailsSections[0].textContent).toContain('Cancelled – still has access');
     expect(detailsSections[0].textContent).toContain('Payment overdue');
+  });
+});
+
+describe('areas render — sections', () => {
+  const emptyVm: ViewModel = {
+    myAreas: [],
+    makespaceAreas: [],
+    systems: [],
+    canManageAreas: false,
+    canSeeOwnerPrivateDetails: false,
+    canSeeTrainings: false,
+  };
+  const renderVM = (viewModel: ViewModel): HTMLBodyElement => {
+    const body = document.createElement('body');
+    body.innerHTML = render(viewModel);
+    return body;
+  };
+  const headings = (page: HTMLElement) =>
+    Array.from(page.querySelectorAll('h2')).map(node => node.textContent);
+
+  it('shows the owner section only when the viewer owns areas', () => {
+    expect(headings(renderVM({...emptyVm, myAreas: [area]}))).toContain(
+      "Areas that I'm an owner in"
+    );
+    expect(
+      headings(renderVM({...emptyVm, makespaceAreas: [area]}))
+    ).not.toContain("Areas that I'm an owner in");
+  });
+
+  it('always renders the Makespace Areas and Makespace Systems sections', () => {
+    const h = headings(renderVM(emptyVm));
+    expect(h).toContain('Makespace Areas');
+    expect(h).toContain('Makespace Systems');
+  });
+
+  it('puts the Add-area button in an Admin options section, super users only', () => {
+    const admin = renderVM({...emptyVm, canManageAreas: true});
+    expect(headings(admin)).toContain('Admin options');
+    expect(admin.textContent).toContain('Add area of responsibility');
+
+    const nonAdmin = renderVM(emptyVm);
+    expect(nonAdmin.textContent).not.toContain('Admin options');
+    expect(nonAdmin.textContent).not.toContain('Add area of responsibility');
   });
 });
