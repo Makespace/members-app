@@ -240,6 +240,30 @@ export const trainingStatsNotificationTable = defineTable(
   }
 );
 
+export const trainingQuizCompletionsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS trainingQuizCompletions (
+      rowHash TEXT PRIMARY KEY,
+      trainingSheetId TEXT NOT NULL,
+      completedAt INTEGER NOT NULL,
+      memberNumberProvided INTEGER,
+      emailProvided TEXT,
+      score INTEGER NOT NULL,
+      maxScore INTEGER NOT NULL
+    )
+  `,
+  'trainingQuizCompletions' as const,
+  {
+    rowHash: text('rowHash').primaryKey(),
+    trainingSheetId: text('trainingSheetId').notNull(),
+    completedAt: integer('completedAt', {mode: 'timestamp'}).notNull(),
+    memberNumberProvided: integer('memberNumberProvided'),
+    emailProvided: text('emailProvided'),
+    score: integer('score').notNull(),
+    maxScore: integer('maxScore').notNull(),
+  }
+);
+
 export const eventStateTable = defineTable(
   sql`
     CREATE TABLE IF NOT EXISTS eventStateTable (

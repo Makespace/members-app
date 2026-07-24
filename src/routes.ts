@@ -2,10 +2,13 @@ import {Dependencies} from './dependencies';
 import {Config} from './configuration';
 import {commands, sendEmailCommands} from './commands';
 import * as queries from './queries';
-import {Route, get} from './types/route';
+import {Route, get, post} from './types/route';
 import {authRoutes} from './authentication';
 import {queryToHandler, commandToHandlers, ping} from './http';
+import {apiToHandlers} from './http/api-to-handlers';
 import {emailHandler} from './http/email-handler';
+import expressAsyncHandler from 'express-async-handler';
+import {runQuizMigration} from './training-quiz/migrate';
 
 export const initRoutes = (
   deps: Dependencies,
@@ -13,6 +16,7 @@ export const initRoutes = (
 ): ReadonlyArray<Route> => {
   const query = queryToHandler(deps);
   const command = commandToHandlers(deps, conf);
+  const api = apiToHandlers(deps, conf);
   const email = emailHandler(conf, deps);
   return [
     query('/', queries.me),
@@ -61,6 +65,20 @@ export const initRoutes = (
       'equipment',
       'mark-member-trained-by',
       commands.trainers.markMemberTrainedBy
+    ),
+    ...api('training-quiz', 'record', commands.trainingQuiz.record),
+    post(
+      '/api/training-quiz/migrate',
+      expressAsyncHandler(async (req, res) => {
+        if (
+          req.headers.authorization !== `Bearer ${conf.ADMIN_API_BEARER_TOKEN}`
+        ) {
+          res.status(401).send({message: 'Bad Bearer Token'});
+          return;
+        }
+        const summary = await runQuizMigration(deps)();
+        res.status(200).send(summary);
+      })
     ),
     get('/equipment', (_req, res) => res.redirect('/areas')),
     query('/equipment/:equipment', queries.equipment),
