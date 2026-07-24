@@ -33,6 +33,7 @@ import { updateTroubleTicketCache } from '../../src/sync-worker/db/update_troubl
 import { ensureExtDBTablesExist, ExternalStateDB, initExternalStateDB } from '../../src/sync-worker/external-state-db';
 import {Int} from 'io-ts';
 import { deleteEvent, unDeleteEvent } from '../../src/init-dependencies/event-store/set-event-deleted-state';
+import { rebuildEventTimeline } from '../../src/training-quiz/rebuild-event-timeline';
 
 const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
 
@@ -114,6 +115,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     getAllEventsByType: getAllEventsByType(eventDB),
     deleteEvent: deleteEvent(eventDB, sharedReadModel.reset),
     unDeleteEvent: unDeleteEvent(eventDB, sharedReadModel.reset),
+    rebuildEventTimeline: rebuildEventTimeline(eventDB, sharedReadModel.reset),
     sharedReadModel,
     logger,
     extDB: extDBDrizzle,
