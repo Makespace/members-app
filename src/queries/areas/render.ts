@@ -221,6 +221,15 @@ const renderArea =
       ? html`<p><strong>Mailing list:</strong> ${mailTo(area.email.value, O.none, O.none)}</p>`
       : html``}
     <div>${renderEquipment(area.equipment)}</div>
+    ${showTrainings
+      ? html`<p>
+          <strong>Last training:</strong>
+          ${O.isSome(area.lastTrainingAt)
+            ? displayDateShort(DateTime.fromJSDate(area.lastTrainingAt.value))
+            : safe('none yet')}
+          · ${safe(area.trainingsThisMonth.toString())} this month
+        </p>`
+      : html``}
     ${renderActiveOwners(
       area.id,
       publiclyVisibleOwners,

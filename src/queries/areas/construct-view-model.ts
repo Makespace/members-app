@@ -9,6 +9,7 @@ import {
 } from '../../types/failure-with-status';
 import {AreaViewModel, OwnerViewModel, ViewModel} from './view-model';
 import {partitionAreas} from './systems';
+import {summariseAreaTrainings} from './area-trainings';
 import {ExternalStateDB} from '../../sync-worker/external-state-db';
 import {
   getRecurlyReasonsForMember,
@@ -70,11 +71,17 @@ const expandArea =
   ) =>
   async (area: Area): Promise<AreaViewModel> => {
     const equipmentIds = area.equipment.map(equipment => equipment.id);
+    const {lastTrainingAt, trainingsThisMonth} = summariseAreaTrainings(
+      area.equipment,
+      now
+    );
     return {
       ...area,
       owners: await Promise.all(
         area.owners.map(expandOwner(sharedReadModel, extDB, now, equipmentIds))
       ),
+      lastTrainingAt,
+      trainingsThisMonth,
     };
   };
 

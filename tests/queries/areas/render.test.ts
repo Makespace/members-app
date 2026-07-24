@@ -54,6 +54,8 @@ const area = {
       ],
     },
   ],
+  lastTrainingAt: O.none,
+  trainingsThisMonth: 0,
 } satisfies AreaViewModel;
 
 
@@ -285,6 +287,39 @@ describe('areas render', () => {
     );
     expect(inactive?.textContent).toContain('Cancelled – still has access');
     expect(inactive?.textContent).toContain('Payment overdue');
+  });
+
+  it('shows the last-training summary when trainings are visible', () => {
+    const page = renderPage({
+      areas: [
+        {
+          ...area,
+          lastTrainingAt: O.some(new Date('2026-07-10T12:00:00.000Z')),
+          trainingsThisMonth: 3,
+        },
+      ],
+      canManageAreas: false,
+      canSeeOwnerPrivateDetails: false,
+      canSeeTrainings: true,
+    });
+    expect(page.textContent).toContain('Last training');
+    expect(normalizedText(page)).toContain('3 this month');
+  });
+
+  it('hides the last-training summary when the viewer cannot see trainings', () => {
+    const page = renderPage({
+      areas: [
+        {
+          ...area,
+          lastTrainingAt: O.some(new Date('2026-07-10T12:00:00.000Z')),
+          trainingsThisMonth: 3,
+        },
+      ],
+      canManageAreas: false,
+      canSeeOwnerPrivateDetails: false,
+      canSeeTrainings: false,
+    });
+    expect(page.textContent).not.toContain('Last training');
   });
 
   it('shows active owners inside an "Owners" dropdown', () => {
