@@ -12,6 +12,7 @@ import {
   trainersTable,
   trainingStatsNotificationTable,
   troubleTicketsTable,
+  troubleTicketAssigneesTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, eq, inArray, isNull, sql} from 'drizzle-orm';
@@ -532,6 +533,7 @@ const _updateState =
             id: event.id,
             rowHash: event.rowHash,
             status: 'Todo',
+            title: event.issue,
             submittedAt: event.submittedAt,
             submittedName: event.submittedName,
             submittedMemberNumber: event.submittedMemberNumber,
@@ -548,6 +550,106 @@ const _updateState =
           })
           .onConflictDoNothing()
           .run();
+        break;
+      }
+      case 'TroubleTicketAssigned': {
+        const userId = findUserIdByMemberNumber(tx)(event.trainerMemberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to assign trouble ticket, unknown member number: '${event.trainerMemberNumber}'`);
+        }
+        const ticket = tx
+          .select({status: troubleTicketsTable.status})
+          .from(troubleTicketsTable)
+          .where(eq(troubleTicketsTable.id, event.ticketId))
+          .get();
+        if (ticket === undefined) {
+          throw new InconsistentEventError(`Unable to assign unknown trouble ticket '${event.ticketId}'`);
+        }
+        tx.insert(troubleTicketAssigneesTable)
+          .values({
+            ticketId: event.ticketId,
+            userId: userId.value,
+            memberNumber: event.trainerMemberNumber,
+            assignedAt: event.recordedAt,
+          })
+          .onConflictDoNothing({
+            target: [
+              troubleTicketAssigneesTable.ticketId,
+              troubleTicketAssigneesTable.userId,
+            ],
+          })
+          .run();
+        // The first assignment on a Todo ticket moves it to In Progress.
+        if (ticket.status === 'Todo') {
+          tx.update(troubleTicketsTable)
+            .set({status: 'In Progress'})
+            .where(eq(troubleTicketsTable.id, event.ticketId))
+            .run();
+        }
+        break;
+      }
+      case 'TroubleTicketResolved': {
+        const rows = tx.update(troubleTicketsTable)
+          .set({status: 'Resolved'})
+          .where(eq(troubleTicketsTable.id, event.ticketId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to resolve unknown trouble ticket '${event.ticketId}'`);
+        }
+        break;
+      }
+      case 'TroubleTicketParked': {
+        const rows = tx.update(troubleTicketsTable)
+          .set({status: 'Parked'})
+          .where(eq(troubleTicketsTable.id, event.ticketId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to park unknown trouble ticket '${event.ticketId}'`);
+        }
+        break;
+      }
+      case 'TroubleTicketNeedsHelp': {
+        const rows = tx.update(troubleTicketsTable)
+          .set({status: 'Needs Help'})
+          .where(eq(troubleTicketsTable.id, event.ticketId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to flag unknown trouble ticket '${event.ticketId}' as needing help`);
+        }
+        // The trainer who flagged it is unassigned so another can pick it up.
+        if (event.actor.tag === 'user') {
+          const actorUserId = findUserIdByMemberNumber(tx)(event.actor.user.memberNumber);
+          if (O.isSome(actorUserId)) {
+            tx.delete(troubleTicketAssigneesTable)
+              .where(
+                and(
+                  eq(troubleTicketAssigneesTable.ticketId, event.ticketId),
+                  eq(troubleTicketAssigneesTable.userId, actorUserId.value)
+                )
+              )
+              .run();
+          }
+        }
+        break;
+      }
+      case 'TroubleTicketEquipmentSet': {
+        const rows = tx.update(troubleTicketsTable)
+          .set({equipmentId: event.equipmentId})
+          .where(eq(troubleTicketsTable.id, event.ticketId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to set equipment for unknown trouble ticket '${event.ticketId}'`);
+        }
+        break;
+      }
+      case 'TroubleTicketTitleEdited': {
+        const rows = tx.update(troubleTicketsTable)
+          .set({title: event.title})
+          .where(eq(troubleTicketsTable.id, event.ticketId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to edit title of unknown trouble ticket '${event.ticketId}'`);
+        }
         break;
       }
       case 'LinkingMemberNumberToAnAlreadyUsedEmailAttempted': {

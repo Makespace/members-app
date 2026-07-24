@@ -28,12 +28,16 @@ export type TroubleTicketStatus = t.TypeOf<typeof TroubleTicketStatus>;
 export const TroubleTicket = t.strict({
   id: tt.UUID,
   status: TroubleTicketStatus,
+  // Editable title; defaults to the form's "issue" text at creation.
+  title: t.string,
   submittedAt: tt.DateFromISOString,
   submittedName: t.union([t.string, t.null]),
   submittedMemberNumber: t.union([t.number, t.null]),
   submittedEmail: t.union([t.string, t.null]),
   submittedEquipment: t.union([t.string, t.null]),
   equipmentId: t.union([tt.UUID, t.null]),
+  // Member numbers of trainers currently assigned to the ticket.
+  assignedMemberNumbers: t.readonlyArray(t.number),
   response: TroubleTicketResponse,
 });
 export type TroubleTicket = t.TypeOf<typeof TroubleTicket>;

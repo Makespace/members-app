@@ -251,6 +251,7 @@ export const troubleTicketsTable = defineTable(
       id TEXT PRIMARY KEY,
       rowHash TEXT NOT NULL UNIQUE,
       status TEXT NOT NULL,
+      title TEXT NOT NULL,
       submittedAt INTEGER NOT NULL,
       submittedName TEXT,
       submittedMemberNumber INTEGER,
@@ -265,6 +266,8 @@ export const troubleTicketsTable = defineTable(
     id: text('id').notNull().primaryKey().$type<UUID>(),
     rowHash: text('rowHash').notNull().unique(),
     status: text('status').notNull().$type<TroubleTicketStatus>(),
+    // Editable title; defaults to the form's "issue" text at creation.
+    title: text('title').notNull(),
     submittedAt: integer('submittedAt', {mode: 'timestamp_ms'}).notNull(),
     submittedName: text('submittedName'),
     submittedMemberNumber: integer('submittedMemberNumber'),
@@ -278,6 +281,40 @@ export const troubleTicketsTable = defineTable(
       .notNull()
       .$type<TroubleTicketResponse>(),
   }
+);
+
+// Trainers currently assigned to a trouble ticket (many-to-one).
+export const troubleTicketAssigneesTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS troubleTicketAssignees (
+      ticketId TEXT NOT NULL,
+      userId TEXT NOT NULL,
+      memberNumber INTEGER NOT NULL,
+      assignedAt INTEGER NOT NULL,
+      UNIQUE(ticketId, userId),
+      FOREIGN KEY (ticketId) REFERENCES troubleTickets(id) ON DELETE CASCADE,
+      FOREIGN KEY (userId) REFERENCES members(userId) ON DELETE CASCADE
+    )
+  `,
+  'troubleTicketAssignees' as const,
+  {
+    ticketId: text('ticketId')
+      .notNull()
+      .$type<UUID>()
+      .references(() => troubleTicketsTable.id, {onDelete: 'cascade'}),
+    userId: text('userId')
+      .notNull()
+      .$type<UserId>()
+      .references(() => membersTable.userId, {onDelete: 'cascade'}),
+    memberNumber: integer('memberNumber').notNull(),
+    assignedAt: integer('assignedAt', {mode: 'timestamp_ms'}).notNull(),
+  },
+  table => ({
+    uniqueAssignee: uniqueIndex('trouble_ticket_assignees_ticket_user_unique').on(
+      table.ticketId,
+      table.userId
+    ),
+  })
 );
 
 export const eventStateTable = defineTable(
