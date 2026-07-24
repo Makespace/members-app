@@ -36,10 +36,7 @@ describe('construct-view-model', () => {
 
     const result = await pipe(
       loggedInUser,
-      constructViewModel(
-        framework.sharedReadModel,
-        framework.getTroubleTicketData
-      ),
+      constructViewModel(framework.sharedReadModel),
       T.map(getRightOrFail)
     )();
     expect(result).toBeDefined();
@@ -48,10 +45,7 @@ describe('construct-view-model', () => {
   it('fails if the logged in user is not a super user', async () => {
     const result = await pipe(
       loggedInUser,
-      constructViewModel(
-        framework.sharedReadModel,
-        framework.getTroubleTicketData
-      )
+      constructViewModel(framework.sharedReadModel)
     )();
 
     expect(result).toStrictEqual(E.left(expect.anything()));
@@ -60,10 +54,7 @@ describe('construct-view-model', () => {
   it('fails if the user is unknown', async () => {
     const result = await pipe(
       unregisteredUser,
-      constructViewModel(
-        framework.sharedReadModel,
-        framework.getTroubleTicketData
-      )
+      constructViewModel(framework.sharedReadModel)
     )();
 
     expect(result).toStrictEqual(E.left(expect.anything()));

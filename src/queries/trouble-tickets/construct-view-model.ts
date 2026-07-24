@@ -1,24 +1,45 @@
 import * as TE from 'fp-ts/TaskEither';
+import * as O from 'fp-ts/Option';
 import {
   failureWithStatus,
   FailureWithStatus,
 } from '../../types/failure-with-status';
-import {ViewModel} from './view-model';
+import {ViewModel, TroubleTicketView} from './view-model';
 import {User} from '../../types';
 import {pipe} from 'fp-ts/lib/function';
 import {StatusCodes} from 'http-status-codes';
-import {Dependencies} from '../../dependencies';
 import {SharedReadModel} from '../../read-models/shared-state';
-import {DateTime, Duration} from 'luxon';
-import * as O from 'fp-ts/Option';
+import {TroubleTicket} from '../../types/trouble-ticket';
 
-const TROUBLE_TICKET_DISPLAY_RANGE = Duration.fromObject({month: 6});
+const toView =
+  (rm: SharedReadModel) =>
+  (ticket: TroubleTicket): TroubleTicketView => ({
+    id: ticket.id,
+    title: ticket.title,
+    status: ticket.status,
+    submittedAt: ticket.submittedAt,
+    submittedName: ticket.submittedName,
+    submittedMemberNumber: ticket.submittedMemberNumber,
+    submittedEmail: ticket.submittedEmail,
+    equipmentName: ticket.equipmentId
+      ? pipe(
+          rm.equipment.get(ticket.equipmentId),
+          O.map(equipment => equipment.name)
+        )
+      : O.none,
+    rawEquipment: ticket.submittedEquipment,
+    response: ticket.response,
+    assignees: ticket.assignedMemberNumbers.map(memberNumber => ({
+      memberNumber,
+      name: pipe(
+        rm.members.getByMemberNumber(memberNumber),
+        O.chain(member => member.name)
+      ),
+    })),
+  });
 
 export const constructViewModel =
-  (
-    sharedReadModel: SharedReadModel,
-    getTroubleTicketData: Dependencies['getTroubleTicketData']
-  ) =>
+  (sharedReadModel: SharedReadModel) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> =>
     pipe(
       sharedReadModel.members.getByMemberNumber(user.memberNumber),
@@ -36,19 +57,9 @@ export const constructViewModel =
             StatusCodes.FORBIDDEN
           )()
       ),
-      TE.flatMap(_user =>
-        pipe(
-          getTroubleTicketData(
-            O.some(
-              DateTime.now().minus(TROUBLE_TICKET_DISPLAY_RANGE).toJSDate()
-            )
-          ),
-          TE.mapLeft(msg =>
-            failureWithStatus(msg, StatusCodes.INTERNAL_SERVER_ERROR)()
-          )
-        )
-      ),
-      TE.map(ttd => ({
-        troubleTicketData: ttd,
+      TE.map(() => ({
+        tickets: sharedReadModel.troubleTickets
+          .getAll()
+          .map(toView(sharedReadModel)),
       }))
     );
