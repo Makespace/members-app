@@ -116,9 +116,10 @@ export const initRoutes = (
     // Trouble ticket write side. Interactive forms follow; for now these are API-only
     // (bearer token) so admins/seeding can create tickets and drive status changes.
     ...api('trouble-tickets', 'create', troubleTicketCommands.create),
-    ...api('trouble-tickets', 'resolve', troubleTicketCommands.resolve),
-    ...api('trouble-tickets', 'park', troubleTicketCommands.park),
-    ...api('trouble-tickets', 'needs-help', troubleTicketCommands.needsHelp),
+    ...command('trouble-tickets', 'assign', troubleTicketCommands.assign),
+    ...command('trouble-tickets', 'resolve', troubleTicketCommands.resolve),
+    ...command('trouble-tickets', 'park', troubleTicketCommands.park),
+    ...command('trouble-tickets', 'needs-help', troubleTicketCommands.needsHelp),
     ...api('trouble-tickets', 'set-equipment', troubleTicketCommands.setEquipment),
     ...api('trouble-tickets', 'edit-title', troubleTicketCommands.editTitle),
     query('/google', queries.logGoogleJson),

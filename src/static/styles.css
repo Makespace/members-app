@@ -642,3 +642,262 @@ label img {
   justify-content: center;
   padding: 2rem 0;
 }
+
+/* Trouble ticket cards - make each ticket a distinct, scannable card with a
+   status-coloured left accent. */
+.trouble-ticket-card {
+  border: 1px solid var(--border-color);
+  border-left: 5px solid var(--grey-color);
+  border-radius: 6px;
+  padding: 15px 20px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(11 12 12 / 12%);
+}
+
+.trouble-ticket-card > h3 {
+  margin-top: 0;
+}
+
+.trouble-ticket-card dl {
+  margin: 0;
+}
+
+.trouble-ticket-card--todo {
+  border-left-color: var(--grey-color);
+}
+
+.trouble-ticket-card--in-progress {
+  border-left-color: var(--link-color);
+}
+
+.trouble-ticket-card--needs-help {
+  border-left-color: var(--red-color);
+}
+
+.trouble-ticket-card--parked {
+  border-left-color: var(--yellow-color);
+}
+
+.trouble-ticket-card--resolved {
+  border-left-color: var(--green-color);
+}
+
+/* Status badges (used on cards and as filter chips) */
+.tt-badge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+  color: #fff;
+  background: var(--grey-color);
+}
+
+.tt-badge--todo {
+  background: var(--grey-color);
+}
+
+.tt-badge--in-progress {
+  background: var(--link-color);
+}
+
+.tt-badge--needs-help {
+  background: var(--red-color);
+}
+
+.tt-badge--parked {
+  background: var(--yellow-color);
+  color: var(--text-color);
+}
+
+.tt-badge--resolved {
+  background: var(--green-color);
+}
+
+/* Card header: badge alongside the title */
+.tt-card__header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tt-card__header h3 {
+  margin: 0;
+}
+
+/* Status filter bar */
+.tt-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Give each filter group clear separation from the previous one. */
+.tt-filters + .tt-filters {
+  margin-block-start: 1rem;
+}
+
+/* Group label sits inline with its chips. A <legend> otherwise renders on its own line
+   inside a flex fieldset; floating it keeps it inline. */
+.tt-filters__legend {
+  float: left;
+  margin: 0 8px 0 0;
+  padding: 0;
+  font-weight: 700;
+}
+
+/* Visually hide the checkbox but keep it focusable for keyboard users. */
+/* Visually hidden but keyboard-focusable; pointer-events:none so the hidden inputs never
+   intercept clicks (the visible label toggles them via `for`). */
+.tt-filter {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tt-filter__label {
+  cursor: pointer;
+  opacity: 0.5;
+  user-select: none;
+}
+
+.tt-filter:checked + .tt-filter__label {
+  opacity: 1;
+  box-shadow: 0 0 0 2px var(--text-color);
+}
+
+.tt-filter:focus-visible + .tt-filter__label {
+  outline: 3px solid var(--focus-color);
+  outline-offset: 1px;
+}
+
+/* Neutral chip used for the "show only" scope filters. */
+.tt-chip {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+  color: var(--text-color);
+  background: #fff;
+  border: 1px solid var(--border-color);
+}
+
+.tt-chip .tt-badge__count {
+  background: rgb(11 12 12 / 10%);
+}
+
+/* Count shown inside a status badge / filter chip */
+.tt-badge__count {
+  display: inline-block;
+  min-width: 1.4em;
+  margin-left: 2px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 30%);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.tt-badge--parked .tt-badge__count {
+  background: rgb(11 12 12 / 12%);
+}
+
+/* Card action buttons (links to the confirmation pages) */
+.tt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Action links styled as status badges. Reset the default link colours so the badge colour
+   shows through in every state. */
+.tt-action,
+.tt-action:visited,
+.tt-action:hover,
+.tt-action:active {
+  color: #fff;
+  text-decoration: none;
+}
+
+.tt-badge--parked.tt-action,
+.tt-badge--parked.tt-action:visited,
+.tt-badge--parked.tt-action:hover,
+.tt-badge--parked.tt-action:active {
+  color: var(--text-color);
+}
+
+.tt-action:hover {
+  filter: brightness(0.92);
+}
+
+/* Ticket change log - a stack of little status-tinted cards. */
+.tt-changelog > .tt-changelog__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  border-left: 0;
+}
+
+.tt-log-entry {
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--grey-color);
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin: 0;
+  background: #fff;
+}
+
+.tt-log-entry small {
+  color: var(--grey-color);
+}
+
+.tt-changelog__details {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  list-style: disc;
+}
+
+.tt-log-entry--todo {
+  border-left-color: var(--grey-color);
+  background: color-mix(in oklch, white 92%, var(--grey-color));
+}
+
+.tt-log-entry--in-progress {
+  border-left-color: var(--link-color);
+  background: color-mix(in oklch, white 92%, var(--link-color));
+}
+
+.tt-log-entry--needs-help {
+  border-left-color: var(--red-color);
+  background: color-mix(in oklch, white 92%, var(--red-color));
+}
+
+.tt-log-entry--parked {
+  border-left-color: var(--yellow-color);
+  background: color-mix(in oklch, white 88%, var(--yellow-color));
+}
+
+.tt-log-entry--resolved {
+  border-left-color: var(--green-color);
+  background: color-mix(in oklch, white 92%, var(--green-color));
+}

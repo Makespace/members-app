@@ -2,7 +2,11 @@ import {User} from '../types';
 import {html} from '../types/html';
 import {loggedInUserSquare} from './logged-in-user-square';
 
-export const navBar = (user: User, isSuperUser: boolean) => html`
+export const navBar = (
+  user: User,
+  isSuperUser: boolean,
+  isOwner: boolean
+) => html`
   <nav class="page-nav">
     <a class="jsonly page-nav__previous" href="#" onclick="history.back()"
       >Back</a
@@ -19,7 +23,7 @@ export const navBar = (user: User, isSuperUser: boolean) => html`
       ${isSuperUser ? html`<a href="/admin">Admin</a>` : ''}
       <a href="/raise-issue">Raise an Issue</a>
       <a href="/equipment">Equipment</a>
-      ${isSuperUser
+      ${isSuperUser || isOwner
         ? html`<a href="/trouble-tickets">Trouble Tickets</a>`
         : ''}
       <a href="/log-out">Log out</a>

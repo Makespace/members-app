@@ -579,8 +579,13 @@ const _updateState =
             ],
           })
           .run();
-        // The first assignment on a Todo ticket moves it to In Progress.
-        if (ticket.status === 'Todo') {
+        // Picking up a ticket (from Todo, Needs Help or Parked) moves it to In Progress.
+        // Assigning an already In Progress ticket just adds another trainer.
+        if (
+          ticket.status === 'Todo' ||
+          ticket.status === 'Needs Help' ||
+          ticket.status === 'Parked'
+        ) {
           tx.update(troubleTicketsTable)
             .set({status: 'In Progress'})
             .where(eq(troubleTicketsTable.id, event.ticketId))
@@ -596,6 +601,10 @@ const _updateState =
         if (rows.changes === 0) {
           throw new InconsistentEventError(`Unable to resolve unknown trouble ticket '${event.ticketId}'`);
         }
+        // A resolved ticket is done - clear its assignees.
+        tx.delete(troubleTicketAssigneesTable)
+          .where(eq(troubleTicketAssigneesTable.ticketId, event.ticketId))
+          .run();
         break;
       }
       case 'TroubleTicketParked': {

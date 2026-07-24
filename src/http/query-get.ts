@@ -57,7 +57,12 @@ export const queryGet =
             res
               .status(200)
               .send(
-                pageTemplate(title, user.value, member.value.isSuperUser)(body)
+                pageTemplate(
+                  title,
+                  user.value,
+                  member.value.isSuperUser,
+                  member.value.ownerOf.length > 0
+                )(body)
               ),
           Redirect: ({url}) => res.redirect(url),
           Raw: ({body, contentType}) => {

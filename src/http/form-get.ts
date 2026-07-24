@@ -46,7 +46,12 @@ export const formGet =
       })),
       TE.map(form.renderForm),
       TE.map(({title, body}) =>
-        pageTemplate(title, user.value, member.value.isSuperUser)(body)
+        pageTemplate(
+          title,
+          user.value,
+          member.value.isSuperUser,
+          member.value.ownerOf.length > 0
+        )(body)
       ),
       TE.matchW(
         failure => {
