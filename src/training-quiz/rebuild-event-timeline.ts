@@ -28,7 +28,7 @@ const readExistingRows = async (eventDB: Client): Promise<ExistingRow[]> => {
   const result = await eventDB.execute(
     'SELECT id, event_index, event_type, payload FROM events ORDER BY event_index ASC'
   );
-  return result.rows.map(row => {
+  const rows = result.rows.map(row => {
     // These are known TEXT/INTEGER columns; libsql types them as a Value union.
     const payload = row.payload as string;
     // Every event carries recordedAt in its payload as an ISO string; that is
@@ -42,6 +42,23 @@ const readExistingRows = async (eventDB: Client): Promise<ExistingRow[]> => {
       oldIndex: Number(row.event_index),
     };
   });
+
+  // Fail loudly rather than silently mis-order the log: an unparseable
+  // recordedAt would become NaN and corrupt the timestamp sort. This should
+  // never happen (every event is built via constructEvent) but guards against
+  // unknown legacy rows before we rewrite the source of truth.
+  const undated = rows.filter(row => Number.isNaN(row.recordedAtMs));
+  if (undated.length > 0) {
+    const sample = undated
+      .slice(0, 5)
+      .map(row => `#${row.oldIndex} (${row.eventType})`)
+      .join(', ');
+    throw new Error(
+      `Refusing to rebuild timeline: ${undated.length} event(s) have an unparseable recordedAt, e.g. ${sample}`
+    );
+  }
+
+  return rows;
 };
 
 export const rebuildEventTimeline =

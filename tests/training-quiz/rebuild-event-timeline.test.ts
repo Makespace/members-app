@@ -127,6 +127,33 @@ describe('rebuildEventTimeline', () => {
     );
   });
 
+  it('refuses to rewrite when an existing event has an unparseable recordedAt', async () => {
+    advanceTo(new Date('2022-01-01T00:00:00Z'));
+    await framework.commands.area.create({
+      id: uuidv4() as UUID,
+      name: 'valid-area' as NonEmptyString,
+    });
+    clear();
+
+    // Inject a malformed event row directly (no recordedAt in the payload).
+    await framework.eventStoreDb.execute({
+      sql: 'INSERT INTO events (id, event_index, event_type, payload) VALUES (?, ?, ?, ?)',
+      args: [uuidv4(), 2, 'LegacyThing', '{"type":"LegacyThing"}'],
+    });
+
+    await expect(
+      framework.depsForCommands.rebuildEventTimeline([
+        quizTimelineRow(new Date('2022-02-01T00:00:00Z'), faker.string.alphanumeric(64)),
+      ])
+    ).rejects.toThrow(/unparseable recordedAt/);
+
+    // The log was left untouched (no rewrite, no backup).
+    const events = (
+      await framework.eventStoreDb.execute('SELECT count(*) as c FROM events')
+    ).rows;
+    expect(Number(events[0].c)).toBe(2);
+  });
+
   it('is a no-op when there is nothing new to insert', async () => {
     advanceTo(new Date('2022-01-01T00:00:00Z'));
     await framework.commands.area.create({
