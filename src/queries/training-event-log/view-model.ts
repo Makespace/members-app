@@ -27,5 +27,8 @@ export type CandidateRow = {
 };
 
 export type ViewModel = {
+  // Candidates that have NOT yet been imported as events.
   candidates: ReadonlyArray<CandidateRow>;
+  // How many candidates were dropped because they're already imported.
+  importedCount: number;
 };
