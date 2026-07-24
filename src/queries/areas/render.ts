@@ -48,8 +48,8 @@ const renderSignedAtForManager = (owner: Owner) => {
 };
 
 const renderRemoveOwner = (
-  areaId: ViewModel['areas'][number]['id'],
-  owner: ViewModel['areas'][number]['owners'][number]
+  areaId: AreaViewModel['id'],
+  owner: OwnerViewModel
 ) => html`
   <a
     href="/areas/remove-owner?memberNumber=${owner.memberNumber}&areaId=${safe(
@@ -213,7 +213,7 @@ const renderArea =
   const showTrainings = area.equipment.length > 0 && viewModel.canSeeTrainings;
   return html`
   <article id="area-${safe(area.id)}">
-    <h2>${sanitizeString(area.name)}</h2>
+    <h3>${sanitizeString(area.name)}</h3>
     ${O.isSome(area.email)
       ? html`<p><strong>Mailing list:</strong> ${mailTo(area.email.value, O.none, O.none)}</p>`
       : html``}
@@ -247,21 +247,37 @@ const renderArea =
 `;
 };
 
-const renderAreas = (viewModel: ViewModel) => {
-  if (viewModel.areas.length === 0) {
-    return html`<p>Currently no Areas</p> `;
-  }
-  return pipe(viewModel.areas, RA.map(renderArea(viewModel)), joinHtml);
-};
+const renderSection =
+  (viewModel: ViewModel) =>
+  (title: string, areas: ReadonlyArray<AreaViewModel>) => html`
+    <section class="stack-large">
+      <h2>${safe(title)}</h2>
+      ${areas.length === 0
+        ? html`<p>None</p>`
+        : pipe(areas, RA.map(renderArea(viewModel)), joinHtml)}
+    </section>
+  `;
 
 const addAreaCallToAction = html`
   <a class="button" href="/areas/create">Add area of responsibility</a>
 `;
 
-export const render = (viewModel: ViewModel) => html`
-  <div class="stack-large">
-    <h1>Areas</h1>
-    ${viewModel.canManageAreas ? html`<div>${addAreaCallToAction}</div>` : html``}
-    <section class="stack-large">${renderAreas(viewModel)}</section>
-  </div>
-`;
+export const render = (viewModel: ViewModel) => {
+  const section = renderSection(viewModel);
+  return html`
+    <div class="stack-large">
+      <h1>Areas</h1>
+      ${viewModel.myAreas.length > 0
+        ? section("Areas that I'm an owner in", viewModel.myAreas)
+        : html``}
+      ${section('Makespace Areas', viewModel.makespaceAreas)}
+      ${section('Makespace Systems', viewModel.systems)}
+      ${viewModel.canManageAreas
+        ? html`<section class="stack-large">
+            <h2>Admin options</h2>
+            <div>${addAreaCallToAction}</div>
+          </section>`
+        : html``}
+    </div>
+  `;
+};

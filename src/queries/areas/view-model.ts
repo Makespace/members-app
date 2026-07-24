@@ -18,7 +18,11 @@ export type AreaViewModel = Omit<Area, 'owners'> & {
 };
 
 export type ViewModel = {
-  areas: ReadonlyArray<AreaViewModel>;
+  // Areas the viewer owns (hidden when empty); then the remaining areas grouped
+  // into physical areas and "systems".
+  myAreas: ReadonlyArray<AreaViewModel>;
+  makespaceAreas: ReadonlyArray<AreaViewModel>;
+  systems: ReadonlyArray<AreaViewModel>;
   canManageAreas: boolean;
   canSeeOwnerPrivateDetails: boolean;
   canSeeTrainings: boolean;
