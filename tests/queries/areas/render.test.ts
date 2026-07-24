@@ -311,10 +311,16 @@ describe('areas render — sections', () => {
     ).not.toContain("Areas that I'm an owner in");
   });
 
-  it('always renders the Makespace Areas and Makespace Systems sections', () => {
-    const h = headings(renderVM(emptyVm));
-    expect(h).toContain('Makespace Areas');
-    expect(h).toContain('Makespace Systems');
+  it('hides empty sections and shows them once populated', () => {
+    const empty = headings(renderVM(emptyVm));
+    expect(empty).not.toContain('Makespace Areas');
+    expect(empty).not.toContain('Makespace Systems');
+
+    const populated = headings(
+      renderVM({...emptyVm, makespaceAreas: [area], systems: [area]})
+    );
+    expect(populated).toContain('Makespace Areas');
+    expect(populated).toContain('Makespace Systems');
   });
 
   it('puts the Add-area button in an Admin options section, super users only', () => {

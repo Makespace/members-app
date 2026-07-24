@@ -247,16 +247,19 @@ const renderArea =
 `;
 };
 
+// Empty sections are hidden entirely (heading and all) rather than showing an
+// "empty" placeholder.
 const renderSection =
   (viewModel: ViewModel) =>
-  (title: string, areas: ReadonlyArray<AreaViewModel>) => html`
-    <section class="stack-large">
-      <h2>${safe(title)}</h2>
-      ${areas.length === 0
-        ? html`<p>None</p>`
-        : pipe(areas, RA.map(renderArea(viewModel)), joinHtml)}
-    </section>
-  `;
+  (title: string, areas: ReadonlyArray<AreaViewModel>) =>
+    areas.length === 0
+      ? html``
+      : html`
+          <section class="stack-large">
+            <h2>${safe(title)}</h2>
+            ${pipe(areas, RA.map(renderArea(viewModel)), joinHtml)}
+          </section>
+        `;
 
 const addAreaCallToAction = html`
   <a class="button" href="/areas/create">Add area of responsibility</a>
@@ -267,9 +270,7 @@ export const render = (viewModel: ViewModel) => {
   return html`
     <div class="stack-large">
       <h1>Areas</h1>
-      ${viewModel.myAreas.length > 0
-        ? section("Areas that I'm an owner in", viewModel.myAreas)
-        : html``}
+      ${section("Areas that I'm an owner in", viewModel.myAreas)}
       ${section('Makespace Areas', viewModel.makespaceAreas)}
       ${section('Makespace Systems', viewModel.systems)}
       ${viewModel.canManageAreas
