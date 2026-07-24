@@ -119,23 +119,26 @@ const renderActiveOwners = (
     ? [...owners].sort((a, b) => trainingsTotal(b) - trainingsTotal(a))
     : owners;
   return html`
-    <table>
-      <thead>
-        <tr>
-          <th>Owner</th>
-          ${showTrainings ? trainingsHeader : html``}
-          ${canSeeOwnerPrivateDetails
-            ? html`<th>Agreement Signed</th>`
-            : html``}
-          ${canManageAreas ? html`<th></th>` : html``}
-        </tr>
-      </thead>
-      <tbody>
-        ${joinHtml(
-          sorted.map(owner => ownerRow(areaId, owner, canManageAreas, canSeeOwnerPrivateDetails, showTrainings))
-        )}
-      </tbody>
-    </table>
+    <details>
+      <summary>Owners (${safe(owners.length.toString())})</summary>
+      <table>
+        <thead>
+          <tr>
+            <th>Member</th>
+            ${showTrainings ? trainingsHeader : html``}
+            ${canSeeOwnerPrivateDetails
+              ? html`<th>Agreement Signed</th>`
+              : html``}
+            ${canManageAreas ? html`<th></th>` : html``}
+          </tr>
+        </thead>
+        <tbody>
+          ${joinHtml(
+            sorted.map(owner => ownerRow(areaId, owner, canManageAreas, canSeeOwnerPrivateDetails, showTrainings))
+          )}
+        </tbody>
+      </table>
+    </details>
   `;
 };
 
@@ -228,20 +231,25 @@ const renderArea =
     )}
     ${viewModel.canManageAreas ? renderInactiveOwners(area.id, inactiveOwners, viewModel.canManageAreas, viewModel.canSeeOwnerPrivateDetails, showTrainings) : html``}
     ${
-      viewModel.canManageAreas ? html`<div class="wrap">
-      <a class="button" href="/areas/add-owner?area=${safe(area.id)}"
-        >Add owner</a
-      >
-      <a class="button" href="/equipment/add?area=${safe(area.id)}"
-        >Add RED equipment</a
-      >
-      <a class="button" href="/areas/set-mailing-list?area=${safe(area.id)}"
-        >Set mailing list</a
-      >
-      <a class="button" href="/areas/remove?area=${safe(area.id)}"
-        >Remove area</a
-      >
-    </div>` : html``
+      viewModel.canManageAreas
+        ? html`<details>
+      <summary>Manage area</summary>
+      <div class="wrap">
+        <a class="button" href="/areas/add-owner?area=${safe(area.id)}"
+          >Add owner</a
+        >
+        <a class="button" href="/equipment/add?area=${safe(area.id)}"
+          >Add RED equipment</a
+        >
+        <a class="button" href="/areas/set-mailing-list?area=${safe(area.id)}"
+          >Set mailing list</a
+        >
+        <a class="button" href="/areas/remove?area=${safe(area.id)}"
+          >Remove area</a
+        >
+      </div>
+    </details>`
+        : html``
     }
   </article>
 `;

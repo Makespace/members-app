@@ -278,10 +278,42 @@ describe('areas render', () => {
       canSeeOwnerPrivateDetails: true,
       canSeeTrainings: true,
     });
-    const detailsSections = Array.from(page.querySelectorAll("details"));
-    expect(detailsSections).toHaveLength(1);
-    expect(detailsSections[0].textContent).toContain('Cancelled – still has access');
-    expect(detailsSections[0].textContent).toContain('Payment overdue');
+    const inactive = Array.from(page.querySelectorAll('details')).find(node =>
+      (node.querySelector('summary')?.textContent ?? '').includes(
+        'Inactive owners'
+      )
+    );
+    expect(inactive?.textContent).toContain('Cancelled – still has access');
+    expect(inactive?.textContent).toContain('Payment overdue');
+  });
+
+  it('shows active owners inside an "Owners" dropdown', () => {
+    const page = renderPage({
+      areas: [area],
+      canManageAreas: false,
+      canSeeOwnerPrivateDetails: false,
+      canSeeTrainings: false,
+    });
+    const summaries = Array.from(page.querySelectorAll('summary')).map(
+      node => node.textContent
+    );
+    expect(summaries.some(text => text?.includes('Owners (1)'))).toBe(true);
+  });
+
+  it('puts the per-area admin actions in a "Manage area" dropdown', () => {
+    const page = renderPage({
+      areas: [area],
+      canManageAreas: true,
+      canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: true,
+    });
+    const manage = Array.from(page.querySelectorAll('details')).find(node =>
+      (node.querySelector('summary')?.textContent ?? '').includes('Manage area')
+    );
+    expect(manage?.textContent).toContain('Add owner');
+    expect(manage?.textContent).toContain('Add RED equipment');
+    expect(manage?.textContent).toContain('Set mailing list');
+    expect(manage?.textContent).toContain('Remove area');
   });
 });
 
