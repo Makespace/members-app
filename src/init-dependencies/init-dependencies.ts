@@ -15,6 +15,7 @@ import {
 } from './event-store/get-all-events';
 import {Client} from '@libsql/client';
 import {deleteEvent, unDeleteEvent} from './event-store/set-event-deleted-state';
+import {rebuildEventTimeline} from '../training-quiz/rebuild-event-timeline';
 
 import {initSharedReadModel} from '../read-models/shared-state';
 import {lastSync} from '../sync-worker/db/last_sync';
@@ -84,6 +85,7 @@ export const initDependencies = (
     getAllEventsByType: getAllEventsByType(eventDB),
     deleteEvent: deleteEvent(eventDB, sharedReadModel.reset),
     unDeleteEvent: unDeleteEvent(eventDB, sharedReadModel.reset),
+    rebuildEventTimeline: rebuildEventTimeline(eventDB, sharedReadModel.reset),
     sharedReadModel,
     extDB,
     rateLimitSendingOfEmails: createRateLimiter(5, 24 * 3600),
