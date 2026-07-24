@@ -317,6 +317,19 @@ export const troubleTicketAssigneesTable = defineTable(
   })
 );
 
+// Status-change event indices we have already sent notification emails for (dedup).
+export const troubleTicketNotificationsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS troubleTicketNotifications (
+      notifiedEventIndex INTEGER PRIMARY KEY
+    )
+  `,
+  'troubleTicketNotifications' as const,
+  {
+    notifiedEventIndex: integer('notifiedEventIndex').notNull().primaryKey(),
+  }
+);
+
 export const eventStateTable = defineTable(
   sql`
     CREATE TABLE IF NOT EXISTS eventStateTable (

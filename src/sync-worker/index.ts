@@ -1,5 +1,6 @@
 import {syncTroubleTickets} from './sync_trouble_ticket';
 import {ingestTroubleTickets} from './ingest_trouble_tickets';
+import {notifyTroubleTicketChanges} from './notify_trouble_tickets';
 import {syncEquipmentTrainingSheets} from './sync_training_sheet';
 import {initDependencies} from './init-dependencies';
 import {GoogleHelpers} from './google/pull_sheet_data';
@@ -13,6 +14,8 @@ const EQUIPMENT_SYNC_CHECK_INTERVAL_MS = 60 * 1000;
 const TRAINING_SUMMARY_EMAIL_CHECK_INTERVAL_MS = 20 * 60 * 1000;
 const EQUIPMENT_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 const TROUBLE_TICKET_SYNC_INTERVAL_MS = 20 * 60 * 1000;
+// Status-change notifications should be prompt, so check often.
+const TROUBLE_TICKET_NOTIFY_INTERVAL_MS = 30 * 1000;
 const RECURLY_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 
 async function syncExternDataPeriodically(
@@ -22,6 +25,7 @@ async function syncExternDataPeriodically(
   let lastHeartbeat = Date.now();
   let lastEquipmentSyncCheck = Date.now();
   let lastTroubleTicketCheck = Date.now();
+  let lastTroubleTicketNotify = Date.now();
   let lastTrainingSummaryEmailCheck = Date.now();
   while (true) {
     try {
@@ -29,6 +33,7 @@ async function syncExternDataPeriodically(
       const lastHeartbeatAgoMs = now - lastHeartbeat;
       const lastEquipmentSyncCheckAgoMs = now - lastEquipmentSyncCheck;
       const lastTroubleTicketCheckAgoMs = now - lastTroubleTicketCheck;
+      const lastTroubleTicketNotifyAgoMs = now - lastTroubleTicketNotify;
       const lastTrainingSummaryEmailCheckAgoMs =
         now - lastTrainingSummaryEmailCheck;
 
@@ -58,6 +63,11 @@ async function syncExternDataPeriodically(
         // Bring any newly-cached rows into the event timeline (idempotent).
         await ingestTroubleTickets(deps);
         lastTroubleTicketCheck = Date.now();
+      }
+
+      if (lastTroubleTicketNotifyAgoMs > TROUBLE_TICKET_NOTIFY_INTERVAL_MS) {
+        await notifyTroubleTicketChanges(deps);
+        lastTroubleTicketNotify = Date.now();
       }
 
       if (

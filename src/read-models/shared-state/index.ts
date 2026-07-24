@@ -36,6 +36,7 @@ import {
   getAllTroubleTickets,
   getTroubleTicketById,
   getTroubleTicketsByEquipment,
+  hasNotifiedForEvent,
   hasTroubleTicketRowHash,
 } from './trouble-tickets/get';
 import { findAllSuperUsers, findStoredEmailForLogin, findUserIdByEmail, findUserIdByMemberNumber, getAllMemberCore } from './member/get';
@@ -86,6 +87,7 @@ export type SharedReadModel = {
     getAll: () => ReadonlyArray<TroubleTicket>;
     getById: (id: UUID) => O.Option<TroubleTicket>;
     getByEquipment: (equipmentId: UUID | null) => ReadonlyArray<TroubleTicket>;
+    hasNotifiedForEvent: (eventIndex: number) => boolean;
   };
   debug: {
     dump: () => SharedDatabaseDump;
@@ -147,6 +149,7 @@ export const initSharedReadModel = (
       getAll: getAllTroubleTickets(readModelDb),
       getById: getTroubleTicketById(readModelDb),
       getByEquipment: getTroubleTicketsByEquipment(readModelDb),
+      hasNotifiedForEvent: hasNotifiedForEvent(readModelDb),
     },
     debug: {
       dump: dumpCurrentState(readModelDb),

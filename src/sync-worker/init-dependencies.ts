@@ -18,6 +18,7 @@ import {initSharedReadModel} from '../read-models/shared-state';
 import {commitEvent} from '../init-dependencies/event-store/commit-event';
 import {getSheetData} from './db/get_sheet_data';
 import {getTroubleTicketData} from './db/get_trouble_ticket_data';
+import {getAllEventsByType} from '../init-dependencies/event-store/get-all-events';
 import {ensureExtDBTablesExist, ExternalStateDB, initExternalStateDB} from './external-state-db';
 import { pullRecurlyData } from './recurly/pull-recurly-data';
 import { Duration } from 'luxon';
@@ -97,6 +98,7 @@ export const initDependencies = (): SyncWorkerDependencies => {
       extDB,
       O.some(conf.TROUBLE_TICKET_SHEET)
     ),
+    getAllEventsByType: getAllEventsByType(eventDB),
     commitEvent: commitEvent(eventDB, logger, sharedReadModel.asyncRefresh),
     pullRecurlyData: conf.RECURLY_TOKEN ?  pullRecurlyData(logger, extDB, conf.RECURLY_TOKEN) : async (_interval: Duration) => {},
     ...initDBCommands(extDB, eventDB),
