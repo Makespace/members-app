@@ -12,11 +12,16 @@
 
 // A row as it will be (re-)written into the events table. `payload` is kept
 // verbatim so existing events are byte-for-byte unchanged apart from their index.
+// The legacy resource_* columns are carried through verbatim too; the normal
+// append path never writes them, so newly inserted events leave them null.
 export type TimelineRow = {
   id: string;
   eventType: string;
   payload: string;
   recordedAtMs: number;
+  resourceVersion?: number | null;
+  resourceId?: string | null;
+  resourceType?: string | null;
 };
 
 export type ExistingRow = TimelineRow & {oldIndex: number};
@@ -58,6 +63,9 @@ export const planTimelineRebuild = (
     eventType: t.row.eventType,
     payload: t.row.payload,
     recordedAtMs: t.row.recordedAtMs,
+    resourceVersion: t.row.resourceVersion ?? null,
+    resourceId: t.row.resourceId ?? null,
+    resourceType: t.row.resourceType ?? null,
     newIndex: i + 1,
   }));
 

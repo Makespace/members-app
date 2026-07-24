@@ -26,10 +26,16 @@ export const backfillTrainingQuizTimeline =
       sheetToEquipment
     );
 
+    // Dedup against the read model AND within this batch: unlike the append
+    // path there is no per-insert read-model refresh here, so two byte-identical
+    // sheet rows (same hash) would otherwise both be woven into the log forever.
+    const batchHashes = new Set<string>();
     const inserts: ReadonlyArray<TimelineRow> = candidates
       .filter(
         candidate =>
-          !deps.sharedReadModel.trainingQuiz.hasRowHash(candidate.rowHash)
+          !deps.sharedReadModel.trainingQuiz.hasRowHash(candidate.rowHash) &&
+          !batchHashes.has(candidate.rowHash) &&
+          !!batchHashes.add(candidate.rowHash)
       )
       .map(candidate => {
         const event = {

@@ -146,4 +146,29 @@ describe('planTimelineRebuild', () => {
       expect(plan.rows[0].payload).toStrictEqual(row.payload);
     });
   });
+  describe('legacy resource_* columns', () => {
+    it('carries existing values through and defaults inserts to null', () => {
+      const legacy: ExistingRow = {
+        ...existing(1, 100),
+        resourceVersion: 7,
+        resourceId: 'legacy-resource-id',
+        resourceType: 'LegacyResource',
+      };
+
+      const plan = planTimelineRebuild([legacy], [insert('fresh', 200)]);
+
+      expect(plan.rows[0]).toMatchObject({
+        id: 'existing-1',
+        resourceVersion: 7,
+        resourceId: 'legacy-resource-id',
+        resourceType: 'LegacyResource',
+      });
+      expect(plan.rows[1]).toMatchObject({
+        id: 'new-fresh',
+        resourceVersion: null,
+        resourceId: null,
+        resourceType: null,
+      });
+    });
+  });
 });

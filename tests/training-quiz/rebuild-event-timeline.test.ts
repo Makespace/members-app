@@ -177,4 +177,129 @@ describe('rebuildEventTimeline', () => {
     ).rows;
     expect(events.map(r => Number(r.event_index))).toStrictEqual([1]);
   });
+  it('refuses a second rewrite while backups from a previous run exist', async () => {
+    advanceTo(new Date('2022-01-01T00:00:00Z'));
+    await framework.commands.area.create({
+      id: uuidv4() as UUID,
+      name: 'area-one' as NonEmptyString,
+    });
+    clear();
+
+    // First rewrite succeeds and leaves the *_backup tables behind.
+    const first = await framework.depsForCommands.rebuildEventTimeline([
+      quizTimelineRow(
+        new Date('2021-06-01T00:00:00Z'),
+        faker.string.alphanumeric(64)
+      ),
+    ]);
+    expect(first.rewrote).toBe(true);
+
+    // A second rewrite must not silently destroy the first run's backup.
+    await expect(
+      framework.depsForCommands.rebuildEventTimeline([
+        quizTimelineRow(
+          new Date('2021-07-01T00:00:00Z'),
+          faker.string.alphanumeric(64)
+        ),
+      ])
+    ).rejects.toThrow(/backup tables from a previous rewrite/);
+
+    // The failed attempt rolled back: log still as the first rewrite left it.
+    const events = (
+      await framework.eventStoreDb.execute('SELECT count(*) as c FROM events')
+    ).rows;
+    expect(Number(events[0].c)).toBe(2);
+  });
+
+  it('refuses to rewrite when the existing log is not in chronological order', async () => {
+    advanceTo(new Date('2022-03-01T00:00:00Z'));
+    await framework.commands.area.create({
+      id: uuidv4() as UUID,
+      name: 'later-area' as NonEmptyString,
+    });
+    clear();
+
+    // Inject a legacy event whose recordedAt PRECEDES the event before it.
+    await framework.eventStoreDb.execute({
+      sql: 'INSERT INTO events (id, event_index, event_type, payload) VALUES (?, ?, ?, ?)',
+      args: [
+        uuidv4(),
+        2,
+        'LegacyThing',
+        '{"type":"LegacyThing","recordedAt":"2022-01-01T00:00:00.000Z"}',
+      ],
+    });
+
+    await expect(
+      framework.depsForCommands.rebuildEventTimeline([
+        quizTimelineRow(
+          new Date('2022-02-01T00:00:00Z'),
+          faker.string.alphanumeric(64)
+        ),
+      ])
+    ).rejects.toThrow(/chronological order/);
+
+    // Untouched: no rewrite, no backups.
+    const backups = (
+      await framework.eventStoreDb.execute(
+        "SELECT name FROM sqlite_master WHERE name = 'events_backup'"
+      )
+    ).rows;
+    expect(backups).toHaveLength(0);
+  });
+
+  it('carries the legacy resource_* column values through the rewrite', async () => {
+    advanceTo(new Date('2022-01-01T00:00:00Z'));
+    await framework.commands.area.create({
+      id: uuidv4() as UUID,
+      name: 'area-one' as NonEmptyString,
+    });
+    clear();
+
+    // A legacy row with the resource_* columns populated (the current append
+    // path never writes them, but old rows might have them). The payload must
+    // be a decodable domain event: the read model replays the whole log after
+    // the rewrite.
+    const legacyId = uuidv4();
+    const legacyEvent = {
+      ...constructEvent('AreaCreated')({
+        id: uuidv4() as UUID,
+        name: 'legacy-area' as NonEmptyString,
+        actor: MIGRATION_ACTOR,
+      }),
+      recordedAt: new Date('2022-03-01T00:00:00Z'),
+    };
+    await framework.eventStoreDb.execute({
+      sql: 'INSERT INTO events (id, event_index, event_type, payload, resource_version, resource_id, resource_type) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      args: [
+        legacyId,
+        2,
+        legacyEvent.type,
+        JSON.stringify(legacyEvent),
+        7,
+        'legacy-resource-id',
+        'LegacyResource',
+      ],
+    });
+
+    // Weave a quiz in between; the legacy row shifts from index 2 to 3.
+    const summary = await framework.depsForCommands.rebuildEventTimeline([
+      quizTimelineRow(
+        new Date('2022-02-01T00:00:00Z'),
+        faker.string.alphanumeric(64)
+      ),
+    ]);
+    expect(summary.rewrote).toBe(true);
+
+    const legacy = (
+      await framework.eventStoreDb.execute({
+        sql: 'SELECT event_index, resource_version, resource_id, resource_type FROM events WHERE id = ?',
+        args: [legacyId],
+      })
+    ).rows[0];
+    expect(Number(legacy.event_index)).toBe(3);
+    expect(Number(legacy.resource_version)).toBe(7);
+    expect(legacy.resource_id).toBe('legacy-resource-id');
+    expect(legacy.resource_type).toBe('LegacyResource');
+  });
 });
