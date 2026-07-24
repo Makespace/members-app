@@ -22,7 +22,11 @@ export type CandidateTrainingQuizCompleted = {
   rowHash: string; // stable dedup key
 };
 
-const SEP = '';
+// The fields are joined with \u0001 (an ASCII control byte that can never
+// appear in a field value), making the concatenation unambiguous. Never change
+// this: it changes every rowHash, and previously imported rows would all be
+// re-imported as duplicates.
+const SEP = '\u0001';
 
 // Stable hash of the identifying fields of a quiz row, used to dedup: the same
 // row always hashes the same, while a retake (different timestamp/score) hashes
