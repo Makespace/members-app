@@ -1,10 +1,12 @@
 import {Dependencies} from './dependencies';
 import {Config} from './configuration';
 import {commands, sendEmailCommands} from './commands';
+import {troubleTicketCommands} from './commands/trouble-tickets';
 import * as queries from './queries';
 import {Route, get} from './types/route';
 import {authRoutes} from './authentication';
 import {queryToHandler, commandToHandlers, ping} from './http';
+import {apiToHandlers} from './http/api-to-handlers';
 import {emailHandler} from './http/email-handler';
 
 export const initRoutes = (
@@ -13,6 +15,7 @@ export const initRoutes = (
 ): ReadonlyArray<Route> => {
   const query = queryToHandler(deps);
   const command = commandToHandlers(deps, conf);
+  const api = apiToHandlers(deps, conf);
   const email = emailHandler(conf, deps);
   return [
     query('/', queries.me),
@@ -110,6 +113,14 @@ export const initRoutes = (
 
     // Temporary location for POC - may move under individual equipments eventually.
     query('/trouble-tickets', queries.troubleTickets),
+    // Trouble ticket write side. Interactive forms follow; for now these are API-only
+    // (bearer token) so admins/seeding can create tickets and drive status changes.
+    ...api('trouble-tickets', 'create', troubleTicketCommands.create),
+    ...api('trouble-tickets', 'resolve', troubleTicketCommands.resolve),
+    ...api('trouble-tickets', 'park', troubleTicketCommands.park),
+    ...api('trouble-tickets', 'needs-help', troubleTicketCommands.needsHelp),
+    ...api('trouble-tickets', 'set-equipment', troubleTicketCommands.setEquipment),
+    ...api('trouble-tickets', 'edit-title', troubleTicketCommands.editTitle),
     query('/google', queries.logGoogleJson),
     ...authRoutes(deps, conf),
   ];

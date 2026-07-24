@@ -19,6 +19,9 @@ export const navBar = (user: User, isSuperUser: boolean) => html`
       ${isSuperUser ? html`<a href="/admin">Admin</a>` : ''}
       <a href="/raise-issue">Raise an Issue</a>
       <a href="/equipment">Equipment</a>
+      ${isSuperUser
+        ? html`<a href="/trouble-tickets">Trouble Tickets</a>`
+        : ''}
       <a href="/log-out">Log out</a>
     </div>
     ${loggedInUserSquare(user)}
