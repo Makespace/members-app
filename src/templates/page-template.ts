@@ -10,12 +10,18 @@ import {head} from './head';
 import {navBar} from './navbar';
 
 export const pageTemplate =
-  (title: HtmlSubstitution, user: User, isSuperUser: boolean) => (body: Html) =>
+  (
+    title: HtmlSubstitution,
+    user: User,
+    isSuperUser: boolean,
+    isOwner: boolean
+  ) =>
+  (body: Html) =>
     html`
       <!doctype html>
       <html lang="en">
         ${head(title)}
-        <header>${navBar(user, isSuperUser)}</header>
+        <header>${navBar(user, isSuperUser, isOwner)}</header>
         <body>
           ${body} ${gridJs()}
         </body>

@@ -167,6 +167,67 @@ describe('trouble ticket status workflow (read model)', () => {
     expect(ticket.assignedMemberNumbers).toStrictEqual([]);
   });
 
+  it('picking up a Needs Help ticket moves it back to In Progress', () => {
+    const created = troubleTicketCreated();
+    framework.insertIntoSharedReadModel(created);
+    linkMember(12);
+    linkMember(34);
+    framework.insertIntoSharedReadModel(
+      constructEvent('TroubleTicketAssigned')({
+        actor: userActorWithMember(12),
+        ticketId: created.id,
+        trainerMemberNumber: 12,
+      })
+    );
+    framework.insertIntoSharedReadModel(
+      constructEvent('TroubleTicketNeedsHelp')({
+        actor: userActorWithMember(12),
+        ticketId: created.id,
+        whatTried: 'x',
+        whyDidntWork: 'y',
+      })
+    );
+    framework.insertIntoSharedReadModel(
+      constructEvent('TroubleTicketAssigned')({
+        actor: userActorWithMember(34),
+        ticketId: created.id,
+        trainerMemberNumber: 34,
+      })
+    );
+
+    const ticket = getSomeOrFail(
+      framework.sharedReadModel.troubleTickets.getById(created.id)
+    );
+    expect(ticket.status).toStrictEqual('In Progress');
+    expect(ticket.assignedMemberNumbers).toStrictEqual([34]);
+  });
+
+  it('resolving clears the assignees', () => {
+    const created = troubleTicketCreated();
+    framework.insertIntoSharedReadModel(created);
+    linkMember(12);
+    framework.insertIntoSharedReadModel(
+      constructEvent('TroubleTicketAssigned')({
+        actor: userActorWithMember(12),
+        ticketId: created.id,
+        trainerMemberNumber: 12,
+      })
+    );
+    framework.insertIntoSharedReadModel(
+      constructEvent('TroubleTicketResolved')({
+        actor: systemActor(),
+        ticketId: created.id,
+        summary: 'done',
+      })
+    );
+
+    const ticket = getSomeOrFail(
+      framework.sharedReadModel.troubleTickets.getById(created.id)
+    );
+    expect(ticket.status).toStrictEqual('Resolved');
+    expect(ticket.assignedMemberNumbers).toStrictEqual([]);
+  });
+
   it('editing the title updates it', () => {
     const created = troubleTicketCreated();
     framework.insertIntoSharedReadModel(created);

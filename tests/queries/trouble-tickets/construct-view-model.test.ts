@@ -1,5 +1,7 @@
 import * as E from 'fp-ts/Either';
 import {pipe} from 'fp-ts/lib/function';
+import {faker} from '@faker-js/faker';
+import {NonEmptyString, UUID} from 'io-ts-types';
 import {arbitraryUser} from '../../types/user.helper';
 import {constructViewModel} from '../../../src/queries/trouble-tickets/construct-view-model';
 import * as T from 'fp-ts/Task';
@@ -36,7 +38,26 @@ describe('construct-view-model', () => {
 
     const result = await pipe(
       loggedInUser,
-      constructViewModel(framework.sharedReadModel),
+      constructViewModel(framework.depsForCommands),
+      T.map(getRightOrFail)
+    )();
+    expect(result).toBeDefined();
+  });
+
+  it('succeeds if the logged in user is an area owner', async () => {
+    const areaId = faker.string.uuid() as UUID;
+    await framework.commands.area.create({
+      id: areaId,
+      name: faker.company.buzzNoun() as NonEmptyString,
+    });
+    await framework.commands.area.addOwner({
+      areaId,
+      memberNumber: loggedInUser.memberNumber,
+    });
+
+    const result = await pipe(
+      loggedInUser,
+      constructViewModel(framework.depsForCommands),
       T.map(getRightOrFail)
     )();
     expect(result).toBeDefined();
@@ -45,7 +66,7 @@ describe('construct-view-model', () => {
   it('fails if the logged in user is not a super user', async () => {
     const result = await pipe(
       loggedInUser,
-      constructViewModel(framework.sharedReadModel)
+      constructViewModel(framework.depsForCommands)
     )();
 
     expect(result).toStrictEqual(E.left(expect.anything()));
@@ -54,7 +75,7 @@ describe('construct-view-model', () => {
   it('fails if the user is unknown', async () => {
     const result = await pipe(
       unregisteredUser,
-      constructViewModel(framework.sharedReadModel)
+      constructViewModel(framework.depsForCommands)
     )();
 
     expect(result).toStrictEqual(E.left(expect.anything()));
