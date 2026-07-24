@@ -99,15 +99,16 @@ const troubleTicketActionForm = (
 export const assignForm = troubleTicketActionForm({
   verb: 'assign',
   pageTitle: 'Assign this ticket to you',
-  intro: html`This assigns the ticket to you. If it isn't already In Progress,
-  it will be moved there.`,
+  intro: html`This assigns the ticket to you and notifies the submitter. If it
+  isn't already In Progress, it will be moved there.`,
   submitLabel: 'Assign to me',
 });
 
 export const resolveForm = troubleTicketActionForm({
   verb: 'resolve',
   pageTitle: 'Resolve ticket',
-  intro: html`This marks the ticket as Resolved and unassigns everyone.`,
+  intro: html`This marks the ticket as Resolved, unassigns everyone, and
+  notifies the submitter.`,
   fields: textField('summary', 'What did you do to resolve this ticket?'),
   submitLabel: 'Resolve ticket',
 });
@@ -115,8 +116,9 @@ export const resolveForm = troubleTicketActionForm({
 export const needsHelpForm = troubleTicketActionForm({
   verb: 'needs-help',
   pageTitle: 'Flag as Needs Help',
-  intro: html`This flags the ticket as Needs Help and unassigns you, so another
-  trainer can pick it up.`,
+  intro: html`This flags the ticket as Needs Help and unassigns you, then
+  notifies the submitter and the machine's trainers so someone else can pick it
+  up.`,
   fields: html`${textField('whatTried', 'What did you try?')}
   ${textField('whyDidntWork', "Why didn't it work?")}`,
   submitLabel: 'Flag Needs Help',
@@ -125,7 +127,8 @@ export const needsHelpForm = troubleTicketActionForm({
 export const parkForm = troubleTicketActionForm({
   verb: 'park',
   pageTitle: 'Park ticket',
-  intro: html`This parks the ticket until it can be worked on again.`,
+  intro: html`This parks the ticket until it can be worked on again, and
+  notifies the submitter.`,
   fields: html`${textField('whyParked', 'Why is this being parked?')}
   ${textField('pathToResolution', 'What is the path to future resolution?')}
   ${textField(
