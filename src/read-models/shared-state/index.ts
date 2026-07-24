@@ -27,6 +27,7 @@ import {
 import {dumpCurrentState, SharedDatabaseDump} from './debug/dump';
 import {DateTime} from 'luxon';
 import {getLastSent} from './training-stat-notifications/get-last-sent';
+import {getImportedQuizRowHashes, hasQuizRowHash} from './training-quiz/get';
 import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
 import { TrainingSheetId } from '../../types/training-sheet';
 import { EquipmentId } from '../../types/equipment-id';
@@ -79,6 +80,10 @@ export type SharedReadModel = {
   };
   trainingStats: {
     getLastSent: (userId: UserId) => O.Option<DateTime>;
+  };
+  trainingQuiz: {
+    hasRowHash: (rowHash: string) => boolean;
+    importedRowHashes: () => ReadonlySet<string>;
   };
 };
 
@@ -134,6 +139,10 @@ export const initSharedReadModel = (
     },
     trainingStats: {
       getLastSent: getLastSent(readModelDb),
+    },
+    trainingQuiz: {
+      hasRowHash: hasQuizRowHash(readModelDb),
+      importedRowHashes: getImportedQuizRowHashes(readModelDb),
     },
   };
 };
