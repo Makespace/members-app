@@ -1,3 +1,4 @@
+import * as O from 'fp-ts/Option';
 import {Area, Owner} from '../../read-models/shared-state/return-types';
 import {RecurlyReason} from '../../read-models/external-state/recurly-status';
 import {QuarterCount} from '../../read-models/shared-state/member/training-delivered';
@@ -15,6 +16,10 @@ export type OwnerViewModel = Owner & {
 
 export type AreaViewModel = Omit<Area, 'owners'> & {
   owners: ReadonlyArray<OwnerViewModel>;
+  // Most recent training completed on this area's equipment, and how many
+  // trainings happened this calendar month.
+  lastTrainingAt: O.Option<Date>;
+  trainingsThisMonth: number;
 };
 
 export type ViewModel = {
