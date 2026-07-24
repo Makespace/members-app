@@ -289,24 +289,7 @@ describe('areas render', () => {
     expect(inactive?.textContent).toContain('Payment overdue');
   });
 
-  it('shows the last-training summary when trainings are visible', () => {
-    const page = renderPage({
-      areas: [
-        {
-          ...area,
-          lastTrainingAt: O.some(new Date('2026-07-10T12:00:00.000Z')),
-          trainingsThisMonth: 3,
-        },
-      ],
-      canManageAreas: false,
-      canSeeOwnerPrivateDetails: false,
-      canSeeTrainings: true,
-    });
-    expect(page.textContent).toContain('Last training');
-    expect(normalizedText(page)).toContain('3 this month');
-  });
-
-  it('hides the last-training summary when the viewer cannot see trainings', () => {
+  it('shows the last-training summary to every viewer (even non-owners)', () => {
     const page = renderPage({
       areas: [
         {
@@ -318,6 +301,25 @@ describe('areas render', () => {
       canManageAreas: false,
       canSeeOwnerPrivateDetails: false,
       canSeeTrainings: false,
+    });
+    expect(page.textContent).toContain('Last training');
+    expect(normalizedText(page)).toContain('10th July 2026');
+    expect(normalizedText(page)).toContain('3 this month');
+  });
+
+  it('hides the last-training summary for areas with no equipment', () => {
+    const page = renderPage({
+      areas: [
+        {
+          ...area,
+          equipment: [],
+          lastTrainingAt: O.none,
+          trainingsThisMonth: 0,
+        },
+      ],
+      canManageAreas: true,
+      canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: true,
     });
     expect(page.textContent).not.toContain('Last training');
   });

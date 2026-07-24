@@ -14,7 +14,11 @@ import {renderMember} from '../../templates/member';
 import {renderTrainingSparkline} from '../../templates/training-sparkline';
 import {tooltip} from '../shared-render/tool-tip';
 import * as O from 'fp-ts/Option';
-import {displayDate, displayDateShort} from '../../templates/display-date';
+import {
+  displayDate,
+  displayDateLong,
+  displayDateShort,
+} from '../../templates/display-date';
 import {DateTime} from 'luxon';
 import {
   Area,
@@ -221,11 +225,11 @@ const renderArea =
       ? html`<p><strong>Mailing list:</strong> ${mailTo(area.email.value, O.none, O.none)}</p>`
       : html``}
     <div>${renderEquipment(area.equipment)}</div>
-    ${showTrainings
+    ${area.equipment.length > 0
       ? html`<p>
           <strong>Last training:</strong>
           ${O.isSome(area.lastTrainingAt)
-            ? displayDateShort(DateTime.fromJSDate(area.lastTrainingAt.value))
+            ? displayDateLong(DateTime.fromJSDate(area.lastTrainingAt.value))
             : safe('none yet')}
           · ${safe(area.trainingsThisMonth.toString())} this month
         </p>`
