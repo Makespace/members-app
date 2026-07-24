@@ -1,14 +1,16 @@
 import {faker} from '@faker-js/faker';
+import {Int} from 'io-ts';
+import {NonEmptyString} from 'io-ts-types';
 import {TestFramework, initTestFramework} from '../test-framework';
 
 const arbitraryCompletion = () => ({
-  trainingSheetId: faker.string.alphanumeric(10),
+  trainingSheetId: faker.string.alphanumeric(10) as NonEmptyString,
   completedAt: faker.date.past(),
   memberNumberProvided: faker.number.int({min: 1}),
   emailProvided: faker.internet.email(),
-  score: 8,
-  maxScore: 10,
-  rowHash: faker.string.alphanumeric(64),
+  score: 8 as Int,
+  maxScore: 10 as Int,
+  rowHash: faker.string.alphanumeric(64) as NonEmptyString,
 });
 
 describe('training quiz completions read model', () => {

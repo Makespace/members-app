@@ -6,14 +6,17 @@ import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
 import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
 
+// rowHash is the global dedup sentinel (and the read-model primary key), so it
+// must never be empty; scores must be real integers (t.number would let NaN
+// through). emailProvided stays free-form: the sheet field is unvalidated.
 const codec = t.strict({
-  trainingSheetId: t.string,
+  trainingSheetId: tt.NonEmptyString,
   completedAt: tt.DateFromISOString,
   memberNumberProvided: t.union([t.number, t.null]),
   emailProvided: t.union([t.string, t.null]),
-  score: t.number,
-  maxScore: t.number,
-  rowHash: t.string,
+  score: t.Int,
+  maxScore: t.Int,
+  rowHash: tt.NonEmptyString,
 });
 
 type RecordTrainingQuizCompletion = t.TypeOf<typeof codec>;

@@ -1,18 +1,21 @@
+import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
+import {Int} from 'io-ts';
+import {NonEmptyString} from 'io-ts-types';
 import {record} from '../../../src/commands/training-quiz/record';
 import {constructEvent} from '../../../src/types';
 import {arbitraryActor, getTaskEitherRightOrFail} from '../../helpers';
 import {TestFramework, initTestFramework} from '../../read-models/test-framework';
 
 const arbitraryCompletion = () => ({
-  trainingSheetId: faker.string.alphanumeric(10),
+  trainingSheetId: faker.string.alphanumeric(10) as NonEmptyString,
   completedAt: faker.date.past(),
   memberNumberProvided: faker.number.int({min: 1}),
   emailProvided: faker.internet.email(),
-  score: 10,
-  maxScore: 10,
-  rowHash: faker.string.alphanumeric(64),
+  score: 10 as Int,
+  maxScore: 10 as Int,
+  rowHash: faker.string.alphanumeric(64) as NonEmptyString,
 });
 
 describe('record-training-quiz-completion', () => {
@@ -117,6 +120,32 @@ describe('record-training-quiz-completion', () => {
           })
         )
       );
+    });
+  });
+  describe('decoding input', () => {
+    it('accepts a well-formed completion', () => {
+      const valid = {
+        ...arbitraryCompletion(),
+        completedAt: '2024-01-01T00:00:00.000Z',
+      };
+      expect(E.isRight(record.decode(valid))).toBe(true);
+    });
+
+    it('rejects an empty rowHash (it is the dedup sentinel)', () => {
+      const valid = {
+        ...arbitraryCompletion(),
+        completedAt: '2024-01-01T00:00:00.000Z',
+      };
+      expect(E.isLeft(record.decode({...valid, rowHash: ''}))).toBe(true);
+    });
+
+    it('rejects non-integer scores', () => {
+      const valid = {
+        ...arbitraryCompletion(),
+        completedAt: '2024-01-01T00:00:00.000Z',
+      };
+      expect(E.isLeft(record.decode({...valid, score: NaN}))).toBe(true);
+      expect(E.isLeft(record.decode({...valid, maxScore: 9.5}))).toBe(true);
     });
   });
 });
