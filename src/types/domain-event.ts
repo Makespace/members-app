@@ -175,6 +175,52 @@ const TroubleTicketCreated = defineEvent('TroubleTicketCreated', {
   steps: t.string,
 });
 
+// --- Trouble ticket status workflow ---
+// Each transition is its own event so its required context can be enforced by the codec
+// (defineEvent uses t.strict - no optional fields). All carry the ticketId plus the
+// standard actor/recordedAt, which supply the who/when for the ticket's change timeline.
+
+// A trainer assigns themselves to a ticket. Multiple trainers may be assigned; the first
+// assignment on a Todo ticket moves it to In Progress.
+const TroubleTicketAssigned = defineEvent('TroubleTicketAssigned', {
+  ticketId: tt.UUID,
+  trainerMemberNumber: t.number,
+});
+
+// The ticket is resolved, with a summary of what was done.
+const TroubleTicketResolved = defineEvent('TroubleTicketResolved', {
+  ticketId: tt.UUID,
+  summary: t.string,
+});
+
+// The ticket is parked - can't be solved right now.
+const TroubleTicketParked = defineEvent('TroubleTicketParked', {
+  ticketId: tt.UUID,
+  whyParked: t.string,
+  pathToResolution: t.string,
+  intermediateActions: t.string,
+});
+
+// A trainer looked at the ticket but couldn't solve it; they are unassigned so another
+// trainer can pick it up.
+const TroubleTicketNeedsHelp = defineEvent('TroubleTicketNeedsHelp', {
+  ticketId: tt.UUID,
+  whatTried: t.string,
+  whyDidntWork: t.string,
+});
+
+// An owner overrides which equipment a ticket relates to (null re-buckets to Unassigned).
+const TroubleTicketEquipmentSet = defineEvent('TroubleTicketEquipmentSet', {
+  ticketId: tt.UUID,
+  equipmentId: t.union([tt.UUID, t.null]),
+});
+
+// An owner edits the ticket title (which defaults to the form's "issue" text).
+const TroubleTicketTitleEdited = defineEvent('TroubleTicketTitleEdited', {
+  ticketId: tt.UUID,
+  title: t.string,
+});
+
 const MemberDetailsUpdated = defineEvent('MemberDetailsUpdated', {
   memberNumber: t.number,
   name: t.union([t.string, t.undefined]),
@@ -267,6 +313,12 @@ export const events = [
   EquipmentTrainingQuizEmailUpdated,
   TroubleTicketResponseSubmitted,
   TroubleTicketCreated,
+  TroubleTicketAssigned,
+  TroubleTicketResolved,
+  TroubleTicketParked,
+  TroubleTicketNeedsHelp,
+  TroubleTicketEquipmentSet,
+  TroubleTicketTitleEdited,
   MemberRejoinedWithNewNumber,
   MemberRejoinedWithExistingNumber,
   TrainingStatNotificationSent,
@@ -301,6 +353,12 @@ export const DomainEvent = t.union([
   EquipmentTrainingQuizEmailUpdated.codec,
   TroubleTicketResponseSubmitted.codec,
   TroubleTicketCreated.codec,
+  TroubleTicketAssigned.codec,
+  TroubleTicketResolved.codec,
+  TroubleTicketParked.codec,
+  TroubleTicketNeedsHelp.codec,
+  TroubleTicketEquipmentSet.codec,
+  TroubleTicketTitleEdited.codec,
   MemberRejoinedWithNewNumber.codec,
   MemberRejoinedWithExistingNumber.codec,
   TrainingStatNotificationSent.codec,

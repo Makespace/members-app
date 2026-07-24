@@ -1,25 +1,65 @@
 import {pipe} from 'fp-ts/lib/function';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {desc, eq, isNull} from 'drizzle-orm';
+import {desc, eq, inArray, isNull} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {UUID} from 'io-ts-types';
-import {troubleTicketsTable} from '../state';
+import {troubleTicketAssigneesTable, troubleTicketsTable} from '../state';
 import {TroubleTicket} from '../../../types/trouble-ticket';
 
 type Row = typeof troubleTicketsTable.$inferSelect;
 
-const transformRow = (row: Row): TroubleTicket => ({
-  id: row.id,
-  status: row.status,
-  submittedAt: row.submittedAt,
-  submittedName: row.submittedName,
-  submittedMemberNumber: row.submittedMemberNumber,
-  submittedEmail: row.submittedEmail,
-  submittedEquipment: row.submittedEquipment,
-  equipmentId: row.equipmentId ?? null,
-  response: row.responseJson,
-});
+// Assigned trainer member numbers, keyed by ticket id, for the given tickets.
+const assigneesByTicket = (
+  db: BetterSQLite3Database,
+  ticketIds: ReadonlyArray<UUID>
+): ReadonlyMap<string, ReadonlyArray<number>> => {
+  if (ticketIds.length === 0) {
+    return new Map();
+  }
+  const rows = db
+    .select({
+      ticketId: troubleTicketAssigneesTable.ticketId,
+      memberNumber: troubleTicketAssigneesTable.memberNumber,
+    })
+    .from(troubleTicketAssigneesTable)
+    .where(inArray(troubleTicketAssigneesTable.ticketId, [...ticketIds]))
+    .all();
+  const map = new Map<string, number[]>();
+  for (const row of rows) {
+    const existing = map.get(row.ticketId) ?? [];
+    existing.push(row.memberNumber);
+    map.set(row.ticketId, existing);
+  }
+  return map;
+};
+
+const transformRow =
+  (assignees: ReadonlyMap<string, ReadonlyArray<number>>) =>
+  (row: Row): TroubleTicket => ({
+    id: row.id,
+    status: row.status,
+    title: row.title,
+    submittedAt: row.submittedAt,
+    submittedName: row.submittedName,
+    submittedMemberNumber: row.submittedMemberNumber,
+    submittedEmail: row.submittedEmail,
+    submittedEquipment: row.submittedEquipment,
+    equipmentId: row.equipmentId ?? null,
+    assignedMemberNumbers: assignees.get(row.id) ?? [],
+    response: row.responseJson,
+  });
+
+const withAssignees = (
+  db: BetterSQLite3Database,
+  rows: ReadonlyArray<Row>
+): ReadonlyArray<TroubleTicket> => {
+  const assignees = assigneesByTicket(
+    db,
+    rows.map(r => r.id)
+  );
+  return pipe(rows, RA.map(transformRow(assignees)));
+};
 
 export const hasTroubleTicketRowHash =
   (db: BetterSQLite3Database) =>
@@ -33,13 +73,13 @@ export const hasTroubleTicketRowHash =
 export const getAllTroubleTickets =
   (db: BetterSQLite3Database) =>
   (): ReadonlyArray<TroubleTicket> =>
-    pipe(
+    withAssignees(
+      db,
       db
         .select()
         .from(troubleTicketsTable)
         .orderBy(desc(troubleTicketsTable.submittedAt))
-        .all(),
-      RA.map(transformRow)
+        .all()
     );
 
 export const getTroubleTicketById =
@@ -52,7 +92,7 @@ export const getTroubleTicketById =
         .where(eq(troubleTicketsTable.id, id))
         .get(),
       O.fromNullable,
-      O.map(transformRow)
+      O.map(row => withAssignees(db, [row])[0])
     );
 
 // Passing null returns the "Unassigned" bucket (tickets whose equipment could not be
@@ -60,7 +100,8 @@ export const getTroubleTicketById =
 export const getTroubleTicketsByEquipment =
   (db: BetterSQLite3Database) =>
   (equipmentId: UUID | null): ReadonlyArray<TroubleTicket> =>
-    pipe(
+    withAssignees(
+      db,
       db
         .select()
         .from(troubleTicketsTable)
@@ -70,6 +111,5 @@ export const getTroubleTicketsByEquipment =
             : eq(troubleTicketsTable.equipmentId, equipmentId)
         )
         .orderBy(desc(troubleTicketsTable.submittedAt))
-        .all(),
-      RA.map(transformRow)
+        .all()
     );
