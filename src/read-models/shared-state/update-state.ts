@@ -13,6 +13,7 @@ import {
   trainingStatsNotificationTable,
   troubleTicketsTable,
   troubleTicketAssigneesTable,
+  troubleTicketNotificationsTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, eq, inArray, isNull, sql} from 'drizzle-orm';
@@ -659,6 +660,13 @@ const _updateState =
         if (rows.changes === 0) {
           throw new InconsistentEventError(`Unable to edit title of unknown trouble ticket '${event.ticketId}'`);
         }
+        break;
+      }
+      case 'TroubleTicketNotificationSent': {
+        tx.insert(troubleTicketNotificationsTable)
+          .values({notifiedEventIndex: event.notifiedEventIndex})
+          .onConflictDoNothing()
+          .run();
         break;
       }
       case 'LinkingMemberNumberToAnAlreadyUsedEmailAttempted': {

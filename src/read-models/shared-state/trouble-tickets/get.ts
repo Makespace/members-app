@@ -4,7 +4,11 @@ import {desc, eq, inArray, isNull} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {UUID} from 'io-ts-types';
-import {troubleTicketAssigneesTable, troubleTicketsTable} from '../state';
+import {
+  troubleTicketAssigneesTable,
+  troubleTicketNotificationsTable,
+  troubleTicketsTable,
+} from '../state';
 import {TroubleTicket} from '../../../types/trouble-ticket';
 
 type Row = typeof troubleTicketsTable.$inferSelect;
@@ -68,6 +72,17 @@ export const hasTroubleTicketRowHash =
       .select({rowHash: troubleTicketsTable.rowHash})
       .from(troubleTicketsTable)
       .where(eq(troubleTicketsTable.rowHash, rowHash))
+      .get() !== undefined;
+
+// Whether change-notification emails have already been sent for the status-change event
+// at the given event index.
+export const hasNotifiedForEvent =
+  (db: BetterSQLite3Database) =>
+  (eventIndex: number): boolean =>
+    db
+      .select({i: troubleTicketNotificationsTable.notifiedEventIndex})
+      .from(troubleTicketNotificationsTable)
+      .where(eq(troubleTicketNotificationsTable.notifiedEventIndex, eventIndex))
       .get() !== undefined;
 
 export const getAllTroubleTickets =
