@@ -95,6 +95,74 @@ endpoint during a genuinely quiet window.
 - **Sheet rows are not deleted** after import (needs a Google write scope) —
   deferred.
 
+## Next steps: consume the events instead of the Google Sheets cache
+
+Once the migration has run, the historical quiz data lives in the event log — but
+the equipment/member pages and owner emails still read the **Google Sheets
+cache**, so this data isn't actually used yet. This section specs the follow-on
+work to switch those reads over. It's the natural continuation of the stack, to
+pick up after #274–#276 merge.
+
+### The current picture (a single chokepoint)
+
+Almost all quiz-data consumption funnels through one module:
+**`src/read-models/external-state/equipment-quiz.ts`**. It reads the sheet cache
+(`getSheetData` / `getSheetDataByMemberNumber`), resolves each row to a piece of
+equipment (`equipment.getTrainingSheetIdMapping()`) and to a member
+(`members.getByMemberNumber` / `getByEmail`), decides **pass = full marks**
+(`row.percentage >= 100`), and feeds exactly three consumers:
+
+| Consumer | What it shows |
+| --- | --- |
+| Equipment page (`queries/equipment`) | "Members awaiting training" (passed quiz, not yet marked trained) + failed quizzes |
+| Member page → training matrix | Per-equipment ✅ passed / 〰️ attempted |
+| Owner summary emails (`sync-worker/training-summary`) | Count of members awaiting training per equipment |
+
+Two things to keep in mind:
+
+- **"Passed the quiz" is not "trained on equipment".** Trained status comes from
+  `MemberTrainedOnEquipment(By)` events → `trainedMemberstable` and is *already*
+  event-sourced. This work only touches the **quiz** side.
+- `training-status.csv` already reads the read model, not the cache — unaffected.
+
+### ⚠️ Ordering dependency — read this first
+
+You **cannot repoint the reads to events until the events are kept current.**
+Today new completions only enter the log via the append command, and nothing
+calls it automatically yet; the sheet cache, by contrast, refreshes every ~60s.
+Switch the reads over too early and the pages would show the historical backfill
+but **miss every new completion** until someone manually re-runs the import. So
+the going-forward poller must land **before** (or with) the repoint.
+
+### Phased plan
+
+**PR A — going-forward poller (keeps events fresh).** Wire the sync worker to call
+the `RecordTrainingQuizCompletion` append command for new sheet rows on its
+existing poll cycle (dedup by `rowHash` already makes this safe and idempotent).
+After this, the event log stays current without manual runs.
+
+**PR B — event-sourced quiz views + repoint (the core, ~80%).** Add read-model
+getters that answer the same questions `equipment-quiz.ts` answers today, but
+query `trainingQuizCompletionsTable` (populated by `TrainingQuizCompleted`
+events) instead of the sheet cache — same equipment/member resolution, pass logic
+now `score >= maxScore`. Live in the existing
+`read-models/shared-state/training-quiz/` module and unit-testable purely from
+events. Then repoint the three consumers, keeping the view-model shapes identical
+so the `render.ts` files barely change.
+
+**PR C — retire the cache path.** Remove `equipment-quiz.ts` and the quiz uses of
+`getSheetData` (keep `getSheetData` only if the admin `log-google` dump still
+wants the raw cache).
+
+### Decisions to confirm with Paul
+
+- **Pass semantics:** keep "full marks" (`score >= maxScore`, i.e. today's
+  `percentage >= 100`)? Some quizzes may intend a lower pass mark.
+- **Display window:** keep the equipment page's "last 12 months" filter?
+- **Index:** add an index on
+  `trainingQuizCompletionsTable(trainingSheetId, memberNumberProvided)` for the
+  per-equipment / per-member queries (currently only the `rowHash` primary key).
+
 ## How this was verified
 
 - Unit tests for the pure ordering/renumber planner and integration tests for the
