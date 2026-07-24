@@ -8,6 +8,7 @@ import {createTables} from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import {Area, Equipment, Member, MemberCoreInfo} from './return-types';
+import {TroubleTicket} from '../../types/trouble-ticket';
 
 import {Client} from '@libsql/client';
 import {asyncRefresh} from './async-refresh';
@@ -31,6 +32,12 @@ import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
 import { TrainingSheetId } from '../../types/training-sheet';
 import { EquipmentId } from '../../types/equipment-id';
 import { getTrainingSheetIdMapping } from './equipment/get';
+import {
+  getAllTroubleTickets,
+  getTroubleTicketById,
+  getTroubleTicketsByEquipment,
+  hasTroubleTicketRowHash,
+} from './trouble-tickets/get';
 import { findAllSuperUsers, findStoredEmailForLogin, findUserIdByEmail, findUserIdByMemberNumber, getAllMemberCore } from './member/get';
 import { trainingsDeliveredBy } from './member/training-delivered';
 import { setupEventStateTable } from './setup-event-state-table';
@@ -73,6 +80,12 @@ export type SharedReadModel = {
   area: {
     get: (id: UUID) => O.Option<Area>;
     getAll: () => ReadonlyArray<Area>;
+  };
+  troubleTickets: {
+    hasRowHash: (rowHash: string) => boolean;
+    getAll: () => ReadonlyArray<TroubleTicket>;
+    getById: (id: UUID) => O.Option<TroubleTicket>;
+    getByEquipment: (equipmentId: UUID | null) => ReadonlyArray<TroubleTicket>;
   };
   debug: {
     dump: () => SharedDatabaseDump;
@@ -128,6 +141,12 @@ export const initSharedReadModel = (
     area: {
       get: getAreaFull(readModelDb),
       getAll: getAllAreaFull(readModelDb),
+    },
+    troubleTickets: {
+      hasRowHash: hasTroubleTicketRowHash(readModelDb),
+      getAll: getAllTroubleTickets(readModelDb),
+      getById: getTroubleTicketById(readModelDb),
+      getByEquipment: getTroubleTicketsByEquipment(readModelDb),
     },
     debug: {
       dump: dumpCurrentState(readModelDb),

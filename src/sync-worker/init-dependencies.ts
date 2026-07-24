@@ -17,9 +17,11 @@ import nodemailer from 'nodemailer';
 import {initSharedReadModel} from '../read-models/shared-state';
 import {commitEvent} from '../init-dependencies/event-store/commit-event';
 import {getSheetData} from './db/get_sheet_data';
+import {getTroubleTicketData} from './db/get_trouble_ticket_data';
 import {ensureExtDBTablesExist, ExternalStateDB, initExternalStateDB} from './external-state-db';
 import { pullRecurlyData } from './recurly/pull-recurly-data';
 import { Duration } from 'luxon';
+import * as O from 'fp-ts/Option';
 
 const initDBCommands = (extDB: ExternalStateDB, eventDB: Client) => {
   return {
@@ -91,6 +93,10 @@ export const initDependencies = (): SyncWorkerDependencies => {
     sendEmail: sendEmail(emailTransporter, conf.SMTP_FROM),
     lastQuizSync: lastSync(extDB),
     getSheetData: getSheetData(extDB),
+    getTroubleTicketData: getTroubleTicketData(
+      extDB,
+      O.some(conf.TROUBLE_TICKET_SHEET)
+    ),
     commitEvent: commitEvent(eventDB, logger, sharedReadModel.asyncRefresh),
     pullRecurlyData: conf.RECURLY_TOKEN ?  pullRecurlyData(logger, extDB, conf.RECURLY_TOKEN) : async (_interval: Duration) => {},
     ...initDBCommands(extDB, eventDB),

@@ -1,5 +1,10 @@
 import {BuildColumns, SQL, sql} from 'drizzle-orm';
 import {EmailAddress, GravatarHash, UserId} from '../../types';
+import {UUID} from 'io-ts-types';
+import {
+  TroubleTicketResponse,
+  TroubleTicketStatus,
+} from '../../types/trouble-ticket';
 import * as O from 'fp-ts/Option';
 import {blob, integer, SQLiteColumnBuilderBase, sqliteTable, SQLiteTableExtraConfig, text, uniqueIndex} from 'drizzle-orm/sqlite-core';
 
@@ -237,6 +242,41 @@ export const trainingStatsNotificationTable = defineTable(
       .$type<UserId>()
       .references(() => membersTable.userId, { onDelete: 'cascade' }),
     lastEmailSent: integer('lastEmailSent', {mode: 'timestamp'}),
+  }
+);
+
+export const troubleTicketsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS troubleTickets (
+      id TEXT PRIMARY KEY,
+      rowHash TEXT NOT NULL UNIQUE,
+      status TEXT NOT NULL,
+      submittedAt INTEGER NOT NULL,
+      submittedName TEXT,
+      submittedMemberNumber INTEGER,
+      submittedEmail TEXT,
+      submittedEquipment TEXT,
+      equipmentId TEXT,
+      responseJson TEXT NOT NULL
+    )
+  `,
+  'troubleTickets' as const,
+  {
+    id: text('id').notNull().primaryKey().$type<UUID>(),
+    rowHash: text('rowHash').notNull().unique(),
+    status: text('status').notNull().$type<TroubleTicketStatus>(),
+    submittedAt: integer('submittedAt', {mode: 'timestamp_ms'}).notNull(),
+    submittedName: text('submittedName'),
+    submittedMemberNumber: integer('submittedMemberNumber'),
+    submittedEmail: text('submittedEmail'),
+    // The raw equipment string from the form; kept so the equipment link can be
+    // re-resolved or overridden later.
+    submittedEquipment: text('submittedEquipment'),
+    // Resolved equipment record; null means the "Unassigned" bucket.
+    equipmentId: text('equipmentId').$type<UUID>(),
+    responseJson: text('responseJson', {mode: 'json'})
+      .notNull()
+      .$type<TroubleTicketResponse>(),
   }
 );
 
