@@ -9,6 +9,7 @@ import {apiToHandlers} from './http/api-to-handlers';
 import {emailHandler} from './http/email-handler';
 import expressAsyncHandler from 'express-async-handler';
 import {runQuizMigration} from './training-quiz/migrate';
+import {backfillTrainingQuizTimeline} from './training-quiz/backfill-timeline';
 
 export const initRoutes = (
   deps: Dependencies,
@@ -77,6 +78,19 @@ export const initRoutes = (
           return;
         }
         const summary = await runQuizMigration(deps)();
+        res.status(200).send(summary);
+      })
+    ),
+    post(
+      '/api/training-quiz/backfill-timeline',
+      expressAsyncHandler(async (req, res) => {
+        if (
+          req.headers.authorization !== `Bearer ${conf.ADMIN_API_BEARER_TOKEN}`
+        ) {
+          res.status(401).send({message: 'Bad Bearer Token'});
+          return;
+        }
+        const summary = await backfillTrainingQuizTimeline(deps)();
         res.status(200).send(summary);
       })
     ),
