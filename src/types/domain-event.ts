@@ -146,10 +146,34 @@ const EquipmentTrainingQuizMemberNumberUpdated = defineEvent(
 );
 
 const TroubleTicketResponseSubmitted = defineEvent(
-  // Old event no longer used.
+  // Old event no longer used. Kept registered (with an empty payload) so historical
+  // events of this type still decode - see the constructEvent note below.
   'TroubleTicketResponseSubmitted',
   {}
 );
+
+// A trouble ticket raised via the Google Form, brought into the event timeline.
+// Carries the raw, unverified facts of the form submission only. The historical
+// submission time rides in `submittedAt` (the read model orders by this); `recordedAt`
+// stays the append time as usual. `rowHash` is the dedup key against re-ingesting the
+// same sheet row (see src/trouble-tickets/row-hash.ts).
+const TroubleTicketCreated = defineEvent('TroubleTicketCreated', {
+  id: tt.UUID,
+  rowHash: t.string,
+  sheetId: t.string,
+  submittedAt: tt.DateFromISOString,
+  // Submitter-provided identity - not trusted/verified, may be absent.
+  submittedMemberNumber: t.union([t.number, t.null]),
+  submittedEmail: t.union([t.string, t.null]),
+  submittedName: t.union([t.string, t.null]),
+  submittedEquipment: t.union([t.string, t.null]),
+  // Parsed free-text answers, defaulted to '' when missing.
+  otherEquipmentDetail: t.string,
+  status: t.string,
+  attempting: t.string,
+  issue: t.string,
+  steps: t.string,
+});
 
 const MemberDetailsUpdated = defineEvent('MemberDetailsUpdated', {
   memberNumber: t.number,
@@ -242,6 +266,7 @@ export const events = [
   EquipmentTrainingQuizMemberNumberUpdated,
   EquipmentTrainingQuizEmailUpdated,
   TroubleTicketResponseSubmitted,
+  TroubleTicketCreated,
   MemberRejoinedWithNewNumber,
   MemberRejoinedWithExistingNumber,
   TrainingStatNotificationSent,
@@ -275,6 +300,7 @@ export const DomainEvent = t.union([
   EquipmentTrainingQuizMemberNumberUpdated.codec,
   EquipmentTrainingQuizEmailUpdated.codec,
   TroubleTicketResponseSubmitted.codec,
+  TroubleTicketCreated.codec,
   MemberRejoinedWithNewNumber.codec,
   MemberRejoinedWithExistingNumber.codec,
   TrainingStatNotificationSent.codec,

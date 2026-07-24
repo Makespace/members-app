@@ -38,5 +38,6 @@ export interface SyncWorkerDependencies {
   sendEmail: (email: Email) => TE.TaskEither<Failure, string>;
   lastQuizSync: Dependencies['lastQuizSync'];
   getSheetData: Dependencies['getSheetData'];
+  getTroubleTicketData: Dependencies['getTroubleTicketData'];
   pullRecurlyData: (syncInterval: Duration) => Promise<void>;
 }

@@ -1,4 +1,5 @@
 import {syncTroubleTickets} from './sync_trouble_ticket';
+import {ingestTroubleTickets} from './ingest_trouble_tickets';
 import {syncEquipmentTrainingSheets} from './sync_training_sheet';
 import {initDependencies} from './init-dependencies';
 import {GoogleHelpers} from './google/pull_sheet_data';
@@ -54,6 +55,8 @@ async function syncExternDataPeriodically(
           deps.conf.TROUBLE_TICKET_SHEET,
           TROUBLE_TICKET_SYNC_INTERVAL_MS
         );
+        // Bring any newly-cached rows into the event timeline (idempotent).
+        await ingestTroubleTickets(deps);
         lastTroubleTicketCheck = Date.now();
       }
 
