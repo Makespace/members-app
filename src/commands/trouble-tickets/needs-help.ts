@@ -7,7 +7,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {StatusCodes} from 'http-status-codes';
 import {Command} from '../command';
 import {failureWithStatus} from '../../types/failure-with-status';
-import {isTicketTrainer} from './authorization';
+import {isTicketTrainerOrOwner} from './authorization';
 
 const codec = t.strict({
   ticketId: tt.UUID,
@@ -43,5 +43,5 @@ const process: Command<TroubleTicketNeedsHelp>['process'] = input =>
 export const needsHelp: Command<TroubleTicketNeedsHelp> = {
   process,
   decode: codec.decode,
-  isAuthorized: isTicketTrainer,
+  isAuthorized: isTicketTrainerOrOwner,
 };

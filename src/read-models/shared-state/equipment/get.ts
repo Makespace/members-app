@@ -10,12 +10,14 @@ import {UUID} from 'io-ts-types';
 import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
 import { TrainingSheetId } from '../../../types/training-sheet';
 import { EquipmentId } from '../../../types/equipment-id';
+import { EquipmentClassification } from '../../../types/equipment';
 
 const transformRow = <
   R extends {
     id: string;
     areaId: string;
     trainingSheetId: string | undefined | null;
+    classification: EquipmentClassification;
   },
 >(
   row: R
@@ -24,6 +26,7 @@ const transformRow = <
   id: row.id as UUID,
   areaId: row.areaId as UUID,
   trainingSheetId: O.fromNullable(row.trainingSheetId),
+  classification: row.classification,
 });
 
 export const getEquipmentForAreaMinimal =

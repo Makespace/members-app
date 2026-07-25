@@ -191,7 +191,10 @@ const renderCard = (ticket: TroubleTicketView) => html`
       <h3>${sanitizeString(ticket.title)}</h3>
     </div>
     <p>
-      <strong>Equipment:</strong> ${renderEquipment(ticket)}<br />
+      <strong>Equipment:</strong> ${renderEquipment(ticket)}
+      <a class="tt-set-equipment" href="/trouble-tickets/set-equipment?ticketId=${safe(
+        ticket.id
+      )}">(set)</a><br />
       <strong>Submitted by:</strong> ${renderSubmitter(ticket)} on
       ${displayDate(DateTime.fromJSDate(ticket.submittedAt))}<br />
       <strong>Assigned:</strong> ${renderAssignees(ticket.assignees)}

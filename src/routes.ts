@@ -120,7 +120,7 @@ export const initRoutes = (
     ...command('trouble-tickets', 'resolve', troubleTicketCommands.resolve),
     ...command('trouble-tickets', 'park', troubleTicketCommands.park),
     ...command('trouble-tickets', 'needs-help', troubleTicketCommands.needsHelp),
-    ...api('trouble-tickets', 'set-equipment', troubleTicketCommands.setEquipment),
+    ...command('trouble-tickets', 'set-equipment', troubleTicketCommands.setEquipment),
     ...api('trouble-tickets', 'edit-title', troubleTicketCommands.editTitle),
     query('/google', queries.logGoogleJson),
     ...authRoutes(deps, conf),

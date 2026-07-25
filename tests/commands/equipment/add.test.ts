@@ -65,6 +65,7 @@ describe('add-equipment', () => {
         id,
         name,
         areaId,
+        classification: 'Red',
         actor: arbitraryActor(),
       })
     );

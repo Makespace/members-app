@@ -24,6 +24,7 @@ describe('authentication helpers', () => {
         name: 'equipment1',
         id: faker.string.uuid() as UUID,
         areaId: area1.id,
+        classification: 'Red' as const,
     };
     const area1Owner = arbitraryUser();
     const equipment1Trainer = arbitraryUser();
@@ -36,6 +37,7 @@ describe('authentication helpers', () => {
         name: 'equipment2',
         id: faker.string.uuid() as UUID,
         areaId: area2.id,
+        classification: 'Red' as const,
     };
     const area2Owner = arbitraryUser();
 

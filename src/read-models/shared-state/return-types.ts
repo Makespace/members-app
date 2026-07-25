@@ -1,6 +1,7 @@
 import * as O from 'fp-ts/Option';
 import {Actor, EmailAddress, GravatarHash, UserId} from '../../types';
 import {UUID} from 'io-ts-types';
+import {EquipmentClassification} from '../../types/equipment';
 
 export type TrainedMember = Pick<
   MemberCoreInfo,
@@ -26,6 +27,7 @@ export type MinimalEquipment = {
   name: string;
   areaId: UUID;
   trainingSheetId: O.Option<string>;
+  classification: EquipmentClassification;
 };
 
 export type Equipment = {

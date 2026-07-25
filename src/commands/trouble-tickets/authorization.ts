@@ -18,10 +18,11 @@ const ticketEquipmentId = (
   );
 
 // Status transitions (assign / resolve / park / needs-help) require the actor to be a
-// trainer on the ticket's equipment - or an admin/super user. An Unassigned ticket (no
-// resolved equipment) has no trainers, so only an admin/super user can act until an owner
-// sets its equipment.
-export const isTicketTrainer = (input: {
+// trainer on the ticket's equipment, an owner of its area, or an admin/super user. Owners
+// are included because Orange/Green equipment has no trainers, so the area owner must be
+// able to handle its tickets. An Unassigned ticket (no resolved equipment) can only be
+// acted on by an admin/super user until an owner sets its equipment.
+export const isTicketTrainerOrOwner = (input: {
   actor: Actor;
   rm: SharedReadModel;
   input: {ticketId: UUID};
@@ -32,7 +33,12 @@ export const isTicketTrainer = (input: {
     O.match(
       () => false,
       equipmentId =>
-        isEquipmentTrainer({actor: input.actor, rm: input.rm, input: {equipmentId}})
+        isEquipmentTrainer({
+          actor: input.actor,
+          rm: input.rm,
+          input: {equipmentId},
+        }) ||
+        isEquipmentOwner({actor: input.actor, rm: input.rm, input: {equipmentId}})
     )
   );
 
@@ -58,17 +64,19 @@ export const isTicketOwner = (input: {
 export const canSetTicketEquipment = (input: {
   actor: Actor;
   rm: SharedReadModel;
-  input: {ticketId: UUID; equipmentId: UUID | null};
+  input: {ticketId: UUID; equipmentId: UUID | null | ''};
 }): boolean => {
   if (isAdminOrSuperUser({actor: input.actor, rm: input.rm})) {
     return true;
   }
+  const targetEquipmentId =
+    input.input.equipmentId === '' ? null : input.input.equipmentId;
   const ownsTarget =
-    input.input.equipmentId !== null &&
+    targetEquipmentId !== null &&
     isEquipmentOwner({
       actor: input.actor,
       rm: input.rm,
-      input: {equipmentId: input.input.equipmentId},
+      input: {equipmentId: targetEquipmentId},
     });
   const ownsCurrent = pipe(
     ticketEquipmentId(input.rm, input.input.ticketId),

@@ -23,6 +23,12 @@ const renderForm = (viewModel: ViewModel) =>
       <form action="/equipment/add" method="post">
         <label for="name">What is this Equipment called</label>
         <input type="text" name="name" id="name" />
+        <label for="classification">Classification</label>
+        <select name="classification" id="classification">
+          <option value="Red">Red (needs training)</option>
+          <option value="Orange">Orange (no training)</option>
+          <option value="Green">Green (no training)</option>
+        </select>
         <input type="hidden" name="id" value="${v4() as UUID}" />
         <input type="hidden" name="areaId" value="${viewModel.areaId}" />
         <button type="submit">Confirm and send</button>

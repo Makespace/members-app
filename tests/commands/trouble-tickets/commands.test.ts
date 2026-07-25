@@ -34,10 +34,11 @@ describe('trouble ticket commands', () => {
   let framework: TestFramework;
   let ticketId: UUID;
   let equipmentId: UUID;
+  let areaId: UUID;
 
   beforeEach(async () => {
     framework = await initTestFramework();
-    const areaId = faker.string.uuid() as UUID;
+    areaId = faker.string.uuid() as UUID;
     equipmentId = faker.string.uuid() as UUID;
     ticketId = faker.string.uuid() as UUID;
 
@@ -51,6 +52,7 @@ describe('trouble ticket commands', () => {
         id: equipmentId,
         name: 'Test Rig',
         areaId,
+        classification: 'Red',
       })
     );
     insert(
@@ -119,6 +121,33 @@ describe('trouble ticket commands', () => {
           input: {ticketId},
         })
       ).toBe(false);
+    });
+
+    it('authorises an area owner who is not a trainer', () => {
+      const owner = 55;
+      framework.insertIntoSharedReadModel(
+        constructEvent('MemberNumberLinkedToEmail')({
+          actor: systemActor(),
+          memberNumber: owner,
+          email: 'owner55@test.com' as EmailAddress,
+          name: undefined,
+          formOfAddress: undefined,
+        })
+      );
+      framework.insertIntoSharedReadModel(
+        constructEvent('OwnerAdded')({
+          actor: systemActor(),
+          areaId,
+          memberNumber: owner,
+        })
+      );
+      expect(
+        assign.isAuthorized({
+          actor: userActorWithMember(owner),
+          rm: rm(),
+          input: {ticketId},
+        })
+      ).toBe(true);
     });
 
     it('emits TroubleTicketAssigned for the acting member', async () => {

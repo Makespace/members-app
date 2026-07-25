@@ -357,6 +357,15 @@ const trainingQuizResults = (viewModel: ViewModel) => html`
   ${unknownMemberWaitingForTrainingTable(viewModel)}
 `;
 
+// Training features (trainers, training sheets, quiz results) only apply to Red equipment.
+const trainingSections = (viewModel: ViewModel) => html`
+  ${equipmentActions(viewModel)}
+  <h2>Trainers</h2>
+  ${trainersList(viewModel.equipment.trainers)}
+  ${currentlyTrainedUsersTable(viewModel)}
+  ${isTrainerOrOwner(viewModel) ? trainingQuizResults(viewModel) : html``}
+`;
+
 export const render = (viewModel: ViewModel) =>
   pipe(
     viewModel,
@@ -373,11 +382,16 @@ export const render = (viewModel: ViewModel) =>
               ${safe(viewModel.equipment.area.email.value)}`
             : html``}
         </p>
-        ${equipmentActions(viewModel)}
-        <h2>Trainers</h2>
-        ${trainersList(viewModel.equipment.trainers)}
-        ${currentlyTrainedUsersTable(viewModel)}
-        ${isTrainerOrOwner(viewModel) ? trainingQuizResults(viewModel) : html``}
+        <p>
+          <strong>Classification:</strong>
+          ${safe(viewModel.equipment.classification)}
+        </p>
+        ${viewModel.equipment.classification === 'Red'
+          ? trainingSections(viewModel)
+          : html`<p>
+              This is ${safe(viewModel.equipment.classification)} equipment and
+              doesn't require training.
+            </p>`}
       </div>
     `,
     toLoggedInContent(sanitizeString(viewModel.equipment.name))

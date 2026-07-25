@@ -28,7 +28,7 @@ const renderArea = (area: ViewModel['areas'][number]) => html`
       ${pipe(
         area.equipment,
         RA.match(
-          () => html` <p>This area does not contain any RED equipment.</p> `,
+          () => html` <p>This area does not contain any equipment.</p> `,
           renderEquipment
         )
       )}
