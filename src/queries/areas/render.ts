@@ -183,37 +183,31 @@ const renderInactiveOwners = (
   `;
 };
 
-// A piece of equipment as an outlined pill badge, coloured by its classification and
-// linking to the equipment page.
+const classificationRank = (item: Equipment) =>
+  equipmentClassifications.indexOf(item.classification);
+
+// A piece of equipment as an outlined pill badge, coloured (and border-styled) by its
+// classification and linking to the equipment page. The classification is in the title so
+// it's still available without the old per-class headings.
 const equipmentBadge = (item: Equipment) => html`
   <a
     class="eq-badge eq-badge--${safe(item.classification.toLowerCase())}"
     href="/equipment/${safe(item.id)}"
+    title="${safe(item.classification)} equipment"
     >${sanitizeString(item.name)}</a
   >
 `;
 
-// Equipment grouped by classification (Red / Orange / Green), showing only non-empty
-// groups. The group heading names the class in text so the colour isn't the only signal.
+// All of an area's equipment as a single wrapping line of badges, ordered by class
+// (Red, Orange, Green) so colours cluster together.
 const renderEquipment = (equipment: ReadonlyArray<Equipment>) => {
   if (equipment.length === 0) {
     return html`<p>No equipment currently assigned to this area.</p>`;
   }
-  return pipe(
-    equipmentClassifications,
-    RA.map(classification => ({
-      classification,
-      items: equipment.filter(e => e.classification === classification),
-    })),
-    RA.filter(group => group.items.length > 0),
-    RA.map(
-      group => html`<p class="eq-group">
-        <strong>${safe(group.classification)} equipment:</strong>
-        <span class="eq-badges">${joinHtml(group.items.map(equipmentBadge))}</span>
-      </p>`
-    ),
-    joinHtml
+  const sorted = [...equipment].sort(
+    (a, b) => classificationRank(a) - classificationRank(b)
   );
+  return html`<div class="eq-badges">${joinHtml(sorted.map(equipmentBadge))}</div>`;
 };
 
 const renderArea =
