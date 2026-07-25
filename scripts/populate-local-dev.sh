@@ -16,10 +16,11 @@ event 'api/areas/set-mailing-List' '{"id": "eeaf7f8b-77a3-429d-ae9d-2f7ade53736e
 event 'api/equipment/add' '{"id": "4224ee94-09b0-47d4-ae60-fac46b8ca93e", "name": "Metal Lathe", "areaId": "eeaf7f8b-77a3-429d-ae9d-2f7ade53736e", "classification": "Red"}'
 event 'api/equipment/add-training-sheet' '{"equipmentId": "4224ee94-09b0-47d4-ae60-fac46b8ca93e", "trainingSheetId": "19e610we8nSzo3QO-T76RzdVoCNjq75my4Fkc0eDgmSo"}'
 
-# Wood Shop - Orange/Green (no training) equipment
+# Wood Shop - a mix of Red / Orange / Green equipment
 event 'api/areas/create' '{"id": "aaaaaaaa-0000-4000-8000-000000000001", "name": "Wood Shop"}'
 event 'api/equipment/add' '{"id": "aaaaaaaa-0000-4000-8000-000000000002", "name": "Belt Sander", "areaId": "aaaaaaaa-0000-4000-8000-000000000001", "classification": "Orange"}'
-event 'api/equipment/add' '{"id": "aaaaaaaa-0000-4000-8000-000000000003", "name": "Bandsaw", "areaId": "aaaaaaaa-0000-4000-8000-000000000001", "classification": "Green"}'
+event 'api/equipment/add' '{"id": "aaaaaaaa-0000-4000-8000-000000000003", "name": "Band Saw", "areaId": "aaaaaaaa-0000-4000-8000-000000000001", "classification": "Red"}'
+event 'api/equipment/add' '{"id": "aaaaaaaa-0000-4000-8000-000000000008", "name": "Screwdriver", "areaId": "aaaaaaaa-0000-4000-8000-000000000001", "classification": "Green"}'
 
 # 3D Printers
 event 'api/areas/create' '{"id": "aaaaaaaa-0000-4000-8000-000000000004", "name": "3D Printers"}'
