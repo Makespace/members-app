@@ -11,6 +11,7 @@
   --grey-color: #505a5f;
   --red-color: #d4351c;
   --yellow-color: #ffdd00;
+  --orange-color: #f47738;
 
   font-family: Optima, Candara, 'Noto Sans', source-sans-pro, sans-serif;
   font-weight: normal;
@@ -900,4 +901,59 @@ label img {
 .tt-log-entry--resolved {
   border-left-color: var(--green-color);
   background: color-mix(in oklch, white 92%, var(--green-color));
+}
+
+/* Equipment classification badges on the areas page. Colour is a secondary cue: each
+   group is also labelled in text (Red/Orange/Green equipment) and each class has a
+   distinct border style, so red/green colourblindness isn't a barrier. */
+.eq-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.eq-badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.eq-badge {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 999px;
+  border: 2px solid var(--grey-color);
+  background: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.eq-badge,
+.eq-badge:visited,
+.eq-badge:hover,
+.eq-badge:active {
+  color: var(--text-color);
+  text-decoration: none;
+}
+
+.eq-badge:hover {
+  background: color-mix(in oklch, white 92%, var(--grey-color));
+}
+
+/* Colour + a distinct border style per class (solid / dashed / dotted). */
+.eq-badge--red {
+  border-color: var(--red-color);
+  border-style: solid;
+}
+
+.eq-badge--orange {
+  border-color: var(--orange-color);
+  border-style: dashed;
+}
+
+.eq-badge--green {
+  border-color: var(--green-color);
+  border-style: dotted;
 }
