@@ -1,6 +1,5 @@
 import {pipe} from 'fp-ts/lib/function';
 import {
-  commaHtml,
   html,
   Html,
   joinHtml,
@@ -184,12 +183,18 @@ const renderInactiveOwners = (
   `;
 };
 
-const equipmentLink = (item: Equipment) => html`
-  <a href="/equipment/${safe(item.id)}">${sanitizeString(item.name)}</a>
+// A piece of equipment as an outlined pill badge, coloured by its classification and
+// linking to the equipment page.
+const equipmentBadge = (item: Equipment) => html`
+  <a
+    class="eq-badge eq-badge--${safe(item.classification.toLowerCase())}"
+    href="/equipment/${safe(item.id)}"
+    >${sanitizeString(item.name)}</a
+  >
 `;
 
 // Equipment grouped by classification (Red / Orange / Green), showing only non-empty
-// groups.
+// groups. The group heading names the class in text so the colour isn't the only signal.
 const renderEquipment = (equipment: ReadonlyArray<Equipment>) => {
   if (equipment.length === 0) {
     return html`<p>No equipment currently assigned to this area.</p>`;
@@ -202,9 +207,9 @@ const renderEquipment = (equipment: ReadonlyArray<Equipment>) => {
     })),
     RA.filter(group => group.items.length > 0),
     RA.map(
-      group => html`<p>
+      group => html`<p class="eq-group">
         <strong>${safe(group.classification)} equipment:</strong>
-        ${commaHtml(group.items.map(equipmentLink))}
+        <span class="eq-badges">${joinHtml(group.items.map(equipmentBadge))}</span>
       </p>`
     ),
     joinHtml
