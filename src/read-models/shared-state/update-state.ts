@@ -222,7 +222,12 @@ const _updateState =
       }
       case 'EquipmentAdded': {
         tx.insert(equipmentTable)
-          .values({id: event.id, name: event.name, areaId: event.areaId})
+          .values({
+            id: event.id,
+            name: event.name,
+            areaId: event.areaId,
+            classification: event.classification,
+          })
           .run();
         break;
       }

@@ -21,6 +21,7 @@ import {
   Equipment,
   Owner,
 } from '../../read-models/shared-state/return-types';
+import {equipmentClassifications} from '../../types/equipment';
 
 
 const renderSignedAt = (owner: Owner) => {
@@ -183,19 +184,30 @@ const renderInactiveOwners = (
   `;
 };
 
+const equipmentLink = (item: Equipment) => html`
+  <a href="/equipment/${safe(item.id)}">${sanitizeString(item.name)}</a>
+`;
+
+// Equipment grouped by classification (Red / Orange / Green), showing only non-empty
+// groups.
 const renderEquipment = (equipment: ReadonlyArray<Equipment>) => {
   if (equipment.length === 0) {
     return html`<p>No equipment currently assigned to this area.</p>`;
   }
-
   return pipe(
-    equipment,
+    equipmentClassifications,
+    RA.map(classification => ({
+      classification,
+      items: equipment.filter(e => e.classification === classification),
+    })),
+    RA.filter(group => group.items.length > 0),
     RA.map(
-      item => html`
-        <a href="/equipment/${safe(item.id)}">${sanitizeString(item.name)}</a>
-      `
+      group => html`<p>
+        <strong>${safe(group.classification)} equipment:</strong>
+        ${commaHtml(group.items.map(equipmentLink))}
+      </p>`
     ),
-    items => html`<p><strong>RED equipment:</strong> ${commaHtml(items)}</p>`
+    joinHtml
   );
 };
 
@@ -232,7 +244,7 @@ const renderArea =
         >Add owner</a
       >
       <a class="button" href="/equipment/add?area=${safe(area.id)}"
-        >Add RED equipment</a
+        >Add equipment</a
       >
       <a class="button" href="/areas/set-mailing-list?area=${safe(area.id)}"
         >Set mailing list</a

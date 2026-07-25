@@ -11,15 +11,16 @@ import {
   needsHelpForm,
   parkForm,
 } from './action-form';
+import {setEquipmentForm} from './set-equipment-form';
 
-// Actions that own a confirmation page combine their command with a Form so they can be
-// wired with command() (GET form + POST). create/set-equipment/edit-title stay API-only.
+// Actions that own a form/confirmation page combine their command with a Form so they can
+// be wired with command() (GET form + POST). create/edit-title stay API-only.
 export const troubleTicketCommands = {
   create,
   assign: {...assign, ...assignForm},
   resolve: {...resolve, ...resolveForm},
   park: {...park, ...parkForm},
   needsHelp: {...needsHelp, ...needsHelpForm},
-  setEquipment,
+  setEquipment: {...setEquipment, ...setEquipmentForm},
   editTitle,
 };

@@ -20,6 +20,7 @@ const equipment = {
   id: equipmentId,
   name: 'Laser Cutter',
   trainingSheetId: O.none,
+  classification: 'Red',
   trainers: [],
   trainedMembers: [],
   area: {
@@ -83,7 +84,7 @@ describe('areas render', () => {
     expect(page.textContent).not.toContain(ownerEmail);
     expect(page.textContent).not.toContain('Agreement Signed');
     expect(page.textContent).not.toContain('Add owner');
-    expect(page.textContent).not.toContain('Add RED equipment');
+    expect(page.textContent).not.toContain('Add equipment');
     expect(page.textContent).not.toContain('Set mailing list');
     expect(page.textContent).not.toContain('Remove area');
   });
@@ -114,7 +115,7 @@ describe('areas render', () => {
 
     expect(page.textContent).toContain('Add area of responsibility');
     expect(page.textContent).toContain('Add owner');
-    expect(page.textContent).toContain('Add RED equipment');
+    expect(page.textContent).toContain('Add equipment');
     expect(page.textContent).toContain('Set mailing list');
     expect(page.textContent).toContain('Remove area');
     expect(page.querySelector(`a[href="/areas/remove-owner?memberNumber=123&areaId=${areaId}"]`)).not.toBeNull();

@@ -256,6 +256,7 @@ describe('trouble ticket status workflow (read model)', () => {
         id: equipmentId,
         name: 'Test Rig',
         areaId,
+        classification: 'Red',
       })
     );
     const created = troubleTicketCreated({submittedEquipment: 'unmatched thing'});

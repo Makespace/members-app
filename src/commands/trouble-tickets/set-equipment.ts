@@ -11,8 +11,8 @@ import {canSetTicketEquipment} from './authorization';
 
 const codec = t.strict({
   ticketId: tt.UUID,
-  // null re-buckets the ticket to Unassigned.
-  equipmentId: t.union([tt.UUID, t.null]),
+  // null (API) or '' (the form's Unassigned option) re-buckets the ticket to Unassigned.
+  equipmentId: t.union([tt.UUID, t.null, t.literal('')]),
 });
 
 type SetTroubleTicketEquipment = t.TypeOf<typeof codec>;
@@ -28,9 +28,11 @@ const process: Command<SetTroubleTicketEquipment>['process'] = input =>
       )()
     ),
     TE.chain(() => {
+      const equipmentId =
+        input.command.equipmentId === '' ? null : input.command.equipmentId;
       if (
-        input.command.equipmentId !== null &&
-        O.isNone(input.rm.equipment.get(input.command.equipmentId))
+        equipmentId !== null &&
+        O.isNone(input.rm.equipment.get(equipmentId))
       ) {
         return TE.left(
           failureWithStatus(
@@ -43,7 +45,7 @@ const process: Command<SetTroubleTicketEquipment>['process'] = input =>
         O.some(
           constructEvent('TroubleTicketEquipmentSet')({
             ticketId: input.command.ticketId,
-            equipmentId: input.command.equipmentId,
+            equipmentId,
             actor: input.command.actor,
           })
         )

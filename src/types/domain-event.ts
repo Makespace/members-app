@@ -2,6 +2,7 @@ import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import {EmailAddressCodec} from './email-address';
 import {Actor} from './actor';
+import {EquipmentClassification} from './equipment';
 
 const defineEvent = <A extends string, T extends t.Props>(
   type: A,
@@ -50,6 +51,8 @@ const EquipmentAdded = defineEvent('EquipmentAdded', {
   name: t.string,
   id: tt.UUID,
   areaId: tt.UUID,
+  // Equipment predating this field decodes as Red (the training-required default).
+  classification: tt.withFallback(EquipmentClassification, 'Red'),
 });
 
 const OwnerAdded = defineEvent('OwnerAdded', {

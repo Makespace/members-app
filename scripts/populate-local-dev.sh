@@ -12,9 +12,22 @@ function event {
 event 'api/areas/create' '{"id": "eeaf7f8b-77a3-429d-ae9d-2f7ade53736e", "name": "Metal Shop"}'
 event 'api/areas/set-mailing-List' '{"id": "eeaf7f8b-77a3-429d-ae9d-2f7ade53736e", "email": "metalshop@example.com"}'
 
-# Metal lathe
-event 'api/equipment/add' '{"id": "4224ee94-09b0-47d4-ae60-fac46b8ca93e", "name": "Metal Lathe", "areaId": "eeaf7f8b-77a3-429d-ae9d-2f7ade53736e"}'
+# Metal lathe (Red - needs training)
+event 'api/equipment/add' '{"id": "4224ee94-09b0-47d4-ae60-fac46b8ca93e", "name": "Metal Lathe", "areaId": "eeaf7f8b-77a3-429d-ae9d-2f7ade53736e", "classification": "Red"}'
 event 'api/equipment/add-training-sheet' '{"equipmentId": "4224ee94-09b0-47d4-ae60-fac46b8ca93e", "trainingSheetId": "19e610we8nSzo3QO-T76RzdVoCNjq75my4Fkc0eDgmSo"}'
+
+# Wood Shop - Orange/Green (no training) equipment
+event 'api/areas/create' '{"id": "aaaaaaaa-0000-4000-8000-000000000001", "name": "Wood Shop"}'
+event 'api/equipment/add' '{"id": "aaaaaaaa-0000-4000-8000-000000000002", "name": "Belt Sander", "areaId": "aaaaaaaa-0000-4000-8000-000000000001", "classification": "Orange"}'
+event 'api/equipment/add' '{"id": "aaaaaaaa-0000-4000-8000-000000000003", "name": "Bandsaw", "areaId": "aaaaaaaa-0000-4000-8000-000000000001", "classification": "Green"}'
+
+# 3D Printers
+event 'api/areas/create' '{"id": "aaaaaaaa-0000-4000-8000-000000000004", "name": "3D Printers"}'
+event 'api/equipment/add' '{"id": "aaaaaaaa-0000-4000-8000-000000000005", "name": "Bambu 3D Printer", "areaId": "aaaaaaaa-0000-4000-8000-000000000004", "classification": "Orange"}'
+
+# Management - catch-all area for general trouble tickets
+event 'api/areas/create' '{"id": "aaaaaaaa-0000-4000-8000-000000000006", "name": "Management"}'
+event 'api/equipment/add' '{"id": "aaaaaaaa-0000-4000-8000-000000000007", "name": "General", "areaId": "aaaaaaaa-0000-4000-8000-000000000006", "classification": "Green"}'
 
 # Ada Admin (superuser)
 event 'api/members/create' '{"memberNumber": "1337", "email": "admin@example.com"}'
@@ -22,11 +35,15 @@ event 'api/members/edit-name' '{"memberNumber": "1337", "name": "Ada Admin"}'
 event 'api/members/edit-forms-of-address' '{"memberNumber": "1337", "formsOfAddress": "she/her"}'
 event 'api/super-users/declare' '{"memberNumber": "1337"}'
 
-# Owen Owner (owner of metal shop area)
+# Owen Owner - owns Metal Shop plus the non-training areas and Management, but is not a
+# trainer, so he exercises the owner-can-manage-tickets path.
 event 'api/members/create' '{"memberNumber": "4150", "email": "owner@example.com"}'
 event 'api/members/edit-name' '{"memberNumber": "4150", "name": "Owen Owner"}'
 event 'api/members/edit-forms-of-address' '{"memberNumber": "4150", "formsOfAddress": "he/him"}'
 event 'api/areas/add-owner' '{"areaId": "eeaf7f8b-77a3-429d-ae9d-2f7ade53736e", "memberNumber": "4150"}'
+event 'api/areas/add-owner' '{"areaId": "aaaaaaaa-0000-4000-8000-000000000001", "memberNumber": "4150"}'
+event 'api/areas/add-owner' '{"areaId": "aaaaaaaa-0000-4000-8000-000000000004", "memberNumber": "4150"}'
+event 'api/areas/add-owner' '{"areaId": "aaaaaaaa-0000-4000-8000-000000000006", "memberNumber": "4150"}'
 
 # Treacle Trainer (Trainer for metal lathe)
 event 'api/members/create' '{"memberNumber": "7777", "email": "trainer@example.com"}'

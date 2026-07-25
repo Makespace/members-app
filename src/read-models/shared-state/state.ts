@@ -5,6 +5,7 @@ import {
   TroubleTicketResponse,
   TroubleTicketStatus,
 } from '../../types/trouble-ticket';
+import {EquipmentClassification} from '../../types/equipment';
 import * as O from 'fp-ts/Option';
 import {blob, integer, SQLiteColumnBuilderBase, sqliteTable, SQLiteTableExtraConfig, text, uniqueIndex} from 'drizzle-orm/sqlite-core';
 
@@ -105,6 +106,7 @@ export const equipmentTable = defineTable(
       name TEXT,
       areaId TEXT,
       trainingSheetId TEXT,
+      classification TEXT NOT NULL DEFAULT 'Red',
       FOREIGN KEY(areaId) REFERENCES areas(id) ON DELETE CASCADE
     );
   `,
@@ -116,6 +118,10 @@ export const equipmentTable = defineTable(
       .notNull()
       .references(() => areasTable.id, { onDelete: 'cascade' }),
     trainingSheetId: text('trainingSheetId'),
+    classification: text('classification')
+      .notNull()
+      .default('Red')
+      .$type<EquipmentClassification>(),
   }
 );
 

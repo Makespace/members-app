@@ -58,6 +58,7 @@ describe('markMemberTrainedBy authorization', () => {
       name: 'Test Equipment',
       id: equipmentId,
       areaId,
+      classification: 'Red',
       actor: arbitraryActor(),
     }),
     constructEvent('MemberNumberLinkedToEmail')({

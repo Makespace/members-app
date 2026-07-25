@@ -172,6 +172,13 @@ const toView =
     const onMyTrainerMachine =
       ticket.equipmentId !== null &&
       viewer.trainerFor.some(t => t.equipment_id === ticket.equipmentId);
+    const inMyOwnerArea = pipe(
+      equipment,
+      O.match(
+        () => false,
+        e => viewer.ownerOf.some(area => area.id === e.area.id)
+      )
+    );
     return {
       id: ticket.id,
       title: ticket.title,
@@ -196,15 +203,11 @@ const toView =
       assignedToMe: ticket.assignedMemberNumbers.some(n =>
         myMemberNumbers.includes(n)
       ),
-      inMyOwnerArea: pipe(
-        equipment,
-        O.match(
-          () => false,
-          e => viewer.ownerOf.some(area => area.id === e.area.id)
-        )
-      ),
-      onMyTrainerMachine: onMyTrainerMachine,
-      canChangeStatus: viewer.isSuperUser || onMyTrainerMachine,
+      inMyOwnerArea,
+      onMyTrainerMachine,
+      // Mirrors isTicketTrainerOrOwner: trainer on the machine, owner of its area, or
+      // super-user.
+      canChangeStatus: viewer.isSuperUser || onMyTrainerMachine || inMyOwnerArea,
       changeLog: buildChangeLog(changeLogs.get(ticket.id) ?? [], rm),
     };
   };
