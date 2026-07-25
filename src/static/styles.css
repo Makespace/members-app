@@ -906,15 +906,8 @@ label img {
 /* Equipment classification badges on the areas page. Colour is a secondary cue: each
    group is also labelled in text (Red/Orange/Green equipment) and each class has a
    distinct border style, so red/green colourblindness isn't a barrier. */
-.eq-group {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 8px;
-}
-
 .eq-badges {
-  display: inline-flex;
+  display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
