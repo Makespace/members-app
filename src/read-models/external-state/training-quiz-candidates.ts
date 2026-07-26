@@ -4,7 +4,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {inArray} from 'drizzle-orm';
 import {UUID} from 'io-ts-types';
 import {ReadonlyRecord} from 'fp-ts/ReadonlyRecord';
-import {EmailAddress} from '../../types';
+import {EmailAddress, EmailAddressCodec} from '../../types';
 import {ExternalStateDB} from '../../sync-worker/external-state-db';
 import {sheetDataTable} from '../../sync-worker/google/sheet-data-table';
 
@@ -83,9 +83,13 @@ export const getTrainingQuizCandidates =
       if (equipmentId === undefined) {
         return [];
       }
-      const email = O.fromNullable(
-        row.email_provided
-      ) as O.Option<EmailAddress>;
+      // Freeform sheet input: validate it as a real address rather than
+      // trusting the brand. An invalid value becomes O.none (and hashes as an
+      // empty email segment), matching how the real event reader will treat it.
+      const email = pipe(
+        O.fromNullable(row.email_provided),
+        O.chain(e => O.fromEither(EmailAddressCodec.decode(e)))
+      );
       const memberNumber = O.fromNullable(row.member_number_provided);
       return [
         {
