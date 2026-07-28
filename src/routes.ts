@@ -20,6 +20,7 @@ export const initRoutes = (
     query('/raise-issue', queries.raiseIssue),
     query('/humans', queries.humans),
     query('/event-log', queries.log),
+    query('/training-event-log', queries.trainingEventLog),
     query('/event-log/failed', queries.failedEventLog),
     query('/event-log/deleted', queries.deletedEvents),
     ...command('event-log', 'delete', commands.eventLog.delete),
