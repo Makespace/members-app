@@ -29,11 +29,11 @@ export const asyncRefresh = (
         );
       })
     )();
-    const fetchDurationMs = performance.now() - fetchStartedAt;
+    const fetchDurationMs = Math.round(performance.now() - fetchStartedAt);
 
     const projectionStartedAt = performance.now();
     events.forEach(updateState);
-    const projectionDurationMs = performance.now() - projectionStartedAt;
+    const projectionDurationMs = Math.round(performance.now() - projectionStartedAt);
 
     logger.info(
       {
@@ -42,7 +42,7 @@ export const asyncRefresh = (
         endEventIndex: getCurrentEventIndex(),
         fetchDurationMs,
         projectionDurationMs,
-        totalDurationMs: performance.now() - refreshStartedAt,
+        totalDurationMs:  Math.round(performance.now() - refreshStartedAt),
       },
       'Read model refresh completed'
     );

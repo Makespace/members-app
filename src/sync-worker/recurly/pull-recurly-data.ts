@@ -34,7 +34,7 @@ export const pullRecurlyData = (
             O.isSome(lastRecurlySync) &&
             lastRecurlySync.value.diffNow().negate() < recurlySyncInterval
         ) {
-            logger.info(
+            logger.debug(
             'Skipping recurly sync, next sync in %s',
             recurlySyncInterval.minus(
                 lastRecurlySync.value.diffNow().negate()
