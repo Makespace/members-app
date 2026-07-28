@@ -1,6 +1,5 @@
 import {pipe} from 'fp-ts/lib/function';
 import {
-  commaHtml,
   html,
   Html,
   joinHtml,
@@ -197,15 +196,20 @@ const renderEquipment = (equipment: ReadonlyArray<EquipmentViewModel>) => {
     equipment,
     RA.map(
       item => html`
-        <span class="equipment-with-sparkline"
+        <div class="equipment-with-sparkline"
           ><a href="/equipment/${safe(item.id)}"
             >${sanitizeString(item.name)}</a
           >
-          ${renderTrainingSparkline(item.trainingsByQuarter)}</span
+          ${renderTrainingSparkline(item.trainingsByQuarter)}</div
         >
       `
     ),
-    items => html`<p><strong>RED equipment:</strong> ${commaHtml(items)}</p>`
+    items => html`
+      <div>
+        <strong>RED equipment:</strong>
+        <div>${joinHtml(items)}</div>
+      </div>
+    `
   );
 };
 

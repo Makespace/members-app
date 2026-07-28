@@ -37,6 +37,14 @@ const equipment = {
   ],
 } satisfies EquipmentViewModel;
 
+const secondEquipmentId = '44444444-4444-4444-8444-444444444444' as UUID;
+
+const secondEquipment = {
+  ...equipment,
+  id: secondEquipmentId,
+  name: 'CNC Router',
+} satisfies EquipmentViewModel;
+
 const area = {
   id: areaId,
   name: 'Laser Area',
@@ -137,6 +145,23 @@ describe('areas render', () => {
     });
 
     expect(page.textContent).toContain('No equipment currently assigned to this area.');
+  });
+
+  it('puts each piece of equipment on its own line', () => {
+    const page = renderPage({
+      areas: [{...area, equipment: [equipment, secondEquipment]}],
+      canManageAreas: false,
+      canSeeOwnerPrivateDetails: false,
+      canSeeTrainings: false,
+    });
+
+    const equipmentItems = page.querySelectorAll(
+      `#area-${areaId} .equipment-with-sparkline`
+    );
+
+    expect(equipmentItems).toHaveLength(2);
+    expect(equipmentItems[0]?.textContent).toContain('Laser Cutter');
+    expect(equipmentItems[1]?.textContent).toContain('CNC Router');
   });
 
   it('shows inactive owners to normal members as public owner details', () => {
