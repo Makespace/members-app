@@ -8,7 +8,12 @@ import {
   sanitizeString,
 } from '../../types/html';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {AreaViewModel, OwnerViewModel, ViewModel} from './view-model';
+import {
+  AreaViewModel,
+  EquipmentViewModel,
+  OwnerViewModel,
+  ViewModel,
+} from './view-model';
 import {renderReasonChips} from '../../templates/recurly-reasons';
 import {renderMember} from '../../templates/member';
 import {renderTrainingSparkline} from '../../templates/training-sparkline';
@@ -18,7 +23,6 @@ import {displayDate, displayDateShort} from '../../templates/display-date';
 import {DateTime} from 'luxon';
 import {
   Area,
-  Equipment,
   Owner,
 } from '../../read-models/shared-state/return-types';
 import { mailTo } from '../../templates/mailto';
@@ -184,7 +188,7 @@ const renderInactiveOwners = (
   `;
 };
 
-const renderEquipment = (equipment: ReadonlyArray<Equipment>) => {
+const renderEquipment = (equipment: ReadonlyArray<EquipmentViewModel>) => {
   if (equipment.length === 0) {
     return html`<p>No equipment currently assigned to this area.</p>`;
   }
@@ -193,7 +197,12 @@ const renderEquipment = (equipment: ReadonlyArray<Equipment>) => {
     equipment,
     RA.map(
       item => html`
-        <a href="/equipment/${safe(item.id)}">${sanitizeString(item.name)}</a>
+        <span class="equipment-with-sparkline"
+          ><a href="/equipment/${safe(item.id)}"
+            >${sanitizeString(item.name)}</a
+          >
+          ${renderTrainingSparkline(item.trainingsByQuarter)}</span
+        >
       `
     ),
     items => html`<p><strong>RED equipment:</strong> ${commaHtml(items)}</p>`

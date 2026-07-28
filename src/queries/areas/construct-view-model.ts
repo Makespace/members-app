@@ -7,14 +7,19 @@ import {
   failureWithStatus,
   FailureWithStatus,
 } from '../../types/failure-with-status';
-import {AreaViewModel, OwnerViewModel, ViewModel} from './view-model';
+import {
+  AreaViewModel,
+  EquipmentViewModel,
+  OwnerViewModel,
+  ViewModel,
+} from './view-model';
 import {ExternalStateDB} from '../../sync-worker/external-state-db';
 import {
   getRecurlyReasonsForMember,
   RecurlyFlags,
   RecurlyReason,
 } from '../../read-models/external-state/recurly-status';
-import {Area, Owner} from '../../read-models/shared-state/return-types';
+import {Area, Equipment, Owner} from '../../read-models/shared-state/return-types';
 import {StatusCodes} from 'http-status-codes';
 import {trainingsByQuarter} from '../../read-models/shared-state/member/training-delivered';
 import {DateTime} from 'luxon';
@@ -61,6 +66,16 @@ const expandOwner =
     return {...owner, isActiveOwner, reasons, trainingsByQuarter: trainings};
   };
 
+const expandEquipment =
+  (now: DateTime) =>
+  (equipment: Equipment): EquipmentViewModel => ({
+    ...equipment,
+    trainingsByQuarter: trainingsByQuarter(
+      equipment.trainedMembers.map(member => member.trainedSince),
+      now
+    ),
+  });
+
 const expandArea =
   (
     sharedReadModel: Dependencies['sharedReadModel'],
@@ -71,6 +86,7 @@ const expandArea =
     const equipmentIds = area.equipment.map(equipment => equipment.id);
     return {
       ...area,
+      equipment: area.equipment.map(expandEquipment(now)),
       owners: await Promise.all(
         area.owners.map(expandOwner(sharedReadModel, extDB, now, equipmentIds))
       ),
