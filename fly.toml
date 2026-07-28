@@ -35,8 +35,7 @@ timeout = "5s"
 path = "/ping"
 
 [[vm]]
-size = 'shared-cpu-2x'
-memory = '512mb'
+size = 'performance-1x'
 
 [mounts]
 source = "google_db_data"
