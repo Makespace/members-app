@@ -8,6 +8,7 @@ export {equipment} from './equipment';
 export {members} from './members';
 export {member} from './member';
 export {log} from './log';
+export {trainingEventLog} from './training-event-log';
 export {failedEventLog} from './failed-event-log';
 export {deletedEvents} from './deleted-events';
 export {logcsv} from './logcsv';
