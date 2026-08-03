@@ -49,6 +49,11 @@ export const initRoutes = (
     ),
     ...command(
       'equipment',
+      'mark-obsolete',
+      commands.equipment.markObsolete
+    ),
+    ...command(
+      'equipment',
       'mark-member-trained',
       commands.trainers.markTrained
     ),

@@ -70,6 +70,7 @@ describe('Render equipment page', () => {
             trainedMember
         ],
         trainingSheetId: O.some(faker.string.alpha({length: 20})),
+        removedAt: O.none,
         area: {
             id: faker.string.uuid() as UUID,
             name: faker.airline.airline().name,
