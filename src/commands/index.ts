@@ -6,6 +6,7 @@ import {memberNumbers} from './member-numbers';
 import {superUser} from './super-user';
 import {ownerAgreementInvite} from './owner-agreement-invite';
 import {eventLog} from './event-log';
+import {trainingQuiz} from './training-quiz';
 
 export const commands = {
   area,
@@ -15,6 +16,7 @@ export const commands = {
   memberNumbers,
   members,
   eventLog,
+  trainingQuiz,
 };
 
 export const sendEmailCommands = {

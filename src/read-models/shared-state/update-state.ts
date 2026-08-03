@@ -10,6 +10,7 @@ import {
   ownersTable,
   trainedMemberstable,
   trainersTable,
+  trainingQuizCompletionsTable,
   trainingStatsNotificationTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
@@ -521,6 +522,23 @@ const _updateState =
       }
       case 'LinkingMemberNumberToAnAlreadyUsedEmailAttempted': {
         throw new InconsistentEventError(`Tried to link member number '${event.memberNumber}' to email '${event.email}' but it was already in use`);
+      }
+      case 'TrainingQuizCompleted': {
+        // Idempotent: the rowHash primary key means re-importing the same row
+        // (or replaying the event) is a no-op.
+        tx.insert(trainingQuizCompletionsTable)
+          .values({
+            rowHash: event.rowHash,
+            trainingSheetId: event.trainingSheetId,
+            completedAt: event.completedAt,
+            memberNumberProvided: event.memberNumberProvided,
+            emailProvided: event.emailProvided,
+            score: event.score,
+            maxScore: event.maxScore,
+          })
+          .onConflictDoNothing()
+          .run();
+        break;
       }
       default: {
         break;

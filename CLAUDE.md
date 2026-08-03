@@ -33,13 +33,12 @@ This application uses **event sourcing** as its core architectural pattern. All 
 #### Commands (Write Side)
 - Located in `src/commands/`
 - Commands validate authorization and business rules, then produce domain events
-- Each command implements the `Command<T>` interface with:
-  - `resource()` - identifies which resource the command operates on
-  - `process()` - validates business logic and returns `Option<DomainEvent>`
-  - `decode()` - validates and decodes input data
-  - `isAuthorized()` - checks if the actor can execute this command
-- Commands NEVER directly query state - they receive all relevant events as input
-- See `src/commands/command.ts` for the Command interface
+- Each command implements the `Command<T>` interface (see `src/commands/command.ts`) with:
+  - `process({ command, rm, deps? })` - validates business logic and returns `TaskEither<FailureWithStatus, Option<DomainEvent>>` (async; `O.none` means "no event, nothing to do")
+  - `decode` - an io-ts codec's `.decode` that validates and decodes input data
+  - `isAuthorized({ actor, rm, input })` - checks if the actor can execute this command
+- Commands receive the `SharedReadModel` as `rm` and query its views directly for business rules (e.g. `input.rm.area.get(id)`). They do NOT replay raw events themselves.
+- A command's only side effect is returning the event(s) to append - it never writes to the store directly
 
 #### Events (Domain Events)
 - Defined in `src/types/domain-event.ts`
@@ -65,13 +64,13 @@ This application uses **event sourcing** as its core architectural pattern. All 
 - Located in `src/queries/`
 - Queries read from the SharedReadModel and render HTML responses
 - Each query implements the `Query` type (see `src/queries/query.ts`)
-- Queries receive: `(deps, user, params, queryParams) => TaskEither<FailureWithStatus, HttpResponse>`
+- Queries are curried: `(deps) => (user, params, queryParams) => TaskEither<FailureWithStatus, HttpResponse>`
 
 ### Separation Principle
-The codebase maintains strict separation between commands and read models:
-- **Commands** should only use events passed to them, never call read models
-- **Read models** should only process events, never call command.process() (except in tests to generate test events)
-- Communication between frontend and backend happens exclusively via events
+The codebase maintains separation between the write side and read side:
+- **Commands** read from the `SharedReadModel` (`rm`) to validate business rules, but their only output is domain events - they never write to the event store directly
+- **Read models** should only process events, never call `command.process()` (except in tests to generate test events)
+- All state changes flow through events; the read model is rebuilt from those events
 - This makes testing easier and allows independent evolution of read/write sides
 
 ### Authentication
@@ -124,8 +123,8 @@ The codebase maintains strict separation between commands and read models:
 - Use `.test.ts` extension
 
 ### Testing Commands
-- Provide events as input, assert on resulting events
-- Use `command.process({ command, events })` pattern
+- Seed state via a `TestFramework` from `initTestFramework()` (provides `sharedReadModel`), then assert on the resulting event
+- Use `command.process({ command: { ...fields, actor }, rm: framework.sharedReadModel })` - it returns a `TaskEither`, so unwrap with `getTaskEitherRightOrFail()` from `tests/helpers`
 - Example: `tests/commands/area/create.test.ts`
 - Use `constructEvent(type)(payload)` to build test events
 - Use `arbitraryActor()` from `tests/helpers` for actor values
