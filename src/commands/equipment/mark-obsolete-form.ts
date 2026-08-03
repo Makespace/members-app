@@ -27,7 +27,7 @@ const renderForm = (viewModel: ViewModel) =>
         </form>
       </div>
     `,
-    toLoggedInContent(safe('Retire equipment'))
+    toLoggedInContent(html`Retire equipment`)
   );
 
 const constructForm: Form<ViewModel>['constructForm'] =
