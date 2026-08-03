@@ -264,6 +264,17 @@ export const trainingQuizCompletionsTable = defineTable(
   }
 );
 
+// Lookups query completions by equipment (via trainingSheetId) and by member
+// number; without these the read model would scan the whole table each time.
+// Added as raw statements because the read model creates tables from createTables
+// (the drizzle index metadata above is not what builds the schema here).
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS trainingQuizCompletions_trainingSheetId_idx ON trainingQuizCompletions (trainingSheetId);`
+);
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS trainingQuizCompletions_memberNumberProvided_idx ON trainingQuizCompletions (memberNumberProvided);`
+);
+
 export const eventStateTable = defineTable(
   sql`
     CREATE TABLE IF NOT EXISTS eventStateTable (
