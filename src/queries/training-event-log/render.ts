@@ -1,6 +1,6 @@
 import * as O from 'fp-ts/Option';
 import {html, joinHtml, sanitizeString} from '../../types/html';
-import {ViewModel, CandidateRow} from './view-model';
+import {ViewModel, CandidateRow, AreaGroup} from './view-model';
 import {renderMember} from '../../templates/member';
 import {renderMemberNumber} from '../../templates/member-number';
 import {displayDate} from '../../templates/display-date';
@@ -33,7 +33,6 @@ const renderScore = (row: CandidateRow) => {
 // full-width raw row directly below it (see rawToggleScript).
 const renderRow = (row: CandidateRow) => html`
   <tr>
-    <td>${sanitizeString(row.equipmentName)}</td>
     <td>${renderCandidateMember(row)}</td>
     <td>${displayDate(DateTime.fromJSDate(row.completedAt))}</td>
     <td>${renderScore(row)}</td>
@@ -51,7 +50,7 @@ const renderRow = (row: CandidateRow) => html`
     </td>
   </tr>
   <tr class="raw-row" hidden>
-    <td colspan="6"><pre><code>${sanitizeString(row.raw)}</code></pre></td>
+    <td colspan="5"><pre><code>${sanitizeString(row.raw)}</code></pre></td>
   </tr>
 `;
 
@@ -74,23 +73,60 @@ const rawToggleScript = html`
   </script>
 `;
 
-export const render = (viewModel: ViewModel) => html`
+const renderAreaGroup = (group: AreaGroup) => html`
+  <section>
+    <h2>${sanitizeString(group.areaName)}</h2>
+    <ul>
+      ${joinHtml(
+        group.equipment.map(
+          equipment => html`
+            <li>
+              <a href="/training-event-log?equipment=${equipment.id}"
+                >${sanitizeString(equipment.name)}</a
+              >
+            </li>
+          `
+        )
+      )}
+    </ul>
+  </section>
+`;
+
+const renderPicker = (areas: ReadonlyArray<AreaGroup>) => html`
   <div class="stack-large">
     <h1>Training event log</h1>
     <p>
-      These are the ${viewModel.candidates.length} training-quiz
-      events that <strong>would</strong> be created from the cached quiz data if
-      the one-time migration were run.${viewModel.importedCount > 0
-        ? html` ${viewModel.importedCount} already-imported rows are hidden.`
+      Pick a machine to preview the training-quiz events that
+      <strong>would</strong> be created from its cached quiz data if the one-time
+      migration were run. Machines are only listed if they have a training sheet.
+    </p>
+    ${areas.length === 0
+      ? html`<p>No machines with a training sheet found.</p>`
+      : joinHtml(areas.map(renderAreaGroup))}
+  </div>
+`;
+
+const renderSelected = (
+  equipmentName: string,
+  candidates: ReadonlyArray<CandidateRow>,
+  importedCount: number
+) => html`
+  <div class="stack-large">
+    <p><a href="/training-event-log">← All machines</a></p>
+    <h1>Training event log: ${sanitizeString(equipmentName)}</h1>
+    <p>
+      These are the ${candidates.length} training-quiz events that
+      <strong>would</strong> be created from this machine's cached quiz data if
+      the one-time migration were run.${importedCount > 0
+        ? html` ${importedCount} already-imported rows are hidden.`
         : ''}
     </p>
-    ${viewModel.candidates.length === 0
-      ? html`<p>No cached quiz rows found.</p>`
+    ${candidates.length === 0
+      ? html`<p>No cached quiz rows found for this machine.</p>`
       : html`
           <table>
             <thead>
               <tr>
-                <th>Equipment</th>
                 <th>Member</th>
                 <th>Completed</th>
                 <th>Score</th>
@@ -99,10 +135,19 @@ export const render = (viewModel: ViewModel) => html`
               </tr>
             </thead>
             <tbody>
-              ${joinHtml(viewModel.candidates.map(renderRow))}
+              ${joinHtml(candidates.map(renderRow))}
             </tbody>
           </table>
         `}
     ${rawToggleScript}
   </div>
 `;
+
+export const render = (viewModel: ViewModel) =>
+  viewModel._tag === 'picker'
+    ? renderPicker(viewModel.areas)
+    : renderSelected(
+        viewModel.equipmentName,
+        viewModel.candidates,
+        viewModel.importedCount
+      );
