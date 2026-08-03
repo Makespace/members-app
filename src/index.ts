@@ -19,6 +19,7 @@ import * as libsqlClient from '@libsql/client';
 import cookieSession from 'cookie-session';
 import {initRoutes} from './routes';
 import { startVerifyEmailPubSub } from './authentication/verify-email/start-verify-email-pub-sub';
+import {generateRequestId} from './http/request-id';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -47,7 +48,7 @@ passport.deserializeUser((user: Express.User, done) => {
 const app: Application = express();
 // The types from pino-http are broken https://github.com/pinojs/pino-http/issues/378
 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
-app.use(httpLogger({logger: deps.logger, useLevel: 'debug'} as any));
+app.use(httpLogger({logger: deps.logger, useLevel: 'debug', genReqId: generateRequestId} as any));
 app.use(express.urlencoded({extended: true}));
 app.use(express.json());
 app.use(cookieSession(sessionConfig(conf)));

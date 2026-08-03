@@ -5,8 +5,10 @@
 import * as O from 'fp-ts/Option';
 import {UUID} from 'io-ts-types';
 import {render} from '../../../src/queries/areas/render';
-import {ViewModel} from '../../../src/queries/areas/view-model';
-import {Equipment} from '../../../src/read-models/shared-state/return-types';
+import {
+  EquipmentViewModel,
+  ViewModel,
+} from '../../../src/queries/areas/view-model';
 import {EmailAddress, UserId} from '../../../src/types';
 import { getSomeOrFail } from '../../helpers';
 import { html } from '../../../src/types/html';
@@ -27,7 +29,21 @@ const equipment = {
     name: 'Laser Area',
     email: O.none,
   },
-} satisfies Equipment;
+  trainingsByQuarter: [
+    {label: html`Q4 2025`, count: 1},
+    {label: html`Q1 2026`, count: 0},
+    {label: html`Q2 2026`, count: 3},
+    {label: html`Q3 2026`, count: 2},
+  ],
+} satisfies EquipmentViewModel;
+
+const secondEquipmentId = '44444444-4444-4444-8444-444444444444' as UUID;
+
+const secondEquipment = {
+  ...equipment,
+  id: secondEquipmentId,
+  name: 'CNC Router',
+} satisfies EquipmentViewModel;
 
 const area = {
   id: areaId,
@@ -131,6 +147,23 @@ describe('areas render', () => {
     expect(page.textContent).toContain('No equipment currently assigned to this area.');
   });
 
+  it('puts each piece of equipment on its own line', () => {
+    const page = renderPage({
+      areas: [{...area, equipment: [equipment, secondEquipment]}],
+      canManageAreas: false,
+      canSeeOwnerPrivateDetails: false,
+      canSeeTrainings: false,
+    });
+
+    const equipmentItems = page.querySelectorAll(
+      `#area-${areaId} .equipment-with-sparkline`
+    );
+
+    expect(equipmentItems).toHaveLength(2);
+    expect(equipmentItems[0]?.textContent).toContain('Laser Cutter');
+    expect(equipmentItems[1]?.textContent).toContain('CNC Router');
+  });
+
   it('shows inactive owners to normal members as public owner details', () => {
     const page = renderPage({
       areas: [
@@ -218,7 +251,7 @@ describe('areas render', () => {
     });
     expect(page.textContent).toContain('Trainings');
     expect(page.textContent).toContain('Shows trainings completed within this area');
-    expect(page.querySelectorAll(".sparkline")).toHaveLength(1);
+    expect(page.querySelectorAll(".sparkline")).toHaveLength(2);
   });
 
   it('hides the trainings column for an area with no red equipment', () => {

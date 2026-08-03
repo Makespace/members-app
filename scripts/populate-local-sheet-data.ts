@@ -1,6 +1,8 @@
 #!/usr/bin/env npx tsx
 import {createClient} from '@libsql/client';
+import * as E from 'fp-ts/Either';
 import * as fs from 'fs';
+import {extractTimestamp} from '../src/sync-worker/google/util';
 
 // Seeds the local external-state `sheet_data` cache from a downloaded quiz CSV,
 // so the /training-event-log dry-run page has data without the Google sync
@@ -15,34 +17,33 @@ import * as fs from 'fs';
 // rows to equipment (e.g. the Metal Lathe sheet id from populate-local-dev.sh).
 //
 // Note: only the first 5 columns (Timestamp, Email, Score, Name, Membership
-// number) are read; the quiz-answer columns are ignored. A naive comma split is
-// fine because those five columns never contain embedded commas.
+// number) are read; the quiz-answer columns are ignored. This is a dev-only
+// stand-in for the Google sync (prod fills sheet_data from the structured
+// Sheets API, never from CSV), so a naive comma split is fine for the fixed
+// local test CSV. It would mis-column a Name containing a comma ("Doe, Jane"),
+// but our seed data has none - don't rely on this for arbitrary exports.
 
 const url =
   process.env.GOOGLE_DB_URL ?? 'file:/db/makespace-member-app-google.db';
-const [, , csvPath, sheetId] = process.argv;
+// The sheet timezone defaults to Europe/London (the production default in
+// pull_sheet_data.ts) so seeded timestamps/hashes match what the real sync
+// would produce; override it for a sheet in another timezone.
+const [, , csvPath, sheetId, timezone = 'Europe/London'] = process.argv;
 
 if (!csvPath || !sheetId) {
   console.error(
-    'usage: npx tsx populate-local-sheet-data.ts <csv-path> <sheet-id>'
+    'usage: npx tsx populate-local-sheet-data.ts <csv-path> <sheet-id> [timezone]'
   );
   process.exit(1);
 }
 
+// Reuse the production timestamp parser so the dry-run seeds exactly the epoch
+// (and therefore the rowHash) the real sync would compute for the same row.
+const decodeTimestamp = extractTimestamp(timezone).decode;
+
 const parseTimestamp = (s: string): number | null => {
-  const m = s
-    .trim()
-    .match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})$/);
-  if (!m) return null;
-  const [, dd, MM, yyyy, HH, mm, ss] = m;
-  return new Date(
-    Number(yyyy),
-    Number(MM) - 1,
-    Number(dd),
-    Number(HH),
-    Number(mm),
-    Number(ss)
-  ).getTime();
+  const decoded = decodeTimestamp(s.trim());
+  return E.isRight(decoded) ? decoded.right.getTime() : null;
 };
 
 const parseScore = (s: string): {score: number; max: number} | null => {
@@ -76,6 +77,8 @@ const main = async () => {
   const lines = fs.readFileSync(csvPath, 'utf8').split(/\r?\n/);
   let inserted = 0;
   let skipped = 0;
+  // Skip the header row (index 0); row_index mirrors production's use of the
+  // sheet row number for a stable per-row identifier.
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
     if (!line.trim()) continue;

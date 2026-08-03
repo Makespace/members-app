@@ -316,7 +316,7 @@ export const syncEquipmentTrainingSheets = async (
       O.isSome(lastSync.right) &&
       Date.now() - lastSync.right.value.getTime() < syncIntervalMs
     ) {
-      deps.logger.info(
+      deps.logger.debug(
         'Skipping sync of %s for equipment %s as last sync was recent: %s',
         equipmentId,
         trainingSheetId,

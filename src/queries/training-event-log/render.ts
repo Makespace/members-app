@@ -1,5 +1,5 @@
 import * as O from 'fp-ts/Option';
-import {html, joinHtml, safe, sanitizeString} from '../../types/html';
+import {html, joinHtml, sanitizeString} from '../../types/html';
 import {ViewModel, CandidateRow} from './view-model';
 import {renderMember} from '../../templates/member';
 import {renderMemberNumber} from '../../templates/member-number';
@@ -19,14 +19,14 @@ const renderCandidateMember = (row: CandidateRow) => {
   if (O.isSome(row.email)) {
     return sanitizeString(row.email.value);
   }
-  return safe('—');
+  return html`—`;
 };
 
 const renderScore = (row: CandidateRow) => {
-  const text = `${row.score} / ${row.maxScore}`;
+  const text = html`${row.score} / ${row.maxScore}`;
   return row.maxScore > 0 && row.score === row.maxScore
-    ? html`<span class="score-full">${safe(text)}</span>`
-    : safe(text);
+    ? html`<span class="score-full">${text}</span>`
+    : text;
 };
 
 // The 'view raw' button sits in the row's rightmost cell and toggles the
@@ -39,9 +39,9 @@ const renderRow = (row: CandidateRow) => html`
     <td>${renderScore(row)}</td>
     <td>
       <code
-        >${safe(row.rowHash.slice(0, 12))}${row.rowHash.length > 12
-          ? safe('…')
-          : safe('')}</code
+        >${sanitizeString(row.rowHash.slice(0, 12))}${row.rowHash.length > 12
+          ? html`…`
+          : ''}</code
       >
     </td>
     <td style="text-align: right">
@@ -78,13 +78,11 @@ export const render = (viewModel: ViewModel) => html`
   <div class="stack-large">
     <h1>Training event log</h1>
     <p>
-      These are the ${safe(viewModel.candidates.length.toString())} training-quiz
+      These are the ${viewModel.candidates.length} training-quiz
       events that <strong>would</strong> be created from the cached quiz data if
       the one-time migration were run.${viewModel.importedCount > 0
-        ? safe(
-            ` ${viewModel.importedCount} already-imported rows are hidden.`
-          )
-        : safe('')}
+        ? html` ${viewModel.importedCount} already-imported rows are hidden.`
+        : ''}
     </p>
     ${viewModel.candidates.length === 0
       ? html`<p>No cached quiz rows found.</p>`
