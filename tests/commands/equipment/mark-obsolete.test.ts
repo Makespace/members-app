@@ -1,4 +1,5 @@
 import * as O from 'fp-ts/Option';
+import * as E from 'fp-ts/Either';
 import {faker} from '@faker-js/faker';
 import {StatusCodes} from 'http-status-codes';
 import {NonEmptyString, UUID} from 'io-ts-types';
@@ -8,6 +9,7 @@ import {markEquipmentObsolete} from '../../../src/commands/equipment/mark-obsole
 import {
   arbitraryActor,
   getLeftOrFail,
+  getRightOrFail,
   getTaskEitherRightOrFail,
 } from '../../helpers';
 import {
@@ -26,33 +28,11 @@ describe('mark-obsolete', () => {
     framework.close();
   });
 
-  const areaId = v4() as UUID;
-  const equipmentId = v4() as UUID;
-  const command = {id: equipmentId, actor: arbitraryActor()};
-
-  const seedEquipment = () => {
-    framework.insertIntoSharedReadModel(
-      constructEvent('AreaCreated')({
-        id: areaId,
-        name: faker.commerce.productName() as NonEmptyString,
-        actor: arbitraryActor(),
-      })
-    );
-    framework.insertIntoSharedReadModel(
-      constructEvent('EquipmentAdded')({
-        id: equipmentId,
-        name: faker.commerce.productName(),
-        areaId,
-        actor: arbitraryActor(),
-      })
-    );
-  };
-
   describe('when the equipment does not exist', () => {
     it('fails with not found', async () => {
       const result = getLeftOrFail(
         await markEquipmentObsolete.process({
-          command,
+          command: {id: v4() as UUID, actor: arbitraryActor()},
           rm: framework.sharedReadModel,
         })()
       );
@@ -65,9 +45,27 @@ describe('mark-obsolete', () => {
   });
 
   describe('when the equipment exists', () => {
+    const areaId = v4() as UUID;
+    const equipmentId = v4() as UUID;
+    const command = {id: equipmentId, actor: arbitraryActor()};
+    beforeEach(() => {
+      framework.insertIntoSharedReadModel(
+        constructEvent('AreaCreated')({
+          id: areaId,
+          name: faker.commerce.productName() as NonEmptyString,
+          actor: arbitraryActor(),
+        })
+      );
+      framework.insertIntoSharedReadModel(
+        constructEvent('EquipmentAdded')({
+          id: equipmentId,
+          name: faker.commerce.productName(),
+          areaId,
+          actor: arbitraryActor(),
+        })
+      );
+    });
     it('records an EquipmentMarkedObsolete event', async () => {
-      seedEquipment();
-
       const result = await getTaskEitherRightOrFail(
         markEquipmentObsolete.process({
           command,
@@ -84,26 +82,29 @@ describe('mark-obsolete', () => {
         )
       );
     });
-  });
 
-  describe('when the equipment is already obsolete', () => {
-    it('is a no-op (idempotent), without failing', async () => {
-      seedEquipment();
-      framework.insertIntoSharedReadModel(
-        constructEvent('EquipmentMarkedObsolete')({
-          id: equipmentId,
-          actor: arbitraryActor(),
-        })
-      );
-
-      const result = await getTaskEitherRightOrFail(
-        markEquipmentObsolete.process({
-          command,
-          rm: framework.sharedReadModel,
-        })
-      );
-
-      expect(result).toStrictEqual(O.none);
+    describe('when the equipment is already obsolete', () => {
+      beforeEach(() => {
+        framework.insertIntoSharedReadModel(
+          constructEvent('EquipmentMarkedObsolete')({
+            id: equipmentId,
+            actor: arbitraryActor(),
+          })
+        );
+      });
+      describe('mark equipment as obsolete', () => {
+        let result: E.Either<unknown, unknown>;
+        beforeEach(async () => {
+          result = await markEquipmentObsolete.process({
+            command,
+            rm: framework.sharedReadModel,
+          })();
+        });
+        
+        it('is a no-op (idempotent), without failing', async () => {
+          expect(getRightOrFail(result)).toStrictEqual(O.none);
+        });
+      });
     });
   });
 });
