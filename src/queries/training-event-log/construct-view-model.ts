@@ -73,20 +73,23 @@ export const constructViewModel =
     }
 
     // Resolving a member runs several DB queries (full member expansion), and
-    // the same member recurs across many rows (retakes), so memoise per request
-    // - keyed on the exact (memberNumber, email) inputs the resolution uses.
+    // the same member recurs across many rows (retakes), so memoise per request.
+    // Rows resolve by member number, else by email, so cache under whichever
+    // identity is used. The email is kept verbatim: getByEmail treats the local
+    // part as case-significant, so lowercasing here could merge distinct members.
+    const cacheKey = (candidate: CandidateTrainingQuizCompleted): string =>
+      O.isSome(candidate.memberNumber)
+        ? `n:${candidate.memberNumber.value}`
+        : O.isSome(candidate.email)
+          ? `e:${candidate.email.value}`
+          : 'none';
+
     const memberCache = new Map<string, O.Option<ResolvedMember>>();
     // Resolve the row to a known member: by member number first, then by email.
     const resolveMember = (
       candidate: CandidateTrainingQuizCompleted
     ): O.Option<ResolvedMember> => {
-      const key = `${O.toNullable(candidate.memberNumber) ?? ''}|${
-        pipe(
-          candidate.email,
-          O.map(email => email.toLowerCase()),
-          O.toNullable
-        ) ?? ''
-      }`;
+      const key = cacheKey(candidate);
       const cached = memberCache.get(key);
       if (cached !== undefined) {
         return cached;
@@ -111,17 +114,14 @@ export const constructViewModel =
     };
 
     // Read candidates for this one machine's sheet only, so the query never
-    // scans the whole quiz history.
-    const candidates = await pipe(
-      equipment.value.trainingSheetId,
-      O.fold(
-        () => Promise.resolve([] as ReadonlyArray<CandidateTrainingQuizCompleted>),
-        sheetId =>
-          getTrainingQuizCandidates(extDB)({
-            [sheetId]: selectedEquipment.value,
-          })
-      )
-    );
+    // scans the whole quiz history. A machine reached directly by URL may have
+    // no sheet, in which case there are simply no candidates.
+    const sheetId = equipment.value.trainingSheetId;
+    const candidates = O.isSome(sheetId)
+      ? await getTrainingQuizCandidates(extDB)({
+          [sheetId.value]: selectedEquipment.value,
+        })
+      : [];
 
     return E.right({
       _tag: 'selected',
