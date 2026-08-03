@@ -15,7 +15,7 @@ SMTP_PORT = '587'
 PUBLIC_URL = 'https://app.makespace.org'
 SMTP_HOST = 'in-v3.mailjet.com'
 SMTP_FROM = 'it-maintainers@makespace.org'
-LOG_LEVEL = 'info'
+LOG_LEVEL = 'debug'
 RUST_BACKTRACE = 'full'
 TROUBLE_TICKET_SHEET = '1P36QUdnEyIGlX_pMP-3FjWTFXOILKAYNYNAkl6N4nK4'
 
