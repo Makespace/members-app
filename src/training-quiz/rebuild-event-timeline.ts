@@ -112,19 +112,29 @@ const assertNoPreviousBackup = async (eventDB: Client): Promise<void> => {
 
 // First statement of the batch: succeeds as a no-op while the log still looks
 // exactly like the snapshot we planned from, and deliberately violates the
-// event_index NOT NULL constraint (failing the WHOLE batch atomically) if any
-// event was appended or any deletion recorded in between. Appends always
-// increase max(event_index) and deletions only ever add deleted_events rows, so
-// these two checks cover every concurrent write the store supports.
+// event_index NOT NULL constraint (failing the WHOLE batch atomically) if the
+// log changed in between. Appends increase max(event_index); a deletion added or
+// removed changes the count. Re-deleting an already-deleted event, though, uses
+// INSERT OR REPLACE (see set-event-deleted-state.ts) and leaves the count
+// unchanged while overwriting the timestamp/reason/actor - so we also guard the
+// sums of deleted_at_unix_ms and mark_deleted_by_member_number. Every re-delete
+// writes a fresh Date.now(), so any change to a deletion row moves one of these.
 const driftGuard = (
   expectedMaxIndex: number,
-  expectedDeletedCount: number
+  expected: {count: number; deletedAtSum: number; memberSum: number}
 ): InStatement => ({
   sql: `INSERT INTO events (id, event_index, event_type, payload)
         SELECT 'drift-guard', NULL, 'drift-guard', 'drift-guard'
         WHERE (SELECT coalesce(max(event_index), 0) FROM events) <> ?
-           OR (SELECT count(*) FROM deleted_events) <> ?`,
-  args: [expectedMaxIndex, expectedDeletedCount],
+           OR (SELECT count(*) FROM deleted_events) <> ?
+           OR (SELECT coalesce(sum(deleted_at_unix_ms), 0) FROM deleted_events) <> ?
+           OR (SELECT coalesce(sum(mark_deleted_by_member_number), 0) FROM deleted_events) <> ?`,
+  args: [
+    expectedMaxIndex,
+    expected.count,
+    expected.deletedAtSum,
+    expected.memberSum,
+  ],
 });
 
 const isDriftError = (error: unknown): boolean =>
@@ -161,11 +171,25 @@ export const rebuildEventTimeline =
     const {rows, remap} = planTimelineRebuild(existing, inserts);
     const oldToNewIndex = new Map(remap.map(r => [r.oldIndex, r.newIndex]));
 
+    // Content fingerprint of deleted_events as we read it, so the guard aborts if
+    // any deletion is added, removed, or overwritten in between (see driftGuard).
+    const expectedDeletions = {
+      count: deletedRows.length,
+      deletedAtSum: deletedRows.reduce(
+        (sum, row) => sum + Number(row.deleted_at_unix_ms),
+        0
+      ),
+      memberSum: deletedRows.reduce(
+        (sum, row) => sum + Number(row.mark_deleted_by_member_number),
+        0
+      ),
+    };
+
     const statements: InStatement[] = [
       // 0. Abort the whole batch if the log changed since we read it.
       driftGuard(
         existing.length > 0 ? existing[existing.length - 1].oldIndex : 0,
-        deletedRows.length
+        expectedDeletions
       ),
       // 1. Back up both tables so the rewrite is recoverable. Deliberately no
       //    DROP IF EXISTS: colliding with a previous run's backup fails the
