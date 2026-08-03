@@ -4,7 +4,7 @@ import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
-import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
+import {isAdminSuperUserOrSystem} from '../authentication-helpers/is-admin-super-user-or-system';
 
 // rowHash is the global dedup sentinel (and the read-model primary key), so it
 // must never be empty; scores must be real integers (t.number would let NaN
@@ -34,5 +34,5 @@ const process: Command<RecordTrainingQuizCompletion>['process'] = input =>
 export const record: Command<RecordTrainingQuizCompletion> = {
   process,
   decode: codec.decode,
-  isAuthorized: isAdminOrSuperUser,
+  isAuthorized: isAdminSuperUserOrSystem,
 };

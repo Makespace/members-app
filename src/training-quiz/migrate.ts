@@ -8,7 +8,10 @@ import {applyCommand} from '../commands/apply-command';
 import {commands} from '../commands';
 import {getTrainingQuizCandidates} from '../read-models/external-state/training-quiz-candidates';
 
-const MIGRATION_ACTOR: Actor = {tag: 'token', token: 'admin'};
+// This driver is the going-forward sync-worker poller's mechanism, so its
+// events are system-generated - not an administrator acting via the API.
+// Attributing them to the system actor keeps the audit history honest.
+const SYSTEM_ACTOR: Actor = {tag: 'system'};
 
 type QuizMigrationSummary = {
   total: number;
@@ -61,7 +64,7 @@ export const runQuizMigration =
           maxScore: candidate.maxScore as Int,
           rowHash: candidate.rowHash as NonEmptyString,
         },
-        MIGRATION_ACTOR
+        SYSTEM_ACTOR
       )();
       if (E.isLeft(result)) {
         deps.logger.error(
