@@ -52,6 +52,12 @@ const EquipmentAdded = defineEvent('EquipmentAdded', {
   areaId: tt.UUID,
 });
 
+// Soft-hide: the equipment and its training history stay in the log/read model,
+// but it is treated as obsolete (hidden from members browsing for training).
+const EquipmentMarkedObsolete = defineEvent('EquipmentMarkedObsolete', {
+  id: tt.UUID,
+});
+
 const OwnerAdded = defineEvent('OwnerAdded', {
   areaId: tt.UUID,
   memberNumber: t.number,
@@ -214,11 +220,27 @@ const TrainingStatNotificationSent = defineEvent(
   }
 );
 
+// A member's completion of an online training quiz, migrated from (or newly
+// scraped from) a Google training sheet. Stores only the raw facts from the
+// sheet row - member and equipment resolution happen downstream. `emailProvided`
+// is free-form (the sheet field is unvalidated) so may not be a valid email.
+// `rowHash` is a stable dedup key so the same row is never imported twice.
+const TrainingQuizCompleted = defineEvent('TrainingQuizCompleted', {
+  trainingSheetId: t.string,
+  completedAt: tt.DateFromISOString,
+  memberNumberProvided: t.union([t.number, t.null]),
+  emailProvided: t.union([t.string, t.null]),
+  score: t.number,
+  maxScore: t.number,
+  rowHash: t.string,
+});
+
 export const events = [
   AreaCreated,
   AreaRemoved,
   AreaEmailUpdated,
   EquipmentAdded,
+  EquipmentMarkedObsolete,
   OwnerAdded,
   OwnerRemoved,
   SuperUserDeclared,
@@ -245,6 +267,7 @@ export const events = [
   MemberRejoinedWithNewNumber,
   MemberRejoinedWithExistingNumber,
   TrainingStatNotificationSent,
+  TrainingQuizCompleted,
 ];
 
 export const DomainEvent = t.union([
@@ -252,6 +275,7 @@ export const DomainEvent = t.union([
   AreaRemoved.codec,
   AreaEmailUpdated.codec,
   EquipmentAdded.codec,
+  EquipmentMarkedObsolete.codec,
   OwnerAdded.codec,
   OwnerRemoved.codec,
   SuperUserDeclared.codec,
@@ -278,6 +302,7 @@ export const DomainEvent = t.union([
   MemberRejoinedWithNewNumber.codec,
   MemberRejoinedWithExistingNumber.codec,
   TrainingStatNotificationSent.codec,
+  TrainingQuizCompleted.codec,
 ]);
 
 export const StoredDomainEvent = t.intersection([

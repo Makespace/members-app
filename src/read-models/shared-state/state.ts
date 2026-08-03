@@ -100,6 +100,7 @@ export const equipmentTable = defineTable(
       name TEXT,
       areaId TEXT,
       trainingSheetId TEXT,
+      removedAt INTEGER,
       FOREIGN KEY(areaId) REFERENCES areas(id) ON DELETE CASCADE
     );
   `,
@@ -111,6 +112,9 @@ export const equipmentTable = defineTable(
       .notNull()
       .references(() => areasTable.id, { onDelete: 'cascade' }),
     trainingSheetId: text('trainingSheetId'),
+    // When set, the equipment is obsolete: hidden from members browsing for
+    // training, but kept (with its history) for owners/admins.
+    removedAt: integer('removedAt', {mode: 'timestamp_ms'}),
   }
 );
 
@@ -238,6 +242,41 @@ export const trainingStatsNotificationTable = defineTable(
       .references(() => membersTable.userId, { onDelete: 'cascade' }),
     lastEmailSent: integer('lastEmailSent', {mode: 'timestamp'}),
   }
+);
+
+export const trainingQuizCompletionsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS trainingQuizCompletions (
+      rowHash TEXT PRIMARY KEY,
+      trainingSheetId TEXT NOT NULL,
+      completedAt INTEGER NOT NULL,
+      memberNumberProvided INTEGER,
+      emailProvided TEXT,
+      score INTEGER NOT NULL,
+      maxScore INTEGER NOT NULL
+    )
+  `,
+  'trainingQuizCompletions' as const,
+  {
+    rowHash: text('rowHash').primaryKey(),
+    trainingSheetId: text('trainingSheetId').notNull(),
+    completedAt: integer('completedAt', {mode: 'timestamp'}).notNull(),
+    memberNumberProvided: integer('memberNumberProvided'),
+    emailProvided: text('emailProvided'),
+    score: integer('score').notNull(),
+    maxScore: integer('maxScore').notNull(),
+  }
+);
+
+// Lookups query completions by equipment (via trainingSheetId) and by member
+// number; without these the read model would scan the whole table each time.
+// Added as raw statements because the read model creates tables from createTables
+// (the drizzle index metadata above is not what builds the schema here).
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS trainingQuizCompletions_trainingSheetId_idx ON trainingQuizCompletions (trainingSheetId);`
+);
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS trainingQuizCompletions_memberNumberProvided_idx ON trainingQuizCompletions (memberNumberProvided);`
 );
 
 export const eventStateTable = defineTable(

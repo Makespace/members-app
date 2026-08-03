@@ -46,5 +46,8 @@ export type ViewModel =
   | {
       _tag: 'selected';
       equipmentName: string;
+      // Candidates for this machine that have NOT yet been imported as events.
       candidates: ReadonlyArray<CandidateRow>;
+      // How many of this machine's candidates were dropped as already imported.
+      importedCount: number;
     };

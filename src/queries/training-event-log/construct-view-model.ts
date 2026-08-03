@@ -123,10 +123,16 @@ export const constructViewModel =
         })
       : [];
 
+    // Drop rows already imported as events (dedup by hash).
+    const imported = sharedReadModel.trainingQuiz.importedRowHashes();
+    const pending = candidates.filter(
+      candidate => !imported.has(candidate.rowHash)
+    );
     return E.right({
       _tag: 'selected',
       equipmentName: equipment.value.name,
-      candidates: candidates.map(candidate => ({
+      importedCount: candidates.length - pending.length,
+      candidates: pending.map(candidate => ({
         equipmentId: candidate.equipmentId,
         equipmentName: equipment.value.name,
         completedAt: candidate.completedAt,

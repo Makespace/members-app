@@ -26,6 +26,8 @@ export type MinimalEquipment = {
   name: string;
   areaId: UUID;
   trainingSheetId: O.Option<string>;
+  // Set when the equipment has been marked obsolete (soft-hidden).
+  removedAt: O.Option<Date>;
 };
 
 export type Equipment = {

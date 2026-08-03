@@ -86,7 +86,12 @@ const expandArea =
     const equipmentIds = area.equipment.map(equipment => equipment.id);
     return {
       ...area,
-      equipment: area.equipment.map(expandEquipment(now)),
+      // Hide obsolete equipment from members browsing for training. equipmentIds
+      // above still spans all equipment, so owners' training-delivered counts
+      // keep including trainings on now-retired machines.
+      equipment: area.equipment
+        .filter(equipment => O.isNone(equipment.removedAt))
+        .map(expandEquipment(now)),
       owners: await Promise.all(
         area.owners.map(expandOwner(sharedReadModel, extDB, now, equipmentIds))
       ),

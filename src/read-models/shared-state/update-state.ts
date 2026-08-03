@@ -10,6 +10,7 @@ import {
   ownersTable,
   trainedMemberstable,
   trainersTable,
+  trainingQuizCompletionsTable,
   trainingStatsNotificationTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
@@ -221,6 +222,21 @@ const _updateState =
         tx.insert(equipmentTable)
           .values({id: event.id, name: event.name, areaId: event.areaId})
           .run();
+        break;
+      }
+      case 'EquipmentMarkedObsolete': {
+        // Soft-hide only: flag the row, keep its trainers/trained-members so no
+        // training history is lost.
+        const rows = tx
+          .update(equipmentTable)
+          .set({removedAt: event.recordedAt})
+          .where(eq(equipmentTable.id, event.id))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(
+            `Unable to mark equipment obsolete for ${event.id} - unknown equipment`
+          );
+        }
         break;
       }
       case 'TrainerAdded': {
@@ -521,6 +537,23 @@ const _updateState =
       }
       case 'LinkingMemberNumberToAnAlreadyUsedEmailAttempted': {
         throw new InconsistentEventError(`Tried to link member number '${event.memberNumber}' to email '${event.email}' but it was already in use`);
+      }
+      case 'TrainingQuizCompleted': {
+        // Idempotent: the rowHash primary key means re-importing the same row
+        // (or replaying the event) is a no-op.
+        tx.insert(trainingQuizCompletionsTable)
+          .values({
+            rowHash: event.rowHash,
+            trainingSheetId: event.trainingSheetId,
+            completedAt: event.completedAt,
+            memberNumberProvided: event.memberNumberProvided,
+            emailProvided: event.emailProvided,
+            score: event.score,
+            maxScore: event.maxScore,
+          })
+          .onConflictDoNothing()
+          .run();
+        break;
       }
       default: {
         break;

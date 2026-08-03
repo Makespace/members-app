@@ -108,7 +108,8 @@ const renderPicker = (areas: ReadonlyArray<AreaGroup>) => html`
 
 const renderSelected = (
   equipmentName: string,
-  candidates: ReadonlyArray<CandidateRow>
+  candidates: ReadonlyArray<CandidateRow>,
+  importedCount: number
 ) => html`
   <div class="stack-large">
     <p><a href="/training-event-log">← All machines</a></p>
@@ -116,7 +117,9 @@ const renderSelected = (
     <p>
       These are the ${candidates.length} training-quiz events that
       <strong>would</strong> be created from this machine's cached quiz data if
-      the one-time migration were run.
+      the one-time migration were run.${importedCount > 0
+        ? html` ${importedCount} already-imported rows are hidden.`
+        : ''}
     </p>
     ${candidates.length === 0
       ? html`<p>No cached quiz rows found for this machine.</p>`
@@ -143,4 +146,8 @@ const renderSelected = (
 export const render = (viewModel: ViewModel) =>
   viewModel._tag === 'picker'
     ? renderPicker(viewModel.areas)
-    : renderSelected(viewModel.equipmentName, viewModel.candidates);
+    : renderSelected(
+        viewModel.equipmentName,
+        viewModel.candidates,
+        viewModel.importedCount
+      );
