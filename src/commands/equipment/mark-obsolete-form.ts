@@ -6,6 +6,7 @@ import {html, safe, sanitizeString, toLoggedInContent} from '../../types/html';
 import {Form} from '../../types/form';
 import {getEquipmentName} from './get-equipment-name';
 import {getEquipmentIdFromForm} from './get-equipment-id-from-form';
+import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-user';
 
 type ViewModel = {
   equipmentId: UUID;
@@ -45,5 +46,5 @@ const constructForm: Form<ViewModel>['constructForm'] =
 export const markEquipmentObsoleteForm: Form<ViewModel> = {
   renderForm,
   constructForm,
-  formIsAuthorized: null,
+  formIsAuthorized: isAdminOrSuperUser,
 };
