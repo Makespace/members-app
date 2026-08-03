@@ -154,9 +154,7 @@ const retireEquipment = (viewModel: ViewModel) =>
             >[Admin] Retire equipment</a
           >
           ${tooltip(
-            safe(
-              'Hide this equipment from members looking for training. Training records are kept.'
-            )
+            html`Hide this equipment from members looking for training. Training records are kept.`
           )}
         </li>`
     ),
