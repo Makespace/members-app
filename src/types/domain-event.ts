@@ -52,6 +52,12 @@ const EquipmentAdded = defineEvent('EquipmentAdded', {
   areaId: tt.UUID,
 });
 
+// Soft-hide: the equipment and its training history stay in the log/read model,
+// but it is treated as obsolete (hidden from members browsing for training).
+const EquipmentMarkedObsolete = defineEvent('EquipmentMarkedObsolete', {
+  id: tt.UUID,
+});
+
 const OwnerAdded = defineEvent('OwnerAdded', {
   areaId: tt.UUID,
   memberNumber: t.number,
@@ -219,6 +225,7 @@ export const events = [
   AreaRemoved,
   AreaEmailUpdated,
   EquipmentAdded,
+  EquipmentMarkedObsolete,
   OwnerAdded,
   OwnerRemoved,
   SuperUserDeclared,
@@ -252,6 +259,7 @@ export const DomainEvent = t.union([
   AreaRemoved.codec,
   AreaEmailUpdated.codec,
   EquipmentAdded.codec,
+  EquipmentMarkedObsolete.codec,
   OwnerAdded.codec,
   OwnerRemoved.codec,
   SuperUserDeclared.codec,

@@ -139,11 +139,36 @@ const removeTrainingSheet = (viewModel: ViewModel) =>
     O.getOrElse(() => html``)
   );
 
+const retireEquipment = (viewModel: ViewModel) =>
+  pipe(
+    viewModel,
+    O.of,
+    O.filter(viewModel => viewModel.isSuperUser),
+    // Already-retired equipment has nothing to retire.
+    O.filter(viewModel => O.isNone(viewModel.equipment.removedAt)),
+    O.map(viewModel => viewModel.equipment.id),
+    O.map(
+      id =>
+        html` <li>
+          <a href="/equipment/mark-obsolete?equipmentId=${id}"
+            >[Admin] Retire equipment</a
+          >
+          ${tooltip(
+            safe(
+              'Hide this equipment from members looking for training. Training records are kept.'
+            )
+          )}
+        </li>`
+    ),
+    O.getOrElse(() => html``)
+  );
+
 const equipmentActions = (viewModel: ViewModel) => html`
   <ul>
     ${trainMember(viewModel)} ${adminMarkTrainedBy(viewModel)}
     ${addTrainer(viewModel)} ${registerSheet(viewModel)}
     ${currentSheet(viewModel)} ${removeTrainingSheet(viewModel)}
+    ${retireEquipment(viewModel)}
   </ul>
 `;
 

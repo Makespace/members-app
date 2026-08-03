@@ -16,6 +16,7 @@ const transformRow = <
     id: string;
     areaId: string;
     trainingSheetId: string | undefined | null;
+    removedAt: Date | undefined | null;
   },
 >(
   row: R
@@ -24,6 +25,7 @@ const transformRow = <
   id: row.id as UUID,
   areaId: row.areaId as UUID,
   trainingSheetId: O.fromNullable(row.trainingSheetId),
+  removedAt: O.fromNullable(row.removedAt),
 });
 
 export const getEquipmentForAreaMinimal =

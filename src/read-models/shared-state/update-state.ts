@@ -223,6 +223,21 @@ const _updateState =
           .run();
         break;
       }
+      case 'EquipmentMarkedObsolete': {
+        // Soft-hide only: flag the row, keep its trainers/trained-members so no
+        // training history is lost.
+        const rows = tx
+          .update(equipmentTable)
+          .set({removedAt: event.recordedAt})
+          .where(eq(equipmentTable.id, event.id))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(
+            `Unable to mark equipment obsolete for ${event.id} - unknown equipment`
+          );
+        }
+        break;
+      }
       case 'TrainerAdded': {
         const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
         if (O.isNone(userId)) {
