@@ -108,7 +108,7 @@ export const initSharedReadModel = (
     db: readModelDb,
     readOnlyDb: readOnlyReadModelDb,
     _underlyingReadModelDb,
-    asyncRefresh: asyncRefresh(eventStoreClient, getCurrentEventIndex_, updateState_),
+    asyncRefresh: asyncRefresh(eventStoreClient, getCurrentEventIndex_, updateState_, logger),
     updateState: updateState_,
     reset: reset(eventStoreClient, readModelDb, logger),
     getCurrentEventIndex: getCurrentEventIndex_,

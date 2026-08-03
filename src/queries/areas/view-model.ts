@@ -1,4 +1,4 @@
-import {Area, Owner} from '../../read-models/shared-state/return-types';
+import {Area, Equipment, Owner} from '../../read-models/shared-state/return-types';
 import {RecurlyReason} from '../../read-models/external-state/recurly-status';
 import {QuarterCount} from '../../read-models/shared-state/member/training-delivered';
 
@@ -13,8 +13,13 @@ export type OwnerViewModel = Owner & {
   trainingsByQuarter: ReadonlyArray<QuarterCount>;
 };
 
-export type AreaViewModel = Omit<Area, 'owners'> & {
+export type EquipmentViewModel = Equipment & {
+  trainingsByQuarter: ReadonlyArray<QuarterCount>;
+};
+
+export type AreaViewModel = Omit<Area, 'owners' | 'equipment'> & {
   owners: ReadonlyArray<OwnerViewModel>;
+  equipment: ReadonlyArray<EquipmentViewModel>;
 };
 
 export type ViewModel = {

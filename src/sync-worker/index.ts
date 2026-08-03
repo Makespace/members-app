@@ -7,7 +7,7 @@ import {SyncWorkerDependencies} from './dependencies';
 import {trainingSummaryEmail} from './training-summary/training_summary_email';
 import { Duration } from 'luxon';
 
-const HEARTBEAT_INTERVAL_MS = 5 * 1000;
+const HEARTBEAT_INTERVAL_MS = 20 * 1000;
 const EQUIPMENT_SYNC_CHECK_INTERVAL_MS = 60 * 1000;
 const TRAINING_SUMMARY_EMAIL_CHECK_INTERVAL_MS = 20 * 60 * 1000;
 const EQUIPMENT_SYNC_INTERVAL_MS = 20 * 60 * 1000;

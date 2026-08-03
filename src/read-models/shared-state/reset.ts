@@ -22,7 +22,8 @@ export const reset = (
     await asyncRefresh(
         eventDB,
         getCurrentEventIndex(readModelDB),
-        updateState(readModelDB, logger, true)
+        updateState(readModelDB, logger, true),
+        logger
     )()();
     logger.info('Finished resetting shared state');
 };
