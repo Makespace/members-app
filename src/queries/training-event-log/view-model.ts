@@ -26,9 +26,28 @@ export type CandidateRow = {
   raw: string;
 };
 
-export type ViewModel = {
-  // Candidates that have NOT yet been imported as events.
-  candidates: ReadonlyArray<CandidateRow>;
-  // How many candidates were dropped because they're already imported.
-  importedCount: number;
+// One selectable machine in the picker.
+type EquipmentChoice = {
+  id: UUID;
+  name: string;
 };
+
+// Machines that have a training sheet, grouped by area.
+export type AreaGroup = {
+  areaName: string;
+  equipment: ReadonlyArray<EquipmentChoice>;
+};
+
+// The page has two modes so it never loads every machine's rows at once:
+//  - 'picker': no machine selected -> just links, no candidate computation.
+//  - 'selected': one machine chosen -> candidates for that machine's sheet only.
+export type ViewModel =
+  | {_tag: 'picker'; areas: ReadonlyArray<AreaGroup>}
+  | {
+      _tag: 'selected';
+      equipmentName: string;
+      // Candidates for this machine that have NOT yet been imported as events.
+      candidates: ReadonlyArray<CandidateRow>;
+      // How many of this machine's candidates were dropped as already imported.
+      importedCount: number;
+    };
