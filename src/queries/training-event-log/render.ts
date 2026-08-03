@@ -80,7 +80,9 @@ export const render = (viewModel: ViewModel) => html`
     <p>
       These are the ${viewModel.candidates.length} training-quiz
       events that <strong>would</strong> be created from the cached quiz data if
-      the one-time migration were run.
+      the one-time migration were run.${viewModel.importedCount > 0
+        ? html` ${viewModel.importedCount} already-imported rows are hidden.`
+        : ''}
     </p>
     ${viewModel.candidates.length === 0
       ? html`<p>No cached quiz rows found.</p>`
