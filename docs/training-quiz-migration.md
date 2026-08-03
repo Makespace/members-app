@@ -95,11 +95,14 @@ Care is still warranted:
     ```
     Expect `{"rewrote":true,"inserted":<N>,"totalBefore":<M>,"totalAfter":<M+N>}`.
 
-    **If the curl times out**, don't panic and don't immediately re-run: the
-    rewrite is likely still completing server-side (Fly's proxy gives up before
-    a slow transaction does). The summary is also written to the app logs
-    regardless of whether the HTTP response made it out. Wait a minute, then
-    verify as below — the idempotent re-run doubles as the completion check.
+    **Expect this to take roughly 40–60 minutes** (based on the row volume seen
+    in #274; prod uses remote Turso and the rewrite re-inserts every event). So
+    **the curl will almost certainly time out** long before it finishes — that's
+    Fly's proxy giving up, not the rewrite failing. Don't panic and don't re-run:
+    it's still completing server-side, and the summary is written to the app logs
+    regardless of whether the HTTP response made it out. Wait for it to finish
+    (watch the logs), then verify as below — the idempotent re-run doubles as the
+    completion check.
 
 ### D. Verify
 11. **Re-run the same call** → expect `{"rewrote":false,"inserted":0}` (idempotent;
