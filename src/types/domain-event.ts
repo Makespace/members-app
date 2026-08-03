@@ -214,6 +214,21 @@ const TrainingStatNotificationSent = defineEvent(
   }
 );
 
+// A member's completion of an online training quiz, migrated from (or newly
+// scraped from) a Google training sheet. Stores only the raw facts from the
+// sheet row - member and equipment resolution happen downstream. `emailProvided`
+// is free-form (the sheet field is unvalidated) so may not be a valid email.
+// `rowHash` is a stable dedup key so the same row is never imported twice.
+const TrainingQuizCompleted = defineEvent('TrainingQuizCompleted', {
+  trainingSheetId: t.string,
+  completedAt: tt.DateFromISOString,
+  memberNumberProvided: t.union([t.number, t.null]),
+  emailProvided: t.union([t.string, t.null]),
+  score: t.number,
+  maxScore: t.number,
+  rowHash: t.string,
+});
+
 export const events = [
   AreaCreated,
   AreaRemoved,
@@ -245,6 +260,7 @@ export const events = [
   MemberRejoinedWithNewNumber,
   MemberRejoinedWithExistingNumber,
   TrainingStatNotificationSent,
+  TrainingQuizCompleted,
 ];
 
 export const DomainEvent = t.union([
@@ -278,6 +294,7 @@ export const DomainEvent = t.union([
   MemberRejoinedWithNewNumber.codec,
   MemberRejoinedWithExistingNumber.codec,
   TrainingStatNotificationSent.codec,
+  TrainingQuizCompleted.codec,
 ]);
 
 export const StoredDomainEvent = t.intersection([

@@ -214,6 +214,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         delete: frameworkify(commands.eventLog.delete),
         undelete: frameworkify(commands.eventLog.undelete),
       },
+      trainingQuiz: {
+        record: frameworkify(commands.trainingQuiz.record),
+      },
     },
     trainingSummaryDeps: {
       logger,
