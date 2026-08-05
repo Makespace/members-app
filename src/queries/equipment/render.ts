@@ -18,7 +18,7 @@ import {UUID} from 'io-ts-types';
 import {renderMembersAsList} from '../../templates/member-link-list';
 import {currentTrainingSheetButton} from '../shared-render/current-training-sheet-button';
 import {
-  EquipmentQuizResults,
+  QuizRow,
   MemberAwaitingTraining,
   OrphanedPassedQuiz,
 } from '../../read-models/external-state/equipment-quiz';
@@ -320,17 +320,17 @@ const unknownMemberWaitingForTrainingTable = (viewModel: ViewModel) =>
     O.getOrElse(() => html`<p>No training quiz data available</p>`)
   );
 
-const failedQuizRow = (row: EquipmentQuizResults['failedQuizes'][0]) => html`
+const failedQuizRow = (row: QuizRow) => html`
   <tr class="failed_training_quiz_row">
-    <td>${displayDate(DateTime.fromJSDate(row.response_submitted))}</td>
+    <td>${displayDate(DateTime.fromJSDate(row.completedAt))}</td>
     <td>
       ${pipe(
-        O.fromNullable(row.member_number_provided),
+        row.memberNumberProvided,
         O.map(renderMemberNumber),
         O.getOrElse(() => html`-`)
       )}
     </td>
-    <td>${row.score} / ${row.max_score} (${row.percentage}%)</td>
+    <td>${row.score} / ${row.maxScore} (${row.percentage}%)</td>
   </tr>
 `;
 
