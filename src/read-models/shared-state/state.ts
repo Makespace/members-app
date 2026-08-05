@@ -100,6 +100,7 @@ export const equipmentTable = defineTable(
       name TEXT,
       areaId TEXT,
       trainingSheetId TEXT,
+      removedAt INTEGER,
       FOREIGN KEY(areaId) REFERENCES areas(id) ON DELETE CASCADE
     );
   `,
@@ -111,6 +112,9 @@ export const equipmentTable = defineTable(
       .notNull()
       .references(() => areasTable.id, { onDelete: 'cascade' }),
     trainingSheetId: text('trainingSheetId'),
+    // When set, the equipment is obsolete: hidden from members browsing for
+    // training, but kept (with its history) for owners/admins.
+    removedAt: integer('removedAt', {mode: 'timestamp_ms'}),
   }
 );
 
