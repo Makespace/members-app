@@ -20,6 +20,8 @@ import {
 } from './sync-worker/google/sheet-data-table';
 import { Int } from 'io-ts';
 import { ExternalStateDB } from './sync-worker/external-state-db';
+import {TimelineRow} from './training-quiz/plan-timeline-rebuild';
+import {TimelineRebuildSummary} from './training-quiz/rebuild-event-timeline';
 
 export type Dependencies = {
   commitEvent: (
@@ -49,6 +51,11 @@ export type Dependencies = {
     markDeletedByMemberNumber: Int,
   ) => TE.TaskEither<FailureWithStatus, void>;
   unDeleteEvent: (eventIndex: Int) => TE.TaskEither<FailureWithStatus, void>;
+  // One-time only: weave historical events into the log in chronological order,
+  // renumbering event_index and re-pointing deleted_events accordingly.
+  rebuildEventTimeline: (
+    inserts: ReadonlyArray<TimelineRow>
+  ) => Promise<TimelineRebuildSummary>;
   sharedReadModel: SharedReadModel;
   extDB: ExternalStateDB;
   logger: Logger;
