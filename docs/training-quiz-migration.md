@@ -33,22 +33,28 @@ merges, and each merge auto-deploys to Fly.
 
 The backfill **rewrites the whole `events` table in one atomic, drift-guarded
 batch**: it reads the log, plans the new order, then executes a single batch
-that backs up `events`/`deleted_events` to `*_backup` tables and re-inserts
-every event (every column, payloads verbatim) in chronological order with fresh
-`event_index` values, re-pointing the `deleted_events` foreign key — then
-rebuilds the read model. The batch's first statement is a **drift guard**: if
-any event was appended or any deletion recorded between the read and the batch
-executing, the guard fails and the whole batch rolls back with nothing changed.
-A concurrent write can never be silently dropped — the worst case is a clean
-"aborted, re-run" error.
+that re-inserts every event (every column, payloads verbatim) in chronological
+order with fresh `event_index` values, re-pointing the `deleted_events` foreign
+key — then rebuilds the read model. The batch's first statement is a **drift
+guard**: if any event was appended or any deletion recorded between the read and
+the batch executing, the guard fails and the whole batch rolls back with nothing
+changed. A concurrent write can never be silently dropped — the worst case is a
+clean "aborted, re-run" error.
+
+There is **no in-database backup**: the whole rewrite is a single atomic
+transaction (nothing is dropped unless it all commits), so a `*_backup` table
+written in that same transaction would protect nothing the transaction's own
+rollback doesn't already cover. For a committed-but-wrong run the recovery path
+is **Turso's point-in-time restore** (see step 13). Because there's no backup
+guard to clear, the backfill can be **re-run freely** — including one piece of
+equipment at a time via `?equipmentId=` (see step 9).
 
 It is idempotent (nothing new to insert ⇒ it does not touch the log) and
 **refuses to run** if:
 
 - any existing event has an unparseable `recordedAt`;
 - the existing log is not already in chronological (`recordedAt`) order —
-  renumbering must never reorder existing events;
-- `*_backup` tables from a previous rewrite exist (see step 14 below).
+  renumbering must never reorder existing events.
 
 Care is still warranted:
 
@@ -76,11 +82,10 @@ Care is still warranted:
    partial import). If the count on the dry-run page equals the full quiz-row
    count, you're clean.
    The backfill enforces these same preconditions itself (parseable `recordedAt`,
-   chronological order, no leftover `*_backup` tables) and **refuses to run,
-   changing nothing**, if any are violated — so there's no separate pre-check to
-   run.
-7. **Take a Turso snapshot/backup** (belt-and-suspenders on top of the automatic
-   `*_backup` tables).
+   chronological order) and **refuses to run, changing nothing**, if either is
+   violated — so there's no separate pre-check to run.
+7. **Take a Turso snapshot/backup** — this is the recovery path if a run commits
+   something wrong (there is no in-database `*_backup`; see step 13).
 8. Pick a **quiet window** — minimal write traffic.
 
 ### C. Run it (one call)
@@ -89,6 +94,18 @@ Care is still warranted:
          -H "Authorization: Bearer <ADMIN_API_BEARER_TOKEN>"
     ```
     Expect `{"rewrote":true,"inserted":<N>,"totalBefore":<M>,"totalAfter":<M+N>}`.
+
+    **Optional — canary one machine first.** Append `?equipmentId=<uuid>` to
+    weave in just that equipment's sheet rows:
+    ```
+    curl -X POST "https://app.makespace.org/api/training-quiz/backfill-timeline?equipmentId=<uuid>" \
+         -H "Authorization: Bearer <ADMIN_API_BEARER_TOKEN>"
+    ```
+    The rewrite still renumbers the whole log (renumbering is cheap), but only
+    that machine's rows are inserted — so you can verify one piece of equipment
+    on prod before running the rest. Each run is independently idempotent and
+    there is no backup guard to clear between runs, so you can chain scoped runs
+    or finish with the unscoped call above to sweep up everything else.
 
     **Expect this to take roughly 40–60 minutes** (based on the row volume seen
     in #274; prod uses remote Turso and the rewrite re-inserts every event). So
@@ -106,17 +123,10 @@ Care is still warranted:
 12. Spot-check health — a member page and a training page load; login works.
 
 ### E. Rollback (only if something looks wrong)
-13. Restore `events` + `deleted_events` from the `*_backup` tables (or the Turso
-    snapshot) and restart the app.
-
-### F. After you're satisfied
-14. **Leave the `*_backup` tables in place** until you're confident the rewrite
-    is good (they're the fast rollback path). The backfill **refuses to run
-    again while they exist** — that's deliberate: a second rewrite would replace
-    the backup of the *original* log with a backup of the already-rewritten one.
-    If you ever do need another rewrite (e.g. new rows synced before the poller
-    lands), verify the previous run first, then
-    `DROP TABLE events_backup; DROP TABLE deleted_events_backup;` and re-run.
+13. **Restore from the Turso snapshot** (point-in-time restore to just before the
+    run — step 7) and restart the app. There is no in-database backup to restore
+    from; the rewrite is atomic, so a run that *aborts* changes nothing and needs
+    no rollback — this is only for a run that committed something wrong.
 
 ## What this migration does NOT do yet (set expectations)
 
@@ -125,9 +135,8 @@ Care is still warranted:
   the new events is the next PR.
 - **No going-forward auto-import yet.** New completions won't become events until
   the sync-worker poller is wired to call the append command. Until then you
-  *could* re-run `backfill-timeline` to catch up (after deliberately dropping the
-  previous run's `*_backup` tables — see step 14), but the poller is the intended
-  design.
+  *could* re-run `backfill-timeline` to catch up (it's freely re-runnable — no
+  backup guard to clear), but the poller is the intended design.
 - **Sheet rows are not deleted** after import (needs a Google write scope) —
   deferred.
 
@@ -203,7 +212,7 @@ wants the raw cache).
 
 - Unit tests for the pure ordering/renumber planner and integration tests for the
   executor (middle-insertion, tail renumbering, the `deleted_events` foreign-key
-  remap, backups, read-model rebuild, and idempotent no-op).
+  remap, read-model rebuild, idempotent no-op, and repeated/scoped re-runs).
 - End-to-end on a dev store: 422 historical rows woven into 38 real events →
   contiguous `1..460`, zero out-of-chronological-order, member accounts
   preserved, second run a clean no-op.

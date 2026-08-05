@@ -113,13 +113,14 @@ describe('rebuildEventTimeline', () => {
     ).rows;
     expect(deleted.map(r => Number(r.event_index))).toStrictEqual([3]);
 
-    // Backups captured the pre-rewrite state (recoverable).
-    const backup = (
+    // The rewrite leaves no in-database backup behind (recovery is via Turso
+    // restore); the events table is the only copy.
+    const backupTables = (
       await framework.eventStoreDb.execute(
-        'SELECT count(*) as c FROM events_backup'
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE '%_backup'"
       )
     ).rows;
-    expect(Number(backup[0].c)).toBe(2);
+    expect(backupTables).toHaveLength(0);
 
     // The read model was rebuilt and now recognises the quiz as imported.
     expect(framework.sharedReadModel.trainingQuiz.hasRowHash(rowHash)).toBe(
@@ -147,7 +148,7 @@ describe('rebuildEventTimeline', () => {
       ])
     ).rejects.toThrow(/unparseable recordedAt/);
 
-    // The log was left untouched (no rewrite, no backup).
+    // The log was left untouched (no rewrite).
     const events = (
       await framework.eventStoreDb.execute('SELECT count(*) as c FROM events')
     ).rows;
@@ -177,7 +178,7 @@ describe('rebuildEventTimeline', () => {
     ).rows;
     expect(events.map(r => Number(r.event_index))).toStrictEqual([1]);
   });
-  it('refuses a second rewrite while backups from a previous run exist', async () => {
+  it('can be run repeatedly to weave in more events (no backup guard to clear)', async () => {
     advanceTo(new Date('2022-01-01T00:00:00Z'));
     await framework.commands.area.create({
       id: uuidv4() as UUID,
@@ -185,7 +186,7 @@ describe('rebuildEventTimeline', () => {
     });
     clear();
 
-    // First rewrite succeeds and leaves the *_backup tables behind.
+    // First run weaves in one historical quiz.
     const first = await framework.depsForCommands.rebuildEventTimeline([
       quizTimelineRow(
         new Date('2021-06-01T00:00:00Z'),
@@ -193,22 +194,36 @@ describe('rebuildEventTimeline', () => {
       ),
     ]);
     expect(first.rewrote).toBe(true);
+    expect(first.totalAfter).toBe(2);
 
-    // A second rewrite must not silently destroy the first run's backup.
-    await expect(
-      framework.depsForCommands.rebuildEventTimeline([
-        quizTimelineRow(
-          new Date('2021-07-01T00:00:00Z'),
-          faker.string.alphanumeric(64)
-        ),
-      ])
-    ).rejects.toThrow(/backup tables from a previous rewrite/);
+    // A second run (e.g. a different equipment's canary, or a catch-up) weaves
+    // in another - it is NOT blocked by any leftover backup from the first run.
+    const second = await framework.depsForCommands.rebuildEventTimeline([
+      quizTimelineRow(
+        new Date('2021-07-01T00:00:00Z'),
+        faker.string.alphanumeric(64)
+      ),
+    ]);
+    expect(second).toStrictEqual({
+      rewrote: true,
+      inserted: 1,
+      totalBefore: 2,
+      totalAfter: 3,
+    });
 
-    // The failed attempt rolled back: log still as the first rewrite left it.
-    const events = (
-      await framework.eventStoreDb.execute('SELECT count(*) as c FROM events')
+    // Both quizzes plus the area are now in chronological order.
+    const after = (
+      await framework.eventStoreDb.execute(
+        'SELECT event_index, event_type FROM events ORDER BY event_index ASC'
+      )
     ).rows;
-    expect(Number(events[0].c)).toBe(2);
+    expect(
+      after.map(r => [Number(r.event_index), r.event_type as string])
+    ).toStrictEqual([
+      [1, 'TrainingQuizCompleted'],
+      [2, 'TrainingQuizCompleted'],
+      [3, 'AreaCreated'],
+    ]);
   });
 
   it('refuses to rewrite when the existing log is not in chronological order', async () => {
@@ -239,13 +254,11 @@ describe('rebuildEventTimeline', () => {
       ])
     ).rejects.toThrow(/chronological order/);
 
-    // Untouched: no rewrite, no backups.
-    const backups = (
-      await framework.eventStoreDb.execute(
-        "SELECT name FROM sqlite_master WHERE name = 'events_backup'"
-      )
+    // Untouched: no rewrite happened (the injected legacy row is still there).
+    const events = (
+      await framework.eventStoreDb.execute('SELECT count(*) as c FROM events')
     ).rows;
-    expect(backups).toHaveLength(0);
+    expect(Number(events[0].c)).toBe(2);
   });
 
   it('carries the legacy resource_* column values through the rewrite', async () => {

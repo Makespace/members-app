@@ -1,5 +1,6 @@
 import * as O from 'fp-ts/Option';
 import {v4 as uuidv4} from 'uuid';
+import {UUID} from 'io-ts-types';
 import {Dependencies} from '../dependencies';
 import {Actor} from '../types/actor';
 import {constructEvent} from '../types';
@@ -15,13 +16,30 @@ const BACKFILL_ACTOR: Actor = {tag: 'token', token: 'admin'};
 // row is in the log (matched by rowHash) it is skipped, so a second run inserts
 // nothing and leaves the log untouched.
 //
+// Pass an `equipmentId` to catch up just that one piece of equipment's sheet:
+// the rewrite renumbers the whole log either way (renumbering is cheap), but
+// scoping the *inserts* lets you run one machine as a canary, verify it on prod,
+// then do the rest - each run is independently idempotent and there is no
+// backup guard to clear between runs.
+//
 // Going forward, new completions are recorded by the ordinary append command
 // (they are always newer than the tail), so this timeline surgery never needs
 // to run again.
 export const backfillTrainingQuizTimeline =
-  (deps: Dependencies) => async (): Promise<TimelineRebuildSummary> => {
-    const sheetToEquipment =
+  (deps: Dependencies) =>
+  async (equipmentId?: UUID): Promise<TimelineRebuildSummary> => {
+    const fullMapping =
       deps.sharedReadModel.equipment.getTrainingSheetIdMapping();
+    // Scope the candidate sheets to a single piece of equipment when asked, so a
+    // canary run only weaves in that machine's rows.
+    const sheetToEquipment =
+      equipmentId === undefined
+        ? fullMapping
+        : Object.fromEntries(
+            Object.entries(fullMapping).filter(
+              ([, eqId]) => eqId === equipmentId
+            )
+          );
     const candidates = await getTrainingQuizCandidates(deps.extDB)(
       sheetToEquipment
     );
@@ -31,12 +49,16 @@ export const backfillTrainingQuizTimeline =
     // sheet rows (same hash) would otherwise both be woven into the log forever.
     const batchHashes = new Set<string>();
     const inserts: ReadonlyArray<TimelineRow> = candidates
-      .filter(
-        candidate =>
-          !deps.sharedReadModel.trainingQuiz.hasRowHash(candidate.rowHash) &&
-          !batchHashes.has(candidate.rowHash) &&
-          !!batchHashes.add(candidate.rowHash)
-      )
+      .filter(candidate => {
+        if (
+          deps.sharedReadModel.trainingQuiz.hasRowHash(candidate.rowHash) ||
+          batchHashes.has(candidate.rowHash)
+        ) {
+          return false;
+        }
+        batchHashes.add(candidate.rowHash);
+        return true;
+      })
       .map(candidate => {
         const event = {
           ...constructEvent('TrainingQuizCompleted')({

@@ -1,3 +1,7 @@
+import * as O from 'fp-ts/Option';
+import * as E from 'fp-ts/Either';
+import {pipe} from 'fp-ts/function';
+import {UUID} from 'io-ts-types';
 import {Dependencies} from './dependencies';
 import {Config} from './configuration';
 import {commands, sendEmailCommands} from './commands';
@@ -82,7 +86,24 @@ export const initRoutes = (
           res.status(401).send({message: 'Bad Bearer Token'});
           return;
         }
-        const summary = await backfillTrainingQuizTimeline(deps)();
+        // Optional: scope the catch-up to a single piece of equipment (a canary
+        // run). Absent => import every mapped sheet.
+        const rawEquipmentId = req.query.equipmentId;
+        if (rawEquipmentId !== undefined && typeof rawEquipmentId !== 'string') {
+          res.status(400).send({message: 'equipmentId must be a single UUID'});
+          return;
+        }
+        const equipmentId = pipe(
+          O.fromNullable(rawEquipmentId),
+          O.map(UUID.decode)
+        );
+        if (O.isSome(equipmentId) && E.isLeft(equipmentId.value)) {
+          res.status(400).send({message: 'equipmentId is not a valid UUID'});
+          return;
+        }
+        const summary = await backfillTrainingQuizTimeline(deps)(
+          pipe(equipmentId, O.chain(O.fromEither), O.toUndefined)
+        );
         res.status(200).send(summary);
       })
     ),

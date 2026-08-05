@@ -18,15 +18,17 @@ import {
 //     event_index changes;
 //   - it refuses to run unless the existing log is already ordered by
 //     recordedAt (renumbering must never reorder existing events);
-//   - the events + deleted_events tables are backed up first (recoverable),
-//     and it refuses to overwrite backups from a previous run - a human must
-//     verify that run and drop the *_backup tables before another rewrite.
-//     (The un-guarded CREATE TABLE inside the batch enforces this atomically;
-//     the pre-check just gives a clearer error.)
 //   - deleted_events indices are re-pointed via the old->new map, so the only
 //     source-of-truth reference to an index stays correct;
 //   - the read model is then reset() and rebuilt from the new order.
 // Everything else that references an index lives in the (rebuildable) read model.
+//
+// There is deliberately no in-database backup. The whole rewrite is a single
+// atomic transaction, so nothing is dropped unless it all commits; a *_backup
+// table written inside that same transaction protects nothing the transaction's
+// own rollback doesn't already cover. For a committed-but-wrong run the reliable
+// recovery path is Turso's point-in-time restore. Keeping no backup also means
+// the backfill can be re-run freely - e.g. one piece of equipment at a time.
 
 export type TimelineRebuildSummary = {
   rewrote: boolean;
@@ -96,20 +98,6 @@ const readExistingRows = async (eventDB: Client): Promise<ExistingRow[]> => {
   return rows;
 };
 
-// A previous rewrite's backups are the only in-database way back to the log as
-// it was before that run. Never overwrite them mechanically: the operator must
-// verify the previous run and DROP the *_backup tables to allow another one.
-const assertNoPreviousBackup = async (eventDB: Client): Promise<void> => {
-  const backups = await eventDB.execute(
-    "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('events_backup', 'deleted_events_backup')"
-  );
-  if (backups.rows.length > 0) {
-    throw new Error(
-      'Refusing to rebuild timeline: backup tables from a previous rewrite exist (events_backup / deleted_events_backup). Verify that run, then drop the backup tables to allow another rewrite.'
-    );
-  }
-};
-
 // First statement of the batch: succeeds as a no-op while the log still looks
 // exactly like the snapshot we planned from, and deliberately violates the
 // event_index NOT NULL constraint (failing the WHOLE batch atomically) if the
@@ -140,9 +128,6 @@ const driftGuard = (
 const isDriftError = (error: unknown): boolean =>
   error instanceof Error && error.message.includes('events.event_index');
 
-const isBackupCollision = (error: unknown): boolean =>
-  error instanceof Error && error.message.includes('_backup');
-
 export const rebuildEventTimeline =
   (eventDB: Client, resetReadModel: () => Promise<void>) =>
   async (
@@ -159,8 +144,6 @@ export const rebuildEventTimeline =
         totalAfter: existing.length,
       };
     }
-
-    await assertNoPreviousBackup(eventDB);
 
     const deletedRows = (
       await eventDB.execute(
@@ -191,15 +174,10 @@ export const rebuildEventTimeline =
         existing.length > 0 ? existing[existing.length - 1].oldIndex : 0,
         expectedDeletions
       ),
-      // 1. Back up both tables so the rewrite is recoverable. Deliberately no
-      //    DROP IF EXISTS: colliding with a previous run's backup fails the
-      //    batch instead of destroying the only way back to the original log.
-      'CREATE TABLE events_backup AS SELECT * FROM events',
-      'CREATE TABLE deleted_events_backup AS SELECT * FROM deleted_events',
-      // 2. Clear deleted_events before events so the foreign key never dangles.
+      // 1. Clear deleted_events before events so the foreign key never dangles.
       'DELETE FROM deleted_events',
       'DELETE FROM events',
-      // 3. Re-insert every event, every column, in the new chronological order.
+      // 2. Re-insert every event, every column, in the new chronological order.
       ...rows.map(row => ({
         sql: 'INSERT INTO events (id, event_index, event_type, payload, resource_version, resource_id, resource_type) VALUES (?, ?, ?, ?, ?, ?, ?)',
         args: [
@@ -212,17 +190,26 @@ export const rebuildEventTimeline =
           row.resourceType ?? null,
         ],
       })),
-      // 4. Re-point deletions at their events' new indices.
-      ...deletedRows.map(deleted => ({
-        sql: 'INSERT INTO deleted_events (event_index, deleted_at_unix_ms, delete_reason, mark_deleted_by_member_number) VALUES (?, ?, ?, ?)',
-        args: [
-          oldToNewIndex.get(Number(deleted.event_index)) ??
-            Number(deleted.event_index),
-          deleted.deleted_at_unix_ms,
-          deleted.delete_reason,
-          deleted.mark_deleted_by_member_number,
-        ],
-      })),
+      // 3. Re-point deletions at their events' new indices. Parse the old index
+      //    up front and refuse on a non-numeric one, rather than letting a NaN
+      //    silently flow into the insert.
+      ...deletedRows.map(deleted => {
+        const oldIndex = Number(deleted.event_index);
+        if (Number.isNaN(oldIndex)) {
+          throw new Error(
+            'Refusing to rebuild timeline: a deleted_events row has a non-numeric event_index.'
+          );
+        }
+        return {
+          sql: 'INSERT INTO deleted_events (event_index, deleted_at_unix_ms, delete_reason, mark_deleted_by_member_number) VALUES (?, ?, ?, ?)',
+          args: [
+            oldToNewIndex.get(oldIndex) ?? oldIndex,
+            deleted.deleted_at_unix_ms,
+            deleted.delete_reason,
+            deleted.mark_deleted_by_member_number,
+          ],
+        };
+      }),
     ];
 
     try {
@@ -231,11 +218,6 @@ export const rebuildEventTimeline =
       if (isDriftError(error)) {
         throw new Error(
           'Timeline rebuild aborted: an event or deletion was committed while the rewrite was being planned. Nothing was changed - re-run to try again.'
-        );
-      }
-      if (isBackupCollision(error)) {
-        throw new Error(
-          'Refusing to rebuild timeline: backup tables from a previous rewrite exist (events_backup / deleted_events_backup). Verify that run, then drop the backup tables to allow another rewrite.'
         );
       }
       throw error;
