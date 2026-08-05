@@ -8,6 +8,7 @@ import {queryToHandler, commandToHandlers, ping} from './http';
 import {emailHandler} from './http/email-handler';
 import expressAsyncHandler from 'express-async-handler';
 import {backfillTrainingQuizTimeline} from './training-quiz/backfill-timeline';
+import {constantTimeEqual} from './http/constant-time-equal';
 
 export const initRoutes = (
   deps: Dependencies,
@@ -73,7 +74,10 @@ export const initRoutes = (
       '/api/training-quiz/backfill-timeline',
       expressAsyncHandler(async (req, res) => {
         if (
-          req.headers.authorization !== `Bearer ${conf.ADMIN_API_BEARER_TOKEN}`
+          !constantTimeEqual(
+            req.headers.authorization ?? '',
+            `Bearer ${conf.ADMIN_API_BEARER_TOKEN}`
+          )
         ) {
           res.status(401).send({message: 'Bad Bearer Token'});
           return;
