@@ -48,7 +48,7 @@ It is idempotent (nothing new to insert ⇒ it does not touch the log) and
 - any existing event has an unparseable `recordedAt`;
 - the existing log is not already in chronological (`recordedAt`) order —
   renumbering must never reorder existing events;
-- `*_backup` tables from a previous rewrite exist (see step 10a below).
+- `*_backup` tables from a previous rewrite exist (see step 14 below).
 
 Care is still warranted:
 
@@ -75,21 +75,16 @@ Care is still warranted:
 6. Confirm there are **no existing `TrainingQuizCompleted` events** yet (no
    partial import). If the count on the dry-run page equals the full quiz-row
    count, you're clean.
-7. Run the **read-only pre-flight check** against prod — it verifies the same
-   preconditions the backfill enforces (parseable `recordedAt`, chronological
-   order, no leftover backup tables) without touching anything:
-   ```
-   TURSO_EVENTDB_SYNC_URL=libsql://... TURSO_TOKEN=... \
-     npx tsx scripts/check-event-chronology.ts
-   ```
-   Expect `OK`. If it reports `BLOCKED`, stop and investigate before scheduling
-   the window.
-8. **Take a Turso snapshot/backup** (belt-and-suspenders on top of the automatic
+   The backfill enforces these same preconditions itself (parseable `recordedAt`,
+   chronological order, no leftover `*_backup` tables) and **refuses to run,
+   changing nothing**, if any are violated — so there's no separate pre-check to
+   run.
+7. **Take a Turso snapshot/backup** (belt-and-suspenders on top of the automatic
    `*_backup` tables).
-9. Pick a **quiet window** — minimal write traffic.
+8. Pick a **quiet window** — minimal write traffic.
 
 ### C. Run it (one call)
-10. ```
+9. ```
     curl -X POST https://app.makespace.org/api/training-quiz/backfill-timeline \
          -H "Authorization: Bearer <ADMIN_API_BEARER_TOKEN>"
     ```
@@ -105,17 +100,17 @@ Care is still warranted:
     completion check.
 
 ### D. Verify
-11. **Re-run the same call** → expect `{"rewrote":false,"inserted":0}` (idempotent;
+10. **Re-run the same call** → expect `{"rewrote":false,"inserted":0}` (idempotent;
     confirms completion).
-12. Reload **`/training-event-log`** → should show **0 pending** (all imported).
-13. Spot-check health — a member page and a training page load; login works.
+11. Reload **`/training-event-log`** → should show **0 pending** (all imported).
+12. Spot-check health — a member page and a training page load; login works.
 
 ### E. Rollback (only if something looks wrong)
-14. Restore `events` + `deleted_events` from the `*_backup` tables (or the Turso
+13. Restore `events` + `deleted_events` from the `*_backup` tables (or the Turso
     snapshot) and restart the app.
 
 ### F. After you're satisfied
-15. **Leave the `*_backup` tables in place** until you're confident the rewrite
+14. **Leave the `*_backup` tables in place** until you're confident the rewrite
     is good (they're the fast rollback path). The backfill **refuses to run
     again while they exist** — that's deliberate: a second rewrite would replace
     the backup of the *original* log with a backup of the already-rewritten one.
@@ -131,7 +126,7 @@ Care is still warranted:
 - **No going-forward auto-import yet.** New completions won't become events until
   the sync-worker poller is wired to call the append command. Until then you
   *could* re-run `backfill-timeline` to catch up (after deliberately dropping the
-  previous run's `*_backup` tables — see step 15), but the poller is the intended
+  previous run's `*_backup` tables — see step 14), but the poller is the intended
   design.
 - **Sheet rows are not deleted** after import (needs a Google write scope) —
   deferred.
