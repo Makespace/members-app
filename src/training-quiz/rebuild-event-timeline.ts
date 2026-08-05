@@ -1,0 +1,234 @@
+import {Client, InStatement} from '@libsql/client';
+import {
+  ExistingRow,
+  TimelineRow,
+  planTimelineRebuild,
+} from './plan-timeline-rebuild';
+
+// The one-time, destructive operation that weaves a batch of historical events
+// into the correct chronological position in the append-only log.
+//
+// This is the ONLY thing that ever renumbers event_index. It is safe because it
+// is a controlled, one-off catch-up rather than something on the hot path:
+//   - the whole rewrite is one atomic batch guarded by an in-batch drift check:
+//     if any event or deletion lands between our read of the log and the batch
+//     executing, the guard statement fails and the WHOLE batch rolls back with
+//     nothing changed - a concurrent write can never be silently dropped;
+//   - every column of every existing row is re-inserted verbatim - only
+//     event_index changes;
+//   - it refuses to run unless the existing log is already ordered by
+//     recordedAt (renumbering must never reorder existing events);
+//   - deleted_events indices are re-pointed via the old->new map, so the only
+//     source-of-truth reference to an index stays correct;
+//   - the read model is then reset() and rebuilt from the new order.
+// Everything else that references an index lives in the (rebuildable) read model.
+//
+// There is deliberately no in-database backup. The whole rewrite is a single
+// atomic transaction, so nothing is dropped unless it all commits; a *_backup
+// table written inside that same transaction protects nothing the transaction's
+// own rollback doesn't already cover. For a committed-but-wrong run the reliable
+// recovery path is Turso's point-in-time restore. Keeping no backup also means
+// the backfill can be re-run freely - e.g. one piece of equipment at a time.
+
+export type TimelineRebuildSummary = {
+  rewrote: boolean;
+  inserted: number;
+  totalBefore: number;
+  totalAfter: number;
+};
+
+const readExistingRows = async (eventDB: Client): Promise<ExistingRow[]> => {
+  const result = await eventDB.execute(
+    'SELECT id, event_index, event_type, payload, resource_version, resource_id, resource_type FROM events ORDER BY event_index ASC'
+  );
+  const rows = result.rows.map(row => {
+    // These are known TEXT/INTEGER columns; libsql types them as a Value union.
+    const payload = row.payload as string;
+    // Every event carries recordedAt in its payload as an ISO string; that is
+    // the timestamp the log is ordered by.
+    const recordedAt = (JSON.parse(payload) as {recordedAt: string}).recordedAt;
+    return {
+      id: row.id as string,
+      eventType: row.event_type as string,
+      payload,
+      recordedAtMs: Date.parse(recordedAt),
+      oldIndex: Number(row.event_index),
+      // Legacy columns the current append path never writes; carried through
+      // verbatim so the rewrite is lossless whatever their values.
+      resourceVersion: row.resource_version as number | null,
+      resourceId: row.resource_id as string | null,
+      resourceType: row.resource_type as string | null,
+    };
+  });
+
+  // Fail loudly rather than silently mis-order the log: an unparseable
+  // recordedAt would become NaN and corrupt the timestamp sort. This should
+  // never happen (every event is built via constructEvent) but guards against
+  // unknown legacy rows before we rewrite the source of truth.
+  const undated = rows.filter(row => Number.isNaN(row.recordedAtMs));
+  if (undated.length > 0) {
+    const sample = undated
+      .slice(0, 5)
+      .map(row => `#${row.oldIndex} (${row.eventType})`)
+      .join(', ');
+    throw new Error(
+      `Refusing to rebuild timeline: ${undated.length} event(s) have an unparseable recordedAt, e.g. ${sample}`
+    );
+  }
+
+  // The planner sorts by recordedAt, which only preserves the existing events'
+  // relative order if that order already agrees with their timestamps (ties are
+  // fine - the sort is stable by old index). If the log violates this (e.g.
+  // clock skew between deploys), a rewrite would silently REORDER existing
+  // events and change what the read model computes on replay. Refuse and let a
+  // human look, rather than papering over it.
+  const misordered = rows.filter(
+    (row, i) => i > 0 && row.recordedAtMs < rows[i - 1].recordedAtMs
+  );
+  if (misordered.length > 0) {
+    const sample = misordered
+      .slice(0, 5)
+      .map(row => `#${row.oldIndex} (${row.eventType})`)
+      .join(', ');
+    throw new Error(
+      `Refusing to rebuild timeline: ${misordered.length} event(s) have a recordedAt earlier than the event before them, e.g. ${sample}. The log must be in chronological order before it can be renumbered.`
+    );
+  }
+
+  return rows;
+};
+
+// First statement of the batch: succeeds as a no-op while the log still looks
+// exactly like the snapshot we planned from, and deliberately violates the
+// event_index NOT NULL constraint (failing the WHOLE batch atomically) if the
+// log changed in between. Appends increase max(event_index); a deletion added or
+// removed changes the count. Re-deleting an already-deleted event, though, uses
+// INSERT OR REPLACE (see set-event-deleted-state.ts) and leaves the count
+// unchanged while overwriting the timestamp/reason/actor - so we also guard the
+// sums of deleted_at_unix_ms and mark_deleted_by_member_number. Every re-delete
+// writes a fresh Date.now(), so any change to a deletion row moves one of these.
+const driftGuard = (
+  expectedMaxIndex: number,
+  expected: {count: number; deletedAtSum: number; memberSum: number}
+): InStatement => ({
+  sql: `INSERT INTO events (id, event_index, event_type, payload)
+        SELECT 'drift-guard', NULL, 'drift-guard', 'drift-guard'
+        WHERE (SELECT coalesce(max(event_index), 0) FROM events) <> ?
+           OR (SELECT count(*) FROM deleted_events) <> ?
+           OR (SELECT coalesce(sum(deleted_at_unix_ms), 0) FROM deleted_events) <> ?
+           OR (SELECT coalesce(sum(mark_deleted_by_member_number), 0) FROM deleted_events) <> ?`,
+  args: [
+    expectedMaxIndex,
+    expected.count,
+    expected.deletedAtSum,
+    expected.memberSum,
+  ],
+});
+
+const isDriftError = (error: unknown): boolean =>
+  error instanceof Error && error.message.includes('events.event_index');
+
+export const rebuildEventTimeline =
+  (eventDB: Client, resetReadModel: () => Promise<void>) =>
+  async (
+    inserts: ReadonlyArray<TimelineRow>
+  ): Promise<TimelineRebuildSummary> => {
+    const existing = await readExistingRows(eventDB);
+
+    // Nothing new to weave in => leave the source of truth completely untouched.
+    if (inserts.length === 0) {
+      return {
+        rewrote: false,
+        inserted: 0,
+        totalBefore: existing.length,
+        totalAfter: existing.length,
+      };
+    }
+
+    const deletedRows = (
+      await eventDB.execute(
+        'SELECT event_index, deleted_at_unix_ms, delete_reason, mark_deleted_by_member_number FROM deleted_events'
+      )
+    ).rows;
+
+    const {rows, remap} = planTimelineRebuild(existing, inserts);
+    const oldToNewIndex = new Map(remap.map(r => [r.oldIndex, r.newIndex]));
+
+    // Content fingerprint of deleted_events as we read it, so the guard aborts if
+    // any deletion is added, removed, or overwritten in between (see driftGuard).
+    const expectedDeletions = {
+      count: deletedRows.length,
+      deletedAtSum: deletedRows.reduce(
+        (sum, row) => sum + Number(row.deleted_at_unix_ms),
+        0
+      ),
+      memberSum: deletedRows.reduce(
+        (sum, row) => sum + Number(row.mark_deleted_by_member_number),
+        0
+      ),
+    };
+
+    const statements: InStatement[] = [
+      // 0. Abort the whole batch if the log changed since we read it.
+      driftGuard(
+        existing.length > 0 ? existing[existing.length - 1].oldIndex : 0,
+        expectedDeletions
+      ),
+      // 1. Clear deleted_events before events so the foreign key never dangles.
+      'DELETE FROM deleted_events',
+      'DELETE FROM events',
+      // 2. Re-insert every event, every column, in the new chronological order.
+      ...rows.map(row => ({
+        sql: 'INSERT INTO events (id, event_index, event_type, payload, resource_version, resource_id, resource_type) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        args: [
+          row.id,
+          row.newIndex,
+          row.eventType,
+          row.payload,
+          row.resourceVersion ?? null,
+          row.resourceId ?? null,
+          row.resourceType ?? null,
+        ],
+      })),
+      // 3. Re-point deletions at their events' new indices. Parse the old index
+      //    up front and refuse on a non-numeric one, rather than letting a NaN
+      //    silently flow into the insert.
+      ...deletedRows.map(deleted => {
+        const oldIndex = Number(deleted.event_index);
+        if (Number.isNaN(oldIndex)) {
+          throw new Error(
+            'Refusing to rebuild timeline: a deleted_events row has a non-numeric event_index.'
+          );
+        }
+        return {
+          sql: 'INSERT INTO deleted_events (event_index, deleted_at_unix_ms, delete_reason, mark_deleted_by_member_number) VALUES (?, ?, ?, ?)',
+          args: [
+            oldToNewIndex.get(oldIndex) ?? oldIndex,
+            deleted.deleted_at_unix_ms,
+            deleted.delete_reason,
+            deleted.mark_deleted_by_member_number,
+          ],
+        };
+      }),
+    ];
+
+    try {
+      await eventDB.batch(statements, 'write');
+    } catch (error) {
+      if (isDriftError(error)) {
+        throw new Error(
+          'Timeline rebuild aborted: an event or deletion was committed while the rewrite was being planned. Nothing was changed - re-run to try again.'
+        );
+      }
+      throw error;
+    }
+
+    await resetReadModel();
+
+    return {
+      rewrote: true,
+      inserted: inserts.length,
+      totalBefore: existing.length,
+      totalAfter: rows.length,
+    };
+  };

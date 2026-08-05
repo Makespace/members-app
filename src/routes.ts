@@ -1,11 +1,18 @@
+import * as O from 'fp-ts/Option';
+import * as E from 'fp-ts/Either';
+import {pipe} from 'fp-ts/function';
+import {UUID} from 'io-ts-types';
 import {Dependencies} from './dependencies';
 import {Config} from './configuration';
 import {commands, sendEmailCommands} from './commands';
 import * as queries from './queries';
-import {Route, get} from './types/route';
+import {Route, get, post} from './types/route';
 import {authRoutes} from './authentication';
 import {queryToHandler, commandToHandlers, ping} from './http';
 import {emailHandler} from './http/email-handler';
+import expressAsyncHandler from 'express-async-handler';
+import {backfillTrainingQuizTimeline} from './training-quiz/backfill-timeline';
+import {constantTimeEqual} from './http/constant-time-equal';
 
 export const initRoutes = (
   deps: Dependencies,
@@ -66,6 +73,39 @@ export const initRoutes = (
       'equipment',
       'mark-member-trained-by',
       commands.trainers.markMemberTrainedBy
+    ),
+    post(
+      '/api/training-quiz/backfill-timeline',
+      expressAsyncHandler(async (req, res) => {
+        if (
+          !constantTimeEqual(
+            req.headers.authorization ?? '',
+            `Bearer ${conf.ADMIN_API_BEARER_TOKEN}`
+          )
+        ) {
+          res.status(401).send({message: 'Bad Bearer Token'});
+          return;
+        }
+        // Optional: scope the catch-up to a single piece of equipment (a canary
+        // run). Absent => import every mapped sheet.
+        const rawEquipmentId = req.query.equipmentId;
+        if (rawEquipmentId !== undefined && typeof rawEquipmentId !== 'string') {
+          res.status(400).send({message: 'equipmentId must be a single UUID'});
+          return;
+        }
+        const equipmentId = pipe(
+          O.fromNullable(rawEquipmentId),
+          O.map(UUID.decode)
+        );
+        if (O.isSome(equipmentId) && E.isLeft(equipmentId.value)) {
+          res.status(400).send({message: 'equipmentId is not a valid UUID'});
+          return;
+        }
+        const summary = await backfillTrainingQuizTimeline(deps)(
+          pipe(equipmentId, O.chain(O.fromEither), O.toUndefined)
+        );
+        res.status(200).send(summary);
+      })
     ),
     get('/equipment', (_req, res) => res.redirect('/areas')),
     query('/equipment/:equipment', queries.equipment),

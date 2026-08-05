@@ -28,6 +28,13 @@ export const happyPathAdapters: Dependencies = {
   getAllEventsByType: <T extends EventName>(_eventType: T) => TE.right([]),
   deleteEvent: (_eventIndex, _deleteReason, _markDeletedByMemberNumber) => TE.right(undefined),
   unDeleteEvent: (_eventIndex) => TE.right(undefined),
+  rebuildEventTimeline: _inserts =>
+    Promise.resolve({
+      rewrote: false,
+      inserted: 0,
+      totalBefore: 0,
+      totalAfter: 0,
+    }),
   lastQuizSync: (_sheetId: string) => TE.right(O.none),
   getSheetData: (_sheetId: string) => TE.right([]),
   getSheetDataByMemberNumber: (_memberNumber: number) => TE.right([]),
