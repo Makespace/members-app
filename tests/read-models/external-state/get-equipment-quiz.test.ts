@@ -1,4 +1,5 @@
 import {faker} from '@faker-js/faker';
+import {DateTime} from 'luxon';
 import {TestFramework, initTestFramework} from '../test-framework';
 import {NonEmptyString, UUID} from 'io-ts-types';
 
@@ -12,65 +13,57 @@ import {
   getFullQuizResultsForMember,
 } from '../../../src/read-models/external-state/equipment-quiz';
 import {storeSync} from '../../../src/sync-worker/db/store_sync';
-import {SheetDataTable} from '../../../src/sync-worker/google/sheet-data-table';
+
+// The events column is a second-precision timestamp, so seed whole seconds to
+// keep exact-Date assertions stable.
+const recentDate = DateTime.now().minus({months: 1}).startOf('second').toJSDate();
+const oldDate = DateTime.now().minus({months: 18}).startOf('second').toJSDate();
 
 const runGetQuizResultsByEquipment = async (
   framework: TestFramework,
   trainingSheetId: string,
-  equipmentId: UUID,
-): Promise<FullQuizResultsForEquipment> => getRightOrFail(
-  await getFullQuizResultsForEquipment(
-    {
-      sharedReadModel: framework.sharedReadModel,
-      lastQuizSync: framework.lastSync,
-      getSheetData: framework.getSheetData,
-    },
-    trainingSheetId,
-    getSomeOrFail(framework.sharedReadModel.equipment.get(equipmentId))
-  )()
-);
+  equipmentId: UUID
+): Promise<FullQuizResultsForEquipment> =>
+  getRightOrFail(
+    await getFullQuizResultsForEquipment(
+      {
+        sharedReadModel: framework.sharedReadModel,
+        lastQuizSync: framework.lastSync,
+      },
+      trainingSheetId,
+      getSomeOrFail(framework.sharedReadModel.equipment.get(equipmentId))
+    )()
+  );
 
 const runGetQuizResultsByMemberNumber = async (
   framework: TestFramework,
-  memberNumber: number,
-): Promise<FullQuizResultsForMember> => getRightOrFail(
-  await getFullQuizResultsForMember(
-    {
-      sharedReadModel: framework.sharedReadModel,
-      getSheetDataByMemberNumber: framework.getSheetDataByMemberNumber,
-    },
-    memberNumber
-  )()
-);
-
-const populateQuizData = async (
-  framework: TestFramework,
-  syncDate: Date,
-  sheetId: string,
-  entries: SheetDataTable['rows']
-) => {
-  await framework.updateTrainingSheetCache(sheetId, entries);
-  for (const trainingSheetId of new Set(entries.map(m => m.sheet_id))) {
-    getRightOrFail(
-      await storeSync(framework.extDB)(trainingSheetId, syncDate)()
-    );
-  }
-};
+  memberNumber: number
+): Promise<FullQuizResultsForMember> =>
+  getRightOrFail(
+    await getFullQuizResultsForMember(
+      {sharedReadModel: framework.sharedReadModel},
+      memberNumber
+    )()
+  );
 
 describe('Get equipment quiz', () => {
   let framework: TestFramework;
   const addTrainedMember = {
-    memberNumber: faker.number.int() as Int,
+    memberNumber: faker.number.int({max: 100000}) as Int,
     email: faker.internet.email() as EmailAddress,
     name: undefined,
     formOfAddress: undefined,
   };
   const addAwaitingTrainingMember = {
-    memberNumber: faker.number.int({max: 10000}) as Int,
+    memberNumber: faker.number.int({max: 100000}) as Int,
     email: faker.internet.email() as EmailAddress,
     name: undefined,
     formOfAddress: undefined,
   };
+  // A member number recorded on a quiz row but never linked to an account.
+  const unknownMemberNumber = 999999;
+  const unknownMemberEmail = faker.internet.email();
+
   const createArea = {
     id: faker.string.uuid() as UUID,
     name: faker.airline.airport().name as NonEmptyString,
@@ -89,118 +82,164 @@ describe('Get equipment quiz', () => {
     trainingSheetId: 'testTrainingSheetId',
   };
 
+  const recordQuiz = (opts: {
+    completedAt: Date;
+    memberNumber: number | null;
+    email: string | null;
+    score: number;
+    maxScore: number;
+  }) =>
+    framework.commands.trainingQuiz.record({
+      trainingSheetId: addTrainingSheet.trainingSheetId as NonEmptyString,
+      completedAt: opts.completedAt,
+      memberNumberProvided: opts.memberNumber,
+      emailProvided: opts.email,
+      score: opts.score as Int,
+      maxScore: opts.maxScore as Int,
+      rowHash: faker.string.uuid() as NonEmptyString,
+    });
+
+  const quizSyncDate = DateTime.now().startOf('second').toJSDate();
+
   beforeEach(async () => {
     framework = await initTestFramework();
+    await framework.commands.memberNumbers.linkNumberToEmail(addTrainedMember);
+    await framework.commands.memberNumbers.linkNumberToEmail(
+      addAwaitingTrainingMember
+    );
+    await framework.commands.area.create(createArea);
+    await framework.commands.equipment.add(addEquipment);
+    await framework.commands.trainers.markTrained(markTrained);
+    await framework.commands.equipment.trainingSheet(addTrainingSheet);
+
+    // Trained member: passed -> excluded from "awaiting".
+    await recordQuiz({
+      completedAt: recentDate,
+      memberNumber: addTrainedMember.memberNumber,
+      email: addTrainedMember.email,
+      score: 10,
+      maxScore: 10,
+    });
+    // Awaiting member: passed (recent) + a passed row older than 12 months +
+    // a failed attempt.
+    await recordQuiz({
+      completedAt: recentDate,
+      memberNumber: addAwaitingTrainingMember.memberNumber,
+      email: addAwaitingTrainingMember.email,
+      score: 10,
+      maxScore: 10,
+    });
+    await recordQuiz({
+      completedAt: oldDate,
+      memberNumber: addAwaitingTrainingMember.memberNumber,
+      email: addAwaitingTrainingMember.email,
+      score: 10,
+      maxScore: 10,
+    });
+    await recordQuiz({
+      completedAt: recentDate,
+      memberNumber: addAwaitingTrainingMember.memberNumber,
+      email: addAwaitingTrainingMember.email,
+      score: 5,
+      maxScore: 10,
+    });
+    // Unknown member: passed but the member number isn't linked to an account.
+    await recordQuiz({
+      completedAt: recentDate,
+      memberNumber: unknownMemberNumber,
+      email: unknownMemberEmail,
+      score: 10,
+      maxScore: 10,
+    });
+
+    // Only used to populate lastQuizSync (the sheet still syncs).
+    getRightOrFail(
+      await storeSync(framework.extDB)(
+        addTrainingSheet.trainingSheetId,
+        quizSyncDate
+      )()
+    );
   });
+
   afterEach(() => {
     framework.close();
   });
 
-  describe('when equipment has 1 trained member and 1 member awaiting training', () => {
-    let quizSyncDate: Date;
-
-    const trainedMemberQuizAttempt: SheetDataTable["rows"][0] = {
-      sheet_id: addTrainingSheet.trainingSheetId,
-      sheet_name: faker.animal.bear(),
-      row_index: 2, // 1 is the sheet headers.
-      response_submitted: faker.date.past(),
-      member_number_provided: addTrainedMember.memberNumber,
-      email_provided: addTrainedMember.email,
-      score: 10,
-      max_score: 10,
-      percentage: 100,
-      cached_at: new Date(),
-    };
-    const awaitingTrainingMemberQuizAttempt: SheetDataTable["rows"][0] = {
-      sheet_id: addTrainingSheet.trainingSheetId,
-      sheet_name: faker.animal.bear(),
-      row_index: 3,
-      response_submitted: faker.date.past(),
-      member_number_provided: addAwaitingTrainingMember.memberNumber,
-      email_provided: addAwaitingTrainingMember.email,
-      score: 10,
-      max_score: 10,
-      percentage: 100,
-      cached_at: new Date(),
-    };
-
+  describe('getFullQuizResultsForEquipment', () => {
+    let results: FullQuizResultsForEquipment;
     beforeEach(async () => {
-      await framework.commands.memberNumbers.linkNumberToEmail(
-        addTrainedMember
+      results = await runGetQuizResultsByEquipment(
+        framework,
+        addTrainingSheet.trainingSheetId,
+        addTrainingSheet.equipmentId
       );
-      await framework.commands.memberNumbers.linkNumberToEmail(
-        addAwaitingTrainingMember
-      );
-      await framework.commands.area.create(createArea);
-      await framework.commands.equipment.add(addEquipment);
-      await framework.commands.trainers.markTrained(markTrained);
-      await framework.commands.equipment.trainingSheet(addTrainingSheet);
-      quizSyncDate = faker.date.past();
-      await populateQuizData(framework, quizSyncDate, addTrainingSheet.trainingSheetId, [
-        trainedMemberQuizAttempt,
-        awaitingTrainingMemberQuizAttempt
-      ]);
     });
 
-    describe('getFullQuizResultsForEquipment', () => {
-      let quizResultsByEquipment: FullQuizResultsForEquipment;
-      beforeEach(async () => {
-        quizResultsByEquipment = await runGetQuizResultsByEquipment(
-          framework,
-          addTrainingSheet.trainingSheetId,
-          addTrainingSheet.equipmentId
-        );
-      });
-      it('only 1 member appears as awaiting training', () => {
-        expect(
-          quizResultsByEquipment.membersAwaitingTraining.map(m => m.memberNumber)
-        ).toStrictEqual([addAwaitingTrainingMember.memberNumber]);
-      });
-      it('last quiz sync matches expected', () => {
-        expect(getSomeOrFail(quizResultsByEquipment.lastQuizSync)).toStrictEqual(
-          quizSyncDate
-        );
-      });
-
-      it('no failed quizes', () => {
-        expect(quizResultsByEquipment.failedQuizes).toStrictEqual([]);
-      });
-      it('no unknown member passes', () => {
-        expect(quizResultsByEquipment.unknownMembersAwaitingTraining).toStrictEqual([]);
-      });
+    it('shows the linked, untrained member as awaiting training (once - the >12mo pass is windowed out)', () => {
+      expect(results.membersAwaitingTraining.map(m => m.memberNumber)).toStrictEqual(
+        [addAwaitingTrainingMember.memberNumber]
+      );
+      expect(getSomeOrFail(results.lastQuizSync)).toStrictEqual(quizSyncDate);
     });
 
-    describe('quizResultsByMember', () => {
-      let quizResultsForTrainedMember: FullQuizResultsForMember;
-      let quizResultsForMemberAwaitingTraining: FullQuizResultsForMember;
+    it('shows the passed-but-unlinked member as an unknown awaiting pass', () => {
+      expect(results.unknownMembersAwaitingTraining).toHaveLength(1);
+      expect(
+        getSomeOrFail(results.unknownMembersAwaitingTraining[0].memberNumberProvided)
+      ).toBe(unknownMemberNumber);
+      expect(
+        getSomeOrFail(results.unknownMembersAwaitingTraining[0].emailProvided)
+      ).toBe(unknownMemberEmail);
+      expect(results.unknownMembersAwaitingTraining[0].waitingSince).toStrictEqual(
+        recentDate
+      );
+    });
 
-      beforeEach(async () => {
-        quizResultsForTrainedMember = await runGetQuizResultsByMemberNumber(
-          framework,
-          addTrainedMember.memberNumber
-        );
-        quizResultsForMemberAwaitingTraining = await runGetQuizResultsByMemberNumber(
-          framework,
-          addAwaitingTrainingMember.memberNumber
-        );
+    it('reports failed quizes with a computed percentage', () => {
+      expect(results.failedQuizes).toHaveLength(1);
+      expect(results.failedQuizes[0]).toMatchObject({
+        score: 5,
+        maxScore: 10,
+        percentage: 50,
+        completedAt: recentDate,
       });
-      it('shows the trained member as having passed the quiz', () => {
-        expect(quizResultsForTrainedMember.equipmentQuiz[addEquipment.id].passedAt).toStrictEqual(
-          [trainedMemberQuizAttempt.response_submitted]
-        );
-      });
-      it('shows the trained member as having no other quiz attempts', () => {
-        expect(Object.values(quizResultsForTrainedMember.equipmentQuiz)).toHaveLength(1);
-        expect(quizResultsForTrainedMember.equipmentQuiz[addEquipment.id].attempted).toHaveLength(0);
-      });
-      it('shows the member awaiting training as having passed the quiz', () => {
-        expect(quizResultsForMemberAwaitingTraining.equipmentQuiz[addEquipment.id].passedAt).toStrictEqual(
-          [awaitingTrainingMemberQuizAttempt.response_submitted]
-        );
-      });
-      it('shows the member awaiting training as having no other quiz attempts', () => {
-        expect(Object.values(quizResultsForMemberAwaitingTraining.equipmentQuiz)).toHaveLength(1);
-        expect(quizResultsForMemberAwaitingTraining.equipmentQuiz[addEquipment.id].attempted).toHaveLength(0);
+    });
+  });
+
+  describe('getFullQuizResultsForMember', () => {
+    it('shows the trained member as having passed once', async () => {
+      const r = await runGetQuizResultsByMemberNumber(
+        framework,
+        addTrainedMember.memberNumber
+      );
+      expect(r.equipmentQuiz[addEquipment.id].passedAt).toStrictEqual([recentDate]);
+      expect(r.equipmentQuiz[addEquipment.id].attempted).toHaveLength(0);
+    });
+
+    it('is unwindowed - the awaiting member shows both the recent and the >12mo pass', async () => {
+      const r = await runGetQuizResultsByMemberNumber(
+        framework,
+        addAwaitingTrainingMember.memberNumber
+      );
+      const passedAt = r.equipmentQuiz[addEquipment.id].passedAt;
+      expect(passedAt).toHaveLength(2);
+      expect(passedAt.map(d => d.getTime())).toEqual(
+        expect.arrayContaining([recentDate.getTime(), oldDate.getTime()])
+      );
+    });
+
+    it('shows the awaiting member’s failed attempt with score/percentage', async () => {
+      const r = await runGetQuizResultsByMemberNumber(
+        framework,
+        addAwaitingTrainingMember.memberNumber
+      );
+      const attempted = r.equipmentQuiz[addEquipment.id].attempted;
+      expect(attempted).toHaveLength(1);
+      expect(attempted[0]).toMatchObject({
+        score: 5,
+        max_score: 10,
+        percentage: 50,
+        response_submitted: recentDate,
       });
     });
   });
