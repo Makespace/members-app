@@ -14,7 +14,6 @@ import { CreateArea } from '../../../src/commands/area/create';
 import { NonEmptyString, UUID } from 'io-ts-types';
 import { AddEquipment } from '../../../src/commands/equipment/add';
 import { EquipmentId } from '../../../src/types/equipment-id';
-import { SheetDataTable } from '../../../src/sync-worker/google/sheet-data-table';
 import { RegisterTrainingSheet } from '../../../src/commands/equipment/register-training-sheet';
 import * as O from 'fp-ts/Option';
 import { Int } from 'io-ts';
@@ -344,22 +343,21 @@ describe('construct-training-matrix', () => {
     });
 
     describe('user passes the quiz for the metal mill', () => {
-      const passedMetalMillQuiz: SheetDataTable['rows'][0] = {
-        sheet_id: metalMillSheet.trainingSheetId,
-        sheet_name: metalMillSheet.sheetName,
-        row_index: 0,
-        response_submitted: faker.date.past(),
-        member_number_provided: user.memberNumber,
-        email_provided: user.email,
-        score: 10,
-        max_score: 10,
-        percentage: 100,
-        cached_at: new Date(),
-      };
+      // Whole-second (the events completedAt column is second-precision).
+      const metalMillQuizCompletedAt = DateTime.now()
+        .minus({months: 1})
+        .startOf('second')
+        .toJSDate();
       beforeEach(async () => {
-        await framework.updateTrainingSheetCache(metalCncSheet.trainingSheetId, [
-          passedMetalMillQuiz
-        ]);
+        await framework.commands.trainingQuiz.record({
+          trainingSheetId: metalMillSheet.trainingSheetId as NonEmptyString,
+          completedAt: metalMillQuizCompletedAt,
+          memberNumberProvided: user.memberNumber,
+          emailProvided: user.email,
+          score: 10 as Int,
+          maxScore: 10 as Int,
+          rowHash: faker.string.uuid() as NonEmptyString,
+        });
       });
 
       it('training matrix contains a row for the metal mill', async () => {
@@ -373,7 +371,7 @@ describe('construct-training-matrix', () => {
         expect(millRow.is_trained).toStrictEqual(O.none);
         expect(millRow.is_trainer).toStrictEqual(O.none);
         expect(millRow.equipment_quiz.attempted).toHaveLength(0);
-        expect(millRow.equipment_quiz.passedAt).toStrictEqual([passedMetalMillQuiz.response_submitted]);
+        expect(millRow.equipment_quiz.passedAt).toStrictEqual([metalMillQuizCompletedAt]);
       });
 
       describe('user is marked as trained on the metal mill', () => {
@@ -381,7 +379,7 @@ describe('construct-training-matrix', () => {
           equipmentId: metalMill.id,
           memberNumber: user.memberNumber as Int,
           trainedByMemberNumber: existingTrainerMetalMill.memberNumber as Int,
-          trainedAt: DateTime.fromJSDate(passedMetalMillQuiz.response_submitted).plus(Duration.fromObject({days: 1})).toJSDate(),
+          trainedAt: DateTime.fromJSDate(metalMillQuizCompletedAt).plus(Duration.fromObject({days: 1})).toJSDate(),
         };
 
         beforeEach(async () => {
