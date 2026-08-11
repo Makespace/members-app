@@ -30,6 +30,7 @@ export const initRoutes = (
     query('/domain-events', queries.domainEvents),
     query('/unlinked-recurly', queries.unlinkedRecurly),
     query('/areas', queries.areas),
+    query('/equipment-catalogue', queries.equipmentCatalogue),
     ...command('areas', 'create', commands.area.create),
     ...command('areas', 'add-owner', commands.area.addOwner),
     ...command('areas', 'remove-owner', commands.area.removeOwner),

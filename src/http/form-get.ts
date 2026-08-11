@@ -11,6 +11,7 @@ import {logInPath} from '../authentication/login/routes';
 import { liftActorOrUser } from '../read-models/lift-actor-or-user';
 import { FailureWithStatus, failureWithStatus } from '../types/failure-with-status';
 import { StatusCodes } from 'http-status-codes';
+import {navBarViewModel} from '../templates/navbar';
 
 // See formPost for a more indepth discussion about the design decisions around why this is how it is.
 // formGet is like formPost but rather than processing a command formGet handles calling a read model to
@@ -29,6 +30,7 @@ export const formGet =
       res.redirect(logInPath);
       return;
     }
+    const headerNav = navBarViewModel(deps.sharedReadModel.area.getAll());
     const isAuthorized: TE.TaskEither<FailureWithStatus, null> = form.formIsAuthorized === null || form.formIsAuthorized({
       actor: liftActorOrUser(user.value),
       rm: deps.sharedReadModel
@@ -46,7 +48,12 @@ export const formGet =
       })),
       TE.map(form.renderForm),
       TE.map(({title, body}) =>
-        pageTemplate(title, user.value, member.value.isSuperUser)(body)
+        pageTemplate(
+          title,
+          user.value,
+          member.value.isSuperUser,
+          headerNav
+        )(body)
       ),
       TE.matchW(
         failure => {

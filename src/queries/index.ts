@@ -5,6 +5,7 @@ export {raiseIssue} from './raise-issue';
 export {humans} from './humans';
 export {superUsers} from './super-users';
 export {equipment} from './equipment';
+export {equipmentCatalogue} from './equipment-catalogue';
 export {members} from './members';
 export {member} from './member';
 export {log} from './log';
