@@ -7,7 +7,14 @@ import * as O from 'fp-ts/Option';
 import {createTables} from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
-import {Area, Equipment, Member, MemberCoreInfo} from './return-types';
+import {
+  Area,
+  Equipment,
+  Member,
+  MemberCoreInfo,
+  MinimalArea,
+  MinimalEquipment,
+} from './return-types';
 
 import {Client} from '@libsql/client';
 import {asyncRefresh} from './async-refresh';
@@ -31,7 +38,11 @@ import {getImportedQuizRowHashes, hasQuizRowHash} from './training-quiz/get';
 import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
 import { TrainingSheetId } from '../../types/training-sheet';
 import { EquipmentId } from '../../types/equipment-id';
-import { getTrainingSheetIdMapping } from './equipment/get';
+import {
+  getEquipmentForAreaMinimal,
+  getTrainingSheetIdMapping,
+} from './equipment/get';
+import {getAllAreaMinimal} from './area/get';
 import { findAllSuperUsers, findStoredEmailForLogin, findUserIdByEmail, findUserIdByMemberNumber, getAllMemberCore } from './member/get';
 import { trainingsDeliveredBy } from './member/training-delivered';
 import { setupEventStateTable } from './setup-event-state-table';
@@ -69,11 +80,13 @@ export type SharedReadModel = {
   equipment: {
     get: (id: UUID) => O.Option<Equipment>;
     getAll: () => ReadonlyArray<Equipment>;
+    getForAreaMinimal: (areaId: UUID) => ReadonlyArray<MinimalEquipment>;
     getTrainingSheetIdMapping: () => ReadonlyRecord<TrainingSheetId, EquipmentId>;
   };
   area: {
     get: (id: UUID) => O.Option<Area>;
     getAll: () => ReadonlyArray<Area>;
+    getAllMinimal: () => ReadonlyArray<MinimalArea>;
   };
   debug: {
     dump: () => SharedDatabaseDump;
@@ -128,11 +141,13 @@ export const initSharedReadModel = (
     equipment: {
       get: getEquipmentFull(readModelDb),
       getAll: getAllEquipmentFull(readModelDb),
+      getForAreaMinimal: getEquipmentForAreaMinimal(readModelDb),
       getTrainingSheetIdMapping: getTrainingSheetIdMapping(readModelDb),
     },
     area: {
       get: getAreaFull(readModelDb),
       getAll: getAllAreaFull(readModelDb),
+      getAllMinimal: () => getAllAreaMinimal(readModelDb),
     },
     debug: {
       dump: dumpCurrentState(readModelDb),

@@ -1,5 +1,8 @@
 import * as O from 'fp-ts/Option';
-import {Area} from '../read-models/shared-state/return-types';
+import {
+  MinimalArea,
+  MinimalEquipment,
+} from '../read-models/shared-state/return-types';
 import {User} from '../types';
 import {html, joinHtml, safe, sanitizeString} from '../types/html';
 import {loggedInUserSquare} from './logged-in-user-square';
@@ -28,12 +31,17 @@ const sortAreas = (a: NavBarArea, b: NavBarArea) => {
   return aHasTools === bHasTools ? sortByName(a, b) : aHasTools ? -1 : 1;
 };
 
-export const navBarViewModel = (areas: ReadonlyArray<Area>): NavBarViewModel => ({
+export const navBarViewModel = (
+  areas: ReadonlyArray<MinimalArea>,
+  getEquipmentForArea: (
+    areaId: MinimalArea['id']
+  ) => ReadonlyArray<MinimalEquipment>
+): NavBarViewModel => ({
   areas: areas
     .map(area => ({
       id: area.id,
       name: area.name,
-      equipment: [...area.equipment]
+      equipment: [...getEquipmentForArea(area.id)]
         .filter(equipment => O.isNone(equipment.removedAt))
         .sort(sortByName)
         .map(equipment => ({id: equipment.id, name: equipment.name})),
@@ -58,12 +66,7 @@ const externalSiteLinks = [
     iconClass: 'fa-calendar',
   },
   {
-    href: 'https://discord.gg/makespace',
-    label: 'Discord',
-    iconClass: 'fa-comments',
-  },
-  {
-    href: 'https://groups.google.com/g/makespace',
+    href: 'https://groups.google.com/g/cammakespace',
     label: 'Google Groups',
     iconClass: 'fa-envelope',
   },
@@ -217,6 +220,18 @@ const renderAreasPanel = (areas: ReadonlyArray<NavBarArea>) => {
   `;
 };
 
+export const renderCommunityLinks = () => html`
+  <div class="page-nav__sites-menu">
+    ${joinHtml(externalSiteLinks.map(renderSiteLink))}
+    <div class="page-nav__site-link page-nav__site-link--unavailable">
+      <span class="page-nav__site-icon" aria-hidden="true">
+        <i class="fa-regular fa-comments"></i>
+      </span>
+      <span>Discord - link under review</span>
+    </div>
+  </div>
+`;
+
 const renderSitesPanel = () => html`
   <div
     id="page-nav-sites-panel"
@@ -224,8 +239,26 @@ const renderSitesPanel = () => html`
     data-page-nav-panel="sites"
     hidden
   >
-    <div class="page-nav__sites-menu">
-      ${joinHtml(externalSiteLinks.map(renderSiteLink))}
+    ${renderCommunityLinks()}
+  </div>
+`;
+
+const renderProfilePanel = () => html`
+  <div
+    id="page-nav-profile-panel"
+    class="page-nav__panel page-nav__panel--profile"
+    data-page-nav-panel="profile"
+    hidden
+  >
+    <div class="page-nav__profile-menu">
+      <a href="/me">
+        <i class="fa-regular fa-circle-user" aria-hidden="true"></i>
+        <span>Your Profile</span>
+      </a>
+      <a href="/log-out">
+        <i class="fa-regular fa-share-from-square" aria-hidden="true"></i>
+        <span>Log out</span>
+      </a>
     </div>
   </div>
 `;
@@ -250,15 +283,15 @@ export const navBar = (
         class="page-nav__menu page-nav__menu--areas"
         data-page-nav-menu="areas"
       >
-        <button
-          type="button"
+        <a
+          href="/areas"
           class="page-nav__control page-nav__control--primary"
           data-page-nav-toggle="areas"
           aria-expanded="false"
           aria-controls="page-nav-areas-panel"
         >
           Areas &amp; tools
-        </button>
+        </a>
         ${renderAreasPanel(viewModel.areas)}
       </div>
       <div class="page-nav__secondary-actions">
@@ -267,20 +300,25 @@ export const navBar = (
           class="page-nav__menu page-nav__menu--sites"
           data-page-nav-menu="sites"
         >
-          <button
-            type="button"
+          <a
+            href="/community"
             class="page-nav__control page-nav__control--secondary"
             data-page-nav-toggle="sites"
             aria-expanded="false"
             aria-controls="page-nav-sites-panel"
           >
             Community
-          </button>
+          </a>
           ${renderSitesPanel()}
         </div>
         ${isSuperUser ? html`<a class="page-nav__admin" href="/admin">Admin</a>` : html``}
       </div>
-      <div class="page-nav__profile">${loggedInUserSquare(user)}</div>
+      <div
+        class="page-nav__profile page-nav__menu page-nav__menu--profile"
+        data-page-nav-menu="profile"
+      >
+        ${loggedInUserSquare(user)} ${renderProfilePanel()}
+      </div>
     </div>
     <div class="page-nav__row page-nav__row--secondary">
       <a
@@ -341,10 +379,12 @@ export const navBar = (
         }
 
         toggles.forEach(function (toggle) {
-          toggle.addEventListener('click', function () {
+          toggle.addEventListener('click', function (event) {
             var name = toggle.getAttribute('data-page-nav-toggle');
             var panel = nav.querySelector('[data-page-nav-panel="' + name + '"]');
             if (!panel) return;
+            if (usesHoverMenus() && name === 'profile') return;
+            event.preventDefault();
             if (usesHoverMenus()) {
               openMenu(name);
               return;

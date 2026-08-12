@@ -11,13 +11,23 @@ import {EmailAddress} from '../../src/types';
 import {User} from '../../src/types/user';
 
 const renderNav = (isSuperUser: boolean, areas: ReadonlyArray<Area>) => {
+  const viewModel = navBarViewModel(areas, areaId => {
+    const area = areas.find(candidate => candidate.id === areaId);
+    return (area?.equipment ?? []).map(equipment => ({
+      id: equipment.id,
+      name: equipment.name,
+      areaId,
+      trainingSheetId: equipment.trainingSheetId,
+      removedAt: equipment.removedAt,
+    }));
+  });
   const rendered = navBar(
     {
       emailAddress: faker.internet.email() as EmailAddress,
       memberNumber: faker.number.int({min: 1}),
     } as User,
     isSuperUser,
-    navBarViewModel(areas)
+    viewModel
   );
   const body = document.createElement('body');
   body.innerHTML = rendered;
@@ -67,7 +77,21 @@ describe('navBar', () => {
     expect(page.textContent).toContain('Raise an issue');
     expect(page.textContent).toContain('Community');
     expect(page.textContent).toContain('All areas');
-    expect(page.textContent).not.toContain('Log out');
+    expect(page.textContent).toContain('Log out');
+  });
+
+  it('uses working links as the fallback for enhanced menu controls', () => {
+    const page = renderNav(false, areas);
+
+    expect(
+      page.querySelector('[data-page-nav-toggle="areas"]')?.getAttribute('href')
+    ).toStrictEqual('/areas');
+    expect(
+      page.querySelector('[data-page-nav-toggle="sites"]')?.getAttribute('href')
+    ).toStrictEqual('/community');
+    expect(
+      page.querySelector('[data-page-nav-toggle="profile"]')?.getAttribute('href')
+    ).toStrictEqual('/me');
   });
 
   it('renders admin only for super users', () => {
@@ -82,6 +106,24 @@ describe('navBar', () => {
 
     expect(profileLink?.getAttribute('aria-label')).toStrictEqual('Your profile');
     expect(avatar?.getAttribute('src')).toContain('&d=mp');
+  });
+
+  it('renders profile and logout actions in the profile menu', () => {
+    const page = renderNav(false, areas);
+    const links = [...page.querySelectorAll('.page-nav__profile-menu a')].map(
+      link => ({label: link.textContent?.trim(), href: link.getAttribute('href')})
+    );
+
+    expect(links).toStrictEqual([
+      {label: 'Your Profile', href: '/me'},
+      {label: 'Log out', href: '/log-out'},
+    ]);
+    expect(
+      page.querySelector('.page-nav__profile-menu .fa-circle-user')
+    ).not.toBeNull();
+    expect(
+      page.querySelector('.page-nav__profile-menu .fa-share-from-square')
+    ).not.toBeNull();
   });
 
   it('renders tool drilldown links to equipment pages', () => {
@@ -123,17 +165,35 @@ describe('navBar', () => {
 
   it('orders external links by the requested priority', () => {
     const page = renderNav(false, areas);
-    const links = [...page.querySelectorAll('.page-nav__site-link')].map(link =>
-      link.textContent?.trim()
-    );
+    const links = [...page.querySelectorAll('a.page-nav__site-link')].map(link => ({
+      label: link.textContent?.trim(),
+      href: link.getAttribute('href'),
+    }));
 
     expect(links).toStrictEqual([
-      'Equipment website',
-      'Makespace website',
-      'Meetup',
-      'Discord',
-      'Google Groups',
+      {
+        label: 'Equipment website',
+        href: 'https://equipment.makespace.org',
+      },
+      {label: 'Makespace website', href: 'https://web.makespace.org'},
+      {label: 'Meetup', href: 'https://www.meetup.com/makespace/'},
+      {
+        label: 'Google Groups',
+        href: 'https://groups.google.com/g/cammakespace',
+      },
     ]);
+  });
+
+  it('shows Discord last without exposing an unapproved access link', () => {
+    const page = renderNav(false, areas);
+    const items = [...page.querySelectorAll('.page-nav__site-link')];
+    const discord = items.at(-1);
+
+    expect(discord?.textContent?.trim()).toStrictEqual(
+      'Discord - link under review'
+    );
+    expect(discord?.tagName).toStrictEqual('DIV');
+    expect(discord?.querySelector('a')).toBeNull();
   });
 
   it('filters removed equipment and sorts areas alphabetically', () => {

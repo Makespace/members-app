@@ -30,7 +30,6 @@ export const formGet =
       res.redirect(logInPath);
       return;
     }
-    const headerNav = navBarViewModel(deps.sharedReadModel.area.getAll());
     const isAuthorized: TE.TaskEither<FailureWithStatus, null> = form.formIsAuthorized === null || form.formIsAuthorized({
       actor: liftActorOrUser(user.value),
       rm: deps.sharedReadModel
@@ -52,7 +51,10 @@ export const formGet =
           title,
           user.value,
           member.value.isSuperUser,
-          headerNav
+          navBarViewModel(
+            deps.sharedReadModel.area.getAllMinimal(),
+            deps.sharedReadModel.equipment.getForAreaMinimal
+          )
         )(body)
       ),
       TE.matchW(

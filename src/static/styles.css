@@ -209,7 +209,8 @@ button:active {
   top: 3px;
 }
 
-a.button {
+a.button,
+a.button:visited {
   color: white;
   text-decoration: none;
   display: inline-block;
@@ -268,6 +269,22 @@ details > *:not(summary) {
   }
 }
 
+.page-profile__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.page-profile__heading h1 {
+  margin: 0;
+}
+
+.page-profile__heading .button {
+  margin-left: auto;
+}
+
 .page-nav {
   display: grid;
   gap: 1rem;
@@ -322,7 +339,8 @@ details > *:not(summary) {
 .page-nav__control:hover,
 .page-nav__action:hover,
 .page-nav__admin:hover,
-.page-nav__site-link:hover {
+a.page-nav__site-link:hover,
+.page-nav__profile-menu a:hover {
   background: color-mix(in oklch, white 90%, var(--link-color));
 }
 
@@ -337,7 +355,8 @@ details > *:not(summary) {
   cursor: pointer;
 }
 
-.page-nav__control--primary {
+.page-nav__control--primary,
+.page-nav__control--primary:visited {
   width: 100%;
   justify-content: space-between;
   background: var(--link-color);
@@ -349,7 +368,8 @@ details > *:not(summary) {
   background: var(--link-hover-color);
 }
 
-.page-nav__control--secondary {
+.page-nav__control--secondary,
+.page-nav__control--secondary:visited {
   border-color: var(--green-color);
   color: var(--green-color);
 }
@@ -404,6 +424,12 @@ details > *:not(summary) {
   padding: 0.75rem;
 }
 
+.page-nav__panel--profile {
+  right: 0;
+  min-width: 10rem;
+  padding: 0.5rem;
+}
+
 .page-nav__sites-menu {
   display: grid;
   gap: 0.25rem;
@@ -417,6 +443,14 @@ details > *:not(summary) {
   text-decoration: none;
 }
 
+.page-nav__site-link--unavailable {
+  color: var(--grey-color);
+}
+
+.page-nav__site-link--unavailable .page-nav__site-icon {
+  color: currentColor;
+}
+
 .page-nav__site-icon {
   display: inline-flex;
   align-items: center;
@@ -428,13 +462,13 @@ details > *:not(summary) {
 .page-nav__profile {
   flex: 0 0 auto;
   width: 3.5rem;
-  height: 3.5rem;
+  height: auto;
 }
 
 .page-nav__profile-link,
 .page-nav__profile-avatar {
   width: 100%;
-  height: 100%;
+  height: 3.5rem;
 }
 
 .page-nav__profile-link {
@@ -447,6 +481,18 @@ details > *:not(summary) {
 .page-nav__profile-avatar {
   margin: 0;
   object-fit: cover;
+}
+
+.page-nav__profile-menu {
+  display: grid;
+}
+
+.page-nav__profile-menu a {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  text-decoration: none;
 }
 
 .page-nav__panel[hidden] {
@@ -570,6 +616,15 @@ details > *:not(summary) {
 }
 
 @media screen and (max-width: 48rem) {
+  .page-profile__heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .page-profile__heading .button {
+    margin-left: 0;
+  }
+
   .page-nav__profile {
     order: 1;
     margin-left: auto;
@@ -614,6 +669,15 @@ details > *:not(summary) {
 
   .page-nav__panel--areas {
     height: auto;
+  }
+
+  .page-nav__panel--profile {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 12rem;
+    margin-top: 0;
+    box-shadow: 0 0.5rem 1.5rem color-mix(in oklch, black 10%, white);
   }
 
   .page-nav__drilldown {

@@ -41,7 +41,6 @@ export const queryGet =
       res.redirect(logInPath);
       return;
     }
-    const headerNav = navBarViewModel(deps.sharedReadModel.area.getAll());
     await pipe(
       query(deps)(user.value, req.params, simplifyExpressQuery(req.query)),
       TE.matchW(
@@ -63,7 +62,10 @@ export const queryGet =
                   title,
                   user.value,
                   member.value.isSuperUser,
-                  headerNav
+                  navBarViewModel(
+                    deps.sharedReadModel.area.getAllMinimal(),
+                    deps.sharedReadModel.equipment.getForAreaMinimal
+                  )
                 )(body)
               ),
           Redirect: ({url}) => res.redirect(url),
