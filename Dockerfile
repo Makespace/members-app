@@ -1,5 +1,5 @@
 # BASE
-FROM node:20-slim@sha256:a16301294ba66d2ad22d3beded4a52720f96ab208c1db0973c034d0127a4ccb0 as node
+FROM node:22-slim@sha256:d649c27dae7ba0137b3cef5dd75baa422c08dc3d9e3fc0c23dfb172dc3cc6436 as node
 WORKDIR /app
 COPY package.json ./
 RUN apt-get -y update &&  \
@@ -15,7 +15,7 @@ RUN apt-get -y update &&  \
     curl \
     unzip \
     &&  rm -rf /var/lib/apt/lists/*
-RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr bash
+RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr bash -s "bun-v1.3.14"
 COPY package.json ./
 COPY bun.lock ./
 
