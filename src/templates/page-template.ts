@@ -7,15 +7,21 @@ import {
 } from '../types/html';
 import {gridJs} from './grid-js';
 import {head} from './head';
-import {navBar} from './navbar';
+import {navBar, NavBarViewModel} from './navbar';
 
 export const pageTemplate =
-  (title: HtmlSubstitution, user: User, isSuperUser: boolean) => (body: Html) =>
+  (
+    title: HtmlSubstitution,
+    user: User,
+    isSuperUser: boolean,
+    navBarModel: NavBarViewModel
+  ) =>
+  (body: Html) =>
     html`
       <!doctype html>
       <html lang="en">
         ${head(title)}
-        <header>${navBar(user, isSuperUser)}</header>
+        <header>${navBar(user, isSuperUser, navBarModel)}</header>
         <body>
           ${body} ${gridJs()}
         </body>

@@ -68,6 +68,15 @@ describe('/me render', () => {
     expect(page.textContent).toContain(verifiedSecondaryEmail);
   });
 
+  it('shows a prominent log out action', () => {
+    const page = renderPage(viewModel);
+    const logOutLink = page.querySelector('a[href="/log-out"]');
+
+    expect(logOutLink?.closest('.page-profile__heading')).not.toBeNull();
+    expect(logOutLink?.textContent).toStrictEqual('Log out');
+    expect(logOutLink?.classList.contains('button')).toBe(true);
+  });
+
   it('shows the right actions for unverified and verified non-primary emails', () => {
     const page = renderPage(viewModel);
     expect(page.textContent).toContain('Send Verification Email');
