@@ -277,15 +277,28 @@ const buildSelected = (
   };
 };
 
-export const constructViewModel =
-  (deps: Dependencies, selectedIndex: O.Option<number>, truncate: boolean) =>
-  (user: User): TE.TaskEither<FailureWithStatus, ViewModel> =>
-    pipe(
-      mustBeSuperuser(deps.sharedReadModel, user),
-      TE.chainW(() => deps.getAllEvents()),
-      TE.map((events): ViewModel => {
+// Pure timeline analysis: events -> the detected ordering structure (seams,
+// blocks, structural regions, corroborated boundaries, duplicate overlaps). No
+// I/O and no request params, so it is unit-testable in isolation (see tests).
+type TimelineAnalysis = {
+  ordered: ReadonlyArray<StoredDomainEvent>;
+  totalEvents: number;
+  points: ReadonlyArray<EventPoint>;
+  blocks: ReadonlyArray<Block>;
+  seamPositions: ReadonlyArray<number>;
+  precisionRuns: ReadonlyArray<Region>;
+  densityRuns: ReadonlyArray<Region>;
+  bulkTypeRuns: ReadonlyArray<Region>;
+  boundaries: ReadonlyArray<DetectedBoundary>;
+  minRecordedAtMs: number;
+  maxRecordedAtMs: number;
+};
+
+export const analyzeTimeline = (
+  events: ReadonlyArray<StoredDomainEvent>
+): TimelineAnalysis => {
         // getAllEvents returns rows in event_index order already; sort defensively
-        // so the visualisation never depends on query ordering.
+        // so the analysis never depends on query ordering.
         const ordered = [...events].sort(
           (a, b) => a.event_index - b.event_index
         );
@@ -494,6 +507,7 @@ export const constructViewModel =
           points.length > 0 ? points[0].recordedAtMs : 0
         );
         return {
+          ordered,
           totalEvents: points.length,
           points,
           blocks,
@@ -504,13 +518,24 @@ export const constructViewModel =
           boundaries,
           minRecordedAtMs,
           maxRecordedAtMs,
+        };
+};
+
+export const constructViewModel =
+  (deps: Dependencies, selectedIndex: O.Option<number>, truncate: boolean) =>
+  (user: User): TE.TaskEither<FailureWithStatus, ViewModel> =>
+    pipe(
+      mustBeSuperuser(deps.sharedReadModel, user),
+      TE.chainW(() => deps.getAllEvents()),
+      TE.map((events): ViewModel => {
+        const {ordered, ...analysis} = analyzeTimeline(events);
+        return {
+          ...analysis,
           truncate,
           selected: O.isSome(selectedIndex)
-            ? buildSelected(ordered, blocks, selectedIndex.value)
+            ? buildSelected(ordered, analysis.blocks, selectedIndex.value)
             : null,
         };
       }),
-      // mustBeSuperuser and getAllEvents already return the correct failure types;
-      // this is a TaskEither<FailureWithStatus, ViewModel>.
       TE.mapLeft((failure): FailureWithStatus => failure)
     );
