@@ -12,6 +12,7 @@ import {sequenceS} from 'fp-ts/lib/Apply';
 import {Command} from '../commands';
 import {Actor} from '../types/actor';
 import {applyCommand} from '../commands/apply-command';
+import {constantTimeEqual} from './constant-time-equal';
 
 const getCommandFrom = <T>(body: unknown, command: Command<T>) =>
   pipe(
@@ -35,7 +36,7 @@ const getActorFrom = (authorization: unknown, conf: Config) =>
       )
     ),
     E.chain(authString =>
-      authString === `Bearer ${conf.ADMIN_API_BEARER_TOKEN}`
+      constantTimeEqual(authString, `Bearer ${conf.ADMIN_API_BEARER_TOKEN}`)
         ? E.right({tag: 'token', token: 'admin'} satisfies Actor)
         : E.left(
             failureWithStatus('Bad Bearer Token', StatusCodes.UNAUTHORIZED)()
