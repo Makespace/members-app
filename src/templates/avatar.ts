@@ -1,10 +1,14 @@
 import {html, Safe, safe} from '../types/html';
 import {GravatarHash, isoGravatarHash} from '../types';
 
-function getGravatarUrl(hash: GravatarHash, size: number = 160) {
+function getGravatarUrl(
+  hash: GravatarHash,
+  size: number = 160,
+  defaultImage: 'identicon' | 'mp' = 'identicon'
+) {
   const rawHash = isoGravatarHash.unwrap(hash);
   return safe(
-    `https://www.gravatar.com/avatar/${rawHash}?s=${size}&d=identicon`
+    `https://www.gravatar.com/avatar/${rawHash}?s=${size}&d=${defaultImage}`
   );
 }
 
@@ -44,6 +48,22 @@ export const getGravatarThumbnail = (
     url4x: getGravatarUrl(hash, 160),
     memberNumber,
   });
+
+export const getGravatarNavigationThumbnail = (hash: GravatarHash) => html`
+  <img
+    width="56"
+    height="56"
+    class="page-nav__profile-avatar"
+    srcset="
+      ${getGravatarUrl(hash, 56, 'mp')} 1x,
+      ${getGravatarUrl(hash, 112, 'mp')} 2x,
+      ${getGravatarUrl(hash, 224, 'mp')} 4x
+    "
+    src="${getGravatarUrl(hash, 56, 'mp')}"
+    alt=""
+    loading="lazy"
+  />
+`;
 
 export const getGravatarProfile = (hash: GravatarHash, memberNumber: number) =>
   gravatar(
