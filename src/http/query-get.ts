@@ -11,6 +11,7 @@ import {CompleteHtmlDocument, sanitizeString} from '../types/html';
 import * as O from 'fp-ts/Option';
 import {match} from '../types/tagged-union';
 import {ParsedQs} from 'qs';
+import {navBarViewModel} from '../templates/navbar';
 
 // req.query has a complicated type:
 // type ParsedQs = { [key: string]: undefined | string | string[] | ParsedQs | ParsedQs[] };
@@ -57,7 +58,15 @@ export const queryGet =
             res
               .status(200)
               .send(
-                pageTemplate(title, user.value, member.value.isSuperUser)(body)
+                pageTemplate(
+                  title,
+                  user.value,
+                  member.value.isSuperUser,
+                  navBarViewModel(
+                    deps.sharedReadModel.area.getAllMinimal(),
+                    deps.sharedReadModel.equipment.getForAreaMinimal
+                  )
+                )(body)
               ),
           Redirect: ({url}) => res.redirect(url),
           Raw: ({body, contentType}) => {

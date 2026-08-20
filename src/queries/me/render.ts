@@ -73,7 +73,10 @@ const renderMemberDetails = (viewModel: ViewModel) => html`
 
 export const render = (viewModel: ViewModel) => html`
   <div class="stack-large">
-    <h1>Your Makespace profile</h1>
+    <div class="page-profile__heading">
+      <h1>Your Makespace profile</h1>
+      <a class="button" href="/log-out">Log out</a>
+    </div>
     <section>
       <h2>Your details</h2>
       ${renderMemberDetails(viewModel)}

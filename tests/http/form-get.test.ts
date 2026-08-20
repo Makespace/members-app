@@ -93,6 +93,10 @@ describe('formGet', () => {
       const res = makeRes();
       const constructForm = jest.fn(() => TE.right({message: 'Loaded'}));
       const formIsAuthorized = jest.fn(() => false);
+      const getAllAreas = jest.spyOn(
+        framework.sharedReadModel.area,
+        'getAllMinimal'
+      );
       const form = makeForm({
         constructForm: () => () => constructForm(),
         formIsAuthorized,
@@ -105,6 +109,7 @@ describe('formGet', () => {
         rm: framework.sharedReadModel,
       });
       expect(constructForm).not.toHaveBeenCalled();
+      expect(getAllAreas).not.toHaveBeenCalled();
       expect(res.redirect).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(StatusCodes.FORBIDDEN);
       expect(res.send).toHaveBeenCalledWith(
