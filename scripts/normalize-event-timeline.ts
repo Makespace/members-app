@@ -112,6 +112,19 @@ const detectStructure = (
     );
   }
 
+  // Block 2 is deleted by event_index RANGE (on the raw table) in apply().
+  // getAllEvents filters out EquipmentTrainingQuizResult rows, so if any sat
+  // inside block 2's index range they would be deleted without showing in the
+  // (also filtered) dry-run diff. Refuse unless the range is gap-free - i.e. it
+  // holds exactly the block-2 events we analysed and nothing else.
+  if (block2LastIndex - block2FirstIndex + 1 !== block2.length) {
+    die(
+      `block 2's event_index range (${block2FirstIndex}..${block2LastIndex}) is not ` +
+        `contiguous: ${block2.length} events span ${block2LastIndex - block2FirstIndex + 1} ` +
+        `indices, so deleting the range would also remove other rows. Review manually.`
+    );
+  }
+
   // Shift so block 1 lands in ANCHOR_YEAR, and assert it then fully predates the
   // training import (no overlap).
   const block1 = events.slice(0, p1);
@@ -228,37 +241,47 @@ const apply = async (
   await client.execute('CREATE TABLE deleted_events_prenormalize_backup AS SELECT * FROM deleted_events');
   console.log(`  backed up events/deleted_events to *_prenormalize_backup`);
 
-  // 2. Build the shift UPDATEs from the RAW payloads (preserving milliseconds -
-  //    doing this in SQL would truncate to whole seconds).
-  const raw = await client.execute({
-    sql: 'SELECT event_index, payload FROM events WHERE event_index < ?',
-    args: [s.block2FirstIndex],
-  });
-  const statements: InStatement[] = [];
-  for (const row of raw.rows) {
-    const payload = JSON.parse(row.payload as string) as {recordedAt?: string};
-    if (!payload.recordedAt) continue;
-    const d = new Date(payload.recordedAt);
-    if (Number.isNaN(d.getTime())) continue;
-    d.setUTCFullYear(d.getUTCFullYear() - s.shiftYears);
-    payload.recordedAt = d.toISOString();
-    statements.push({
-      sql: 'UPDATE events SET payload = ? WHERE event_index = ?',
-      args: [JSON.stringify(payload), Number(row.event_index)],
-    });
-  }
-  // 3. Delete block 2 (+ any deletion rows pointing into it).
-  statements.push({
-    sql: 'DELETE FROM deleted_events WHERE event_index BETWEEN ? AND ?',
-    args: [s.block2FirstIndex, s.block2LastIndex],
-  });
-  statements.push({
-    sql: 'DELETE FROM events WHERE event_index BETWEEN ? AND ?',
-    args: [s.block2FirstIndex, s.block2LastIndex],
-  });
+  // The whole change is 3 statements in one atomic batch (no huge multi-row
+  // request against remote Turso):
+  //
+  //  - Shift ONLY the payload's recordedAt (not other date fields like
+  //    OwnerAgreementSigned.signedAt - those are left as-is; the read model was
+  //    verified unchanged by that, and the dry-run diff mirrors this).
+  //  - Shift it back `shiftYears` years by string arithmetic on the ISO year:
+  //    replace the first 4 chars (YYYY) with YYYY-shiftYears and keep the rest
+  //    (-MM-DDTHH:MM:SS.sssZ). This preserves milliseconds - SQL datetime() would
+  //    truncate them, making block 1 look like a whole-second import.
+  //  - The `recordedAt IS NOT NULL` guard skips any payload without one (e.g. the
+  //    obsolete EquipmentTrainingQuizResult rows).
+  const statements: InStatement[] = [
+    {
+      // The outer CAST keeps the year an INTEGER: libsql binds the JS `shiftYears`
+      // as a REAL, so 2024 - 11.0 = 2013.0, which would stringify as "2013.0" and
+      // corrupt the ISO date. CAST(... AS INTEGER) makes it "2013".
+      sql: `UPDATE events
+            SET payload = json_set(payload, '$.recordedAt',
+              CAST(CAST(substr(json_extract(payload, '$.recordedAt'), 1, 4) AS INTEGER) - ? AS INTEGER)
+              || substr(json_extract(payload, '$.recordedAt'), 5))
+            WHERE event_index < ?
+              AND json_extract(payload, '$.recordedAt') IS NOT NULL`,
+      args: [s.shiftYears, s.block2FirstIndex],
+    },
+    // Delete block 2 (+ any deletion rows pointing into it); its index range is
+    // asserted gap-free in detectStructure, so this removes exactly block 2.
+    {
+      sql: 'DELETE FROM deleted_events WHERE event_index BETWEEN ? AND ?',
+      args: [s.block2FirstIndex, s.block2LastIndex],
+    },
+    {
+      sql: 'DELETE FROM events WHERE event_index BETWEEN ? AND ?',
+      args: [s.block2FirstIndex, s.block2LastIndex],
+    },
+  ];
 
   await client.batch(statements, 'write');
-  console.log(`  shifted ${statements.length - 2} block-1 events, deleted block 2`);
+  console.log(
+    `  shifted block 1 back ${s.shiftYears} years, deleted block 2 (event_index ${s.block2FirstIndex}..${s.block2LastIndex})`
+  );
 
   // 4. Post-conditions.
   const after = await loadEvents(client);
