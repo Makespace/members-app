@@ -19,6 +19,9 @@ export const render = () => html`
         <a href="/event-log/deleted">View deleted events</a>
       </li>
       <li>
+        <a href="/event-log-order">Visualise event log ordering (blocks &amp; seams)</a>
+      </li>
+      <li>
         <a href="/event-log.csv">Download a log of all actions taken</a>
       </li>
       <li><a href="/members/create">Link an email and number</a></li>
