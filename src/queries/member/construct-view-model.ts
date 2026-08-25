@@ -15,7 +15,7 @@ import { getRecurlyStatusForMember } from '../../read-models/external-state/recu
 
 export const constructViewModel =
   (
-    deps: Pick<Dependencies, 'sharedReadModel' | 'getSheetDataByMemberNumber' | 'extDB'>,
+    deps: Pick<Dependencies, 'sharedReadModel' | 'extDB'>,
     user: User
   ) =>
   (memberNumber: number): TE.TaskEither<FailureWithStatus, ViewModel> => async () => {
