@@ -1,5 +1,6 @@
 import {syncTroubleTickets} from './sync_trouble_ticket';
 import {syncEquipmentTrainingSheets} from './sync_training_sheet';
+import {runQuizMigration} from '../training-quiz/migrate';
 import {initDependencies} from './init-dependencies';
 import {GoogleHelpers} from './google/pull_sheet_data';
 import {setTimeout} from 'node:timers/promises';
@@ -44,6 +45,17 @@ async function syncExternDataPeriodically(
           google,
           EQUIPMENT_SYNC_INTERVAL_MS
         );
+        // Bring any newly-cached quiz completions into the event log (dedup by
+        // rowHash, so already-imported rows are cheap no-ops). Refresh first so
+        // the dedup sees the one-time backfill and events from earlier cycles.
+        //
+        // SAFETY: this appends completions at recordedAt = now, which is only
+        // correct once the one-time historical backfill has run. Deploying this
+        // before that backfill would claim every historical row's hash at now
+        // and prevent it being woven in at its true completedAt. That ordering
+        // is enforced by not merging this until the backfill is done.
+        await deps.sharedReadModel.asyncRefresh()();
+        await runQuizMigration(deps)();
         lastEquipmentSyncCheck = Date.now();
       }
 
