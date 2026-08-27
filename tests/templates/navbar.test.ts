@@ -94,6 +94,28 @@ describe('navBar', () => {
     ).toStrictEqual('/me');
   });
 
+  it('shows state chevrons on the expandable navigation controls', () => {
+    const page = renderNav(false, areas);
+
+    expect(
+      page.querySelector('[data-page-nav-toggle="areas"] .page-nav__chevron')
+    ).not.toBeNull();
+    expect(
+      page.querySelector('[data-page-nav-toggle="sites"] .page-nav__chevron')
+    ).not.toBeNull();
+  });
+
+  it('renders an accessible mobile navigation toggle', () => {
+    const page = renderNav(false, areas);
+    const toggle = page.querySelector('[data-page-nav-mobile-toggle]');
+
+    expect(toggle?.tagName).toStrictEqual('BUTTON');
+    expect(toggle?.getAttribute('aria-expanded')).toStrictEqual('false');
+    expect(toggle?.getAttribute('aria-label')).toStrictEqual('Open menu');
+    expect(toggle?.textContent?.trim()).toStrictEqual('Menu');
+    expect(toggle?.querySelector('.page-nav__mobile-menu-close')).not.toBeNull();
+  });
+
   it('renders admin only for super users', () => {
     expect(renderNav(false, areas).textContent).not.toContain('Admin');
     expect(renderNav(true, areas).textContent).toContain('Admin');
@@ -133,6 +155,29 @@ describe('navBar', () => {
     );
 
     expect(links.some(link => link?.startsWith('/equipment/'))).toBeTruthy();
+  });
+
+  it('renders a mobile control for returning from tools to the area list', () => {
+    const page = renderNav(false, areas);
+    const backButton = page.querySelector('[data-page-nav-area-back]');
+
+    expect(backButton?.tagName).toStrictEqual('BUTTON');
+    expect(backButton?.textContent?.trim()).toStrictEqual('Back to all areas');
+    expect(
+      backButton?.querySelector('.page-nav__mobile-back-chevron')
+    ).not.toBeNull();
+    expect(
+      page.querySelectorAll('.page-nav__area-button .page-nav__area-chevron')
+    ).toHaveLength(areas.length);
+  });
+
+  it('renders an always-visible desktop scrollbar for the area list', () => {
+    const page = renderNav(false, areas);
+
+    expect(page.querySelector('[data-page-nav-area-scrollbar]')).not.toBeNull();
+    expect(
+      page.querySelector('[data-page-nav-area-scrollbar-thumb]')
+    ).not.toBeNull();
   });
 
   it('links each tool panel and desktop area button to its area', () => {
