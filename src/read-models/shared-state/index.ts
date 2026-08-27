@@ -34,7 +34,13 @@ import {
 import {dumpCurrentState, SharedDatabaseDump} from './debug/dump';
 import {DateTime} from 'luxon';
 import {getLastSent} from './training-stat-notifications/get-last-sent';
-import {getImportedQuizRowHashes, hasQuizRowHash} from './training-quiz/get';
+import {
+  getCompletionsForMember,
+  getCompletionsForSheet,
+  getImportedQuizRowHashes,
+  hasQuizRowHash,
+  TrainingQuizCompletionRow,
+} from './training-quiz/get';
 import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
 import { TrainingSheetId } from '../../types/training-sheet';
 import { EquipmentId } from '../../types/equipment-id';
@@ -97,6 +103,13 @@ export type SharedReadModel = {
   trainingQuiz: {
     hasRowHash: (rowHash: string) => boolean;
     importedRowHashes: () => ReadonlySet<string>;
+    getCompletionsForSheet: (
+      trainingSheetId: string,
+      since: O.Option<Date>
+    ) => ReadonlyArray<TrainingQuizCompletionRow>;
+    getCompletionsForMember: (
+      memberNumber: number
+    ) => ReadonlyArray<TrainingQuizCompletionRow>;
   };
 };
 
@@ -158,6 +171,8 @@ export const initSharedReadModel = (
     trainingQuiz: {
       hasRowHash: hasQuizRowHash(readModelDb),
       importedRowHashes: getImportedQuizRowHashes(readModelDb),
+      getCompletionsForSheet: getCompletionsForSheet(readModelDb),
+      getCompletionsForMember: getCompletionsForMember(readModelDb),
     },
   };
 };

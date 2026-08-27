@@ -27,6 +27,8 @@ export const initRoutes = (
     query('/raise-issue', queries.raiseIssue),
     query('/humans', queries.humans),
     query('/event-log', queries.log),
+    query('/event-log-order', queries.eventLogOrder),
+    query('/event-log-order/:index', queries.eventLogOrder),
     query('/training-event-log', queries.trainingEventLog),
     query('/event-log/failed', queries.failedEventLog),
     query('/event-log/deleted', queries.deletedEvents),
