@@ -384,10 +384,12 @@ export const navBar = (
         var areaBackButton = nav.querySelector('[data-page-nav-area-back]');
         var mobileMenuToggle = nav.querySelector('[data-page-nav-mobile-toggle]');
         var lastAreaButton = null;
+        // Must match the layout breakpoint in styles.css.
+        var breakpointRem = 48;
         var hoverMedia = window.matchMedia(
-          '(min-width: 48.01rem) and (hover: hover) and (pointer: fine)'
+          '(min-width: ' + (breakpointRem + 0.01) + 'rem) and (hover: hover) and (pointer: fine)'
         );
-        var mobileMedia = window.matchMedia('(max-width: 48rem)');
+        var mobileMedia = window.matchMedia('(max-width: ' + breakpointRem + 'rem)');
 
         nav.classList.add('has-mobile-menu');
 
@@ -434,6 +436,10 @@ export const navBar = (
           mobileMenuToggle.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
           if (!isOpen) closeMenus();
         }
+
+        mobileMedia.addEventListener('change', function (event) {
+          if (!event.matches) setMobileMenuOpen(false);
+        });
 
         function updateAreaScrollbar() {
           if (!areaList || !areaScrollbar || !areaScrollbarThumb) return;
@@ -548,6 +554,7 @@ export const navBar = (
             var rect = areaScrollbar.getBoundingClientRect();
             var thumbHeight = areaScrollbarThumb.offsetHeight;
             var thumbRange = areaScrollbar.clientHeight - thumbHeight;
+            if (thumbRange <= 0) return;
             var scrollRange = areaList.scrollHeight - areaList.clientHeight;
             var target = event.clientY - rect.top - thumbHeight / 2;
             areaList.scrollTop =
@@ -566,16 +573,22 @@ export const navBar = (
             if (!areaScrollbarThumb.hasPointerCapture(event.pointerId)) return;
             var thumbRange =
               areaScrollbar.clientHeight - areaScrollbarThumb.offsetHeight;
+            if (thumbRange <= 0) return;
             var scrollRange = areaList.scrollHeight - areaList.clientHeight;
             areaList.scrollTop =
               dragStartScroll +
               (event.clientY - dragStartY) * (scrollRange / thumbRange);
           });
 
-          areaScrollbarThumb.addEventListener('pointerup', function (event) {
-            areaScrollbarThumb.releasePointerCapture(event.pointerId);
+          var endThumbDrag = function (event) {
+            if (areaScrollbarThumb.hasPointerCapture(event.pointerId)) {
+              areaScrollbarThumb.releasePointerCapture(event.pointerId);
+            }
             areaScrollbarThumb.classList.remove('is-dragging');
-          });
+          };
+
+          areaScrollbarThumb.addEventListener('pointerup', endThumbDrag);
+          areaScrollbarThumb.addEventListener('pointercancel', endThumbDrag);
         }
 
         if (mobileMenuToggle) {
