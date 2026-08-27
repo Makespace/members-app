@@ -99,7 +99,8 @@ const renderAreaButton = (
     aria-selected="${safe(isActive ? 'true' : 'false')}"
     aria-controls="page-nav-tools-${safe(area.id)}"
   >
-    ${sanitizeString(area.name)}
+    <span>${sanitizeString(area.name)}</span>
+    <span class="page-nav__area-chevron" aria-hidden="true"></span>
   </button>
 `;
 
@@ -182,27 +183,50 @@ const renderAreasPanel = (areas: ReadonlyArray<NavBarArea>) => {
       ${areas.length > 0
         ? html`
             <div class="page-nav__drilldown">
-              <div
-                class="page-nav__area-list"
-                aria-label="Makespace areas"
-              >
-                ${joinHtml(
-                  areasWithTools.map((area, index) =>
-                    renderAreaButton(area, index === 0)
-                  )
-                )}
-                ${areasWithoutTools.length > 0
-                  ? html`
-                      <div
-                        class="page-nav__empty-area-list"
-                        aria-label="Areas without listed tools"
-                      >
-                        ${joinHtml(areasWithoutTools.map(renderEmptyAreaLink))}
-                      </div>
-                    `
-                  : html``}
+              <div class="page-nav__area-column">
+                <div
+                  class="page-nav__area-list"
+                  aria-label="Makespace areas"
+                >
+                  ${joinHtml(
+                    areasWithTools.map((area, index) =>
+                      renderAreaButton(area, index === 0)
+                    )
+                  )}
+                  ${areasWithoutTools.length > 0
+                    ? html`
+                        <div
+                          class="page-nav__empty-area-list"
+                          aria-label="Areas without listed tools"
+                        >
+                          ${joinHtml(areasWithoutTools.map(renderEmptyAreaLink))}
+                        </div>
+                      `
+                    : html``}
+                </div>
+                <div
+                  class="page-nav__area-scrollbar"
+                  data-page-nav-area-scrollbar
+                  aria-hidden="true"
+                >
+                  <span
+                    class="page-nav__area-scrollbar-thumb"
+                    data-page-nav-area-scrollbar-thumb
+                  ></span>
+                </div>
               </div>
               <div class="page-nav__tools" data-page-nav-tools>
+                <button
+                  type="button"
+                  class="page-nav__mobile-area-back"
+                  data-page-nav-area-back
+                >
+                  <span
+                    class="page-nav__mobile-back-chevron"
+                    aria-hidden="true"
+                  ></span>
+                  <span>Back to all areas</span>
+                </button>
                 ${joinHtml(
                   areasWithTools.map((area, index) =>
                     renderToolPanel(area, index === 0)
@@ -280,6 +304,7 @@ export const navBar = (
         />
       </a>
       <div
+        id="page-nav-areas-menu"
         class="page-nav__menu page-nav__menu--areas"
         data-page-nav-menu="areas"
       >
@@ -290,11 +315,12 @@ export const navBar = (
           aria-expanded="false"
           aria-controls="page-nav-areas-panel"
         >
-          Areas &amp; tools
+          <span>Areas &amp; tools</span>
+          <span class="page-nav__chevron" aria-hidden="true"></span>
         </a>
         ${renderAreasPanel(viewModel.areas)}
       </div>
-      <div class="page-nav__secondary-actions">
+      <div id="page-nav-secondary-actions" class="page-nav__secondary-actions">
         <a class="page-nav__action" href="/raise-issue">Raise an issue</a>
         <div
           class="page-nav__menu page-nav__menu--sites"
@@ -307,12 +333,24 @@ export const navBar = (
             aria-expanded="false"
             aria-controls="page-nav-sites-panel"
           >
-            Community
+            <span>Community</span>
+            <span class="page-nav__chevron" aria-hidden="true"></span>
           </a>
           ${renderSitesPanel()}
         </div>
         ${isSuperUser ? html`<a class="page-nav__admin" href="/admin">Admin</a>` : html``}
       </div>
+      <button
+        type="button"
+        class="jsonly page-nav__mobile-menu-toggle"
+        data-page-nav-mobile-toggle
+        aria-expanded="false"
+        aria-controls="page-nav-areas-menu page-nav-secondary-actions"
+        aria-label="Open menu"
+      >
+        <span class="page-nav__mobile-menu-label">Menu</span>
+        <span class="page-nav__mobile-menu-close" aria-hidden="true"></span>
+      </button>
       <div
         class="page-nav__profile page-nav__menu page-nav__menu--profile"
         data-page-nav-menu="profile"
@@ -337,9 +375,23 @@ export const navBar = (
         var toggles = nav.querySelectorAll('[data-page-nav-toggle]');
         var areaButtons = nav.querySelectorAll('[data-page-nav-area-button]');
         var toolPanels = nav.querySelectorAll('[data-page-nav-tools-panel]');
-        var hoverMedia = window.matchMedia(
-          '(min-width: 48.01rem) and (hover: hover) and (pointer: fine)'
+        var drilldown = nav.querySelector('.page-nav__drilldown');
+        var areaList = nav.querySelector('.page-nav__area-list');
+        var areaScrollbar = nav.querySelector('[data-page-nav-area-scrollbar]');
+        var areaScrollbarThumb = nav.querySelector(
+          '[data-page-nav-area-scrollbar-thumb]'
         );
+        var areaBackButton = nav.querySelector('[data-page-nav-area-back]');
+        var mobileMenuToggle = nav.querySelector('[data-page-nav-mobile-toggle]');
+        var lastAreaButton = null;
+        // Must match the layout breakpoint in styles.css.
+        var breakpointRem = 48;
+        var hoverMedia = window.matchMedia(
+          '(min-width: ' + (breakpointRem + 0.01) + 'rem) and (hover: hover) and (pointer: fine)'
+        );
+        var mobileMedia = window.matchMedia('(max-width: ' + breakpointRem + 'rem)');
+
+        nav.classList.add('has-mobile-menu');
 
         function setMenuOpen(name, isOpen) {
           var toggle = nav.querySelector('[data-page-nav-toggle="' + name + '"]');
@@ -347,6 +399,13 @@ export const navBar = (
           if (!toggle || !panel) return;
           panel.hidden = !isOpen;
           toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+          if (name === 'areas' && !isOpen && drilldown) {
+            drilldown.classList.remove('is-showing-tools');
+            drilldown.classList.remove('is-returning-to-areas');
+          }
+          if (name === 'areas' && isOpen && areaList) {
+            window.requestAnimationFrame(updateAreaScrollbar);
+          }
         }
 
         function closeMenus() {
@@ -364,6 +423,40 @@ export const navBar = (
 
         function usesHoverMenus() {
           return hoverMedia.matches;
+        }
+
+        function usesMobileDrilldown() {
+          return mobileMedia.matches;
+        }
+
+        function setMobileMenuOpen(isOpen) {
+          nav.classList.toggle('is-mobile-menu-open', isOpen);
+          if (!mobileMenuToggle) return;
+          mobileMenuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+          mobileMenuToggle.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
+          if (!isOpen) closeMenus();
+        }
+
+        mobileMedia.addEventListener('change', function (event) {
+          if (!event.matches) setMobileMenuOpen(false);
+        });
+
+        function updateAreaScrollbar() {
+          if (!areaList || !areaScrollbar || !areaScrollbarThumb) return;
+          var scrollRange = areaList.scrollHeight - areaList.clientHeight;
+          areaScrollbar.hidden = scrollRange <= 1;
+          if (scrollRange <= 1) return;
+
+          var trackHeight = areaScrollbar.clientHeight;
+          var thumbHeight = Math.max(
+            32,
+            trackHeight * (areaList.clientHeight / areaList.scrollHeight)
+          );
+          var thumbRange = trackHeight - thumbHeight;
+          var thumbTop = thumbRange * (areaList.scrollTop / scrollRange);
+          areaScrollbarThumb.style.height = thumbHeight + 'px';
+          areaScrollbarThumb.style.transform =
+            'translateY(' + thumbTop + 'px)';
         }
 
         function activateArea(areaId) {
@@ -417,6 +510,12 @@ export const navBar = (
               }
             }
             activateArea(button.getAttribute('data-area-id'));
+            if (usesMobileDrilldown() && drilldown) {
+              lastAreaButton = button;
+              drilldown.classList.remove('is-returning-to-areas');
+              drilldown.classList.add('is-showing-tools');
+              if (areaBackButton) areaBackButton.focus();
+            }
           });
 
           button.addEventListener('mouseenter', function () {
@@ -426,15 +525,94 @@ export const navBar = (
           });
         });
 
+        if (areaBackButton) {
+          areaBackButton.addEventListener('click', function () {
+            if (!drilldown) return;
+            drilldown.classList.add('is-returning-to-areas');
+            drilldown.classList.remove('is-showing-tools');
+            if (lastAreaButton) lastAreaButton.focus();
+          });
+        }
+
+        if (areaList) {
+          areaList.addEventListener('scroll', updateAreaScrollbar);
+          areaList.addEventListener('animationend', function () {
+            if (drilldown) {
+              drilldown.classList.remove('is-returning-to-areas');
+            }
+          });
+        }
+
+        window.addEventListener('resize', updateAreaScrollbar);
+
+        if (areaScrollbar && areaScrollbarThumb && areaList) {
+          var dragStartY = 0;
+          var dragStartScroll = 0;
+
+          areaScrollbar.addEventListener('click', function (event) {
+            if (event.target === areaScrollbarThumb) return;
+            var rect = areaScrollbar.getBoundingClientRect();
+            var thumbHeight = areaScrollbarThumb.offsetHeight;
+            var thumbRange = areaScrollbar.clientHeight - thumbHeight;
+            if (thumbRange <= 0) return;
+            var scrollRange = areaList.scrollHeight - areaList.clientHeight;
+            var target = event.clientY - rect.top - thumbHeight / 2;
+            areaList.scrollTop =
+              scrollRange * Math.max(0, Math.min(1, target / thumbRange));
+          });
+
+          areaScrollbarThumb.addEventListener('pointerdown', function (event) {
+            event.preventDefault();
+            dragStartY = event.clientY;
+            dragStartScroll = areaList.scrollTop;
+            areaScrollbarThumb.setPointerCapture(event.pointerId);
+            areaScrollbarThumb.classList.add('is-dragging');
+          });
+
+          areaScrollbarThumb.addEventListener('pointermove', function (event) {
+            if (!areaScrollbarThumb.hasPointerCapture(event.pointerId)) return;
+            var thumbRange =
+              areaScrollbar.clientHeight - areaScrollbarThumb.offsetHeight;
+            if (thumbRange <= 0) return;
+            var scrollRange = areaList.scrollHeight - areaList.clientHeight;
+            areaList.scrollTop =
+              dragStartScroll +
+              (event.clientY - dragStartY) * (scrollRange / thumbRange);
+          });
+
+          var endThumbDrag = function (event) {
+            if (areaScrollbarThumb.hasPointerCapture(event.pointerId)) {
+              areaScrollbarThumb.releasePointerCapture(event.pointerId);
+            }
+            areaScrollbarThumb.classList.remove('is-dragging');
+          };
+
+          areaScrollbarThumb.addEventListener('pointerup', endThumbDrag);
+          areaScrollbarThumb.addEventListener('pointercancel', endThumbDrag);
+        }
+
+        if (mobileMenuToggle) {
+          mobileMenuToggle.addEventListener('click', function () {
+            setMobileMenuOpen(
+              mobileMenuToggle.getAttribute('aria-expanded') !== 'true'
+            );
+          });
+        }
+
         document.addEventListener('click', function (event) {
           if (!nav.contains(event.target)) {
             closeMenus();
+            if (usesMobileDrilldown()) setMobileMenuOpen(false);
           }
         });
 
         document.addEventListener('keydown', function (event) {
           if (event.key === 'Escape') {
             closeMenus();
+            if (usesMobileDrilldown()) {
+              setMobileMenuOpen(false);
+              if (mobileMenuToggle) mobileMenuToggle.focus();
+            }
           }
         });
       })();
