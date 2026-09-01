@@ -1,5 +1,7 @@
 import {addTrainer} from './add-trainer';
 import {addTrainerForm} from './add-trainer-form';
+import {removeTrainer} from './remove-trainer';
+import {removeTrainerForm} from './remove-trainer-form';
 
 import {markMemberTrained} from './mark-member-trained';
 import {markMemberTrainedBy} from './mark-member-trained-by';
@@ -12,6 +14,10 @@ export const trainers = {
   add: {
     ...addTrainer,
     ...addTrainerForm,
+  },
+  remove: {
+    ...removeTrainer,
+    ...removeTrainerForm,
   },
   markTrained: {
     ...markMemberTrained,

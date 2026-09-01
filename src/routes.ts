@@ -48,6 +48,7 @@ export const initRoutes = (
     ...command('areas', 'set-mailing-List', commands.area.setMailingList),
     ...command('equipment', 'add', commands.equipment.add),
     ...command('equipment', 'add-trainer', commands.trainers.add),
+    ...command('equipment', 'remove-trainer', commands.trainers.remove),
     ...command(
       'equipment',
       'add-training-sheet',

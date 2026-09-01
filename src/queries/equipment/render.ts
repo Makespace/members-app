@@ -91,6 +91,24 @@ const addTrainer = (viewModel: ViewModel) =>
     O.getOrElse(() => html``)
   );
 
+const removeTrainer = (viewModel: ViewModel) =>
+  pipe(
+    viewModel,
+    O.of,
+    O.filter(isOwner),
+    O.filter(viewModel => viewModel.equipment.trainers.length > 0),
+    O.map(viewModel => viewModel.equipment.id),
+    O.map(
+      id =>
+        html` <li>
+          <a href="/equipment/remove-trainer?equipment=${id}">
+            Remove a trainer
+          </a>
+        </li>`
+    ),
+    O.getOrElse(() => html``)
+  );
+
 const registerSheet = (viewModel: ViewModel) =>
   pipe(
     viewModel,
@@ -164,7 +182,8 @@ const retireEquipment = (viewModel: ViewModel) =>
 const equipmentActions = (viewModel: ViewModel) => html`
   <ul>
     ${trainMember(viewModel)} ${adminMarkTrainedBy(viewModel)}
-    ${addTrainer(viewModel)} ${registerSheet(viewModel)}
+    ${addTrainer(viewModel)} ${removeTrainer(viewModel)}
+    ${registerSheet(viewModel)}
     ${currentSheet(viewModel)} ${removeTrainingSheet(viewModel)}
     ${retireEquipment(viewModel)}
   </ul>
