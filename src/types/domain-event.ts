@@ -81,6 +81,11 @@ const TrainerAdded = defineEvent('TrainerAdded', {
   equipmentId: tt.UUID,
 });
 
+const TrainerRemoved = defineEvent('TrainerRemoved', {
+  memberNumber: t.number,
+  equipmentId: tt.UUID,
+});
+
 const MemberNumberLinkedToEmail = defineEvent('MemberNumberLinkedToEmail', {
   memberNumber: t.number,
   email: EmailAddressCodec,
@@ -246,6 +251,7 @@ export const events = [
   SuperUserDeclared,
   SuperUserRevoked,
   TrainerAdded,
+  TrainerRemoved,
   MemberNumberLinkedToEmail,
   MemberEmailAdded,
   MemberEmailVerificationRequested,
@@ -281,6 +287,7 @@ export const DomainEvent = t.union([
   SuperUserDeclared.codec,
   SuperUserRevoked.codec,
   TrainerAdded.codec,
+  TrainerRemoved.codec,
   MemberNumberLinkedToEmail.codec,
   MemberEmailAdded.codec,
   MemberEmailVerificationRequested.codec,
