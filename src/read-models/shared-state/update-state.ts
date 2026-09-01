@@ -260,6 +260,21 @@ const _updateState =
           .run();
         break;
       }
+      case 'TrainerRemoved': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to remove trainer, unknown member number: '${event.memberNumber}'`);
+        }
+        tx.delete(trainersTable)
+          .where(
+            and(
+              eq(trainersTable.userId, userId.value),
+              eq(trainersTable.equipmentId, event.equipmentId)
+            )
+          )
+          .run();
+        break;
+      }
       case 'MemberTrainedOnEquipment': {
         const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
 
