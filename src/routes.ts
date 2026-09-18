@@ -9,6 +9,7 @@ import * as queries from './queries';
 import {Route, get, post} from './types/route';
 import {authRoutes} from './authentication';
 import {queryToHandler, commandToHandlers, ping} from './http';
+import {apiToHandlers} from './http/api-to-handlers';
 import {emailHandler} from './http/email-handler';
 import expressAsyncHandler from 'express-async-handler';
 import {backfillTrainingQuizTimeline} from './training-quiz/backfill-timeline';
@@ -24,6 +25,7 @@ export const initRoutes = (
 ): ReadonlyArray<Route> => {
   const query = queryToHandler(deps);
   const command = commandToHandlers(deps, conf);
+  const api = apiToHandlers(deps, conf);
   const email = emailHandler(conf, deps);
   return [
     query('/', queries.me),
@@ -201,6 +203,23 @@ export const initRoutes = (
 
     // Temporary location for POC - may move under individual equipments eventually.
     query('/trouble-tickets', queries.troubleTickets),
+    // Trouble ticket write side. create/set-equipment/edit-title are API-only
+    // (bearer token); the status actions have confirmation pages.
+    ...api('trouble-tickets', 'create', commands.troubleTickets.create),
+    ...command('trouble-tickets', 'assign', commands.troubleTickets.assign),
+    ...command('trouble-tickets', 'resolve', commands.troubleTickets.resolve),
+    ...command('trouble-tickets', 'park', commands.troubleTickets.park),
+    ...command(
+      'trouble-tickets',
+      'needs-help',
+      commands.troubleTickets.needsHelp
+    ),
+    ...api(
+      'trouble-tickets',
+      'set-equipment',
+      commands.troubleTickets.setEquipment
+    ),
+    ...api('trouble-tickets', 'edit-title', commands.troubleTickets.editTitle),
     query('/google', queries.logGoogleJson),
     ...authRoutes(deps, conf),
   ];

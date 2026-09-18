@@ -223,6 +223,13 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       },
       troubleTickets: {
         record: frameworkify(commands.troubleTickets.record),
+        create: frameworkify(commands.troubleTickets.create),
+        assign: frameworkify(commands.troubleTickets.assign),
+        resolve: frameworkify(commands.troubleTickets.resolve),
+        park: frameworkify(commands.troubleTickets.park),
+        needsHelp: frameworkify(commands.troubleTickets.needsHelp),
+        setEquipment: frameworkify(commands.troubleTickets.setEquipment),
+        editTitle: frameworkify(commands.troubleTickets.editTitle),
       },
     },
     trainingSummaryDeps: {
