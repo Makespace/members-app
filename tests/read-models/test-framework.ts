@@ -221,6 +221,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       trainingQuiz: {
         record: frameworkify(commands.trainingQuiz.record),
       },
+      troubleTickets: {
+        record: frameworkify(commands.troubleTickets.record),
+      },
     },
     trainingSummaryDeps: {
       logger,

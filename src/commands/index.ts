@@ -7,6 +7,7 @@ import {superUser} from './super-user';
 import {ownerAgreementInvite} from './owner-agreement-invite';
 import {eventLog} from './event-log';
 import {trainingQuiz} from './training-quiz';
+import {troubleTickets} from './trouble-tickets';
 
 export const commands = {
   area,
@@ -17,6 +18,7 @@ export const commands = {
   members,
   eventLog,
   trainingQuiz,
+  troubleTickets,
 };
 
 export const sendEmailCommands = {

@@ -41,6 +41,12 @@ import {
   hasQuizRowHash,
   TrainingQuizCompletionRow,
 } from './training-quiz/get';
+import {
+  getAllTroubleTickets,
+  getTroubleTicketById,
+  hasTroubleTicketRowHash,
+} from './trouble-tickets/get';
+import {TroubleTicket} from '../../types/trouble-ticket';
 import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
 import { TrainingSheetId } from '../../types/training-sheet';
 import { EquipmentId } from '../../types/equipment-id';
@@ -111,6 +117,11 @@ export type SharedReadModel = {
       memberNumber: number
     ) => ReadonlyArray<TrainingQuizCompletionRow>;
   };
+  troubleTickets: {
+    hasRowHash: (rowHash: string) => boolean;
+    getAll: () => ReadonlyArray<TroubleTicket>;
+    getById: (id: UUID) => O.Option<TroubleTicket>;
+  };
 };
 
 export const initSharedReadModel = (
@@ -173,6 +184,11 @@ export const initSharedReadModel = (
       importedRowHashes: getImportedQuizRowHashes(readModelDb),
       getCompletionsForSheet: getCompletionsForSheet(readModelDb),
       getCompletionsForMember: getCompletionsForMember(readModelDb),
+    },
+    troubleTickets: {
+      hasRowHash: hasTroubleTicketRowHash(readModelDb),
+      getAll: getAllTroubleTickets(readModelDb),
+      getById: getTroubleTicketById(readModelDb),
     },
   };
 };
