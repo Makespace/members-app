@@ -61,7 +61,7 @@ export type TestFramework = {
   depsForCommands: Dependencies;
   eventStoreDb: libsqlClient.Client;
   extDB: ExternalStateDB;
-  getTroubleTicketData: Dependencies['getTroubleTicketData'];
+  getTroubleTicketData: ReturnType<typeof getTroubleTicketData>;
   updateTrainingSheetCache: SyncWorkerDependencies['updateTrainingSheetCache'];
   updateTroubleTicketCache: SyncWorkerDependencies['updateTroubleTicketCache'];
   close: () => void;
@@ -124,10 +124,6 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     lastQuizSync: lastSync(extDBDrizzle),
     getSheetData: getSheetData(extDBDrizzle),
     getSheetDataByMemberNumber: getSheetDataByMemberNumber(extDBDrizzle),
-    getTroubleTicketData: getTroubleTicketData(
-      extDBDrizzle,
-      O.some(TROUBLE_TICKET_SHEET_ID)
-    ),
     getEventByIndex: getEventByIndex(eventDB),
     getDeletedEventByIndex: getDeletedEventByIndex(eventDB),
   };

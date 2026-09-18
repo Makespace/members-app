@@ -33,13 +33,12 @@ type TroubleTicketIngestSummary = {
 // TroubleTicketCreated event, skipping any already imported (dedup by hash).
 // Idempotent and re-runnable.
 //
-// Deliberately NOT exposed over HTTP and NOT yet wired into the sync worker:
-// appending claims each row's hash with recordedAt = now, which would
-// permanently prevent the one-time timeline backfill from weaving that row in
-// at its historical submittedAt. This function is reserved for the
-// going-forward sync-worker poller, which only ever sees fresh rows (where
-// append-at-tail is correct) and must only be wired up after the backfill has
-// run and been verified on prod.
+// Deliberately NOT exposed over HTTP: appending claims each row's hash with
+// recordedAt = now, which would permanently prevent the one-time timeline
+// backfill from weaving that row in at its historical submittedAt. This
+// function is reserved for the going-forward sync-worker poller, which only
+// ever sees fresh rows (where append-at-tail is correct); the poller wiring
+// must only deploy after the backfill has run and been verified on prod.
 //
 // Runs sequentially because commitEvent refreshes the read model after each
 // append, so the command's dedup check sees events created earlier in this run.

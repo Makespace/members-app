@@ -2,7 +2,6 @@ import {Config} from '../configuration';
 import {Dependencies} from '../dependencies';
 import {createRateLimiter} from './rate-limit-sending-of-emails';
 import {sendEmail} from './send-email';
-import * as O from 'fp-ts/Option';
 import createLogger, {LoggerOptions} from 'pino';
 import nodemailer from 'nodemailer';
 import {commitEvent} from './event-store/commit-event';
@@ -20,7 +19,6 @@ import {rebuildEventTimeline} from '../training-quiz/rebuild-event-timeline';
 import {initSharedReadModel} from '../read-models/shared-state';
 import {lastSync} from '../sync-worker/db/last_sync';
 import {getSheetData, getSheetDataByMemberNumber} from '../sync-worker/db/get_sheet_data';
-import {getTroubleTicketData} from '../sync-worker/db/get_trouble_ticket_data';
 import { initExternalStateDB } from '../sync-worker/external-state-db';
 
 export const initLogger = (conf: Config) => {
@@ -94,10 +92,6 @@ export const initDependencies = (
     lastQuizSync: lastSync(extDB),
     getSheetData: getSheetData(extDB),
     getSheetDataByMemberNumber: getSheetDataByMemberNumber(extDB),
-    getTroubleTicketData: getTroubleTicketData(
-      extDB,
-      O.fromNullable(conf.TROUBLE_TICKET_SHEET)
-    ),
     // getPassedQuizResults: getPassedQuizResults(dbClient),
     // getFailedQuizResults: getFailedQuizResults(dbClient),
   };
