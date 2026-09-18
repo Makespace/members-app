@@ -104,6 +104,11 @@ describe('trouble ticket timeline backfill', () => {
       ticketRow(3, new Date('2025-03-26T22:47:01.000Z'), 'New issue'),
     ]);
 
+    const canaryPlan = await planTroubleTicketBackfill(framework.depsForCommands)(
+      new Date('2022-01-01T00:00:00.000Z')
+    );
+    expect(canaryPlan).toMatchObject({wouldInsert: 1, excludedByScope: 1});
+
     const canary = await backfillTroubleTicketTimeline(
       framework.depsForCommands
     )(new Date('2022-01-01T00:00:00.000Z'));
@@ -127,6 +132,7 @@ describe('trouble ticket timeline backfill', () => {
       totalCandidates: 1,
       wouldInsert: 1,
       alreadyImported: 0,
+      excludedByScope: 0,
     });
     expect(plan.sample).toHaveLength(1);
     expect(plan.sample[0].issue).toBe('Ancient issue');

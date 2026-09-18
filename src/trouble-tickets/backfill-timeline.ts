@@ -16,6 +16,7 @@ type TroubleTicketBackfillPlan = {
   totalCandidates: number;
   wouldInsert: number;
   alreadyImported: number;
+  excludedByScope: number;
   sample: ReadonlyArray<{
     submittedAt: Date;
     submittedEquipment: string | null;
@@ -41,6 +42,7 @@ export const planTroubleTicketBackfill =
 
     const batchHashes = new Set<string>();
     let alreadyImported = 0;
+    let excludedByScope = 0;
     const toInsert = candidates.filter(candidate => {
       if (
         deps.sharedReadModel.troubleTickets.hasRowHash(candidate.rowHash) ||
@@ -50,6 +52,7 @@ export const planTroubleTicketBackfill =
         return false;
       }
       if (before !== undefined && candidate.submittedAt >= before) {
+        excludedByScope++;
         return false;
       }
       batchHashes.add(candidate.rowHash);
@@ -90,6 +93,7 @@ export const planTroubleTicketBackfill =
       totalCandidates: candidates.length,
       wouldInsert: inserts.length,
       alreadyImported,
+      excludedByScope,
       sample: toInsert.slice(0, SAMPLE_SIZE).map(candidate => ({
         submittedAt: candidate.submittedAt,
         submittedEquipment: candidate.submittedEquipment,
