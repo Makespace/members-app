@@ -9,8 +9,9 @@ import {troubleTicketRowHash} from '../../trouble-tickets/row-hash';
 
 // Creates a trouble ticket directly (admin/super user). Ongoing tickets normally arrive
 // via the sync-worker ingest from the Google Form; this command exists for seeding local
-// dev data and for future manual entry. Generates the dedup rowHash from the supplied
-// fields so re-running a seed is idempotent.
+// dev data and for future manual entry. Idempotent by ticket id: re-running a seed with
+// the same fixed id is a no-op. (The rowHash includes the creation time, so it cannot be
+// the dedup key here - two deliberate manual tickets may otherwise be identical.)
 const codec = t.strict({
   id: tt.UUID,
   submittedEquipment: t.union([t.string, t.null]),
@@ -29,6 +30,9 @@ type CreateTroubleTicket = t.TypeOf<typeof codec>;
 const SEED_SHEET_ID = 'manual';
 
 const process: Command<CreateTroubleTicket>['process'] = input => {
+  if (O.isSome(input.rm.troubleTickets.getById(input.command.id))) {
+    return TE.right(O.none);
+  }
   const submittedAt = new Date();
   const rowHash = troubleTicketRowHash({
     sheetId: SEED_SHEET_ID,
