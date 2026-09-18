@@ -120,5 +120,28 @@ describe('trouble-tickets read model', () => {
       const [ticket] = framework.sharedReadModel.troubleTickets.getAll();
       expect(ticket.equipmentId).toBeNull();
     });
+
+    it('late-binds a ticket recorded before its equipment existed', async () => {
+      // A backfilled historical ticket replays earlier in the log than the
+      // EquipmentAdded event for the machine it names; the link must be made
+      // when the equipment arrives.
+      await framework.commands.troubleTickets.record({
+        ...arbitraryTicket(),
+        submittedEquipment: 'CNC Router',
+      });
+      expect(
+        framework.sharedReadModel.troubleTickets.getAll()[0].equipmentId
+      ).toBeNull();
+
+      const lateEquipmentId = faker.string.uuid() as UUID;
+      await framework.commands.equipment.add({
+        id: lateEquipmentId,
+        name: 'CNC Router' as NonEmptyString,
+        areaId,
+      });
+
+      const [ticket] = framework.sharedReadModel.troubleTickets.getAll();
+      expect(ticket.equipmentId).toStrictEqual(lateEquipmentId);
+    });
   });
 });
