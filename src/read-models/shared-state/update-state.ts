@@ -1,4 +1,5 @@
 import {DomainEvent, StoredDomainEvent} from '../../types/domain-event';
+import {UUID} from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import {
   areasTable,
@@ -12,6 +13,8 @@ import {
   trainersTable,
   trainingQuizCompletionsTable,
   trainingStatsNotificationTable,
+  deletedTroubleTicketRowHashesTable,
+  troubleTicketsTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, eq, inArray, isNull, sql} from 'drizzle-orm';
@@ -26,7 +29,7 @@ import { InconsistentEventError } from './inconsistent-event-error';
 import { insertMemberNumber } from './insert-member-number';
 import { insertMemberEmail } from './insert-member-email';
 import { setPrimaryEmailAddress } from './set-primary-email';
-import { getEquipmentMinimal } from './equipment/get';
+import { getEquipmentMinimal, resolveEquipmentByName } from './equipment/get';
 import { generateUserId } from './member/generate-user-id';
 import { gravatarHashFromEmail } from '../avatar';
 
@@ -221,6 +224,19 @@ const _updateState =
       case 'EquipmentAdded': {
         tx.insert(equipmentTable)
           .values({id: event.id, name: event.name, areaId: event.areaId})
+          .run();
+        // Late-bind trouble tickets: a backfilled ticket sits earlier in the
+        // log than the EquipmentAdded event for the machine it names, so its
+        // creation arm could not resolve the name. Link any still-unresolved
+        // tickets whose submitted string matches this equipment.
+        tx.update(troubleTicketsTable)
+          .set({equipmentId: event.id as UUID})
+          .where(
+            and(
+              isNull(troubleTicketsTable.equipmentId),
+              sql`lower(trim(${troubleTicketsTable.submittedEquipment})) = ${event.name.trim().toLowerCase()}`
+            )
+          )
           .run();
         break;
       }
@@ -570,6 +586,38 @@ const _updateState =
           .run();
         break;
       }
+      case 'TroubleTicketCreated': {
+        // Resolve the raw equipment string to a known equipment record; a miss
+        // leaves equipmentId null (the "Unassigned" bucket). Idempotent: the
+        // unique rowHash / primary key make re-projecting the same event a
+        // no-op.
+        const equipmentId = event.submittedEquipment
+          ? O.toNullable(resolveEquipmentByName(tx)(event.submittedEquipment))
+          : null;
+        tx.insert(troubleTicketsTable)
+          .values({
+            id: event.id,
+            rowHash: event.rowHash,
+            status: 'Todo',
+            title: event.issue,
+            submittedAt: event.submittedAt,
+            submittedName: event.submittedName,
+            submittedMemberNumber: event.submittedMemberNumber,
+            submittedEmail: event.submittedEmail,
+            submittedEquipment: event.submittedEquipment,
+            equipmentId,
+            responseJson: {
+              otherEquipmentDetail: event.otherEquipmentDetail,
+              status: event.status,
+              attempting: event.attempting,
+              issue: event.issue,
+              steps: event.steps,
+            },
+          })
+          .onConflictDoNothing()
+          .run();
+        break;
+      }
       default: {
         break;
       }
@@ -594,6 +642,14 @@ export function updateState (db: BetterSQLite3Database, logger: Logger, trackedE
         (tx: DatabaseTransaction) => {
           if (event.deletedAt === null) {
             _updateState(tx, event);
+          } else if (event.type === 'TroubleTicketCreated') {
+            // A deleted ticket must stay deleted: remember its rowHash so the
+            // ingest dedup doesn't re-import the same cached sheet row as a
+            // fresh event on the next sync cycle.
+            tx.insert(deletedTroubleTicketRowHashesTable)
+              .values({rowHash: event.rowHash})
+              .onConflictDoNothing()
+              .run();
           }
           if (trackedEvent) {
             _updateEventState(tx, event);

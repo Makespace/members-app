@@ -1,6 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {eq, isNotNull} from 'drizzle-orm';
+import {eq, isNotNull, sql} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as RR from 'fp-ts/ReadonlyRecord';
@@ -53,6 +53,24 @@ export const getAllEquipmentMinimal = (
   db: BetterSQLite3Database
 ): ReadonlyArray<MinimalEquipment> =>
   pipe(db.select().from(equipmentTable).all(), RA.map(transformRow));
+
+// Resolves a freeform equipment name (e.g. from the trouble-ticket form) to a
+// known equipment record. Case- and whitespace-insensitive; a miss returns
+// O.none and the caller decides what an unresolved name means.
+export const resolveEquipmentByName =
+  (db: BetterSQLite3Database) =>
+  (name: string): O.Option<UUID> =>
+    pipe(
+      db
+        .select({id: equipmentTable.id})
+        .from(equipmentTable)
+        .where(
+          sql`lower(trim(${equipmentTable.name})) = ${name.trim().toLowerCase()}`
+        )
+        .get(),
+      O.fromNullable,
+      O.map(row => row.id as UUID)
+    );
 
 export const getTrainingSheetIdMapping = (
   db: BetterSQLite3Database
