@@ -333,6 +333,22 @@ createTables.push(
   sql`CREATE INDEX IF NOT EXISTS troubleTickets_status_idx ON troubleTickets (status);`
 );
 
+// Row hashes of TroubleTicketCreated events that have been soft-deleted. Kept
+// so ingest dedup still recognises the cached sheet row - without this,
+// deleting a ticket event (e.g. for a data-removal request) would be undone on
+// the next sync cycle, which would re-import the same row as a fresh event.
+export const deletedTroubleTicketRowHashesTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS deletedTroubleTicketRowHashes (
+      rowHash TEXT PRIMARY KEY
+    )
+  `,
+  'deletedTroubleTicketRowHashes' as const,
+  {
+    rowHash: text('rowHash').primaryKey(),
+  }
+);
+
 export const eventStateTable = defineTable(
   sql`
     CREATE TABLE IF NOT EXISTS eventStateTable (
