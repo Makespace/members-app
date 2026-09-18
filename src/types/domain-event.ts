@@ -240,6 +240,28 @@ const TrainingQuizCompleted = defineEvent('TrainingQuizCompleted', {
   rowHash: t.string,
 });
 
+// A trouble ticket submitted via the Google Form, migrated from (or newly
+// scraped from) the trouble-ticket sheet cache. Stores only the raw facts from
+// the sheet row - member and equipment resolution happen downstream. The
+// submitter-provided identity fields are unverified free-form input. `rowHash`
+// is a stable dedup key so the same row is never imported twice.
+const TroubleTicketCreated = defineEvent('TroubleTicketCreated', {
+  id: tt.UUID,
+  rowHash: t.string,
+  sheetId: t.string,
+  submittedAt: tt.DateFromISOString,
+  submittedMemberNumber: t.union([t.number, t.null]),
+  submittedEmail: t.union([t.string, t.null]),
+  submittedName: t.union([t.string, t.null]),
+  submittedEquipment: t.union([t.string, t.null]),
+  // Parsed free-text answers, defaulted to '' when missing.
+  otherEquipmentDetail: t.string,
+  status: t.string,
+  attempting: t.string,
+  issue: t.string,
+  steps: t.string,
+});
+
 export const events = [
   AreaCreated,
   AreaRemoved,
@@ -274,6 +296,7 @@ export const events = [
   MemberRejoinedWithExistingNumber,
   TrainingStatNotificationSent,
   TrainingQuizCompleted,
+  TroubleTicketCreated,
 ];
 
 export const DomainEvent = t.union([
@@ -310,6 +333,7 @@ export const DomainEvent = t.union([
   MemberRejoinedWithExistingNumber.codec,
   TrainingStatNotificationSent.codec,
   TrainingQuizCompleted.codec,
+  TroubleTicketCreated.codec,
 ]);
 
 export const StoredDomainEvent = t.intersection([

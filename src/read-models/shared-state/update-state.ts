@@ -12,6 +12,7 @@ import {
   trainersTable,
   trainingQuizCompletionsTable,
   trainingStatsNotificationTable,
+  troubleTicketsTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, eq, inArray, isNull, sql} from 'drizzle-orm';
@@ -26,7 +27,7 @@ import { InconsistentEventError } from './inconsistent-event-error';
 import { insertMemberNumber } from './insert-member-number';
 import { insertMemberEmail } from './insert-member-email';
 import { setPrimaryEmailAddress } from './set-primary-email';
-import { getEquipmentMinimal } from './equipment/get';
+import { getEquipmentMinimal, resolveEquipmentByName } from './equipment/get';
 import { generateUserId } from './member/generate-user-id';
 import { gravatarHashFromEmail } from '../avatar';
 
@@ -565,6 +566,38 @@ const _updateState =
             emailProvided: event.emailProvided,
             score: event.score,
             maxScore: event.maxScore,
+          })
+          .onConflictDoNothing()
+          .run();
+        break;
+      }
+      case 'TroubleTicketCreated': {
+        // Resolve the raw equipment string to a known equipment record; a miss
+        // leaves equipmentId null (the "Unassigned" bucket). Idempotent: the
+        // unique rowHash / primary key make re-projecting the same event a
+        // no-op.
+        const equipmentId = event.submittedEquipment
+          ? O.toNullable(resolveEquipmentByName(tx)(event.submittedEquipment))
+          : null;
+        tx.insert(troubleTicketsTable)
+          .values({
+            id: event.id,
+            rowHash: event.rowHash,
+            status: 'Todo',
+            title: event.issue,
+            submittedAt: event.submittedAt,
+            submittedName: event.submittedName,
+            submittedMemberNumber: event.submittedMemberNumber,
+            submittedEmail: event.submittedEmail,
+            submittedEquipment: event.submittedEquipment,
+            equipmentId,
+            responseJson: {
+              otherEquipmentDetail: event.otherEquipmentDetail,
+              status: event.status,
+              attempting: event.attempting,
+              issue: event.issue,
+              steps: event.steps,
+            },
           })
           .onConflictDoNothing()
           .run();
