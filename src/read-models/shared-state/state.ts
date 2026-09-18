@@ -1,5 +1,10 @@
 import {BuildColumns, SQL, sql} from 'drizzle-orm';
+import {UUID} from 'io-ts-types';
 import {EmailAddress, GravatarHash, UserId} from '../../types';
+import {
+  TroubleTicketResponse,
+  TroubleTicketStatus,
+} from '../../types/trouble-ticket';
 import * as O from 'fp-ts/Option';
 import {blob, integer, SQLiteColumnBuilderBase, sqliteTable, SQLiteTableExtraConfig, text, uniqueIndex} from 'drizzle-orm/sqlite-core';
 
@@ -277,6 +282,71 @@ createTables.push(
 );
 createTables.push(
   sql`CREATE INDEX IF NOT EXISTS trainingQuizCompletions_memberNumberProvided_idx ON trainingQuizCompletions (memberNumberProvided);`
+);
+
+export const troubleTicketsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS troubleTickets (
+      id TEXT PRIMARY KEY,
+      rowHash TEXT NOT NULL UNIQUE,
+      status TEXT NOT NULL,
+      title TEXT NOT NULL,
+      submittedAt INTEGER NOT NULL,
+      submittedName TEXT,
+      submittedMemberNumber INTEGER,
+      submittedEmail TEXT,
+      submittedEquipment TEXT,
+      equipmentId TEXT,
+      responseJson TEXT NOT NULL
+    )
+  `,
+  'troubleTickets' as const,
+  {
+    id: text('id').notNull().primaryKey().$type<UUID>(),
+    rowHash: text('rowHash').notNull().unique(),
+    status: text('status').notNull().$type<TroubleTicketStatus>(),
+    // Editable title; defaults to the form's "issue" text at creation.
+    title: text('title').notNull(),
+    submittedAt: integer('submittedAt', {mode: 'timestamp_ms'}).notNull(),
+    submittedName: text('submittedName'),
+    submittedMemberNumber: integer('submittedMemberNumber'),
+    submittedEmail: text('submittedEmail'),
+    // The raw equipment string from the form; kept so the equipment link can be
+    // re-resolved or overridden later.
+    submittedEquipment: text('submittedEquipment'),
+    // Resolved equipment record; null means the "Unassigned" bucket.
+    equipmentId: text('equipmentId').$type<UUID>(),
+    responseJson: text('responseJson', {mode: 'json'})
+      .notNull()
+      .$type<TroubleTicketResponse>(),
+  }
+);
+
+// Lookups query tickets by equipment and by status; without these the read
+// model would scan the whole table each time. Added as raw statements because
+// the read model creates tables from createTables (the drizzle index metadata
+// above is not what builds the schema here).
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS troubleTickets_equipmentId_idx ON troubleTickets (equipmentId);`
+);
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS troubleTickets_status_idx ON troubleTickets (status);`
+);
+
+// Row hashes of TroubleTicketCreated events that have been soft-deleted. Kept
+// so ingest dedup still recognises the cached sheet row - without this,
+// deleting a ticket event (e.g. for a data-removal request) would be undone on
+// the next sync cycle, which would re-import the same row as a fresh event.
+export const deletedTroubleTicketRowHashesTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS deletedTroubleTicketRowHashes (
+      rowHash TEXT PRIMARY KEY
+    )
+  `,
+  'deletedTroubleTicketRowHashes' as const,
+  {
+    rowHash: text('rowHash').primaryKey(),
+  }
 );
 
 export const eventStateTable = defineTable(
