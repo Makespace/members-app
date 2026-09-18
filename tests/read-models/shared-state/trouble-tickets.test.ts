@@ -1,6 +1,6 @@
 import * as O from 'fp-ts/Option';
-import {faker} from '@faker-js/faker';
 import {Int} from 'io-ts';
+import {faker} from '@faker-js/faker';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {TestFramework, initTestFramework} from '../test-framework';
 import {getSomeOrFail} from '../../helpers';
@@ -73,7 +73,8 @@ describe('trouble-tickets read model', () => {
     // hash were forgotten, the ingest would re-import the cached sheet row.
     const ticket = arbitraryTicket();
     await framework.commands.troubleTickets.record(ticket);
-    const [event] = await framework.getAllEventsByType('TroubleTicketCreated');
+    // The only event in the store is the ticket we just recorded.
+    const [event] = await framework.getAllEvents();
 
     await framework.depsForCommands.deleteEvent(
       event.event_index,
