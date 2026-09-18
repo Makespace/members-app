@@ -364,6 +364,7 @@ export const troubleTicketAssigneesTable = defineTable(
       'trouble_ticket_assignees_ticket_user_unique'
     ).on(table.ticketId, table.userId),
   })
+);
 
 // Row hashes of TroubleTicketCreated events that have been soft-deleted. Kept
 // so ingest dedup still recognises the cached sheet row - without this,
