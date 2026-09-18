@@ -1,6 +1,6 @@
 import * as O from 'fp-ts/Option';
-import {faker} from '@faker-js/faker';
 import {Int} from 'io-ts';
+import {faker} from '@faker-js/faker';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {TestFramework, initTestFramework} from '../test-framework';
 import {getSomeOrFail} from '../../helpers';
@@ -66,6 +66,27 @@ describe('trouble-tickets read model', () => {
     expect(
       framework.sharedReadModel.troubleTickets.hasRowHash('unseen-hash')
     ).toBe(false);
+  });
+
+  it('keeps recognising the row hash after the ticket event is soft-deleted', async () => {
+    // Deleting a ticket event (e.g. a data-removal request) must stick: if the
+    // hash were forgotten, the ingest would re-import the cached sheet row.
+    const ticket = arbitraryTicket();
+    await framework.commands.troubleTickets.record(ticket);
+    // The only event in the store is the ticket we just recorded.
+    const [event] = await framework.getAllEvents();
+
+    await framework.depsForCommands.deleteEvent(
+      event.event_index,
+      'data removal request',
+      1337 as Int
+    )();
+    await framework.sharedReadModel.reset();
+
+    expect(framework.sharedReadModel.troubleTickets.getAll()).toHaveLength(0);
+    expect(
+      framework.sharedReadModel.troubleTickets.hasRowHash(ticket.rowHash)
+    ).toBe(true);
   });
 
   it('finds a ticket by id', async () => {

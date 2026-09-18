@@ -13,20 +13,22 @@ step-for-step; differences are called out.
 1. **#296** – the `TroubleTicketCreated` event, the `record` command (dedup by
    row hash), the read-model projection, and the `runTroubleTicketIngest`
    append driver. The driver is deliberately **not** wired to the sync worker
-   and **not** exposed over HTTP: appending a historical row claims its hash
-   with `recordedAt` = now, which would permanently prevent this PR from
-   weaving that row in at its historical time.
-2. **This PR** – the **one-time historical catch-up**: weaves cached
+   and **not** exposed over HTTP in that PR: appending a historical row claims
+   its hash with `recordedAt` = now, which would permanently prevent this PR
+   from weaving that row in at its historical time.
+2. **#297 (this PR)** – the **one-time historical catch-up**: weaves cached
    trouble-ticket rows into the log at the point in time they were actually
    submitted, renumbering `event_index` so replay order stays chronological.
    Exposed as `POST /api/trouble-tickets/backfill-timeline` — the **only**
    ticket-import endpoint. Supports `?dryRun=true` (report, write nothing) —
    this replaces the quiz migration's dry-run page; ticket volume is small
    enough that a JSON summary with a sample is sufficient.
-3. **Next** – the going-forward sync-worker poller + repointing the
-   `/trouble-tickets` page at the read model. **Do not merge the poller until
-   the backfill has run and been verified on prod** (see the ordering trap
-   above).
+3. **#298 (draft)** – the going-forward sync-worker poller + repointing the
+   `/trouble-tickets` page at the read model. **It stays draft until the
+   backfill has run and been verified on prod** (see the ordering trap above),
+   and its merge-deploy doubles as the post-backfill process restart (step 11).
+4. **#299** – the status workflow (assign/resolve/park/needs-help) — no
+   migration impact.
 
 > Only this PR rewrites history, and only once. Going forward, tickets are
 > appended normally (they are always newer than the tail), so the timeline
@@ -110,12 +112,23 @@ Care is still warranted:
 ### D. Verify
 9. **Re-run the same call** → expect `{"rewrote":false,"inserted":0}`.
 10. Re-run the dry-run call → expect `"wouldInsert":0`.
-11. Spot-check health — `/trouble-tickets` (still cache-backed until the next
-    PR), a member page, and login all work; `/event-log-order` (super-user)
-    shows no out-of-order events.
+11. **Restart the other processes.** Only the web process that served the
+    backfill resets its own read model; the sync worker (and any other
+    instance) refreshes incrementally by event index, which is wrong after a
+    renumbering, until restarted. Merging #298 right after verification
+    triggers a deploy that restarts everything — or run `fly apps restart` if
+    you need the gap closed sooner.
+12. Spot-check health — `/trouble-tickets` (still cache-backed until #298), a
+    member page, and login all work; `/event-log-order` (super-user) shows no
+    out-of-order events.
+
+> **After #298 is deployed, don't re-run the backfill.** The poller keeps the
+> log current from then on; the backfill remains idempotent, but re-running it
+> concurrently with a live poller serves no purpose and needlessly exercises
+> the rewrite path.
 
 ### E. Rollback (only if something looks wrong)
-12. **Restore from the Turso snapshot** (point-in-time restore to just before
+13. **Restore from the Turso snapshot** (point-in-time restore to just before
     the run — step 6) and restart the app. A run that *aborts* changes nothing
     and needs no rollback — this is only for a run that committed something
     wrong.

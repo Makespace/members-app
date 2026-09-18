@@ -14,6 +14,7 @@ import {
   trainingQuizCompletionsTable,
   trainingStatsNotificationTable,
   troubleTicketAssigneesTable,
+  deletedTroubleTicketRowHashesTable,
   troubleTicketsTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
@@ -773,6 +774,14 @@ export function updateState (db: BetterSQLite3Database, logger: Logger, trackedE
         (tx: DatabaseTransaction) => {
           if (event.deletedAt === null) {
             _updateState(tx, event);
+          } else if (event.type === 'TroubleTicketCreated') {
+            // A deleted ticket must stay deleted: remember its rowHash so the
+            // ingest dedup doesn't re-import the same cached sheet row as a
+            // fresh event on the next sync cycle.
+            tx.insert(deletedTroubleTicketRowHashesTable)
+              .values({rowHash: event.rowHash})
+              .onConflictDoNothing()
+              .run();
           }
           if (trackedEvent) {
             _updateEventState(tx, event);

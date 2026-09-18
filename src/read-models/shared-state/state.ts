@@ -364,6 +364,21 @@ export const troubleTicketAssigneesTable = defineTable(
       'trouble_ticket_assignees_ticket_user_unique'
     ).on(table.ticketId, table.userId),
   })
+
+// Row hashes of TroubleTicketCreated events that have been soft-deleted. Kept
+// so ingest dedup still recognises the cached sheet row - without this,
+// deleting a ticket event (e.g. for a data-removal request) would be undone on
+// the next sync cycle, which would re-import the same row as a fresh event.
+export const deletedTroubleTicketRowHashesTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS deletedTroubleTicketRowHashes (
+      rowHash TEXT PRIMARY KEY
+    )
+  `,
+  'deletedTroubleTicketRowHashes' as const,
+  {
+    rowHash: text('rowHash').primaryKey(),
+  }
 );
 
 export const eventStateTable = defineTable(

@@ -4,7 +4,11 @@ import {desc, eq, inArray, isNull} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {UUID} from 'io-ts-types';
-import {troubleTicketAssigneesTable, troubleTicketsTable} from '../state';
+import {
+  deletedTroubleTicketRowHashesTable,
+  troubleTicketAssigneesTable,
+  troubleTicketsTable,
+} from '../state';
 import {TroubleTicket} from '../../../types/trouble-ticket';
 
 type Row = typeof troubleTicketsTable.$inferSelect;
@@ -61,6 +65,9 @@ const withAssignees = (
   return pipe(rows, RA.map(transformRow(assignees)));
 };
 
+// True if the row has ever been imported - including tickets whose event has
+// since been soft-deleted. Deleted tickets must stay deleted: if this returned
+// false for them, the ingest would re-import the same cached sheet row.
 export const hasTroubleTicketRowHash =
   (db: BetterSQLite3Database) =>
   (rowHash: string): boolean =>
@@ -68,6 +75,11 @@ export const hasTroubleTicketRowHash =
       .select({rowHash: troubleTicketsTable.rowHash})
       .from(troubleTicketsTable)
       .where(eq(troubleTicketsTable.rowHash, rowHash))
+      .get() !== undefined ||
+    db
+      .select({rowHash: deletedTroubleTicketRowHashesTable.rowHash})
+      .from(deletedTroubleTicketRowHashesTable)
+      .where(eq(deletedTroubleTicketRowHashesTable.rowHash, rowHash))
       .get() !== undefined;
 
 export const getAllTroubleTickets =

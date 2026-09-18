@@ -109,16 +109,19 @@ const readExistingRows = async (eventDB: Client): Promise<ExistingRow[]> => {
 // writes a fresh Date.now(), so any change to a deletion row moves one of these.
 const driftGuard = (
   expectedMaxIndex: number,
+  expectedEventCount: number,
   expected: {count: number; deletedAtSum: number; memberSum: number}
 ): InStatement => ({
   sql: `INSERT INTO events (id, event_index, event_type, payload)
         SELECT 'drift-guard', NULL, 'drift-guard', 'drift-guard'
         WHERE (SELECT coalesce(max(event_index), 0) FROM events) <> ?
+           OR (SELECT count(*) FROM events) <> ?
            OR (SELECT count(*) FROM deleted_events) <> ?
            OR (SELECT coalesce(sum(deleted_at_unix_ms), 0) FROM deleted_events) <> ?
            OR (SELECT coalesce(sum(mark_deleted_by_member_number), 0) FROM deleted_events) <> ?`,
   args: [
     expectedMaxIndex,
+    expectedEventCount,
     expected.count,
     expected.deletedAtSum,
     expected.memberSum,
@@ -133,6 +136,18 @@ export const rebuildEventTimeline =
   async (
     inserts: ReadonlyArray<TimelineRow>
   ): Promise<TimelineRebuildSummary> => {
+    // Validate the INSERTS as strictly as the existing rows: a NaN
+    // recordedAtMs would make the sort comparator inconsistent, which can
+    // silently permute EXISTING events in the committed rewrite.
+    const invalidInserts = inserts.filter(
+      row => !Number.isFinite(row.recordedAtMs)
+    );
+    if (invalidInserts.length > 0) {
+      throw new Error(
+        `Refusing to rebuild timeline: ${invalidInserts.length} insert(s) have a non-finite recordedAtMs.`
+      );
+    }
+
     const existing = await readExistingRows(eventDB);
 
     // Nothing new to weave in => leave the source of truth completely untouched.
@@ -172,6 +187,7 @@ export const rebuildEventTimeline =
       // 0. Abort the whole batch if the log changed since we read it.
       driftGuard(
         existing.length > 0 ? existing[existing.length - 1].oldIndex : 0,
+        existing.length,
         expectedDeletions
       ),
       // 1. Clear deleted_events before events so the foreign key never dangles.
@@ -200,10 +216,19 @@ export const rebuildEventTimeline =
             'Refusing to rebuild timeline: a deleted_events row has a non-numeric event_index.'
           );
         }
+        const newIndex = oldToNewIndex.get(oldIndex);
+        if (newIndex === undefined) {
+          // A deletion pointing at a non-existent event must not fall back to
+          // its old number: after renumbering that index belongs to a
+          // DIFFERENT event, which would silently become soft-deleted.
+          throw new Error(
+            `Refusing to rebuild timeline: deleted_events references event_index ${oldIndex}, which does not exist in events.`
+          );
+        }
         return {
           sql: 'INSERT INTO deleted_events (event_index, deleted_at_unix_ms, delete_reason, mark_deleted_by_member_number) VALUES (?, ?, ?, ?)',
           args: [
-            oldToNewIndex.get(oldIndex) ?? oldIndex,
+            newIndex,
             deleted.deleted_at_unix_ms,
             deleted.delete_reason,
             deleted.mark_deleted_by_member_number,
