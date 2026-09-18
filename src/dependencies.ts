@@ -16,7 +16,6 @@ import {EventName} from './types/domain-event';
 import {SharedReadModel} from './read-models/shared-state';
 import {
   SheetDataTable,
-  TroubleTicketDataTable,
 } from './sync-worker/google/sheet-data-table';
 import { Int } from 'io-ts';
 import { ExternalStateDB } from './sync-worker/external-state-db';
@@ -69,7 +68,4 @@ export type Dependencies = {
   getSheetDataByMemberNumber: (
     memberNumber: number,
   ) => TE.TaskEither<string, SheetDataTable['rows']>,
-  getTroubleTicketData: (
-    from: O.Option<Date>
-  ) => TE.TaskEither<string, O.Option<TroubleTicketDataTable['rows']>>;
 };
