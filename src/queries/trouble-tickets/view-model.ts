@@ -1,6 +1,5 @@
-import * as O from 'fp-ts/Option';
-import {TroubleTicketDataTable} from '../../sync-worker/google/sheet-data-table';
+import {TroubleTicket} from '../../types/trouble-ticket';
 
 export type ViewModel = {
-  troubleTicketData: O.Option<TroubleTicketDataTable['rows']>;
+  tickets: ReadonlyArray<TroubleTicket>;
 };
