@@ -315,4 +315,54 @@ describe('rebuildEventTimeline', () => {
     expect(legacy.resource_id).toBe('legacy-resource-id');
     expect(legacy.resource_type).toBe('LegacyResource');
   });
+
+  it('refuses to rewrite when an insert has a non-finite recordedAtMs', async () => {
+    await framework.commands.area.create({
+      id: uuidv4() as UUID,
+      name: 'area-one' as NonEmptyString,
+    });
+    const badRow = {
+      ...quizTimelineRow(
+        new Date('2022-02-01T00:00:00Z'),
+        faker.string.alphanumeric(64)
+      ),
+      recordedAtMs: NaN,
+    };
+
+    await expect(
+      framework.depsForCommands.rebuildEventTimeline([badRow])
+    ).rejects.toThrow(/non-finite recordedAtMs/);
+
+    // Nothing was changed.
+    const rows = (
+      await framework.eventStoreDb.execute('SELECT count(*) AS c FROM events')
+    ).rows;
+    expect(Number(rows[0].c)).toBe(1);
+  });
+
+  it('refuses to rewrite when a deletion references a non-existent event', async () => {
+    await framework.commands.area.create({
+      id: uuidv4() as UUID,
+      name: 'area-one' as NonEmptyString,
+    });
+    // A dangling deletion: no event with index 99 exists. Falling back to the
+    // old number would soft-delete whatever event ends up at index 99. libsql
+    // enforces the FK by default, so this state needs FK enforcement off to
+    // set up - as it could be on an engine or dump/restore that skipped FKs.
+    await framework.eventStoreDb.execute('PRAGMA foreign_keys = OFF');
+    await framework.eventStoreDb.execute({
+      sql: 'INSERT INTO deleted_events (event_index, deleted_at_unix_ms, delete_reason, mark_deleted_by_member_number) VALUES (?, ?, ?, ?)',
+      args: [99, Date.now(), 'dangling', 1],
+    });
+    await framework.eventStoreDb.execute('PRAGMA foreign_keys = ON');
+
+    await expect(
+      framework.depsForCommands.rebuildEventTimeline([
+        quizTimelineRow(
+          new Date('2022-02-01T00:00:00Z'),
+          faker.string.alphanumeric(64)
+        ),
+      ])
+    ).rejects.toThrow(/does not exist in events/);
+  });
 });
