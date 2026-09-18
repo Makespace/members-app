@@ -44,6 +44,7 @@ import {
 import {
   getAllTroubleTickets,
   getTroubleTicketById,
+  getTroubleTicketsByEquipment,
   hasTroubleTicketRowHash,
 } from './trouble-tickets/get';
 import {TroubleTicket} from '../../types/trouble-ticket';
@@ -121,6 +122,7 @@ export type SharedReadModel = {
     hasRowHash: (rowHash: string) => boolean;
     getAll: () => ReadonlyArray<TroubleTicket>;
     getById: (id: UUID) => O.Option<TroubleTicket>;
+    getByEquipment: (equipmentId: UUID | null) => ReadonlyArray<TroubleTicket>;
   };
 };
 
@@ -189,6 +191,7 @@ export const initSharedReadModel = (
       hasRowHash: hasTroubleTicketRowHash(readModelDb),
       getAll: getAllTroubleTickets(readModelDb),
       getById: getTroubleTicketById(readModelDb),
+      getByEquipment: getTroubleTicketsByEquipment(readModelDb),
     },
   };
 };
