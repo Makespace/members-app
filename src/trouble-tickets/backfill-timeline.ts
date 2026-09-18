@@ -1,8 +1,10 @@
+import * as E from 'fp-ts/Either';
 import {v4 as uuidv4} from 'uuid';
 import {UUID} from 'io-ts-types';
 import {Dependencies} from '../dependencies';
 import {Actor} from '../types/actor';
 import {constructEvent} from '../types';
+import {DomainEvent} from '../types/domain-event';
 import {getTroubleTicketCandidates} from '../read-models/external-state/trouble-ticket-candidates';
 import {TimelineRow} from '../training-quiz/plan-timeline-rebuild';
 import {TimelineRebuildSummary} from '../training-quiz/rebuild-event-timeline';
@@ -38,6 +40,9 @@ const SAMPLE_SIZE = 5;
 export const planTroubleTicketBackfill =
   (deps: Pick<Dependencies, 'sharedReadModel' | 'extDB'>) =>
   async (before?: Date): Promise<TroubleTicketBackfillPlan> => {
+    // Dedup below reads the shared read model, which is eventually consistent;
+    // refresh first so recently-appended events are visible.
+    await deps.sharedReadModel.asyncRefresh()();
     const candidates = await getTroubleTicketCandidates(deps.extDB);
 
     const batchHashes = new Set<string>();
@@ -81,11 +86,26 @@ export const planTroubleTicketBackfill =
         // the log stays ordered by recordedAt.
         recordedAt: candidate.submittedAt,
       };
+      // We are about to write directly into the source of truth: verify the
+      // payload round-trips the DomainEvent codec (getAllEvents decodes the
+      // whole log with traverseArray, so ONE undecodable event would take the
+      // read side down), and that the timestamp is a real number (a NaN would
+      // corrupt the rebuild's sort).
+      const payload = JSON.stringify(event);
+      const recordedAtMs = candidate.submittedAt.getTime();
+      if (
+        !Number.isFinite(recordedAtMs) ||
+        E.isLeft(DomainEvent.decode(JSON.parse(payload)))
+      ) {
+        throw new Error(
+          `Refusing to backfill: cached trouble-ticket row (hash ${candidate.rowHash.slice(0, 12)}, sheet ${candidate.sheetId}) does not produce a valid event. Fix or purge the cache row and re-run.`
+        );
+      }
       return {
         id: uuidv4(),
         eventType: event.type,
-        payload: JSON.stringify(event),
-        recordedAtMs: candidate.submittedAt.getTime(),
+        payload,
+        recordedAtMs,
       };
     });
 
