@@ -53,3 +53,8 @@ event 'api/members/create' '{"memberNumber": "1234", "email": "foo@example.com"}
 # Mixed-case local part (for testing case-insensitive email login, issue #260)
 # Stored as "Joe@example.com"; logging in with "joe@example.com" should still work.
 event 'api/members/create' '{"memberNumber": "4321", "email": "Joe@example.com"}'
+
+# Trouble tickets (fixed ids so re-running the script is idempotent)
+# One resolves to the Metal Lathe, one is Unassigned (unknown equipment).
+event 'api/trouble-tickets/create' '{"id": "7c1f9a30-45c2-4b6e-9a11-2f8a5f0d3c21", "submittedEquipment": "Metal Lathe", "submittedMemberNumber": "8888", "submittedEmail": "lathe@example.com", "submittedName": "Lucy Lathe", "otherEquipmentDetail": "", "status": "Making bad noises", "attempting": "Turning a chair leg", "issue": "Loud grinding noise from the headstock", "steps": "Stopped the machine and cleaned the chuck"}'
+event 'api/trouble-tickets/create' '{"id": "b4e2d7f8-9c13-4a5b-8d6e-1f2a3b4c5d6f", "submittedEquipment": "Mystery Machine", "submittedMemberNumber": null, "submittedEmail": "new@example.com", "submittedName": "Neon Newmember", "otherEquipmentDetail": "The one in the corner", "status": "Dead", "attempting": "Switching it on", "issue": "No power at all", "steps": "Checked the fuse"}'
