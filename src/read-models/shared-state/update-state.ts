@@ -1,4 +1,5 @@
 import {DomainEvent, StoredDomainEvent} from '../../types/domain-event';
+import {UUID} from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import {
   areasTable,
@@ -222,6 +223,19 @@ const _updateState =
       case 'EquipmentAdded': {
         tx.insert(equipmentTable)
           .values({id: event.id, name: event.name, areaId: event.areaId})
+          .run();
+        // Late-bind trouble tickets: a backfilled ticket sits earlier in the
+        // log than the EquipmentAdded event for the machine it names, so its
+        // creation arm could not resolve the name. Link any still-unresolved
+        // tickets whose submitted string matches this equipment.
+        tx.update(troubleTicketsTable)
+          .set({equipmentId: event.id as UUID})
+          .where(
+            and(
+              isNull(troubleTicketsTable.equipmentId),
+              sql`lower(trim(${troubleTicketsTable.submittedEquipment})) = ${event.name.trim().toLowerCase()}`
+            )
+          )
           .run();
         break;
       }
