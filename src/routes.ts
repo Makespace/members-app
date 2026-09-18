@@ -141,7 +141,12 @@ export const initRoutes = (
           res.status(400).send({message: 'before is not a valid ISO date'});
           return;
         }
-        // ?dryRun=true reports what would be woven in without writing.
+        // ?dryRun=true reports what would be woven in without writing. Any
+        // other value is rejected rather than silently running the real thing.
+        if (req.query.dryRun !== undefined && req.query.dryRun !== 'true') {
+          res.status(400).send({message: "dryRun must be exactly 'true'"});
+          return;
+        }
         if (req.query.dryRun === 'true') {
           const {inserts: _inserts, ...plan} =
             await planTroubleTicketBackfill(deps)(before);
