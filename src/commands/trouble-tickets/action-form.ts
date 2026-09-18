@@ -14,6 +14,7 @@ import {
 } from '../../types/html';
 import {Form} from '../../types/form';
 import {failureWithStatus} from '../../types/failure-with-status';
+import {isTicketTrainer} from './authorization';
 
 // A trouble-ticket action confirmation page. Shows the ticket, a short explanation of what
 // the action does, any required text fields, then a submit button that POSTs to the
@@ -70,13 +71,30 @@ const troubleTicketActionForm = (
 
   const constructForm: Form<ActionViewModel>['constructForm'] =
     input =>
-    ({readModel}) =>
+    ({user, readModel}) =>
       pipe(
         input,
         t.type({ticketId: UUID}).decode,
         E.mapLeft(formatValidationErrors),
         E.mapLeft(
           failureWithStatus('Invalid parameters', StatusCodes.BAD_REQUEST)
+        ),
+        // The ticket title below is submitter-provided content, so the page is
+        // gated like the action itself: trainers on the ticket's equipment (or
+        // admins). Checked before the existence lookup so an unauthorized
+        // viewer cannot probe which ticket ids exist.
+        E.filterOrElse(
+          ({ticketId}) =>
+            isTicketTrainer({
+              actor: {tag: 'user', user},
+              rm: readModel,
+              input: {ticketId},
+            }),
+          () =>
+            failureWithStatus(
+              "Only trainers on the ticket's equipment (or admins) can act on it",
+              StatusCodes.FORBIDDEN
+            )()
         ),
         E.chain(({ticketId}) =>
           pipe(
