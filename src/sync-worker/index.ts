@@ -1,6 +1,7 @@
 import {syncTroubleTickets} from './sync_trouble_ticket';
 import {syncEquipmentTrainingSheets} from './sync_training_sheet';
 import {runQuizMigration} from '../training-quiz/migrate';
+import {runTroubleTicketIngest} from '../trouble-tickets/ingest';
 import {initDependencies} from './init-dependencies';
 import {GoogleHelpers} from './google/pull_sheet_data';
 import {setTimeout} from 'node:timers/promises';
@@ -66,6 +67,13 @@ async function syncExternDataPeriodically(
           deps.conf.TROUBLE_TICKET_SHEET,
           TROUBLE_TICKET_SYNC_INTERVAL_MS
         );
+        // SAFETY: the ingest appends new tickets at recordedAt = now, which is
+        // only correct once the one-time historical backfill has run. Deploying
+        // this before that backfill would claim every historical row's hash at
+        // now and prevent it being woven in at its true submittedAt. That
+        // ordering is enforced by not merging this until the backfill is done.
+        await deps.sharedReadModel.asyncRefresh()();
+        await runTroubleTicketIngest(deps)();
         lastTroubleTicketCheck = Date.now();
       }
 
