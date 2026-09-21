@@ -1606,6 +1606,11 @@ label img {
 .site-banners {
   display: flex;
   flex-direction: column;
+  /* Tuck the stack up towards the nav's Back row (the nav carries 3rem
+     bottom margin) and push the page content clearly below the banners. */
+  margin: -2.25rem 0 2.5rem;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .site-banner {
@@ -1627,15 +1632,32 @@ label img {
 }
 
 .site-banner__dismiss button {
+  /* Undo the global button treatment (green fill, 10px/20px padding, 3px
+     bottom border) - that padding floors the width and turns the circle
+     into an oval. */
+  padding: 0;
   border: none;
-  background: rgb(11 12 12 / 12%);
+  border-bottom: none;
+  background: #ffffff;
   border-radius: 50%;
   width: 1.8rem;
   height: 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   font-size: 0.9rem;
   line-height: 1;
-  color: inherit;
+  color: #0b0c0c;
+}
+
+.site-banner__dismiss button:hover {
+  background: #e8e8e8;
+}
+
+.site-banner__dismiss button:active {
+  position: static;
+  top: auto;
 }
 
 .site-banner--action {
