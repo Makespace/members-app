@@ -1,4 +1,5 @@
 import {faker} from '@faker-js/faker';
+import {sql} from 'drizzle-orm';
 import {advanceTo} from 'jest-date-mock';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {TroubleTicketDataTable} from '../../src/sync-worker/google/sheet-data-table';
@@ -119,6 +120,31 @@ describe('trouble ticket timeline backfill', () => {
       framework.depsForCommands
     )();
     expect(rest).toMatchObject({inserted: 1});
+  });
+
+  it('skips and counts cache rows with a NULL submission timestamp', async () => {
+    // Older sync versions / abandoned sheet ids can leave rows with no
+    // timestamp; the DDL has no NOT NULL. They must be reported, not crash
+    // the run (this happened on prod's first dry-run).
+    await framework.updateTroubleTicketCache(sheetId, [
+      ticketRow(2, new Date('2021-05-30T13:50:30.000Z'), 'Good row'),
+    ]);
+    await framework.extDB.run(
+      sql`INSERT INTO trouble_ticket_data (sheet_id, sheet_name, row_index, response_submitted, cached_at, submitted_response_json) VALUES ('stale-sheet', 'Form Responses 1', 3, NULL, 0, '{}')`
+    );
+
+    const plan = await planTroubleTicketBackfill(framework.depsForCommands)();
+
+    expect(plan).toMatchObject({
+      totalCandidates: 1,
+      wouldInsert: 1,
+      skippedNoTimestamp: 1,
+    });
+
+    const summary = await backfillTroubleTicketTimeline(
+      framework.depsForCommands
+    )();
+    expect(summary).toMatchObject({inserted: 1});
   });
 
   it('plans without writing (dry run)', async () => {

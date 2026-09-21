@@ -19,6 +19,9 @@ type TroubleTicketBackfillPlan = {
   wouldInsert: number;
   alreadyImported: number;
   excludedByScope: number;
+  // Cache rows skipped because they have no usable submission timestamp
+  // (stale rows from older sync versions/sheet ids). Not importable.
+  skippedNoTimestamp: number;
   sample: ReadonlyArray<{
     submittedAt: Date;
     submittedEquipment: string | null;
@@ -43,7 +46,9 @@ export const planTroubleTicketBackfill =
     // Dedup below reads the shared read model, which is eventually consistent;
     // refresh first so recently-appended events are visible.
     await deps.sharedReadModel.asyncRefresh()();
-    const candidates = await getTroubleTicketCandidates(deps.extDB);
+    const {candidates, skippedNoTimestamp} = await getTroubleTicketCandidates(
+      deps.extDB
+    );
 
     const batchHashes = new Set<string>();
     let alreadyImported = 0;
@@ -114,6 +119,7 @@ export const planTroubleTicketBackfill =
       wouldInsert: inserts.length,
       alreadyImported,
       excludedByScope,
+      skippedNoTimestamp,
       sample: toInsert.slice(0, SAMPLE_SIZE).map(candidate => ({
         submittedAt: candidate.submittedAt,
         submittedEquipment: candidate.submittedEquipment,

@@ -46,7 +46,15 @@ type TroubleTicketIngestSummary = {
 export const runTroubleTicketIngest =
   (deps: TroubleTicketIngestDeps) =>
   async (): Promise<TroubleTicketIngestSummary> => {
-    const candidates = await getTroubleTicketCandidates(deps.extDB);
+    const {candidates, skippedNoTimestamp} = await getTroubleTicketCandidates(
+      deps.extDB
+    );
+    if (skippedNoTimestamp > 0) {
+      deps.logger.warn(
+        {skippedNoTimestamp},
+        'Skipped cached trouble-ticket rows with no usable submission timestamp'
+      );
+    }
 
     let created = 0;
     let alreadyImported = 0;

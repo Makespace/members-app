@@ -19,31 +19,54 @@ type CandidateTroubleTicket = {
   rowHash: string; // stable dedup key
 };
 
+type TroubleTicketCandidates = {
+  candidates: ReadonlyArray<CandidateTroubleTicket>;
+  // Cache rows with no usable submission timestamp (NULL or invalid). The
+  // current sync worker validates timestamps before caching, but older code
+  // versions and abandoned sheet ids can leave such rows behind, and the
+  // per-sheet cache replacement never cleans them up. They cannot become
+  // events (no time to weave them in at, and no stable hash), so they are
+  // skipped and counted rather than crashing the whole run.
+  skippedNoTimestamp: number;
+};
+
 // Reads the cached trouble-ticket rows and maps each to the event that would be
 // created. Read-only - no events are written.
 export const getTroubleTicketCandidates = async (
   extDB: ExternalStateDB
-): Promise<ReadonlyArray<CandidateTroubleTicket>> => {
+): Promise<TroubleTicketCandidates> => {
   const rows = await extDB.select().from(troubleTicketDataTable);
 
-  return rows.map(row => {
+  let skippedNoTimestamp = 0;
+  const candidates = rows.flatMap(row => {
+    // The DDL has no NOT NULL on response_submitted, so distrust the drizzle
+    // type: a NULL (or out-of-range) stored value must not crash the reader.
+    const submittedAt = row.response_submitted as Date | null;
+    if (submittedAt === null || !Number.isFinite(submittedAt.getTime())) {
+      skippedNoTimestamp++;
+      return [];
+    }
     const response = parseResponseJson(row.submitted_response_json);
-    return {
-      sheetId: row.sheet_id,
-      submittedAt: row.response_submitted,
-      submittedMemberNumber: row.submitted_membership_number,
-      submittedEmail: row.submitted_email,
-      submittedName: row.submitted_name,
-      submittedEquipment: row.submitted_equipment,
-      response,
-      rowHash: troubleTicketRowHash({
+    return [
+      {
         sheetId: row.sheet_id,
-        submittedAt: row.response_submitted,
-        submittedEmail: row.submitted_email,
+        submittedAt,
         submittedMemberNumber: row.submitted_membership_number,
+        submittedEmail: row.submitted_email,
+        submittedName: row.submitted_name,
         submittedEquipment: row.submitted_equipment,
         response,
-      }),
-    };
+        rowHash: troubleTicketRowHash({
+          sheetId: row.sheet_id,
+          submittedAt,
+          submittedEmail: row.submitted_email,
+          submittedMemberNumber: row.submitted_membership_number,
+          submittedEquipment: row.submitted_equipment,
+          response,
+        }),
+      },
+    ];
   });
+
+  return {candidates, skippedNoTimestamp};
 };

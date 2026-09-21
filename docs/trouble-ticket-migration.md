@@ -77,8 +77,11 @@ Care is still warranted:
    curl -X POST "https://app.makespace.org/api/trouble-tickets/backfill-timeline?dryRun=true" \
         -H "Authorization: Bearer <ADMIN_API_BEARER_TOKEN>"
    ```
-   Expect `{"totalCandidates":<N>,"wouldInsert":<N>,"alreadyImported":0,"sample":[...]}`.
+   Expect `{"totalCandidates":<N>,"wouldInsert":<N>,"alreadyImported":0,"excludedByScope":0,"skippedNoTimestamp":<S>,"sample":[...]}`.
    Sanity-check the count against the sheet's row count and eyeball the sample.
+   `skippedNoTimestamp` counts stale cache rows with no submission timestamp
+   (left behind by older sync versions/sheet ids) — they cannot be imported
+   and are excluded; a small non-zero value here is expected and fine.
 5. Confirm there are **no existing `TroubleTicketCreated` events** yet:
    `wouldInsert` equal to `totalCandidates` (and `alreadyImported: 0`) means
    you're clean.
