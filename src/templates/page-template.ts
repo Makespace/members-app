@@ -13,7 +13,7 @@ export const pageTemplate =
   (
     title: HtmlSubstitution,
     user: User,
-    isSuperUser: boolean,
+    viewer: {isSuperUser: boolean; isOwner: boolean},
     navBarModel: NavBarViewModel
   ) =>
   (body: Html) =>
@@ -21,7 +21,7 @@ export const pageTemplate =
       <!doctype html>
       <html lang="en">
         ${head(title)}
-        <header>${navBar(user, isSuperUser, navBarModel)}</header>
+        <header>${navBar(user, viewer, navBarModel)}</header>
         <body>
           ${body} ${gridJs()}
         </body>
