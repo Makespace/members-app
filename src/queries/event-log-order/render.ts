@@ -12,6 +12,7 @@ import {
 const PRECISION_FILL = '#2563eb'; // whole-second import regions
 const DENSITY_FILL = '#7c3aed'; // burst / dump regions
 const BULK_FILL = '#059669'; // bulk same-type runs (informational)
+const HIGHLIGHT_FILL = '#dc2626'; // events matching ?highlight=<type prefix>
 // In truncate mode: a dump region is compressed to at most this many
 // event-widths, and every block is given at least MIN_BLOCK_WIDTH so the tiny
 // blocks stay visible.
@@ -250,6 +251,7 @@ const renderSvg = (vm: ViewModel): string => {
     renderDensityRegions(vm, xOf) +
     renderBlockBoxes(vm, xOf, yOf) +
     renderLine(vm, xOf, yOf) +
+    renderHighlight(vm, xOf, yOf) +
     renderBulkRuns(vm, xOf) +
     renderXAxis(vm, xOf) +
     `<text x="${PAD.left + PLOT_W / 2}" y="${HEIGHT - 4}" text-anchor="middle" font-size="11" fill="#374151">event position (event_index order) →</text>` +
@@ -492,6 +494,88 @@ const renderSelected = (selected: SelectedEvent) => {
   `;
 };
 
+const highlightedPoints = (vm: ViewModel) =>
+  vm.highlightPrefix === null
+    ? []
+    : vm.points.filter(p => p.type.startsWith(vm.highlightPrefix as string));
+
+// Highlighted events drawn on top of the line: a dot at each event's exact
+// position/time, plus a thin tick strip just under the density strip so the
+// spread stays visible where dots overlap. Correctly woven events trace along
+// the polyline; a bulk append would collapse into one vertical column.
+const renderHighlight = (
+  vm: ViewModel,
+  xOf: (position: number) => number,
+  yOf: (recordedAtMs: number) => number
+): string => {
+  const points = highlightedPoints(vm);
+  if (points.length === 0) {
+    return '';
+  }
+  const dots = points
+    .map(
+      p =>
+        `<circle cx="${round(xOf(p.position))}" cy="${round(yOf(p.recordedAtMs))}" r="2" fill="${HIGHLIGHT_FILL}" fill-opacity="0.8"/>`
+    )
+    .join('');
+  const ticks = points
+    .map(
+      p =>
+        `<rect x="${round(xOf(p.position))}" y="${PAD.top + 11}" width="1" height="4" fill="${HIGHLIGHT_FILL}"/>`
+    )
+    .join('');
+  return dots + ticks;
+};
+
+// Summary + clear link for the highlight, and the most convincing verification
+// figure on the page: how many blocks the highlighted events are spread over.
+const renderHighlightSummary = (vm: ViewModel) => {
+  if (vm.highlightPrefix === null) {
+    return html``;
+  }
+  const prefix = vm.highlightPrefix;
+  const base = vm.selected
+    ? `/event-log-order/${vm.selected.requestedIndex}`
+    : '/event-log-order';
+  const points = highlightedPoints(vm);
+  if (points.length === 0) {
+    return html`
+      <p>
+        Highlight <code>${sanitizeString(prefix)}</code>: no matching events.
+        <a href="${safe(base)}${vm.truncate ? safe('?truncate=1') : ''}"
+          >clear</a
+        >
+      </p>
+    `;
+  }
+  const indexes = points.map(p => p.eventIndex);
+  const times = points.map(p => p.recordedAtMs);
+  const blocksHit = vm.blocks.filter(
+    block =>
+      points.filter(
+        p =>
+          p.position >= block.startPosition && p.position <= block.endPosition
+      ).length > 0
+  ).length;
+  const fmt = (ms: number) => DateTime.fromMillis(ms).toISODate() ?? '?';
+  return html`
+    <p>
+      Highlighting
+      <strong style="color:${safe(HIGHLIGHT_FILL)}"
+        >${points.length} ${sanitizeString(prefix)}*</strong
+      >
+      event${points.length === 1 ? '' : safe('s')}: event_index
+      ${Math.min(...indexes.slice(0, 1).concat(indexes))}–${Math.max(
+        ...indexes.slice(0, 1).concat(indexes)
+      )},
+      recordedAt ${safe(fmt(Math.min(...times.slice(0, 1).concat(times))))} –
+      ${safe(fmt(Math.max(...times.slice(0, 1).concat(times))))}, spread across
+      <strong>${blocksHit} of ${vm.blocks.length}</strong> blocks.
+      <a href="${safe(base)}${vm.truncate ? safe('?truncate=1') : ''}">clear</a>
+    </p>
+  `;
+};
+
 // Toggle between the linear x-axis and one that compresses the dump regions.
 const renderViewToggle = (vm: ViewModel) => {
   const base = vm.selected
@@ -536,7 +620,8 @@ export const render = (vm: ViewModel) => html`
     ${vm.totalEvents === 0
       ? html`<p>No events in the log.</p>`
       : html`
-          ${renderViewToggle(vm)} ${safe(renderSvg(vm))}
+          ${renderViewToggle(vm)} ${renderHighlightSummary(vm)}
+          ${safe(renderSvg(vm))}
           <table>
             <thead>
               <tr>
