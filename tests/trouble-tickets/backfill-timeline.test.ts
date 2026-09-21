@@ -132,19 +132,39 @@ describe('trouble ticket timeline backfill', () => {
     await framework.extDB.run(
       sql`INSERT INTO trouble_ticket_data (sheet_id, sheet_name, row_index, response_submitted, cached_at, submitted_response_json) VALUES ('stale-sheet', 'Form Responses 1', 3, NULL, 0, '{}')`
     );
+    // A row written in an older storage format: TEXT date instead of epoch ms.
+    await framework.extDB.run(
+      sql`INSERT INTO trouble_ticket_data (sheet_id, sheet_name, row_index, response_submitted, cached_at, submitted_response_json) VALUES ('stale-sheet', 'Form Responses 1', 4, '2021-05-30T13:50:30.000Z', 0, '{}')`
+    );
 
     const plan = await planTroubleTicketBackfill(framework.depsForCommands)();
 
+    // The parseable TEXT row is imported (drizzle maps ISO text to a valid
+    // Date); only the NULL row is skipped.
     expect(plan).toMatchObject({
-      totalCandidates: 1,
-      wouldInsert: 1,
+      totalCandidates: 2,
+      wouldInsert: 2,
       skippedNoTimestamp: 1,
     });
+    // The diagnostics give a definitive storage-class breakdown and identify
+    // the NULL rows, so the operator can tell dead rows from recoverable
+    // older-format data.
+    expect(plan.cacheDiagnostics.timestampStorageBreakdown).toEqual({
+      integer: 1,
+      text: 1,
+      null: 1,
+    });
+    expect(plan.cacheDiagnostics.nullTimestampSample).toEqual([
+      expect.objectContaining({sheetId: 'stale-sheet', rowIndex: 3}),
+    ]);
+    // Bounds check against wrong-epoch timestamps.
+    expect(plan.oldestCandidate).toEqual(new Date('2021-05-30T13:50:30.000Z'));
+    expect(plan.newestCandidate).toEqual(new Date('2021-05-30T13:50:30.000Z'));
 
     const summary = await backfillTroubleTicketTimeline(
       framework.depsForCommands
     )();
-    expect(summary).toMatchObject({inserted: 1});
+    expect(summary).toMatchObject({inserted: 2});
   });
 
   it('plans without writing (dry run)', async () => {
