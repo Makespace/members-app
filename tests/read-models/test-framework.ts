@@ -221,6 +221,11 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       trainingQuiz: {
         record: frameworkify(commands.trainingQuiz.record),
       },
+      notifications: {
+        create: frameworkify(commands.notifications.create),
+        dismiss: frameworkify(commands.notifications.dismiss),
+        revoke: frameworkify(commands.notifications.revoke),
+      },
       troubleTickets: {
         record: frameworkify(commands.troubleTickets.record),
         create: frameworkify(commands.troubleTickets.create),

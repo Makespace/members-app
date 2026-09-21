@@ -1,3 +1,4 @@
+import {renderBanners, systemBanners, toBanner} from '../templates/banners';
 import * as TE from 'fp-ts/TaskEither';
 import {Dependencies} from '../dependencies';
 import {pipe} from 'fp-ts/lib/function';
@@ -68,6 +69,15 @@ export const queryGet =
                   navBarViewModel(
                     deps.sharedReadModel.area.getAllMinimal(),
                     deps.sharedReadModel.equipment.getForAreaMinimal
+                  ),
+                  renderBanners(
+                    [
+                      ...systemBanners(member.value),
+                      ...deps.sharedReadModel.notifications
+                        .getForMember(member.value, new Date())
+                        .map(toBanner),
+                    ],
+                    req.path
                   )
                 )(body)
               ),

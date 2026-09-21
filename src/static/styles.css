@@ -1598,3 +1598,66 @@ label img {
   border-left-color: var(--green-color);
   background: color-mix(in oklch, white 92%, var(--green-color));
 }
+
+
+/* Site notification banners (see templates/banners.ts). Types: orange for
+   action needed, green for upcoming events, blue for information. Adjacent
+   banners of the same type alternate the --alt shade for separation. */
+.site-banners {
+  display: flex;
+  flex-direction: column;
+}
+
+.site-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.65rem 1.25rem;
+  border-bottom: 1px solid rgb(11 12 12 / 15%);
+}
+
+.site-banner__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.site-banner__body a {
+  font-weight: bold;
+  color: inherit;
+}
+
+.site-banner__dismiss button {
+  border: none;
+  background: rgb(11 12 12 / 12%);
+  border-radius: 50%;
+  width: 1.8rem;
+  height: 1.8rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  color: inherit;
+}
+
+.site-banner--action {
+  background: #fa990e;
+  color: #0b0c0c;
+}
+.site-banner--action.site-banner--alt {
+  background: #ffb84d;
+}
+
+.site-banner--event {
+  background: #00703c;
+  color: #ffffff;
+}
+.site-banner--event.site-banner--alt {
+  background: #1e9e63;
+}
+
+.site-banner--info {
+  background: #1d70b8;
+  color: #ffffff;
+}
+.site-banner--info.site-banner--alt {
+  background: #4d94d1;
+}

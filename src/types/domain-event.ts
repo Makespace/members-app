@@ -192,6 +192,44 @@ const TroubleTicketResponseSubmitted = defineEvent(
   {}
 );
 
+// --- Site notifications ---
+// Admin-authored banners shown at the top of every page to their target
+// audience. The banner content is structured (title/message/link) so it can
+// be rendered safely; the optional email body is markdown, converted to HTML
+// when the go-live email is sent by the sync worker.
+const NotificationCreated = defineEvent('NotificationCreated', {
+  id: tt.UUID,
+  title: t.string,
+  message: t.string,
+  // 'action' (orange), 'event' (green), 'info' (blue).
+  bannerType: t.keyof({action: null, event: null, info: null}),
+  linkUrl: t.union([t.string, t.null]),
+  linkLabel: t.union([t.string, t.null]),
+  dismissable: t.boolean,
+  expiresAt: t.union([tt.DateFromISOString, t.null]),
+  // Target audience: every owner, or owners of the listed areas.
+  targetAllOwners: t.boolean,
+  targetAreaIds: t.readonlyArray(tt.UUID),
+  emailMarkdown: t.union([t.string, t.null]),
+});
+
+// A member dismissed a dismissable notification for themselves.
+const NotificationDismissed = defineEvent('NotificationDismissed', {
+  notificationId: tt.UUID,
+  memberNumber: t.number,
+});
+
+// An admin withdrew a notification before its expiry.
+const NotificationRevoked = defineEvent('NotificationRevoked', {
+  notificationId: tt.UUID,
+});
+
+// The go-live email for a notification has been dispatched (dedup marker,
+// committed before sending - prefer a missed email over duplicates).
+const NotificationEmailSent = defineEvent('NotificationEmailSent', {
+  notificationId: tt.UUID,
+});
+
 const MemberDetailsUpdated = defineEvent('MemberDetailsUpdated', {
   memberNumber: t.number,
   name: t.union([t.string, t.undefined]),
@@ -397,6 +435,10 @@ export const events = [
   TroubleTicketEquipmentSet,
   TroubleTicketTitleEdited,
   TroubleTicketNotificationSent,
+  NotificationCreated,
+  NotificationDismissed,
+  NotificationRevoked,
+  NotificationEmailSent,
 ];
 
 export const DomainEvent = t.union([
@@ -445,6 +487,10 @@ export const DomainEvent = t.union([
   TroubleTicketEquipmentSet.codec,
   TroubleTicketTitleEdited.codec,
   TroubleTicketNotificationSent.codec,
+  NotificationCreated.codec,
+  NotificationDismissed.codec,
+  NotificationRevoked.codec,
+  NotificationEmailSent.codec,
 ]);
 
 export const StoredDomainEvent = t.intersection([

@@ -14,7 +14,8 @@ export const pageTemplate =
     title: HtmlSubstitution,
     user: User,
     viewer: {isSuperUser: boolean; isOwner: boolean},
-    navBarModel: NavBarViewModel
+    navBarModel: NavBarViewModel,
+    banners: Html = html``
   ) =>
   (body: Html) =>
     html`
@@ -23,7 +24,7 @@ export const pageTemplate =
         ${head(title)}
         <header>${navBar(user, viewer, navBarModel)}</header>
         <body>
-          ${body} ${gridJs()}
+          ${banners} ${body} ${gridJs()}
         </body>
       </html>
     ` as CompleteHtmlDocument;

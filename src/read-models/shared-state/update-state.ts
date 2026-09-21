@@ -20,6 +20,9 @@ import {
   troubleTicketChangeLogTable,
   troubleTicketNotificationsTable,
   troubleTicketsTable,
+  notificationsTable,
+  notificationAreaTargetsTable,
+  notificationDismissalsTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, eq, inArray, isNull, sql} from 'drizzle-orm';
@@ -884,6 +887,57 @@ const _updateState =
           );
         }
         recordTicketChange(tx, event, {title: event.title});
+        break;
+      }
+      case 'NotificationCreated': {
+        tx.insert(notificationsTable)
+          .values({
+            id: event.id,
+            title: event.title,
+            message: event.message,
+            bannerType: event.bannerType,
+            linkUrl: event.linkUrl,
+            linkLabel: event.linkLabel,
+            dismissable: event.dismissable,
+            expiresAt: event.expiresAt,
+            targetAllOwners: event.targetAllOwners,
+            emailMarkdown: event.emailMarkdown,
+            emailSent: false,
+            revoked: false,
+            createdAt: event.recordedAt,
+          })
+          .onConflictDoNothing()
+          .run();
+        for (const areaId of event.targetAreaIds) {
+          tx.insert(notificationAreaTargetsTable)
+            .values({notificationId: event.id, areaId})
+            .onConflictDoNothing()
+            .run();
+        }
+        break;
+      }
+      case 'NotificationDismissed': {
+        tx.insert(notificationDismissalsTable)
+          .values({
+            notificationId: event.notificationId,
+            memberNumber: event.memberNumber,
+          })
+          .onConflictDoNothing()
+          .run();
+        break;
+      }
+      case 'NotificationRevoked': {
+        tx.update(notificationsTable)
+          .set({revoked: true})
+          .where(eq(notificationsTable.id, event.notificationId))
+          .run();
+        break;
+      }
+      case 'NotificationEmailSent': {
+        tx.update(notificationsTable)
+          .set({emailSent: true})
+          .where(eq(notificationsTable.id, event.notificationId))
+          .run();
         break;
       }
       default: {

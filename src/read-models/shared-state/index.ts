@@ -51,6 +51,12 @@ import {
   TroubleTicketChangeRow,
 } from './trouble-tickets/get';
 import {TroubleTicket} from '../../types/trouble-ticket';
+import {
+  getAllNotifications,
+  getNotificationById,
+  getNotificationsForMember,
+  Notification,
+} from './notifications/get';
 import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
 import { TrainingSheetId } from '../../types/training-sheet';
 import { EquipmentId } from '../../types/equipment-id';
@@ -131,6 +137,11 @@ export type SharedReadModel = {
       ticketIds: ReadonlyArray<UUID>
     ) => ReadonlyArray<TroubleTicketChangeRow>;
   };
+  notifications: {
+    getAll: () => ReadonlyArray<Notification>;
+    getById: (id: UUID) => Notification | undefined;
+    getForMember: (member: Member, now: Date) => ReadonlyArray<Notification>;
+  };
 };
 
 export const initSharedReadModel = (
@@ -201,6 +212,11 @@ export const initSharedReadModel = (
       getByEquipment: getTroubleTicketsByEquipment(readModelDb),
       hasNotifiedForEvent: hasNotifiedForEvent(readModelDb),
       getChangeLog: getTroubleTicketChangeLog(readModelDb),
+    },
+    notifications: {
+      getAll: getAllNotifications(readModelDb),
+      getById: getNotificationById(readModelDb),
+      getForMember: getNotificationsForMember(readModelDb),
     },
   };
 };

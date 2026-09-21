@@ -3,6 +3,7 @@ import {syncEquipmentTrainingSheets} from './sync_training_sheet';
 import {runQuizMigration} from '../training-quiz/migrate';
 import {runTroubleTicketIngest} from '../trouble-tickets/ingest';
 import {notifyTroubleTicketChanges} from './notify_trouble_tickets';
+import {notifySiteNotifications} from './notify_site_notifications';
 import {initDependencies} from './init-dependencies';
 import {GoogleHelpers} from './google/pull_sheet_data';
 import {setTimeout} from 'node:timers/promises';
@@ -83,6 +84,7 @@ async function syncExternDataPeriodically(
 
       if (lastTroubleTicketNotifyAgoMs > TROUBLE_TICKET_NOTIFY_INTERVAL_MS) {
         await notifyTroubleTicketChanges(deps);
+        await notifySiteNotifications(deps);
         lastTroubleTicketNotify = Date.now();
       }
 
