@@ -26,12 +26,41 @@ trouble tickets from emails and send templated replies.
 | Variable | Meaning |
 | --- | --- |
 | `GMAIL_IMPORT_MAILBOX` | The mailbox to import, e.g. `management@makespace.org`. Empty (the default) disables the import entirely. |
+| `GMAIL_AUTHORIZED_USER_JSON` | **Fly secret** (never fly.toml): an authorized-user OAuth credential for the mailbox account - see Option A. When set, it is preferred and no domain-wide delegation is needed. |
 | `MANAGEMENT_TEAM_AREA_ID` | Area whose owners may view `/mailbox`. Empty = super-users only. Find the id on `/db` with `SELECT id, name FROM areas`. |
 
 Setting `GMAIL_IMPORT_MAILBOX` before the delegation grant has propagated is
 safe: the sync logs a clear auth error each cycle and imports nothing.
 
-## One-time Google Workspace setup (needs a Workspace super admin)
+## Credentials: two supported options
+
+### Option A (preferred): an OAuth token for the mailbox account itself
+
+The narrowest option - it touches exactly one mailbox and needs no
+domain-wide grant. Someone who can sign in as the mailbox account mints a
+refresh token with the `gmail.readonly` scope and it becomes a Fly secret:
+
+1. In the Google Cloud console (any project), create an **OAuth client ID**
+   (type: Desktop app) - or reuse the one from the previous project that did
+   this. Note the client ID and client secret.
+2. **Publish the OAuth consent screen to "In production"** (Testing-mode
+   refresh tokens expire after 7 days - this is the classic trap).
+3. Mint the token while signed in AS the mailbox account, consenting to the
+   `https://www.googleapis.com/auth/gmail.readonly` scope - the OAuth
+   Playground (https://developers.google.com/oauthplayground, with "Use your
+   own OAuth credentials" ticked) is the quickest way: authorise the scope,
+   exchange for tokens, copy the refresh token.
+4. Set the secret (never goes in fly.toml or the repo):
+
+   ```
+   fly secrets set -a makespace-app GMAIL_AUTHORIZED_USER_JSON='{"type":"authorized_user","client_id":"<id>","client_secret":"<secret>","refresh_token":"<token>"}'
+   ```
+
+Caveats: the token dies if the account's password is reset, the grant is
+revoked from the account's security page, or the consent screen is left in
+Testing mode. The sync's auth errors in the logs are the tell.
+
+### Option B: domain-wide delegation (needs a Workspace super admin)
 
 1. **Google Cloud console** → the project that owns the sheet-sync service
    account → IAM & Admin → Service accounts → copy the account's **numeric

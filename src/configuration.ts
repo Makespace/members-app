@@ -46,8 +46,15 @@ const Config = t.strict({
   GOOGLE_SERVICE_ACCOUNT_KEY_JSON: tt.NonEmptyString, // Don't default so we don't accidentally disable.
   TROUBLE_TICKET_SHEET: t.string,
   // The Workspace mailbox to import into the app ('' disables the import).
-  // Requires domain-wide delegation of gmail.readonly to the service account.
+  // Authenticated EITHER by an authorized-user OAuth token for the mailbox
+  // account (GMAIL_AUTHORIZED_USER_JSON, a Fly secret - preferred, narrowest
+  // blast radius) OR by domain-wide delegation of gmail.readonly to the
+  // service account.
   GMAIL_IMPORT_MAILBOX: tt.withFallback(t.string, ''),
+  // An OAuth "authorized user" credential for the mailbox account itself:
+  // {"type":"authorized_user","client_id":...,"client_secret":...,
+  //  "refresh_token":...}. '' falls back to domain-wide delegation.
+  GMAIL_AUTHORIZED_USER_JSON: tt.withFallback(t.string, ''),
   // Area whose owners may view the imported mailbox (super-users always can).
   // '' restricts the page to super-users only.
   MANAGEMENT_TEAM_AREA_ID: tt.withFallback(t.string, ''),
