@@ -163,13 +163,19 @@ The codebase maintains separation between the write side and read side:
 
 ## API Endpoints
 
-Bearer token authentication required (header: `Authorization: Bearer <ADMIN_API_BEARER_TOKEN>`):
+Bearer token authentication required (header: `Authorization: Bearer <ADMIN_API_BEARER_TOKEN>`).
+Every `command()` route in `src/routes.ts` also registers a bearer-token twin at
+`/api/<noun>/<verb>` (see `src/http/command-to-handlers.ts`); the notable ones:
 
-- `POST /api/link-number-to-email` - Link member number with email
-- `POST /api/declare-super-user` - Grant super user privileges
-- `POST /api/create-area` - Create a new area
+- `POST /api/members/create` - Link member number with email
+- `POST /api/super-users/declare` - Grant super user privileges
+- `POST /api/areas/create` - Create a new area
+- `POST /api/trouble-tickets/create` - Manually create a trouble ticket (seeding/manual entry)
+- `POST /api/trouble-tickets/set-equipment` / `edit-title` - Ticket admin actions (API-only, no form)
+- `POST /api/training-quiz/backfill-timeline` - One-time quiz history weave (see docs/training-quiz-migration.md)
+- `POST /api/trouble-tickets/backfill-timeline` - One-time trouble-ticket history weave (see docs/trouble-ticket-migration.md)
 
-See README.md for curl examples.
+`scripts/populate-local-dev.sh` shows working curl examples for the common ones.
 
 ## Development Notes
 
