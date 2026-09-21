@@ -32,6 +32,7 @@ export const initRoutes = (
     query('/admin', queries.admin),
     query('/raise-issue', queries.raiseIssue),
     query('/humans', queries.humans),
+    query('/roadmap', queries.roadmap),
     query('/event-log', queries.log),
     query('/event-log-order', queries.eventLogOrder),
     query('/event-log-order/:index', queries.eventLogOrder),

@@ -1707,3 +1707,99 @@ label img {
   accent-color: var(--green-color);
   cursor: pointer;
 }
+/* Timeline - vertical list of tasks with circular markers (see templates/timeline.ts).
+   Heading items are larger nodes; the line runs continuously behind the markers. */
+.timeline {
+  --timeline-marker-size: 1.125rem;
+  --timeline-heading-marker-size: 1.625rem;
+  --timeline-line-x: calc(var(--timeline-heading-marker-size) / 2);
+}
+
+.timeline__item {
+  position: relative;
+  padding-left: calc(var(--timeline-heading-marker-size) + 0.875rem);
+  padding-bottom: 1.25rem;
+}
+
+.timeline__item:last-child {
+  padding-bottom: 0;
+}
+
+.timeline__item::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--timeline-line-x) - 1px);
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border-color);
+}
+
+.timeline__item:first-child::before {
+  top: 0.4rem;
+}
+
+.timeline__item:last-child::before {
+  bottom: auto;
+  height: 0.4rem;
+}
+
+.timeline__item:only-child::before {
+  display: none;
+}
+
+.timeline__marker {
+  position: absolute;
+  left: calc(var(--timeline-line-x) - var(--timeline-marker-size) / 2);
+  top: 0.2rem;
+  width: var(--timeline-marker-size);
+  height: var(--timeline-marker-size);
+  border-radius: 50%;
+  border: 2px solid var(--grey-color);
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.timeline__item--complete .timeline__marker {
+  border-color: var(--green-color);
+  background: var(--green-color);
+  color: white;
+}
+
+.timeline__item--complete .timeline__content {
+  color: var(--grey-color);
+}
+
+.timeline__item--in-progress .timeline__marker {
+  border-color: var(--green-color);
+  background: radial-gradient(circle, var(--green-color) 45%, white 46%);
+}
+
+.timeline__item--heading {
+  --timeline-heading-gap: 2rem;
+  padding-top: var(--timeline-heading-gap);
+}
+
+.timeline__item--heading:first-child {
+  --timeline-heading-gap: 0rem;
+}
+
+.timeline__item--heading .timeline__marker {
+  left: 0;
+  top: calc(var(--timeline-heading-gap) + 0.3rem);
+  width: var(--timeline-heading-marker-size);
+  height: var(--timeline-heading-marker-size);
+  border-width: 3px;
+  border-color: var(--text-color);
+  font-size: 0.9rem;
+}
+
+.timeline__item--heading.timeline__item--complete .timeline__marker {
+  border-color: var(--green-color);
+  background: var(--green-color);
+}
+

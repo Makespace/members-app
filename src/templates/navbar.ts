@@ -321,6 +321,7 @@ export const navBar = (
         ${renderAreasPanel(viewModel.areas)}
       </div>
       <div id="page-nav-secondary-actions" class="page-nav__secondary-actions">
+        <a class="page-nav__action" href="/roadmap">Roadmap</a>
         <a class="page-nav__action" href="/raise-issue">Raise an issue</a>
         ${viewer.isSuperUser || viewer.isOwner
           ? html`<a class="page-nav__action" href="/trouble-tickets"
