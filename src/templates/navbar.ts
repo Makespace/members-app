@@ -289,7 +289,7 @@ const renderProfilePanel = () => html`
 
 export const navBar = (
   user: User,
-  isSuperUser: boolean,
+  viewer: {isSuperUser: boolean; isOwner: boolean},
   viewModel: NavBarViewModel
 ) => html`
   <nav class="page-nav" data-page-nav>
@@ -322,6 +322,11 @@ export const navBar = (
       </div>
       <div id="page-nav-secondary-actions" class="page-nav__secondary-actions">
         <a class="page-nav__action" href="/raise-issue">Raise an issue</a>
+        ${viewer.isSuperUser || viewer.isOwner
+          ? html`<a class="page-nav__action" href="/trouble-tickets"
+              >Trouble tickets</a
+            >`
+          : html``}
         <div
           class="page-nav__menu page-nav__menu--sites"
           data-page-nav-menu="sites"
@@ -338,7 +343,9 @@ export const navBar = (
           </a>
           ${renderSitesPanel()}
         </div>
-        ${isSuperUser ? html`<a class="page-nav__admin" href="/admin">Admin</a>` : html``}
+        ${viewer.isSuperUser
+          ? html`<a class="page-nav__admin" href="/admin">Admin</a>`
+          : html``}
       </div>
       <button
         type="button"
