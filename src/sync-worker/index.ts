@@ -98,7 +98,8 @@ async function syncExternDataPeriodically(
           deps.logger,
           deps.extDB,
           gmailClientFactory,
-          deps.conf.GMAIL_IMPORT_MAILBOX
+          deps.conf.GMAIL_IMPORT_MAILBOX,
+          deps.conf.GMAIL_FILTER_TO_ADDRESS
         );
         lastGmailSync = Date.now();
       }

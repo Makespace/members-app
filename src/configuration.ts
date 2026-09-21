@@ -55,6 +55,11 @@ const Config = t.strict({
   // {"type":"authorized_user","client_id":...,"client_secret":...,
   //  "refresh_token":...}. '' falls back to domain-wide delegation.
   GMAIL_AUTHORIZED_USER_JSON: tt.withFallback(t.string, ''),
+  // When the interesting address is a GROUP (groups have no mailbox of their
+  // own), the import authenticates as a member account and this filters the
+  // import to mail addressed/delivered to the group. '' imports the whole
+  // inbox.
+  GMAIL_FILTER_TO_ADDRESS: tt.withFallback(t.string, ''),
   // Area whose owners may view the imported mailbox (super-users always can).
   // '' restricts the page to super-users only.
   MANAGEMENT_TEAM_AREA_ID: tt.withFallback(t.string, ''),
