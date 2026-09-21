@@ -70,6 +70,7 @@ const renderRow = (message: InboxMessage) => html`
 
 const renderList = (
   mailbox: string,
+  filterToAddress: string,
   messages: ReadonlyArray<InboxMessage>
 ): Html => html`
   <div class="stack">
@@ -78,14 +79,16 @@ const renderList = (
       The most recent ${messages.length} message${messages.length === 1
         ? ''
         : safe('s')}
-      imported from <strong>${sanitizeString(mailbox)}</strong>. The import
-      runs every few minutes; replies and creating tickets from emails are
-      coming next.
+      sent to
+      <strong>
+        ${sanitizeString(filterToAddress !== '' ? filterToAddress : mailbox)}
+      </strong>. The import runs every few minutes; replies and creating
+      tickets from emails are coming next.
     </p>
     ${messages.length === 0
       ? html`<p>
-          Nothing imported yet. If this persists, the domain-wide delegation
-          grant may still be propagating - see the sync worker logs.
+          Nothing imported yet. If this persists, check the Gmail credentials
+          and the sync worker logs.
         </p>`
       : html`
           <table>
@@ -156,7 +159,11 @@ export const mailbox: Query = deps => (user, params) =>
                 )()
             ),
             TE.map(messages =>
-              renderList(deps.conf.GMAIL_IMPORT_MAILBOX, messages)
+              renderList(
+                deps.conf.GMAIL_IMPORT_MAILBOX,
+                deps.conf.GMAIL_FILTER_TO_ADDRESS,
+                messages
+              )
             )
           )
         : pipe(

@@ -16,7 +16,7 @@ import {testLogger} from './util';
 
 const b64 = (value: string) => Buffer.from(value, 'utf8').toString('base64url');
 
-const apiMessage = (id: string, subject: string) => ({
+const apiMessage = (id: string, subject: string, to = 'management@makespace.org') => ({
   id,
   threadId: `thread-${id}`,
   snippet: `${subject}…`,
@@ -26,6 +26,7 @@ const apiMessage = (id: string, subject: string) => ({
     mimeType: 'multipart/alternative',
     headers: [
       {name: 'From', value: 'member@example.com'},
+      {name: 'To', value: to},
       {name: 'Subject', value: subject},
       {name: 'Message-ID', value: `<${id}@example.com>`},
     ],
@@ -89,12 +90,12 @@ describe('pullGmailData', () => {
     };
     const factory = () => fakeClient(state);
 
-    await pullGmailData(testLogger(), extDB, factory, mailbox);
+    await pullGmailData(testLogger(), extDB, factory, mailbox, '');
     expect(await getInboxMessages(extDB, 50)).toHaveLength(2);
 
     state.added = [apiMessage('m3', 'Third')];
     state.historyId = 'h2';
-    await pullGmailData(testLogger(), extDB, factory, mailbox);
+    await pullGmailData(testLogger(), extDB, factory, mailbox, '');
 
     const messages = await getInboxMessages(extDB, 50);
     expect(messages).toHaveLength(3);
@@ -111,13 +112,45 @@ describe('pullGmailData', () => {
       expireHistory: false,
     };
     const factory = () => fakeClient(state);
-    await pullGmailData(testLogger(), extDB, factory, mailbox);
+    await pullGmailData(testLogger(), extDB, factory, mailbox, '');
 
     state.expireHistory = true;
     state.added = [apiMessage('m2', 'Second')];
-    await pullGmailData(testLogger(), extDB, factory, mailbox);
+    await pullGmailData(testLogger(), extDB, factory, mailbox, '');
 
     const messages = await getInboxMessages(extDB, 50);
     expect(messages).toHaveLength(2);
+  });
+
+  it('only caches mail addressed to the filter address when one is set', async () => {
+    const state = {
+      historyId: 'h1',
+      initial: [
+        apiMessage('m1', 'For the group'),
+        apiMessage('m2', 'IT business', 'it-owners@makespace.org'),
+      ],
+      added: [] as ReturnType<typeof apiMessage>[],
+    };
+    const factory = () => fakeClient(state);
+    const filter = 'management@makespace.org';
+
+    await pullGmailData(testLogger(), extDB, factory, mailbox, filter);
+    expect((await getInboxMessages(extDB, 50)).map(m => m.subject)).toEqual([
+      'For the group',
+    ]);
+
+    // Incremental additions are header-filtered too (history.list can't
+    // filter server-side).
+    state.added = [
+      apiMessage('m3', 'Also for the group'),
+      apiMessage('m4', 'More IT business', 'it-owners@makespace.org'),
+    ];
+    state.historyId = 'h2';
+    await pullGmailData(testLogger(), extDB, factory, mailbox, filter);
+    const messages = await getInboxMessages(extDB, 50);
+    expect(messages.map(m => m.subject)).toEqual([
+      'Also for the group',
+      'For the group',
+    ]);
   });
 });
