@@ -61,7 +61,10 @@ export const queryGet =
                 pageTemplate(
                   title,
                   user.value,
-                  member.value.isSuperUser,
+                  {
+                    isSuperUser: member.value.isSuperUser,
+                    isOwner: member.value.ownerOf.length > 0,
+                  },
                   navBarViewModel(
                     deps.sharedReadModel.area.getAllMinimal(),
                     deps.sharedReadModel.equipment.getForAreaMinimal
