@@ -1,4 +1,5 @@
 import {Client, createClient} from '@libsql/client';
+import {sql} from 'drizzle-orm';
 import {ensureEventTableExists} from '../../src/init-dependencies/event-store/ensure-events-table-exists';
 import {getRightOrFail, getSomeOrFail} from '../helpers';
 import {faker} from '@faker-js/faker';
@@ -427,6 +428,32 @@ describe('Test sync worker db', () => {
             )
           )
         ).toStrictEqual(RA.sort(byTimestamp)(data1_2)));
+    });
+
+    describe('Purge all-NULL junk rows on cache update', () => {
+      beforeEach(async () => {
+        // An old sync bug left rows with every column NULL; the sheet_id-scoped
+        // replacement can never delete them (NULL never matches =). Prod
+        // carried 542 of these.
+        await extDB.run(
+          sql`INSERT INTO trouble_ticket_data (sheet_id, sheet_name, row_index, response_submitted, cached_at, submitted_response_json) VALUES (NULL, NULL, NULL, NULL, NULL, '{}')`
+        );
+        await updateTroubleTicketCache(extDB)(sheetId, data1_2);
+      });
+
+      it('removes NULL-sheet rows while keeping real data', async () => {
+        const nullRows = await extDB.all<{n: number}>(
+          sql`SELECT count(*) AS n FROM trouble_ticket_data WHERE sheet_id IS NULL`
+        );
+        expect(Number(nullRows[0].n)).toBe(0);
+        expect(
+          getSomeOrFail(
+            getRightOrFail(
+              await getTroubleTicketData(extDB, O.some(sheetId))(O.none)()
+            )
+          )
+        ).toHaveLength(data1_2.length);
+      });
     });
 
     describe('Update trouble ticket data with no rows', () => {
