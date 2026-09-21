@@ -1,3 +1,4 @@
+import {renderBanners, systemBanners, toBanner} from '../templates/banners';
 import {Request, Response} from 'express';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
@@ -57,6 +58,15 @@ export const formGet =
           navBarViewModel(
             deps.sharedReadModel.area.getAllMinimal(),
             deps.sharedReadModel.equipment.getForAreaMinimal
+          ),
+          renderBanners(
+            [
+              ...systemBanners(member.value),
+              ...deps.sharedReadModel.notifications
+                .getForMember(member.value, new Date())
+                .map(toBanner),
+            ],
+            req.path
           )
         )(body)
       ),
