@@ -1,8 +1,16 @@
-# Gmail import: management@ mailbox in the app
+# Gmail import: management@ mail in the app
 
-Imports the management mailbox into the app (read-only in this iteration) so
-managers can read member email at `/mailbox` — and, in follow-up PRs, create
-trouble tickets from emails and send templated replies.
+Imports mail sent to `management@makespace.org` into the app (read-only in
+this iteration) so managers can read member email at `/mailbox` — and, in
+follow-up PRs, create trouble tickets from emails and send templated replies.
+
+**Key wrinkle: `management@makespace.org` is a Google *group*, not an
+account.** Groups have no mailbox of their own — Gmail just fans their mail
+out to member accounts — so there is nothing to authenticate as and no inbox
+to read directly. The import therefore authenticates as a real *member
+account* of the group (`it-owners@makespace.org`, which receives the group's
+mail) and filters the import down to messages addressed/delivered to the
+group, so the member account's unrelated mail stays out of the app.
 
 ## How it works
 
@@ -25,7 +33,8 @@ trouble tickets from emails and send templated replies.
 
 | Variable | Meaning |
 | --- | --- |
-| `GMAIL_IMPORT_MAILBOX` | The mailbox to import, e.g. `management@makespace.org`. Empty (the default) disables the import entirely. |
+| `GMAIL_IMPORT_MAILBOX` | The **account** the import authenticates as and reads, e.g. `it-owners@makespace.org`. Must be a real account (not a group). Empty (the default) disables the import entirely. |
+| `GMAIL_FILTER_TO_ADDRESS` | When set (e.g. `management@makespace.org`), only messages addressed or delivered to this address are cached — use this when the interesting address is a group the account is a member of. Bootstrap listings filter server-side (`deliveredto:`); incremental pulls filter on the To/Cc/Delivered-To headers. Empty imports the whole inbox. |
 | `GMAIL_AUTHORIZED_USER_JSON` | **Fly secret** (never fly.toml): an authorized-user OAuth credential for the mailbox account - see Option A. When set, it is preferred and no domain-wide delegation is needed. |
 | `MANAGEMENT_TEAM_AREA_ID` | Area whose owners may view `/mailbox`. Empty = super-users only. Find the id on `/db` with `SELECT id, name FROM areas`. |
 
@@ -41,12 +50,14 @@ domain-wide grant. Someone who can sign in as the mailbox account mints a
 refresh token with the `gmail.readonly` scope and it becomes a Fly secret:
 
 1. In the Google Cloud console (any project), create an **OAuth client ID**
-   (type: Desktop app) - or reuse the one from the previous project that did
-   this. Note the client ID and client secret.
+   (Desktop app is simplest) - or reuse an existing one. A **Web
+   application** client also works, but the OAuth Playground's redirect URI
+   (`https://developers.google.com/oauthplayground`) must be added to its
+   authorized redirect URIs first. Note the client ID and client secret.
 2. **Publish the OAuth consent screen to "In production"** (Testing-mode
    refresh tokens expire after 7 days - this is the classic trap).
-3. Mint the token while signed in AS the mailbox account, consenting to the
-   `https://www.googleapis.com/auth/gmail.readonly` scope - the OAuth
+3. Mint the token while signed in AS the account (`it-owners@`), consenting
+   to the `https://www.googleapis.com/auth/gmail.readonly` scope - the OAuth
    Playground (https://developers.google.com/oauthplayground, with "Use your
    own OAuth credentials" ticked) is the quickest way: authorise the scope,
    exchange for tokens, copy the refresh token.
@@ -59,6 +70,10 @@ refresh token with the `gmail.readonly` scope and it becomes a Fly secret:
 Caveats: the token dies if the account's password is reset, the grant is
 revoked from the account's security page, or the consent screen is left in
 Testing mode. The sync's auth errors in the logs are the tell.
+
+For the group-filtered setup, the account must actually be a member of the
+group (so the group's mail is delivered to its inbox), and the group's
+delivery setting must not be "No email".
 
 ### Option B: domain-wide delegation (needs a Workspace super admin)
 

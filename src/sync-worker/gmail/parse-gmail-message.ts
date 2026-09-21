@@ -31,6 +31,8 @@ export type ParsedGmailMessage = {
   rfc822MessageId: string | null;
   fromAddress: string | null;
   toAddresses: string | null;
+  ccAddresses: string | null;
+  deliveredTo: string | null;
   subject: string | null;
   receivedAt: Date;
   snippet: string | null;
@@ -111,6 +113,8 @@ export const parseGmailMessage = (
     rfc822MessageId: header(message.payload, 'Message-ID'),
     fromAddress: header(message.payload, 'From'),
     toAddresses: header(message.payload, 'To'),
+    ccAddresses: header(message.payload, 'Cc'),
+    deliveredTo: header(message.payload, 'Delivered-To'),
     subject: header(message.payload, 'Subject'),
     receivedAt: Number.isFinite(internalMs)
       ? new Date(internalMs)
