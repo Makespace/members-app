@@ -48,4 +48,9 @@ export type TroubleTicketView = {
 
 export type ViewModel = {
   tickets: ReadonlyArray<TroubleTicketView>;
+  // Distinct raw form strings that failed to resolve to equipment, with
+  // ticket counts - the work list for the alias mapping page.
+  unresolvedEquipmentNames: ReadonlyArray<{raw: string; count: number}>;
+  // Whether the viewer may register aliases (admin/super-user).
+  canMapEquipment: boolean;
 };

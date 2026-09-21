@@ -72,6 +72,16 @@ export const initRoutes = (
     ),
     ...command(
       'equipment',
+      'add-name-alias',
+      commands.equipment.addNameAlias
+    ),
+    ...api(
+      'equipment',
+      'remove-name-alias',
+      commands.equipment.removeNameAlias
+    ),
+    ...command(
+      'equipment',
       'mark-member-trained',
       commands.trainers.markTrained
     ),

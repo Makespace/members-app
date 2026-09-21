@@ -209,6 +209,27 @@ const toView =
     };
   };
 
+// Distinct raw form strings among tickets with no resolved equipment, largest
+// count first - each is a candidate for an equipment-name alias.
+const unresolvedEquipmentNames = (
+  tickets: ReadonlyArray<TroubleTicketView>
+): ReadonlyArray<{raw: string; count: number}> => {
+  const counts = new Map<string, {raw: string; count: number}>();
+  for (const ticket of tickets) {
+    if (O.isSome(ticket.equipmentName) || !ticket.rawEquipment) {
+      continue;
+    }
+    const key = ticket.rawEquipment.trim().toLowerCase();
+    const existing = counts.get(key);
+    if (existing) {
+      existing.count++;
+    } else {
+      counts.set(key, {raw: ticket.rawEquipment.trim(), count: 1});
+    }
+  }
+  return [...counts.values()].sort((a, b) => b.count - a.count);
+};
+
 export const constructViewModel =
   (deps: Dependencies) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> => {
@@ -233,11 +254,16 @@ export const constructViewModel =
       TE.chain(loggedInMember =>
         pipe(
           fetchChangeLogs(deps),
-          TE.map(changeLogs => ({
-            tickets: rm.troubleTickets
+          TE.map(changeLogs => {
+            const tickets = rm.troubleTickets
               .getAll()
-              .map(toView(rm, loggedInMember, changeLogs)),
-          }))
+              .map(toView(rm, loggedInMember, changeLogs));
+            return {
+              tickets,
+              unresolvedEquipmentNames: unresolvedEquipmentNames(tickets),
+              canMapEquipment: loggedInMember.isSuperUser,
+            };
+          })
         )
       )
     );
