@@ -3,6 +3,7 @@ import {UUID} from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import {
   areasTable,
+  equipmentNameAliasesTable,
   equipmentTable,
   eventStateTable,
   failedEventsTable,
@@ -585,6 +586,46 @@ const _updateState =
             maxScore: event.maxScore,
           })
           .onConflictDoNothing()
+          .run();
+        break;
+      }
+      case 'EquipmentNameAliasAdded': {
+        const alias = event.alias.trim();
+        if (alias === '') {
+          break;
+        }
+        // Re-adding an existing alias re-points it (a mapping correction).
+        tx.insert(equipmentNameAliasesTable)
+          .values({alias, equipmentId: event.equipmentId})
+          .onConflictDoUpdate({
+            target: equipmentNameAliasesTable.alias,
+            set: {equipmentId: event.equipmentId},
+          })
+          .run();
+        // Late-bind: any still-unresolved ticket whose raw equipment string
+        // matches this alias now belongs to the equipment. Only Unassigned
+        // tickets - a manual TroubleTicketEquipmentSet is never overridden.
+        tx.update(troubleTicketsTable)
+          .set({equipmentId: event.equipmentId})
+          .where(
+            and(
+              isNull(troubleTicketsTable.equipmentId),
+              sql`lower(trim(${troubleTicketsTable.submittedEquipment})) = ${alias.toLowerCase()}`
+            )
+          )
+          .run();
+        break;
+      }
+      case 'EquipmentNameAliasRemoved': {
+        // Tickets already bound through the alias keep their equipment - the
+        // removal only stops future/re-run resolution using it.
+        tx.delete(equipmentNameAliasesTable)
+          .where(
+            and(
+              sql`lower(trim(${equipmentNameAliasesTable.alias})) = ${event.alias.trim().toLowerCase()}`,
+              eq(equipmentNameAliasesTable.equipmentId, event.equipmentId)
+            )
+          )
           .run();
         break;
       }

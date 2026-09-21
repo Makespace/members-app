@@ -123,6 +123,23 @@ export const equipmentTable = defineTable(
   }
 );
 
+// Alternative names that resolve to equipment (e.g. the trouble-ticket form's
+// labels). One alias maps to exactly one equipment; matching is case- and
+// whitespace-insensitive via the NOCASE collation plus trimming at write time.
+export const equipmentNameAliasesTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS equipmentNameAliases (
+      alias TEXT PRIMARY KEY COLLATE NOCASE,
+      equipmentId TEXT NOT NULL
+    )
+  `,
+  'equipmentNameAliases' as const,
+  {
+    alias: text('alias').primaryKey(),
+    equipmentId: text('equipmentId').notNull().$type<UUID>(),
+  }
+);
+
 export const trainersTable = defineTable(
   sql`
     CREATE TABLE IF NOT EXISTS trainers (
