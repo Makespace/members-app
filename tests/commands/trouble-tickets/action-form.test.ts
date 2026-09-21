@@ -14,11 +14,12 @@ describe('trouble-ticket action form (assign)', () => {
   const equipmentId = faker.string.uuid() as UUID;
   const ticketId = faker.string.uuid() as UUID;
   const trainer = arbitraryUser();
+  const ownerNotTrainer = arbitraryUser();
   const bystander = arbitraryUser();
 
   beforeEach(async () => {
     framework = await initTestFramework();
-    for (const member of [trainer, bystander]) {
+    for (const member of [trainer, ownerNotTrainer, bystander]) {
       await framework.commands.memberNumbers.linkNumberToEmail({
         memberNumber: member.memberNumber,
         email: member.emailAddress,
@@ -38,6 +39,10 @@ describe('trouble-ticket action form (assign)', () => {
     await framework.commands.area.addOwner({
       areaId,
       memberNumber: trainer.memberNumber,
+    });
+    await framework.commands.area.addOwner({
+      areaId,
+      memberNumber: ownerNotTrainer.memberNumber,
     });
     await framework.commands.trainers.add({
       equipmentId,
@@ -74,6 +79,13 @@ describe('trouble-ticket action form (assign)', () => {
   it('shows the ticket to a trainer on its equipment', async () => {
     const viewModel = await getTaskEitherRightOrFail(
       constructFor(trainer, ticketId)
+    );
+    expect(viewModel.title).toBe('Sensitive submitter free text');
+  });
+
+  it('shows the ticket to an area owner who is not a trainer', async () => {
+    const viewModel = await getTaskEitherRightOrFail(
+      constructFor(ownerNotTrainer, ticketId)
     );
     expect(viewModel.title).toBe('Sensitive submitter free text');
   });
