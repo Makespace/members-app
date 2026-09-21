@@ -1816,7 +1816,10 @@ label img {
 .page-nav__about-freshness {
   font-size: 0.7rem;
   color: var(--grey-color);
-  max-width: 16rem;
+  /* Contribute no intrinsic width, then stretch to the label's width, so
+     the button is sized by "About this app" and the note ellipsizes. */
+  width: 0;
+  min-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
