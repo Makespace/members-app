@@ -51,6 +51,7 @@ const transformRow =
     submittedEmail: row.submittedEmail,
     submittedEquipment: row.submittedEquipment,
     equipmentId: row.equipmentId ?? null,
+    areaId: row.areaId ?? null,
     assignedMemberNumbers: assignees.get(row.id) ?? [],
     response: row.responseJson,
   });

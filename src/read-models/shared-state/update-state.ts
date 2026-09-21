@@ -2,6 +2,7 @@ import {DomainEvent, StoredDomainEvent} from '../../types/domain-event';
 import {UUID} from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import {
+  areaNameAliasesTable,
   areasTable,
   equipmentNameAliasesTable,
   equipmentTable,
@@ -33,6 +34,7 @@ import { insertMemberNumber } from './insert-member-number';
 import { insertMemberEmail } from './insert-member-email';
 import { setPrimaryEmailAddress } from './set-primary-email';
 import { getEquipmentMinimal, resolveEquipmentByName } from './equipment/get';
+import { resolveAreaByName } from './area/get';
 import { generateUserId } from './member/generate-user-id';
 import { gravatarHashFromEmail } from '../avatar';
 
@@ -589,6 +591,42 @@ const _updateState =
           .run();
         break;
       }
+      case 'AreaNameAliasAdded': {
+        const alias = event.alias.trim();
+        if (alias === '') {
+          break;
+        }
+        tx.insert(areaNameAliasesTable)
+          .values({alias, areaId: event.areaId})
+          .onConflictDoUpdate({
+            target: areaNameAliasesTable.alias,
+            set: {areaId: event.areaId},
+          })
+          .run();
+        // Late-bind fully-unresolved tickets (no equipment AND no area).
+        tx.update(troubleTicketsTable)
+          .set({areaId: event.areaId})
+          .where(
+            and(
+              isNull(troubleTicketsTable.equipmentId),
+              isNull(troubleTicketsTable.areaId),
+              sql`lower(trim(${troubleTicketsTable.submittedEquipment})) = ${alias.toLowerCase()}`
+            )
+          )
+          .run();
+        break;
+      }
+      case 'AreaNameAliasRemoved': {
+        tx.delete(areaNameAliasesTable)
+          .where(
+            and(
+              sql`lower(trim(${areaNameAliasesTable.alias})) = ${event.alias.trim().toLowerCase()}`,
+              eq(areaNameAliasesTable.areaId, event.areaId)
+            )
+          )
+          .run();
+        break;
+      }
       case 'EquipmentNameAliasAdded': {
         const alias = event.alias.trim();
         if (alias === '') {
@@ -637,6 +675,12 @@ const _updateState =
         const equipmentId = event.submittedEquipment
           ? O.toNullable(resolveEquipmentByName(tx)(event.submittedEquipment))
           : null;
+        // No specific machine matched: the label may still name a whole area
+        // (directly or via an area alias), which is enough to sort the ticket.
+        const areaId =
+          equipmentId === null && event.submittedEquipment
+            ? O.toNullable(resolveAreaByName(tx)(event.submittedEquipment))
+            : null;
         tx.insert(troubleTicketsTable)
           .values({
             id: event.id,
@@ -649,6 +693,7 @@ const _updateState =
             submittedEmail: event.submittedEmail,
             submittedEquipment: event.submittedEquipment,
             equipmentId,
+            areaId,
             responseJson: {
               otherEquipmentDetail: event.otherEquipmentDetail,
               status: event.status,

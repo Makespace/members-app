@@ -71,6 +71,15 @@ const renderForm: Form<ViewModel>['renderForm'] = viewModel =>
             <a href="/trouble-tickets">Cancel</a>
           </div>
         </form>
+        <p>
+          Not about one machine?
+          <a
+            href="/areas/add-name-alias?alias=${safe(
+              encodeURIComponent(viewModel.alias)
+            )}"
+            >Map it to a whole area instead</a
+          >.
+        </p>
       </div>
     `,
     toLoggedInContent(safe('Map an equipment name'))

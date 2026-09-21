@@ -3,17 +3,38 @@ import {pipe} from 'fp-ts/lib/function';
 import {UUID} from 'io-ts-types';
 import {Actor} from '../../types';
 import {SharedReadModel} from '../../read-models/shared-state';
-import {EquipmentId} from '../../types/equipment-id';
 import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
+import {allMemberNumbers} from '../../read-models/shared-state/return-types';
 import {isEquipmentOwner} from '../authentication-helpers/is-equipment-owner';
 
-const ticketEquipmentId = (
-  rm: SharedReadModel,
-  ticketId: UUID
-): O.Option<EquipmentId> =>
+// True when the actor owns the given area (user actors only - admin/super is
+// checked separately by the callers).
+const isAreaOwner = (actor: Actor, rm: SharedReadModel, areaId: UUID): boolean =>
+  actor.tag === 'user' &&
+  pipe(
+    rm.area.get(areaId),
+    O.match(
+      () => false,
+      area =>
+        area.owners.some(owner =>
+          allMemberNumbers(owner).includes(actor.user.memberNumber)
+        )
+    )
+  );
+
+// The area a ticket belongs to: its equipment's area when a machine is
+// resolved, else its directly-mapped area.
+const ticketAreaId = (rm: SharedReadModel, ticketId: UUID): O.Option<UUID> =>
   pipe(
     rm.troubleTickets.getById(ticketId),
-    O.chain(ticket => O.fromNullable(ticket.equipmentId))
+    O.chain(ticket =>
+      ticket.equipmentId !== null
+        ? pipe(
+            rm.equipment.get(ticket.equipmentId),
+            O.map(equipment => equipment.area.id)
+          )
+        : O.fromNullable(ticket.areaId)
+    )
   );
 
 // Status transitions (assign / resolve / park / needs-help), like title edits, require
@@ -30,11 +51,10 @@ export const isTicketOwner = (input: {
 }): boolean =>
   isAdminOrSuperUser({actor: input.actor, rm: input.rm}) ||
   pipe(
-    ticketEquipmentId(input.rm, input.input.ticketId),
+    ticketAreaId(input.rm, input.input.ticketId),
     O.match(
       () => false,
-      equipmentId =>
-        isEquipmentOwner({actor: input.actor, rm: input.rm, input: {equipmentId}})
+      areaId => isAreaOwner(input.actor, input.rm, areaId)
     )
   );
 
@@ -57,11 +77,10 @@ export const canSetTicketEquipment = (input: {
       input: {equipmentId: input.input.equipmentId},
     });
   const ownsCurrent = pipe(
-    ticketEquipmentId(input.rm, input.input.ticketId),
+    ticketAreaId(input.rm, input.input.ticketId),
     O.match(
       () => false,
-      equipmentId =>
-        isEquipmentOwner({actor: input.actor, rm: input.rm, input: {equipmentId}})
+      areaId => isAreaOwner(input.actor, input.rm, areaId)
     )
   );
   return ownsTarget || ownsCurrent;
