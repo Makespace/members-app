@@ -18,6 +18,11 @@ SMTP_FROM = 'it-maintainers@makespace.org'
 LOG_LEVEL = 'debug'
 RUST_BACKTRACE = 'full'
 TROUBLE_TICKET_SHEET = '1P36QUdnEyIGlX_pMP-3FjWTFXOILKAYNYNAkl6N4nK4'
+# Mailbox imported into /mailbox (see docs/gmail-import.md). Requires the
+# domain-wide delegation grant; until it propagates the sync just logs an
+# auth error each cycle. MANAGEMENT_TEAM_AREA_ID intentionally unset for
+# now: /mailbox stays super-user-only until the area id is configured.
+GMAIL_IMPORT_MAILBOX = 'management@makespace.org'
 
 [http_service]
 internal_port = 8080
