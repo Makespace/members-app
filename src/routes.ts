@@ -52,6 +52,8 @@ export const initRoutes = (
     ...command('areas', 'remove-owner', commands.area.removeOwner),
     ...command('areas', 'remove', commands.area.remove),
     ...command('areas', 'set-mailing-List', commands.area.setMailingList),
+    ...command('areas', 'add-name-alias', commands.area.addNameAlias),
+    ...api('areas', 'remove-name-alias', commands.area.removeNameAlias),
     ...command('equipment', 'add', commands.equipment.add),
     ...command('equipment', 'add-trainer', commands.trainers.add),
     ...command('equipment', 'remove-trainer', commands.trainers.remove),

@@ -168,15 +168,26 @@ const toView =
     const equipment = ticket.equipmentId
       ? rm.equipment.get(ticket.equipmentId)
       : O.none;
+    const directArea = ticket.areaId ? rm.area.get(ticket.areaId) : O.none;
+    const ticketArea = pipe(
+      equipment,
+      O.map(e => ({id: e.area.id as string, name: e.area.name})),
+      O.alt(() =>
+        pipe(
+          directArea,
+          O.map(area => ({id: area.id as string, name: area.name}))
+        )
+      )
+    );
     const myMemberNumbers = allMemberNumbers(viewer);
     const onMyTrainerMachine =
       ticket.equipmentId !== null &&
       viewer.trainerFor.some(t => t.equipment_id === ticket.equipmentId);
     const inMyOwnerArea = pipe(
-      equipment,
+      ticketArea,
       O.match(
         () => false,
-        e => viewer.ownerOf.some(area => area.id === e.area.id)
+        area => viewer.ownerOf.some(owned => owned.id === area.id)
       )
     );
     return {
@@ -190,6 +201,10 @@ const toView =
       equipmentName: pipe(
         equipment,
         O.map(e => e.name)
+      ),
+      areaName: pipe(
+        ticketArea,
+        O.map(area => area.name)
       ),
       rawEquipment: ticket.submittedEquipment,
       response: ticket.response,
@@ -219,7 +234,11 @@ const unresolvedEquipmentNames = (
 ): ReadonlyArray<{raw: string; count: number}> => {
   const counts = new Map<string, {raw: string; count: number}>();
   for (const ticket of tickets) {
-    if (O.isSome(ticket.equipmentName) || !ticket.rawEquipment) {
+    if (
+      O.isSome(ticket.equipmentName) ||
+      O.isSome(ticket.areaName) ||
+      !ticket.rawEquipment
+    ) {
       continue;
     }
     const key = ticket.rawEquipment.trim().toLowerCase();

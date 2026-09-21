@@ -140,6 +140,21 @@ export const equipmentNameAliasesTable = defineTable(
   }
 );
 
+// Freeform labels that resolve to a whole area (see equipmentNameAliases).
+export const areaNameAliasesTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS areaNameAliases (
+      alias TEXT PRIMARY KEY COLLATE NOCASE,
+      areaId TEXT NOT NULL
+    )
+  `,
+  'areaNameAliases' as const,
+  {
+    alias: text('alias').primaryKey(),
+    areaId: text('areaId').notNull().$type<UUID>(),
+  }
+);
+
 export const trainersTable = defineTable(
   sql`
     CREATE TABLE IF NOT EXISTS trainers (
@@ -314,6 +329,7 @@ export const troubleTicketsTable = defineTable(
       submittedEmail TEXT,
       submittedEquipment TEXT,
       equipmentId TEXT,
+      areaId TEXT,
       responseJson TEXT NOT NULL
     )
   `,
@@ -331,8 +347,11 @@ export const troubleTicketsTable = defineTable(
     // The raw equipment string from the form; kept so the equipment link can be
     // re-resolved or overridden later.
     submittedEquipment: text('submittedEquipment'),
-    // Resolved equipment record; null means the "Unassigned" bucket.
+    // Resolved equipment record; null means no specific machine matched.
     equipmentId: text('equipmentId').$type<UUID>(),
+    // Directly-resolved area, for tickets that matched an area name/alias but
+    // no equipment. equipmentId wins when both are set. Both null = Unassigned.
+    areaId: text('areaId').$type<UUID>(),
     responseJson: text('responseJson', {mode: 'json'})
       .notNull()
       .$type<TroubleTicketResponse>(),
@@ -348,6 +367,9 @@ createTables.push(
 );
 createTables.push(
   sql`CREATE INDEX IF NOT EXISTS troubleTickets_status_idx ON troubleTickets (status);`
+);
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS troubleTickets_areaId_idx ON troubleTickets (areaId);`
 );
 
 // Row hashes of TroubleTicketCreated events that have been soft-deleted. Kept
