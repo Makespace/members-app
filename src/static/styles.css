@@ -1661,3 +1661,27 @@ label img {
 .site-banner--info.site-banner--alt {
   background: #4d94d1;
 }
+
+
+/* A label wrapping a native checkbox + text. The global input reset
+   (appearance:none, width:100%, display:block) turns bare checkboxes into
+   invisible full-width blocks; restore native rendering inside these rows. */
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  cursor: pointer;
+}
+
+.checkbox-row input[type='checkbox'] {
+  appearance: auto;
+  display: inline-block;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  flex: none;
+  accent-color: var(--green-color);
+  cursor: pointer;
+}
