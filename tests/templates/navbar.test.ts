@@ -78,7 +78,8 @@ describe('navBar', () => {
     const page = renderNav(false, areas);
 
     expect(page.textContent).toContain('Areas & tools');
-    expect(page.textContent).toContain('Raise an issue');
+    expect(page.textContent).toContain('About this app');
+    expect(page.textContent).toContain('Updated');
     expect(page.textContent).toContain('Community');
     expect(page.textContent).toContain('All areas');
     expect(page.textContent).toContain('Log out');

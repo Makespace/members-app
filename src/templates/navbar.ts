@@ -6,6 +6,8 @@ import {
 import {User} from '../types';
 import {html, joinHtml, safe, sanitizeString} from '../types/html';
 import {loggedInUserSquare} from './logged-in-user-square';
+import {latestChange} from '../queries/about/change-log';
+import {DateTime} from 'luxon';
 
 type NavBarEquipment = Readonly<{
   id: string;
@@ -287,6 +289,21 @@ const renderProfilePanel = () => html`
   </div>
 `;
 
+// "Updated N days ago - <headline>", derived from the change log's newest
+// entry, so the About button doubles as a freshness indicator.
+const aboutFreshness = () => {
+  const latest = latestChange();
+  const days = Math.max(
+    0,
+    Math.floor(
+      DateTime.now().diff(DateTime.fromISO(latest.date), 'days').days
+    )
+  );
+  const when =
+    days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`;
+  return sanitizeString(`Updated ${when} — ${latest.headline}`);
+};
+
 export const navBar = (
   user: User,
   viewer: {isSuperUser: boolean; isOwner: boolean},
@@ -321,8 +338,10 @@ export const navBar = (
         ${renderAreasPanel(viewModel.areas)}
       </div>
       <div id="page-nav-secondary-actions" class="page-nav__secondary-actions">
-        <a class="page-nav__action" href="/roadmap">Roadmap</a>
-        <a class="page-nav__action" href="/raise-issue">Raise an issue</a>
+        <a class="page-nav__action page-nav__action--about" href="/about">
+          <span>About this app</span>
+          <small class="page-nav__about-freshness">${aboutFreshness()}</small>
+        </a>
         ${viewer.isSuperUser || viewer.isOwner
           ? html`<a class="page-nav__action" href="/trouble-tickets"
               >Trouble tickets</a
