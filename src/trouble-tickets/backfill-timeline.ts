@@ -5,7 +5,11 @@ import {Dependencies} from '../dependencies';
 import {Actor} from '../types/actor';
 import {constructEvent} from '../types';
 import {DomainEvent} from '../types/domain-event';
-import {getTroubleTicketCandidates} from '../read-models/external-state/trouble-ticket-candidates';
+import {
+  getTroubleTicketCacheDiagnostics,
+  getTroubleTicketCandidates,
+  TroubleTicketCacheDiagnostics,
+} from '../read-models/external-state/trouble-ticket-candidates';
 import {TimelineRow} from '../training-quiz/plan-timeline-rebuild';
 import {TimelineRebuildSummary} from '../training-quiz/rebuild-event-timeline';
 
@@ -22,6 +26,13 @@ type TroubleTicketBackfillPlan = {
   // Cache rows skipped because they have no usable submission timestamp
   // (stale rows from older sync versions/sheet ids). Not importable.
   skippedNoTimestamp: number;
+  // The submission-time range of what would be imported - a bounds check
+  // against wrong-epoch timestamps (e.g. seconds stored as ms => 1970).
+  oldestCandidate: Date | null;
+  newestCandidate: Date | null;
+  // Storage-class breakdown + NULL-row sample so the operator can judge
+  // whether skipped rows are dead or recoverable data in an older format.
+  cacheDiagnostics: TroubleTicketCacheDiagnostics;
   sample: ReadonlyArray<{
     submittedAt: Date;
     submittedEquipment: string | null;
@@ -120,6 +131,19 @@ export const planTroubleTicketBackfill =
       alreadyImported,
       excludedByScope,
       skippedNoTimestamp,
+      oldestCandidate:
+        candidates.length > 0
+          ? new Date(
+              Math.min(...candidates.map(c => c.submittedAt.getTime()))
+            )
+          : null,
+      newestCandidate:
+        candidates.length > 0
+          ? new Date(
+              Math.max(...candidates.map(c => c.submittedAt.getTime()))
+            )
+          : null,
+      cacheDiagnostics: await getTroubleTicketCacheDiagnostics(deps.extDB),
       sample: toInsert.slice(0, SAMPLE_SIZE).map(candidate => ({
         submittedAt: candidate.submittedAt,
         submittedEquipment: candidate.submittedEquipment,
