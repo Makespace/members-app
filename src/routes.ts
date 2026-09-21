@@ -30,7 +30,9 @@ export const initRoutes = (
   return [
     query('/', queries.me),
     query('/admin', queries.admin),
-    query('/raise-issue', queries.raiseIssue),
+    query('/about', queries.about),
+    // The old name for /about; deep links (#bad-records etc.) survive.
+    get('/raise-issue', (_req, res) => res.redirect('/about')),
     query('/humans', queries.humans),
     query('/roadmap', queries.roadmap),
     query('/event-log', queries.log),

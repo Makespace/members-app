@@ -1803,3 +1803,21 @@ label img {
   background: var(--green-color);
 }
 
+
+
+/* The About button carries a one-line freshness note under its label. */
+.page-nav__action--about {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+}
+
+.page-nav__about-freshness {
+  font-size: 0.7rem;
+  color: var(--grey-color);
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
