@@ -31,7 +31,8 @@ async function syncExternDataPeriodically(
   let lastTroubleTicketNotify = Date.now();
   let lastGmailSync = 0;
   const gmailClientFactory = createGmailClientFactory(
-    deps.conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON
+    deps.conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON,
+    deps.conf.GMAIL_AUTHORIZED_USER_JSON
   );
   let lastTrainingSummaryEmailCheck = Date.now();
   while (true) {

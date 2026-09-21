@@ -30,25 +30,42 @@ export type GmailClient = {
 
 type GmailClientFactory = (mailbox: string) => GmailClient;
 
-// The real factory: a second GoogleAuth using the same service-account key,
-// scoped to gmail.readonly and impersonating the mailbox (domain-wide
-// delegation - see docs/gmail-import.md for the admin-console grant).
+// The real factory. Two supported credentials, tried in this order:
+// 1. An "authorized user" OAuth token minted for the mailbox account itself
+//    (client id/secret + refresh token) - the narrowest option, touching
+//    exactly one mailbox. Preferred when configured.
+// 2. The sheet-sync service-account key with gmail.readonly domain-wide
+//    delegation, impersonating the mailbox (see docs/gmail-import.md).
 export const createGmailClientFactory =
-  (serviceAccountKeyJson: string): GmailClientFactory =>
+  (
+    serviceAccountKeyJson: string,
+    authorizedUserJson: string
+  ): GmailClientFactory =>
   mailbox => {
     // The gmail package's own auth class - avoids the version clash between
     // the app's top-level google-auth-library and the one googleapis-common
-    // bundles.
-    const auth = new gmailAuth.GoogleAuth({
-      // Google issues the credentials file and validates it.
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      credentials: JSON.parse(serviceAccountKeyJson),
-      clientOptions: {
-        subject: mailbox,
-        transporterOptions: {fetchImplementation: fetch},
-      },
-      scopes: ['https://www.googleapis.com/auth/gmail.readonly'],
-    });
+    // bundles. GoogleAuth accepts both credential shapes; only the
+    // service-account path needs the impersonation subject.
+    const auth = new gmailAuth.GoogleAuth(
+      authorizedUserJson !== ''
+        ? {
+            // Google issues both credential files and validates them.
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            credentials: JSON.parse(authorizedUserJson),
+            clientOptions: {
+              transporterOptions: {fetchImplementation: fetch},
+            },
+          }
+        : {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            credentials: JSON.parse(serviceAccountKeyJson),
+            clientOptions: {
+              subject: mailbox,
+              transporterOptions: {fetchImplementation: fetch},
+            },
+            scopes: ['https://www.googleapis.com/auth/gmail.readonly'],
+          }
+    );
     const api = gmail({version: 'v1', auth});
     return {
       getProfile: async () =>
