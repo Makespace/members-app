@@ -8,7 +8,7 @@ import {safe, toLoggedInContent} from '../../types/html';
 export const troubleTickets: Query = deps => user =>
   pipe(
     user,
-    constructViewModel(deps.sharedReadModel, deps.getTroubleTicketData),
+    constructViewModel(deps.sharedReadModel),
     TE.map(render),
     TE.map(toLoggedInContent(safe('Trouble Tickets')))
   );
