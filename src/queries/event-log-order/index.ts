@@ -31,7 +31,17 @@ export const eventLogOrder: Query = deps => (user, params, queryParams) =>
     parseSelectedIndex(params),
     TE.fromEither,
     TE.chain(selectedIndex =>
-      constructViewModel(deps, selectedIndex, queryParams.truncate === '1')(user)
+      constructViewModel(
+        deps,
+        selectedIndex,
+        queryParams.truncate === '1',
+        // Highlight is an event-type prefix; constrain it to type-name
+        // characters so arbitrary input never reaches the page.
+        typeof queryParams.highlight === 'string' &&
+          /^[A-Za-z]{1,64}$/.test(queryParams.highlight)
+          ? queryParams.highlight
+          : null
+      )(user)
     ),
     TE.map(render),
     TE.map(toLoggedInContent(safe('Event log order')))

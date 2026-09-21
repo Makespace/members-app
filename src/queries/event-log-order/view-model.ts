@@ -4,6 +4,7 @@ export type EventPoint = {
   position: number; // 0-based ordinal in event_index order
   eventIndex: number;
   recordedAtMs: number;
+  type: string;
 };
 
 // A contiguous run of events with no internal "seam" (see below). Blocks are
@@ -109,6 +110,10 @@ export type ViewModel = {
   // When true, the density (dump) regions are compressed on the x-axis so the
   // time-spread blocks are easier to read.
   truncate: boolean;
+  // Event-type prefix to highlight on the line (?highlight=TroubleTicket),
+  // e.g. for visually verifying that a migration wove events in at their
+  // correct chronological positions. null = no highlighting.
+  highlightPrefix: string | null;
   // Present when the page was reached via /event-log-order/:index.
   selected: SelectedEvent | null;
 };
