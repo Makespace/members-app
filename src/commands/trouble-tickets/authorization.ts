@@ -5,7 +5,6 @@ import {Actor} from '../../types';
 import {SharedReadModel} from '../../read-models/shared-state';
 import {EquipmentId} from '../../types/equipment-id';
 import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
-import {isEquipmentTrainer} from '../authentication-helpers/is-equipment-trainer';
 import {isEquipmentOwner} from '../authentication-helpers/is-equipment-owner';
 
 const ticketEquipmentId = (
@@ -17,26 +16,13 @@ const ticketEquipmentId = (
     O.chain(ticket => O.fromNullable(ticket.equipmentId))
   );
 
-// Status transitions (assign / resolve / park / needs-help) require the actor to be a
-// trainer on the ticket's equipment - or an admin/super user. An Unassigned ticket (no
-// resolved equipment) has no trainers, so only an admin/super user can act until an owner
-// sets its equipment.
-export const isTicketTrainer = (input: {
-  actor: Actor;
-  rm: SharedReadModel;
-  input: {ticketId: UUID};
-}): boolean =>
-  isAdminOrSuperUser({actor: input.actor, rm: input.rm}) ||
-  pipe(
-    ticketEquipmentId(input.rm, input.input.ticketId),
-    O.match(
-      () => false,
-      equipmentId =>
-        isEquipmentTrainer({actor: input.actor, rm: input.rm, input: {equipmentId}})
-    )
-  );
-
-// Editing a ticket's title requires ownership of its equipment's area - or admin/super user.
+// Status transitions (assign / resolve / park / needs-help), like title edits, require
+// ownership of the ticket's equipment's area - or admin/super user. All owners are
+// maintainers (trainers are the subset who also train, and must be owners anyway), so
+// area ownership is the right bar for working a ticket. An Unassigned ticket (no
+// resolved equipment) has no area, so only an admin/super user can act until someone
+// sets its equipment. If maintainer/trainer roles ever diverge per equipment, this is
+// the seam to split.
 export const isTicketOwner = (input: {
   actor: Actor;
   rm: SharedReadModel;

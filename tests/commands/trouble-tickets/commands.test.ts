@@ -20,6 +20,7 @@ import {editTitle} from '../../../src/commands/trouble-tickets/edit-title';
 import {TestFramework, initTestFramework} from '../../read-models/test-framework';
 
 const TRAINER = 12;
+const OWNER_NOT_TRAINER = 13;
 const OUTSIDER = 99;
 
 const userActorWithMember = (memberNumber: number): UserActor => ({
@@ -76,6 +77,22 @@ describe('trouble ticket commands', () => {
         memberNumber: TRAINER,
       })
     );
+    insert(
+      constructEvent('MemberNumberLinkedToEmail')({
+        actor: systemActor(),
+        memberNumber: OWNER_NOT_TRAINER,
+        email: 'owner@test.com' as EmailAddress,
+        name: undefined,
+        formOfAddress: undefined,
+      })
+    );
+    insert(
+      constructEvent('OwnerAdded')({
+        actor: systemActor(),
+        areaId,
+        memberNumber: OWNER_NOT_TRAINER,
+      })
+    );
     // submittedEquipment matches the equipment name so it resolves to equipmentId.
     insert(
       constructEvent('TroubleTicketCreated')({
@@ -104,10 +121,19 @@ describe('trouble ticket commands', () => {
   const rm = () => framework.sharedReadModel;
 
   describe('assign', () => {
-    it('authorises a trainer but not an outsider', () => {
+    it('authorises any area owner (trainer or not) but not an outsider', () => {
       expect(
         assign.isAuthorized({
           actor: userActorWithMember(TRAINER),
+          rm: rm(),
+          input: {ticketId},
+        })
+      ).toBe(true);
+      // All owners are maintainers: area ownership alone is enough to work a
+      // ticket, whether or not the owner also trains on the machine.
+      expect(
+        assign.isAuthorized({
+          actor: userActorWithMember(OWNER_NOT_TRAINER),
           rm: rm(),
           input: {ticketId},
         })
