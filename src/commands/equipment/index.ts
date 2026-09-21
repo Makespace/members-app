@@ -6,6 +6,9 @@ import {removeTrainingSheet} from './remove-training-sheet';
 import {removeTrainingSheetForm} from './remove-training-sheet-form';
 import {markEquipmentObsolete} from './mark-obsolete';
 import {markEquipmentObsoleteForm} from './mark-obsolete-form';
+import {addNameAlias} from './add-name-alias';
+import {addNameAliasForm} from './add-name-alias-form';
+import {removeNameAlias} from './remove-name-alias';
 
 export const equipment = {
   add: {
@@ -24,4 +27,9 @@ export const equipment = {
     ...markEquipmentObsolete,
     ...markEquipmentObsoleteForm,
   },
+  addNameAlias: {
+    ...addNameAlias,
+    ...addNameAliasForm,
+  },
+  removeNameAlias,
 };
