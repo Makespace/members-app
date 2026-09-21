@@ -10,7 +10,11 @@ import {navBar, navBarViewModel} from '../../src/templates/navbar';
 import {EmailAddress} from '../../src/types';
 import {User} from '../../src/types/user';
 
-const renderNav = (isSuperUser: boolean, areas: ReadonlyArray<Area>) => {
+const renderNav = (
+  isSuperUser: boolean,
+  areas: ReadonlyArray<Area>,
+  isOwner = false
+) => {
   const viewModel = navBarViewModel(areas, areaId => {
     const area = areas.find(candidate => candidate.id === areaId);
     return (area?.equipment ?? []).map(equipment => ({
@@ -26,7 +30,7 @@ const renderNav = (isSuperUser: boolean, areas: ReadonlyArray<Area>) => {
       emailAddress: faker.internet.email() as EmailAddress,
       memberNumber: faker.number.int({min: 1}),
     } as User,
-    isSuperUser,
+    {isSuperUser, isOwner},
     viewModel
   );
   const body = document.createElement('body');
@@ -119,6 +123,16 @@ describe('navBar', () => {
   it('renders admin only for super users', () => {
     expect(renderNav(false, areas).textContent).not.toContain('Admin');
     expect(renderNav(true, areas).textContent).toContain('Admin');
+  });
+
+  it('renders the trouble-tickets link only for owners and super users', () => {
+    expect(renderNav(false, areas).textContent).not.toContain(
+      'Trouble tickets'
+    );
+    expect(renderNav(true, areas).textContent).toContain('Trouble tickets');
+    expect(renderNav(false, areas, true).textContent).toContain(
+      'Trouble tickets'
+    );
   });
 
   it('requests a simple profile image when no custom Gravatar exists', () => {
