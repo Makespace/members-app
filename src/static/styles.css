@@ -404,9 +404,9 @@ a.page-nav__site-link:hover,
 }
 
 .page-nav__menu--areas {
-  flex: 0 1 300px;
+  flex: 0 1 210px;
   width: 100%;
-  max-width: 300px;
+  max-width: 210px;
 }
 
 .page-nav__secondary-actions {
