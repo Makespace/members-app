@@ -18,6 +18,7 @@ import {withGoogleRateLimitRetry} from '../google/google-rate-limit-retry';
 export type GmailClient = {
   getProfile: () => Promise<{historyId?: string | null}>;
   listMessageIds: (
+    query: string,
     pageToken?: string
   ) => Promise<{ids: string[]; nextPageToken?: string | null}>;
   getMessage: (id: string) => Promise<GmailApiMessage>;
@@ -70,10 +71,11 @@ export const createGmailClientFactory =
     return {
       getProfile: async () =>
         (await api.users.getProfile({userId: 'me'})).data,
-      listMessageIds: async pageToken => {
+      listMessageIds: async (query, pageToken) => {
         const response = await api.users.messages.list({
           userId: 'me',
           labelIds: ['INBOX'],
+          q: query === '' ? undefined : query,
           maxResults: 100,
           pageToken,
         });
@@ -114,6 +116,24 @@ export const createGmailClientFactory =
     };
   };
 
+// When the interesting address is a group, the import authenticates as a
+// member account whose inbox also holds unrelated mail - only cache messages
+// addressed or delivered to the group. The bootstrap listing filters
+// server-side too, but history.list can't, so this covers the incremental
+// path (and anything the server-side query misses).
+const matchesFilter = (
+  filterToAddress: string,
+  parsed: ParsedGmailMessage
+): boolean => {
+  if (filterToAddress === '') {
+    return true;
+  }
+  const needle = filterToAddress.toLowerCase();
+  return [parsed.deliveredTo, parsed.toAddresses, parsed.ccAddresses].some(
+    header => header !== null && header.toLowerCase().includes(needle)
+  );
+};
+
 const upsertMessage = async (
   extDB: ExternalStateDB,
   mailbox: string,
@@ -149,6 +169,7 @@ const fetchAndCache = async (
   extDB: ExternalStateDB,
   client: GmailClient,
   mailbox: string,
+  filterToAddress: string,
   ids: ReadonlyArray<string>
 ): Promise<number> => {
   let cached = 0;
@@ -161,6 +182,9 @@ const fetchAndCache = async (
     const parsed = parseGmailMessage(message);
     if (parsed === null) {
       logger.warn('Skipping unparseable gmail message %s', id);
+      continue;
+    }
+    if (!matchesFilter(filterToAddress, parsed)) {
       continue;
     }
     await upsertMessage(extDB, mailbox, parsed);
@@ -182,7 +206,8 @@ export const pullGmailData = async (
   logger: Logger,
   extDB: ExternalStateDB,
   clientFactory: GmailClientFactory,
-  mailbox: string
+  mailbox: string,
+  filterToAddress: string
 ): Promise<void> => {
   const client = clientFactory(mailbox);
   const metadata = await extDB
@@ -201,7 +226,14 @@ export const pullGmailData = async (
         `listing gmail history for ${mailbox}`,
         () => client.listHistoryMessageIds(lastHistoryId)
       );
-      cached = await fetchAndCache(logger, extDB, client, mailbox, history.ids);
+      cached = await fetchAndCache(
+        logger,
+        extDB,
+        client,
+        mailbox,
+        filterToAddress,
+        history.ids
+      );
       nextHistoryId = history.historyId ?? lastHistoryId;
     } catch (error) {
       if (!isHistoryExpired(error)) {
@@ -222,14 +254,23 @@ export const pullGmailData = async (
       `getting gmail profile for ${mailbox}`,
       () => client.getProfile()
     );
+    const query =
+      filterToAddress === '' ? '' : `deliveredto:${filterToAddress}`;
     let pageToken: string | undefined;
     do {
       const page = await withGoogleRateLimitRetry(
         logger,
         `listing gmail messages for ${mailbox}`,
-        () => client.listMessageIds(pageToken)
+        () => client.listMessageIds(query, pageToken)
       );
-      cached += await fetchAndCache(logger, extDB, client, mailbox, page.ids);
+      cached += await fetchAndCache(
+        logger,
+        extDB,
+        client,
+        mailbox,
+        filterToAddress,
+        page.ids
+      );
       pageToken = page.nextPageToken ?? undefined;
     } while (pageToken);
     nextHistoryId = profile.historyId ?? null;
