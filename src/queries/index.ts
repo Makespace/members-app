@@ -3,6 +3,7 @@ export {admin} from './admin';
 export {db} from './db';
 export {raiseIssue} from './raise-issue';
 export {humans} from './humans';
+export {roadmap} from './roadmap';
 export {superUsers} from './super-users';
 export {equipment} from './equipment';
 export {equipmentCatalogue} from './equipment-catalogue';
