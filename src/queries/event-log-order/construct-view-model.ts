@@ -306,6 +306,7 @@ export const analyzeTimeline = (
           position,
           eventIndex: event.event_index,
           recordedAtMs: event.recordedAt.getTime(),
+          type: event.type,
         }));
         const types = ordered.map(event => event.type);
         const n = points.length;
@@ -522,7 +523,12 @@ export const analyzeTimeline = (
 };
 
 export const constructViewModel =
-  (deps: Dependencies, selectedIndex: O.Option<number>, truncate: boolean) =>
+  (
+    deps: Dependencies,
+    selectedIndex: O.Option<number>,
+    truncate: boolean,
+    highlightPrefix: string | null
+  ) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> =>
     pipe(
       mustBeSuperuser(deps.sharedReadModel, user),
@@ -532,6 +538,7 @@ export const constructViewModel =
         return {
           ...analysis,
           truncate,
+          highlightPrefix,
           selected: O.isSome(selectedIndex)
             ? buildSelected(ordered, analysis.blocks, selectedIndex.value)
             : null,
