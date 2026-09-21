@@ -14,7 +14,7 @@ import {
 } from '../../types/html';
 import {Form} from '../../types/form';
 import {failureWithStatus} from '../../types/failure-with-status';
-import {isTicketTrainer} from './authorization';
+import {isTicketOwner} from './authorization';
 
 // A trouble-ticket action confirmation page. Shows the ticket, a short explanation of what
 // the action does, any required text fields, then a submit button that POSTs to the
@@ -80,19 +80,19 @@ const troubleTicketActionForm = (
           failureWithStatus('Invalid parameters', StatusCodes.BAD_REQUEST)
         ),
         // The ticket title below is submitter-provided content, so the page is
-        // gated like the action itself: trainers on the ticket's equipment (or
-        // admins). Checked before the existence lookup so an unauthorized
-        // viewer cannot probe which ticket ids exist.
+        // gated like the action itself: owners of the ticket's equipment's
+        // area (or admins). Checked before the existence lookup so an
+        // unauthorized viewer cannot probe which ticket ids exist.
         E.filterOrElse(
           ({ticketId}) =>
-            isTicketTrainer({
+            isTicketOwner({
               actor: {tag: 'user', user},
               rm: readModel,
               input: {ticketId},
             }),
           () =>
             failureWithStatus(
-              "Only trainers on the ticket's equipment (or admins) can act on it",
+              "Only owners of the ticket's equipment's area (or admins) can act on it",
               StatusCodes.FORBIDDEN
             )()
         ),
