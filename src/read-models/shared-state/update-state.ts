@@ -15,6 +15,7 @@ import {
   trainingStatsNotificationTable,
   deletedTroubleTicketRowHashesTable,
   troubleTicketAssigneesTable,
+  troubleTicketNotificationsTable,
   troubleTicketsTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
@@ -735,6 +736,13 @@ const _updateState =
             `Unable to set equipment for unknown trouble ticket '${event.ticketId}'`
           );
         }
+        break;
+      }
+      case 'TroubleTicketNotificationSent': {
+        tx.insert(troubleTicketNotificationsTable)
+          .values({notifiedEventIndex: event.notifiedEventIndex})
+          .onConflictDoNothing()
+          .run();
         break;
       }
       case 'TroubleTicketTitleEdited': {

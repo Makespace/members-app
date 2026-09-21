@@ -16,6 +16,7 @@ import {sendEmail} from '../init-dependencies/send-email';
 import nodemailer from 'nodemailer';
 import {initSharedReadModel} from '../read-models/shared-state';
 import {commitEvent} from '../init-dependencies/event-store/commit-event';
+import {getAllEventsByType} from '../init-dependencies/event-store/get-all-events';
 import {getSheetData} from './db/get_sheet_data';
 import {ensureExtDBTablesExist, ExternalStateDB, initExternalStateDB} from './external-state-db';
 import { pullRecurlyData } from './recurly/pull-recurly-data';
@@ -92,6 +93,7 @@ export const initDependencies = (): SyncWorkerDependencies => {
     lastQuizSync: lastSync(extDB),
     getSheetData: getSheetData(extDB),
     commitEvent: commitEvent(eventDB, logger, sharedReadModel.asyncRefresh),
+    getAllEventsByType: getAllEventsByType(eventDB),
     pullRecurlyData: conf.RECURLY_TOKEN ?  pullRecurlyData(logger, extDB, conf.RECURLY_TOKEN) : async (_interval: Duration) => {},
     ...initDBCommands(extDB, eventDB),
   };
