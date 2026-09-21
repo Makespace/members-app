@@ -109,6 +109,11 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   const frameworkGetAllEventsByType = <EN extends EventName>(eventType: EN) =>
     pipe(getAllEventsByType(eventDB)(eventType), T.map(getRightOrFail))();
   const depsForCommands: Dependencies = {
+    conf: {
+      PUBLIC_URL: 'http://localhost:8080',
+      GMAIL_IMPORT_MAILBOX: '',
+      MANAGEMENT_TEAM_AREA_ID: '',
+    } as Dependencies['conf'],
     commitEvent: frameworkCommitEvent,
     getAllEvents: getAllEvents(eventDB),
     getDeletedEvents: getDeletedEvents(eventDB),

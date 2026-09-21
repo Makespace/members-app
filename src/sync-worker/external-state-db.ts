@@ -1,3 +1,4 @@
+import {createGmailTables} from './gmail/gmail-message-table';
 import {Client} from '@libsql/client';
 import {drizzle} from 'drizzle-orm/libsql';
 import {
@@ -42,4 +43,11 @@ export type ExternalStateDB = ReturnType<typeof initExternalStateDB>;
 export const ensureExtDBTablesExist = (extDB: ExternalStateDB): SyncWorkerDependencies['ensureExtDBTablesExist'] => async () => {
     await ensureGoogleDBTablesExist(extDB);
     await ensureRecurlyDBTablesExist(extDB);
+    await ensureGmailTablesExist(extDB);
+}
+
+const ensureGmailTablesExist = async (extDB: ExternalStateDB) => {
+    for (const statement of createGmailTables) {
+        await extDB.run(statement);
+    }
 }

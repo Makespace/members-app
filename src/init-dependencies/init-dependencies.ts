@@ -75,6 +75,7 @@ export const initDependencies = (
   const extDB = initExternalStateDB(extDBClient);
 
   const deps: Dependencies = {
+    conf,
     commitEvent: commitEvent(eventDB, logger, sharedReadModel.asyncRefresh),
     getAllEvents: getAllEvents(eventDB),
     getEventByIndex: getEventByIndex(eventDB),

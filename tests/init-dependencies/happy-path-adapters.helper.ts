@@ -10,6 +10,11 @@ import { initExternalStateDB } from '../../src/sync-worker/external-state-db';
 import { Int } from 'io-ts';
 
 export const happyPathAdapters: Dependencies = {
+  conf: {
+    PUBLIC_URL: 'http://localhost:8080',
+    GMAIL_IMPORT_MAILBOX: '',
+    MANAGEMENT_TEAM_AREA_ID: '',
+  } as Dependencies['conf'],
   commitEvent: () => () => 
     TE.right({status: StatusCodes.CREATED, message: 'dummy create event'}),
   getAllEvents: () => TE.right([]),

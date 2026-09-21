@@ -4,6 +4,7 @@ import {runQuizMigration} from '../training-quiz/migrate';
 import {runTroubleTicketIngest} from '../trouble-tickets/ingest';
 import {notifyTroubleTicketChanges} from './notify_trouble_tickets';
 import {notifySiteNotifications} from './notify_site_notifications';
+import {createGmailClientFactory, pullGmailData} from './gmail/pull_gmail_data';
 import {initDependencies} from './init-dependencies';
 import {GoogleHelpers} from './google/pull_sheet_data';
 import {setTimeout} from 'node:timers/promises';
@@ -17,6 +18,7 @@ const TRAINING_SUMMARY_EMAIL_CHECK_INTERVAL_MS = 20 * 60 * 1000;
 const EQUIPMENT_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 const TROUBLE_TICKET_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 const TROUBLE_TICKET_NOTIFY_INTERVAL_MS = 30 * 1000;
+const GMAIL_SYNC_INTERVAL_MS = 5 * 60 * 1000;
 const RECURLY_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 
 async function syncExternDataPeriodically(
@@ -27,6 +29,10 @@ async function syncExternDataPeriodically(
   let lastEquipmentSyncCheck = Date.now();
   let lastTroubleTicketCheck = Date.now();
   let lastTroubleTicketNotify = Date.now();
+  let lastGmailSync = 0;
+  const gmailClientFactory = createGmailClientFactory(
+    deps.conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON
+  );
   let lastTrainingSummaryEmailCheck = Date.now();
   while (true) {
     try {
@@ -35,6 +41,7 @@ async function syncExternDataPeriodically(
       const lastEquipmentSyncCheckAgoMs = now - lastEquipmentSyncCheck;
       const lastTroubleTicketCheckAgoMs = now - lastTroubleTicketCheck;
       const lastTroubleTicketNotifyAgoMs = now - lastTroubleTicketNotify;
+      const lastGmailSyncAgoMs = now - lastGmailSync;
       const lastTrainingSummaryEmailCheckAgoMs =
         now - lastTrainingSummaryEmailCheck;
 
@@ -80,6 +87,19 @@ async function syncExternDataPeriodically(
         await deps.sharedReadModel.asyncRefresh()();
         await runTroubleTicketIngest(deps)();
         lastTroubleTicketCheck = Date.now();
+      }
+
+      if (
+        deps.conf.GMAIL_IMPORT_MAILBOX !== '' &&
+        lastGmailSyncAgoMs > GMAIL_SYNC_INTERVAL_MS
+      ) {
+        await pullGmailData(
+          deps.logger,
+          deps.extDB,
+          gmailClientFactory,
+          deps.conf.GMAIL_IMPORT_MAILBOX
+        );
+        lastGmailSync = Date.now();
       }
 
       if (lastTroubleTicketNotifyAgoMs > TROUBLE_TICKET_NOTIFY_INTERVAL_MS) {
