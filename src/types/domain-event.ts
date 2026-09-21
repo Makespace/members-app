@@ -58,6 +58,21 @@ const EquipmentMarkedObsolete = defineEvent('EquipmentMarkedObsolete', {
   id: tt.UUID,
 });
 
+// An alternative name that resolves to a piece of equipment - e.g. the label
+// used by the trouble-ticket Google Form ("Laser cutter (Jaws)") for the
+// equipment the app calls "Jaws". Used when linking free-text equipment
+// references to equipment records; adding an alias re-binds any tickets whose
+// raw string matches it and is still unresolved.
+const EquipmentNameAliasAdded = defineEvent('EquipmentNameAliasAdded', {
+  equipmentId: tt.UUID,
+  alias: t.string,
+});
+
+const EquipmentNameAliasRemoved = defineEvent('EquipmentNameAliasRemoved', {
+  equipmentId: tt.UUID,
+  alias: t.string,
+});
+
 const OwnerAdded = defineEvent('OwnerAdded', {
   areaId: tt.UUID,
   memberNumber: t.number,
@@ -327,6 +342,8 @@ export const events = [
   AreaEmailUpdated,
   EquipmentAdded,
   EquipmentMarkedObsolete,
+  EquipmentNameAliasAdded,
+  EquipmentNameAliasRemoved,
   OwnerAdded,
   OwnerRemoved,
   SuperUserDeclared,
@@ -371,6 +388,8 @@ export const DomainEvent = t.union([
   AreaEmailUpdated.codec,
   EquipmentAdded.codec,
   EquipmentMarkedObsolete.codec,
+  EquipmentNameAliasAdded.codec,
+  EquipmentNameAliasRemoved.codec,
   OwnerAdded.codec,
   OwnerRemoved.codec,
   SuperUserDeclared.codec,

@@ -301,6 +301,46 @@ const filterScript = html`
   </script>
 `;
 
+// Super-user work list: form strings that resolve to no equipment, each
+// linking to the alias-mapping page. Mapping one re-binds its tickets.
+const renderUnresolvedNames = (vm: ViewModel) => {
+  if (!vm.canMapEquipment || vm.unresolvedEquipmentNames.length === 0) {
+    return html``;
+  }
+  return html`
+    <details class="tt-changelog">
+      <summary>
+        Unresolved equipment names (${safe(
+          vm.unresolvedEquipmentNames.length.toString()
+        )})
+      </summary>
+      <p>
+        These form answers don't match any equipment name or alias, so their
+        tickets sit in Unassigned. Map a name to link its tickets - now and
+        for future submissions.
+      </p>
+      <ul>
+        ${joinHtml(
+          vm.unresolvedEquipmentNames.map(
+            entry => html`
+              <li>
+                <a
+                  href="/equipment/add-name-alias?alias=${safe(
+                    encodeURIComponent(entry.raw)
+                  )}"
+                  >${sanitizeString(entry.raw)}</a
+                >
+                (${safe(entry.count.toString())}
+                ticket${entry.count === 1 ? '' : safe('s')})
+              </li>
+            `
+          )
+        )}
+      </ul>
+    </details>
+  `;
+};
+
 export const render = (viewModel: ViewModel) => {
   if (viewModel.tickets.length === 0) {
     return html`
@@ -335,6 +375,7 @@ export const render = (viewModel: ViewModel) => {
     <div class="stack tt-wrapper">
       <h1>Trouble tickets</h1>
       ${renderStatusFilters(statusCounts)} ${renderScopeFilters(scopeCounts)}
+      ${renderUnresolvedNames(viewModel)}
       <div class="tt-board stack">${joinHtml(sorted.map(renderCard))}</div>
     </div>
     ${filterScript}
