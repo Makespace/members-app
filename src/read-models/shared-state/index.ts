@@ -44,9 +44,11 @@ import {
 import {
   getAllTroubleTickets,
   getTroubleTicketById,
+  getTroubleTicketChangeLog,
   getTroubleTicketsByEquipment,
   hasNotifiedForEvent,
   hasTroubleTicketRowHash,
+  TroubleTicketChangeRow,
 } from './trouble-tickets/get';
 import {TroubleTicket} from '../../types/trouble-ticket';
 import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
@@ -125,6 +127,9 @@ export type SharedReadModel = {
     getById: (id: UUID) => O.Option<TroubleTicket>;
     getByEquipment: (equipmentId: UUID | null) => ReadonlyArray<TroubleTicket>;
     hasNotifiedForEvent: (eventIndex: number) => boolean;
+    getChangeLog: (
+      ticketIds: ReadonlyArray<UUID>
+    ) => ReadonlyArray<TroubleTicketChangeRow>;
   };
 };
 
@@ -195,6 +200,7 @@ export const initSharedReadModel = (
       getById: getTroubleTicketById(readModelDb),
       getByEquipment: getTroubleTicketsByEquipment(readModelDb),
       hasNotifiedForEvent: hasNotifiedForEvent(readModelDb),
+      getChangeLog: getTroubleTicketChangeLog(readModelDb),
     },
   };
 };

@@ -48,8 +48,6 @@ const SCOPES: ReadonlyArray<{
   {key: 'my-machines', label: 'My machines', test: t => t.onMyTrainerMachine},
 ];
 
-const statusRank = (status: TroubleTicketStatus) => STATUS_ORDER.indexOf(status);
-
 // Space-separated scope tokens a card belongs to (read by the filter script).
 const cardScopes = (ticket: TroubleTicketView): string =>
   SCOPES.filter(scope => scope.test(ticket))
@@ -351,20 +349,60 @@ const renderUnresolvedNames = (vm: ViewModel) => {
   `;
 };
 
+// The scope banner and page navigation. Plain links, no JS: scope and page
+// round-trip as query params.
+const renderScopeAndPages = (vm: ViewModel) => {
+  return html`
+    <p>
+      ${vm.scopedToMine
+        ? html`Showing <strong>${vm.totalInScope}</strong> ticket${vm.totalInScope ===
+            1
+              ? ''
+              : safe('s')}
+            in <strong>your areas</strong> ·
+            <a href="/trouble-tickets?show=all">show all areas</a>`
+        : html`Showing <strong>all ${vm.totalInScope}</strong> ticket${vm.totalInScope ===
+            1
+              ? ''
+              : safe('s')}
+            · <a href="/trouble-tickets">show just your areas</a>`}
+      ${vm.pageCount > 1
+        ? html`· page ${vm.page} of ${vm.pageCount}
+            ${vm.page > 1
+              ? html`· ${renderPageLink(vm, vm.page - 1, '← previous')}`
+              : html``}
+            ${vm.page < vm.pageCount
+              ? html`· ${renderPageLink(vm, vm.page + 1, 'next →')}`
+              : html``}`
+        : html``}
+    </p>
+  `;
+};
+
+const renderPageLink = (vm: ViewModel, page: number, label: string) => {
+  const params = [
+    vm.scopedToMine ? '' : 'show=all',
+    page > 1 ? `page=${page}` : '',
+  ]
+    .filter(Boolean)
+    .join('&');
+  return html`<a href="/trouble-tickets${params ? safe('?' + params) : ''}"
+    >${safe(label)}</a
+  >`;
+};
+
 export const render = (viewModel: ViewModel) => {
   if (viewModel.tickets.length === 0) {
     return html`
       <div class="stack">
         <h1>Trouble tickets</h1>
-        <p>No trouble tickets yet.</p>
+        ${renderScopeAndPages(viewModel)}
+        ${renderUnresolvedNames(viewModel)}
+        <p>No trouble tickets in this view.</p>
       </div>
     `;
   }
-  const sorted = [...viewModel.tickets].sort(
-    (a, b) =>
-      statusRank(a.status) - statusRank(b.status) ||
-      b.submittedAt.getTime() - a.submittedAt.getTime()
-  );
+  const sorted = viewModel.tickets;
   const statusCounts = STATUS_ORDER.reduce(
     (acc, status) => {
       acc[status] = viewModel.tickets.filter(
@@ -384,6 +422,7 @@ export const render = (viewModel: ViewModel) => {
   return html`
     <div class="stack tt-wrapper">
       <h1>Trouble tickets</h1>
+      ${renderScopeAndPages(viewModel)}
       ${renderStatusFilters(statusCounts)} ${renderScopeFilters(scopeCounts)}
       ${renderUnresolvedNames(viewModel)}
       <div class="tt-board stack">${joinHtml(sorted.map(renderCard))}</div>

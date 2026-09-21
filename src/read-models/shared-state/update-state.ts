@@ -17,6 +17,7 @@ import {
   trainingStatsNotificationTable,
   deletedTroubleTicketRowHashesTable,
   troubleTicketAssigneesTable,
+  troubleTicketChangeLogTable,
   troubleTicketNotificationsTable,
   troubleTicketsTable,
 } from './state';
@@ -37,6 +38,32 @@ import { getEquipmentMinimal, resolveEquipmentByName } from './equipment/get';
 import { resolveAreaByName } from './area/get';
 import { generateUserId } from './member/generate-user-id';
 import { gravatarHashFromEmail } from '../avatar';
+
+// Appends a board change-log row for a ticket status-change event. The
+// event_index is present for every event replayed from the store (external
+// untracked events never carry ticket changes); keyed on it so re-projection
+// is a no-op.
+const recordTicketChange = (
+  tx: DatabaseTransaction,
+  event: DomainEvent & {ticketId: UUID},
+  details: Record<string, string>
+) => {
+  const eventIndex = (event as unknown as {event_index?: number}).event_index;
+  if (eventIndex === undefined) {
+    return;
+  }
+  tx.insert(troubleTicketChangeLogTable)
+    .values({
+      eventIndex,
+      ticketId: event.ticketId,
+      at: event.recordedAt,
+      actorJson: JSON.stringify(event.actor),
+      eventType: event.type,
+      detailsJson: JSON.stringify(details),
+    })
+    .onConflictDoNothing()
+    .run();
+};
 
 const _updateState =
   (tx: DatabaseTransaction, event: DomainEvent) => {
@@ -750,6 +777,7 @@ const _updateState =
             .where(eq(troubleTicketsTable.id, event.ticketId))
             .run();
         }
+        recordTicketChange(tx, event, {});
         break;
       }
       case 'TroubleTicketResolved': {
@@ -767,6 +795,7 @@ const _updateState =
         tx.delete(troubleTicketAssigneesTable)
           .where(eq(troubleTicketAssigneesTable.ticketId, event.ticketId))
           .run();
+        recordTicketChange(tx, event, {summary: event.summary});
         break;
       }
       case 'TroubleTicketParked': {
@@ -780,6 +809,11 @@ const _updateState =
             `Unable to park unknown trouble ticket '${event.ticketId}'`
           );
         }
+        recordTicketChange(tx, event, {
+          whyParked: event.whyParked,
+          pathToResolution: event.pathToResolution,
+          intermediateActions: event.intermediateActions,
+        });
         break;
       }
       case 'TroubleTicketNeedsHelp': {
@@ -793,6 +827,10 @@ const _updateState =
             `Unable to flag unknown trouble ticket '${event.ticketId}' as needing help`
           );
         }
+        recordTicketChange(tx, event, {
+          whatTried: event.whatTried,
+          whyDidntWork: event.whyDidntWork,
+        });
         // The trainer who flagged it is unassigned so another can pick it up.
         if (event.actor.tag === 'user') {
           const actorUserId = findUserIdByMemberNumber(tx)(
@@ -822,6 +860,9 @@ const _updateState =
             `Unable to set equipment for unknown trouble ticket '${event.ticketId}'`
           );
         }
+        recordTicketChange(tx, event, {
+          equipmentId: event.equipmentId ?? '',
+        });
         break;
       }
       case 'TroubleTicketNotificationSent': {
@@ -842,6 +883,7 @@ const _updateState =
             `Unable to edit title of unknown trouble ticket '${event.ticketId}'`
           );
         }
+        recordTicketChange(tx, event, {title: event.title});
         break;
       }
       default: {
