@@ -35,6 +35,7 @@ export interface SyncWorkerDependencies {
   >;
   ensureExtDBTablesExist: () => Promise<void>;
   commitEvent: Dependencies['commitEvent'];
+  getAllEventsByType: Dependencies['getAllEventsByType'];
   sendEmail: (email: Email) => TE.TaskEither<Failure, string>;
   lastQuizSync: Dependencies['lastQuizSync'];
   getSheetData: Dependencies['getSheetData'];
