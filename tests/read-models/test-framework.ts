@@ -166,6 +166,8 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         addOwner: frameworkify(commands.area.addOwner),
         removeOwner: frameworkify(commands.area.removeOwner),
         setMailingList: frameworkify(commands.area.setMailingList),
+        addNameAlias: frameworkify(commands.area.addNameAlias),
+        removeNameAlias: frameworkify(commands.area.removeNameAlias),
       },
       equipment: {
         add: frameworkify(commands.equipment.add),

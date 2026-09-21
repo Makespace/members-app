@@ -73,6 +73,21 @@ const EquipmentNameAliasRemoved = defineEvent('EquipmentNameAliasRemoved', {
   alias: t.string,
 });
 
+// Like EquipmentNameAliasAdded, but resolving a freeform label to a whole
+// AREA - for tickets about something in an area that has no (or no single)
+// equipment record, e.g. "Wi-Fi / Computers / Printer" -> IT Systems. A
+// ticket's specific equipment always wins over a direct area when both ever
+// apply.
+const AreaNameAliasAdded = defineEvent('AreaNameAliasAdded', {
+  areaId: tt.UUID,
+  alias: t.string,
+});
+
+const AreaNameAliasRemoved = defineEvent('AreaNameAliasRemoved', {
+  areaId: tt.UUID,
+  alias: t.string,
+});
+
 const OwnerAdded = defineEvent('OwnerAdded', {
   areaId: tt.UUID,
   memberNumber: t.number,
@@ -344,6 +359,8 @@ export const events = [
   EquipmentMarkedObsolete,
   EquipmentNameAliasAdded,
   EquipmentNameAliasRemoved,
+  AreaNameAliasAdded,
+  AreaNameAliasRemoved,
   OwnerAdded,
   OwnerRemoved,
   SuperUserDeclared,
@@ -390,6 +407,8 @@ export const DomainEvent = t.union([
   EquipmentMarkedObsolete.codec,
   EquipmentNameAliasAdded.codec,
   EquipmentNameAliasRemoved.codec,
+  AreaNameAliasAdded.codec,
+  AreaNameAliasRemoved.codec,
   OwnerAdded.codec,
   OwnerRemoved.codec,
   SuperUserDeclared.codec,

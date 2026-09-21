@@ -8,6 +8,9 @@ import {removeOwner} from './remove-owner';
 import {removeOwnerForm} from './remove-owner-form';
 import {setMailingList} from './set-mailing-list';
 import {setMailingListForm} from './set-mailing-list-form';
+import {addNameAlias} from './add-name-alias';
+import {addNameAliasForm} from './add-name-alias-form';
+import {removeNameAlias} from './remove-name-alias';
 
 
 export const area = {
@@ -31,4 +34,9 @@ export const area = {
     ...setMailingList,
     ...setMailingListForm,
   },
+  addNameAlias: {
+    ...addNameAlias,
+    ...addNameAliasForm,
+  },
+  removeNameAlias,
 };
