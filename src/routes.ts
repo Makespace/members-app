@@ -222,6 +222,9 @@ export const initRoutes = (
     query('/trouble-tickets', queries.troubleTickets),
     // Site notification banners: admin management + member dismissal.
     query('/notifications', queries.notifications),
+    // Imported management mailbox (read-only in this iteration).
+    query('/mailbox', queries.mailbox),
+    query('/mailbox/:id', queries.mailbox),
     ...command('notifications', 'create', commands.notifications.create),
     ...command('notifications', 'dismiss', commands.notifications.dismiss),
     ...command('notifications', 'revoke', commands.notifications.revoke),
