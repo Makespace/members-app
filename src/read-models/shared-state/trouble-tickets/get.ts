@@ -7,6 +7,7 @@ import {UUID} from 'io-ts-types';
 import {
   deletedTroubleTicketRowHashesTable,
   troubleTicketAssigneesTable,
+  troubleTicketNotificationsTable,
   troubleTicketsTable,
 } from '../state';
 import {TroubleTicket} from '../../../types/trouble-ticket';
@@ -64,6 +65,17 @@ const withAssignees = (
   );
   return pipe(rows, RA.map(transformRow(assignees)));
 };
+
+// Whether change-notification emails have already been sent for the
+// status-change event at the given event index.
+export const hasNotifiedForEvent =
+  (db: BetterSQLite3Database) =>
+  (eventIndex: number): boolean =>
+    db
+      .select({i: troubleTicketNotificationsTable.notifiedEventIndex})
+      .from(troubleTicketNotificationsTable)
+      .where(eq(troubleTicketNotificationsTable.notifiedEventIndex, eventIndex))
+      .get() !== undefined;
 
 // True if the row has ever been imported - including tickets whose event has
 // since been soft-deleted. Deleted tickets must stay deleted: if this returned

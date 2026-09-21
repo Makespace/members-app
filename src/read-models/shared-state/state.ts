@@ -382,6 +382,19 @@ export const troubleTicketAssigneesTable = defineTable(
   })
 );
 
+// Event indices of status changes whose notification emails have been sent.
+export const troubleTicketNotificationsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS troubleTicketNotifications (
+      notifiedEventIndex INTEGER PRIMARY KEY
+    )
+  `,
+  'troubleTicketNotifications' as const,
+  {
+    notifiedEventIndex: integer('notifiedEventIndex').primaryKey(),
+  }
+);
+
 export const eventStateTable = defineTable(
   sql`
     CREATE TABLE IF NOT EXISTS eventStateTable (

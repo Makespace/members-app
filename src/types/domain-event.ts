@@ -310,6 +310,17 @@ const TroubleTicketTitleEdited = defineEvent('TroubleTicketTitleEdited', {
   title: t.string,
 });
 
+// Records that change-notification emails have been sent for a specific
+// status-change event (identified by its event index), so the notifier doesn't
+// send them again.
+const TroubleTicketNotificationSent = defineEvent(
+  'TroubleTicketNotificationSent',
+  {
+    ticketId: tt.UUID,
+    notifiedEventIndex: t.number,
+  }
+);
+
 export const events = [
   AreaCreated,
   AreaRemoved,
@@ -351,6 +362,7 @@ export const events = [
   TroubleTicketNeedsHelp,
   TroubleTicketEquipmentSet,
   TroubleTicketTitleEdited,
+  TroubleTicketNotificationSent,
 ];
 
 export const DomainEvent = t.union([
@@ -394,6 +406,7 @@ export const DomainEvent = t.union([
   TroubleTicketNeedsHelp.codec,
   TroubleTicketEquipmentSet.codec,
   TroubleTicketTitleEdited.codec,
+  TroubleTicketNotificationSent.codec,
 ]);
 
 export const StoredDomainEvent = t.intersection([
