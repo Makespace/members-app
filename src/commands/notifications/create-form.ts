@@ -52,9 +52,9 @@ const renderForm: Form<ViewModel>['renderForm'] = viewModel =>
             <strong>Link label (optional)</strong>
             <input type="text" name="linkLabel" placeholder="Sign up here" />
           </label>
-          <label>
+          <label class="checkbox-row">
             <input type="checkbox" name="dismissable" checked />
-            People can dismiss this banner
+            <span>People can dismiss this banner</span>
           </label>
           <label class="stack">
             <strong>Expires at (optional)</strong>
@@ -62,21 +62,21 @@ const renderForm: Form<ViewModel>['renderForm'] = viewModel =>
           </label>
           <fieldset class="stack">
             <legend><strong>Audience</strong></legend>
-            <label>
+            <label class="checkbox-row">
               <input type="checkbox" name="targetAllOwners" />
-              All owners
+              <span>All owners</span>
             </label>
             <p><small>…or owners of specific areas:</small></p>
             ${joinHtml(
               viewModel.areas.map(
                 area => html`
-                  <label>
+                  <label class="checkbox-row">
                     <input
                       type="checkbox"
                       name="targetAreaIds"
                       value="${safe(area.id)}"
                     />
-                    ${sanitizeString(area.name)}
+                    <span>${sanitizeString(area.name)}</span>
                   </label>
                 `
               )
