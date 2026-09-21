@@ -52,6 +52,13 @@ export type TroubleTicketView = {
 
 export type ViewModel = {
   tickets: ReadonlyArray<TroubleTicketView>;
+  // True when the board is showing only the viewer's own areas (the default
+  // for owners); false = everything (?show=all, or a viewer with no areas).
+  scopedToMine: boolean;
+  // Tickets in the current scope across all pages.
+  totalInScope: number;
+  page: number;
+  pageCount: number;
   // Distinct raw form strings that failed to resolve to equipment, with
   // ticket counts - the work list for the alias mapping page.
   unresolvedEquipmentNames: ReadonlyArray<{raw: string; count: number}>;

@@ -7,10 +7,44 @@ import {UUID} from 'io-ts-types';
 import {
   deletedTroubleTicketRowHashesTable,
   troubleTicketAssigneesTable,
+  troubleTicketChangeLogTable,
   troubleTicketNotificationsTable,
   troubleTicketsTable,
 } from '../state';
 import {TroubleTicket} from '../../../types/trouble-ticket';
+import {Actor} from '../../../types/actor';
+
+// One board change-log entry, decoded from the projection.
+export type TroubleTicketChangeRow = {
+  ticketId: UUID;
+  at: Date;
+  actor: Actor;
+  eventType: string;
+  details: Record<string, string>;
+};
+
+// Change-log rows for the given tickets, oldest first. Reads the in-memory
+// projection - no event-store round trips on the page's hot path.
+export const getTroubleTicketChangeLog =
+  (db: BetterSQLite3Database) =>
+  (ticketIds: ReadonlyArray<UUID>): ReadonlyArray<TroubleTicketChangeRow> => {
+    if (ticketIds.length === 0) {
+      return [];
+    }
+    return db
+      .select()
+      .from(troubleTicketChangeLogTable)
+      .where(inArray(troubleTicketChangeLogTable.ticketId, [...ticketIds]))
+      .orderBy(troubleTicketChangeLogTable.eventIndex)
+      .all()
+      .map(row => ({
+        ticketId: row.ticketId,
+        at: row.at,
+        actor: JSON.parse(row.actorJson) as Actor,
+        eventType: row.eventType,
+        details: JSON.parse(row.detailsJson) as Record<string, string>,
+      }));
+  };
 
 type Row = typeof troubleTicketsTable.$inferSelect;
 

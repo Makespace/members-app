@@ -421,6 +421,35 @@ export const troubleTicketAssigneesTable = defineTable(
   })
 );
 
+// One row per ticket status-change event, so the board can render change
+// logs without querying the remote event store on every page load. Keyed by
+// the source event's index for idempotent re-projection.
+export const troubleTicketChangeLogTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS troubleTicketChangeLog (
+      eventIndex INTEGER PRIMARY KEY,
+      ticketId TEXT NOT NULL,
+      at INTEGER NOT NULL,
+      actorJson TEXT NOT NULL,
+      eventType TEXT NOT NULL,
+      detailsJson TEXT NOT NULL
+    )
+  `,
+  'troubleTicketChangeLog' as const,
+  {
+    eventIndex: integer('eventIndex').primaryKey(),
+    ticketId: text('ticketId').notNull().$type<UUID>(),
+    at: integer('at', {mode: 'timestamp_ms'}).notNull(),
+    actorJson: text('actorJson').notNull(),
+    eventType: text('eventType').notNull(),
+    detailsJson: text('detailsJson').notNull(),
+  }
+);
+
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS troubleTicketChangeLog_ticketId_idx ON troubleTicketChangeLog (ticketId);`
+);
+
 // Event indices of status changes whose notification emails have been sent.
 export const troubleTicketNotificationsTable = defineTable(
   sql`
