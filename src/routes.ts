@@ -12,6 +12,10 @@ import {queryToHandler, commandToHandlers, ping} from './http';
 import {emailHandler} from './http/email-handler';
 import expressAsyncHandler from 'express-async-handler';
 import {backfillTrainingQuizTimeline} from './training-quiz/backfill-timeline';
+import {
+  backfillTroubleTicketTimeline,
+  planTroubleTicketBackfill,
+} from './trouble-tickets/backfill-timeline';
 import {constantTimeEqual} from './http/constant-time-equal';
 
 export const initRoutes = (
@@ -109,6 +113,47 @@ export const initRoutes = (
         const summary = await backfillTrainingQuizTimeline(deps)(
           pipe(equipmentId, O.chain(O.fromEither), O.toUndefined)
         );
+        res.status(200).send(summary);
+      })
+    ),
+    post(
+      '/api/trouble-tickets/backfill-timeline',
+      expressAsyncHandler(async (req, res) => {
+        if (
+          !constantTimeEqual(
+            req.headers.authorization ?? '',
+            `Bearer ${conf.ADMIN_API_BEARER_TOKEN}`
+          )
+        ) {
+          res.status(401).send({message: 'Bad Bearer Token'});
+          return;
+        }
+        // Optional: scope the catch-up to submissions strictly before a date
+        // (a canary run). Absent => import every cached row.
+        const rawBefore = req.query.before;
+        if (rawBefore !== undefined && typeof rawBefore !== 'string') {
+          res.status(400).send({message: 'before must be a single ISO date'});
+          return;
+        }
+        const before =
+          rawBefore === undefined ? undefined : new Date(rawBefore);
+        if (before !== undefined && isNaN(before.getTime())) {
+          res.status(400).send({message: 'before is not a valid ISO date'});
+          return;
+        }
+        // ?dryRun=true reports what would be woven in without writing. Any
+        // other value is rejected rather than silently running the real thing.
+        if (req.query.dryRun !== undefined && req.query.dryRun !== 'true') {
+          res.status(400).send({message: "dryRun must be exactly 'true'"});
+          return;
+        }
+        if (req.query.dryRun === 'true') {
+          const {inserts: _inserts, ...plan} =
+            await planTroubleTicketBackfill(deps)(before);
+          res.status(200).send(plan);
+          return;
+        }
+        const summary = await backfillTroubleTicketTimeline(deps)(before);
         res.status(200).send(summary);
       })
     ),
