@@ -1,6 +1,5 @@
 import * as TE from 'fp-ts/TaskEither';
 import * as O from 'fp-ts/Option';
-import * as RA from 'fp-ts/ReadonlyArray';
 import {
   failureWithStatus,
   FailureWithStatus,
@@ -10,25 +9,25 @@ import {User, Actor} from '../../types';
 import {pipe} from 'fp-ts/lib/function';
 import {StatusCodes} from 'http-status-codes';
 import {SharedReadModel} from '../../read-models/shared-state';
+import {TroubleTicketChangeRow} from '../../read-models/shared-state/trouble-tickets/get';
 import {Dependencies} from '../../dependencies';
 import {
   TroubleTicket,
   TroubleTicketStatus,
 } from '../../types/trouble-ticket';
 import {Member, allMemberNumbers} from '../../read-models/shared-state/return-types';
-import {StoredEventOfType} from '../../types/domain-event';
 
-// Event types that make up a ticket's change log, oldest-to-newest by event index.
-const TIMELINE_TYPES = [
-  'TroubleTicketAssigned',
-  'TroubleTicketResolved',
-  'TroubleTicketParked',
-  'TroubleTicketNeedsHelp',
-  'TroubleTicketEquipmentSet',
-  'TroubleTicketTitleEdited',
-] as const;
+// Cards per page. The board serves the viewer's own areas by default, but a
+// super-user's "show all" can span the whole backlog - keep the DOM bounded.
+export const PAGE_SIZE = 100;
 
-type TimelineEvent = StoredEventOfType<(typeof TIMELINE_TYPES)[number]>;
+const STATUS_ORDER: ReadonlyArray<TroubleTicketStatus> = [
+  'Todo',
+  'In Progress',
+  'Needs Help',
+  'Parked',
+  'Resolved',
+];
 
 const actorName = (actor: Actor, rm: SharedReadModel): string => {
   switch (actor.tag) {
@@ -45,18 +44,19 @@ const actorName = (actor: Actor, rm: SharedReadModel): string => {
   }
 };
 
-// Fold a ticket's events into display lines, tracking status so the first assignment reads
-// "assigned themselves and set the ticket to In Progress".
+// Fold a ticket's change rows into display lines, tracking status so the
+// first assignment reads "assigned themselves and set the ticket to In
+// Progress". Rows come from the read-model projection, not the event store.
 const buildChangeLog = (
-  events: ReadonlyArray<TimelineEvent>,
+  rows: ReadonlyArray<TroubleTicketChangeRow>,
   rm: SharedReadModel
 ): ReadonlyArray<ChangeLogEntry> => {
   let status: TroubleTicketStatus = 'Todo';
   const entries: ChangeLogEntry[] = [];
-  for (const event of events) {
-    const actor = actorName(event.actor, rm);
-    const at = event.recordedAt;
-    switch (event.type) {
+  for (const row of rows) {
+    const actor = actorName(row.actor, rm);
+    const at = row.at;
+    switch (row.eventType) {
       case 'TroubleTicketAssigned': {
         const movedToInProgress =
           status === 'Todo' ||
@@ -83,7 +83,7 @@ const buildChangeLog = (
           at,
           actor,
           summary: 'marked this ticket as Resolved',
-          details: [{label: 'Summary', value: event.summary}],
+          details: [{label: 'Summary', value: row.details.summary ?? ''}],
         });
         break;
       case 'TroubleTicketParked':
@@ -94,9 +94,15 @@ const buildChangeLog = (
           actor,
           summary: 'parked this ticket',
           details: [
-            {label: 'Why parked', value: event.whyParked},
-            {label: 'Path to resolution', value: event.pathToResolution},
-            {label: 'Intermediate actions', value: event.intermediateActions},
+            {label: 'Why parked', value: row.details.whyParked ?? ''},
+            {
+              label: 'Path to resolution',
+              value: row.details.pathToResolution ?? '',
+            },
+            {
+              label: 'Intermediate actions',
+              value: row.details.intermediateActions ?? '',
+            },
           ],
         });
         break;
@@ -108,8 +114,11 @@ const buildChangeLog = (
           actor,
           summary: 'marked this ticket as Needs Help and unassigned themselves',
           details: [
-            {label: 'They tried', value: event.whatTried},
-            {label: "It didn't work because", value: event.whyDidntWork},
+            {label: 'They tried', value: row.details.whatTried ?? ''},
+            {
+              label: "It didn't work because",
+              value: row.details.whyDidntWork ?? '',
+            },
           ],
         });
         break;
@@ -118,7 +127,7 @@ const buildChangeLog = (
           status,
           at,
           actor,
-          summary: event.equipmentId
+          summary: row.details.equipmentId
             ? 'changed the equipment for this ticket'
             : 'removed the equipment from this ticket',
           details: [],
@@ -129,7 +138,7 @@ const buildChangeLog = (
           status,
           at,
           actor,
-          summary: `renamed this ticket to "${event.title}"`,
+          summary: `renamed this ticket to "${row.details.title ?? ''}"`,
           details: [],
         });
         break;
@@ -138,33 +147,9 @@ const buildChangeLog = (
   return entries;
 };
 
-// Fetch every timeline event once and group by ticket id (oldest first).
-const fetchChangeLogs = (
-  deps: Dependencies
-): TE.TaskEither<FailureWithStatus, ReadonlyMap<string, ReadonlyArray<TimelineEvent>>> =>
-  pipe(
-    TIMELINE_TYPES,
-    TE.traverseArray(type => deps.getAllEventsByType(type)),
-    TE.map(RA.flatten),
-    TE.map(events => {
-      const sorted = [...events].sort((a, b) => a.event_index - b.event_index);
-      const byTicket = new Map<string, TimelineEvent[]>();
-      for (const event of sorted) {
-        const existing = byTicket.get(event.ticketId) ?? [];
-        existing.push(event);
-        byTicket.set(event.ticketId, existing);
-      }
-      return byTicket;
-    })
-  );
-
 const toView =
-  (
-    rm: SharedReadModel,
-    viewer: Member,
-    changeLogs: ReadonlyMap<string, ReadonlyArray<TimelineEvent>>
-  ) =>
-  (ticket: TroubleTicket): TroubleTicketView => {
+  (rm: SharedReadModel, viewer: Member) =>
+  (ticket: TroubleTicket): Omit<TroubleTicketView, 'changeLog'> => {
     const equipment = ticket.equipmentId
       ? rm.equipment.get(ticket.equipmentId)
       : O.none;
@@ -219,18 +204,17 @@ const toView =
         myMemberNumbers.includes(n)
       ),
       inMyOwnerArea,
-      onMyTrainerMachine: onMyTrainerMachine,
+      onMyTrainerMachine,
       // All owners are maintainers: any owner of the equipment's area may work
       // the ticket (trainers are a subset of area owners).
       canChangeStatus: viewer.isSuperUser || inMyOwnerArea,
-      changeLog: buildChangeLog(changeLogs.get(ticket.id) ?? [], rm),
     };
   };
 
-// Distinct raw form strings among tickets with no resolved equipment, largest
-// count first - each is a candidate for an equipment-name alias.
+// Distinct raw form strings among tickets with no resolved equipment or area,
+// largest count first - each is a candidate for a name alias.
 const unresolvedEquipmentNames = (
-  tickets: ReadonlyArray<TroubleTicketView>
+  tickets: ReadonlyArray<Omit<TroubleTicketView, 'changeLog'>>
 ): ReadonlyArray<{raw: string; count: number}> => {
   const counts = new Map<string, {raw: string; count: number}>();
   for (const ticket of tickets) {
@@ -252,8 +236,11 @@ const unresolvedEquipmentNames = (
   return [...counts.values()].sort((a, b) => b.count - a.count);
 };
 
+const statusRank = (status: TroubleTicketStatus) =>
+  STATUS_ORDER.indexOf(status);
+
 export const constructViewModel =
-  (deps: Dependencies) =>
+  (deps: Dependencies, options: {showAll: boolean; page: number}) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> => {
     const rm = deps.sharedReadModel;
     return pipe(
@@ -273,20 +260,51 @@ export const constructViewModel =
             StatusCodes.FORBIDDEN
           )()
       ),
-      TE.chain(loggedInMember =>
-        pipe(
-          fetchChangeLogs(deps),
-          TE.map(changeLogs => {
-            const tickets = rm.troubleTickets
-              .getAll()
-              .map(toView(rm, loggedInMember, changeLogs));
-            return {
-              tickets,
-              unresolvedEquipmentNames: unresolvedEquipmentNames(tickets),
-              canMapEquipment: loggedInMember.isSuperUser,
-            };
-          })
-        )
-      )
+      TE.map(loggedInMember => {
+        const all = rm.troubleTickets
+          .getAll()
+          .map(toView(rm, loggedInMember));
+        // Default to the viewer's own areas; a viewer who owns none (e.g. a
+        // super-user who isn't an owner) would see an empty page, so they get
+        // everything. ?show=all is the explicit escape hatch for owners.
+        const scopedToMine =
+          !options.showAll && loggedInMember.ownerOf.length > 0;
+        const scoped = scopedToMine
+          ? all.filter(ticket => ticket.inMyOwnerArea)
+          : all;
+        const sorted = [...scoped].sort(
+          (a, b) =>
+            statusRank(a.status) - statusRank(b.status) ||
+            b.submittedAt.getTime() - a.submittedAt.getTime()
+        );
+        const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+        const page = Math.min(Math.max(1, options.page), pageCount);
+        const pageTickets = sorted.slice(
+          (page - 1) * PAGE_SIZE,
+          page * PAGE_SIZE
+        );
+        // Change logs only for the cards actually shown.
+        const changeRows = rm.troubleTickets.getChangeLog(
+          pageTickets.map(ticket => ticket.id)
+        );
+        const rowsByTicket = new Map<string, TroubleTicketChangeRow[]>();
+        for (const row of changeRows) {
+          const bucket = rowsByTicket.get(row.ticketId) ?? [];
+          bucket.push(row);
+          rowsByTicket.set(row.ticketId, bucket);
+        }
+        return {
+          tickets: pageTickets.map(ticket => ({
+            ...ticket,
+            changeLog: buildChangeLog(rowsByTicket.get(ticket.id) ?? [], rm),
+          })),
+          scopedToMine,
+          totalInScope: sorted.length,
+          page,
+          pageCount,
+          unresolvedEquipmentNames: unresolvedEquipmentNames(all),
+          canMapEquipment: loggedInMember.isSuperUser,
+        };
+      })
     );
   };
