@@ -1,4 +1,5 @@
 import {Logger} from 'pino';
+import {Config} from './configuration';
 import {
   DeletedStoredDomainEvent,
   Failure,
@@ -23,6 +24,7 @@ import {TimelineRow} from './training-quiz/plan-timeline-rebuild';
 import {TimelineRebuildSummary} from './training-quiz/rebuild-event-timeline';
 
 export type Dependencies = {
+  conf: Config;
   commitEvent: (
     lastSeenEventIndex: Int,
   ) => (

@@ -28,6 +28,7 @@ export const render = () => html`
       <li><a href="/training-status.csv">Download current owners and trainers</li>
       <li><a href="/trouble-tickets">View all trouble tickets (prototype)</li>
       <li><a href="/notifications">Manage notification banners</a></li>
+      <li><a href="/mailbox">Management mailbox (imported)</a></li>
       <li><a href="/members/rejoined-with-new">Mark member rejoined with new number</a></li>
       <li><a href="/members/rejoined-with-existing">Mark a user as rejoined</a></li>
       <li><a href="/unlinked-recurly">View Recurly emails not linked to members</a></li>
