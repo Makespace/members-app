@@ -463,6 +463,86 @@ export const troubleTicketNotificationsTable = defineTable(
   }
 );
 
+// Admin-authored site notifications (banners), their area targets, and
+// per-member dismissals.
+export const notificationsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      bannerType TEXT NOT NULL,
+      linkUrl TEXT,
+      linkLabel TEXT,
+      dismissable INTEGER NOT NULL,
+      expiresAt INTEGER,
+      targetAllOwners INTEGER NOT NULL,
+      emailMarkdown TEXT,
+      emailSent INTEGER NOT NULL DEFAULT 0,
+      revoked INTEGER NOT NULL DEFAULT 0,
+      createdAt INTEGER NOT NULL
+    )
+  `,
+  'notifications' as const,
+  {
+    id: text('id').notNull().primaryKey().$type<UUID>(),
+    title: text('title').notNull(),
+    message: text('message').notNull(),
+    bannerType: text('bannerType').notNull().$type<'action' | 'event' | 'info'>(),
+    linkUrl: text('linkUrl'),
+    linkLabel: text('linkLabel'),
+    dismissable: integer('dismissable', {mode: 'boolean'}).notNull(),
+    expiresAt: integer('expiresAt', {mode: 'timestamp_ms'}),
+    targetAllOwners: integer('targetAllOwners', {mode: 'boolean'}).notNull(),
+    emailMarkdown: text('emailMarkdown'),
+    emailSent: integer('emailSent', {mode: 'boolean'}).notNull(),
+    revoked: integer('revoked', {mode: 'boolean'}).notNull(),
+    createdAt: integer('createdAt', {mode: 'timestamp_ms'}).notNull(),
+  }
+);
+
+export const notificationAreaTargetsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS notificationAreaTargets (
+      notificationId TEXT NOT NULL,
+      areaId TEXT NOT NULL,
+      UNIQUE(notificationId, areaId)
+    )
+  `,
+  'notificationAreaTargets' as const,
+  {
+    notificationId: text('notificationId').notNull().$type<UUID>(),
+    areaId: text('areaId').notNull().$type<UUID>(),
+  },
+  table => ({
+    uniqueTarget: uniqueIndex('notification_area_targets_unique').on(
+      table.notificationId,
+      table.areaId
+    ),
+  })
+);
+
+export const notificationDismissalsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS notificationDismissals (
+      notificationId TEXT NOT NULL,
+      memberNumber INTEGER NOT NULL,
+      UNIQUE(notificationId, memberNumber)
+    )
+  `,
+  'notificationDismissals' as const,
+  {
+    notificationId: text('notificationId').notNull().$type<UUID>(),
+    memberNumber: integer('memberNumber').notNull(),
+  },
+  table => ({
+    uniqueDismissal: uniqueIndex('notification_dismissals_unique').on(
+      table.notificationId,
+      table.memberNumber
+    ),
+  })
+);
+
 export const eventStateTable = defineTable(
   sql`
     CREATE TABLE IF NOT EXISTS eventStateTable (

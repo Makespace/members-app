@@ -220,6 +220,11 @@ export const initRoutes = (
 
     // Temporary location for POC - may move under individual equipments eventually.
     query('/trouble-tickets', queries.troubleTickets),
+    // Site notification banners: admin management + member dismissal.
+    query('/notifications', queries.notifications),
+    ...command('notifications', 'create', commands.notifications.create),
+    ...command('notifications', 'dismiss', commands.notifications.dismiss),
+    ...command('notifications', 'revoke', commands.notifications.revoke),
     // Trouble ticket write side. create/set-equipment/edit-title are API-only
     // (bearer token); the status actions have confirmation pages.
     ...api('trouble-tickets', 'create', commands.troubleTickets.create),
