@@ -11,7 +11,7 @@ export const render = () => html`
     </p>
     <p class="mb-8">
       Have a suggestion, or want to help build any of this?
-      <a href="/raise-issue">Raise an issue</a>.
+      <a href="/about#new-contributor">Get in touch via the about page</a>.
     </p>
 
     ${timeline([
