@@ -74,10 +74,20 @@ const renderEquipment = (ticket: TroubleTicketView) =>
     ticket.equipmentName,
     O.match(
       () =>
-        ticket.rawEquipment
-          ? html`Unassigned
-              <small>(form said: ${sanitizeString(ticket.rawEquipment)})</small>`
-          : html`Unassigned`,
+        pipe(
+          ticket.areaName,
+          O.match(
+            () =>
+              ticket.rawEquipment
+                ? html`Unassigned
+                    <small
+                      >(form said:
+                      ${sanitizeString(ticket.rawEquipment)})</small
+                    >`
+                : html`Unassigned`,
+            areaName => html`${sanitizeString(areaName)} <small>(area)</small>`
+          )
+        ),
       name => html`${sanitizeString(name)}`
     )
   );
