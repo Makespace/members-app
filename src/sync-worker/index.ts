@@ -2,6 +2,7 @@ import {syncTroubleTickets} from './sync_trouble_ticket';
 import {syncEquipmentTrainingSheets} from './sync_training_sheet';
 import {runQuizMigration} from '../training-quiz/migrate';
 import {runTroubleTicketIngest} from '../trouble-tickets/ingest';
+import {notifyTroubleTicketChanges} from './notify_trouble_tickets';
 import {initDependencies} from './init-dependencies';
 import {GoogleHelpers} from './google/pull_sheet_data';
 import {setTimeout} from 'node:timers/promises';
@@ -14,6 +15,7 @@ const EQUIPMENT_SYNC_CHECK_INTERVAL_MS = 60 * 1000;
 const TRAINING_SUMMARY_EMAIL_CHECK_INTERVAL_MS = 20 * 60 * 1000;
 const EQUIPMENT_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 const TROUBLE_TICKET_SYNC_INTERVAL_MS = 20 * 60 * 1000;
+const TROUBLE_TICKET_NOTIFY_INTERVAL_MS = 30 * 1000;
 const RECURLY_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 
 async function syncExternDataPeriodically(
@@ -23,6 +25,7 @@ async function syncExternDataPeriodically(
   let lastHeartbeat = Date.now();
   let lastEquipmentSyncCheck = Date.now();
   let lastTroubleTicketCheck = Date.now();
+  let lastTroubleTicketNotify = Date.now();
   let lastTrainingSummaryEmailCheck = Date.now();
   while (true) {
     try {
@@ -30,6 +33,7 @@ async function syncExternDataPeriodically(
       const lastHeartbeatAgoMs = now - lastHeartbeat;
       const lastEquipmentSyncCheckAgoMs = now - lastEquipmentSyncCheck;
       const lastTroubleTicketCheckAgoMs = now - lastTroubleTicketCheck;
+      const lastTroubleTicketNotifyAgoMs = now - lastTroubleTicketNotify;
       const lastTrainingSummaryEmailCheckAgoMs =
         now - lastTrainingSummaryEmailCheck;
 
@@ -75,6 +79,11 @@ async function syncExternDataPeriodically(
         await deps.sharedReadModel.asyncRefresh()();
         await runTroubleTicketIngest(deps)();
         lastTroubleTicketCheck = Date.now();
+      }
+
+      if (lastTroubleTicketNotifyAgoMs > TROUBLE_TICKET_NOTIFY_INTERVAL_MS) {
+        await notifyTroubleTicketChanges(deps);
+        lastTroubleTicketNotify = Date.now();
       }
 
       if (
