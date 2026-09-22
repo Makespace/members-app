@@ -34,6 +34,9 @@ export const render = () => html`
       changes`),
       done(html`Match tickets to their equipment or area, even when the form
       names them differently`),
+      done(html`Report a problem from inside the app, picking the machine from
+      a list instead of typing its name`),
+      todo(html`Let members follow the tickets they've reported`),
 
       heading(html`Notifications`, {done: true}),
       done(html`Banners at the top of the app for events and things that need

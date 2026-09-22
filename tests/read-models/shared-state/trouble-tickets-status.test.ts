@@ -19,6 +19,9 @@ const troubleTicketCreated = (
   overrides: Partial<EventOfType<'TroubleTicketCreated'>> = {}
 ): EventOfType<'TroubleTicketCreated'> =>
   constructEvent('TroubleTicketCreated')({
+        source: 'sheet',
+        equipmentId: null,
+        machine: '',
     actor: systemActor(),
     id: faker.string.uuid() as UUID,
     rowHash: faker.string.hexadecimal({length: 64}),

@@ -22,6 +22,7 @@ const renderNav = (
       name: equipment.name,
       areaId,
       category: equipment.category,
+      machineNames: equipment.machineNames,
       trainingSheetId: equipment.trainingSheetId,
       removedAt: equipment.removedAt,
     }));
@@ -45,6 +46,7 @@ const makeEquipment = (name: string, removed = false): Equipment => ({
   trainers: [],
   trainedMembers: [],
   category: 'red' as const,
+  machineNames: [],
     trainingSheetId: O.none,
   removedAt: removed ? O.some(new Date('2026-01-01T00:00:00.000Z')) : O.none,
   area: {
@@ -128,10 +130,10 @@ describe('navBar', () => {
     expect(renderNav(true, areas).textContent).toContain('Admin');
   });
 
-  it('renders the trouble-tickets link only for owners and super users', () => {
-    expect(renderNav(false, areas).textContent).not.toContain(
-      'Trouble tickets'
-    );
+  // Everyone can report a problem, so everyone gets the link; the landing
+  // page decides what each member can go on to see.
+  it('renders the trouble-tickets link for every member', () => {
+    expect(renderNav(false, areas).textContent).toContain('Trouble tickets');
     expect(renderNav(true, areas).textContent).toContain('Trouble tickets');
     expect(renderNav(false, areas, true).textContent).toContain(
       'Trouble tickets'

@@ -280,6 +280,13 @@ const _updateState =
           .run();
         break;
       }
+      case 'EquipmentMachinesSet': {
+        tx.update(equipmentTable)
+          .set({machineNamesJson: JSON.stringify(event.machineNames)})
+          .where(eq(equipmentTable.id, event.equipmentId))
+          .run();
+        break;
+      }
       case 'EquipmentCategoryChanged': {
         tx.update(equipmentTable)
           .set({category: event.category})
@@ -714,9 +721,16 @@ const _updateState =
         // leaves equipmentId null (the "Unassigned" bucket). Idempotent: the
         // unique rowHash / primary key make re-projecting the same event a
         // no-op.
-        const equipmentId = event.submittedEquipment
-          ? O.toNullable(resolveEquipmentByName(tx)(event.submittedEquipment))
-          : null;
+        // Raised in the app: the member picked the equipment from a list, so
+        // there is nothing to resolve.
+        const equipmentId =
+          event.equipmentId !== null
+            ? event.equipmentId
+            : event.submittedEquipment
+              ? O.toNullable(
+                  resolveEquipmentByName(tx)(event.submittedEquipment)
+                )
+              : null;
         // No specific machine matched: the label may still name a whole area
         // (directly or via an area alias), which is enough to sort the ticket.
         const areaId =

@@ -10,6 +10,8 @@ import {addNameAlias} from './add-name-alias';
 import {addNameAliasForm} from './add-name-alias-form';
 import {removeNameAlias} from './remove-name-alias';
 import {setCategory} from './set-category';
+import {setMachines} from './set-machines';
+import {setMachinesForm} from './set-machines-form';
 
 export const equipment = {
   add: {
@@ -29,6 +31,7 @@ export const equipment = {
     ...markEquipmentObsoleteForm,
   },
   setCategory,
+  setMachines: {...setMachines, ...setMachinesForm},
   addNameAlias: {
     ...addNameAlias,
     ...addNameAliasForm,

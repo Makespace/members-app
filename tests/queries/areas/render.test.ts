@@ -31,6 +31,7 @@ const equipment = {
     email: O.none,
   },
   category: 'red' as const,
+  machineNames: [],
   trainingsByQuarter: [
     {label: html`Q4 2025`, count: 1},
     {label: html`Q1 2026`, count: 0},

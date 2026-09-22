@@ -185,10 +185,40 @@ const retireEquipment = (viewModel: ViewModel) =>
 
 // Orange/green equipment has no training machinery, so only the
 // admin-level actions apply.
+const reportProblem = (viewModel: ViewModel) =>
+  html` <li>
+    <a href="/trouble-tickets/raise?equipmentId=${viewModel.equipment.id}"
+      >Report a problem with this equipment</a
+    >
+  </li>`;
+
+// Naming the units of a multi-machine entry (e.g. Printer 1, 2, 3).
+const setMachines = (viewModel: ViewModel) =>
+  pipe(
+    viewModel,
+    O.of,
+    O.filter(isOwner),
+    O.map(vm => vm.equipment.id),
+    O.map(
+      id =>
+        html` <li>
+          <a href="/equipment/set-machines?equipmentId=${id}"
+            >Name the machines this entry stands for</a
+          >
+          ${tooltip(
+            html`Use this when one entry covers several identical machines.
+            Members reporting a problem are then asked which one.`
+          )}
+        </li>`
+    ),
+    O.getOrElse(() => html``)
+  );
+
 const equipmentActions = (viewModel: ViewModel) =>
   viewModel.equipment.category === 'red'
     ? html`
         <ul>
+          ${reportProblem(viewModel)} ${setMachines(viewModel)}
           ${trainMember(viewModel)} ${adminMarkTrainedBy(viewModel)}
           ${addTrainer(viewModel)} ${removeTrainer(viewModel)}
           ${registerSheet(viewModel)}
@@ -198,6 +228,7 @@ const equipmentActions = (viewModel: ViewModel) =>
       `
     : html`
         <ul>
+          ${reportProblem(viewModel)} ${setMachines(viewModel)}
           ${retireEquipment(viewModel)}
         </ul>
       `;
