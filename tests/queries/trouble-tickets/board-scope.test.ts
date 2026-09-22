@@ -123,6 +123,7 @@ describe('/trouble-tickets scope and pagination', () => {
     const [woodTicket] = (await view(owner, false)).tickets;
     await framework.commands.troubleTickets.assign({
       ticketId: woodTicket.id,
+      comment: '',
       actor: {
         tag: 'user',
         user: {

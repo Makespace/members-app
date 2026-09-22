@@ -73,6 +73,7 @@ describe('trouble ticket status workflow (read model)', () => {
     linkMember(12);
     framework.insertIntoSharedReadModel(
       constructEvent('TroubleTicketAssigned')({
+        comment: '',
         actor: userActorWithMember(12),
         ticketId: created.id,
         trainerMemberNumber: 12,
@@ -94,6 +95,7 @@ describe('trouble ticket status workflow (read model)', () => {
     [12, 34].forEach(memberNumber =>
       framework.insertIntoSharedReadModel(
         constructEvent('TroubleTicketAssigned')({
+        comment: '',
           actor: userActorWithMember(memberNumber),
           ticketId: created.id,
           trainerMemberNumber: memberNumber,
@@ -147,6 +149,7 @@ describe('trouble ticket status workflow (read model)', () => {
     linkMember(12);
     framework.insertIntoSharedReadModel(
       constructEvent('TroubleTicketAssigned')({
+        comment: '',
         actor: userActorWithMember(12),
         ticketId: created.id,
         trainerMemberNumber: 12,
@@ -175,6 +178,7 @@ describe('trouble ticket status workflow (read model)', () => {
     linkMember(34);
     framework.insertIntoSharedReadModel(
       constructEvent('TroubleTicketAssigned')({
+        comment: '',
         actor: userActorWithMember(12),
         ticketId: created.id,
         trainerMemberNumber: 12,
@@ -190,6 +194,7 @@ describe('trouble ticket status workflow (read model)', () => {
     );
     framework.insertIntoSharedReadModel(
       constructEvent('TroubleTicketAssigned')({
+        comment: '',
         actor: userActorWithMember(34),
         ticketId: created.id,
         trainerMemberNumber: 34,
@@ -209,6 +214,7 @@ describe('trouble ticket status workflow (read model)', () => {
     linkMember(12);
     framework.insertIntoSharedReadModel(
       constructEvent('TroubleTicketAssigned')({
+        comment: '',
         actor: userActorWithMember(12),
         ticketId: created.id,
         trainerMemberNumber: 12,

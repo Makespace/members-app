@@ -76,7 +76,9 @@ const buildChangeLog = (
           summary: movedToInProgress
             ? 'assigned themselves and set the ticket to In Progress'
             : 'assigned themselves to this ticket',
-          details: [],
+          details: row.details.comment
+            ? [{label: 'Comment', value: row.details.comment}]
+            : [],
         });
         break;
       }
