@@ -127,7 +127,14 @@ export const resolveForm = troubleTicketActionForm({
   pageTitle: 'Resolve ticket',
   intro: html`This marks the ticket as Resolved, unassigns everyone, and
   notifies the submitter.`,
-  fields: textField('summary', 'What did you do to resolve this ticket?'),
+  fields: html`${textField('summary', 'What did you do to resolve this ticket?')}
+    <label class="checkbox-row">
+      <input type="checkbox" name="quiet" />
+      <span
+        >Don't email the submitter (for clearing out tickets that were
+        already resolved outside the app)</span
+      >
+    </label>`,
   submitLabel: 'Resolve ticket',
 });
 
