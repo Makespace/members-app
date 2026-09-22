@@ -24,6 +24,10 @@ import {
 } from '../../read-models/external-state/equipment-quiz';
 import {tooltip} from '../shared-render/tool-tip';
 import { mailTo } from '../../templates/mailto';
+import {
+  categoryBadge,
+  categoryDescription,
+} from '../../templates/equipment-category';
 
 const trainersList = (trainers: ViewModel['equipment']['trainers']) =>
   pipe(
@@ -179,15 +183,24 @@ const retireEquipment = (viewModel: ViewModel) =>
     O.getOrElse(() => html``)
   );
 
-const equipmentActions = (viewModel: ViewModel) => html`
-  <ul>
-    ${trainMember(viewModel)} ${adminMarkTrainedBy(viewModel)}
-    ${addTrainer(viewModel)} ${removeTrainer(viewModel)}
-    ${registerSheet(viewModel)}
-    ${currentSheet(viewModel)} ${removeTrainingSheet(viewModel)}
-    ${retireEquipment(viewModel)}
-  </ul>
-`;
+// Orange/green equipment has no training machinery, so only the
+// admin-level actions apply.
+const equipmentActions = (viewModel: ViewModel) =>
+  viewModel.equipment.category === 'red'
+    ? html`
+        <ul>
+          ${trainMember(viewModel)} ${adminMarkTrainedBy(viewModel)}
+          ${addTrainer(viewModel)} ${removeTrainer(viewModel)}
+          ${registerSheet(viewModel)}
+          ${currentSheet(viewModel)} ${removeTrainingSheet(viewModel)}
+          ${retireEquipment(viewModel)}
+        </ul>
+      `
+    : html`
+        <ul>
+          ${retireEquipment(viewModel)}
+        </ul>
+      `;
 
 const currentlyTrainedUsersTable = (viewModel: ViewModel) =>
   pipe(
@@ -407,6 +420,10 @@ export const render = (viewModel: ViewModel) =>
       <div class="stack">
         <h1>${sanitizeString(viewModel.equipment.name)}</h1>
         <p>
+          ${categoryBadge(viewModel.equipment.category)} —
+          ${categoryDescription(viewModel.equipment.category)}
+        </p>
+        <p>
           <strong>Area:</strong>
           <a href="/areas#area-${safe(viewModel.equipment.area.id)}">
             ${sanitizeString(viewModel.equipment.area.name)}
@@ -417,10 +434,16 @@ export const render = (viewModel: ViewModel) =>
             : html``}
         </p>
         ${equipmentActions(viewModel)}
-        <h2>Trainers</h2>
-        ${trainersList(viewModel.equipment.trainers)}
-        ${currentlyTrainedUsersTable(viewModel)}
-        ${isTrainerOrOwner(viewModel) ? trainingQuizResults(viewModel) : html``}
+        ${viewModel.equipment.category === 'red'
+          ? html`
+              <h2>Trainers</h2>
+              ${trainersList(viewModel.equipment.trainers)}
+              ${currentlyTrainedUsersTable(viewModel)}
+              ${isTrainerOrOwner(viewModel)
+                ? trainingQuizResults(viewModel)
+                : html``}
+            `
+          : html``}
       </div>
     `,
     toLoggedInContent(sanitizeString(viewModel.equipment.name))

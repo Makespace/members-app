@@ -21,6 +21,7 @@ const renderNav = (
       id: equipment.id,
       name: equipment.name,
       areaId,
+      category: equipment.category,
       trainingSheetId: equipment.trainingSheetId,
       removedAt: equipment.removedAt,
     }));
@@ -43,7 +44,8 @@ const makeEquipment = (name: string, removed = false): Equipment => ({
   name,
   trainers: [],
   trainedMembers: [],
-  trainingSheetId: O.none,
+  category: 'red' as const,
+    trainingSheetId: O.none,
   removedAt: removed ? O.some(new Date('2026-01-01T00:00:00.000Z')) : O.none,
   area: {
     id: faker.string.uuid() as UUID,

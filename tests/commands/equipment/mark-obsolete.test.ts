@@ -58,6 +58,7 @@ describe('mark-obsolete', () => {
       );
       framework.insertIntoSharedReadModel(
         constructEvent('EquipmentAdded')({
+        category: 'red',
           id: equipmentId,
           name: faker.commerce.productName(),
           areaId,

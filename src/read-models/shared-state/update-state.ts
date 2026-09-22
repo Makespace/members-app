@@ -258,7 +258,12 @@ const _updateState =
       }
       case 'EquipmentAdded': {
         tx.insert(equipmentTable)
-          .values({id: event.id, name: event.name, areaId: event.areaId})
+          .values({
+            id: event.id,
+            name: event.name,
+            areaId: event.areaId,
+            category: event.category,
+          })
           .run();
         // Late-bind trouble tickets: a backfilled ticket sits earlier in the
         // log than the EquipmentAdded event for the machine it names, so its
@@ -272,6 +277,13 @@ const _updateState =
               sql`lower(trim(${troubleTicketsTable.submittedEquipment})) = ${event.name.trim().toLowerCase()}`
             )
           )
+          .run();
+        break;
+      }
+      case 'EquipmentCategoryChanged': {
+        tx.update(equipmentTable)
+          .set({category: event.category})
+          .where(eq(equipmentTable.id, event.equipmentId))
           .run();
         break;
       }

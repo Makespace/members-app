@@ -63,6 +63,7 @@ describe('Render equipment page', () => {
     const equipment: Readonly<Equipment> = {
         id: faker.string.uuid() as UUID,
         name: faker.airline.aircraftType(),
+        category: 'red',
         trainers: [
             trainer
         ],
@@ -220,6 +221,54 @@ describe('Render equipment page', () => {
         });
     });
 
+    describe('orange and green equipment', () => {
+        const superUser: User = {
+            emailAddress: faker.internet.email() as EmailAddress,
+            memberNumber: faker.number.int({min: 1}),
+        };
 
+        const renderWithCategory = (category: 'red' | 'orange' | 'green') =>
+            renderPage({
+                isSuperUser: true,
+                isSuperUserOrOwnerOfArea: true,
+                isSuperUserOrTrainerOfArea: true,
+                user: superUser,
+                equipment: {...equipment, category},
+                quizResults: O.some(quizResultsWithMemberAwaitingTraining),
+            });
+
+        it('states what the category means', () => {
+            expect(renderWithCategory('orange').textContent).toContain(
+                'Only use if confident to do so'
+            );
+            expect(renderWithCategory('green').textContent).toContain(
+                'All members & guests'
+            );
+            expect(renderWithCategory('red').textContent).toContain(
+                'Training required before use'
+            );
+        });
+
+        it('hides trainers, trained members and quiz results, which do not apply', () => {
+            const dom = renderWithCategory('orange');
+            expect(dom.textContent).not.toContain('Trainers');
+            expect(dom.textContent).not.toContain('Currently Trained Users');
+            expect(dom.textContent).not.toContain('Training Quiz Results');
+        });
+
+        it('hides the training actions but keeps admin retirement', () => {
+            const dom = renderWithCategory('green');
+            expect(O.isSome(findMarkAsTrainedButton(dom))).toBe(false);
+            expect(dom.textContent).not.toContain('Add a trainer');
+            expect(dom.textContent).not.toContain('Register training sheet');
+            expect(dom.textContent).toContain('Retire equipment');
+        });
+
+        it('still shows all of that for red equipment', () => {
+            const dom = renderWithCategory('red');
+            expect(dom.textContent).toContain('Trainers');
+            expect(dom.textContent).toContain('Add a trainer');
+        });
+    });
 
 });

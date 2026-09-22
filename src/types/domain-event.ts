@@ -2,6 +2,7 @@ import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import {EmailAddressCodec} from './email-address';
 import {Actor} from './actor';
+import {EquipmentCategoryCodec} from './equipment-category';
 
 const defineEvent = <A extends string, T extends t.Props>(
   type: A,
@@ -50,6 +51,15 @@ const EquipmentAdded = defineEvent('EquipmentAdded', {
   name: t.string,
   id: tt.UUID,
   areaId: tt.UUID,
+  // red / orange / green sticker category; equipment added before categories
+  // existed is red (training-managed), which is what all of it was.
+  category: tt.withFallback(EquipmentCategoryCodec, 'red'),
+});
+
+// Recategorise existing equipment (e.g. red kit downgraded to orange).
+const EquipmentCategoryChanged = defineEvent('EquipmentCategoryChanged', {
+  equipmentId: tt.UUID,
+  category: EquipmentCategoryCodec,
 });
 
 // Soft-hide: the equipment and its training history stay in the log/read model,
@@ -400,6 +410,7 @@ export const events = [
   AreaRemoved,
   AreaEmailUpdated,
   EquipmentAdded,
+  EquipmentCategoryChanged,
   EquipmentMarkedObsolete,
   EquipmentNameAliasAdded,
   EquipmentNameAliasRemoved,
@@ -452,6 +463,7 @@ export const DomainEvent = t.union([
   AreaRemoved.codec,
   AreaEmailUpdated.codec,
   EquipmentAdded.codec,
+  EquipmentCategoryChanged.codec,
   EquipmentMarkedObsolete.codec,
   EquipmentNameAliasAdded.codec,
   EquipmentNameAliasRemoved.codec,
