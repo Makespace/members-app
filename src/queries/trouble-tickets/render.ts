@@ -127,6 +127,30 @@ const renderActions = (ticket: TroubleTicketView): Html => {
       href="/trouble-tickets/${safe(verb)}?ticketId=${safe(ticket.id)}"
       >${safe(label)}</a
     >`;
+  // Clearing the backlog of tickets that were dealt with long ago outside the
+  // app is a bulk job, so it skips the confirmation page: one click resolves
+  // the ticket without writing a summary or emailing anybody.
+  const resolveSilently = html`
+    <form
+      class="tt-quiet-resolve"
+      action="/trouble-tickets/resolve"
+      method="post"
+    >
+      <input type="hidden" name="ticketId" value="${safe(ticket.id)}" />
+      <input type="hidden" name="summary" value="" />
+      <input type="hidden" name="quiet" value="on" />
+      <button
+        class="tt-badge tt-badge--${safe(STATUS_SLUG.Resolved)} tt-action"
+        type="submit"
+      >
+        Resolve silently
+      </button>
+      <small
+        >without emailing the submitter — for tickets already resolved outside
+        the app</small
+      >
+    </form>
+  `;
   const inProgress = STATUS_SLUG['In Progress'];
   switch (ticket.status) {
     // Resolve is offered from every open status, not just In Progress, so a
@@ -135,7 +159,7 @@ const renderActions = (ticket: TroubleTicketView): Html => {
     case 'Todo':
       return html`<div class="tt-actions">
         ${action('assign', 'Mark In Progress', inProgress)}
-        ${action('resolve', 'Resolve', STATUS_SLUG.Resolved)}
+        ${action('resolve', 'Resolve', STATUS_SLUG.Resolved)} ${resolveSilently}
       </div>`;
     case 'In Progress':
       return html`<div class="tt-actions">
@@ -145,12 +169,13 @@ const renderActions = (ticket: TroubleTicketView): Html => {
         ${ticket.assignedToMe
           ? html``
           : action('assign', 'Assign to me', inProgress)}
+        ${resolveSilently}
       </div>`;
     case 'Needs Help':
     case 'Parked':
       return html`<div class="tt-actions">
         ${action('assign', 'Mark In Progress', inProgress)}
-        ${action('resolve', 'Resolve', STATUS_SLUG.Resolved)}
+        ${action('resolve', 'Resolve', STATUS_SLUG.Resolved)} ${resolveSilently}
       </div>`;
     case 'Resolved':
       return html``;

@@ -1557,6 +1557,32 @@ label img {
   color: var(--text-color);
 }
 
+/* The one-click silent resolve: a badge-styled submit button plus its
+   explanation, sitting inline with the other actions. */
+.tt-quiet-resolve {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.tt-quiet-resolve button {
+  font-size: 0.8rem;
+  border: 0;
+  border-bottom: 0;
+  cursor: pointer;
+}
+
+.tt-quiet-resolve button:active {
+  position: static;
+  top: auto;
+}
+
+.tt-quiet-resolve small {
+  color: var(--grey-color);
+}
+
 .tt-action:hover {
   filter: brightness(0.92);
 }
