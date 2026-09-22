@@ -156,3 +156,28 @@ Care is still warranted:
   newer events with `recordedAt` = submission time, in-batch dedup of
   byte-identical rows, `?before=` canary scoping, dry-run planning without
   writes, and idempotent re-runs.
+
+## Bulk-closing the historic backlog
+
+Most imported tickets were dealt with years ago, outside the app. Closing them
+one by one is not realistic, so there is a bearer-token endpoint that quietly
+resolves every **open** ticket submitted before a date:
+
+```
+# See what would be closed - writes nothing.
+curl -s -X POST -H "Authorization: Bearer $ADMIN_API_BEARER_TOKEN" \
+  "https://app.makespace.org/api/trouble-tickets/bulk-quiet-resolve?before=2026-01-01&dryRun=true"
+
+# Do it.
+curl -s -X POST -H "Authorization: Bearer $ADMIN_API_BEARER_TOKEN" \
+  "https://app.makespace.org/api/trouble-tickets/bulk-quiet-resolve?before=2026-01-01"
+```
+
+- Every resolve is **quiet**, so the notification sweep skips it and no
+  submitter is emailed.
+- Already-resolved tickets are ignored, so a repeat run reports
+  `candidates: 0` - which is also how you verify a run that timed out at the
+  proxy while still working server-side.
+- It appends one `TroubleTicketResolved` event per ticket, actor `token`
+  ("An administrator" in the ticket's change log). Nothing is deleted or
+  rewritten, so the only way back is to decide those tickets are open again.

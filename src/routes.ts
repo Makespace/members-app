@@ -20,6 +20,7 @@ import {
   planTroubleTicketBackfill,
 } from './trouble-tickets/backfill-timeline';
 import {constantTimeEqual} from './http/constant-time-equal';
+import {bulkQuietResolve} from './trouble-tickets/bulk-quiet-resolve';
 import * as t from 'io-ts';
 import {v4} from 'uuid';
 import {StatusCodes} from 'http-status-codes';
@@ -281,6 +282,46 @@ export const initRoutes = (
           return;
         }
         const summary = await backfillTroubleTicketTimeline(deps)(before);
+        res.status(200).send(summary);
+      })
+    ),
+    // Bulk backlog closure: quietly resolve every open ticket submitted
+    // before a date. Quiet resolves are skipped by the notification sweep, so
+    // nobody is emailed. Already-resolved tickets are untouched, so a repeat
+    // run is a no-op. See docs/trouble-ticket-migration.md.
+    post(
+      '/api/trouble-tickets/bulk-quiet-resolve',
+      expressAsyncHandler(async (req, res) => {
+        if (
+          !constantTimeEqual(
+            req.headers.authorization ?? '',
+            `Bearer ${conf.ADMIN_API_BEARER_TOKEN}`
+          )
+        ) {
+          res.status(401).send({message: 'Bad Bearer Token'});
+          return;
+        }
+        const rawBefore = req.query.before;
+        if (typeof rawBefore !== 'string') {
+          res
+            .status(400)
+            .send({message: 'before is required, as a single ISO date'});
+          return;
+        }
+        const before = new Date(rawBefore);
+        if (isNaN(before.getTime())) {
+          res.status(400).send({message: 'before is not a valid ISO date'});
+          return;
+        }
+        // ?dryRun=true reports what would be closed without writing. Any other
+        // value is rejected rather than silently running the real thing.
+        if (req.query.dryRun !== undefined && req.query.dryRun !== 'true') {
+          res.status(400).send({message: "dryRun must be exactly 'true'"});
+          return;
+        }
+        const summary = await bulkQuietResolve(deps)(before, {
+          dryRun: req.query.dryRun === 'true',
+        });
         res.status(200).send(summary);
       })
     ),
