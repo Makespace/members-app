@@ -61,6 +61,7 @@ import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
 import { TrainingSheetId } from '../../types/training-sheet';
 import { EquipmentId } from '../../types/equipment-id';
 import {
+  getAllEquipmentMinimal,
   getEquipmentForAreaMinimal,
   getTrainingSheetIdMapping,
 } from './equipment/get';
@@ -102,6 +103,7 @@ export type SharedReadModel = {
   equipment: {
     get: (id: UUID) => O.Option<Equipment>;
     getAll: () => ReadonlyArray<Equipment>;
+    getAllMinimal: () => ReadonlyArray<MinimalEquipment>;
     getForAreaMinimal: (areaId: UUID) => ReadonlyArray<MinimalEquipment>;
     getTrainingSheetIdMapping: () => ReadonlyRecord<TrainingSheetId, EquipmentId>;
   };
@@ -185,6 +187,7 @@ export const initSharedReadModel = (
     equipment: {
       get: getEquipmentFull(readModelDb),
       getAll: getAllEquipmentFull(readModelDb),
+      getAllMinimal: () => getAllEquipmentMinimal(readModelDb),
       getForAreaMinimal: getEquipmentForAreaMinimal(readModelDb),
       getTrainingSheetIdMapping: getTrainingSheetIdMapping(readModelDb),
     },
