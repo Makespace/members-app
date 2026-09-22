@@ -341,6 +341,9 @@ const TroubleTicketCreated = defineEvent('TroubleTicketCreated', {
 const TroubleTicketAssigned = defineEvent('TroubleTicketAssigned', {
   ticketId: tt.UUID,
   trainerMemberNumber: t.number,
+  // Optional message to the submitter, shown in the notification email and
+  // the ticket's change log. '' means none.
+  comment: tt.withFallback(t.string, ''),
 });
 
 // The ticket is resolved, with a summary of what was done.

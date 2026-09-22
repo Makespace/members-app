@@ -38,6 +38,13 @@ const textField = (name: string, label: string) => html`
   </label>
 `;
 
+const optionalTextField = (name: string, label: string) => html`
+  <label class="stack">
+    <strong>${safe(label)}</strong>
+    <textarea name="${safe(name)}" rows="3"></textarea>
+  </label>
+`;
+
 const troubleTicketActionForm = (
   config: ActionConfig
 ): Form<ActionViewModel> => {
@@ -119,6 +126,10 @@ export const assignForm = troubleTicketActionForm({
   pageTitle: 'Assign this ticket to you',
   intro: html`This assigns the ticket to you and notifies the submitter. If it
   isn't already In Progress, it will be moved there.`,
+  fields: optionalTextField(
+    'comment',
+    'Add a comment for the submitter (optional)'
+  ),
   submitLabel: 'Assign to me',
 });
 
