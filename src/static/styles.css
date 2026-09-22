@@ -1844,6 +1844,8 @@ label img {
   .page-nav__about-freshness {
     text-align: center;
   }
+}
+
 /* Breathing room between the last category radio and whatever follows it
    (typically the submit button). */
 .eq-cat-choices {
@@ -1864,6 +1866,12 @@ label img {
   height: 0.75rem;
   border-radius: 50%;
   border: 1px solid color-mix(in oklch, black 25%, transparent);
+}
+
+/* Standing alone before an equipment name, the dot needs its own gap - there
+   is no flex container to space it. */
+.eq-cat__dot--standalone {
+  margin-right: 0.45rem;
 }
 
 .eq-cat--red .eq-cat__dot,
