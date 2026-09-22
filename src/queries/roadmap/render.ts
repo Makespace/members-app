@@ -15,8 +15,12 @@ export const render = () => html`
     </p>
 
     ${timeline([
-      heading(html`Equipment management`, {done: true}),
+      heading(html`Equipment management`),
       done(html`Ability to remove equipment`),
+      done(html`List orange and green equipment in the app, alongside the
+      training-managed red equipment`),
+      todo(html`Record PAT testing against equipment: asset number, class, who
+      tested it, the date, the result and when it's next due`),
 
       heading(html`Event timeline data migrations`, {done: true}),
       done(html`Bring training quiz results into the event timeline`),

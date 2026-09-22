@@ -55,6 +55,7 @@ describe('markMemberTrainedBy authorization', () => {
       formOfAddress: undefined,
     }),
     constructEvent('EquipmentAdded')({
+        category: 'red',
       name: 'Test Equipment',
       id: equipmentId,
       areaId,

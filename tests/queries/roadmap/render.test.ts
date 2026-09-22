@@ -27,10 +27,13 @@ describe('/roadmap render', () => {
     const doneHeadings = page.querySelectorAll(
       'li.timeline__item--heading.timeline__item--complete'
     );
-    expect(doneHeadings.length).toBe(4);
+    expect(doneHeadings.length).toBe(3);
     const texts = [...doneHeadings].map(node => node.textContent ?? '');
-    expect(texts.join(' ')).toContain('Equipment management');
     expect(texts.join(' ')).toContain('Trouble ticket management');
+    expect(texts.join(' ')).toContain('Notifications');
+    // Equipment management has shipped work but is no longer fully done: PAT
+    // testing details are still to come.
+    expect(texts.join(' ')).not.toContain('Equipment management');
   });
 
   it('shows the planned themes of work', () => {

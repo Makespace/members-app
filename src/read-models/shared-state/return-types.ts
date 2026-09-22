@@ -1,3 +1,4 @@
+import {EquipmentCategory} from '../../types/equipment-category';
 import * as O from 'fp-ts/Option';
 import {Actor, EmailAddress, GravatarHash, UserId} from '../../types';
 import {UUID} from 'io-ts-types';
@@ -25,6 +26,7 @@ export type MinimalEquipment = {
   id: UUID;
   name: string;
   areaId: UUID;
+  category: EquipmentCategory;
   trainingSheetId: O.Option<string>;
   // Set when the equipment has been marked obsolete (soft-hidden).
   removedAt: O.Option<Date>;

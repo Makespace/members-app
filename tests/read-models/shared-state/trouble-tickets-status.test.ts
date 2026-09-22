@@ -260,6 +260,7 @@ describe('trouble ticket status workflow (read model)', () => {
     );
     framework.insertIntoSharedReadModel(
       constructEvent('EquipmentAdded')({
+        category: 'red',
         actor: systemActor(),
         id: equipmentId,
         name: 'Test Rig',

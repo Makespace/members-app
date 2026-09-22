@@ -104,6 +104,7 @@ export const equipmentTable = defineTable(
       id TEXT PRIMARY KEY,
       name TEXT,
       areaId TEXT,
+      category TEXT NOT NULL DEFAULT 'red',
       trainingSheetId TEXT,
       removedAt INTEGER,
       FOREIGN KEY(areaId) REFERENCES areas(id) ON DELETE CASCADE
@@ -116,6 +117,8 @@ export const equipmentTable = defineTable(
     areaId: text('areaId')
       .notNull()
       .references(() => areasTable.id, { onDelete: 'cascade' }),
+    // red / orange / green sticker category; only red has training machinery.
+    category: text('category').notNull().default('red'),
     trainingSheetId: text('trainingSheetId'),
     // When set, the equipment is obsolete: hidden from members browsing for
     // training, but kept (with its history) for owners/admins.

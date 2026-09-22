@@ -3,7 +3,6 @@ import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import * as TE from 'fp-ts/TaskEither';
 import {html, safe, sanitizeString, toLoggedInContent} from '../../types/html';
-import {v4} from 'uuid';
 import {Form} from '../../types/form';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {failureWithStatus} from '../../types/failure-with-status';
@@ -16,21 +15,18 @@ type ViewModel = {
   areaName: string;
 };
 
+// Paste-a-list page for stocking an area with orange/green equipment (red is
+// deliberately not offered here: red kit needs training set up, so it goes
+// through the single add form).
 const renderForm = (viewModel: ViewModel) =>
   pipe(
     html`
-      <h1>Add equipment to ${sanitizeString(viewModel.areaName)}</h1>
-      <form action="/equipment/add" method="post">
-        <label for="name">What is this Equipment called</label>
-        <input type="text" name="name" id="name" />
+      <h1>Bulk-add equipment to ${sanitizeString(viewModel.areaName)}</h1>
+      <form action="/equipment/bulk-add" method="post" class="stack">
         <fieldset class="stack">
           <legend><strong>Sticker category</strong></legend>
           <label class="checkbox-row">
-            <input type="radio" name="category" value="red" checked />
-            <span>Red — training required</span>
-          </label>
-          <label class="checkbox-row">
-            <input type="radio" name="category" value="orange" />
+            <input type="radio" name="category" value="orange" checked />
             <span>Orange</span>
           </label>
           <label class="checkbox-row">
@@ -38,12 +34,15 @@ const renderForm = (viewModel: ViewModel) =>
             <span>Green</span>
           </label>
         </fieldset>
-        <input type="hidden" name="id" value="${v4() as UUID}" />
+        <label class="stack">
+          <strong>Equipment names, one per line</strong>
+          <textarea name="names" rows="12" required></textarea>
+        </label>
         <input type="hidden" name="areaId" value="${viewModel.areaId}" />
-        <button type="submit">Confirm and send</button>
+        <button type="submit">Add all</button>
       </form>
     `,
-    toLoggedInContent(safe('Create Equipment'))
+    toLoggedInContent(safe('Bulk-add equipment'))
   );
 
 const getAreaId = (input: unknown) =>
@@ -75,7 +74,7 @@ const constructForm: Form<ViewModel>['constructForm'] =
       TE.fromEither
     );
 
-export const addForm: Form<ViewModel> = {
+export const bulkAddForm: Form<ViewModel> = {
   renderForm,
   constructForm,
   formIsAuthorized: null,
