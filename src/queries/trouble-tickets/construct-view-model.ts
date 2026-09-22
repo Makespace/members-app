@@ -90,7 +90,11 @@ const buildChangeLog = (
           at,
           actor,
           summary: 'marked this ticket as Resolved',
-          details: [{label: 'Summary', value: row.details.summary ?? ''}],
+          // A quiet resolve carries no summary - show nothing rather than an
+          // empty labelled line.
+          details: row.details.summary
+            ? [{label: 'Summary', value: row.details.summary}]
+            : [],
         });
         break;
       case 'TroubleTicketParked':

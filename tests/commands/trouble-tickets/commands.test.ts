@@ -207,8 +207,15 @@ describe('trouble ticket commands', () => {
   });
 
   describe('resolve', () => {
-    it('requires a non-empty summary', () => {
+    it('requires a non-empty summary when the submitter will be emailed', () => {
       expect(E.isLeft(resolve.decode({ticketId, summary: ''}))).toBe(true);
+      expect(E.isLeft(resolve.decode({ticketId, summary: '   '}))).toBe(true);
+    });
+
+    it('does not require a summary for a quiet resolve', () => {
+      const decoded = resolve.decode({ticketId, summary: '', quiet: 'on'});
+      expect(E.isRight(decoded)).toBe(true);
+      expect(E.isRight(decoded) && decoded.right.quiet).toBe(true);
     });
 
     it('decodes the quiet checkbox: on means true, absent means false', () => {
