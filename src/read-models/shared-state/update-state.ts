@@ -780,7 +780,11 @@ const _updateState =
             .where(eq(troubleTicketsTable.id, event.ticketId))
             .run();
         }
-        recordTicketChange(tx, event, {});
+        recordTicketChange(
+          tx,
+          event,
+          event.comment !== '' ? {comment: event.comment} : {}
+        );
         break;
       }
       case 'TroubleTicketResolved': {

@@ -121,12 +121,19 @@ describe('trouble ticket commands', () => {
   const rm = () => framework.sharedReadModel;
 
   describe('assign', () => {
+    it('decodes an absent comment as empty', () => {
+      const absent = assign.decode({ticketId});
+      const given = assign.decode({ticketId, comment: 'On it tomorrow'});
+      expect(E.isRight(absent) && absent.right.comment === '').toBe(true);
+      expect(E.isRight(given) && given.right.comment).toBe('On it tomorrow');
+    });
+
     it('authorises any area owner (trainer or not) but not an outsider', () => {
       expect(
         assign.isAuthorized({
           actor: userActorWithMember(TRAINER),
           rm: rm(),
-          input: {ticketId},
+          input: {ticketId, comment: ''},
         })
       ).toBe(true);
       // All owners are maintainers: area ownership alone is enough to work a
@@ -135,14 +142,14 @@ describe('trouble ticket commands', () => {
         assign.isAuthorized({
           actor: userActorWithMember(OWNER_NOT_TRAINER),
           rm: rm(),
-          input: {ticketId},
+          input: {ticketId, comment: ''},
         })
       ).toBe(true);
       expect(
         assign.isAuthorized({
           actor: userActorWithMember(OUTSIDER),
           rm: rm(),
-          input: {ticketId},
+          input: {ticketId, comment: ''},
         })
       ).toBe(false);
     });
@@ -150,7 +157,7 @@ describe('trouble ticket commands', () => {
     it('emits TroubleTicketAssigned for the acting member', async () => {
       const result = await getTaskEitherRightOrFail(
         assign.process({
-          command: {ticketId, actor: userActorWithMember(TRAINER)},
+          command: {ticketId, comment: '', actor: userActorWithMember(TRAINER)},
           rm: rm(),
         })
       );
@@ -168,6 +175,7 @@ describe('trouble ticket commands', () => {
     it('is idempotent once assigned', async () => {
       framework.insertIntoSharedReadModel(
         constructEvent('TroubleTicketAssigned')({
+        comment: '',
           actor: userActorWithMember(TRAINER),
           ticketId,
           trainerMemberNumber: TRAINER,
@@ -175,7 +183,7 @@ describe('trouble ticket commands', () => {
       );
       const result = await getTaskEitherRightOrFail(
         assign.process({
-          command: {ticketId, actor: userActorWithMember(TRAINER)},
+          command: {ticketId, comment: '', actor: userActorWithMember(TRAINER)},
           rm: rm(),
         })
       );
@@ -187,6 +195,7 @@ describe('trouble ticket commands', () => {
         await assign.process({
           command: {
             ticketId: faker.string.uuid() as UUID,
+            comment: '',
             actor: userActorWithMember(TRAINER),
           },
           rm: rm(),

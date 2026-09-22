@@ -44,7 +44,9 @@ const actorName = (actor: Actor, rm: SharedReadModel): string => {
 const describeChange = (event: NotifyEvent, actor: string): string => {
   switch (event.type) {
     case 'TroubleTicketAssigned':
-      return `${actor} is now working on this ticket.`;
+      return event.comment !== ''
+        ? `${actor} is now working on this ticket.\n\nThey said: ${event.comment}`
+        : `${actor} is now working on this ticket.`;
     case 'TroubleTicketResolved':
       return `${actor} marked this ticket as Resolved.\n\nWhat they did: ${event.summary}`;
     case 'TroubleTicketParked':
