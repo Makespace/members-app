@@ -1,7 +1,7 @@
 import * as O from 'fp-ts/Option';
 import * as E from 'fp-ts/Either';
 import {pipe} from 'fp-ts/function';
-import {UUID} from 'io-ts-types';
+import {NonEmptyString, UUID} from 'io-ts-types';
 import {Dependencies} from './dependencies';
 import {Config} from './configuration';
 import {commands, sendEmailCommands} from './commands';
@@ -9,6 +9,8 @@ import * as queries from './queries';
 import {Route, get, post} from './types/route';
 import {authRoutes} from './authentication';
 import {queryToHandler, commandToHandlers, ping} from './http';
+import {formGet} from './http/form-get';
+import {bulkAddForm} from './commands/equipment/bulk-add-form';
 import {apiToHandlers} from './http/api-to-handlers';
 import {emailHandler} from './http/email-handler';
 import expressAsyncHandler from 'express-async-handler';
@@ -18,6 +20,15 @@ import {
   planTroubleTicketBackfill,
 } from './trouble-tickets/backfill-timeline';
 import {constantTimeEqual} from './http/constant-time-equal';
+import * as t from 'io-ts';
+import {v4} from 'uuid';
+import {StatusCodes} from 'http-status-codes';
+import {getUserFromSession} from './authentication';
+import {logInPath} from './authentication/login/routes';
+import {applyCommand} from './commands/apply-command';
+import {oopsPage} from './templates';
+import {safe, sanitizeString} from './types/html';
+import {Actor} from './types/actor';
 
 export const initRoutes = (
   deps: Dependencies,
@@ -58,6 +69,105 @@ export const initRoutes = (
     ...command('areas', 'add-name-alias', commands.area.addNameAlias),
     ...api('areas', 'remove-name-alias', commands.area.removeNameAlias),
     ...command('equipment', 'add', commands.equipment.add),
+    ...api('equipment', 'set-category', commands.equipment.setCategory),
+    // Bulk-add: one EquipmentAdded per pasted line. A bespoke POST because
+    // the command pipeline commits exactly one event per request; the GET is
+    // the standard form renderer.
+    get(
+      '/equipment/bulk-add',
+      expressAsyncHandler(formGet(deps, bulkAddForm))
+    ),
+    post(
+      '/equipment/bulk-add',
+      expressAsyncHandler(async (req, res) => {
+        const user = getUserFromSession(deps)(req.session);
+        if (O.isNone(user)) {
+          res.redirect(logInPath);
+          return;
+        }
+        const actor: Actor = {tag: 'user', user: user.value};
+        const body = t
+          .strict({
+            areaId: UUID,
+            // Red is deliberately not bulk-addable: it needs training set up
+            // per machine, so it goes through the single add form.
+            category: t.keyof({orange: null, green: null}),
+            names: t.string,
+          })
+          .decode(req.body);
+        if (E.isLeft(body)) {
+          res.status(StatusCodes.BAD_REQUEST).send(
+            oopsPage(safe('That bulk-add submission was not valid.'))
+          );
+          return;
+        }
+        const {areaId, category, names} = body.right;
+        const toAdd = [
+          ...new Set(
+            names
+              .split('\n')
+              .map(line => line.trim())
+              .filter(line => line !== '')
+          ),
+        ].map(name => ({
+          id: v4() as UUID,
+          name: name as NonEmptyString,
+          areaId,
+          category,
+        }));
+        if (toAdd.length === 0) {
+          res.redirect(`/areas#area-${areaId}`);
+          return;
+        }
+        // Authorization does not vary by name, so one check covers the batch.
+        if (
+          !commands.equipment.add.isAuthorized({
+            actor,
+            rm: deps.sharedReadModel,
+            input: toAdd[0],
+          })
+        ) {
+          res
+            .status(StatusCodes.FORBIDDEN)
+            .send(
+              oopsPage(
+                safe(
+                  'Only owners of this area (or admins) can add equipment to it.'
+                )
+              )
+            );
+          return;
+        }
+        const failed: string[] = [];
+        for (const input of toAdd) {
+          const result = await applyCommand(deps, commands.equipment.add)(
+            input,
+            actor
+          )();
+          if (E.isLeft(result)) {
+            failed.push(input.name);
+            deps.logger.warn(
+              result.left,
+              'Bulk-add failed for equipment %s',
+              input.name
+            );
+          }
+        }
+        if (failed.length > 0) {
+          res
+            .status(StatusCodes.INTERNAL_SERVER_ERROR)
+            .send(
+              oopsPage(
+                sanitizeString(
+                  `Added ${toAdd.length - failed.length} of ${toAdd.length}. These failed: ${failed.join(', ')}`
+                )
+              )
+            );
+          return;
+        }
+        res.redirect(`/areas#area-${areaId}`);
+      })
+    ),
     ...command('equipment', 'add-trainer', commands.trainers.add),
     ...command('equipment', 'remove-trainer', commands.trainers.remove),
     ...command(

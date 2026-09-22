@@ -1,3 +1,4 @@
+import {EquipmentCategory} from '../../types/equipment-category';
 import * as O from 'fp-ts/Option';
 import {UUID} from 'io-ts-types';
 import {
@@ -33,6 +34,7 @@ export type TroubleTicketView = {
   // The resolved equipment's name; when none, areaName may still place the
   // ticket in an area. Both none = the Unassigned bucket.
   equipmentName: O.Option<string>;
+  equipmentCategory: O.Option<EquipmentCategory>;
   // The ticket's area: the equipment's area when a machine is resolved, else
   // the directly-mapped area.
   areaName: O.Option<string>;

@@ -25,6 +25,7 @@ import {
   Owner,
 } from '../../read-models/shared-state/return-types';
 import { mailTo } from '../../templates/mailto';
+import {categoryDot} from '../../templates/equipment-category';
 
 
 const renderSignedAt = (owner: Owner) => {
@@ -197,16 +198,18 @@ const renderEquipment = (equipment: ReadonlyArray<EquipmentViewModel>) => {
     RA.map(
       item => html`
         <div class="equipment-with-sparkline"
-          ><a href="/equipment/${safe(item.id)}"
+          >${categoryDot(item.category)}<a href="/equipment/${safe(item.id)}"
             >${sanitizeString(item.name)}</a
           >
-          ${renderTrainingSparkline(item.trainingsByQuarter)}</div
+          ${item.category === 'red'
+            ? renderTrainingSparkline(item.trainingsByQuarter)
+            : html``}</div
         >
       `
     ),
     items => html`
       <div>
-        <strong>RED equipment:</strong>
+        <strong>Equipment:</strong>
         <div>${joinHtml(items)}</div>
       </div>
     `
@@ -223,7 +226,9 @@ const renderArea =
     : area.owners;
   // Only areas with red equipment have anything to train on, so only they get
   // the trainings column.
-  const showTrainings = area.equipment.length > 0 && viewModel.canSeeTrainings;
+  const showTrainings =
+    area.equipment.some(item => item.category === 'red') &&
+    viewModel.canSeeTrainings;
   return html`
   <article id="area-${safe(area.id)}">
     <h2>${sanitizeString(area.name)}</h2>
@@ -246,7 +251,10 @@ const renderArea =
         >Add owner</a
       >
       <a class="button" href="/equipment/add?area=${safe(area.id)}"
-        >Add RED equipment</a
+        >Add equipment</a
+      >
+      <a class="button" href="/equipment/bulk-add?area=${safe(area.id)}"
+        >Bulk-add orange/green</a
       >
       <a class="button" href="/areas/set-mailing-list?area=${safe(area.id)}"
         >Set mailing list</a
