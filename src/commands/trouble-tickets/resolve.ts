@@ -17,11 +17,20 @@ const checkbox = new t.Type<boolean, unknown, unknown>(
   t.identity
 );
 
-const codec = t.strict({
+const baseCodec = t.strict({
   ticketId: tt.UUID,
-  summary: tt.NonEmptyString,
+  summary: t.string,
   quiet: checkbox,
 });
+
+// A summary is required only when the submitter will be emailed. A quiet
+// resolve is backlog clearing - the ticket was dealt with long ago, outside
+// the app, and there is nothing to write.
+const codec = t.refinement(
+  baseCodec,
+  input => input.quiet || input.summary.trim() !== '',
+  'ResolveTroubleTicket'
+);
 
 type ResolveTroubleTicket = t.TypeOf<typeof codec>;
 
@@ -39,7 +48,7 @@ const process: Command<ResolveTroubleTicket>['process'] = input =>
       O.some(
         constructEvent('TroubleTicketResolved')({
           ticketId: input.command.ticketId,
-          summary: input.command.summary,
+          summary: input.command.summary.trim(),
           quiet: input.command.quiet,
           actor: input.command.actor,
         })
