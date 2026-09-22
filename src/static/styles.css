@@ -191,6 +191,23 @@ textarea {
   box-sizing: border-box;
 }
 
+/* The reset above is written for text-like inputs; applied to checkboxes and
+   radios it turns them into full-width bordered boxes with nothing to click.
+   Give those back their native rendering. Must stay ABOVE .fieldset-item,
+   whose large custom radios deliberately hide the real control. */
+input[type='checkbox'],
+input[type='radio'] {
+  appearance: auto;
+  display: inline-block;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  accent-color: var(--green-color);
+  cursor: pointer;
+}
+
 button {
   color: white;
   font-size: 120%;
@@ -1695,17 +1712,9 @@ label img {
   cursor: pointer;
 }
 
-.checkbox-row input[type='checkbox'] {
-  appearance: auto;
-  display: inline-block;
-  width: 1.15rem;
-  height: 1.15rem;
-  margin: 0;
-  padding: 0;
-  border: none;
+.checkbox-row input[type='checkbox'],
+.checkbox-row input[type='radio'] {
   flex: none;
-  accent-color: var(--green-color);
-  cursor: pointer;
 }
 /* Timeline - vertical list of tasks with circular markers (see templates/timeline.ts).
    Heading items are larger nodes; the line runs continuously behind the markers. */

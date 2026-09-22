@@ -9,6 +9,7 @@ import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {UUID} from 'io-ts-types';
 import {SharedReadModel} from '../../read-models/shared-state';
+import {categoryChoices} from '../../templates/equipment-category';
 
 type ViewModel = {
   areaId: UUID;
@@ -23,17 +24,7 @@ const renderForm = (viewModel: ViewModel) =>
     html`
       <h1>Bulk-add equipment to ${sanitizeString(viewModel.areaName)}</h1>
       <form action="/equipment/bulk-add" method="post" class="stack">
-        <fieldset class="stack">
-          <legend><strong>Sticker category</strong></legend>
-          <label class="checkbox-row">
-            <input type="radio" name="category" value="orange" checked />
-            <span>Orange</span>
-          </label>
-          <label class="checkbox-row">
-            <input type="radio" name="category" value="green" />
-            <span>Green</span>
-          </label>
-        </fieldset>
+        ${categoryChoices(['orange', 'green'], 'orange')}
         <label class="stack">
           <strong>Equipment names, one per line</strong>
           <textarea name="names" rows="12" required></textarea>
