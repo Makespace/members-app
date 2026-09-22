@@ -1844,6 +1844,12 @@ label img {
   .page-nav__about-freshness {
     text-align: center;
   }
+/* Breathing room between the last category radio and whatever follows it
+   (typically the submit button). */
+.eq-cat-choices {
+  margin-bottom: 1.5rem;
+}
+
 /* Equipment sticker-category badges (red / orange / green). */
 .eq-cat {
   display: inline-flex;
