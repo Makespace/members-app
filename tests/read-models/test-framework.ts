@@ -177,6 +177,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       equipment: {
         add: frameworkify(commands.equipment.add),
         setCategory: frameworkify(commands.equipment.setCategory),
+        setMachines: frameworkify(commands.equipment.setMachines),
         trainingSheet: frameworkify(commands.equipment.trainingSheet),
         removeTrainingSheet: frameworkify(
           commands.equipment.removeTrainingSheet
@@ -234,6 +235,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       },
       troubleTickets: {
         record: frameworkify(commands.troubleTickets.record),
+        raise: frameworkify(commands.troubleTickets.raise),
         create: frameworkify(commands.troubleTickets.create),
         assign: frameworkify(commands.troubleTickets.assign),
         resolve: frameworkify(commands.troubleTickets.resolve),

@@ -1,4 +1,6 @@
 import {record} from './record';
+import {raise} from './raise';
+import {raiseForm} from './raise-form';
 import {create} from './create';
 import {assign} from './assign';
 import {resolve} from './resolve';
@@ -18,6 +20,7 @@ import {
 // path; create/set-equipment/edit-title stay API-only.
 export const troubleTickets = {
   record,
+  raise: {...raise, ...raiseForm},
   create,
   assign: {...assign, ...assignForm},
   resolve: {...resolve, ...resolveForm},

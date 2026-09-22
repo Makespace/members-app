@@ -1922,3 +1922,132 @@ label img {
   border: 1px solid color-mix(in oklch, black 25%, transparent);
   border-radius: 50%;
 }
+
+/* The member-facing "report a problem" form. Questions are grouped with room
+   to breathe; hints sit quietly under their labels. */
+.tt-form__question {
+  margin-bottom: 2rem;
+}
+
+.tt-form__hint {
+  color: var(--grey-color);
+  display: block;
+}
+
+.tt-form select {
+  display: block;
+  width: 100%;
+  margin: 0.5rem 0 0;
+  padding: 0.8rem;
+  border: 2px solid var(--text-color);
+  background: white;
+  box-sizing: border-box;
+}
+
+.tt-form textarea,
+.tt-form input[type='text'] {
+  margin-bottom: 0;
+}
+
+.tt-form__closing {
+  border-left: 5px solid var(--border-color);
+  padding: 0.5rem 0 0.5rem 1rem;
+  color: var(--grey-color);
+}
+
+/* Trouble tickets landing: two cards side by side, stacking on narrow
+   screens. */
+.tt-home {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+}
+
+@media screen and (min-width: 48rem) {
+  .tt-home {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.tt-home__card {
+  border: 2px solid var(--border-color);
+  padding: 1.5rem;
+}
+
+.tt-home__card h2 {
+  margin-top: 0;
+}
+
+.tt-home__stats {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.tt-home__stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.tt-home__stat-count {
+  font-size: 1.6rem;
+  line-height: 1.2;
+  min-width: 2.5ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tt-home__note {
+  color: var(--grey-color);
+}
+
+/* The equipment search on the report form: unmistakably a search box, set
+   apart from the dropdowns below it. */
+.tt-search {
+  margin-bottom: 0.5rem;
+}
+
+.tt-search__label {
+  font-weight: 700;
+}
+
+.tt-search__field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 2px solid var(--text-color);
+  background: white;
+  padding: 0 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.tt-search__icon {
+  flex: none;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.tt-search__field input[type='search'] {
+  border: 0;
+  margin: 0;
+  padding: 0.8rem 0;
+  width: 100%;
+  appearance: none;
+}
+
+.tt-search__field input[type='search']:focus-visible {
+  outline: none;
+}
+
+.tt-search__field:focus-within {
+  outline: var(--focus-color) solid 3px;
+}
+
+.tt-form__or {
+  color: var(--grey-color);
+  margin: 0.25rem 0 0.5rem;
+}

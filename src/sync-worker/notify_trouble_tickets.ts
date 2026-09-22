@@ -12,6 +12,9 @@ import {SyncWorkerDependencies} from './dependencies';
 
 // The status changes we notify about.
 const NOTIFY_TYPES = [
+  // Only app-raised tickets notify on creation - the imported history would
+  // otherwise email hundreds of members about years-old reports.
+  'TroubleTicketCreated',
   'TroubleTicketAssigned',
   'TroubleTicketResolved',
   'TroubleTicketParked',
@@ -24,6 +27,10 @@ export type NotifyTroubleTicketDependencies = Pick<
   SyncWorkerDependencies,
   'logger' | 'sharedReadModel' | 'getAllEventsByType' | 'commitEvent' | 'sendEmail' | 'conf'
 >;
+
+// Creation names the ticket 'id'; every later event names it 'ticketId'.
+const ticketIdOf = (event: NotifyEvent) =>
+  event.type === 'TroubleTicketCreated' ? event.id : event.ticketId;
 
 const actorName = (actor: Actor, rm: SharedReadModel): string => {
   switch (actor.tag) {
@@ -43,6 +50,8 @@ const actorName = (actor: Actor, rm: SharedReadModel): string => {
 // The change description for the notification body.
 const describeChange = (event: NotifyEvent, actor: string): string => {
   switch (event.type) {
+    case 'TroubleTicketCreated':
+      return "Thanks for letting us know about this issue. One of the owners of the equipment will address it soon.\n\nIf the equipment is not useable, or is unsafe, please put a sign on it telling other members, and consider a post on the Google group.";
     case 'TroubleTicketAssigned':
       return event.comment !== ''
         ? `${actor} is now working on this ticket.\n\nThey said: ${event.comment}`
@@ -104,12 +113,18 @@ const buildEmail = (
   publicUrl: string,
   recipient: EmailAddress,
   ticket: TroubleTicket,
-  change: string
+  change: string,
+  isNew: boolean
 ): Email => {
-  const text = `Hi,\n\nThere's an update on the trouble ticket "${ticket.title}".\n\n${change}\n\nSee the trouble tickets page: ${publicUrl}/trouble-tickets\n`;
+  const opening = isNew
+    ? `We've logged your report about "${ticket.title}".`
+    : `There's an update on the trouble ticket "${ticket.title}".`;
+  const text = `Hi,\n\n${opening}\n\n${change}\n\nSee the trouble tickets page: ${publicUrl}/trouble-tickets\n`;
   return {
     recipient,
-    subject: `Trouble ticket update: ${ticket.title}`,
+    subject: isNew
+      ? `We've logged your report: ${ticket.title}`
+      : `Trouble ticket update: ${ticket.title}`,
     text,
     html: mjml2html(`
       <mjml>
@@ -122,7 +137,7 @@ const buildEmail = (
           <mj-section>
             <mj-column>
               <mj-text font-size="16px" color="#111">
-                <p>There's an update on the trouble ticket <strong>${ticket.title}</strong>.</p>
+                <p>${opening.replace(`"${ticket.title}"`, `<strong>${ticket.title}</strong>`)}</p>
                 <p>${change.replace(/\n/g, '<br/>')}</p>
               </mj-text>
               <mj-button background-color="#00703c" href="${publicUrl}/trouble-tickets">View trouble tickets</mj-button>
@@ -163,13 +178,18 @@ export const notifyTroubleTicketChanges = async (
     if (event.type === 'TroubleTicketResolved' && event.quiet) {
       continue;
     }
+    // Only tickets raised in the app get a creation confirmation: the
+    // imported sheet history must never email anybody.
+    if (event.type === 'TroubleTicketCreated' && event.source !== 'app') {
+      continue;
+    }
     if (rm.troubleTickets.hasNotifiedForEvent(event.event_index)) {
       continue;
     }
     const commitResp = await deps.commitEvent(rm.getCurrentEventIndex())(
       constructEvent('TroubleTicketNotificationSent')({
         actor: {tag: 'system'},
-        ticketId: event.ticketId,
+        ticketId: ticketIdOf(event),
         notifiedEventIndex: event.event_index,
       })
     )();
@@ -182,14 +202,20 @@ export const notifyTroubleTicketChanges = async (
       continue;
     }
 
-    const ticket = rm.troubleTickets.getById(event.ticketId);
+    const ticket = rm.troubleTickets.getById(ticketIdOf(event));
     if (O.isNone(ticket)) {
       continue;
     }
     const change = describeChange(event, actorName(event.actor, rm));
     for (const recipient of collectRecipients(rm, ticket.value, event)) {
       const sent = await deps.sendEmail(
-        buildEmail(deps.conf.PUBLIC_URL, recipient, ticket.value, change)
+        buildEmail(
+          deps.conf.PUBLIC_URL,
+          recipient,
+          ticket.value,
+          change,
+          event.type === 'TroubleTicketCreated'
+        )
       )();
       if (E.isLeft(sent)) {
         deps.logger.error(

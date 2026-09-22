@@ -96,6 +96,9 @@ export const planTroubleTicketBackfill =
           attempting: candidate.response.attempting,
           issue: candidate.response.issue,
           steps: candidate.response.steps,
+          source: 'sheet',
+          equipmentId: null,
+          machine: '',
           actor: BACKFILL_ACTOR,
         }),
         // Place the event at its real historical time, not the run time, so

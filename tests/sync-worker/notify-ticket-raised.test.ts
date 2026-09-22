@@ -1,5 +1,5 @@
-import {faker} from '@faker-js/faker';
 import * as TE from 'fp-ts/TaskEither';
+import {faker} from '@faker-js/faker';
 import {UUID} from 'io-ts-types';
 import {constructEvent, Email} from '../../src/types';
 import {EmailAddress} from '../../src/types/email-address';
@@ -12,19 +12,41 @@ import {
 import {getRightOrFail, systemActor} from '../helpers';
 import {TestFramework, initTestFramework} from '../read-models/test-framework';
 
-const SUBMITTER = 50;
+const SUBMITTER = 61;
 
-describe('notifyTroubleTicketChanges', () => {
+describe('confirming a newly raised ticket', () => {
   let framework: TestFramework;
   let sentEmails: Email[];
   let deps: NotifyTroubleTicketDependencies;
-  let ticketId: UUID;
 
   const commit = async (event: DomainEvent) =>
     getRightOrFail(
       await framework.depsForCommands.commitEvent(
         framework.sharedReadModel.getCurrentEventIndex()
       )(event)()
+    );
+
+  const addTicket = async (source: 'app' | 'sheet') =>
+    commit(
+      constructEvent('TroubleTicketCreated')({
+        actor: systemActor(),
+        id: faker.string.uuid() as UUID,
+        rowHash: faker.string.hexadecimal({length: 64}),
+        sheetId: source,
+        submittedAt: new Date(),
+        submittedMemberNumber: SUBMITTER,
+        submittedEmail: 'submitter@test.com',
+        submittedName: 'Sam Submitter',
+        submittedEquipment: 'Bandsaw',
+        equipmentId: null,
+        machine: '',
+        source,
+        otherEquipmentDetail: '',
+        status: "It's not working",
+        attempting: 'cutting',
+        issue: 'Blade stalls',
+        steps: '',
+      })
     );
 
   beforeEach(async () => {
@@ -41,8 +63,6 @@ describe('notifyTroubleTicketChanges', () => {
       },
       conf: {PUBLIC_URL: 'https://members.makespace.org'} as unknown as Config,
     };
-
-    ticketId = faker.string.uuid() as UUID;
     await commit(
       constructEvent('MemberNumberLinkedToEmail')({
         actor: systemActor(),
@@ -52,84 +72,33 @@ describe('notifyTroubleTicketChanges', () => {
         formOfAddress: undefined,
       })
     );
-    await commit(
-      constructEvent('TroubleTicketCreated')({
-        source: 'sheet',
-        equipmentId: null,
-        machine: '',
-        actor: systemActor(),
-        id: ticketId,
-        rowHash: faker.string.hexadecimal({length: 64}),
-        sheetId: 'sheet-1',
-        submittedAt: faker.date.past(),
-        submittedMemberNumber: SUBMITTER,
-        submittedEmail: 'submitter@test.com',
-        submittedName: 'Sam Submitter',
-        submittedEquipment: null,
-        otherEquipmentDetail: '',
-        status: 'Broken',
-        attempting: 'x',
-        issue: 'the issue',
-        steps: '',
-      })
-    );
   });
 
   afterEach(() => {
     framework.close();
   });
 
-  it('emails the submitter on a status change and records it', async () => {
-    await commit(
-      constructEvent('TroubleTicketResolved')({
-        quiet: false,
-        actor: systemActor(),
-        ticketId,
-        summary: 'fixed it',
-      })
-    );
+  it('emails the member who raised it in the app', async () => {
+    await addTicket('app');
 
     await notifyTroubleTicketChanges(deps);
 
     expect(sentEmails).toHaveLength(1);
     expect(sentEmails[0].recipient).toStrictEqual('submitter@test.com');
-    expect(sentEmails[0].subject).toContain('the issue');
-
-    const notified = await framework.getAllEventsByType(
-      'TroubleTicketNotificationSent'
-    );
-    expect(notified).toHaveLength(1);
+    expect(sentEmails[0].subject).toContain("We've logged your report");
+    expect(sentEmails[0].text).toContain('will address it soon');
   });
 
-  it('a quiet resolve sends no email and records no marker', async () => {
-    await commit(
-      constructEvent('TroubleTicketResolved')({
-        quiet: true,
-        actor: systemActor(),
-        ticketId,
-        summary: 'was already fixed months ago',
-      })
-    );
+  it('never emails about tickets imported from the sheet', async () => {
+    await addTicket('sheet');
 
     await notifyTroubleTicketChanges(deps);
 
     expect(sentEmails).toHaveLength(0);
-    const notified = await framework.getAllEventsByType(
-      'TroubleTicketNotificationSent'
-    );
-    expect(notified).toHaveLength(0);
   });
 
-  it('does not re-notify on a second run', async () => {
-    await commit(
-      constructEvent('TroubleTicketResolved')({
-        quiet: false,
-        actor: systemActor(),
-        ticketId,
-        summary: 'fixed it',
-      })
-    );
-
+  it('does not confirm the same ticket twice', async () => {
+    await addTicket('app');
     await notifyTroubleTicketChanges(deps);
     await notifyTroubleTicketChanges(deps);
 

@@ -68,7 +68,9 @@ describe('/trouble-tickets board actions', () => {
       const dom = renderBoard(viewModel([ticket({status})]));
       const form = silentForm(dom);
       expect(form).not.toBeNull();
-      expect(form?.getAttribute('action')).toBe('/trouble-tickets/resolve');
+      expect(form?.getAttribute('action')).toBe(
+        '/trouble-tickets/resolve?next=/trouble-tickets/board'
+      );
       expect(form?.getAttribute('method')).toBe('post');
     }
   );

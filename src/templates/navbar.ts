@@ -342,11 +342,9 @@ export const navBar = (
           <span>About this app</span>
           <small class="page-nav__about-freshness">${aboutFreshness()}</small>
         </a>
-        ${viewer.isSuperUser || viewer.isOwner
-          ? html`<a class="page-nav__action" href="/trouble-tickets"
-              >Trouble tickets</a
-            >`
-          : html``}
+        <a class="page-nav__action" href="/trouble-tickets"
+          >Trouble tickets</a
+        >
         <div
           class="page-nav__menu page-nav__menu--sites"
           data-page-nav-menu="sites"
