@@ -11,6 +11,8 @@ import {isTicketOwner} from './authorization';
 
 const codec = t.strict({
   ticketId: tt.UUID,
+  // Optional message to the submitter; an absent or empty field means none.
+  comment: tt.withFallback(t.string, ''),
 });
 
 type AssignTroubleTicket = t.TypeOf<typeof codec>;
@@ -42,6 +44,7 @@ const process: Command<AssignTroubleTicket>['process'] = input =>
               constructEvent('TroubleTicketAssigned')({
                 ticketId: input.command.ticketId,
                 trainerMemberNumber: memberNumber,
+                comment: input.command.comment.trim(),
                 actor: input.command.actor,
               })
             )
