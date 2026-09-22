@@ -12,11 +12,30 @@ import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
 import { TrainingSheetId } from '../../../types/training-sheet';
 import { EquipmentId } from '../../../types/equipment-id';
 
+// Stored as JSON; anything unparseable means "no named units" rather than a
+// crash while projecting.
+const parseMachineNames = (
+  json: string | undefined | null
+): ReadonlyArray<string> => {
+  if (!json) {
+    return [];
+  }
+  try {
+    const parsed: unknown = JSON.parse(json);
+    return Array.isArray(parsed)
+      ? parsed.filter((name): name is string => typeof name === 'string')
+      : [];
+  } catch {
+    return [];
+  }
+};
+
 const transformRow = <
   R extends {
     id: string;
     areaId: string;
     category: string;
+    machineNamesJson: string | undefined | null;
     trainingSheetId: string | undefined | null;
     removedAt: Date | undefined | null;
   },
@@ -27,6 +46,7 @@ const transformRow = <
   id: row.id as UUID,
   areaId: row.areaId as UUID,
   category: row.category as EquipmentCategory,
+  machineNames: parseMachineNames(row.machineNamesJson),
   trainingSheetId: O.fromNullable(row.trainingSheetId),
   removedAt: O.fromNullable(row.removedAt),
 });

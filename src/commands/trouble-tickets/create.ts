@@ -66,6 +66,9 @@ const process: Command<CreateTroubleTicket>['process'] = input => {
             attempting: input.command.attempting,
             issue: input.command.issue,
             steps: input.command.steps,
+            source: 'sheet',
+            equipmentId: null,
+            machine: '',
             actor: input.command.actor,
           })
         )

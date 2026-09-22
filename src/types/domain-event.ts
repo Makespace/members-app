@@ -62,6 +62,14 @@ const EquipmentCategoryChanged = defineEvent('EquipmentCategoryChanged', {
   category: EquipmentCategoryCodec,
 });
 
+// Some equipment records stand for several identical machines (e.g. three 3D
+// printers under one entry). The names are the units a member picks from when
+// raising a ticket; an empty list means a single machine.
+const EquipmentMachinesSet = defineEvent('EquipmentMachinesSet', {
+  equipmentId: tt.UUID,
+  machineNames: t.readonlyArray(t.string),
+});
+
 // Soft-hide: the equipment and its training history stay in the log/read model,
 // but it is treated as obsolete (hidden from members browsing for training).
 const EquipmentMarkedObsolete = defineEvent('EquipmentMarkedObsolete', {
@@ -338,6 +346,14 @@ const TroubleTicketCreated = defineEvent('TroubleTicketCreated', {
   attempting: t.string,
   issue: t.string,
   steps: t.string,
+  // Raised through the app rather than the Google Form: the member picked the
+  // equipment from a list, so it needs no name resolution, and they get a
+  // confirmation email (which the imported history must never trigger - hence
+  // the 'sheet' fallback on every stored event).
+  source: tt.withFallback(t.keyof({sheet: null, app: null}), 'sheet'),
+  equipmentId: tt.withFallback(t.union([tt.UUID, t.null]), null),
+  // Which unit, when the equipment stands for several machines.
+  machine: tt.withFallback(t.string, ''),
 });
 
 // --- Trouble ticket status workflow ---
@@ -411,6 +427,7 @@ export const events = [
   AreaEmailUpdated,
   EquipmentAdded,
   EquipmentCategoryChanged,
+  EquipmentMachinesSet,
   EquipmentMarkedObsolete,
   EquipmentNameAliasAdded,
   EquipmentNameAliasRemoved,
@@ -464,6 +481,7 @@ export const DomainEvent = t.union([
   AreaEmailUpdated.codec,
   EquipmentAdded.codec,
   EquipmentCategoryChanged.codec,
+  EquipmentMachinesSet.codec,
   EquipmentMarkedObsolete.codec,
   EquipmentNameAliasAdded.codec,
   EquipmentNameAliasRemoved.codec,

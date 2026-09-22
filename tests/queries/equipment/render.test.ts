@@ -64,6 +64,7 @@ describe('Render equipment page', () => {
         id: faker.string.uuid() as UUID,
         name: faker.airline.aircraftType(),
         category: 'red',
+        machineNames: [],
         trainers: [
             trainer
         ],

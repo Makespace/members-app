@@ -27,6 +27,8 @@ export type MinimalEquipment = {
   name: string;
   areaId: UUID;
   category: EquipmentCategory;
+  // Unit names when this record stands for several identical machines.
+  machineNames: ReadonlyArray<string>;
   trainingSheetId: O.Option<string>;
   // Set when the equipment has been marked obsolete (soft-hidden).
   removedAt: O.Option<Date>;

@@ -21,6 +21,7 @@ export {me} from './me';
 export {dumpSharedDbAsJson, dumpSharedDbAsBuffer} from './debug';
 export {domainEvents} from './domain-events';
 export {troubleTickets} from './trouble-tickets';
+export {troubleTicketsHome} from './trouble-tickets-home';
 export {notifications} from './notifications';
 export {mailbox} from './mailbox';
 export {logGoogleJson} from './log-google';

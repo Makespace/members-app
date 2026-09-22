@@ -26,6 +26,9 @@ describe('bulkQuietResolve', () => {
     const id = faker.string.uuid() as UUID;
     await commit(
       constructEvent('TroubleTicketCreated')({
+        source: 'sheet',
+        equipmentId: null,
+        machine: '',
         actor: systemActor(),
         id,
         rowHash: faker.string.hexadecimal({length: 64}),
