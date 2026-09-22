@@ -17,7 +17,11 @@ import {extractTimestamp} from './google/util';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {getChunkIndexes} from '../util';
 
-const ROW_BATCH_SIZE = 50;
+// Rows per Sheets API call. Google's quota meters requests, not rows, and we
+// re-read whole sheets every cycle (tail-reading broke on mid-sheet inserts -
+// see issue #208) - so big batches are what keeps us inside the quota. The
+// payload stays small: only the mapped columns' formattedValues are fetched.
+const ROW_BATCH_SIZE = 1000;
 const EXPECTED_TROUBLE_TICKET_RESPONSE_SHEET_NAME = 'Form Responses 1';
 
 export type SyncTroubleTicketDependencies = Pick<
