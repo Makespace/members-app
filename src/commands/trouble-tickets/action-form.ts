@@ -138,14 +138,40 @@ export const resolveForm = troubleTicketActionForm({
   pageTitle: 'Resolve ticket',
   intro: html`This marks the ticket as Resolved, unassigns everyone, and
   notifies the submitter.`,
-  fields: html`${textField('summary', 'What did you do to resolve this ticket?')}
+  // The summary is required only when the submitter will be emailed: a quiet
+  // resolve is backlog clearing, where there is nothing to tell them. The
+  // command enforces this; the script below keeps the browser's own
+  // validation in step, and the form still works without it.
+  fields: html`
+    <label class="stack">
+      <strong>What did you do to resolve this ticket?</strong>
+      <textarea
+        name="summary"
+        id="resolve-summary"
+        rows="3"
+        required
+      ></textarea>
+    </label>
     <label class="checkbox-row">
-      <input type="checkbox" name="quiet" />
+      <input type="checkbox" name="quiet" id="resolve-quiet" />
       <span
-        >Don't email the submitter (for clearing out tickets that were
-        already resolved outside the app)</span
+        >Don't email the submitter (for clearing out tickets that were already
+        resolved outside the app)</span
       >
-    </label>`,
+    </label>
+    <script>
+      (function () {
+        var quiet = document.getElementById('resolve-quiet');
+        var summary = document.getElementById('resolve-summary');
+        if (!quiet || !summary) return;
+        var sync = function () {
+          summary.required = !quiet.checked;
+        };
+        quiet.addEventListener('change', sync);
+        sync();
+      })();
+    </script>
+  `,
   submitLabel: 'Resolve ticket',
 });
 
