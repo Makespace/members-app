@@ -62,6 +62,7 @@ describe('add-equipment', () => {
     );
     framework.insertIntoSharedReadModel(
       constructEvent('EquipmentAdded')({
+        category: 'red',
         id,
         name,
         areaId,

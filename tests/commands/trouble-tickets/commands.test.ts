@@ -48,6 +48,7 @@ describe('trouble ticket commands', () => {
     );
     insert(
       constructEvent('EquipmentAdded')({
+        category: 'red',
         actor: systemActor(),
         id: equipmentId,
         name: 'Test Rig',

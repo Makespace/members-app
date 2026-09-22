@@ -1,5 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
+import {categoryDot} from '../../templates/equipment-category';
 import {
   commaHtml,
   html,
@@ -86,7 +87,14 @@ const renderEquipment = (ticket: TroubleTicketView) =>
             areaName => html`${sanitizeString(areaName)} <small>(area)</small>`
           )
         ),
-      name => html`${sanitizeString(name)}`
+      name =>
+        html`${pipe(
+            ticket.equipmentCategory,
+            O.match(
+              () => html``,
+              category => categoryDot(category)
+            )
+          )}${sanitizeString(name)}`
     )
   );
 

@@ -1835,4 +1835,33 @@ label img {
   .page-nav__about-freshness {
     text-align: center;
   }
+/* Equipment sticker-category badges (red / orange / green). */
+.eq-cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+}
+
+.eq-cat__dot {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  border: 1px solid color-mix(in oklch, black 25%, transparent);
+}
+
+.eq-cat--red .eq-cat__dot,
+.eq-cat__dot--standalone.eq-cat--red {
+  background: var(--red-color);
+}
+
+.eq-cat--orange .eq-cat__dot,
+.eq-cat__dot--standalone.eq-cat--orange {
+  background: #fa990e;
+}
+
+.eq-cat--green .eq-cat__dot,
+.eq-cat__dot--standalone.eq-cat--green {
+  background: var(--green-color);
 }

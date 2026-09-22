@@ -6,6 +6,7 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import * as RR from 'fp-ts/ReadonlyRecord';
 import {equipmentNameAliasesTable, equipmentTable} from '../state';
 import {MinimalEquipment} from '../return-types';
+import {EquipmentCategory} from '../../../types/equipment-category';
 import {UUID} from 'io-ts-types';
 import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
 import { TrainingSheetId } from '../../../types/training-sheet';
@@ -15,6 +16,7 @@ const transformRow = <
   R extends {
     id: string;
     areaId: string;
+    category: string;
     trainingSheetId: string | undefined | null;
     removedAt: Date | undefined | null;
   },
@@ -24,6 +26,7 @@ const transformRow = <
   ...row,
   id: row.id as UUID,
   areaId: row.areaId as UUID,
+  category: row.category as EquipmentCategory,
   trainingSheetId: O.fromNullable(row.trainingSheetId),
   removedAt: O.fromNullable(row.removedAt),
 });

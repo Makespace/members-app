@@ -14,6 +14,11 @@ type ChangeLogEntry = {
 
 export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
+    date: '2026-09-22',
+    headline:
+      'Orange and green equipment can now be listed in the app, not just training-managed red equipment',
+  },
+  {
     date: '2026-09-21',
     headline: 'Added the roadmap page',
   },

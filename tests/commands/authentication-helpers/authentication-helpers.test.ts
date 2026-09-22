@@ -56,7 +56,7 @@ describe('authentication helpers', () => {
         })),
 
         constructEvent('AreaCreated')({...area1, actor: arbitraryActor()}),
-        constructEvent('EquipmentAdded')({...equipment1, actor: arbitraryActor()}),
+        constructEvent('EquipmentAdded')({...equipment1, category: 'red', actor: arbitraryActor()}),
         constructEvent('OwnerAdded')({
             memberNumber: area1Owner.memberNumber,
             actor: arbitraryActor(),
@@ -74,7 +74,7 @@ describe('authentication helpers', () => {
         }),
 
         constructEvent('AreaCreated')({...area2, actor: arbitraryActor()}),
-        constructEvent('EquipmentAdded')({...equipment2, actor: arbitraryActor()}),
+        constructEvent('EquipmentAdded')({...equipment2, category: 'red', actor: arbitraryActor()}),
         constructEvent('OwnerAdded')({
             memberNumber: area2Owner.memberNumber,
             actor: arbitraryActor(),

@@ -176,6 +176,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       },
       equipment: {
         add: frameworkify(commands.equipment.add),
+        setCategory: frameworkify(commands.equipment.setCategory),
         trainingSheet: frameworkify(commands.equipment.trainingSheet),
         removeTrainingSheet: frameworkify(
           commands.equipment.removeTrainingSheet

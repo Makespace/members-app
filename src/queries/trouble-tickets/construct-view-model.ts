@@ -11,6 +11,7 @@ import {StatusCodes} from 'http-status-codes';
 import {SharedReadModel} from '../../read-models/shared-state';
 import {TroubleTicketChangeRow} from '../../read-models/shared-state/trouble-tickets/get';
 import {Dependencies} from '../../dependencies';
+import {EquipmentCategory} from '../../types/equipment-category';
 import {
   TroubleTicket,
   TroubleTicketStatus,
@@ -160,6 +161,7 @@ const buildChangeLog = (
 type TicketScope = {
   ticket: TroubleTicket;
   equipmentName: O.Option<string>;
+  equipmentCategory: O.Option<EquipmentCategory>;
   ticketArea: O.Option<{id: string; name: string}>;
   inMyOwnerArea: boolean;
 };
@@ -186,6 +188,8 @@ const toScope =
     return {
       ticket,
       equipmentName: equipment !== undefined ? O.some(equipment.name) : O.none,
+      equipmentCategory:
+        equipment !== undefined ? O.some(equipment.category) : O.none,
       ticketArea,
       inMyOwnerArea: pipe(
         ticketArea,
@@ -201,7 +205,8 @@ const toScope =
 const toView =
   (rm: SharedReadModel, viewer: Member) =>
   (scope: TicketScope): Omit<TroubleTicketView, 'changeLog'> => {
-    const {ticket, equipmentName, ticketArea, inMyOwnerArea} = scope;
+    const {ticket, equipmentName, equipmentCategory, ticketArea, inMyOwnerArea} =
+      scope;
     const myMemberNumbers = allMemberNumbers(viewer);
     const onMyTrainerMachine =
       ticket.equipmentId !== null &&
@@ -215,6 +220,7 @@ const toView =
       submittedMemberNumber: ticket.submittedMemberNumber,
       submittedEmail: ticket.submittedEmail,
       equipmentName,
+      equipmentCategory,
       areaName: pipe(
         ticketArea,
         O.map(area => area.name)
