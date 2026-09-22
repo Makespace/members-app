@@ -39,7 +39,7 @@ export const categoryChoices = (
   categories: ReadonlyArray<EquipmentCategory>,
   checked: EquipmentCategory
 ) => html`
-  <fieldset class="stack">
+  <fieldset class="stack eq-cat-choices">
     <legend><strong>Sticker category</strong></legend>
     ${joinHtml(
       categories.map(
