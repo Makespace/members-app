@@ -1824,3 +1824,15 @@ label img {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* In the mobile menu every control is full-width and centred; the About
+   button's stacked lines follow suit. */
+@media screen and (max-width: 48rem) {
+  .page-nav__action--about {
+    align-items: center;
+  }
+
+  .page-nav__about-freshness {
+    text-align: center;
+  }
+}
