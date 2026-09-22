@@ -1,4 +1,4 @@
-import {html, safe} from '../types/html';
+import {html, joinHtml, safe} from '../types/html';
 import {EquipmentCategory} from '../types/equipment-category';
 
 // The single home of what each sticker colour means in the app.
@@ -31,3 +31,33 @@ export const categoryDot = (category: EquipmentCategory) =>
 
 export const categoryDescription = (category: EquipmentCategory) =>
   safe(DESCRIPTIONS[category]);
+
+// Radio group for choosing a category on the add / bulk-add forms. Takes the
+// categories to offer (bulk-add omits red) and which one starts selected, so
+// the wording lives here rather than being retyped per form.
+export const categoryChoices = (
+  categories: ReadonlyArray<EquipmentCategory>,
+  checked: EquipmentCategory
+) => html`
+  <fieldset class="stack">
+    <legend><strong>Sticker category</strong></legend>
+    ${joinHtml(
+      categories.map(
+        category => html`
+          <label class="checkbox-row">
+            <input
+              type="radio"
+              name="category"
+              value="${safe(category)}"
+              ${category === checked ? safe('checked') : safe('')}
+            />
+            <span
+              >${categoryBadge(category)} —
+              ${categoryDescription(category)}</span
+            >
+          </label>
+        `
+      )
+    )}
+  </fieldset>
+`;

@@ -10,6 +10,7 @@ import {failureWithStatus} from '../../types/failure-with-status';
 import {StatusCodes} from 'http-status-codes';
 import {UUID} from 'io-ts-types';
 import {SharedReadModel} from '../../read-models/shared-state';
+import {categoryChoices} from '../../templates/equipment-category';
 
 type ViewModel = {
   areaId: UUID;
@@ -21,23 +22,9 @@ const renderForm = (viewModel: ViewModel) =>
     html`
       <h1>Add equipment to ${sanitizeString(viewModel.areaName)}</h1>
       <form action="/equipment/add" method="post">
-        <label for="name">What is this Equipment called</label>
+        <label for="name">Equipment name</label>
         <input type="text" name="name" id="name" />
-        <fieldset class="stack">
-          <legend><strong>Sticker category</strong></legend>
-          <label class="checkbox-row">
-            <input type="radio" name="category" value="red" checked />
-            <span>Red — training required</span>
-          </label>
-          <label class="checkbox-row">
-            <input type="radio" name="category" value="orange" />
-            <span>Orange</span>
-          </label>
-          <label class="checkbox-row">
-            <input type="radio" name="category" value="green" />
-            <span>Green</span>
-          </label>
-        </fieldset>
+        ${categoryChoices(['red', 'orange', 'green'], 'red')}
         <input type="hidden" name="id" value="${v4() as UUID}" />
         <input type="hidden" name="areaId" value="${viewModel.areaId}" />
         <button type="submit">Confirm and send</button>
