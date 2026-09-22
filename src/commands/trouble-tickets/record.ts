@@ -35,7 +35,16 @@ const process: Command<RecordTroubleTicket>['process'] = input =>
   TE.right(
     input.rm.troubleTickets.hasRowHash(input.command.rowHash)
       ? O.none
-      : O.some(constructEvent('TroubleTicketCreated')(input.command))
+      : O.some(
+          constructEvent('TroubleTicketCreated')({
+            ...input.command,
+            // Imported from the sheet: no picked equipment, no confirmation
+            // email.
+            source: 'sheet',
+            equipmentId: null,
+            machine: '',
+          })
+        )
   );
 
 export const record: Command<RecordTroubleTicket> = {

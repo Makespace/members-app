@@ -105,6 +105,7 @@ export const equipmentTable = defineTable(
       name TEXT,
       areaId TEXT,
       category TEXT NOT NULL DEFAULT 'red',
+      machineNamesJson TEXT,
       trainingSheetId TEXT,
       removedAt INTEGER,
       FOREIGN KEY(areaId) REFERENCES areas(id) ON DELETE CASCADE
@@ -119,6 +120,9 @@ export const equipmentTable = defineTable(
       .references(() => areasTable.id, { onDelete: 'cascade' }),
     // red / orange / green sticker category; only red has training machinery.
     category: text('category').notNull().default('red'),
+    // JSON array of unit names when this record stands for several identical
+    // machines (e.g. Printer 1, Printer 2); null/absent means a single one.
+    machineNamesJson: text('machineNamesJson'),
     trainingSheetId: text('trainingSheetId'),
     // When set, the equipment is obsolete: hidden from members browsing for
     // training, but kept (with its history) for owners/admins.

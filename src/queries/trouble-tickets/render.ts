@@ -124,7 +124,7 @@ const renderActions = (ticket: TroubleTicketView): Html => {
   const action = (verb: string, label: string, targetSlug: string) =>
     html`<a
       class="tt-badge tt-badge--${safe(targetSlug)} tt-action"
-      href="/trouble-tickets/${safe(verb)}?ticketId=${safe(ticket.id)}"
+      href="/trouble-tickets/${safe(verb)}?ticketId=${safe(ticket.id)}&next=/trouble-tickets/board"
       >${safe(label)}</a
     >`;
   // Clearing the backlog of tickets that were dealt with long ago outside the
@@ -133,7 +133,7 @@ const renderActions = (ticket: TroubleTicketView): Html => {
   const resolveSilently = html`
     <form
       class="tt-quiet-resolve"
-      action="/trouble-tickets/resolve"
+      action="/trouble-tickets/resolve?next=/trouble-tickets/board"
       method="post"
     >
       <input type="hidden" name="ticketId" value="${safe(ticket.id)}" />
@@ -398,12 +398,12 @@ const renderScopeAndPages = (vm: ViewModel) => {
               ? ''
               : safe('s')}
             in <strong>your areas</strong> ·
-            <a href="/trouble-tickets?show=all">show all areas</a>`
+            <a href="/trouble-tickets/board?show=all">show all areas</a>`
         : html`Showing <strong>all ${vm.totalInScope}</strong> ticket${vm.totalInScope ===
             1
               ? ''
               : safe('s')}
-            · <a href="/trouble-tickets">show just your areas</a>`}
+            · <a href="/trouble-tickets/board">show just your areas</a>`}
       ${vm.pageCount > 1
         ? html`· page ${vm.page} of ${vm.pageCount}
             ${vm.page > 1
@@ -424,7 +424,8 @@ const renderPageLink = (vm: ViewModel, page: number, label: string) => {
   ]
     .filter(Boolean)
     .join('&');
-  return html`<a href="/trouble-tickets${params ? safe('?' + params) : ''}"
+  return html`<a
+    href="/trouble-tickets/board${params ? safe('?' + params) : ''}"
     >${safe(label)}</a
   >`;
 };

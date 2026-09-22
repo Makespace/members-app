@@ -38,6 +38,9 @@ const area = (): DomainEvent =>
 
 const ticket = (submittedAtMs: number): DomainEvent =>
   constructEvent('TroubleTicketCreated')({
+        source: 'sheet',
+        equipmentId: null,
+        machine: '',
     id: faker.string.uuid() as UUID,
     rowHash: faker.string.alphanumeric(64),
     sheetId: 'sheet',

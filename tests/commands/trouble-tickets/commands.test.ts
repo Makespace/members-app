@@ -97,6 +97,9 @@ describe('trouble ticket commands', () => {
     // submittedEquipment matches the equipment name so it resolves to equipmentId.
     insert(
       constructEvent('TroubleTicketCreated')({
+        source: 'sheet',
+        equipmentId: null,
+        machine: '',
         actor: systemActor(),
         id: ticketId,
         rowHash: faker.string.hexadecimal({length: 64}),

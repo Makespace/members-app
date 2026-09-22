@@ -56,7 +56,7 @@ const troubleTicketActionForm = (
           <p>Ticket: <strong>${sanitizeString(viewModel.title)}</strong></p>
           <p>${config.intro}</p>
           <form
-            action="/trouble-tickets/${safe(config.verb)}"
+            action="/trouble-tickets/${safe(config.verb)}?next=/trouble-tickets/board"
             method="post"
             class="stack"
           >
@@ -68,7 +68,7 @@ const troubleTicketActionForm = (
             ${config.fields ?? html``}
             <div class="tt-actions">
               <button type="submit">${safe(config.submitLabel)}</button>
-              <a href="/trouble-tickets">Cancel</a>
+              <a href="/trouble-tickets/board">Cancel</a>
             </div>
           </form>
         </div>

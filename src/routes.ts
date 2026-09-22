@@ -71,6 +71,7 @@ export const initRoutes = (
     ...api('areas', 'remove-name-alias', commands.area.removeNameAlias),
     ...command('equipment', 'add', commands.equipment.add),
     ...api('equipment', 'set-category', commands.equipment.setCategory),
+    ...command('equipment', 'set-machines', commands.equipment.setMachines),
     // Bulk-add: one EquipmentAdded per pasted line. A bespoke POST because
     // the command pipeline commits exactly one event per request; the GET is
     // the standard form renderer.
@@ -373,7 +374,8 @@ export const initRoutes = (
     query('/debug/dump-shared-db/buffer', queries.dumpSharedDbAsBuffer),
 
     // Temporary location for POC - may move under individual equipments eventually.
-    query('/trouble-tickets', queries.troubleTickets),
+    query('/trouble-tickets', queries.troubleTicketsHome),
+    query('/trouble-tickets/board', queries.troubleTickets),
     // Site notification banners: admin management + member dismissal.
     query('/notifications', queries.notifications),
     // Imported management mailbox (read-only in this iteration).
@@ -385,6 +387,7 @@ export const initRoutes = (
     // Trouble ticket write side. create/set-equipment/edit-title are API-only
     // (bearer token); the status actions have confirmation pages.
     ...api('trouble-tickets', 'create', commands.troubleTickets.create),
+    ...command('trouble-tickets', 'raise', commands.troubleTickets.raise),
     ...command('trouble-tickets', 'assign', commands.troubleTickets.assign),
     ...command('trouble-tickets', 'resolve', commands.troubleTickets.resolve),
     ...command('trouble-tickets', 'park', commands.troubleTickets.park),
