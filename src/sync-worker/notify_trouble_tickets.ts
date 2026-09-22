@@ -156,6 +156,11 @@ export const notifyTroubleTicketChanges = async (
   events.sort((a, b) => a.event_index - b.event_index);
 
   for (const event of events) {
+    // A quiet resolve (backlog clearing) never notifies - skipped before the
+    // marker commit so it leaves no trace in the event log either.
+    if (event.type === 'TroubleTicketResolved' && event.quiet) {
+      continue;
+    }
     if (rm.troubleTickets.hasNotifiedForEvent(event.event_index)) {
       continue;
     }

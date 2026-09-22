@@ -343,10 +343,13 @@ const TroubleTicketAssigned = defineEvent('TroubleTicketAssigned', {
   trainerMemberNumber: t.number,
 });
 
-// The ticket is resolved, with a summary of what was done.
+// The ticket is resolved, with a summary of what was done. quiet suppresses
+// the notification email - for clearing backlogs of tickets that were
+// resolved long ago outside the app.
 const TroubleTicketResolved = defineEvent('TroubleTicketResolved', {
   ticketId: tt.UUID,
   summary: t.string,
+  quiet: tt.withFallback(t.boolean, false),
 });
 
 // The ticket is parked - can't be solved right now.
