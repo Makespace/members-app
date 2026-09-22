@@ -121,9 +121,13 @@ const renderActions = (ticket: TroubleTicketView): Html => {
     >`;
   const inProgress = STATUS_SLUG['In Progress'];
   switch (ticket.status) {
+    // Resolve is offered from every open status, not just In Progress, so a
+    // ticket that was actually dealt with long ago can be closed (quietly,
+    // via the form's checkbox) without first sending an 'in progress' email.
     case 'Todo':
       return html`<div class="tt-actions">
         ${action('assign', 'Mark In Progress', inProgress)}
+        ${action('resolve', 'Resolve', STATUS_SLUG.Resolved)}
       </div>`;
     case 'In Progress':
       return html`<div class="tt-actions">
@@ -138,6 +142,7 @@ const renderActions = (ticket: TroubleTicketView): Html => {
     case 'Parked':
       return html`<div class="tt-actions">
         ${action('assign', 'Mark In Progress', inProgress)}
+        ${action('resolve', 'Resolve', STATUS_SLUG.Resolved)}
       </div>`;
     case 'Resolved':
       return html``;
