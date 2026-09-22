@@ -15,7 +15,11 @@ import {
   TroubleTicket,
   TroubleTicketStatus,
 } from '../../types/trouble-ticket';
-import {Member, allMemberNumbers} from '../../read-models/shared-state/return-types';
+import {
+  Member,
+  MinimalEquipment,
+  allMemberNumbers,
+} from '../../read-models/shared-state/return-types';
 
 // Cards per page. The board serves the viewer's own areas by default, but a
 // super-user's "show all" can span the whole backlog - keep the DOM bounded.
@@ -147,34 +151,59 @@ const buildChangeLog = (
   return entries;
 };
 
+// The cheap per-ticket pass: everything scoping, sorting and the
+// unresolved-names panel need, resolved via two prebuilt maps rather than
+// per-ticket read-model queries (rm.equipment.get expands trainers and
+// trained members - far too heavy to run for every ticket on the board).
+type TicketScope = {
+  ticket: TroubleTicket;
+  equipmentName: O.Option<string>;
+  ticketArea: O.Option<{id: string; name: string}>;
+  inMyOwnerArea: boolean;
+};
+
+const toScope =
+  (
+    equipmentById: ReadonlyMap<string, MinimalEquipment>,
+    areaNameById: ReadonlyMap<string, string>,
+    viewer: Member
+  ) =>
+  (ticket: TroubleTicket): TicketScope => {
+    const equipment = ticket.equipmentId
+      ? equipmentById.get(ticket.equipmentId)
+      : undefined;
+    const areaId = equipment !== undefined ? equipment.areaId : ticket.areaId;
+    const areaName =
+      areaId !== null && areaId !== undefined
+        ? areaNameById.get(areaId)
+        : undefined;
+    const ticketArea =
+      areaId !== null && areaId !== undefined && areaName !== undefined
+        ? O.some({id: areaId as string, name: areaName})
+        : O.none;
+    return {
+      ticket,
+      equipmentName: equipment !== undefined ? O.some(equipment.name) : O.none,
+      ticketArea,
+      inMyOwnerArea: pipe(
+        ticketArea,
+        O.match(
+          () => false,
+          area => viewer.ownerOf.some(owned => owned.id === area.id)
+        )
+      ),
+    };
+  };
+
+// The full card view, built only for tickets on the visible page.
 const toView =
   (rm: SharedReadModel, viewer: Member) =>
-  (ticket: TroubleTicket): Omit<TroubleTicketView, 'changeLog'> => {
-    const equipment = ticket.equipmentId
-      ? rm.equipment.get(ticket.equipmentId)
-      : O.none;
-    const directArea = ticket.areaId ? rm.area.get(ticket.areaId) : O.none;
-    const ticketArea = pipe(
-      equipment,
-      O.map(e => ({id: e.area.id as string, name: e.area.name})),
-      O.alt(() =>
-        pipe(
-          directArea,
-          O.map(area => ({id: area.id as string, name: area.name}))
-        )
-      )
-    );
+  (scope: TicketScope): Omit<TroubleTicketView, 'changeLog'> => {
+    const {ticket, equipmentName, ticketArea, inMyOwnerArea} = scope;
     const myMemberNumbers = allMemberNumbers(viewer);
     const onMyTrainerMachine =
       ticket.equipmentId !== null &&
       viewer.trainerFor.some(t => t.equipment_id === ticket.equipmentId);
-    const inMyOwnerArea = pipe(
-      ticketArea,
-      O.match(
-        () => false,
-        area => viewer.ownerOf.some(owned => owned.id === area.id)
-      )
-    );
     return {
       id: ticket.id,
       title: ticket.title,
@@ -183,10 +212,7 @@ const toView =
       submittedName: ticket.submittedName,
       submittedMemberNumber: ticket.submittedMemberNumber,
       submittedEmail: ticket.submittedEmail,
-      equipmentName: pipe(
-        equipment,
-        O.map(e => e.name)
-      ),
+      equipmentName,
       areaName: pipe(
         ticketArea,
         O.map(area => area.name)
@@ -214,23 +240,20 @@ const toView =
 // Distinct raw form strings among tickets with no resolved equipment or area,
 // largest count first - each is a candidate for a name alias.
 const unresolvedEquipmentNames = (
-  tickets: ReadonlyArray<Omit<TroubleTicketView, 'changeLog'>>
+  scopes: ReadonlyArray<TicketScope>
 ): ReadonlyArray<{raw: string; count: number}> => {
   const counts = new Map<string, {raw: string; count: number}>();
-  for (const ticket of tickets) {
-    if (
-      O.isSome(ticket.equipmentName) ||
-      O.isSome(ticket.areaName) ||
-      !ticket.rawEquipment
-    ) {
+  for (const scope of scopes) {
+    const raw = scope.ticket.submittedEquipment;
+    if (O.isSome(scope.equipmentName) || O.isSome(scope.ticketArea) || !raw) {
       continue;
     }
-    const key = ticket.rawEquipment.trim().toLowerCase();
+    const key = raw.trim().toLowerCase();
     const existing = counts.get(key);
     if (existing) {
       existing.count++;
     } else {
-      counts.set(key, {raw: ticket.rawEquipment.trim(), count: 1});
+      counts.set(key, {raw: raw.trim(), count: 1});
     }
   }
   return [...counts.values()].sort((a, b) => b.count - a.count);
@@ -261,29 +284,39 @@ export const constructViewModel =
           )()
       ),
       TE.map(loggedInMember => {
+        // Two bulk queries replace two per-ticket queries across the whole
+        // backlog; per-ticket resolution is then a map hit.
+        const equipmentById = new Map(
+          rm.equipment.getAllMinimal().map(e => [e.id as string, e])
+        );
+        const areaNameById = new Map(
+          rm.area.getAllMinimal().map(area => [area.id as string, area.name])
+        );
         const all = rm.troubleTickets
           .getAll()
-          .map(toView(rm, loggedInMember));
+          .map(toScope(equipmentById, areaNameById, loggedInMember));
         // Default to the viewer's own areas; a viewer who owns none (e.g. a
         // super-user who isn't an owner) would see an empty page, so they get
         // everything. ?show=all is the explicit escape hatch for owners.
         const scopedToMine =
           !options.showAll && loggedInMember.ownerOf.length > 0;
         const scoped = scopedToMine
-          ? all.filter(ticket => ticket.inMyOwnerArea)
+          ? all.filter(scope => scope.inMyOwnerArea)
           : all;
         const sorted = [...scoped].sort(
           (a, b) =>
-            statusRank(a.status) - statusRank(b.status) ||
-            b.submittedAt.getTime() - a.submittedAt.getTime()
+            statusRank(a.ticket.status) - statusRank(b.ticket.status) ||
+            b.ticket.submittedAt.getTime() - a.ticket.submittedAt.getTime()
         );
         const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
         const page = Math.min(Math.max(1, options.page), pageCount);
-        const pageTickets = sorted.slice(
+        const pageScopes = sorted.slice(
           (page - 1) * PAGE_SIZE,
           page * PAGE_SIZE
         );
-        // Change logs only for the cards actually shown.
+        // Full card views (member-name lookups) and change logs only for the
+        // cards actually shown.
+        const pageTickets = pageScopes.map(toView(rm, loggedInMember));
         const changeRows = rm.troubleTickets.getChangeLog(
           pageTickets.map(ticket => ticket.id)
         );
