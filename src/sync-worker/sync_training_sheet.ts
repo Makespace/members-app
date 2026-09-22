@@ -24,7 +24,11 @@ import {
 import {formatValidationErrors} from 'io-ts-reporters';
 import {SyncWorkerDependencies} from './dependencies';
 
-const ROW_BATCH_SIZE = 50;
+// Rows per Sheets API call. Google's quota meters requests, not rows, and we
+// re-read whole sheets every cycle (tail-reading broke on mid-sheet inserts -
+// see issue #208) - so big batches are what keeps us inside the quota. The
+// payload stays small: only the mapped columns' formattedValues are fetched.
+const ROW_BATCH_SIZE = 1000;
 const FORM_RESPONSES_SHEET_REGEX = /^Form Responses [0-9]*/i;
 
 export type SyncTrainingSheetDependencies = Pick<
