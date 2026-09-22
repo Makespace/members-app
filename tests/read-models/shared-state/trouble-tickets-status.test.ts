@@ -111,6 +111,7 @@ describe('trouble ticket status workflow (read model)', () => {
     framework.insertIntoSharedReadModel(created);
     framework.insertIntoSharedReadModel(
       constructEvent('TroubleTicketResolved')({
+        quiet: false,
         actor: systemActor(),
         ticketId: created.id,
         summary: 'turned it off and on again',
@@ -215,6 +216,7 @@ describe('trouble ticket status workflow (read model)', () => {
     );
     framework.insertIntoSharedReadModel(
       constructEvent('TroubleTicketResolved')({
+        quiet: false,
         actor: systemActor(),
         ticketId: created.id,
         summary: 'done',

@@ -79,6 +79,7 @@ describe('notifyTroubleTicketChanges', () => {
   it('emails the submitter on a status change and records it', async () => {
     await commit(
       constructEvent('TroubleTicketResolved')({
+        quiet: false,
         actor: systemActor(),
         ticketId,
         summary: 'fixed it',
@@ -97,9 +98,29 @@ describe('notifyTroubleTicketChanges', () => {
     expect(notified).toHaveLength(1);
   });
 
+  it('a quiet resolve sends no email and records no marker', async () => {
+    await commit(
+      constructEvent('TroubleTicketResolved')({
+        quiet: true,
+        actor: systemActor(),
+        ticketId,
+        summary: 'was already fixed months ago',
+      })
+    );
+
+    await notifyTroubleTicketChanges(deps);
+
+    expect(sentEmails).toHaveLength(0);
+    const notified = await framework.getAllEventsByType(
+      'TroubleTicketNotificationSent'
+    );
+    expect(notified).toHaveLength(0);
+  });
+
   it('does not re-notify on a second run', async () => {
     await commit(
       constructEvent('TroubleTicketResolved')({
+        quiet: false,
         actor: systemActor(),
         ticketId,
         summary: 'fixed it',

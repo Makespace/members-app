@@ -9,9 +9,18 @@ import {Command} from '../command';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {isTicketOwner} from './authorization';
 
+// HTML checkboxes submit 'on' when ticked and nothing when not.
+const checkbox = new t.Type<boolean, unknown, unknown>(
+  'checkbox',
+  (u): u is boolean => typeof u === 'boolean',
+  u => t.success(u === 'on' || u === 'true' || u === true),
+  t.identity
+);
+
 const codec = t.strict({
   ticketId: tt.UUID,
   summary: tt.NonEmptyString,
+  quiet: checkbox,
 });
 
 type ResolveTroubleTicket = t.TypeOf<typeof codec>;
@@ -31,6 +40,7 @@ const process: Command<ResolveTroubleTicket>['process'] = input =>
         constructEvent('TroubleTicketResolved')({
           ticketId: input.command.ticketId,
           summary: input.command.summary,
+          quiet: input.command.quiet,
           actor: input.command.actor,
         })
       )

@@ -201,12 +201,20 @@ describe('trouble ticket commands', () => {
       expect(E.isLeft(resolve.decode({ticketId, summary: ''}))).toBe(true);
     });
 
+    it('decodes the quiet checkbox: on means true, absent means false', () => {
+      const on = resolve.decode({ticketId, summary: 'done', quiet: 'on'});
+      const absent = resolve.decode({ticketId, summary: 'done'});
+      expect(E.isRight(on) && on.right.quiet).toBe(true);
+      expect(E.isRight(absent) && absent.right.quiet === false).toBe(true);
+    });
+
     it('emits TroubleTicketResolved', async () => {
       const result = await getTaskEitherRightOrFail(
         resolve.process({
           command: {
             ticketId,
             summary: 'fixed it' as NonEmptyString,
+            quiet: false,
             actor: userActorWithMember(TRAINER),
           },
           rm: rm(),
