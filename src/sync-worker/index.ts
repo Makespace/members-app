@@ -94,14 +94,23 @@ async function syncExternDataPeriodically(
         deps.conf.GMAIL_IMPORT_MAILBOX !== '' &&
         lastGmailSyncAgoMs > GMAIL_SYNC_INTERVAL_MS
       ) {
-        await pullGmailData(
-          deps.logger,
-          deps.extDB,
-          gmailClientFactory,
-          deps.conf.GMAIL_IMPORT_MAILBOX,
-          deps.conf.GMAIL_FILTER_TO_ADDRESS
-        );
-        lastGmailSync = Date.now();
+        // Contained: a broken Gmail credential must neither hot-loop (the
+        // loop's pause is skipped when an error escapes to the outer catch)
+        // nor starve the notify/Recurly work later in the loop body. Failures
+        // wait a full beat before retrying, like successes.
+        try {
+          await pullGmailData(
+            deps.logger,
+            deps.extDB,
+            gmailClientFactory,
+            deps.conf.GMAIL_IMPORT_MAILBOX,
+            deps.conf.GMAIL_FILTER_TO_ADDRESS
+          );
+        } catch (err) {
+          deps.logger.error(err, 'Gmail sync failed');
+        } finally {
+          lastGmailSync = Date.now();
+        }
       }
 
       if (lastTroubleTicketNotifyAgoMs > TROUBLE_TICKET_NOTIFY_INTERVAL_MS) {
