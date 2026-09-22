@@ -1886,31 +1886,39 @@ label img {
   font-weight: 700;
 }
 
+/* Shape carries the category as well as colour, so the three are told apart
+   without relying on colour vision: triangle = red, square = orange,
+   circle = green. Each category sets its own shape and colour together. */
 .eq-cat__dot {
   display: inline-block;
   width: 0.75rem;
   height: 0.75rem;
-  border-radius: 50%;
-  border: 1px solid color-mix(in oklch, black 25%, transparent);
 }
 
-/* Standing alone before an equipment name, the dot needs its own gap - there
-   is no flex container to space it. */
+/* Standing alone before an equipment name, the marker needs its own gap -
+   there is no flex container to space it. */
 .eq-cat__dot--standalone {
   margin-right: 0.45rem;
 }
 
+/* A clipped triangle carries no border: a border would be clipped with it. */
 .eq-cat--red .eq-cat__dot,
 .eq-cat__dot--standalone.eq-cat--red {
+  width: 0.85rem;
   background: var(--red-color);
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
 }
 
 .eq-cat--orange .eq-cat__dot,
 .eq-cat__dot--standalone.eq-cat--orange {
   background: #fa990e;
+  border: 1px solid color-mix(in oklch, black 25%, transparent);
+  border-radius: 2px;
 }
 
 .eq-cat--green .eq-cat__dot,
 .eq-cat__dot--standalone.eq-cat--green {
   background: var(--green-color);
+  border: 1px solid color-mix(in oklch, black 25%, transparent);
+  border-radius: 50%;
 }
