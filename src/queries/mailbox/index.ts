@@ -18,9 +18,10 @@ import {
   FailureWithStatus,
 } from '../../types/failure-with-status';
 import {
-  getInboxMessageById,
-  getInboxMessages,
+  getInboxThread,
+  getInboxThreads,
   InboxMessage,
+  InboxThread,
 } from '../../read-models/external-state/gmail-inbox';
 import {displayDate} from '../../templates/display-date';
 
@@ -55,37 +56,52 @@ const mustBeManagement =
       TE.map(() => undefined)
     );
 
-const renderRow = (message: InboxMessage) => html`
+// Gmail's own subjects carry the Re: chain; the thread's own subject reads
+// better without it.
+const threadSubject = (subject: string | null) =>
+  (subject ?? '(no subject)').replace(/^((re|fwd|fw)\s*:\s*)+/i, '').trim() ||
+  '(no subject)';
+
+const renderRow = (thread: InboxThread) => html`
   <tr>
-    <td>${displayDate(DateTime.fromJSDate(message.receivedAt))}</td>
-    <td>${sanitizeString(message.fromAddress ?? 'Unknown sender')}</td>
+    <td>${displayDate(DateTime.fromJSDate(thread.latest.receivedAt))}</td>
     <td>
-      <a href="/mailbox/${safe(encodeURIComponent(message.gmailMessageId))}"
-        >${sanitizeString(message.subject ?? '(no subject)')}</a
-      >
+      ${sanitizeString(
+        thread.senders.length > 0
+          ? thread.senders.join(', ')
+          : 'Unknown sender'
+      )}
     </td>
-    <td>${sanitizeString(message.snippet ?? '')}</td>
+    <td>
+      <a href="/mailbox/${safe(encodeURIComponent(thread.gmailThreadId))}"
+        >${sanitizeString(threadSubject(thread.latest.subject))}</a
+      >
+      ${thread.messageCount > 1
+        ? html`<span class="mailbox__count"
+            >${safe(String(thread.messageCount))} messages</span
+          >`
+        : html``}
+    </td>
+    <td>${sanitizeString(thread.latest.snippet ?? '')}</td>
   </tr>
 `;
 
 const renderList = (
   mailbox: string,
   filterToAddress: string,
-  messages: ReadonlyArray<InboxMessage>
+  threads: ReadonlyArray<InboxThread>
 ): Html => html`
   <div class="stack">
     <h1>Mailbox</h1>
     <p>
-      The most recent ${messages.length} message${messages.length === 1
-        ? ''
-        : safe('s')}
-      sent to
+      The most recent ${threads.length}
+      conversation${threads.length === 1 ? '' : safe('s')} sent to
       <strong>
         ${sanitizeString(filterToAddress !== '' ? filterToAddress : mailbox)}
       </strong>. The import runs every few minutes; replies and creating
       tickets from emails are coming next.
     </p>
-    ${messages.length === 0
+    ${threads.length === 0
       ? html`<p>
           Nothing imported yet. If this persists, check the Gmail credentials
           and the sync worker logs.
@@ -94,29 +110,26 @@ const renderList = (
           <table>
             <thead>
               <tr>
-                <th>Received</th>
-                <th>From</th>
+                <th>Last reply</th>
+                <th>Who</th>
                 <th>Subject</th>
                 <th>Preview</th>
               </tr>
             </thead>
             <tbody>
-              ${joinHtml(messages.map(renderRow))}
+              ${joinHtml(threads.map(renderRow))}
             </tbody>
           </table>
         `}
   </div>
 `;
 
-const renderDetail = (message: InboxMessage): Html => html`
-  <div class="stack">
-    <p><a href="/mailbox">← Back to the mailbox</a></p>
-    <h1>${sanitizeString(message.subject ?? '(no subject)')}</h1>
-    <p>
-      <strong>From:</strong>
-      ${sanitizeString(message.fromAddress ?? 'Unknown sender')}<br />
+const renderMessage = (message: InboxMessage): Html => html`
+  <article class="mailbox__message stack">
+    <p class="mailbox__meta">
+      <strong>${sanitizeString(message.fromAddress ?? 'Unknown sender')}</strong
+      ><br />
       <strong>To:</strong> ${sanitizeString(message.toAddresses ?? '—')}<br />
-      <strong>Received:</strong>
       ${displayDate(DateTime.fromJSDate(message.receivedAt))}
     </p>
     ${message.attachments.length > 0
@@ -141,6 +154,19 @@ const renderDetail = (message: InboxMessage): Html => html`
             - the text part covers almost all real email.)</em
           >`}
     </div>
+  </article>
+`;
+
+// The whole conversation, oldest first, so it reads top to bottom.
+const renderDetail = (messages: ReadonlyArray<InboxMessage>): Html => html`
+  <div class="stack">
+    <p><a href="/mailbox">← Back to the mailbox</a></p>
+    <h1>${sanitizeString(threadSubject(messages[0].subject))}</h1>
+    <p>
+      ${safe(String(messages.length))}
+      message${messages.length === 1 ? '' : safe('s')} in this conversation.
+    </p>
+    ${joinHtml(messages.map(renderMessage))}
   </div>
 `;
 
@@ -151,34 +177,37 @@ export const mailbox: Query = deps => (user, params) =>
       params.id === undefined
         ? pipe(
             TE.tryCatch(
-              () => getInboxMessages(deps.extDB, INBOX_PAGE_SIZE),
+              () => getInboxThreads(deps.extDB, INBOX_PAGE_SIZE),
               () =>
                 failureWithStatus(
                   'Failed to read the mailbox cache',
                   StatusCodes.INTERNAL_SERVER_ERROR
                 )()
             ),
-            TE.map(messages =>
+            TE.map(threads =>
               renderList(
                 deps.conf.GMAIL_IMPORT_MAILBOX,
                 deps.conf.GMAIL_FILTER_TO_ADDRESS,
-                messages
+                threads
               )
             )
           )
         : pipe(
             TE.tryCatch(
-              () => getInboxMessageById(deps.extDB, params.id),
+              () => getInboxThread(deps.extDB, params.id),
               () =>
                 failureWithStatus(
                   'Failed to read the mailbox cache',
                   StatusCodes.INTERNAL_SERVER_ERROR
                 )()
             ),
-            TE.chain(
-              TE.fromNullable(
-                failureWithStatus('No such message', StatusCodes.NOT_FOUND)()
-              )
+            TE.filterOrElse(
+              messages => messages.length > 0,
+              () =>
+                failureWithStatus(
+                  'No such conversation',
+                  StatusCodes.NOT_FOUND
+                )()
             ),
             TE.map(renderDetail)
           )
