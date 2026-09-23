@@ -18,7 +18,10 @@ const TRAINING_SUMMARY_EMAIL_CHECK_INTERVAL_MS = 20 * 60 * 1000;
 const EQUIPMENT_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 const TROUBLE_TICKET_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 const TROUBLE_TICKET_NOTIFY_INTERVAL_MS = 30 * 1000;
-const GMAIL_SYNC_INTERVAL_MS = 5 * 60 * 1000;
+// Gmail's history API is cheap (a couple of quota units per call against a
+// per-user budget of 250 per second), and managers want the mailbox to feel
+// live, so this beats far more often than the sheet syncs.
+const GMAIL_SYNC_INTERVAL_MS = 60 * 1000;
 const RECURLY_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 
 async function syncExternDataPeriodically(
