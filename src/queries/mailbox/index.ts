@@ -138,6 +138,7 @@ export const mailboxListForTest = (senders: ReadonlyArray<string>): string =>
     latest: {
       gmailMessageId: 'm1',
       gmailThreadId: 't1',
+      rfc822MessageId: '<m1@test>',
       fromAddress: senders[0] ?? null,
       toAddresses: null,
       subject: 'Subject',
@@ -338,38 +339,53 @@ const renderDetail = (
           // The frames hold inert markup - no scripts run inside them - so
           // the page measures them from outside and sizes each to its
           // content, rather than leaving a scrolling box in the flow.
+          // A frame measured before its document exists reports zero, which
+          // would collapse the message to nothing. Never shrink below a
+          // readable minimum, and treat zero as "not ready yet".
+          var MINIMUM = 32;
           function fit(frame) {
             try {
               var doc = frame.contentDocument;
-              if (!doc || !doc.body) return;
+              if (!doc || !doc.body) return false;
+              var previous = frame.style.height;
               frame.style.height = '0px';
-              frame.style.height =
-                Math.max(
-                  doc.body.scrollHeight,
-                  doc.documentElement.scrollHeight
-                ) + 'px';
+              var measured = Math.max(
+                doc.body.scrollHeight,
+                doc.documentElement.scrollHeight
+              );
+              if (measured <= 0) {
+                frame.style.height = previous || MINIMUM + 'px';
+                return false;
+              }
+              frame.style.height = Math.max(measured, MINIMUM) + 'px';
+              return true;
             } catch (e) {
-              // Measuring failed; the stylesheet's height keeps it usable.
+              return false;
             }
           }
           function fitAll() {
             var frames = document.querySelectorAll('[data-email-frame]');
-            Array.prototype.forEach.call(frames, fit);
+            var allDone = true;
+            Array.prototype.forEach.call(frames, function (frame) {
+              if (!fit(frame)) allDone = false;
+            });
+            return allDone;
           }
           var frames = document.querySelectorAll('[data-email-frame]');
           Array.prototype.forEach.call(frames, function (frame) {
-            if (frame.contentDocument && frame.contentDocument.readyState === 'complete') {
-              fit(frame);
-            }
             frame.addEventListener('load', function () {
               fit(frame);
             });
           });
-          // Images arriving, fonts settling and the window changing width all
-          // change the height after first paint.
+          // Keep trying briefly: srcdoc documents are not always ready when
+          // the load event fires, and images change the height after it.
+          var attempts = 0;
+          var timer = setInterval(function () {
+            attempts++;
+            if (fitAll() || attempts > 20) clearInterval(timer);
+          }, 150);
           window.addEventListener('resize', fitAll);
           window.addEventListener('load', fitAll);
-          setTimeout(fitAll, 250);
           // Opening the quoted history reveals frames measured while hidden.
           document.addEventListener('toggle', fitAll, true);
         })();

@@ -20,12 +20,14 @@ describe('grouping the mailbox into conversations', () => {
     from: string;
     subject: string;
     receivedAt: string;
+    // The sender's own id, which every group forwarding the message keeps.
+    rfc822?: string;
   }) => {
     await extDB.insert(gmailMessageTable).values({
       gmail_message_id: input.id,
       gmail_thread_id: input.threadId,
       mailbox: 'tickets@makespace.org',
-      rfc822_message_id: `<${input.id}@test>`,
+      rfc822_message_id: input.rfc822 ?? `<${input.id}@test>`,
       from_address: input.from,
       to_addresses: 'management@makespace.org',
       subject: input.subject,
@@ -140,6 +142,27 @@ describe('grouping the mailbox into conversations', () => {
       'hector@example.com',
     ]);
     expect(single.messageCount).toBe(1);
+  });
+
+  // tickets@ is subscribed to several groups, so a message sent to more than
+  // one arrives more than once: same Message-ID, different Gmail ids.
+  it('shows one copy of a message delivered by two groups', async () => {
+    await addMessage({
+      id: 'm1-via-admin',
+      threadId: 't-other',
+      from: 'tara@example.com',
+      subject: '[admin] Building wifi down',
+      receivedAt: '2026-09-23T09:42:00.000Z',
+      rfc822: '<m1@test>',
+    });
+
+    const threads = await getInboxThreads(extDB, 50);
+    const wifi = threads.find(thread =>
+      thread.latest.subject?.toLowerCase().includes('wifi')
+    );
+
+    // m1 and m1-via-admin are the same message; the reply makes two.
+    expect(wifi?.messageCount).toBe(2);
   });
 
   it('reads a whole conversation oldest first, by its earliest message', async () => {
