@@ -22,9 +22,20 @@ describe('rendering email HTML', () => {
       expect(sandbox).not.toContain('allow-scripts');
     });
 
-    it('cannot reach the app: no same-origin access', () => {
+    // allow-same-origin is granted so the page can measure the rendered
+    // height from outside and size the frame to its content. It is safe only
+    // because allow-scripts is withheld - the message is inert markup, so
+    // there is no code inside the frame to use the origin. The two together
+    // would be the dangerous combination, so this guards the pairing.
+    it('never pairs same-origin access with the ability to run scripts', () => {
       const sandbox = frame?.getAttribute('sandbox') ?? '';
-      expect(sandbox).not.toContain('allow-same-origin');
+      expect(
+        sandbox.includes('allow-same-origin') && sandbox.includes('allow-scripts')
+      ).toBe(false);
+    });
+
+    it('is measurable by the page, so it can be sized to its content', () => {
+      expect(frame?.hasAttribute('data-email-frame')).toBe(true);
     });
 
     it('lets links open in a new tab', () => {

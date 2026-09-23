@@ -2068,14 +2068,15 @@ label img {
   color: var(--grey-color);
 }
 
-/* Email HTML renders in a sandboxed frame; without scripts it cannot size
-   itself, so it gets a generous fixed height and scrolls. */
+/* Email HTML renders in a sandboxed frame, sized to its content by the page
+   so it sits in the flow like any other block rather than scrolling. The
+   height here only applies until that measurement runs. */
 .email-html {
+  display: block;
   width: 100%;
-  min-height: 24rem;
-  border: 1px solid var(--border-color);
-  background: white;
-  resize: vertical;
+  height: 8rem;
+  border: 0;
+  background: transparent;
 }
 
 .mailbox__view-options small {
