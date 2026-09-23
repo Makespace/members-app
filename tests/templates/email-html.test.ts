@@ -66,6 +66,14 @@ describe('rendering email HTML', () => {
     });
   });
 
+  describe('looking like part of the site', () => {
+    it("uses the site's typeface and link colour as the defaults", () => {
+      const srcdoc = srcdocOf(renderEmailHtml(message, false));
+      expect(srcdoc).toContain('Optima,Candara');
+      expect(srcdoc).toContain('color:#1d70b8');
+    });
+  });
+
   describe('the message itself', () => {
     it("keeps the sender's formatting", () => {
       expect(srcdocOf(renderEmailHtml(message, false))).toContain(
