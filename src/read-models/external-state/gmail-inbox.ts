@@ -11,6 +11,8 @@ export type InboxMessage = {
   receivedAt: Date;
   snippet: string | null;
   bodyText: string | null;
+  // The HTML alternative, when the sender provided one.
+  bodyHtml: string | null;
   attachments: ReadonlyArray<{filename: string; size: number}>;
 };
 
@@ -25,6 +27,7 @@ const transformRow = (row: Row): InboxMessage => ({
   receivedAt: row.received_at,
   snippet: row.snippet,
   bodyText: row.body_text,
+  bodyHtml: row.body_html,
   attachments: JSON.parse(row.attachments_json) as ReadonlyArray<{
     filename: string;
     size: number;

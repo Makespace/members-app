@@ -3,6 +3,11 @@ import * as TE from 'fp-ts/TaskEither';
 import {StatusCodes} from 'http-status-codes';
 import {DateTime} from 'luxon';
 import {Query} from '../query';
+import {renderEmailHtml} from '../../templates/email-html';
+import {
+  splitQuotedHtml,
+  splitQuotedText,
+} from '../../templates/quoted-reply';
 import {Dependencies} from '../../dependencies';
 import {User} from '../../types';
 import {
@@ -124,7 +129,68 @@ const renderList = (
   </div>
 `;
 
-const renderMessage = (message: InboxMessage): Html => html`
+// How the body of one message is shown: its HTML when there is any, with
+// remote images blocked unless asked for, otherwise the plain-text twin that
+// almost every real email carries.
+const asLines = (text: string) =>
+  joinHtml(
+    text.split('\n').map(line => html`${sanitizeString(line)}<br />`)
+  );
+
+// Folded away rather than thrown away: the history is one click from view.
+const quotedHistory = (contents: Html) => html`
+  <details class="email-quoted">
+    <summary>Show quoted history</summary>
+    ${contents}
+  </details>
+`;
+
+const renderBody = (
+  message: InboxMessage,
+  options: {preferText: boolean; showImages: boolean}
+): Html => {
+  if (message.bodyHtml !== null && !options.preferText) {
+    const {reply, quoted} = splitQuotedHtml(message.bodyHtml);
+    return html`
+      ${renderEmailHtml(reply, options.showImages)}
+      ${quoted === ''
+        ? html``
+        : quotedHistory(renderEmailHtml(quoted, options.showImages))}
+    `;
+  }
+  if (message.bodyText !== null) {
+    const {reply, quoted} = splitQuotedText(message.bodyText);
+    return html`
+      <div class="email-body">${asLines(reply)}</div>
+      ${quoted === ''
+        ? html``
+        : quotedHistory(html`<div class="email-body">${asLines(quoted)}</div>`)}
+    `;
+  }
+  return html`<div class="email-body">
+    <em>This message has no readable body.</em>
+  </div>`;
+};
+
+const viewOption = (
+  conversationId: string,
+  label: string,
+  query: string,
+  active: boolean
+) =>
+  active
+    ? html`<strong>${safe(label)}</strong>`
+    : html`<a
+        href="/mailbox/${safe(encodeURIComponent(conversationId))}${safe(
+          query
+        )}"
+        >${safe(label)}</a
+      >`;
+
+const renderMessage = (
+  message: InboxMessage,
+  options: {preferText: boolean; showImages: boolean}
+): Html => html`
   <article class="mailbox__message stack">
     <p class="mailbox__meta">
       <strong>${sanitizeString(message.fromAddress ?? 'Unknown sender')}</strong
@@ -142,35 +208,54 @@ const renderMessage = (message: InboxMessage): Html => html`
           )}
         </p>`
       : ''}
-    <div class="email-body">
-      ${message.bodyText
-        ? joinHtml(
-            message.bodyText
-              .split('\n')
-              .map(line => html`${sanitizeString(line)}<br />`)
-          )
-        : html`<em
-            >No plain-text body. (Rich HTML rendering is deliberately not done
-            - the text part covers almost all real email.)</em
-          >`}
-    </div>
+    ${renderBody(message, options)}
   </article>
 `;
 
 // The whole conversation, oldest first, so it reads top to bottom.
-const renderDetail = (messages: ReadonlyArray<InboxMessage>): Html => html`
-  <div class="stack">
-    <p><a href="/mailbox">← Back to the mailbox</a></p>
-    <h1>${sanitizeString(threadSubject(messages[0].subject))}</h1>
-    <p>
-      ${safe(String(messages.length))}
-      message${messages.length === 1 ? '' : safe('s')} in this conversation.
-    </p>
-    ${joinHtml(messages.map(renderMessage))}
-  </div>
-`;
+const renderDetail = (
+  messages: ReadonlyArray<InboxMessage>,
+  options: {preferText: boolean; showImages: boolean}
+): Html => {
+  const conversationId = messages[0].gmailMessageId;
+  const anyHtml = messages.some(message => message.bodyHtml !== null);
+  return html`
+    <div class="stack">
+      <p><a href="/mailbox">← Back to the mailbox</a></p>
+      <h1>${sanitizeString(threadSubject(messages[0].subject))}</h1>
+      <p>
+        ${safe(String(messages.length))}
+        message${messages.length === 1 ? '' : safe('s')} in this conversation.
+      </p>
+      ${anyHtml
+        ? html`<p class="mailbox__view-options">
+            ${viewOption(
+              conversationId,
+              'Formatted',
+              '',
+              !options.preferText && !options.showImages
+            )}
+            ·
+            ${viewOption(
+              conversationId,
+              'Show images',
+              '?images=1',
+              !options.preferText && options.showImages
+            )}
+            ·
+            ${viewOption(conversationId, 'Plain text', '?text=1', options.preferText)}
+            <small
+              >Images in email are often tracking pixels, so they stay blocked
+              until you ask for them.</small
+            >
+          </p>`
+        : html``}
+      ${joinHtml(messages.map(message => renderMessage(message, options)))}
+    </div>
+  `;
+};
 
-export const mailbox: Query = deps => (user, params) =>
+export const mailbox: Query = deps => (user, params, queryParams) =>
   pipe(
     mustBeManagement(deps)(user),
     TE.chain(() =>
@@ -209,7 +294,12 @@ export const mailbox: Query = deps => (user, params) =>
                   StatusCodes.NOT_FOUND
                 )()
             ),
-            TE.map(renderDetail)
+            TE.map(messages =>
+              renderDetail(messages, {
+                preferText: queryParams.text === '1',
+                showImages: queryParams.images === '1',
+              })
+            )
           )
     ),
     TE.map(toLoggedInContent(safe('Mailbox')))
