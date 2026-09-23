@@ -2147,3 +2147,10 @@ label img {
   color: var(--text-color);
   white-space: nowrap;
 }
+
+/* An active filter chip: the board is showing only this, and clicking it
+   again clears the filter. */
+.tt-filter__label--active {
+  outline: 3px solid var(--focus-color);
+  outline-offset: 1px;
+}

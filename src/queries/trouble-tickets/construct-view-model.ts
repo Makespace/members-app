@@ -168,6 +168,8 @@ type TicketScope = {
   equipmentCategory: O.Option<EquipmentCategory>;
   ticketArea: O.Option<{id: string; name: string}>;
   inMyOwnerArea: boolean;
+  assignedToMe: boolean;
+  onMyTrainerMachine: boolean;
 };
 
 const toScope =
@@ -202,6 +204,12 @@ const toScope =
           area => viewer.ownerOf.some(owned => owned.id === area.id)
         )
       ),
+      assignedToMe: ticket.assignedMemberNumbers.some(number =>
+        allMemberNumbers(viewer).includes(number)
+      ),
+      onMyTrainerMachine:
+        ticket.equipmentId !== null &&
+        viewer.trainerFor.some(t => t.equipment_id === ticket.equipmentId),
     };
   };
 
@@ -209,12 +217,15 @@ const toScope =
 const toView =
   (rm: SharedReadModel, viewer: Member) =>
   (scope: TicketScope): Omit<TroubleTicketView, 'changeLog'> => {
-    const {ticket, equipmentName, equipmentCategory, ticketArea, inMyOwnerArea} =
-      scope;
-    const myMemberNumbers = allMemberNumbers(viewer);
-    const onMyTrainerMachine =
-      ticket.equipmentId !== null &&
-      viewer.trainerFor.some(t => t.equipment_id === ticket.equipmentId);
+    const {
+      ticket,
+      equipmentName,
+      equipmentCategory,
+      ticketArea,
+      inMyOwnerArea,
+      assignedToMe,
+      onMyTrainerMachine,
+    } = scope;
     return {
       id: ticket.id,
       title: ticket.title,
@@ -238,9 +249,7 @@ const toView =
           O.chain(member => member.name)
         ),
       })),
-      assignedToMe: ticket.assignedMemberNumbers.some(n =>
-        myMemberNumbers.includes(n)
-      ),
+      assignedToMe,
       inMyOwnerArea,
       onMyTrainerMachine,
       // All owners are maintainers: any owner of the equipment's area may work
@@ -274,8 +283,46 @@ const unresolvedEquipmentNames = (
 const statusRank = (status: TroubleTicketStatus) =>
   STATUS_ORDER.indexOf(status);
 
+// Counts describe the whole scope, not the page, so a filter chip says how
+// many tickets it would show rather than how many happen to be on screen.
+const countBy = <T extends string>(
+  scopes: ReadonlyArray<TicketScope>,
+  keys: ReadonlyArray<T>,
+  test: (scope: TicketScope, key: T) => boolean
+): Record<T, number> =>
+  keys.reduce(
+    (counts, key) => {
+      counts[key] = scopes.filter(scope => test(scope, key)).length;
+      return counts;
+    },
+    {} as Record<T, number>
+  );
+
+const SCOPE_KEYS = ['mine', 'my-area', 'my-machines'] as const;
+
+const matchesScope = (scope: TicketScope, key: (typeof SCOPE_KEYS)[number]) => {
+  switch (key) {
+    case 'mine':
+      return scope.assignedToMe;
+    case 'my-area':
+      return scope.inMyOwnerArea;
+    case 'my-machines':
+      return scope.onMyTrainerMachine;
+  }
+};
+
 export const constructViewModel =
-  (deps: Dependencies, options: {showAll: boolean; page: number}) =>
+  (
+    deps: Dependencies,
+    options: {
+      showAll: boolean;
+      page: number;
+      // Filters applied before paging, so the page is a page of the filtered
+      // set rather than a filtered page.
+      status: O.Option<TroubleTicketStatus>;
+      only: O.Option<(typeof SCOPE_KEYS)[number]>;
+    }
+  ) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> => {
     const rm = deps.sharedReadModel;
     return pipe(
@@ -315,7 +362,36 @@ export const constructViewModel =
         const scoped = scopedToMine
           ? all.filter(scope => scope.inMyOwnerArea)
           : all;
-        const sorted = [...scoped].sort(
+        // Counted before the filters narrow anything, so each chip reports
+        // what it would show.
+        const statusCounts = countBy(
+          scoped,
+          STATUS_ORDER,
+          (scope, status) => scope.ticket.status === status
+        );
+        const scopeCounts = countBy(scoped, SCOPE_KEYS, matchesScope);
+
+        const filtered = scoped
+          .filter(scope =>
+            pipe(
+              options.status,
+              O.match(
+                () => true,
+                status => scope.ticket.status === status
+              )
+            )
+          )
+          .filter(scope =>
+            pipe(
+              options.only,
+              O.match(
+                () => true,
+                key => matchesScope(scope, key)
+              )
+            )
+          );
+
+        const sorted = [...filtered].sort(
           (a, b) =>
             statusRank(a.ticket.status) - statusRank(b.ticket.status) ||
             b.ticket.submittedAt.getTime() - a.ticket.submittedAt.getTime()
@@ -345,6 +421,10 @@ export const constructViewModel =
           })),
           scopedToMine,
           totalInScope: sorted.length,
+          statusCounts,
+          scopeCounts,
+          activeStatus: options.status,
+          activeScope: options.only,
           page,
           pageCount,
           unresolvedEquipmentNames: unresolvedEquipmentNames(all),

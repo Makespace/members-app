@@ -1,3 +1,4 @@
+import * as O from 'fp-ts/Option';
 import * as E from 'fp-ts/Either';
 import {pipe} from 'fp-ts/lib/function';
 import {faker} from '@faker-js/faker';
@@ -38,7 +39,12 @@ describe('construct-view-model', () => {
 
     const result = await pipe(
       loggedInUser,
-      constructViewModel(framework.depsForCommands, {showAll: true, page: 1}),
+      constructViewModel(framework.depsForCommands, {
+        showAll: true,
+        page: 1,
+        status: O.none,
+        only: O.none,
+      }),
       T.map(getRightOrFail)
     )();
     expect(result).toBeDefined();
@@ -57,7 +63,12 @@ describe('construct-view-model', () => {
 
     const result = await pipe(
       loggedInUser,
-      constructViewModel(framework.depsForCommands, {showAll: true, page: 1}),
+      constructViewModel(framework.depsForCommands, {
+        showAll: true,
+        page: 1,
+        status: O.none,
+        only: O.none,
+      }),
       T.map(getRightOrFail)
     )();
     expect(result).toBeDefined();
@@ -66,7 +77,12 @@ describe('construct-view-model', () => {
   it('fails if the logged in user is not a super user', async () => {
     const result = await pipe(
       loggedInUser,
-      constructViewModel(framework.depsForCommands, {showAll: true, page: 1})
+      constructViewModel(framework.depsForCommands, {
+        showAll: true,
+        page: 1,
+        status: O.none,
+        only: O.none,
+      })
     )();
 
     expect(result).toStrictEqual(E.left(expect.anything()));
@@ -75,7 +91,12 @@ describe('construct-view-model', () => {
   it('fails if the user is unknown', async () => {
     const result = await pipe(
       unregisteredUser,
-      constructViewModel(framework.depsForCommands, {showAll: true, page: 1})
+      constructViewModel(framework.depsForCommands, {
+        showAll: true,
+        page: 1,
+        status: O.none,
+        only: O.none,
+      })
     )();
 
     expect(result).toStrictEqual(E.left(expect.anything()));

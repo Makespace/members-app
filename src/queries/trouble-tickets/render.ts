@@ -257,98 +257,95 @@ const renderCard = (ticket: TroubleTicketView) => html`
   </article>
 `;
 
-// Status filter chips, each with its ticket count. Read by the filter script via
-// data-status.
-const renderStatusFilters = (counts: Record<TroubleTicketStatus, number>) => html`
+// A board URL with one filter changed and the rest kept. Changing a filter
+// returns to page one: page 7 of a different set is meaningless.
+const boardUrl = (
+  viewModel: ViewModel,
+  change: {status?: string | null; only?: string | null}
+) => {
+  const params = new URLSearchParams();
+  if (!viewModel.scopedToMine) {
+    params.set('show', 'all');
+  }
+  const status =
+    change.status !== undefined
+      ? change.status
+      : O.toNullable(viewModel.activeStatus);
+  const only =
+    change.only !== undefined
+      ? change.only
+      : O.toNullable(viewModel.activeScope);
+  if (status !== null) {
+    params.set('status', status);
+  }
+  if (only !== null) {
+    params.set('only', only);
+  }
+  const query = params.toString();
+  return `/trouble-tickets/board${query === '' ? '' : `?${query}`}`;
+};
+
+const activeClass = (active: boolean) =>
+  active ? safe(' tt-filter__label--active') : safe('');
+
+// Status chips, each showing what it would find across every page. Clicking
+// one filters server-side, so the count and the result agree.
+const renderStatusFilters = (viewModel: ViewModel) => html`
   <fieldset class="tt-filters">
     <legend class="tt-filters__legend">Filter by status</legend>
     ${joinHtml(
       STATUS_ORDER.map(status => {
         const slug = safe(STATUS_SLUG[status]);
-        return html`<input
-            type="checkbox"
-            class="tt-filter"
-            id="tt-filter-${slug}"
-            data-status="${slug}"
-          /><label class="tt-badge tt-badge--${slug} tt-filter__label" for="tt-filter-${slug}"
-            >${safe(status)}
-            <span class="tt-badge__count">${safe(counts[status].toString())}</span></label
-          >`;
+        const active = pipe(
+          viewModel.activeStatus,
+          O.match(
+            () => false,
+            current => current === status
+          )
+        );
+        return html`<a
+          class="tt-badge tt-badge--${slug} tt-filter__label${activeClass(
+            active
+          )}"
+          href="${safe(
+            boardUrl(viewModel, {status: active ? null : STATUS_SLUG[status]})
+          )}"
+          >${safe(status)}
+          <span class="tt-badge__count"
+            >${safe(viewModel.statusCounts[status].toString())}</span
+          ></a
+        >`;
       })
     )}
   </fieldset>
 `;
 
-// "Show only" scope chips (assigned to me / my area / my machines), read via data-scope.
-const renderScopeFilters = (counts: Record<string, number>) => html`
+// "Show only" chips, counted and filtered the same way.
+const renderScopeFilters = (viewModel: ViewModel) => html`
   <fieldset class="tt-filters">
     <legend class="tt-filters__legend">Show only</legend>
     ${joinHtml(
       SCOPES.map(scope => {
-        const key = safe(scope.key);
-        return html`<input
-            type="checkbox"
-            class="tt-filter"
-            id="tt-scope-${key}"
-            data-scope="${key}"
-          /><label class="tt-chip tt-filter__label" for="tt-scope-${key}"
-            >${safe(scope.label)}
-            <span class="tt-badge__count">${safe(
-              (counts[scope.key] ?? 0).toString()
-            )}</span></label
-          >`;
+        const active = pipe(
+          viewModel.activeScope,
+          O.match(
+            () => false,
+            current => current === scope.key
+          )
+        );
+        return html`<a
+          class="tt-chip tt-filter__label${activeClass(active)}"
+          href="${safe(boardUrl(viewModel, {only: active ? null : scope.key}))}"
+          >${safe(scope.label)}
+          <span class="tt-badge__count"
+            >${safe((viewModel.scopeCounts[scope.key] ?? 0).toString())}</span
+          ></a
+        >`;
       })
     )}
   </fieldset>
 `;
 
-// Client-side filtering. A card is shown when it matches at least one checked status (or no
-// status is checked) AND at least one checked scope (or no scope is checked) - so the two
-// filter rows narrow together, while chips within a row combine as a union.
-const filterScript = html`
-  <script>
-    (function () {
-      var wrapper = document.querySelector('.tt-wrapper');
-      if (!wrapper) return;
-      var filters = [].slice.call(wrapper.querySelectorAll('.tt-filter'));
-      var cards = [].slice.call(wrapper.querySelectorAll('.trouble-ticket-card'));
-      function checkedVals(key) {
-        return filters
-          .filter(function (f) {
-            return f.checked && f.dataset[key] != null;
-          })
-          .map(function (f) {
-            return f.dataset[key];
-          });
-      }
-      function apply() {
-        var statuses = checkedVals('status');
-        var scopes = checkedVals('scope');
-        cards.forEach(function (card) {
-          var statusOk =
-            statuses.length === 0 ||
-            statuses.indexOf(card.dataset.status) !== -1;
-          var cardScopes = (card.dataset.scopes || '')
-            .split(' ')
-            .filter(Boolean);
-          var scopeOk =
-            scopes.length === 0 ||
-            scopes.some(function (s) {
-              return cardScopes.indexOf(s) !== -1;
-            });
-          card.style.display = statusOk && scopeOk ? '' : 'none';
-        });
-      }
-      filters.forEach(function (f) {
-        f.addEventListener('change', apply);
-      });
-      apply();
-    })();
-  </script>
-`;
-
-// Super-user work list: form strings that resolve to no equipment, each
-// linking to the alias-mapping page. Mapping one re-binds its tickets.
 const renderUnresolvedNames = (vm: ViewModel) => {
   if (!vm.canMapEquipment || vm.unresolvedEquipmentNames.length === 0) {
     return html``;
@@ -442,30 +439,14 @@ export const render = (viewModel: ViewModel) => {
     `;
   }
   const sorted = viewModel.tickets;
-  const statusCounts = STATUS_ORDER.reduce(
-    (acc, status) => {
-      acc[status] = viewModel.tickets.filter(
-        ticket => ticket.status === status
-      ).length;
-      return acc;
-    },
-    {} as Record<TroubleTicketStatus, number>
-  );
-  const scopeCounts = SCOPES.reduce(
-    (acc, scope) => {
-      acc[scope.key] = viewModel.tickets.filter(scope.test).length;
-      return acc;
-    },
-    {} as Record<string, number>
-  );
   return html`
     <div class="stack tt-wrapper">
       <h1>Trouble tickets</h1>
       ${renderScopeAndPages(viewModel)}
-      ${renderStatusFilters(statusCounts)} ${renderScopeFilters(scopeCounts)}
+      ${renderStatusFilters(viewModel)} ${renderScopeFilters(viewModel)}
       ${renderUnresolvedNames(viewModel)}
       <div class="tt-board stack">${joinHtml(sorted.map(renderCard))}</div>
     </div>
-    ${filterScript}
+    
   `;
 };
