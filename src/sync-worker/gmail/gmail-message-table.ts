@@ -23,6 +23,9 @@ export const gmailMessageTable = sqliteTable('gmail_message', {
   // are fetched on demand in a later PR, if ever.
   attachments_json: text('attachments_json').notNull(),
   label_ids: text('label_ids').notNull(),
+  list_unsubscribe: text('list_unsubscribe'),
+  auto_submitted: text('auto_submitted'),
+  precedence: text('precedence'),
   cached_at: integer('cached_at', {mode: 'timestamp_ms'}).notNull(),
 });
 
@@ -48,6 +51,9 @@ const createGmailMessageTable = sql`
     body_html TEXT,
     attachments_json TEXT NOT NULL,
     label_ids TEXT NOT NULL,
+    list_unsubscribe TEXT,
+    auto_submitted TEXT,
+    precedence TEXT,
     cached_at INTEGER NOT NULL
   );
 `;
