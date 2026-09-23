@@ -6,8 +6,14 @@ import {html, Html, safe} from '../types/html';
 // is a boundary the browser enforces:
 //
 //  - no allow-scripts, so nothing in the message can execute;
-//  - no allow-same-origin, so it cannot reach the app's cookies or DOM;
 //  - its own CSP, which by default blocks every remote load.
+//
+// allow-same-origin is granted so the page can measure the rendered height
+// and size the frame to its content - a frame that scrolls inside the page
+// reads badly. That pairing is safe precisely because allow-scripts is
+// withheld: the message is inert markup, so there is no code inside the
+// frame to make use of the origin. The dangerous combination is the two
+// together, which is why they are never both given.
 //
 // That last point is the privacy one. Remote images in email are routinely
 // tracking pixels: loading them tells the sender exactly when Makespace read
@@ -51,7 +57,9 @@ export const renderEmailHtml = (
   <iframe
     class="email-html"
     title="Message content"
-    sandbox="allow-popups allow-popups-to-escape-sandbox"
+    data-email-frame
+    scrolling="no"
+    sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
     referrerpolicy="no-referrer"
     srcdoc="${safe(forSrcdoc(document(bodyHtml, showImages)))}"
   ></iframe>

@@ -15,6 +15,7 @@ export type InboxMessage = {
   bodyText: string | null;
   // The HTML alternative, when the sender provided one.
   bodyHtml: string | null;
+  replyTo: string | null;
   listUnsubscribe: string | null;
   autoSubmitted: string | null;
   precedence: string | null;
@@ -33,6 +34,7 @@ const transformRow = (row: Row): InboxMessage => ({
   snippet: row.snippet,
   bodyText: row.body_text,
   bodyHtml: row.body_html,
+  replyTo: row.reply_to,
   listUnsubscribe: row.list_unsubscribe,
   autoSubmitted: row.auto_submitted,
   precedence: row.precedence,
