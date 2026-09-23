@@ -58,8 +58,12 @@ export const pullRecurlyData = (
                 hasPastDueInvoice,
             } = account;
 
+            // Recurly emails can differ in case from our records
+            // (e.g. Foo@HotMail.com), so store them lowercased.
             const maybeEmail = E.getOrElseW(() => undefined)(
-                EmailAddressCodec.decode(email)
+                EmailAddressCodec.decode(
+                    typeof email === 'string' ? email.toLowerCase() : email
+                )
             );
 
             if (maybeEmail === undefined) {

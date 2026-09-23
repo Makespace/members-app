@@ -115,6 +115,29 @@ describe('pull recurly data', () => {
     });
   });
 
+  it('stores mixed-case Recurly emails lowercased', async () => {
+    const [createRecurlyClient] = recurlyClientFactory([
+      {
+        email: 'MixedCase@Example.com',
+        hasActiveSubscription: true,
+      },
+    ]);
+
+    await pullRecurlyData(
+      createLogger({level: 'silent'}),
+      extDB,
+      'token',
+      createRecurlyClient
+    )(Duration.fromMillis(0));
+
+    const rows = await extDB.select().from(recurlySubscriptionTable).all();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      email: 'mixedcase@example.com',
+      hasActiveSubscription: true,
+    });
+  });
+
   it('updates an existing cached subscription row', async () => {
     const email = 'existing@example.com' as EmailAddress;
     await extDB
