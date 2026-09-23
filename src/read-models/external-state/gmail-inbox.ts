@@ -1,5 +1,7 @@
 import {asc, desc, eq} from 'drizzle-orm';
+import {pipe} from 'fp-ts/lib/function';
 import {ExternalStateDB} from '../../sync-worker/external-state-db';
+import {noiseRuleForConversation} from './mailbox-noise';
 import {gmailMessageTable} from '../../sync-worker/gmail/gmail-message-table';
 
 export type InboxMessage = {
@@ -13,6 +15,9 @@ export type InboxMessage = {
   bodyText: string | null;
   // The HTML alternative, when the sender provided one.
   bodyHtml: string | null;
+  listUnsubscribe: string | null;
+  autoSubmitted: string | null;
+  precedence: string | null;
   attachments: ReadonlyArray<{filename: string; size: number}>;
 };
 
@@ -28,6 +33,9 @@ const transformRow = (row: Row): InboxMessage => ({
   snippet: row.snippet,
   bodyText: row.body_text,
   bodyHtml: row.body_html,
+  listUnsubscribe: row.list_unsubscribe,
+  autoSubmitted: row.auto_submitted,
+  precedence: row.precedence,
   attachments: JSON.parse(row.attachments_json) as ReadonlyArray<{
     filename: string;
     size: number;
@@ -53,6 +61,9 @@ const GROUPING_WINDOW = 500;
 
 // An email conversation.
 export type InboxThread = {
+  // Set when every message in the conversation matched a noise rule; the
+  // reason is shown on the row.
+  filteredBy: {id: string; reason: string} | undefined;
   // The earliest message's id: stable, unique, and what the detail page uses.
   conversationId: string;
   gmailThreadId: string;
@@ -105,6 +116,9 @@ const toConversations = (
 };
 
 const summarise = (conversation: ReadonlyArray<InboxMessage>): InboxThread => ({
+  filteredBy: pipe(noiseRuleForConversation(conversation), rule =>
+    rule === undefined ? undefined : {id: rule.id, reason: rule.reason}
+  ),
   conversationId: conversation[0].gmailMessageId,
   gmailThreadId: conversation[0].gmailThreadId,
   latest: conversation[conversation.length - 1],
@@ -118,10 +132,12 @@ const summarise = (conversation: ReadonlyArray<InboxMessage>): InboxThread => ({
   ],
 });
 
-// The most recently active conversations, newest first.
+// The most recently active conversations, newest first. Conversations that
+// every rule agrees are noise are left out unless asked for.
 export const getInboxThreads = async (
   extDB: ExternalStateDB,
-  limit: number
+  limit: number,
+  options: {includeFiltered: boolean} = {includeFiltered: false}
 ): Promise<ReadonlyArray<InboxThread>> => {
   const messages = (
     await extDB
@@ -133,10 +149,28 @@ export const getInboxThreads = async (
 
   return toConversations(messages)
     .map(summarise)
+    .filter(thread => options.includeFiltered || thread.filteredBy === undefined)
     .sort(
       (a, b) => b.latest.receivedAt.getTime() - a.latest.receivedAt.getTime()
     )
     .slice(0, limit);
+};
+
+// How many conversations the rules are currently hiding, so the toggle can
+// say what it would reveal.
+export const countFilteredConversations = async (
+  extDB: ExternalStateDB
+): Promise<number> => {
+  const messages = (
+    await extDB
+      .select()
+      .from(gmailMessageTable)
+      .orderBy(asc(gmailMessageTable.received_at))
+      .limit(GROUPING_WINDOW)
+  ).map(transformRow);
+  return toConversations(messages)
+    .map(summarise)
+    .filter(thread => thread.filteredBy !== undefined).length;
 };
 
 // Every message in one conversation, oldest first. Grouping is done here

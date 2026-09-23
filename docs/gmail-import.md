@@ -34,7 +34,16 @@ the group, so the account's unrelated mail stays out of the app.
 | Variable | Meaning |
 | --- | --- |
 | `GMAIL_IMPORT_MAILBOX` | The **account** the import authenticates as and reads, e.g. `tickets@makespace.org`. Must be a real account (not a group). Empty (the default) disables the import entirely. |
-| `GMAIL_FILTER_TO_ADDRESS` | When set (e.g. `management@makespace.org`), only messages addressed or delivered to this address are cached — use this when the interesting address is a group the account is a member of. Bootstrap listings filter server-side (`deliveredto:`); incremental pulls filter on the To/Cc/Delivered-To headers. Empty imports the whole inbox. |
+| `GMAIL_FILTER_TO_ADDRESS` | When set, only messages addressed to this address are cached — for when a member account's inbox holds far more than the app should show. **Currently empty**: tickets@ is subscribed to the groups the app cares about, so its whole inbox is imported and the mailbox's own noise rules (`src/read-models/external-state/mailbox-noise.ts`) hide the automated and bulk mail instead. |
+
+### Importing mail that was skipped
+
+The address filter is applied at import time, so widening it does not
+retroactively fetch what it previously skipped: the incremental cursor only
+moves forward. To re-import an inbox from scratch, delete the mailbox's row
+from `gmail_sync_metadata` - the next beat then finds no cursor and does a
+full listing. Messages already cached are upserted by id, so nothing is
+duplicated.
 | `GMAIL_AUTHORIZED_USER_JSON` | **Fly secret** (never fly.toml): an authorized-user OAuth credential for the mailbox account - see Option A. When set, it is preferred and no domain-wide delegation is needed. |
 | `MANAGEMENT_TEAM_AREA_ID` | Area whose owners may view `/mailbox`. Empty = super-users only. Find the id on `/db` with `SELECT id, name FROM areas`. |
 
