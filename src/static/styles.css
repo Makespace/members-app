@@ -2126,8 +2126,10 @@ label img {
   width: 26%;
 }
 
-/* The preview is a hint, not the message: two lines is plenty. */
-.mailbox-table td:nth-child(4) {
+/* The preview is a hint, not the message: two lines is plenty. The clamp
+   lives on a span inside the cell - putting display:-webkit-box on the td
+   itself takes it out of the table layout, and the row falls apart. */
+.mailbox-preview {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;

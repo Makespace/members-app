@@ -17,21 +17,38 @@ type NoiseRule = {
   matches: (message: InboxMessage) => boolean;
 };
 
-const NO_REPLY =
-  /(^|[<:,\s])(no-?reply|do-?not-?reply|donotreply|mailer-daemon|postmaster)[@.-]/;
+// Suppliers whose order and delivery mail is never correspondence. Matching
+// on the sender's domain keeps each rule about one identifiable source,
+// rather than guessing from the shape of a message: no member has an
+// address at these domains, so nothing a person writes can match.
+const senderDomainIs =
+  (domains: ReadonlyArray<string>) =>
+  (message: InboxMessage): boolean => {
+    // Mail forwarded by a Google Group arrives From the group, so the sender
+    // reads "'Amazon.co.uk' via management" whoever wrote it. The group
+    // records the real originator in X-Original-Sender; Reply-To carries it
+    // for mail that arrived some other way.
+    const candidates = [
+      message.originalSender,
+      message.replyTo,
+      message.fromAddress,
+    ].filter((value): value is string => value !== null);
+    return candidates.some(candidate =>
+      domains.some(domain =>
+        new RegExp(`@([a-z0-9-]+\\.)*${domain.replace(/\./g, '\\.')}\\b`, 'i').test(
+          candidate
+        )
+      )
+    );
+  };
 
 const NOISE_RULES: ReadonlyArray<NoiseRule> = [
   {
-    id: 'no-reply-originator',
-    reason: 'Sent by a no-reply address',
-    // Mail forwarded by a Google Group arrives From the group, so the sender
-    // looks like "'Amazon.co.uk' via management" and tells us nothing. The
-    // group records who actually sent it in X-Original-Sender, which for a
-    // supplier's robot is a no-reply address and for a member is their own.
-    // That single header separates the two cleanly.
-    matches: message =>
-      message.originalSender !== null &&
-      NO_REPLY.test(message.originalSender.toLowerCase()),
+    id: 'amazon-order-updates',
+    reason: 'Amazon order and delivery notice',
+    // Covers amazon.co.uk and amazon.com, and their subdomains -
+    // business.amazon.co.uk, delivery.amazon.co.uk and the like.
+    matches: senderDomainIs(['amazon.co.uk', 'amazon.com']),
   },
 ];
 
