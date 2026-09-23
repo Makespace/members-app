@@ -73,7 +73,7 @@ const renderRow = (thread: InboxThread) => html`
       )}
     </td>
     <td>
-      <a href="/mailbox/${safe(encodeURIComponent(thread.gmailThreadId))}"
+      <a href="/mailbox/${safe(encodeURIComponent(thread.conversationId))}"
         >${sanitizeString(threadSubject(thread.latest.subject))}</a
       >
       ${thread.messageCount > 1
