@@ -1,68 +1,37 @@
 import {InboxMessage} from './gmail-inbox';
 
-// Most of what reaches a shared management address is not correspondence:
-// order confirmations, marketing, delivery updates, account notices. Hiding
-// it by default keeps the mailbox about members, while a toggle keeps every
-// message reachable and each rule explains itself, so a wrong call is
-// obvious rather than mysterious.
+// Most of what reaches a shared address is not correspondence: order
+// confirmations, delivery updates, marketing. Hiding it keeps the mailbox
+// about members, while a toggle keeps every message reachable and each rule
+// explains itself, so a wrong call is visible rather than mysterious.
 //
-// Rules are deliberately narrow. A false negative leaves noise in the list,
-// which is untidy; a false positive hides a member asking for help, which is
-// a failure. When in doubt, no rule should match.
+// Rules are built from real messages, one at a time, and stay as narrow as
+// the evidence: a false negative leaves clutter in the list, which is
+// untidy, but a false positive hides a member asking for help, which is a
+// failure. Nothing is hidden on a hunch.
 type NoiseRule = {
-  // Stable identifier, used in the UI and when discussing a mis-filed message.
+  // Stable identifier, shown in the UI so a mis-filed message can be
+  // reported precisely.
   id: string;
-  // Shown on the row: why this was filtered.
   reason: string;
   matches: (message: InboxMessage) => boolean;
 };
 
-const fromAddress = (message: InboxMessage) =>
-  (message.fromAddress ?? '').toLowerCase();
-
-const subject = (message: InboxMessage) => (message.subject ?? '').toLowerCase();
-
 const NO_REPLY =
-  /(^|[<:,\s])(no-?reply|do-?not-?reply|donotreply|mailer-daemon|postmaster|bounce)[@.-]/;
-
-// Google Groups rewrites the sender of anything it forwards, so a message
-// from Amazon arrives as "'Amazon.co.uk' via management" and the real
-// originator survives only in Reply-To. Both are worth checking.
-const originators = (message: InboxMessage) =>
-  [fromAddress(message), (message.replyTo ?? '').toLowerCase()];
-
-// Every message delivered by a Google Group carries a List-Unsubscribe
-// pointing at the group itself and Precedence: list - genuine member mail
-// included. Those are delivery plumbing, not evidence of marketing, so only
-// an unsubscribe link somewhere else counts.
-const GROUP_PLUMBING = /googlegroups\.com|groups\.google\.com/;
+  /(^|[<:,\s])(no-?reply|do-?not-?reply|donotreply|mailer-daemon|postmaster)[@.-]/;
 
 const NOISE_RULES: ReadonlyArray<NoiseRule> = [
   {
-    id: 'no-reply-sender',
-    reason: 'Sent from a no-reply address',
-    matches: message => originators(message).some(who => NO_REPLY.test(who)),
-  },
-  {
-    id: 'bulk-mail',
-    reason: 'Marketing mail (offers its own unsubscribe link)',
+    id: 'no-reply-originator',
+    reason: 'Sent by a no-reply address',
+    // Mail forwarded by a Google Group arrives From the group, so the sender
+    // looks like "'Amazon.co.uk' via management" and tells us nothing. The
+    // group records who actually sent it in X-Original-Sender, which for a
+    // supplier's robot is a no-reply address and for a member is their own.
+    // That single header separates the two cleanly.
     matches: message =>
-      message.listUnsubscribe !== null &&
-      !GROUP_PLUMBING.test(message.listUnsubscribe),
-  },
-  {
-    id: 'auto-generated',
-    reason: 'Generated automatically, not written by a person',
-    matches: message =>
-      message.autoSubmitted !== null &&
-      message.autoSubmitted.toLowerCase() !== 'no',
-  },
-  {
-    id: 'account-security-alert',
-    reason: "Google account notice about the app's own mailbox",
-    matches: message =>
-      /@(accounts\.)?google\.com/.test(fromAddress(message)) &&
-      /^security alert/.test(subject(message)),
+      message.originalSender !== null &&
+      NO_REPLY.test(message.originalSender.toLowerCase()),
   },
 ];
 
