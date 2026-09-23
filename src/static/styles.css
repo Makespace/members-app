@@ -2067,3 +2067,32 @@ label img {
 .mailbox__meta {
   color: var(--grey-color);
 }
+
+/* Email HTML renders in a sandboxed frame; without scripts it cannot size
+   itself, so it gets a generous fixed height and scrolls. */
+.email-html {
+  width: 100%;
+  min-height: 24rem;
+  border: 1px solid var(--border-color);
+  background: white;
+  resize: vertical;
+}
+
+.mailbox__view-options small {
+  display: block;
+  color: var(--grey-color);
+}
+
+/* Quoted history is folded away by default: without this, reading a thread
+   means reading its first message once per reply. */
+.email-quoted {
+  margin-top: 0.5rem;
+}
+
+.email-quoted > summary {
+  font-size: 0.9rem;
+}
+
+.email-quoted .email-body {
+  color: var(--grey-color);
+}
