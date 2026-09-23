@@ -1,3 +1,4 @@
+import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
 import {pipe} from 'fp-ts/lib/function';
 import * as T from 'fp-ts/Task';
@@ -80,10 +81,34 @@ describe('/trouble-tickets scope and pagination', () => {
     framework.close();
   });
 
+  const viewFiltered = (
+    user: typeof owner,
+    filters: {
+      status?: 'Todo' | 'Resolved';
+      only?: 'mine' | 'my-area' | 'my-machines';
+      page?: number;
+    }
+  ) =>
+    pipe(
+      user,
+      constructViewModel(framework.depsForCommands, {
+        showAll: true,
+        page: filters.page ?? 1,
+        status: O.fromNullable(filters.status),
+        only: O.fromNullable(filters.only),
+      }),
+      T.map(getRightOrFail)
+    )();
+
   const view = (user: typeof owner, showAll: boolean, page = 1) =>
     pipe(
       user,
-      constructViewModel(framework.depsForCommands, {showAll, page}),
+      constructViewModel(framework.depsForCommands, {
+        showAll,
+        page,
+        status: O.none,
+        only: O.none,
+      }),
       T.map(getRightOrFail)
     )();
 
@@ -117,6 +142,50 @@ describe('/trouble-tickets scope and pagination', () => {
     expect(second.tickets).toHaveLength(3);
     const clamped = await view(superUser, true, 99);
     expect(clamped.page).toBe(2);
+  });
+
+  // The counts describe everything in scope, not the page in front of you:
+  // a chip saying "Resolved 0" while a later page is full of resolved
+  // tickets is worse than no count at all.
+  describe('filter counts and filtering', () => {
+    it('counts every ticket in scope, not just the current page', async () => {
+      const board = await viewFiltered(superUser, {});
+
+      expect(board.statusCounts.Todo).toBe(3);
+      expect(board.statusCounts.Resolved).toBe(0);
+    });
+
+    it('filters before paging, so a filtered view starts at its own page one', async () => {
+      const board = await viewFiltered(superUser, {status: 'Todo'});
+
+      expect(board.tickets).toHaveLength(3);
+      expect(board.totalInScope).toBe(3);
+      expect(board.page).toBe(1);
+    });
+
+    it('reports an empty result for a status nothing matches, while still counting the rest', async () => {
+      const board = await viewFiltered(superUser, {status: 'Resolved'});
+
+      expect(board.tickets).toHaveLength(0);
+      // The chips still say what else is there, so the way back is visible.
+      expect(board.statusCounts.Todo).toBe(3);
+    });
+
+    it('narrows to the viewer relationship asked for', async () => {
+      const board = await viewFiltered(owner, {only: 'my-area'});
+
+      expect(
+        board.tickets.every(ticket => ticket.inMyOwnerArea)
+      ).toBe(true);
+      expect(board.scopeCounts['my-area']).toBe(board.tickets.length);
+    });
+
+    it('remembers which filter is active, so the chip can show it', async () => {
+      const board = await viewFiltered(superUser, {status: 'Todo'});
+
+      expect(board.activeStatus).toStrictEqual(O.some('Todo'));
+      expect(board.activeScope).toStrictEqual(O.none);
+    });
   });
 
   it('serves change logs from the read model projection', async () => {

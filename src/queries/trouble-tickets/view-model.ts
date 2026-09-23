@@ -57,8 +57,14 @@ export type ViewModel = {
   // True when the board is showing only the viewer's own areas (the default
   // for owners); false = everything (?show=all, or a viewer with no areas).
   scopedToMine: boolean;
-  // Tickets in the current scope across all pages.
+  // Tickets matching the current filters, across all pages.
   totalInScope: number;
+  // How many tickets each filter would show, over everything in scope - not
+  // just the page, which would make the numbers meaningless.
+  statusCounts: Record<TroubleTicketStatus, number>;
+  scopeCounts: Record<string, number>;
+  activeStatus: O.Option<TroubleTicketStatus>;
+  activeScope: O.Option<string>;
   page: number;
   pageCount: number;
   // Distinct raw form strings that failed to resolve to equipment, with
