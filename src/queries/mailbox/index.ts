@@ -83,13 +83,21 @@ const threadSubject = (subject: string | null) =>
   (subject ?? '(no subject)').replace(/^((re|fwd|fw)\s*:\s*)+/i, '').trim() ||
   '(no subject)';
 
+// "Alice Example <alice@example.com>" is mostly noise in a narrow column,
+// and an unbreakable address wide enough to push the table off the page. The
+// name is what a manager scans for; the address is on the message itself.
+const displayName = (sender: string) => {
+  const named = /^\s*"?([^"<]+?)"?\s*<[^>]+>\s*$/.exec(sender);
+  return named === null ? sender.trim() : named[1].trim();
+};
+
 const renderRow = (thread: InboxThread) => html`
   <tr>
     <td>${displayDate(DateTime.fromJSDate(thread.latest.receivedAt))}</td>
     <td>
       ${sanitizeString(
         thread.senders.length > 0
-          ? thread.senders.join(', ')
+          ? [...new Set(thread.senders.map(displayName))].join(', ')
           : 'Unknown sender'
       )}
     </td>
@@ -113,6 +121,33 @@ const renderRow = (thread: InboxThread) => html`
     <td>${sanitizeString(thread.latest.snippet ?? '')}</td>
   </tr>
 `;
+
+// Renders one row's sender cell, so the display-name handling can be tested
+// without standing up a whole page.
+export const mailboxListForTest = (senders: ReadonlyArray<string>): string =>
+  `<table><tbody>${renderRow({
+    filteredBy: undefined,
+    conversationId: 'c1',
+    gmailThreadId: 't1',
+    messageCount: senders.length,
+    senders,
+    latest: {
+      gmailMessageId: 'm1',
+      gmailThreadId: 't1',
+      fromAddress: senders[0] ?? null,
+      toAddresses: null,
+      subject: 'Subject',
+      receivedAt: new Date('2026-09-23T09:42:00.000Z'),
+      snippet: 'Preview',
+      bodyText: null,
+      bodyHtml: null,
+      replyTo: null,
+      listUnsubscribe: null,
+      autoSubmitted: null,
+      precedence: null,
+      attachments: [],
+    },
+  })}</tbody></table>`;
 
 const renderList = (
   mailbox: string,
@@ -154,7 +189,7 @@ const renderList = (
           and the sync worker logs.
         </p>`
       : html`
-          <table>
+          <table class="mailbox-table">
             <thead>
               <tr>
                 <th>Last reply</th>
