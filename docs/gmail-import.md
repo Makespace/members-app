@@ -43,7 +43,47 @@ safe: the sync logs a clear auth error each cycle and imports nothing.
 
 ## Credentials: two supported options
 
-### Option A (preferred): an OAuth token for the mailbox account itself
+### What the three values are
+
+| Value | Identifies | Where it comes from |
+| --- | --- | --- |
+| `client_id` | *Which application* is asking - our registration in a Google Cloud project. Public by design. | Cloud Console; readable at any time |
+| `client_secret` | Proof the request really is that application. | Cloud Console; readable at any time |
+| `refresh_token` | *Which Google account* granted that application permission, and for which scopes. | Cannot be looked up - it exists only once someone signs in and consents |
+
+A refresh token is only valid for the client that minted it, so a new
+client id/secret always needs a new token. Mixing them gives
+`unauthorized_client`; a wrong secret gives `invalid_client`.
+
+### Setting it up from scratch on the Workspace domain
+
+1. **console.cloud.google.com** -> create (or reuse) a project.
+2. **APIs & Services -> Library** -> enable the **Gmail API**.
+3. **OAuth consent screen** -> **Internal**. Internal apps skip Google's
+   verification *and* are not subject to the 7-day refresh-token expiry that
+   kills Testing-mode tokens. This is the main reason to do this on a
+   Workspace account rather than a personal one.
+4. **Credentials -> Create credentials -> OAuth client ID**. Either:
+   - **Desktop app** - works with `scripts/mint-gmail-token.ts` below with no
+     further configuration; or
+   - **Web application** - add `http://localhost:4571/callback` (for the
+     script) or `https://developers.google.com/oauthplayground` (for Option A)
+     to its authorized redirect URIs.
+5. Mint the refresh token **signed in as the mailbox account** - the inbox the
+   app reads, which need not be the account that owns the project.
+
+### Minting the token locally (easiest)
+
+```
+bun scripts/mint-gmail-token.ts <client-id> <client-secret>
+```
+
+It opens a browser, waits for the consent redirect on localhost, and prints
+the ready-made `fly secrets set` line. If Google returns no refresh token and
+no error, this account has already granted this client - revoke it at
+https://myaccount.google.com/permissions and run it again.
+
+### Option A: an OAuth token for the mailbox account itself
 
 The narrowest option - it touches exactly one mailbox and needs no
 domain-wide grant. Someone who can sign in as the mailbox account mints a
