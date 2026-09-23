@@ -40,10 +40,24 @@ const document = (bodyHtml: string, showImages: boolean) =>
     '<meta name="referrer" content="no-referrer">',
     // Links open in a new tab rather than replacing the frame.
     '<base target="_blank">',
+    // The frame is a separate document, so it cannot reach the site's
+    // stylesheet or its custom properties: these values mirror :root and
+    // body in static/styles.css so a message reads as part of the page.
+    // Senders who set their own fonts and colours still win, as they should.
     '<style>',
-    'body{font:1rem/1.5 system-ui,sans-serif;color:#0b0c0c;margin:0;padding:0.5rem;overflow-wrap:break-word}',
+    'body{',
+    "font-family:Optima,Candara,'Noto Sans',source-sans-pro,sans-serif;",
+    'font-size:1rem;line-height:1.5;color:#0b0c0c;',
+    'margin:0;padding:0;overflow-wrap:break-word;background:transparent',
+    '}',
+    'a{color:#1d70b8;text-underline-offset:0.16em}',
+    'a:hover{color:#003078;text-decoration-thickness:3px}',
     'img{max-width:100%;height:auto}',
     'table{max-width:100%}',
+    'blockquote{',
+    'margin:0.5rem 0;padding-left:1rem;',
+    'border-left:5px solid #b1b4b6;color:#505a5f',
+    '}',
     '</style>',
     '</head><body>',
     bodyHtml,
