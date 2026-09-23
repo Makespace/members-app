@@ -23,36 +23,33 @@ const message = (overrides: Partial<InboxMessage> = {}): InboxMessage => ({
   ...overrides,
 });
 
-// Everything a Google Group forwards arrives From the group, so the sender
-// reads "'Amazon.co.uk' via management" whoever wrote it. The group records
-// the real originator in X-Original-Sender, which is what these rules use.
+// Headers taken verbatim from the saved copies of these notices.
+const amazonDeliveryUpdate = message({
+  fromAddress: `"'Amazon.co.uk' via management" <management@makespace.org>`,
+  replyTo: '"Amazon.co.uk" <no-reply@amazon.co.uk>',
+  originalSender: 'no-reply@amazon.co.uk',
+  subject:
+    '[admin] [Management] Delivery estimate update for your Amazon order #205-9015748-1363506',
+  listUnsubscribe:
+    '<mailto:googlegroups-manage+511811749452+unsubscribe@googlegroups.com>',
+  precedence: 'list',
+});
+
 describe('deciding what is mailbox noise', () => {
-  describe('the Amazon delivery updates these rules were built from', () => {
-    // Headers taken verbatim from the nine saved copies.
-    const amazonDeliveryUpdate = message({
-      fromAddress: `"'Amazon.co.uk' via management" <management@makespace.org>`,
-      replyTo: '"Amazon.co.uk" <no-reply@amazon.co.uk>',
-      originalSender: 'no-reply@amazon.co.uk',
-      subject:
-        '[admin] [Management] Delivery estimate update for your Amazon order #205-9015748-1363506',
-      listUnsubscribe:
-        '<mailto:googlegroups-manage+511811749452+unsubscribe@googlegroups.com>',
-      precedence: 'list',
-    });
-
-    it('hides them', () => {
+  describe('Amazon order and delivery notices', () => {
+    it('are hidden', () => {
       expect(noiseRuleFor(amazonDeliveryUpdate)?.id).toBe(
-        'no-reply-originator'
+        'amazon-order-updates'
       );
     });
 
-    it('says why, so a wrong call can be reported', () => {
+    it('say why, so a wrong call can be reported', () => {
       expect(noiseRuleFor(amazonDeliveryUpdate)?.reason).toBe(
-        'Sent by a no-reply address'
+        'Amazon order and delivery notice'
       );
     });
 
-    it('hides the .com spelling of the same notice', () => {
+    it('are hidden whichever spelling of the subject arrives', () => {
       expect(
         noiseRuleFor(
           message({
@@ -63,9 +60,24 @@ describe('deciding what is mailbox noise', () => {
         )
       ).toBeDefined();
     });
+
+    it('include Amazon Business, on its own subdomain', () => {
+      expect(
+        noiseRuleFor(
+          message({
+            fromAddress: `'Amazon Business' via management <management@makespace.org>`,
+            replyTo: 'Amazon Business <no-reply@business.amazon.co.uk>',
+            originalSender: 'no-reply@business.amazon.co.uk',
+            subject: '[admin] [Management] Save more with Quantity Discounts',
+          })
+        )?.id
+      ).toBe('amazon-order-updates');
+    });
   });
 
-  describe('people are never hidden', () => {
+  // The rule names one supplier rather than describing a shape of message,
+  // so anything it was not built for is left alone until there is a reason.
+  describe('everything else is left alone', () => {
     it('keeps a member reporting a problem', () => {
       expect(noiseRuleFor(message())).toBeUndefined();
     });
@@ -82,38 +94,45 @@ describe('deciding what is mailbox noise', () => {
       ).toBeUndefined();
     });
 
-    it('keeps an owner replying', () => {
+    it('keeps automated mail from anyone else, which may well matter', () => {
       expect(
         noiseRuleFor(
           message({
-            fromAddress: 'Hector Dearman <hector.dearman@makespace.org>',
-            originalSender: 'hector.dearman@makespace.org',
+            fromAddress: 'Recurly <no-reply@recurly.com>',
+            originalSender: 'no-reply@recurly.com',
+            subject: '[admin] Your Subscription Has Expired',
           })
         )
       ).toBeUndefined();
     });
 
-    it('keeps a person whose address merely contains "reply"', () => {
+    it('is not fooled by a lookalike domain', () => {
       expect(
-        noiseRuleFor(message({originalSender: 'ripley@example.com'}))
+        noiseRuleFor(
+          message({originalSender: 'sales@not-amazon.co.uk.example.com'})
+        )
       ).toBeUndefined();
     });
 
-    it('keeps anything the group did not label with an originator', () => {
-      expect(noiseRuleFor(message({originalSender: null}))).toBeUndefined();
+    it('keeps a member who merely writes about Amazon', () => {
+      expect(
+        noiseRuleFor(
+          message({
+            subject: 'Can we order this from Amazon?',
+            bodyText: 'Found it on amazon.co.uk - shall I order one?',
+          })
+        )
+      ).toBeUndefined();
     });
   });
 
   describe('conversations', () => {
     it('are noise only when every message is', () => {
-      const robot = message({
-        gmailMessageId: 'm1',
-        originalSender: 'no-reply@amazon.co.uk',
-      });
+      const robot = {...amazonDeliveryUpdate, gmailMessageId: 'm1'};
       const humanReply = message({gmailMessageId: 'm2'});
 
       expect(noiseRuleForConversation([robot])).toBeDefined();
-      // Someone replied, so the thread matters now.
+      // Someone replied to ask about the order, so the thread matters now.
       expect(noiseRuleForConversation([robot, humanReply])).toBeUndefined();
     });
   });

@@ -27,6 +27,12 @@ describe('the mailbox list', () => {
     expect(who?.textContent?.trim()).toBe('membership@makespace.org');
   });
 
+  it('clamps the preview inside the cell, so the row keeps its shape', () => {
+    const row = render(['a@b.com']);
+    // display:-webkit-box on the td itself would break the table layout.
+    expect(row.querySelector('td .mailbox-preview')).not.toBeNull();
+  });
+
   it('does not repeat a sender who wrote more than once', () => {
     const who = render([
       'Tara Beattie <beattietara@gmail.com>',

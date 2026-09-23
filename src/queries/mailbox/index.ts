@@ -118,7 +118,11 @@ const renderRow = (thread: InboxThread) => html`
             >${sanitizeString(thread.filteredBy.reason)}</span
           >`}
     </td>
-    <td>${sanitizeString(thread.latest.snippet ?? '')}</td>
+    <td>
+      <span class="mailbox-preview"
+        >${sanitizeString(thread.latest.snippet ?? '')}</span
+      >
+    </td>
   </tr>
 `;
 
