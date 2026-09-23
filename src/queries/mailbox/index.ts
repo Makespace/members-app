@@ -278,6 +278,47 @@ const renderDetail = (
           </p>`
         : html``}
       ${joinHtml(messages.map(message => renderMessage(message, options)))}
+      <script>
+        (function () {
+          // The frames hold inert markup - no scripts run inside them - so
+          // the page measures them from outside and sizes each to its
+          // content, rather than leaving a scrolling box in the flow.
+          function fit(frame) {
+            try {
+              var doc = frame.contentDocument;
+              if (!doc || !doc.body) return;
+              frame.style.height = '0px';
+              frame.style.height =
+                Math.max(
+                  doc.body.scrollHeight,
+                  doc.documentElement.scrollHeight
+                ) + 'px';
+            } catch (e) {
+              // Measuring failed; the stylesheet's height keeps it usable.
+            }
+          }
+          function fitAll() {
+            var frames = document.querySelectorAll('[data-email-frame]');
+            Array.prototype.forEach.call(frames, fit);
+          }
+          var frames = document.querySelectorAll('[data-email-frame]');
+          Array.prototype.forEach.call(frames, function (frame) {
+            if (frame.contentDocument && frame.contentDocument.readyState === 'complete') {
+              fit(frame);
+            }
+            frame.addEventListener('load', function () {
+              fit(frame);
+            });
+          });
+          // Images arriving, fonts settling and the window changing width all
+          // change the height after first paint.
+          window.addEventListener('resize', fitAll);
+          window.addEventListener('load', fitAll);
+          setTimeout(fitAll, 250);
+          // Opening the quoted history reveals frames measured while hidden.
+          document.addEventListener('toggle', fitAll, true);
+        })();
+      </script>
     </div>
   `;
 };

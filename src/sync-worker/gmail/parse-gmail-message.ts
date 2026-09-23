@@ -35,6 +35,8 @@ export type ParsedGmailMessage = {
   deliveredTo: string | null;
   // The standard markers for bulk and machine-generated mail, which is what
   // most mailbox noise is.
+  // Group delivery rewrites From, so the originator often survives only here.
+  replyTo: string | null;
   listUnsubscribe: string | null;
   autoSubmitted: string | null;
   precedence: string | null;
@@ -120,6 +122,7 @@ export const parseGmailMessage = (
     toAddresses: header(message.payload, 'To'),
     ccAddresses: header(message.payload, 'Cc'),
     deliveredTo: header(message.payload, 'Delivered-To'),
+    replyTo: header(message.payload, 'Reply-To'),
     listUnsubscribe: header(message.payload, 'List-Unsubscribe'),
     autoSubmitted: header(message.payload, 'Auto-Submitted'),
     precedence: header(message.payload, 'Precedence'),
