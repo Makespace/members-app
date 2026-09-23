@@ -35,6 +35,21 @@ const INBOX_PAGE_SIZE = 50;
 
 // The imported mailbox contains member correspondence (PII): only members of
 // the management team's area - or super-users - may read it.
+// Whatever went wrong reaching the cache, the member sees the same thing;
+// without this the cause was discarded, so a broken query said only "failed
+// to read the mailbox cache" in the logs too, which cost an afternoon.
+const cacheFailure = (deps: Dependencies, what: string) => (error: unknown) => {
+  deps.logger.error(
+    {err: error instanceof Error ? error : new Error(String(error))},
+    'Failed to read %s from the gmail cache',
+    what
+  );
+  return failureWithStatus(
+    'Failed to read the mailbox cache',
+    StatusCodes.INTERNAL_SERVER_ERROR
+  )();
+};
+
 const mustBeManagement =
   (deps: Dependencies) =>
   (user: User): TE.TaskEither<FailureWithStatus, void> =>
@@ -340,11 +355,7 @@ export const mailbox: Query = deps => (user, params, queryParams) =>
                 ]);
                 return {threads, filteredCount, includeFiltered};
               },
-              () =>
-                failureWithStatus(
-                  'Failed to read the mailbox cache',
-                  StatusCodes.INTERNAL_SERVER_ERROR
-                )()
+              cacheFailure(deps, 'the conversation list')
             ),
             TE.map(({threads, filteredCount, includeFiltered}) =>
               renderList(
@@ -358,11 +369,7 @@ export const mailbox: Query = deps => (user, params, queryParams) =>
         : pipe(
             TE.tryCatch(
               () => getInboxThread(deps.extDB, params.id),
-              () =>
-                failureWithStatus(
-                  'Failed to read the mailbox cache',
-                  StatusCodes.INTERNAL_SERVER_ERROR
-                )()
+              cacheFailure(deps, 'a conversation')
             ),
             TE.filterOrElse(
               messages => messages.length > 0,
