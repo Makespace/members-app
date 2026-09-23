@@ -1,4 +1,4 @@
-import {createGmailTables} from './gmail/gmail-message-table';
+import {addGmailMessageColumns, createGmailTables} from './gmail/gmail-message-table';
 import {Client} from '@libsql/client';
 import {drizzle} from 'drizzle-orm/libsql';
 import {
@@ -49,5 +49,18 @@ export const ensureExtDBTablesExist = (extDB: ExternalStateDB): SyncWorkerDepend
 const ensureGmailTablesExist = async (extDB: ExternalStateDB) => {
     for (const statement of createGmailTables) {
         await extDB.run(statement);
+    }
+    // Columns added to an already-existing cache. SQLite has no
+    // ADD COLUMN IF NOT EXISTS, so the only way to be idempotent is to try
+    // and forgive the one error that means "already done".
+    for (const statement of addGmailMessageColumns) {
+        try {
+            await extDB.run(statement);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            if (!/duplicate column name/i.test(message)) {
+                throw error;
+            }
+        }
     }
 }
