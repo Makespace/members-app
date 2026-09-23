@@ -8,9 +8,9 @@ follow-up PRs, create trouble tickets from emails and send templated replies.
 account.** Groups have no mailbox of their own — Gmail just fans their mail
 out to member accounts — so there is nothing to authenticate as and no inbox
 to read directly. The import therefore authenticates as a real *member
-account* of the group (`it-owners@makespace.org`, which receives the group's
-mail) and filters the import down to messages addressed/delivered to the
-group, so the member account's unrelated mail stays out of the app.
+account* of the group (`tickets@makespace.org`, confirmed to receive the
+group's mail) and filters the import down to messages addressed/delivered to
+the group, so the account's unrelated mail stays out of the app.
 
 ## How it works
 
@@ -33,7 +33,7 @@ group, so the member account's unrelated mail stays out of the app.
 
 | Variable | Meaning |
 | --- | --- |
-| `GMAIL_IMPORT_MAILBOX` | The **account** the import authenticates as and reads, e.g. `it-owners@makespace.org`. Must be a real account (not a group). Empty (the default) disables the import entirely. |
+| `GMAIL_IMPORT_MAILBOX` | The **account** the import authenticates as and reads, e.g. `tickets@makespace.org`. Must be a real account (not a group). Empty (the default) disables the import entirely. |
 | `GMAIL_FILTER_TO_ADDRESS` | When set (e.g. `management@makespace.org`), only messages addressed or delivered to this address are cached — use this when the interesting address is a group the account is a member of. Bootstrap listings filter server-side (`deliveredto:`); incremental pulls filter on the To/Cc/Delivered-To headers. Empty imports the whole inbox. |
 | `GMAIL_AUTHORIZED_USER_JSON` | **Fly secret** (never fly.toml): an authorized-user OAuth credential for the mailbox account - see Option A. When set, it is preferred and no domain-wide delegation is needed. |
 | `MANAGEMENT_TEAM_AREA_ID` | Area whose owners may view `/mailbox`. Empty = super-users only. Find the id on `/db` with `SELECT id, name FROM areas`. |
@@ -96,7 +96,7 @@ refresh token with the `gmail.readonly` scope and it becomes a Fly secret:
    authorized redirect URIs first. Note the client ID and client secret.
 2. **Publish the OAuth consent screen to "In production"** (Testing-mode
    refresh tokens expire after 7 days - this is the classic trap).
-3. Mint the token while signed in AS the account (`it-owners@`), consenting
+3. Mint the token while signed in AS the account (`tickets@`), consenting
    to the `https://www.googleapis.com/auth/gmail.readonly` scope - the OAuth
    Playground (https://developers.google.com/oauthplayground, with "Use your
    own OAuth credentials" ticked) is the quickest way: authorise the scope,

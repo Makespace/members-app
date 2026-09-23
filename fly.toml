@@ -19,10 +19,11 @@ LOG_LEVEL = 'debug'
 RUST_BACKTRACE = 'full'
 TROUBLE_TICKET_SHEET = '1P36QUdnEyIGlX_pMP-3FjWTFXOILKAYNYNAkl6N4nK4'
 # Gmail import into /mailbox (see docs/gmail-import.md). management@ is a
-# GROUP (no mailbox of its own), so we authenticate as a member account and
-# filter to mail addressed to the group. Until credentials are set the sync
-# just logs an auth error each cycle.
-GMAIL_IMPORT_MAILBOX = 'it-owners@makespace.org'
+# GROUP (no mailbox of its own), so we authenticate as tickets@ - a member
+# account of that group, confirmed to receive its mail - and filter to mail
+# addressed to the group, keeping the account's other traffic out. Until
+# credentials are set the sync just logs an auth error each cycle.
+GMAIL_IMPORT_MAILBOX = 'tickets@makespace.org'
 GMAIL_FILTER_TO_ADDRESS = 'management@makespace.org'
 # Owners of this area (the management team) may view /mailbox, alongside
 # super-users.
