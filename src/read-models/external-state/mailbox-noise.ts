@@ -22,29 +22,40 @@ const fromAddress = (message: InboxMessage) =>
 
 const subject = (message: InboxMessage) => (message.subject ?? '').toLowerCase();
 
+const NO_REPLY =
+  /(^|[<:,\s])(no-?reply|do-?not-?reply|donotreply|mailer-daemon|postmaster|bounce)[@.-]/;
+
+// Google Groups rewrites the sender of anything it forwards, so a message
+// from Amazon arrives as "'Amazon.co.uk' via management" and the real
+// originator survives only in Reply-To. Both are worth checking.
+const originators = (message: InboxMessage) =>
+  [fromAddress(message), (message.replyTo ?? '').toLowerCase()];
+
+// Every message delivered by a Google Group carries a List-Unsubscribe
+// pointing at the group itself and Precedence: list - genuine member mail
+// included. Those are delivery plumbing, not evidence of marketing, so only
+// an unsubscribe link somewhere else counts.
+const GROUP_PLUMBING = /googlegroups\.com|groups\.google\.com/;
+
 const NOISE_RULES: ReadonlyArray<NoiseRule> = [
   {
     id: 'no-reply-sender',
     reason: 'Sent from a no-reply address',
-    matches: message =>
-      /(^|[<.\s])(no-?reply|do-?not-?reply|noreply|mailer-daemon|postmaster)[@.]/.test(
-        fromAddress(message)
-      ),
+    matches: message => originators(message).some(who => NO_REPLY.test(who)),
   },
   {
     id: 'bulk-mail',
-    reason: 'Bulk mail (offers an unsubscribe link)',
-    matches: message => message.listUnsubscribe !== null,
+    reason: 'Marketing mail (offers its own unsubscribe link)',
+    matches: message =>
+      message.listUnsubscribe !== null &&
+      !GROUP_PLUMBING.test(message.listUnsubscribe),
   },
   {
     id: 'auto-generated',
     reason: 'Generated automatically, not written by a person',
     matches: message =>
-      (message.autoSubmitted !== null &&
-        message.autoSubmitted.toLowerCase() !== 'no') ||
-      ['bulk', 'junk', 'list'].includes(
-        (message.precedence ?? '').toLowerCase()
-      ),
+      message.autoSubmitted !== null &&
+      message.autoSubmitted.toLowerCase() !== 'no',
   },
   {
     id: 'account-security-alert',

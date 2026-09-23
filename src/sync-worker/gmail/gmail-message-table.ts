@@ -23,6 +23,7 @@ export const gmailMessageTable = sqliteTable('gmail_message', {
   // are fetched on demand in a later PR, if ever.
   attachments_json: text('attachments_json').notNull(),
   label_ids: text('label_ids').notNull(),
+  reply_to: text('reply_to'),
   list_unsubscribe: text('list_unsubscribe'),
   auto_submitted: text('auto_submitted'),
   precedence: text('precedence'),
@@ -51,6 +52,7 @@ const createGmailMessageTable = sql`
     body_html TEXT,
     attachments_json TEXT NOT NULL,
     label_ids TEXT NOT NULL,
+    reply_to TEXT,
     list_unsubscribe TEXT,
     auto_submitted TEXT,
     precedence TEXT,
@@ -74,4 +76,17 @@ export const createGmailTables = [
   createGmailMessageTable,
   createGmailMessageIndexes,
   createGmailSyncMetadataTable,
+];
+
+// Unlike the read model, this cache is persistent: CREATE TABLE IF NOT
+// EXISTS silently does nothing once the table is there, so a column added to
+// the schema above never reaches an existing database and every query that
+// selects it fails. New columns therefore need an ALTER too. These run on
+// every boot and are expected to fail once the column exists - see
+// ensureGmailTablesExist, which ignores exactly that error.
+export const addGmailMessageColumns = [
+  sql`ALTER TABLE gmail_message ADD COLUMN reply_to TEXT;`,
+  sql`ALTER TABLE gmail_message ADD COLUMN list_unsubscribe TEXT;`,
+  sql`ALTER TABLE gmail_message ADD COLUMN auto_submitted TEXT;`,
+  sql`ALTER TABLE gmail_message ADD COLUMN precedence TEXT;`,
 ];
