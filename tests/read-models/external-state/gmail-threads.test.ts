@@ -32,7 +32,7 @@ describe('grouping the mailbox into conversations', () => {
       received_at: new Date(input.receivedAt),
       snippet: input.subject,
       body_text: `Body of ${input.id}`,
-      body_html: null,
+      body_html: '<p>Body</p>',
       attachments_json: '[]',
       label_ids: '[]',
       cached_at: new Date(),
