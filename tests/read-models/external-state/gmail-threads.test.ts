@@ -75,15 +75,59 @@ describe('grouping the mailbox into conversations', () => {
     const threads = await getInboxThreads(extDB, 50);
 
     expect(threads).toHaveLength(2);
-    expect(threads.map(thread => thread.gmailThreadId)).toEqual(['t1', 't2']);
+    expect(threads.map(thread => thread.latest.gmailMessageId)).toEqual([
+      'm2',
+      'm3',
+    ]);
+  });
+
+  // Google Groups re-sends each message, so a reply frequently arrives under
+  // a different Gmail thread id from the message it answers - which is how
+  // the Room Hire enquiry and its reply came in as two separate threads.
+  it('groups a reply that Gmail filed under a different thread id', async () => {
+    await addMessage({
+      id: 'm4',
+      threadId: 'different-thread-entirely',
+      from: 'agent@example.com',
+      subject: '[admin] Re: [Management] Room hire enquiry',
+      receivedAt: '2026-09-23T11:07:00.000Z',
+    });
+
+    const threads = await getInboxThreads(extDB, 50);
+    const roomHire = threads.find(thread =>
+      thread.latest.subject?.toLowerCase().includes('room hire')
+    );
+
+    expect(roomHire?.messageCount).toBe(2);
+    expect(threads).toHaveLength(2);
+  });
+
+  it('does not merge unrelated conversations that happen to share a subject', async () => {
+    await addMessage({
+      id: 'm5',
+      threadId: 'much-later',
+      from: 'someone-else@example.com',
+      subject: 'Room hire enquiry',
+      // Over a year later: a different enquiry that reuses the wording.
+      receivedAt: '2027-11-01T09:00:00.000Z',
+    });
+
+    const threads = await getInboxThreads(extDB, 50);
+    const roomHireConversations = threads.filter(thread =>
+      thread.latest.subject?.toLowerCase().includes('room hire')
+    );
+
+    expect(roomHireConversations).toHaveLength(2);
+    expect(roomHireConversations.every(thread => thread.messageCount === 1)).toBe(
+      true
+    );
   });
 
   it('orders conversations by their most recent reply', async () => {
     const [first] = await getInboxThreads(extDB, 50);
 
-    // t1's reply at 10:12 is newer than t2's only message at 09:55, even
-    // though t1 started earlier.
-    expect(first.gmailThreadId).toBe('t1');
+    // The wifi reply at 10:12 is newer than the room hire enquiry at 09:55,
+    // even though the wifi thread started earlier.
     expect(first.latest.gmailMessageId).toBe('m2');
   });
 
@@ -98,8 +142,8 @@ describe('grouping the mailbox into conversations', () => {
     expect(single.messageCount).toBe(1);
   });
 
-  it('reads a whole conversation oldest first', async () => {
-    const messages = await getInboxThread(extDB, 't1');
+  it('reads a whole conversation oldest first, by its earliest message', async () => {
+    const messages = await getInboxThread(extDB, 'm1');
 
     expect(messages.map(message => message.gmailMessageId)).toEqual([
       'm1',
