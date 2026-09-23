@@ -23,6 +23,7 @@ import {
   FailureWithStatus,
 } from '../../types/failure-with-status';
 import {
+  countFilteredConversations,
   getInboxThread,
   getInboxThreads,
   InboxMessage,
@@ -86,6 +87,13 @@ const renderRow = (thread: InboxThread) => html`
             >${safe(String(thread.messageCount))} messages</span
           >`
         : html``}
+      ${thread.filteredBy === undefined
+        ? html``
+        : html`<span class="mailbox__filtered" title="Rule: ${safe(
+            thread.filteredBy.id
+          )}"
+            >${sanitizeString(thread.filteredBy.reason)}</span
+          >`}
     </td>
     <td>${sanitizeString(thread.latest.snippet ?? '')}</td>
   </tr>
@@ -94,7 +102,8 @@ const renderRow = (thread: InboxThread) => html`
 const renderList = (
   mailbox: string,
   filterToAddress: string,
-  threads: ReadonlyArray<InboxThread>
+  threads: ReadonlyArray<InboxThread>,
+  filtered: {count: number; showing: boolean}
 ): Html => html`
   <div class="stack">
     <h1>Mailbox</h1>
@@ -103,9 +112,27 @@ const renderList = (
       conversation${threads.length === 1 ? '' : safe('s')} sent to
       <strong>
         ${sanitizeString(filterToAddress !== '' ? filterToAddress : mailbox)}
-      </strong>. The import runs every few minutes; replies and creating
-      tickets from emails are coming next.
+      </strong>. The import runs every minute; replies and creating tickets
+      from emails are coming next.
     </p>
+    ${filtered.showing
+      ? html`<p>
+          Showing everything, including the
+          ${safe(String(filtered.count))} conversation${filtered.count === 1
+            ? ''
+            : safe('s')}
+          the rules would hide, each labelled with the rule that matched.
+          <a href="/mailbox">Hide them again</a>.
+        </p>`
+      : filtered.count > 0
+        ? html`<p>
+            ${safe(String(filtered.count))} conversation${filtered.count === 1
+              ? ''
+              : safe('s')}
+            hidden as automated or bulk mail.
+            <a href="/mailbox?filtered=1">Show them</a>.
+          </p>`
+        : html``}
     ${threads.length === 0
       ? html`<p>
           Nothing imported yet. If this persists, check the Gmail credentials
@@ -262,18 +289,28 @@ export const mailbox: Query = deps => (user, params, queryParams) =>
       params.id === undefined
         ? pipe(
             TE.tryCatch(
-              () => getInboxThreads(deps.extDB, INBOX_PAGE_SIZE),
+              async () => {
+                const includeFiltered = queryParams.filtered === '1';
+                const [threads, filteredCount] = await Promise.all([
+                  getInboxThreads(deps.extDB, INBOX_PAGE_SIZE, {
+                    includeFiltered,
+                  }),
+                  countFilteredConversations(deps.extDB),
+                ]);
+                return {threads, filteredCount, includeFiltered};
+              },
               () =>
                 failureWithStatus(
                   'Failed to read the mailbox cache',
                   StatusCodes.INTERNAL_SERVER_ERROR
                 )()
             ),
-            TE.map(threads =>
+            TE.map(({threads, filteredCount, includeFiltered}) =>
               renderList(
                 deps.conf.GMAIL_IMPORT_MAILBOX,
                 deps.conf.GMAIL_FILTER_TO_ADDRESS,
-                threads
+                threads,
+                {count: filteredCount, showing: includeFiltered}
               )
             )
           )

@@ -2096,3 +2096,14 @@ label img {
 .email-quoted .email-body {
   color: var(--grey-color);
 }
+
+/* Why a conversation was hidden, shown when filtered mail is revealed. */
+.mailbox__filtered {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in oklch, white 85%, var(--grey-color));
+  color: var(--text-color);
+  white-space: nowrap;
+}
