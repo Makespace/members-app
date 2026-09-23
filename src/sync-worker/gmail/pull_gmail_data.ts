@@ -118,20 +118,39 @@ export const createGmailClientFactory =
 
 // When the interesting address is a group, the import authenticates as a
 // member account whose inbox also holds unrelated mail - only cache messages
-// addressed or delivered to the group. The bootstrap listing filters
-// server-side too, but history.list can't, so this covers the incremental
-// path (and anything the server-side query misses).
-const matchesFilter = (
+// addressed to the group. The bootstrap listing filters server-side too, but
+// history.list cannot, so this covers the incremental path.
+const addressedToGroup = (
   filterToAddress: string,
   parsed: ParsedGmailMessage
 ): boolean => {
-  if (filterToAddress === '') {
-    return true;
-  }
   const needle = filterToAddress.toLowerCase();
   return [parsed.deliveredTo, parsed.toAddresses, parsed.ccAddresses].some(
     header => header !== null && header.toLowerCase().includes(needle)
   );
+};
+
+// Replies are the reason this is not just a header check: people reply to
+// each other, so a reply to a group thread usually carries none of the
+// group's addresses. A message therefore counts as in scope when it is
+// addressed to the group OR continues a thread we have already cached.
+const isInScope = async (
+  extDB: ExternalStateDB,
+  filterToAddress: string,
+  parsed: ParsedGmailMessage
+): Promise<boolean> => {
+  if (filterToAddress === '') {
+    return true;
+  }
+  if (addressedToGroup(filterToAddress, parsed)) {
+    return true;
+  }
+  const known = await extDB
+    .select({id: gmailMessageTable.gmail_message_id})
+    .from(gmailMessageTable)
+    .where(eq(gmailMessageTable.gmail_thread_id, parsed.gmailThreadId))
+    .limit(1);
+  return known.length > 0;
 };
 
 const upsertMessage = async (
@@ -164,6 +183,8 @@ const upsertMessage = async (
     });
 };
 
+// Messages are processed oldest first so that the message which addressed the
+// group seeds the thread before its replies are considered.
 const fetchAndCache = async (
   logger: Logger,
   extDB: ExternalStateDB,
@@ -184,7 +205,7 @@ const fetchAndCache = async (
       logger.warn('Skipping unparseable gmail message %s', id);
       continue;
     }
-    if (!matchesFilter(filterToAddress, parsed)) {
+    if (!(await isInScope(extDB, filterToAddress, parsed))) {
       continue;
     }
     await upsertMessage(extDB, mailbox, parsed);
@@ -254,8 +275,13 @@ export const pullGmailData = async (
       `getting gmail profile for ${mailbox}`,
       () => client.getProfile()
     );
+    // Gmail's deliveredto: matches the final recipient - the member account,
+    // not the group - so the group has to be looked for in the addressing
+    // headers instead.
     const query =
-      filterToAddress === '' ? '' : `deliveredto:${filterToAddress}`;
+      filterToAddress === ''
+        ? ''
+        : `{to:${filterToAddress} cc:${filterToAddress} bcc:${filterToAddress} deliveredto:${filterToAddress}}`;
     let pageToken: string | undefined;
     do {
       const page = await withGoogleRateLimitRetry(

@@ -1,4 +1,4 @@
-import {asc, desc, eq, inArray} from 'drizzle-orm';
+import {asc, desc, eq} from 'drizzle-orm';
 import {ExternalStateDB} from '../../sync-worker/external-state-db';
 import {gmailMessageTable} from '../../sync-worker/gmail/gmail-message-table';
 
@@ -31,8 +31,27 @@ const transformRow = (row: Row): InboxMessage => ({
   }>,
 });
 
-// An email conversation: Gmail already groups replies for us by thread id.
+// Google Groups re-sends each message, so a reply often arrives with a
+// different Gmail thread id from the message it answers - the Room Hire
+// enquiry and its reply came in as two threads. Conversations are therefore
+// grouped by subject, with the list's own tags and reply prefixes stripped.
+const normaliseSubject = (subject: string | null): string =>
+  (subject ?? '')
+    .replace(/^(\s*(re|fwd|fw)\s*:|\s*\[[^\]]*\])+/gi, '')
+    .trim()
+    .toLowerCase();
+
+// Two unrelated enquiries can share a subject months apart, so a gap this
+// long starts a new conversation rather than reviving an old one.
+const SAME_CONVERSATION_GAP_MS = 30 * 24 * 60 * 60 * 1000;
+
+// Enough history to group correctly without reading the whole mailbox.
+const GROUPING_WINDOW = 500;
+
+// An email conversation.
 export type InboxThread = {
+  // The earliest message's id: stable, unique, and what the detail page uses.
+  conversationId: string;
   gmailThreadId: string;
   // The most recent message, which is what the list shows.
   latest: InboxMessage;
@@ -54,76 +73,90 @@ export const getInboxMessages = async (
       .limit(limit)
   ).map(transformRow);
 
-// The most recently active threads. Two queries rather than one grouped
-// query: the second fetches every message of the chosen threads, so senders
-// and counts come from the same rows the detail page will show.
+// Groups a run of messages into conversations, oldest first within each.
+const toConversations = (
+  messages: ReadonlyArray<InboxMessage>
+): ReadonlyArray<ReadonlyArray<InboxMessage>> => {
+  const open = new Map<string, InboxMessage[]>();
+  const closed: InboxMessage[][] = [];
+  for (const message of messages) {
+    // A message with no usable subject can only be grouped by its thread.
+    const key = normaliseSubject(message.subject) || message.gmailThreadId;
+    const current = open.get(key);
+    const previous = current?.[current.length - 1];
+    if (
+      current !== undefined &&
+      previous !== undefined &&
+      message.receivedAt.getTime() - previous.receivedAt.getTime() <
+        SAME_CONVERSATION_GAP_MS
+    ) {
+      current.push(message);
+      continue;
+    }
+    if (current !== undefined) {
+      closed.push(current);
+    }
+    open.set(key, [message]);
+  }
+  return [...closed, ...open.values()];
+};
+
+const summarise = (conversation: ReadonlyArray<InboxMessage>): InboxThread => ({
+  conversationId: conversation[0].gmailMessageId,
+  gmailThreadId: conversation[0].gmailThreadId,
+  latest: conversation[conversation.length - 1],
+  messageCount: conversation.length,
+  senders: [
+    ...new Set(
+      conversation
+        .map(message => message.fromAddress)
+        .filter((from): from is string => from !== null)
+    ),
+  ],
+});
+
+// The most recently active conversations, newest first.
 export const getInboxThreads = async (
   extDB: ExternalStateDB,
   limit: number
 ): Promise<ReadonlyArray<InboxThread>> => {
-  const recent = (
-    await extDB
-      .select({threadId: gmailMessageTable.gmail_thread_id})
-      .from(gmailMessageTable)
-      .orderBy(desc(gmailMessageTable.received_at))
-      // A thread with many replies would otherwise crowd out older threads,
-      // so take a generous slice of messages and group it down.
-      .limit(limit * 10)
-  ).map(row => row.threadId);
-  const threadIds = [...new Set(recent)].slice(0, limit);
-  if (threadIds.length === 0) {
-    return [];
-  }
-
   const messages = (
     await extDB
       .select()
       .from(gmailMessageTable)
-      .where(inArray(gmailMessageTable.gmail_thread_id, threadIds))
       .orderBy(asc(gmailMessageTable.received_at))
+      .limit(GROUPING_WINDOW)
   ).map(transformRow);
 
-  const byThread = new Map<string, InboxMessage[]>();
-  for (const message of messages) {
-    const bucket = byThread.get(message.gmailThreadId) ?? [];
-    bucket.push(message);
-    byThread.set(message.gmailThreadId, bucket);
-  }
-
-  return threadIds.flatMap(threadId => {
-    const inThread = byThread.get(threadId);
-    if (inThread === undefined || inThread.length === 0) {
-      return [];
-    }
-    return [
-      {
-        gmailThreadId: threadId,
-        latest: inThread[inThread.length - 1],
-        messageCount: inThread.length,
-        senders: [
-          ...new Set(
-            inThread
-              .map(message => message.fromAddress)
-              .filter((from): from is string => from !== null)
-          ),
-        ],
-      },
-    ];
-  });
+  return toConversations(messages)
+    .map(summarise)
+    .sort(
+      (a, b) => b.latest.receivedAt.getTime() - a.latest.receivedAt.getTime()
+    )
+    .slice(0, limit);
 };
 
-// Every message in one conversation, oldest first.
+// Every message in one conversation, oldest first. Grouping is done here
+// rather than in SQL because the key is a normalised subject; the mailbox is
+// small enough that reading a window of it costs nothing.
 export const getInboxThread = async (
   extDB: ExternalStateDB,
-  gmailThreadId: string
-): Promise<ReadonlyArray<InboxMessage>> =>
-  (
+  conversationId: string
+): Promise<ReadonlyArray<InboxMessage>> => {
+  const messages = (
     await extDB
       .select()
       .from(gmailMessageTable)
-      .where(eq(gmailMessageTable.gmail_thread_id, gmailThreadId))
       .orderBy(asc(gmailMessageTable.received_at))
+      .limit(GROUPING_WINDOW)
   ).map(transformRow);
+
+  return (
+    toConversations(messages).find(
+      conversation => conversation[0].gmailMessageId === conversationId
+    ) ?? []
+  );
+};
 
 export const getInboxMessageById = async (
   extDB: ExternalStateDB,
