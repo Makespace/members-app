@@ -23,6 +23,7 @@ export const gmailMessageTable = sqliteTable('gmail_message', {
   // are fetched on demand in a later PR, if ever.
   attachments_json: text('attachments_json').notNull(),
   label_ids: text('label_ids').notNull(),
+  original_sender: text('original_sender'),
   reply_to: text('reply_to'),
   list_unsubscribe: text('list_unsubscribe'),
   auto_submitted: text('auto_submitted'),
@@ -52,6 +53,7 @@ const createGmailMessageTable = sql`
     body_html TEXT,
     attachments_json TEXT NOT NULL,
     label_ids TEXT NOT NULL,
+    original_sender TEXT,
     reply_to TEXT,
     list_unsubscribe TEXT,
     auto_submitted TEXT,
@@ -85,6 +87,7 @@ export const createGmailTables = [
 // every boot and are expected to fail once the column exists - see
 // ensureGmailTablesExist, which ignores exactly that error.
 export const addGmailMessageColumns = [
+  sql`ALTER TABLE gmail_message ADD COLUMN original_sender TEXT;`,
   sql`ALTER TABLE gmail_message ADD COLUMN reply_to TEXT;`,
   sql`ALTER TABLE gmail_message ADD COLUMN list_unsubscribe TEXT;`,
   sql`ALTER TABLE gmail_message ADD COLUMN auto_submitted TEXT;`,

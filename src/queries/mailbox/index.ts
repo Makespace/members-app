@@ -141,6 +141,7 @@ export const mailboxListForTest = (senders: ReadonlyArray<string>): string =>
       snippet: 'Preview',
       bodyText: null,
       bodyHtml: null,
+      originalSender: null,
       replyTo: null,
       listUnsubscribe: null,
       autoSubmitted: null,
