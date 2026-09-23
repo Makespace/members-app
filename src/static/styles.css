@@ -2051,3 +2051,19 @@ label img {
   color: var(--grey-color);
   margin: 0.25rem 0 0.5rem;
 }
+
+/* Mailbox: a conversation reads top to bottom, each message set apart. */
+.mailbox__count {
+  color: var(--grey-color);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.mailbox__message {
+  border-left: 5px solid var(--border-color);
+  padding: 0.75rem 0 0.75rem 1rem;
+}
+
+.mailbox__meta {
+  color: var(--grey-color);
+}
