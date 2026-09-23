@@ -172,6 +172,9 @@ const upsertMessage = async (
     body_html: parsed.bodyHtml,
     attachments_json: JSON.stringify(parsed.attachments),
     label_ids: JSON.stringify(parsed.labelIds),
+    list_unsubscribe: parsed.listUnsubscribe,
+    auto_submitted: parsed.autoSubmitted,
+    precedence: parsed.precedence,
     cached_at: new Date(),
   };
   await extDB
