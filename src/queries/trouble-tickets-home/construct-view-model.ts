@@ -10,8 +10,21 @@ import {User} from '../../types';
 import {Dependencies} from '../../dependencies';
 import {allMemberNumbers} from '../../read-models/shared-state/return-types';
 
+// The page can be pointed at one machine or one area - a QR code on the
+// machine itself, or on an area's noticeboard - so that reporting a problem
+// takes one tap and arrives already attached to the right thing.
+type Focus = {
+  kind: 'equipment' | 'area';
+  id: string;
+  name: string;
+  // For equipment, the area it sits in, so the page can say where it is.
+  areaName: O.Option<string>;
+};
+
 export type ViewModel = {
-  // Tickets not yet resolved, across Makespace.
+  focus: O.Option<Focus>;
+  // Tickets not yet resolved: across Makespace, or within the focus when
+  // there is one.
   active: number;
   // Of those, the ones this member reported.
   mine: number;
@@ -22,9 +35,50 @@ export type ViewModel = {
 };
 
 export const constructViewModel =
-  (deps: Dependencies) =>
+  (deps: Dependencies, params: {equipmentId?: string; areaId?: string}) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> => {
     const rm = deps.sharedReadModel;
+    const areaNames = new Map(
+      rm.area.getAllMinimal().map(area => [area.id as string, area.name])
+    );
+    const equipment = pipe(
+      O.fromNullable(params.equipmentId),
+      O.chain(id =>
+        pipe(
+          rm.equipment.getAllMinimal().find(item => item.id === id),
+          O.fromNullable
+        )
+      )
+    );
+    // An unknown id is ignored rather than refused: a QR code outliving the
+    // equipment it names should still let someone report a problem.
+    const equipmentFocus: O.Option<Focus> = pipe(
+      equipment,
+      O.map(item => ({
+        kind: 'equipment' as const,
+        id: item.id as string,
+        name: item.name,
+        areaName: O.fromNullable(areaNames.get(item.areaId as string)),
+      }))
+    );
+    const areaFocus: O.Option<Focus> = pipe(
+      O.fromNullable(params.areaId),
+      O.chain(id =>
+        pipe(
+          O.fromNullable(areaNames.get(id)),
+          O.map(name => ({
+            kind: 'area' as const,
+            id,
+            name,
+            areaName: O.none as O.Option<string>,
+          }))
+        )
+      )
+    );
+    const focus: O.Option<Focus> = pipe(
+      equipmentFocus,
+      O.alt(() => areaFocus)
+    );
     return pipe(
       rm.members.getByMemberNumber(user.memberNumber),
       TE.fromOption(
@@ -42,9 +96,26 @@ export const constructViewModel =
         );
         const myNumbers = allMemberNumbers(member);
 
-        const open = rm.troubleTickets
+        const allOpen = rm.troubleTickets
           .getAll()
           .filter(ticket => ticket.status !== 'Resolved');
+
+        // With a focus, every count on the page is about that machine or
+        // area; without one they are about Makespace as a whole.
+        const open = pipe(
+          focus,
+          O.match(
+            () => allOpen,
+            current =>
+              allOpen.filter(ticket =>
+                current.kind === 'equipment'
+                  ? ticket.equipmentId === current.id
+                  : (ticket.equipmentId !== null
+                      ? equipmentArea.get(ticket.equipmentId)
+                      : ticket.areaId) === current.id
+              )
+          )
+        );
 
         const areaOf = (ticket: (typeof open)[number]) =>
           ticket.equipmentId !== null
@@ -52,6 +123,7 @@ export const constructViewModel =
             : ticket.areaId;
 
         return {
+          focus,
           active: open.length,
           mine: open.filter(
             ticket =>

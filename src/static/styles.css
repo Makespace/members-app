@@ -2270,3 +2270,8 @@ label img {
     page-break-after: auto;
   }
 }
+
+/* Where a focused trouble-tickets page says what it is about. */
+.tt-home__where {
+  color: var(--grey-color);
+}

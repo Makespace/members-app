@@ -28,6 +28,9 @@ type ViewModel = {
   equipment: ReadonlyArray<MachineOption>;
   // Preselected by a QR code or a link from an equipment page.
   selectedEquipmentId: O.Option<string>;
+  // A QR code on an area's noticeboard names the area rather than one
+  // machine, so the area is chosen and its equipment listed ready to pick.
+  selectedAreaId: O.Option<string>;
 };
 
 const OTHER = 'other';
@@ -148,7 +151,13 @@ const renderForm = (viewModel: ViewModel) =>
                 ${joinHtml(
                   viewModel.areas.map(
                     area =>
-                      html`<option value="${safe(area.id)}">
+                      html`<option
+                        value="${safe(area.id)}"
+                        ${O.getOrElse(() => '')(viewModel.selectedAreaId) ===
+                        area.id
+                          ? safe('selected')
+                          : safe('')}
+                      >
                         ${sanitizeString(area.name)}
                       </option>`
                   )
@@ -374,6 +383,12 @@ const constructForm: Form<ViewModel>['constructForm'] =
       E.map(({equipmentId}) => O.fromNullable(equipmentId)),
       E.getOrElse<unknown, O.Option<string>>(() => O.none)
     );
+    const selectedArea = pipe(
+      input,
+      t.partial({areaId: UUID}).decode,
+      E.map(({areaId}) => O.fromNullable(areaId)),
+      E.getOrElse<unknown, O.Option<string>>(() => O.none)
+    );
     const areas = readModel.area
       .getAllMinimal()
       .map(area => ({id: area.id as string, name: area.name}))
@@ -391,7 +406,12 @@ const constructForm: Form<ViewModel>['constructForm'] =
         machineNames: item.machineNames,
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
-    return TE.right({areas, equipment, selectedEquipmentId: selected});
+    return TE.right({
+      areas,
+      equipment,
+      selectedEquipmentId: selected,
+      selectedAreaId: selectedArea,
+    });
   };
 
 export const raiseForm: Form<ViewModel> = {
