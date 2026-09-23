@@ -77,3 +77,16 @@ export const createGmailTables = [
   createGmailMessageIndexes,
   createGmailSyncMetadataTable,
 ];
+
+// Unlike the read model, this cache is persistent: CREATE TABLE IF NOT
+// EXISTS silently does nothing once the table is there, so a column added to
+// the schema above never reaches an existing database and every query that
+// selects it fails. New columns therefore need an ALTER too. These run on
+// every boot and are expected to fail once the column exists - see
+// ensureGmailTablesExist, which ignores exactly that error.
+export const addGmailMessageColumns = [
+  sql`ALTER TABLE gmail_message ADD COLUMN reply_to TEXT;`,
+  sql`ALTER TABLE gmail_message ADD COLUMN list_unsubscribe TEXT;`,
+  sql`ALTER TABLE gmail_message ADD COLUMN auto_submitted TEXT;`,
+  sql`ALTER TABLE gmail_message ADD COLUMN precedence TEXT;`,
+];
