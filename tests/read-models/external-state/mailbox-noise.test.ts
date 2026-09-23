@@ -7,6 +7,7 @@ import {
 const message = (overrides: Partial<InboxMessage> = {}): InboxMessage => ({
   gmailMessageId: 'm1',
   gmailThreadId: 't1',
+  rfc822MessageId: '<m1@test>',
   fromAddress: 'Alice Example <alice@example.com>',
   toAddresses: 'management@makespace.org',
   subject: '[Management] Building wifi down...',
@@ -129,7 +130,10 @@ describe('deciding what is mailbox noise', () => {
   describe('conversations', () => {
     it('are noise only when every message is', () => {
       const robot = {...amazonDeliveryUpdate, gmailMessageId: 'm1'};
-      const humanReply = message({gmailMessageId: 'm2'});
+      const humanReply = message({
+        gmailMessageId: 'm2',
+        rfc822MessageId: '<m2@test>',
+      });
 
       expect(noiseRuleForConversation([robot])).toBeDefined();
       // Someone replied to ask about the order, so the thread matters now.

@@ -7,6 +7,9 @@ import {gmailMessageTable} from '../../sync-worker/gmail/gmail-message-table';
 export type InboxMessage = {
   gmailMessageId: string;
   gmailThreadId: string;
+  // The id the sender's own mail client gave this message. Every group that
+  // forwards it keeps this the same, which is how copies are recognised.
+  rfc822MessageId: string | null;
   fromAddress: string | null;
   toAddresses: string | null;
   subject: string | null;
@@ -28,6 +31,7 @@ type Row = typeof gmailMessageTable.$inferSelect;
 const transformRow = (row: Row): InboxMessage => ({
   gmailMessageId: row.gmail_message_id,
   gmailThreadId: row.gmail_thread_id,
+  rfc822MessageId: row.rfc822_message_id,
   fromAddress: row.from_address,
   toAddresses: row.to_addresses,
   subject: row.subject,
@@ -91,13 +95,32 @@ export const getInboxMessages = async (
       .limit(limit)
   ).map(transformRow);
 
+// tickets@ belongs to several groups, so one message sent to more than one
+// of them is delivered more than once - same Message-ID, different Gmail
+// ids. Keep the first copy of each.
+const withoutDuplicates = (
+  messages: ReadonlyArray<InboxMessage>
+): ReadonlyArray<InboxMessage> => {
+  const seen = new Set<string>();
+  return messages.filter(message => {
+    if (message.rfc822MessageId === null) {
+      return true;
+    }
+    if (seen.has(message.rfc822MessageId)) {
+      return false;
+    }
+    seen.add(message.rfc822MessageId);
+    return true;
+  });
+};
+
 // Groups a run of messages into conversations, oldest first within each.
 const toConversations = (
   messages: ReadonlyArray<InboxMessage>
 ): ReadonlyArray<ReadonlyArray<InboxMessage>> => {
   const open = new Map<string, InboxMessage[]>();
   const closed: InboxMessage[][] = [];
-  for (const message of messages) {
+  for (const message of withoutDuplicates(messages)) {
     // A message with no usable subject can only be grouped by its thread.
     const key = normaliseSubject(message.subject) || message.gmailThreadId;
     const current = open.get(key);

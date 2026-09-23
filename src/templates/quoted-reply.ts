@@ -87,5 +87,11 @@ export const splitQuotedHtml = (bodyHtml: string): SplitMessage => {
     return {reply: bodyHtml, quoted: ''};
   }
   const cut = Math.min(...cuts);
-  return {reply: bodyHtml.slice(0, cut), quoted: bodyHtml.slice(cut)};
+  const reply = bodyHtml.slice(0, cut);
+  // Cutting can leave nothing but wrapper markup, and a message that is
+  // entirely quoted history still needs reading.
+  if (reply.replace(/<[^>]*>/g, '').trim() === '') {
+    return {reply: bodyHtml, quoted: ''};
+  }
+  return {reply, quoted: bodyHtml.slice(cut)};
 };

@@ -92,6 +92,13 @@ describe('separating a reply from the history it quotes', () => {
       expect(quoted).toContain('Earlier message');
     });
 
+    it('shows everything when the cut would leave only wrapper markup', () => {
+      const body =
+        '<div dir="ltr"></div><div class="gmail_quote"><p>Earlier</p></div>';
+
+      expect(splitQuotedHtml(body)).toStrictEqual({reply: body, quoted: ''});
+    });
+
     it('leaves a message without a quote container alone', () => {
       const body = '<p>Just this</p>';
 
