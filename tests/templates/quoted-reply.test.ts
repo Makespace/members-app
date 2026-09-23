@@ -58,7 +58,7 @@ describe('separating a reply from the history it quotes', () => {
   });
 
   it('leaves a message with no quoted history alone', () => {
-    const message = 'Hello\n\nThe wifi seems to be down.\n\nTara';
+    const message = 'Hello\n\nThe wifi seems to be down.\n\nAlice';
 
     expect(splitQuotedText(message)).toStrictEqual({
       reply: message,
