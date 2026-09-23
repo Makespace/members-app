@@ -118,7 +118,11 @@ const renderRow = (thread: InboxThread) => html`
             >${sanitizeString(thread.filteredBy.reason)}</span
           >`}
     </td>
-    <td>${sanitizeString(thread.latest.snippet ?? '')}</td>
+    <td>
+      <span class="mailbox-preview"
+        >${sanitizeString(thread.latest.snippet ?? '')}</span
+      >
+    </td>
   </tr>
 `;
 
@@ -141,6 +145,7 @@ export const mailboxListForTest = (senders: ReadonlyArray<string>): string =>
       snippet: 'Preview',
       bodyText: null,
       bodyHtml: null,
+      originalSender: null,
       replyTo: null,
       listUnsubscribe: null,
       autoSubmitted: null,
