@@ -122,6 +122,59 @@ describe('pullGmailData', () => {
     expect(messages).toHaveLength(2);
   });
 
+  it('caches replies to a thread it already has, even when they do not name the group', async () => {
+    const state = {
+      historyId: 'h1',
+      initial: [apiMessage('m1', 'Building wifi down')],
+      added: [] as ReturnType<typeof apiMessage>[],
+    };
+    const factory = () => fakeClient(state);
+    const filter = 'management@makespace.org';
+
+    await pullGmailData(testLogger(), extDB, factory, mailbox, filter);
+    expect(await getInboxMessages(extDB, 50)).toHaveLength(1);
+
+    // A reply addressed to a person, not the group - the shape that was
+    // silently dropped before.
+    const reply = apiMessage(
+      'm2',
+      'Re: Building wifi down',
+      'hector@makespace.org'
+    );
+    reply.threadId = 'thread-m1';
+    state.added = [reply];
+    state.historyId = 'h2';
+
+    await pullGmailData(testLogger(), extDB, factory, mailbox, filter);
+
+    const messages = await getInboxMessages(extDB, 50);
+    expect(messages.map(message => message.subject)).toEqual([
+      'Re: Building wifi down',
+      'Building wifi down',
+    ]);
+  });
+
+  it('still ignores an unrelated thread that never names the group', async () => {
+    const other = apiMessage('m9', 'Digest for safety-team', 'lists@example.com');
+    other.threadId = 'thread-unrelated';
+    const state = {
+      historyId: 'h1',
+      initial: [other],
+      added: [] as ReturnType<typeof apiMessage>[],
+    };
+    const factory = () => fakeClient(state);
+
+    await pullGmailData(
+      testLogger(),
+      extDB,
+      factory,
+      mailbox,
+      'management@makespace.org'
+    );
+
+    expect(await getInboxMessages(extDB, 50)).toHaveLength(0);
+  });
+
   it('only caches mail addressed to the filter address when one is set', async () => {
     const state = {
       historyId: 'h1',
