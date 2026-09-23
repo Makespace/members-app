@@ -10,7 +10,7 @@ describe('separating a reply from the history it quotes', () => {
       'intermittent outages until 26th September.',
       'James',
       '',
-      'On Wed, 23 Sept 2026 at 10:12, Hector Dearman <hector.dearman@makespace.org>',
+      'On Wed, 23 Sept 2026 at 10:12, Bob Example <bob@example.com>',
       'wrote:',
       '',
       '> +cc: it-maintainers',
@@ -36,7 +36,7 @@ describe('separating a reply from the history it quotes', () => {
       '',
       'Matt S or Daniel K might know!',
       '',
-      'On Wed, Sept 23 2026 at 9:42 , Tara Beattie < beattietara@gmail.com > wrote:',
+      'On Wed, Sept 23 2026 at 9:42 , Alice Example < alice@example.com > wrote:',
       '',
       '> Hello',
     ].join('\n');
@@ -58,7 +58,7 @@ describe('separating a reply from the history it quotes', () => {
   });
 
   it('leaves a message with no quoted history alone', () => {
-    const message = 'Hello\n\nThe wifi seems to be down.\n\nTara';
+    const message = 'Hello\n\nThe wifi seems to be down.\n\nAlice';
 
     expect(splitQuotedText(message)).toStrictEqual({
       reply: message,

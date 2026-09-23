@@ -83,7 +83,7 @@ const threadSubject = (subject: string | null) =>
   (subject ?? '(no subject)').replace(/^((re|fwd|fw)\s*:\s*)+/i, '').trim() ||
   '(no subject)';
 
-// "Tara Beattie <beattietara@gmail.com>" is mostly noise in a narrow column,
+// "Alice Example <alice@example.com>" is mostly noise in a narrow column,
 // and an unbreakable address wide enough to push the table off the page. The
 // name is what a manager scans for; the address is on the message itself.
 const displayName = (sender: string) => {

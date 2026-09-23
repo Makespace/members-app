@@ -12,11 +12,11 @@ describe('the mailbox list', () => {
 
   it('shows sender names rather than full addresses, which do not wrap', () => {
     const who = render([
-      'Tara Beattie <beattietara@gmail.com>',
-      '"Hector Dearman" <hector.dearman@makespace.org>',
+      'Alice Example <alice@example.com>',
+      '"Bob Example" <bob@example.com>',
     ]).querySelector('td:nth-child(2)');
 
-    expect(who?.textContent?.trim()).toBe('Tara Beattie, Hector Dearman');
+    expect(who?.textContent?.trim()).toBe('Alice Example, Bob Example');
   });
 
   it('falls back to the address when there is no name', () => {
@@ -35,10 +35,10 @@ describe('the mailbox list', () => {
 
   it('does not repeat a sender who wrote more than once', () => {
     const who = render([
-      'Tara Beattie <beattietara@gmail.com>',
-      'Tara Beattie <beattietara@gmail.com>',
+      'Alice Example <alice@example.com>',
+      'Alice Example <alice@example.com>',
     ]).querySelector('td:nth-child(2)');
 
-    expect(who?.textContent?.trim()).toBe('Tara Beattie');
+    expect(who?.textContent?.trim()).toBe('Alice Example');
   });
 });

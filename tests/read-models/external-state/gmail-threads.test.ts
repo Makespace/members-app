@@ -47,7 +47,7 @@ describe('grouping the mailbox into conversations', () => {
     await addMessage({
       id: 'm1',
       threadId: 't1',
-      from: 'tara@example.com',
+      from: 'alice@example.com',
       subject: 'Building wifi down',
       receivedAt: '2026-09-23T09:42:00.000Z',
     });
@@ -136,7 +136,7 @@ describe('grouping the mailbox into conversations', () => {
 
     expect(withReply.messageCount).toBe(2);
     expect(withReply.senders).toEqual([
-      'tara@example.com',
+      'alice@example.com',
       'hector@example.com',
     ]);
     expect(single.messageCount).toBe(1);

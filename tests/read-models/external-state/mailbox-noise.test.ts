@@ -7,14 +7,14 @@ import {
 const message = (overrides: Partial<InboxMessage> = {}): InboxMessage => ({
   gmailMessageId: 'm1',
   gmailThreadId: 't1',
-  fromAddress: 'Tara Beattie <beattietara@gmail.com>',
+  fromAddress: 'Alice Example <alice@example.com>',
   toAddresses: 'management@makespace.org',
   subject: '[Management] Building wifi down...',
   receivedAt: new Date('2026-09-23T09:42:00.000Z'),
   snippet: 'Hello',
   bodyText: 'Hello',
   bodyHtml: null,
-  originalSender: 'beattietara@gmail.com',
+  originalSender: 'alice@example.com',
   replyTo: null,
   listUnsubscribe: null,
   autoSubmitted: null,
@@ -86,8 +86,8 @@ describe('deciding what is mailbox noise', () => {
       expect(
         noiseRuleFor(
           message({
-            fromAddress: 'Daniel Franklin <danielfranklin055@gmail.com>',
-            originalSender: 'danielfranklin055@gmail.com',
+            fromAddress: 'Carol Example <carol@example.com>',
+            originalSender: 'carol@example.com',
             subject: '[admin] See the space',
           })
         )
