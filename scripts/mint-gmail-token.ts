@@ -7,7 +7,11 @@
  * and it prints the fly secrets command to paste. Nothing is written to disk
  * and nothing leaves your machine except the OAuth exchange with Google.
  *
+ *   bun scripts/mint-gmail-token.ts <path-to-client-secret.json>
  *   bun scripts/mint-gmail-token.ts <client-id> <client-secret>
+ *
+ * Prefer the first form with the JSON Google gives you when you create the
+ * client: passing secrets as arguments leaves them in your shell history.
  *
  * The OAuth client must be a "Web application" client with
  * http://localhost:4571/callback in its authorized redirect URIs, or a
@@ -15,17 +19,47 @@
  * See docs/gmail-import.md.
  */
 import {createServer} from 'http';
+import {readFileSync} from 'fs';
 import open from 'open';
 
 const SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
 const PORT = 4571;
 const REDIRECT_URI = `http://localhost:${PORT}/callback`;
 
-const [clientId, clientSecret] = process.argv.slice(2);
+// Google's downloaded client file nests the values under "installed" for a
+// desktop client and "web" for a web one.
+const fromFile = (path: string): [string, string] => {
+  const parsed = JSON.parse(readFileSync(path, 'utf8')) as Record<
+    string,
+    {client_id?: string; client_secret?: string} | undefined
+  >;
+  const section = parsed.installed ?? parsed.web;
+  if (!section?.client_id || !section.client_secret) {
+    throw new Error(
+      `${path} does not look like a Google OAuth client file (no installed/web client_id and client_secret)`
+    );
+  }
+  return [section.client_id, section.client_secret];
+};
+
+const args = process.argv.slice(2);
+
+let clientId: string | undefined;
+let clientSecret: string | undefined;
+try {
+  [clientId, clientSecret] =
+    args.length === 1 ? fromFile(args[0]) : [args[0], args[1]];
+} catch (error: unknown) {
+  console.error(error instanceof Error ? error.message : error);
+  process.exit(1);
+}
 
 if (!clientId || !clientSecret) {
   console.error(
-    'usage: bun scripts/mint-gmail-token.ts <client-id> <client-secret>'
+    'usage: bun scripts/mint-gmail-token.ts <path-to-client-secret.json>'
+  );
+  console.error(
+    '   or: bun scripts/mint-gmail-token.ts <client-id> <client-secret>'
   );
   process.exit(1);
 }

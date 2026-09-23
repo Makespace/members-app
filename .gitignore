@@ -5,3 +5,6 @@
 .env
 .devcontainer/db/
 .vscode
+
+# Google OAuth client files, as downloaded from the Cloud Console
+client_secret*.json
