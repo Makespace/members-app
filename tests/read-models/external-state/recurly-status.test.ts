@@ -96,6 +96,42 @@ describe('recurly status', () => {
     expect(status).toStrictEqual('inactive');
   });
 
+  it('matches cache rows regardless of email casing', async () => {
+    await insertRecurlySubscription(framework.extDB, {
+      email: 'MixedCase@Example.com' as EmailAddress,
+      hasActiveSubscription: true,
+    });
+    const memberEmail = verifiedEmail(
+      'mixedcase@example.com' as EmailAddress
+    );
+
+    const status = await getRecurlyStatusForMember(framework.extDB)({
+      emails: [memberEmail],
+    });
+    const {flags, reasons} = await getRecurlyReasonsForMember(framework.extDB)({
+      emails: [memberEmail],
+    });
+
+    expect(status).toStrictEqual('active');
+    expect(reasons).toStrictEqual([]);
+    expect(flags).toStrictEqual(
+      O.some(expect.objectContaining({hasActiveSubscription: true}))
+    );
+  });
+
+  it('matches when the member email is the mixed-case one', async () => {
+    await insertRecurlySubscription(framework.extDB, {
+      email: 'mixedcase@example.com' as EmailAddress,
+      hasActiveSubscription: true,
+    });
+
+    const status = await getRecurlyStatusForMember(framework.extDB)({
+      emails: [verifiedEmail('MixedCase@example.com' as EmailAddress)],
+    });
+
+    expect(status).toStrictEqual('active');
+  });
+
   it('reports cancelled-but-in-term as a reason (still has access)', async () => {
     const email = 'cancelled@example.com' as EmailAddress;
     await insertRecurlySubscription(framework.extDB, {

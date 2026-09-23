@@ -1,7 +1,7 @@
 import { ExternalStateDB } from "../../sync-worker/external-state-db";
 import { recurlySubscriptionTable } from "../../sync-worker/recurly/recurly-data-table";
 import { EmailAddress } from "../../types";
-import { gt, inArray, and } from 'drizzle-orm';
+import { gt, inArray, and, sql } from 'drizzle-orm';
 import { DateTime, Duration } from "luxon";
 import { MemberCoreInfo } from "../shared-state/return-types";
 import * as O from 'fp-ts/Option';
@@ -11,6 +11,13 @@ const RECURLY_TTL = Duration.fromObject({days: 3});
 
 export type RecurlyStatus = 'inactive' | 'active';
 
+// Recurly emails can differ in case from our records (e.g. Foo@HotMail.com),
+// so match case-insensitively on both sides. New cache rows are stored
+// lowercased, but rows written before that change may still be mixed-case.
+const lowercasedEmailColumn = sql`lower(${recurlySubscriptionTable.email})`;
+const lowercased = (emails: EmailAddress[]) =>
+    emails.map(email => email.toLowerCase());
+
 const _getRecurlyStatus = (extDB: ExternalStateDB) => async (emails: EmailAddress[]): Promise<RecurlyStatus> => {
     const entries = await extDB
         .select({
@@ -18,7 +25,7 @@ const _getRecurlyStatus = (extDB: ExternalStateDB) => async (emails: EmailAddres
         })
         .from(recurlySubscriptionTable)
         .where(and(
-            inArray(recurlySubscriptionTable.email, emails),
+            inArray(lowercasedEmailColumn, lowercased(emails)),
             gt(recurlySubscriptionTable.cacheLastUpdated, DateTime.now().minus(RECURLY_TTL).toJSDate())
         ))
         .all();
@@ -68,7 +75,7 @@ const _getRecurlyFlags = (extDB: ExternalStateDB) => async (emails: EmailAddress
         })
         .from(recurlySubscriptionTable)
         .where(and(
-            inArray(recurlySubscriptionTable.email, emails),
+            inArray(lowercasedEmailColumn, lowercased(emails)),
             gt(recurlySubscriptionTable.cacheLastUpdated, DateTime.now().minus(RECURLY_TTL).toJSDate())
         ))
         .all();

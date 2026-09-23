@@ -16,6 +16,11 @@ export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
     date: '2026-09-23',
     headline:
+      'Fixed members showing as having no membership data when their Recurly email differed only in capitalisation',
+  },
+  {
+    date: '2026-09-23',
+    headline:
       'Report a problem with a machine from inside the app, and get an email confirming it',
   },
   {
