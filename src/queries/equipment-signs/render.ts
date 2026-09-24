@@ -131,7 +131,7 @@ const renderSign = (sign: Sign) => html`
           qrUrl: sign.learnUrl,
           variant: 'learn',
           icon: bookIcon,
-          title: 'Learn to use this equipment!',
+          title: 'Learn',
           note: 'How it works, what it is for, and what it can do.',
         })}
         ${pipe(
@@ -143,7 +143,7 @@ const renderSign = (sign: Sign) => html`
                 qrUrl: trainUrl,
                 variant: 'train',
                 icon: capIcon,
-                title: 'Get trained on this equipment!',
+                title: 'Get trained',
                 note: 'Who can train you, and how training works here.',
               })
           )
@@ -152,7 +152,7 @@ const renderSign = (sign: Sign) => html`
           qrUrl: sign.url,
           variant: 'fault',
           icon: spannerIcon,
-          title: 'Create and view trouble tickets',
+          title: 'Trouble tickets',
           note: 'See what has already been reported, and report a problem yourself.',
         })}
       </div>

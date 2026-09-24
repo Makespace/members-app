@@ -14,9 +14,11 @@ export const qrCodeSvg = (content: string, sizePx: number): Html => {
   qr.make();
 
   const count = qr.getModuleCount();
-  // A quiet zone of four modules is required by the spec; scanners are
-  // unreliable without it.
-  const margin = 4;
+  // The spec asks for four modules of white around the code. Two are drawn
+  // here and the rest comes from the white the code sits on: on a sign that
+  // is several millimetres of padding on every side, and drawing all four
+  // inside the box only shrinks the code and opens a gap above it.
+  const margin = 2;
   const extent = count + margin * 2;
 
   const squares: string[] = [];

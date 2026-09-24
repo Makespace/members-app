@@ -2285,7 +2285,7 @@ label img {
   /* Tight underneath: the name needs air below the band, but the space
      between it and the first code is better spent on the code. Padding is in
      the name's own ems, so 0.5em here is half a very large line. */
-  padding: 0.5em 0.5em 0.15em;
+  padding: 0.5em 0.5em 0;
   flex: 0 1 auto;
   min-height: 0;
   display: flex;
@@ -2321,14 +2321,10 @@ label img {
   align-items: center;
   flex: 1 1 0;
   gap: 0.8em;
-  padding: 0.7em 0.9em;
+  padding: 0.5em 0.9em;
   text-align: left;
   min-width: 0;
   min-height: 0;
-}
-
-.sign__scan + .sign__scan {
-  border-top: 1px solid #d6d6d6;
 }
 
 .sign__scan-text {
@@ -2361,7 +2357,10 @@ label img {
   justify-content: flex-start;
   gap: 0.3em;
   margin: 0;
-  font-size: 1.05em;
+  /* Two or three words, read from across the room: the title does the work
+     of telling a member which code is which, so it is set as a heading
+     rather than as a label. */
+  font-size: 1.7em;
   font-weight: 800;
   line-height: 1.15;
   text-wrap: balance;

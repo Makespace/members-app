@@ -56,9 +56,9 @@ describe('printable equipment signs', () => {
     it('says what each QR code is for, so scanning is a decision', () => {
       const label = sign.querySelector('.sign__codes')?.textContent ?? '';
       const text = label.replace(/\s+/g, ' ');
-      expect(text).toContain('Learn to use this equipment!');
-      expect(text).toContain('Get trained on this equipment!');
-      expect(text).toContain('Create and view trouble tickets');
+      expect(text).toContain('Learn');
+      expect(text).toContain('Get trained');
+      expect(text).toContain('Trouble tickets');
       // Each title carries a line saying what scanning gets you.
       expect(text).toContain('already been reported');
       expect(text).toContain('Who can train you');
@@ -69,11 +69,7 @@ describe('printable equipment signs', () => {
         node => (node.textContent ?? '').replace(/\s+/g, ' ').trim()
       );
 
-      expect(titles).toStrictEqual([
-        'Learn to use this equipment!',
-        'Get trained on this equipment!',
-        'Create and view trouble tickets',
-      ]);
+      expect(titles).toStrictEqual(['Learn', 'Get trained', 'Trouble tickets']);
     });
 
     // Training only applies to red equipment: an orange or green sign
