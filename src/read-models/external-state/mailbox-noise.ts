@@ -42,13 +42,48 @@ const senderDomainIs =
     );
   };
 
+// A Google Group rewrites the From of everything it forwards to its own
+// address, and builds the display name from the original sender's:
+//
+//   "'Amazon Business' via management" <management@makespace.org>
+//
+// For mail imported before X-Original-Sender was stored, that name is the
+// only trace left of who wrote it - and the copies in question have since
+// been archived, so no re-list will ever fill the header in. Every Amazon
+// notice arrives twice (tickets@ is in two groups), the copies share a
+// conversation, and one copy the rule cannot judge unhides both.
+//
+// This matches the relay format exactly - the quoted name followed by
+// " via " - so it still names one supplier by the name Amazon itself sends,
+// rather than anything that mentions it. A member who merely called
+// themselves "Amazon Business" would not arrive in that shape.
+const relayedFrom =
+  (names: ReadonlyArray<string>) =>
+  (message: InboxMessage): boolean =>
+    message.fromAddress !== null &&
+    names.some(name =>
+      new RegExp(
+        `^\\s*"?'${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'\\s+via\\s`,
+        'i'
+      ).test(message.fromAddress as string)
+    );
+
+const either =
+  (...matchers: ReadonlyArray<(message: InboxMessage) => boolean>) =>
+  (message: InboxMessage): boolean =>
+    matchers.some(matches => matches(message));
+
 const NOISE_RULES: ReadonlyArray<NoiseRule> = [
   {
     id: 'amazon-order-updates',
     reason: 'Amazon order and delivery notice',
-    // Covers amazon.co.uk and amazon.com, and their subdomains -
-    // business.amazon.co.uk, delivery.amazon.co.uk and the like.
-    matches: senderDomainIs(['amazon.co.uk', 'amazon.com']),
+    matches: either(
+      // Covers amazon.co.uk and amazon.com, and their subdomains -
+      // business.amazon.co.uk, delivery.amazon.co.uk and the like.
+      senderDomainIs(['amazon.co.uk', 'amazon.com']),
+      // The names Amazon sends under, as the group relays them.
+      relayedFrom(['Amazon.co.uk', 'Amazon.com', 'Amazon Business'])
+    ),
   },
 ];
 
