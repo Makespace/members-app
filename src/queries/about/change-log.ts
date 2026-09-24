@@ -16,11 +16,6 @@ export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
     date: '2026-09-24',
     headline:
-      'Fixed the "print this sign" button, which moved out from under the pointer when you pressed it',
-  },
-  {
-    date: '2026-09-24',
-    headline:
       "Super-users can change a machine's sticker category in the app, keeping its training records either way",
   },
   {

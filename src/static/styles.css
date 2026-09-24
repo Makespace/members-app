@@ -2192,9 +2192,49 @@ label img {
   }
 }
 
+/* Printing: the paper gets the signs and nothing else. Every other thing on
+   this page - the navigation, the size chooser, the warnings about missing
+   guides, the per-sign print button - exists to get you to the point of
+   printing, and has no business on a poster. */
 @media print {
+  .page-nav,
+  .site-banner,
+  .signs-page__controls,
+  .signs-page__warning,
   .sign-block__print {
     display: none !important;
+  }
+
+  body {
+    margin: 0;
+    background: white;
+  }
+
+  .signs-page {
+    display: block;
+    margin: 0;
+    padding: 0;
+    gap: 0;
+  }
+
+  .sign-block {
+    width: auto;
+    max-width: none;
+    margin: 0;
+  }
+
+  .sign {
+    /* The paper's own edge draws the boundary; the screen-only shadow would
+       print as a grey line. */
+    box-shadow: none;
+    margin: 0;
+    /* One sign per sheet, so a run of them comes out as a stack of posters
+       rather than a ribbon. */
+    break-after: page;
+  }
+
+  .sign-block:last-child .sign {
+    break-after: auto;
   }
 }
 

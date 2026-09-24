@@ -199,7 +199,13 @@ const trainingBlock = (sign: Sign) => {
   }
 };
 
-const renderSign = (sign: Sign) => html`
+// Opening one sign on its own keeps the size being viewed: printing an A7
+// sign from a page laid out for A5 is the kind of surprise you only notice
+// after the paper comes out.
+const printHref = (sign: Sign, size: SizeKey) =>
+  `/equipment-signs?equipmentId=${sign.id}&size=${size}&print=1`;
+
+const renderSign = (size: SizeKey) => (sign: Sign) => html`
   <div class="sign-block">
     <article class="sign sign--${safe(sign.category)}">
       <header class="sign__band">
@@ -237,7 +243,7 @@ const renderSign = (sign: Sign) => html`
     </article>
     <a
       class="button sign-block__print"
-      href="/equipment-signs?equipmentId=${safe(sign.id)}&print=1"
+      href="${safe(printHref(sign, size))}"
       target="_blank"
       rel="noopener"
       >Print this sign</a
@@ -368,7 +374,7 @@ export const render = (viewModel: ViewModel) => {
               address before printing them.
             </p>
           </div>`}
-      ${joinHtml(viewModel.signs.map(renderSign))}
+      ${joinHtml(viewModel.signs.map(renderSign(size)))}
       <script>
         (function () {
           var button = document.querySelector('[data-print-signs]');
