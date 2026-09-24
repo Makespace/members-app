@@ -9,7 +9,9 @@ import {
 import {User} from '../../types';
 import {Dependencies} from '../../dependencies';
 import {EquipmentCategory} from '../../types/equipment-category';
+import {sizeFrom} from './render';
 import {equipmentSlug, toSlug} from '../../templates/slug';
+import {equipmentGuideUrl} from '../../templates/equipment-guide-url';
 
 export type Sign = {
   id: string;
@@ -21,35 +23,27 @@ export type Sign = {
   url: string;
   // The equipment guide: how to use the thing, and how to get trained on it.
   learnUrl: string;
+  // This machine's page in the app, listing who can train you. Only red
+  // equipment needs training, so only red equipment carries this code.
+  trainUrl: O.Option<string>;
+  // Where to send a question about orange equipment, which has no training
+  // to point at and no trainers to ask.
+  areaEmail: O.Option<string>;
 };
 
 export type ViewModel = {
   signs: ReadonlyArray<Sign>;
+  // Paper size to lay the signs out for.
+  size: 'a7' | 'a6' | 'a5' | 'a4';
   // Areas to choose between when nothing is selected yet.
   areas: ReadonlyArray<{id: string; name: string; equipmentCount: number}>;
   selectedArea: O.Option<{id: string; name: string}>;
 };
 
-// equipment.makespace.org files a machine under its area (/wood-shop/band-saw)
-// but files orange and green equipment under the colour instead
-// (/orange-equipment/dremel). Derived rather than stored: there is nothing in
-// the app recording these addresses, and a guessable URL that is right for
-// most machines beats no link at all - a member who lands on a miss can still
-// use the site's own navigation.
-const learnUrlFor = (
-  areaName: string,
-  equipmentName: string,
-  category: EquipmentCategory
-) => {
-  const section =
-    category === 'red' ? toSlug(areaName) : `${category}-equipment`;
-  return `https://equipment.makespace.org/${section}/${toSlug(equipmentName)}`;
-};
-
 export const constructViewModel =
   (
     deps: Dependencies,
-    params: {areaId?: string; equipmentId?: string}
+    params: {areaId?: string; equipmentId?: string; size?: string}
   ) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> => {
     const rm = deps.sharedReadModel;
@@ -67,8 +61,11 @@ export const constructViewModel =
           )()
       ),
       TE.map(() => {
+        const areas = new Map(
+          rm.area.getAllMinimal().map(area => [area.id as string, area])
+        );
         const areaNames = new Map(
-          rm.area.getAllMinimal().map(area => [area.id as string, area.name])
+          [...areas.entries()].map(([id, area]) => [id, area.name])
         );
         const equipment = rm.equipment
           .getAllMinimal()
@@ -84,10 +81,24 @@ export const constructViewModel =
               areaNames.get(item.areaId as string) ?? '',
               item.name
             )}`,
-            learnUrl: learnUrlFor(
+            learnUrl: equipmentGuideUrl(
               areaNames.get(item.areaId as string) ?? '',
               item.name,
               item.category
+            ),
+            trainUrl:
+              item.category === 'red'
+                ? O.some(
+                    `${deps.conf.PUBLIC_URL}/equipment/${equipmentSlug(
+                      areaNames.get(item.areaId as string) ?? '',
+                      item.name
+                    )}/training`
+                  )
+                : O.none,
+            areaEmail: pipe(
+              O.fromNullable(areas.get(item.areaId as string)),
+              O.chain(area => area.email),
+              O.map(email => email as string)
             ),
           }));
 
@@ -123,6 +134,7 @@ export const constructViewModel =
             );
 
         return {
+          size: sizeFrom(params.size),
           signs: [...signs].sort((a, b) => a.name.localeCompare(b.name)),
           areas: [...areaNames.entries()]
             .map(([id, name]) => ({

@@ -5,6 +5,7 @@ import * as O from 'fp-ts/Option';
 import {UUID} from 'io-ts-types';
 import {render} from '../../../src/queries/equipment-signs/render';
 import {ViewModel} from '../../../src/queries/equipment-signs/construct-view-model';
+import {categoryDescription} from '../../../src/templates/equipment-category';
 
 const areaId = 'aaaaaaaa-0000-0000-0000-000000000001' as UUID;
 
@@ -17,8 +18,13 @@ const viewModel = (overrides: Partial<ViewModel> = {}): ViewModel => ({
       category: 'red',
       url: 'https://app.makespace.org/trouble-tickets?equipmentId=metal-shop-metal-lathe',
       learnUrl: 'https://equipment.makespace.org/metal-shop/metal-lathe',
+      trainUrl: O.some(
+        'https://app.makespace.org/equipment/metal-shop-metal-lathe'
+      ),
+      areaEmail: O.none,
     },
   ],
+  size: 'a6',
   areas: [{id: areaId, name: 'Metal Shop', equipmentCount: 1}],
   selectedArea: O.some({id: areaId, name: 'Metal Shop'}),
   ...overrides,
@@ -40,26 +46,101 @@ describe('printable equipment signs', () => {
       );
     });
 
+    // The rule comes from the one place in the app that says what a colour
+    // means, so a printed sign cannot drift from what a screen says.
     it('states the category and what it means, not just a colour', () => {
-      expect(sign.querySelector('.sign__category')?.textContent?.trim()).toBe(
+      expect(sign.querySelector('.sign__band-word')?.textContent?.trim()).toBe(
         'RED EQUIPMENT'
       );
-      expect(sign.querySelector('.sign__rule')?.textContent?.trim()).toBe(
-        'YOU MUST PASS MAKESPACE TRAINING TO USE THIS EQUIPMENT'
+      expect(sign.querySelector('.sign__band-rule')?.textContent?.trim()).toBe(
+        categoryDescription('red')
       );
     });
 
     it('says what each QR code is for, so scanning is a decision', () => {
-      const label = sign.querySelector('.sign__footer')?.textContent ?? '';
+      const label = sign.querySelector('.sign__codes')?.textContent ?? '';
       const text = label.replace(/\s+/g, ' ');
-      expect(text).toContain('Something wrong with this equipment?');
-      expect(text).toContain('report a problem');
-      expect(text).toContain('Learn to use this equipment!');
+      expect(text).toContain('Learn');
+      expect(text).toContain('Get trained');
+      expect(text).toContain('Trouble tickets');
+      // Each title carries a line saying what scanning gets you.
+      expect(text).toContain('view active issues');
+      expect(text).toContain('pass the equipment quiz online');
     });
 
-    it('carries both QR codes, drawn on the server', () => {
+    it('reads down the sign in the order a member meets the machine', () => {
+      const titles = [...sign.querySelectorAll('.sign__scan-title')].map(
+        node => (node.textContent ?? '').replace(/\s+/g, ' ').trim()
+      );
+
+      expect(titles).toStrictEqual(['Learn', 'Get trained', 'Trouble tickets']);
+    });
+
+    // What the middle block says depends on the colour, because what a
+    // member has to do before touching the machine depends on the colour.
+    describe('the middle block', () => {
+      const ofCategory = (
+        category: 'orange' | 'green',
+        areaEmail = O.none as O.Option<string>
+      ) =>
+        renderPage(
+          viewModel({
+            signs: [
+              {
+                ...viewModel().signs[0],
+                category,
+                trainUrl: O.none,
+                areaEmail,
+              },
+            ],
+          })
+        );
+
+      it('tells red equipment how training is actually obtained', () => {
+        const text = (
+          renderPage(viewModel()).textContent ?? ''
+        ).replace(/\s+/g, ' ');
+
+        expect(text).toContain('You must be trained to use this equipment!');
+        expect(text).toContain('pass the equipment quiz online');
+      });
+
+      it('tells orange equipment it is members only, with no code to scan', () => {
+        const orange = ofCategory('orange');
+        const text = (orange.textContent ?? '').replace(/\s+/g, ' ');
+
+        expect(text).toContain('Members only');
+        expect(text).toContain("You don't need formal training");
+        expect(text).not.toContain('Get trained');
+        // Learn and trouble tickets only: there is nothing to scan here.
+        expect(orange.querySelectorAll('.sign__qr svg')).toHaveLength(2);
+      });
+
+      it('points an orange question at the area, when the area has an address', () => {
+        const text = (
+          ofCategory('orange', O.some('area@example.com')).textContent ?? ''
+        ).replace(/\s+/g, ' ');
+
+        expect(text).toContain('Contact area@example.com');
+      });
+
+      it('leaves the contact sentence out when the area has no address', () => {
+        expect(ofCategory('orange').textContent).not.toContain('Contact');
+      });
+
+      it('tells green equipment it is open to all', () => {
+        const green = ofCategory('green');
+        const text = (green.textContent ?? '').replace(/\s+/g, ' ');
+
+        expect(text).toContain('Open to all!');
+        expect(text).toContain('free for all members and non-members');
+        expect(green.querySelectorAll('.sign__qr svg')).toHaveLength(2);
+      });
+    });
+
+    it('carries all three QR codes, drawn on the server', () => {
       const codes = sign.querySelectorAll('.sign__qr svg');
-      expect(codes).toHaveLength(2);
+      expect(codes).toHaveLength(3);
       const svg = codes[0];
       // A QR code of this URL needs many modules; a handful of paths would
       // mean it had not really been encoded.
@@ -68,12 +149,17 @@ describe('printable equipment signs', () => {
       ).toBeGreaterThan(500);
     });
 
-    it('prints both URLs, for anyone without a camera to hand', () => {
+    it('prints every URL in full, for anyone without a camera to hand', () => {
       const urls = [...sign.querySelectorAll('.sign__url')].map(
-        node => node.textContent ?? ''
+        node => node.textContent?.trim() ?? ''
       );
-      expect(urls.join(' ')).toContain('equipment.makespace.org');
-      expect(urls.join(' ')).toContain('/trouble-tickets?equipmentId=');
+      // Whole addresses, so they can be typed - no ellipsis, no truncation.
+      expect(urls).toContain('equipment.makespace.org/metal-shop/metal-lathe');
+      expect(urls).toContain(
+        'app.makespace.org/trouble-tickets?equipmentId=metal-shop-metal-lathe'
+      );
+      expect(urls).toContain('app.makespace.org/equipment/metal-shop-metal-lathe');
+      expect(urls.join(' ')).not.toContain('…');
     });
 
     it('uses a readable slug rather than a uuid in the printed URL', () => {
@@ -100,6 +186,21 @@ describe('printable equipment signs', () => {
 
   describe('getting it onto paper', () => {
     const page = renderPage(viewModel());
+
+    it('sets the paper size, so the dialog opens on the right one', () => {
+      expect(render(viewModel())).toContain('size: A6 portrait');
+      expect(render(viewModel({size: 'a5'}))).toContain('size: A5 portrait');
+    });
+
+    it('offers the other sizes, keeping what is being printed', () => {
+      const links = [...page.querySelectorAll('.signs-page__size')].map(
+        node => node.getAttribute('href') ?? ''
+      );
+      expect(links.some(href => href.includes('size=a7'))).toBe(true);
+      expect(links.every(href => href.includes(`areaId=${areaId}`))).toBe(
+        true
+      );
+    });
 
     it('offers a print button, since the browser dialog is where PDFs come from', () => {
       expect(page.querySelector('[data-print-signs]')).not.toBeNull();

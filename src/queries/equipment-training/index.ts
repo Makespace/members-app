@@ -1,21 +1,24 @@
 import * as t from 'io-ts';
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
-import {failureWithStatus} from '../../types/failure-with-status';
+import * as E from 'fp-ts/Either';
 import {StatusCodes} from 'http-status-codes';
+import {formatValidationErrors} from 'io-ts-reporters';
+import {failureWithStatus} from '../../types/failure-with-status';
+import {safe, toLoggedInContent} from '../../types/html';
+import {Query} from '../query';
 import {constructViewModel} from './construct-view-model';
 import {render} from './render';
-import * as E from 'fp-ts/Either';
-import {formatValidationErrors} from 'io-ts-reporters';
-import {Query} from '../query';
-import {resolveEquipmentReference} from './resolve-reference';
+import {resolveEquipmentReference} from '../equipment/resolve-reference';
 
 const invalidParams = flow(
   formatValidationErrors,
   failureWithStatus('Invalid request parameters', StatusCodes.BAD_REQUEST)
 );
 
-export const equipment: Query = deps => (user, params) =>
+// What the QR code on a red sign leads to: the two steps to being trained on
+// this machine, and how far the member reading it has got.
+export const equipmentTraining: Query = deps => (user, params) =>
   pipe(
     params,
     t.strict({equipment: t.string}).decode,
@@ -30,5 +33,6 @@ export const equipment: Query = deps => (user, params) =>
     ),
     TE.fromEither,
     TE.chain(constructViewModel(deps, user)),
-    TE.map(render)
+    TE.map(render),
+    TE.map(toLoggedInContent(safe('Get trained')))
   );

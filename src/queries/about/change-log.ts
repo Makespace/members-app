@@ -16,7 +16,12 @@ export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
     date: '2026-09-24',
     headline:
-      'Scan the QR code on a machine to see what has been reported about it, or report something new',
+      'Every red machine now has a page telling you how to get trained on it, and how far you have got',
+  },
+  {
+    date: '2026-09-24',
+    headline:
+      'Printable signs for every machine, with QR codes for its guide, its trainers, and its trouble tickets',
   },
   {
     date: '2026-09-23',

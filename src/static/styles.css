@@ -2161,12 +2161,17 @@ label img {
    would be unreachable without a mouse. */
 .sign-block {
   position: relative;
+  /* Shrink to the sign, so the button anchors to its corner rather than to
+     the width of the page - which is what put it off beside the sign. */
+  width: fit-content;
+  max-width: 100%;
 }
 
 .sign-block__print {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1;
   font-size: 0.9rem;
   opacity: 0;
   transition: opacity 0.12s ease-in-out;
@@ -2192,147 +2197,327 @@ label img {
   }
 }
 
-/* Printable equipment signs. Each sign fills one landscape page: a thick
-   border in the equipment's colour, its name, what the colour means, and a
-   QR code leading to its trouble tickets. */
-.sign {
-  /* Makespace posters are set in Inter; the stack falls back to the site's
-     own faces if it does not load, so a sign always prints. */
-  font-family: Inter, Optima, Candara, 'Noto Sans', sans-serif;
-  font-feature-settings: 'cv05' 1;
-  border: 1.5rem solid var(--sign-colour);
-  background: white;
-  margin: 0 0 2rem;
-  padding: 0;
-  aspect-ratio: 297 / 210;
-  display: flex;
+/* Printable equipment signs.
+
+   Portrait, with a solid colour band across the top rather than a border
+   around everything: a different silhouette from the signs already in the
+   space, so a new one is recognisably new from across the room.
+
+   Everything is sized in millimetres and scaled from one font size, so the
+   same design holds from A7 to A4 rather than needing a layout each. */
+.signs-page--a7 {
+  --sign-w: 74mm;
+  --sign-h: 105mm;
+  --sign-font: 2.2mm;
 }
 
+.signs-page--a6 {
+  --sign-w: 105mm;
+  --sign-h: 148mm;
+  --sign-font: 3.1mm;
+}
+
+.signs-page--a5 {
+  --sign-w: 148mm;
+  --sign-h: 210mm;
+  --sign-font: 4.4mm;
+}
+
+.signs-page--a4 {
+  --sign-w: 210mm;
+  --sign-h: 297mm;
+  --sign-font: 6.2mm;
+}
+
+.sign {
+  font-family: Inter, Optima, Candara, 'Noto Sans', sans-serif;
+  width: var(--sign-w);
+  height: var(--sign-h);
+  font-size: var(--sign-font);
+  background: white;
+  color: #0b0c0c;
+  margin: 0 0 2rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* The colour is the sign. Without this a browser drops every background
+     when printing unless the person finds "Background graphics" in the
+     dialog, and the sign comes out as black text on white paper. */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  /* Only on screen: the paper's own edge does this job when printed. */
+  box-shadow: 0 0 0 1px var(--border-color);
+}
+
+/* Each colour carries three shades: the band, a tint for the block that
+   speaks for that colour, and a dark version of it for type on the tint. */
 .sign--red {
   --sign-colour: #e8291c;
-  --sign-text: #a01208;
+  --sign-tint: #fbeae8;
+  --sign-dark: #9c1109;
 }
 
 .sign--orange {
-  --sign-colour: #fa990e;
-  --sign-text: #8a5000;
+  --sign-colour: #e07800;
+  --sign-tint: #fdf0e0;
+  --sign-dark: #8a4700;
 }
 
 .sign--green {
   --sign-colour: #00703c;
-  --sign-text: #00512b;
+  --sign-tint: #e4f0e9;
+  --sign-dark: #005a30;
 }
 
-.sign__inner {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 1.5rem 2rem;
+/* The band is the recognisable part: colour, and the rule in plain words. */
+.sign__band {
+  background: var(--sign-colour);
+  color: white;
+  padding: 1.2em 1em;
   text-align: center;
 }
 
-.sign__name {
-  font-size: 3.4rem;
+.sign__band-word {
+  margin: 0;
+  font-size: 2.6em;
   font-weight: 900;
+  line-height: 1;
   letter-spacing: -0.02em;
-  line-height: 1.1;
-  margin: 0 0 0.5rem;
 }
 
-.sign__category {
-  font-size: 2.2rem;
-  font-weight: 800;
-  color: var(--sign-colour);
-  margin: 0 0 0.75rem;
+.sign__band-rule {
+  margin: 0.35em 0 0;
+  font-size: 1.15em;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
-.sign__rule {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--sign-text);
-  margin: 0 0 auto;
-}
-
-.sign__footer {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  text-align: left;
-  margin-top: 0.75rem;
-}
-
-/* One scannable thing: its code, its title and where it goes. */
-.sign__scan {
+.sign__name {
+  margin: 0;
+  /* Between the band and the codes, with about as much air above as below
+     so it sits on neither. */
+  padding: 0.7em 0.5em 0.1em;
+  flex: 0 1 auto;
+  min-height: 0;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: center;
+  text-align: center;
+  font-size: 2.4em;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+/* The codes stack, each running the full width of the sign: side by side
+   they would each get a fraction of a portrait page, which is not enough for
+   a scannable code and its explanation. Stacked, each gets the code on the
+   left and its words on the right - how a sign is read. Red equipment
+   carries three (learn, train, tickets); orange and green carry two. */
+.sign__codes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  padding: 0 0.6em 0.6em;
+  /* Takes every millimetre the band and the name leave behind, and shares it
+     between the codes: the space below the name is worth more as a bigger
+     code than as white paper, and so was the coloured rule that used to
+     divide them - the band at the top already says which colour this is. */
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.sign__scan {
+  display: flex;
+  /* Each code gets an equal share of the sign, and fills its share. */
+  align-items: center;
+  flex: 1 1 0;
+  gap: 0.8em;
+  padding: 0.5em 0.8em;
+  text-align: left;
+  min-width: 0;
+  min-height: 0;
+  /* A capsule per code, tinted by what scanning it does: three things to
+     choose between read faster as three blocks than as three lines. */
+  border-radius: 1em;
+  background: var(--scan-tint);
+}
+
+.sign__scan--learn {
+  --scan-colour: #14568a;
+  --scan-tint: #e7f0f8;
+}
+
+.sign__scan--train {
+  --scan-colour: #005a30;
+  --scan-tint: #e4f0e9;
+}
+
+.sign__scan--fault {
+  --scan-colour: #9c1109;
+  --scan-tint: #fbeae8;
+}
+
+/* The block that speaks for the machine's own colour, and has nothing to
+   scan: it takes the sign's colour and the words run the full width. */
+.sign__scan--notice {
+  --scan-colour: var(--sign-dark);
+  --scan-tint: var(--sign-tint);
+}
+
+.sign__scan-text {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .sign__qr {
-  flex: none;
   line-height: 0;
+  /* The code keeps its own white ground whatever the capsule is tinted,
+     because a scanner reads contrast, not colour. */
+  background: #fff;
+  border-radius: 0.4em;
+  padding: 0.3em;
+  /* Square, and as tall as its share of the sign allows: the codes are given
+     whatever the name does not need, so a poster prints a bigger code than a
+     postcard without either needing a layout of its own. Capped so a sign
+     with only two codes does not hand half its width to one of them. */
+  flex: 0 0 auto;
+  aspect-ratio: 1;
+  height: min(100%, 12em);
+  width: auto;
+  max-width: 38%;
 }
 
-.sign__scan-text p {
-  margin: 0 0 0.15rem;
+.sign__qr svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .sign__scan-title {
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0.3em;
+  margin: 0;
+  /* Two or three words, read from across the room: the title does the work
+     of telling a member which code is which, so it is set as a heading
+     rather than as a label. */
+  font-size: 1.7em;
+  color: var(--scan-colour);
   font-weight: 800;
-  font-size: 1.25rem;
-  line-height: 1.2;
+  line-height: 1.15;
+  text-wrap: balance;
 }
 
-.sign__scan-title--fault {
-  color: #e8291c;
+/* A line of explanation under each title: what scanning actually gets you. */
+.sign__scan-note {
+  /* Space above, so the title reads as a heading rather than as the first
+     line of the sentence under it. */
+  margin: 0.45em 0 0.2em;
+  font-size: 0.85em;
+  line-height: 1.25;
+  color: #2b2b2b;
+  text-wrap: pretty;
 }
 
-.sign__scan-title--learn {
-  color: #0b0c0c;
-}
+/* The title carries the capsule's colour; the words under it stay black, so
+   the colour is a signal rather than decoration. */
 
 .sign__icon {
   flex: none;
-  width: 1.4rem;
-  height: 1.4rem;
+  width: 1.1em;
+  height: 1.1em;
+  margin-top: 0.1em;
 }
 
 .sign__url {
-  font-size: 0.8rem;
-  color: var(--grey-color);
+  margin: 0.3em 0 0;
+  font-size: 0.72em;
+  line-height: 1.25;
+  color: #55504f;
+  /* Shown in full and never truncated: its whole purpose is to be typed by
+     someone whose camera will not scan the code. It wraps mid-address
+     because a URL has no spaces to wrap at. */
   overflow-wrap: anywhere;
 }
 
-/* Printing: one sign per landscape page, and nothing else on the paper. */
-@page {
-  size: landscape;
-  margin: 8mm;
+
+
+/* The two steps to being trained on a machine: numbered, because the order
+   matters - the quiz comes before anyone will book you a practical. */
+.training-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-@media print {
-  .page-nav,
-  .signs-page__controls,
-  .site-banner {
-    display: none !important;
-  }
-
-  .sign {
-    margin: 0;
-    break-after: page;
-    page-break-after: always;
-    border-width: 1rem;
-  }
-
-  .sign:last-child {
-    break-after: auto;
-    page-break-after: auto;
-  }
+.training-step {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
 }
 
-/* Where a focused trouble-tickets page says what it is about. */
-.tt-home__where {
-  color: var(--grey-color);
+.training-step h2 {
+  margin-top: 0;
+}
+
+/* Where the member stands on this step, said in one sentence. */
+.training-step__state {
+  border-left: 6px solid;
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.training-step__state p {
+  margin: 0;
+}
+
+.training-step__state--done {
+  border-color: #00703c;
+  background: #e4f0e9;
+}
+
+.training-step__state--todo {
+  border-color: #e07800;
+  background: #fdf0e0;
+}
+
+/* Nobody will book a practical before the quiz is passed, so the step is
+   dimmed until then: still readable, plainly not your turn yet. */
+.training-step--waiting {
+  opacity: 0.55;
+}
+
+.training-summary {
+  margin: 1rem 0 0;
+}
+
+.training-summary dt {
+  font-weight: bold;
+}
+
+.training-summary dd {
+  margin: 0.25rem 0 0.75rem;
+}
+
+.training-trainers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.training-trainers li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }

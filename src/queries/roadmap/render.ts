@@ -37,7 +37,8 @@ export const render = () => html`
       done(html`Report a problem from inside the app, picking the machine from
       a list instead of typing its name`),
       done(html`Printable signs for each machine: its name, what its colour
-      means, and a QR code for reporting problems`),
+      means, and QR codes for learning about it, getting trained on it, and
+      reporting a problem`),
       todo(html`Let members follow the tickets they've reported`),
 
       heading(html`Notifications`, {done: true}),
@@ -93,6 +94,8 @@ export const render = () => html`
       heading(html`Making it easier for members to get trained`),
       done(html`Show who the active trainers are`),
       done(html`Show when the last trainings were`),
+      done(html`A page per machine showing the steps to being trained on it,
+      and how far you have got`),
       todo(html`Training scheduling in the app`),
 
       heading(html`Fob-based access control`),
