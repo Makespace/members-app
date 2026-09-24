@@ -28,6 +28,13 @@ export const gmailMessageTable = sqliteTable('gmail_message', {
   list_unsubscribe: text('list_unsubscribe'),
   auto_submitted: text('auto_submitted'),
   precedence: text('precedence'),
+  // Every header the message carried, as [{name, value}]. The columns above
+  // are the handful someone once had a use for; a rule written later needs
+  // whatever it needs, and the only way it can read that from mail already
+  // imported - without a re-import that cannot reach archived mail anyway -
+  // is if the whole set was kept. NULL means this row predates the column
+  // and is still to be refreshed.
+  headers_json: text('headers_json'),
   cached_at: integer('cached_at', {mode: 'timestamp_ms'}).notNull(),
 });
 
@@ -58,6 +65,7 @@ const createGmailMessageTable = sql`
     list_unsubscribe TEXT,
     auto_submitted TEXT,
     precedence TEXT,
+    headers_json TEXT,
     cached_at INTEGER NOT NULL
   );
 `;
@@ -92,4 +100,5 @@ export const addGmailMessageColumns = [
   sql`ALTER TABLE gmail_message ADD COLUMN list_unsubscribe TEXT;`,
   sql`ALTER TABLE gmail_message ADD COLUMN auto_submitted TEXT;`,
   sql`ALTER TABLE gmail_message ADD COLUMN precedence TEXT;`,
+  sql`ALTER TABLE gmail_message ADD COLUMN headers_json TEXT;`,
 ];

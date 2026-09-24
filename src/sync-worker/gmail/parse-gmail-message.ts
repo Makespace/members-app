@@ -43,6 +43,10 @@ export type ParsedGmailMessage = {
   listUnsubscribe: string | null;
   autoSubmitted: string | null;
   precedence: string | null;
+  // The complete header set, in the order Gmail returned it. The named
+  // fields above are conveniences; this is what lets a rule written later
+  // judge mail imported earlier.
+  headers: ReadonlyArray<{name: string; value: string}>;
   subject: string | null;
   receivedAt: Date;
   snippet: string | null;
@@ -130,6 +134,11 @@ export const parseGmailMessage = (
     listUnsubscribe: header(message.payload, 'List-Unsubscribe'),
     autoSubmitted: header(message.payload, 'Auto-Submitted'),
     precedence: header(message.payload, 'Precedence'),
+    headers: (message.payload?.headers ?? []).flatMap(candidate =>
+      candidate.name && typeof candidate.value === 'string'
+        ? [{name: candidate.name, value: candidate.value}]
+        : []
+    ),
     subject: header(message.payload, 'Subject'),
     receivedAt: Number.isFinite(internalMs)
       ? new Date(internalMs)
