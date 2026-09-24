@@ -46,6 +46,9 @@ export const render = () => html`
       it, and whether you have passed its online quiz yet`),
       todo(html`Book a practical training session in the app, rather than on
       Meetup or by email`),
+      todo(html`Ask members to countersign their training, confirming they are
+      happy with what they were shown and confident to use the machine - this
+      becomes a third step on each machine's training page`),
 
       heading(html`Notifications`, {done: true}),
       done(html`Banners at the top of the app for events and things that need

@@ -17,11 +17,12 @@ import {
 } from '../../read-models/shared-state/member/training-delivered';
 import {DateTime} from 'luxon';
 
-// Where the member has got to, told from their own quiz results and training
-// record rather than from a list of everybody: a member on this page is
-// asking about themselves.
-export type Progress =
-  | {tag: 'trained'; since: Date}
+// Where the member has got to with the quiz, told from their own results
+// rather than from a list of everybody: a member on this page is asking about
+// themselves. Whether they have been trained is tracked separately, because
+// the two steps can be reached in either order - plenty of members were
+// trained before the quiz existed.
+export type QuizProgress =
   | {tag: 'passed'; completedAt: Date}
   | {tag: 'failed'; completedAt: Date; score: number; maxScore: number}
   | {tag: 'not-attempted'}
@@ -36,7 +37,9 @@ export type ViewModel = {
   };
   area: {name: string; email: O.Option<string>};
   guideUrl: string;
-  progress: Progress;
+  quiz: QuizProgress;
+  // When this member was marked trained on this equipment, if they have been.
+  trainedSince: O.Option<Date>;
   // Who can actually run a practical, and how recently each of them has -
   // a list of names says less than a list of names with their record beside
   // it, when you are deciding whether to wait or to email.
@@ -51,25 +54,27 @@ export type ViewModel = {
 const isPass = (row: {score: number; maxScore: number}) =>
   row.maxScore > 0 && row.score >= row.maxScore;
 
-const progressFor = (
+const trainedSinceFor = (
   deps: Dependencies,
   user: User,
-  equipment: {id: UUID; trainingSheetId: O.Option<string>}
-): Progress => {
-  const trainedSince = pipe(
+  equipmentId: UUID
+): O.Option<Date> =>
+  pipe(
     deps.sharedReadModel.members.getByMemberNumber(user.memberNumber),
     O.chain(member =>
       pipe(
-        member.trainedOn.find(item => item.id === (equipment.id as string)),
+        member.trainedOn.find(item => item.id === (equipmentId as string)),
         O.fromNullable
       )
     ),
     O.map(item => item.trainedAt)
   );
-  if (O.isSome(trainedSince)) {
-    return {tag: 'trained', since: trainedSince.value};
-  }
 
+const quizProgressFor = (
+  deps: Dependencies,
+  user: User,
+  equipment: {id: UUID; trainingSheetId: O.Option<string>}
+): QuizProgress => {
   if (O.isNone(equipment.trainingSheetId)) {
     return {tag: 'no-quiz'};
   }
@@ -126,7 +131,8 @@ export const constructViewModel =
           equipment.name,
           equipment.category
         ),
-        progress: progressFor(deps, user, equipment),
+        quiz: quizProgressFor(deps, user, equipment),
+        trainedSince: trainedSinceFor(deps, user, equipment.id),
         trainers: equipment.trainers.map(trainer => ({
           memberNumber: trainer.memberNumber,
           name: trainer.name,

@@ -22,7 +22,12 @@ describe('how far a member has got with training', () => {
   const progress = async () =>
     getRightOrFail(
       await constructViewModel(framework.depsForCommands, member)(equipmentId)()
-    ).progress;
+    ).quiz;
+
+  const trainedSince = async () =>
+    getRightOrFail(
+      await constructViewModel(framework.depsForCommands, member)(equipmentId)()
+    ).trainedSince;
 
   const quizAttempt = (score: number, maxScore: number, completedAt: Date) =>
     framework.commands.trainingQuiz.record({
@@ -111,16 +116,17 @@ describe('how far a member has got with training', () => {
       expect(await progress()).toStrictEqual({tag: 'not-attempted'});
     });
 
-    // Being trained is the end of the road, whatever the quiz history says -
-    // plenty of members were trained before the quiz existed.
-    it('says a trained member is trained, without mentioning the quiz', async () => {
+    // Being trained and having passed the quiz are separate facts, and can
+    // arrive in either order - plenty of members were trained long before the
+    // quiz existed.
+    it('records that a member has been trained, separately from the quiz', async () => {
       await framework.commands.trainers.markTrained({
         equipmentId,
         memberNumber: member.memberNumber as Int,
       });
 
-      const result = await progress();
-      expect(result.tag).toBe('trained');
+      expect(O.isSome(await trainedSince())).toBe(true);
+      expect((await progress()).tag).toBe('not-attempted');
     });
   });
 

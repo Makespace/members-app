@@ -15,7 +15,8 @@ const viewModel = (overrides: Partial<ViewModel> = {}): ViewModel => ({
   },
   area: {name: 'Wood Shop', email: O.some('woodshop-owners@example.com')},
   guideUrl: 'https://equipment.makespace.org/wood-shop/band-saw',
-  progress: {tag: 'not-attempted'},
+  quiz: {tag: 'not-attempted'},
+  trainedSince: O.none,
   trainers: [
     {
       memberNumber: 1234,
@@ -72,7 +73,7 @@ describe('the get-trained page', () => {
     it('says they have not passed yet, with the score to beat', () => {
       const text = textOf(
         viewModel({
-          progress: {
+          quiz: {
             tag: 'failed',
             score: 7,
             maxScore: 10,
@@ -88,7 +89,7 @@ describe('the get-trained page', () => {
     it('moves them on to the practical once they have passed', () => {
       const text = textOf(
         viewModel({
-          progress: {tag: 'passed', completedAt: new Date('2026-03-04')},
+          quiz: {tag: 'passed', completedAt: new Date('2026-03-04')},
         })
       );
 
@@ -96,16 +97,43 @@ describe('the get-trained page', () => {
       expect(text).toContain('in-person training session');
     });
 
-    it('tells a trained member there is nothing left to do', () => {
+    it('tells a trained member both steps are behind them', () => {
       const text = textOf(
-        viewModel({progress: {tag: 'trained', since: new Date('2026-03-04')}})
+        viewModel({trainedSince: O.some(new Date('2026-03-04'))})
       );
 
-      expect(text).toContain('You are trained on this equipment');
+      // The quiz is not asked of someone who is already trained: most
+      // training records predate the quiz entirely.
+      expect(text).toContain('You are already trained on this equipment');
+      expect(text).toContain('You have completed an in-person training');
+      expect(text).toContain('refresher');
+    });
+
+    // The second step says what is blocking it, rather than saying nothing
+    // until the first step is done.
+    it('tells a member waiting on the quiz what step two needs', () => {
+      const secondStep =
+        page(viewModel()).querySelectorAll('.training-step')[1];
+
+      expect(secondStep.textContent).toContain(
+        'You need to take the online quiz'
+      );
+    });
+
+    it('asks a member who has passed to attend a practical', () => {
+      const secondStep = page(
+        viewModel({
+          quiz: {tag: 'passed', completedAt: new Date('2026-03-04')},
+        })
+      ).querySelectorAll('.training-step')[1];
+
+      expect(secondStep.textContent).toContain(
+        'You need to attend an in-person training'
+      );
     });
 
     it('is honest when the equipment has no quiz registered', () => {
-      const text = textOf(viewModel({progress: {tag: 'no-quiz'}}));
+      const text = textOf(viewModel({quiz: {tag: 'no-quiz'}}));
 
       expect(text).toContain('No online quiz is registered');
     });
@@ -158,7 +186,7 @@ describe('the get-trained page', () => {
       expect(
         isDimmed(
           viewModel({
-            progress: {
+            quiz: {
               tag: 'failed',
               score: 7,
               maxScore: 10,
@@ -173,7 +201,7 @@ describe('the get-trained page', () => {
       expect(
         isDimmed(
           viewModel({
-            progress: {tag: 'passed', completedAt: new Date('2026-03-04')},
+            quiz: {tag: 'passed', completedAt: new Date('2026-03-04')},
           })
         )
       ).toBe(false);
@@ -182,7 +210,7 @@ describe('the get-trained page', () => {
     it('lifts it for a member who is already trained', () => {
       expect(
         isDimmed(
-          viewModel({progress: {tag: 'trained', since: new Date('2026-03-04')}})
+          viewModel({trainedSince: O.some(new Date('2026-03-04'))})
         )
       ).toBe(false);
     });

@@ -8,7 +8,7 @@ import {
   categoryBadge,
   categoryDescription,
 } from '../../templates/equipment-category';
-import {Progress, ViewModel} from './construct-view-model';
+import {ViewModel} from './construct-view-model';
 
 const MEETUP = 'https://www.meetup.com/makespace/';
 const MANAGEMENT_EMAIL = 'management@makespace.org';
@@ -18,49 +18,96 @@ const emailLink = (address: string) =>
     >${sanitizeString(address)}</a
   >`;
 
-// Where the member stands, in the second person, because this page exists to
-// answer "what do I do next?" for the person reading it.
-const progressPanel = (progress: Progress): Html => {
-  switch (progress.tag) {
-    case 'trained':
-      return html`<div class="training-step__state training-step__state--done">
-        <p>
-          <strong>You are trained on this equipment.</strong> Marked trained on
-          ${displayDate(DateTime.fromJSDate(progress.since))}.
-        </p>
-      </div>`;
+const state = (done: boolean, body: Html) =>
+  html`<div
+    class="training-step__state training-step__state--${done
+      ? safe('done')
+      : safe('todo')}"
+  >
+    ${body}
+  </div>`;
+
+// Where the member stands on each step, in the second person, because this
+// page exists to answer "what do I do next?" for the person reading it. Both
+// steps carry one, so the answer is legible from either half of the page.
+const quizState = (viewModel: ViewModel): Html => {
+  // Trained members who never took the quiz are not behind on anything: the
+  // quiz came in long after most of the training records did.
+  if (O.isSome(viewModel.trainedSince) && viewModel.quiz.tag !== 'passed') {
+    return state(
+      true,
+      html`<p>
+        <strong>You are already trained on this equipment</strong>, so you do
+        not need to take the quiz.
+      </p>`
+    );
+  }
+  switch (viewModel.quiz.tag) {
     case 'passed':
-      return html`<div class="training-step__state training-step__state--done">
-        <p>
+      return state(
+        true,
+        html`<p>
           <strong>You passed the online quiz</strong> on
-          ${displayDate(DateTime.fromJSDate(progress.completedAt))}. Next:
-          an in-person training session.
-        </p>
-      </div>`;
+          ${displayDate(DateTime.fromJSDate(viewModel.quiz.completedAt))}.
+        </p>`
+      );
     case 'failed':
-      return html`<div class="training-step__state training-step__state--todo">
-        <p>
+      return state(
+        false,
+        html`<p>
           <strong>You have taken the online quiz but not passed it yet.</strong>
-          Your best attempt scored ${safe(String(progress.score))} out of
-          ${safe(String(progress.maxScore))} on
-          ${displayDate(DateTime.fromJSDate(progress.completedAt))}. You can
-          take it again.
-        </p>
-      </div>`;
+          Your best attempt scored ${safe(String(viewModel.quiz.score))} out of
+          ${safe(String(viewModel.quiz.maxScore))} on
+          ${displayDate(DateTime.fromJSDate(viewModel.quiz.completedAt))}. You
+          can take it again.
+        </p>`
+      );
     case 'not-attempted':
-      return html`<div class="training-step__state training-step__state--todo">
-        <p><strong>You need to take the online quiz.</strong></p>
-      </div>`;
+      return state(
+        false,
+        html`<p><strong>You need to take the online quiz.</strong></p>`
+      );
     case 'no-quiz':
-      return html`<div class="training-step__state training-step__state--todo">
-        <p>
+      return state(
+        false,
+        html`<p>
           No online quiz is registered for this equipment in the app yet, so
           your result cannot be shown here. The equipment guide is still the
           place to start.
-        </p>
-      </div>`;
+        </p>`
+      );
   }
 };
+
+const practicalState = (viewModel: ViewModel): Html =>
+  pipe(
+    viewModel.trainedSince,
+    O.match(
+      () =>
+        viewModel.quiz.tag === 'passed'
+          ? state(
+              false,
+              html`<p>
+                <strong>You need to attend an in-person training.</strong>
+              </p>`
+            )
+          : // Nobody will book a practical before the quiz is passed, so the
+            // step says what is actually blocking it rather than going quiet.
+            state(
+              false,
+              html`<p><strong>You need to take the online quiz.</strong></p>`
+            ),
+      trainedSince =>
+        state(
+          true,
+          html`<p>
+            <strong>You have completed an in-person training</strong> on
+            ${displayDate(DateTime.fromJSDate(trainedSince))}. You are welcome
+            to take the training again whenever you would like a refresher.
+          </p>`
+        )
+    )
+  );
 
 // The people who can actually run a practical, with what each of them has
 // done recently: deciding whether to wait for a session or email the owners
@@ -93,12 +140,13 @@ const trainerList = (viewModel: ViewModel) =>
 
 const practicalStep = (viewModel: ViewModel) => html`
   <li
-    class="training-step${viewModel.progress.tag === 'passed' ||
-    viewModel.progress.tag === 'trained'
+    class="training-step${viewModel.quiz.tag === 'passed' ||
+    O.isSome(viewModel.trainedSince)
       ? safe('')
       : safe(' training-step--waiting')}"
   >
     <h2>2. Attend an in-person training session</h2>
+    ${practicalState(viewModel)}
     <p>
       Check the
       <a href="${safe(MEETUP)}">Makespace Meetup group</a>
@@ -191,7 +239,7 @@ export const render = (viewModel: ViewModel): Html => {
       <ol class="training-steps">
         <li class="training-step">
           <h2>1. Pass the online quiz</h2>
-          ${progressPanel(viewModel.progress)}
+          ${quizState(viewModel)}
           <p>
             The quiz is on the equipment guide for this machine, which is also
             where you learn how it works.
@@ -203,6 +251,9 @@ export const render = (viewModel: ViewModel): Html => {
           </p>
         </li>
         ${practicalStep(viewModel)}
+        <!-- A third step belongs here once members countersign their
+             training to say they are happy with what they were shown and
+             confident to use the machine. -->
       </ol>
       <p>
         <a href="/equipment/${safe(viewModel.equipment.id)}"
