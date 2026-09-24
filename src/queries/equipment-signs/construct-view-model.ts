@@ -22,6 +22,9 @@ export type Sign = {
   url: string;
   // The equipment guide: how to use the thing, and how to get trained on it.
   learnUrl: string;
+  // This machine's page in the app, listing who can train you. Only red
+  // equipment needs training, so only red equipment carries this code.
+  trainUrl: O.Option<string>;
 };
 
 export type ViewModel = {
@@ -92,6 +95,15 @@ export const constructViewModel =
               item.name,
               item.category
             ),
+            trainUrl:
+              item.category === 'red'
+                ? O.some(
+                    `${deps.conf.PUBLIC_URL}/equipment/${equipmentSlug(
+                      areaNames.get(item.areaId as string) ?? '',
+                      item.name
+                    )}`
+                  )
+                : O.none,
           }));
 
         const selected = pipe(

@@ -1,6 +1,6 @@
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
-import {html, joinHtml, safe, sanitizeString} from '../../types/html';
+import {Html, html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {qrCodeSvg} from '../../templates/qr-code';
 import {EquipmentCategory} from '../../types/equipment-category';
 import {Sign, ViewModel} from './construct-view-model';
@@ -65,6 +65,20 @@ const spannerIcon = html`<svg
   <path d="M14.7 6.3 18 3l3 3-3.3 3.3" />
 </svg>`;
 
+const capIcon = html`<svg
+  class="sign__icon"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+>
+  <path d="M12 4 2 9l10 5 10-5Z" />
+  <path d="M6 11.5V17c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5v-5.5" />
+</svg>`;
+
 const bookIcon = html`<svg
   class="sign__icon"
   viewBox="0 0 24 24"
@@ -79,6 +93,31 @@ const bookIcon = html`<svg
   <path d="M8 7h7M8 11h7" />
 </svg>`;
 
+// Printed for someone to type, so the scheme is dropped: a browser adds it
+// back, and those eight characters are eight more chances to mistype.
+const forReading = (url: string) => url.replace(/^https?:\/\//, '');
+
+// One code, its title, the line explaining what scanning gets you, and the
+// address underneath for anyone whose camera will not scan it.
+const scanBlock = (block: {
+  qrUrl: string;
+  variant: 'learn' | 'train' | 'fault';
+  icon: Html;
+  title: string;
+  note: string;
+}) => html`
+  <div class="sign__scan">
+    <div class="sign__qr">${qrCodeSvg(block.qrUrl, 200)}</div>
+    <div class="sign__scan-text">
+      <p class="sign__scan-title sign__scan-title--${safe(block.variant)}">
+        ${block.icon} ${safe(block.title)}
+      </p>
+      <p class="sign__scan-note">${safe(block.note)}</p>
+      <p class="sign__url">${sanitizeString(forReading(block.qrUrl))}</p>
+    </div>
+  </div>
+`;
+
 const renderSign = (sign: Sign) => html`
   <div class="sign-block">
     <article class="sign sign--${safe(sign.category)}">
@@ -88,20 +127,34 @@ const renderSign = (sign: Sign) => html`
       </header>
       <h2 class="sign__name">${sanitizeString(sign.name)}</h2>
       <div class="sign__codes">
-        <div class="sign__scan">
-          <div class="sign__qr">${qrCodeSvg(sign.learnUrl, 220)}</div>
-          <p class="sign__scan-title sign__scan-title--learn">
-            ${bookIcon} Learn to use this
-          </p>
-          <p class="sign__url">${sanitizeString(sign.learnUrl)}</p>
-        </div>
-        <div class="sign__scan">
-          <div class="sign__qr">${qrCodeSvg(sign.url, 220)}</div>
-          <p class="sign__scan-title sign__scan-title--fault">
-            ${spannerIcon} Something wrong?
-          </p>
-          <p class="sign__url">${sanitizeString(sign.url)}</p>
-        </div>
+        ${scanBlock({
+          qrUrl: sign.learnUrl,
+          variant: 'learn',
+          icon: bookIcon,
+          title: 'Learn to use this equipment!',
+          note: 'How it works, what it is for, and what it can do.',
+        })}
+        ${pipe(
+          sign.trainUrl,
+          O.match(
+            () => html``,
+            trainUrl =>
+              scanBlock({
+                qrUrl: trainUrl,
+                variant: 'train',
+                icon: capIcon,
+                title: 'Get trained on this equipment!',
+                note: 'Who can train you, and how training works here.',
+              })
+          )
+        )}
+        ${scanBlock({
+          qrUrl: sign.url,
+          variant: 'fault',
+          icon: spannerIcon,
+          title: 'Create and view trouble tickets',
+          note: 'See what has already been reported, and report a problem yourself.',
+        })}
       </div>
     </article>
     <a
