@@ -23,6 +23,10 @@ export type InboxMessage = {
   listUnsubscribe: string | null;
   autoSubmitted: string | null;
   precedence: string | null;
+  // Every header the message carried. Empty for a row imported before
+  // headers were kept and not yet refreshed - a rule reading these should
+  // treat "none" as "unknown", not as evidence.
+  headers: ReadonlyArray<{name: string; value: string}>;
   attachments: ReadonlyArray<{filename: string; size: number}>;
 };
 
@@ -44,6 +48,13 @@ const transformRow = (row: Row): InboxMessage => ({
   listUnsubscribe: row.list_unsubscribe,
   autoSubmitted: row.auto_submitted,
   precedence: row.precedence,
+  headers:
+    row.headers_json === null
+      ? []
+      : (JSON.parse(row.headers_json) as ReadonlyArray<{
+          name: string;
+          value: string;
+        }>),
   attachments: JSON.parse(row.attachments_json) as ReadonlyArray<{
     filename: string;
     size: number;

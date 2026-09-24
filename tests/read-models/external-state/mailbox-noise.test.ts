@@ -20,6 +20,7 @@ const message = (overrides: Partial<InboxMessage> = {}): InboxMessage => ({
   listUnsubscribe: null,
   autoSubmitted: null,
   precedence: null,
+  headers: [],
   attachments: [],
   ...overrides,
 });

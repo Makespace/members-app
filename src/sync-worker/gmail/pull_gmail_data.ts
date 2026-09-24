@@ -1,5 +1,5 @@
 import {Logger} from 'pino';
-import {eq} from 'drizzle-orm';
+import {and, eq, isNull} from 'drizzle-orm';
 import {auth as gmailAuth, gmail} from '@googleapis/gmail';
 import {ExternalStateDB} from '../external-state-db';
 import {
@@ -177,6 +177,7 @@ const upsertMessage = async (
     list_unsubscribe: parsed.listUnsubscribe,
     auto_submitted: parsed.autoSubmitted,
     precedence: parsed.precedence,
+    headers_json: JSON.stringify(parsed.headers),
     cached_at: new Date(),
   };
   await extDB
@@ -219,11 +220,85 @@ const fetchAndCache = async (
   return cached;
 };
 
-const isHistoryExpired = (error: unknown): boolean =>
+const isNotFound = (error: unknown): boolean =>
   typeof error === 'object' &&
   error !== null &&
   'code' in error &&
   (error as {code: unknown}).code === 404;
+
+// Gmail answers an expired history cursor with the same 404.
+const isHistoryExpired = isNotFound;
+
+// How many rows lacking headers are fetched again per cycle. Enough that a
+// mailbox of a few hundred messages is caught up within the hour; few
+// enough that the loop, which runs everything in turn, is never held long.
+const REFRESH_BATCH = 100;
+
+// Rows imported before every header was kept are fetched again, by id, and
+// rewritten with the full set. By id rather than by re-listing, because a
+// listing covers the inbox and the rows most in need of this had already
+// been archived out of it - which is how two copies of one Amazon notice
+// came to sit in the cache with no way to ever judge one of them.
+//
+// Whatever a rule may need later, this is what makes it answerable for mail
+// that is already here, without importing anything again.
+const refreshRowsWithoutHeaders = async (
+  logger: Logger,
+  extDB: ExternalStateDB,
+  client: GmailClient,
+  mailbox: string
+): Promise<number> => {
+  const stale = await extDB
+    .select({id: gmailMessageTable.gmail_message_id})
+    .from(gmailMessageTable)
+    .where(
+      and(
+        eq(gmailMessageTable.mailbox, mailbox),
+        isNull(gmailMessageTable.headers_json)
+      )
+    )
+    .limit(REFRESH_BATCH);
+
+  // A row that cannot be refreshed is recorded as having no headers, so it
+  // is not asked for again every cycle. The row itself stays: it was
+  // correspondence when it arrived, and the mailbox is a record of that.
+  const giveUp = (id: string) =>
+    extDB
+      .update(gmailMessageTable)
+      .set({headers_json: '[]'})
+      .where(eq(gmailMessageTable.gmail_message_id, id));
+
+  let refreshed = 0;
+  for (const {id} of stale) {
+    let message: GmailApiMessage;
+    try {
+      message = await withGoogleRateLimitRetry(
+        logger,
+        `refreshing gmail message ${id}`,
+        () => client.getMessage(id)
+      );
+    } catch (error) {
+      if (!isNotFound(error)) {
+        throw error;
+      }
+      logger.warn(
+        'Gmail no longer has message %s; keeping the cached copy as it is',
+        id
+      );
+      await giveUp(id);
+      continue;
+    }
+    const parsed = parseGmailMessage(message);
+    if (parsed === null) {
+      logger.warn('Skipping unparseable gmail message %s on refresh', id);
+      await giveUp(id);
+      continue;
+    }
+    await upsertMessage(extDB, mailbox, parsed);
+    refreshed++;
+  }
+  return refreshed;
+};
 
 // Pulls the mailbox into the cache: a full INBOX listing on first run (or
 // when the incremental cursor expires - Gmail keeps historyIds for roughly a
@@ -318,5 +393,19 @@ export const pullGmailData = async (
 
   if (cached > 0) {
     logger.info('Cached %s gmail message(s) for %s', cached, mailbox);
+  }
+
+  const refreshed = await refreshRowsWithoutHeaders(
+    logger,
+    extDB,
+    client,
+    mailbox
+  );
+  if (refreshed > 0) {
+    logger.info(
+      'Refreshed the headers of %s cached gmail message(s) for %s',
+      refreshed,
+      mailbox
+    );
   }
 };

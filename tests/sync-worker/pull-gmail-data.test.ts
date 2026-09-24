@@ -12,6 +12,7 @@ import {
   getInboxMessageById,
   getInboxMessages,
 } from '../../src/read-models/external-state/gmail-inbox';
+import {gmailMessageTable} from '../../src/sync-worker/gmail/gmail-message-table';
 import {testLogger} from './util';
 
 const b64 = (value: string) => Buffer.from(value, 'utf8').toString('base64url');
@@ -36,10 +37,15 @@ const apiMessage = (id: string, subject: string, to = 'management@makespace.org'
 
 // A fake Gmail API: bootstrap serves `initial`, incremental serves `added`
 // since the cursor; a 404 can be forced to test the expired-cursor fallback.
+// `archived` can be fetched by id but never appears in a listing, as mail
+// moved out of the inbox behaves; `gone` answers 404, as deleted mail does.
 const fakeClient = (state: {
   historyId: string;
   initial: ReturnType<typeof apiMessage>[];
   added: ReturnType<typeof apiMessage>[];
+  archived?: ReturnType<typeof apiMessage>[];
+  gone?: string[];
+  fetched?: string[];
   expireHistory?: boolean;
 }): GmailClient => ({
   getProfile: () => Promise.resolve({historyId: state.historyId}),
@@ -48,9 +54,15 @@ const fakeClient = (state: {
       ids: [...state.initial, ...state.added].map(message => message.id),
     }),
   getMessage: id => {
-    const found = [...state.initial, ...state.added].find(
-      message => message.id === id
-    );
+    state.fetched?.push(id);
+    if (state.gone?.includes(id)) {
+      return Promise.reject(Object.assign(new Error('gone'), {code: 404}));
+    }
+    const found = [
+      ...state.initial,
+      ...state.added,
+      ...(state.archived ?? []),
+    ].find(message => message.id === id);
     if (!found) {
       return Promise.reject(new Error(`no such message ${id}`));
     }
@@ -205,5 +217,82 @@ describe('pullGmailData', () => {
       'Also for the group',
       'For the group',
     ]);
+  });
+
+  // The cache once kept only a handful of named headers. A rule written
+  // later than a row was imported could not read anything else about it,
+  // and a re-list could not help: it covers the inbox, and the rows in
+  // question had been archived out of it.
+  describe('rows imported before every header was kept', () => {
+    const staleRow = (id: string) =>
+      extDB.insert(gmailMessageTable).values({
+        gmail_message_id: id,
+        gmail_thread_id: `thread-${id}`,
+        mailbox,
+        rfc822_message_id: `<${id}@example.com>`,
+        from_address: `"'Amazon.co.uk' via management" <${mailbox}>`,
+        to_addresses: mailbox,
+        subject: 'Delivery estimate update',
+        received_at: new Date('2026-09-23T06:16:50.000Z'),
+        snippet: null,
+        body_text: null,
+        body_html: null,
+        original_sender: null,
+        headers_json: null,
+        attachments_json: '[]',
+        label_ids: '[]',
+        cached_at: new Date('2026-09-23T06:20:29.000Z'),
+      });
+
+    it('are fetched again by id and rewritten in full, even once archived', async () => {
+      await staleRow('old-1');
+      const archived = apiMessage('old-1', 'Delivery estimate update');
+      archived.payload.headers.push({
+        name: 'X-Original-Sender',
+        value: 'no-reply@amazon.co.uk',
+      });
+      const state = {
+        historyId: 'h1',
+        initial: [] as ReturnType<typeof apiMessage>[],
+        added: [] as ReturnType<typeof apiMessage>[],
+        archived: [archived],
+        fetched: [] as string[],
+      };
+      const factory = () => fakeClient(state);
+
+      await pullGmailData(testLogger(), extDB, factory, mailbox, '');
+
+      const row = await getInboxMessageById(extDB, 'old-1');
+      expect(row?.originalSender).toBe('no-reply@amazon.co.uk');
+      expect(row?.headers).toContainEqual({
+        name: 'X-Original-Sender',
+        value: 'no-reply@amazon.co.uk',
+      });
+
+      // Once is enough: the next cycle has nothing left to refresh.
+      state.fetched.length = 0;
+      await pullGmailData(testLogger(), extDB, factory, mailbox, '');
+      expect(state.fetched).not.toContain('old-1');
+    });
+
+    it('give up on a message Gmail no longer has, keeping the cached copy', async () => {
+      await staleRow('gone-1');
+      const state = {
+        historyId: 'h1',
+        initial: [] as ReturnType<typeof apiMessage>[],
+        added: [] as ReturnType<typeof apiMessage>[],
+        gone: ['gone-1'],
+        fetched: [] as string[],
+      };
+      const factory = () => fakeClient(state);
+
+      await pullGmailData(testLogger(), extDB, factory, mailbox, '');
+      expect(await getInboxMessageById(extDB, 'gone-1')).toBeDefined();
+
+      // Not asked for again every cycle.
+      state.fetched.length = 0;
+      await pullGmailData(testLogger(), extDB, factory, mailbox, '');
+      expect(state.fetched).not.toContain('gone-1');
+    });
   });
 });

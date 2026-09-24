@@ -151,6 +151,7 @@ export const mailboxListForTest = (senders: ReadonlyArray<string>): string =>
       listUnsubscribe: null,
       autoSubmitted: null,
       precedence: null,
+      headers: [],
       attachments: [],
     },
   })}</tbody></table>`;

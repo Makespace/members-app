@@ -42,6 +42,13 @@ describe('parseGmailMessage', () => {
       fromAddress: 'Member <member@example.com>',
       toAddresses: 'management@makespace.org',
       subject: 'Broken bandsaw',
+      // Kept whole, so a rule written later can read any of them.
+      headers: [
+        {name: 'From', value: 'Member <member@example.com>'},
+        {name: 'To', value: 'management@makespace.org'},
+        {name: 'Subject', value: 'Broken bandsaw'},
+        {name: 'Message-ID', value: '<abc@mail.example.com>'},
+      ],
       receivedAt: new Date(1789990000000),
       bodyText: 'Hello\nworld',
       bodyHtml: '<p>Hello</p>',
