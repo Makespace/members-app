@@ -5,6 +5,7 @@ import * as O from 'fp-ts/Option';
 import {UUID} from 'io-ts-types';
 import {render} from '../../../src/queries/equipment-signs/render';
 import {ViewModel} from '../../../src/queries/equipment-signs/construct-view-model';
+import {categoryDescription} from '../../../src/templates/equipment-category';
 
 const areaId = 'aaaaaaaa-0000-0000-0000-000000000001' as UUID;
 
@@ -45,12 +46,14 @@ describe('printable equipment signs', () => {
       );
     });
 
+    // The rule comes from the one place in the app that says what a colour
+    // means, so a printed sign cannot drift from what a screen says.
     it('states the category and what it means, not just a colour', () => {
       expect(sign.querySelector('.sign__band-word')?.textContent?.trim()).toBe(
         'RED EQUIPMENT'
       );
       expect(sign.querySelector('.sign__band-rule')?.textContent?.trim()).toBe(
-        'Training required before use'
+        categoryDescription('red')
       );
     });
 

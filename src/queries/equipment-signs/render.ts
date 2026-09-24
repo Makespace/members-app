@@ -4,6 +4,7 @@ import {Html, html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {qrCodeSvg} from '../../templates/qr-code';
 import {EquipmentCategory} from '../../types/equipment-category';
 import {Sign, ViewModel} from './construct-view-model';
+import {categoryDescription} from '../../templates/equipment-category';
 
 // Paper sizes, smallest first. The sign is laid out in millimetres and its
 // type scales from one millimetre-based font size, so the same design holds
@@ -31,19 +32,13 @@ const pageSize = (size: SizeKey) => html`
   </style>
 `;
 
-// What each sticker colour tells a member standing in front of the machine.
-// The heading is the shorthand people use in the space; the sentence under it
-// is the rule.
+// The heading is the shorthand people use in the space; the sentence under
+// it is the rule, taken from the one place in the app that defines what each
+// colour means, so a sign cannot drift from a screen.
 const CATEGORY_HEADING: Record<EquipmentCategory, string> = {
   red: 'RED EQUIPMENT',
   orange: 'ORANGE EQUIPMENT',
   green: 'GREEN EQUIPMENT',
-};
-
-const CATEGORY_RULE: Record<EquipmentCategory, string> = {
-  red: 'Training required before use',
-  orange: 'Members only — use only if confident',
-  green: 'All members & guests',
 };
 
 // Inline rather than linked: a sign has to print correctly from a browser
@@ -207,11 +202,11 @@ const trainingBlock = (sign: Sign) => {
 const renderSign = (sign: Sign) => html`
   <div class="sign-block">
     <article class="sign sign--${safe(sign.category)}">
-      <h2 class="sign__name">${sanitizeString(sign.name)}</h2>
       <header class="sign__band">
         <p class="sign__band-word">${safe(CATEGORY_HEADING[sign.category])}</p>
-        <p class="sign__band-rule">${safe(CATEGORY_RULE[sign.category])}</p>
+        <p class="sign__band-rule">${categoryDescription(sign.category)}</p>
       </header>
+      <h2 class="sign__name">${sanitizeString(sign.name)}</h2>
       <div class="sign__codes">
         ${scanBlock({
           qrUrl: O.some(sign.learnUrl),

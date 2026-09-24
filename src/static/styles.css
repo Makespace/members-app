@@ -2295,9 +2295,9 @@ label img {
 
 .sign__name {
   margin: 0;
-  /* Above the band, where a sign is read from: which machine this is, then
-     what colour it is, then what to scan. */
-  padding: 0.35em 0.5em 0.3em;
+  /* Between the band and the codes, with about as much air above as below
+     so it sits on neither. */
+  padding: 0.7em 0.5em 0.1em;
   flex: 0 1 auto;
   min-height: 0;
   display: flex;
