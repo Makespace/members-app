@@ -36,6 +36,8 @@ export const render = () => html`
       names them differently`),
       done(html`Report a problem from inside the app, picking the machine from
       a list instead of typing its name`),
+      done(html`Printable signs for each machine: its name, what its colour
+      means, and a QR code for reporting problems`),
       todo(html`Let members follow the tickets they've reported`),
 
       heading(html`Notifications`, {done: true}),

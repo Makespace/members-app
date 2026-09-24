@@ -374,6 +374,7 @@ export const initRoutes = (
     query('/debug/dump-shared-db/buffer', queries.dumpSharedDbAsBuffer),
 
     // Temporary location for POC - may move under individual equipments eventually.
+    query('/equipment-signs', queries.equipmentSigns),
     query('/trouble-tickets', queries.troubleTicketsHome),
     query('/trouble-tickets/board', queries.troubleTickets),
     // Site notification banners: admin management + member dismissal.

@@ -185,6 +185,23 @@ const retireEquipment = (viewModel: ViewModel) =>
 
 // Orange/green equipment has no training machinery, so only the
 // admin-level actions apply.
+const printSign = (viewModel: ViewModel) =>
+  pipe(
+    viewModel,
+    O.of,
+    O.filter(isOwner),
+    O.map(vm => vm.equipment.id),
+    O.map(
+      id =>
+        html` <li>
+          <a href="/equipment-signs?equipmentId=${id}"
+            >Print a sign for this equipment</a
+          >
+        </li>`
+    ),
+    O.getOrElse(() => html``)
+  );
+
 const reportProblem = (viewModel: ViewModel) =>
   html` <li>
     <a href="/trouble-tickets/raise?equipmentId=${viewModel.equipment.id}"
@@ -218,8 +235,8 @@ const equipmentActions = (viewModel: ViewModel) =>
   viewModel.equipment.category === 'red'
     ? html`
         <ul>
-          ${reportProblem(viewModel)} ${setMachines(viewModel)}
-          ${trainMember(viewModel)} ${adminMarkTrainedBy(viewModel)}
+          ${reportProblem(viewModel)} ${printSign(viewModel)}
+          ${setMachines(viewModel)} ${trainMember(viewModel)} ${adminMarkTrainedBy(viewModel)}
           ${addTrainer(viewModel)} ${removeTrainer(viewModel)}
           ${registerSheet(viewModel)}
           ${currentSheet(viewModel)} ${removeTrainingSheet(viewModel)}
@@ -228,8 +245,8 @@ const equipmentActions = (viewModel: ViewModel) =>
       `
     : html`
         <ul>
-          ${reportProblem(viewModel)} ${setMachines(viewModel)}
-          ${retireEquipment(viewModel)}
+          ${reportProblem(viewModel)} ${printSign(viewModel)}
+          ${setMachines(viewModel)} ${retireEquipment(viewModel)}
         </ul>
       `;
 
