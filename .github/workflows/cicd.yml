@@ -23,7 +23,11 @@ jobs:
       - run: make lint unused-exports
 
   test:
-    timeout-minutes: 2
+    # ts-jest compiles the whole suite from cold on CI, which is slower than
+    # it is locally and gets slower as the suite grows. Two minutes started
+    # cancelling this job - and with it the deploy, since the deploy waits on
+    # it - while the tests were still passing.
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
