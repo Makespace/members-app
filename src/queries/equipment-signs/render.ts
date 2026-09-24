@@ -153,7 +153,7 @@ const renderSign = (sign: Sign) => html`
           variant: 'fault',
           icon: spannerIcon,
           title: 'Trouble tickets',
-          note: 'See what has already been reported, and report a problem yourself.',
+          note: "Report an issue with this equipment, or view what has already been reported and whether it's being worked on.",
         })}
       </div>
     </article>
