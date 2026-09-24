@@ -222,8 +222,9 @@ button:hover {
 }
 
 button:active {
-  position: relative;
-  top: 3px;
+  /* See the note on .button:active: the press nudge must not re-position the
+     element, or a button anchored to a corner walks away from the pointer. */
+  transform: translateY(3px);
 }
 
 a.button,
@@ -247,8 +248,13 @@ a.button:visited {
 }
 
 .button:active {
-  position: relative;
-  top: 3px;
+  /* Nudged down on press by moving the painted button, not by changing how it
+     is positioned. `position: relative` here used to win over the absolute
+     placement of a button anchored to a corner, so the print button on a sign
+     jumped to the bottom of the block on mousedown - out from under the
+     pointer, which meant the click never completed and the link never
+     opened. */
+  transform: translateY(3px);
 }
 
 caption {
@@ -755,8 +761,9 @@ a.page-nav__site-link:hover,
   }
 
   .page-nav__mobile-menu-toggle:active {
-    position: static;
-    top: auto;
+    /* The position reset that used to live here was undoing the old global
+       press nudge, which moved buttons rather than painting them moved. The
+       nudge no longer moves anything, so there is nothing to undo. */
     background: var(--focus-color);
     color: var(--text-color);
   }
@@ -934,8 +941,6 @@ a.page-nav__site-link:hover,
   }
 
   .page-nav__mobile-area-back:active {
-    position: static;
-    top: auto;
     background: var(--focus-color);
     color: var(--text-color);
   }
@@ -1575,8 +1580,6 @@ label img {
 }
 
 .tt-quiet-resolve button:active {
-  position: static;
-  top: auto;
 }
 
 .tt-quiet-resolve small {
@@ -1699,8 +1702,6 @@ label img {
 }
 
 .site-banner__dismiss button:active {
-  position: static;
-  top: auto;
 }
 
 .site-banner--action {
@@ -2191,9 +2192,49 @@ label img {
   }
 }
 
+/* Printing: the paper gets the signs and nothing else. Every other thing on
+   this page - the navigation, the size chooser, the warnings about missing
+   guides, the per-sign print button - exists to get you to the point of
+   printing, and has no business on a poster. */
 @media print {
+  .page-nav,
+  .site-banner,
+  .signs-page__controls,
+  .signs-page__warning,
   .sign-block__print {
     display: none !important;
+  }
+
+  body {
+    margin: 0;
+    background: white;
+  }
+
+  .signs-page {
+    display: block;
+    margin: 0;
+    padding: 0;
+    gap: 0;
+  }
+
+  .sign-block {
+    width: auto;
+    max-width: none;
+    margin: 0;
+  }
+
+  .sign {
+    /* The paper's own edge draws the boundary; the screen-only shadow would
+       print as a grey line. */
+    box-shadow: none;
+    margin: 0;
+    /* One sign per sheet, so a run of them comes out as a stack of posters
+       rather than a ribbon. */
+    break-after: page;
+  }
+
+  .sign-block:last-child .sign {
+    break-after: auto;
   }
 }
 

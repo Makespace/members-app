@@ -48,6 +48,21 @@ describe('styles.css', () => {
         };
   };
 
+  // A button that moves on mousedown moves out from under the pointer, and
+  // the click never completes. That is exactly what happened to the "print
+  // this sign" button, which is anchored to the corner of its sign: the
+  // press nudge was `position: relative`, which beat the absolute placement
+  // and dropped the button to the bottom of the block mid-click.
+  it('nudges a pressed button without re-positioning it', () => {
+    const activeRules = [...code.matchAll(/(^|\})\s*[^{}]*:active\s*\{([^}]*)\}/g)]
+      .map(match => match[2]);
+
+    expect(activeRules.length).toBeGreaterThan(0);
+    for (const rule of activeRules) {
+      expect(rule).not.toMatch(/position\s*:/);
+    }
+  });
+
   it('has balanced braces, so no rule is trapped in an unterminated block', () => {
     expect(braceReport()).toStrictEqual({problem: null});
   });
