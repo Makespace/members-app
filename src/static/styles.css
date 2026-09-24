@@ -2282,7 +2282,10 @@ label img {
 
 .sign__name {
   margin: 0;
-  padding: 0.5em 0.5em;
+  /* Tight underneath: the name needs air below the band, but the space
+     between it and the first code is better spent on the code. Padding is in
+     the name's own ems, so 0.5em here is half a very large line. */
+  padding: 0.5em 0.5em 0.15em;
   flex: 0 1 auto;
   min-height: 0;
   display: flex;
