@@ -2155,10 +2155,25 @@ label img {
   outline-offset: 1px;
 }
 
+/* One sign and its own print button, on screen only. */
+.sign-block__actions {
+  margin: 0 0 0.5rem;
+}
+
+@media print {
+  .sign-block__actions {
+    display: none !important;
+  }
+}
+
 /* Printable equipment signs. Each sign fills one landscape page: a thick
    border in the equipment's colour, its name, what the colour means, and a
    QR code leading to its trouble tickets. */
 .sign {
+  /* Makespace posters are set in Inter; the stack falls back to the site's
+     own faces if it does not load, so a sign always prints. */
+  font-family: Inter, Optima, Candara, 'Noto Sans', sans-serif;
+  font-feature-settings: 'cv05' 1;
   border: 1.5rem solid var(--sign-colour);
   background: white;
   margin: 0 0 2rem;
@@ -2192,13 +2207,15 @@ label img {
 
 .sign__name {
   font-size: 3.4rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
   line-height: 1.1;
   margin: 0 0 0.5rem;
 }
 
 .sign__category {
   font-size: 2.2rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--sign-colour);
   margin: 0 0 0.75rem;
 }
