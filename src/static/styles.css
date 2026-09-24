@@ -2250,16 +2250,24 @@ label img {
   box-shadow: 0 0 0 1px var(--border-color);
 }
 
+/* Each colour carries three shades: the band, a tint for the block that
+   speaks for that colour, and a dark version of it for type on the tint. */
 .sign--red {
   --sign-colour: #e8291c;
+  --sign-tint: #fbeae8;
+  --sign-dark: #9c1109;
 }
 
 .sign--orange {
   --sign-colour: #e07800;
+  --sign-tint: #fdf0e0;
+  --sign-dark: #8a4700;
 }
 
 .sign--green {
   --sign-colour: #00703c;
+  --sign-tint: #e4f0e9;
+  --sign-dark: #005a30;
 }
 
 /* The band is the recognisable part: colour, and the rule in plain words. */
@@ -2350,6 +2358,13 @@ label img {
 .sign__scan--fault {
   --scan-colour: #9c1109;
   --scan-tint: #fbeae8;
+}
+
+/* The block that speaks for the machine's own colour, and has nothing to
+   scan: it takes the sign's colour and the words run the full width. */
+.sign__scan--notice {
+  --scan-colour: var(--sign-dark);
+  --scan-tint: var(--sign-tint);
 }
 
 .sign__scan-text {

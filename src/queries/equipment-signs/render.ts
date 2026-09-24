@@ -79,6 +79,34 @@ const capIcon = html`<svg
   <path d="M6 11.5V17c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5v-5.5" />
 </svg>`;
 
+const memberIcon = html`<svg
+  class="sign__icon"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+>
+  <circle cx="12" cy="8" r="3.5" />
+  <path d="M4.5 20.5a7.5 7.5 0 0 1 15 0" />
+</svg>`;
+
+const tickIcon = html`<svg
+  class="sign__icon"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+>
+  <circle cx="12" cy="12" r="9" />
+  <path d="m7.5 12.5 3 3 6-6.5" />
+</svg>`;
+
 const bookIcon = html`<svg
   class="sign__icon"
   viewBox="0 0 24 24"
@@ -97,26 +125,84 @@ const bookIcon = html`<svg
 // back, and those eight characters are eight more chances to mistype.
 const forReading = (url: string) => url.replace(/^https?:\/\//, '');
 
-// One code, its title, the line explaining what scanning gets you, and the
-// address underneath for anyone whose camera will not scan it.
+// A block on the sign: a code with the words that say what scanning it does,
+// or - where there is nothing to scan, because the answer is the words
+// themselves - the words alone, running the width of the capsule.
 const scanBlock = (block: {
-  qrUrl: string;
-  variant: 'learn' | 'train' | 'fault';
+  qrUrl: O.Option<string>;
+  variant: 'learn' | 'train' | 'fault' | 'notice';
   icon: Html;
   title: string;
-  note: string;
+  note: Html;
 }) => html`
   <div class="sign__scan sign__scan--${safe(block.variant)}">
-    <div class="sign__qr">${qrCodeSvg(block.qrUrl, 200)}</div>
+    ${pipe(
+      block.qrUrl,
+      O.match(
+        () => html``,
+        qrUrl => html`<div class="sign__qr">${qrCodeSvg(qrUrl, 200)}</div>`
+      )
+    )}
     <div class="sign__scan-text">
-      <p class="sign__scan-title">
-        ${block.icon} ${safe(block.title)}
-      </p>
-      <p class="sign__scan-note">${safe(block.note)}</p>
-      <p class="sign__url">${sanitizeString(forReading(block.qrUrl))}</p>
+      <p class="sign__scan-title">${block.icon} ${safe(block.title)}</p>
+      <p class="sign__scan-note">${block.note}</p>
+      ${pipe(
+        block.qrUrl,
+        O.match(
+          () => html``,
+          qrUrl =>
+            html`<p class="sign__url">
+              ${sanitizeString(forReading(qrUrl))}
+            </p>`
+        )
+      )}
     </div>
   </div>
 `;
+
+// The middle block is the one that depends on the colour: red equipment has
+// training to get, orange has a rule to keep, and green has neither.
+const trainingBlock = (sign: Sign) => {
+  switch (sign.category) {
+    case 'red':
+      return scanBlock({
+        qrUrl: sign.trainUrl,
+        variant: 'train',
+        icon: capIcon,
+        title: 'Get trained',
+        note: html`<b>You must be trained to use this equipment!</b> To get
+          trained, pass the equipment quiz online and then attend an in-person
+          training session.`,
+      });
+    case 'orange':
+      return scanBlock({
+        qrUrl: O.none,
+        variant: 'notice',
+        icon: memberIcon,
+        title: 'Members only',
+        note: html`You don't need formal training to use this equipment, but
+          you do need to be a member of Makespace. Please only use it if you
+          are confident to do so.${pipe(
+            sign.areaEmail,
+            O.match(
+              () => html``,
+              email =>
+                html` Contact ${sanitizeString(email)} if you have any
+                questions.`
+            )
+          )}`,
+      });
+    case 'green':
+      return scanBlock({
+        qrUrl: O.none,
+        variant: 'notice',
+        icon: tickIcon,
+        title: 'Free to use!',
+        note: html`This equipment requires no training and is free for all
+          members and non-members to use.`,
+      });
+  }
+};
 
 const renderSign = (sign: Sign) => html`
   <div class="sign-block">
@@ -128,32 +214,20 @@ const renderSign = (sign: Sign) => html`
       </header>
       <div class="sign__codes">
         ${scanBlock({
-          qrUrl: sign.learnUrl,
+          qrUrl: O.some(sign.learnUrl),
           variant: 'learn',
           icon: bookIcon,
           title: 'Learn',
-          note: 'What this equipment is for and how to use it.',
+          note: html`What this equipment is for and how to use it.`,
         })}
-        ${pipe(
-          sign.trainUrl,
-          O.match(
-            () => html``,
-            trainUrl =>
-              scanBlock({
-                qrUrl: trainUrl,
-                variant: 'train',
-                icon: capIcon,
-                title: 'Get trained',
-                note: 'Who can train you, and how training works here.',
-              })
-          )
-        )}
+        ${trainingBlock(sign)}
         ${scanBlock({
-          qrUrl: sign.url,
+          qrUrl: O.some(sign.url),
           variant: 'fault',
           icon: spannerIcon,
           title: 'Trouble tickets',
-          note: "Report an issue with this equipment, or view what has already been reported and whether it's being worked on.",
+          note: html`Report an issue with this equipment, or view what has
+            already been reported and whether it's being worked on.`,
         })}
       </div>
     </article>

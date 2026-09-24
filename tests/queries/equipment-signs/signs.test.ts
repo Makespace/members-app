@@ -20,6 +20,7 @@ const viewModel = (overrides: Partial<ViewModel> = {}): ViewModel => ({
       trainUrl: O.some(
         'https://app.makespace.org/equipment/metal-shop-metal-lathe'
       ),
+      areaEmail: O.none,
     },
   ],
   size: 'a6',
@@ -61,7 +62,7 @@ describe('printable equipment signs', () => {
       expect(text).toContain('Trouble tickets');
       // Each title carries a line saying what scanning gets you.
       expect(text).toContain('already been reported');
-      expect(text).toContain('Who can train you');
+      expect(text).toContain('pass the equipment quiz online');
     });
 
     it('reads down the sign in the order a member meets the machine', () => {
@@ -72,20 +73,66 @@ describe('printable equipment signs', () => {
       expect(titles).toStrictEqual(['Learn', 'Get trained', 'Trouble tickets']);
     });
 
-    // Training only applies to red equipment: an orange or green sign
-    // offering to get you trained would be offering something that does not
-    // exist.
-    it('leaves the training code off equipment that needs no training', () => {
-      const green = renderPage(
-        viewModel({
-          signs: [
-            {...viewModel().signs[0], category: 'green', trainUrl: O.none},
-          ],
-        })
-      );
+    // What the middle block says depends on the colour, because what a
+    // member has to do before touching the machine depends on the colour.
+    describe('the middle block', () => {
+      const ofCategory = (
+        category: 'orange' | 'green',
+        areaEmail = O.none as O.Option<string>
+      ) =>
+        renderPage(
+          viewModel({
+            signs: [
+              {
+                ...viewModel().signs[0],
+                category,
+                trainUrl: O.none,
+                areaEmail,
+              },
+            ],
+          })
+        );
 
-      expect(green.textContent).not.toContain('Get trained');
-      expect(green.querySelectorAll('.sign__qr svg')).toHaveLength(2);
+      it('tells red equipment how training is actually obtained', () => {
+        const text = (
+          renderPage(viewModel()).textContent ?? ''
+        ).replace(/\s+/g, ' ');
+
+        expect(text).toContain('You must be trained to use this equipment!');
+        expect(text).toContain('pass the equipment quiz online');
+      });
+
+      it('tells orange equipment it is members only, with no code to scan', () => {
+        const orange = ofCategory('orange');
+        const text = (orange.textContent ?? '').replace(/\s+/g, ' ');
+
+        expect(text).toContain('Members only');
+        expect(text).toContain("You don't need formal training");
+        expect(text).not.toContain('Get trained');
+        // Learn and trouble tickets only: there is nothing to scan here.
+        expect(orange.querySelectorAll('.sign__qr svg')).toHaveLength(2);
+      });
+
+      it('points an orange question at the area, when the area has an address', () => {
+        const text = (
+          ofCategory('orange', O.some('area@example.com')).textContent ?? ''
+        ).replace(/\s+/g, ' ');
+
+        expect(text).toContain('Contact area@example.com');
+      });
+
+      it('leaves the contact sentence out when the area has no address', () => {
+        expect(ofCategory('orange').textContent).not.toContain('Contact');
+      });
+
+      it('tells green equipment it is free to use', () => {
+        const green = ofCategory('green');
+        const text = (green.textContent ?? '').replace(/\s+/g, ' ');
+
+        expect(text).toContain('Free to use!');
+        expect(text).toContain('free for all members and non-members');
+        expect(green.querySelectorAll('.sign__qr svg')).toHaveLength(2);
+      });
     });
 
     it('carries all three QR codes, drawn on the server', () => {

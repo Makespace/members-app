@@ -25,6 +25,9 @@ export type Sign = {
   // This machine's page in the app, listing who can train you. Only red
   // equipment needs training, so only red equipment carries this code.
   trainUrl: O.Option<string>;
+  // Where to send a question about orange equipment, which has no training
+  // to point at and no trainers to ask.
+  areaEmail: O.Option<string>;
 };
 
 export type ViewModel = {
@@ -73,8 +76,11 @@ export const constructViewModel =
           )()
       ),
       TE.map(() => {
+        const areas = new Map(
+          rm.area.getAllMinimal().map(area => [area.id as string, area])
+        );
         const areaNames = new Map(
-          rm.area.getAllMinimal().map(area => [area.id as string, area.name])
+          [...areas.entries()].map(([id, area]) => [id, area.name])
         );
         const equipment = rm.equipment
           .getAllMinimal()
@@ -104,6 +110,11 @@ export const constructViewModel =
                     )}`
                   )
                 : O.none,
+            areaEmail: pipe(
+              O.fromNullable(areas.get(item.areaId as string)),
+              O.chain(area => area.email),
+              O.map(email => email as string)
+            ),
           }));
 
         const selected = pipe(
