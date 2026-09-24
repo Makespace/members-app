@@ -98,6 +98,8 @@ export const render = () => html`
       and how far you have got`),
       done(html`Record each machine's equipment guide link, so its sign and
       training page point at the real page rather than a guess`),
+      done(html`Check those links daily, and flag the ones that stop
+      answering before a sign is printed with them`),
       todo(html`Training scheduling in the app`),
 
       heading(html`Fob-based access control`),

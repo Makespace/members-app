@@ -2535,3 +2535,10 @@ label img {
 .signs-page__warning p {
   margin: 0;
 }
+
+/* A recorded guide address that stopped answering. Said where the address is
+   shown, because the fix is to correct the address. */
+.guide-link-warning {
+  color: #9c1109;
+  font-size: 0.9em;
+}

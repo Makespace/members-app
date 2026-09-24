@@ -28,6 +28,7 @@ const viewModel = (overrides: Partial<ViewModel> = {}): ViewModel => ({
   ],
   size: 'a6',
   missingGuideUrl: [],
+  unreachableGuideUrl: [],
   areas: [{id: areaId, name: 'Metal Shop', equipmentCount: 1}],
   selectedArea: O.some({id: areaId, name: 'Metal Shop'}),
   ...overrides,
@@ -170,6 +171,18 @@ describe('printable equipment signs', () => {
         expect(
           renderPage(viewModel()).querySelector('.signs-page__warning')
         ).toBeNull();
+      });
+
+      // A recorded address that has since gone dead is worse than none: the
+      // sign prints a code, and it leads nowhere.
+      it('warns separately when a recorded guide stopped answering', () => {
+        const page = renderPage(
+          viewModel({unreachableGuideUrl: ['Metal Lathe']})
+        );
+        const warning = page.querySelector('.signs-page__warning');
+
+        expect(warning?.textContent).toContain('did not answer');
+        expect(warning?.textContent).toContain('Metal Lathe');
       });
     });
 

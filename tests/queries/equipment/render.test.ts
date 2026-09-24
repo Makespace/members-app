@@ -113,6 +113,7 @@ describe('Render equipment page', () => {
         const viewmodel: Readonly<ViewModel> = {
             ...memberDetails,
             equipment,
+            guideLink: O.none,
             quizResults: O.some(quizResults)
         };
         let renderedDom: HTMLElement;
@@ -149,6 +150,7 @@ describe('Render equipment page', () => {
         const viewmodel: Readonly<ViewModel> = {
             ...memberDetails,
             equipment,
+            guideLink: O.none,
             quizResults: O.some(quizResults)
         };
         let renderedDom: HTMLElement;
@@ -183,6 +185,7 @@ describe('Render equipment page', () => {
             user: owner,
             isSuperUserOrTrainerOfArea: false,
             equipment,
+            guideLink: O.none,
             quizResults: O.some(quizResultsWithMemberAwaitingTraining)
         };
         let renderedDom: HTMLElement;
@@ -209,6 +212,7 @@ describe('Render equipment page', () => {
             user: trainerUser,
             isSuperUserOrTrainerOfArea: true,
             equipment,
+            guideLink: O.none,
             quizResults: O.some(quizResultsWithMemberAwaitingTraining)
         };
         let renderedDom: HTMLElement;
@@ -236,7 +240,8 @@ describe('Render equipment page', () => {
                 isSuperUserOrTrainerOfArea: true,
                 user: superUser,
                 equipment: {...equipment, category},
-                quizResults: O.some(quizResultsWithMemberAwaitingTraining),
+                guideLink: O.none,
+            quizResults: O.some(quizResultsWithMemberAwaitingTraining),
             });
 
         it('states what the category means', () => {

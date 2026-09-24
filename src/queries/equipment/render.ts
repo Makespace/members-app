@@ -227,6 +227,30 @@ const guideLink = (viewModel: ViewModel) =>
     O.getOrElse(() => html``)
   );
 
+// A link nobody has checked is fine; a link that answered with a 404 this
+// morning is a poster on a machine sending members nowhere, so it says so.
+const guideLinkHealth = (viewModel: ViewModel) =>
+  pipe(
+    viewModel.guideLink,
+    O.match(
+      () => html``,
+      check =>
+        check.reachable
+          ? html``
+          : html`<br /><span class="guide-link-warning"
+                >This link did not answer when it was last checked on
+                ${displayDate(DateTime.fromJSDate(check.checkedAt))}${pipe(
+                  check.status,
+                  O.match(
+                    () => html``,
+                    status => html` (${safe(String(status))})`
+                  )
+                )}. The sign for this machine prints a code that leads
+                there.</span
+              >`
+    )
+  );
+
 const guideForMembers = (viewModel: ViewModel) =>
   pipe(
     viewModel.equipment.guideUrl,
@@ -236,6 +260,7 @@ const guideForMembers = (viewModel: ViewModel) =>
         html`<p>
           <strong>Equipment guide:</strong>
           <a href="${safe(guideUrl)}">${sanitizeString(guideUrl)}</a>
+          ${guideLinkHealth(viewModel)}
         </p>`
     )
   );

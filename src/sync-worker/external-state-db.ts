@@ -8,6 +8,10 @@ import {
   troubleTicketDataTable,
 } from './google/sheet-data-table';
 import { createTables as createRecurlyTables, recurlySubscriptionTable } from './recurly/recurly-data-table';
+import {
+  createTables as createGuideLinkTables,
+  guideLinkCheckTable,
+} from './guide-links/guide-link-table';
 import { SyncWorkerDependencies } from './dependencies';
 
 
@@ -36,6 +40,7 @@ export const initExternalStateDB = (client: Client) =>
     sheetSyncMetadataTable,
     troubleTicketDataTable,
     recurlySubscriptionTable,
+    guideLinkCheckTable,
   }});
 
 export type ExternalStateDB = ReturnType<typeof initExternalStateDB>;
@@ -44,6 +49,13 @@ export const ensureExtDBTablesExist = (extDB: ExternalStateDB): SyncWorkerDepend
     await ensureGoogleDBTablesExist(extDB);
     await ensureRecurlyDBTablesExist(extDB);
     await ensureGmailTablesExist(extDB);
+    await ensureGuideLinkTablesExist(extDB);
+}
+
+const ensureGuideLinkTablesExist = async (extDB: ExternalStateDB) => {
+    for (const statement of createGuideLinkTables) {
+        await extDB.run(statement);
+    }
 }
 
 const ensureGmailTablesExist = async (extDB: ExternalStateDB) => {
