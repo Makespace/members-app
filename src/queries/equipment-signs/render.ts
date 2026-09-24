@@ -20,36 +20,77 @@ const CATEGORY_RULE: Record<EquipmentCategory, string> = {
   green: 'ALL MEMBERS & GUESTS MAY USE THIS EQUIPMENT',
 };
 
+// Inline rather than linked: a sign has to print correctly from a browser
+// that may be offline, and an icon that fails to load leaves a title that
+// reads oddly.
+const spannerIcon = html`<svg
+  class="sign__icon"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+>
+  <path
+    d="M14.7 6.3a4 4 0 0 0 5 5l-9.4 9.4a2.1 2.1 0 0 1-3-3Z"
+  />
+  <path d="M14.7 6.3 18 3l3 3-3.3 3.3" />
+</svg>`;
+
+const bookIcon = html`<svg
+  class="sign__icon"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+>
+  <path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2Z" />
+  <path d="M8 7h7M8 11h7" />
+</svg>`;
+
 const renderSign = (sign: Sign) => html`
   <div class="sign-block">
-    <p class="sign-block__actions">
-      <a
-        class="button"
-        href="/equipment-signs?equipmentId=${safe(sign.id)}&print=1"
-        target="_blank"
-        rel="noopener"
-        >Print this sign</a
-      >
-    </p>
     <article class="sign sign--${safe(sign.category)}">
     <div class="sign__inner">
       <h2 class="sign__name">${sanitizeString(sign.name)}</h2>
       <p class="sign__category">${safe(CATEGORY_HEADING[sign.category])}</p>
       <p class="sign__rule">${safe(CATEGORY_RULE[sign.category])}</p>
       <div class="sign__footer">
-        <div class="sign__qr">${qrCodeSvg(sign.url, 180)}</div>
-        <div class="sign__qr-label">
-          <p class="sign__qr-title">Something wrong with this equipment?</p>
-          <p>
-            Scan to see what has already been reported, and to report a
-            problem yourself.
-          </p>
-          <p class="sign__url">${sanitizeString(sign.url)}</p>
+        <div class="sign__scan">
+          <div class="sign__qr">${qrCodeSvg(sign.learnUrl, 120)}</div>
+          <div class="sign__scan-text">
+            <p class="sign__scan-title sign__scan-title--learn">
+              ${bookIcon} Learn to use this equipment!
+            </p>
+            <p class="sign__url">${sanitizeString(sign.learnUrl)}</p>
+          </div>
+        </div>
+        <div class="sign__scan">
+          <div class="sign__qr">${qrCodeSvg(sign.url, 120)}</div>
+          <div class="sign__scan-text">
+            <p class="sign__scan-title sign__scan-title--fault">
+              ${spannerIcon} Something wrong with this equipment?
+            </p>
+            <p>
+              Scan to see what has been reported, and to report a problem.
+            </p>
+            <p class="sign__url">${sanitizeString(sign.url)}</p>
+          </div>
         </div>
       </div>
-      <p class="sign__area">${sanitizeString(sign.areaName)}</p>
-      </div>
     </article>
+    <a
+      class="button sign-block__print"
+      href="/equipment-signs?equipmentId=${safe(sign.id)}&print=1"
+      target="_blank"
+      rel="noopener"
+      >Print this sign</a
+    >
   </div>
 `;
 

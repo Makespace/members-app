@@ -127,6 +127,28 @@ describe('the trouble tickets landing page, pointed at one thing', () => {
     expect(board.active).toBe(3);
   });
 
+  // Signs carry a readable slug, so someone can retype a URL from a poster
+  // when the code will not scan. Old links carry a uuid and must keep
+  // working, since they are already printed and on walls.
+  it('accepts a readable slug as well as an id', async () => {
+    const board = await view({equipmentId: 'wood-shop-band-saw'});
+
+    expect(board.active).toBe(2);
+    expect(board.focus).toStrictEqual(
+      O.some(expect.objectContaining({name: 'Band Saw'}))
+    );
+  });
+
+  it('accepts an area slug too', async () => {
+    const board = await view({areaId: 'wood-shop'});
+
+    expect(board.active).toBe(2);
+  });
+
+  it('is not case-sensitive about it', async () => {
+    expect((await view({equipmentId: 'Wood-Shop-Band-Saw'})).active).toBe(2);
+  });
+
   it('prefers the machine when given both', async () => {
     const board = await view({equipmentId: bandsawId, areaId: laserAreaId});
 

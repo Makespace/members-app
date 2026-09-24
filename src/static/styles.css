@@ -2155,13 +2155,39 @@ label img {
   outline-offset: 1px;
 }
 
-/* One sign and its own print button, on screen only. */
-.sign-block__actions {
-  margin: 0 0 0.5rem;
+/* Each sign carries its own print button, tucked into the corner of the
+   preview so the page is a wall of signs rather than a wall of controls. It
+   appears on hover, and on keyboard focus - without that second rule it
+   would be unreachable without a mouse. */
+.sign-block {
+  position: relative;
+}
+
+.sign-block__print {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  font-size: 0.9rem;
+  opacity: 0;
+  transition: opacity 0.12s ease-in-out;
+}
+
+.sign-block:hover .sign-block__print,
+.sign-block:focus-within .sign-block__print,
+.sign-block__print:focus-visible {
+  opacity: 1;
+}
+
+/* Someone who has asked not to see motion still gets the button, just
+   without the fade. */
+@media (prefers-reduced-motion: reduce) {
+  .sign-block__print {
+    transition: none;
+  }
 }
 
 @media print {
-  .sign-block__actions {
+  .sign-block__print {
     display: none !important;
   }
 }
@@ -2229,10 +2255,17 @@ label img {
 
 .sign__footer {
   display: flex;
-  align-items: center;
-  gap: 1.5rem;
+  flex-direction: column;
+  gap: 0.75rem;
   text-align: left;
-  margin-top: 1rem;
+  margin-top: 0.75rem;
+}
+
+/* One scannable thing: its code, its title and where it goes. */
+.sign__scan {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .sign__qr {
@@ -2240,26 +2273,37 @@ label img {
   line-height: 0;
 }
 
-.sign__qr-title {
-  font-weight: 700;
-  font-size: 1.2rem;
-  margin: 0 0 0.25rem;
+.sign__scan-text p {
+  margin: 0 0 0.15rem;
 }
 
-.sign__qr-label p {
-  margin: 0 0 0.25rem;
+.sign__scan-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 800;
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.sign__scan-title--fault {
+  color: #e8291c;
+}
+
+.sign__scan-title--learn {
+  color: #0b0c0c;
+}
+
+.sign__icon {
+  flex: none;
+  width: 1.4rem;
+  height: 1.4rem;
 }
 
 .sign__url {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--grey-color);
   overflow-wrap: anywhere;
-}
-
-.sign__area {
-  margin: 0.5rem 0 0;
-  color: var(--grey-color);
-  font-size: 0.9rem;
 }
 
 /* Printing: one sign per landscape page, and nothing else on the paper. */
