@@ -132,7 +132,7 @@ const renderSign = (sign: Sign) => html`
           variant: 'learn',
           icon: bookIcon,
           title: 'Learn',
-          note: 'How it works, what it is for, and what it can do.',
+          note: 'What this equipment is for and how to use it.',
         })}
         ${pipe(
           sign.trainUrl,
