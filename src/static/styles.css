@@ -2306,10 +2306,10 @@ label img {
   flex-direction: column;
   /* Takes every millimetre the band and the name leave behind, and shares it
      between the codes: the space below the name is worth more as a bigger
-     code than as white paper. */
+     code than as white paper, and so was the coloured rule that used to
+     divide them - the band at the top already says which colour this is. */
   flex: 1 1 auto;
   min-height: 0;
-  border-top: 0.35em solid var(--sign-colour);
 }
 
 .sign__scan {
