@@ -2154,3 +2154,119 @@ label img {
   outline: 3px solid var(--focus-color);
   outline-offset: 1px;
 }
+
+/* Printable equipment signs. Each sign fills one landscape page: a thick
+   border in the equipment's colour, its name, what the colour means, and a
+   QR code leading to its trouble tickets. */
+.sign {
+  border: 1.5rem solid var(--sign-colour);
+  background: white;
+  margin: 0 0 2rem;
+  padding: 0;
+  aspect-ratio: 297 / 210;
+  display: flex;
+}
+
+.sign--red {
+  --sign-colour: #e8291c;
+  --sign-text: #a01208;
+}
+
+.sign--orange {
+  --sign-colour: #fa990e;
+  --sign-text: #8a5000;
+}
+
+.sign--green {
+  --sign-colour: #00703c;
+  --sign-text: #00512b;
+}
+
+.sign__inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 2rem;
+  text-align: center;
+}
+
+.sign__name {
+  font-size: 3.4rem;
+  line-height: 1.1;
+  margin: 0 0 0.5rem;
+}
+
+.sign__category {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--sign-colour);
+  margin: 0 0 0.75rem;
+}
+
+.sign__rule {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--sign-text);
+  margin: 0 0 auto;
+}
+
+.sign__footer {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  text-align: left;
+  margin-top: 1rem;
+}
+
+.sign__qr {
+  flex: none;
+  line-height: 0;
+}
+
+.sign__qr-title {
+  font-weight: 700;
+  font-size: 1.2rem;
+  margin: 0 0 0.25rem;
+}
+
+.sign__qr-label p {
+  margin: 0 0 0.25rem;
+}
+
+.sign__url {
+  font-size: 0.85rem;
+  color: var(--grey-color);
+  overflow-wrap: anywhere;
+}
+
+.sign__area {
+  margin: 0.5rem 0 0;
+  color: var(--grey-color);
+  font-size: 0.9rem;
+}
+
+/* Printing: one sign per landscape page, and nothing else on the paper. */
+@page {
+  size: landscape;
+  margin: 8mm;
+}
+
+@media print {
+  .page-nav,
+  .signs-page__controls,
+  .site-banner {
+    display: none !important;
+  }
+
+  .sign {
+    margin: 0;
+    break-after: page;
+    page-break-after: always;
+    border-width: 1rem;
+  }
+
+  .sign:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}

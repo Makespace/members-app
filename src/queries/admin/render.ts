@@ -8,6 +8,10 @@ export const render = () => html`
     <ul class="stack">
       <li><a href="/members">View all members</a></li>
       <li><a href="/areas">Manage areas and owners</a></li>
+      <li>
+        <a href="/equipment-signs">Print equipment signs</a> - name, colour
+        and a QR code for reporting problems
+      </li>
       <li><a href="/super-users">Manage super-users</a></li>
       <li>
         <a href="/event-log">View a log of all actions taken</a>

@@ -14,6 +14,11 @@ type ChangeLogEntry = {
 
 export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
+    date: '2026-09-24',
+    headline:
+      'Scan the QR code on a machine to see what has been reported about it, or report something new',
+  },
+  {
     date: '2026-09-23',
     headline:
       'Fixed members showing as having no membership data when their Recurly email differed only in capitalisation',
