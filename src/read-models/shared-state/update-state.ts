@@ -563,6 +563,20 @@ const _updateState =
         }
         break;
       }
+      case 'EquipmentGuideUrlSet': {
+        const rows = tx
+          .update(equipmentTable)
+          // An empty string clears the link rather than recording a blank one.
+          .set({guideUrl: event.guideUrl === '' ? null : event.guideUrl})
+          .where(eq(equipmentTable.id, event.equipmentId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(
+            `Unable to set the guide url for equipment '${event.equipmentId}' - unknown equipment`
+          );
+        }
+        break;
+      }
       case 'RevokeTrainedOnEquipment': {
         const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
         if (O.isNone(userId)) {

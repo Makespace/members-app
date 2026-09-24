@@ -202,6 +202,44 @@ const printSign = (viewModel: ViewModel) =>
     O.getOrElse(() => html``)
   );
 
+// The guide address is printed on this machine's sign and linked from its
+// training page, so it is worth seeing at a glance whether one is recorded.
+const guideLink = (viewModel: ViewModel) =>
+  pipe(
+    viewModel,
+    O.of,
+    O.filter(isTrainerOrOwner),
+    O.map(
+      vm => html` <li>
+        <a href="/equipment/set-guide-url?equipmentId=${vm.equipment.id}"
+          >${O.isSome(vm.equipment.guideUrl)
+            ? safe('Change the equipment guide link')
+            : safe('Add the equipment guide link')}</a
+        >
+        ${O.isSome(vm.equipment.guideUrl)
+          ? html``
+          : tooltip(
+              html`Without it, this machine's sign prints without its "Learn"
+              code and its training page has no guide to send members to.`
+            )}
+      </li>`
+    ),
+    O.getOrElse(() => html``)
+  );
+
+const guideForMembers = (viewModel: ViewModel) =>
+  pipe(
+    viewModel.equipment.guideUrl,
+    O.match(
+      () => html``,
+      guideUrl =>
+        html`<p>
+          <strong>Equipment guide:</strong>
+          <a href="${safe(guideUrl)}">${sanitizeString(guideUrl)}</a>
+        </p>`
+    )
+  );
+
 const reportProblem = (viewModel: ViewModel) =>
   html` <li>
     <a href="/trouble-tickets/raise?equipmentId=${viewModel.equipment.id}"
@@ -238,7 +276,7 @@ const equipmentActions = (viewModel: ViewModel) =>
           ${reportProblem(viewModel)} ${printSign(viewModel)}
           ${setMachines(viewModel)} ${trainMember(viewModel)} ${adminMarkTrainedBy(viewModel)}
           ${addTrainer(viewModel)} ${removeTrainer(viewModel)}
-          ${registerSheet(viewModel)}
+          ${guideLink(viewModel)} ${registerSheet(viewModel)}
           ${currentSheet(viewModel)} ${removeTrainingSheet(viewModel)}
           ${retireEquipment(viewModel)}
         </ul>
@@ -246,7 +284,8 @@ const equipmentActions = (viewModel: ViewModel) =>
     : html`
         <ul>
           ${reportProblem(viewModel)} ${printSign(viewModel)}
-          ${setMachines(viewModel)} ${retireEquipment(viewModel)}
+          ${guideLink(viewModel)} ${setMachines(viewModel)}
+          ${retireEquipment(viewModel)}
         </ul>
       `;
 
@@ -481,7 +520,7 @@ export const render = (viewModel: ViewModel) =>
               ${mailTo(viewModel.equipment.area.email.value, O.none, O.none)}`
             : html``}
         </p>
-        ${equipmentActions(viewModel)}
+        ${guideForMembers(viewModel)} ${equipmentActions(viewModel)}
         ${viewModel.equipment.category === 'red'
           ? html`
               <h2>Trainers</h2>

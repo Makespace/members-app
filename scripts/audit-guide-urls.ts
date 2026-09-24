@@ -2,11 +2,10 @@
 /**
  * Checks that every machine's equipment-guide address actually exists.
  *
- * The signs print a guide URL derived from the area and equipment names
- * (equipment.makespace.org/<area>/<machine>, or /<colour>-equipment/<machine>
- * for orange and green), because nothing in the app records these addresses.
- * A derived address is a guess, and a poster on a machine is a bad place to
- * find out the guess was wrong - so check them all before printing.
+ * The address is recorded against each machine and printed on its sign, so a
+ * link that has gone stale is a dead QR code on a poster stuck to a machine.
+ * This reports both kinds of problem: machines with no address recorded, and
+ * addresses that no longer resolve.
  *
  * Usage:
  *   ./scripts/audit-guide-urls.ts <shared-db-dump.json> [--json]
@@ -17,7 +16,6 @@
  * prints nothing else.
  */
 import {readFileSync} from 'fs';
-import {equipmentGuideUrl} from '../src/templates/equipment-guide-url';
 import {EquipmentCategory} from '../src/types/equipment-category';
 
 type Row = Record<string, unknown>;
@@ -31,13 +29,14 @@ type Check = {
   area: string;
   name: string;
   category: EquipmentCategory;
-  url: string;
-  status: number | string;
+  url: string | null;
+  status: number | string | null;
 };
 
-const check = async (
-  item: Omit<Check, 'status'>
-): Promise<Check> => {
+const check = async (item: Omit<Check, 'status'>): Promise<Check> => {
+  if (item.url === null) {
+    return {...item, status: null};
+  }
   try {
     const response = await fetch(item.url, {redirect: 'follow'});
     return {...item, status: response.status};
@@ -77,10 +76,11 @@ const main = async () => {
       area: areas.get(asString(item.areaId)) ?? '(unknown area)',
       name: asString(item.name),
       category: asString(item.category) as EquipmentCategory,
+      guideUrl: item.guideUrl,
     }))
     .map(item => ({
       ...item,
-      url: equipmentGuideUrl(item.area, item.name, item.category),
+      url: typeof item.guideUrl === 'string' ? item.guideUrl : null,
     }))
     .sort((a, b) => a.area.localeCompare(b.area) || a.name.localeCompare(b.name));
 
@@ -92,24 +92,23 @@ const main = async () => {
     return 0;
   }
 
-  const missing = results.filter(result => result.status !== 200);
-  const found = results.length - missing.length;
+  const unset = results.filter(result => result.url === null);
+  const dead = results.filter(
+    result => result.url !== null && result.status !== 200
+  );
+  const found = results.length - unset.length - dead.length;
 
   for (const result of results) {
-    const mark = result.status === 200 ? 'ok  ' : 'MISS';
+    const mark =
+      result.url === null ? 'none' : result.status === 200 ? 'ok  ' : 'DEAD';
     console.log(
-      `${mark} ${String(result.status).padEnd(6)} ${result.area} / ${result.name}\n     ${result.url}`
+      `${mark} ${String(result.status ?? '-').padEnd(6)} ${result.area} / ${result.name}\n     ${result.url ?? 'no guide address recorded'}`
     );
   }
 
   console.log(
-    `\n${found} of ${results.length} guides found; ${missing.length} to fix.`
+    `\n${found} of ${results.length} guides reachable; ${dead.length} dead, ${unset.length} not recorded.`
   );
-  if (missing.length > 0) {
-    console.log(
-      'Each miss is either a guide page that does not exist yet, or one filed\nunder a different name than the app uses.'
-    );
-  }
   return 0;
 };
 

@@ -14,7 +14,7 @@ const viewModel = (overrides: Partial<ViewModel> = {}): ViewModel => ({
     category: 'red',
   },
   area: {name: 'Wood Shop', email: O.some('woodshop-owners@example.com')},
-  guideUrl: 'https://equipment.makespace.org/wood-shop/band-saw',
+  guideUrl: O.some('https://equipment.makespace.org/wood-shop/band-saw'),
   quiz: {tag: 'not-attempted'},
   trainedSince: O.none,
   trainers: [

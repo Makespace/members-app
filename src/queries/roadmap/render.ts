@@ -96,6 +96,8 @@ export const render = () => html`
       done(html`Show when the last trainings were`),
       done(html`A page per machine showing the steps to being trained on it,
       and how far you have got`),
+      done(html`Record each machine's equipment guide link, so its sign and
+      training page point at the real page rather than a guess`),
       todo(html`Training scheduling in the app`),
 
       heading(html`Fob-based access control`),

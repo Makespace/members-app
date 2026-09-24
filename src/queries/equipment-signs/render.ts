@@ -208,13 +208,22 @@ const renderSign = (sign: Sign) => html`
       </header>
       <h2 class="sign__name">${sanitizeString(sign.name)}</h2>
       <div class="sign__codes">
-        ${scanBlock({
-          qrUrl: O.some(sign.learnUrl),
-          variant: 'learn',
-          icon: bookIcon,
-          title: 'Learn',
-          note: html`What this equipment is for and how to use it.`,
-        })}
+        ${pipe(
+          sign.learnUrl,
+          O.match(
+            // No guide address recorded: the sign prints without the code
+            // rather than sending someone to an address nobody has checked.
+            () => html``,
+            learnUrl =>
+              scanBlock({
+                qrUrl: O.some(learnUrl),
+                variant: 'learn',
+                icon: bookIcon,
+                title: 'Learn',
+                note: html`What this equipment is for and how to use it.`,
+              })
+          )
+        )}
         ${trainingBlock(sign)}
         ${scanBlock({
           qrUrl: O.some(sign.url),
@@ -331,6 +340,22 @@ export const render = (viewModel: ViewModel) => {
           </small>
         </p>
       </div>
+      ${viewModel.missingGuideUrl.length === 0
+        ? html``
+        : html`<div class="signs-page__warning">
+            <p>
+              <strong
+                >No equipment guide recorded for
+                ${safe(String(viewModel.missingGuideUrl.length))} of
+                these:</strong
+              >
+              ${safe(
+                viewModel.missingGuideUrl.map(name => name).join(', ')
+              )}.
+              Those signs print without the "Learn" code. Set the guide
+              address from each machine's page to include it.
+            </p>
+          </div>`}
       ${joinHtml(viewModel.signs.map(renderSign))}
       <script>
         (function () {
