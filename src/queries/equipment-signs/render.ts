@@ -21,7 +21,17 @@ const CATEGORY_RULE: Record<EquipmentCategory, string> = {
 };
 
 const renderSign = (sign: Sign) => html`
-  <article class="sign sign--${safe(sign.category)}">
+  <div class="sign-block">
+    <p class="sign-block__actions">
+      <a
+        class="button"
+        href="/equipment-signs?equipmentId=${safe(sign.id)}&print=1"
+        target="_blank"
+        rel="noopener"
+        >Print this sign</a
+      >
+    </p>
+    <article class="sign sign--${safe(sign.category)}">
     <div class="sign__inner">
       <h2 class="sign__name">${sanitizeString(sign.name)}</h2>
       <p class="sign__category">${safe(CATEGORY_HEADING[sign.category])}</p>
@@ -38,8 +48,9 @@ const renderSign = (sign: Sign) => html`
         </div>
       </div>
       <p class="sign__area">${sanitizeString(sign.areaName)}</p>
-    </div>
-  </article>
+      </div>
+    </article>
+  </div>
 `;
 
 const renderChooser = (viewModel: ViewModel) => html`
@@ -66,11 +77,21 @@ const renderChooser = (viewModel: ViewModel) => html`
   </div>
 `;
 
+// Makespace posters are set in Inter, so the signs are too. Loaded only on
+// this page rather than site-wide, and with a system fallback so a sign
+// still prints correctly if the font does not arrive.
+const interFont = html`
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+  </style>
+`;
+
 export const render = (viewModel: ViewModel) => {
   if (viewModel.signs.length === 0) {
     return renderChooser(viewModel);
   }
   return html`
+    ${interFont}
     <div class="stack signs-page">
       <div class="signs-page__controls">
         <h1>
@@ -85,10 +106,36 @@ export const render = (viewModel: ViewModel) => {
         <p>
           ${safe(String(viewModel.signs.length))}
           sign${viewModel.signs.length === 1 ? '' : safe('s')}, one per page.
-          Print landscape. <a href="/equipment-signs">Choose another area</a>.
+          <a href="/equipment-signs">Choose another area</a>.
+        </p>
+        <p>
+          <button type="button" class="button" data-print-signs>
+            Print / save as PDF
+          </button>
+          <small>
+            Choose landscape in the print dialog. Everything but the signs is
+            left off the paper.
+          </small>
         </p>
       </div>
       ${joinHtml(viewModel.signs.map(renderSign))}
+      <script>
+        (function () {
+          var button = document.querySelector('[data-print-signs]');
+          if (button) {
+            button.addEventListener('click', function () {
+              window.print();
+            });
+          }
+          // Opened from "Print this sign": show the dialog straight away, so
+          // the new tab is one step rather than two.
+          if (window.location.search.indexOf('print=1') !== -1) {
+            window.addEventListener('load', function () {
+              window.print();
+            });
+          }
+        })();
+      </script>
     </div>
   `;
 };

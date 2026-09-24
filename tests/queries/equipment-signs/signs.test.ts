@@ -89,6 +89,26 @@ describe('printable equipment signs', () => {
     });
   });
 
+  describe('getting it onto paper', () => {
+    const page = renderPage(viewModel());
+
+    it('offers a print button, since the browser dialog is where PDFs come from', () => {
+      expect(page.querySelector('[data-print-signs]')).not.toBeNull();
+    });
+
+    it('lets one sign be opened on its own, in a new tab', () => {
+      const link = page.querySelector<HTMLAnchorElement>(
+        '.sign-block__actions a'
+      );
+      expect(link?.getAttribute('target')).toBe('_blank');
+      expect(link?.getAttribute('href')).toContain('print=1');
+    });
+
+    it('sets the posters in Inter, as the printed ones are', () => {
+      expect(render(viewModel())).toContain('family=Inter');
+    });
+  });
+
   describe('choosing what to print', () => {
     it('offers the areas when nothing is selected', () => {
       const page = renderPage(
