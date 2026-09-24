@@ -16,6 +16,11 @@ export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
     date: '2026-09-24',
     headline:
+      "Owners can record each machine's equipment guide link, which its sign and training page then use",
+  },
+  {
+    date: '2026-09-24',
+    headline:
       'Every red machine now has a page telling you how to get trained on it, and how far you have got',
   },
   {

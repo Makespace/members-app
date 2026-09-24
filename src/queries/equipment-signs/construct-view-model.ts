@@ -11,7 +11,6 @@ import {Dependencies} from '../../dependencies';
 import {EquipmentCategory} from '../../types/equipment-category';
 import {sizeFrom} from './render';
 import {equipmentSlug, toSlug} from '../../templates/slug';
-import {equipmentGuideUrl} from '../../templates/equipment-guide-url';
 
 export type Sign = {
   id: string;
@@ -21,8 +20,10 @@ export type Sign = {
   // The page a member reaches by scanning: what is already reported, and the
   // way to report something new.
   url: string;
-  // The equipment guide: how to use the thing, and how to get trained on it.
-  learnUrl: string;
+  // The equipment guide, as recorded against the machine. None when nobody
+  // has set one: the sign prints no learn code rather than a guessed address
+  // that may not exist.
+  learnUrl: O.Option<string>;
   // This machine's page in the app, listing who can train you. Only red
   // equipment needs training, so only red equipment carries this code.
   trainUrl: O.Option<string>;
@@ -33,6 +34,10 @@ export type Sign = {
 
 export type ViewModel = {
   signs: ReadonlyArray<Sign>;
+  // Machines in this selection with no guide address recorded, so whoever is
+  // about to print notices before the posters are on the wall rather than
+  // after.
+  missingGuideUrl: ReadonlyArray<string>;
   // Paper size to lay the signs out for.
   size: 'a7' | 'a6' | 'a5' | 'a4';
   // Areas to choose between when nothing is selected yet.
@@ -81,11 +86,7 @@ export const constructViewModel =
               areaNames.get(item.areaId as string) ?? '',
               item.name
             )}`,
-            learnUrl: equipmentGuideUrl(
-              areaNames.get(item.areaId as string) ?? '',
-              item.name,
-              item.category
-            ),
+            learnUrl: item.guideUrl,
             trainUrl:
               item.category === 'red'
                 ? O.some(
@@ -133,9 +134,16 @@ export const constructViewModel =
               )
             );
 
+        const ordered = [...signs].sort((a, b) =>
+          a.name.localeCompare(b.name)
+        );
+
         return {
           size: sizeFrom(params.size),
-          signs: [...signs].sort((a, b) => a.name.localeCompare(b.name)),
+          signs: ordered,
+          missingGuideUrl: ordered
+            .filter(sign => O.isNone(sign.learnUrl))
+            .map(sign => sign.name),
           areas: [...areaNames.entries()]
             .map(([id, name]) => ({
               id,

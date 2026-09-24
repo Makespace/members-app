@@ -107,6 +107,7 @@ export const equipmentTable = defineTable(
       category TEXT NOT NULL DEFAULT 'red',
       machineNamesJson TEXT,
       trainingSheetId TEXT,
+      guideUrl TEXT,
       removedAt INTEGER,
       FOREIGN KEY(areaId) REFERENCES areas(id) ON DELETE CASCADE
     );
@@ -124,6 +125,8 @@ export const equipmentTable = defineTable(
     // machines (e.g. Printer 1, Printer 2); null/absent means a single one.
     machineNamesJson: text('machineNamesJson'),
     trainingSheetId: text('trainingSheetId'),
+    // The machine's page on equipment.makespace.org, as recorded by an owner.
+    guideUrl: text('guideUrl'),
     // When set, the equipment is obsolete: hidden from members browsing for
     // training, but kept (with its history) for owners/admins.
     removedAt: integer('removedAt', {mode: 'timestamp_ms'}),

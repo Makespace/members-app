@@ -30,6 +30,9 @@ export type MinimalEquipment = {
   // Unit names when this record stands for several identical machines.
   machineNames: ReadonlyArray<string>;
   trainingSheetId: O.Option<string>;
+  // The machine's page on equipment.makespace.org, recorded by an owner. None
+  // until somebody sets it: the app never guesses an address it cannot check.
+  guideUrl: O.Option<string>;
   // Set when the equipment has been marked obsolete (soft-hidden).
   removedAt: O.Option<Date>;
 };

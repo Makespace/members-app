@@ -214,8 +214,19 @@ const noTrainingNeeded = (viewModel: ViewModel) => html`
     </p>
     <p>
       There is no training to book for this equipment.
-      <a href="${safe(viewModel.guideUrl)}">Read the equipment guide</a>
-      before using it.
+      ${pipe(
+        viewModel.guideUrl,
+        O.match(
+          () => html`Read its guide on
+            <a href="https://equipment.makespace.org"
+              >equipment.makespace.org</a
+            >
+            before using it.`,
+          guideUrl =>
+            html`<a href="${safe(guideUrl)}">Read the equipment guide</a>
+              before using it.`
+        )
+      )}
     </p>
     <p>
       <a href="/equipment/${safe(viewModel.equipment.id)}"
@@ -240,15 +251,33 @@ export const render = (viewModel: ViewModel): Html => {
         <li class="training-step">
           <h2>1. Pass the online quiz</h2>
           ${quizState(viewModel)}
-          <p>
-            The quiz is on the equipment guide for this machine, which is also
-            where you learn how it works.
-          </p>
-          <p>
-            <a class="button" href="${safe(viewModel.guideUrl)}"
-              >Go to the equipment guide</a
-            >
-          </p>
+          ${pipe(
+            viewModel.guideUrl,
+            O.match(
+              // Nobody has recorded where this machine's guide lives, and the
+              // app will not invent an address: say so, rather than sending
+              // the member to a page that may not exist.
+              () => html`<p>
+                The guide for this machine has not been recorded in the app
+                yet, so there is no link to give you. You will find it on
+                <a href="https://equipment.makespace.org"
+                  >equipment.makespace.org</a
+                >, and an owner can record the address from this machine's
+                page so the next person gets a link.
+              </p>`,
+              guideUrl => html`
+                <p>
+                  The quiz is on the equipment guide for this machine, which is
+                  also where you learn how it works.
+                </p>
+                <p>
+                  <a class="button" href="${safe(guideUrl)}"
+                    >Go to the equipment guide</a
+                  >
+                </p>
+              `
+            )
+          )}
         </li>
         ${practicalStep(viewModel)}
         <!-- A third step belongs here once members countersign their

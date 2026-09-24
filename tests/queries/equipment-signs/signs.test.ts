@@ -17,7 +17,9 @@ const viewModel = (overrides: Partial<ViewModel> = {}): ViewModel => ({
       areaName: 'Metal Shop',
       category: 'red',
       url: 'https://app.makespace.org/trouble-tickets?equipmentId=metal-shop-metal-lathe',
-      learnUrl: 'https://equipment.makespace.org/metal-shop/metal-lathe',
+      learnUrl: O.some(
+        'https://equipment.makespace.org/metal-shop/metal-lathe'
+      ),
       trainUrl: O.some(
         'https://app.makespace.org/equipment/metal-shop-metal-lathe'
       ),
@@ -25,6 +27,7 @@ const viewModel = (overrides: Partial<ViewModel> = {}): ViewModel => ({
     },
   ],
   size: 'a6',
+  missingGuideUrl: [],
   areas: [{id: areaId, name: 'Metal Shop', equipmentCount: 1}],
   selectedArea: O.some({id: areaId, name: 'Metal Shop'}),
   ...overrides,
@@ -135,6 +138,38 @@ describe('printable equipment signs', () => {
         expect(text).toContain('Open to all!');
         expect(text).toContain('free for all members and non-members');
         expect(green.querySelectorAll('.sign__qr svg')).toHaveLength(2);
+      });
+    });
+
+    // The app never guesses a guide address, so a machine without one prints
+    // a sign with no learn code rather than a code that 404s on the wall.
+    describe('when no equipment guide has been recorded', () => {
+      const withoutGuide = () =>
+        renderPage(
+          viewModel({
+            signs: [{...viewModel().signs[0], learnUrl: O.none}],
+            missingGuideUrl: ['Metal Lathe'],
+          })
+        );
+
+      it('prints the sign without the learn code', () => {
+        const page = withoutGuide();
+
+        expect(page.querySelectorAll('.sign__scan--learn')).toHaveLength(0);
+        expect(page.querySelectorAll('.sign__qr svg')).toHaveLength(2);
+      });
+
+      it('warns whoever is about to print, naming the machines', () => {
+        const warning = withoutGuide().querySelector('.signs-page__warning');
+
+        expect(warning?.textContent).toContain('Metal Lathe');
+        expect(warning?.textContent).toContain('No equipment guide recorded');
+      });
+
+      it('says nothing when every sign has one', () => {
+        expect(
+          renderPage(viewModel()).querySelector('.signs-page__warning')
+        ).toBeNull();
       });
     });
 

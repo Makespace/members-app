@@ -22,10 +22,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Other
 - `make fix` - Auto-fix linting issues
 - `make smoketest` - Run smoke tests
-- `./scripts/audit-guide-urls.ts <shared-db-dump.json>` - Check every machine's
-  derived equipment-guide address against equipment.makespace.org (the dump
-  comes from `/debug/dump-shared-db/json`; delete it afterwards, it contains
-  member data)
+- `./scripts/audit-guide-urls.ts <shared-db-dump.json>` - Check each machine's
+  recorded equipment-guide address against equipment.makespace.org, and list
+  the machines with none (the dump comes from `/debug/dump-shared-db/json`;
+  delete it afterwards, it contains member data)
+- `BASE_URL=... TOKEN=... ./scripts/seed-guide-urls.sh` - One-off: record the
+  guide address for the machines that had one as of 2026-09-24
 - Local app: http://localhost:8080
 - Mailcatcher (dev emails): http://localhost:1080
 
@@ -175,6 +177,7 @@ Every `command()` route in `src/routes.ts` also registers a bearer-token twin at
 - `POST /api/super-users/declare` - Grant super user privileges
 - `POST /api/areas/create` - Create a new area
 - `POST /api/trouble-tickets/create` - Manually create a trouble ticket (seeding/manual entry)
+- `POST /api/equipment/set-guide-url` - Record a machine's equipment-guide address
 - `POST /api/trouble-tickets/set-equipment` / `edit-title` - Ticket admin actions (API-only, no form)
 - `POST /api/training-quiz/backfill-timeline` - One-time quiz history weave (see docs/training-quiz-migration.md)
 - `POST /api/trouble-tickets/backfill-timeline` - One-time trouble-ticket history weave (see docs/trouble-ticket-migration.md)

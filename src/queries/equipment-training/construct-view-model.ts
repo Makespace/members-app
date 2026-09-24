@@ -10,7 +10,6 @@ import {
 import {User} from '../../types';
 import {Dependencies} from '../../dependencies';
 import {EquipmentCategory} from '../../types/equipment-category';
-import {equipmentGuideUrl} from '../../templates/equipment-guide-url';
 import {
   QuarterCount,
   trainingsByQuarter,
@@ -36,7 +35,8 @@ export type ViewModel = {
     category: EquipmentCategory;
   };
   area: {name: string; email: O.Option<string>};
-  guideUrl: string;
+  // The machine's guide, when an owner has recorded one.
+  guideUrl: O.Option<string>;
   quiz: QuizProgress;
   // When this member was marked trained on this equipment, if they have been.
   trainedSince: O.Option<Date>;
@@ -126,11 +126,7 @@ export const constructViewModel =
           category: equipment.category,
         },
         area: {name: equipment.area.name, email: equipment.area.email},
-        guideUrl: equipmentGuideUrl(
-          equipment.area.name,
-          equipment.name,
-          equipment.category
-        ),
+        guideUrl: equipment.guideUrl,
         quiz: quizProgressFor(deps, user, equipment),
         trainedSince: trainedSinceFor(deps, user, equipment.id),
         trainers: equipment.trainers.map(trainer => ({

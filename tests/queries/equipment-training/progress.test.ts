@@ -137,9 +137,39 @@ describe('how far a member has got with training', () => {
 
     expect(viewModel.area.name).toBe('Wood Shop');
     expect(viewModel.equipment.name).toBe('Band Saw');
-    expect(viewModel.guideUrl).toBe(
-      'https://equipment.makespace.org/wood-shop/band-saw'
-    );
+  });
+
+  // The app never guesses a guide address: an unset one stays unset, and the
+  // page says so rather than linking somewhere that may not exist.
+  describe('the equipment guide link', () => {
+    it('is absent until somebody records one', async () => {
+      const viewModel = getRightOrFail(
+        await constructViewModel(
+          framework.depsForCommands,
+          member
+        )(equipmentId)()
+      );
+
+      expect(viewModel.guideUrl).toStrictEqual(O.none);
+    });
+
+    it('is whatever an owner recorded', async () => {
+      await framework.commands.equipment.setGuideUrl({
+        equipmentId,
+        guideUrl: 'https://equipment.makespace.org/wood-shop/band-saw',
+      });
+
+      const viewModel = getRightOrFail(
+        await constructViewModel(
+          framework.depsForCommands,
+          member
+        )(equipmentId)()
+      );
+
+      expect(viewModel.guideUrl).toStrictEqual(
+        O.some('https://equipment.makespace.org/wood-shop/band-saw')
+      );
+    });
   });
 
   it('is not found for equipment that does not exist', async () => {

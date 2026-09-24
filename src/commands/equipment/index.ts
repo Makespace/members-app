@@ -10,6 +10,8 @@ import {addNameAlias} from './add-name-alias';
 import {addNameAliasForm} from './add-name-alias-form';
 import {removeNameAlias} from './remove-name-alias';
 import {setCategory} from './set-category';
+import {setGuideUrl} from './set-guide-url';
+import {setGuideUrlForm} from './set-guide-url-form';
 import {setMachines} from './set-machines';
 import {setMachinesForm} from './set-machines-form';
 
@@ -31,6 +33,7 @@ export const equipment = {
     ...markEquipmentObsoleteForm,
   },
   setCategory,
+  setGuideUrl: {...setGuideUrl, ...setGuideUrlForm},
   setMachines: {...setMachines, ...setMachinesForm},
   addNameAlias: {
     ...addNameAlias,

@@ -2521,3 +2521,17 @@ label img {
   align-items: center;
   gap: 0.6rem;
 }
+
+/* Said above the signs, where somebody about to print them will read it. */
+.signs-page__warning {
+  border-left: 6px solid #e07800;
+  background: #fdf0e0;
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin: 0 0 1rem;
+  max-width: 40rem;
+}
+
+.signs-page__warning p {
+  margin: 0;
+}

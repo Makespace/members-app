@@ -180,6 +180,15 @@ const EquipmentTrainingSheetRegistered = defineEvent(
   }
 );
 
+// The machine's page on equipment.makespace.org. Recorded rather than derived
+// from the machine's name: the guide site files things under its own headings,
+// and a guessed address that 404s is worse than no link - it goes on a poster
+// stuck to the machine. An empty string clears it.
+const EquipmentGuideUrlSet = defineEvent('EquipmentGuideUrlSet', {
+  equipmentId: tt.UUID,
+  guideUrl: t.string,
+});
+
 const EquipmentTrainingSheetRemoved = defineEvent(
   'EquipmentTrainingSheetRemoved',
   {
@@ -447,6 +456,7 @@ export const events = [
   LinkingMemberNumberToAnAlreadyUsedEmailAttempted,
   EquipmentTrainingSheetRegistered,
   EquipmentTrainingSheetRemoved,
+  EquipmentGuideUrlSet,
   EquipmentTrainingQuizResult,
   EquipmentTrainingQuizSync,
   MemberDetailsUpdated,
@@ -501,6 +511,7 @@ export const DomainEvent = t.union([
   LinkingMemberNumberToAnAlreadyUsedEmailAttempted.codec,
   EquipmentTrainingSheetRegistered.codec,
   EquipmentTrainingSheetRemoved.codec,
+  EquipmentGuideUrlSet.codec,
   EquipmentTrainingQuizResult.codec,
   EquipmentTrainingQuizSync.codec,
   MemberDetailsUpdated.codec,
