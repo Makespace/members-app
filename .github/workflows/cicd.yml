@@ -22,8 +22,15 @@ jobs:
       - uses: jdx/mise-action@v2
       - run: make lint unused-exports
 
+  # The budget covers the whole job, not just jest: checkout, mise and
+  # `make node_modules` are all inside it. At two minutes the suite was
+  # finishing with seconds to spare - 1m24s, 1m50s, 1m55s on recent runs of
+  # main - and the same commit could pass one run and be killed on the next,
+  # which reads as a broken branch rather than a slow one. Ten leaves room to
+  # keep adding tests; if the suite ever genuinely needs that long, the fix is
+  # the suite, not this number.
   test:
-    timeout-minutes: 2
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,8 +46,9 @@ jobs:
       - uses: jdx/mise-action@v2
       - run: make audit
 
+  # Runs at 1m14s-1m25s, so it was heading the same way.
   smoketest:
-    timeout-minutes: 2
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
