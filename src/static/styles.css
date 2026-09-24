@@ -2291,7 +2291,7 @@ label img {
 }
 
 .sign__scan-title--learn {
-  color: #0b0c0c;
+  color: var(--green-color);
 }
 
 .sign__icon {
