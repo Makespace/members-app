@@ -108,3 +108,58 @@ describe('an Amazon notice delivered by two groups', () => {
     expect(await countFilteredConversations(extDB)).toBe(1);
   });
 });
+
+// The mailbox as it stood: every Amazon-sent row in the cache. Two notices
+// delivered twice, one un-headered copy each, and one that arrived later
+// with its header and no twin. Only the last was being hidden.
+describe('the whole Amazon side of the mailbox', () => {
+  let client: ReturnType<typeof createClient>;
+
+  afterEach(() => {
+    client.close();
+  });
+
+  it('hides all three notices, not just the one with a header on every copy', async () => {
+    client = createClient({url: ':memory:'});
+    const extDB = initExternalStateDB(client);
+    await ensureExtDBTablesExist(extDB)();
+
+    const businessReceived = new Date('2026-09-23T10:46:05.000Z');
+    await extDB.insert(gmailMessageTable).values([
+      withoutHeader('<estimate-a@amazon.co.uk>'),
+      withHeader('<estimate-b@amazon.co.uk>'),
+      copy({
+        gmail_message_id: 'business-without-header',
+        gmail_thread_id: 'thread-c',
+        rfc822_message_id: '<business-a@amazon.co.uk>',
+        from_address: `"'Amazon Business' via management" <management@makespace.org>`,
+        received_at: businessReceived,
+        reply_to: null,
+        original_sender: null,
+        subject: '[Management] Save more with Quantity Discounts',
+      }),
+      copy({
+        gmail_message_id: 'business-with-header',
+        gmail_thread_id: 'thread-d',
+        rfc822_message_id: '<business-b@amazon.co.uk>',
+        from_address: `"'Amazon Business' via management" <management@makespace.org>`,
+        received_at: businessReceived,
+        reply_to: 'Amazon Business <no-reply@business.amazon.co.uk>',
+        original_sender: 'no-reply@business.amazon.co.uk',
+        subject: '[admin] [Management] Save more with Quantity Discounts',
+      }),
+      copy({
+        gmail_message_id: 'ordered',
+        gmail_thread_id: 'thread-e',
+        rfc822_message_id: '<ordered@amazon.co.uk>',
+        received_at: new Date('2026-09-24T14:51:30.000Z'),
+        reply_to: '"Amazon.co.uk" <auto-confirm@amazon.co.uk>',
+        original_sender: 'auto-confirm@amazon.co.uk',
+        subject: '[admin] [Management] Ordered: 2 items',
+      }),
+    ] as never);
+
+    expect(await getInboxThreads(extDB, 50)).toHaveLength(0);
+    expect(await countFilteredConversations(extDB)).toBe(3);
+  });
+});

@@ -80,6 +80,21 @@ describe('deciding what is mailbox noise', () => {
       ).toBe('amazon-order-updates');
     });
 
+    // The Amazon Business name carries no domain, so only the relay format
+    // itself can identify the copies that never got a header.
+    it('are hidden on the relayed name alone, whichever name Amazon sends under', () => {
+      expect(
+        noiseRuleFor(
+          message({
+            fromAddress: `"'Amazon Business' via management" <management@makespace.org>`,
+            replyTo: null,
+            originalSender: null,
+            subject: '[Management] Save more with Quantity Discounts',
+          })
+        )?.id
+      ).toBe('amazon-order-updates');
+    });
+
     it('include Amazon Business, on its own subdomain', () => {
       expect(
         noiseRuleFor(
@@ -155,6 +170,20 @@ describe('deciding what is mailbox noise', () => {
             replyTo: 'A Member <member@makespace.org>',
             originalSender: null,
             subject: 'Amazon order for the workshop',
+          })
+        )
+      ).toBeUndefined();
+    });
+
+    // The relay match is anchored on the group's " via " shape, so a name is
+    // only evidence when a group is vouching for where it came from.
+    it('keeps a member who merely calls themselves Amazon Business', () => {
+      expect(
+        noiseRuleFor(
+          message({
+            fromAddress: 'Amazon Business <member@example.com>',
+            replyTo: null,
+            originalSender: 'member@example.com',
           })
         )
       ).toBeUndefined();
