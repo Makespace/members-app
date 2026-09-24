@@ -11,6 +11,7 @@ import {Dependencies} from '../../dependencies';
 import {EquipmentCategory} from '../../types/equipment-category';
 import {sizeFrom} from './render';
 import {equipmentSlug, toSlug} from '../../templates/slug';
+import {getGuideLinkChecks} from '../../read-models/external-state/guide-links';
 
 export type Sign = {
   id: string;
@@ -38,6 +39,10 @@ export type ViewModel = {
   // about to print notices before the posters are on the wall rather than
   // after.
   missingGuideUrl: ReadonlyArray<string>;
+  // And those whose recorded address did not answer when it was last checked:
+  // a code that leads to a 404 is worse than no code, and worth knowing about
+  // before it is laminated.
+  unreachableGuideUrl: ReadonlyArray<string>;
   // Paper size to lay the signs out for.
   size: 'a7' | 'a6' | 'a5' | 'a4';
   // Areas to choose between when nothing is selected yet.
@@ -65,7 +70,11 @@ export const constructViewModel =
             StatusCodes.FORBIDDEN
           )()
       ),
-      TE.map(() => {
+      TE.bindTo('member'),
+      TE.bind('guideChecks', () =>
+        TE.fromTask(() => getGuideLinkChecks(deps.extDB)())
+      ),
+      TE.map(({guideChecks}) => {
         const areas = new Map(
           rm.area.getAllMinimal().map(area => [area.id as string, area])
         );
@@ -143,6 +152,12 @@ export const constructViewModel =
           signs: ordered,
           missingGuideUrl: ordered
             .filter(sign => O.isNone(sign.learnUrl))
+            .map(sign => sign.name),
+          unreachableGuideUrl: ordered
+            .filter(sign => {
+              const check = guideChecks.get(sign.id);
+              return check !== undefined && !check.reachable;
+            })
             .map(sign => sign.name),
           areas: [...areaNames.entries()]
             .map(([id, name]) => ({

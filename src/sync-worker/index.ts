@@ -10,6 +10,7 @@ import {GoogleHelpers} from './google/pull_sheet_data';
 import {setTimeout} from 'node:timers/promises';
 import {SyncWorkerDependencies} from './dependencies';
 import {trainingSummaryEmail} from './training-summary/training_summary_email';
+import {checkGuideLinks} from './guide-links/check_guide_links';
 import { Duration } from 'luxon';
 
 const HEARTBEAT_INTERVAL_MS = 20 * 1000;
@@ -23,6 +24,11 @@ const TROUBLE_TICKET_NOTIFY_INTERVAL_MS = 30 * 1000;
 // live, so this beats far more often than the sheet syncs.
 const GMAIL_SYNC_INTERVAL_MS = 60 * 1000;
 const RECURLY_SYNC_INTERVAL_MS = 20 * 60 * 1000;
+// The guide site changes about as often as somebody edits a wiki page, and a
+// dead link matters in days rather than minutes. Starting from zero means the
+// first check happens shortly after a deploy, which is when links are most
+// likely to have just been recorded.
+const GUIDE_LINK_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 async function syncExternDataPeriodically(
   deps: SyncWorkerDependencies,
@@ -38,6 +44,7 @@ async function syncExternDataPeriodically(
     deps.conf.GMAIL_AUTHORIZED_USER_JSON
   );
   let lastTrainingSummaryEmailCheck = Date.now();
+  let lastGuideLinkCheck = 0;
   while (true) {
     try {
       const now = Date.now();
@@ -48,6 +55,7 @@ async function syncExternDataPeriodically(
       const lastGmailSyncAgoMs = now - lastGmailSync;
       const lastTrainingSummaryEmailCheckAgoMs =
         now - lastTrainingSummaryEmailCheck;
+      const lastGuideLinkCheckAgoMs = now - lastGuideLinkCheck;
 
       if (lastHeartbeatAgoMs > HEARTBEAT_INTERVAL_MS) {
         deps.logger.info(
@@ -131,6 +139,19 @@ async function syncExternDataPeriodically(
         await deps.sharedReadModel.asyncRefresh()();
         await trainingSummaryEmail(deps);
         lastTrainingSummaryEmailCheck = Date.now();
+      }
+
+      if (lastGuideLinkCheckAgoMs > GUIDE_LINK_CHECK_INTERVAL_MS) {
+        // Contained, like the Gmail pull: an unreachable guide site must not
+        // skip the loop's pause and starve everything after it.
+        try {
+          await deps.sharedReadModel.asyncRefresh()();
+          await checkGuideLinks(deps);
+        } catch (err) {
+          deps.logger.error(err, 'Equipment guide link check failed');
+        } finally {
+          lastGuideLinkCheck = Date.now();
+        }
       }
 
       await deps.pullRecurlyData(Duration.fromMillis(RECURLY_SYNC_INTERVAL_MS));

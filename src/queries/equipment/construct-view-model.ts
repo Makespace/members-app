@@ -6,6 +6,10 @@ import {
   failureWithStatus,
   FailureWithStatus,
 } from '../../types/failure-with-status';
+import {
+  getGuideLinkChecks,
+  GuideLinkCheck,
+} from '../../read-models/external-state/guide-links';
 import {ViewModel} from './view-model';
 import {User} from '../../types';
 import {UUID} from 'io-ts-types';
@@ -57,6 +61,14 @@ export const constructViewModel =
       TE.let(
         'isSuperUserOrTrainerOfArea',
         ({isSuperUser, isTrainer}) => isSuperUser || isTrainer
+      ),
+      TE.bind('guideLink', ({equipment}) =>
+        pipe(
+          TE.fromTask<ReadonlyMap<string, GuideLinkCheck>, FailureWithStatus>(
+            () => getGuideLinkChecks(deps.extDB)()
+          ),
+          TE.map(checks => O.fromNullable(checks.get(equipment.id as string)))
+        )
       ),
       TE.bind('quizResults', ({equipment}) => {
         if (O.isNone(equipment.trainingSheetId)) {
