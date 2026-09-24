@@ -15,6 +15,7 @@ export const equipmentSigns: Query = deps => (user, _params, queryParams) =>
         typeof queryParams.equipmentId === 'string'
           ? queryParams.equipmentId
           : undefined,
+      size: typeof queryParams.size === 'string' ? queryParams.size : undefined,
     }),
     TE.map(render),
     TE.map(toLoggedInContent(safe('Equipment signs')))

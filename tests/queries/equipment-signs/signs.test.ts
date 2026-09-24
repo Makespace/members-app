@@ -19,6 +19,7 @@ const viewModel = (overrides: Partial<ViewModel> = {}): ViewModel => ({
       learnUrl: 'https://equipment.makespace.org/metal-shop/metal-lathe',
     },
   ],
+  size: 'a6',
   areas: [{id: areaId, name: 'Metal Shop', equipmentCount: 1}],
   selectedArea: O.some({id: areaId, name: 'Metal Shop'}),
   ...overrides,
@@ -41,20 +42,19 @@ describe('printable equipment signs', () => {
     });
 
     it('states the category and what it means, not just a colour', () => {
-      expect(sign.querySelector('.sign__category')?.textContent?.trim()).toBe(
+      expect(sign.querySelector('.sign__band-word')?.textContent?.trim()).toBe(
         'RED EQUIPMENT'
       );
-      expect(sign.querySelector('.sign__rule')?.textContent?.trim()).toBe(
-        'YOU MUST PASS MAKESPACE TRAINING TO USE THIS EQUIPMENT'
+      expect(sign.querySelector('.sign__band-rule')?.textContent?.trim()).toBe(
+        'Training required before use'
       );
     });
 
     it('says what each QR code is for, so scanning is a decision', () => {
-      const label = sign.querySelector('.sign__footer')?.textContent ?? '';
+      const label = sign.querySelector('.sign__codes')?.textContent ?? '';
       const text = label.replace(/\s+/g, ' ');
-      expect(text).toContain('Something wrong with this equipment?');
-      expect(text).toContain('report a problem');
-      expect(text).toContain('Learn to use this equipment!');
+      expect(text).toContain('Something wrong?');
+      expect(text).toContain('Learn to use this');
     });
 
     it('carries both QR codes, drawn on the server', () => {
@@ -100,6 +100,21 @@ describe('printable equipment signs', () => {
 
   describe('getting it onto paper', () => {
     const page = renderPage(viewModel());
+
+    it('sets the paper size, so the dialog opens on the right one', () => {
+      expect(render(viewModel())).toContain('size: A6 portrait');
+      expect(render(viewModel({size: 'a5'}))).toContain('size: A5 portrait');
+    });
+
+    it('offers the other sizes, keeping what is being printed', () => {
+      const links = [...page.querySelectorAll('.signs-page__size')].map(
+        node => node.getAttribute('href') ?? ''
+      );
+      expect(links.some(href => href.includes('size=a7'))).toBe(true);
+      expect(links.every(href => href.includes(`areaId=${areaId}`))).toBe(
+        true
+      );
+    });
 
     it('offers a print button, since the browser dialog is where PDFs come from', () => {
       expect(page.querySelector('[data-print-signs]')).not.toBeNull();

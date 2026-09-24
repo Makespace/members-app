@@ -9,6 +9,7 @@ import {
 import {User} from '../../types';
 import {Dependencies} from '../../dependencies';
 import {EquipmentCategory} from '../../types/equipment-category';
+import {sizeFrom} from './render';
 import {equipmentSlug, toSlug} from '../../templates/slug';
 
 export type Sign = {
@@ -25,6 +26,8 @@ export type Sign = {
 
 export type ViewModel = {
   signs: ReadonlyArray<Sign>;
+  // Paper size to lay the signs out for.
+  size: 'a7' | 'a6' | 'a5' | 'a4';
   // Areas to choose between when nothing is selected yet.
   areas: ReadonlyArray<{id: string; name: string; equipmentCount: number}>;
   selectedArea: O.Option<{id: string; name: string}>;
@@ -49,7 +52,7 @@ const learnUrlFor = (
 export const constructViewModel =
   (
     deps: Dependencies,
-    params: {areaId?: string; equipmentId?: string}
+    params: {areaId?: string; equipmentId?: string; size?: string}
   ) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> => {
     const rm = deps.sharedReadModel;
@@ -123,6 +126,7 @@ export const constructViewModel =
             );
 
         return {
+          size: sizeFrom(params.size),
           signs: [...signs].sort((a, b) => a.name.localeCompare(b.name)),
           areas: [...areaNames.entries()]
             .map(([id, name]) => ({

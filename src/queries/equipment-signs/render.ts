@@ -5,6 +5,32 @@ import {qrCodeSvg} from '../../templates/qr-code';
 import {EquipmentCategory} from '../../types/equipment-category';
 import {Sign, ViewModel} from './construct-view-model';
 
+// Paper sizes, smallest first. The sign is laid out in millimetres and its
+// type scales from one millimetre-based font size, so the same design holds
+// at every size rather than needing a layout each.
+const SIZES = [
+  {key: 'a7', label: 'Small (A7)', note: 'half a postcard'},
+  {key: 'a6', label: 'Postcard (A6)', note: 'the usual choice'},
+  {key: 'a5', label: 'Large (A5)', note: 'twice a postcard'},
+  {key: 'a4', label: 'Poster (A4)', note: 'for a wall'},
+] as const;
+
+type SizeKey = (typeof SIZES)[number]['key'];
+
+export const sizeFrom = (value: unknown): SizeKey =>
+  SIZES.some(size => size.key === value) ? (value as SizeKey) : 'a6';
+
+// @page carries the paper size, so the print dialog opens on the right size
+// and the sign fills it exactly rather than being scaled to fit.
+const pageSize = (size: SizeKey) => html`
+  <style>
+    @page {
+      size: ${safe(size.toUpperCase())} portrait;
+      margin: 0;
+    }
+  </style>
+`;
+
 // What each sticker colour tells a member standing in front of the machine.
 // The heading is the shorthand people use in the space; the sentence under it
 // is the rule.
@@ -15,9 +41,9 @@ const CATEGORY_HEADING: Record<EquipmentCategory, string> = {
 };
 
 const CATEGORY_RULE: Record<EquipmentCategory, string> = {
-  red: 'YOU MUST PASS MAKESPACE TRAINING TO USE THIS EQUIPMENT',
-  orange: 'MEMBERS ONLY — ONLY USE IF CONFIDENT TO DO SO',
-  green: 'ALL MEMBERS & GUESTS MAY USE THIS EQUIPMENT',
+  red: 'Training required before use',
+  orange: 'Members only — use only if confident',
+  green: 'All members & guests',
 };
 
 // Inline rather than linked: a sign has to print correctly from a browser
@@ -56,31 +82,25 @@ const bookIcon = html`<svg
 const renderSign = (sign: Sign) => html`
   <div class="sign-block">
     <article class="sign sign--${safe(sign.category)}">
-    <div class="sign__inner">
+      <header class="sign__band">
+        <p class="sign__band-word">${safe(CATEGORY_HEADING[sign.category])}</p>
+        <p class="sign__band-rule">${safe(CATEGORY_RULE[sign.category])}</p>
+      </header>
       <h2 class="sign__name">${sanitizeString(sign.name)}</h2>
-      <p class="sign__category">${safe(CATEGORY_HEADING[sign.category])}</p>
-      <p class="sign__rule">${safe(CATEGORY_RULE[sign.category])}</p>
-      <div class="sign__footer">
+      <div class="sign__codes">
         <div class="sign__scan">
-          <div class="sign__qr">${qrCodeSvg(sign.learnUrl, 120)}</div>
-          <div class="sign__scan-text">
-            <p class="sign__scan-title sign__scan-title--learn">
-              ${bookIcon} Learn to use this equipment!
-            </p>
-            <p class="sign__url">${sanitizeString(sign.learnUrl)}</p>
-          </div>
+          <div class="sign__qr">${qrCodeSvg(sign.learnUrl, 220)}</div>
+          <p class="sign__scan-title sign__scan-title--learn">
+            ${bookIcon} Learn to use this
+          </p>
+          <p class="sign__url">${sanitizeString(sign.learnUrl)}</p>
         </div>
         <div class="sign__scan">
-          <div class="sign__qr">${qrCodeSvg(sign.url, 120)}</div>
-          <div class="sign__scan-text">
-            <p class="sign__scan-title sign__scan-title--fault">
-              ${spannerIcon} Something wrong with this equipment?
-            </p>
-            <p>
-              Scan to see what has been reported, and to report a problem.
-            </p>
-            <p class="sign__url">${sanitizeString(sign.url)}</p>
-          </div>
+          <div class="sign__qr">${qrCodeSvg(sign.url, 220)}</div>
+          <p class="sign__scan-title sign__scan-title--fault">
+            ${spannerIcon} Something wrong?
+          </p>
+          <p class="sign__url">${sanitizeString(sign.url)}</p>
         </div>
       </div>
     </article>
@@ -93,6 +113,20 @@ const renderSign = (sign: Sign) => html`
     >
   </div>
 `;
+
+// Keeps whatever is being printed, and changes only the size.
+const sizeLink = (viewModel: ViewModel, size: SizeKey) => {
+  const params = new URLSearchParams();
+  pipe(
+    viewModel.selectedArea,
+    O.map(area => params.set('areaId', area.id))
+  );
+  if (viewModel.signs.length === 1 && O.isNone(viewModel.selectedArea)) {
+    params.set('equipmentId', viewModel.signs[0].id);
+  }
+  params.set('size', size);
+  return `/equipment-signs?${params.toString()}`;
+};
 
 const renderChooser = (viewModel: ViewModel) => html`
   <div class="stack">
@@ -131,9 +165,10 @@ export const render = (viewModel: ViewModel) => {
   if (viewModel.signs.length === 0) {
     return renderChooser(viewModel);
   }
+  const size = viewModel.size;
   return html`
-    ${interFont}
-    <div class="stack signs-page">
+    ${interFont} ${pageSize(size)}
+    <div class="stack signs-page signs-page--${safe(size)}">
       <div class="signs-page__controls">
         <h1>
           ${pipe(
@@ -149,13 +184,28 @@ export const render = (viewModel: ViewModel) => {
           sign${viewModel.signs.length === 1 ? '' : safe('s')}, one per page.
           <a href="/equipment-signs">Choose another area</a>.
         </p>
+        <p class="signs-page__sizes">
+          Size:
+          ${joinHtml(
+            SIZES.map(
+              option => html`<a
+                class="signs-page__size${option.key === size
+                  ? safe(' signs-page__size--active')
+                  : safe('')}"
+                href="${safe(sizeLink(viewModel, option.key))}"
+                >${safe(option.label)}
+                <small>${safe(option.note)}</small></a
+              >`
+            )
+          )}
+        </p>
         <p>
           <button type="button" class="button" data-print-signs>
             Print / save as PDF
           </button>
           <small>
-            Choose landscape in the print dialog. Everything but the signs is
-            left off the paper.
+            The paper size is set for you; leave scaling at 100%. Everything
+            but the signs is left off the paper.
           </small>
         </p>
       </div>

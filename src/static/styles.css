@@ -2192,6 +2192,294 @@ label img {
   }
 }
 
+/* Printable equipment signs.
+
+   Portrait, with a solid colour band across the top rather than a border
+   around everything: a different silhouette from the signs already in the
+   space, so a new one is recognisably new from across the room.
+
+   Everything is sized in millimetres and scaled from one font size, so the
+   same design holds from A7 to A4 rather than needing a layout each. */
+.signs-page--a7 {
+  --sign-w: 74mm;
+  --sign-h: 105mm;
+  --sign-font: 2.2mm;
+}
+
+.signs-page--a6 {
+  --sign-w: 105mm;
+  --sign-h: 148mm;
+  --sign-font: 3.1mm;
+}
+
+.signs-page--a5 {
+  --sign-w: 148mm;
+  --sign-h: 210mm;
+  --sign-font: 4.4mm;
+}
+
+.signs-page--a4 {
+  --sign-w: 210mm;
+  --sign-h: 297mm;
+  --sign-font: 6.2mm;
+}
+
+.sign {
+  font-family: Inter, Optima, Candara, 'Noto Sans', sans-serif;
+  width: var(--sign-w);
+  height: var(--sign-h);
+  font-size: var(--sign-font);
+  background: white;
+  color: #0b0c0c;
+  margin: 0 0 2rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Only on screen: the paper's own edge does this job when printed. */
+  box-shadow: 0 0 0 1px var(--border-color);
+}
+
+.sign--red {
+  --sign-colour: #e8291c;
+}
+
+.sign--orange {
+  --sign-colour: #e07800;
+}
+
+.sign--green {
+  --sign-colour: #00703c;
+}
+
+/* The band is the recognisable part: colour, and the rule in plain words. */
+.sign__band {
+  background: var(--sign-colour);
+  color: white;
+  padding: 1.2em 1em;
+  text-align: center;
+}
+
+.sign__band-word {
+  margin: 0;
+  font-size: 2.6em;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.sign__band-rule {
+  margin: 0.35em 0 0;
+  font-size: 1.15em;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.sign__name {
+  margin: 0;
+  padding: 0.8em 0.6em;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 3.4em;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+/* The two things a member might want, side by side and equally weighted. */
+.sign__codes {
+  display: flex;
+  border-top: 0.35em solid var(--sign-colour);
+}
+
+.sign__scan {
+  flex: 1 1 50%;
+  padding: 0.9em 0.6em 0.7em;
+  text-align: center;
+  min-width: 0;
+}
+
+.sign__scan + .sign__scan {
+  border-left: 1px solid #d6d6d6;
+}
+
+.sign__qr {
+  line-height: 0;
+}
+
+.sign__qr svg {
+  width: 100%;
+  height: auto;
+  max-width: 26em;
+}
+
+.sign__scan-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3em;
+  margin: 0.5em 0 0.2em;
+  font-size: 1.25em;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.sign__scan-title--fault {
+  color: #c21b0f;
+}
+
+.sign__scan-title--learn {
+  color: #00703c;
+}
+
+.sign__icon {
+  flex: none;
+  width: 1.2em;
+  height: 1.2em;
+}
+
+.sign__url {
+  margin: 0;
+  font-size: 0.72em;
+  line-height: 1.25;
+  color: #5b5b5b;
+  overflow-wrap: anywhere;
+}
+
+/* Each sign carries its own print button, tucked into the corner of the
+   preview so the page is a wall of signs rather than a wall of controls. It
+   appears on hover, and on keyboard focus - without that second rule it
+   would be unreachable without a mouse. */
+.sign-block {
+  position: relative;
+  width: fit-content;
+}
+
+.sign-block__print {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  font-size: 0.9rem;
+  opacity: 0;
+  transition: opacity 0.12s ease-in-out;
+}
+
+.sign-block:hover .sign-block__print,
+.sign-block:focus-within .sign-block__print,
+.sign-block__print:focus-visible {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sign-block__print {
+    transition: none;
+  }
+}
+
+.signs-page__sizes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+
+.signs-page__size small {
+  display: block;
+  color: var(--grey-color);
+}
+
+.signs-page__size--active {
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--text-color);
+}
+
+@media print {
+  .page-nav,
+  .signs-page__controls,
+  .sign-block__print,
+  .site-banner {
+    display: none !important;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    max-width: none;
+  }
+
+  .sign {
+    margin: 0;
+    box-shadow: none;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .sign-block:last-child .sign {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}
+
+/* Why a conversation was hidden, shown when filtered mail is revealed. */
+.mailbox__filtered {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in oklch, white 85%, var(--grey-color));
+  color: var(--text-color);
+  white-space: nowrap;
+}
+
+/* An active filter chip: the board is showing only this, and clicking it
+   again clears the filter. */
+.tt-filter__label--active {
+  outline: 3px solid var(--focus-color);
+  outline-offset: 1px;
+}
+
+/* Each sign carries its own print button, tucked into the corner of the
+   preview so the page is a wall of signs rather than a wall of controls. It
+   appears on hover, and on keyboard focus - without that second rule it
+   would be unreachable without a mouse. */
+.sign-block {
+  position: relative;
+}
+
+.sign-block__print {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  font-size: 0.9rem;
+  opacity: 0;
+  transition: opacity 0.12s ease-in-out;
+}
+
+.sign-block:hover .sign-block__print,
+.sign-block:focus-within .sign-block__print,
+.sign-block__print:focus-visible {
+  opacity: 1;
+}
+
+/* Someone who has asked not to see motion still gets the button, just
+   without the fade. */
+@media (prefers-reduced-motion: reduce) {
+  .sign-block__print {
+    transition: none;
+  }
+}
+
+@media print {
+  .sign-block__print {
+    display: none !important;
+  }
+}
+
 /* Printable equipment signs. Each sign fills one landscape page: a thick
    border in the equipment's colour, its name, what the colour means, and a
    QR code leading to its trouble tickets. */
