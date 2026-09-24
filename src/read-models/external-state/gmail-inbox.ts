@@ -1,4 +1,4 @@
-import {asc, desc, eq} from 'drizzle-orm';
+import {desc, eq} from 'drizzle-orm';
 import {pipe} from 'fp-ts/lib/function';
 import {ExternalStateDB} from '../../sync-worker/external-state-db';
 import {noiseRuleForConversation} from './mailbox-noise';
@@ -66,6 +66,25 @@ const SAME_CONVERSATION_GAP_MS = 30 * 24 * 60 * 60 * 1000;
 
 // Enough history to group correctly without reading the whole mailbox.
 const GROUPING_WINDOW = 500;
+
+// The window has to be taken from the NEWEST end: `LIMIT` with an ascending
+// sort hands back the oldest messages instead, so once the cache passed 500
+// the mailbox froze on its own first 500 messages - new mail never reached
+// the list, and a link to a newer conversation was "No such conversation".
+// SQL sorts descending to pick the window, and the grouping needs it oldest
+// first, so it is turned back round here.
+const recentMessages = async (
+  extDB: ExternalStateDB
+): Promise<ReadonlyArray<InboxMessage>> =>
+  (
+    await extDB
+      .select()
+      .from(gmailMessageTable)
+      .orderBy(desc(gmailMessageTable.received_at))
+      .limit(GROUPING_WINDOW)
+  )
+    .map(transformRow)
+    .reverse();
 
 // An email conversation.
 export type InboxThread = {
@@ -166,13 +185,7 @@ export const getInboxThreads = async (
   limit: number,
   options: {includeFiltered: boolean} = {includeFiltered: false}
 ): Promise<ReadonlyArray<InboxThread>> => {
-  const messages = (
-    await extDB
-      .select()
-      .from(gmailMessageTable)
-      .orderBy(asc(gmailMessageTable.received_at))
-      .limit(GROUPING_WINDOW)
-  ).map(transformRow);
+  const messages = await recentMessages(extDB);
 
   return toConversations(messages)
     .map(summarise)
@@ -188,13 +201,7 @@ export const getInboxThreads = async (
 export const countFilteredConversations = async (
   extDB: ExternalStateDB
 ): Promise<number> => {
-  const messages = (
-    await extDB
-      .select()
-      .from(gmailMessageTable)
-      .orderBy(asc(gmailMessageTable.received_at))
-      .limit(GROUPING_WINDOW)
-  ).map(transformRow);
+  const messages = await recentMessages(extDB);
   return toConversations(messages)
     .map(summarise)
     .filter(thread => thread.filteredBy !== undefined).length;
@@ -207,18 +214,21 @@ export const getInboxThread = async (
   extDB: ExternalStateDB,
   conversationId: string
 ): Promise<ReadonlyArray<InboxMessage>> => {
-  const messages = (
-    await extDB
-      .select()
-      .from(gmailMessageTable)
-      .orderBy(asc(gmailMessageTable.received_at))
-      .limit(GROUPING_WINDOW)
-  ).map(transformRow);
+  const conversations = toConversations(await recentMessages(extDB));
 
+  // The id names the conversation's earliest message. As the window moves on
+  // that message eventually drops out of it, and the conversation is then
+  // named by whichever of its messages is still the earliest - so a link
+  // someone kept would find nothing. Any message of the conversation
+  // identifies it well enough to show.
   return (
-    toConversations(messages).find(
+    conversations.find(
       conversation => conversation[0].gmailMessageId === conversationId
-    ) ?? []
+    ) ??
+    conversations.find(conversation =>
+      conversation.some(message => message.gmailMessageId === conversationId)
+    ) ??
+    []
   );
 };
 

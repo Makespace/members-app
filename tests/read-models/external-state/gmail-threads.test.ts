@@ -178,3 +178,63 @@ describe('grouping the mailbox into conversations', () => {
     expect(await getInboxThread(extDB, 'nope')).toEqual([]);
   });
 });
+
+// The grouping reads a window of the cache rather than all of it. Taken from
+// the wrong end that window is the mailbox's oldest messages, which froze the
+// page: nothing new ever appeared and every new conversation was "No such
+// conversation". The window has to follow the newest mail.
+describe('a cache larger than the grouping window', () => {
+  const GROUPING_WINDOW = 500;
+  const MESSAGES = GROUPING_WINDOW + 100;
+  const FIRST_RECEIVED_AT = new Date('2026-01-01T00:00:00.000Z').getTime();
+  const newest = `m${MESSAGES - 1}`;
+
+  let extDB: ExternalStateDB;
+  let client: ReturnType<typeof createClient>;
+
+  beforeEach(async () => {
+    client = createClient({url: ':memory:'});
+    extDB = initExternalStateDB(client);
+    await ensureExtDBTablesExist(extDB)();
+
+    // One conversation per message, an hour apart, oldest first.
+    await extDB.insert(gmailMessageTable).values(
+      Array.from({length: MESSAGES}, (_, index) => ({
+        gmail_message_id: `m${index}`,
+        gmail_thread_id: `t${index}`,
+        mailbox: 'tickets@example.org',
+        rfc822_message_id: `<m${index}@test>`,
+        from_address: 'someone@example.com',
+        to_addresses: 'management@example.org',
+        subject: `Enquiry number ${index}`,
+        received_at: new Date(FIRST_RECEIVED_AT + index * 60 * 60 * 1000),
+        snippet: `Snippet ${index}`,
+        body_text: `Body of m${index}`,
+        body_html: null,
+        attachments_json: '[]',
+        label_ids: '[]',
+        cached_at: new Date(),
+      }))
+    );
+  });
+
+  afterEach(() => {
+    client.close();
+  });
+
+  it('lists the newest conversations, not the oldest', async () => {
+    const threads = await getInboxThreads(extDB, 50);
+
+    expect(threads[0].latest.gmailMessageId).toBe(newest);
+  });
+
+  it('reads a conversation that arrived after the first window filled', async () => {
+    const messages = await getInboxThread(extDB, newest);
+
+    expect(messages.map(message => message.gmailMessageId)).toEqual([newest]);
+  });
+
+  it('leaves the conversations that fell out of the window behind', async () => {
+    expect(await getInboxThread(extDB, 'm0')).toEqual([]);
+  });
+});
