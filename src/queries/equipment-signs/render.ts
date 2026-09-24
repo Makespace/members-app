@@ -205,9 +205,8 @@ const trainingBlock = (sign: Sign) => {
 const printHref = (sign: Sign, size: SizeKey) =>
   `/equipment-signs?equipmentId=${sign.id}&size=${size}&print=1`;
 
-const renderSign = (size: SizeKey) => (sign: Sign) => html`
-  <div class="sign-block">
-    <article class="sign sign--${safe(sign.category)}">
+const signCard = (sign: Sign) => html`
+  <article class="sign sign--${safe(sign.category)}">
       <header class="sign__band">
         <p class="sign__band-word">${safe(CATEGORY_HEADING[sign.category])}</p>
         <p class="sign__band-rule">${categoryDescription(sign.category)}</p>
@@ -241,6 +240,16 @@ const renderSign = (size: SizeKey) => (sign: Sign) => html`
         })}
       </div>
     </article>
+`;
+
+// On the print document there is nothing to click, so the sign stands alone.
+const renderSignForPrint = (sign: Sign) => html`
+  <div class="sign-block">${signCard(sign)}</div>
+`;
+
+const renderSign = (size: SizeKey) => (sign: Sign) => html`
+  <div class="sign-block">
+    ${signCard(sign)}
     <a
       class="button sign-block__print"
       href="${safe(printHref(sign, size))}"
@@ -298,6 +307,40 @@ const interFont = html`
   </style>
 `;
 
+// Opened to print: a document of its own, with none of the app around it.
+// The printed page and the page on screen are then the same thing, so a
+// preview cannot lie about what comes out - and nothing from the rest of the
+// site can leak onto the paper.
+export const renderPrintDocument = (viewModel: ViewModel): Html => html`
+  <!doctype html>
+  <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <title>
+        ${pipe(
+          viewModel.selectedArea,
+          O.match(
+            () => html`Equipment sign`,
+            area => html`Signs for ${sanitizeString(area.name)}`
+          )
+        )}
+      </title>
+      <link rel="stylesheet" href="/static/styles.css" />
+      ${interFont} ${pageSize(viewModel.size)}
+    </head>
+    <body class="signs-print">
+      <div class="signs-page signs-page--${safe(viewModel.size)}">
+        ${joinHtml(viewModel.signs.map(renderSignForPrint))}
+      </div>
+      <script>
+        window.addEventListener('load', function () {
+          window.print();
+        });
+      </script>
+    </body>
+  </html>
+`;
+
 export const render = (viewModel: ViewModel) => {
   if (viewModel.signs.length === 0) {
     return renderChooser(viewModel);
@@ -341,8 +384,10 @@ export const render = (viewModel: ViewModel) => {
             Print / save as PDF
           </button>
           <small>
-            The paper size is set for you; leave scaling at 100%. Everything
-            but the signs is left off the paper.
+            The paper size is set for you; leave scaling at 100%, turn
+            headers and footers off, and leave background graphics on -
+            without them the colour bands print white. Everything but the
+            signs is left off the paper.
           </small>
         </p>
       </div>

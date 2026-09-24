@@ -3,7 +3,10 @@
  */
 import * as O from 'fp-ts/Option';
 import {UUID} from 'io-ts-types';
-import {render} from '../../../src/queries/equipment-signs/render';
+import {
+  render,
+  renderPrintDocument,
+} from '../../../src/queries/equipment-signs/render';
 import {ViewModel} from '../../../src/queries/equipment-signs/construct-view-model';
 import {categoryDescription} from '../../../src/templates/equipment-category';
 
@@ -262,8 +265,48 @@ describe('printable equipment signs', () => {
       expect(link?.getAttribute('href')).toContain('print=1');
     });
 
+    // Printing an A7 sign from a page laid out for A5 is a surprise you
+    // discover after the paper comes out.
+    it('keeps the size being viewed when one sign is opened', () => {
+      const link = renderPage(viewModel({size: 'a7'})).querySelector(
+        '.sign-block__print'
+      );
+
+      expect(link?.getAttribute('href')).toContain('size=a7');
+    });
+
     it('sets the posters in Inter, as the printed ones are', () => {
       expect(render(viewModel())).toContain('family=Inter');
+    });
+  });
+
+  // The print view is a document of its own rather than the app page with
+  // bits hidden, so what is on screen is what comes out of the printer.
+  describe('the print document', () => {
+    const document_ = () => renderPrintDocument(viewModel());
+
+    it('is a whole document, with the paper size set', () => {
+      expect(document_()).toContain('<!doctype html>');
+      expect(document_()).toContain('size: A6 portrait');
+    });
+
+    it('carries the signs', () => {
+      const body = renderPage(viewModel());
+      expect(document_()).toContain('Metal Lathe');
+      expect(body.querySelectorAll('.sign').length).toBe(1);
+    });
+
+    it('has none of the app around them', () => {
+      const printed = document_();
+
+      expect(printed).not.toContain('page-nav');
+      expect(printed).not.toContain('signs-page__controls');
+      expect(printed).not.toContain('signs-page__warning');
+      expect(printed).not.toContain('sign-block__print');
+    });
+
+    it('opens the print dialog by itself', () => {
+      expect(document_()).toContain('window.print()');
     });
   });
 
