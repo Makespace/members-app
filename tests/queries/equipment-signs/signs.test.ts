@@ -15,7 +15,8 @@ const viewModel = (overrides: Partial<ViewModel> = {}): ViewModel => ({
       name: 'Metal Lathe',
       areaName: 'Metal Shop',
       category: 'red',
-      url: 'https://app.makespace.org/trouble-tickets?equipmentId=eeeeeeee-0000-0000-0000-000000000001',
+      url: 'https://app.makespace.org/trouble-tickets?equipmentId=metal-shop-metal-lathe',
+      learnUrl: 'https://equipment.makespace.org/metal-shop/metal-lathe',
     },
   ],
   areas: [{id: areaId, name: 'Metal Shop', equipmentCount: 1}],
@@ -33,12 +34,9 @@ describe('printable equipment signs', () => {
   describe('a sign', () => {
     const sign = renderPage(viewModel());
 
-    it('names the equipment and where it lives', () => {
+    it('names the equipment', () => {
       expect(sign.querySelector('.sign__name')?.textContent?.trim()).toBe(
         'Metal Lathe'
-      );
-      expect(sign.querySelector('.sign__area')?.textContent?.trim()).toBe(
-        'Metal Shop'
       );
     });
 
@@ -51,17 +49,18 @@ describe('printable equipment signs', () => {
       );
     });
 
-    it('says what the QR code is for, so scanning it is a decision', () => {
-      const label = sign.querySelector('.sign__qr-label')?.textContent ?? '';
-      expect(label.replace(/\s+/g, ' ')).toContain(
-        'Something wrong with this equipment?'
-      );
-      expect(label.replace(/\s+/g, ' ')).toContain('report a problem');
+    it('says what each QR code is for, so scanning is a decision', () => {
+      const label = sign.querySelector('.sign__footer')?.textContent ?? '';
+      const text = label.replace(/\s+/g, ' ');
+      expect(text).toContain('Something wrong with this equipment?');
+      expect(text).toContain('report a problem');
+      expect(text).toContain('Learn to use this equipment!');
     });
 
-    it('carries a real QR code, drawn on the server', () => {
-      const svg = sign.querySelector('.sign__qr svg');
-      expect(svg).not.toBeNull();
+    it('carries both QR codes, drawn on the server', () => {
+      const codes = sign.querySelectorAll('.sign__qr svg');
+      expect(codes).toHaveLength(2);
+      const svg = codes[0];
       // A QR code of this URL needs many modules; a handful of paths would
       // mean it had not really been encoded.
       expect(
@@ -69,10 +68,20 @@ describe('printable equipment signs', () => {
       ).toBeGreaterThan(500);
     });
 
-    it('prints the URL too, for anyone without a camera to hand', () => {
-      expect(sign.querySelector('.sign__url')?.textContent).toContain(
-        '/trouble-tickets?equipmentId='
+    it('prints both URLs, for anyone without a camera to hand', () => {
+      const urls = [...sign.querySelectorAll('.sign__url')].map(
+        node => node.textContent ?? ''
       );
+      expect(urls.join(' ')).toContain('equipment.makespace.org');
+      expect(urls.join(' ')).toContain('/trouble-tickets?equipmentId=');
+    });
+
+    it('uses a readable slug rather than a uuid in the printed URL', () => {
+      expect(
+        [...sign.querySelectorAll('.sign__url')]
+          .map(node => node.textContent ?? '')
+          .join(' ')
+      ).toContain('metal-shop-metal-lathe');
     });
 
     it('is coloured by category', () => {
@@ -98,7 +107,7 @@ describe('printable equipment signs', () => {
 
     it('lets one sign be opened on its own, in a new tab', () => {
       const link = page.querySelector<HTMLAnchorElement>(
-        '.sign-block__actions a'
+        '.sign-block__print'
       );
       expect(link?.getAttribute('target')).toBe('_blank');
       expect(link?.getAttribute('href')).toContain('print=1');

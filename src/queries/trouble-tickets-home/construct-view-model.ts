@@ -9,13 +9,17 @@ import {
 import {User} from '../../types';
 import {Dependencies} from '../../dependencies';
 import {allMemberNumbers} from '../../read-models/shared-state/return-types';
+import {equipmentSlug, toSlug} from '../../templates/slug';
 
 // The page can be pointed at one machine or one area - a QR code on the
 // machine itself, or on an area's noticeboard - so that reporting a problem
 // takes one tap and arrives already attached to the right thing.
 type Focus = {
   kind: 'equipment' | 'area';
+  // The real id, which is what tickets are matched against.
   id: string;
+  // The readable form, for links this page builds.
+  slug: string;
   name: string;
   // For equipment, the area it sits in, so the page can say where it is.
   areaName: O.Option<string>;
@@ -41,11 +45,21 @@ export const constructViewModel =
     const areaNames = new Map(
       rm.area.getAllMinimal().map(area => [area.id as string, area.name])
     );
+    // A sign carries a readable slug (wood-shop-band-saw); older codes and
+    // links carry a uuid. Both resolve, so nothing already printed breaks.
+    const allEquipment = rm.equipment.getAllMinimal();
     const equipment = pipe(
       O.fromNullable(params.equipmentId),
-      O.chain(id =>
+      O.chain(reference =>
         pipe(
-          rm.equipment.getAllMinimal().find(item => item.id === id),
+          allEquipment.find(
+            item =>
+              item.id === reference ||
+              equipmentSlug(
+                areaNames.get(item.areaId as string) ?? '',
+                item.name
+              ) === reference.toLowerCase()
+          ),
           O.fromNullable
         )
       )
@@ -57,18 +71,27 @@ export const constructViewModel =
       O.map(item => ({
         kind: 'equipment' as const,
         id: item.id as string,
+        slug: equipmentSlug(
+          areaNames.get(item.areaId as string) ?? '',
+          item.name
+        ),
         name: item.name,
         areaName: O.fromNullable(areaNames.get(item.areaId as string)),
       }))
     );
     const areaFocus: O.Option<Focus> = pipe(
       O.fromNullable(params.areaId),
-      O.chain(id =>
+      O.chain(reference =>
         pipe(
-          O.fromNullable(areaNames.get(id)),
-          O.map(name => ({
+          [...areaNames.entries()].find(
+            ([id, name]) =>
+              id === reference || toSlug(name) === reference.toLowerCase()
+          ),
+          O.fromNullable,
+          O.map(([id, name]) => ({
             kind: 'area' as const,
             id,
+            slug: toSlug(name),
             name,
             areaName: O.none as O.Option<string>,
           }))
