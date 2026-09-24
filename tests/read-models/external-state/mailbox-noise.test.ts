@@ -62,6 +62,24 @@ describe('deciding what is mailbox noise', () => {
       ).toBeDefined();
     });
 
+    // Everything imported before X-Original-Sender was first stored has no
+    // header to judge, and a group rewrites the address to its own - so the
+    // display name the group builds is all that is left to go on. Without
+    // this, those messages could never be filtered, however the rules were
+    // later written.
+    it('are hidden on the display name alone, as older imports arrive', () => {
+      expect(
+        noiseRuleFor(
+          message({
+            fromAddress: `"'Amazon.co.uk' via management" <management@makespace.org>`,
+            replyTo: null,
+            originalSender: null,
+            subject: '[Management] Delivery estimate update for your order',
+          })
+        )?.id
+      ).toBe('amazon-order-updates');
+    });
+
     it('include Amazon Business, on its own subdomain', () => {
       expect(
         noiseRuleFor(
@@ -111,6 +129,33 @@ describe('deciding what is mailbox noise', () => {
       expect(
         noiseRuleFor(
           message({originalSender: 'sales@not-amazon.co.uk.example.com'})
+        )
+      ).toBeUndefined();
+    });
+
+    // The reason the match is anchored on a boundary rather than loose: a
+    // member at a domain that merely ends the same way is still a member.
+    it('keeps a member at a lookalike domain, name and all', () => {
+      expect(
+        noiseRuleFor(
+          message({
+            fromAddress: 'A Member <member@notamazon.co.uk>',
+            replyTo: null,
+            originalSender: 'member@notamazon.co.uk',
+          })
+        )
+      ).toBeUndefined();
+    });
+
+    it('keeps a member whose own message is about an Amazon order', () => {
+      expect(
+        noiseRuleFor(
+          message({
+            fromAddress: 'A Member <member@makespace.org>',
+            replyTo: 'A Member <member@makespace.org>',
+            originalSender: null,
+            subject: 'Amazon order for the workshop',
+          })
         )
       ).toBeUndefined();
     });

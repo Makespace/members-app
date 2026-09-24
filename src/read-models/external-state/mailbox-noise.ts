@@ -34,13 +34,27 @@ const senderDomainIs =
       message.fromAddress,
     ].filter((value): value is string => value !== null);
     return candidates.some(candidate =>
-      domains.some(domain =>
-        new RegExp(`@([a-z0-9-]+\\.)*${domain.replace(/\./g, '\\.')}\\b`, 'i').test(
-          candidate
-        )
-      )
+      domains.some(domain => domainPattern(domain).test(candidate))
     );
   };
+
+// The domain is looked for anywhere in the sender, not only after an "@".
+// A rule that reads only the address can say nothing about the mail a Google
+// Group forwards, because the address there is the group's; the supplier
+// survives in the display name the group builds from the original sender -
+// "'Amazon.co.uk' via management" <management@makespace.org>. Requiring the
+// "@" meant the rule could only judge messages imported after
+// X-Original-Sender was first stored, which left everything already in the
+// cache permanently unfilterable.
+//
+// The leading boundary is what keeps this honest: it matches "@amazon.co.uk"
+// and "'Amazon.co.uk'" but not "notamazon.co.uk", so the rule still names one
+// supplier rather than matching anything with the word in it.
+const domainPattern = (domain: string) =>
+  new RegExp(
+    `(^|[^a-z0-9.-])([a-z0-9-]+\\.)*${domain.replace(/\./g, '\\.')}\\b`,
+    'i'
+  );
 
 const NOISE_RULES: ReadonlyArray<NoiseRule> = [
   {
