@@ -84,10 +84,18 @@ export const constructViewModel =
               areaNames.get(item.areaId as string) ?? '',
               item.name
             )}`,
-            learnUrl: learnUrlFor(
-              areaNames.get(item.areaId as string) ?? '',
-              item.name,
-              item.category
+            // A recorded address beats a derived one: the derivation is a
+            // considered guess at another site's filing, and only stands in
+            // until someone records the real page.
+            learnUrl: pipe(
+              item.guideUrl,
+              O.getOrElse(() =>
+                learnUrlFor(
+                  areaNames.get(item.areaId as string) ?? '',
+                  item.name,
+                  item.category
+                )
+              )
             ),
           }));
 

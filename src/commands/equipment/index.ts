@@ -11,6 +11,7 @@ import {addNameAliasForm} from './add-name-alias-form';
 import {removeNameAlias} from './remove-name-alias';
 import {setCategory} from './set-category';
 import {setMachines} from './set-machines';
+import {setGuideUrl} from './set-guide-url';
 import {setMachinesForm} from './set-machines-form';
 
 export const equipment = {
@@ -32,6 +33,7 @@ export const equipment = {
   },
   setCategory,
   setMachines: {...setMachines, ...setMachinesForm},
+  setGuideUrl,
   addNameAlias: {
     ...addNameAlias,
     ...addNameAliasForm,

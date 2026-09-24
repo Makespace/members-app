@@ -65,6 +65,7 @@ describe('Render equipment page', () => {
         name: faker.airline.aircraftType(),
         category: 'red',
         machineNames: [],
+  guideUrl: O.none,
         trainers: [
             trainer
         ],

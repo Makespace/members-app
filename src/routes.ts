@@ -11,6 +11,8 @@ import {authRoutes} from './authentication';
 import {queryToHandler, commandToHandlers, ping} from './http';
 import {formGet} from './http/form-get';
 import {bulkAddForm} from './commands/equipment/bulk-add-form';
+import {guideUrlsForm} from './commands/equipment/guide-urls-form';
+import {slugMatches} from './templates/slug';
 import {apiToHandlers} from './http/api-to-handlers';
 import {emailHandler} from './http/email-handler';
 import expressAsyncHandler from 'express-async-handler';
@@ -72,6 +74,103 @@ export const initRoutes = (
     ...command('equipment', 'add', commands.equipment.add),
     ...api('equipment', 'set-category', commands.equipment.setCategory),
     ...command('equipment', 'set-machines', commands.equipment.setMachines),
+    ...api('equipment', 'set-guide-url', commands.equipment.setGuideUrl),
+    // Bulk guide addresses: paste a list, match each to a machine by the last
+    // part of its address, and record the ones that match. A bespoke POST
+    // because the command pipeline commits one event per request.
+    get(
+      '/equipment/guide-urls',
+      expressAsyncHandler(formGet(deps, guideUrlsForm))
+    ),
+    post(
+      '/equipment/guide-urls',
+      expressAsyncHandler(async (req, res) => {
+        const user = getUserFromSession(deps)(req.session);
+        if (O.isNone(user)) {
+          res.redirect(logInPath);
+          return;
+        }
+        const actor: Actor = {tag: 'user', user: user.value};
+        const body = t
+          .strict({areaId: UUID, urls: t.string})
+          .decode(req.body);
+        if (E.isLeft(body)) {
+          res
+            .status(StatusCodes.BAD_REQUEST)
+            .send(oopsPage(safe('That submission was not valid.')));
+          return;
+        }
+        const {areaId, urls} = body.right;
+        const equipment = deps.sharedReadModel.equipment
+          .getAllMinimal()
+          .filter(item => item.areaId === areaId);
+
+        const matched: {id: UUID; name: string; url: string}[] = [];
+        const unmatched: string[] = [];
+        for (const line of urls.split('\n').map(value => value.trim())) {
+          if (line === '') {
+            continue;
+          }
+          // The last path segment is the equipment's own slug on that site,
+          // which is what identifies the machine.
+          const slug = line.split('?')[0].split('#')[0].replace(/\/+$/, '').split('/').pop() ?? '';
+          const found = equipment.find(item => slugMatches(item.name, slug));
+          if (found === undefined) {
+            unmatched.push(line);
+            continue;
+          }
+          matched.push({id: found.id, name: found.name, url: line});
+        }
+
+        if (
+          matched.length > 0 &&
+          !commands.equipment.setGuideUrl.isAuthorized({
+            actor,
+            rm: deps.sharedReadModel,
+            input: {equipmentId: matched[0].id, url: matched[0].url},
+          })
+        ) {
+          res
+            .status(StatusCodes.FORBIDDEN)
+            .send(
+              oopsPage(
+                safe('Only owners of this area (or admins) can do that.')
+              )
+            );
+          return;
+        }
+
+        const failed: string[] = [];
+        for (const item of matched) {
+          const result = await applyCommand(deps, commands.equipment.setGuideUrl)(
+            {equipmentId: item.id, url: item.url},
+            actor
+          )();
+          if (E.isLeft(result)) {
+            failed.push(item.name);
+            deps.logger.warn(result.left, 'Guide url failed for %s', item.name);
+          }
+        }
+
+        if (unmatched.length > 0 || failed.length > 0) {
+          res.status(StatusCodes.OK).send(
+            oopsPage(
+              sanitizeString(
+                `Set ${matched.length - failed.length} of ${
+                  matched.length + unmatched.length
+                }.` +
+                  (unmatched.length > 0
+                    ? ` No machine matched: ${unmatched.join(', ')}.`
+                    : '') +
+                  (failed.length > 0 ? ` Failed: ${failed.join(', ')}.` : '')
+              )
+            )
+          );
+          return;
+        }
+        res.redirect(`/equipment/guide-urls?area=${areaId}`);
+      })
+    ),
     // Bulk-add: one EquipmentAdded per pasted line. A bespoke POST because
     // the command pipeline commits exactly one event per request; the GET is
     // the standard form renderer.

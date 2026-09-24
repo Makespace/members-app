@@ -18,3 +18,12 @@ export const toSlug = (value: string): string =>
 // "Band Saw" without colliding: wood-shop-band-saw, metal-shop-band-saw.
 export const equipmentSlug = (areaName: string, equipmentName: string) =>
   [toSlug(areaName), toSlug(equipmentName)].filter(part => part !== '').join('-');
+
+// Two systems rarely punctuate a name the same way: the equipment site files
+// "Hammer A3-31 Planer/Thicknesser" as planerthicknesser, dropping the
+// slash, where this app's slug would keep it as a separator. Comparing only
+// the letters and digits matches them without loosening what a slug is.
+export const slugMatches = (a: string, b: string): boolean => {
+  const bare = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return toSlug(a) === toSlug(b) || bare(a) === bare(b);
+};

@@ -280,6 +280,13 @@ const _updateState =
           .run();
         break;
       }
+      case 'EquipmentGuideUrlSet': {
+        tx.update(equipmentTable)
+          .set({guideUrl: event.url === '' ? null : event.url})
+          .where(eq(equipmentTable.id, event.equipmentId))
+          .run();
+        break;
+      }
       case 'EquipmentMachinesSet': {
         tx.update(equipmentTable)
           .set({machineNamesJson: JSON.stringify(event.machineNames)})

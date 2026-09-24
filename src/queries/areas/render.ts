@@ -256,6 +256,9 @@ const renderArea =
       <a class="button" href="/equipment/bulk-add?area=${safe(area.id)}"
         >Bulk-add orange/green</a
       >
+      <a class="button" href="/equipment/guide-urls?area=${safe(area.id)}"
+        >Equipment guides</a
+      >
       <a class="button" href="/areas/set-mailing-list?area=${safe(area.id)}"
         >Set mailing list</a
       >

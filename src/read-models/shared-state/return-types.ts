@@ -29,6 +29,8 @@ export type MinimalEquipment = {
   category: EquipmentCategory;
   // Unit names when this record stands for several identical machines.
   machineNames: ReadonlyArray<string>;
+  // The equipment site page for this machine, when recorded.
+  guideUrl: O.Option<string>;
   trainingSheetId: O.Option<string>;
   // Set when the equipment has been marked obsolete (soft-hidden).
   removedAt: O.Option<Date>;

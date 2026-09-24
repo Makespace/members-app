@@ -32,6 +32,7 @@ const equipment = {
   },
   category: 'red' as const,
   machineNames: [],
+  guideUrl: O.none,
   trainingsByQuarter: [
     {label: html`Q4 2025`, count: 1},
     {label: html`Q1 2026`, count: 0},

@@ -23,6 +23,7 @@ const renderNav = (
       areaId,
       category: equipment.category,
       machineNames: equipment.machineNames,
+      guideUrl: equipment.guideUrl,
       trainingSheetId: equipment.trainingSheetId,
       removedAt: equipment.removedAt,
     }));
@@ -47,6 +48,7 @@ const makeEquipment = (name: string, removed = false): Equipment => ({
   trainedMembers: [],
   category: 'red' as const,
   machineNames: [],
+  guideUrl: O.none,
     trainingSheetId: O.none,
   removedAt: removed ? O.some(new Date('2026-01-01T00:00:00.000Z')) : O.none,
   area: {

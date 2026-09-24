@@ -106,6 +106,7 @@ export const equipmentTable = defineTable(
       areaId TEXT,
       category TEXT NOT NULL DEFAULT 'red',
       machineNamesJson TEXT,
+      guideUrl TEXT,
       trainingSheetId TEXT,
       removedAt INTEGER,
       FOREIGN KEY(areaId) REFERENCES areas(id) ON DELETE CASCADE
@@ -123,6 +124,8 @@ export const equipmentTable = defineTable(
     // JSON array of unit names when this record stands for several identical
     // machines (e.g. Printer 1, Printer 2); null/absent means a single one.
     machineNamesJson: text('machineNamesJson'),
+    // The equipment site page for this machine, when someone has recorded it.
+    guideUrl: text('guideUrl'),
     trainingSheetId: text('trainingSheetId'),
     // When set, the equipment is obsolete: hidden from members browsing for
     // training, but kept (with its history) for owners/admins.

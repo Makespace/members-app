@@ -36,6 +36,7 @@ const transformRow = <
     areaId: string;
     category: string;
     machineNamesJson: string | undefined | null;
+    guideUrl: string | undefined | null;
     trainingSheetId: string | undefined | null;
     removedAt: Date | undefined | null;
   },
@@ -47,6 +48,7 @@ const transformRow = <
   areaId: row.areaId as UUID,
   category: row.category as EquipmentCategory,
   machineNames: parseMachineNames(row.machineNamesJson),
+  guideUrl: O.fromNullable(row.guideUrl),
   trainingSheetId: O.fromNullable(row.trainingSheetId),
   removedAt: O.fromNullable(row.removedAt),
 });

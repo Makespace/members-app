@@ -56,6 +56,13 @@ const EquipmentAdded = defineEvent('EquipmentAdded', {
   category: tt.withFallback(EquipmentCategoryCodec, 'red'),
 });
 
+// Where to read about this equipment: the page on the equipment site that
+// explains how to use it and how to get trained. An empty url clears it.
+const EquipmentGuideUrlSet = defineEvent('EquipmentGuideUrlSet', {
+  equipmentId: tt.UUID,
+  url: t.string,
+});
+
 // Recategorise existing equipment (e.g. red kit downgraded to orange).
 const EquipmentCategoryChanged = defineEvent('EquipmentCategoryChanged', {
   equipmentId: tt.UUID,
@@ -427,6 +434,7 @@ export const events = [
   AreaEmailUpdated,
   EquipmentAdded,
   EquipmentCategoryChanged,
+  EquipmentGuideUrlSet,
   EquipmentMachinesSet,
   EquipmentMarkedObsolete,
   EquipmentNameAliasAdded,
@@ -481,6 +489,7 @@ export const DomainEvent = t.union([
   AreaEmailUpdated.codec,
   EquipmentAdded.codec,
   EquipmentCategoryChanged.codec,
+  EquipmentGuideUrlSet.codec,
   EquipmentMachinesSet.codec,
   EquipmentMarkedObsolete.codec,
   EquipmentNameAliasAdded.codec,
