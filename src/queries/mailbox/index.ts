@@ -155,6 +155,42 @@ export const mailboxListForTest = (senders: ReadonlyArray<string>): string =>
     },
   })}</tbody></table>`;
 
+const conversationCount = (count: number) =>
+  html`${safe(String(count))} conversation${count === 1 ? '' : safe('s')}`;
+
+// The filter describes itself even when it has hidden nothing. Left silent,
+// a filter that is working and a filter that has been deleted look exactly
+// alike on the page - and since this line carries the only link into the
+// everything view, a quiet day also left no way to check what the rules
+// would have done.
+const filterNotice = (filtered: {count: number; showing: boolean}): Html => {
+  if (filtered.count === 0) {
+    // Both views are identical with nothing hidden, so neither link is
+    // worth offering here.
+    return html`<p>
+      No conversations are hidden by the noise rules at the moment.
+    </p>`;
+  }
+  if (filtered.showing) {
+    return html`<p>
+      Showing everything, including the ${conversationCount(filtered.count)}
+      the rules would hide, each labelled with the rule that matched.
+      <a href="/mailbox">Hide them again</a>.
+    </p>`;
+  }
+  return html`<p>
+    ${conversationCount(filtered.count)} hidden as automated or bulk mail.
+    <a href="/mailbox?filtered=1">Show them</a>.
+  </p>`;
+};
+
+// Renders the filter's own line, so its wording and links can be tested
+// without standing up a whole page.
+export const mailboxFilterNoticeForTest = (
+  count: number,
+  showing: boolean
+): string => filterNotice({count, showing});
+
 const renderList = (
   mailbox: string,
   filterToAddress: string,
@@ -171,24 +207,7 @@ const renderList = (
       </strong>. The import runs every minute; replies and creating tickets
       from emails are coming next.
     </p>
-    ${filtered.showing
-      ? html`<p>
-          Showing everything, including the
-          ${safe(String(filtered.count))} conversation${filtered.count === 1
-            ? ''
-            : safe('s')}
-          the rules would hide, each labelled with the rule that matched.
-          <a href="/mailbox">Hide them again</a>.
-        </p>`
-      : filtered.count > 0
-        ? html`<p>
-            ${safe(String(filtered.count))} conversation${filtered.count === 1
-              ? ''
-              : safe('s')}
-            hidden as automated or bulk mail.
-            <a href="/mailbox?filtered=1">Show them</a>.
-          </p>`
-        : html``}
+    ${filterNotice(filtered)}
     ${threads.length === 0
       ? html`<p>
           Nothing imported yet. If this persists, check the Gmail credentials
