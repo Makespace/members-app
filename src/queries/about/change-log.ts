@@ -16,6 +16,11 @@ export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
     date: '2026-09-24',
     headline:
+      "Super-users can change a machine's sticker category in the app, keeping its training records either way",
+  },
+  {
+    date: '2026-09-24',
+    headline:
       'Equipment guide links are checked daily, so a sign is never printed with a code that leads nowhere',
   },
   {

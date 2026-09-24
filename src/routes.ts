@@ -70,7 +70,7 @@ export const initRoutes = (
     ...command('areas', 'add-name-alias', commands.area.addNameAlias),
     ...api('areas', 'remove-name-alias', commands.area.removeNameAlias),
     ...command('equipment', 'add', commands.equipment.add),
-    ...api('equipment', 'set-category', commands.equipment.setCategory),
+    ...command('equipment', 'set-category', commands.equipment.setCategory),
     ...command('equipment', 'set-guide-url', commands.equipment.setGuideUrl),
     ...command('equipment', 'set-machines', commands.equipment.setMachines),
     // Bulk-add: one EquipmentAdded per pasted line. A bespoke POST because

@@ -265,6 +265,21 @@ const guideForMembers = (viewModel: ViewModel) =>
     )
   );
 
+// Super-users only: the colour decides whether a machine has training at all,
+// so it is not a per-area decision.
+const changeCategory = (viewModel: ViewModel) =>
+  viewModel.isSuperUser
+    ? html` <li>
+        <a href="/equipment/set-category?equipmentId=${viewModel.equipment.id}"
+          >Change the sticker category</a
+        >
+        ${tooltip(
+          html`Red, orange or green. Training records are kept whichever way
+          it goes.`
+        )}
+      </li>`
+    : html``;
+
 const reportProblem = (viewModel: ViewModel) =>
   html` <li>
     <a href="/trouble-tickets/raise?equipmentId=${viewModel.equipment.id}"
@@ -301,7 +316,8 @@ const equipmentActions = (viewModel: ViewModel) =>
           ${reportProblem(viewModel)} ${printSign(viewModel)}
           ${setMachines(viewModel)} ${trainMember(viewModel)} ${adminMarkTrainedBy(viewModel)}
           ${addTrainer(viewModel)} ${removeTrainer(viewModel)}
-          ${guideLink(viewModel)} ${registerSheet(viewModel)}
+          ${guideLink(viewModel)} ${changeCategory(viewModel)}
+          ${registerSheet(viewModel)}
           ${currentSheet(viewModel)} ${removeTrainingSheet(viewModel)}
           ${retireEquipment(viewModel)}
         </ul>
@@ -309,8 +325,8 @@ const equipmentActions = (viewModel: ViewModel) =>
     : html`
         <ul>
           ${reportProblem(viewModel)} ${printSign(viewModel)}
-          ${guideLink(viewModel)} ${setMachines(viewModel)}
-          ${retireEquipment(viewModel)}
+          ${guideLink(viewModel)} ${changeCategory(viewModel)}
+          ${setMachines(viewModel)} ${retireEquipment(viewModel)}
         </ul>
       `;
 

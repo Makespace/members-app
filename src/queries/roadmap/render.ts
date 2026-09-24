@@ -19,6 +19,8 @@ export const render = () => html`
       done(html`Ability to remove equipment`),
       done(html`List orange and green equipment in the app, alongside the
       training-managed red equipment`),
+      done(html`Change a machine's sticker category without losing its
+      training history`),
       todo(html`Record PAT testing against equipment: asset number, class, who
       tested it, the date, the result and when it's next due`),
 
