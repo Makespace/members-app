@@ -41,15 +41,6 @@ export const render = () => html`
       reporting a problem`),
       todo(html`Let members follow the tickets they've reported`),
 
-      heading(html`Getting trained`),
-      done(html`A page per machine showing the two steps to being trained on
-      it, and whether you have passed its online quiz yet`),
-      todo(html`Book a practical training session in the app, rather than on
-      Meetup or by email`),
-      todo(html`Ask members to countersign their training, confirming they are
-      happy with what they were shown and confident to use the machine - this
-      becomes a third step on each machine's training page`),
-
       heading(html`Notifications`, {done: true}),
       done(html`Banners at the top of the app for events and things that need
       your attention, targetable at owners or specific areas`),
@@ -103,6 +94,8 @@ export const render = () => html`
       heading(html`Making it easier for members to get trained`),
       done(html`Show who the active trainers are`),
       done(html`Show when the last trainings were`),
+      done(html`A page per machine showing the steps to being trained on it,
+      and how far you have got`),
       todo(html`Training scheduling in the app`),
 
       heading(html`Fob-based access control`),

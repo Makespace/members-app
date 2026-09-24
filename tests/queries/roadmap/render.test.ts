@@ -16,7 +16,7 @@ describe('/roadmap render', () => {
     const page = renderPage();
     expect(page.querySelectorAll('ul.timeline').length).toBe(1);
     const headings = page.querySelectorAll('li.timeline__item--heading');
-    expect(headings.length).toBe(13);
+    expect(headings.length).toBe(12);
     headings.forEach(item => {
       expect(item.querySelector('h2')).not.toBeNull();
     });
