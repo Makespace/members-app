@@ -2,7 +2,7 @@ import {faker} from '@faker-js/faker';
 import * as O from 'fp-ts/Option';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {constructViewModel} from '../../../src/queries/equipment-signs/construct-view-model';
-import {equipment as equipmentPage} from '../../../src/queries/equipment';
+import {equipmentTraining} from '../../../src/queries/equipment-training';
 import {arbitraryUser} from '../../types/user.helper';
 import {getRightOrFail} from '../../helpers';
 import {
@@ -55,15 +55,16 @@ describe('the training code on a sign', () => {
   });
 
   // The address is printed and then typed or scanned months later, so the
-  // thing that matters is that the app still answers it.
+  // thing that matters is that the app still answers it, with the page that
+  // tells the member how to get trained.
   it('prints an address the app resolves back to the same machine', async () => {
     const sign = await signFor('Band Saw');
     const reference = O.isSome(sign!.trainUrl)
-      ? sign!.trainUrl.value.split('/equipment/')[1]
+      ? sign!.trainUrl.value.split('/equipment/')[1].replace('/training', '')
       : '';
 
     const page = getRightOrFail(
-      await equipmentPage(framework.depsForCommands)(
+      await equipmentTraining(framework.depsForCommands)(
         superUser,
         {equipment: reference},
         {}
@@ -71,7 +72,7 @@ describe('the training code on a sign', () => {
     );
 
     expect(reference).toBe('wood-shop-band-saw');
-    expect(JSON.stringify(page)).toContain('Band Saw');
+    expect(JSON.stringify(page)).toContain('Get trained on Band Saw');
   });
 
   it('leaves green equipment without one, since there is no training to get', async () => {

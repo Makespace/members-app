@@ -11,6 +11,7 @@ import {Dependencies} from '../../dependencies';
 import {EquipmentCategory} from '../../types/equipment-category';
 import {sizeFrom} from './render';
 import {equipmentSlug, toSlug} from '../../templates/slug';
+import {equipmentGuideUrl} from '../../templates/equipment-guide-url';
 
 export type Sign = {
   id: string;
@@ -37,22 +38,6 @@ export type ViewModel = {
   // Areas to choose between when nothing is selected yet.
   areas: ReadonlyArray<{id: string; name: string; equipmentCount: number}>;
   selectedArea: O.Option<{id: string; name: string}>;
-};
-
-// equipment.makespace.org files a machine under its area (/wood-shop/band-saw)
-// but files orange and green equipment under the colour instead
-// (/orange-equipment/dremel). Derived rather than stored: there is nothing in
-// the app recording these addresses, and a guessable URL that is right for
-// most machines beats no link at all - a member who lands on a miss can still
-// use the site's own navigation.
-const learnUrlFor = (
-  areaName: string,
-  equipmentName: string,
-  category: EquipmentCategory
-) => {
-  const section =
-    category === 'red' ? toSlug(areaName) : `${category}-equipment`;
-  return `https://equipment.makespace.org/${section}/${toSlug(equipmentName)}`;
 };
 
 export const constructViewModel =
@@ -96,7 +81,7 @@ export const constructViewModel =
               areaNames.get(item.areaId as string) ?? '',
               item.name
             )}`,
-            learnUrl: learnUrlFor(
+            learnUrl: equipmentGuideUrl(
               areaNames.get(item.areaId as string) ?? '',
               item.name,
               item.category
@@ -107,7 +92,7 @@ export const constructViewModel =
                     `${deps.conf.PUBLIC_URL}/equipment/${equipmentSlug(
                       areaNames.get(item.areaId as string) ?? '',
                       item.name
-                    )}`
+                    )}/training`
                   )
                 : O.none,
             areaEmail: pipe(

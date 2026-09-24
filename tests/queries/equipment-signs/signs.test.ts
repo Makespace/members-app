@@ -64,7 +64,7 @@ describe('printable equipment signs', () => {
       expect(text).toContain('Get trained');
       expect(text).toContain('Trouble tickets');
       // Each title carries a line saying what scanning gets you.
-      expect(text).toContain('already been reported');
+      expect(text).toContain('view active issues');
       expect(text).toContain('pass the equipment quiz online');
     });
 
@@ -128,11 +128,11 @@ describe('printable equipment signs', () => {
         expect(ofCategory('orange').textContent).not.toContain('Contact');
       });
 
-      it('tells green equipment it is free to use', () => {
+      it('tells green equipment it is open to all', () => {
         const green = ofCategory('green');
         const text = (green.textContent ?? '').replace(/\s+/g, ' ');
 
-        expect(text).toContain('Free to use!');
+        expect(text).toContain('Open to all!');
         expect(text).toContain('free for all members and non-members');
         expect(green.querySelectorAll('.sign__qr svg')).toHaveLength(2);
       });

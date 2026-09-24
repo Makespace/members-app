@@ -16,6 +16,11 @@ export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
     date: '2026-09-24',
     headline:
+      'Every red machine now has a page telling you how to get trained on it, and how far you have got',
+  },
+  {
+    date: '2026-09-24',
+    headline:
       'Printable signs for every machine, with QR codes for its guide, its trainers, and its trouble tickets',
   },
   {

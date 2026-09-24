@@ -2445,3 +2445,79 @@ label img {
 }
 
 
+
+/* The two steps to being trained on a machine: numbered, because the order
+   matters - the quiz comes before anyone will book you a practical. */
+.training-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.training-step {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+
+.training-step h2 {
+  margin-top: 0;
+}
+
+/* Where the member stands on this step, said in one sentence. */
+.training-step__state {
+  border-left: 6px solid;
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.training-step__state p {
+  margin: 0;
+}
+
+.training-step__state--done {
+  border-color: #00703c;
+  background: #e4f0e9;
+}
+
+.training-step__state--todo {
+  border-color: #e07800;
+  background: #fdf0e0;
+}
+
+/* Nobody will book a practical before the quiz is passed, so the step is
+   dimmed until then: still readable, plainly not your turn yet. */
+.training-step--waiting {
+  opacity: 0.55;
+}
+
+.training-summary {
+  margin: 1rem 0 0;
+}
+
+.training-summary dt {
+  font-weight: bold;
+}
+
+.training-summary dd {
+  margin: 0.25rem 0 0.75rem;
+}
+
+.training-trainers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.training-trainers li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}

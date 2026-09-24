@@ -192,7 +192,7 @@ const trainingBlock = (sign: Sign) => {
         qrUrl: O.none,
         variant: 'notice',
         icon: tickIcon,
-        title: 'Free to use!',
+        title: 'Open to all!',
         note: html`This equipment requires no training and is free for all
           members and non-members to use.`,
       });
@@ -221,8 +221,8 @@ const renderSign = (sign: Sign) => html`
           variant: 'fault',
           icon: spannerIcon,
           title: 'Trouble tickets',
-          note: html`Report an issue with this equipment, or view what has
-            already been reported and whether it's being worked on.`,
+          note: html`Report an issue with this equipment, or view active
+            issues.`,
         })}
       </div>
     </article>

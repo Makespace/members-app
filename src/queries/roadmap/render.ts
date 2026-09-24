@@ -41,6 +41,12 @@ export const render = () => html`
       reporting a problem`),
       todo(html`Let members follow the tickets they've reported`),
 
+      heading(html`Getting trained`),
+      done(html`A page per machine showing the two steps to being trained on
+      it, and whether you have passed its online quiz yet`),
+      todo(html`Book a practical training session in the app, rather than on
+      Meetup or by email`),
+
       heading(html`Notifications`, {done: true}),
       done(html`Banners at the top of the app for events and things that need
       your attention, targetable at owners or specific areas`),
