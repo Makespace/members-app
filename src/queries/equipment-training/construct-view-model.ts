@@ -22,7 +22,7 @@ import {DateTime} from 'luxon';
 // themselves. Whether they have been trained is tracked separately, because
 // the two steps can be reached in either order - plenty of members were
 // trained before the quiz existed.
-export type QuizProgress =
+type QuizProgress =
   | {tag: 'passed'; completedAt: Date}
   | {tag: 'failed'; completedAt: Date; score: number; maxScore: number}
   | {tag: 'not-attempted'}
