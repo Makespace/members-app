@@ -38,6 +38,22 @@ describe('the signs stylesheet', () => {
     expect(block.slice(0, block.indexOf('}'))).toContain('width: fit-content');
   });
 
+  // The codes used to sit at the bottom of the sign with the space below the
+  // name left blank. That space is worth more as a bigger code.
+  it('gives the codes the space the name does not need', () => {
+    const rule = (selector: string) => {
+      const from = css.slice(css.indexOf(selector));
+      return from.slice(0, from.indexOf('}'));
+    };
+
+    expect(rule('.sign__codes {')).toContain('flex: 1 1 auto');
+    expect(rule('.sign__codes {')).not.toContain('margin-top: auto');
+    expect(rule('.sign__scan {')).toContain('flex: 1 1 0');
+    // Square, and as tall as its share allows - not a fixed width.
+    expect(rule('.sign__qr {')).toContain('aspect-ratio: 1');
+    expect(rule('.sign__qr {')).toContain('height: min(100%');
+  });
+
   it('sizes the sign from paper rather than screen units', () => {
     expect(css).toContain('--sign-w: 105mm');
     expect(css).toContain('--sign-font');

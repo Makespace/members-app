@@ -2304,17 +2304,24 @@ label img {
 .sign__codes {
   display: flex;
   flex-direction: column;
-  margin-top: auto;
+  /* Takes every millimetre the band and the name leave behind, and shares it
+     between the codes: the space below the name is worth more as a bigger
+     code than as white paper. */
+  flex: 1 1 auto;
+  min-height: 0;
   border-top: 0.35em solid var(--sign-colour);
 }
 
 .sign__scan {
   display: flex;
+  /* Each code gets an equal share of the sign, and fills its share. */
   align-items: center;
+  flex: 1 1 0;
   gap: 0.8em;
   padding: 0.7em 0.9em;
   text-align: left;
   min-width: 0;
+  min-height: 0;
 }
 
 .sign__scan + .sign__scan {
@@ -2328,19 +2335,21 @@ label img {
 
 .sign__qr {
   line-height: 0;
-  /* Fixed against the sign's own scale, so the code is the same size on the
-     paper whichever sheet it is printed on. */
+  /* Square, and as tall as its share of the sign allows: the codes are given
+     whatever the name does not need, so a poster prints a bigger code than a
+     postcard without either needing a layout of its own. Capped so a sign
+     with only two codes does not hand half its width to one of them. */
   flex: 0 0 auto;
-  /* Sized so three of these, the band and the name all fit one portrait
-     page: on A6 that leaves each code about 27mm across, comfortably
-     scannable at arm's length. */
-  width: 8.8em;
+  aspect-ratio: 1;
+  height: min(100%, 12em);
+  width: auto;
+  max-width: 38%;
 }
 
 .sign__qr svg {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
 }
 
 .sign__scan-title {
