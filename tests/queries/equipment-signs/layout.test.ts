@@ -54,6 +54,16 @@ describe('the signs stylesheet', () => {
     expect(rule('.sign__qr {')).toContain('height: min(100%');
   });
 
+  // Chrome and Safari leave backgrounds off the paper unless the person
+  // finds the "Background graphics" tickbox, which would print the sign as
+  // black text on white - no band, no capsules, no colour at all.
+  it('insists the colours reach the paper', () => {
+    const sign = css.slice(css.indexOf('.sign {'));
+    expect(sign.slice(0, sign.indexOf('}'))).toContain(
+      'print-color-adjust: exact'
+    );
+  });
+
   it('sizes the sign from paper rather than screen units', () => {
     expect(css).toContain('--sign-w: 105mm');
     expect(css).toContain('--sign-font');

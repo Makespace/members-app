@@ -2241,6 +2241,11 @@ label img {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* The colour is the sign. Without this a browser drops every background
+     when printing unless the person finds "Background graphics" in the
+     dialog, and the sign comes out as black text on white paper. */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
   /* Only on screen: the paper's own edge does this job when printed. */
   box-shadow: 0 0 0 1px var(--border-color);
 }
@@ -2292,7 +2297,7 @@ label img {
   align-items: center;
   justify-content: center;
   text-align: center;
-  font-size: 3.4em;
+  font-size: 2.4em;
   font-weight: 900;
   line-height: 1.05;
   letter-spacing: -0.02em;
@@ -2307,6 +2312,8 @@ label img {
 .sign__codes {
   display: flex;
   flex-direction: column;
+  gap: 0.5em;
+  padding: 0 0.6em 0.6em;
   /* Takes every millimetre the band and the name leave behind, and shares it
      between the codes: the space below the name is worth more as a bigger
      code than as white paper, and so was the coloured rule that used to
@@ -2321,10 +2328,29 @@ label img {
   align-items: center;
   flex: 1 1 0;
   gap: 0.8em;
-  padding: 0.5em 0.9em;
+  padding: 0.5em 0.8em;
   text-align: left;
   min-width: 0;
   min-height: 0;
+  /* A capsule per code, tinted by what scanning it does: three things to
+     choose between read faster as three blocks than as three lines. */
+  border-radius: 1em;
+  background: var(--scan-tint);
+}
+
+.sign__scan--learn {
+  --scan-colour: #14568a;
+  --scan-tint: #e7f0f8;
+}
+
+.sign__scan--train {
+  --scan-colour: #005a30;
+  --scan-tint: #e4f0e9;
+}
+
+.sign__scan--fault {
+  --scan-colour: #9c1109;
+  --scan-tint: #fbeae8;
 }
 
 .sign__scan-text {
@@ -2334,6 +2360,11 @@ label img {
 
 .sign__qr {
   line-height: 0;
+  /* The code keeps its own white ground whatever the capsule is tinted,
+     because a scanner reads contrast, not colour. */
+  background: #fff;
+  border-radius: 0.4em;
+  padding: 0.3em;
   /* Square, and as tall as its share of the sign allows: the codes are given
      whatever the name does not need, so a poster prints a bigger code than a
      postcard without either needing a layout of its own. Capped so a sign
@@ -2361,6 +2392,7 @@ label img {
      of telling a member which code is which, so it is set as a heading
      rather than as a label. */
   font-size: 1.7em;
+  color: var(--scan-colour);
   font-weight: 800;
   line-height: 1.15;
   text-wrap: balance;
@@ -2373,21 +2405,12 @@ label img {
   margin: 0.45em 0 0.2em;
   font-size: 0.85em;
   line-height: 1.25;
-  color: #333;
+  color: #2b2b2b;
   text-wrap: pretty;
 }
 
-.sign__scan-title--fault {
-  color: #c21b0f;
-}
-
-.sign__scan-title--learn {
-  color: #1d70b8;
-}
-
-.sign__scan-title--train {
-  color: #00703c;
-}
+/* The title carries the capsule's colour; the words under it stay black, so
+   the colour is a signal rather than decoration. */
 
 .sign__icon {
   flex: none;
@@ -2400,7 +2423,7 @@ label img {
   margin: 0.3em 0 0;
   font-size: 0.72em;
   line-height: 1.25;
-  color: #4a4a4a;
+  color: #55504f;
   /* Shown in full and never truncated: its whole purpose is to be typed by
      someone whose camera will not scan the code. It wraps mid-address
      because a URL has no spaces to wrap at. */

@@ -106,10 +106,10 @@ const scanBlock = (block: {
   title: string;
   note: string;
 }) => html`
-  <div class="sign__scan">
+  <div class="sign__scan sign__scan--${safe(block.variant)}">
     <div class="sign__qr">${qrCodeSvg(block.qrUrl, 200)}</div>
     <div class="sign__scan-text">
-      <p class="sign__scan-title sign__scan-title--${safe(block.variant)}">
+      <p class="sign__scan-title">
         ${block.icon} ${safe(block.title)}
       </p>
       <p class="sign__scan-note">${safe(block.note)}</p>
