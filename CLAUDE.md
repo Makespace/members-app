@@ -22,6 +22,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Other
 - `make fix` - Auto-fix linting issues
 - `make smoketest` - Run smoke tests
+- `./scripts/audit-guide-urls.ts <shared-db-dump.json>` - Check every machine's
+  derived equipment-guide address against equipment.makespace.org (the dump
+  comes from `/debug/dump-shared-db/json`; delete it afterwards, it contains
+  member data)
 - Local app: http://localhost:8080
 - Mailcatcher (dev emails): http://localhost:1080
 
