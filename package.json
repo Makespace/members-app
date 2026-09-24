@@ -11,7 +11,7 @@
   "keywords": [],
   "scripts": {},
   "engines": {
-    "node": "20",
+    "node": "22",
     "npm": "10"
   },
   "devDependencies": {
@@ -26,7 +26,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/luxon": "^3.7.1",
     "@types/mjml": "^4.7.4",
-    "@types/node": "^20.19.33",
+    "@types/node": "^22.10.0",
     "@types/nodemailer": "^6.4.23",
     "@types/passport": "^1.0.17",
     "@types/passport-strategy": "^0.2.38",
