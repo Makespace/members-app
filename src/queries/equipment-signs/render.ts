@@ -121,11 +121,11 @@ const scanBlock = (block: {
 const renderSign = (sign: Sign) => html`
   <div class="sign-block">
     <article class="sign sign--${safe(sign.category)}">
+      <h2 class="sign__name">${sanitizeString(sign.name)}</h2>
       <header class="sign__band">
         <p class="sign__band-word">${safe(CATEGORY_HEADING[sign.category])}</p>
         <p class="sign__band-rule">${safe(CATEGORY_RULE[sign.category])}</p>
       </header>
-      <h2 class="sign__name">${sanitizeString(sign.name)}</h2>
       <div class="sign__codes">
         ${scanBlock({
           qrUrl: sign.learnUrl,
