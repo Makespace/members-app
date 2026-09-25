@@ -36,6 +36,10 @@ import {
   archiveReasonButton,
   MailboxArchiveReason,
 } from '../../types/mailbox-archive-reason';
+import {senderName} from '../../types/email-sender';
+import {toSlug} from '../../templates/slug';
+import * as O from 'fp-ts/Option';
+import {UUID} from 'io-ts-types';
 
 const INBOX_PAGE_SIZE = 50;
 
@@ -82,10 +86,7 @@ const threadSubject = (subject: string | null) =>
 // "Alice Example <alice@example.com>" is mostly noise in a narrow column,
 // and an unbreakable address wide enough to push the table off the page. The
 // name is what a manager scans for; the address is on the message itself.
-const displayName = (sender: string) => {
-  const named = /^\s*"?([^"<]+?)"?\s*<[^>]+>\s*$/.exec(sender);
-  return named === null ? sender.trim() : named[1].trim();
-};
+const displayName = senderName;
 
 // The archive buttons, wherever a conversation is shown. A live one offers
 // one button per reason - one click says both what to do and why - and an
@@ -152,12 +153,27 @@ const actionCell = (thread: InboxThread, returnTo: string) => html`
   </td>
 `;
 
-// The same buttons on the conversation itself, with where it stands.
-const conversationActions = (conversation: {
-  conversationId: string;
-  archivedAs: MailboxArchiveReason | undefined;
-}): Html => html`
+type LinkedTicket = {title: string; status: string};
+
+// What to do with the conversation itself: raise a ticket from it, or put it
+// away. Tickets it has already led to are listed, so nobody raises it twice
+// and the manager can see where it stands.
+const conversationActions = (
+  conversation: {
+    conversationId: string;
+    archivedAs: MailboxArchiveReason | undefined;
+  },
+  tickets: ReadonlyArray<LinkedTicket>,
+  boardHref: string
+): Html => html`
   <p class="mailbox__conversation-actions">
+    <a
+      class="button"
+      href="/mailbox/create-ticket?conversationId=${safe(
+        encodeURIComponent(conversation.conversationId)
+      )}"
+      >Create a ticket</a
+    >
     ${conversation.archivedAs === undefined
       ? html`<span>Done with this conversation?</span>`
       : html`<span class="mailbox__filtered"
@@ -170,13 +186,34 @@ const conversationActions = (conversation: {
       )}`,
     })}
   </p>
+  ${tickets.length === 0
+    ? html``
+    : html`<p class="mailbox__linked-tickets">
+        Raised from this conversation:
+        ${joinHtml(
+          tickets.map(
+            ticket => html`<a href="${safe(boardHref)}"
+                >${sanitizeString(ticket.title)}</a
+              >
+              <span class="mailbox__filtered"
+                >${sanitizeString(ticket.status)}</span
+              >`
+          )
+        )}
+      </p>`}
 `;
 
 // Renders the conversation page's own buttons, so their targets can be
 // tested without standing up a whole page.
 export const mailboxConversationActionsForTest = (
-  archivedAs?: MailboxArchiveReason
-): string => conversationActions({conversationId: 'c1', archivedAs});
+  archivedAs?: MailboxArchiveReason,
+  tickets: ReadonlyArray<LinkedTicket> = []
+): string =>
+  conversationActions(
+    {conversationId: 'c1', archivedAs},
+    tickets,
+    '/trouble-tickets/board?areaId=management-team'
+  );
 
 const renderRow = (thread: InboxThread, returnTo: string) => html`
   <tr>
@@ -450,7 +487,9 @@ const renderMessage = (
 const renderDetail = (
   messages: ReadonlyArray<InboxMessage>,
   options: {preferText: boolean; showImages: boolean},
-  archivedAs: MailboxArchiveReason | undefined
+  archivedAs: MailboxArchiveReason | undefined,
+  tickets: ReadonlyArray<LinkedTicket>,
+  boardHref: string
 ): Html => {
   const conversationId = messages[0].gmailMessageId;
   const anyHtml = messages.some(message => message.bodyHtml !== null);
@@ -462,7 +501,7 @@ const renderDetail = (
         ${safe(String(messages.length))}
         message${messages.length === 1 ? '' : safe('s')} in this conversation.
       </p>
-      ${conversationActions({conversationId, archivedAs})}
+      ${conversationActions({conversationId, archivedAs}, tickets, boardHref)}
       ${anyHtml
         ? html`<p class="mailbox__view-options">
             ${viewOption(
@@ -611,6 +650,17 @@ export const mailbox: Query = deps => (user, params, queryParams) =>
               // Any message of the conversation being archived means the
               // conversation is; see summarise.
               const archived = deps.sharedReadModel.mailbox.archivedMessages();
+              // Tickets from the mailbox go to the management team, so that
+              // is the board to send the manager to.
+              const boardHref = pipe(
+                deps.sharedReadModel.area.get(
+                  deps.conf.MANAGEMENT_TEAM_AREA_ID as UUID
+                ),
+                O.match(
+                  () => '/trouble-tickets/board',
+                  area => `/trouble-tickets/board?areaId=${toSlug(area.name)}`
+                )
+              );
               return renderDetail(
                 messages,
                 {
@@ -619,7 +669,11 @@ export const mailbox: Query = deps => (user, params, queryParams) =>
                 },
                 messages
                   .map(message => archived.get(message.gmailMessageId))
-                  .find(reason => reason !== undefined)
+                  .find(reason => reason !== undefined),
+                deps.sharedReadModel.troubleTickets
+                  .getByMailboxConversation(messages[0].gmailMessageId)
+                  .map(ticket => ({title: ticket.title, status: ticket.status})),
+                boardHref
               );
             })
           )

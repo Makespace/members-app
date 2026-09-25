@@ -386,6 +386,7 @@ export const initRoutes = (
     query('/mailbox', queries.mailbox),
     ...command('mailbox', 'archive', commands.mailbox.archive),
     ...command('mailbox', 'unarchive', commands.mailbox.unarchive),
+    ...command('mailbox', 'create-ticket', commands.mailbox.createTicket),
     query('/mailbox/:id', queries.mailbox),
     ...command('notifications', 'create', commands.notifications.create),
     ...command('notifications', 'dismiss', commands.notifications.dismiss),

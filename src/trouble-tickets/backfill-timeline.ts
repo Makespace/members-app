@@ -99,6 +99,9 @@ export const planTroubleTicketBackfill =
           source: 'sheet',
           equipmentId: null,
           machine: '',
+          areaId: null,
+          title: '',
+          mailboxConversationId: '',
           actor: BACKFILL_ACTOR,
         }),
         // Place the event at its real historical time, not the run time, so

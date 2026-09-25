@@ -86,6 +86,7 @@ const transformRow =
     submittedEquipment: row.submittedEquipment,
     equipmentId: row.equipmentId ?? null,
     areaId: row.areaId ?? null,
+    mailboxConversationId: row.mailboxConversationId ?? null,
     assignedMemberNumbers: assignees.get(row.id) ?? [],
     response: row.responseJson,
   });
@@ -151,6 +152,21 @@ export const getTroubleTicketById =
         .get(),
       O.fromNullable,
       O.map(row => withAssignees(db, [row])[0])
+    );
+
+// The tickets raised from one mailbox conversation, newest first - so the
+// conversation can show what it has already led to.
+export const getTroubleTicketsByMailboxConversation =
+  (db: BetterSQLite3Database) =>
+  (conversationId: string): ReadonlyArray<TroubleTicket> =>
+    withAssignees(
+      db,
+      db
+        .select()
+        .from(troubleTicketsTable)
+        .where(eq(troubleTicketsTable.mailboxConversationId, conversationId))
+        .orderBy(desc(troubleTicketsTable.submittedAt))
+        .all()
     );
 
 // Passing null returns the "Unassigned" bucket (tickets whose equipment could

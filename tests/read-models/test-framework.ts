@@ -248,6 +248,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       mailbox: {
         archive: frameworkify(commands.mailbox.archive),
         unarchive: frameworkify(commands.mailbox.unarchive),
+        createTicket: frameworkify(commands.mailbox.createTicket),
       },
     },
     trainingSummaryDeps: {

@@ -123,6 +123,9 @@ const process: Command<RaiseTroubleTicket>['process'] = input => {
           )
         ),
         machine: input.command.machine,
+        areaId: null,
+        title: '',
+        mailboxConversationId: '',
         otherEquipmentDetail: input.command.otherEquipmentDetail,
         status: input.command.machineStatuses.join(', '),
         attempting: input.command.attempting,
