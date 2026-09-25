@@ -15,6 +15,7 @@ import {
   AssigneeView,
   ChangeLogEntry,
 } from './view-model';
+import {Focus} from './focus';
 import {DateTime} from 'luxon';
 import {displayDate} from '../../templates/display-date';
 import {TroubleTicketStatus} from '../../types/trouble-ticket';
@@ -261,10 +262,24 @@ const renderCard = (ticket: TroubleTicketView) => html`
 // returns to page one: page 7 of a different set is meaningless.
 const boardUrl = (
   viewModel: ViewModel,
-  change: {status?: string | null; only?: string | null}
+  change: {
+    status?: string | null;
+    only?: string | null;
+    page?: number;
+    focus?: Focus | null;
+  }
 ) => {
   const params = new URLSearchParams();
-  if (!viewModel.scopedToMine) {
+  const focus =
+    change.focus !== undefined ? change.focus : O.toNullable(viewModel.focus);
+  // A focus replaces the your-areas/everything distinction: it is already a
+  // narrower question than either.
+  if (focus !== null) {
+    params.set(
+      focus.kind === 'equipment' ? 'equipmentId' : 'areaId',
+      focus.slug
+    );
+  } else if (!viewModel.scopedToMine) {
     params.set('show', 'all');
   }
   const status =
@@ -280,6 +295,9 @@ const boardUrl = (
   }
   if (only !== null) {
     params.set('only', only);
+  }
+  if (change.page !== undefined && change.page > 1) {
+    params.set('page', String(change.page));
   }
   const query = params.toString();
   return `/trouble-tickets/board${query === '' ? '' : `?${query}`}`;
@@ -347,7 +365,13 @@ const renderScopeFilters = (viewModel: ViewModel) => html`
 `;
 
 const renderUnresolvedNames = (vm: ViewModel) => {
-  if (!vm.canMapEquipment || vm.unresolvedEquipmentNames.length === 0) {
+  // The unmatched names are a fact about the whole backlog. Someone looking
+  // at one machine did not ask about them.
+  if (
+    O.isSome(vm.focus) ||
+    !vm.canMapEquipment ||
+    vm.unresolvedEquipmentNames.length === 0
+  ) {
     return html``;
   }
   return html`
@@ -386,7 +410,60 @@ const renderUnresolvedNames = (vm: ViewModel) => {
 
 // The scope banner and page navigation. Plain links, no JS: scope and page
 // round-trip as query params.
+// What the board is showing, and the ways out of it. With a machine or an
+// area in focus that is the first thing to say, along with how to widen.
+const renderFocus = (vm: ViewModel) =>
+  pipe(
+    vm.focus,
+    O.match(
+      () => html``,
+      focus => html`
+        <p class="tt-focus">
+          Showing <strong>${vm.totalInScope}</strong>
+          ticket${vm.totalInScope === 1 ? '' : safe('s')} for
+          <strong>${sanitizeString(focus.name)}</strong>${pipe(
+            focus.areaName,
+            O.match(
+              () => html``,
+              areaName => html` in ${sanitizeString(areaName)}`
+            )
+          )}
+          ·
+          ${pipe(
+            focus.areaSlug,
+            O.match(
+              () => html``,
+              areaSlug => html`<a
+                  href="/trouble-tickets/board?areaId=${safe(areaSlug)}"
+                  >all in
+                  ${sanitizeString(O.getOrElse(() => '')(focus.areaName))}</a
+                >
+                · `
+            )
+          )}
+          <a href="${safe(boardUrl(vm, {focus: null}))}">all tickets</a>
+        </p>
+      `
+    )
+  );
+
 const renderScopeAndPages = (vm: ViewModel) => {
+  if (O.isSome(vm.focus)) {
+    return html`
+      ${renderFocus(vm)}
+      ${vm.pageCount > 1
+        ? html`<p>
+            page ${vm.page} of ${vm.pageCount}
+            ${vm.page > 1
+              ? html`· ${renderPageLink(vm, vm.page - 1, '← previous')}`
+              : html``}
+            ${vm.page < vm.pageCount
+              ? html`· ${renderPageLink(vm, vm.page + 1, 'next →')}`
+              : html``}
+          </p>`
+        : html``}
+    `;
+  }
   return html`
     <p>
       ${vm.scopedToMine
@@ -414,25 +491,25 @@ const renderScopeAndPages = (vm: ViewModel) => {
   `;
 };
 
-const renderPageLink = (vm: ViewModel, page: number, label: string) => {
-  const params = [
-    vm.scopedToMine ? '' : 'show=all',
-    page > 1 ? `page=${page}` : '',
-  ]
-    .filter(Boolean)
-    .join('&');
-  return html`<a
-    href="/trouble-tickets/board${params ? safe('?' + params) : ''}"
-    >${safe(label)}</a
-  >`;
-};
+const renderPageLink = (vm: ViewModel, page: number, label: string) =>
+  html`<a href="${safe(boardUrl(vm, {page}))}">${safe(label)}</a>`;
+
+const renderTitle = (vm: ViewModel) =>
+  pipe(
+    vm.focus,
+    O.match(
+      () => html`Trouble tickets`,
+      focus => html`Trouble tickets: ${sanitizeString(focus.name)}`
+    )
+  );
 
 export const render = (viewModel: ViewModel) => {
   if (viewModel.tickets.length === 0) {
     return html`
       <div class="stack">
-        <h1>Trouble tickets</h1>
+        <h1>${renderTitle(viewModel)}</h1>
         ${renderScopeAndPages(viewModel)}
+        ${renderStatusFilters(viewModel)}
         ${renderUnresolvedNames(viewModel)}
         <p>No trouble tickets in this view.</p>
       </div>
@@ -441,7 +518,7 @@ export const render = (viewModel: ViewModel) => {
   const sorted = viewModel.tickets;
   return html`
     <div class="stack tt-wrapper">
-      <h1>Trouble tickets</h1>
+      <h1>${renderTitle(viewModel)}</h1>
       ${renderScopeAndPages(viewModel)}
       ${renderStatusFilters(viewModel)} ${renderScopeFilters(viewModel)}
       ${renderUnresolvedNames(viewModel)}

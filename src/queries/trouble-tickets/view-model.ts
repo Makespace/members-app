@@ -5,6 +5,7 @@ import {
   TroubleTicketResponse,
   TroubleTicketStatus,
 } from '../../types/trouble-ticket';
+import {Focus} from './focus';
 
 export type AssigneeView = {
   memberNumber: number;
@@ -53,6 +54,10 @@ export type TroubleTicketView = {
 };
 
 export type ViewModel = {
+  // The machine or area the board was opened for, when it was opened from
+  // one. Everything on the page - the cards, the counts, the filters -
+  // describes what is in focus.
+  focus: O.Option<Focus>;
   tickets: ReadonlyArray<TroubleTicketView>;
   // True when the board is showing only the viewer's own areas (the default
   // for owners); false = everything (?show=all, or a viewer with no areas).

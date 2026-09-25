@@ -33,6 +33,12 @@ export const troubleTickets: Query = deps => (user, _params, queryParams) =>
         typeof queryParams.page === 'string' && /^\d+$/.test(queryParams.page)
           ? Number(queryParams.page)
           : 1,
+      equipmentId:
+        typeof queryParams.equipmentId === 'string'
+          ? queryParams.equipmentId
+          : undefined,
+      areaId:
+        typeof queryParams.areaId === 'string' ? queryParams.areaId : undefined,
     }),
     TE.map(render),
     TE.map(toLoggedInContent(safe('Trouble Tickets')))
