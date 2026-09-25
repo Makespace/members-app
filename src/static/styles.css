@@ -2149,35 +2149,48 @@ label img {
   white-space: nowrap;
 }
 
-/* The archive controls keep to their own cell, small and quiet: the row is
+/* The archive buttons, small and quiet wherever they appear: the page is
    about the conversation, not the buttons. */
+.mailbox__action {
+  display: inline-block;
+  margin: 0;
+}
+
+.mailbox__action button {
+  padding: 4px 10px;
+  font-size: 0.85rem;
+}
+
+/* In the list they keep to their own cell... */
 .mailbox__actions {
   white-space: nowrap;
   vertical-align: top;
 }
 
-.mailbox__actions form {
-  display: inline-block;
-  margin: 0 0 0 4px;
+.mailbox__actions .mailbox__action {
+  margin-left: 4px;
 }
 
-.mailbox__actions button {
-  padding: 4px 10px;
-  font-size: 0.85rem;
-}
-
-/* They appear when the row is pointed at, so the list reads as a list and
-   not a wall of controls. Only where pointing is possible - a touch screen
-   has no hover - and keyboard focus brings them back regardless. */
+/* ...and appear when the row is pointed at, so the list reads as a list and
+   not a wall of controls. Only in the table, only where pointing is possible
+   - a touch screen has no hover - and keyboard focus brings them back
+   regardless. On the conversation page they are simply there. */
 @media (hover: hover) {
-  .mailbox__actions form {
+  .mailbox-table .mailbox__action {
     opacity: 0;
   }
 
-  .mailbox-table tr:hover .mailbox__actions form,
-  .mailbox__actions form:focus-within {
+  .mailbox-table tr:hover .mailbox__action,
+  .mailbox-table .mailbox__action:focus-within {
     opacity: 1;
   }
+}
+
+.mailbox__conversation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
 /* An active filter chip: the board is showing only this, and clicking it

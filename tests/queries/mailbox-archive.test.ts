@@ -3,6 +3,7 @@
  */
 import {
   mailboxArchivedNoticeForTest,
+  mailboxConversationActionsForTest,
   mailboxListForTest,
 } from '../../src/queries/mailbox/index';
 
@@ -59,6 +60,45 @@ describe('archiving from the mailbox list', () => {
     );
     expect(row.querySelector('.mailbox__filtered')?.textContent?.trim()).toBe(
       'Archived: Hide like this'
+    );
+  });
+});
+
+// Reading the conversation is when the decision gets made, so the same
+// buttons are there - and they are not the hover-hidden kind, which only
+// applies inside the table.
+describe('archiving from the conversation itself', () => {
+  it('offers the same reasons, and returns to the list once dealt with', () => {
+    const forms = [
+      ...render(mailboxConversationActionsForTest()).querySelectorAll(
+        'form.mailbox__action'
+      ),
+    ];
+
+    expect(forms.map(form => form.getAttribute('action'))).toEqual([
+      '/mailbox/archive?next=%2Fmailbox',
+      '/mailbox/archive?next=%2Fmailbox',
+    ]);
+    expect(
+      forms.map(form =>
+        form.querySelector('input[name="reason"]')?.getAttribute('value')
+      )
+    ).toEqual(['resolved', 'hide-similar']);
+    expect(
+      render(mailboxConversationActionsForTest()).querySelector('.mailbox-table')
+    ).toBeNull();
+  });
+
+  it('says where an archived conversation stands, and stays put when it is brought back', () => {
+    const block = render(mailboxConversationActionsForTest('resolved'));
+    const forms = block.querySelectorAll('form.mailbox__action');
+
+    expect(block.querySelector('.mailbox__filtered')?.textContent?.trim()).toBe(
+      'Archived: Resolved'
+    );
+    expect(forms).toHaveLength(1);
+    expect(forms[0].getAttribute('action')).toBe(
+      '/mailbox/unarchive?next=%2Fmailbox%2Fc1'
     );
   });
 });

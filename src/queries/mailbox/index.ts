@@ -87,46 +87,84 @@ const displayName = (sender: string) => {
   return named === null ? sender.trim() : named[1].trim();
 };
 
-// The row's buttons post straight back to this page. `returnTo` is the view
-// the manager was looking at, so archiving from the archived view lands
-// back there. A live conversation offers one button per reason - one click
-// says both what to do and why - and an archived one offers the way back.
-const actionCell = (thread: InboxThread, returnTo: string) => {
-  const next = safe(encodeURIComponent(returnTo));
-  const conversationId = sanitizeString(thread.conversationId);
-  return html`
-    <td class="mailbox__actions">
-      ${thread.archivedAs === undefined
-        ? joinHtml(
-            ARCHIVE_REASONS.map(
-              ({reason, button, label}) => html`
-                <form method="post" action="/mailbox/archive?next=${next}">
-                  <input
-                    type="hidden"
-                    name="conversationId"
-                    value="${conversationId}"
-                  />
-                  <input type="hidden" name="reason" value="${safe(reason)}" />
-                  <button type="submit" title="${safe(label)}">
-                    ${safe(button)}
-                  </button>
-                </form>
-              `
-            )
-          )
-        : html`
-            <form method="post" action="/mailbox/unarchive?next=${next}">
-              <input
-                type="hidden"
-                name="conversationId"
-                value="${conversationId}"
-              />
-              <button type="submit">Unarchive</button>
-            </form>
-          `}
-    </td>
-  `;
+// The archive buttons, wherever a conversation is shown. A live one offers
+// one button per reason - one click says both what to do and why - and an
+// archived one offers the way back. Each posts straight back to wherever
+// the caller says: the list returns to the view the manager was on, and
+// the conversation page returns to the list once the conversation is dealt
+// with, but stays put when it is brought back.
+const archiveActions = (
+  conversation: {conversationId: string; archivedAs: MailboxArchiveReason | undefined},
+  returnTo: {afterArchive: string; afterUnarchive: string}
+): Html => {
+  const conversationId = sanitizeString(conversation.conversationId);
+  if (conversation.archivedAs !== undefined) {
+    return html`
+      <form
+        class="mailbox__action"
+        method="post"
+        action="/mailbox/unarchive?next=${safe(
+          encodeURIComponent(returnTo.afterUnarchive)
+        )}"
+      >
+        <input type="hidden" name="conversationId" value="${conversationId}" />
+        <button type="submit">Unarchive</button>
+      </form>
+    `;
+  }
+  const next = safe(encodeURIComponent(returnTo.afterArchive));
+  return joinHtml(
+    ARCHIVE_REASONS.map(
+      ({reason, button, label}) => html`
+        <form
+          class="mailbox__action"
+          method="post"
+          action="/mailbox/archive?next=${next}"
+        >
+          <input
+            type="hidden"
+            name="conversationId"
+            value="${conversationId}"
+          />
+          <input type="hidden" name="reason" value="${safe(reason)}" />
+          <button type="submit" title="${safe(label)}">${safe(button)}</button>
+        </form>
+      `
+    )
+  );
 };
+
+const actionCell = (thread: InboxThread, returnTo: string) => html`
+  <td class="mailbox__actions">
+    ${archiveActions(thread, {afterArchive: returnTo, afterUnarchive: returnTo})}
+  </td>
+`;
+
+// The same buttons on the conversation itself, with where it stands.
+const conversationActions = (conversation: {
+  conversationId: string;
+  archivedAs: MailboxArchiveReason | undefined;
+}): Html => html`
+  <p class="mailbox__conversation-actions">
+    ${conversation.archivedAs === undefined
+      ? html`<span>Done with this conversation?</span>`
+      : html`<span class="mailbox__filtered"
+          >Archived: ${safe(archiveReasonButton(conversation.archivedAs))}</span
+        >`}
+    ${archiveActions(conversation, {
+      afterArchive: '/mailbox',
+      afterUnarchive: `/mailbox/${encodeURIComponent(
+        conversation.conversationId
+      )}`,
+    })}
+  </p>
+`;
+
+// Renders the conversation page's own buttons, so their targets can be
+// tested without standing up a whole page.
+export const mailboxConversationActionsForTest = (
+  archivedAs?: MailboxArchiveReason
+): string => conversationActions({conversationId: 'c1', archivedAs});
 
 const renderRow = (thread: InboxThread, returnTo: string) => html`
   <tr>
@@ -399,7 +437,8 @@ const renderMessage = (
 // The whole conversation, oldest first, so it reads top to bottom.
 const renderDetail = (
   messages: ReadonlyArray<InboxMessage>,
-  options: {preferText: boolean; showImages: boolean}
+  options: {preferText: boolean; showImages: boolean},
+  archivedAs: MailboxArchiveReason | undefined
 ): Html => {
   const conversationId = messages[0].gmailMessageId;
   const anyHtml = messages.some(message => message.bodyHtml !== null);
@@ -411,6 +450,7 @@ const renderDetail = (
         ${safe(String(messages.length))}
         message${messages.length === 1 ? '' : safe('s')} in this conversation.
       </p>
+      ${conversationActions({conversationId, archivedAs})}
       ${anyHtml
         ? html`<p class="mailbox__view-options">
             ${viewOption(
@@ -555,12 +595,21 @@ export const mailbox: Query = deps => (user, params, queryParams) =>
                   StatusCodes.NOT_FOUND
                 )()
             ),
-            TE.map(messages =>
-              renderDetail(messages, {
-                preferText: queryParams.text === '1',
-                showImages: queryParams.images === '1',
-              })
-            )
+            TE.map(messages => {
+              // Any message of the conversation being archived means the
+              // conversation is; see summarise.
+              const archived = deps.sharedReadModel.mailbox.archivedMessages();
+              return renderDetail(
+                messages,
+                {
+                  preferText: queryParams.text === '1',
+                  showImages: queryParams.images === '1',
+                },
+                messages
+                  .map(message => archived.get(message.gmailMessageId))
+                  .find(reason => reason !== undefined)
+              );
+            })
           )
     ),
     TE.map(toLoggedInContent(safe('Mailbox')))
