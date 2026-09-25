@@ -384,10 +384,23 @@ const TroubleTicketCreated = defineEvent('TroubleTicketCreated', {
   // equipment from a list, so it needs no name resolution, and they get a
   // confirmation email (which the imported history must never trigger - hence
   // the 'sheet' fallback on every stored event).
-  source: tt.withFallback(t.keyof({sheet: null, app: null}), 'sheet'),
+  // 'email': raised by a manager from the imported mailbox. The sender is
+  // not a member reporting through the app, so no confirmation is sent.
+  source: tt.withFallback(
+    t.keyof({sheet: null, app: null, email: null}),
+    'sheet'
+  ),
   equipmentId: tt.withFallback(t.union([tt.UUID, t.null]), null),
   // Which unit, when the equipment stands for several machines.
   machine: tt.withFallback(t.string, ''),
+  // Placed directly in an area rather than resolved from a name: a ticket
+  // raised from the management mailbox belongs to the management team.
+  areaId: tt.withFallback(t.union([tt.UUID, t.null]), null),
+  // '' means the issue text is the title, as it always was.
+  title: tt.withFallback(t.string, ''),
+  // The mailbox conversation it was raised from, by that conversation's id;
+  // '' when it was not.
+  mailboxConversationId: tt.withFallback(t.string, ''),
 });
 
 // --- Trouble ticket status workflow ---

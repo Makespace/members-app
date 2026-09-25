@@ -46,6 +46,7 @@ import {
   getTroubleTicketById,
   getTroubleTicketChangeLog,
   getTroubleTicketsByEquipment,
+  getTroubleTicketsByMailboxConversation,
   hasNotifiedForEvent,
   hasTroubleTicketRowHash,
   TroubleTicketChangeRow,
@@ -136,6 +137,9 @@ export type SharedReadModel = {
     getAll: () => ReadonlyArray<TroubleTicket>;
     getById: (id: UUID) => O.Option<TroubleTicket>;
     getByEquipment: (equipmentId: UUID | null) => ReadonlyArray<TroubleTicket>;
+    getByMailboxConversation: (
+      conversationId: string
+    ) => ReadonlyArray<TroubleTicket>;
     hasNotifiedForEvent: (eventIndex: number) => boolean;
     getChangeLog: (
       ticketIds: ReadonlyArray<UUID>
@@ -219,6 +223,8 @@ export const initSharedReadModel = (
       getAll: getAllTroubleTickets(readModelDb),
       getById: getTroubleTicketById(readModelDb),
       getByEquipment: getTroubleTicketsByEquipment(readModelDb),
+      getByMailboxConversation:
+        getTroubleTicketsByMailboxConversation(readModelDb),
       hasNotifiedForEvent: hasNotifiedForEvent(readModelDb),
       getChangeLog: getTroubleTicketChangeLog(readModelDb),
     },

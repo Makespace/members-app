@@ -26,7 +26,7 @@ describe('confirming a newly raised ticket', () => {
       )(event)()
     );
 
-  const addTicket = async (source: 'app' | 'sheet') =>
+  const addTicket = async (source: 'app' | 'sheet' | 'email') =>
     commit(
       constructEvent('TroubleTicketCreated')({
         actor: systemActor(),
@@ -40,6 +40,9 @@ describe('confirming a newly raised ticket', () => {
         submittedEquipment: 'Bandsaw',
         equipmentId: null,
         machine: '',
+        areaId: null,
+        title: '',
+        mailboxConversationId: '',
         source,
         otherEquipmentDetail: '',
         status: "It's not working",
@@ -91,6 +94,16 @@ describe('confirming a newly raised ticket', () => {
 
   it('never emails about tickets imported from the sheet', async () => {
     await addTicket('sheet');
+
+    await notifyTroubleTicketChanges(deps);
+
+    expect(sentEmails).toHaveLength(0);
+  });
+
+  // The sender of an email did not use the app; any reply belongs in the
+  // conversation, not in an automated confirmation.
+  it('never emails about tickets raised from the mailbox', async () => {
+    await addTicket('email');
 
     await notifyTroubleTicketChanges(deps);
 

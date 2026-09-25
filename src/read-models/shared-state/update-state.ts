@@ -746,18 +746,21 @@ const _updateState =
                   resolveEquipmentByName(tx)(event.submittedEquipment)
                 )
               : null;
-        // No specific machine matched: the label may still name a whole area
-        // (directly or via an area alias), which is enough to sort the ticket.
+        // Placed directly when the event says where it belongs. Otherwise,
+        // with no specific machine matched, the label may still name a whole
+        // area (directly or via an alias), which is enough to sort the ticket.
         const areaId =
-          equipmentId === null && event.submittedEquipment
-            ? O.toNullable(resolveAreaByName(tx)(event.submittedEquipment))
-            : null;
+          event.areaId !== null
+            ? event.areaId
+            : equipmentId === null && event.submittedEquipment
+              ? O.toNullable(resolveAreaByName(tx)(event.submittedEquipment))
+              : null;
         tx.insert(troubleTicketsTable)
           .values({
             id: event.id,
             rowHash: event.rowHash,
             status: 'Todo',
-            title: event.issue,
+            title: event.title !== '' ? event.title : event.issue,
             submittedAt: event.submittedAt,
             submittedName: event.submittedName,
             submittedMemberNumber: event.submittedMemberNumber,
@@ -765,6 +768,10 @@ const _updateState =
             submittedEquipment: event.submittedEquipment,
             equipmentId,
             areaId,
+            mailboxConversationId:
+              event.mailboxConversationId !== ''
+                ? event.mailboxConversationId
+                : null,
             responseJson: {
               otherEquipmentDetail: event.otherEquipmentDetail,
               status: event.status,

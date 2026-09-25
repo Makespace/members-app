@@ -38,6 +38,8 @@ export const TroubleTicket = t.strict({
   equipmentId: t.union([tt.UUID, t.null]),
   // Directly-resolved area when no equipment matched; equipmentId wins.
   areaId: t.union([tt.UUID, t.null]),
+  // The mailbox conversation the ticket was raised from, when it was.
+  mailboxConversationId: t.union([t.string, t.null]),
   // Member numbers of trainers currently assigned to the ticket.
   assignedMemberNumbers: t.readonlyArray(t.number),
   response: TroubleTicketResponse,

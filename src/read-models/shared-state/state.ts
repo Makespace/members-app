@@ -341,6 +341,7 @@ export const troubleTicketsTable = defineTable(
       submittedEquipment TEXT,
       equipmentId TEXT,
       areaId TEXT,
+      mailboxConversationId TEXT,
       responseJson TEXT NOT NULL
     )
   `,
@@ -363,6 +364,8 @@ export const troubleTicketsTable = defineTable(
     // Directly-resolved area, for tickets that matched an area name/alias but
     // no equipment. equipmentId wins when both are set. Both null = Unassigned.
     areaId: text('areaId').$type<UUID>(),
+    // The mailbox conversation the ticket was raised from, when it was.
+    mailboxConversationId: text('mailboxConversationId'),
     responseJson: text('responseJson', {mode: 'json'})
       .notNull()
       .$type<TroubleTicketResponse>(),
