@@ -108,14 +108,14 @@ const archiveActions = (
         )}"
       >
         <input type="hidden" name="conversationId" value="${conversationId}" />
-        <button type="submit">Unarchive</button>
+        ${iconButton('fa-folder-open', 'Bring this conversation back')}
       </form>
     `;
   }
   const next = safe(encodeURIComponent(returnTo.afterArchive));
   return joinHtml(
     ARCHIVE_REASONS.map(
-      ({reason, button, label}) => html`
+      ({reason, icon, label}) => html`
         <form
           class="mailbox__action"
           method="post"
@@ -127,12 +127,24 @@ const archiveActions = (
             value="${conversationId}"
           />
           <input type="hidden" name="reason" value="${safe(reason)}" />
-          <button type="submit" title="${safe(label)}">${safe(button)}</button>
+          ${iconButton(icon, label)}
         </form>
       `
     )
   );
 };
+
+// A small icon that says what it does on hover, and to a screen reader.
+const iconButton = (icon: string, label: string) => html`
+  <button
+    type="submit"
+    class="mailbox__icon-button"
+    title="${safe(label)}"
+    aria-label="${safe(label)}"
+  >
+    <i class="fa-regular ${safe(icon)}" aria-hidden="true"></i>
+  </button>
+`;
 
 const actionCell = (thread: InboxThread, returnTo: string) => html`
   <td class="mailbox__actions">

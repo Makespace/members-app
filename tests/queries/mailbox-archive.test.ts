@@ -42,9 +42,22 @@ describe('archiving from the mailbox list', () => {
         form.querySelector('input[name="reason"]')?.getAttribute('value')
       )
     ).toEqual(['resolved', 'hide-similar']);
+    // Icons, with the meaning on hover and for a screen reader.
     expect(
-      forms.map(form => form.querySelector('button')?.textContent?.trim())
-    ).toEqual(['Resolved', 'Hide like this']);
+      forms.map(form => form.querySelector('button')?.getAttribute('title'))
+    ).toEqual([
+      'Resolved - no further action needed',
+      'Hide mail like this in future',
+    ]);
+    expect(
+      forms.map(form => form.querySelector('button')?.getAttribute('aria-label'))
+    ).toEqual([
+      'Resolved - no further action needed',
+      'Hide mail like this in future',
+    ]);
+    expect(
+      forms.map(form => form.querySelector('button i')?.getAttribute('class'))
+    ).toEqual(['fa-regular fa-circle-check', 'fa-regular fa-eye-slash']);
   });
 
   it('offers to bring an archived conversation back, and says why it went', () => {
@@ -55,8 +68,11 @@ describe('archiving from the mailbox list', () => {
     expect(forms[0].getAttribute('action')).toBe(
       '/mailbox/unarchive?next=%2Fmailbox'
     );
-    expect(forms[0].querySelector('button')?.textContent?.trim()).toBe(
-      'Unarchive'
+    expect(forms[0].querySelector('button')?.getAttribute('title')).toBe(
+      'Bring this conversation back'
+    );
+    expect(forms[0].querySelector('button i')?.getAttribute('class')).toBe(
+      'fa-regular fa-folder-open'
     );
     expect(row.querySelector('.mailbox__filtered')?.textContent?.trim()).toBe(
       'Archived: Hide like this'
