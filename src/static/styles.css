@@ -2204,14 +2204,30 @@ label img {
   background: color-mix(in oklch, white 85%, var(--grey-color));
 }
 
-/* In the list they keep to their own cell... */
+/* In the list they keep to their own cell, two across, so three or four
+   buttons stay a small block beside the row rather than a long strip that
+   pushes the subject out of the way. */
 .mailbox__actions {
-  white-space: nowrap;
   vertical-align: top;
+  width: 1%;
 }
 
-.mailbox__actions .mailbox__action {
-  margin-left: 4px;
+.mailbox__actions .mailbox__state {
+  display: contents;
+}
+
+/* `display: contents` beats the browser's own `hidden` rule, so the state
+   that is not showing has to be told again. Without this a live row offers
+   to un-archive itself. */
+.mailbox__actions .mailbox__state[hidden] {
+  display: none;
+}
+
+.mailbox__actions {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 2px;
+  justify-content: start;
 }
 
 /* ...and appear when the row is pointed at, so the list reads as a list and
@@ -2219,21 +2235,56 @@ label img {
    - a touch screen has no hover - and keyboard focus brings them back
    regardless. On the conversation page they are simply there. */
 @media (hover: hover) {
-  .mailbox-table .mailbox__action {
+  .mailbox-table .mailbox__action,
+  .mailbox-table .mailbox__actions > .mailbox__icon-button {
     opacity: 0;
   }
 
   .mailbox-table tr:hover .mailbox__action,
-  .mailbox-table .mailbox__action:focus-within {
+  .mailbox-table tr:hover .mailbox__actions > .mailbox__icon-button,
+  .mailbox-table .mailbox__action:focus-within,
+  .mailbox-table .mailbox__actions > .mailbox__icon-button:focus-visible {
     opacity: 1;
   }
 }
 
+/* The ticket button is a link rather than a form, so it needs the icon
+   button's look in its own right. */
+.mailbox__actions > .mailbox__icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+  border-radius: 4px;
+  color: var(--grey-color);
+  text-decoration: none;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.mailbox__actions > .mailbox__icon-button:hover,
+.mailbox__actions > .mailbox__icon-button:focus-visible {
+  color: var(--text-color);
+  background: color-mix(in oklch, white 85%, var(--grey-color));
+}
+
+/* On the conversation itself there is room to say what each button does, so
+   they are buttons with words on them rather than icons to decode. */
 .mailbox__conversation-actions {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: stretch;
   gap: 8px;
+  margin: 1rem 0;
+}
+
+.mailbox__conversation-actions .mailbox__action {
+  display: flex;
+}
+
+.mailbox__full-button {
+  font-size: 100%;
+  white-space: nowrap;
 }
 
 /* An active filter chip: the board is showing only this, and clicking it

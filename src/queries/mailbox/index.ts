@@ -94,15 +94,47 @@ const displayName = senderName;
 // the caller says: the list returns to the view the manager was on, and
 // the conversation page returns to the list once the conversation is dealt
 // with, but stays put when it is brought back.
+// In a list row the buttons are icons in a small grid; on the conversation
+// itself there is room to say what each one does.
+type ActionStyle = 'icon' | 'full';
+
 const archiveActions = (
   conversation: {conversationId: string; archivedAs: MailboxArchiveReason | undefined},
-  returnTo: {afterArchive: string; afterUnarchive: string}
+  returnTo: {afterArchive: string; afterUnarchive: string},
+  style: ActionStyle = 'icon'
 ): Html =>
   conversation.archivedAs !== undefined
-    ? unarchiveForm(conversation.conversationId, returnTo.afterUnarchive)
-    : archiveForms(conversation.conversationId, returnTo.afterArchive);
+    ? unarchiveForm(conversation.conversationId, returnTo.afterUnarchive, style)
+    : archiveForms(conversation.conversationId, returnTo.afterArchive, style);
 
-const unarchiveForm = (conversationId: string, returnTo: string): Html => html`
+// Raising a ticket is the other thing a manager does with a conversation, so
+// it belongs with the archive buttons rather than only on the conversation
+// page: the list is where most mail is dealt with.
+const createTicketAction = (
+  conversationId: string,
+  style: ActionStyle
+): Html => {
+  const href = `/mailbox/create-ticket?conversationId=${encodeURIComponent(
+    conversationId
+  )}`;
+  return style === 'full'
+    ? html`<a class="button mailbox__full-button" href="${safe(href)}"
+        >Create a ticket</a
+      >`
+    : html`<a
+        class="mailbox__icon-button"
+        href="${safe(href)}"
+        title="Create a trouble ticket from this conversation"
+        aria-label="Create a trouble ticket from this conversation"
+        ><i class="fa-regular fa-clipboard" aria-hidden="true"></i
+      ></a>`;
+};
+
+const unarchiveForm = (
+  conversationId: string,
+  returnTo: string,
+  style: ActionStyle
+): Html => html`
   <form
     class="mailbox__action"
     method="post"
@@ -113,13 +145,21 @@ const unarchiveForm = (conversationId: string, returnTo: string): Html => html`
       name="conversationId"
       value="${sanitizeString(conversationId)}"
     />
-    ${iconButton('fa-folder-open', 'Bring this conversation back', {})}
+    ${style === 'full'
+      ? html`<button type="submit" class="button mailbox__full-button">
+          Bring this conversation back
+        </button>`
+      : iconButton('fa-folder-open', 'Bring this conversation back', {})}
   </form>
 `;
 
 // One form per reason. Each button also carries what the row becomes once
 // it is pressed - its colour and its mark - for the page to apply in place.
-const archiveForms = (conversationId: string, returnTo: string): Html => {
+const archiveForms = (
+  conversationId: string,
+  returnTo: string,
+  style: ActionStyle
+): Html => {
   const next = safe(encodeURIComponent(returnTo));
   return joinHtml(
     ARCHIVE_REASONS.map(
@@ -135,10 +175,18 @@ const archiveForms = (conversationId: string, returnTo: string): Html => {
             value="${sanitizeString(conversationId)}"
           />
           <input type="hidden" name="reason" value="${safe(reason)}" />
-          ${iconButton(icon, label, {
-            'data-row-class': rowClassFor(reason),
-            'data-mark': `Archived: ${button}`,
-          })}
+          ${style === 'full'
+            ? html`<button
+                type="submit"
+                class="button mailbox__full-button"
+                title="${safe(label)}"
+              >
+                ${safe(button)}
+              </button>`
+            : iconButton(icon, label, {
+                'data-row-class': rowClassFor(reason),
+                'data-mark': `Archived: ${button}`,
+              })}
         </form>
       `
     )
@@ -180,16 +228,17 @@ const rowClass = (thread: InboxThread): string =>
 
 // Both states of the cell are rendered, one hidden, so that pressing a button
 // can swap them in place - the row is marked rather than made to vanish.
-const actionCell = (thread: InboxThread, returnTo: string) => {
+export const actionCell = (thread: InboxThread, returnTo: string) => {
   const archived = thread.archivedAs !== undefined;
   return html`
     <td class="mailbox__actions">
       <span class="mailbox__state" data-state="live" ${archived ? safe('hidden') : safe('')}>
-        ${archiveForms(thread.conversationId, returnTo)}
+        ${archiveForms(thread.conversationId, returnTo, 'icon')}
       </span>
       <span class="mailbox__state" data-state="archived" ${archived ? safe('') : safe('hidden')}>
-        ${unarchiveForm(thread.conversationId, returnTo)}
+        ${unarchiveForm(thread.conversationId, returnTo, 'icon')}
       </span>
+      ${createTicketAction(thread.conversationId, 'icon')}
     </td>
   `;
 };
@@ -254,7 +303,7 @@ type LinkedTicket = {title: string; status: string};
 // What to do with the conversation itself: raise a ticket from it, or put it
 // away. Tickets it has already led to are listed, so nobody raises it twice
 // and the manager can see where it stands.
-const conversationActions = (
+export const conversationActions = (
   conversation: {
     conversationId: string;
     archivedAs: MailboxArchiveReason | undefined;
@@ -262,26 +311,24 @@ const conversationActions = (
   tickets: ReadonlyArray<LinkedTicket>,
   boardHref: string
 ): Html => html`
-  <p class="mailbox__conversation-actions">
-    <a
-      class="button"
-      href="/mailbox/create-ticket?conversationId=${safe(
-        encodeURIComponent(conversation.conversationId)
-      )}"
-      >Create a ticket</a
-    >
-    ${conversation.archivedAs === undefined
-      ? html`<span>Done with this conversation?</span>`
-      : html`<span class="mailbox__filtered"
-          >Archived: ${safe(archiveReasonButton(conversation.archivedAs))}</span
-        >`}
-    ${archiveActions(conversation, {
-      afterArchive: '/mailbox',
-      afterUnarchive: `/mailbox/${encodeURIComponent(
-        conversation.conversationId
-      )}`,
-    })}
-  </p>
+  ${conversation.archivedAs === undefined
+    ? html``
+    : html`<p class="mailbox__filtered">
+        Archived: ${safe(archiveReasonButton(conversation.archivedAs))}
+      </p>`}
+  <div class="mailbox__conversation-actions">
+    ${createTicketAction(conversation.conversationId, 'full')}
+    ${archiveActions(
+      conversation,
+      {
+        afterArchive: '/mailbox',
+        afterUnarchive: `/mailbox/${encodeURIComponent(
+          conversation.conversationId
+        )}`,
+      },
+      'full'
+    )}
+  </div>
   ${tickets.length === 0
     ? html``
     : html`<p class="mailbox__linked-tickets">
