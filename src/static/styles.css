@@ -2127,6 +2127,14 @@ label img {
   width: 26%;
 }
 
+/* The actions are two small icons; under a fixed layout an unsized column
+   takes an equal share of what is left, which was most of the preview's
+   room. Pinned to what the icons need, the preview gets the rest. */
+.mailbox-table th:nth-child(5),
+.mailbox-table td:nth-child(5) {
+  width: 4.5rem;
+}
+
 /* The preview is a hint, not the message: two lines is plenty. The clamp
    lives on a span inside the cell - putting display:-webkit-box on the td
    itself takes it out of the table layout, and the row falls apart. */
