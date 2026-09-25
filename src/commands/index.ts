@@ -9,6 +9,7 @@ import {eventLog} from './event-log';
 import {trainingQuiz} from './training-quiz';
 import {troubleTickets} from './trouble-tickets';
 import {notifications} from './notifications';
+import {mailbox} from './mailbox';
 
 export const commands = {
   area,
@@ -21,6 +22,7 @@ export const commands = {
   trainingQuiz,
   troubleTickets,
   notifications,
+  mailbox,
 };
 
 export const sendEmailCommands = {

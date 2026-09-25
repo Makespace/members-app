@@ -6,7 +6,7 @@ import {
 } from '../../../src/sync-worker/external-state-db';
 import {gmailMessageTable} from '../../../src/sync-worker/gmail/gmail-message-table';
 import {
-  countFilteredConversations,
+  countHiddenConversations,
   getInboxThreads,
 } from '../../../src/read-models/external-state/gmail-inbox';
 
@@ -82,7 +82,7 @@ describe('an Amazon notice delivered by two groups', () => {
     ]);
 
     expect(await getInboxThreads(extDB, 50)).toHaveLength(0);
-    expect(await countFilteredConversations(extDB)).toBe(1);
+    expect((await countHiddenConversations(extDB)).filtered).toBe(1);
   });
 
   it('is hidden when the copies are grouped into one conversation', async () => {
@@ -98,14 +98,14 @@ describe('an Amazon notice delivered by two groups', () => {
     expect(conversation.messageCount).toBe(2);
     expect(conversation.filteredBy?.id).toBe('amazon-order-updates');
     expect(await getInboxThreads(extDB, 50)).toHaveLength(0);
-    expect(await countFilteredConversations(extDB)).toBe(1);
+    expect((await countHiddenConversations(extDB)).filtered).toBe(1);
   });
 
   // The copy with no header is the one that used to unhide the pair.
   it('is hidden even when no copy carries the header at all', async () => {
     await cache([withoutHeader('<only@amazon.co.uk>')]);
 
-    expect(await countFilteredConversations(extDB)).toBe(1);
+    expect((await countHiddenConversations(extDB)).filtered).toBe(1);
   });
 });
 
@@ -160,6 +160,6 @@ describe('the whole Amazon side of the mailbox', () => {
     ] as never);
 
     expect(await getInboxThreads(extDB, 50)).toHaveLength(0);
-    expect(await countFilteredConversations(extDB)).toBe(3);
+    expect((await countHiddenConversations(extDB)).filtered).toBe(3);
   });
 });

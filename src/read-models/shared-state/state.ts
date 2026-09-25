@@ -5,6 +5,7 @@ import {
   TroubleTicketResponse,
   TroubleTicketStatus,
 } from '../../types/trouble-ticket';
+import {MailboxArchiveReason} from '../../types/mailbox-archive-reason';
 import * as O from 'fp-ts/Option';
 import {blob, integer, SQLiteColumnBuilderBase, sqliteTable, SQLiteTableExtraConfig, text, uniqueIndex} from 'drizzle-orm/sqlite-core';
 
@@ -582,5 +583,24 @@ export const failedEventsTable = defineTable(
     eventIndex: integer('eventIndex').notNull(),
     eventType: text('eventType').notNull(),
     payload: text('payload', {mode: 'json'}).notNull(),
+  }
+);
+
+// Gmail message ids of the conversations a manager has archived. Opaque ids
+// only - the messages themselves live in the external-state cache. A
+// conversation is archived when any of its messages is here.
+export const mailboxArchivedMessagesTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS mailboxArchivedMessages (
+      gmailMessageId TEXT PRIMARY KEY,
+      reason TEXT NOT NULL,
+      archivedAt INTEGER NOT NULL
+    )
+  `,
+  'mailboxArchivedMessages' as const,
+  {
+    gmailMessageId: text('gmailMessageId').notNull().primaryKey(),
+    reason: text('reason').notNull().$type<MailboxArchiveReason>(),
+    archivedAt: integer('archivedAt', {mode: 'timestamp_ms'}).notNull(),
   }
 );

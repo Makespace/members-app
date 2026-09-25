@@ -381,8 +381,11 @@ export const initRoutes = (
     query('/trouble-tickets/board', queries.troubleTickets),
     // Site notification banners: admin management + member dismissal.
     query('/notifications', queries.notifications),
-    // Imported management mailbox (read-only in this iteration).
+    // Imported management mailbox. The commands go before the :id route,
+    // which would otherwise take "archive" for a conversation id.
     query('/mailbox', queries.mailbox),
+    ...command('mailbox', 'archive', commands.mailbox.archive),
+    ...command('mailbox', 'unarchive', commands.mailbox.unarchive),
     query('/mailbox/:id', queries.mailbox),
     ...command('notifications', 'create', commands.notifications.create),
     ...command('notifications', 'dismiss', commands.notifications.dismiss),

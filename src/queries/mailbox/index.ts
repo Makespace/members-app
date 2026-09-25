@@ -23,13 +23,19 @@ import {
   FailureWithStatus,
 } from '../../types/failure-with-status';
 import {
-  countFilteredConversations,
+  countHiddenConversations,
   getInboxThread,
   getInboxThreads,
   InboxMessage,
   InboxThread,
 } from '../../read-models/external-state/gmail-inbox';
 import {displayDate} from '../../templates/display-date';
+import {isManagementTeam} from '../../commands/authentication-helpers/is-management-team';
+import {
+  ARCHIVE_REASONS,
+  archiveReasonButton,
+  MailboxArchiveReason,
+} from '../../types/mailbox-archive-reason';
 
 const INBOX_PAGE_SIZE = 50;
 
@@ -50,32 +56,22 @@ const cacheFailure = (deps: Dependencies, what: string) => (error: unknown) => {
   )();
 };
 
+// One check, shared with the archive commands, so who can see the mailbox
+// and who can act on it never come apart.
 const mustBeManagement =
   (deps: Dependencies) =>
   (user: User): TE.TaskEither<FailureWithStatus, void> =>
-    pipe(
-      deps.sharedReadModel.members.getByMemberNumber(user.memberNumber),
-      TE.fromOption(
-        failureWithStatus(
-          'Only the management team can see the mailbox',
-          StatusCodes.UNAUTHORIZED
-        )
-      ),
-      TE.filterOrElse(
-        member =>
-          member.isSuperUser ||
-          (deps.conf.MANAGEMENT_TEAM_AREA_ID !== '' &&
-            member.ownerOf.some(
-              area => area.id === deps.conf.MANAGEMENT_TEAM_AREA_ID
-            )),
-        () =>
+    isManagementTeam(
+      deps.sharedReadModel,
+      deps.conf.MANAGEMENT_TEAM_AREA_ID
+    )({tag: 'user', user})
+      ? TE.right(undefined)
+      : TE.left(
           failureWithStatus(
             'Only the management team can see the mailbox',
             StatusCodes.FORBIDDEN
           )()
-      ),
-      TE.map(() => undefined)
-    );
+        );
 
 // Gmail's own subjects carry the Re: chain; the thread's own subject reads
 // better without it.
@@ -91,7 +87,86 @@ const displayName = (sender: string) => {
   return named === null ? sender.trim() : named[1].trim();
 };
 
-const renderRow = (thread: InboxThread) => html`
+// The archive buttons, wherever a conversation is shown. A live one offers
+// one button per reason - one click says both what to do and why - and an
+// archived one offers the way back. Each posts straight back to wherever
+// the caller says: the list returns to the view the manager was on, and
+// the conversation page returns to the list once the conversation is dealt
+// with, but stays put when it is brought back.
+const archiveActions = (
+  conversation: {conversationId: string; archivedAs: MailboxArchiveReason | undefined},
+  returnTo: {afterArchive: string; afterUnarchive: string}
+): Html => {
+  const conversationId = sanitizeString(conversation.conversationId);
+  if (conversation.archivedAs !== undefined) {
+    return html`
+      <form
+        class="mailbox__action"
+        method="post"
+        action="/mailbox/unarchive?next=${safe(
+          encodeURIComponent(returnTo.afterUnarchive)
+        )}"
+      >
+        <input type="hidden" name="conversationId" value="${conversationId}" />
+        <button type="submit">Unarchive</button>
+      </form>
+    `;
+  }
+  const next = safe(encodeURIComponent(returnTo.afterArchive));
+  return joinHtml(
+    ARCHIVE_REASONS.map(
+      ({reason, button, label}) => html`
+        <form
+          class="mailbox__action"
+          method="post"
+          action="/mailbox/archive?next=${next}"
+        >
+          <input
+            type="hidden"
+            name="conversationId"
+            value="${conversationId}"
+          />
+          <input type="hidden" name="reason" value="${safe(reason)}" />
+          <button type="submit" title="${safe(label)}">${safe(button)}</button>
+        </form>
+      `
+    )
+  );
+};
+
+const actionCell = (thread: InboxThread, returnTo: string) => html`
+  <td class="mailbox__actions">
+    ${archiveActions(thread, {afterArchive: returnTo, afterUnarchive: returnTo})}
+  </td>
+`;
+
+// The same buttons on the conversation itself, with where it stands.
+const conversationActions = (conversation: {
+  conversationId: string;
+  archivedAs: MailboxArchiveReason | undefined;
+}): Html => html`
+  <p class="mailbox__conversation-actions">
+    ${conversation.archivedAs === undefined
+      ? html`<span>Done with this conversation?</span>`
+      : html`<span class="mailbox__filtered"
+          >Archived: ${safe(archiveReasonButton(conversation.archivedAs))}</span
+        >`}
+    ${archiveActions(conversation, {
+      afterArchive: '/mailbox',
+      afterUnarchive: `/mailbox/${encodeURIComponent(
+        conversation.conversationId
+      )}`,
+    })}
+  </p>
+`;
+
+// Renders the conversation page's own buttons, so their targets can be
+// tested without standing up a whole page.
+export const mailboxConversationActionsForTest = (
+  archivedAs?: MailboxArchiveReason
+): string => conversationActions({conversationId: 'c1', archivedAs});
+
+const renderRow = (thread: InboxThread, returnTo: string) => html`
   <tr>
     <td>${displayDate(DateTime.fromJSDate(thread.latest.receivedAt))}</td>
     <td>
@@ -117,20 +192,31 @@ const renderRow = (thread: InboxThread) => html`
           )}"
             >${sanitizeString(thread.filteredBy.reason)}</span
           >`}
+      ${thread.archivedAs === undefined
+        ? html``
+        : html`<span class="mailbox__filtered"
+            >Archived: ${safe(archiveReasonButton(thread.archivedAs))}</span
+          >`}
     </td>
     <td>
       <span class="mailbox-preview"
         >${sanitizeString(thread.latest.snippet ?? '')}</span
       >
     </td>
+    ${actionCell(thread, returnTo)}
   </tr>
 `;
 
 // Renders one row's sender cell, so the display-name handling can be tested
 // without standing up a whole page.
-export const mailboxListForTest = (senders: ReadonlyArray<string>): string =>
-  `<table><tbody>${renderRow({
+export const mailboxListForTest = (
+  senders: ReadonlyArray<string>,
+  archivedAs?: MailboxArchiveReason
+): string =>
+  `<table><tbody>${renderRow(
+    {
     filteredBy: undefined,
+    archivedAs,
     conversationId: 'c1',
     gmailThreadId: 't1',
     messageCount: senders.length,
@@ -154,7 +240,9 @@ export const mailboxListForTest = (senders: ReadonlyArray<string>): string =>
       headers: [],
       attachments: [],
     },
-  })}</tbody></table>`;
+    },
+    '/mailbox'
+  )}</tbody></table>`;
 
 const conversationCount = (count: number) =>
   html`${safe(String(count))} conversation${count === 1 ? '' : safe('s')}`;
@@ -192,11 +280,41 @@ export const mailboxFilterNoticeForTest = (
   showing: boolean
 ): string => filterNotice({count, showing});
 
+// The archive's line, in the same shape as the filter's: what is out of
+// sight is always stated, and the link into it is always here.
+const archivedNotice = (archived: {count: number; showing: boolean}): Html => {
+  if (archived.count === 0) {
+    return html`<p>No conversations are archived.</p>`;
+  }
+  if (archived.showing) {
+    return html`<p>
+      Showing the ${conversationCount(archived.count)} that
+      ${archived.count === 1 ? safe('has') : safe('have')} been archived, marked as
+      such. <a href="/mailbox">Hide them again</a>.
+    </p>`;
+  }
+  return html`<p>
+    ${conversationCount(archived.count)} archived.
+    <a href="/mailbox?archived=1">Show them</a>.
+  </p>`;
+};
+
+export const mailboxArchivedNoticeForTest = (
+  count: number,
+  showing: boolean
+): string => archivedNotice({count, showing});
+
+type Hidden = {
+  filtered: {count: number; showing: boolean};
+  archived: {count: number; showing: boolean};
+};
+
 const renderList = (
   mailbox: string,
   filterToAddress: string,
   threads: ReadonlyArray<InboxThread>,
-  filtered: {count: number; showing: boolean}
+  hidden: Hidden,
+  returnTo: string
 ): Html => html`
   <div class="stack">
     <h1>Mailbox</h1>
@@ -208,7 +326,7 @@ const renderList = (
       </strong>. The import runs every minute; replies and creating tickets
       from emails are coming next.
     </p>
-    ${filterNotice(filtered)}
+    ${filterNotice(hidden.filtered)} ${archivedNotice(hidden.archived)}
     ${threads.length === 0
       ? html`<p>
           Nothing imported yet. If this persists, check the Gmail credentials
@@ -222,10 +340,11 @@ const renderList = (
                 <th>Who</th>
                 <th>Subject</th>
                 <th>Preview</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              ${joinHtml(threads.map(renderRow))}
+              ${joinHtml(threads.map(thread => renderRow(thread, returnTo)))}
             </tbody>
           </table>
         `}
@@ -318,7 +437,8 @@ const renderMessage = (
 // The whole conversation, oldest first, so it reads top to bottom.
 const renderDetail = (
   messages: ReadonlyArray<InboxMessage>,
-  options: {preferText: boolean; showImages: boolean}
+  options: {preferText: boolean; showImages: boolean},
+  archivedAs: MailboxArchiveReason | undefined
 ): Html => {
   const conversationId = messages[0].gmailMessageId;
   const anyHtml = messages.some(message => message.bodyHtml !== null);
@@ -330,6 +450,7 @@ const renderDetail = (
         ${safe(String(messages.length))}
         message${messages.length === 1 ? '' : safe('s')} in this conversation.
       </p>
+      ${conversationActions({conversationId, archivedAs})}
       ${anyHtml
         ? html`<p class="mailbox__view-options">
             ${viewOption(
@@ -423,24 +544,43 @@ export const mailbox: Query = deps => (user, params, queryParams) =>
             TE.tryCatch(
               async () => {
                 const includeFiltered = queryParams.filtered === '1';
-                const [threads, filteredCount] = await Promise.all([
+                const includeArchived = queryParams.archived === '1';
+                const archived =
+                  deps.sharedReadModel.mailbox.archivedMessages();
+                const [threads, counts] = await Promise.all([
                   getInboxThreads(deps.extDB, INBOX_PAGE_SIZE, {
                     includeFiltered,
+                    includeArchived,
+                    archived,
                   }),
-                  countFilteredConversations(deps.extDB),
+                  countHiddenConversations(deps.extDB, archived),
                 ]);
-                return {threads, filteredCount, includeFiltered};
+                return {threads, counts, includeFiltered, includeArchived};
               },
               cacheFailure(deps, 'the conversation list')
             ),
-            TE.map(({threads, filteredCount, includeFiltered}) =>
-              renderList(
+            TE.map(({threads, counts, includeFiltered, includeArchived}) => {
+              // Where a row's button sends the manager back to: the view
+              // they were on, switches and all.
+              const switches = [
+                ...(includeFiltered ? ['filtered=1'] : []),
+                ...(includeArchived ? ['archived=1'] : []),
+              ];
+              const returnTo =
+                switches.length === 0
+                  ? '/mailbox'
+                  : `/mailbox?${switches.join('&')}`;
+              return renderList(
                 deps.conf.GMAIL_IMPORT_MAILBOX,
                 deps.conf.GMAIL_FILTER_TO_ADDRESS,
                 threads,
-                {count: filteredCount, showing: includeFiltered}
-              )
-            )
+                {
+                  filtered: {count: counts.filtered, showing: includeFiltered},
+                  archived: {count: counts.archived, showing: includeArchived},
+                },
+                returnTo
+              );
+            })
           )
         : pipe(
             TE.tryCatch(
@@ -455,12 +595,21 @@ export const mailbox: Query = deps => (user, params, queryParams) =>
                   StatusCodes.NOT_FOUND
                 )()
             ),
-            TE.map(messages =>
-              renderDetail(messages, {
-                preferText: queryParams.text === '1',
-                showImages: queryParams.images === '1',
-              })
-            )
+            TE.map(messages => {
+              // Any message of the conversation being archived means the
+              // conversation is; see summarise.
+              const archived = deps.sharedReadModel.mailbox.archivedMessages();
+              return renderDetail(
+                messages,
+                {
+                  preferText: queryParams.text === '1',
+                  showImages: queryParams.images === '1',
+                },
+                messages
+                  .map(message => archived.get(message.gmailMessageId))
+                  .find(reason => reason !== undefined)
+              );
+            })
           )
     ),
     TE.map(toLoggedInContent(safe('Mailbox')))

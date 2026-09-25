@@ -3,6 +3,7 @@ import * as tt from 'io-ts-types';
 import {EmailAddressCodec} from './email-address';
 import {Actor} from './actor';
 import {EquipmentCategoryCodec} from './equipment-category';
+import {MailboxArchiveReason} from './mailbox-archive-reason';
 
 const defineEvent = <A extends string, T extends t.Props>(
   type: A,
@@ -257,6 +258,30 @@ const NotificationEmailSent = defineEvent('NotificationEmailSent', {
   notificationId: tt.UUID,
 });
 
+// --- Mailbox ---
+// A manager puts a conversation out of sight, or brings it back. The mailbox
+// itself is a cache outside the event log (its bodies are PII); this is the
+// curated fact about it that does belong here - opaque Gmail message ids and
+// who acted. Every message of the conversation is named, because the
+// conversation's own id is its earliest message, which moves as the cache
+// window does: any one of these identifies it later.
+const MailboxConversationArchived = defineEvent(
+  'MailboxConversationArchived',
+  {
+    gmailMessageIds: t.array(t.string),
+    // Why: the archived view shows it, and "hide like this" is the list to
+    // write the next noise rule from.
+    reason: MailboxArchiveReason,
+  }
+);
+
+const MailboxConversationUnarchived = defineEvent(
+  'MailboxConversationUnarchived',
+  {
+    gmailMessageIds: t.array(t.string),
+  }
+);
+
 const MemberDetailsUpdated = defineEvent('MemberDetailsUpdated', {
   memberNumber: t.number,
   name: t.union([t.string, t.undefined]),
@@ -483,6 +508,8 @@ export const events = [
   NotificationDismissed,
   NotificationRevoked,
   NotificationEmailSent,
+  MailboxConversationArchived,
+  MailboxConversationUnarchived,
 ];
 
 export const DomainEvent = t.union([
@@ -538,6 +565,8 @@ export const DomainEvent = t.union([
   NotificationDismissed.codec,
   NotificationRevoked.codec,
   NotificationEmailSent.codec,
+  MailboxConversationArchived.codec,
+  MailboxConversationUnarchived.codec,
 ]);
 
 export const StoredDomainEvent = t.intersection([

@@ -245,6 +245,10 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         setEquipment: frameworkify(commands.troubleTickets.setEquipment),
         editTitle: frameworkify(commands.troubleTickets.editTitle),
       },
+      mailbox: {
+        archive: frameworkify(commands.mailbox.archive),
+        unarchive: frameworkify(commands.mailbox.unarchive),
+      },
     },
     trainingSummaryDeps: {
       logger,
