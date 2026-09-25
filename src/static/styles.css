@@ -2164,6 +2164,25 @@ label img {
   margin: 0;
 }
 
+/* A marked row says so at a glance, wherever it is shown: faint green once
+   resolved, faint yellow for anything put out of sight - by a rule or by
+   hand. Pressing a button colours the row in place; it does not vanish. */
+.mailbox-row--resolved {
+  background: #e9f5ea;
+}
+
+.mailbox-row--hidden {
+  background: #fdf6dc;
+}
+
+/* Only one of the cell's two states shows at a time, and the mark waits
+   unseen until there is something to say - their own display rules would
+   otherwise override the hidden attribute. */
+.mailbox__state[hidden],
+.mailbox__archived-mark[hidden] {
+  display: none;
+}
+
 /* An icon, not a button: the global button treatment (green fill, heavy
    padding, bottom border) is undone so each is a small quiet glyph that
    says what it does on hover. */

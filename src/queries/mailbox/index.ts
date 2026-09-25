@@ -97,26 +97,33 @@ const displayName = senderName;
 const archiveActions = (
   conversation: {conversationId: string; archivedAs: MailboxArchiveReason | undefined},
   returnTo: {afterArchive: string; afterUnarchive: string}
-): Html => {
-  const conversationId = sanitizeString(conversation.conversationId);
-  if (conversation.archivedAs !== undefined) {
-    return html`
-      <form
-        class="mailbox__action"
-        method="post"
-        action="/mailbox/unarchive?next=${safe(
-          encodeURIComponent(returnTo.afterUnarchive)
-        )}"
-      >
-        <input type="hidden" name="conversationId" value="${conversationId}" />
-        ${iconButton('fa-folder-open', 'Bring this conversation back')}
-      </form>
-    `;
-  }
-  const next = safe(encodeURIComponent(returnTo.afterArchive));
+): Html =>
+  conversation.archivedAs !== undefined
+    ? unarchiveForm(conversation.conversationId, returnTo.afterUnarchive)
+    : archiveForms(conversation.conversationId, returnTo.afterArchive);
+
+const unarchiveForm = (conversationId: string, returnTo: string): Html => html`
+  <form
+    class="mailbox__action"
+    method="post"
+    action="/mailbox/unarchive?next=${safe(encodeURIComponent(returnTo))}"
+  >
+    <input
+      type="hidden"
+      name="conversationId"
+      value="${sanitizeString(conversationId)}"
+    />
+    ${iconButton('fa-folder-open', 'Bring this conversation back', {})}
+  </form>
+`;
+
+// One form per reason. Each button also carries what the row becomes once
+// it is pressed - its colour and its mark - for the page to apply in place.
+const archiveForms = (conversationId: string, returnTo: string): Html => {
+  const next = safe(encodeURIComponent(returnTo));
   return joinHtml(
     ARCHIVE_REASONS.map(
-      ({reason, icon, label}) => html`
+      ({reason, icon, label, button}) => html`
         <form
           class="mailbox__action"
           method="post"
@@ -125,10 +132,13 @@ const archiveActions = (
           <input
             type="hidden"
             name="conversationId"
-            value="${conversationId}"
+            value="${sanitizeString(conversationId)}"
           />
           <input type="hidden" name="reason" value="${safe(reason)}" />
-          ${iconButton(icon, label)}
+          ${iconButton(icon, label, {
+            'data-row-class': rowClassFor(reason),
+            'data-mark': `Archived: ${button}`,
+          })}
         </form>
       `
     )
@@ -136,21 +146,104 @@ const archiveActions = (
 };
 
 // A small icon that says what it does on hover, and to a screen reader.
-const iconButton = (icon: string, label: string) => html`
+const iconButton = (
+  icon: string,
+  label: string,
+  data: Record<string, string>
+) => html`
   <button
     type="submit"
     class="mailbox__icon-button"
     title="${safe(label)}"
     aria-label="${safe(label)}"
+    ${joinHtml(
+      Object.entries(data).map(
+        ([name, value]) => html`${safe(name)}="${sanitizeString(value)}" `
+      )
+    )}
   >
     <i class="fa-regular ${safe(icon)}" aria-hidden="true"></i>
   </button>
 `;
 
-const actionCell = (thread: InboxThread, returnTo: string) => html`
-  <td class="mailbox__actions">
-    ${archiveActions(thread, {afterArchive: returnTo, afterUnarchive: returnTo})}
-  </td>
+// What colour a row is: faint green once resolved, faint yellow for anything
+// put out of sight, whether by a rule or by hand.
+const rowClassFor = (reason: MailboxArchiveReason): string =>
+  reason === 'resolved' ? 'mailbox-row--resolved' : 'mailbox-row--hidden';
+
+const rowClass = (thread: InboxThread): string =>
+  thread.archivedAs !== undefined
+    ? rowClassFor(thread.archivedAs)
+    : thread.filteredBy !== undefined
+      ? 'mailbox-row--hidden'
+      : '';
+
+// Both states of the cell are rendered, one hidden, so that pressing a button
+// can swap them in place - the row is marked rather than made to vanish.
+const actionCell = (thread: InboxThread, returnTo: string) => {
+  const archived = thread.archivedAs !== undefined;
+  return html`
+    <td class="mailbox__actions">
+      <span class="mailbox__state" data-state="live" ${archived ? safe('hidden') : safe('')}>
+        ${archiveForms(thread.conversationId, returnTo)}
+      </span>
+      <span class="mailbox__state" data-state="archived" ${archived ? safe('') : safe('hidden')}>
+        ${unarchiveForm(thread.conversationId, returnTo)}
+      </span>
+    </td>
+  `;
+};
+
+// Presses a row's button without leaving the page: the form still posts,
+// and the row takes its new colour, mark and buttons on success. Without
+// scripting, or if the post fails, the form submits as it always did and
+// the page says what went wrong.
+const markInPlace = () => html`
+  <script>
+    (function () {
+      if (!window.fetch) return;
+      var rowClasses = ['mailbox-row--resolved', 'mailbox-row--hidden'];
+      document
+        .querySelectorAll('.mailbox-table form.mailbox__action')
+        .forEach(function (form) {
+          form.addEventListener('submit', function (event) {
+            var row = form.closest('tr');
+            var button = form.querySelector('button');
+            if (!row || !button) return;
+            event.preventDefault();
+            fetch(form.getAttribute('action'), {
+              method: 'POST',
+              body: new FormData(form),
+              credentials: 'same-origin',
+            })
+              .then(function (response) {
+                if (!response.ok) throw new Error('not ok');
+                var archiving = button.hasAttribute('data-row-class');
+                rowClasses.forEach(function (name) {
+                  row.classList.remove(name);
+                });
+                if (archiving) {
+                  row.classList.add(button.getAttribute('data-row-class'));
+                } else if (row.getAttribute('data-filtered') === '1') {
+                  row.classList.add('mailbox-row--hidden');
+                }
+                row.querySelectorAll('.mailbox__state').forEach(function (state) {
+                  state.hidden =
+                    (state.getAttribute('data-state') === 'archived') !== archiving;
+                });
+                var mark = row.querySelector('.mailbox__archived-mark');
+                if (mark) {
+                  mark.hidden = !archiving;
+                  if (archiving) mark.textContent = button.getAttribute('data-mark');
+                }
+              })
+              .catch(function () {
+                form.submit();
+              });
+          });
+        });
+    })();
+  </script>
 `;
 
 type LinkedTicket = {title: string; status: string};
@@ -216,7 +309,10 @@ export const mailboxConversationActionsForTest = (
   );
 
 const renderRow = (thread: InboxThread, returnTo: string) => html`
-  <tr>
+  <tr
+    class="${safe(rowClass(thread))}"
+    data-filtered="${thread.filteredBy === undefined ? safe('0') : safe('1')}"
+  >
     <td>${displayDate(DateTime.fromJSDate(thread.latest.receivedAt))}</td>
     <td>
       ${sanitizeString(
@@ -241,11 +337,13 @@ const renderRow = (thread: InboxThread, returnTo: string) => html`
           )}"
             >${sanitizeString(thread.filteredBy.reason)}</span
           >`}
-      ${thread.archivedAs === undefined
-        ? html``
-        : html`<span class="mailbox__filtered"
-            >Archived: ${safe(archiveReasonButton(thread.archivedAs))}</span
-          >`}
+      <span
+        class="mailbox__filtered mailbox__archived-mark"
+        ${thread.archivedAs === undefined ? safe('hidden') : safe('')}
+        >${thread.archivedAs === undefined
+          ? html``
+          : html`Archived: ${safe(archiveReasonButton(thread.archivedAs))}`}</span
+      >
     </td>
     <td>
       <span class="mailbox-preview"
@@ -260,11 +358,12 @@ const renderRow = (thread: InboxThread, returnTo: string) => html`
 // without standing up a whole page.
 export const mailboxListForTest = (
   senders: ReadonlyArray<string>,
-  archivedAs?: MailboxArchiveReason
+  archivedAs?: MailboxArchiveReason,
+  filteredBy?: {id: string; reason: string}
 ): string =>
   `<table><tbody>${renderRow(
     {
-    filteredBy: undefined,
+    filteredBy,
     archivedAs,
     conversationId: 'c1',
     gmailThreadId: 't1',
@@ -396,6 +495,7 @@ const renderList = (
               ${joinHtml(threads.map(thread => renderRow(thread, returnTo)))}
             </tbody>
           </table>
+          ${markInPlace()}
         `}
   </div>
 `;

@@ -16,13 +16,16 @@ const render = (markup: string) => {
 const text = (markup: string) =>
   render(markup).textContent?.replace(/\s+/g, ' ').trim();
 
+// The buttons a row currently offers: those in whichever state is showing.
+const offered = (row: HTMLElement) => [
+  ...row.querySelectorAll(
+    'td.mailbox__actions .mailbox__state:not([hidden]) form'
+  ),
+];
+
 describe('archiving from the mailbox list', () => {
   it('gives a live row one button per reason, each posting back to the page', () => {
-    const forms = [
-      ...render(mailboxListForTest(['a@example.com'])).querySelectorAll(
-        'td.mailbox__actions form'
-      ),
-    ];
+    const forms = offered(render(mailboxListForTest(['a@example.com'])));
 
     expect(forms.map(form => form.getAttribute('action'))).toEqual([
       '/mailbox/archive?next=%2Fmailbox',
@@ -62,7 +65,7 @@ describe('archiving from the mailbox list', () => {
 
   it('offers to bring an archived conversation back, and says why it went', () => {
     const row = render(mailboxListForTest(['a@example.com'], 'hide-similar'));
-    const forms = row.querySelectorAll('td.mailbox__actions form');
+    const forms = offered(row);
 
     expect(forms).toHaveLength(1);
     expect(forms[0].getAttribute('action')).toBe(
@@ -77,6 +80,79 @@ describe('archiving from the mailbox list', () => {
     expect(row.querySelector('.mailbox__filtered')?.textContent?.trim()).toBe(
       'Archived: Hide like this'
     );
+  });
+});
+
+// A row is marked by its colour, wherever it is shown, and pressing a
+// button marks it in place. Each button says what the row becomes.
+describe('how a row is marked', () => {
+  const rowOf = (markup: string) => render(markup).querySelector('tr');
+
+  it('is plain until something is done to it', () => {
+    const row = rowOf(mailboxListForTest(['a@example.com']));
+
+    expect(row?.getAttribute('class')).toBe('');
+    expect(
+      row?.querySelector('.mailbox__archived-mark')?.hasAttribute('hidden')
+    ).toBe(true);
+  });
+
+  it('is green once resolved', () => {
+    expect(
+      rowOf(mailboxListForTest(['a@example.com'], 'resolved'))?.getAttribute(
+        'class'
+      )
+    ).toBe('mailbox-row--resolved');
+  });
+
+  it('is yellow when put out of sight by hand', () => {
+    expect(
+      rowOf(mailboxListForTest(['a@example.com'], 'hide-similar'))?.getAttribute(
+        'class'
+      )
+    ).toBe('mailbox-row--hidden');
+  });
+
+  it('is yellow when put out of sight by a rule, and remembers that', () => {
+    const row = rowOf(
+      mailboxListForTest(['a@example.com'], undefined, {
+        id: 'amazon-order-updates',
+        reason: 'Amazon order and delivery notice',
+      })
+    );
+
+    expect(row?.getAttribute('class')).toBe('mailbox-row--hidden');
+    expect(row?.getAttribute('data-filtered')).toBe('1');
+  });
+
+  it('tells each button what the row becomes when it is pressed', () => {
+    const buttons = [
+      ...render(mailboxListForTest(['a@example.com'])).querySelectorAll(
+        '[data-state="live"] button'
+      ),
+    ];
+
+    expect(
+      buttons.map(button => [
+        button.getAttribute('data-row-class'),
+        button.getAttribute('data-mark'),
+      ])
+    ).toEqual([
+      ['mailbox-row--resolved', 'Archived: Resolved'],
+      ['mailbox-row--hidden', 'Archived: Hide like this'],
+    ]);
+  });
+
+  it('keeps both states of the cell ready, one hidden', () => {
+    const live = render(mailboxListForTest(['a@example.com']));
+    const archived = render(mailboxListForTest(['a@example.com'], 'resolved'));
+
+    expect(
+      live.querySelector('[data-state="archived"]')?.hasAttribute('hidden')
+    ).toBe(true);
+    expect(
+      archived.querySelector('[data-state="live"]')?.hasAttribute('hidden')
+    ).toBe(true);
   });
 });
 
