@@ -16,6 +16,11 @@ export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
     date: '2026-09-25',
     headline:
+      'Log in with your member number as well as your email address - the link still goes to the address we hold for you',
+  },
+  {
+    date: '2026-09-25',
+    headline:
       'Open the trouble tickets for one machine from its page, and widen to its area or everything from there',
   },
   {
