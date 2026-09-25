@@ -2149,6 +2149,22 @@ label img {
   white-space: nowrap;
 }
 
+/* The archive control keeps to its own cell, small and quiet: the row is
+   about the conversation, not the button. */
+.mailbox__actions {
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.mailbox__actions form {
+  margin: 0;
+}
+
+.mailbox__actions button {
+  padding: 4px 10px;
+  font-size: 0.85rem;
+}
+
 /* An active filter chip: the board is showing only this, and clicking it
    again clears the filter. */
 .tt-filter__label--active {

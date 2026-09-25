@@ -102,6 +102,9 @@ export type InboxThread = {
   // Set when every message in the conversation matched a noise rule; the
   // reason is shown on the row.
   filteredBy: {id: string; reason: string} | undefined;
+  // A manager put it out of sight. Judged on any of its messages, since the
+  // conversation's own id moves as the cache window does.
+  archived: boolean;
   // The earliest message's id: stable, unique, and what the detail page uses.
   conversationId: string;
   gmailThreadId: string;
@@ -172,9 +175,14 @@ const toConversations = (
   return [...closed, ...open.values()];
 };
 
-const summarise = (conversation: ReadonlyArray<InboxMessage>): InboxThread => ({
+const summarise =
+  (archivedMessageIds: ReadonlySet<string>) =>
+  (conversation: ReadonlyArray<InboxMessage>): InboxThread => ({
   filteredBy: pipe(noiseRuleForConversation(conversation), rule =>
     rule === undefined ? undefined : {id: rule.id, reason: rule.reason}
+  ),
+  archived: conversation.some(message =>
+    archivedMessageIds.has(message.gmailMessageId)
   ),
   conversationId: conversation[0].gmailMessageId,
   gmailThreadId: conversation[0].gmailThreadId,
@@ -189,33 +197,54 @@ const summarise = (conversation: ReadonlyArray<InboxMessage>): InboxThread => ({
   ],
 });
 
+const NO_ARCHIVED: ReadonlySet<string> = new Set();
+
+type ThreadOptions = {
+  // Show conversations the noise rules would hide.
+  includeFiltered?: boolean;
+  // Show conversations a manager archived.
+  includeArchived?: boolean;
+  // Which message ids count as archived; from the shared read model.
+  archivedMessageIds?: ReadonlySet<string>;
+};
+
 // The most recently active conversations, newest first. Conversations that
-// every rule agrees are noise are left out unless asked for.
+// every rule agrees are noise, and ones a manager archived, are left out
+// unless asked for - each by its own switch, so the page can explain each.
 export const getInboxThreads = async (
   extDB: ExternalStateDB,
   limit: number,
-  options: {includeFiltered: boolean} = {includeFiltered: false}
+  options: ThreadOptions = {}
 ): Promise<ReadonlyArray<InboxThread>> => {
   const messages = await recentMessages(extDB);
 
   return toConversations(messages)
-    .map(summarise)
-    .filter(thread => options.includeFiltered || thread.filteredBy === undefined)
+    .map(summarise(options.archivedMessageIds ?? NO_ARCHIVED))
+    .filter(
+      thread =>
+        (options.includeFiltered === true || thread.filteredBy === undefined) &&
+        (options.includeArchived === true || !thread.archived)
+    )
     .sort(
       (a, b) => b.latest.receivedAt.getTime() - a.latest.receivedAt.getTime()
     )
     .slice(0, limit);
 };
 
-// How many conversations the rules are currently hiding, so the toggle can
-// say what it would reveal.
-export const countFilteredConversations = async (
-  extDB: ExternalStateDB
-): Promise<number> => {
-  const messages = await recentMessages(extDB);
-  return toConversations(messages)
-    .map(summarise)
-    .filter(thread => thread.filteredBy !== undefined).length;
+// How many conversations each switch is currently hiding, so the page can
+// say what each would reveal. A conversation both noise and archived counts
+// under both, since either switch alone would not show it.
+export const countHiddenConversations = async (
+  extDB: ExternalStateDB,
+  archivedMessageIds: ReadonlySet<string> = NO_ARCHIVED
+): Promise<{filtered: number; archived: number}> => {
+  const threads = toConversations(await recentMessages(extDB)).map(
+    summarise(archivedMessageIds)
+  );
+  return {
+    filtered: threads.filter(thread => thread.filteredBy !== undefined).length,
+    archived: threads.filter(thread => thread.archived).length,
+  };
 };
 
 // Every message in one conversation, oldest first. Grouping is done here

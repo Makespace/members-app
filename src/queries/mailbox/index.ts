@@ -23,13 +23,14 @@ import {
   FailureWithStatus,
 } from '../../types/failure-with-status';
 import {
-  countFilteredConversations,
+  countHiddenConversations,
   getInboxThread,
   getInboxThreads,
   InboxMessage,
   InboxThread,
 } from '../../read-models/external-state/gmail-inbox';
 import {displayDate} from '../../templates/display-date';
+import {isManagementTeam} from '../../commands/authentication-helpers/is-management-team';
 
 const INBOX_PAGE_SIZE = 50;
 
@@ -50,32 +51,22 @@ const cacheFailure = (deps: Dependencies, what: string) => (error: unknown) => {
   )();
 };
 
+// One check, shared with the archive commands, so who can see the mailbox
+// and who can act on it never come apart.
 const mustBeManagement =
   (deps: Dependencies) =>
   (user: User): TE.TaskEither<FailureWithStatus, void> =>
-    pipe(
-      deps.sharedReadModel.members.getByMemberNumber(user.memberNumber),
-      TE.fromOption(
-        failureWithStatus(
-          'Only the management team can see the mailbox',
-          StatusCodes.UNAUTHORIZED
-        )
-      ),
-      TE.filterOrElse(
-        member =>
-          member.isSuperUser ||
-          (deps.conf.MANAGEMENT_TEAM_AREA_ID !== '' &&
-            member.ownerOf.some(
-              area => area.id === deps.conf.MANAGEMENT_TEAM_AREA_ID
-            )),
-        () =>
+    isManagementTeam(
+      deps.sharedReadModel,
+      deps.conf.MANAGEMENT_TEAM_AREA_ID
+    )({tag: 'user', user})
+      ? TE.right(undefined)
+      : TE.left(
           failureWithStatus(
             'Only the management team can see the mailbox',
             StatusCodes.FORBIDDEN
           )()
-      ),
-      TE.map(() => undefined)
-    );
+        );
 
 // Gmail's own subjects carry the Re: chain; the thread's own subject reads
 // better without it.
@@ -91,7 +82,30 @@ const displayName = (sender: string) => {
   return named === null ? sender.trim() : named[1].trim();
 };
 
-const renderRow = (thread: InboxThread) => html`
+// One button per row, posting straight back to this page. Which button
+// depends on where the conversation is; `returnTo` is the view the manager
+// was looking at, so archiving from the archived view lands back there.
+const actionCell = (thread: InboxThread, returnTo: string) => html`
+  <td class="mailbox__actions">
+    <form
+      method="post"
+      action="/mailbox/${safe(
+        thread.archived ? 'unarchive' : 'archive'
+      )}?next=${safe(encodeURIComponent(returnTo))}"
+    >
+      <input
+        type="hidden"
+        name="conversationId"
+        value="${sanitizeString(thread.conversationId)}"
+      />
+      <button type="submit">
+        ${safe(thread.archived ? 'Unarchive' : 'Archive')}
+      </button>
+    </form>
+  </td>
+`;
+
+const renderRow = (thread: InboxThread, returnTo: string) => html`
   <tr>
     <td>${displayDate(DateTime.fromJSDate(thread.latest.receivedAt))}</td>
     <td>
@@ -117,20 +131,29 @@ const renderRow = (thread: InboxThread) => html`
           )}"
             >${sanitizeString(thread.filteredBy.reason)}</span
           >`}
+      ${thread.archived
+        ? html`<span class="mailbox__filtered">Archived</span>`
+        : html``}
     </td>
     <td>
       <span class="mailbox-preview"
         >${sanitizeString(thread.latest.snippet ?? '')}</span
       >
     </td>
+    ${actionCell(thread, returnTo)}
   </tr>
 `;
 
 // Renders one row's sender cell, so the display-name handling can be tested
 // without standing up a whole page.
-export const mailboxListForTest = (senders: ReadonlyArray<string>): string =>
-  `<table><tbody>${renderRow({
+export const mailboxListForTest = (
+  senders: ReadonlyArray<string>,
+  archived = false
+): string =>
+  `<table><tbody>${renderRow(
+    {
     filteredBy: undefined,
+    archived,
     conversationId: 'c1',
     gmailThreadId: 't1',
     messageCount: senders.length,
@@ -154,7 +177,9 @@ export const mailboxListForTest = (senders: ReadonlyArray<string>): string =>
       headers: [],
       attachments: [],
     },
-  })}</tbody></table>`;
+    },
+    '/mailbox'
+  )}</tbody></table>`;
 
 const conversationCount = (count: number) =>
   html`${safe(String(count))} conversation${count === 1 ? '' : safe('s')}`;
@@ -192,11 +217,41 @@ export const mailboxFilterNoticeForTest = (
   showing: boolean
 ): string => filterNotice({count, showing});
 
+// The archive's line, in the same shape as the filter's: what is out of
+// sight is always stated, and the link into it is always here.
+const archivedNotice = (archived: {count: number; showing: boolean}): Html => {
+  if (archived.count === 0) {
+    return html`<p>No conversations are archived.</p>`;
+  }
+  if (archived.showing) {
+    return html`<p>
+      Showing the ${conversationCount(archived.count)} that
+      ${archived.count === 1 ? safe('has') : safe('have')} been archived, marked as
+      such. <a href="/mailbox">Hide them again</a>.
+    </p>`;
+  }
+  return html`<p>
+    ${conversationCount(archived.count)} archived.
+    <a href="/mailbox?archived=1">Show them</a>.
+  </p>`;
+};
+
+export const mailboxArchivedNoticeForTest = (
+  count: number,
+  showing: boolean
+): string => archivedNotice({count, showing});
+
+type Hidden = {
+  filtered: {count: number; showing: boolean};
+  archived: {count: number; showing: boolean};
+};
+
 const renderList = (
   mailbox: string,
   filterToAddress: string,
   threads: ReadonlyArray<InboxThread>,
-  filtered: {count: number; showing: boolean}
+  hidden: Hidden,
+  returnTo: string
 ): Html => html`
   <div class="stack">
     <h1>Mailbox</h1>
@@ -208,7 +263,7 @@ const renderList = (
       </strong>. The import runs every minute; replies and creating tickets
       from emails are coming next.
     </p>
-    ${filterNotice(filtered)}
+    ${filterNotice(hidden.filtered)} ${archivedNotice(hidden.archived)}
     ${threads.length === 0
       ? html`<p>
           Nothing imported yet. If this persists, check the Gmail credentials
@@ -222,10 +277,11 @@ const renderList = (
                 <th>Who</th>
                 <th>Subject</th>
                 <th>Preview</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              ${joinHtml(threads.map(renderRow))}
+              ${joinHtml(threads.map(thread => renderRow(thread, returnTo)))}
             </tbody>
           </table>
         `}
@@ -423,24 +479,43 @@ export const mailbox: Query = deps => (user, params, queryParams) =>
             TE.tryCatch(
               async () => {
                 const includeFiltered = queryParams.filtered === '1';
-                const [threads, filteredCount] = await Promise.all([
+                const includeArchived = queryParams.archived === '1';
+                const archivedMessageIds =
+                  deps.sharedReadModel.mailbox.archivedMessageIds();
+                const [threads, counts] = await Promise.all([
                   getInboxThreads(deps.extDB, INBOX_PAGE_SIZE, {
                     includeFiltered,
+                    includeArchived,
+                    archivedMessageIds,
                   }),
-                  countFilteredConversations(deps.extDB),
+                  countHiddenConversations(deps.extDB, archivedMessageIds),
                 ]);
-                return {threads, filteredCount, includeFiltered};
+                return {threads, counts, includeFiltered, includeArchived};
               },
               cacheFailure(deps, 'the conversation list')
             ),
-            TE.map(({threads, filteredCount, includeFiltered}) =>
-              renderList(
+            TE.map(({threads, counts, includeFiltered, includeArchived}) => {
+              // Where a row's button sends the manager back to: the view
+              // they were on, switches and all.
+              const switches = [
+                ...(includeFiltered ? ['filtered=1'] : []),
+                ...(includeArchived ? ['archived=1'] : []),
+              ];
+              const returnTo =
+                switches.length === 0
+                  ? '/mailbox'
+                  : `/mailbox?${switches.join('&')}`;
+              return renderList(
                 deps.conf.GMAIL_IMPORT_MAILBOX,
                 deps.conf.GMAIL_FILTER_TO_ADDRESS,
                 threads,
-                {count: filteredCount, showing: includeFiltered}
-              )
-            )
+                {
+                  filtered: {count: counts.filtered, showing: includeFiltered},
+                  archived: {count: counts.archived, showing: includeArchived},
+                },
+                returnTo
+              );
+            })
           )
         : pipe(
             TE.tryCatch(

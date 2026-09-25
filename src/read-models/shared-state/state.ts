@@ -584,3 +584,20 @@ export const failedEventsTable = defineTable(
     payload: text('payload', {mode: 'json'}).notNull(),
   }
 );
+
+// Gmail message ids of the conversations a manager has archived. Opaque ids
+// only - the messages themselves live in the external-state cache. A
+// conversation is archived when any of its messages is here.
+export const mailboxArchivedMessagesTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS mailboxArchivedMessages (
+      gmailMessageId TEXT PRIMARY KEY,
+      archivedAt INTEGER NOT NULL
+    )
+  `,
+  'mailboxArchivedMessages' as const,
+  {
+    gmailMessageId: text('gmailMessageId').notNull().primaryKey(),
+    archivedAt: integer('archivedAt', {mode: 'timestamp_ms'}).notNull(),
+  }
+);

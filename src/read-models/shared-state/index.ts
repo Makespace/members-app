@@ -67,6 +67,7 @@ import {
 } from './equipment/get';
 import {getAllAreaMinimal} from './area/get';
 import { findAllSuperUsers, findStoredEmailForLogin, findUserIdByEmail, findUserIdByMemberNumber, getAllMemberCore } from './member/get';
+import {getArchivedMailboxMessageIds} from './mailbox/get';
 import { trainingsDeliveredBy } from './member/training-delivered';
 import { setupEventStateTable } from './setup-event-state-table';
 import { getCurrentEventIndex } from './get-current-event-index';
@@ -144,6 +145,10 @@ export type SharedReadModel = {
     getById: (id: UUID) => Notification | undefined;
     getForMember: (member: Member, now: Date) => ReadonlyArray<Notification>;
   };
+  mailbox: {
+    // Gmail message ids of every archived conversation's messages.
+    archivedMessageIds: () => ReadonlySet<string>;
+  };
 };
 
 export const initSharedReadModel = (
@@ -220,6 +225,9 @@ export const initSharedReadModel = (
       getAll: getAllNotifications(readModelDb),
       getById: getNotificationById(readModelDb),
       getForMember: getNotificationsForMember(readModelDb),
+    },
+    mailbox: {
+      archivedMessageIds: getArchivedMailboxMessageIds(readModelDb),
     },
   };
 };

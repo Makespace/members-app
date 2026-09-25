@@ -23,6 +23,7 @@ import {
   notificationsTable,
   notificationAreaTargetsTable,
   notificationDismissalsTable,
+  mailboxArchivedMessagesTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, eq, inArray, isNull, sql} from 'drizzle-orm';
@@ -982,6 +983,28 @@ const _updateState =
           .set({emailSent: true})
           .where(eq(notificationsTable.id, event.notificationId))
           .run();
+        break;
+      }
+      case 'MailboxConversationArchived': {
+        for (const gmailMessageId of event.gmailMessageIds) {
+          tx.insert(mailboxArchivedMessagesTable)
+            .values({gmailMessageId, archivedAt: event.recordedAt})
+            .onConflictDoNothing()
+            .run();
+        }
+        break;
+      }
+      case 'MailboxConversationUnarchived': {
+        if (event.gmailMessageIds.length > 0) {
+          tx.delete(mailboxArchivedMessagesTable)
+            .where(
+              inArray(
+                mailboxArchivedMessagesTable.gmailMessageId,
+                event.gmailMessageIds
+              )
+            )
+            .run();
+        }
         break;
       }
       default: {
