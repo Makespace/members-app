@@ -132,7 +132,20 @@ export const render = (viewModel: ViewModel) => html`
         </ul>
         ${viewModel.canSeeBoard
           ? html`<p>
-              <a class="button" href="/trouble-tickets/board"
+              <a
+                class="button"
+                href="${safe(
+                  pipe(
+                    viewModel.focus,
+                    O.match(
+                      () => '/trouble-tickets/board',
+                      focus =>
+                        `/trouble-tickets/board?${
+                          focus.kind === 'equipment' ? 'equipmentId' : 'areaId'
+                        }=${focus.slug}`
+                    )
+                  )
+                )}"
                 >View active tickets</a
               >
             </p>`

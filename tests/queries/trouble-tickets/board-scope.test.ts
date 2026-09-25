@@ -87,15 +87,20 @@ describe('/trouble-tickets scope and pagination', () => {
       status?: 'Todo' | 'Resolved';
       only?: 'mine' | 'my-area' | 'my-machines';
       page?: number;
+      equipmentId?: string;
+      areaId?: string;
+      showAll?: boolean;
     }
   ) =>
     pipe(
       user,
       constructViewModel(framework.depsForCommands, {
-        showAll: true,
+        showAll: filters.showAll ?? true,
         page: filters.page ?? 1,
         status: O.fromNullable(filters.status),
         only: O.fromNullable(filters.only),
+        equipmentId: filters.equipmentId,
+        areaId: filters.areaId,
       }),
       T.map(getRightOrFail)
     )();
@@ -185,6 +190,88 @@ describe('/trouble-tickets scope and pagination', () => {
 
       expect(board.activeStatus).toStrictEqual(O.some('Todo'));
       expect(board.activeScope).toStrictEqual(O.none);
+    });
+  });
+
+  // Opened from a machine's page or its QR code: the board answers about
+  // that machine, and offers the way back out rather than assuming it.
+  describe('pointed at one machine', () => {
+    it("shows only that machine's tickets", async () => {
+      const board = await viewFiltered(superUser, {
+        equipmentId: 'wood-shop-band-saw',
+      });
+
+      expect(board.tickets).toHaveLength(1);
+      expect(board.tickets[0].equipmentName).toStrictEqual(
+        O.some('Band Saw')
+      );
+      expect(board.totalInScope).toBe(1);
+    });
+
+    it('names what it is focused on, and where it lives', async () => {
+      const board = await viewFiltered(superUser, {
+        equipmentId: 'wood-shop-band-saw',
+      });
+
+      expect(board.focus).toStrictEqual(
+        O.some(
+          expect.objectContaining({
+            kind: 'equipment',
+            name: 'Band Saw',
+            slug: 'wood-shop-band-saw',
+            areaName: O.some('Wood Shop'),
+          })
+        )
+      );
+    });
+
+    it('counts the statuses within the machine, not the backlog', async () => {
+      const board = await viewFiltered(superUser, {
+        equipmentId: 'wood-shop-band-saw',
+      });
+
+      expect(board.statusCounts.Todo).toBe(1);
+    });
+
+    it('still filters by status inside the machine', async () => {
+      const resolved = await viewFiltered(superUser, {
+        equipmentId: 'wood-shop-band-saw',
+        status: 'Resolved',
+      });
+
+      expect(resolved.tickets).toHaveLength(0);
+      // The chips still say what else is there.
+      expect(resolved.statusCounts.Todo).toBe(1);
+    });
+
+    it("answers for a machine outside the viewer's own areas", async () => {
+      const board = await viewFiltered(owner, {
+        equipmentId: 'laser-cutters-trotec',
+        showAll: false,
+      });
+
+      expect(board.tickets).toHaveLength(1);
+      expect(board.scopedToMine).toBe(false);
+    });
+
+    it('widens to the whole area when asked', async () => {
+      const board = await viewFiltered(superUser, {areaId: 'wood-shop'});
+
+      expect(board.tickets).toHaveLength(1);
+      expect(board.focus).toStrictEqual(
+        O.some(expect.objectContaining({kind: 'area', name: 'Wood Shop'}))
+      );
+    });
+
+    // A code on a machine outlives the machine; landing on the whole board
+    // beats landing on an error.
+    it('ignores a machine it cannot find', async () => {
+      const board = await viewFiltered(superUser, {
+        equipmentId: 'no-such-machine',
+      });
+
+      expect(board.focus).toStrictEqual(O.none);
+      expect(board.tickets).toHaveLength(3);
     });
   });
 

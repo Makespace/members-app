@@ -21,6 +21,7 @@ import {
   MinimalEquipment,
   allMemberNumbers,
 } from '../../read-models/shared-state/return-types';
+import {resolveFocus} from './focus';
 
 // Cards per page. The board serves the viewer's own areas by default, but a
 // super-user's "show all" can span the whole backlog - keep the DOM bounded.
@@ -321,6 +322,11 @@ export const constructViewModel =
       // set rather than a filtered page.
       status: O.Option<TroubleTicketStatus>;
       only: O.Option<(typeof SCOPE_KEYS)[number]>;
+      // One machine or one area, when the board was opened from it. The
+      // counts and the filters then describe that thing rather than the
+      // whole backlog.
+      equipmentId?: string;
+      areaId?: string;
     }
   ) =>
   (user: User): TE.TaskEither<FailureWithStatus, ViewModel> => {
@@ -343,6 +349,10 @@ export const constructViewModel =
           )()
       ),
       TE.map(loggedInMember => {
+        const focus = resolveFocus(rm, {
+          equipmentId: options.equipmentId,
+          areaId: options.areaId,
+        });
         // Two bulk queries replace two per-ticket queries across the whole
         // backlog; per-ticket resolution is then a map hit.
         const equipmentById = new Map(
@@ -357,11 +367,34 @@ export const constructViewModel =
         // Default to the viewer's own areas; a viewer who owns none (e.g. a
         // super-user who isn't an owner) would see an empty page, so they get
         // everything. ?show=all is the explicit escape hatch for owners.
+        // Asking for one machine means that machine, wherever it lives: the
+        // "your areas" default is about finding your way into a big backlog,
+        // and somebody who arrived from a machine has already done that.
+        const inFocus = pipe(
+          focus,
+          O.match(
+            () => all,
+            current =>
+              all.filter(scope =>
+                current.kind === 'equipment'
+                  ? scope.ticket.equipmentId === current.id
+                  : pipe(
+                      scope.ticketArea,
+                      O.match(
+                        () => false,
+                        area => area.id === current.id
+                      )
+                    )
+              )
+          )
+        );
         const scopedToMine =
-          !options.showAll && loggedInMember.ownerOf.length > 0;
+          O.isNone(focus) &&
+          !options.showAll &&
+          loggedInMember.ownerOf.length > 0;
         const scoped = scopedToMine
-          ? all.filter(scope => scope.inMyOwnerArea)
-          : all;
+          ? inFocus.filter(scope => scope.inMyOwnerArea)
+          : inFocus;
         // Counted before the filters narrow anything, so each chip reports
         // what it would show.
         const statusCounts = countBy(
@@ -415,6 +448,7 @@ export const constructViewModel =
           rowsByTicket.set(row.ticketId, bucket);
         }
         return {
+          focus,
           tickets: pageTickets.map(ticket => ({
             ...ticket,
             changeLog: buildChangeLog(rowsByTicket.get(ticket.id) ?? [], rm),

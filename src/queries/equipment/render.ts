@@ -287,6 +287,19 @@ const reportProblem = (viewModel: ViewModel) =>
     >
   </li>`;
 
+// The board, already narrowed to this machine: somebody who came here about
+// one machine wants that machine's tickets, not the whole backlog with it
+// somewhere inside.
+const viewTickets = (viewModel: ViewModel) =>
+  viewModel.isSuperUserOrOwnerOfArea || viewModel.isSuperUser
+    ? html` <li>
+        <a
+          href="/trouble-tickets/board?equipmentId=${viewModel.equipment.id}"
+          >View trouble tickets for this equipment</a
+        >
+      </li>`
+    : html``;
+
 // Naming the units of a multi-machine entry (e.g. Printer 1, 2, 3).
 const setMachines = (viewModel: ViewModel) =>
   pipe(
@@ -313,7 +326,8 @@ const equipmentActions = (viewModel: ViewModel) =>
   viewModel.equipment.category === 'red'
     ? html`
         <ul>
-          ${reportProblem(viewModel)} ${printSign(viewModel)}
+          ${reportProblem(viewModel)} ${viewTickets(viewModel)}
+          ${printSign(viewModel)}
           ${setMachines(viewModel)} ${trainMember(viewModel)} ${adminMarkTrainedBy(viewModel)}
           ${addTrainer(viewModel)} ${removeTrainer(viewModel)}
           ${guideLink(viewModel)} ${changeCategory(viewModel)}
@@ -324,7 +338,8 @@ const equipmentActions = (viewModel: ViewModel) =>
       `
     : html`
         <ul>
-          ${reportProblem(viewModel)} ${printSign(viewModel)}
+          ${reportProblem(viewModel)} ${viewTickets(viewModel)}
+          ${printSign(viewModel)}
           ${guideLink(viewModel)} ${changeCategory(viewModel)}
           ${setMachines(viewModel)} ${retireEquipment(viewModel)}
         </ul>
