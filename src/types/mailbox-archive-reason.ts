@@ -10,20 +10,24 @@ export const MailboxArchiveReason = t.keyof({
 
 export type MailboxArchiveReason = t.TypeOf<typeof MailboxArchiveReason>;
 
-// In the order the buttons appear. `button` is the word on the row;
-// `label` says what it means, for the title and the archived view.
+// In the order the buttons appear. `icon` is the button (Font Awesome
+// regular, the only style the site loads), `label` what it means - shown on
+// hover and read out - and `button` the short name for the archived view.
 export const ARCHIVE_REASONS: ReadonlyArray<{
   reason: MailboxArchiveReason;
+  icon: string;
   button: string;
   label: string;
 }> = [
   {
     reason: 'resolved',
+    icon: 'fa-circle-check',
     button: 'Resolved',
     label: 'Resolved - no further action needed',
   },
   {
     reason: 'hide-similar',
+    icon: 'fa-eye-slash',
     button: 'Hide like this',
     label: 'Hide mail like this in future',
   },
