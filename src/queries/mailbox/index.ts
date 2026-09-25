@@ -211,9 +211,12 @@ const markInPlace = () => html`
             var button = form.querySelector('button');
             if (!row || !button) return;
             event.preventDefault();
+            // As the browser itself would send it: url-encoded. The server
+            // reads no other kind of form body, so a FormData body - which
+            // goes as multipart - arrives empty and is refused.
             fetch(form.getAttribute('action'), {
               method: 'POST',
-              body: new FormData(form),
+              body: new URLSearchParams(new FormData(form)),
               credentials: 'same-origin',
             })
               .then(function (response) {
@@ -354,14 +357,17 @@ const renderRow = (thread: InboxThread, returnTo: string) => html`
   </tr>
 `;
 
-// Renders one row's sender cell, so the display-name handling can be tested
-// without standing up a whole page.
+// The page's in-place marking script, so a test can run it against a row.
+export const mailboxMarkInPlaceScriptForTest = (): string => markInPlace();
+
+// Renders one row, so the row's markup can be tested without standing up a
+// whole page.
 export const mailboxListForTest = (
   senders: ReadonlyArray<string>,
   archivedAs?: MailboxArchiveReason,
   filteredBy?: {id: string; reason: string}
 ): string =>
-  `<table><tbody>${renderRow(
+  `<table class="mailbox-table"><tbody>${renderRow(
     {
     filteredBy,
     archivedAs,
