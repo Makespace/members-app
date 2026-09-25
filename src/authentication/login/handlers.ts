@@ -1,7 +1,7 @@
 import {RequestHandler} from 'express';
 import {Request, Response} from 'express';
 import {pipe} from 'fp-ts/lib/function';
-import {parseEmailAddressFromBody} from './parse-email-address-from-body';
+import {parseLogInIdentifier} from './log-in-identifier';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
 import {publish} from 'pubsub-js';
@@ -43,14 +43,13 @@ export const logOut = (req: Request, res: Response<CompleteHtmlDocument>) => {
 export const auth = (req: Request, res: Response<CompleteHtmlDocument>) => {
   pipe(
     req.body,
-    parseEmailAddressFromBody,
-    E.mapLeft(() => "You entered something that isn't a valid email address"),
+    parseLogInIdentifier,
     E.matchW(
       msg =>
         res.status(StatusCodes.BAD_REQUEST).send(oopsPage(sanitizeString(msg))),
-      email => {
-        publish('send-log-in-link', email);
-        res.status(StatusCodes.ACCEPTED).send(checkYourMailPage(email));
+      identifier => {
+        publish('send-log-in-link', identifier);
+        res.status(StatusCodes.ACCEPTED).send(checkYourMailPage(identifier));
       }
     )
   );

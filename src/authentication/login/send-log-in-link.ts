@@ -2,6 +2,7 @@ import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
 import {Dependencies} from '../../dependencies';
 import {Email, EmailAddress, Failure, failure} from '../../types';
+import {LogInIdentifier} from './log-in-identifier';
 import {Config} from '../../configuration';
 import {magicLink} from '..';
 import mjml2html from 'mjml';
@@ -41,19 +42,53 @@ const toEmail =
     `).html,
   });
 
+// A member number resolves to the address already on file rather than to
+// anything the person typed, so a number is only ever a way of asking "send
+// it to me" - never a way of choosing where "me" is.
+const addressFor = (
+  deps: Pick<Dependencies, 'sharedReadModel'>,
+  identifier: LogInIdentifier
+): O.Option<EmailAddress> => {
+  switch (identifier.tag) {
+    case 'email':
+      // Match the typed email to a stored one case-insensitively (e.g.
+      // "joe@x.com" finds a member registered as "Joe@x.com").
+      return deps.sharedReadModel.members.resolveEmailForLogin(
+        identifier.email,
+        true
+      );
+    case 'memberNumber':
+      return pipe(
+        deps.sharedReadModel.members.getByMemberNumber(
+          identifier.memberNumber
+        ),
+        O.chain(member =>
+          // Through the same gate as a typed address: an unverified address
+          // cannot be logged in to either way.
+          deps.sharedReadModel.members.resolveEmailForLogin(
+            member.primaryEmailAddress,
+            true
+          )
+        )
+      );
+  }
+};
+
 export const sendLogInLink = (
   deps: Pick<Dependencies, 'sendEmail' | 'rateLimitSendingOfEmails' | 'sharedReadModel' | 'logger'>,
   conf: Config
-) => (emailAddress: EmailAddress): TE.TaskEither<Failure, string> => {
-  // Match the typed email to a stored one case-insensitively (e.g. "joe@x.com"
-  // finds a member registered as "Joe@x.com"). resolveEmailForLogin returns the
-  // address exactly as stored, so we always send to the on-file casing.
-  const storedEmail = deps.sharedReadModel.members.resolveEmailForLogin(
-    emailAddress,
-    true
-  );
+) => (identifier: LogInIdentifier): TE.TaskEither<Failure, string> => {
+  // resolveEmailForLogin returns the address exactly as stored, so we always
+  // send to the on-file casing.
+  const storedEmail = addressFor(deps, identifier);
   if (O.isNone(storedEmail)) {
-    return TE.left(failure('No member associated with that email')());
+    return TE.left(
+      failure(
+        identifier.tag === 'email'
+          ? 'No member associated with that email'
+          : 'No member associated with that member number'
+      )()
+    );
   }
   // Note that we intentionally use the stored email address rather than the one provided.
   // This prevents attacks where you specify an email address that somehow matches to an existing user but isn't

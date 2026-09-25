@@ -8,17 +8,21 @@ export const logInPage = pipe(
       <div class="max-w-md mx-auto">
         <h1 class="mb-6">Log in</h1>
         <form action="/auth" method="post">
-          <label for="email">E-Mail: </label>
+          <label for="email">Email address or member number: </label>
           <input
             id="email"
-            type="email"
+            type="text"
+            inputmode="email"
+            autocomplete="username"
             required
             name="email"
             value=""
             class="mb-2"
           />
           <p class="text-sm text-gray mb-6">
-            Enter email associated with your MakeSpace membership.
+            Either the email address linked to your MakeSpace membership, or
+            your member number - the link goes to the address we hold for you
+            either way.
           </p>
           <button type="submit" class="w-full mt-6 mb-6">
             Email me a login link

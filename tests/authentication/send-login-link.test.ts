@@ -41,6 +41,54 @@ describe('send-log-in-link', () => {
     framework.close();
   });
 
+  // A member who knows their number but not which address we hold can still
+  // ask for a link: it goes to the address on file, never to anything typed.
+  describe('asked for by member number', () => {
+    const member: LinkNumberToEmail = {
+      email: emailAddress,
+      memberNumber,
+      name: undefined,
+      formOfAddress: undefined,
+    };
+
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail(member);
+    });
+
+    it('sends the link to the address on file', async () => {
+      const result = getRightOrFail(
+        await sendLogInLink(deps, conf)({tag: 'memberNumber', memberNumber})()
+      );
+
+      expect(sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({recipient: emailAddress})
+      );
+      expect(result).toContain(emailAddress);
+    });
+
+    it('logs the member in as themselves', async () => {
+      await sendLogInLink(deps, conf)({tag: 'memberNumber', memberNumber})();
+
+      const sent = sendEmail.mock.calls[0][0];
+      const token = /token=([^\s"]+)/.exec(sent.text)?.[1] ?? '';
+      const decoded = getRightOrFail(
+        decodeMagicLinkFromQuery(testLogger(), conf)({token})
+      );
+
+      expect(decoded).toMatchObject({memberNumber, emailAddress});
+    });
+
+    it('sends nothing for a number nobody has', async () => {
+      const result = await sendLogInLink(deps, conf)({
+        tag: 'memberNumber',
+        memberNumber: memberNumber + 1,
+      })();
+
+      expect(E.isLeft(result)).toBe(true);
+      expect(sendEmail).not.toHaveBeenCalled();
+    });
+  });
+
   describe('when an email is uniquely linked to a member number', () => {
     const member: LinkNumberToEmail = {
       email: emailAddress,
@@ -56,7 +104,7 @@ describe('send-log-in-link', () => {
       let result: string;
 
       beforeEach(async () => {
-        result = getRightOrFail(await sendLogInLink(deps, conf)(emailAddress)());
+        result = getRightOrFail(await sendLogInLink(deps, conf)({tag: 'email', email: emailAddress})());
       });
 
       it('tries to send an email with a link', () => {
@@ -90,7 +138,7 @@ describe('send-log-in-link', () => {
       });
       describe('tried to login with the correct email address for the first member', () => {
         beforeEach(async () => {
-          getRightOrFail(await sendLogInLink(deps, conf)(emailAddress)());
+          getRightOrFail(await sendLogInLink(deps, conf)({tag: 'email', email: emailAddress})());
         });
         it('tries to send an email with a link', () => {
           expect(deps.sendEmail).toHaveBeenCalledWith(
@@ -104,7 +152,7 @@ describe('send-log-in-link', () => {
       });
       describe('tried to login with the correct email address for the second member', () => {
         beforeEach(async () => {
-          getRightOrFail(await sendLogInLink(deps, conf)(member2.email)());
+          getRightOrFail(await sendLogInLink(deps, conf)({tag: 'email', email: member2.email})());
         });
         it('tries to send an email with a link', () => {
           expect(deps.sendEmail).toHaveBeenCalledWith(
@@ -127,7 +175,7 @@ describe('send-log-in-link', () => {
 
       beforeEach(async () => {
         result = getRightOrFail(
-          await sendLogInLink(deps, conf)(emailAddressWithUpperCaseDomain)()
+          await sendLogInLink(deps, conf)({tag: 'email', email: emailAddressWithUpperCaseDomain})()
         );
       });
 
@@ -149,7 +197,7 @@ describe('send-log-in-link', () => {
       let result: E.Either<Failure, string>;
 
       beforeEach(async () => {
-        result = await sendLogInLink(deps, conf)(faker.internet.email() as EmailAddress)();
+        result = await sendLogInLink(deps, conf)({tag: 'email', email: faker.internet.email() as EmailAddress})();
       });
 
       it('returns Left describing the missing member', () => {
@@ -178,7 +226,7 @@ describe('send-log-in-link', () => {
       });
 
       it('does not allow login with an unverified additional email', async () => {
-        const result = await sendLogInLink(deps, conf)(secondaryEmail)();
+        const result = await sendLogInLink(deps, conf)({tag: 'email', email: secondaryEmail})();
         expect(result).toStrictEqual(
           E.left(
             expect.objectContaining({
@@ -198,7 +246,7 @@ describe('send-log-in-link', () => {
 
         it('sends the login email to the matched verified address', async () => {
           const result = getRightOrFail(
-            await sendLogInLink(deps, conf)(secondaryEmail)()
+            await sendLogInLink(deps, conf)({tag: 'email', email: secondaryEmail})()
           );
 
           expect(deps.sendEmail).toHaveBeenCalledWith(
@@ -243,7 +291,7 @@ describe('send-log-in-link', () => {
     ])(
       'sends login for the canonical member number via the %s verified email',
       async (_name, email) => {
-        const result = getRightOrFail(await sendLogInLink(deps, conf)(email)());
+        const result = getRightOrFail(await sendLogInLink(deps, conf)({tag: 'email', email: email})());
         const sentEmail: Email = sendEmail.mock.calls[0][0];
         const link = String(sentEmail.text).match(/https:\/\/\S+/)?.[0];
         if (!link) {
@@ -281,7 +329,7 @@ describe('send-log-in-link', () => {
 
       it('logs in with an uppercased local part and sends to the stored address', async () => {
         const result = getRightOrFail(
-          await sendLogInLink(deps, conf)('Joe@example.com' as EmailAddress)()
+          await sendLogInLink(deps, conf)({tag: 'email', email: 'Joe@example.com' as EmailAddress})()
         );
         expect(deps.sendEmail).toHaveBeenCalledWith(
           expect.objectContaining({recipient: storedEmail})
@@ -304,7 +352,7 @@ describe('send-log-in-link', () => {
 
       it('logs in with a lowercased local part but still sends to the stored (capitalised) address', async () => {
         const result = getRightOrFail(
-          await sendLogInLink(deps, conf)('joe@example.com' as EmailAddress)()
+          await sendLogInLink(deps, conf)({tag: 'email', email: 'joe@example.com' as EmailAddress})()
         );
         expect(deps.sendEmail).toHaveBeenCalledWith(
           expect.objectContaining({recipient: storedEmail})
@@ -339,7 +387,7 @@ describe('send-log-in-link', () => {
 
     it('sends to the exact match when the typed casing matches one exactly', async () => {
       const result = getRightOrFail(
-        await sendLogInLink(deps, conf)(upperEmail)()
+        await sendLogInLink(deps, conf)({tag: 'email', email: upperEmail})()
       );
       expect(deps.sendEmail).toHaveBeenCalledWith(
         expect.objectContaining({recipient: upperEmail})
@@ -348,9 +396,9 @@ describe('send-log-in-link', () => {
     });
 
     it('does not send a link when the typed casing matches neither exactly', async () => {
-      const result = await sendLogInLink(deps, conf)(
+      const result = await sendLogInLink(deps, conf)({tag: 'email', email: 
         'SAM@example.com' as EmailAddress
-      )();
+      })();
       expect(result).toStrictEqual(
         E.left(
           expect.objectContaining({
@@ -366,7 +414,7 @@ describe('send-log-in-link', () => {
     let result: E.Either<Failure, string>;
 
     beforeEach(async () => {
-      result = await sendLogInLink(deps, conf)(emailAddress)();
+      result = await sendLogInLink(deps, conf)({tag: 'email', email: emailAddress})();
     });
 
     it('returns Left describing the missing member', () => {
@@ -396,7 +444,7 @@ describe('send-log-in-link', () => {
         name: undefined,
         formOfAddress: undefined,
       });
-      result = await sendLogInLink(deps, conf)(emailAddress)();
+      result = await sendLogInLink(deps, conf)({tag: 'email', email: emailAddress})();
     });
 
     it('returns Left with the rate limiting error', () => {
@@ -421,7 +469,7 @@ describe('send-log-in-link', () => {
         name: undefined,
         formOfAddress: undefined,
       });
-      result = await sendLogInLink(deps, conf)(emailAddress)();
+      result = await sendLogInLink(deps, conf)({tag: 'email', email: emailAddress})();
     });
 
     it('returns Left with message from email adapter', () => {
