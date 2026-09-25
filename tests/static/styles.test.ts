@@ -53,6 +53,10 @@ describe('styles.css', () => {
   // this sign" button, which is anchored to the corner of its sign: the
   // press nudge was `position: relative`, which beat the absolute placement
   // and dropped the button to the bottom of the block mid-click.
+  it('re-hides a hidden element it has given display: contents', () => {
+    expect(code).toContain('.mailbox__actions .mailbox__state[hidden]');
+  });
+
   it('nudges a pressed button without re-positioning it', () => {
     const activeRules = [...code.matchAll(/(^|\})\s*[^{}]*:active\s*\{([^}]*)\}/g)]
       .map(match => match[2]);

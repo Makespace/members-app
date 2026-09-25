@@ -21,8 +21,8 @@ export const logInPage = pipe(
           />
           <p class="text-sm text-gray mb-6">
             Either the email address linked to your MakeSpace membership, or
-            your member number - the link goes to the address we hold for you
-            either way.
+            your member number - in which case your login link will be sent to
+            the <strong>primary email</strong> we hold for you.
           </p>
           <button type="submit" class="w-full mt-6 mb-6">
             Email me a login link
