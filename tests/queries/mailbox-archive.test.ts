@@ -16,30 +16,49 @@ const text = (markup: string) =>
   render(markup).textContent?.replace(/\s+/g, ' ').trim();
 
 describe('archiving from the mailbox list', () => {
-  it('gives every row an archive button that posts back to the page', () => {
-    const form = render(mailboxListForTest(['a@example.com'])).querySelector(
-      'td.mailbox__actions form'
-    );
+  it('gives a live row one button per reason, each posting back to the page', () => {
+    const forms = [
+      ...render(mailboxListForTest(['a@example.com'])).querySelectorAll(
+        'td.mailbox__actions form'
+      ),
+    ];
 
-    expect(form?.getAttribute('method')).toBe('post');
-    expect(form?.getAttribute('action')).toBe(
-      '/mailbox/archive?next=%2Fmailbox'
-    );
+    expect(forms.map(form => form.getAttribute('action'))).toEqual([
+      '/mailbox/archive?next=%2Fmailbox',
+      '/mailbox/archive?next=%2Fmailbox',
+    ]);
+    expect(forms.map(form => form.getAttribute('method'))).toEqual([
+      'post',
+      'post',
+    ]);
     expect(
-      form?.querySelector('input[name="conversationId"]')?.getAttribute('value')
-    ).toBe('c1');
-    expect(form?.querySelector('button')?.textContent?.trim()).toBe('Archive');
+      forms.map(form =>
+        form.querySelector('input[name="conversationId"]')?.getAttribute('value')
+      )
+    ).toEqual(['c1', 'c1']);
+    expect(
+      forms.map(form =>
+        form.querySelector('input[name="reason"]')?.getAttribute('value')
+      )
+    ).toEqual(['resolved', 'hide-similar']);
+    expect(
+      forms.map(form => form.querySelector('button')?.textContent?.trim())
+    ).toEqual(['Resolved', 'Hide like this']);
   });
 
-  it('offers to bring an archived conversation back, and says it is archived', () => {
-    const row = render(mailboxListForTest(['a@example.com'], true));
+  it('offers to bring an archived conversation back, and says why it went', () => {
+    const row = render(mailboxListForTest(['a@example.com'], 'hide-similar'));
+    const forms = row.querySelectorAll('td.mailbox__actions form');
 
-    expect(
-      row.querySelector('td.mailbox__actions form')?.getAttribute('action')
-    ).toBe('/mailbox/unarchive?next=%2Fmailbox');
-    expect(row.querySelector('button')?.textContent?.trim()).toBe('Unarchive');
+    expect(forms).toHaveLength(1);
+    expect(forms[0].getAttribute('action')).toBe(
+      '/mailbox/unarchive?next=%2Fmailbox'
+    );
+    expect(forms[0].querySelector('button')?.textContent?.trim()).toBe(
+      'Unarchive'
+    );
     expect(row.querySelector('.mailbox__filtered')?.textContent?.trim()).toBe(
-      'Archived'
+      'Archived: Hide like this'
     );
   });
 });
@@ -49,7 +68,9 @@ describe('the archived notice', () => {
     expect(text(mailboxArchivedNoticeForTest(0, false))).toBe(
       'No conversations are archived.'
     );
-    expect(render(mailboxArchivedNoticeForTest(0, false)).querySelector('a')).toBeNull();
+    expect(
+      render(mailboxArchivedNoticeForTest(0, false)).querySelector('a')
+    ).toBeNull();
   });
 
   it('counts what is archived and links to it', () => {

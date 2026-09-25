@@ -9,6 +9,7 @@ import {
   countHiddenConversations,
   getInboxThreads,
 } from '../../../src/read-models/external-state/gmail-inbox';
+import {MailboxArchiveReason} from '../../../src/types/mailbox-archive-reason';
 
 // Two conversations: one of two messages, one of one. A manager archives
 // the first; the archive names both its message ids, and the page has to
@@ -17,14 +18,9 @@ describe('archived conversations in the mailbox list', () => {
   let extDB: ExternalStateDB;
   let client: ReturnType<typeof createClient>;
 
-  const row = (
-    id: string,
-    subject: string,
-    receivedAt: string,
-    threadId = `thread-${id}`
-  ) => ({
+  const row = (id: string, subject: string, receivedAt: string) => ({
     gmail_message_id: id,
-    gmail_thread_id: threadId,
+    gmail_thread_id: `thread-${id}`,
     mailbox: 'tickets@example.org',
     rfc822_message_id: `<${id}@example.org>`,
     from_address: 'A Member <member@example.com>',
@@ -38,6 +34,9 @@ describe('archived conversations in the mailbox list', () => {
     label_ids: '[]',
     cached_at: new Date(),
   });
+
+  const archived = (...entries: Array<[string, MailboxArchiveReason]>) =>
+    new Map<string, MailboxArchiveReason>(entries);
 
   beforeEach(async () => {
     client = createClient({url: ':memory:'});
@@ -54,12 +53,13 @@ describe('archived conversations in the mailbox list', () => {
     client.close();
   });
 
-  const subjects = (threads: ReadonlyArray<{latest: {subject: string | null}}>) =>
-    threads.map(thread => thread.latest.subject);
+  const subjects = (
+    threads: ReadonlyArray<{latest: {subject: string | null}}>
+  ) => threads.map(thread => thread.latest.subject);
 
   it('are left out of the list by default', async () => {
     const threads = await getInboxThreads(extDB, 50, {
-      archivedMessageIds: new Set(['wifi-1', 'wifi-2']),
+      archived: archived(['wifi-1', 'resolved'], ['wifi-2', 'resolved']),
     });
 
     expect(subjects(threads)).toEqual(['Room hire enquiry']);
@@ -69,27 +69,29 @@ describe('archived conversations in the mailbox list', () => {
   // cache window in time; the archive has to hold whichever message is left.
   it('are recognised by any one of their messages', async () => {
     const threads = await getInboxThreads(extDB, 50, {
-      archivedMessageIds: new Set(['wifi-2']),
+      archived: archived(['wifi-2', 'resolved']),
     });
 
     expect(subjects(threads)).toEqual(['Room hire enquiry']);
   });
 
-  it('are shown, and marked, when asked for', async () => {
+  it('are shown, with why, when asked for', async () => {
     const threads = await getInboxThreads(extDB, 50, {
       includeArchived: true,
-      archivedMessageIds: new Set(['wifi-1']),
+      archived: archived(['wifi-1', 'hide-similar']),
     });
 
-    expect(threads.map(thread => [thread.latest.subject, thread.archived])).toEqual([
-      ['Room hire enquiry', false],
-      ['Re: Building wifi down', true],
+    expect(
+      threads.map(thread => [thread.latest.subject, thread.archivedAs])
+    ).toEqual([
+      ['Room hire enquiry', undefined],
+      ['Re: Building wifi down', 'hide-similar'],
     ]);
   });
 
   it('are counted for the page to say what the switch would reveal', async () => {
     expect(
-      await countHiddenConversations(extDB, new Set(['wifi-1']))
+      await countHiddenConversations(extDB, archived(['wifi-1', 'resolved']))
     ).toEqual({filtered: 0, archived: 1});
   });
 

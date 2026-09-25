@@ -2149,20 +2149,35 @@ label img {
   white-space: nowrap;
 }
 
-/* The archive control keeps to its own cell, small and quiet: the row is
-   about the conversation, not the button. */
+/* The archive controls keep to their own cell, small and quiet: the row is
+   about the conversation, not the buttons. */
 .mailbox__actions {
   white-space: nowrap;
   vertical-align: top;
 }
 
 .mailbox__actions form {
-  margin: 0;
+  display: inline-block;
+  margin: 0 0 0 4px;
 }
 
 .mailbox__actions button {
   padding: 4px 10px;
   font-size: 0.85rem;
+}
+
+/* They appear when the row is pointed at, so the list reads as a list and
+   not a wall of controls. Only where pointing is possible - a touch screen
+   has no hover - and keyboard focus brings them back regardless. */
+@media (hover: hover) {
+  .mailbox__actions form {
+    opacity: 0;
+  }
+
+  .mailbox-table tr:hover .mailbox__actions form,
+  .mailbox__actions form:focus-within {
+    opacity: 1;
+  }
 }
 
 /* An active filter chip: the board is showing only this, and clicking it

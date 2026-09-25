@@ -3,6 +3,7 @@ import * as tt from 'io-ts-types';
 import {EmailAddressCodec} from './email-address';
 import {Actor} from './actor';
 import {EquipmentCategoryCodec} from './equipment-category';
+import {MailboxArchiveReason} from './mailbox-archive-reason';
 
 const defineEvent = <A extends string, T extends t.Props>(
   type: A,
@@ -268,6 +269,9 @@ const MailboxConversationArchived = defineEvent(
   'MailboxConversationArchived',
   {
     gmailMessageIds: t.array(t.string),
+    // Why: the archived view shows it, and "hide like this" is the list to
+    // write the next noise rule from.
+    reason: MailboxArchiveReason,
   }
 );
 

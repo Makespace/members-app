@@ -988,7 +988,11 @@ const _updateState =
       case 'MailboxConversationArchived': {
         for (const gmailMessageId of event.gmailMessageIds) {
           tx.insert(mailboxArchivedMessagesTable)
-            .values({gmailMessageId, archivedAt: event.recordedAt})
+            .values({
+              gmailMessageId,
+              reason: event.reason,
+              archivedAt: event.recordedAt,
+            })
             .onConflictDoNothing()
             .run();
         }

@@ -2,8 +2,9 @@ import * as t from 'io-ts';
 import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
 import {StatusCodes} from 'http-status-codes';
-import {Command} from '../command';
 import {Dependencies} from '../../dependencies';
+import {Actor} from '../../types';
+import {SharedReadModel} from '../../read-models/shared-state';
 import {
   failureWithStatus,
   FailureWithStatus,
@@ -11,7 +12,8 @@ import {
 import {getInboxThread} from '../../read-models/external-state/gmail-inbox';
 import {isManagementTeam} from '../authentication-helpers/is-management-team';
 
-// What both mailbox commands take: the conversation as the page names it.
+// The conversation as the page names it; what unarchiving takes, and the
+// half of archiving that says which.
 export const conversationCodec = t.strict({
   conversationId: t.string,
 });
@@ -22,9 +24,11 @@ export type ConversationCommand = t.TypeOf<typeof conversationCodec>;
 // area is the management team's - configuration that isAuthorized cannot
 // see. So the commands accept everyone there and refuse here, where the
 // config is to hand, exactly as the page does.
-export const managementOnly = (
-  input: Parameters<Command<ConversationCommand>['process']>[0]
-): TE.TaskEither<FailureWithStatus, Dependencies> =>
+export const managementOnly = (input: {
+  command: ConversationCommand & {actor: Actor};
+  rm: SharedReadModel;
+  deps?: Dependencies;
+}): TE.TaskEither<FailureWithStatus, Dependencies> =>
   pipe(
     input.deps,
     TE.fromNullable(

@@ -5,6 +5,7 @@ import {
   TroubleTicketResponse,
   TroubleTicketStatus,
 } from '../../types/trouble-ticket';
+import {MailboxArchiveReason} from '../../types/mailbox-archive-reason';
 import * as O from 'fp-ts/Option';
 import {blob, integer, SQLiteColumnBuilderBase, sqliteTable, SQLiteTableExtraConfig, text, uniqueIndex} from 'drizzle-orm/sqlite-core';
 
@@ -592,12 +593,14 @@ export const mailboxArchivedMessagesTable = defineTable(
   sql`
     CREATE TABLE IF NOT EXISTS mailboxArchivedMessages (
       gmailMessageId TEXT PRIMARY KEY,
+      reason TEXT NOT NULL,
       archivedAt INTEGER NOT NULL
     )
   `,
   'mailboxArchivedMessages' as const,
   {
     gmailMessageId: text('gmailMessageId').notNull().primaryKey(),
+    reason: text('reason').notNull().$type<MailboxArchiveReason>(),
     archivedAt: integer('archivedAt', {mode: 'timestamp_ms'}).notNull(),
   }
 );

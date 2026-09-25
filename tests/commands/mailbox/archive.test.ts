@@ -2,10 +2,9 @@ import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
 import {archive} from '../../../src/commands/mailbox/archive';
 import {unarchive} from '../../../src/commands/mailbox/unarchive';
-import {ConversationCommand} from '../../../src/commands/mailbox/conversation';
-import {Command} from '../../../src/commands/command';
 import {constructEvent, EmailAddress} from '../../../src/types';
 import {Actor} from '../../../src/types/actor';
+import {MailboxArchiveReason} from '../../../src/types/mailbox-archive-reason';
 import {gmailMessageTable} from '../../../src/sync-worker/gmail/gmail-message-table';
 import {getLeftOrFail, getRightOrFail, getSomeOrFail} from '../../helpers';
 import {
@@ -77,72 +76,81 @@ describe('archiving a mailbox conversation', () => {
     framework.close();
   });
 
-  const run = (
-    command: Command<ConversationCommand>,
+  const runArchive = (
     actor: Actor,
+    reason: MailboxArchiveReason = 'resolved',
     conversationId = CONVERSATION_ID
   ) =>
-    command.process({
+    archive.process({
+      command: {conversationId, reason, actor},
+      rm: framework.sharedReadModel,
+      deps: framework.depsForCommands,
+    })();
+
+  const runUnarchive = (actor: Actor, conversationId = CONVERSATION_ID) =>
+    unarchive.process({
       command: {conversationId, actor},
       rm: framework.sharedReadModel,
       deps: framework.depsForCommands,
     })();
 
-  it('names every message of the conversation, so any of them identifies it later', async () => {
-    const event = getSomeOrFail(
-      getRightOrFail(await run(archive, manager))
-    );
-
-    expect(event).toMatchObject({
-      type: 'MailboxConversationArchived',
-      gmailMessageIds: [CONVERSATION_ID, REPLY_ID],
-      actor: manager,
-    });
-  });
-
-  it('is for the management team only', async () => {
-    const failure = getLeftOrFail(await run(archive, member));
-
-    expect(failure.status).toBe(403);
-  });
-
-  it('refuses a conversation that is not in the mailbox', async () => {
-    const failure = getLeftOrFail(await run(archive, manager, 'nope'));
-
-    expect(failure.status).toBe(404);
-  });
-
-  it('records nothing when the conversation is already archived', async () => {
+  const alreadyArchived = () =>
     framework.insertIntoSharedReadModel(
       constructEvent('MailboxConversationArchived')({
         gmailMessageIds: [CONVERSATION_ID, REPLY_ID],
+        reason: 'resolved',
         actor: manager,
       })
     );
 
-    expect(getRightOrFail(await run(archive, manager))).toStrictEqual(
-      O.none
+  it('names every message of the conversation, so any of them identifies it later', async () => {
+    const event = getSomeOrFail(getRightOrFail(await runArchive(manager)));
+
+    expect(event).toMatchObject({
+      type: 'MailboxConversationArchived',
+      gmailMessageIds: [CONVERSATION_ID, REPLY_ID],
+      reason: 'resolved',
+      actor: manager,
+    });
+  });
+
+  // The reason is the point: everything archived as "hide like this" is
+  // the list to write the next noise rule from.
+  it('records why, as given', async () => {
+    const event = getSomeOrFail(
+      getRightOrFail(await runArchive(manager, 'hide-similar'))
     );
+
+    expect(event).toMatchObject({reason: 'hide-similar'});
+  });
+
+  it('is for the management team only', async () => {
+    expect(getLeftOrFail(await runArchive(member)).status).toBe(403);
+  });
+
+  it('refuses a conversation that is not in the mailbox', async () => {
+    expect(
+      getLeftOrFail(await runArchive(manager, 'resolved', 'nope')).status
+    ).toBe(404);
+  });
+
+  it('records nothing when the conversation is already archived', async () => {
+    alreadyArchived();
+
+    expect(getRightOrFail(await runArchive(manager))).toStrictEqual(O.none);
   });
 
   describe('and bringing it back', () => {
     it('records nothing when the conversation was never archived', async () => {
-      expect(
-        getRightOrFail(await run(unarchive, manager))
-      ).toStrictEqual(O.none);
+      expect(getRightOrFail(await runUnarchive(manager))).toStrictEqual(
+        O.none
+      );
     });
 
     it('names every message, so all of them come back together', async () => {
-      framework.insertIntoSharedReadModel(
-        constructEvent('MailboxConversationArchived')({
-          gmailMessageIds: [CONVERSATION_ID, REPLY_ID],
-          actor: manager,
-        })
-      );
+      alreadyArchived();
 
-      const event = getSomeOrFail(
-        getRightOrFail(await run(unarchive, manager))
-      );
+      const event = getSomeOrFail(getRightOrFail(await runUnarchive(manager)));
 
       expect(event).toMatchObject({
         type: 'MailboxConversationUnarchived',
@@ -151,7 +159,7 @@ describe('archiving a mailbox conversation', () => {
     });
 
     it('is for the management team only', async () => {
-      expect(getLeftOrFail(await run(unarchive, member)).status).toBe(403);
+      expect(getLeftOrFail(await runUnarchive(member)).status).toBe(403);
     });
   });
 });

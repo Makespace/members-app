@@ -31,6 +31,11 @@ import {
 } from '../../read-models/external-state/gmail-inbox';
 import {displayDate} from '../../templates/display-date';
 import {isManagementTeam} from '../../commands/authentication-helpers/is-management-team';
+import {
+  ARCHIVE_REASONS,
+  archiveReasonButton,
+  MailboxArchiveReason,
+} from '../../types/mailbox-archive-reason';
 
 const INBOX_PAGE_SIZE = 50;
 
@@ -82,28 +87,46 @@ const displayName = (sender: string) => {
   return named === null ? sender.trim() : named[1].trim();
 };
 
-// One button per row, posting straight back to this page. Which button
-// depends on where the conversation is; `returnTo` is the view the manager
-// was looking at, so archiving from the archived view lands back there.
-const actionCell = (thread: InboxThread, returnTo: string) => html`
-  <td class="mailbox__actions">
-    <form
-      method="post"
-      action="/mailbox/${safe(
-        thread.archived ? 'unarchive' : 'archive'
-      )}?next=${safe(encodeURIComponent(returnTo))}"
-    >
-      <input
-        type="hidden"
-        name="conversationId"
-        value="${sanitizeString(thread.conversationId)}"
-      />
-      <button type="submit">
-        ${safe(thread.archived ? 'Unarchive' : 'Archive')}
-      </button>
-    </form>
-  </td>
-`;
+// The row's buttons post straight back to this page. `returnTo` is the view
+// the manager was looking at, so archiving from the archived view lands
+// back there. A live conversation offers one button per reason - one click
+// says both what to do and why - and an archived one offers the way back.
+const actionCell = (thread: InboxThread, returnTo: string) => {
+  const next = safe(encodeURIComponent(returnTo));
+  const conversationId = sanitizeString(thread.conversationId);
+  return html`
+    <td class="mailbox__actions">
+      ${thread.archivedAs === undefined
+        ? joinHtml(
+            ARCHIVE_REASONS.map(
+              ({reason, button, label}) => html`
+                <form method="post" action="/mailbox/archive?next=${next}">
+                  <input
+                    type="hidden"
+                    name="conversationId"
+                    value="${conversationId}"
+                  />
+                  <input type="hidden" name="reason" value="${safe(reason)}" />
+                  <button type="submit" title="${safe(label)}">
+                    ${safe(button)}
+                  </button>
+                </form>
+              `
+            )
+          )
+        : html`
+            <form method="post" action="/mailbox/unarchive?next=${next}">
+              <input
+                type="hidden"
+                name="conversationId"
+                value="${conversationId}"
+              />
+              <button type="submit">Unarchive</button>
+            </form>
+          `}
+    </td>
+  `;
+};
 
 const renderRow = (thread: InboxThread, returnTo: string) => html`
   <tr>
@@ -131,9 +154,11 @@ const renderRow = (thread: InboxThread, returnTo: string) => html`
           )}"
             >${sanitizeString(thread.filteredBy.reason)}</span
           >`}
-      ${thread.archived
-        ? html`<span class="mailbox__filtered">Archived</span>`
-        : html``}
+      ${thread.archivedAs === undefined
+        ? html``
+        : html`<span class="mailbox__filtered"
+            >Archived: ${safe(archiveReasonButton(thread.archivedAs))}</span
+          >`}
     </td>
     <td>
       <span class="mailbox-preview"
@@ -148,12 +173,12 @@ const renderRow = (thread: InboxThread, returnTo: string) => html`
 // without standing up a whole page.
 export const mailboxListForTest = (
   senders: ReadonlyArray<string>,
-  archived = false
+  archivedAs?: MailboxArchiveReason
 ): string =>
   `<table><tbody>${renderRow(
     {
     filteredBy: undefined,
-    archived,
+    archivedAs,
     conversationId: 'c1',
     gmailThreadId: 't1',
     messageCount: senders.length,
@@ -480,15 +505,15 @@ export const mailbox: Query = deps => (user, params, queryParams) =>
               async () => {
                 const includeFiltered = queryParams.filtered === '1';
                 const includeArchived = queryParams.archived === '1';
-                const archivedMessageIds =
-                  deps.sharedReadModel.mailbox.archivedMessageIds();
+                const archived =
+                  deps.sharedReadModel.mailbox.archivedMessages();
                 const [threads, counts] = await Promise.all([
                   getInboxThreads(deps.extDB, INBOX_PAGE_SIZE, {
                     includeFiltered,
                     includeArchived,
-                    archivedMessageIds,
+                    archived,
                   }),
-                  countHiddenConversations(deps.extDB, archivedMessageIds),
+                  countHiddenConversations(deps.extDB, archived),
                 ]);
                 return {threads, counts, includeFiltered, includeArchived};
               },

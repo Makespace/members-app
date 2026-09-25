@@ -17,7 +17,7 @@ const process: Command<ConversationCommand>['process'] = input =>
     managementOnly(input),
     TE.chain(deps => messageIdsOf(deps, input.command.conversationId)),
     TE.map(gmailMessageIds => {
-      const archived = input.rm.mailbox.archivedMessageIds();
+      const archived = input.rm.mailbox.archivedMessages();
       return gmailMessageIds.some(id => archived.has(id))
         ? O.some(
             constructEvent('MailboxConversationUnarchived')({
