@@ -2816,15 +2816,17 @@ a.eq-guide--dead:visited {
 }
 
 /* An action that belongs to a trainer or an owner rather than to whoever is
-   reading. Black on orange: the same "yours to do carefully" the equipment
-   colours use, and readable where white on orange would not be. */
+   reading: orange, for "yours to do carefully", next to the green one that
+   is anybody's. A darker orange than the equipment sticker so that white
+   text on it clears 4.5:1 - #e07800 with white is 3:1, which is not enough
+   for text this size. */
 .button--admin,
 a.button--admin,
 a.button--admin:visited {
-  background: #e07800;
-  color: #1a1a1a;
+  background: #b35f00;
+  color: white;
 }
 
 .button--admin:hover {
-  background: #c46900;
+  background: #9c5300;
 }
