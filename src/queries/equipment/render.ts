@@ -2,6 +2,8 @@ import {pipe} from 'fp-ts/lib/function';
 import {displayDate} from '../../templates/display-date';
 import {
   html,
+  Html,
+  joinHtml,
   safe,
   sanitizeString,
   toLoggedInContent,
@@ -314,28 +316,56 @@ const setMachines = (viewModel: ViewModel) =>
     O.getOrElse(() => html``)
   );
 
-const equipmentActions = (viewModel: ViewModel) =>
-  viewModel.equipment.category === 'red'
-    ? html`
-        <ul>
-          ${reportProblem(viewModel)} ${viewTickets(viewModel)}
-          ${printSign(viewModel)}
-          ${setMachines(viewModel)} ${trainMember(viewModel)} ${adminMarkTrainedBy(viewModel)}
-          ${addTrainer(viewModel)} ${removeTrainer(viewModel)}
-          ${guideLink(viewModel)} ${changeCategory(viewModel)}
-          ${registerSheet(viewModel)}
-          ${currentSheet(viewModel)} ${removeTrainingSheet(viewModel)}
-          ${retireEquipment(viewModel)}
-        </ul>
-      `
+// Each action already decides for itself whether the person looking may use
+// it, and renders nothing when they may not. A heading with nothing under it
+// is worse than no heading, so a group that comes back empty is left out
+// entirely rather than announcing something that is not there.
+const actionGroup = (title: string, items: ReadonlyArray<Html>): Html => {
+  const visible = items.filter(item => item.trim() !== '');
+  return visible.length === 0
+    ? html``
     : html`
-        <ul>
-          ${reportProblem(viewModel)} ${viewTickets(viewModel)}
-          ${printSign(viewModel)}
-          ${guideLink(viewModel)} ${changeCategory(viewModel)}
-          ${setMachines(viewModel)} ${retireEquipment(viewModel)}
-        </ul>
+        <section class="equipment-actions">
+          <h2>${safe(title)}</h2>
+          <ul>
+            ${joinHtml(visible)}
+          </ul>
+        </section>
       `;
+};
+
+const equipmentActions = (viewModel: ViewModel) => html`
+  ${actionGroup('Trouble tickets', [
+    reportProblem(viewModel),
+    viewTickets(viewModel),
+    printSign(viewModel),
+  ])}
+  ${actionGroup(
+    'Training',
+    viewModel.equipment.category === 'red'
+      ? [
+          trainMember(viewModel),
+          adminMarkTrainedBy(viewModel),
+          addTrainer(viewModel),
+          removeTrainer(viewModel),
+          ...peopleLinks(viewModel),
+        ]
+      : []
+  )}
+  ${actionGroup('Update this equipment', [
+    setMachines(viewModel),
+    guideLink(viewModel),
+    changeCategory(viewModel),
+    ...(viewModel.equipment.category === 'red'
+      ? [
+          registerSheet(viewModel),
+          currentSheet(viewModel),
+          removeTrainingSheet(viewModel),
+        ]
+      : []),
+    retireEquipment(viewModel),
+  ])}
+`;
 
 // The lists of people are long enough to bury everything above them, so each
 // lives on a page of its own and is linked with its size: a trainer can see
@@ -367,32 +397,27 @@ const quizCounts = (viewModel: ViewModel) =>
     )
   );
 
-const peopleLinks = (viewModel: ViewModel) => {
+const peopleLinks = (viewModel: ViewModel): ReadonlyArray<Html> => {
   const counts = quizCounts(viewModel);
-  return html`
-    <ul>
-      ${peopleLink(
-        viewModel,
-        'trained-users',
-        'View currently trained users',
-        viewModel.equipment.trainedMembers.length
-      )}
-      ${isTrainerOrOwner(viewModel)
-        ? html`${peopleLink(
-            viewModel,
-            'quiz-results',
-            'View training quiz results, and mark people as trained',
-            counts.waiting
-          )}
-          ${peopleLink(
-            viewModel,
-            'failed-quizzes',
-            'View failed quizzes',
-            counts.failed
-          )}`
-        : html``}
-    </ul>
-  `;
+  return [
+    peopleLink(
+      viewModel,
+      'trained-users',
+      'View currently trained users',
+      viewModel.equipment.trainedMembers.length
+    ),
+    isTrainerOrOwner(viewModel)
+      ? peopleLink(
+          viewModel,
+          'quiz-results',
+          'View training quiz results, and mark people as trained',
+          counts.waiting
+        )
+      : html``,
+    isTrainerOrOwner(viewModel)
+      ? peopleLink(viewModel, 'failed-quizzes', 'View failed quizzes', counts.failed)
+      : html``,
+  ];
 };
 
 export const render = (viewModel: ViewModel) =>
@@ -420,8 +445,6 @@ export const render = (viewModel: ViewModel) =>
           ? html`
               <h2>Trainers</h2>
               ${trainersList(viewModel.equipment.trainers)}
-              <h2>Training</h2>
-              ${peopleLinks(viewModel)}
             `
           : html``}
       </div>

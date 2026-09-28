@@ -299,3 +299,123 @@ describe('Render equipment page', () => {
     });
 
 });
+
+describe('the actions, in groups', () => {
+    const renderPage = (vm: ViewModel) => {
+        const body = document.createElement('body');
+        body.innerHTML = render(vm).body;
+        return body;
+    };
+
+    const equipmentId = faker.string.uuid() as UUID;
+    const area = {
+        id: faker.string.uuid() as UUID,
+        name: 'Wood Shop',
+        email: O.none,
+    };
+
+    const redEquipment: Equipment = {
+        id: equipmentId,
+        name: 'Band Saw',
+        category: 'red',
+        machineNames: [],
+        trainers: [],
+        trainedMembers: [],
+        trainingSheetId: O.none,
+        guideUrl: O.none,
+        removedAt: O.none,
+        area,
+    };
+
+    const viewFor = (
+        overrides: Partial<ViewModel> = {},
+        equipment: Equipment = redEquipment
+    ): ViewModel => ({
+        user: {
+            emailAddress: faker.internet.email() as EmailAddress,
+            memberNumber: faker.number.int({min: 1}),
+        },
+        isSuperUser: false,
+        isSuperUserOrOwnerOfArea: false,
+        isSuperUserOrTrainerOfArea: false,
+        equipment,
+        guideLink: O.none,
+        quizResults: O.none,
+        ...overrides,
+    });
+
+    const headings = (viewModel: ViewModel) =>
+        [...renderPage(viewModel).querySelectorAll('.equipment-actions h2')].map(
+            node => (node.textContent ?? '').trim()
+        );
+
+    it('groups what an owner can do under headings in a fixed order', () => {
+        expect(
+            headings(
+                viewFor({isSuperUser: true, isSuperUserOrOwnerOfArea: true, isSuperUserOrTrainerOfArea: true})
+            )
+        ).toStrictEqual(['Trouble tickets', 'Training', 'Update this equipment']);
+    });
+
+    // A heading with nothing under it is worse than no heading.
+    it('leaves out a group with nothing in it for this person', () => {
+        // An ordinary member may report a problem and see who is trained,
+        // but has nothing to update.
+        expect(headings(viewFor())).toStrictEqual([
+            'Trouble tickets',
+            'Training',
+        ]);
+    });
+
+    it('has no training group at all for equipment that needs none', () => {
+        expect(
+            headings(
+                viewFor(
+                    {isSuperUser: true, isSuperUserOrOwnerOfArea: true},
+                    {...redEquipment, category: 'green'}
+                )
+            )
+        ).toStrictEqual(['Trouble tickets', 'Update this equipment']);
+    });
+
+    it('puts each action under the heading it belongs to', () => {
+        const rendered = renderPage(
+            viewFor({isSuperUser: true, isSuperUserOrOwnerOfArea: true, isSuperUserOrTrainerOfArea: true})
+        );
+        const groups = [...rendered.querySelectorAll('.equipment-actions')].map(
+            section => ({
+                heading: (section.querySelector('h2')?.textContent ?? '').trim(),
+                items: [...section.querySelectorAll('li')].map(item =>
+                    (item.textContent ?? '').replace(/\s+/g, ' ').trim()
+                ),
+            })
+        );
+        const group = (heading: string) =>
+            groups.find(candidate => candidate.heading === heading)?.items ?? [];
+
+        expect(group('Trouble tickets')).toStrictEqual([
+            'Report a problem with this equipment',
+            'View trouble tickets for this equipment',
+            'Print a sign for this equipment',
+        ]);
+        // Some items carry a tooltip, so compare how each one opens.
+        const opensWith = (items: ReadonlyArray<string>) =>
+            items.map(item => item.split(' Only ')[0].trim());
+
+        expect(opensWith(group('Training')).slice(0, 3)).toStrictEqual([
+            'Mark member as trained',
+            '[Admin] Mark member as trained by',
+            'Add a trainer',
+        ]);
+        expect(group('Training').join(' ')).toContain(
+            'View currently trained users'
+        );
+        const updates = group('Update this equipment').join(' | ');
+        expect(updates).toContain('Change the sticker category');
+        expect(updates).toContain('[Admin] Retire equipment');
+        expect(updates).toContain('Name the machines this entry stands for');
+        // Nothing about training or tickets strayed in here.
+        expect(updates).not.toContain('Mark member as trained');
+        expect(updates).not.toContain('Report a problem');
+    });
+});
