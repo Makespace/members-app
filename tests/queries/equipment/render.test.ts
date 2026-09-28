@@ -128,12 +128,18 @@ describe('Render equipment page', () => {
             expect(findRevokeTrainingButton(renderedDom)).toStrictEqual(O.none);
         });
 
-        it('links to the equipment area', () => {
-            expect(
-                renderedDom.querySelector(
+        // The breadcrumb is where the area lives now, and it is the only
+        // place it lives: the same link twice on one screen is noise.
+        it('links to the equipment area, from the breadcrumb', () => {
+            const toArea = [
+                ...renderedDom.querySelectorAll(
                     `a[href="/areas#area-${equipment.area.id}"]`
-                )!.textContent
-            ).toContain(equipment.area.name);
+                ),
+            ];
+
+            expect(toArea).toHaveLength(1);
+            expect(toArea[0].closest('.eq-breadcrumb')).not.toBeNull();
+            expect(toArea[0].textContent).toContain(equipment.area.name);
         });
     });
 
