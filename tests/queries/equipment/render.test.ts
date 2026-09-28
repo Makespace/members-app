@@ -159,15 +159,19 @@ describe('Render equipment page', () => {
             renderedDom = renderPage(viewmodel);
         });
 
-        describe('get revoke training button', () => {
-            let button: O.Option<HTMLElement>;
-            beforeEach(() => {
-                button = findRevokeTrainingButton(renderedDom);
-            });
+        // The lists of people are pages of their own; this page links to them
+        // with their sizes, so a glance says whether there is anything to do.
+        it('links to the people pages, with their counts', () => {
+            const links = [...renderedDom.querySelectorAll('a')].map(
+                node => node.getAttribute('href') ?? ''
+            );
 
-            it('revoke training button is rendered', () => {
-                expect(O.isSome(button)).toBeTruthy();
-            });
+            expect(links).toContain(`/equipment/${equipment.id}/trained-users`);
+            expect(links).toContain(`/equipment/${equipment.id}/quiz-results`);
+            expect(links).toContain(`/equipment/${equipment.id}/failed-quizzes`);
+            expect(renderedDom.textContent).toContain(
+                'View currently trained users (1)'
+            );
         });
 
         
@@ -194,9 +198,15 @@ describe('Render equipment page', () => {
             renderedDom = renderPage(viewmodel);
         });
 
-        it('does not show the mark as trained and revoke training buttons', () => {
-            expect(O.isNone(findMarkAsTrainedButton(renderedDom))).toBeTruthy();
-            expect(O.isNone(findRevokeTrainingButton(renderedDom))).toBeTruthy();
+        // An owner reads the lists; marking somebody trained is a trainer's
+        // job, and that button lives on the page that lists them.
+        it('is offered the lists to read', () => {
+            const links = [...renderedDom.querySelectorAll('a')].map(
+                node => node.getAttribute('href') ?? ''
+            );
+
+            expect(links).toContain(`/equipment/${equipment.id}/quiz-results`);
+            expect(links).toContain(`/equipment/${equipment.id}/trained-users`);
         });
     });
 
@@ -221,9 +231,19 @@ describe('Render equipment page', () => {
             renderedDom = renderPage(viewmodel);
         });
 
-        it('shows the mark as trained and revoke training buttons', () => {
-            expect(O.isSome(findMarkAsTrainedButton(renderedDom))).toBeTruthy();
-            expect(O.isSome(findRevokeTrainingButton(renderedDom))).toBeTruthy();
+        // The lists themselves are a page each now; what a trainer needs from
+        // here is the way in, and how many people are waiting.
+        it('offers the quiz results and the trained users, with their counts', () => {
+            const links = [...renderedDom.querySelectorAll('a')].map(
+                node => node.getAttribute('href') ?? ''
+            );
+
+            expect(links).toContain(`/equipment/${equipment.id}/quiz-results`);
+            expect(links).toContain(`/equipment/${equipment.id}/trained-users`);
+            expect(links).toContain(`/equipment/${equipment.id}/failed-quizzes`);
+            expect(renderedDom.textContent).toContain(
+                'View training quiz results, and mark people as trained (1)'
+            );
         });
     });
 

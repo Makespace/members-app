@@ -329,6 +329,15 @@ export const initRoutes = (
     ),
     get('/equipment', (_req, res) => res.redirect('/areas')),
     query('/equipment/:equipment/training', queries.equipmentTraining),
+    query(
+      '/equipment/:equipment/trained-users',
+      queries.equipmentTrainedUsers
+    ),
+    query('/equipment/:equipment/quiz-results', queries.equipmentQuizResults),
+    query(
+      '/equipment/:equipment/failed-quizzes',
+      queries.equipmentFailedQuizzes
+    ),
     query('/equipment/:equipment', queries.equipment),
     query('/super-users', queries.superUsers),
     ...command('super-users', 'declare', commands.superUser.declare),
