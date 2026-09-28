@@ -15,4 +15,10 @@ export type ViewModel = {
   // checked yet.
   guideLink: O.Option<GuideLinkCheck>;
   quizResults: O.Option<FullQuizResultsForEquipment>;
+  // What the two cards at the top of the page say: enough to know whether
+  // anything needs doing without opening either of them.
+  // Counted over a rolling thirty days, so the numbers do not fall off a
+  // cliff on the first of the month.
+  tickets: {active: number; resolvedRecently: number};
+  training: {activeTrainers: number; trainingsRecently: number};
 };

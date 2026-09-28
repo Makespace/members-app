@@ -16,10 +16,11 @@ import {renderMembersAsList} from '../../templates/member-link-list';
 import {currentTrainingSheetButton} from '../shared-render/current-training-sheet-button';
 
 
-import {tooltip} from '../shared-render/tool-tip';
+import {tooltip, tooltipWith} from '../shared-render/tool-tip';
 import { mailTo } from '../../templates/mailto';
 import {
-  categoryBadge,
+  categoryDot,
+  categoryLabel,
   categoryDescription,
 } from '../../templates/equipment-category';
 
@@ -231,33 +232,89 @@ const guideLinkHealth = (viewModel: ViewModel) =>
       check =>
         check.reachable
           ? html``
-          : html`<br /><span class="guide-link-warning"
-                >This link did not answer when it was last checked on
-                ${displayDate(DateTime.fromJSDate(check.checkedAt))}${pipe(
-                  check.status,
-                  O.match(
-                    () => html``,
-                    status => html` (${safe(String(status))})`
-                  )
-                )}. The sign for this machine prints a code that leads
-                there.</span
-              >`
+          : tooltipWith(
+              html`This link did not answer when it was last checked on
+              ${displayDate(DateTime.fromJSDate(check.checkedAt))}${pipe(
+                check.status,
+                O.match(
+                  () => html``,
+                  status => html` (${safe(String(status))})`
+                )
+              )}. The sign for this machine prints a code that leads there.`,
+              html`<i
+                class="fa-solid fa-circle-exclamation guide-link-warning"
+                aria-label="This link did not answer when it was last checked"
+              ></i>`
+            )
     )
   );
 
-const guideForMembers = (viewModel: ViewModel) =>
+// Written for reading rather than for copying: the scheme is noise on a page
+// where the link is right there to click.
+const forReading = (url: string) => url.replace(/^https?:\/\//, '');
+
+// A link that did not answer is shown in the colour of the problem, with the
+// mark beside it rather than under the line: the address is the thing that
+// needs fixing, so the address is what is marked.
+const guideUnreachable = (viewModel: ViewModel) =>
+  pipe(
+    viewModel.guideLink,
+    O.match(
+      () => false,
+      check => !check.reachable
+    )
+  );
+
+const guideFact = (viewModel: ViewModel) =>
   pipe(
     viewModel.equipment.guideUrl,
     O.match(
       () => html``,
       guideUrl =>
-        html`<p>
-          <strong>Equipment guide:</strong>
-          <a href="${safe(guideUrl)}">${sanitizeString(guideUrl)}</a>
-          ${guideLinkHealth(viewModel)}
-        </p>`
+        html`<span class="eq-facts__fact"
+          ><strong>Equipment guide:</strong>
+          <a
+            class="${guideUnreachable(viewModel)
+              ? safe('eq-guide--dead')
+              : safe('')}"
+            href="${safe(guideUrl)}"
+            >${sanitizeString(forReading(guideUrl))}</a
+          >
+          ${guideLinkHealth(viewModel)}</span
+        >`
     )
   );
+
+// Where the page sits: the areas list, then this machine's area. Replaces the
+// browser-history "Back", which could not say where it was going.
+const breadcrumb = (viewModel: ViewModel) => html`
+  <nav class="eq-breadcrumb" aria-label="Breadcrumb">
+    <a href="/areas">Areas</a> /
+    <a href="/areas#area-${safe(viewModel.equipment.area.id)}"
+      >${sanitizeString(viewModel.equipment.area.name)}</a
+    >
+  </nav>
+  <style>
+    .page-nav__back {
+      display: none;
+    }
+  </style>
+`;
+
+// The machine's name, its colour beside it, and what that colour means -
+// read as one thing rather than as a title with a footnote.
+const equipmentHeading = (viewModel: ViewModel) => html`
+  <div class="eq-heading">
+    <h1>
+      ${categoryDot(viewModel.equipment.category)}
+      ${sanitizeString(viewModel.equipment.name)}
+    </h1>
+    <p class="eq-rule eq-rule--${safe(viewModel.equipment.category)}">
+      <strong>${categoryLabel(viewModel.equipment.category)} equipment</strong>
+      ${categoryDescription(viewModel.equipment.category)}
+    </p>
+  </div>
+`;
 
 // Super-users only: the colour decides whether a machine has training at all,
 // so it is not a per-area decision.
@@ -271,26 +328,6 @@ const changeCategory = (viewModel: ViewModel) =>
           html`Red, orange or green. Training records are kept whichever way
           it goes.`
         )}
-      </li>`
-    : html``;
-
-const reportProblem = (viewModel: ViewModel) =>
-  html` <li>
-    <a href="/trouble-tickets/raise?equipmentId=${viewModel.equipment.id}"
-      >Report a problem with this equipment</a
-    >
-  </li>`;
-
-// The board, already narrowed to this machine: somebody who came here about
-// one machine wants that machine's tickets, not the whole backlog with it
-// somewhere inside.
-const viewTickets = (viewModel: ViewModel) =>
-  viewModel.isSuperUserOrOwnerOfArea || viewModel.isSuperUser
-    ? html` <li>
-        <a
-          href="/trouble-tickets/board?equipmentId=${viewModel.equipment.id}"
-          >View trouble tickets for this equipment</a
-        >
       </li>`
     : html``;
 
@@ -320,6 +357,80 @@ const setMachines = (viewModel: ViewModel) =>
 // it, and renders nothing when they may not. A heading with nothing under it
 // is worse than no heading, so a group that comes back empty is left out
 // entirely rather than announcing something that is not there.
+const stat = (count: number, label: string) => html`
+  <li class="tt-home__stat">
+    <span class="tt-home__stat-count">${safe(String(count))}</span>
+    <span>${safe(label)}</span>
+  </li>
+`;
+
+// Admin actions get the orange: the same colour the app uses to mean "this
+// one is yours to do carefully", so a trainer's button and a member's button
+// are not the same green.
+const cardButton = (href: string, label: string, admin = false) => html`
+  <a
+    class="button${admin ? safe(' button--admin') : safe('')}"
+    href="${safe(href)}"
+    >${safe(label)}</a
+  >
+`;
+
+// The two things people come to a machine's page to do. Everything else is a
+// list below; these are the reasons the page gets opened.
+const equipmentCards = (viewModel: ViewModel) => {
+  const id = viewModel.equipment.id;
+  return html`
+    <div class="tt-home eq-cards">
+      <section class="tt-home__card stack">
+        <h2>Trouble tickets</h2>
+        <ul class="tt-home__stats">
+          ${stat(viewModel.tickets.active, 'active tickets')}
+          ${stat(
+            viewModel.tickets.resolvedRecently,
+            'resolved in the last 30 days'
+          )}
+        </ul>
+        <p class="eq-cards__actions">
+          ${cardButton(
+            `/trouble-tickets/raise?equipmentId=${id}`,
+            'Open a ticket'
+          )}
+          ${viewModel.isSuperUserOrOwnerOfArea || viewModel.isSuperUser
+            ? cardButton(
+                `/trouble-tickets/board?equipmentId=${id}`,
+                'View tickets'
+              )
+            : html``}
+        </p>
+      </section>
+      ${viewModel.equipment.category === 'red'
+        ? html`
+            <section class="tt-home__card stack">
+              <h2>Training</h2>
+              <ul class="tt-home__stats">
+                ${stat(viewModel.training.activeTrainers, 'active trainers')}
+                ${stat(
+                  viewModel.training.trainingsRecently,
+                  'trainings in the last 30 days'
+                )}
+              </ul>
+              <p class="eq-cards__actions">
+                ${cardButton(`/equipment/${id}/training`, 'Get Trained')}
+                ${isTrainerOrOwner(viewModel)
+                  ? cardButton(
+                      `/equipment/${id}/quiz-results`,
+                      'Mark as Trained',
+                      true
+                    )
+                  : html``}
+              </p>
+            </section>
+          `
+        : html``}
+    </div>
+  `;
+};
+
 const actionGroup = (title: string, items: ReadonlyArray<Html>): Html => {
   const visible = items.filter(item => item.trim() !== '');
   return visible.length === 0
@@ -335,11 +446,6 @@ const actionGroup = (title: string, items: ReadonlyArray<Html>): Html => {
 };
 
 const equipmentActions = (viewModel: ViewModel) => html`
-  ${actionGroup('Trouble tickets', [
-    reportProblem(viewModel),
-    viewTickets(viewModel),
-    printSign(viewModel),
-  ])}
   ${actionGroup(
     'Training',
     viewModel.equipment.category === 'red'
@@ -356,6 +462,7 @@ const equipmentActions = (viewModel: ViewModel) => html`
     setMachines(viewModel),
     guideLink(viewModel),
     changeCategory(viewModel),
+    printSign(viewModel),
     ...(viewModel.equipment.category === 'red'
       ? [
           registerSheet(viewModel),
@@ -425,22 +532,30 @@ export const render = (viewModel: ViewModel) =>
     viewModel,
     (viewModel: ViewModel) => html`
       <div class="stack">
-        <h1>${sanitizeString(viewModel.equipment.name)}</h1>
-        <p>
-          ${categoryBadge(viewModel.equipment.category)} —
-          ${categoryDescription(viewModel.equipment.category)}
-        </p>
-        <p>
-          <strong>Area:</strong>
-          <a href="/areas#area-${safe(viewModel.equipment.area.id)}">
-            ${sanitizeString(viewModel.equipment.area.name)}
-          </a>
+        ${breadcrumb(viewModel)} ${equipmentHeading(viewModel)}
+        <!-- A div rather than a p: the guide's warning mark is a tooltip,
+             which is a div, and a browser closes a paragraph when one opens
+             inside it - dropping the mark onto its own line. -->
+        <div class="eq-facts">
+          <span
+            ><strong>Area:</strong>
+            <a href="/areas#area-${safe(viewModel.equipment.area.id)}"
+              >${sanitizeString(viewModel.equipment.area.name)}</a
+            ></span
+          >
           ${O.isSome(viewModel.equipment.area.email)
-            ? html` | <strong>Mailing list:</strong>
-              ${mailTo(viewModel.equipment.area.email.value, O.none, O.none)}`
+            ? html`<span
+                ><strong>Mailing list:</strong>
+                ${mailTo(
+                  viewModel.equipment.area.email.value,
+                  O.none,
+                  O.none
+                )}</span
+              >`
             : html``}
-        </p>
-        ${guideForMembers(viewModel)} ${equipmentActions(viewModel)}
+          ${guideFact(viewModel)}
+        </div>
+        ${equipmentCards(viewModel)} ${equipmentActions(viewModel)}
         ${viewModel.equipment.category === 'red'
           ? html`
               <h2>Trainers</h2>

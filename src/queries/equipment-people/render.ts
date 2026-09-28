@@ -135,7 +135,7 @@ const unknownWaiting = (viewModel: ViewModel) =>
           ${joinHtml(
             viewModel.waitingUnknown.map(
               quiz => html`
-                <tr class="passed_training_quiz_row">
+                <tr>
                   <td>
                     ${displayDate(DateTime.fromJSDate(quiz.waitingSince))}
                   </td>
@@ -175,7 +175,7 @@ export const renderQuizResults = (viewModel: ViewModel) =>
         viewModel.waiting,
         RA.map(
           member => html`
-            <tr class="passed_training_quiz_row">
+            <tr>
               <td>${person(member, viewModel.isTrainerOrOwner)}</td>
               <td>${displayDate(DateTime.fromJSDate(member.waitingSince))}</td>
               ${viewModel.isTrainer
@@ -192,7 +192,7 @@ export const renderQuizResults = (viewModel: ViewModel) =>
             <table>
               <tr>
                 <th>Member</th>
-                <th>Waiting since</th>
+                <th>Quiz passed</th>
                 ${viewModel.isTrainer ? html`<th>Actions</th>` : html``}
               </tr>
               ${joinHtml(rows)}
@@ -214,7 +214,7 @@ export const renderFailedQuizzes = (viewModel: ViewModel) =>
         viewModel.failed,
         RA.map(
           row => html`
-            <tr class="failed_training_quiz_row">
+            <tr>
               <td>${displayDate(DateTime.fromJSDate(row.completedAt))}</td>
               <td>
                 ${pipe(

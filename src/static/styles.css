@@ -2720,9 +2720,113 @@ label img {
   margin: 0;
 }
 
-/* A recorded guide address that stopped answering. Said where the address is
-   shown, because the fix is to correct the address. */
+/* A recorded guide address that stopped answering: a mark beside the address,
+   with what happened behind it, rather than a line of red under the page's
+   facts. */
 .guide-link-warning {
   color: #9c1109;
-  font-size: 0.9em;
+}
+
+/* A machine's page: what it is, where it lives, and what it is for, read as
+   one block before any of the doing starts. */
+.eq-breadcrumb {
+  margin: 0 0 1.5rem;
+  font-size: 0.9rem;
+}
+
+.eq-heading {
+  display: flex;
+  flex-wrap: wrap;
+  /* Centred against the name rather than sitting on its baseline: the pill
+     is a label for the whole title, not a word in the sentence. */
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.eq-heading h1 {
+  margin: 0;
+}
+
+/* What the colour means, said once, in the colour: a pill rather than a
+   sentence underneath, so the name and the rule read together. */
+.eq-rule {
+  margin: 0;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  background: color-mix(in oklch, white 88%, var(--eq-rule-colour));
+  color: color-mix(in oklch, black 75%, var(--eq-rule-colour));
+}
+
+.eq-rule--red {
+  --eq-rule-colour: #e8291c;
+}
+
+.eq-rule--orange {
+  --eq-rule-colour: #e07800;
+}
+
+.eq-rule--green {
+  --eq-rule-colour: #00703c;
+}
+
+/* Area, mailing list and guide on one line, wrapping to as many as the width
+   needs rather than one line each. */
+.eq-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
+  margin: 1rem 0 0;
+}
+
+.eq-facts__fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* The tooltip is a block by default, which would drop its mark onto the next
+   line. Beside the address is the whole point of it. */
+.eq-facts__fact .tooltip {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* An address that did not answer, said in the colour of the problem. */
+.eq-guide--dead,
+a.eq-guide--dead,
+a.eq-guide--dead:visited {
+  color: #9c1109;
+}
+
+.eq-cards__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  /* The numbers above are read, then a button is pressed: they are not the
+     same thought, so they do not sit on top of each other. */
+  margin: 1.25rem 0 0;
+}
+
+/* The heading of a group of actions sits closer to its list than a page
+   heading would. */
+.equipment-actions h2 {
+  margin-bottom: 0.25rem;
+}
+
+/* An action that belongs to a trainer or an owner rather than to whoever is
+   reading: orange, for "yours to do carefully", next to the green one that
+   is anybody's. A darker orange than the equipment sticker so that white
+   text on it clears 4.5:1 - #e07800 with white is 3:1, which is not enough
+   for text this size. */
+.button--admin,
+a.button--admin,
+a.button--admin:visited {
+  background: #b35f00;
+  color: white;
+}
+
+.button--admin:hover {
+  background: #9c5300;
 }

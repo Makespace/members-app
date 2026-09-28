@@ -114,6 +114,8 @@ describe('Render equipment page', () => {
             ...memberDetails,
             equipment,
             guideLink: O.none,
+            tickets: {active: 0, resolvedRecently: 0},
+            training: {activeTrainers: 0, trainingsRecently: 0},
             quizResults: O.some(quizResults)
         };
         let renderedDom: HTMLElement;
@@ -151,6 +153,8 @@ describe('Render equipment page', () => {
             ...memberDetails,
             equipment,
             guideLink: O.none,
+            tickets: {active: 0, resolvedRecently: 0},
+            training: {activeTrainers: 0, trainingsRecently: 0},
             quizResults: O.some(quizResults)
         };
         let renderedDom: HTMLElement;
@@ -190,6 +194,8 @@ describe('Render equipment page', () => {
             isSuperUserOrTrainerOfArea: false,
             equipment,
             guideLink: O.none,
+            tickets: {active: 0, resolvedRecently: 0},
+            training: {activeTrainers: 0, trainingsRecently: 0},
             quizResults: O.some(quizResultsWithMemberAwaitingTraining)
         };
         let renderedDom: HTMLElement;
@@ -223,6 +229,8 @@ describe('Render equipment page', () => {
             isSuperUserOrTrainerOfArea: true,
             equipment,
             guideLink: O.none,
+            tickets: {active: 0, resolvedRecently: 0},
+            training: {activeTrainers: 0, trainingsRecently: 0},
             quizResults: O.some(quizResultsWithMemberAwaitingTraining)
         };
         let renderedDom: HTMLElement;
@@ -261,6 +269,8 @@ describe('Render equipment page', () => {
                 user: superUser,
                 equipment: {...equipment, category},
                 guideLink: O.none,
+            tickets: {active: 0, resolvedRecently: 0},
+            training: {activeTrainers: 0, trainingsRecently: 0},
             quizResults: O.some(quizResultsWithMemberAwaitingTraining),
             });
 
@@ -298,6 +308,74 @@ describe('Render equipment page', () => {
         });
     });
 
+});
+
+describe('the equipment guide, when it stopped answering', () => {
+    const renderPage = (vm: ViewModel) => {
+        const body = document.createElement('body');
+        body.innerHTML = render(vm).body;
+        return body;
+    };
+
+    const withGuide = (reachable: boolean): ViewModel => ({
+        user: {
+            emailAddress: faker.internet.email() as EmailAddress,
+            memberNumber: faker.number.int({min: 1}),
+        },
+        isSuperUser: false,
+        isSuperUserOrOwnerOfArea: false,
+        isSuperUserOrTrainerOfArea: false,
+        equipment: {
+            id: faker.string.uuid() as UUID,
+            name: 'Band Saw',
+            category: 'red',
+            machineNames: [],
+            trainers: [],
+            trainedMembers: [],
+            trainingSheetId: O.none,
+            guideUrl: O.some('https://equipment.makespace.org/wood-shop/band-saw'),
+            removedAt: O.none,
+            area: {id: faker.string.uuid() as UUID, name: 'Wood Shop', email: O.none},
+        },
+        guideLink: O.some({
+            url: 'https://equipment.makespace.org/wood-shop/band-saw',
+            status: O.some(404),
+            reachable,
+            checkedAt: new Date('2026-09-28'),
+        }),
+        quizResults: O.none,
+        tickets: {active: 0, resolvedRecently: 0},
+        training: {activeTrainers: 0, trainingsRecently: 0},
+    });
+
+    // The scheme is noise on a page where the link is there to click.
+    it('shows the address without its scheme, and links the whole thing', () => {
+        const link = renderPage(withGuide(true)).querySelector('.eq-facts a[href*="band-saw"]');
+
+        expect(link?.textContent?.trim()).toBe(
+            'equipment.makespace.org/wood-shop/band-saw'
+        );
+        expect(link?.getAttribute('href')).toBe(
+            'https://equipment.makespace.org/wood-shop/band-saw'
+        );
+    });
+
+    it('marks the address itself when the link did not answer', () => {
+        const page = renderPage(withGuide(false));
+
+        expect(page.querySelector('.eq-guide--dead')).not.toBeNull();
+        // Beside the address, not a line of red underneath it.
+        expect(
+            page.querySelector('.eq-facts__fact .tooltip .guide-link-warning')
+        ).not.toBeNull();
+    });
+
+    it('says nothing when the link answered', () => {
+        const page = renderPage(withGuide(true));
+
+        expect(page.querySelector('.eq-guide--dead')).toBeNull();
+        expect(page.querySelector('.guide-link-warning')).toBeNull();
+    });
 });
 
 describe('the actions, in groups', () => {
@@ -340,6 +418,8 @@ describe('the actions, in groups', () => {
         isSuperUserOrTrainerOfArea: false,
         equipment,
         guideLink: O.none,
+        tickets: {active: 0, resolvedRecently: 0},
+        training: {activeTrainers: 0, trainingsRecently: 0},
         quizResults: O.none,
         ...overrides,
     });
@@ -354,17 +434,14 @@ describe('the actions, in groups', () => {
             headings(
                 viewFor({isSuperUser: true, isSuperUserOrOwnerOfArea: true, isSuperUserOrTrainerOfArea: true})
             )
-        ).toStrictEqual(['Trouble tickets', 'Training', 'Update this equipment']);
+        ).toStrictEqual(['Training', 'Update this equipment']);
     });
 
     // A heading with nothing under it is worse than no heading.
     it('leaves out a group with nothing in it for this person', () => {
         // An ordinary member may report a problem and see who is trained,
         // but has nothing to update.
-        expect(headings(viewFor())).toStrictEqual([
-            'Trouble tickets',
-            'Training',
-        ]);
+        expect(headings(viewFor())).toStrictEqual(['Training']);
     });
 
     it('has no training group at all for equipment that needs none', () => {
@@ -375,7 +452,7 @@ describe('the actions, in groups', () => {
                     {...redEquipment, category: 'green'}
                 )
             )
-        ).toStrictEqual(['Trouble tickets', 'Update this equipment']);
+        ).toStrictEqual(['Update this equipment']);
     });
 
     it('puts each action under the heading it belongs to', () => {
@@ -393,11 +470,7 @@ describe('the actions, in groups', () => {
         const group = (heading: string) =>
             groups.find(candidate => candidate.heading === heading)?.items ?? [];
 
-        expect(group('Trouble tickets')).toStrictEqual([
-            'Report a problem with this equipment',
-            'View trouble tickets for this equipment',
-            'Print a sign for this equipment',
-        ]);
+
         // Some items carry a tooltip, so compare how each one opens.
         const opensWith = (items: ReadonlyArray<string>) =>
             items.map(item => item.split(' Only ')[0].trim());
@@ -411,6 +484,9 @@ describe('the actions, in groups', () => {
             'View currently trained users'
         );
         const updates = group('Update this equipment').join(' | ');
+        // Reporting a problem and reading the tickets are cards at the top of
+        // the page now; printing a sign is a change to the record.
+        expect(updates).toContain('Print a sign for this equipment');
         expect(updates).toContain('Change the sticker category');
         expect(updates).toContain('[Admin] Retire equipment');
         expect(updates).toContain('Name the machines this entry stands for');

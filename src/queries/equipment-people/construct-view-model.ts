@@ -80,28 +80,38 @@ export const constructViewModel =
           trainedSince: member.trainedSince,
           trainedByMemberNumber: member.trainedByMemberNumber,
         })),
+        // Most recent pass first: the people a trainer is most likely to be
+        // about to hear from, and the ones a glance should find.
         waiting: pipe(
           equipmentView.quizResults,
           O.match(
             () => [],
             results =>
-              results.membersAwaitingTraining.map(
-                toWaiting(deps.sharedReadModel)
-              )
+              [...results.membersAwaitingTraining]
+                .map(toWaiting(deps.sharedReadModel))
+                .sort(
+                  (a, b) => b.waitingSince.getTime() - a.waitingSince.getTime()
+                )
           )
         ),
         waitingUnknown: pipe(
           equipmentView.quizResults,
           O.match(
             () => [],
-            results => [...results.unknownMembersAwaitingTraining]
+            results =>
+              [...results.unknownMembersAwaitingTraining].sort(
+                (a, b) => b.waitingSince.getTime() - a.waitingSince.getTime()
+              )
           )
         ),
         failed: pipe(
           equipmentView.quizResults,
           O.match(
             () => [],
-            results => [...results.failedQuizes]
+            results =>
+              [...results.failedQuizes].sort(
+                (a, b) => b.completedAt.getTime() - a.completedAt.getTime()
+              )
           )
         ),
         lastQuizSync: pipe(

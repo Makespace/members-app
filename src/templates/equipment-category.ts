@@ -32,6 +32,10 @@ export const categoryDot = (category: EquipmentCategory) =>
 export const categoryDescription = (category: EquipmentCategory) =>
   safe(DESCRIPTIONS[category]);
 
+// Just the colour's name, for places that draw the dot themselves.
+export const categoryLabel = (category: EquipmentCategory) =>
+  safe(LABELS[category]);
+
 // Radio group for choosing a category on the add / bulk-add forms. Takes the
 // categories to offer (bulk-add omits red) and which one starts selected, so
 // the wording lives here rather than being retyped per form.

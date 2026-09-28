@@ -70,6 +70,60 @@ const renderBoard = (vm: ViewModel) => {
 };
 
 // Opened from a machine, the page says so and offers the way back out.
+// An owner reading a ticket usually wants to know who this is and what else
+// they are trained on, which is one click away if the name is a link.
+describe('who submitted a ticket', () => {
+  const cardFor = (overrides: Partial<TroubleTicketView>) => {
+    const body = document.createElement('body');
+    body.innerHTML = render(viewModel([{...ticket(), ...overrides}]));
+    return body;
+  };
+
+  it('links a matched member to their record, by name and by number', () => {
+    const links = [
+      ...cardFor({
+        submittedName: 'Sam Submitter',
+        submittedMemberNumber: 42,
+      }).querySelectorAll('a[href="/member/42"], a[href="/member/42/"]'),
+    ].map(node => (node.textContent ?? '').trim());
+
+    expect(links).toContain('Sam Submitter');
+    expect(links).toContain('42');
+  });
+
+  it('leaves what they typed as plain text when nobody matched', () => {
+    const card = cardFor({
+      submittedName: 'Someone Unmatched',
+      submittedMemberNumber: null,
+    });
+
+    expect(card.textContent).toContain('Someone Unmatched');
+    expect(card.querySelector('a[href^="/member/"]')).toBeNull();
+  });
+
+  it('falls back to the address when there is no name', () => {
+    const card = cardFor({
+      submittedName: null,
+      submittedEmail: 'someone@example.com',
+      submittedMemberNumber: 42,
+    });
+
+    expect(
+      card.querySelector('a[href="/member/42"]')?.textContent?.trim()
+    ).toBe('someone@example.com');
+  });
+
+  it('says so when the form carried nothing at all', () => {
+    expect(
+      cardFor({
+        submittedName: null,
+        submittedEmail: null,
+        submittedMemberNumber: null,
+      }).textContent
+    ).toContain('Not provided');
+  });
+});
+
 describe('the board pointed at one machine', () => {
   const focused = {
     kind: 'equipment' as const,
