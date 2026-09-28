@@ -16,6 +16,7 @@ import {
   ChangeLogEntry,
 } from './view-model';
 import {Focus} from './focus';
+import {STATUS_SLUG} from './status-slug';
 import {DateTime} from 'luxon';
 import {displayDate} from '../../templates/display-date';
 import {TroubleTicketStatus} from '../../types/trouble-ticket';
@@ -31,14 +32,6 @@ const STATUS_ORDER: ReadonlyArray<TroubleTicketStatus> = [
 
 // Slug used for the per-status modifier class (accent colour, badge colour) and the status
 // filter data attribute.
-const STATUS_SLUG: Record<TroubleTicketStatus, string> = {
-  Todo: 'todo',
-  'In Progress': 'in-progress',
-  'Needs Help': 'needs-help',
-  Parked: 'parked',
-  Resolved: 'resolved',
-};
-
 // The "show only" scope filters - relationship of a ticket to the viewing member.
 const SCOPES: ReadonlyArray<{
   key: string;
