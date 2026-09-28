@@ -148,32 +148,66 @@ const withoutDuplicates = (
   });
 };
 
+// The messages this one answers, as its own headers say: In-Reply-To names
+// the parent, References the whole chain. Every mail client sets them, and
+// a Google Group passes them through untouched.
+const answersTo = (message: InboxMessage): ReadonlyArray<string> =>
+  message.headers
+    .filter(header => /^(in-reply-to|references)$/i.test(header.name))
+    .flatMap(header => header.value.match(/<[^>]+>/g) ?? []);
+
+// Whether the subject says this is a reply: a Re:/Fwd: prefix, possibly
+// behind the tags a group adds. A subject without one is a new thread
+// however many other messages share it.
+const looksLikeReply = (subject: string | null): boolean =>
+  /^(\s*\[[^\]]*\])*\s*(re|fwd|fw)\s*:/i.test(subject ?? '');
+
 // Groups a run of messages into conversations, oldest first within each.
+//
+// A message joins the conversation of a message it answers, by the ids in
+// its own threading headers. Failing that, a message whose subject reads as
+// a reply joins the latest conversation with that subject, if it is recent
+// - the fallback for a client that set no headers. Anything else starts a
+// conversation of its own. Subject alone is never enough: twelve
+// subscription-expired notices about twelve members share a subject, and
+// are twelve conversations.
 const toConversations = (
   messages: ReadonlyArray<InboxMessage>
 ): ReadonlyArray<ReadonlyArray<InboxMessage>> => {
-  const open = new Map<string, InboxMessage[]>();
-  const closed: InboxMessage[][] = [];
+  const conversations: InboxMessage[][] = [];
+  const byMessageId = new Map<string, InboxMessage[]>();
+  const latestBySubject = new Map<string, InboxMessage[]>();
+
   for (const message of withoutDuplicates(messages)) {
     // A message with no usable subject can only be grouped by its thread.
-    const key = normaliseSubject(message.subject) || message.gmailThreadId;
-    const current = open.get(key);
-    const previous = current?.[current.length - 1];
-    if (
-      current !== undefined &&
-      previous !== undefined &&
-      message.receivedAt.getTime() - previous.receivedAt.getTime() <
-        SAME_CONVERSATION_GAP_MS
-    ) {
-      current.push(message);
-      continue;
+    const subjectKey =
+      normaliseSubject(message.subject) || message.gmailThreadId;
+
+    const answered = answersTo(message)
+      .map(id => byMessageId.get(id))
+      .find(found => found !== undefined);
+    const bySubject = latestBySubject.get(subjectKey);
+    const recentEnough =
+      bySubject !== undefined &&
+      message.receivedAt.getTime() -
+        bySubject[bySubject.length - 1].receivedAt.getTime() <
+        SAME_CONVERSATION_GAP_MS;
+
+    const conversation =
+      answered ??
+      (looksLikeReply(message.subject) && recentEnough ? bySubject : undefined) ??
+      [];
+    if (conversation.length === 0) {
+      conversations.push(conversation);
     }
-    if (current !== undefined) {
-      closed.push(current);
+    conversation.push(message);
+
+    if (message.rfc822MessageId !== null) {
+      byMessageId.set(message.rfc822MessageId, conversation);
     }
-    open.set(key, [message]);
+    latestBySubject.set(subjectKey, conversation);
   }
-  return [...closed, ...open.values()];
+  return conversations;
 };
 
 const summarise =
