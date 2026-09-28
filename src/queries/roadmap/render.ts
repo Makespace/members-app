@@ -42,6 +42,9 @@ export const render = () => html`
       means, and QR codes for learning about it, getting trained on it, and
       reporting a problem`),
       todo(html`Let members follow the tickets they've reported`),
+      todo(html`Mark a ticket as sensitive and hide it, rather than hiding
+      every ticket that came from management email - so members can see the
+      rest`),
 
       heading(html`Notifications`, {done: true}),
       done(html`Banners at the top of the app for events and things that need
