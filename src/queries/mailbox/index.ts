@@ -228,17 +228,22 @@ const rowClass = (thread: InboxThread): string =>
 
 // Both states of the cell are rendered, one hidden, so that pressing a button
 // can swap them in place - the row is marked rather than made to vanish.
+// The buttons sit in a small grid inside the cell, not on it: a cell that
+// is made a grid stops being a table cell, no longer stretches to the row,
+// and draws its bottom border under its own content instead of the row's.
 export const actionCell = (thread: InboxThread, returnTo: string) => {
   const archived = thread.archivedAs !== undefined;
   return html`
     <td class="mailbox__actions">
-      <span class="mailbox__state" data-state="live" ${archived ? safe('hidden') : safe('')}>
-        ${archiveForms(thread.conversationId, returnTo, 'icon')}
-      </span>
-      <span class="mailbox__state" data-state="archived" ${archived ? safe('') : safe('hidden')}>
-        ${unarchiveForm(thread.conversationId, returnTo, 'icon')}
-      </span>
-      ${createTicketAction(thread.conversationId, 'icon')}
+      <div class="mailbox__action-grid">
+        <span class="mailbox__state" data-state="live" ${archived ? safe('hidden') : safe('')}>
+          ${archiveForms(thread.conversationId, returnTo, 'icon')}
+        </span>
+        <span class="mailbox__state" data-state="archived" ${archived ? safe('') : safe('hidden')}>
+          ${unarchiveForm(thread.conversationId, returnTo, 'icon')}
+        </span>
+        ${createTicketAction(thread.conversationId, 'icon')}
+      </div>
     </td>
   `;
 };
