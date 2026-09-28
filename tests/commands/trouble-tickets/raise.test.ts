@@ -6,7 +6,7 @@ import {constructEvent} from '../../../src/types';
 import {EmailAddress} from '../../../src/types/email-address';
 import {UserActor} from '../../../src/types/actor';
 import {getTaskEitherRightOrFail, systemActor} from '../../helpers';
-import {raise} from '../../../src/commands/trouble-tickets/raise';
+import {NOT_LISTED, raise} from '../../../src/commands/trouble-tickets/raise';
 import {
   TestFramework,
   initTestFramework,
@@ -143,7 +143,42 @@ describe('raising a trouble ticket in the app', () => {
     });
   });
 
+  // The select is required, so the form cannot post '' for "not listed";
+  // it posts the word the option carries. The server once accepted only
+  // '' - so every unlisted report was refused, whatever the member wrote.
+  it('accepts the form\'s own "not listed" choice, described in free text', async () => {
+    const result = await getTaskEitherRightOrFail(
+      raise.process({
+        command: {
+          ...input({
+            equipmentId: NOT_LISTED,
+            otherEquipmentDetail: 'The glove dispenser',
+          }),
+          actor: memberActor,
+        },
+        rm: framework.sharedReadModel,
+      })
+    );
+    expect(O.toNullable(result)).toEqual(
+      expect.objectContaining({
+        equipmentId: null,
+        submittedEquipment: null,
+        otherEquipmentDetail: 'The glove dispenser',
+      })
+    );
+  });
+
   describe('what it refuses', () => {
+    it('still needs the unlisted machine described', () => {
+      expect(
+        E.isLeft(
+          raise.decode(
+            input({equipmentId: NOT_LISTED, otherEquipmentDetail: ''})
+          )
+        )
+      ).toBe(true);
+    });
+
     it('needs to know what went wrong', () => {
       expect(E.isLeft(raise.decode(input({issue: ''})))).toBe(true);
       expect(E.isLeft(raise.decode(input({issue: '   '})))).toBe(true);

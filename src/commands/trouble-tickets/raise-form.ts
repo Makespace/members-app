@@ -13,7 +13,7 @@ import {
   toLoggedInContent,
 } from '../../types/html';
 import {Form} from '../../types/form';
-import {MACHINE_STATUSES} from './raise';
+import {MACHINE_STATUSES, NOT_LISTED} from './raise';
 
 type MachineOption = {
   id: string;
@@ -33,7 +33,8 @@ type ViewModel = {
   selectedAreaId: O.Option<string>;
 };
 
-const OTHER = 'other';
+// The one word the form and the command agree on for "not listed".
+const OTHER = NOT_LISTED;
 
 // JSON for the page's script. Escaping '<' keeps a name containing "</script"
 // from ending the block early.
@@ -368,6 +369,14 @@ const renderForm = (viewModel: ViewModel) =>
             picker.value = preselected;
           }
           syncSelection();
+
+          // A browser restoring the form after a back-navigation puts the
+          // values back after this has run, and without firing change - so
+          // a restored "Other" sat with its "which machine?" field still
+          // hidden and, worse, still required. Look again once the page has
+          // fully loaded, and whenever it comes back from the cache.
+          window.addEventListener('load', syncSelection);
+          window.addEventListener('pageshow', syncSelection);
         })();
       </script>
     `,

@@ -47,9 +47,19 @@ const trimmed = new t.Type<string, unknown, unknown>(
   t.identity
 );
 
+// The form's "Other / not listed here" choice. The select is required, so
+// it cannot post an empty value; it posts this word instead, and the
+// server has to know it. It once did not: every report of unlisted
+// equipment was refused at the door, whatever the member had written.
+export const NOT_LISTED = 'other';
+
+// Either sentinel means "no machine picked": the member describes it in
+// otherEquipmentDetail.
+const isPicked = (equipmentId: string): boolean =>
+  equipmentId !== '' && equipmentId !== NOT_LISTED;
+
 const baseCodec = t.strict({
-  // '' means "not listed" - the member describes it in otherEquipmentDetail.
-  equipmentId: t.union([tt.UUID, t.literal('')]),
+  equipmentId: t.union([tt.UUID, t.literal(''), t.literal(NOT_LISTED)]),
   // Which unit, when the equipment stands for several machines.
   machine: tt.withFallback(trimmed, ''),
   otherEquipmentDetail: tt.withFallback(trimmed, ''),
@@ -65,7 +75,7 @@ const codec = t.refinement(
   baseCodec,
   input =>
     input.issue !== '' &&
-    (input.equipmentId !== '' || input.otherEquipmentDetail !== ''),
+    (isPicked(input.equipmentId) || input.otherEquipmentDetail !== ''),
   'RaiseTroubleTicket'
 );
 
@@ -83,11 +93,11 @@ const process: Command<RaiseTroubleTicket>['process'] = input => {
   const member = input.rm.members.getByMemberNumber(
     input.command.actor.user.memberNumber
   );
-  const equipment =
-    input.command.equipmentId === ''
-      ? O.none
-      : input.rm.equipment.get(input.command.equipmentId as UUID);
-  if (input.command.equipmentId !== '' && O.isNone(equipment)) {
+  const picked = isPicked(input.command.equipmentId);
+  const equipment = picked
+    ? input.rm.equipment.get(input.command.equipmentId as UUID)
+    : O.none;
+  if (picked && O.isNone(equipment)) {
     return TE.left(
       failureWithStatus('No such equipment', StatusCodes.BAD_REQUEST)()
     );
