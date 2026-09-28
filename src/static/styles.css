@@ -2223,7 +2223,12 @@ label img {
   display: none;
 }
 
-.mailbox__actions {
+/* The grid is a block inside the cell, never the cell itself: a <td> given
+   another display stops being a table cell, no longer stretches to the
+   row's height, and draws its bottom border under its own content rather
+   than along the row - which is how the actions came to sit in a box of
+   their own with a rule under it halfway up the row. */
+.mailbox__action-grid {
   display: grid;
   grid-template-columns: repeat(2, auto);
   gap: 2px;
@@ -2236,21 +2241,21 @@ label img {
    regardless. On the conversation page they are simply there. */
 @media (hover: hover) {
   .mailbox-table .mailbox__action,
-  .mailbox-table .mailbox__actions > .mailbox__icon-button {
+  .mailbox-table .mailbox__action-grid > .mailbox__icon-button {
     opacity: 0;
   }
 
   .mailbox-table tr:hover .mailbox__action,
-  .mailbox-table tr:hover .mailbox__actions > .mailbox__icon-button,
+  .mailbox-table tr:hover .mailbox__action-grid > .mailbox__icon-button,
   .mailbox-table .mailbox__action:focus-within,
-  .mailbox-table .mailbox__actions > .mailbox__icon-button:focus-visible {
+  .mailbox-table .mailbox__action-grid > .mailbox__icon-button:focus-visible {
     opacity: 1;
   }
 }
 
 /* The ticket button is a link rather than a form, so it needs the icon
    button's look in its own right. */
-.mailbox__actions > .mailbox__icon-button {
+.mailbox__action-grid > .mailbox__icon-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2262,8 +2267,8 @@ label img {
   line-height: 1;
 }
 
-.mailbox__actions > .mailbox__icon-button:hover,
-.mailbox__actions > .mailbox__icon-button:focus-visible {
+.mailbox__action-grid > .mailbox__icon-button:hover,
+.mailbox__action-grid > .mailbox__icon-button:focus-visible {
   color: var(--text-color);
   background: color-mix(in oklch, white 85%, var(--grey-color));
 }

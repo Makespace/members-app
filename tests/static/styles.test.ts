@@ -57,6 +57,22 @@ describe('styles.css', () => {
     expect(code).toContain('.mailbox__actions .mailbox__state[hidden]');
   });
 
+  // A table cell given any other display stops being a table cell: it no
+  // longer stretches to the row, and its bottom border lands under its own
+  // content rather than along the row. The mailbox actions were laid out as
+  // a grid on the cell itself, and sat in a box of their own with a rule
+  // halfway up the row. The grid belongs on a block inside the cell.
+  it('leaves the mailbox actions cell a table cell', () => {
+    const cellRules = [
+      ...code.matchAll(/(^|\})\s*\.mailbox__actions\s*\{([^}]*)\}/g),
+    ].map(match => match[2]);
+
+    expect(cellRules.length).toBeGreaterThan(0);
+    for (const rule of cellRules) {
+      expect(rule).not.toMatch(/display\s*:/);
+    }
+  });
+
   it('nudges a pressed button without re-positioning it', () => {
     const activeRules = [...code.matchAll(/(^|\})\s*[^{}]*:active\s*\{([^}]*)\}/g)]
       .map(match => match[2]);

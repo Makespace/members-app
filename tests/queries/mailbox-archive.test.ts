@@ -83,6 +83,22 @@ describe('archiving from the mailbox list', () => {
   });
 });
 
+// The buttons' grid is a block inside the cell, so the cell stays a cell
+// and its border stays on the row.
+describe('the actions cell', () => {
+  it('keeps its grid inside it, with every control in the grid', () => {
+    const cell = render(mailboxListForTest(['a@example.com'])).querySelector(
+      'td.mailbox__actions'
+    );
+    const grid = cell?.querySelector(':scope > .mailbox__action-grid');
+
+    expect(grid).not.toBeNull();
+    expect(cell?.children).toHaveLength(1);
+    expect(grid?.querySelectorAll('form.mailbox__action')).toHaveLength(3);
+    expect(grid?.querySelector(':scope > a.mailbox__icon-button')).not.toBeNull();
+  });
+});
+
 // A row is marked by its colour, wherever it is shown, and pressing a
 // button marks it in place. Each button says what the row becomes.
 describe('how a row is marked', () => {
