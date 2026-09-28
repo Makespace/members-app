@@ -10,6 +10,7 @@ import {User} from '../../types';
 import {Dependencies} from '../../dependencies';
 import {allMemberNumbers} from '../../read-models/shared-state/return-types';
 import {equipmentSlug, toSlug} from '../../templates/slug';
+import {ticketsVisibleTo} from '../trouble-tickets/management-tickets';
 
 // The page can be pointed at one machine or one area - a QR code on the
 // machine itself, or on an area's noticeboard - so that reporting a problem
@@ -119,9 +120,13 @@ export const constructViewModel =
         );
         const myNumbers = allMemberNumbers(member);
 
-        const allOpen = rm.troubleTickets
-          .getAll()
-          .filter(ticket => ticket.status !== 'Resolved');
+        // What a member wrote to the management team is not counted to
+        // everyone: outside that team these tickets do not exist here either.
+        const allOpen = ticketsVisibleTo(
+          rm,
+          deps.conf.MANAGEMENT_TEAM_AREA_ID,
+          member
+        ).filter(ticket => ticket.status !== 'Resolved');
 
         // With a focus, every count on the page is about that machine or
         // area; without one they are about Makespace as a whole.
