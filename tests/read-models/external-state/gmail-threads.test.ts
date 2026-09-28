@@ -22,12 +22,18 @@ describe('grouping the mailbox into conversations', () => {
     receivedAt: string;
     // The sender's own id, which every group forwarding the message keeps.
     rfc822?: string;
+    // The id of the message this one answers, as its client wrote it.
+    inReplyTo?: string;
   }) => {
     await extDB.insert(gmailMessageTable).values({
       gmail_message_id: input.id,
       gmail_thread_id: input.threadId,
       mailbox: 'tickets@makespace.org',
       rfc822_message_id: input.rfc822 ?? `<${input.id}@test>`,
+      headers_json:
+        input.inReplyTo === undefined
+          ? null
+          : JSON.stringify([{name: 'In-Reply-To', value: input.inReplyTo}]),
       from_address: input.from,
       to_addresses: 'management@makespace.org',
       subject: input.subject,
@@ -123,6 +129,64 @@ describe('grouping the mailbox into conversations', () => {
     expect(roomHireConversations.every(thread => thread.messageCount === 1)).toBe(
       true
     );
+  });
+
+  // Twelve subscription-expired notices about twelve members share a
+  // subject and a sender, and are twelve conversations. A subject alone
+  // never groups; only a reply does.
+  it('keeps identical automated notices apart', async () => {
+    for (const n of [1, 2, 3]) {
+      await addMessage({
+        id: `notice-${n}`,
+        threadId: `notice-thread-${n}`,
+        from: 'no-reply@recurly.example',
+        subject: '[admin] Your Subscription Has Expired',
+        receivedAt: `2026-09-23T1${n}:00:00.000Z`,
+      });
+    }
+
+    const notices = (await getInboxThreads(extDB, 50)).filter(thread =>
+      thread.latest.subject?.includes('Subscription Has Expired')
+    );
+
+    expect(notices).toHaveLength(3);
+    expect(notices.every(thread => thread.messageCount === 1)).toBe(true);
+  });
+
+  // A reply says what it answers in its own headers, whatever its subject
+  // became along the way.
+  it('follows In-Reply-To when the subject was changed', async () => {
+    await addMessage({
+      id: 'm6',
+      threadId: 'yet-another-thread',
+      from: 'agent@example.com',
+      subject: 'Dates for the workshop',
+      receivedAt: '2026-09-24T09:00:00.000Z',
+      inReplyTo: '<m3@test>',
+    });
+
+    const roomHire = (await getInboxThreads(extDB, 50)).find(
+      thread => thread.latest.subject === 'Dates for the workshop'
+    );
+
+    expect(roomHire?.messageCount).toBe(2);
+    expect(roomHire?.conversationId).toBe('m3');
+  });
+
+  it('does not put a fresh message onto one that merely shares its subject', async () => {
+    await addMessage({
+      id: 'm7',
+      threadId: 'another-enquiry',
+      from: 'someone-else@example.com',
+      subject: 'Room hire enquiry',
+      receivedAt: '2026-09-23T12:00:00.000Z',
+    });
+
+    const roomHire = (await getInboxThreads(extDB, 50)).filter(thread =>
+      thread.latest.subject?.toLowerCase().includes('room hire')
+    );
+
+    expect(roomHire).toHaveLength(2);
   });
 
   it('orders conversations by their most recent reply', async () => {

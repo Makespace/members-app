@@ -85,20 +85,29 @@ describe('an Amazon notice delivered by two groups', () => {
     expect((await countHiddenConversations(extDB)).filtered).toBe(1);
   });
 
-  it('is hidden when the copies are grouped into one conversation', async () => {
+  // A group keeps the Message-ID, so this does not happen; but were the
+  // copies to arrive with different ids, a shared subject alone no longer
+  // makes them one conversation - each is judged, and hidden, on its own.
+  it('is hidden copy by copy when the copies somehow carry different Message-IDs', async () => {
     await cache([
       withoutHeader('<first@amazon.co.uk>'),
       withHeader('<second@amazon.co.uk>'),
     ]);
 
-    const [conversation] = await getInboxThreads(extDB, 50, {
+    const conversations = await getInboxThreads(extDB, 50, {
       includeFiltered: true,
     });
 
-    expect(conversation.messageCount).toBe(2);
-    expect(conversation.filteredBy?.id).toBe('amazon-order-updates');
+    expect(conversations).toHaveLength(2);
+    expect(
+      conversations.every(
+        conversation =>
+          conversation.messageCount === 1 &&
+          conversation.filteredBy?.id === 'amazon-order-updates'
+      )
+    ).toBe(true);
     expect(await getInboxThreads(extDB, 50)).toHaveLength(0);
-    expect((await countHiddenConversations(extDB)).filtered).toBe(1);
+    expect((await countHiddenConversations(extDB)).filtered).toBe(2);
   });
 
   // The copy with no header is the one that used to unhide the pair.
@@ -110,8 +119,9 @@ describe('an Amazon notice delivered by two groups', () => {
 });
 
 // The mailbox as it stood: every Amazon-sent row in the cache. Two notices
-// delivered twice, one un-headered copy each, and one that arrived later
-// with its header and no twin. Only the last was being hidden.
+// delivered twice - each pair sharing its Message-ID, as a group leaves it,
+// with one un-headered copy - and one that arrived later with its header
+// and no twin. Only the last was being hidden.
 describe('the whole Amazon side of the mailbox', () => {
   let client: ReturnType<typeof createClient>;
 
@@ -126,12 +136,12 @@ describe('the whole Amazon side of the mailbox', () => {
 
     const businessReceived = new Date('2026-09-23T10:46:05.000Z');
     await extDB.insert(gmailMessageTable).values([
-      withoutHeader('<estimate-a@amazon.co.uk>'),
-      withHeader('<estimate-b@amazon.co.uk>'),
+      withoutHeader('<estimate@amazon.co.uk>'),
+      withHeader('<estimate@amazon.co.uk>'),
       copy({
         gmail_message_id: 'business-without-header',
         gmail_thread_id: 'thread-c',
-        rfc822_message_id: '<business-a@amazon.co.uk>',
+        rfc822_message_id: '<business@amazon.co.uk>',
         from_address: `"'Amazon Business' via management" <management@makespace.org>`,
         received_at: businessReceived,
         reply_to: null,
@@ -141,7 +151,7 @@ describe('the whole Amazon side of the mailbox', () => {
       copy({
         gmail_message_id: 'business-with-header',
         gmail_thread_id: 'thread-d',
-        rfc822_message_id: '<business-b@amazon.co.uk>',
+        rfc822_message_id: '<business@amazon.co.uk>',
         from_address: `"'Amazon Business' via management" <management@makespace.org>`,
         received_at: businessReceived,
         reply_to: 'Amazon Business <no-reply@business.amazon.co.uk>',
