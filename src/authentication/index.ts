@@ -4,4 +4,3 @@ export {getUserFromSession} from './login/get-user-from-session';
 export {startMagicLinkEmailPubSub} from './login/start-magic-link-email-pub-sub';
 export {sessionOptions as sessionConfig} from './session-config';
 export {cookieSessionPassportWorkaround} from './cookie-session-passport-workaround';
-export {rollingSession} from './rolling-session';
