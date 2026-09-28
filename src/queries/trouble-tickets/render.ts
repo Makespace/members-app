@@ -16,6 +16,7 @@ import {
   ChangeLogEntry,
 } from './view-model';
 import {Focus} from './focus';
+import {renderMemberNumber} from '../../templates/member-number';
 import {STATUS_SLUG} from './status-slug';
 import {DateTime} from 'luxon';
 import {displayDate} from '../../templates/display-date';
@@ -49,17 +50,25 @@ const cardScopes = (ticket: TroubleTicketView): string =>
     .map(scope => scope.key)
     .join(' ');
 
-const renderSubmitter = (ticket: TroubleTicketView) => {
-  if (ticket.submittedName) {
-    return sanitizeString(ticket.submittedName);
-  }
-  if (ticket.submittedEmail) {
-    return sanitizeString(ticket.submittedEmail);
-  }
+// Where the form's answers were matched to a member, their name leads to
+// their record: an owner reading a ticket usually wants to know who this is
+// and what else they are trained on.
+const renderSubmitter = (ticket: TroubleTicketView): Html => {
+  const name = ticket.submittedName
+    ? sanitizeString(ticket.submittedName)
+    : ticket.submittedEmail
+      ? sanitizeString(ticket.submittedEmail)
+      : null;
   if (ticket.submittedMemberNumber !== null) {
-    return safe(`Member ${ticket.submittedMemberNumber}`);
+    return name === null
+      ? html`Member ${renderMemberNumber(ticket.submittedMemberNumber)}`
+      : html`<a href="/member/${safe(String(ticket.submittedMemberNumber))}"
+          >${name}</a
+        >
+        (${renderMemberNumber(ticket.submittedMemberNumber)})`;
   }
-  return safe('Not provided');
+  // Nobody matched: what they typed is all there is.
+  return name === null ? html`Not provided` : html`${name}`;
 };
 
 const renderEquipment = (ticket: TroubleTicketView) =>

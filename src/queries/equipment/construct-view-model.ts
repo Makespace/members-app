@@ -13,6 +13,7 @@ import {
 import {ViewModel} from './view-model';
 import {User} from '../../types';
 import {UUID} from 'io-ts-types';
+import {DateTime} from 'luxon';
 import {StatusCodes} from 'http-status-codes';
 import {
   FullQuizResultsForEquipment,
@@ -62,6 +63,40 @@ export const constructViewModel =
         'isSuperUserOrTrainerOfArea',
         ({isSuperUser, isTrainer}) => isSuperUser || isTrainer
       ),
+      TE.let('tickets', ({equipment}) => {
+        const forThisMachine = deps.sharedReadModel.troubleTickets
+          .getAll()
+          .filter(ticket => ticket.equipmentId === equipment.id);
+        // A rolling thirty days rather than the calendar month: "two
+        // resolved recently" should not become "none" because it is the
+        // first of the month.
+        const since = DateTime.now().minus({days: 30});
+        // When a ticket was resolved is in its change log rather than on the
+        // ticket, and this is only ever one machine's tickets, so reading
+        // them here costs a handful of rows.
+        const resolvedRecently = deps.sharedReadModel.troubleTickets
+          .getChangeLog(forThisMachine.map(ticket => ticket.id))
+          .filter(
+            row =>
+              row.eventType === 'TroubleTicketResolved' &&
+              DateTime.fromJSDate(row.at) >= since
+          ).length;
+        return {
+          active: forThisMachine.filter(
+            ticket => ticket.status !== 'Resolved'
+          ).length,
+          resolvedRecently,
+        };
+      }),
+      TE.let('training', ({equipment}) => {
+        const since = DateTime.now().minus({days: 30});
+        return {
+          activeTrainers: equipment.trainers.length,
+          trainingsRecently: equipment.trainedMembers.filter(
+            member => DateTime.fromJSDate(member.trainedSince) >= since
+          ).length,
+        };
+      }),
       TE.bind('guideLink', ({equipment}) =>
         pipe(
           TE.fromTask<ReadonlyMap<string, GuideLinkCheck>, FailureWithStatus>(
