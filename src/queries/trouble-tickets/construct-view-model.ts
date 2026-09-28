@@ -22,6 +22,7 @@ import {
   allMemberNumbers,
 } from '../../read-models/shared-state/return-types';
 import {resolveFocus} from './focus';
+import {ticketsVisibleTo} from './management-tickets';
 
 // Cards per page. The board serves the viewer's own areas by default, but a
 // super-user's "show all" can span the whole backlog - keep the DOM bounded.
@@ -361,9 +362,15 @@ export const constructViewModel =
         const areaNameById = new Map(
           rm.area.getAllMinimal().map(area => [area.id as string, area.name])
         );
-        const all = rm.troubleTickets
-          .getAll()
-          .map(toScope(equipmentById, areaNameById, loggedInMember));
+        // Correspondence with the management team is not every owner's to
+        // read, so those tickets never enter the board for anyone outside
+        // that team - before the counts, the filters or a focus can reach
+        // them.
+        const all = ticketsVisibleTo(
+          rm,
+          deps.conf.MANAGEMENT_TEAM_AREA_ID,
+          loggedInMember
+        ).map(toScope(equipmentById, areaNameById, loggedInMember));
         // Default to the viewer's own areas; a viewer who owns none (e.g. a
         // super-user who isn't an owner) would see an empty page, so they get
         // everything. ?show=all is the explicit escape hatch for owners.
