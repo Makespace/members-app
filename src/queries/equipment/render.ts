@@ -536,13 +536,9 @@ export const render = (viewModel: ViewModel) =>
         <!-- A div rather than a p: the guide's warning mark is a tooltip,
              which is a div, and a browser closes a paragraph when one opens
              inside it - dropping the mark onto its own line. -->
+        <!-- The area is in the breadcrumb above; saying it twice on one
+             screen is saying it once too often. -->
         <div class="eq-facts">
-          <span
-            ><strong>Area:</strong>
-            <a href="/areas#area-${safe(viewModel.equipment.area.id)}"
-              >${sanitizeString(viewModel.equipment.area.name)}</a
-            ></span
-          >
           ${O.isSome(viewModel.equipment.area.email)
             ? html`<span
                 ><strong>Mailing list:</strong>
