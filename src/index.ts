@@ -5,6 +5,7 @@ import httpLogger from 'pino-http';
 import {loadConfig} from './configuration';
 import {
   cookieSessionPassportWorkaround,
+  rollingSession,
   magicLink,
   sessionConfig,
   startMagicLinkEmailPubSub,
@@ -53,6 +54,7 @@ app.use(express.urlencoded({extended: true}));
 app.use(express.json());
 app.use(cookieSession(sessionConfig(conf)));
 app.use(cookieSessionPassportWorkaround);
+app.use(rollingSession);
 app.set('trust proxy', true);
 app.use(createRouter(routes));
 
