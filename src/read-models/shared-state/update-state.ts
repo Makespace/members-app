@@ -850,7 +850,13 @@ const _updateState =
         tx.delete(troubleTicketAssigneesTable)
           .where(eq(troubleTicketAssigneesTable.ticketId, event.ticketId))
           .run();
-        recordTicketChange(tx, event, {summary: event.summary});
+        // Whether the submitter was told. A quiet resolution is usually
+        // tidying up - the historic backlog was closed this way - so pages
+        // that report recent activity can leave those out.
+        recordTicketChange(tx, event, {
+          summary: event.summary,
+          quiet: event.quiet ? 'true' : 'false',
+        });
         break;
       }
       case 'TroubleTicketParked': {

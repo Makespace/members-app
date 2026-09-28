@@ -79,6 +79,10 @@ export const constructViewModel =
           .filter(
             row =>
               row.eventType === 'TroubleTicketResolved' &&
+              // Quiet resolutions are tidying up rather than work anybody
+              // did on the machine: counting them would say a machine is
+              // being looked after when its old tickets were merely closed.
+              row.details.quiet !== 'true' &&
               DateTime.fromJSDate(row.at) >= since
           ).length;
         return {
