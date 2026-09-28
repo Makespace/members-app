@@ -7,6 +7,11 @@ export {about} from './about';
 export {superUsers} from './super-users';
 export {equipment} from './equipment';
 export {equipmentTraining} from './equipment-training';
+export {
+  equipmentTrainedUsers,
+  equipmentQuizResults,
+  equipmentFailedQuizzes,
+} from './equipment-people';
 export {equipmentCatalogue} from './equipment-catalogue';
 export {community} from './community';
 export {members} from './members';
