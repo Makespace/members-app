@@ -72,7 +72,7 @@ describe('printable equipment signs', () => {
       expect(text).toContain('Trouble tickets');
       // Each title carries a line saying what scanning gets you.
       expect(text).toContain('view active issues');
-      expect(text).toContain('pass the equipment quiz online');
+      expect(text).toContain('Pass the online quiz');
     });
 
     it('reads down the sign in the order a member meets the machine', () => {
@@ -109,7 +109,7 @@ describe('printable equipment signs', () => {
         ).replace(/\s+/g, ' ');
 
         expect(text).toContain('You must be trained to use this equipment!');
-        expect(text).toContain('pass the equipment quiz online');
+        expect(text).toContain('Pass the online quiz');
       });
 
       it('tells orange equipment it is members only, with no code to scan', () => {

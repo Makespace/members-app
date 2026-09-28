@@ -165,9 +165,8 @@ const trainingBlock = (sign: Sign) => {
         variant: 'train',
         icon: capIcon,
         title: 'Get trained',
-        note: html`<b>You must be trained to use this equipment!</b> To get
-          trained, pass the equipment quiz online and then attend an in-person
-          training session.`,
+        note: html`<b>You must be trained to use this equipment!</b> Pass the
+          online quiz, then attend an in-person training session.`,
       });
     case 'orange':
       return scanBlock({

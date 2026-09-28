@@ -107,6 +107,28 @@ describe('the signs stylesheet', () => {
     expect(printBlock).toContain('break-after: page');
   });
 
+  // The line under each title is what a member actually reads once they are
+  // close enough to scan, so it is set at least as large as the sign's own
+  // base size rather than as small print.
+  it('sets the descriptions at reading size', () => {
+    const rule = (selector: string) => {
+      const from = screenCss.slice(screenCss.indexOf(selector));
+      return from.slice(0, from.indexOf('}'));
+    };
+    const fontSize = (selector: string) =>
+      Number(/font-size:\s*([0-9.]+)em/.exec(rule(selector))?.[1] ?? '0');
+
+    expect(fontSize('.sign__scan-note {')).toBeGreaterThanOrEqual(1);
+    // Still smaller than the heading it sits under, and bigger than the
+    // address it sits above.
+    expect(fontSize('.sign__scan-note {')).toBeLessThan(
+      fontSize('.sign__scan-title {')
+    );
+    expect(fontSize('.sign__scan-note {')).toBeGreaterThan(
+      fontSize('.sign__url {')
+    );
+  });
+
   it('sizes the sign from paper rather than screen units', () => {
     expect(css).toContain('--sign-w: 105mm');
     expect(css).toContain('--sign-font');
