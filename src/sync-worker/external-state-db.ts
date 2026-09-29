@@ -1,6 +1,7 @@
 import {addGmailMessageColumns, createGmailTables} from './gmail/gmail-message-table';
 import {Client} from '@libsql/client';
 import {drizzle} from 'drizzle-orm/libsql';
+import {sql} from 'drizzle-orm';
 import {
   createTables as createGoogleTables,
   sheetDataTable,
@@ -9,8 +10,11 @@ import {
 } from './google/sheet-data-table';
 import {
   addRecurlyColumns,
+  createRecurlyIndexes,
   createTables as createRecurlyTables,
+  rebuildBillingCaches,
   recurlyInvoiceTable,
+  RECURLY_CACHE_SCHEMA_VERSION,
   recurlySubscriptionTable,
   recurlySyncMetadataTable,
   recurlyTransactionTable,
@@ -51,6 +55,18 @@ const ensureGoogleDBTablesExist =
     }
   };
 
+// What shape the invoice and transaction caches are currently in. A database
+// that predates the version table reads as 0, which is correct: it was built
+// before any of this existed.
+const recurlyCacheVersion = async (extDB: ExternalStateDB): Promise<number> => {
+  // .all rather than .get: drizzle cannot map an absent row, and an absent row
+  // is exactly the case here on a database that has never been migrated.
+  const rows = await extDB.all<{version: number}>(
+    sql`SELECT version FROM recurly_schema_version WHERE id = 1;`
+  );
+  return rows[0]?.version ?? 0;
+};
+
 const ensureRecurlyDBTablesExist =
   async (extDB: ExternalStateDB) => {
     for (const statement of createRecurlyTables) {
@@ -61,6 +77,21 @@ const ensureRecurlyDBTablesExist =
     for (const statement of addRecurlyColumns) {
       await runForgivingDuplicateColumn(extDB, statement);
     }
+    // See RECURLY_CACHE_SCHEMA_VERSION: some changes cannot be expressed as an
+    // ALTER, and these two tables are cheap enough to refetch.
+    if ((await recurlyCacheVersion(extDB)) < RECURLY_CACHE_SCHEMA_VERSION) {
+      for (const statement of rebuildBillingCaches) {
+        await extDB.run(statement);
+      }
+    }
+    // Last, so that every column an index names is certain to exist by now.
+    for (const statement of createRecurlyIndexes) {
+      await extDB.run(statement);
+    }
+    await extDB.run(
+      sql`INSERT INTO recurly_schema_version (id, version) VALUES (1, ${RECURLY_CACHE_SCHEMA_VERSION})
+          ON CONFLICT (id) DO UPDATE SET version = ${RECURLY_CACHE_SCHEMA_VERSION};`
+    );
   };
 
 export const initExternalStateDB = (client: Client) =>

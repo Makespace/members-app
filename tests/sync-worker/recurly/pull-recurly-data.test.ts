@@ -345,7 +345,7 @@ describe('pull recurly data', () => {
     expect(rows[0]?.dueAt).toEqual(new Date('2026-08-01T00:00:00.000Z'));
   });
 
-  it('skips invoices with no usable account email', async () => {
+  it('keeps invoices whose account email is missing or unusable', async () => {
     const [createRecurlyClient] = recurlyClientFactory({
       invoices: [
         {id: 'inv_1', account: {id: 'acct_1', email: 'not an email'}, state: 'open'},
@@ -360,7 +360,120 @@ describe('pull recurly data', () => {
       createRecurlyClient
     )(Duration.fromMillis(0));
 
-    expect(await extDB.select().from(recurlyInvoiceTable).all()).toHaveLength(0);
+    // Dropping these would lose the billing history and hide the gap.
+    const rows = await extDB.select().from(recurlyInvoiceTable).all();
+    expect(rows).toHaveLength(2);
+    expect(rows.map(row => row.email)).toEqual([null, null]);
+    expect(rows.map(row => row.accountId)).toEqual(['acct_1', 'acct_2']);
+  });
+
+  it('matches an invoice to its member by account id when Recurly gave no address', async () => {
+    const [createRecurlyClient] = recurlyClientFactory({
+      accounts: [{id: 'acct_1', email: 'payer@example.com'}],
+      invoices: [{id: 'inv_1', account: {id: 'acct_1'}, state: 'past_due'}],
+    });
+
+    await pullRecurlyData(
+      createLogger({level: 'silent'}),
+      extDB,
+      'token',
+      createRecurlyClient
+    )(Duration.fromMillis(0));
+
+    const row = await extDB
+      .select()
+      .from(recurlyInvoiceTable)
+      .where(eq(recurlyInvoiceTable.id, 'inv_1'))
+      .get();
+    expect(row?.email).toBe('payer@example.com');
+  });
+
+  it('matches a transaction to its member through the invoice it paid', async () => {
+    const [createRecurlyClient] = recurlyClientFactory({
+      invoices: [
+        {
+          id: 'inv_1',
+          account: {id: 'acct_1', email: 'payer@example.com'},
+          state: 'past_due',
+        },
+      ],
+      // No account on the transaction at all - only the invoice it belongs to.
+      transactions: [{id: 'tx_1', invoice: {id: 'inv_1'}, status: 'declined'}],
+    });
+
+    await pullRecurlyData(
+      createLogger({level: 'silent'}),
+      extDB,
+      'token',
+      createRecurlyClient
+    )(Duration.fromMillis(0));
+
+    const row = await extDB
+      .select()
+      .from(recurlyTransactionTable)
+      .where(eq(recurlyTransactionTable.id, 'tx_1'))
+      .get();
+    expect(row?.email).toBe('payer@example.com');
+  });
+
+  it('matches up rows left over from an earlier pull once the account arrives', async () => {
+    // The invoice turns up before anything knows whose account it is.
+    const [firstClient] = recurlyClientFactory({
+      invoices: [{id: 'inv_1', account: {id: 'acct_1'}, state: 'past_due'}],
+    });
+    await pullRecurlyData(
+      createLogger({level: 'silent'}),
+      extDB,
+      'token',
+      firstClient
+    )(Duration.fromMillis(0));
+    const before = await extDB
+      .select()
+      .from(recurlyInvoiceTable)
+      .where(eq(recurlyInvoiceTable.id, 'inv_1'))
+      .get();
+    expect(before?.email).toBeNull();
+
+    // A later cycle sees the account, and the old row is picked up even though
+    // the invoice itself was not fetched again.
+    const [secondClient] = recurlyClientFactory({
+      accounts: [{id: 'acct_1', email: 'payer@example.com'}],
+    });
+    await pullRecurlyData(
+      createLogger({level: 'silent'}),
+      extDB,
+      'token',
+      secondClient
+    )(Duration.fromMillis(0));
+
+    const after = await extDB
+      .select()
+      .from(recurlyInvoiceTable)
+      .where(eq(recurlyInvoiceTable.id, 'inv_1'))
+      .get();
+    expect(after?.email).toBe('payer@example.com');
+  });
+
+  it('leaves a genuinely unmatchable row alone rather than guessing', async () => {
+    const [createRecurlyClient] = recurlyClientFactory({
+      accounts: [{id: 'acct_other', email: 'somebody@example.com'}],
+      transactions: [{id: 'tx_1', account: {id: 'acct_unknown'}, status: 'declined'}],
+    });
+
+    await pullRecurlyData(
+      createLogger({level: 'silent'}),
+      extDB,
+      'token',
+      createRecurlyClient
+    )(Duration.fromMillis(0));
+
+    const row = await extDB
+      .select()
+      .from(recurlyTransactionTable)
+      .where(eq(recurlyTransactionTable.id, 'tx_1'))
+      .get();
+    expect(row?.email).toBeNull();
+    expect(row?.accountId).toBe('acct_unknown');
   });
 
   it('caches the payment attempt behind an unpaid invoice, card expiry included', async () => {
