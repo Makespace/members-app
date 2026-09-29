@@ -14,6 +14,11 @@ type ChangeLogEntry = {
 
 export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
+    date: '2026-09-29',
+    headline:
+      'Trainers can find a member by number, name or email on the quiz-results page and mark them trained without leaving it',
+  },
+  {
     date: '2026-09-25',
     headline:
       'Log in with your member number as well as your email address - the link still goes to the address we hold for you',

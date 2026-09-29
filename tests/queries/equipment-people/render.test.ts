@@ -9,9 +9,30 @@ import {
   renderQuizResults,
   renderTrainedUsers,
 } from '../../../src/queries/equipment-people/render';
-import {ViewModel} from '../../../src/queries/equipment-people/construct-view-model';
+import {
+  TrainingRow,
+  ViewModel,
+} from '../../../src/queries/equipment-people/construct-view-model';
 
 const equipmentId = 'eeeeeeee-0000-0000-0000-000000000001' as UUID;
+
+const waitingMember: TrainingRow = {
+  kind: 'member',
+  person: {
+    name: O.some('A Waiting Member'),
+    memberNumber: 4321,
+    primaryEmailAddress: O.some('waiting@example.com' as EmailAddress),
+  },
+  standing: {kind: 'passed', at: new Date('2026-09-01')},
+};
+
+const unknownPass: TrainingRow = {
+  kind: 'unknown',
+  waitingSince: new Date('2026-09-02'),
+  memberNumberProvided: O.some(999999),
+  emailProvided: O.some('someone@example.com'),
+  possibleMatch: O.none,
+};
 
 const viewModel = (overrides: Partial<ViewModel> = {}): ViewModel => ({
   equipment: {id: equipmentId, name: 'Band Saw'},
@@ -29,21 +50,8 @@ const viewModel = (overrides: Partial<ViewModel> = {}): ViewModel => ({
     ...member,
     primaryEmailAddress: O.some(member.primaryEmailAddress),
   })),
-  waiting: [
-    {
-      name: O.some('A Waiting Member'),
-      memberNumber: 4321,
-      primaryEmailAddress: O.some('waiting@example.com' as EmailAddress),
-      waitingSince: new Date('2026-09-01'),
-    },
-  ],
-  waitingUnknown: [
-    {
-      waitingSince: new Date('2026-09-02'),
-      memberNumberProvided: O.none,
-      emailProvided: O.some('someone@example.com'),
-    },
-  ],
+  waiting: [unknownPass, waitingMember],
+  search: O.none,
   failed: [
     {
       completedAt: new Date('2026-09-03'),
@@ -120,25 +128,90 @@ describe('the people pages for a machine', () => {
   });
 
   describe('training quiz results', () => {
-    const results = () => page(renderQuizResults(viewModel()));
+    const results = (overrides: Partial<ViewModel> = {}) =>
+      page(renderQuizResults(viewModel(overrides)));
 
     it('offers a trainer the way to mark somebody trained', () => {
       expect(
-        results().querySelectorAll('form[action="/equipment/mark-member-trained"]')
+        results().querySelectorAll(
+          'form.training-mark[action^="/equipment/mark-member-trained"]'
+        )
       ).toHaveLength(1);
     });
 
+    // Back to this page, not to the areas page, once the press has landed.
+    it('sends the press back to this page', () => {
+      const form = results().querySelector('form.training-mark');
+
+      expect(form?.getAttribute('action')).toBe(
+        `/equipment/mark-member-trained?next=${encodeURIComponent(
+          `/equipment/${equipmentId}/quiz-results`
+        )}`
+      );
+    });
+
+    it('keeps the search in the way back', () => {
+      const form = results({
+        search: O.some({query: 'a waiting', results: [waitingMember]}),
+      }).querySelector('form.training-mark');
+
+      expect(form?.getAttribute('action')).toBe(
+        `/equipment/mark-member-trained?next=${encodeURIComponent(
+          `/equipment/${equipmentId}/quiz-results?q=a%20waiting`
+        )}`
+      );
+    });
+
     // Quizzes passed by somebody the app could not match are people waiting
-    // too, so they belong here rather than under the failures.
-    it('keeps the unmatched passes with the rest of the passes', () => {
-      const headings = [...results().querySelectorAll('h2')].map(node =>
+    // too, so they sit in the same table as everybody else.
+    it('keeps the unmatched passes in the one waiting table', () => {
+      const body = results();
+      const headings = [...body.querySelectorAll('h2')].map(node =>
         (node.textContent ?? '').trim()
       );
+      const rows = body.querySelectorAll('.training-table tr');
 
-      expect(headings).toStrictEqual([
-        'Waiting for training',
-        'Waiting for training - unknown member',
-      ]);
+      expect(headings).toStrictEqual(['Waiting for training']);
+      // A header row, the unknown pass and the known member.
+      expect(rows).toHaveLength(3);
+    });
+
+    it('marks an unmatched pass with the number as typed and a ?', () => {
+      const row = results().querySelector('tr.training-row--unknown');
+
+      expect(row?.querySelector('a[href="/member/999999/"]')).not.toBeNull();
+      expect(row?.textContent).toContain('?');
+      expect(row?.textContent).toContain('no member has this number');
+      expect(row?.textContent).toContain('someone@example.com');
+      // Nobody to mark: the button is there but cannot be pressed.
+      const button = row?.querySelector('button');
+      expect(button?.hasAttribute('disabled')).toBe(true);
+      expect(row?.querySelector('form')).toBeNull();
+    });
+
+    it('says whose address an unmatched pass carries, when it is somebody\'s', () => {
+      const row = results({
+        waiting: [
+          {
+            ...unknownPass,
+            possibleMatch: O.some({
+              name: O.some('A Real Member'),
+              memberNumber: 4321,
+              primaryEmailAddress: O.some('someone@example.com' as EmailAddress),
+            }),
+          },
+        ],
+      }).querySelector('tr.training-row--unknown');
+
+      expect(row?.textContent).toContain('Might be A Real Member');
+      expect(row?.querySelector('a[href="/member/4321/"]')).not.toBeNull();
+    });
+
+    it('explains the ? only when there is one to explain', () => {
+      expect(results().textContent).toContain('A row marked ?');
+      expect(results({waiting: [waitingMember]}).textContent).not.toContain(
+        'A row marked ?'
+      );
     });
 
     it('does not mention the failures', () => {
@@ -147,6 +220,106 @@ describe('the people pages for a machine', () => {
 
     it('says when the results were last pulled', () => {
       expect(results().textContent).toContain('Last refresh');
+    });
+
+    it('carries the page script only for somebody who can press the button', () => {
+      expect(results().querySelector('script')).not.toBeNull();
+      expect(results({isTrainer: false}).querySelector('script')).toBeNull();
+    });
+
+    describe('the search', () => {
+      it('offers a search box that keeps what was typed', () => {
+        const input = results({
+          search: O.some({query: 'sam', results: []}),
+        }).querySelector<HTMLInputElement>('form.training-search input[name="q"]');
+
+        expect(input?.value).toBe('sam');
+        expect(input?.getAttribute('placeholder')).toBe(
+          'Member number, name or email'
+        );
+      });
+
+      it('says so when nobody matches', () => {
+        expect(
+          results({search: O.some({query: 'zzz', results: []})}).textContent
+        ).toContain('Nobody matches “zzz”');
+      });
+
+      it('shows a match who has passed with the button ready', () => {
+        const table = results({
+          search: O.some({query: 'waiting', results: [waitingMember]}),
+        }).querySelectorAll('.training-table')[0];
+
+        expect(table.textContent).toContain('A Waiting Member');
+        expect(
+          table.querySelector('form.training-mark button')?.hasAttribute('disabled')
+        ).toBe(false);
+      });
+
+      // Somebody who matches the search but has not passed is still shown:
+      // an empty table would not say whether the search or the person failed.
+      it('shows a match who has not passed, with the button greyed out', () => {
+        const table = results({
+          search: O.some({
+            query: 'newcomer',
+            results: [
+              {
+                kind: 'member',
+                person: {
+                  name: O.some('A Newcomer'),
+                  memberNumber: 7777,
+                  primaryEmailAddress: O.some('new@example.com' as EmailAddress),
+                },
+                standing: {kind: 'not-passed'},
+              },
+            ],
+          }),
+        }).querySelectorAll('.training-table')[0];
+        const button = table.querySelector('button.training-mark__disabled');
+
+        expect(table.textContent).toContain('A Newcomer');
+        expect(table.textContent).toContain('No pass in the last year');
+        expect(button?.hasAttribute('disabled')).toBe(true);
+        expect(button?.getAttribute('title')).toBe(
+          'They have not passed the quiz yet'
+        );
+        expect(table.querySelector('form.training-mark')).toBeNull();
+      });
+
+      it('shows a match who is already trained as such', () => {
+        const table = results({
+          search: O.some({
+            query: 'trained',
+            results: [
+              {
+                kind: 'member',
+                person: {
+                  name: O.some('A Trained Member'),
+                  memberNumber: 1234,
+                  primaryEmailAddress: O.some(
+                    'trained@example.com' as EmailAddress
+                  ),
+                },
+                standing: {kind: 'trained', since: new Date('2026-03-04')},
+              },
+            ],
+          }),
+        }).querySelectorAll('.training-table')[0];
+
+        expect(table.textContent).toContain('Already trained');
+        const button = table.querySelector('button.training-mark__disabled');
+        expect(button?.textContent?.trim()).toBe('Trained');
+        expect(button?.hasAttribute('disabled')).toBe(true);
+      });
+
+      it('shows the waiting table under the results, untouched', () => {
+        const tables = results({
+          search: O.some({query: 'zzz', results: []}),
+        }).querySelectorAll('.training-table');
+
+        expect(tables).toHaveLength(1);
+        expect(tables[0].textContent).toContain('A Waiting Member');
+      });
     });
   });
 

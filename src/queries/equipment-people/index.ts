@@ -2,6 +2,7 @@ import * as t from 'io-ts';
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
+import * as O from 'fp-ts/Option';
 import {StatusCodes} from 'http-status-codes';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {failureWithStatus} from '../../types/failure-with-status';
@@ -31,7 +32,7 @@ const peoplePage = (
   trainersOnly: boolean
 ): Query =>
   deps =>
-  (user, params) =>
+  (user, params, queryParams) =>
     pipe(
       params,
       t.strict({equipment: t.string}).decode,
@@ -45,7 +46,12 @@ const peoplePage = (
         )
       ),
       TE.fromEither,
-      TE.chain(constructViewModel(deps, user)),
+      TE.chain(equipmentId =>
+        constructViewModel(deps, user)(
+          equipmentId,
+          O.fromNullable(queryParams.q)
+        )
+      ),
       TE.filterOrElse(
         viewModel => !trainersOnly || viewModel.isTrainerOrOwner,
         () =>
