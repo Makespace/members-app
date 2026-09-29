@@ -1381,6 +1381,15 @@ label img {
   margin: 0;
 }
 
+/* An answer can carry a word the page cannot break - a tracking link a
+   thousand characters long, pasted in from an email - and a grid item's
+   minimum width is its content, so the answer grew past its column and out
+   of the card. Let it break anywhere, and let the column hold it. */
+.trouble-ticket-card dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .trouble-ticket-card--todo {
   border-left-color: var(--grey-color);
 }

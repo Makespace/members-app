@@ -21,6 +21,7 @@ const ticket = (
   submittedName: 'Sam Submitter',
   submittedMemberNumber: 42,
   submittedEmail: 'sam@example.com',
+  mailboxConversationId: null,
   equipmentName: O.some('Bandsaw'),
   equipmentCategory: O.some('red' as const),
   areaName: O.some('Wood Shop'),
@@ -68,6 +69,29 @@ const renderBoard = (vm: ViewModel) => {
   body.innerHTML = render(vm);
   return body;
 };
+
+// A ticket raised from the mailbox is one step removed from the email that
+// prompted it, where the sender's own words and any reply live.
+describe('where a ticket came from', () => {
+  const cardFor = (overrides: Partial<TroubleTicketView>) =>
+    renderBoard(viewModel([{...ticket(), ...overrides}]));
+
+  it('links a ticket raised from the mailbox back to its conversation', () => {
+    const link = cardFor({
+      mailboxConversationId: 'first-message',
+    }).querySelector('a[href^="/mailbox/"]');
+
+    expect(link?.getAttribute('href')).toBe('/mailbox/first-message');
+    expect(link?.textContent?.trim()).toBe('an email in the mailbox');
+  });
+
+  it('says nothing of the mailbox for a ticket raised any other way', () => {
+    const card = cardFor({mailboxConversationId: null});
+
+    expect(card.querySelector('a[href^="/mailbox/"]')).toBeNull();
+    expect(card.textContent).not.toContain('Raised from');
+  });
+});
 
 // Opened from a machine, the page says so and offers the way back out.
 // An owner reading a ticket usually wants to know who this is and what else

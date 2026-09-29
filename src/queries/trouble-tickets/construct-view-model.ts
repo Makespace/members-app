@@ -236,6 +236,7 @@ const toView =
       submittedName: ticket.submittedName,
       submittedMemberNumber: ticket.submittedMemberNumber,
       submittedEmail: ticket.submittedEmail,
+      mailboxConversationId: ticket.mailboxConversationId,
       equipmentName,
       equipmentCategory,
       areaName: pipe(
