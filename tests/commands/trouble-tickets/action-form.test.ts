@@ -120,6 +120,53 @@ describe('trouble-ticket action form (assign)', () => {
     );
   });
 
+  // Before anything is sent, the page says who will be emailed and shows
+  // the email - from the notifier's own code, so it cannot drift.
+  describe('what the page says about the email', () => {
+    it('says no email will go out when nobody has an address', async () => {
+      const page = pipe(
+        await getTaskEitherRightOrFail(constructFor(trainer, ticketId)),
+        assignForm.renderForm
+      );
+
+      expect(page.body).toContain('No email will be sent');
+      expect(page.body).not.toContain('Subject:');
+    });
+
+    it('names the recipient and shows the email, with the actor in it', async () => {
+      const withSubmitter = faker.string.uuid() as UUID;
+      await framework.commands.troubleTickets.record({
+        id: withSubmitter,
+        rowHash: faker.string.alphanumeric(64) as NonEmptyString,
+        sheetId: faker.string.alphanumeric(10) as NonEmptyString,
+        submittedAt: faker.date.past(),
+        submittedMemberNumber: null,
+        submittedEmail: 'sam@example.com',
+        submittedName: 'Sam Submitter',
+        submittedEquipment: 'Metal Lathe',
+        otherEquipmentDetail: '',
+        status: 'Down',
+        attempting: '',
+        issue: 'Lathe chuck is loose',
+        steps: '',
+      });
+
+      const viewModel = await getTaskEitherRightOrFail(
+        constructFor(trainer, withSubmitter)
+      );
+      const page = pipe(viewModel, assignForm.renderForm);
+
+      expect(viewModel.email.recipients).toEqual(['sam@example.com']);
+      expect(page.body).toContain('An email will be sent to');
+      expect(page.body).toContain('sam@example.com');
+      expect(page.body).toContain('Trouble ticket update: Lathe chuck is loose');
+      expect(page.body).toContain(
+        `Member ${trainer.memberNumber} is now working on this ticket`
+      );
+      expect(page.body).toContain('(what you write below)');
+    });
+  });
+
   it('renders the confirmation form for the ticket', async () => {
     const viewModel = await getTaskEitherRightOrFail(
       constructFor(trainer, ticketId)

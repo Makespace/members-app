@@ -465,6 +465,10 @@ const TroubleTicketNotificationSent = defineEvent(
   {
     ticketId: tt.UUID,
     notifiedEventIndex: t.number,
+    // Who the notification went to, so the ticket's history can say. Empty
+    // for markers recorded before this was kept, and when nobody had an
+    // address to send to.
+    recipients: tt.withFallback(t.array(t.string), []),
   }
 );
 

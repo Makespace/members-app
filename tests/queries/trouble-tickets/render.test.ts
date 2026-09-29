@@ -213,58 +213,87 @@ describe('the board pointed at one machine', () => {
   });
 });
 
+// Nothing on the card sends an email. Every change goes through its
+// confirmation page, which says who will be emailed and what it will say -
+// the one-click "resolve silently" went round that, and is gone.
 describe('/trouble-tickets board actions', () => {
-  const silentForm = (dom: HTMLElement) =>
-    dom.querySelector<HTMLFormElement>('form.tt-quiet-resolve');
-
-  it.each(['Todo', 'In Progress', 'Needs Help', 'Parked'] as const)(
-    'offers a one-click silent resolve on a %s ticket',
-    status => {
-      const dom = renderBoard(viewModel([ticket({status})]));
-      const form = silentForm(dom);
-      expect(form).not.toBeNull();
-      expect(form?.getAttribute('action')).toBe(
-        '/trouble-tickets/resolve?next=/trouble-tickets/board'
-      );
-      expect(form?.getAttribute('method')).toBe('post');
-    }
-  );
-
-  it('posts the ticket id with quiet set and no summary, so nobody is emailed', () => {
-    const subject = ticket();
-    const form = silentForm(renderBoard(viewModel([subject])));
-    const values = Object.fromEntries(
-      [
-        ...(form?.querySelectorAll<HTMLInputElement>(
-          'input[type="hidden"]'
-        ) ?? []),
-      ].map(input => [input.name, input.value])
-    );
-    expect(values).toStrictEqual({
-      ticketId: subject.id,
-      quiet: 'on',
-      summary: '',
-    });
-  });
-
-  it('says what it does, so it is not confused with the ordinary Resolve', () => {
+  it('offers no one-click resolve; every action goes through its page', () => {
     const dom = renderBoard(viewModel([ticket()]));
-    expect(silentForm(dom)?.textContent).toContain('Resolve silently');
-    expect(silentForm(dom)?.textContent).toContain(
-      'without emailing the submitter'
-    );
-    // The ordinary Resolve, which opens the confirmation page, is still there.
+
+    expect(dom.querySelector('form.tt-quiet-resolve')).toBeNull();
+    expect(dom.querySelectorAll('form')).toHaveLength(0);
     expect(
       dom.querySelector('a[href^="/trouble-tickets/resolve?"]')
     ).not.toBeNull();
   });
 
-  it('is not offered on a resolved ticket, nor to a viewer who cannot act', () => {
+  it('says on each action who it will email', () => {
+    const hints = [
+      ...renderBoard(
+        viewModel([ticket({status: 'In Progress'})])
+      ).querySelectorAll('a.tt-action'),
+    ].map(link => link.getAttribute('title') ?? '');
+
+    expect(hints.length).toBeGreaterThan(0);
+    for (const hint of hints) {
+      expect(hint).toMatch(/^Emails the submitter/);
+    }
+    expect(hints).toContain("Emails the submitter and the machine's trainers");
+  });
+
+  it('offers no actions on a resolved ticket, nor to a viewer who cannot act', () => {
     expect(
-      silentForm(renderBoard(viewModel([ticket({status: 'Resolved'})])))
+      renderBoard(viewModel([ticket({status: 'Resolved'})])).querySelector(
+        'a.tt-action'
+      )
     ).toBeNull();
     expect(
-      silentForm(renderBoard(viewModel([ticket({canChangeStatus: false})])))
+      renderBoard(viewModel([ticket({canChangeStatus: false})])).querySelector(
+        'a.tt-action'
+      )
     ).toBeNull();
   });
 });
+
+// The change log says who was told about each change, so nobody has to
+// wonder whether an email went out or to whom.
+describe('what the change log says about emails', () => {
+  const entry = (over: Partial<TroubleTicketView['changeLog'][number]>) => ({
+    at: new Date('2026-09-02T10:00:00.000Z'),
+    actor: 'Tara Trainer',
+    summary: 'marked this ticket as Resolved',
+    details: [],
+    status: 'Resolved' as TroubleTicketStatus,
+    emailedTo: null,
+    quiet: false,
+    ...over,
+  });
+
+  const logOf = (over: Partial<TroubleTicketView['changeLog'][number]>) =>
+    renderBoard(viewModel([ticket({changeLog: [entry(over)]})])).querySelector(
+      '.tt-emailed'
+    );
+
+  it('names who was emailed', () => {
+    expect(logOf({emailedTo: ['sam@example.com']})?.textContent?.trim()).toBe(
+      'Emailed sam@example.com'
+    );
+  });
+
+  it('says when nobody could be emailed', () => {
+    expect(logOf({emailedTo: []})?.textContent?.trim()).toBe(
+      'No email sent: nobody had a usable address.'
+    );
+  });
+
+  it('says when a resolve was quiet by choice', () => {
+    expect(logOf({emailedTo: null, quiet: true})?.textContent?.trim()).toBe(
+      'No email sent: resolved quietly.'
+    );
+  });
+
+  it('says nothing while an email is still to be sent', () => {
+    expect(logOf({emailedTo: null, quiet: false})).toBeNull();
+  });
+});
+

@@ -76,6 +76,8 @@ const buildChangeLog = (
           status,
           at,
           actor,
+          emailedTo: row.emailedTo,
+          quiet: row.details.quiet === 'true',
           summary: movedToInProgress
             ? 'assigned themselves and set the ticket to In Progress'
             : 'assigned themselves to this ticket',
@@ -91,6 +93,8 @@ const buildChangeLog = (
           status,
           at,
           actor,
+          emailedTo: row.emailedTo,
+          quiet: row.details.quiet === 'true',
           summary: 'marked this ticket as Resolved',
           // A quiet resolve carries no summary - show nothing rather than an
           // empty labelled line.
@@ -105,6 +109,8 @@ const buildChangeLog = (
           status,
           at,
           actor,
+          emailedTo: row.emailedTo,
+          quiet: row.details.quiet === 'true',
           summary: 'parked this ticket',
           details: [
             {label: 'Why parked', value: row.details.whyParked ?? ''},
@@ -125,6 +131,8 @@ const buildChangeLog = (
           status,
           at,
           actor,
+          emailedTo: row.emailedTo,
+          quiet: row.details.quiet === 'true',
           summary: 'marked this ticket as Needs Help and unassigned themselves',
           details: [
             {label: 'They tried', value: row.details.whatTried ?? ''},
@@ -140,6 +148,8 @@ const buildChangeLog = (
           status,
           at,
           actor,
+          emailedTo: row.emailedTo,
+          quiet: row.details.quiet === 'true',
           summary: row.details.equipmentId
             ? 'changed the equipment for this ticket'
             : 'removed the equipment from this ticket',
@@ -151,6 +161,8 @@ const buildChangeLog = (
           status,
           at,
           actor,
+          emailedTo: row.emailedTo,
+          quiet: row.details.quiet === 'true',
           summary: `renamed this ticket to "${row.details.title ?? ''}"`,
           details: [],
         });

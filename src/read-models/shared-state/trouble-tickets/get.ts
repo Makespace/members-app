@@ -21,6 +21,9 @@ export type TroubleTicketChangeRow = {
   actor: Actor;
   eventType: string;
   details: Record<string, string>;
+  // Who was emailed about this change; null when no notification has been
+  // recorded for it - not yet sent, or never to be.
+  emailedTo: ReadonlyArray<string> | null;
 };
 
 // Change-log rows for the given tickets, oldest first. Reads the in-memory
@@ -31,19 +34,38 @@ export const getTroubleTicketChangeLog =
     if (ticketIds.length === 0) {
       return [];
     }
-    return db
+    const rows = db
       .select()
       .from(troubleTicketChangeLogTable)
       .where(inArray(troubleTicketChangeLogTable.ticketId, [...ticketIds]))
       .orderBy(troubleTicketChangeLogTable.eventIndex)
-      .all()
-      .map(row => ({
-        ticketId: row.ticketId,
-        at: row.at,
-        actor: JSON.parse(row.actorJson) as Actor,
-        eventType: row.eventType,
-        details: JSON.parse(row.detailsJson) as Record<string, string>,
-      }));
+      .all();
+    const notified = new Map(
+      rows.length === 0
+        ? []
+        : db
+            .select()
+            .from(troubleTicketNotificationsTable)
+            .where(
+              inArray(
+                troubleTicketNotificationsTable.notifiedEventIndex,
+                rows.map(row => row.eventIndex)
+              )
+            )
+            .all()
+            .map(row => [
+              row.notifiedEventIndex,
+              JSON.parse(row.recipientsJson) as ReadonlyArray<string>,
+            ])
+    );
+    return rows.map(row => ({
+      ticketId: row.ticketId,
+      at: row.at,
+      actor: JSON.parse(row.actorJson) as Actor,
+      eventType: row.eventType,
+      details: JSON.parse(row.detailsJson) as Record<string, string>,
+      emailedTo: notified.get(row.eventIndex) ?? null,
+    }));
   };
 
 type Row = typeof troubleTicketsTable.$inferSelect;

@@ -120,69 +120,92 @@ const statusBadge = (status: TroubleTicketStatus) =>
     >${safe(status)}</span
   >`;
 
-// Actions available from the card, depending on the ticket's current status. Each links to
-// a confirmation page (GET) that POSTs the corresponding command.
+// Actions available from the card, depending on the ticket's current status.
+// Each links to a confirmation page (GET) that says exactly who will be
+// emailed and what it will say, then POSTs the corresponding command. Nothing
+// on the card itself sends an email - every change goes through that page,
+// so nobody is surprised by what went out.
 const renderActions = (ticket: TroubleTicketView): Html => {
-  // Each action is a badge coloured by the status it moves the ticket to.
-  const action = (verb: string, label: string, targetSlug: string) =>
+  // Each action is a badge coloured by the status it moves the ticket to,
+  // and says on hover who hears about it.
+  const action = (
+    verb: string,
+    label: string,
+    targetSlug: string,
+    hint: string
+  ) =>
     html`<a
       class="tt-badge tt-badge--${safe(targetSlug)} tt-action"
       href="/trouble-tickets/${safe(verb)}?ticketId=${safe(ticket.id)}&next=/trouble-tickets/board"
+      title="${safe(hint)}"
       >${safe(label)}</a
     >`;
-  // Clearing the backlog of tickets that were dealt with long ago outside the
-  // app is a bulk job, so it skips the confirmation page: one click resolves
-  // the ticket without writing a summary or emailing anybody.
-  const resolveSilently = html`
-    <form
-      class="tt-quiet-resolve"
-      action="/trouble-tickets/resolve?next=/trouble-tickets/board"
-      method="post"
-    >
-      <input type="hidden" name="ticketId" value="${safe(ticket.id)}" />
-      <input type="hidden" name="summary" value="" />
-      <input type="hidden" name="quiet" value="on" />
-      <button
-        class="tt-badge tt-badge--${safe(STATUS_SLUG.Resolved)} tt-action"
-        type="submit"
-      >
-        Resolve silently
-      </button>
-      <small
-        >without emailing the submitter — for tickets already resolved outside
-        the app</small
-      >
-    </form>
-  `;
-  const inProgress = STATUS_SLUG['In Progress'];
+  const assign = (label: string) =>
+    action(
+      'assign',
+      label,
+      STATUS_SLUG['In Progress'],
+      'Emails the submitter that you are on it'
+    );
+  // Resolve is offered from every open status, not just In Progress, so a
+  // ticket that was actually dealt with long ago can be closed - quietly, via
+  // the page's checkbox - without first sending an "in progress" email.
+  const resolve = action(
+    'resolve',
+    'Resolve',
+    STATUS_SLUG.Resolved,
+    'Emails the submitter what you did - unless you choose not to'
+  );
   switch (ticket.status) {
-    // Resolve is offered from every open status, not just In Progress, so a
-    // ticket that was actually dealt with long ago can be closed (quietly,
-    // via the form's checkbox) without first sending an 'in progress' email.
     case 'Todo':
       return html`<div class="tt-actions">
-        ${action('assign', 'Mark In Progress', inProgress)}
-        ${action('resolve', 'Resolve', STATUS_SLUG.Resolved)} ${resolveSilently}
+        ${assign('Mark In Progress')} ${resolve}
       </div>`;
     case 'In Progress':
       return html`<div class="tt-actions">
-        ${action('resolve', 'Resolve', STATUS_SLUG.Resolved)}
-        ${action('needs-help', 'Needs Help', STATUS_SLUG['Needs Help'])}
-        ${action('park', 'Park', STATUS_SLUG.Parked)}
-        ${ticket.assignedToMe
-          ? html``
-          : action('assign', 'Assign to me', inProgress)}
-        ${resolveSilently}
+        ${resolve}
+        ${action(
+          'needs-help',
+          'Needs Help',
+          STATUS_SLUG['Needs Help'],
+          "Emails the submitter and the machine's trainers"
+        )}
+        ${action(
+          'park',
+          'Park',
+          STATUS_SLUG.Parked,
+          'Emails the submitter why it is parked'
+        )}
+        ${ticket.assignedToMe ? html`` : assign('Assign to me')}
       </div>`;
     case 'Needs Help':
     case 'Parked':
       return html`<div class="tt-actions">
-        ${action('assign', 'Mark In Progress', inProgress)}
-        ${action('resolve', 'Resolve', STATUS_SLUG.Resolved)} ${resolveSilently}
+        ${assign('Mark In Progress')} ${resolve}
       </div>`;
     case 'Resolved':
       return html``;
   }
+};
+
+// Whether anyone was told about a change, and who. A quiet resolve was
+// never going to email anybody; anything else is emailed within the
+// minute, and the record of who says so here once it has been.
+const renderEmailed = (entry: ChangeLogEntry): Html => {
+  if (entry.emailedTo !== null) {
+    return entry.emailedTo.length === 0
+      ? html`<small class="tt-emailed"
+          >No email sent: nobody had a usable address.</small
+        >`
+      : html`<small class="tt-emailed"
+          >Emailed ${sanitizeString(entry.emailedTo.join(', '))}</small
+        >`;
+  }
+  return entry.quiet
+    ? html`<small class="tt-emailed"
+        >No email sent: resolved quietly.</small
+      >`
+    : html``;
 };
 
 const renderChangeLog = (entries: ReadonlyArray<ChangeLogEntry>) => {
@@ -206,6 +229,7 @@ const renderChangeLog = (entries: ReadonlyArray<ChangeLogEntry>) => {
                   ${sanitizeString(entry.summary)}
                   <small>${displayDate(DateTime.fromJSDate(entry.at))}</small>
                 </div>
+                ${renderEmailed(entry)}
                 ${entry.details.length === 0
                   ? html``
                   : html`<ul class="tt-changelog__details">

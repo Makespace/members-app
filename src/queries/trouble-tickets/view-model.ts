@@ -20,6 +20,10 @@ export type ChangeLogEntry = {
   // The action, e.g. "assigned themselves and set the ticket to In Progress".
   summary: string;
   details: ReadonlyArray<ChangeLogDetail>;
+  // Who was emailed about it; null when no notification has been recorded.
+  emailedTo: ReadonlyArray<string> | null;
+  // A resolve that was never going to email anybody.
+  quiet: boolean;
   // The ticket's status immediately after this change - used to tint the entry.
   status: TroubleTicketStatus;
 };

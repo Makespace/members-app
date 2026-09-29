@@ -928,7 +928,10 @@ const _updateState =
       }
       case 'TroubleTicketNotificationSent': {
         tx.insert(troubleTicketNotificationsTable)
-          .values({notifiedEventIndex: event.notifiedEventIndex})
+          .values({
+            notifiedEventIndex: event.notifiedEventIndex,
+            recipientsJson: JSON.stringify(event.recipients),
+          })
           .onConflictDoNothing()
           .run();
         break;
