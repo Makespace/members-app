@@ -73,6 +73,19 @@ describe('styles.css', () => {
     }
   });
 
+  // A ticket's answer can carry an unbreakable word - a tracking link
+  // pasted in from an email - and a grid item's minimum width is its
+  // content, so the answer overflowed the card. Both halves are needed: the
+  // word must be allowed to break, and the column must be allowed to hold
+  // it.
+  it('lets a ticket answer break inside its column', () => {
+    const ddRule = /\.trouble-ticket-card dd\s*\{([^}]*)\}/.exec(code)?.[1];
+
+    expect(ddRule).toBeDefined();
+    expect(ddRule).toMatch(/overflow-wrap\s*:\s*anywhere/);
+    expect(ddRule).toMatch(/min-width\s*:\s*0/);
+  });
+
   it('nudges a pressed button without re-positioning it', () => {
     const activeRules = [...code.matchAll(/(^|\})\s*[^{}]*:active\s*\{([^}]*)\}/g)]
       .map(match => match[2]);

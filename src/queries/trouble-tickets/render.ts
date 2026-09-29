@@ -227,6 +227,18 @@ const renderChangeLog = (entries: ReadonlyArray<ChangeLogEntry>) => {
   `;
 };
 
+// A ticket raised from the mailbox is one step removed from the email that
+// prompted it. The conversation is where the sender's own words, any reply,
+// and the rest of the thread live, so the card says so and links there.
+const renderOrigin = (ticket: TroubleTicketView) =>
+  ticket.mailboxConversationId === null
+    ? html``
+    : html`<br /><strong>Raised from:</strong>
+        <a
+          href="/mailbox/${safe(encodeURIComponent(ticket.mailboxConversationId))}"
+          >an email in the mailbox</a
+        >`;
+
 const renderCard = (ticket: TroubleTicketView) => html`
   <article
     class="trouble-ticket-card trouble-ticket-card--${safe(
@@ -244,6 +256,7 @@ const renderCard = (ticket: TroubleTicketView) => html`
       <strong>Submitted by:</strong> ${renderSubmitter(ticket)} on
       ${displayDate(DateTime.fromJSDate(ticket.submittedAt))}<br />
       <strong>Assigned:</strong> ${renderAssignees(ticket.assignees)}
+      ${renderOrigin(ticket)}
     </p>
     <dl>
       <dt><strong>Machine status</strong></dt>
