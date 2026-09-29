@@ -16,6 +16,11 @@ export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
     date: '2026-09-29',
     headline:
+      "A machine's open trouble tickets can now be shown on an e-ink display mounted on it (trial)",
+  },
+  {
+    date: '2026-09-29',
+    headline:
       "Super-users can see a member's invoices, and why an unpaid one has not gone through",
   },
   {

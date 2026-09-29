@@ -41,6 +41,8 @@ export const render = () => html`
       done(html`Printable signs for each machine: its name, what its colour
       means, and QR codes for learning about it, getting trained on it, and
       reporting a problem`),
+      done(html`Show a machine's open trouble tickets on an e-ink
+      display mounted on it (trial)`),
       todo(html`Let members follow the tickets they've reported`),
       todo(html`Mark a ticket as sensitive and hide it, rather than hiding
       every ticket that came from management email - so members can see the
