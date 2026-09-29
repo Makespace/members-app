@@ -1410,6 +1410,31 @@ label img {
   border-left-color: var(--green-color);
 }
 
+/* Before an action is taken, the page says who will be emailed and shows
+   the email itself, word for word. */
+.tt-email-notice {
+  border-left: 5px solid var(--yellow-color);
+  padding: 0.75rem 1rem;
+  background: color-mix(in oklch, white 92%, var(--yellow-color));
+}
+
+.tt-email-preview {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border: 1px solid var(--border-color);
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+/* In the change log: who was told about a change, or that nobody was. */
+.tt-emailed {
+  display: block;
+  color: var(--grey-color);
+}
+
 /* Status badges (used on cards and as filter chips) */
 .tt-badge {
   display: inline-block;

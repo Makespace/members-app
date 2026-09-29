@@ -4,11 +4,18 @@ import {pipe} from 'fp-ts/lib/function';
 import mjml2html from 'mjml';
 import {constructEvent, Email} from '../types';
 import {Actor} from '../types/actor';
-import {EmailAddress, EmailAddressCodec} from '../types/email-address';
+import {EmailAddress} from '../types/email-address';
 import {SharedReadModel} from '../read-models/shared-state';
 import {TroubleTicket} from '../types/trouble-ticket';
 import {StoredEventOfType} from '../types/domain-event';
 import {SyncWorkerDependencies} from './dependencies';
+import {
+  describeTicketChange,
+  ticketNotificationOpening,
+  ticketNotificationRecipients,
+  ticketNotificationSubject,
+  ticketNotificationText,
+} from '../trouble-tickets/notification';
 
 // The status changes we notify about.
 const NOTIFY_TYPES = [
@@ -47,67 +54,8 @@ const actorName = (actor: Actor, rm: SharedReadModel): string => {
   }
 };
 
-// The change description for the notification body.
-const describeChange = (event: NotifyEvent, actor: string): string => {
-  switch (event.type) {
-    case 'TroubleTicketCreated':
-      return "Thanks for letting us know about this issue. One of the owners of the equipment will address it soon.\n\nIf the equipment is not useable, or is unsafe, please put a sign on it telling other members, and consider a post on the Google group.";
-    case 'TroubleTicketAssigned':
-      return event.comment !== ''
-        ? `${actor} is now working on this ticket.\n\nThey said: ${event.comment}`
-        : `${actor} is now working on this ticket.`;
-    case 'TroubleTicketResolved':
-      return `${actor} marked this ticket as Resolved.\n\nWhat they did: ${event.summary}`;
-    case 'TroubleTicketParked':
-      return `${actor} parked this ticket.\n\nWhy: ${event.whyParked}\nPath to resolution: ${event.pathToResolution}\nIntermediate actions: ${event.intermediateActions}`;
-    case 'TroubleTicketNeedsHelp':
-      return `${actor} looked at this ticket but needs help, so it's open for another trainer to pick up.\n\nWhat they tried: ${event.whatTried}\nWhy it didn't work: ${event.whyDidntWork}`;
-  }
-};
-
-// Everyone who should hear about a change: the original submitter, plus (for Needs Help)
-// the equipment's trainers so someone else can pick it up.
-const collectRecipients = (
-  rm: SharedReadModel,
-  ticket: TroubleTicket,
-  event: NotifyEvent
-): ReadonlyArray<EmailAddress> => {
-  const emails = new Set<EmailAddress>();
-
-  const submitterEmail =
-    ticket.submittedMemberNumber !== null
-      ? pipe(
-          rm.members.getByMemberNumber(ticket.submittedMemberNumber),
-          O.map(member => member.primaryEmailAddress)
-        )
-      : O.none;
-  if (O.isSome(submitterEmail)) {
-    emails.add(submitterEmail.value);
-  } else if (ticket.submittedEmail) {
-    pipe(
-      EmailAddressCodec.decode(ticket.submittedEmail),
-      E.match(
-        () => {},
-        email => emails.add(email)
-      )
-    );
-  }
-
-  if (event.type === 'TroubleTicketNeedsHelp' && ticket.equipmentId) {
-    pipe(
-      rm.equipment.get(ticket.equipmentId),
-      O.match(
-        () => {},
-        equipment =>
-          equipment.trainers.forEach(trainer =>
-            emails.add(trainer.primaryEmailAddress)
-          )
-      )
-    );
-  }
-
-  return [...emails];
-};
+// What the email says and who gets it live with the confirmation pages, so
+// what a page promises is what is sent: see trouble-tickets/notification.
 
 const buildEmail = (
   publicUrl: string,
@@ -116,15 +64,11 @@ const buildEmail = (
   change: string,
   isNew: boolean
 ): Email => {
-  const opening = isNew
-    ? `We've logged your report about "${ticket.title}".`
-    : `There's an update on the trouble ticket "${ticket.title}".`;
-  const text = `Hi,\n\n${opening}\n\n${change}\n\nSee the trouble tickets page: ${publicUrl}/trouble-tickets\n`;
+  const opening = ticketNotificationOpening(ticket.title, isNew);
+  const text = ticketNotificationText(publicUrl, ticket.title, change, isNew);
   return {
     recipient,
-    subject: isNew
-      ? `We've logged your report: ${ticket.title}`
-      : `Trouble ticket update: ${ticket.title}`,
+    subject: ticketNotificationSubject(ticket.title, isNew),
     text,
     html: mjml2html(`
       <mjml>
@@ -186,11 +130,23 @@ export const notifyTroubleTicketChanges = async (
     if (rm.troubleTickets.hasNotifiedForEvent(event.event_index)) {
       continue;
     }
+    const ticket = rm.troubleTickets.getById(ticketIdOf(event));
+    if (O.isNone(ticket)) {
+      continue;
+    }
+    // Who it is going to is decided first and recorded with the marker, so
+    // the ticket's own history can say who was told.
+    const recipients = ticketNotificationRecipients(
+      rm,
+      ticket.value,
+      event.type
+    );
     const commitResp = await deps.commitEvent(rm.getCurrentEventIndex())(
       constructEvent('TroubleTicketNotificationSent')({
         actor: {tag: 'system'},
         ticketId: ticketIdOf(event),
         notifiedEventIndex: event.event_index,
+        recipients: [...recipients],
       })
     )();
     if (E.isLeft(commitResp)) {
@@ -202,12 +158,8 @@ export const notifyTroubleTicketChanges = async (
       continue;
     }
 
-    const ticket = rm.troubleTickets.getById(ticketIdOf(event));
-    if (O.isNone(ticket)) {
-      continue;
-    }
-    const change = describeChange(event, actorName(event.actor, rm));
-    for (const recipient of collectRecipients(rm, ticket.value, event)) {
+    const change = describeTicketChange(event, actorName(event.actor, rm));
+    for (const recipient of recipients) {
       const sent = await deps.sendEmail(
         buildEmail(
           deps.conf.PUBLIC_URL,

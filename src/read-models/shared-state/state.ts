@@ -468,12 +468,15 @@ createTables.push(
 export const troubleTicketNotificationsTable = defineTable(
   sql`
     CREATE TABLE IF NOT EXISTS troubleTicketNotifications (
-      notifiedEventIndex INTEGER PRIMARY KEY
+      notifiedEventIndex INTEGER PRIMARY KEY,
+      recipientsJson TEXT NOT NULL
     )
   `,
   'troubleTicketNotifications' as const,
   {
     notifiedEventIndex: integer('notifiedEventIndex').primaryKey(),
+    // Who was told, as a JSON list of addresses.
+    recipientsJson: text('recipientsJson').notNull(),
   }
 );
 

@@ -102,6 +102,8 @@ describe('notifyTroubleTicketChanges', () => {
       'TroubleTicketNotificationSent'
     );
     expect(notified).toHaveLength(1);
+    // The record says who was told, so the ticket's history can.
+    expect(notified[0].recipients).toEqual(['submitter@test.com']);
   });
 
   it('a quiet resolve sends no email and records no marker', async () => {
