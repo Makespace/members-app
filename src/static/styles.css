@@ -2853,6 +2853,9 @@ a.button--admin:visited {
 .training-search input[type='search'] {
   flex: 1 1 16em;
   max-width: 28em;
+  /* The global input rule leaves 2rem under every input, which centred the
+     box's margin rather than the box and put the label and button low. */
+  margin: 0;
   padding: 8px;
   border: 2px solid var(--grey-color);
 }
