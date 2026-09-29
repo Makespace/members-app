@@ -51,10 +51,11 @@ const backToEquipment = (viewModel: ViewModel) => html`
   </p>
 `;
 
+// One line says which machine and which list: "Band Saw training quiz
+// results", not a heading with the machine's name floating under it.
 const page = (viewModel: ViewModel, heading: Html, body: Html) => html`
   <div class="stack">
-    <h1>${heading}</h1>
-    <p>${sanitizeString(viewModel.equipment.name)}</p>
+    <h1>${sanitizeString(viewModel.equipment.name)} ${heading}</h1>
     ${body} ${backToEquipment(viewModel)}
   </div>
 `;
@@ -70,7 +71,7 @@ const revokeButton = (viewModel: ViewModel, memberNumber: number) => html`
 export const renderTrainedUsers = (viewModel: ViewModel) =>
   page(
     viewModel,
-    html`Currently trained users`,
+    html`currently trained users`,
     pipe(
       viewModel.trained,
       RA.map(
@@ -274,19 +275,31 @@ const searchBox = (viewModel: ViewModel) => html`
   </form>
 `;
 
-const searchResults = (viewModel: ViewModel) =>
+// The search filters the one table: with something typed, the table holds
+// the matches and a line above it says so and offers everybody back.
+const waitingOrMatches = (viewModel: ViewModel) =>
   pipe(
     viewModel.search,
     O.match(
-      () => html``,
+      () =>
+        trainingTable(
+          viewModel,
+          viewModel.waiting,
+          html`<p>No one is waiting for training</p>`
+        ),
       ({query, results}) => html`
-        <h2>Matching &ldquo;${sanitizeString(query)}&rdquo;</h2>
-        ${results.length === SEARCH_RESULT_LIMIT
-          ? html`<p>
-              Showing the first ${SEARCH_RESULT_LIMIT} matches - try a
-              member number or more of the name.
-            </p>`
-          : html``}
+        <p class="training-search__summary">
+          ${results.length === SEARCH_RESULT_LIMIT
+            ? html`The first ${SEARCH_RESULT_LIMIT} matching`
+            : html`Matching`}
+          &ldquo;${sanitizeString(query)}&rdquo;
+          ${results.length === SEARCH_RESULT_LIMIT
+            ? html`- try a member number or more of the name.`
+            : html``}
+          <a href="/equipment/${safe(viewModel.equipment.id)}/quiz-results"
+            >Show everyone waiting</a
+          >
+        </p>
         ${trainingTable(
           viewModel,
           results,
@@ -337,7 +350,7 @@ const markInPlace = () => html`
 export const renderQuizResults = (viewModel: ViewModel) =>
   page(
     viewModel,
-    html`Training quiz results`,
+    html`training quiz results`,
     html`
       <p>
         ${pipe(
@@ -348,20 +361,8 @@ export const renderQuizResults = (viewModel: ViewModel) =>
           )
         )}
       </p>
-      ${searchBox(viewModel)} ${searchResults(viewModel)}
       <h2>Waiting for training</h2>
-      ${viewModel.waiting.some(row => row.kind === 'unknown')
-        ? html`<p>
-            A row marked <b>?</b> is a pass by somebody whose member number
-            did not match anybody. Adding the address to their record links
-            them up.
-          </p>`
-        : html``}
-      ${trainingTable(
-        viewModel,
-        viewModel.waiting,
-        html`<p>No one is waiting for training</p>`
-      )}
+      ${searchBox(viewModel)} ${waitingOrMatches(viewModel)}
       ${viewModel.isTrainer ? markInPlace() : html``}
     `
   );
@@ -369,7 +370,7 @@ export const renderQuizResults = (viewModel: ViewModel) =>
 export const renderFailedQuizzes = (viewModel: ViewModel) =>
   page(
     viewModel,
-    html`Failed quizzes`,
+    html`failed quizzes`,
     html`
       <p>Members who have attempted the quiz recently without passing it.</p>
       ${pipe(

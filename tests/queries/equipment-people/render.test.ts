@@ -207,11 +207,23 @@ describe('the people pages for a machine', () => {
       expect(row?.querySelector('a[href="/member/4321/"]')).not.toBeNull();
     });
 
-    it('explains the ? only when there is one to explain', () => {
-      expect(results().textContent).toContain('A row marked ?');
-      expect(results({waiting: [waitingMember]}).textContent).not.toContain(
-        'A row marked ?'
+    it('names the machine and the list in one heading', () => {
+      expect(results().querySelector('h1')?.textContent?.trim()).toBe(
+        'Band Saw training quiz results'
       );
+    });
+
+    // The search belongs to the waiting list: it sits under that heading,
+    // and what it finds is shown above, in the same shape.
+    it('puts the search box under the waiting-for-training heading', () => {
+      const body = results();
+      const heading = [...body.querySelectorAll('h2')].find(
+        node => node.textContent?.trim() === 'Waiting for training'
+      );
+
+      expect(
+        heading?.nextElementSibling?.classList.contains('training-search')
+      ).toBe(true);
     });
 
     it('does not mention the failures', () => {
@@ -312,13 +324,19 @@ describe('the people pages for a machine', () => {
         expect(button?.hasAttribute('disabled')).toBe(true);
       });
 
-      it('shows the waiting table under the results, untouched', () => {
-        const tables = results({
+      // One table: the search narrows it, and a link widens it again.
+      it('narrows the one table to the matches, with the way back to everyone', () => {
+        const body = results({
           search: O.some({query: 'zzz', results: []}),
-        }).querySelectorAll('.training-table');
+        });
 
-        expect(tables).toHaveLength(1);
-        expect(tables[0].textContent).toContain('A Waiting Member');
+        expect(body.querySelectorAll('.training-table')).toHaveLength(0);
+        expect(body.textContent).not.toContain('A Waiting Member');
+        expect(
+          body.querySelector(
+            `a[href="/equipment/${equipmentId}/quiz-results"]`
+          )?.textContent
+        ).toBe('Show everyone waiting');
       });
     });
   });
