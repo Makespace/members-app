@@ -16,6 +16,11 @@ export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
     date: '2026-09-29',
     headline:
+      "Super-users can see a member's invoices, and why an unpaid one has not gone through",
+  },
+  {
+    date: '2026-09-29',
+    headline:
       'Trainers can find a member by number, name or email on the quiz-results page and mark them trained without leaving it',
   },
   {

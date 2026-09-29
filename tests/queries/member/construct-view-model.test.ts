@@ -12,6 +12,7 @@ import { faker } from '@faker-js/faker';
 import { FailureWithStatus } from '../../../src/types/failure-with-status';
 import { User } from '../../../src/types/user';
 import {insertRecurlySubscription} from '../../helpers';
+import {recurlyInvoiceTable} from '../../../src/sync-worker/recurly/recurly-data-table';
 
 describe('construct-view-model', () => {
   let framework: TestFramework;
@@ -62,6 +63,69 @@ describe('construct-view-model', () => {
     )(anotherUser.memberNumber)();
 
     expect(getRightOrFail(viewModel).recurlyStatus).toStrictEqual('active');
+  });
+
+  // Billing detail is fetched only for the people who chase it. Keeping it out
+  // of the view model - rather than hiding it in the template - means a later
+  // change to the rendering cannot put somebody's payment history on a page
+  // that other members can read.
+  describe('billing detail', () => {
+    const memberInArrears = arbitraryUser();
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        memberNumber: memberInArrears.memberNumber,
+        email: memberInArrears.emailAddress,
+        name: undefined,
+        formOfAddress: undefined,
+      });
+      await framework.extDB
+        .insert(recurlyInvoiceTable)
+        .values({
+          id: 'inv_1',
+          email: memberInArrears.emailAddress.toLowerCase(),
+          accountId: 'acct_1',
+          number: 'INV-9001',
+          state: 'past_due',
+          collectionMethod: 'automatic',
+          currency: 'GBP',
+          total: 25,
+          paid: 0,
+          balance: 25,
+          createdAt: new Date('2026-08-01T00:00:00.000Z'),
+          dueAt: new Date('2026-09-01T00:00:00.000Z'),
+          cachedAt: new Date(),
+        })
+        .run();
+    });
+
+    it('is fetched for a super user', async () => {
+      const viewModel = await constructViewModel(
+        framework,
+        superUser
+      )(memberInArrears.memberNumber)();
+      const billing = O.toNullable(getRightOrFail(viewModel).billing);
+      expect(billing).not.toBeNull();
+      expect(billing?.invoices).toHaveLength(1);
+      expect(billing?.totalOutstanding).toBe(25);
+    });
+
+    it('is not fetched for another member', async () => {
+      const viewModel = await constructViewModel(
+        framework,
+        unprivilegedUser
+      )(memberInArrears.memberNumber)();
+      expect(getRightOrFail(viewModel).billing).toStrictEqual(O.none);
+    });
+
+    it('is not fetched for the member themselves', async () => {
+      const viewModel = await constructViewModel(
+        framework,
+        memberInArrears
+      )(memberInArrears.memberNumber)();
+      const model = getRightOrFail(viewModel);
+      expect(model.isSelf).toBe(true);
+      expect(model.billing).toStrictEqual(O.none);
+    });
   });
 
   ([

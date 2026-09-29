@@ -10,6 +10,7 @@ import {otherMemberNumbersTooltip} from '../shared-render/other-member-numbers-t
 import {renderTrainingMatrix} from '../training-matrix/render';
 import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
 import {renderMemberEmails} from '../shared-render/member-emails';
+import {renderBilling} from './render-billing';
 
 const ownPageBanner = html`<h1>This is your profile!</h1>`;
 
@@ -123,4 +124,5 @@ export const render = (viewModel: ViewModel) => html`
       ${renderTrainingMatrix(viewModel.trainingMatrix)}
     </tbody>
   </table>
+  ${renderBilling(viewModel)}
 `;
