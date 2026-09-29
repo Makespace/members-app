@@ -1,0 +1,144 @@
+import {faker} from '@faker-js/faker';
+import {Request, Response} from 'express';
+import * as E from 'fp-ts/Either';
+import {NonEmptyString, UUID} from 'io-ts-types';
+import {
+  equipmentTroubleTicketsImage,
+  parseDisplaySize,
+} from '../../src/eink/equipment-trouble-tickets-handler';
+import {constructEvent} from '../../src/types/domain-event';
+import {arbitraryActor} from '../helpers';
+import {initTestFramework, TestFramework} from '../read-models/test-framework';
+
+type FakeResponse = Response & {
+  status: jest.Mock;
+  setHeader: jest.Mock<unknown, [string, string]>;
+  type: jest.Mock;
+  send: jest.Mock<unknown, [Buffer]>;
+};
+
+const makeRes = (): FakeResponse =>
+  ({
+    status: jest.fn().mockReturnThis(),
+    setHeader: jest.fn().mockReturnThis(),
+    type: jest.fn().mockReturnThis(),
+    send: jest.fn().mockReturnThis(),
+  }) as unknown as FakeResponse;
+
+const makeReq = (
+  equipment: string,
+  query: Record<string, string>
+): Request => ({params: {equipment}, query}) as unknown as Request;
+
+describe('parseDisplaySize', () => {
+  it('defaults to 800x480', () => {
+    expect(parseDisplaySize({})).toStrictEqual(
+      E.right({width: 800, height: 480})
+    );
+  });
+
+  it('reads width and height', () => {
+    expect(parseDisplaySize({width: '296', height: '128'})).toStrictEqual(
+      E.right({width: 296, height: 128})
+    );
+  });
+
+  it.each([
+    [{width: 'wide'}],
+    [{width: '12.5'}],
+    [{height: '10'}],
+    [{height: '5000'}],
+    [{width: ['300', '400']}],
+  ])('rejects %j', query => {
+    expect(E.isLeft(parseDisplaySize(query))).toBe(true);
+  });
+});
+
+describe('equipmentTroubleTicketsImage', () => {
+  let framework: TestFramework;
+  const areaId = faker.string.uuid() as UUID;
+  const equipmentId = faker.string.uuid() as UUID;
+
+  const handle = (req: Request) => {
+    const res = makeRes();
+    equipmentTroubleTicketsImage(framework.depsForCommands)(req, res);
+    return res;
+  };
+
+  beforeEach(async () => {
+    framework = await initTestFramework();
+    await framework.commands.area.create({
+      id: areaId,
+      name: 'Wood Shop' as NonEmptyString,
+    });
+    await framework.commands.equipment.add({
+      id: equipmentId,
+      name: 'Band Saw' as NonEmptyString,
+      areaId,
+    });
+  });
+
+  afterEach(() => framework.close());
+
+  it('serves a PNG to anyone, without a login', () => {
+    const res = handle(
+      makeReq(equipmentId, {width: '296', height: '128'})
+    );
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.type).toHaveBeenCalledWith('image/png');
+    const png = res.send.mock.calls[0][0];
+    expect(png.readUInt32BE(16)).toBe(296);
+    expect(png.readUInt32BE(20)).toBe(128);
+  });
+
+  it('finds the machine by its slug too', () => {
+    const res = handle(makeReq('wood-shop-band-saw', {}));
+    expect(res.type).toHaveBeenCalledWith('image/png');
+  });
+
+  it('answers 404 for an unknown machine', () => {
+    const res = handle(makeReq(faker.string.uuid(), {}));
+    expect(res.status).toHaveBeenCalledWith(404);
+  });
+
+  it('answers 400 for a size it cannot draw', () => {
+    const res = handle(makeReq(equipmentId, {width: 'huge'}));
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  it('changes its ETag when a ticket is raised against the machine', () => {
+    const etag = (res: FakeResponse) =>
+      res.setHeader.mock.calls.find(([name]) => name === 'ETag')?.[1];
+    const before = etag(handle(makeReq(equipmentId, {})));
+    expect(etag(handle(makeReq(equipmentId, {})))).toBe(before);
+
+    framework.insertIntoSharedReadModel(
+      constructEvent('TroubleTicketCreated')({
+        source: 'app',
+        equipmentId,
+        machine: '',
+        areaId: null,
+        title: 'Blade guide is loose',
+        mailboxConversationId: '',
+        actor: arbitraryActor(),
+        id: faker.string.uuid() as UUID,
+        rowHash: faker.string.hexadecimal({length: 64}),
+        sheetId: '',
+        submittedAt: new Date('2026-09-01'),
+        submittedMemberNumber: null,
+        submittedEmail: null,
+        submittedName: null,
+        submittedEquipment: 'Band Saw',
+        otherEquipmentDetail: '',
+        status: 'Broken',
+        attempting: '',
+        issue: 'Blade guide is loose',
+        steps: '',
+      })
+    );
+
+    expect(etag(handle(makeReq(equipmentId, {})))).not.toBe(
+      before
+    );
+  });
+});
