@@ -1596,30 +1596,6 @@ label img {
   color: var(--text-color);
 }
 
-/* The one-click silent resolve: a badge-styled submit button plus its
-   explanation, sitting inline with the other actions. */
-.tt-quiet-resolve {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin: 0;
-}
-
-.tt-quiet-resolve button {
-  font-size: 0.8rem;
-  border: 0;
-  border-bottom: 0;
-  cursor: pointer;
-}
-
-.tt-quiet-resolve button:active {
-}
-
-.tt-quiet-resolve small {
-  color: var(--grey-color);
-}
-
 .tt-action:hover {
   filter: brightness(0.92);
 }
@@ -2863,4 +2839,65 @@ a.button--admin:visited {
 
 .button--admin:hover {
   background: #9c5300;
+}
+
+/* The training table on a machine's quiz-results page: who has passed the
+   quiz, who a search found, and the button that marks them trained. */
+.training-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.training-search input[type='search'] {
+  flex: 1 1 16em;
+  max-width: 28em;
+  padding: 8px;
+  border: 2px solid var(--grey-color);
+}
+
+.training-mark {
+  margin: 0;
+}
+
+/* Greyed out, not gone: the row says the person was found, the button says
+   what is missing before it can be pressed. */
+.training-mark__disabled,
+.training-mark button:disabled {
+  background: color-mix(in oklch, white 70%, var(--grey-color));
+  border-bottom-color: var(--grey-color);
+  color: white;
+  cursor: not-allowed;
+}
+
+.training-mark__disabled:hover,
+.training-mark button:disabled:hover {
+  background: color-mix(in oklch, white 70%, var(--grey-color));
+}
+
+.training-mark__disabled:active,
+.training-mark button:disabled:active {
+  transform: none;
+}
+
+/* A row marked trained from the page goes faint green where it is, so a
+   trainer working down the list can see what they have done. */
+.training-row--trained {
+  background: #e9f5ea;
+}
+
+/* A pass nobody matches sits with the rest, faintly yellow, its member
+   number followed by a ? so the eye can tell it apart. */
+.training-row--unknown {
+  background: #fdf6dc;
+}
+
+.training-unknown small,
+.training-unknown__match {
+  color: var(--grey-color);
+}
+
+.training-not-passed {
+  color: var(--grey-color);
 }

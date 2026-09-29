@@ -7,13 +7,17 @@ import {
   Html,
   joinHtml,
   safe,
-  sanitizeOption,
   sanitizeString,
 } from '../../types/html';
 import {displayDate} from '../../templates/display-date';
 import {renderMember} from '../../templates/member';
 import {renderMemberNumber} from '../../templates/member-number';
-import {PersonSummary, ViewModel} from './construct-view-model';
+import {
+  PersonSummary,
+  SEARCH_RESULT_LIMIT,
+  TrainingRow,
+  ViewModel,
+} from './construct-view-model';
 
 // One cell for a person, the way the areas page does it: name, number and -
 // for the people who act on these lists - their address to copy.
@@ -106,55 +110,229 @@ export const renderTrainedUsers = (viewModel: ViewModel) =>
     )
   );
 
+// This page, with the search kept, so a press lands back where it was made
+// rather than on the areas page.
+const quizResultsPath = (viewModel: ViewModel) =>
+  `/equipment/${viewModel.equipment.id}/quiz-results` +
+  pipe(
+    viewModel.search,
+    O.match(
+      () => '',
+      ({query}) => `?q=${encodeURIComponent(query)}`
+    )
+  );
+
 const markTrainedButton = (viewModel: ViewModel, memberNumber: number) => html`
-  <form action="/equipment/mark-member-trained" method="post">
+  <form
+    class="training-mark"
+    action="/equipment/mark-member-trained?next=${safe(
+      encodeURIComponent(quizResultsPath(viewModel))
+    )}"
+    method="post"
+  >
     <input type="hidden" name="equipmentId" value="${viewModel.equipment.id}" />
     <input type="hidden" name="memberNumber" value="${memberNumber}" />
     <button type="submit">Mark as trained</button>
   </form>
 `;
 
-// Quizzes passed by someone the app cannot match to a member. They belong
-// with the rest of the passes - they are people waiting too - rather than
-// filed under the failures.
-const unknownWaiting = (viewModel: ViewModel) =>
-  viewModel.waitingUnknown.length === 0
-    ? html``
+// Greyed out rather than gone: the row is there to say the person was
+// found, and the button to say what is missing before it can be pressed.
+const disabledButton = (label: string, reason: string) => html`
+  <button type="button" class="training-mark__disabled" disabled title="${safe(
+    reason
+  )}">
+    ${safe(label)}
+  </button>
+`;
+
+// A pass the app could not match: the number as typed, marked as unknown,
+// the address as typed, and - if that address is somebody's - who.
+const unknownPerson = (
+  row: Extract<TrainingRow, {kind: 'unknown'}>,
+  includePrivate: boolean
+) => html`
+  <div class="training-unknown">
+    ${pipe(
+      row.memberNumberProvided,
+      O.match(
+        () => html`<span>No member number given</span>`,
+        number => html`${renderMemberNumber(number)}<b>?</b>
+          <small>no member has this number</small>`
+      )
+    )}
+  </div>
+  ${includePrivate
+    ? pipe(
+        row.emailProvided,
+        O.match(
+          () => html``,
+          email => html`<div><small>${sanitizeString(email)}</small></div>`
+        )
+      )
+    : html``}
+  ${pipe(
+    row.possibleMatch,
+    O.match(
+      () => html``,
+      match => html`
+        <div class="training-unknown__match">
+          Might be ${sanitizeString(O.getOrElse(() => '-')(match.name))}
+          (${renderMemberNumber(match.memberNumber)}), whose address this is
+        </div>
+      `
+    )
+  )}
+`;
+
+const standingCell = (row: TrainingRow): Html => {
+  if (row.kind === 'unknown') {
+    return html`${displayDate(DateTime.fromJSDate(row.waitingSince))}`;
+  }
+  switch (row.standing.kind) {
+    case 'passed':
+      return html`${displayDate(DateTime.fromJSDate(row.standing.at))}`;
+    case 'trained':
+      return html`Already trained -
+      ${displayDate(DateTime.fromJSDate(row.standing.since))}`;
+    case 'not-passed':
+      return html`<span class="training-not-passed"
+        >No pass in the last year</span
+      >`;
+  }
+};
+
+const actionCell = (viewModel: ViewModel, row: TrainingRow): Html => {
+  if (row.kind === 'unknown') {
+    return disabledButton(
+      'Mark as trained',
+      'Nobody matches this pass. Add the address to their record to link it.'
+    );
+  }
+  switch (row.standing.kind) {
+    case 'passed':
+      return markTrainedButton(viewModel, row.person.memberNumber);
+    case 'trained':
+      return disabledButton('Trained', 'Already trained on this equipment');
+    case 'not-passed':
+      return disabledButton(
+        'Mark as trained',
+        'They have not passed the quiz yet'
+      );
+  }
+};
+
+const trainingRow = (viewModel: ViewModel, row: TrainingRow) => html`
+  <tr class="${row.kind === 'unknown' ? safe('training-row--unknown') : safe('')}">
+    <td>
+      ${row.kind === 'unknown'
+        ? unknownPerson(row, viewModel.isTrainerOrOwner)
+        : person(row.person, viewModel.isTrainerOrOwner)}
+    </td>
+    <td>${standingCell(row)}</td>
+    ${viewModel.isTrainer ? html`<td>${actionCell(viewModel, row)}</td>` : html``}
+  </tr>
+`;
+
+const trainingTable = (
+  viewModel: ViewModel,
+  rows: ReadonlyArray<TrainingRow>,
+  whenEmpty: Html
+) =>
+  rows.length === 0
+    ? whenEmpty
     : html`
-        <h2>Waiting for training - unknown member</h2>
-        <p>
-          Quizzes passed by someone whose member number or email did not match
-          anybody. Adding the address to their record links them up.
-        </p>
-        <table>
+        <table class="training-table">
           <tr>
-            <th>Timestamp</th>
-            <th>Member number provided</th>
-            <th>Email provided</th>
+            <th>Member</th>
+            <th>Quiz passed</th>
+            ${viewModel.isTrainer ? html`<th>Actions</th>` : html``}
           </tr>
-          ${joinHtml(
-            viewModel.waitingUnknown.map(
-              quiz => html`
-                <tr>
-                  <td>
-                    ${displayDate(DateTime.fromJSDate(quiz.waitingSince))}
-                  </td>
-                  <td>
-                    ${pipe(
-                      quiz.memberNumberProvided,
-                      O.match(
-                        () => html`-`,
-                        renderMemberNumber
-                      )
-                    )}
-                  </td>
-                  <td>${sanitizeOption(quiz.emailProvided)}</td>
-                </tr>
-              `
-            )
-          )}
+          ${joinHtml(rows.map(row => trainingRow(viewModel, row)))}
         </table>
       `;
+
+const searchBox = (viewModel: ViewModel) => html`
+  <form method="get" class="training-search" role="search">
+    <label for="training-search-q">Find a member</label>
+    <input
+      type="search"
+      id="training-search-q"
+      name="q"
+      value="${sanitizeString(
+        pipe(
+          viewModel.search,
+          O.match(
+            () => '',
+            ({query}) => query
+          )
+        )
+      )}"
+      placeholder="Member number, name or email"
+    />
+    <button type="submit">Search</button>
+  </form>
+`;
+
+const searchResults = (viewModel: ViewModel) =>
+  pipe(
+    viewModel.search,
+    O.match(
+      () => html``,
+      ({query, results}) => html`
+        <h2>Matching &ldquo;${sanitizeString(query)}&rdquo;</h2>
+        ${results.length === SEARCH_RESULT_LIMIT
+          ? html`<p>
+              Showing the first ${SEARCH_RESULT_LIMIT} matches - try a
+              member number or more of the name.
+            </p>`
+          : html``}
+        ${trainingTable(
+          viewModel,
+          results,
+          html`<p>Nobody matches &ldquo;${sanitizeString(query)}&rdquo;.</p>`
+        )}
+      `
+    )
+  );
+
+// Pressing "Mark as trained" marks the row where it is, so a trainer working
+// down the list is not thrown back to the top of a reloaded page each time.
+// The browser's own submit remains the fallback for anything the post
+// refuses, so the page can then say what went wrong.
+const markInPlace = () => html`
+  <script>
+    (function () {
+      if (!window.fetch) return;
+      document.querySelectorAll('form.training-mark').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+          var row = form.closest('tr');
+          var button = form.querySelector('button');
+          if (!row || !button) return;
+          event.preventDefault();
+          button.disabled = true;
+          // Url-encoded, as the browser would send it: the server reads no
+          // other kind of form body.
+          fetch(form.getAttribute('action'), {
+            method: 'POST',
+            body: new URLSearchParams(new FormData(form)),
+            credentials: 'same-origin',
+          })
+            .then(function (response) {
+              if (!response.ok) throw new Error('not ok');
+              row.classList.add('training-row--trained');
+              button.textContent = 'Trained';
+              button.setAttribute('title', 'Marked as trained just now');
+            })
+            .catch(function () {
+              button.disabled = false;
+              form.submit();
+            });
+        });
+      });
+    })();
+  </script>
+`;
 
 export const renderQuizResults = (viewModel: ViewModel) =>
   page(
@@ -170,37 +348,21 @@ export const renderQuizResults = (viewModel: ViewModel) =>
           )
         )}
       </p>
+      ${searchBox(viewModel)} ${searchResults(viewModel)}
       <h2>Waiting for training</h2>
-      ${pipe(
+      ${viewModel.waiting.some(row => row.kind === 'unknown')
+        ? html`<p>
+            A row marked <b>?</b> is a pass by somebody whose member number
+            did not match anybody. Adding the address to their record links
+            them up.
+          </p>`
+        : html``}
+      ${trainingTable(
+        viewModel,
         viewModel.waiting,
-        RA.map(
-          member => html`
-            <tr>
-              <td>${person(member, viewModel.isTrainerOrOwner)}</td>
-              <td>${displayDate(DateTime.fromJSDate(member.waitingSince))}</td>
-              ${viewModel.isTrainer
-                ? html`<td>
-                    ${markTrainedButton(viewModel, member.memberNumber)}
-                  </td>`
-                : html``}
-            </tr>
-          `
-        ),
-        RA.match(
-          () => html`<p>No one is waiting for training</p>`,
-          rows => html`
-            <table>
-              <tr>
-                <th>Member</th>
-                <th>Quiz passed</th>
-                ${viewModel.isTrainer ? html`<th>Actions</th>` : html``}
-              </tr>
-              ${joinHtml(rows)}
-            </table>
-          `
-        )
+        html`<p>No one is waiting for training</p>`
       )}
-      ${unknownWaiting(viewModel)}
+      ${viewModel.isTrainer ? markInPlace() : html``}
     `
   );
 

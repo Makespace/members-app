@@ -16,7 +16,7 @@ export type OrphanedPassedQuiz = {
   emailProvided: O.Option<string>;
 };
 
-export type MemberAwaitingTraining = Pick<
+type MemberAwaitingTraining = Pick<
   MemberCoreInfo,
   'memberNumber' | 'name' | 'pastMemberNumbers'
 > & {
