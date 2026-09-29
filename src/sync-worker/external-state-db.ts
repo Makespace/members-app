@@ -7,13 +7,37 @@ import {
   sheetSyncMetadataTable,
   troubleTicketDataTable,
 } from './google/sheet-data-table';
-import { createTables as createRecurlyTables, recurlySubscriptionTable } from './recurly/recurly-data-table';
+import {
+  addRecurlyColumns,
+  createTables as createRecurlyTables,
+  recurlyInvoiceTable,
+  recurlySubscriptionTable,
+  recurlySyncMetadataTable,
+  recurlyTransactionTable,
+} from './recurly/recurly-data-table';
 import {
   createTables as createGuideLinkTables,
   guideLinkCheckTable,
 } from './guide-links/guide-link-table';
 import { SyncWorkerDependencies } from './dependencies';
 
+
+// Adds a column to a cache that may already have it. SQLite has no
+// ADD COLUMN IF NOT EXISTS, so the only way to be idempotent is to try and
+// forgive the one error that means "already done".
+const runForgivingDuplicateColumn = async (
+  extDB: ExternalStateDB,
+  statement: Parameters<ExternalStateDB['run']>[0]
+) => {
+  try {
+    await extDB.run(statement);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/duplicate column name/i.test(message)) {
+      throw error;
+    }
+  }
+};
 
 // This table contains a copy of all the training sheet data currently in google.
 // It is read only on requests from the frontend so it can be accelerated via read-replicas.
@@ -32,6 +56,11 @@ const ensureRecurlyDBTablesExist =
     for (const statement of createRecurlyTables) {
       await extDB.run(statement);
     }
+    // See addRecurlyColumns: a column added to a cache that already exists
+    // needs an ALTER, and SQLite has no ADD COLUMN IF NOT EXISTS.
+    for (const statement of addRecurlyColumns) {
+      await runForgivingDuplicateColumn(extDB, statement);
+    }
   };
 
 export const initExternalStateDB = (client: Client) =>
@@ -40,6 +69,9 @@ export const initExternalStateDB = (client: Client) =>
     sheetSyncMetadataTable,
     troubleTicketDataTable,
     recurlySubscriptionTable,
+    recurlyInvoiceTable,
+    recurlyTransactionTable,
+    recurlySyncMetadataTable,
     guideLinkCheckTable,
   }});
 
@@ -62,17 +94,7 @@ const ensureGmailTablesExist = async (extDB: ExternalStateDB) => {
     for (const statement of createGmailTables) {
         await extDB.run(statement);
     }
-    // Columns added to an already-existing cache. SQLite has no
-    // ADD COLUMN IF NOT EXISTS, so the only way to be idempotent is to try
-    // and forgive the one error that means "already done".
     for (const statement of addGmailMessageColumns) {
-        try {
-            await extDB.run(statement);
-        } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : String(error);
-            if (!/duplicate column name/i.test(message)) {
-                throw error;
-            }
-        }
+        await runForgivingDuplicateColumn(extDB, statement);
     }
 }
