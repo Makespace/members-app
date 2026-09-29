@@ -12,6 +12,7 @@ import {StatusCodes} from 'http-status-codes';
 import { getFullQuizResultsForMember } from '../../read-models/external-state/equipment-quiz';
 import { constructTrainingMatrix } from '../training-matrix/construct-view-model';
 import { getRecurlyStatusForMember } from '../../read-models/external-state/recurly-status';
+import { getBillingForMember } from '../../read-models/external-state/recurly-billing';
 
 export const constructViewModel =
   (
@@ -34,13 +35,21 @@ export const constructViewModel =
       return E.left(failureWithStatus('Failed to get training status', StatusCodes.INTERNAL_SERVER_ERROR)());
     }
 
+    const isSuperUser = O.isSome(userDetails) && userDetails.value.isSuperUser;
+
     return E.right({
       user,
       isSelf: memberNumber === user.memberNumber,
       member: memberScoped.value,
-      isSuperUser: O.isSome(userDetails) && userDetails.value.isSuperUser,
+      isSuperUser,
       trainingMatrix: constructTrainingMatrix(memberScoped.value, deps.sharedReadModel, quizData.right),
       recurlyStatus: await getRecurlyStatusForMember(deps.extDB)(memberScoped.value),
+      // Somebody's billing history is for the people who chase it, not for
+      // them and not for anybody else. Not fetched at all unless the viewer is
+      // one of those people, so it cannot reach a template by accident.
+      billing: isSuperUser
+        ? O.some(await getBillingForMember(deps.extDB)(memberScoped.value))
+        : O.none,
     });
   };
 
