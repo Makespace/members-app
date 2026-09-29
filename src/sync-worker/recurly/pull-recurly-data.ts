@@ -2,7 +2,7 @@ import {Logger} from 'pino';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
 import recurly from 'recurly';
-import {eq} from 'drizzle-orm';
+import {eq, sql} from 'drizzle-orm';
 import {EmailAddressCodec} from '../../types/email-address';
 import {DateTime, Duration} from 'luxon';
 import { ExternalStateDB } from '../external-state-db';
@@ -182,16 +182,16 @@ const incrementalPull = async <T>(
 const storeInvoice = (extDB: ExternalStateDB) => async (
     invoice: RecurlyInvoice
 ): Promise<boolean> => {
-    const email = emailOf(invoice.account?.email);
-    // Without an address there is no member to join the invoice to, and
-    // without an id there is nothing to key it by.
-    if (email === undefined || !invoice.id || !invoice.account?.id) {
+    // Only the id is indispensable - it is what the row is keyed by. An
+    // invoice we cannot yet attach to anybody is still worth keeping: see
+    // reconcileEmails, which comes back for it once the account is known.
+    if (!invoice.id) {
         return false;
     }
     const values = {
         id: invoice.id,
-        email,
-        accountId: invoice.account.id,
+        email: emailOf(invoice.account?.email) ?? null,
+        accountId: invoice.account?.id ?? null,
         number: invoice.number ?? null,
         state: invoice.state ?? 'unknown',
         collectionMethod: invoice.collectionMethod ?? null,
@@ -224,14 +224,14 @@ const storeInvoice = (extDB: ExternalStateDB) => async (
 const storeTransaction = (extDB: ExternalStateDB) => async (
     transaction: RecurlyTransaction
 ): Promise<boolean> => {
-    const email = emailOf(transaction.account?.email);
-    if (email === undefined || !transaction.id) {
+    if (!transaction.id) {
         return false;
     }
     const values = {
         id: transaction.id,
         invoiceId: transaction.invoice?.id ?? null,
-        email,
+        email: emailOf(transaction.account?.email) ?? null,
+        accountId: transaction.account?.id ?? null,
         type: transaction.type ?? null,
         status: transaction.status ?? null,
         success: transaction.success ?? null,
@@ -260,6 +260,72 @@ const storeTransaction = (extDB: ExternalStateDB) => async (
         })
         .run();
     return true;
+};
+
+// Recurly does not always give an address on the record itself, so a row can
+// arrive with nobody attached to it. Rather than drop it - which loses the
+// payment history behind an unpaid invoice, and hides the gap - it is stored as
+// it came and matched up afterwards, by whichever route is available:
+//
+//   1. the account id, against the subscription cache
+//   2. (transactions) the invoice it belongs to, which may already be matched
+//
+// This runs every cycle over the whole cache, not just what was pulled this
+// time, so a row that could not be placed today is placed the moment its
+// account or invoice turns up. What is left over is genuinely unmatchable, and
+// gets counted rather than quietly discarded.
+const reconcileEmails = async (extDB: ExternalStateDB): Promise<void> => {
+    await extDB.run(sql`
+        UPDATE recurly_invoices SET email = (
+            SELECT s.email FROM recurly_subscriptions s
+            WHERE s.accountId = recurly_invoices.accountId
+        )
+        WHERE email IS NULL AND accountId IS NOT NULL
+          AND EXISTS (
+            SELECT 1 FROM recurly_subscriptions s
+            WHERE s.accountId = recurly_invoices.accountId
+          );
+    `);
+    await extDB.run(sql`
+        UPDATE recurly_transactions SET email = (
+            SELECT s.email FROM recurly_subscriptions s
+            WHERE s.accountId = recurly_transactions.accountId
+        )
+        WHERE email IS NULL AND accountId IS NOT NULL
+          AND EXISTS (
+            SELECT 1 FROM recurly_subscriptions s
+            WHERE s.accountId = recurly_transactions.accountId
+          );
+    `);
+    await extDB.run(sql`
+        UPDATE recurly_transactions SET email = (
+            SELECT i.email FROM recurly_invoices i
+            WHERE i.id = recurly_transactions.invoiceId
+        )
+        WHERE email IS NULL AND invoiceId IS NOT NULL
+          AND EXISTS (
+            SELECT 1 FROM recurly_invoices i
+            WHERE i.id = recurly_transactions.invoiceId AND i.email IS NOT NULL
+          );
+    `);
+};
+
+// What is still attached to nobody, so that a gap between Recurly and the
+// membership shows up in the logs instead of being silently absent from every
+// page that reads this cache.
+const unmatchedCounts = async (
+    extDB: ExternalStateDB
+): Promise<{invoices: number; transactions: number}> => {
+    const invoices = await extDB.all<{n: number}>(
+        sql`SELECT COUNT(*) AS n FROM recurly_invoices WHERE email IS NULL;`
+    );
+    const transactions = await extDB.all<{n: number}>(
+        sql`SELECT COUNT(*) AS n FROM recurly_transactions WHERE email IS NULL;`
+    );
+    return {
+        invoices: invoices[0]?.n ?? 0,
+        transactions: transactions[0]?.n ?? 0,
+    };
 };
 
 export const pullRecurlyData = (
@@ -342,8 +408,17 @@ export const pullRecurlyData = (
             storeTransaction(extDB)
         );
 
+        await reconcileEmails(extDB);
+        const unmatched = await unmatchedCounts(extDB);
+        if (unmatched.invoices > 0 || unmatched.transactions > 0) {
+            logger.warn(
+                unmatched,
+                'Recurly records that could not be matched to an account'
+            );
+        }
+
         logger.info(
-            {invoices, transactions},
+            {invoices, transactions, unmatched},
             'Finished fetching recurly data'
         );
     }

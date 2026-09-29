@@ -32,8 +32,11 @@ export const recurlyInvoiceTable = sqliteTable(
   'recurly_invoices',
   {
     id: text('id').primaryKey(),
-    email: text('email').notNull(),
-    accountId: text('accountId').notNull(),
+    // Null when Recurly gave us no address we could use, and none could be
+    // recovered from the account. Such a row belongs to no member yet - see
+    // reconcileEmails.
+    email: text('email'),
+    accountId: text('accountId'),
     // The invoice number a member would quote at you.
     number: text('number'),
     // open | pending | processing | past_due | paid | closed | failed | voided
@@ -71,7 +74,9 @@ export const recurlyTransactionTable = sqliteTable(
   {
     id: text('id').primaryKey(),
     invoiceId: text('invoiceId'),
-    email: text('email').notNull(),
+    // As on invoices: null until something can be matched to it.
+    email: text('email'),
+    accountId: text('accountId'),
     // purchase | refund | verify
     type: text('type'),
     // success | declined | error | void
@@ -123,8 +128,8 @@ const createRecurlySubscriptionTable = sql`
 const createRecurlyInvoiceTable = sql`
   CREATE TABLE IF NOT EXISTS recurly_invoices (
     id TEXT PRIMARY KEY,
-    email TEXT NOT NULL,
-    accountId TEXT NOT NULL,
+    email TEXT,
+    accountId TEXT,
     number TEXT,
     state TEXT NOT NULL,
     collectionMethod TEXT,
@@ -147,7 +152,8 @@ const createRecurlyTransactionTable = sql`
   CREATE TABLE IF NOT EXISTS recurly_transactions (
     id TEXT PRIMARY KEY,
     invoiceId TEXT,
-    email TEXT NOT NULL,
+    email TEXT,
+    accountId TEXT,
     type TEXT,
     status TEXT,
     success INTEGER,
@@ -178,18 +184,48 @@ const createRecurlySyncMetadataTable = sql`
 
 // Both pages look a member up by address, and the member page then wants one
 // invoice's attempts.
-const createRecurlyIndexes = [
+//
+// Kept apart from the table statements and run last: an index over a column
+// that arrives by ALTER cannot be built until that ALTER has happened.
+export const createRecurlyIndexes = [
   sql`CREATE INDEX IF NOT EXISTS recurly_invoices_email ON recurly_invoices (email);`,
   sql`CREATE INDEX IF NOT EXISTS recurly_transactions_email ON recurly_transactions (email);`,
   sql`CREATE INDEX IF NOT EXISTS recurly_transactions_invoice ON recurly_transactions (invoiceId);`,
+  // The reconciliation passes look rows up the other way about.
+  sql`CREATE INDEX IF NOT EXISTS recurly_subscriptions_account ON recurly_subscriptions (accountId);`,
+  sql`CREATE INDEX IF NOT EXISTS recurly_invoices_account ON recurly_invoices (accountId);`,
+  sql`CREATE INDEX IF NOT EXISTS recurly_transactions_account ON recurly_transactions (accountId);`,
 ];
 
+const createRecurlySchemaVersionTable = sql`
+  CREATE TABLE IF NOT EXISTS recurly_schema_version (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    version INTEGER NOT NULL
+  );
+`;
+
 export const createTables = [
+  createRecurlySchemaVersionTable,
   createRecurlySubscriptionTable,
   createRecurlyInvoiceTable,
   createRecurlyTransactionTable,
   createRecurlySyncMetadataTable,
-  ...createRecurlyIndexes,
+];
+
+// Bumped whenever the invoice or transaction cache changes shape in a way an
+// ALTER cannot express - relaxing NOT NULL, for one, which SQLite will not do.
+// Both tables are pure copies of what Recurly holds, so the cheapest correct
+// migration is to throw them away and fetch them again. The cursor is cleared
+// alongside them, so the next pull starts from the beginning rather than from
+// today and leaves a hole where the old rows were.
+export const RECURLY_CACHE_SCHEMA_VERSION = 2;
+
+export const rebuildBillingCaches = [
+  sql`DROP TABLE IF EXISTS recurly_invoices;`,
+  sql`DROP TABLE IF EXISTS recurly_transactions;`,
+  sql`DELETE FROM recurly_sync_metadata WHERE resource IN ('invoices', 'transactions');`,
+  createRecurlyInvoiceTable,
+  createRecurlyTransactionTable,
 ];
 
 // CREATE TABLE IF NOT EXISTS does nothing to a table that already exists, so a
