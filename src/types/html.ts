@@ -67,7 +67,14 @@ export type CompleteHtmlDocument = Html & {
 
 const httpResponseConstructors = {
   CompleteHtmlPage: (rendered: CompleteHtmlDocument) => ({rendered}),
-  LoggedInContent: (input: {title: HtmlSubstitution; body: Html}) => input,
+  LoggedInContent: (input: {
+    title: HtmlSubstitution;
+    body: Html;
+    // Replaces the navbar's generic Back button for this page only. Some
+    // pages are reached from several places, so "back" is less useful than
+    // naming where the reader most likely wants to go next.
+    backLink?: {href: string; label: string};
+  }) => input,
   Raw: (input: {body: string; contentType: string}) => input,
   Redirect: (url: string) => ({url}),
 };
@@ -78,3 +85,9 @@ export const HttpResponse = toTaggedContructors(httpResponseConstructors);
 
 export const toLoggedInContent = (title: HtmlSubstitution) => (body: Html) =>
   HttpResponse.LoggedInContent({title, body});
+
+// As above, but naming where this page's Back button should go instead.
+export const toLoggedInContentWithBackLink =
+  (title: HtmlSubstitution, backLink: {href: string; label: string}) =>
+  (body: Html) =>
+    HttpResponse.LoggedInContent({title, body, backLink});

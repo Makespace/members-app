@@ -307,7 +307,8 @@ const aboutFreshness = () => {
 export const navBar = (
   user: User,
   viewer: {isSuperUser: boolean; isOwner: boolean},
-  viewModel: NavBarViewModel
+  viewModel: NavBarViewModel,
+  backLink?: {href: string; label: string}
 ) => html`
   <nav class="page-nav" data-page-nav>
     <div class="page-nav__row page-nav__row--primary">
@@ -384,12 +385,16 @@ export const navBar = (
       </div>
     </div>
     <div class="page-nav__row page-nav__row--secondary">
-      <a
-        class="jsonly page-nav__back"
-        href="/me"
-        onclick="if (window.history.length > 1) { window.history.back(); return false; }"
-        >Back</a
-      >
+      ${backLink === undefined
+        ? html`<a
+            class="jsonly page-nav__back"
+            href="/me"
+            onclick="if (window.history.length > 1) { window.history.back(); return false; }"
+            >Back</a
+          >`
+        : html`<a class="page-nav__back" href="${safe(backLink.href)}"
+            >${sanitizeString(backLink.label)}</a
+          >`}
     </div>
     <script>
       (function () {
