@@ -36,6 +36,14 @@ const Config = t.strict({
   TURSO_TOKEN: t.union([t.undefined, t.string]),
   TURSO_GOOGLE_DB_TOKEN: t.union([t.undefined, t.string]),
   RECURLY_TOKEN: t.union([t.undefined, t.string]),
+  // How long a member can be behind before the outstanding-invoices page files
+  // them under "remove fob access" and then "cancel membership". Trustees set
+  // these, so they are tunable without a code change.
+  BILLING_REMOVE_ACCESS_AFTER_DAYS: withDefaultIfEmpty(
+    tt.IntFromString,
+    14 as t.Int
+  ),
+  BILLING_CANCEL_AFTER_DAYS: withDefaultIfEmpty(tt.IntFromString, 60 as t.Int),
   TURSO_EVENTDB_SYNC_URL: t.string,
   TURSO_GOOGLEDB_SYNC_URL: t.union([t.undefined, t.string]),
   LOG_LEVEL: withDefaultIfEmpty(LogLevel, 'debug'),

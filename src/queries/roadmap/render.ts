@@ -113,7 +113,7 @@ export const render = () => html`
       done(html`Show a member's invoices to super-users, and say why an unpaid
       one has not gone through — an expired card, a refused payment, or an
       invoice nobody has tried to collect`),
-      todo(html`A summary of the invoices that may need following up, so
+      done(html`A summary of the invoices that may need following up, so
       nobody has to open each member in turn`),
       todo(html`Keep track of who has had their access removed for
       non-payment, so it can be put back when they pay`),

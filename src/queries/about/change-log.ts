@@ -16,6 +16,11 @@ export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
     date: '2026-09-30',
     headline:
+      'Super-users can see every membership payment that may need following up on one page, instead of opening members one at a time',
+  },
+  {
+    date: '2026-09-30',
+    headline:
       "A member's page now leads with whether they owe anything, showing only the invoices that still need chasing - the full history has a page of its own",
   },
   {
