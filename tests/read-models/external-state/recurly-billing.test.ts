@@ -10,8 +10,10 @@ import {
   recurlyTransactionTable,
 } from '../../../src/sync-worker/recurly/recurly-data-table';
 import {
+  BillingInvoice,
   getBillingForMember,
   invoiceIssues,
+  invoicesSinceFirstUnpaid,
   PaymentAttempt,
 } from '../../../src/read-models/external-state/recurly-billing';
 import {EmailAddress} from '../../../src/types';
@@ -253,5 +255,80 @@ describe("a member's billing", () => {
     expect(billing.lastPaidAt).toStrictEqual(
       O.some(new Date('2026-08-02T00:00:00.000Z'))
     );
+  });
+});
+
+describe('which invoices are worth showing on a member page', () => {
+  const at = (iso: string) => O.some(new Date(iso));
+  const inv = (
+    id: string,
+    createdAt: string,
+    isOutstanding: boolean
+  ): BillingInvoice => ({
+    id,
+    number: O.some(id),
+    state: isOutstanding ? 'past_due' : 'paid',
+    collectionMethod: O.some('automatic'),
+    currency: O.some('GBP'),
+    total: O.some(30),
+    paid: O.some(isOutstanding ? 0 : 30),
+    balance: O.some(isOutstanding ? 30 : 0),
+    createdAt: at(createdAt),
+    dueAt: at(createdAt),
+    dunningEventsSent: O.none,
+    isOutstanding,
+    daysOverdue: O.none,
+    issues: [],
+    attempts: [],
+  });
+
+  it('shows nothing when the member is square with us', () => {
+    expect(
+      invoicesSinceFirstUnpaid([
+        inv('a', '2026-09-01T00:00:00.000Z', false),
+        inv('b', '2026-08-01T00:00:00.000Z', false),
+      ])
+    ).toEqual([]);
+  });
+
+  // The shape the trustees asked for: successes between failures, and between
+  // the latest failure and now, but nothing from before the trouble began.
+  it('keeps the payments made since the oldest thing still owed', () => {
+    const invoices = [
+      inv('sep-failed', '2026-09-01T00:00:00.000Z', true),
+      inv('aug-paid', '2026-08-15T00:00:00.000Z', false),
+      inv('aug-failed', '2026-08-01T00:00:00.000Z', true),
+      inv('jul-paid', '2026-07-01T00:00:00.000Z', false),
+      inv('jun-paid', '2026-06-01T00:00:00.000Z', false),
+    ];
+    expect(invoicesSinceFirstUnpaid(invoices).map(i => i.id)).toEqual([
+      'sep-failed',
+      'aug-paid',
+      'aug-failed',
+    ]);
+  });
+
+  it('keeps an unpaid invoice even if it predates every other one', () => {
+    const invoices = [
+      inv('new-paid', '2026-09-01T00:00:00.000Z', false),
+      inv('old-failed', '2026-01-01T00:00:00.000Z', true),
+    ];
+    expect(invoicesSinceFirstUnpaid(invoices).map(i => i.id)).toEqual([
+      'new-paid',
+      'old-failed',
+    ]);
+  });
+
+  it('keeps the order it was given', () => {
+    const invoices = [
+      inv('c', '2026-09-01T00:00:00.000Z', true),
+      inv('b', '2026-08-01T00:00:00.000Z', false),
+      inv('a', '2026-07-01T00:00:00.000Z', true),
+    ];
+    expect(invoicesSinceFirstUnpaid(invoices).map(i => i.id)).toEqual([
+      'c',
+      'b',
+      'a',
+    ]);
   });
 });

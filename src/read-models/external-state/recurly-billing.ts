@@ -124,6 +124,32 @@ export const invoiceIssues = (
   return issues;
 };
 
+// Which invoices are worth putting in front of somebody deciding what to do
+// about a member. Everything still owed, plus every invoice raised since the
+// oldest of those - so a payment that went through in between is shown too.
+//
+// That sequence is the useful part: three months paid then two missed reads
+// very differently from five missed in a row, and the paid ones are what tell
+// them apart. Anything older than the trouble is history, and lives on the
+// member's full billing page instead.
+//
+// `invoices` arrives newest first, and is returned the same way.
+export const invoicesSinceFirstUnpaid = (
+  invoices: ReadonlyArray<BillingInvoice>
+): ReadonlyArray<BillingInvoice> => {
+  const outstanding = invoices.filter(invoice => invoice.isOutstanding);
+  if (outstanding.length === 0) {
+    return [];
+  }
+  const raisedAt = (invoice: BillingInvoice): number =>
+    O.isSome(invoice.createdAt) ? invoice.createdAt.value.getTime() : 0;
+  // The oldest thing still owed is where the trouble starts.
+  const start = Math.min(...outstanding.map(raisedAt));
+  return invoices.filter(
+    invoice => invoice.isOutstanding || raisedAt(invoice) >= start
+  );
+};
+
 const lowercasedInvoiceEmail = sql`lower(${recurlyInvoiceTable.email})`;
 
 const optionalDate = (value: Date | null): O.Option<Date> =>

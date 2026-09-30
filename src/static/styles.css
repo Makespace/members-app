@@ -2904,3 +2904,66 @@ a.button--admin:visited {
 .training-not-passed {
   color: var(--grey-color);
 }
+
+/* Billing cards on a member's page. Same shape as the trouble-ticket cards:
+   a coloured left edge for the state, so a run of them can be read down the
+   page without reading any of the words. */
+.billing-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.billing-card {
+  border: 1px solid var(--border-color);
+  border-left: 5px solid var(--grey-color);
+  border-radius: 6px;
+  padding: 12px 16px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(11 12 12 / 12%);
+}
+
+.billing-card > :first-child {
+  margin-top: 0;
+}
+
+.billing-card > :last-child {
+  margin-bottom: 0;
+}
+
+.billing-card__header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.billing-card__header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.billing-card__facts {
+  margin: 6px 0 0;
+}
+
+.billing-card__attempt {
+  margin: 6px 0 0;
+  color: color-mix(in oklch, black 70%, var(--grey-color));
+}
+
+/* A settled invoice is context rather than a job, so it recedes. */
+.billing-card--paid {
+  border-left-color: var(--green-color);
+  background: color-mix(in oklch, white 97%, var(--grey-color));
+  box-shadow: none;
+}
+
+.billing-card--overdue {
+  border-left-color: var(--red-color);
+}
+
+.billing-card--open {
+  border-left-color: var(--yellow-color);
+}
