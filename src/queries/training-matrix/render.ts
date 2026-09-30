@@ -82,6 +82,21 @@ export type TrainingMatrix = ReadonlyArray<{
 }>;
 
 export const renderTrainingMatrix = (tm: TrainingMatrix) => {
+  // A member who owns nothing, has been trained on nothing and has sat no quiz
+  // has no rows at all, and a row of headings over nothing reads as though
+  // something failed to load. Still a table, so that this lands in the same
+  // place on the page as the matrix it stands in for.
+  if (tm.length === 0) {
+    return html`
+      <table>
+        <tbody>
+          <tr>
+            <td>Not an owner of any area, and not trained on any machine.</td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+  }
   const flattenedWithAreaColumn: [HtmlSubstitution, HtmlSubstitution, TrainingMatrixRow][] = [];
   for (const area of tm) {
     const rowSpan = Math.max(area.equipment.length, 1);

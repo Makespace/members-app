@@ -14,6 +14,16 @@ type ChangeLogEntry = {
 
 export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
+    date: '2026-09-30',
+    headline:
+      "A member's page now leads with whether they owe anything, showing only the invoices that still need chasing - the full history has a page of its own",
+  },
+  {
+    date: '2026-09-30',
+    headline:
+      'A member with no training and no areas gets a plain note rather than a table of headings with nothing under it',
+  },
+  {
     date: '2026-09-29',
     headline:
       "A machine's open trouble tickets can now be shown on an e-ink display mounted on it (trial)",

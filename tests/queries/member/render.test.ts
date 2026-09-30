@@ -176,35 +176,129 @@ const overdueBilling: MemberBilling = {
   cachedAt: O.some(new Date('2026-09-29T11:00:00.000Z')),
 };
 
+// jsdom keeps the template's newlines and indentation, so assertions compare
+// against the words with the whitespace flattened out.
+const text = (page: HTMLBodyElement): string =>
+  (page.textContent ?? '').replace(/\s+/g, ' ').trim();
+
 describe('the billing section', () => {
   const pageFor = (billing: ViewModel['billing'], isSuperUser: boolean) =>
     renderPage({...buildViewModel(isSuperUser, false), billing});
 
-  it('shows a super user the invoices and why they are unpaid', () => {
-    const page = pageFor(O.some(overdueBilling), true);
-    expect(page.textContent).toContain('Billing');
-    expect(page.textContent).toContain('INV-9001');
-    expect(page.textContent).toContain('28 days');
-    expect(page.textContent).toContain('Card expired');
-    expect(page.textContent).toContain('Your card has expired.');
-    expect(page.textContent).toContain('Visa ending 4242');
-    expect(page.textContent).toContain('\u00a325.00');
+  const settled = (over: Partial<MemberBilling['invoices'][number]> = {}) => ({
+    ...overdueBilling.invoices[0],
+    id: 'inv_paid',
+    number: O.some('INV-8000'),
+    state: 'paid',
+    balance: O.some(0),
+    isOutstanding: false,
+    daysOverdue: O.none,
+    issues: [],
+    attempts: [],
+    ...over,
   });
 
-  // The view model is what keeps this out of other people's pages, so this is
-  // the belt to that braces: even handed the data, a non-super-user's page
-  // must not be where it shows up.
+  it('leads with where the member stands', () => {
+    const page = pageFor(O.some(overdueBilling), true);
+    expect(text(page)).toContain('Outstanding: \u00a325.00');
+    expect(text(page)).toContain('the oldest of it overdue by 28 days');
+    expect(text(page)).toContain('Last paid');
+  });
+
+  it('gives each invoice a card rather than a table row', () => {
+    const page = pageFor(O.some(overdueBilling), true);
+    expect(page.querySelectorAll('.billing-card')).toHaveLength(1);
+    // The billing section brings no table of its own; the one on the page is
+    // the member's details.
+    expect(page.querySelectorAll('.billing-cards table')).toHaveLength(0);
+  });
+
+  it('shows what is owed on an unpaid card, and why', () => {
+    const page = pageFor(O.some(overdueBilling), true);
+    expect(text(page)).toContain('INV-9001');
+    expect(text(page)).toContain('\u00a325.00 outstanding');
+    expect(text(page)).toContain('overdue by 28 days');
+    expect(text(page)).toContain('Card expired');
+    expect(text(page)).toContain('Your card has expired.');
+    expect(text(page)).toContain('Visa ending 4242');
+  });
+
+  it('marks an overdue card so a run of them can be read down the page', () => {
+    const page = pageFor(O.some(overdueBilling), true);
+    expect(
+      page.querySelector('.billing-card--overdue')
+    ).not.toBeNull();
+  });
+
+  // The sequence is the point: three months paid then two missed reads very
+  // differently from five missed in a row.
+  it('keeps the payments made since the trouble started', () => {
+    const page = pageFor(
+      O.some({
+        ...overdueBilling,
+        invoices: [
+          overdueBilling.invoices[0],
+          settled({createdAt: O.some(new Date('2026-08-15T00:00:00.000Z'))}),
+        ],
+      }),
+      true
+    );
+    expect(text(page)).toContain('INV-9001');
+    expect(text(page)).toContain('INV-8000');
+    expect(page.querySelector('.billing-card--paid')).not.toBeNull();
+  });
+
+  it('leaves the history from before the trouble to the full page', () => {
+    const page = pageFor(
+      O.some({
+        ...overdueBilling,
+        invoices: [
+          overdueBilling.invoices[0],
+          // Raised well before the oldest thing still owed.
+          settled({createdAt: O.some(new Date('2026-01-01T00:00:00.000Z'))}),
+        ],
+      }),
+      true
+    );
+    expect(text(page)).toContain('INV-9001');
+    expect(text(page)).not.toContain('INV-8000');
+  });
+
+  it('shows no cards at all when nothing is outstanding', () => {
+    const page = pageFor(
+      O.some({
+        ...overdueBilling,
+        invoices: [settled()],
+        totalOutstanding: 0,
+        daysOverdue: O.none,
+      }),
+      true
+    );
+    expect(text(page)).toContain('Nothing outstanding.');
+    expect(page.querySelectorAll('.billing-card')).toHaveLength(0);
+  });
+
+  it('links to the full history', () => {
+    const page = pageFor(O.some(overdueBilling), true);
+    expect(
+      page.querySelector<HTMLAnchorElement>('a[href="/member/123/billing"]')!
+        .textContent
+    ).toContain('All invoices');
+  });
+
+  // The view model is what keeps this off other people's pages; this is the
+  // belt to that braces.
   it('shows nothing at all when the viewer is not a super user', () => {
     const page = pageFor(O.none, false);
-    expect(page.textContent).not.toContain('Billing');
-    expect(page.textContent).not.toContain('INV-9001');
-    expect(page.textContent).not.toContain('4242');
+    expect(text(page)).not.toContain('Billing');
+    expect(text(page)).not.toContain('INV-9001');
+    expect(text(page)).not.toContain('4242');
   });
 
   it('shows nothing on your own page either', () => {
     const page = renderPage({...buildViewModel(false, true), billing: O.none});
-    expect(page.textContent).not.toContain('Billing');
-    expect(page.textContent).not.toContain('INV-9001');
+    expect(text(page)).not.toContain('Billing');
+    expect(text(page)).not.toContain('INV-9001');
   });
 
   it('says so plainly when there are no invoices against the member', () => {
@@ -212,27 +306,6 @@ describe('the billing section', () => {
       O.some({...overdueBilling, invoices: [], totalOutstanding: 0}),
       true
     );
-    expect(page.textContent).toContain('No Recurly invoices are held');
-  });
-
-  it('does not unfold a reason for an invoice that is settled', () => {
-    const settled = {
-      ...overdueBilling,
-      invoices: [
-        {
-          ...overdueBilling.invoices[0],
-          state: 'paid',
-          balance: O.some(0),
-          isOutstanding: false,
-          daysOverdue: O.none,
-          issues: [],
-        },
-      ],
-      totalOutstanding: 0,
-      daysOverdue: O.none,
-    };
-    const page = pageFor(O.some(settled), true);
-    expect(page.textContent).toContain('INV-9001');
-    expect(page.textContent).not.toContain('Why this is unpaid');
+    expect(text(page)).toContain('No Recurly invoices are held');
   });
 });

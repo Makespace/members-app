@@ -16,6 +16,7 @@ export {equipmentCatalogue} from './equipment-catalogue';
 export {community} from './community';
 export {members} from './members';
 export {member} from './member';
+export {memberBilling} from './member-billing';
 export {log} from './log';
 export {trainingEventLog} from './training-event-log';
 export {eventLogOrder} from './event-log-order';

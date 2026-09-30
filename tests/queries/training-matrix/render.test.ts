@@ -17,6 +17,17 @@ const renderPage = (trainingMatrix: TrainingMatrix): HTMLBodyElement => {
 };
 
 describe('training matrix render', () => {
+  describe('a member with nothing on their record', () => {
+    it('says so rather than showing headings over an empty table', () => {
+      const page = renderPage([]);
+      expect(page.textContent).toContain(
+        'Not an owner of any area, and not trained on any machine.'
+      );
+      expect(page.textContent).not.toContain('Equipment Quiz Passed');
+      expect(page.querySelectorAll('th')).toHaveLength(0);
+    });
+  });
+
   it('links area names to the area page', () => {
     const page = renderPage([
       {

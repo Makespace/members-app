@@ -1,10 +1,15 @@
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
-import {DateTime} from 'luxon';
-import {Html, html, joinHtml, sanitizeString} from '../../types/html';
-import {displayDate, displayDateShort} from '../../templates/display-date';
+import {Html, html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {
-  renderCardOnFile,
+  renderBillingDate,
+  renderBillingHeadline,
+  renderHowItIsCollected,
+  renderPaymentAttempt,
+  renderRemindersSent,
+  renderStaleWarning,
+} from '../../templates/billing-rows';
+import {
   renderDaysOverdue,
   renderInvoiceIssues,
   renderInvoiceState,
@@ -12,170 +17,108 @@ import {
 } from '../../templates/billing';
 import {
   BillingInvoice,
-  MemberBilling,
-  PaymentAttempt,
+  invoicesSinceFirstUnpaid,
 } from '../../read-models/external-state/recurly-billing';
 import {ViewModel} from './view-model';
 
-// Recurly is only copied every twenty minutes, and a copy that has stopped
-// being refreshed would otherwise read as fact. Three days is the same bar the
-// membership status uses.
-const STALE_AFTER_DAYS = 3;
+const fullHistoryLink = (memberNumber: number): Html =>
+  html`<a href="/member/${safe(String(memberNumber))}/billing"
+    >All invoices</a
+  >`;
 
-const renderDate = (at: O.Option<Date>): Html =>
-  pipe(
-    at,
-    O.match(
-      () => html`-`,
-      value => html`<span title="${displayDate(DateTime.fromJSDate(value))}"
-        >${displayDateShort(DateTime.fromJSDate(value))}</span
-      >`
-    )
-  );
+// Follows the trouble-ticket cards: a coloured left edge for the state, so a
+// run of them can be read down the page without reading any of the words.
+const cardModifier = (invoice: BillingInvoice): string => {
+  if (!invoice.isOutstanding) {
+    return 'paid';
+  }
+  return O.isSome(invoice.daysOverdue) ? 'overdue' : 'open';
+};
 
-const staleWarning = (billing: MemberBilling, now: Date): Html =>
-  pipe(
-    billing.cachedAt,
-    O.match(
-      () => html``,
-      cachedAt =>
-        cachedAt.getTime() <
-        now.getTime() - STALE_AFTER_DAYS * 24 * 60 * 60 * 1000
-          ? html`<p class="tag tag--yellow">
-              This has not been refreshed from Recurly since
-              ${displayDateShort(DateTime.fromJSDate(cachedAt))}, so it may be
-              out of date.
-            </p>`
-          : html``
-    )
-  );
+// When the money actually arrived, which is the interesting date on one of
+// these; falling back to when it was raised if no attempt is recorded.
+const settledOn = (invoice: BillingInvoice): O.Option<Date> => {
+  const paid = invoice.attempts.find(attempt => attempt.succeeded);
+  return paid !== undefined && O.isSome(paid.at) ? paid.at : invoice.createdAt;
+};
 
-// The latest attempt is the one that explains the current state; the rest are
-// history, and only worth unfolding when somebody is actually investigating.
-const attemptRow = (attempt: PaymentAttempt): Html => html`
-  <tr>
-    <td>${renderDate(attempt.at)}</td>
-    <td>
-      ${attempt.succeeded
-        ? html`Succeeded`
-        : html`${sanitizeString(
-            O.getOrElse(() => 'Failed')(attempt.status)
-          )}`}
-    </td>
-    <td>${sanitizeString(O.getOrElse(() => '-')(attempt.message))}</td>
-    <td>${renderCardOnFile(attempt)}</td>
-  </tr>
+// A settled invoice is one line: it is here to show the rhythm of payment
+// around the ones that failed, not to be studied.
+const settledCard = (invoice: BillingInvoice): Html => html`
+  <article class="billing-card billing-card--paid">
+    <div class="billing-card__header">
+      <h3>${sanitizeString(O.getOrElse(() => 'Invoice')(invoice.number))}</h3>
+      ${renderInvoiceState(invoice.state)}
+    </div>
+    <p class="billing-card__facts">
+      ${renderMoney(invoice.total, invoice.currency)} &middot; paid
+      ${renderBillingDate(settledOn(invoice))}
+    </p>
+  </article>
 `;
 
-const attemptsDetail = (invoice: BillingInvoice): Html =>
+const latestAttempt = (invoice: BillingInvoice): Html =>
   invoice.attempts.length === 0
-    ? html`<p>No payment has been attempted against this invoice.</p>`
-    : html`
-        <table>
-          <tr>
-            <th>When</th>
-            <th>Outcome</th>
-            <th>What the bank said</th>
-            <th>Card used</th>
-          </tr>
-          ${joinHtml(invoice.attempts.map(attemptRow))}
-        </table>
-      `;
+    ? html``
+    : html`<p class="billing-card__attempt">
+        ${renderPaymentAttempt(invoice.attempts[0])}
+      </p>`;
 
-// 'automatic' and 'manual' are Recurly's words, and neither means much on its
-// own to somebody deciding whether to chase a person.
-const howItIsCollected = (method: O.Option<string>): Html =>
-  pipe(
-    method,
-    O.match(
-      () => html``,
-      value => {
-        switch (value) {
-          case 'automatic':
-            return html`Collected automatically from a card on file.`;
-          case 'manual':
-            return html`Not collected by card - this member pays some other
-            way.`;
-          default:
-            return html`Collected by ${sanitizeString(value)}.`;
-        }
-      }
-    )
-  );
-
-const remindersSent = (sent: number): Html =>
-  sent === 0
-    ? html`Recurly has not sent a reminder about it.`
-    : sent === 1
-      ? html`Recurly has sent 1 reminder.`
-      : html`Recurly has sent ${sanitizeString(String(sent))} reminders.`;
-
-// Only an unpaid invoice gets its reasons unfolded. A paid one is just a line
-// in the history.
-const whyUnpaid = (invoice: BillingInvoice): Html =>
-  !invoice.isOutstanding
+const earlierAttempts = (invoice: BillingInvoice): Html =>
+  invoice.attempts.length < 2
     ? html``
     : html`
-        <tr>
-          <td colspan="7">
-            <details>
-              <summary>
-                Why this is unpaid ${renderInvoiceIssues(invoice.issues)}
-              </summary>
-              <p>
-                ${howItIsCollected(invoice.collectionMethod)}
-                ${pipe(
-                  invoice.dunningEventsSent,
-                  O.match(
-                    () => html``,
-                    sent => html`${remindersSent(sent)}`
-                  )
-                )}
-              </p>
-              ${attemptsDetail(invoice)}
-            </details>
-          </td>
-        </tr>
+        <details>
+          <summary>
+            ${sanitizeString(String(invoice.attempts.length - 1))} earlier
+            attempt${invoice.attempts.length === 2 ? html`` : html`s`}
+          </summary>
+          ${joinHtml(
+            invoice.attempts
+              .slice(1)
+              .map(
+                attempt =>
+                  html`<p class="billing-card__attempt">
+                    ${renderPaymentAttempt(attempt)}
+                  </p>`
+              )
+          )}
+        </details>
       `;
 
-const invoiceRow = (invoice: BillingInvoice): Html => html`
-  <tr>
-    <td>${sanitizeString(O.getOrElse(() => '-')(invoice.number))}</td>
-    <td>${renderDate(invoice.createdAt)}</td>
-    <td>${renderDate(invoice.dueAt)}</td>
-    <td>${renderMoney(invoice.total, invoice.currency)}</td>
-    <td>${renderMoney(invoice.balance, invoice.currency)}</td>
-    <td>${renderDaysOverdue(invoice.daysOverdue)}</td>
-    <td>${renderInvoiceState(invoice.state)}</td>
-  </tr>
+const unpaidCard = (invoice: BillingInvoice): Html => html`
+  <article class="billing-card billing-card--${safe(cardModifier(invoice))}">
+    <div class="billing-card__header">
+      <h3>${sanitizeString(O.getOrElse(() => 'Invoice')(invoice.number))}</h3>
+      ${renderInvoiceState(invoice.state)} ${renderInvoiceIssues(invoice.issues)}
+    </div>
+    <p class="billing-card__facts">
+      ${renderMoney(invoice.balance, invoice.currency)} outstanding &middot; due
+      ${renderBillingDate(invoice.dueAt)}${pipe(
+        invoice.daysOverdue,
+        O.match(
+          () => html``,
+          days =>
+            html` &middot; overdue by ${renderDaysOverdue(O.some(days))}`
+        )
+      )}
+    </p>
+    <p>
+      ${renderHowItIsCollected(invoice.collectionMethod)}
+      ${pipe(
+        invoice.dunningEventsSent,
+        O.match(
+          () => html``,
+          sent => html`${renderRemindersSent(sent)}`
+        )
+      )}
+    </p>
+    ${latestAttempt(invoice)} ${earlierAttempts(invoice)}
+  </article>
 `;
 
-const summary = (billing: MemberBilling): Html => html`
-  <p>
-    ${billing.totalOutstanding > 0
-      ? html`Outstanding:
-          ${renderMoney(
-            O.some(billing.totalOutstanding),
-            billing.currency
-          )}${pipe(
-            billing.daysOverdue,
-            O.match(
-              () => html``,
-              days =>
-                html`, the oldest of it overdue by
-                ${renderDaysOverdue(O.some(days))}`
-            )
-          )}.`
-      : html`Nothing outstanding.`}
-    ${pipe(
-      billing.lastPaidAt,
-      O.match(
-        () => html`No successful payment on record.`,
-        at => html`Last paid ${displayDateShort(DateTime.fromJSDate(at))}.`
-      )
-    )}
-  </p>
-`;
+const card = (invoice: BillingInvoice): Html =>
+  invoice.isOutstanding ? unpaidCard(invoice) : settledCard(invoice);
 
 // Super users only - see the view model, which does not fetch any of this for
 // anybody else.
@@ -187,46 +130,30 @@ export const renderBilling = (
     viewModel.billing,
     O.match(
       () => html``,
-      billing =>
-        billing.invoices.length === 0
-          ? html`
-              <table>
-                <caption>
-                  Billing
-                </caption>
-                <tbody>
-                  <tr>
-                    <td>
-                      No Recurly invoices are held against this member's
-                      verified addresses.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            `
-          : html`
-              <table>
-                <caption>
-                  Billing
-                </caption>
-                <tr>
-                  <th>Invoice</th>
-                  <th>Raised</th>
-                  <th>Due</th>
-                  <th>Total</th>
-                  <th>Outstanding</th>
-                  <th>Overdue by</th>
-                  <th>State</th>
-                </tr>
-                ${joinHtml(
-                  billing.invoices.map(
-                    invoice => html`
-                      ${invoiceRow(invoice)}${whyUnpaid(invoice)}
-                    `
-                  )
-                )}
-              </table>
-              ${summary(billing)} ${staleWarning(billing, now)}
-            `
+      billing => {
+        if (billing.invoices.length === 0) {
+          return html`
+            <h2>Billing</h2>
+            <p>
+              No Recurly invoices are held against this member's verified
+              addresses.
+            </p>
+          `;
+        }
+        const worthShowing = invoicesSinceFirstUnpaid(billing.invoices);
+        return html`
+          <h2>Billing</h2>
+          <p>
+            ${renderBillingHeadline(billing)}
+            ${fullHistoryLink(viewModel.member.memberNumber)}
+          </p>
+          ${worthShowing.length === 0
+            ? html``
+            : html`<div class="billing-cards">
+                ${joinHtml(worthShowing.map(card))}
+              </div>`}
+          ${renderStaleWarning(billing, now)}
+        `;
+      }
     )
   );
