@@ -127,9 +127,16 @@ describe('navBar', () => {
     expect(toggle?.querySelector('.page-nav__mobile-menu-close')).not.toBeNull();
   });
 
+  // Asserts on the link itself rather than the word: the navbar also carries
+  // the newest change-log headline, which may legitimately mention admins.
   it('renders admin only for super users', () => {
-    expect(renderNav(false, areas).textContent).not.toContain('Admin');
-    expect(renderNav(true, areas).textContent).toContain('Admin');
+    expect(renderNav(false, areas).querySelector('.page-nav__admin')).toBeNull();
+    const adminLink = renderNav(true, areas).querySelector<HTMLAnchorElement>(
+      '.page-nav__admin'
+    );
+    expect(adminLink).not.toBeNull();
+    expect(adminLink?.getAttribute('href')).toStrictEqual('/admin');
+    expect(adminLink?.textContent).toContain('Admin');
   });
 
   // Everyone can report a problem, so everyone gets the link; the landing

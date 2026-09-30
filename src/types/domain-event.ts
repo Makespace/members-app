@@ -82,6 +82,14 @@ const EquipmentMarkedObsolete = defineEvent('EquipmentMarkedObsolete', {
 // equipment the app calls "Jaws". Used when linking free-text equipment
 // references to equipment records; adding an alias re-binds any tickets whose
 // raw string matches it and is still unresolved.
+// Renaming keeps the old name working: it becomes an alias, so a trouble
+// ticket naming the machine the way the form used to is still matched to it.
+const EquipmentNameChanged = defineEvent('EquipmentNameChanged', {
+  equipmentId: tt.UUID,
+  name: t.string,
+  previousName: t.string,
+});
+
 const EquipmentNameAliasAdded = defineEvent('EquipmentNameAliasAdded', {
   equipmentId: tt.UUID,
   alias: t.string,
@@ -479,6 +487,7 @@ export const events = [
   EquipmentAdded,
   EquipmentCategoryChanged,
   EquipmentMachinesSet,
+  EquipmentNameChanged,
   EquipmentMarkedObsolete,
   EquipmentNameAliasAdded,
   EquipmentNameAliasRemoved,
@@ -536,6 +545,7 @@ export const DomainEvent = t.union([
   EquipmentAdded.codec,
   EquipmentCategoryChanged.codec,
   EquipmentMachinesSet.codec,
+  EquipmentNameChanged.codec,
   EquipmentMarkedObsolete.codec,
   EquipmentNameAliasAdded.codec,
   EquipmentNameAliasRemoved.codec,

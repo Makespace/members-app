@@ -691,6 +691,27 @@ const _updateState =
           .run();
         break;
       }
+      case 'EquipmentNameChanged': {
+        const name = event.name.trim();
+        tx.update(equipmentTable)
+          .set({name})
+          .where(eq(equipmentTable.id, event.equipmentId))
+          .run();
+        // The old name keeps working. A trouble ticket whose form still offers
+        // the previous label, or one submitted before the rename, resolves
+        // through the alias rather than landing in Unassigned.
+        const previousName = event.previousName.trim();
+        if (previousName !== '' && previousName.toLowerCase() !== name.toLowerCase()) {
+          // Do nothing on conflict rather than re-point: if that name is
+          // already somebody else's alias, it was deliberate and this rename
+          // is not a reason to take it away from them.
+          tx.insert(equipmentNameAliasesTable)
+            .values({alias: previousName, equipmentId: event.equipmentId})
+            .onConflictDoNothing()
+            .run();
+        }
+        break;
+      }
       case 'EquipmentNameAliasAdded': {
         const alias = event.alias.trim();
         if (alias === '') {
