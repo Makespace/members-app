@@ -60,6 +60,7 @@ export const initRoutes = (
     query('/training-status.csv', queries.trainingStatusCsv),
     query('/domain-events', queries.domainEvents),
     query('/unlinked-recurly', queries.unlinkedRecurly),
+    query('/outstanding-invoices', queries.outstandingInvoices),
     query('/areas', queries.areas),
     query('/community', queries.community),
     query('/equipment-catalogue', queries.equipmentCatalogue),
