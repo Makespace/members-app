@@ -47,7 +47,7 @@ export const formGet =
         readModel: deps.sharedReadModel,
       })),
       TE.map(form.renderForm),
-      TE.map(({title, body}) =>
+      TE.map(({title, body, backLink}) =>
         pageTemplate(
           title,
           user.value,
@@ -67,7 +67,8 @@ export const formGet =
                 .map(toBanner),
             ],
             req.path
-          )
+          ),
+          backLink
         )(body)
       ),
       TE.matchW(

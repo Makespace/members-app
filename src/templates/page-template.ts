@@ -15,14 +15,15 @@ export const pageTemplate =
     user: User,
     viewer: {isSuperUser: boolean; isOwner: boolean},
     navBarModel: NavBarViewModel,
-    banners: Html = html``
+    banners: Html = html``,
+    backLink?: {href: string; label: string}
   ) =>
   (body: Html) =>
     html`
       <!doctype html>
       <html lang="en">
         ${head(title)}
-        <header>${navBar(user, viewer, navBarModel)}</header>
+        <header>${navBar(user, viewer, navBarModel, backLink)}</header>
         <body>
           ${banners} ${body} ${gridJs()}
         </body>

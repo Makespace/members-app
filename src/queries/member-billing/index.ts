@@ -7,7 +7,7 @@ import {StatusCodes} from 'http-status-codes';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {Query} from '../query';
 import {failureWithStatus} from '../../types/failure-with-status';
-import {safe, toLoggedInContent} from '../../types/html';
+import {safe, toLoggedInContentWithBackLink} from '../../types/html';
 import {constructViewModel} from './construct-view-model';
 import {render} from './render';
 
@@ -25,5 +25,12 @@ export const memberBilling: Query = deps => (user, params) =>
     TE.fromEither,
     TE.chain(constructViewModel(deps, user)),
     TE.map(viewModel => render(viewModel)),
-    TE.map(toLoggedInContent(safe('Billing')))
+    // The member themselves is already linked under the heading, so the
+    // navbar's Back is better spent on the view this page is one row of.
+    TE.map(
+      toLoggedInContentWithBackLink(safe('Billing'), {
+        href: '/outstanding-invoices',
+        label: 'View outstanding invoices for all members',
+      })
+    )
   );

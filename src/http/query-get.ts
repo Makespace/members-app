@@ -55,7 +55,7 @@ export const queryGet =
         },
         match({
           CompleteHtmlPage: ({rendered}) => res.status(200).send(rendered),
-          LoggedInContent: ({title, body}) =>
+          LoggedInContent: ({title, body, backLink}) =>
             res
               .status(200)
               .send(
@@ -78,7 +78,8 @@ export const queryGet =
                         .map(toBanner),
                     ],
                     req.path
-                  )
+                  ),
+                  backLink
                 )(body)
               ),
           Redirect: ({url}) => res.redirect(url),
