@@ -72,6 +72,7 @@ export const initRoutes = (
     ...command('areas', 'add-name-alias', commands.area.addNameAlias),
     ...api('areas', 'remove-name-alias', commands.area.removeNameAlias),
     ...command('equipment', 'add', commands.equipment.add),
+    ...command('equipment', 'rename', commands.equipment.rename),
     ...command('equipment', 'set-category', commands.equipment.setCategory),
     ...command('equipment', 'set-guide-url', commands.equipment.setGuideUrl),
     ...command('equipment', 'set-machines', commands.equipment.setMachines),

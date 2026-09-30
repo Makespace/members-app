@@ -9,6 +9,8 @@ import {markEquipmentObsoleteForm} from './mark-obsolete-form';
 import {addNameAlias} from './add-name-alias';
 import {addNameAliasForm} from './add-name-alias-form';
 import {removeNameAlias} from './remove-name-alias';
+import {rename} from './rename';
+import {renameForm} from './rename-form';
 import {setCategory} from './set-category';
 import {setCategoryForm} from './set-category-form';
 import {setGuideUrl} from './set-guide-url';
@@ -33,6 +35,7 @@ export const equipment = {
     ...markEquipmentObsolete,
     ...markEquipmentObsoleteForm,
   },
+  rename: {...rename, ...renameForm},
   setCategory: {...setCategory, ...setCategoryForm},
   setGuideUrl: {...setGuideUrl, ...setGuideUrlForm},
   setMachines: {...setMachines, ...setMachinesForm},

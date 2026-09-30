@@ -316,6 +316,21 @@ const equipmentHeading = (viewModel: ViewModel) => html`
   </div>
 `;
 
+// Admins and super-users. The old name keeps working as an alias, so this does
+// not strand the tickets that used it.
+const renameEquipment = (viewModel: ViewModel) =>
+  viewModel.isSuperUser
+    ? html` <li>
+        <a href="/equipment/rename?equipmentId=${viewModel.equipment.id}"
+          >Rename this machine</a
+        >
+        ${tooltip(
+          html`The name it was called before keeps matching trouble tickets,
+          and its training records are unaffected.`
+        )}
+      </li>`
+    : html``;
+
 // Super-users only: the colour decides whether a machine has training at all,
 // so it is not a per-area decision.
 const changeCategory = (viewModel: ViewModel) =>
@@ -459,6 +474,7 @@ const equipmentActions = (viewModel: ViewModel) => html`
       : []
   )}
   ${actionGroup('Update this equipment', [
+    renameEquipment(viewModel),
     setMachines(viewModel),
     guideLink(viewModel),
     changeCategory(viewModel),

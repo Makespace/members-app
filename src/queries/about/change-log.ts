@@ -16,6 +16,11 @@ export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
     date: '2026-09-30',
     headline:
+      'Admins can rename a machine - the name it had before keeps matching trouble tickets, and its training records are unaffected',
+  },
+  {
+    date: '2026-09-30',
+    headline:
       'Super-users can see every membership payment that may need following up on one page, instead of opening members one at a time',
   },
   {
