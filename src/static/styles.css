@@ -3019,3 +3019,43 @@ a.eq-capsule--dead:visited {
 .eq-capsule--dead > i {
   color: #9c1109;
 }
+
+/* Available to a screen reader, absent from the page. Each input on the
+   equipment-links table needs a label saying which machine it belongs to;
+   showing all of them would bury the table it is meant to serve. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Filling a gap in place, rather than opening the machine's page to do it. */
+.eq-links__set {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.eq-links__set input[type='url'] {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.9rem;
+  padding: 3px 8px;
+}
+
+.eq-links__set button {
+  flex: 0 0 auto;
+  padding: 3px 12px;
+  font-size: 0.9rem;
+}
+
+.eq-links td {
+  vertical-align: middle;
+}

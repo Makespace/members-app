@@ -16,6 +16,11 @@ export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
     date: '2026-10-01',
     headline:
+      'One page shows which machines are missing an equipment guide or a risk assessment, and lets a super-user fill the gaps without leaving it',
+  },
+  {
+    date: '2026-10-01',
+    headline:
       "A machine's page can now link to its risk assessment, recorded by an owner of its area",
   },
   {
