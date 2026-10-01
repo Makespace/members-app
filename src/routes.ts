@@ -64,6 +64,7 @@ export const initRoutes = (
     query('/areas', queries.areas),
     query('/community', queries.community),
     query('/equipment-catalogue', queries.equipmentCatalogue),
+    query('/equipment-links', queries.equipmentLinks),
     ...command('areas', 'create', commands.area.create),
     ...command('areas', 'add-owner', commands.area.addOwner),
     ...command('areas', 'remove-owner', commands.area.removeOwner),

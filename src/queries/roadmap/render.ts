@@ -107,6 +107,8 @@ export const render = () => html`
       training page point at the real page rather than a guess`),
       done(html`Check those links daily, and flag the ones that stop
       answering before a sign is printed with them`),
+      done(html`Link each machine to its risk assessment, and show in one place
+      which machines are still missing one`),
       todo(html`Training scheduling in the app`),
 
       heading(html`Membership payments`),
