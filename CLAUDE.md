@@ -89,7 +89,9 @@ The codebase maintains separation between the write side and read side:
 ### External Integrations
 - **Recurly**: Subscription status, payment information
 - **Google Sheets**: Training quiz results and trouble tickets
-- **Paxton**: Access control (read from external service)
+- **Paxton / Net2**: NOT integrated. Fob access control is deliberately left in
+  the door system; no code, config or credential for it exists in this app. See
+  `/roadmap` ("Fob-based access control"), which is still to do.
 - Sync worker (`src/sync-worker/`) periodically syncs external data into events
 
 ### Database

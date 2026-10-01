@@ -76,7 +76,8 @@ External integrations:
 
 - Recurly provides subscription-related data.
 - Google Sheets provides training and trouble-ticket data.
-- Paxton data is read from an external service.
+- Paxton/Net2 fob data is NOT read by this app. Access control stays in the door
+  system; there is no integration, and no credential for one.
 - Sync-related tests commonly use fixtures under `tests/data/`.
 
 ## Project patterns
