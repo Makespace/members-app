@@ -356,23 +356,42 @@ describe('the equipment guide, when it stopped answering', () => {
         training: {activeTrainers: 0, trainingsRecently: 0},
     });
 
-    // The scheme is noise on a page where the link is there to click.
-    it('shows the address without its scheme, and links the whole thing', () => {
-        const link = renderPage(withGuide(true)).querySelector('.eq-facts a[href*="band-saw"]');
-
-        expect(link?.textContent?.trim()).toBe(
-            'equipment.makespace.org/wood-shop/band-saw'
+    // What it is and where it goes - the path says nothing to a reader, and a
+    // long one pushes everything beside it off the line.
+    it('says what the link is and where it goes, not the whole address', () => {
+        const link = renderPage(withGuide(true)).querySelector(
+            '.eq-facts a[href*="band-saw"]'
         );
+
+        expect(
+            link?.querySelector('.eq-capsule__label')?.textContent?.trim()
+        ).toBe('Equipment guide');
+        expect(
+            link?.querySelector('.eq-capsule__where')?.textContent?.trim()
+        ).toBe('equipment.makespace.org');
+        expect(link?.textContent).not.toContain('/wood-shop/band-saw');
+    });
+
+    // Hidden from the page, but one hover away for anybody who wants to check
+    // where they are about to go.
+    it('keeps the whole address on the link and in its title', () => {
+        const link = renderPage(withGuide(true)).querySelector(
+            '.eq-facts a[href*="band-saw"]'
+        );
+
         expect(link?.getAttribute('href')).toBe(
+            'https://equipment.makespace.org/wood-shop/band-saw'
+        );
+        expect(link?.getAttribute('title')).toBe(
             'https://equipment.makespace.org/wood-shop/band-saw'
         );
     });
 
-    it('marks the address itself when the link did not answer', () => {
+    it('marks the capsule when the link did not answer', () => {
         const page = renderPage(withGuide(false));
 
-        expect(page.querySelector('.eq-guide--dead')).not.toBeNull();
-        // Beside the address, not a line of red underneath it.
+        expect(page.querySelector('.eq-capsule--dead')).not.toBeNull();
+        // Beside the capsule, not a line of red underneath it.
         expect(
             page.querySelector('.eq-facts__fact .tooltip .guide-link-warning')
         ).not.toBeNull();
@@ -381,7 +400,7 @@ describe('the equipment guide, when it stopped answering', () => {
     it('says nothing when the link answered', () => {
         const page = renderPage(withGuide(true));
 
-        expect(page.querySelector('.eq-guide--dead')).toBeNull();
+        expect(page.querySelector('.eq-capsule--dead')).toBeNull();
         expect(page.querySelector('.guide-link-warning')).toBeNull();
     });
 });

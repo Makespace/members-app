@@ -2,7 +2,9 @@ import * as O from 'fp-ts/Option';
 import {EmailAddress} from '../types';
 import {html, Html, safe, sanitizeString} from '../types/html';
 
-const mailtoLink = (
+// Exported so a caller can put the address behind its own markup - a
+// capsule, say - without hand-rolling the encoding.
+export const mailtoLink = (
   email: EmailAddress,
   subject: O.Option<string>,
   body: O.Option<string>
