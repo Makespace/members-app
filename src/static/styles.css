@@ -2803,13 +2803,6 @@ label img {
   align-items: center;
 }
 
-/* An address that did not answer, said in the colour of the problem. */
-.eq-guide--dead,
-a.eq-guide--dead,
-a.eq-guide--dead:visited {
-  color: #9c1109;
-}
-
 .eq-cards__actions {
   display: flex;
   flex-wrap: wrap;
@@ -2966,4 +2959,63 @@ a.button--admin:visited {
 
 .billing-card--open {
   border-left-color: var(--yellow-color);
+}
+
+/* A link as a capsule: what it is, then where it goes, and nothing else. A
+   risk assessment address can be a hundred characters of Drive identifier,
+   which says nothing to a reader and pushes everything beside it off the
+   line. The whole address stays available on hover. */
+.eq-capsule,
+a.eq-capsule,
+a.eq-capsule:visited {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  max-width: 100%;
+  padding: 3px 10px 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  line-height: 1.3;
+}
+
+.eq-capsule:hover,
+.eq-capsule:focus-visible {
+  border-color: var(--link-color);
+  background: color-mix(in oklch, white 94%, var(--link-color));
+}
+
+.eq-capsule > i {
+  color: var(--link-color);
+  align-self: center;
+}
+
+.eq-capsule__label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* The destination is a hint, not the point: it recedes, and gives way first
+   when the row runs out of room. */
+.eq-capsule__where {
+  color: color-mix(in oklch, black 55%, var(--grey-color));
+  font-size: 0.85em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* An address that did not answer when it was last checked. */
+.eq-capsule--dead,
+a.eq-capsule--dead,
+a.eq-capsule--dead:visited {
+  border-color: #9c1109;
+}
+
+.eq-capsule--dead .eq-capsule__label,
+.eq-capsule--dead > i {
+  color: #9c1109;
 }

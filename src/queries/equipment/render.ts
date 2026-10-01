@@ -1,6 +1,7 @@
 import {pipe} from 'fp-ts/lib/function';
 import {displayDate} from '../../templates/display-date';
 import {
+  Safe,
   html,
   Html,
   joinHtml,
@@ -17,7 +18,7 @@ import {currentTrainingSheetButton} from '../shared-render/current-training-shee
 
 
 import {tooltip, tooltipWith} from '../shared-render/tool-tip';
-import { mailTo } from '../../templates/mailto';
+import {mailtoLink} from '../../templates/mailto';
 import {
   categoryDot,
   categoryLabel,
@@ -249,9 +250,42 @@ const guideLinkHealth = (viewModel: ViewModel) =>
     )
   );
 
-// Written for reading rather than for copying: the scheme is noise on a page
-// where the link is right there to click.
-const forReading = (url: string) => url.replace(/^https?:\/\//, '');
+// Where an address points, in the words somebody would use for it. A risk
+// assessment can be a hundred characters of Google Drive identifier, which
+// says nothing and pushes everything beside it off the line.
+const hostOf = (url: string): string => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+};
+
+// A link as a capsule: what it is, where it goes, and nothing else. The whole
+// address is on hover for anybody who wants to check it before clicking.
+const linkCapsule = (input: {
+  label: Html;
+  href: string;
+  hint: string;
+  icon: Safe;
+  dead?: boolean;
+  after?: Html;
+}) => html`
+  <span class="eq-facts__fact">
+    <a
+      class="eq-capsule ${input.dead === true
+        ? safe('eq-capsule--dead')
+        : safe('')}"
+      href="${safe(input.href)}"
+      title="${sanitizeString(input.hint)}"
+    >
+      <i class="${input.icon}" aria-hidden="true"></i>
+      <span class="eq-capsule__label">${input.label}</span>
+      <span class="eq-capsule__where">${sanitizeString(hostOf(input.hint))}</span>
+    </a>
+    ${input.after ?? html``}
+  </span>
+`;
 
 // A link that did not answer is shown in the colour of the problem, with the
 // mark beside it rather than under the line: the address is the thing that
@@ -271,12 +305,12 @@ const riskAssessmentFact = (viewModel: ViewModel) =>
     O.match(
       () => html``,
       riskAssessmentUrl =>
-        html`<span class="eq-facts__fact"
-          ><strong>Risk assessment:</strong>
-          <a href="${safe(riskAssessmentUrl)}"
-            >${sanitizeString(forReading(riskAssessmentUrl))}</a
-          ></span
-        >`
+        linkCapsule({
+          label: html`Risk assessment`,
+          href: riskAssessmentUrl,
+          hint: riskAssessmentUrl,
+          icon: safe('fa-regular fa-file-lines'),
+        })
     )
   );
 
@@ -286,17 +320,14 @@ const guideFact = (viewModel: ViewModel) =>
     O.match(
       () => html``,
       guideUrl =>
-        html`<span class="eq-facts__fact"
-          ><strong>Equipment guide:</strong>
-          <a
-            class="${guideUnreachable(viewModel)
-              ? safe('eq-guide--dead')
-              : safe('')}"
-            href="${safe(guideUrl)}"
-            >${sanitizeString(forReading(guideUrl))}</a
-          >
-          ${guideLinkHealth(viewModel)}</span
-        >`
+        linkCapsule({
+          label: html`Equipment guide`,
+          href: guideUrl,
+          hint: guideUrl,
+          icon: safe('fa-regular fa-circle-question'),
+          dead: guideUnreachable(viewModel),
+          after: guideLinkHealth(viewModel),
+        })
     )
   );
 
@@ -591,14 +622,23 @@ export const render = (viewModel: ViewModel) =>
              screen is saying it once too often. -->
         <div class="eq-facts">
           ${O.isSome(viewModel.equipment.area.email)
-            ? html`<span
-                ><strong>Mailing list:</strong>
-                ${mailTo(
-                  viewModel.equipment.area.email.value,
-                  O.none,
-                  O.none
-                )}</span
-              >`
+            ? html`<span class="eq-facts__fact">
+                <a
+                  class="eq-capsule"
+                  href="${mailtoLink(
+                    viewModel.equipment.area.email.value,
+                    O.none,
+                    O.none
+                  )}"
+                  title="${sanitizeString(viewModel.equipment.area.email.value)}"
+                >
+                  <i class="fa-regular fa-envelope" aria-hidden="true"></i>
+                  <span class="eq-capsule__label">Mailing list</span>
+                  <span class="eq-capsule__where"
+                    >${sanitizeString(viewModel.equipment.area.email.value)}</span
+                  >
+                </a>
+              </span>`
             : html``}
           ${guideFact(viewModel)} ${riskAssessmentFact(viewModel)}
         </div>
