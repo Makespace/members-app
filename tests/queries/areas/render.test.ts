@@ -23,6 +23,7 @@ const equipment = {
   name: 'Laser Cutter',
   trainingSheetId: O.none,
   guideUrl: O.none,
+  riskAssessmentUrl: O.none,
   removedAt: O.none,
   trainers: [],
   trainedMembers: [],

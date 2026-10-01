@@ -181,6 +181,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         setMachines: frameworkify(commands.equipment.setMachines),
         trainingSheet: frameworkify(commands.equipment.trainingSheet),
         setGuideUrl: frameworkify(commands.equipment.setGuideUrl),
+        setRiskAssessmentUrl: frameworkify(
+          commands.equipment.setRiskAssessmentUrl
+        ),
         removeTrainingSheet: frameworkify(
           commands.equipment.removeTrainingSheet
         ),

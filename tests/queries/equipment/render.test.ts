@@ -73,6 +73,7 @@ describe('Render equipment page', () => {
         ],
         trainingSheetId: O.some(faker.string.alpha({length: 20})),
         guideUrl: O.none,
+        riskAssessmentUrl: O.none,
         removedAt: O.none,
         area: {
             id: faker.string.uuid() as UUID,
@@ -340,6 +341,7 @@ describe('the equipment guide, when it stopped answering', () => {
             trainedMembers: [],
             trainingSheetId: O.none,
             guideUrl: O.some('https://equipment.makespace.org/wood-shop/band-saw'),
+            riskAssessmentUrl: O.none,
             removedAt: O.none,
             area: {id: faker.string.uuid() as UUID, name: 'Wood Shop', email: O.none},
         },
@@ -407,6 +409,7 @@ describe('the actions, in groups', () => {
         trainedMembers: [],
         trainingSheetId: O.none,
         guideUrl: O.none,
+        riskAssessmentUrl: O.none,
         removedAt: O.none,
         area,
     };

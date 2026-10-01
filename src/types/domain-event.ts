@@ -84,6 +84,15 @@ const EquipmentMarkedObsolete = defineEvent('EquipmentMarkedObsolete', {
 // raw string matches it and is still unresolved.
 // Renaming keeps the old name working: it becomes an alias, so a trouble
 // ticket naming the machine the way the form used to is still matched to it.
+// Where the written risk assessment for this machine lives. Empty clears it.
+const EquipmentRiskAssessmentUrlSet = defineEvent(
+  'EquipmentRiskAssessmentUrlSet',
+  {
+    equipmentId: tt.UUID,
+    riskAssessmentUrl: t.string,
+  }
+);
+
 const EquipmentNameChanged = defineEvent('EquipmentNameChanged', {
   equipmentId: tt.UUID,
   name: t.string,
@@ -488,6 +497,7 @@ export const events = [
   EquipmentCategoryChanged,
   EquipmentMachinesSet,
   EquipmentNameChanged,
+  EquipmentRiskAssessmentUrlSet,
   EquipmentMarkedObsolete,
   EquipmentNameAliasAdded,
   EquipmentNameAliasRemoved,
@@ -546,6 +556,7 @@ export const DomainEvent = t.union([
   EquipmentCategoryChanged.codec,
   EquipmentMachinesSet.codec,
   EquipmentNameChanged.codec,
+  EquipmentRiskAssessmentUrlSet.codec,
   EquipmentMarkedObsolete.codec,
   EquipmentNameAliasAdded.codec,
   EquipmentNameAliasRemoved.codec,

@@ -14,6 +14,11 @@ type ChangeLogEntry = {
 
 export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
+    date: '2026-10-01',
+    headline:
+      "A machine's page can now link to its risk assessment, recorded by an owner of its area",
+  },
+  {
     date: '2026-09-30',
     headline:
       'Admins can rename a machine - the name it had before keeps matching trouble tickets, and its training records are unaffected',
