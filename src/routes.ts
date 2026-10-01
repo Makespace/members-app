@@ -75,6 +75,11 @@ export const initRoutes = (
     ...command('equipment', 'rename', commands.equipment.rename),
     ...command('equipment', 'set-category', commands.equipment.setCategory),
     ...command('equipment', 'set-guide-url', commands.equipment.setGuideUrl),
+    ...command(
+      'equipment',
+      'set-risk-assessment-url',
+      commands.equipment.setRiskAssessmentUrl
+    ),
     ...command('equipment', 'set-machines', commands.equipment.setMachines),
     // Bulk-add: one EquipmentAdded per pasted line. A bespoke POST because
     // the command pipeline commits exactly one event per request; the GET is

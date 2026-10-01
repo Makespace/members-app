@@ -33,6 +33,8 @@ export type MinimalEquipment = {
   // The machine's page on equipment.makespace.org, recorded by an owner. None
   // until somebody sets it: the app never guesses an address it cannot check.
   guideUrl: O.Option<string>;
+  // Where the written risk assessment for this machine lives.
+  riskAssessmentUrl: O.Option<string>;
   // Set when the equipment has been marked obsolete (soft-hidden).
   removedAt: O.Option<Date>;
 };

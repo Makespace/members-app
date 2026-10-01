@@ -265,6 +265,21 @@ const guideUnreachable = (viewModel: ViewModel) =>
     )
   );
 
+const riskAssessmentFact = (viewModel: ViewModel) =>
+  pipe(
+    viewModel.equipment.riskAssessmentUrl,
+    O.match(
+      () => html``,
+      riskAssessmentUrl =>
+        html`<span class="eq-facts__fact"
+          ><strong>Risk assessment:</strong>
+          <a href="${safe(riskAssessmentUrl)}"
+            >${sanitizeString(forReading(riskAssessmentUrl))}</a
+          ></span
+        >`
+    )
+  );
+
 const guideFact = (viewModel: ViewModel) =>
   pipe(
     viewModel.equipment.guideUrl,
@@ -315,6 +330,25 @@ const equipmentHeading = (viewModel: ViewModel) => html`
     </p>
   </div>
 `;
+
+// Owners of the area, or an admin. A risk assessment is the owning area's
+// responsibility rather than a trainer's.
+const setRiskAssessment = (viewModel: ViewModel) =>
+  viewModel.isSuperUser || isOwner(viewModel)
+    ? html` <li>
+        <a
+          href="/equipment/set-risk-assessment-url?equipmentId=${viewModel
+            .equipment.id}"
+          >${O.isSome(viewModel.equipment.riskAssessmentUrl)
+            ? html`Change where the risk assessment lives`
+            : html`Record where the risk assessment lives`}</a
+        >
+        ${tooltip(
+          html`Shown on this page so anybody wondering what the hazards are
+          can read it.`
+        )}
+      </li>`
+    : html``;
 
 // Admins and super-users. The old name keeps working as an alias, so this does
 // not strand the tickets that used it.
@@ -476,6 +510,7 @@ const equipmentActions = (viewModel: ViewModel) => html`
   ${actionGroup('Update this equipment', [
     renameEquipment(viewModel),
     setMachines(viewModel),
+    setRiskAssessment(viewModel),
     guideLink(viewModel),
     changeCategory(viewModel),
     printSign(viewModel),
@@ -565,7 +600,7 @@ export const render = (viewModel: ViewModel) =>
                 )}</span
               >`
             : html``}
-          ${guideFact(viewModel)}
+          ${guideFact(viewModel)} ${riskAssessmentFact(viewModel)}
         </div>
         ${equipmentCards(viewModel)} ${equipmentActions(viewModel)}
         ${viewModel.equipment.category === 'red'

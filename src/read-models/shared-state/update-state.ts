@@ -564,6 +564,23 @@ const _updateState =
         }
         break;
       }
+      case 'EquipmentRiskAssessmentUrlSet': {
+        const rows = tx
+          .update(equipmentTable)
+          // As with the guide: empty clears it rather than recording a blank.
+          .set({
+            riskAssessmentUrl:
+              event.riskAssessmentUrl === '' ? null : event.riskAssessmentUrl,
+          })
+          .where(eq(equipmentTable.id, event.equipmentId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(
+            `Unable to set the risk assessment url for equipment '${event.equipmentId}' - unknown equipment`
+          );
+        }
+        break;
+      }
       case 'EquipmentGuideUrlSet': {
         const rows = tx
           .update(equipmentTable)

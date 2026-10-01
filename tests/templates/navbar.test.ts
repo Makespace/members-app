@@ -25,6 +25,7 @@ const renderNav = (
       machineNames: equipment.machineNames,
       trainingSheetId: equipment.trainingSheetId,
       guideUrl: equipment.guideUrl,
+      riskAssessmentUrl: equipment.riskAssessmentUrl,
       removedAt: equipment.removedAt,
     }));
   });
@@ -50,6 +51,7 @@ const makeEquipment = (name: string, removed = false): Equipment => ({
   machineNames: [],
     trainingSheetId: O.none,
   guideUrl: O.none,
+  riskAssessmentUrl: O.none,
   removedAt: removed ? O.some(new Date('2026-01-01T00:00:00.000Z')) : O.none,
   area: {
     id: faker.string.uuid() as UUID,

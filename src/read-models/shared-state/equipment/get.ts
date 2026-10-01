@@ -38,6 +38,7 @@ const transformRow = <
     machineNamesJson: string | undefined | null;
     trainingSheetId: string | undefined | null;
     guideUrl: string | undefined | null;
+    riskAssessmentUrl: string | undefined | null;
     removedAt: Date | undefined | null;
   },
 >(
@@ -50,6 +51,7 @@ const transformRow = <
   machineNames: parseMachineNames(row.machineNamesJson),
   trainingSheetId: O.fromNullable(row.trainingSheetId),
   guideUrl: O.fromNullable(row.guideUrl),
+  riskAssessmentUrl: O.fromNullable(row.riskAssessmentUrl),
   removedAt: O.fromNullable(row.removedAt),
 });
 
