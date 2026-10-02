@@ -81,8 +81,10 @@ export const render = () => html`
       trained satisfactorily`),
       todo(html`Filter inactive members out of the 'awaiting training'
       lists`),
-      todo(html`Remove 'trained' status for people who haven't been members
-      for a while, or who have been banned`),
+      inProgress(html`Remove 'trained' status for people who haven't been
+      members for a while, or who have been banned - an admin linking a
+      returning member's new number now chooses whether their old training
+      still counts; working out the gap automatically from Recurly is next`),
 
       heading(html`Increase awareness of the owners system`),
       todo(html`Create area owner team summary pages that can display on

@@ -60,6 +60,7 @@ describe('member email projection', () => {
     await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
       oldMemberNumber,
       newMemberNumber,
+      carryOverTraining: true,
     });
 
     const member = getSomeOrFail(

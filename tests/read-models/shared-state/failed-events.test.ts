@@ -110,6 +110,7 @@ describe('failed-events', () => {
       constructEvent('MemberRejoinedWithNewNumber')({
         oldMemberNumber,
         newMemberNumber,
+        carryOverTraining: true,
         actor: arbitraryActor(),
       })
     );
@@ -145,6 +146,7 @@ describe('failed-events', () => {
       constructEvent('MemberRejoinedWithNewNumber')({
         oldMemberNumber,
         newMemberNumber,
+        carryOverTraining: true,
         actor: arbitraryActor(),
       })
     );

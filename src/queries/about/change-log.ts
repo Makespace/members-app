@@ -14,6 +14,11 @@ type ChangeLogEntry = {
 
 export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
+    date: '2026-10-02',
+    headline:
+      "When a returning member is given a new number, the admin now sees both records and chooses whether their old training still counts - it lapses after 6 months away",
+  },
+  {
     date: '2026-10-01',
     headline:
       'One page shows which machines are missing an equipment guide or a risk assessment, and lets a super-user fill the gaps without leaving it',

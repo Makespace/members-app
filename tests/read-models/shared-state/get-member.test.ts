@@ -413,6 +413,7 @@ describe('get-via-shared-read-model', () => {
                   {
                     oldMemberNumber: memberNumber,
                     newMemberNumber,
+                    carryOverTraining: true,
                   }
                 );
               } else {
@@ -667,6 +668,7 @@ describe('get-via-shared-read-model', () => {
               framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
                 oldMemberNumber: memberNumber,
                 newMemberNumber,
+                carryOverTraining: true,
               });
         const markTrainedOnOldNumber = () =>
           framework.commands.trainers.markTrained({
@@ -1004,6 +1006,7 @@ describe('get-via-shared-read-model', () => {
                       {
                         oldMemberNumber: newMemberNumber,
                         newMemberNumber: newestMemberNumber,
+                        carryOverTraining: true,
                       }
                     );
               beforeEach(async () => {

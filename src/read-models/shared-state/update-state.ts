@@ -611,7 +611,12 @@ const _updateState =
         break;
       }
       case 'MemberRejoinedWithNewNumber': {
-        addMemberNumberToExisting(tx, event.oldMemberNumber, event.newMemberNumber);
+        addMemberNumberToExisting(
+          tx,
+          event.oldMemberNumber,
+          event.newMemberNumber,
+          event.carryOverTraining
+        );
         break;
       }
       case 'MemberRejoinedWithExistingNumber': {
