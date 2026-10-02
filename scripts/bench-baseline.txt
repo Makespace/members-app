@@ -1,0 +1,67 @@
+Node v20.14.0; measuring the real queryGet handler in-process (Express routing and transport excluded)
+Fixture: 20 areas, 200 machines, 5046 members, 10000 training records, 400 trainer rows, 2000 quiz completions, 400 invoices on the trouble member (oldest unpaid, all rendered), 400 all-paid invoices, 3 on the sparse member, 2000 unrelated invoices, 5046 subscription rows
+Event replay into a fresh read model (run 1 of 2): 146282 ms for 22954 events
+Event replay into a fresh read model (run 2 of 2): 145164 ms for 22954 events
+
+Query plans on the populated fixture (shared-state db):
+  member numbers by user (desc)
+    SCAN memberNumbers
+  member emails by user (desc addedAt)
+    SCAN memberEmails; USE TEMP B-TREE FOR ORDER BY
+  trained members by user (join equipment)
+    SCAN trainedMembers; SEARCH equipment USING INDEX sqlite_autoindex_equipment_1 (id=?)
+  trainer-for by user (join equipment)
+    SEARCH trainers USING INDEX sqlite_autoindex_trainers_1 (userId=?); SEARCH equipment USING INDEX sqlite_autoindex_equipment_1 (id=?) LEFT-JOIN
+  owner-of by user (join areas)
+    SCAN owners; SEARCH areas USING INDEX sqlite_autoindex_areas_1 (id=?) LEFT-JOIN
+  owners of an area
+    SCAN owners
+  equipment by area
+    SCAN equipment
+  trained members by equipment (ordered)
+    SCAN trainedMembers; USE TEMP B-TREE FOR ORDER BY
+  trainers by equipment
+    SCAN trainers
+  trainings delivered by trainer numbers on listed equipment
+    SCAN trainedMembers
+
+Query plans on the populated fixture (external-cache db):
+  recurly subscriptions by lower(email), fresh rows
+    "SCAN recurly_subscriptions"
+  recurly invoices by lower(email)
+    "SCAN recurly_invoices"
+  recurly transactions by listed invoice ids
+    "SEARCH recurly_transactions USING INDEX recurly_transactions_invoice (invoiceId=?)"
+
+Billing retrieval vs rendering (super-user view):
+  trouble member (400 invoices, oldest unpaid) - getBillingForMember
+    median 52.65 ms  (min 48.49, max 56.78) over 10 runs after 3 warm-ups  |  0 shared-state + 2 external-cache SQL statements per request
+  trouble member (400 invoices, oldest unpaid) - renderBilling
+    median 518.03 ms  (min 473.03, max 544.21) over 10 runs after 3 warm-ups  |  0 shared-state + 0 external-cache SQL statements per request
+  all-paid member (400 invoices, none outstanding) - getBillingForMember
+    median 42.48 ms  (min 39.75, max 47.71) over 10 runs after 3 warm-ups  |  0 shared-state + 2 external-cache SQL statements per request
+  all-paid member (400 invoices, none outstanding) - renderBilling
+    median 0.03 ms  (min 0.03, max 0.03) over 10 runs after 3 warm-ups  |  0 shared-state + 0 external-cache SQL statements per request
+  sparse member (3 invoices among thousands of unrelated) - getBillingForMember
+    median 4.54 ms  (min 4.14, max 4.80) over 10 runs after 3 warm-ups  |  0 shared-state + 2 external-cache SQL statements per request
+  sparse member (3 invoices among thousands of unrelated) - renderBilling
+    median 2.18 ms  (min 1.90, max 2.54) over 10 runs after 3 warm-ups  |  0 shared-state + 0 external-cache SQL statements per request
+All scenarios ran cleanly once; measuring.
+  / (homepage, ordinary member)
+    median 51.17 ms  (min 45.77, max 73.64) over 10 runs after 3 warm-ups  |  41 shared-state + 0 external-cache SQL statements per request
+  /member/:member (self)
+    median 62.81 ms  (min 60.16, max 66.75) over 10 runs after 3 warm-ups  |  55 shared-state + 1 external-cache SQL statements per request
+  /member/:member (other member, ordinary viewer)
+    median 64.88 ms  (min 63.12, max 68.59) over 10 runs after 3 warm-ups  |  55 shared-state + 1 external-cache SQL statements per request
+  /member/:member (super-user viewing trouble member: 400 invoices, all rendered)
+    median 555.13 ms  (min 526.32, max 596.10) over 10 runs after 3 warm-ups  |  55 shared-state + 3 external-cache SQL statements per request
+  /member/:member (super-user viewing all-paid member: 400 invoices, none rendered)
+    median 106.54 ms  (min 101.06, max 113.64) over 10 runs after 3 warm-ups  |  55 shared-state + 3 external-cache SQL statements per request
+  /member/:member (super-user viewing sparse member: 3 invoices amid thousands)
+    median 70.33 ms  (min 66.70, max 76.59) over 10 runs after 3 warm-ups  |  55 shared-state + 3 external-cache SQL statements per request
+  /areas (ordinary member)
+    median 56610.07 ms  (min 55484.15, max 58003.04) over 10 runs after 3 warm-ups  |  71088 shared-state + 41 external-cache SQL statements per request
+  /areas (area owner)
+    median 56927.70 ms  (min 55444.60, max 58363.44) over 10 runs after 3 warm-ups  |  71088 shared-state + 41 external-cache SQL statements per request
+  /areas (super-user)
+    median 58416.34 ms  (min 56973.41, max 58682.39) over 10 runs after 3 warm-ups  |  71088 shared-state + 41 external-cache SQL statements per request
