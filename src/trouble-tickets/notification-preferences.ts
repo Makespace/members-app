@@ -67,9 +67,8 @@ type Setting = {kind: 'inherit'} | {kind: 'own'; choice: Choice};
 type ScopeKind =
   | 'reported-by-me'
   | 'everything'
-  | 'areas-i-own'
+  | 'my-areas'
   | 'area'
-  | 'equipment-i-train-on'
   | 'equipment'
   | 'everywhere-else';
 
@@ -78,6 +77,9 @@ export type ScopeNode = {
   id: string;
   kind: ScopeKind;
   label: string;
+  // Why this row is in the list at all - owning the area, training in it, or
+  // both. Absent on the rows that are there for everybody.
+  note: O.Option<string>;
   // Named so a row can say "same as Areas I own" rather than just "inherit".
   inheritsFrom: O.Option<string>;
   setting: Setting;
@@ -107,8 +109,7 @@ const DEFAULTS: Record<string, Setting> = {
     'resolved',
   ]),
   everything: own('never', []),
-  'areas-i-own': own('as-it-happens', ['reported', 'needs-help']),
-  'equipment-i-train-on': own('as-it-happens', ['needs-help']),
+  'my-areas': own('as-it-happens', ['reported', 'needs-help']),
   'everywhere-else': inherit,
 };
 
@@ -122,6 +123,7 @@ const node = (input: {
   id: string;
   kind: ScopeKind;
   label: string;
+  note?: O.Option<string>;
   inheritsFrom: O.Option<string>;
   parentChoice: Choice;
   children?: (effective: Choice) => ReadonlyArray<ScopeNode>;
@@ -132,6 +134,7 @@ const node = (input: {
     id: input.id,
     kind: input.kind,
     label: input.label,
+    note: input.note ?? O.none,
     inheritsFrom: input.inheritsFrom,
     setting,
     effective,
@@ -141,13 +144,62 @@ const node = (input: {
 
 const SILENT: Choice = {delivery: 'never', happenings: []};
 
+// Where a machine lives, and what each area is called - enough to put a
+// machine somebody trains on under the area it actually sits in.
+type EquipmentPlacement = {
+  id: string;
+  name: string;
+  areaId: string;
+};
+
+type AreaName = {id: string; name: string};
+
+// Why an area is in somebody's list. Owning it and training in it are
+// different relationships, and a row that cannot say which is harder to trust.
+const roleNote = (owns: boolean, trains: boolean): O.Option<string> => {
+  if (owns && trains) {
+    return O.some('owner and trainer');
+  }
+  return owns ? O.some('owner') : trains ? O.some('trainer') : O.none;
+};
+
 // The tree a member sees: what they are responsible for first, then the rest.
-// Areas they own carry their machines; machines they train on are listed in
-// their own group because teaching on something is a different relationship
-// from owning the area it sits in - and the two do not always go together.
+// An area is listed when they own it or train on something in it - the two
+// usually go together, and where they do not, somebody training in an area
+// still wants to hear about it.
 export const preferencesFor = (
-  member: Pick<Member, 'ownerOf' | 'trainerFor'>
+  member: Pick<Member, 'ownerOf' | 'trainerFor'>,
+  equipment: ReadonlyArray<EquipmentPlacement> = [],
+  areas: ReadonlyArray<AreaName> = []
 ): ReadonlyArray<ScopeNode> => {
+  const areaById = new Map<string, string>([
+    ...areas.map(area => [area.id, area.name] as const),
+    // An area somebody owns is named on their own record, so their list works
+    // even when nothing else was passed in.
+    ...member.ownerOf.map(area => [area.id, area.name] as const),
+  ]);
+  const placementById = new Map(equipment.map(item => [item.id, item]));
+
+  const ownedAreaIds = new Set(member.ownerOf.map(area => area.id));
+  // The machines they train on, grouped by the area each one sits in.
+  const trainedByArea = new Map<string, EquipmentPlacement[]>();
+  for (const trained of member.trainerFor) {
+    const placement = placementById.get(trained.equipment_id);
+    if (placement === undefined) {
+      continue;
+    }
+    trainedByArea.set(placement.areaId, [
+      ...(trainedByArea.get(placement.areaId) ?? []),
+      placement,
+    ]);
+  }
+
+  const myAreaIds = [
+    ...new Set([...ownedAreaIds, ...trainedByArea.keys()]),
+  ].sort((a, b) =>
+    (areaById.get(a) ?? '').localeCompare(areaById.get(b) ?? '', ['en-GB'])
+  );
+
   const reportedByMe = node({
     id: 'reported-by-me',
     kind: 'reported-by-me',
@@ -164,36 +216,36 @@ export const preferencesFor = (
     parentChoice: SILENT,
     children: everythingChoice => [
       node({
-        id: 'areas-i-own',
-        kind: 'areas-i-own',
-        label: 'Areas I own',
+        id: 'my-areas',
+        kind: 'my-areas',
+        label: "Areas I'm an owner or trainer in",
         inheritsFrom: O.some('Everything else'),
         parentChoice: everythingChoice,
         children: areasChoice =>
-          member.ownerOf.map(area =>
+          myAreaIds.map(areaId =>
             node({
-              id: `area:${area.id}`,
+              id: `area:${areaId}`,
               kind: 'area',
-              label: area.name,
-              inheritsFrom: O.some('Areas I own'),
+              label: areaById.get(areaId) ?? 'Unnamed area',
+              note: roleNote(
+                ownedAreaIds.has(areaId),
+                trainedByArea.has(areaId)
+              ),
+              inheritsFrom: O.some("Areas I'm an owner or trainer in"),
               parentChoice: areasChoice,
-            })
-          ),
-      }),
-      node({
-        id: 'equipment-i-train-on',
-        kind: 'equipment-i-train-on',
-        label: 'Equipment I train on',
-        inheritsFrom: O.some('Everything else'),
-        parentChoice: everythingChoice,
-        children: trainerChoice =>
-          member.trainerFor.map(equipment =>
-            node({
-              id: `equipment:${equipment.equipment_id}`,
-              kind: 'equipment',
-              label: equipment.equipment_name,
-              inheritsFrom: O.some('Equipment I train on'),
-              parentChoice: trainerChoice,
+              children: areaChoice =>
+                (trainedByArea.get(areaId) ?? []).map(machine =>
+                  node({
+                    id: `equipment:${machine.id}`,
+                    kind: 'equipment',
+                    label: machine.name,
+                    note: O.some('I train on this'),
+                    inheritsFrom: O.some(
+                      areaById.get(areaId) ?? 'the area above'
+                    ),
+                    parentChoice: areaChoice,
+                  })
+                ),
             })
           ),
       }),

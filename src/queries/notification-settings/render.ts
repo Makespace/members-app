@@ -105,6 +105,13 @@ const row = (scope: ScopeNode, depth: number): Html => html`
   <li class="ns-row ns-row--depth-${safe(String(Math.min(depth, 3)))}">
     <div class="ns-row__head">
       <span class="ns-row__label">${sanitizeString(scope.label)}</span>
+      ${pipe(
+        scope.note,
+        O.match(
+          () => html``,
+          note => html`<span class="ns-row__why">${sanitizeString(note)}</span>`
+        )
+      )}
       <span class="ns-row__effect">${effectInWords(scope.effective)}</span>
     </div>
     <div class="ns-row__controls">

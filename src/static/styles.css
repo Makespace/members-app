@@ -3141,3 +3141,14 @@ a.eq-capsule--dead:visited {
   border-radius: 4px;
   margin: 0;
 }
+
+/* Why a row is in somebody's list - owning the area, training in it, or both.
+   Quieter than the name it sits beside. */
+.ns-row__why {
+  font-size: 0.8rem;
+  color: color-mix(in oklch, black 50%, var(--grey-color));
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 1px 8px 2px;
+  white-space: nowrap;
+}

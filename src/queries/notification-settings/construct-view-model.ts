@@ -30,7 +30,18 @@ export const constructViewModel =
       );
     }
 
-    const scopes = preferencesFor(member.value);
+    const scopes = preferencesFor(
+      member.value,
+      deps.sharedReadModel.equipment.getAllMinimal().map(item => ({
+        id: item.id,
+        name: item.name,
+        areaId: item.areaId,
+      })),
+      deps.sharedReadModel.area.getAllMinimal().map(area => ({
+        id: area.id,
+        name: area.name,
+      }))
+    );
 
     return E.right({
       scopes,
