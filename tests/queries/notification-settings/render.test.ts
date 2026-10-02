@@ -7,18 +7,20 @@ import {render} from '../../../src/queries/notification-settings/render';
 import {preferencesFor} from '../../../src/trouble-tickets/notification-preferences';
 import {ViewModel} from '../../../src/queries/notification-settings/view-model';
 
-const scopes = preferencesFor({
-  ownerOf: [
-    {id: 'a1', name: 'Wood Shop', ownershipRecordedAt: new Date()},
-  ],
-  trainerFor: [
-    {
-      equipment_id: 'e1' as UUID,
-      equipment_name: 'Laser Cutter',
-      since: new Date(),
-    },
-  ],
-});
+const scopes = preferencesFor(
+  {
+    ownerOf: [{id: 'a1', name: 'Wood Shop', ownershipRecordedAt: new Date()}],
+    trainerFor: [
+      {
+        equipment_id: 'e1' as UUID,
+        equipment_name: 'Band Saw',
+        since: new Date(),
+      },
+    ],
+  },
+  [{id: 'e1', name: 'Band Saw', areaId: 'a1'}],
+  [{id: 'a1', name: 'Wood Shop'}]
+);
 
 const viewModel: ViewModel = {
   scopes,
@@ -68,19 +70,35 @@ describe('the notification settings page', () => {
       el => el.textContent?.trim()
     );
     expect(labels).toContain('Tickets I reported');
-    expect(labels).toContain('Areas I own');
+    expect(labels).toContain("Areas I'm an owner or trainer in");
     expect(labels).toContain('Wood Shop');
-    expect(labels).toContain('Equipment I train on');
-    expect(labels).toContain('Laser Cutter');
+    expect(labels).toContain('Band Saw');
     expect(labels).toContain('Anywhere else in Makespace');
   });
 
   it('nests a machine inside the group it follows', () => {
-    const owned = rowNamed(page(), 'Areas I own');
+    const owned = rowNamed(page(), "Areas I'm an owner or trainer in");
     expect(
       ownPart(owned, 'ns-children')?.querySelector('.ns-row__label')
         ?.textContent?.trim()
     ).toBe('Wood Shop');
+  });
+
+  // A machine sits under the area it is in, not under a group of its own.
+  it('nests a machine inside its own area', () => {
+    const woodShop = rowNamed(page(), 'Wood Shop');
+    expect(
+      ownPart(woodShop, 'ns-children')?.querySelector('.ns-row__label')
+        ?.textContent?.trim()
+    ).toBe('Band Saw');
+  });
+
+  it('says why an area is in the list', () => {
+    const woodShop = rowNamed(page(), 'Wood Shop');
+    expect(
+      ownPart(woodShop, 'ns-row__head')?.querySelector('.ns-row__why')
+        ?.textContent?.trim()
+    ).toBe('owner and trainer');
   });
 
   // The thing that makes the model reviewable: a row that follows its parent
@@ -114,7 +132,7 @@ describe('the notification settings page', () => {
   });
 
   it('offers every happening to a rule that speaks for itself', () => {
-    const owned = rowNamed(page(), 'Areas I own');
+    const owned = rowNamed(page(), "Areas I'm an owner or trainer in");
     const boxes = ownPart(owned, 'ns-row__controls')?.querySelectorAll(
       '.ns-check input'
     );
