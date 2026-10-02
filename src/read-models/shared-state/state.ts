@@ -466,6 +466,39 @@ createTables.push(
   sql`CREATE INDEX IF NOT EXISTS troubleTicketChangeLog_ticketId_idx ON troubleTicketChangeLog (ticketId);`
 );
 
+// Member page loads and every page's chrome fetch one member's numbers,
+// emails, training records and ownership; the areas page fetches equipment
+// per area and training rows per machine. SQLite does not index foreign keys
+// automatically, so these access paths are what keep member loads and the
+// areas page from scanning whole tables per lookup.
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS memberNumbers_userId_idx ON memberNumbers (userId, memberNumber);`
+);
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS memberEmails_userId_addedAt_idx ON memberEmails (userId, addedAt);`
+);
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS trainedMembers_userId_idx ON trainedMembers (userId);`
+);
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS trainedMembers_equipmentId_trainedAt_idx ON trainedMembers (equipmentId, trainedAt);`
+);
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS trainedMembers_trainedByMemberNumber_idx ON trainedMembers (trainedByMemberNumber);`
+);
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS trainers_equipmentId_idx ON trainers (equipmentId);`
+);
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS owners_userId_idx ON owners (userId);`
+);
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS owners_areaId_idx ON owners (areaId);`
+);
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS equipment_areaId_idx ON equipment (areaId);`
+);
+
 // Event indices of status changes whose notification emails have been sent.
 export const troubleTicketNotificationsTable = defineTable(
   sql`
