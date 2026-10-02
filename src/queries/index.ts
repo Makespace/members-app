@@ -19,6 +19,7 @@ export {member} from './member';
 export {memberBilling} from './member-billing';
 export {outstandingInvoices} from './outstanding-invoices';
 export {equipmentLinks} from './equipment-links';
+export {notificationSettings} from './notification-settings';
 export {log} from './log';
 export {trainingEventLog} from './training-event-log';
 export {eventLogOrder} from './event-log-order';
