@@ -3059,3 +3059,85 @@ a.eq-capsule--dead:visited {
 .eq-links td {
   vertical-align: middle;
 }
+
+/* Trouble ticket notification settings: a tree of rules, each either
+   following the one above it or saying its own thing. Indentation carries
+   the inheritance, so it has to survive on a phone. */
+.ns-tree,
+.ns-children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ns-row {
+  padding: 10px 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.ns-row__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.75rem;
+}
+
+.ns-row__label {
+  font-weight: 600;
+}
+
+/* What the rule comes to, as opposed to what it says. A row that follows its
+   parent still has an effect, and that is what somebody is choosing. */
+.ns-row__effect {
+  color: color-mix(in oklch, black 55%, var(--grey-color));
+  font-size: 0.9rem;
+}
+
+.ns-row__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-top: 6px;
+}
+
+.ns-row__happenings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.9rem;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.ns-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+/* The nesting is the meaning, so it is drawn rather than just indented. */
+.ns-children {
+  margin-left: 1rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--border-color);
+}
+
+@media (max-width: 40rem) {
+  .ns-children {
+    margin-left: 0.4rem;
+    padding-left: 0.5rem;
+  }
+}
+
+/* Says the page does not do anything yet. Not a .tag: that is capped at a
+   chip's width, which turns a sentence into a column. */
+.ns-preview {
+  border-left: 5px solid var(--yellow-color);
+  background: color-mix(in oklch, white 85%, var(--yellow-color));
+  padding: 10px 14px;
+  border-radius: 4px;
+  margin: 0;
+}
