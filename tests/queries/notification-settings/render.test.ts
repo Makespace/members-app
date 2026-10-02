@@ -111,24 +111,69 @@ describe('the notification settings page', () => {
     ).toContain('reported');
   });
 
-  it('offers following the parent only where there is a parent to follow', () => {
-    const options = (label: string) =>
-      [
-        ...(ownPart(rowNamed(page(), label), 'ns-row__controls')?.querySelectorAll(
-          'select option'
-        ) ?? []),
-      ].map(option => option.getAttribute('value'));
+  // Following is not a kind of delivery, so it is not an option in that list.
+  it('offers a switch to differ only where there is a parent to follow', () => {
+    const differ = (label: string) =>
+      ownPart(rowNamed(page(), label), 'ns-row__controls')?.querySelector(
+        '[data-ns-differ]'
+      );
 
-    expect(options('Everything else')).not.toContain('inherit');
-    expect(options('Wood Shop')).toContain('inherit');
+    expect(differ('Everything else')).toBeNull();
+    expect(differ('Wood Shop')).not.toBeNull();
+  });
+
+  it('names the rule a row would be differing from', () => {
+    const controls = ownPart(
+      rowNamed(page(), 'Wood Shop'),
+      'ns-row__controls'
+    );
+    expect(controls?.querySelector('.ns-row__differ')?.textContent).toContain(
+      "Areas I'm an owner or trainer in"
+    );
   });
 
   // Ticking what to hear about makes no sense while following somebody else.
-  it('does not offer happenings to a rule that follows its parent', () => {
-    const woodShop = rowNamed(page(), 'Wood Shop');
+  // Greyed rather than hidden: somebody deciding whether to differ wants to
+  // see what they would be differing from.
+  it('shows a following row the settings it is following, turned off', () => {
+    const controls = ownPart(
+      rowNamed(page(), 'Wood Shop'),
+      'ns-row__controls'
+    );
+    expect(controls?.classList.contains('ns-row__controls--following')).toBe(
+      true
+    );
+    const happenings = controls?.querySelector('.ns-row__happenings');
+    expect(happenings).not.toBeNull();
+    expect(happenings?.hasAttribute('disabled')).toBe(true);
     expect(
-      ownPart(woodShop, 'ns-row__controls')?.querySelector('.ns-row__happenings')
-    ).toBeNull();
+      controls?.querySelector('.ns-row__delivery')?.hasAttribute('disabled')
+    ).toBe(true);
+  });
+
+  it('shows the inherited values rather than empty boxes', () => {
+    const controls = ownPart(
+      rowNamed(page(), 'Wood Shop'),
+      'ns-row__controls'
+    );
+    const ticked = [
+      ...(controls?.querySelectorAll('.ns-check input') ?? []),
+    ].filter(box => box.hasAttribute('checked'));
+    // Wood Shop follows the group, which hears about reported and needs-help.
+    expect(ticked).toHaveLength(2);
+  });
+
+  it('leaves a rule that speaks for itself switched on', () => {
+    const controls = ownPart(
+      rowNamed(page(), "Areas I'm an owner or trainer in"),
+      'ns-row__controls'
+    );
+    expect(controls?.classList.contains('ns-row__controls--following')).toBe(
+      false
+    );
+    expect(
+      controls?.querySelector('.ns-row__happenings')?.hasAttribute('disabled')
+    ).toBe(false);
   });
 
   it('offers every happening to a rule that speaks for itself', () => {

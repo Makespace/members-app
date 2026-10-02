@@ -39,28 +39,32 @@ const effectInWords = (choice: Choice): Html => {
   return html`${sanitizeString(list)} &mdash; ${when}`;
 };
 
+// A following row shows the settings it is following, greyed and turned off,
+// rather than a sentence naming its parent. Somebody deciding whether to
+// differ wants to see what they would be differing from.
+const shownChoice = (scope: ScopeNode): Choice =>
+  scope.setting.kind === 'own' ? scope.setting.choice : scope.effective;
+
+const isFollowing = (scope: ScopeNode): boolean =>
+  scope.setting.kind === 'inherit' && O.isSome(scope.inheritsFrom);
+
 const deliveryChoices = (scope: ScopeNode): Html => html`
-  <select name="${safe(`delivery:${scope.id}`)}" class="ns-row__delivery">
-    ${pipe(
-      scope.inheritsFrom,
-      O.match(
-        () => html``,
-        parent =>
-          html`<option
-            value="inherit"
-            ${scope.setting.kind === 'inherit' ? safe('selected') : safe('')}
-          >
-            Same as ${sanitizeString(parent)}
-          </option>`
-      )
-    )}
+  <div class="ns-row__group">
+    <label class="ns-row__group-label" for="${safe(`delivery:${scope.id}`)}"
+      >How often</label
+    >
+    <select
+      id="${safe(`delivery:${scope.id}`)}"
+      name="${safe(`delivery:${scope.id}`)}"
+      class="ns-row__delivery"
+      ${isFollowing(scope) ? safe('disabled') : safe('')}
+    >
     ${joinHtml(
       DELIVERIES.map(
         delivery => html`
           <option
             value="${safe(delivery)}"
-            ${scope.setting.kind === 'own' &&
-            scope.setting.choice.delivery === delivery
+            ${shownChoice(scope).delivery === delivery
               ? safe('selected')
               : safe('')}
           >
@@ -69,13 +73,19 @@ const deliveryChoices = (scope: ScopeNode): Html => html`
         `
       )
     )}
-  </select>
+    </select>
+  </div>
 `;
 
 const happeningChoices = (scope: ScopeNode): Html => html`
-  <fieldset class="ns-row__happenings">
-    <legend class="visually-hidden">
-      What to hear about for ${sanitizeString(scope.label)}
+  <fieldset
+    class="ns-row__happenings"
+    ${isFollowing(scope) ? safe('disabled') : safe('')}
+  >
+    <legend class="ns-row__group-label">
+      Tell me about<span class="visually-hidden">
+        &mdash; ${sanitizeString(scope.label)}</span
+      >
     </legend>
     ${joinHtml(
       TICKET_HAPPENINGS.map(happening => {
@@ -87,11 +97,9 @@ const happeningChoices = (scope: ScopeNode): Html => html`
               id="${safe(id)}"
               name="${safe(`happening:${scope.id}`)}"
               value="${safe(happening)}"
-              ${scope.setting.kind === 'own' &&
-              scope.setting.choice.happenings.includes(happening)
+              ${shownChoice(scope).happenings.includes(happening)
                 ? safe('checked')
                 : safe('')}
-              ${scope.setting.kind === 'inherit' ? safe('disabled') : safe('')}
             />
             ${sanitizeString(happeningLabel(happening))}
           </label>
@@ -100,6 +108,33 @@ const happeningChoices = (scope: ScopeNode): Html => html`
     )}
   </fieldset>
 `;
+
+// The switch between following and differing. A checkbox rather than an option
+// inside the delivery list: following is not a kind of delivery, and mixing
+// the two made "Same as Wood Shop" sit beside "Daily summary" as though they
+// answered the same question.
+const followSwitch = (scope: ScopeNode): Html =>
+  pipe(
+    scope.inheritsFrom,
+    O.match(
+      () => html``,
+      parent => html`
+        <label class="ns-row__differ" for="${safe(`differ:${scope.id}`)}">
+          <input
+            type="checkbox"
+            id="${safe(`differ:${scope.id}`)}"
+            name="${safe(`differ:${scope.id}`)}"
+            data-ns-differ
+            ${scope.setting.kind === 'own' ? safe('checked') : safe('')}
+          />
+          <span
+            >Set differently from
+            <strong>${sanitizeString(parent)}</strong></span
+          >
+        </label>
+      `
+    )
+  );
 
 const row = (scope: ScopeNode, depth: number): Html => html`
   <li class="ns-row ns-row--depth-${safe(String(Math.min(depth, 3)))}">
@@ -114,9 +149,14 @@ const row = (scope: ScopeNode, depth: number): Html => html`
       )}
       <span class="ns-row__effect">${effectInWords(scope.effective)}</span>
     </div>
-    <div class="ns-row__controls">
+    <div
+      class="ns-row__controls ${isFollowing(scope)
+        ? safe('ns-row__controls--following')
+        : safe('')}"
+      data-ns-controls
+    >
+      ${followSwitch(scope)} ${happeningChoices(scope)}
       ${deliveryChoices(scope)}
-      ${scope.setting.kind === 'inherit' ? html`` : happeningChoices(scope)}
     </div>
     ${scope.children.length === 0
       ? html``
@@ -153,6 +193,29 @@ export const render = (viewModel: ViewModel): Html => html`
     <ul class="ns-tree">
       ${joinHtml(viewModel.scopes.map(scope => row(scope, 0)))}
     </ul>
+    <script>
+      // Turning a row's own controls on and off. Scoped to the controls block
+      // the switch sits in, because a row contains its children's rows and a
+      // loose query would reach into them.
+      (function () {
+        document.querySelectorAll('[data-ns-differ]').forEach(function (differ) {
+          var controls = differ.closest('[data-ns-controls]');
+          if (!controls) return;
+          var own = controls.querySelectorAll('select, fieldset');
+          var apply = function () {
+            controls.classList.toggle(
+              'ns-row__controls--following',
+              !differ.checked
+            );
+            Array.prototype.forEach.call(own, function (control) {
+              control.disabled = !differ.checked;
+            });
+          };
+          differ.addEventListener('change', apply);
+          apply();
+        });
+      })();
+    </script>
     ${nothingToScope(viewModel)}
     <p>
       <small

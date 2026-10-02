@@ -3152,3 +3152,49 @@ a.eq-capsule--dead:visited {
   padding: 1px 8px 2px;
   white-space: nowrap;
 }
+
+/* A row that follows the one above it shows what it is following, turned off.
+   Greyed rather than hidden: somebody deciding whether to differ wants to see
+   what they would be differing from. */
+.ns-row__controls--following .ns-row__group,
+.ns-row__controls--following .ns-row__happenings {
+  opacity: 0.45;
+}
+
+/* The two questions a rule answers - what is worth telling me, and how often -
+   are different questions, so each is named and they stack rather than running
+   together on one line. */
+.ns-row__controls {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.ns-row__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+}
+
+.ns-row__group-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: color-mix(in oklch, black 55%, var(--grey-color));
+  padding: 0;
+}
+
+.ns-row__differ {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: color-mix(in oklch, black 60%, var(--grey-color));
+  white-space: nowrap;
+}
+
+/* The switch itself never greys - it is the way back out. */
+.ns-row__controls--following .ns-row__differ {
+  opacity: 1;
+}
