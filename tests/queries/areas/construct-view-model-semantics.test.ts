@@ -1,5 +1,6 @@
 import {faker} from '@faker-js/faker';
 import {advanceTo, clear} from 'jest-date-mock';
+import {Settings} from 'luxon';
 import {arbitraryUser} from '../../types/user.helper';
 import {getRightOrFail, arbitraryActor, insertRecurlySubscription} from '../../helpers';
 import {constructViewModel} from '../../../src/queries/areas/construct-view-model';
@@ -449,20 +450,30 @@ describe('construct-view-model semantics', () => {
     });
 
     it('bucket equipment charts across quarter boundaries', async () => {
-      advanceTo(new Date('2026-07-22T12:00:00.000Z'));
-      const trainee = await linkMember();
-      // Q1 2026 started 2026-04-01T00:00:00 local-zone; a delivery exactly at
-      // the boundary lands in the newer quarter, one millisecond earlier does
-      // not.
-      await markTrainedByOwner(trainee.memberNumber, new Date('2026-04-01T00:00:00.000Z'));
-      const secondTrainee = await linkMember();
-      await markTrainedByOwner(secondTrainee.memberNumber, new Date('2026-03-31T23:59:59.999Z'));
+      // Pin the zone: the fixture puts the boundary deliveries at UTC
+      // midnight, which is only a quarter boundary when the chart's zone is
+      // UTC too. PreviousDefaultZoneStore restores whatever zone the host
+      // had, so the test passes anywhere.
+      const previousZone = Settings.defaultZone;
+      Settings.defaultZone = 'UTC';
+      try {
+        advanceTo(new Date('2026-07-22T12:00:00.000Z'));
+        const trainee = await linkMember();
+        // Q1 2026 started 2026-04-01T00:00:00 UTC; a delivery exactly at
+        // the boundary lands in the newer quarter, one millisecond earlier does
+        // not.
+        await markTrainedByOwner(trainee.memberNumber, new Date('2026-04-01T00:00:00.000Z'));
+        const secondTrainee = await linkMember();
+        await markTrainedByOwner(secondTrainee.memberNumber, new Date('2026-03-31T23:59:59.999Z'));
 
-      const viewModel = await runAs(superUser)();
-      const machine = machineNamed(viewModelArea(viewModel, areaId), 'Red Machine');
-      // One millisecond before the boundary stays in Q1 2026, the delivery
-      // exactly at the boundary lands in Q2 2026 - oldest first.
-      expect(machine.trainingsByQuarter.map(q => q.count)).toStrictEqual([0, 1, 1, 0]);
+        const viewModel = await runAs(superUser)();
+        const machine = machineNamed(viewModelArea(viewModel, areaId), 'Red Machine');
+        // One millisecond before the boundary stays in Q1 2026, the delivery
+        // exactly at the boundary lands in Q2 2026 - oldest first.
+        expect(machine.trainingsByQuarter.map(q => q.count)).toStrictEqual([0, 1, 1, 0]);
+      } finally {
+        Settings.defaultZone = previousZone;
+      }
     });
   });
 });
