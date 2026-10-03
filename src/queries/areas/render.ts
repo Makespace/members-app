@@ -17,18 +17,14 @@ import {renderReasonChips} from '../../templates/recurly-reasons';
 import {renderMember} from '../../templates/member';
 import {renderTrainingSparkline} from '../../templates/training-sparkline';
 import {tooltip} from '../shared-render/tool-tip';
-import * as O from 'fp-ts/Option';
 import {displayDate, displayDateShort} from '../../templates/display-date';
+import * as O from 'fp-ts/Option';
 import {DateTime} from 'luxon';
-import {
-  Area,
-  Owner,
-} from '../../read-models/shared-state/return-types';
 import { mailTo } from '../../templates/mailto';
 import {categoryDot} from '../../templates/equipment-category';
 
 
-const renderSignedAt = (owner: Owner) => {
+const renderSignedAt = (owner: OwnerViewModel) => {
   if (O.isSome(owner.agreementSigned)) {
     const signedAt = DateTime.fromJSDate(owner.agreementSigned.value);
     // Compact date in the cell; full timestamp on hover.
@@ -39,7 +35,7 @@ const renderSignedAt = (owner: Owner) => {
   return html`Not signed`;
 };
 
-const renderSignedAtForManager = (owner: Owner) => {
+const renderSignedAtForManager = (owner: OwnerViewModel) => {
   if (O.isSome(owner.agreementSigned)) {
     return renderSignedAt(owner);
   }
@@ -77,7 +73,7 @@ const trainingsHeader = html`<th>
 </th>`;
 
 const ownerRow = (
-  areaId: Area['id'],
+  areaId: AreaViewModel['id'],
   owner: OwnerViewModel,
   canManageAreas: boolean,
   canSeeOwnerPrivateDetails: boolean,
@@ -100,7 +96,7 @@ const ownerRow = (
 `;
 
 const renderActiveOwners = (
-  areaId: Area['id'],
+  areaId: AreaViewModel['id'],
   owners: ReadonlyArray<OwnerViewModel>,
   hasInactiveOwners: boolean,
   canManageAreas: boolean,
@@ -144,7 +140,7 @@ const renderActiveOwners = (
 };
 
 const renderInactiveOwners = (
-  areaId: Area['id'],
+  areaId: AreaViewModel['id'],
   owners: ReadonlyArray<OwnerViewModel>,
   canManageAreas: boolean,
   canSeeOwnerPrivateDetails: boolean,

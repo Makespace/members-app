@@ -66,11 +66,15 @@ import {
   getEquipmentForAreaMinimal,
   getTrainingSheetIdMapping,
 } from './equipment/get';
-import {getAllAreaMinimal} from './area/get';
-import { findAllSuperUsers, findStoredEmailForLogin, findUserIdByEmail, findUserIdByMemberNumber, getAllMemberCore } from './member/get';
+import {getAllAreaMinimal, getAllOwnersBulk, AreaOwnerRow} from './area/get';
+import { findAllSuperUsers, findStoredEmailForLogin, findUserIdByEmail, findUserIdByMemberNumber, getAllMemberCore, getVerifiedEmailsByUserIds } from './member/get';
 import {getArchivedMailboxMessages} from './mailbox/get';
 import {MailboxArchiveReason} from '../../types/mailbox-archive-reason';
-import { trainingsDeliveredBy } from './member/training-delivered';
+import {
+  trainingsDeliveredBy,
+  trainingsDeliveredByForAreas,
+  trainingsForEquipmentBuckets,
+} from './member/training-delivered';
 import { setupEventStateTable } from './setup-event-state-table';
 import { getCurrentEventIndex } from './get-current-event-index';
 import { Int } from 'io-ts';
@@ -102,6 +106,19 @@ export type SharedReadModel = {
       trainerMemberNumbers: ReadonlyArray<number>,
       equipmentIds: ReadonlyArray<UUID>
     ) => ReadonlyArray<Date>;
+    trainingsDeliveredByForAreas: (
+      trainersByEquipment: ReadonlyArray<{
+        trainerMemberNumbers: ReadonlyArray<number>;
+        equipmentIds: ReadonlyArray<UUID>;
+      }>
+    ) => ReadonlyArray<{
+      trainerMemberNumber: number;
+      equipmentId: UUID;
+      trainedAt: Date;
+    }>;
+    getVerifiedEmailsByUserIds: (
+      userIds: ReadonlyArray<UserId>
+    ) => ReadonlyMap<UserId, ReadonlyArray<EmailAddress>>;
   };
   equipment: {
     get: (id: UUID) => O.Option<Equipment>;
@@ -109,11 +126,15 @@ export type SharedReadModel = {
     getAllMinimal: () => ReadonlyArray<MinimalEquipment>;
     getForAreaMinimal: (areaId: UUID) => ReadonlyArray<MinimalEquipment>;
     getTrainingSheetIdMapping: () => ReadonlyRecord<TrainingSheetId, EquipmentId>;
+    trainingsForEquipmentBuckets: (
+      equipmentIds: ReadonlyArray<UUID>
+    ) => ReadonlyArray<{equipmentId: UUID; trainedAt: Date}>;
   };
   area: {
     get: (id: UUID) => O.Option<Area>;
     getAll: () => ReadonlyArray<Area>;
     getAllMinimal: () => ReadonlyArray<MinimalArea>;
+    getAllOwnersBulk: () => ReadonlyArray<AreaOwnerRow>;
   };
   debug: {
     dump: () => SharedDatabaseDump;
@@ -193,6 +214,9 @@ export const initSharedReadModel = (
       findUserIdByMemberNumber: findUserIdByMemberNumber(readModelDb),
       findAllSuperUsers: () => findAllSuperUsers(readModelDb),
       trainingsDeliveredBy: trainingsDeliveredBy(readModelDb),
+      trainingsDeliveredByForAreas:
+        trainingsDeliveredByForAreas(readModelDb),
+      getVerifiedEmailsByUserIds: getVerifiedEmailsByUserIds(readModelDb),
     },
     equipment: {
       get: getEquipmentFull(readModelDb),
@@ -200,11 +224,14 @@ export const initSharedReadModel = (
       getAllMinimal: () => getAllEquipmentMinimal(readModelDb),
       getForAreaMinimal: getEquipmentForAreaMinimal(readModelDb),
       getTrainingSheetIdMapping: getTrainingSheetIdMapping(readModelDb),
+      trainingsForEquipmentBuckets:
+        trainingsForEquipmentBuckets(readModelDb),
     },
     area: {
       get: getAreaFull(readModelDb),
       getAll: getAllAreaFull(readModelDb),
       getAllMinimal: () => getAllAreaMinimal(readModelDb),
+      getAllOwnersBulk: () => getAllOwnersBulk(readModelDb),
     },
     debug: {
       dump: dumpCurrentState(readModelDb),
