@@ -9,7 +9,7 @@ import {
   EquipmentViewModel,
   ViewModel,
 } from '../../../src/queries/areas/view-model';
-import {EmailAddress, UserId} from '../../../src/types';
+import {EmailAddress} from '../../../src/types';
 import { getSomeOrFail } from '../../helpers';
 import { html } from '../../../src/types/html';
 
@@ -21,19 +21,7 @@ const signedAt = new Date('2025-01-02T12:00:00.000Z');
 const equipment = {
   id: equipmentId,
   name: 'Laser Cutter',
-  trainingSheetId: O.none,
-  guideUrl: O.none,
-  riskAssessmentUrl: O.none,
-  removedAt: O.none,
-  trainers: [],
-  trainedMembers: [],
-  area: {
-    id: areaId,
-    name: 'Laser Area',
-    email: O.none,
-  },
   category: 'red' as const,
-  machineNames: [],
   trainingsByQuarter: [
     {label: html`Q4 2025`, count: 1},
     {label: html`Q1 2026`, count: 0},
@@ -57,14 +45,10 @@ const area = {
   equipment: [equipment],
   owners: [
     {
-      userId: '33333333-3333-4333-8333-333333333333' as UserId,
       memberNumber: 123,
-      pastMemberNumbers: [],
       primaryEmailAddress: ownerEmail,
       name: O.some('Area Owner'),
       agreementSigned: O.some(signedAt),
-      ownershipRecordedAt: new Date('2024-01-01T00:00:00.000Z'),
-      markedOwnerBy: O.none,
       isActiveOwner: true,
       reasons: [],
       trainingsByQuarter: [
