@@ -1,7 +1,7 @@
 import {faker} from '@faker-js/faker';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {Int} from 'io-ts';
-import {DateTime} from 'luxon';
+import {DateTime, Settings} from 'luxon';
 import {EmailAddress} from '../../../../src/types';
 import {
   trainingsByQuarter,
@@ -41,6 +41,31 @@ describe('trainingsByQuarter', () => {
   it('ignores deliveries older than the window', () => {
     const result = trainingsByQuarter([at('2025-07-15T10:00:00Z')], now); // Q3 2025
     expect(result.map(q => q.count)).toStrictEqual([0, 0, 0, 0]);
+  });
+
+  it('labels quarters in the zone of now, not the default zone', () => {
+    // Europe/London is UTC+1 in July, so the Q3 boundary is local midnight on
+    // the 1st of July - one hour before UTC midnight. A default-zone (UTC)
+    // label would render that boundary as 30 June and mislabel Q3 as Q2 2026
+    // (and Q4 2025 as Q3 2025, whose local boundary is 30 September).
+    const londonNow = DateTime.fromISO('2026-07-19T12:00:00Z', {
+      zone: 'Europe/London',
+    });
+    Settings.defaultZone = 'UTC';
+    try {
+      const result = trainingsByQuarter(
+        [at('2026-07-10T10:00:00Z')],
+        londonNow
+      );
+      expect(result.map(q => q.label)).toStrictEqual([
+        'Q4 2025',
+        'Q1 2026',
+        'Q2 2026',
+        'Q3 2026',
+      ]);
+    } finally {
+      Settings.defaultZone = 'system';
+    }
   });
 });
 

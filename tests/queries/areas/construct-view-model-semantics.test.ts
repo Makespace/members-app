@@ -1,7 +1,7 @@
 import {faker} from '@faker-js/faker';
 import {advanceTo, clear} from 'jest-date-mock';
 import {arbitraryUser} from '../../types/user.helper';
-import {getRightOrFail} from '../../helpers';
+import {getRightOrFail, arbitraryActor, insertRecurlySubscription} from '../../helpers';
 import {constructViewModel} from '../../../src/queries/areas/construct-view-model';
 import {
   initTestFramework,
@@ -11,12 +11,14 @@ import {EmailAddress} from '../../../src/types';
 import {EventOfType} from '../../../src/types/domain-event';
 import {Int} from 'io-ts';
 import {NonEmptyString, UUID} from 'io-ts-types';
+import {trainedMemberstable} from '../../../src/read-models/shared-state/state';
 
 // Behaviour-preservation tests for the /areas rework (issue #414, deliverables
 // C+D). The narrow queries must produce the same counts and visibility the
 // full expansion produced, including its deliberate asymmetries: legacy rows
 // count towards equipment charts but not owner-delivery stats, orphan rows
-// (trainee never linked) count towards neither, retired machines stay in
+// (trainee never linked) are dropped from equipment charts but a non-legacy
+// orphan still counts in owner-delivery stats, retired machines stay in
 // owner statistics scope, past member numbers still count, and quarter
 // boundaries follow the calendar quarters.
 
@@ -35,10 +37,19 @@ describe('construct-view-model semantics', () => {
   let areaId: UUID;
   let redMachineId: UUID;
   let greenMachineId: UUID;
+  // Drawn from a high range so the reserved past number below (current - 1)
+  // can never collide with any other randomly drawn member number in these
+  // tests, and so a lower number always exists for the rejoin fixture.
   const owner = {
-    memberNumber: faker.number.int() as Int,
+    memberNumber: faker.number.int({min: 1_000_000_000, max: 2_000_000_000}) as Int,
     email: faker.internet.email() as EmailAddress,
   };
+  // A second number the owner held before rejoining. Guaranteed lower than
+  // the owner's current number - the rejoin projection rejects old > new -
+  // and guaranteed distinct: every other number in this suite is drawn from
+  // faker's full positive range, which only overlaps this range on one value
+  // in ~4 billion, and the link command fails loudly on a clash.
+  const ownerPastNumber = (owner.memberNumber - 1) as Int;
 
   beforeEach(async () => {
     areaId = faker.string.uuid() as UUID;
@@ -158,6 +169,28 @@ describe('construct-view-model semantics', () => {
     framework.insertIntoSharedReadModel(event);
   };
 
+  // Orphan training rows (the projector rejects training events for unknown
+  // member numbers, so commands and raw events cannot create them): insert
+  // the documented legacy-import state directly - userId NULL, trainee
+  // memberNumber set, equipment resolvable.
+  const insertOrphanTraining = (
+    traineeNumber: number,
+    trainedAt: Date,
+    legacyImport: boolean
+  ) =>
+    framework.sharedReadModel.db
+      .insert(trainedMemberstable)
+      .values({
+        userId: null,
+        memberNumber: traineeNumber as Int,
+        equipmentId: redMachineId,
+        trainedAt,
+        trainedByMemberNumber: owner.memberNumber,
+        legacyImport,
+        markTrainedByActor: arbitraryActor(),
+      })
+      .run();
+
   describe('equipment training counts', () => {
     it('count legacy-import rows when the trainee is resolvable', async () => {
       advanceTo(new Date('2026-07-22T12:00:00.000Z'));
@@ -177,38 +210,44 @@ describe('construct-view-model semantics', () => {
       ]);
     });
 
-    it('drop orphan rows whose trainee never linked a member number', async () => {
+    it('drop orphan rows from equipment charts but keep non-legacy orphans in owner stats', async () => {
       advanceTo(new Date('2026-07-22T12:00:00.000Z'));
-      // The trainee number was never linked to an email, so the member-core
-      // lookup the expansion used cannot resolve them: the row counts towards
-      // neither the equipment chart nor the owner's delivery chart. Both a
-      // legacy-import and an ordinary row are orphaned here - only the
-      // ordinary one could ever have counted for the owner chart.
-      insertLegacyTraining(
+      // The projector rejects training events for unknown member numbers, so
+      // these rows are seeded the way the legacy import left them: userId
+      // NULL, trainee number unlinked. The old expansion dropped such rows
+      // from equipment charts (the trainee member lookup failed), while the
+      // owner-delivery query only filtered trainer, equipment and
+      // legacyImport - so a non-legacy orphan attributed to the owner still
+      // counted there. Preserve both behaviours.
+      insertOrphanTraining(
         faker.number.int(),
-        new Date('2026-05-01T12:00:00.000Z')
+        new Date('2026-05-01T12:00:00.000Z'),
+        true
       );
-      await framework.commands.trainers.markMemberTrainedBy({
-        equipmentId: redMachineId,
-        memberNumber: faker.number.int() as Int,
-        trainedByMemberNumber: owner.memberNumber,
-        trainedAt: new Date('2026-06-01T12:00:00.000Z'),
-        actor: {
-          tag: 'user',
-          user: {emailAddress: owner.email, memberNumber: owner.memberNumber},
-        },
-      });
+      insertOrphanTraining(
+        faker.number.int(),
+        new Date('2026-06-01T12:00:00.000Z'),
+        false
+      );
+      const orphanRowCount = framework.sharedReadModel.db
+        .select()
+        .from(trainedMemberstable)
+        .all().length;
+      expect(orphanRowCount).toStrictEqual(2);
 
       const viewModel = await runAs(superUser)();
       const area_ = viewModelArea(viewModel, areaId);
+      // Equipment charts require a resolvable trainee: both orphans dropped.
       expect(
         machineNamed(area_, 'Red Machine').trainingsByQuarter.map(
           q => q.count
         )
       ).toStrictEqual([0, 0, 0, 0]);
+      // Owner stats attributed this delivery to the owner regardless of
+      // trainee resolvability; the legacy row stays excluded there.
       expect(
         area_.owners[0].trainingsByQuarter.map(q => q.count)
-      ).toStrictEqual([0, 0, 0, 0]);
+      ).toStrictEqual([0, 0, 1, 0]);
     });
   });
 
@@ -216,18 +255,21 @@ describe('construct-view-model semantics', () => {
     it('count trainings delivered under past member numbers', async () => {
       advanceTo(new Date('2026-07-22T12:00:00.000Z'));
       // The owner held another number first (the past one), trained somebody
-      // with it, then rejoined under the current number. Rejoining requires
-      // old < new, so retry linking until the drawn number qualifies.
-      let pastMember = await linkMember();
-      for (let attempt = 0; attempt < 50; attempt += 1) {
-        if (pastMember.memberNumber < owner.memberNumber) {
-          break;
-        }
-        pastMember = await linkMember();
-      }
-      if (pastMember.memberNumber >= owner.memberNumber) {
-        throw new Error('fixture could not draw a lower past number');
-      }
+      // with it, then rejoined under the current number. The past number
+      // lives on its own member record with its own email - linking an
+      // already-used email throws - and the rejoin event merges the two
+      // records. ownerPastNumber is the owner's number minus one, so the
+      // rejoin's old < new invariant always holds.
+      const pastMember = {
+        memberNumber: ownerPastNumber,
+        email: faker.internet.email() as EmailAddress,
+      };
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        memberNumber: pastMember.memberNumber,
+        email: pastMember.email,
+        name: undefined,
+        formOfAddress: undefined,
+      });
       const trainee = await linkMember();
       await framework.commands.trainers.markMemberTrainedBy({
         equipmentId: redMachineId,
@@ -387,6 +429,23 @@ describe('construct-view-model semantics', () => {
       expect(area_.owners[0].memberNumber).toStrictEqual(owner.memberNumber);
       expect(area_.owners[0].isActiveOwner).toStrictEqual(true);
       expect(area_.owners[0].reasons).toStrictEqual([]);
+    });
+
+    it('treats an owner with an active subscription and a past-due invoice as inactive', async () => {
+      advanceTo(new Date('2026-07-22T12:00:00.000Z'));
+      // This is the rule local to the areas page: a past-due invoice makes an
+      // otherwise-active owner inactive. hasActiveSubscription alone would
+      // not catch a regression that drops the past-due half of the rule.
+      await insertRecurlySubscription(framework.extDB, {
+        email: owner.email,
+        hasActiveSubscription: true,
+        hasPastDueInvoice: true,
+      });
+
+      const viewModel = await runAs(superUser)();
+      const area_ = viewModelArea(viewModel, areaId);
+      expect(area_.owners[0].isActiveOwner).toStrictEqual(false);
+      expect(area_.owners[0].reasons).toStrictEqual(['past-due']);
     });
 
     it('bucket equipment charts across quarter boundaries', async () => {
