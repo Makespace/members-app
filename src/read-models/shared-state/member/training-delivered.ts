@@ -183,7 +183,10 @@ export const trainingsByQuarter = (
     }
   }
   return counts.map((count, i) => {
-    const start = DateTime.fromMillis(boundaries[i]);
+    // Label in now's zone, not the default zone: a boundary at local midnight
+    // in one zone can fall on the previous calendar date in another, which
+    // would mislabel the quarter.
+    const start = DateTime.fromMillis(boundaries[i], {zone: now.zone});
     return {label: html`Q${start.quarter} ${start.year}`, count};
   });
 };

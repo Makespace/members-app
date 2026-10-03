@@ -20,11 +20,12 @@ import {NonEmptyString, UUID} from 'io-ts-types';
 
 // better-sqlite3's Database#prepare is the funnel every drizzle query passes
 // through, so wrapping it counts shared-state statements issued while the
-// action runs.
-const countSharedStatements = <A>(
+// action runs. The action is awaited before the counter is restored, so
+// statements issued after an await inside the action are counted too.
+const countSharedStatements = async <A>(
   framework: TestFramework,
-  action: () => A
-): {result: A; queryCount: number} => {
+  action: () => A | Promise<A>
+): Promise<{result: A; queryCount: number}> => {
   let queryCount = 0;
   const db = framework.sharedReadModel._underlyingReadModelDb;
   const originalPrepare = db.prepare.bind(db);
@@ -33,7 +34,7 @@ const countSharedStatements = <A>(
     return originalPrepare(...args);
   }) as typeof db.prepare;
   try {
-    const result = action();
+    const result = await action();
     return {result, queryCount};
   } finally {
     db.prepare = originalPrepare;
@@ -167,11 +168,10 @@ describe('construct-view-model query counts', () => {
     advanceTo(new Date('2026-07-22T12:00:00.000Z'));
     const asSuperUser = runAs(superUser);
 
-    const small = countSharedStatements(framework, () => asSuperUser());
-    await small.result;
+    const small = await countSharedStatements(framework, () => asSuperUser());
     await markExtraTrainees(10);
-    const large = countSharedStatements(framework, () => asSuperUser());
-    const largeViewModel = await large.result;
+    const large = await countSharedStatements(framework, () => asSuperUser());
+    const largeViewModel = large.result;
 
     expect(
       largeViewModel.areas[0].equipment[0].trainingsByQuarter.map(
@@ -192,7 +192,7 @@ describe('construct-view-model query counts', () => {
     const outer = await countExternalStatements(framework, async () =>
       countSharedStatements(framework, () => runAs(unprivilegedUser)())
     );
-    const viewModel = await outer.result.result;
+    const viewModel = outer.result.result;
 
     // The owner is past-due, yet an ordinary member's view neither groups
     // owners by subscription nor shows reason chips - so no cache query.
@@ -227,7 +227,7 @@ describe('construct-view-model query counts', () => {
     const outer = await countExternalStatements(framework, async () =>
       countSharedStatements(framework, () => asSuperUser())
     );
-    const viewModel = await outer.result.result;
+    const viewModel = outer.result.result;
 
     expect(viewModel.areas).toHaveLength(2);
     // Past-due means inactive on this page, and the reason chips explain why.
