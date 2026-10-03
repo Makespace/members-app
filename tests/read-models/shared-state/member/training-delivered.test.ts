@@ -51,6 +51,7 @@ describe('trainingsByQuarter', () => {
     const londonNow = DateTime.fromISO('2026-07-19T12:00:00Z', {
       zone: 'Europe/London',
     });
+    const previousZone = Settings.defaultZone;
     Settings.defaultZone = 'UTC';
     try {
       const result = trainingsByQuarter(
@@ -64,7 +65,7 @@ describe('trainingsByQuarter', () => {
         'Q3 2026',
       ]);
     } finally {
-      Settings.defaultZone = 'system';
+      Settings.defaultZone = previousZone;
     }
   });
 });
