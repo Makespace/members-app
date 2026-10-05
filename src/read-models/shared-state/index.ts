@@ -185,6 +185,14 @@ export const initSharedReadModel = (
   const uri = path.join(os.tmpdir(), `${randomFileName}.db`);
   fs.rmSync(uri, {force: true});
   const _underlyingReadModelDb = new Database(uri);
+  // DEVNOTE - synchronous=OFF is safe here because this file is a disposable
+  // projection: it has a random name, is unlinked on every init (the rmSync
+  // above), and is fully rebuilt from the event store on every boot (see
+  // asyncRefresh). Nothing in it survives the process, so per-transaction
+  // fsyncs only slow boot-time event replay (~6ms per commit across ~23k
+  // events, ~2.5 minutes per deploy). Revisit this if the read model file
+  // ever persists across restarts.
+  _underlyingReadModelDb.pragma('synchronous = OFF');
   const readModelDb = drizzle(_underlyingReadModelDb);
   const readOnlyReadModelDb = drizzle(new Database(uri, {readonly: true}));
 
