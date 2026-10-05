@@ -14,6 +14,11 @@ type ChangeLogEntry = {
 
 export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
+    date: '2026-10-05',
+    headline:
+      'The areas page now loads much faster, even with thousands of members on the books',
+  },
+  {
     date: '2026-10-01',
     headline:
       'One page shows which machines are missing an equipment guide or a risk assessment, and lets a super-user fill the gaps without leaving it',

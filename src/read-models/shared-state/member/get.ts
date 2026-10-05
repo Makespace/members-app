@@ -1,6 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {and, desc, eq, isNotNull, sql} from 'drizzle-orm';
+import {and, desc, eq, inArray, isNotNull, sql} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {MemberCoreInfo, MemberEmail} from '../return-types';
@@ -148,6 +148,42 @@ export const getMemberCoreByUserId =
       joined: row.joined,
     });
   };
+
+// Verified email addresses for many users in one query. The /areas page's
+// super-user view resolves each owner's verified emails for the Recurly
+// lookup; the full member expansion it previously used loads training,
+// ownership and trainer history that the email lookup never reads (issue
+// #414). Matching stays verified-only and case-preserving as stored.
+export const getVerifiedEmailsByUserIds = (
+  db: BetterSQLite3Database
+) => (
+  userIds: ReadonlyArray<UserId>
+): ReadonlyMap<UserId, ReadonlyArray<EmailAddress>> => {
+  if (userIds.length === 0) {
+    return new Map();
+  }
+  const rows = db
+    .select({
+      userId: memberEmailsTable.userId,
+      emailAddress: memberEmailsTable.emailAddress,
+      verifiedAt: memberEmailsTable.verifiedAt,
+    })
+    .from(memberEmailsTable)
+    .where(
+      and(
+        inArray(memberEmailsTable.userId, [...userIds]),
+        isNotNull(memberEmailsTable.verifiedAt)
+      )
+    )
+    .all();
+  const byUser = new Map<UserId, EmailAddress[]>();
+  for (const row of rows) {
+    const existing = byUser.get(row.userId) ?? [];
+    existing.push(row.emailAddress);
+    byUser.set(row.userId, existing);
+  }
+  return byUser;
+};
 
 export const getAllMemberCore = (
   db: BetterSQLite3Database

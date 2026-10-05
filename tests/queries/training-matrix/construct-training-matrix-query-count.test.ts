@@ -3,7 +3,7 @@ import {
   TestFramework,
 } from '../../read-models/test-framework';
 import { constructTrainingMatrix } from '../../../src/queries/training-matrix/construct-view-model';
-import { getSomeOrFail } from '../../helpers';
+import { countSharedStatements, getSomeOrFail } from '../../helpers';
 import { faker } from '@faker-js/faker';
 import { EmailAddress } from '../../../src/types';
 import { MemberNumber } from '../../../src/types/member-number';
@@ -21,27 +21,6 @@ import { Int } from 'io-ts';
 // machine - i.e. with the whole membership. These tests pin the property that
 // constructing one member's matrix costs a bounded, membership-independent
 // number of queries (issue #414).
-
-// better-sqlite3's Database#prepare is the funnel every drizzle query passes
-// through, so wrapping it counts statements issued while the action runs.
-const countQueriesDuring = <A>(
-  framework: TestFramework,
-  action: () => A
-): {result: A; queryCount: number} => {
-  let queryCount = 0;
-  const db = framework.sharedReadModel._underlyingReadModelDb;
-  const originalPrepare = db.prepare.bind(db);
-  db.prepare = ((...args: Parameters<typeof originalPrepare>) => {
-    queryCount += 1;
-    return originalPrepare(...args);
-  }) as typeof db.prepare;
-  try {
-    const result = action();
-    return {result, queryCount};
-  } finally {
-    db.prepare = originalPrepare;
-  }
-};
 
 describe('construct-training-matrix query count', () => {
   let framework: TestFramework;
@@ -123,13 +102,15 @@ describe('construct-training-matrix query count', () => {
     const quizData: FullQuizResultsForMember = {equipmentQuiz: {}};
     const readMember = () =>
       getSomeOrFail(framework.sharedReadModel.members.getByMemberNumber(viewer.memberNumber));
-    const {queryCount: smallQueryCount} = countQueriesDuring(framework, () =>
-      constructTrainingMatrix(readMember(), framework.sharedReadModel, quizData)
+    const {queryCount: smallQueryCount} = await countSharedStatements(
+      framework.sharedReadModel,
+      () => constructTrainingMatrix(readMember(), framework.sharedReadModel, quizData)
     );
 
     await populateUnrelated(90);
-    const {queryCount: largeQueryCount} = countQueriesDuring(framework, () =>
-      constructTrainingMatrix(readMember(), framework.sharedReadModel, quizData)
+    const {queryCount: largeQueryCount} = await countSharedStatements(
+      framework.sharedReadModel,
+      () => constructTrainingMatrix(readMember(), framework.sharedReadModel, quizData)
     );
 
     expect(largeQueryCount).toStrictEqual(smallQueryCount);
