@@ -325,6 +325,17 @@ describe('construct-training-matrix', () => {
         expectMatchSecondsPrecision(trainedOnMetalMill.trainedAt)(getSomeOrFail(trainingMatrix[0].equipment[0].is_trained));
       });
 
+      describe('the equipment’s area is removed', () => {
+        beforeEach(async () => {
+          await framework.commands.area.remove({id: metalshop.id});
+          trainingMatrix = await getTrainingMatrix(user.memberNumber);
+        });
+
+        it('omits equipment deleted by the area cascade', () => {
+          expect(trainingMatrix).toHaveLength(0);
+        });
+      });
+
       it('user does not appear as a trainer', () => {
         expect(O.isSome(trainingMatrix[0].equipment[0].is_trainer)).toStrictEqual(false);
       });

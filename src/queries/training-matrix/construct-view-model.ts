@@ -1,19 +1,32 @@
 import * as O from 'fp-ts/Option';
 import { TrainingMatrix } from '../training-matrix/render';
 import { FullQuizResultsForMember } from '../../read-models/external-state/equipment-quiz';
-import { Member } from '../../read-models/shared-state/return-types';
+import { Member, MinimalArea } from '../../read-models/shared-state/return-types';
 import { pipe } from 'fp-ts/lib/function';
 import { SharedReadModel } from '../../read-models/shared-state';
+import { UUID } from 'io-ts-types';
 
 export const constructTrainingMatrix = (
   member: Member,
   sharedReadModel: SharedReadModel,
   quizData: FullQuizResultsForMember
 ): TrainingMatrix => {
-  const equipmentList = sharedReadModel.equipment.getAll().toSorted(
+  // Minimal equipment rows plus an area map: the full equipment view expands
+  // every machine's trainers and trained members (with their member details),
+  // work proportional to the whole membership that this matrix never consumes
+  // (issue #414; same approach as the ticket board).
+  const areasById = new Map<UUID, MinimalArea>(
+    sharedReadModel.area.getAllMinimal().map(area => [area.id, area] as const)
+  );
+  // Matches the old expansion's fallback for a machine whose area row is
+  // missing (foreign keys make that hard to reach; kept for parity).
+  const areaFor = (areaId: UUID): MinimalArea =>
+    areasById.get(areaId) ?? {id: areaId, name: 'unknown', email: O.none};
+
+  const equipmentList = sharedReadModel.equipment.getAllMinimal().toSorted(
     (a, b) => {
-      if (a.area.id !== b.area.id) {
-        return a.area.name.localeCompare(b.area.name, ['en-US']);
+      if (a.areaId !== b.areaId) {
+        return areaFor(a.areaId).name.localeCompare(areaFor(b.areaId).name, ['en-US']);
       }
       return a.name.localeCompare(b.name, ['en-US']);
     }
@@ -21,8 +34,9 @@ export const constructTrainingMatrix = (
 
   const equipmentEntries = equipmentList.flatMap(
     equipment => {
+      const area = areaFor(equipment.areaId);
       const quizResults = O.fromNullable(quizData.equipmentQuiz[equipment.id]);
-      const isOwnerOfArea = O.fromNullable(member.ownerOf.find(o => o.id === equipment.area.id));
+      const isOwnerOfArea = O.fromNullable(member.ownerOf.find(o => o.id === equipment.areaId));
       const isTrainedOnEquipment = O.fromNullable(member.trainedOn.find(t => t.id === equipment.id));
       const isTrainerForEquipment = O.fromNullable(member.trainerFor.find(t => t.equipment_id === equipment.id));
       if (O.isNone(quizResults) && O.isNone(isOwnerOfArea) && O.isNone(isTrainedOnEquipment) && O.isNone(isTrainerForEquipment)) {
@@ -32,7 +46,7 @@ export const constructTrainingMatrix = (
         equipment_id: equipment.id,
         equipment_name: equipment.name,
         area: {
-          ...equipment.area,
+          ...area,
           is_owner: pipe(isOwnerOfArea, O.map(o => o.ownershipRecordedAt)),
         },
         equipment_quiz: pipe(
@@ -48,7 +62,7 @@ export const constructTrainingMatrix = (
         isOwnerOfArea,
         O.map(
           o => o.ownershipRecordedAt
-        ) 
+        )
         ),
         is_trained: pipe(
           isTrainedOnEquipment,
