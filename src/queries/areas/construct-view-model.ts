@@ -10,6 +10,7 @@ import {
 import {
   AreaViewModel,
   EquipmentViewModel,
+  OwnerVerdict,
   OwnerViewModel,
   ViewModel,
 } from './view-model';
@@ -18,7 +19,6 @@ import {
   getRecurlyFlagsForVerifiedEmails,
   recurlyReasons,
   RecurlyFlags,
-  RecurlyReason,
 } from '../../read-models/external-state/recurly-status';
 import {StatusCodes} from 'http-status-codes';
 import {
@@ -31,15 +31,12 @@ import {MinimalEquipment} from '../../read-models/shared-state/return-types';
 
 type OwnerFlags = O.Option<RecurlyFlags>;
 
-// Owners enriched without super-user data: everyone is listed as a public
-// owner, no reason chips and no chart-based active/inactive verdict.
-const NO_RECURLY = {isActiveOwner: true, reasons: [] as ReadonlyArray<RecurlyReason>};
-
-// Owner enrichment shared by the super-user path. Active-for-ownership is a
-// rule local to this page: a past-due invoice counts as inactive, since
-// cancelling payment is a common way members self-deactivate. The shared
-// 'active'/'inactive' status calc is unchanged.
-const evaluateOwner = (flags: OwnerFlags) => {
+// Owner enrichment for super-users, the only viewers of the active/inactive
+// verdict. Active-for-ownership is a rule local to this page: a past-due
+// invoice counts as inactive, since cancelling payment is a common way
+// members self-deactivate. The shared 'active'/'inactive' status calc is
+// unchanged.
+const evaluateOwner = (flags: OwnerFlags): OwnerVerdict => {
   const isActiveOwner =
     O.isSome(flags) &&
     flags.value.hasActiveSubscription &&
@@ -214,32 +211,32 @@ export const constructViewModel =
     }
 
     const buildOwners = (areaId: UUID): ReadonlyArray<OwnerViewModel> =>
-      (ownersByArea.get(areaId) ?? []).map(owner => {
-        const enriched = isSuperUser
-          ? evaluateOwner(
-              // An owner whose Recurly lookup somehow ran maps to 'no-data'.
-              ownerFlags.get(owner.userId) ?? O.none
+      (ownersByArea.get(areaId) ?? []).map(owner => ({
+        memberNumber: owner.memberNumber,
+        name: owner.name,
+        primaryEmailAddress: owner.primaryEmailAddress,
+        agreementSigned: owner.agreementSigned,
+        // Only super-users pay for the Recurly lookups behind the verdict;
+        // for everyone else it stays unevaluated.
+        verdict: isSuperUser
+          ? O.some(
+              evaluateOwner(
+                // An owner whose Recurly lookup somehow ran maps to 'no-data'.
+                ownerFlags.get(owner.userId) ?? O.none
+              )
             )
-          : NO_RECURLY;
-        return {
-          memberNumber: owner.memberNumber,
-          name: owner.name,
-          primaryEmailAddress: owner.primaryEmailAddress,
-          agreementSigned: owner.agreementSigned,
-          isActiveOwner: enriched.isActiveOwner,
-          reasons: enriched.reasons,
-          trainingsByQuarter:
-            canSeeTrainings &&
-            (visibleEquipmentByArea
-              .get(areaId)
-              ?.some(equipment => equipment.category === 'red') ?? false)
-              ? trainingsByQuarter(
-                  ownerTrainingDates.get(`${areaId}|${owner.userId}`) ?? [],
-                  now
-                )
-              : [],
-        };
-      });
+          : O.none,
+        trainingsByQuarter:
+          canSeeTrainings &&
+          (visibleEquipmentByArea
+            .get(areaId)
+            ?.some(equipment => equipment.category === 'red') ?? false)
+            ? trainingsByQuarter(
+                ownerTrainingDates.get(`${areaId}|${owner.userId}`) ?? [],
+                now
+              )
+            : [],
+      }));
 
     return E.right({
       canManageAreas: isSuperUser,

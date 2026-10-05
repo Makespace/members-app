@@ -49,8 +49,7 @@ const area = {
       primaryEmailAddress: ownerEmail,
       name: O.some('Area Owner'),
       agreementSigned: O.some(signedAt),
-      isActiveOwner: true,
-      reasons: [],
+      verdict: O.some({isActiveOwner: true, reasons: []}),
       trainingsByQuarter: [
         {label: html`Q4 2025`, count: 0},
         {label: html`Q1 2026`, count: 0},
@@ -158,7 +157,7 @@ describe('areas render', () => {
       areas: [
         {
           ...area,
-          owners: [{...area.owners[0], isActiveOwner: false}],
+          owners: [{...area.owners[0], verdict: O.some({isActiveOwner: false, reasons: []})}],
         },
       ],
       canManageAreas: false,
@@ -218,7 +217,7 @@ describe('areas render', () => {
       areas: [
         {
           ...area,
-          owners: [{...area.owners[0], isActiveOwner: false}],
+          owners: [{...area.owners[0], verdict: O.some({isActiveOwner: false, reasons: []})}],
         },
       ],
       canManageAreas: true,
@@ -278,8 +277,10 @@ describe('areas render', () => {
         ...area,
         owners: [{
           ...area.owners[0],
-          isActiveOwner: false,
-          reasons: ['cancelled-in-term', 'past-due'],
+          verdict: O.some({
+            isActiveOwner: false,
+            reasons: ['cancelled-in-term', 'past-due'],
+          }),
         }]
       }],
       canManageAreas: true,

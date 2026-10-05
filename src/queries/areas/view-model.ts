@@ -10,18 +10,25 @@ import * as O from 'fp-ts/Option';
 // APIs remain available for pages that need expanded relationships (issue
 // #414, deliverables C+D).
 
-// `isActiveOwner` is computed in construct-view-model (past-due counts as
-// inactive here); `reasons` is empty unless a super-user is viewing (the only
-// viewer who sees the inactive-owners section). `trainingsByQuarter` holds the
-// trainings this owner has delivered in this area, bucketed into the last four
-// quarters - computed only when the viewer can see that column.
+// The page's active/inactive verdict for an owner, evaluated only for
+// super-users (the only viewers of the inactive-owners section). `O.none` on
+// the owner means "not evaluated" - the type cannot present an unevaluated
+// owner as active. `isActiveOwner` is computed in construct-view-model
+// (past-due counts as inactive here); `reasons` is empty for active owners.
+export type OwnerVerdict = {
+  isActiveOwner: boolean;
+  reasons: ReadonlyArray<RecurlyReason>;
+};
+
+// `trainingsByQuarter` holds the trainings this owner has delivered in this
+// area, bucketed into the last four quarters - computed only when the viewer
+// can see that column.
 export type OwnerViewModel = {
   memberNumber: number;
   name: O.Option<string>;
   primaryEmailAddress: EmailAddress;
   agreementSigned: O.Option<Date>;
-  isActiveOwner: boolean;
-  reasons: ReadonlyArray<RecurlyReason>;
+  verdict: O.Option<OwnerVerdict>;
   trainingsByQuarter: ReadonlyArray<QuarterCount>;
 };
 

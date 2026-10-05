@@ -1,8 +1,14 @@
 import {faker} from '@faker-js/faker';
 import {advanceTo, clear} from 'jest-date-mock';
 import {arbitraryUser} from '../../types/user.helper';
-import {getRightOrFail, insertRecurlySubscription} from '../../helpers';
+import {
+  countExternalStatements,
+  countSharedStatements,
+  getRightOrFail,
+  insertRecurlySubscription,
+} from '../../helpers';
 import {constructViewModel} from '../../../src/queries/areas/construct-view-model';
+import * as O from 'fp-ts/Option';
 import {
   initTestFramework,
   TestFramework,
@@ -17,49 +23,6 @@ import {NonEmptyString, UUID} from 'io-ts-types';
 // replacement's work bounds (issue #414, deliverables C+D): statement counts
 // that do not grow with trainees, one Recurly lookup per distinct owner only
 // for super-users, and no per-trainee member lookups.
-
-// better-sqlite3's Database#prepare is the funnel every drizzle query passes
-// through, so wrapping it counts shared-state statements issued while the
-// action runs. The action is awaited before the counter is restored, so
-// statements issued after an await inside the action are counted too.
-const countSharedStatements = async <A>(
-  framework: TestFramework,
-  action: () => A | Promise<A>
-): Promise<{result: A; queryCount: number}> => {
-  let queryCount = 0;
-  const db = framework.sharedReadModel._underlyingReadModelDb;
-  const originalPrepare = db.prepare.bind(db);
-  db.prepare = ((...args: Parameters<typeof originalPrepare>) => {
-    queryCount += 1;
-    return originalPrepare(...args);
-  }) as typeof db.prepare;
-  try {
-    const result = await action();
-    return {result, queryCount};
-  } finally {
-    db.prepare = originalPrepare;
-  }
-};
-
-// The recurly cache runs through the libsql client's execute funnel.
-const countExternalStatements = async <A>(
-  framework: TestFramework,
-  action: () => Promise<A>
-): Promise<{result: A; queryCount: number}> => {
-  let queryCount = 0;
-  const client = framework.extDBClient;
-  const originalExecute = client.execute.bind(client);
-  client.execute = ((...args: Parameters<typeof originalExecute>) => {
-    queryCount += 1;
-    return originalExecute(...args);
-  }) as typeof client.execute;
-  try {
-    const result = await action();
-    return {result, queryCount};
-  } finally {
-    client.execute = originalExecute;
-  }
-};
 
 describe('construct-view-model query counts', () => {
   let framework: TestFramework;
@@ -168,9 +131,9 @@ describe('construct-view-model query counts', () => {
     advanceTo(new Date('2026-07-22T12:00:00.000Z'));
     const asSuperUser = runAs(superUser);
 
-    const small = await countSharedStatements(framework, () => asSuperUser());
+    const small = await countSharedStatements(framework.sharedReadModel, () => asSuperUser());
     await markExtraTrainees(10);
-    const large = await countSharedStatements(framework, () => asSuperUser());
+    const large = await countSharedStatements(framework.sharedReadModel, () => asSuperUser());
     const largeViewModel = large.result;
 
     expect(
@@ -189,15 +152,15 @@ describe('construct-view-model query counts', () => {
       hasPastDueInvoice: true,
     });
 
-    const outer = await countExternalStatements(framework, async () =>
-      countSharedStatements(framework, () => runAs(unprivilegedUser)())
+    const outer = await countExternalStatements(framework.extDBClient, async () =>
+      countSharedStatements(framework.sharedReadModel, () => runAs(unprivilegedUser)())
     );
     const viewModel = outer.result.result;
 
     // The owner is past-due, yet an ordinary member's view neither groups
-    // owners by subscription nor shows reason chips - so no cache query.
-    expect(viewModel.areas[0].owners[0].reasons).toStrictEqual([]);
-    expect(viewModel.areas[0].owners[0].isActiveOwner).toStrictEqual(true);
+    // owners by subscription nor shows reason chips - so no cache query, and
+    // the verdict is left unevaluated.
+    expect(viewModel.areas[0].owners[0].verdict).toStrictEqual(O.none);
     expect(outer.queryCount).toStrictEqual(0);
   });
 
@@ -224,15 +187,16 @@ describe('construct-view-model query counts', () => {
     });
 
     const asSuperUser = runAs(superUser);
-    const outer = await countExternalStatements(framework, async () =>
-      countSharedStatements(framework, () => asSuperUser())
+    const outer = await countExternalStatements(framework.extDBClient, async () =>
+      countSharedStatements(framework.sharedReadModel, () => asSuperUser())
     );
     const viewModel = outer.result.result;
 
     expect(viewModel.areas).toHaveLength(2);
     // Past-due means inactive on this page, and the reason chips explain why.
-    expect(viewModel.areas[0].owners[0].isActiveOwner).toStrictEqual(false);
-    expect(viewModel.areas[0].owners[0].reasons).toStrictEqual(['past-due']);
+    expect(viewModel.areas[0].owners[0].verdict).toStrictEqual(
+      O.some({isActiveOwner: false, reasons: ['past-due']})
+    );
     expect(outer.queryCount).toStrictEqual(1);
   });
 });

@@ -10,6 +10,7 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {
   AreaViewModel,
   EquipmentViewModel,
+  OwnerVerdict,
   OwnerViewModel,
   ViewModel,
 } from './view-model';
@@ -62,6 +63,16 @@ const renderRemoveOwner = (
 // Sum of trainings delivered across the shown quarters - used to sort owners.
 const trainingsTotal = (owner: OwnerViewModel): number =>
   owner.trainingsByQuarter.reduce((sum, quarter) => sum + quarter.count, 0);
+
+// The verdict is only evaluated for super-users, the only viewers who see the
+// inactive-owners section where it is rendered.
+const getVerdict = (owner: OwnerViewModel): OwnerVerdict =>
+  pipe(
+    owner.verdict,
+    O.getOrElseW(() => {
+      throw new Error('Owner verdict was never evaluated for this viewer');
+    })
+  );
 
 const trainingsHeader = html`<th>
   Trainings
@@ -174,7 +185,7 @@ const renderInactiveOwners = (
                 canManageAreas,
                 canSeeOwnerPrivateDetails,
                 showTrainings,
-                html`<td>${renderReasonChips(owner.reasons)}</td>`
+                html`<td>${renderReasonChips(getVerdict(owner).reasons)}</td>`
               )
             )
           )}
@@ -215,8 +226,13 @@ const renderEquipment = (equipment: ReadonlyArray<EquipmentViewModel>) => {
 const renderArea =
   (viewModel: ViewModel) =>
   (area: AreaViewModel) => {
-  const activeOwners = area.owners.filter(owner => owner.isActiveOwner);
-  const inactiveOwners = area.owners.filter(owner => !owner.isActiveOwner);
+  // The verdict is only evaluated for super-users, the only viewers of the
+  // inactive-owners section; everyone else sees the full owner list.
+  const evaluatedOwners = area.owners
+    .filter(owner => O.isSome(owner.verdict))
+    .map(owner => ({...owner, ...getVerdict(owner)}));
+  const activeOwners = evaluatedOwners.filter(owner => owner.isActiveOwner);
+  const inactiveOwners = evaluatedOwners.filter(owner => !owner.isActiveOwner);
   const publiclyVisibleOwners = viewModel.canManageAreas
     ? activeOwners
     : area.owners;

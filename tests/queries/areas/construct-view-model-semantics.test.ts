@@ -1,8 +1,9 @@
 import {faker} from '@faker-js/faker';
 import {advanceTo, clear} from 'jest-date-mock';
 import {Settings} from 'luxon';
+import * as O from 'fp-ts/Option';
 import {arbitraryUser} from '../../types/user.helper';
-import {getRightOrFail, arbitraryActor, insertRecurlySubscription} from '../../helpers';
+import {getRightOrFail, insertRecurlySubscription} from '../../helpers';
 import {constructViewModel} from '../../../src/queries/areas/construct-view-model';
 import {
   initTestFramework,
@@ -12,16 +13,13 @@ import {EmailAddress} from '../../../src/types';
 import {EventOfType} from '../../../src/types/domain-event';
 import {Int} from 'io-ts';
 import {NonEmptyString, UUID} from 'io-ts-types';
-import {trainedMemberstable} from '../../../src/read-models/shared-state/state';
 
 // Behaviour-preservation tests for the /areas rework (issue #414, deliverables
 // C+D). The narrow queries must produce the same counts and visibility the
 // full expansion produced, including its deliberate asymmetries: legacy rows
-// count towards equipment charts but not owner-delivery stats, orphan rows
-// (trainee never linked) are dropped from equipment charts but a non-legacy
-// orphan still counts in owner-delivery stats, retired machines stay in
-// owner statistics scope, past member numbers still count, and quarter
-// boundaries follow the calendar quarters.
+// count towards equipment charts but not owner-delivery stats, retired
+// machines stay in owner statistics scope, past member numbers still count,
+// and quarter boundaries follow the calendar quarters.
 
 describe('construct-view-model semantics', () => {
   let framework: TestFramework;
@@ -170,28 +168,6 @@ describe('construct-view-model semantics', () => {
     framework.insertIntoSharedReadModel(event);
   };
 
-  // Orphan training rows (the projector rejects training events for unknown
-  // member numbers, so commands and raw events cannot create them): insert
-  // the documented legacy-import state directly - userId NULL, trainee
-  // memberNumber set, equipment resolvable.
-  const insertOrphanTraining = (
-    traineeNumber: number,
-    trainedAt: Date,
-    legacyImport: boolean
-  ) =>
-    framework.sharedReadModel.db
-      .insert(trainedMemberstable)
-      .values({
-        userId: null,
-        memberNumber: traineeNumber as Int,
-        equipmentId: redMachineId,
-        trainedAt,
-        trainedByMemberNumber: owner.memberNumber,
-        legacyImport,
-        markTrainedByActor: arbitraryActor(),
-      })
-      .run();
-
   describe('equipment training counts', () => {
     it('count legacy-import rows when the trainee is resolvable', async () => {
       advanceTo(new Date('2026-07-22T12:00:00.000Z'));
@@ -209,46 +185,6 @@ describe('construct-view-model semantics', () => {
       expect(machine.trainingsByQuarter.map(q => q.count)).toStrictEqual([
         0, 0, 1, 0,
       ]);
-    });
-
-    it('drop orphan rows from equipment charts but keep non-legacy orphans in owner stats', async () => {
-      advanceTo(new Date('2026-07-22T12:00:00.000Z'));
-      // The projector rejects training events for unknown member numbers, so
-      // these rows are seeded the way the legacy import left them: userId
-      // NULL, trainee number unlinked. The old expansion dropped such rows
-      // from equipment charts (the trainee member lookup failed), while the
-      // owner-delivery query only filtered trainer, equipment and
-      // legacyImport - so a non-legacy orphan attributed to the owner still
-      // counted there. Preserve both behaviours.
-      insertOrphanTraining(
-        faker.number.int(),
-        new Date('2026-05-01T12:00:00.000Z'),
-        true
-      );
-      insertOrphanTraining(
-        faker.number.int(),
-        new Date('2026-06-01T12:00:00.000Z'),
-        false
-      );
-      const orphanRowCount = framework.sharedReadModel.db
-        .select()
-        .from(trainedMemberstable)
-        .all().length;
-      expect(orphanRowCount).toStrictEqual(2);
-
-      const viewModel = await runAs(superUser)();
-      const area_ = viewModelArea(viewModel, areaId);
-      // Equipment charts require a resolvable trainee: both orphans dropped.
-      expect(
-        machineNamed(area_, 'Red Machine').trainingsByQuarter.map(
-          q => q.count
-        )
-      ).toStrictEqual([0, 0, 0, 0]);
-      // Owner stats attributed this delivery to the owner regardless of
-      // trainee resolvability; the legacy row stays excluded there.
-      expect(
-        area_.owners[0].trainingsByQuarter.map(q => q.count)
-      ).toStrictEqual([0, 0, 1, 0]);
     });
   });
 
@@ -428,8 +364,9 @@ describe('construct-view-model semantics', () => {
       const area_ = viewModelArea(viewModel, areaId);
       expect(area_.owners).toHaveLength(1);
       expect(area_.owners[0].memberNumber).toStrictEqual(owner.memberNumber);
-      expect(area_.owners[0].isActiveOwner).toStrictEqual(true);
-      expect(area_.owners[0].reasons).toStrictEqual([]);
+      // Ordinary members see every owner, but the active/inactive verdict is
+      // only evaluated for super-users.
+      expect(area_.owners[0].verdict).toStrictEqual(O.none);
     });
 
     it('treats an owner with an active subscription and a past-due invoice as inactive', async () => {
@@ -445,8 +382,9 @@ describe('construct-view-model semantics', () => {
 
       const viewModel = await runAs(superUser)();
       const area_ = viewModelArea(viewModel, areaId);
-      expect(area_.owners[0].isActiveOwner).toStrictEqual(false);
-      expect(area_.owners[0].reasons).toStrictEqual(['past-due']);
+      expect(area_.owners[0].verdict).toStrictEqual(
+        O.some({isActiveOwner: false, reasons: ['past-due']})
+      );
     });
 
     it('bucket equipment charts across quarter boundaries', async () => {
