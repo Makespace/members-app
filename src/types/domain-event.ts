@@ -242,6 +242,30 @@ const TroubleTicketResponseSubmitted = defineEvent(
 // audience. The banner content is structured (title/message/link) so it can
 // be rendered safely; the optional email body is markdown, converted to HTML
 // when the go-live email is sent by the sync worker.
+// What one member wants to hear about one scope - an area, a machine, or one
+// of the standing groups. 'follow' means they have said nothing of their own
+// and take whatever sits above them, which is also how a choice is undone.
+//
+// The actor says who decided: a member setting their own, or the system doing
+// it because they were made a trainer or an owner. The two read very
+// differently in a member's history, so they are not flattened together.
+const MemberNotificationPreferenceSet = defineEvent(
+  'MemberNotificationPreferenceSet',
+  {
+    memberNumber: t.number,
+    // 'reported-by-me' | 'my-areas' | 'other-areas' | 'area:<id>' |
+    // 'equipment:<id>'
+    scope: t.string,
+    preference: t.keyof({
+      live: null,
+      daily: null,
+      weekly: null,
+      none: null,
+      follow: null,
+    }),
+  }
+);
+
 const NotificationCreated = defineEvent('NotificationCreated', {
   id: tt.UUID,
   title: t.string,
@@ -545,6 +569,7 @@ export const events = [
   TroubleTicketEquipmentSet,
   TroubleTicketTitleEdited,
   TroubleTicketNotificationSent,
+  MemberNotificationPreferenceSet,
   NotificationCreated,
   NotificationDismissed,
   NotificationRevoked,
@@ -604,6 +629,7 @@ export const DomainEvent = t.union([
   TroubleTicketEquipmentSet.codec,
   TroubleTicketTitleEdited.codec,
   TroubleTicketNotificationSent.codec,
+  MemberNotificationPreferenceSet.codec,
   NotificationCreated.codec,
   NotificationDismissed.codec,
   NotificationRevoked.codec,

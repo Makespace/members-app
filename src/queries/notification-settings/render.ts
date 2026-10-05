@@ -3,105 +3,56 @@ import {pipe} from 'fp-ts/lib/function';
 import {Html, html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {
   Choice,
-  DELIVERIES,
-  deliveryLabel,
-  happeningLabel,
   ScopeNode,
-  TICKET_HAPPENINGS,
+  SUBSCRIPTIONS,
+  subscriptionLabel,
 } from '../../trouble-tickets/notification-preferences';
 import {ViewModel} from './view-model';
 
-// Nothing is stored yet. The page exists so the shape of the settings can be
-// argued with before it is written into the event timeline, where changing it
-// afterwards is expensive.
-const notYetSaving = html`
-  <p class="ns-preview">
-    A preview, so we can agree how this should work. Nothing you choose here is
-    saved yet, and your notifications have not changed.
-  </p>
-`;
-
 // What a rule comes to, said as a sentence. A row that inherits still has an
 // effect, and the effect is the thing somebody is actually choosing.
-const effectInWords = (choice: Choice): Html => {
-  if (choice.delivery === 'never' || choice.happenings.length === 0) {
-    return html`Nothing`;
-  }
-  const when =
-    choice.delivery === 'as-it-happens'
-      ? html`as it happens`
-      : choice.delivery === 'daily'
-        ? html`in a daily summary`
-        : html`in a weekly summary`;
-  const list = choice.happenings
-    .map(happening => happeningLabel(happening).toLowerCase())
-    .join(', ');
-  return html`${sanitizeString(list)} &mdash; ${when}`;
-};
-
-// A following row shows the settings it is following, greyed and turned off,
-// rather than a sentence naming its parent. Somebody deciding whether to
-// differ wants to see what they would be differing from.
 const shownChoice = (scope: ScopeNode): Choice =>
   scope.setting.kind === 'own' ? scope.setting.choice : scope.effective;
 
 const isFollowing = (scope: ScopeNode): boolean =>
   scope.setting.kind === 'inherit' && O.isSome(scope.inheritsFrom);
 
-const deliveryChoices = (scope: ScopeNode): Html => html`
-  <div class="ns-row__group">
-    <label class="ns-row__group-label" for="${safe(`delivery:${scope.id}`)}"
-      >How often</label
-    >
-    <select
-      id="${safe(`delivery:${scope.id}`)}"
-      name="${safe(`delivery:${scope.id}`)}"
-      class="ns-row__delivery"
-      ${isFollowing(scope) ? safe('disabled') : safe('')}
-    >
-    ${joinHtml(
-      DELIVERIES.map(
-        delivery => html`
-          <option
-            value="${safe(delivery)}"
-            ${shownChoice(scope).delivery === delivery
-              ? safe('selected')
-              : safe('')}
-          >
-            ${sanitizeString(deliveryLabel(delivery))}
-          </option>
-        `
-      )
-    )}
-    </select>
-  </div>
-`;
-
-const happeningChoices = (scope: ScopeNode): Html => html`
+// Four options, each saying what it means. A rule asks one question now, so
+// there is nothing to group or label beyond the row's own name.
+const subscriptionChoices = (scope: ScopeNode): Html => html`
+  ${O.isSome(scope.inheritsFrom)
+    ? html`<input
+        type="hidden"
+        name="${safe(`subscription:${scope.id}`)}"
+        value="follow"
+        data-ns-follow-field
+        ${isFollowing(scope) ? safe('') : safe('disabled')}
+      />`
+    : html``}
   <fieldset
-    class="ns-row__happenings"
+    class="ns-row__subscription"
     ${isFollowing(scope) ? safe('disabled') : safe('')}
   >
-    <legend class="ns-row__group-label">
-      Tell me about<span class="visually-hidden">
-        &mdash; ${sanitizeString(scope.label)}</span
-      >
+    <legend class="visually-hidden">
+      Notifications for ${sanitizeString(scope.label)}
     </legend>
     ${joinHtml(
-      TICKET_HAPPENINGS.map(happening => {
-        const id = `${scope.id}:${happening}`;
+      SUBSCRIPTIONS.map(subscription => {
+        const id = `${scope.id}:${subscription}`;
         return html`
-          <label class="ns-check" for="${safe(id)}">
+          <label class="ns-option" for="${safe(id)}">
             <input
-              type="checkbox"
+              type="radio"
               id="${safe(id)}"
-              name="${safe(`happening:${scope.id}`)}"
-              value="${safe(happening)}"
-              ${shownChoice(scope).happenings.includes(happening)
+              name="${safe(`subscription:${scope.id}`)}"
+              value="${safe(subscription)}"
+              ${shownChoice(scope) === subscription
                 ? safe('checked')
                 : safe('')}
             />
-            ${sanitizeString(happeningLabel(happening))}
+            <span class="ns-option__label"
+              >${sanitizeString(subscriptionLabel(subscription))}</span
+            >
           </label>
         `;
       })
@@ -136,18 +87,19 @@ const followSwitch = (scope: ScopeNode): Html =>
     )
   );
 
+const heading = (depth: number, inner: Html): Html => {
+  if (depth === 0) {
+    return html`<h2 class="ns-row__label">${inner}</h2>`;
+  }
+  return depth === 1
+    ? html`<h3 class="ns-row__label">${inner}</h3>`
+    : html`<h4 class="ns-row__label">${inner}</h4>`;
+};
+
 const row = (scope: ScopeNode, depth: number): Html => html`
-  <li class="ns-row ns-row--depth-${safe(String(Math.min(depth, 3)))}">
+  <li class="ns-row ns-row--depth-${safe(String(Math.min(depth, 2)))}">
     <div class="ns-row__head">
-      <span class="ns-row__label">${sanitizeString(scope.label)}</span>
-      ${pipe(
-        scope.note,
-        O.match(
-          () => html``,
-          note => html`<span class="ns-row__why">${sanitizeString(note)}</span>`
-        )
-      )}
-      <span class="ns-row__effect">${effectInWords(scope.effective)}</span>
+      ${heading(depth, html`${sanitizeString(scope.label)}`)}
     </div>
     <div
       class="ns-row__controls ${isFollowing(scope)
@@ -155,14 +107,41 @@ const row = (scope: ScopeNode, depth: number): Html => html`
         : safe('')}"
       data-ns-controls
     >
-      ${followSwitch(scope)} ${happeningChoices(scope)}
-      ${deliveryChoices(scope)}
+      ${followSwitch(scope)} ${subscriptionChoices(scope)}
     </div>
     ${scope.children.length === 0
       ? html``
-      : html`<ul class="ns-children">
-          ${joinHtml(scope.children.map(child => row(child, depth + 1)))}
-        </ul>`}
+      : depth === 0
+        ? html`
+            <details class="ns-areas" ${scope.kind === 'my-areas' ? safe('open') : safe('')}>
+              <summary>
+                View specific areas
+                (${sanitizeString(String(scope.children.length))})
+              </summary>
+              <ul class="ns-children" data-ns-children>
+                ${joinHtml(scope.children.map(child => row(child, depth + 1)))}
+              </ul>
+            </details>
+          `
+        : html`
+          ${isFollowing(scope)
+            ? html`<p class="ns-row__folded" data-ns-folded-note>
+                ${sanitizeString(String(scope.children.length))}
+                ${scope.children.length === 1
+                  ? html`machine here follows`
+                  : html`machines here follow`}
+                this.
+              </p>`
+            : html``}
+          <ul
+            class="ns-children ${isFollowing(scope)
+              ? safe('ns-children--folded')
+              : safe('')}"
+            data-ns-children
+          >
+            ${joinHtml(scope.children.map(child => row(child, depth + 1)))}
+          </ul>
+        `}
   </li>
 `;
 
@@ -178,21 +157,18 @@ const nothingToScope = (viewModel: ViewModel): Html =>
 export const render = (viewModel: ViewModel): Html => html`
   <div class="stack">
     <h1>Trouble ticket notifications</h1>
-    ${notYetSaving}
-    <p>
-      Each rule below either follows the one above it or says its own thing.
-      Set it once at the top to go quiet everywhere, or pick out a single
-      machine you want to hear about whatever else you have chosen.
-    </p>
     <p>
       <strong
         >${safe(String(viewModel.soundingCount))} of these currently send you
         something.</strong
       >
     </p>
-    <ul class="ns-tree">
-      ${joinHtml(viewModel.scopes.map(scope => row(scope, 0)))}
-    </ul>
+    <form method="post" action="/notification-settings" class="stack">
+      <ul class="ns-tree">
+        ${joinHtml(viewModel.scopes.map(scope => row(scope, 0)))}
+      </ul>
+      <p><button type="submit">Save</button></p>
+    </form>
     <script>
       // Turning a row's own controls on and off. Scoped to the controls block
       // the switch sits in, because a row contains its children's rows and a
@@ -202,14 +178,38 @@ export const render = (viewModel: ViewModel): Html => html`
           var controls = differ.closest('[data-ns-controls]');
           if (!controls) return;
           var own = controls.querySelectorAll('select, fieldset');
+          var followField = controls.querySelector('[data-ns-follow-field]');
+          var row = controls.parentElement;
+          var kids = row
+            ? Array.prototype.find.call(row.children, function (child) {
+                return child.matches('[data-ns-children]');
+              })
+            : null;
+          var foldedNote = row
+            ? Array.prototype.find.call(row.children, function (child) {
+                return child.matches('[data-ns-folded-note]');
+              })
+            : null;
           var apply = function () {
             controls.classList.toggle(
               'ns-row__controls--following',
               !differ.checked
             );
+            if (kids) {
+              kids.classList.toggle('ns-children--folded', !differ.checked);
+            }
+            if (foldedNote) {
+              foldedNote.hidden = differ.checked;
+            }
             Array.prototype.forEach.call(own, function (control) {
               control.disabled = !differ.checked;
             });
+            // A following row sends 'follow' rather than nothing, so that
+            // going back to following clears what was stored instead of
+            // leaving the old answer in place.
+            if (followField) {
+              followField.disabled = differ.checked;
+            }
           };
           differ.addEventListener('change', apply);
           apply();
@@ -217,13 +217,5 @@ export const render = (viewModel: ViewModel): Html => html`
       })();
     </script>
     ${nothingToScope(viewModel)}
-    <p>
-      <small
-        >A machine in an area you own follows that area unless you say
-        otherwise. A machine you train on follows "Equipment I train on", which
-        is a separate branch because teaching on something and owning the area
-        it sits in do not always go together.</small
-      >
-    </p>
   </div>
 `;

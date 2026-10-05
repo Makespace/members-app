@@ -169,6 +169,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     getSheetData: getSheetData(extDBDrizzle),
     getSheetDataByMemberNumber: getSheetDataByMemberNumber(extDBDrizzle),
     commands: {
+      notificationPreferences: {
+        set: frameworkify(commands.notificationPreferences.set),
+      },
       area: {
         create: frameworkify(commands.area.create),
         remove: frameworkify(commands.area.remove),

@@ -40,7 +40,8 @@ export const constructViewModel =
       deps.sharedReadModel.area.getAllMinimal().map(area => ({
         id: area.id,
         name: area.name,
-      }))
+      })),
+      deps.sharedReadModel.notificationPreferences.forMember(user.memberNumber)
     );
 
     return E.right({

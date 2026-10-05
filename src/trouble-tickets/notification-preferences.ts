@@ -1,4 +1,5 @@
 import * as O from 'fp-ts/Option';
+import {pipe} from 'fp-ts/lib/function';
 import {Member} from '../read-models/shared-state/return-types';
 
 // What somebody can ask to hear about, and how often. Pure: no events and no
@@ -7,7 +8,7 @@ import {Member} from '../read-models/shared-state/return-types';
 
 // The five things that happen to a ticket, in the words a member would use
 // rather than the event names.
-export const TICKET_HAPPENINGS = [
+const TICKET_HAPPENINGS = [
   'reported',
   'picked-up',
   'needs-help',
@@ -17,69 +18,61 @@ export const TICKET_HAPPENINGS = [
 
 type TicketHappening = (typeof TICKET_HAPPENINGS)[number];
 
-export const happeningLabel = (happening: TicketHappening): string => {
-  switch (happening) {
-    case 'reported':
-      return 'Reported';
-    case 'picked-up':
-      return 'Picked up by somebody';
-    case 'needs-help':
-      return 'Needs help';
-    case 'parked':
-      return 'Parked';
-    case 'resolved':
-      return 'Resolved';
-  }
-};
+// One choice, not two. How often somebody hears and how much they hear turned
+// out to be the same question: anybody wanting a weekly summary wants it to
+// cover everything, and anybody wanting to know the moment something breaks is
+// not asking to be told about only some of it.
+export const SUBSCRIPTIONS = ['live', 'daily', 'weekly', 'none'] as const;
 
-export const DELIVERIES = [
-  'as-it-happens',
-  'daily',
-  'weekly',
-  'never',
-] as const;
+type Subscription = (typeof SUBSCRIPTIONS)[number];
 
-type Delivery = (typeof DELIVERIES)[number];
-
-export const deliveryLabel = (delivery: Delivery): string => {
-  switch (delivery) {
-    case 'as-it-happens':
-      return 'As it happens';
+export const subscriptionLabel = (subscription: Subscription): string => {
+  switch (subscription) {
+    case 'live':
+      return 'Live feed';
     case 'daily':
       return 'Daily summary';
     case 'weekly':
       return 'Weekly summary';
-    case 'never':
-      return 'Never';
+    case 'none':
+      return 'No notifications';
   }
 };
 
-export type Choice = {
-  delivery: Delivery;
-  happenings: ReadonlyArray<TicketHappening>;
+// What a choice comes to in the events the notifier will match on. Your own
+// ticket is the exception: you know it was reported, so what is left to tell
+// you is what became of it.
+export const happeningsOf = (
+  subscription: Subscription,
+  kind: ScopeKind
+): ReadonlyArray<TicketHappening> => {
+  if (subscription === 'none') {
+    return [];
+  }
+  return kind === 'reported-by-me'
+    ? TICKET_HAPPENINGS.filter(happening => happening !== 'reported')
+    : TICKET_HAPPENINGS;
 };
 
+export type Choice = Subscription;
+
 // A scope either follows whatever its parent settles on, or says its own
-// thing. Inheriting is the default everywhere, so that somebody who wants to
-// go quiet can do it once at the top rather than machine by machine.
+// thing. Following is the default everywhere below the top three, so somebody
+// who wants to go quiet can do it once rather than machine by machine.
 type Setting = {kind: 'inherit'} | {kind: 'own'; choice: Choice};
 
 type ScopeKind =
   | 'reported-by-me'
-  | 'everything'
   | 'my-areas'
   | 'area'
   | 'equipment'
-  | 'everywhere-else';
+  | 'other-areas';
 
 export type ScopeNode = {
   // Stable across renders, and used as the form field name.
   id: string;
   kind: ScopeKind;
   label: string;
-  // Why this row is in the list at all - owning the area, training in it, or
-  // both. Absent on the rows that are there for everybody.
-  note: O.Option<string>;
   // Named so a row can say "same as Areas I own" rather than just "inherit".
   inheritsFrom: O.Option<string>;
   setting: Setting;
@@ -90,30 +83,52 @@ export type ScopeNode = {
   children: ReadonlyArray<ScopeNode>;
 };
 
-const own = (
-  delivery: Delivery,
-  happenings: ReadonlyArray<TicketHappening>
-): Setting => ({kind: 'own', choice: {delivery, happenings}});
+const own = (choice: Choice): Setting => ({kind: 'own', choice});
 
 const inherit: Setting = {kind: 'inherit'};
 
-// Where somebody starts before they have touched anything. Chosen so that the
-// people responsible for a thing hear about it and nobody else is emailed:
-// owners hear when something in their area is reported or gets stuck, trainers
-// hear when a machine they teach on needs help, and everything else is quiet.
+// Where somebody starts before they have touched anything. The people
+// responsible for a thing hear about it and nobody else is emailed: a week's
+// worth of everything in the areas they look after, a day's worth for the
+// machines they are named on, and silence everywhere else. A summary with
+// nothing in it is not sent, so a quiet week costs nobody an email.
 const DEFAULTS: Record<string, Setting> = {
-  'reported-by-me': own('as-it-happens', [
-    'picked-up',
-    'needs-help',
-    'parked',
-    'resolved',
-  ]),
-  everything: own('never', []),
-  'my-areas': own('as-it-happens', ['reported', 'needs-help']),
-  'everywhere-else': inherit,
+  'reported-by-me': own('live'),
+  'my-areas': own('weekly'),
+  'other-areas': own('none'),
 };
 
-const defaultFor = (id: string): Setting => DEFAULTS[id] ?? inherit;
+// What a member has actually said, scope by scope. Anything they have said
+// nothing about falls through to the default for that scope.
+const SUBSCRIPTION_VALUES: ReadonlySet<string> = new Set(SUBSCRIPTIONS);
+
+const storedSetting = (value: string | undefined): O.Option<Setting> => {
+  if (value === undefined) {
+    return O.none;
+  }
+  if (value === 'follow') {
+    return O.some(inherit);
+  }
+  return SUBSCRIPTION_VALUES.has(value)
+    ? O.some(own(value as Choice))
+    : O.none;
+};
+
+// A machine somebody is named on is their job in a way the rest of the area is
+// not, so it is heard about sooner.
+const defaultFor = (
+  id: string,
+  trainedOn: ReadonlySet<string>
+): Setting => {
+  const named = DEFAULTS[id];
+  if (named !== undefined) {
+    return named;
+  }
+  return id.startsWith('equipment:') &&
+    trainedOn.has(id.slice('equipment:'.length))
+    ? own('daily')
+    : inherit;
+};
 
 // A child that says nothing takes its parent's answer, all the way up.
 const resolve = (setting: Setting, fromParent: Choice): Choice =>
@@ -123,18 +138,21 @@ const node = (input: {
   id: string;
   kind: ScopeKind;
   label: string;
-  note?: O.Option<string>;
   inheritsFrom: O.Option<string>;
   parentChoice: Choice;
+  trainedOn: ReadonlySet<string>;
+  stored: ReadonlyMap<string, string>;
   children?: (effective: Choice) => ReadonlyArray<ScopeNode>;
 }): ScopeNode => {
-  const setting = defaultFor(input.id);
+  const setting = pipe(
+    storedSetting(input.stored.get(input.id)),
+    O.getOrElse(() => defaultFor(input.id, input.trainedOn))
+  );
   const effective = resolve(setting, input.parentChoice);
   return {
     id: input.id,
     kind: input.kind,
     label: input.label,
-    note: input.note ?? O.none,
     inheritsFrom: input.inheritsFrom,
     setting,
     effective,
@@ -142,7 +160,7 @@ const node = (input: {
   };
 };
 
-const SILENT: Choice = {delivery: 'never', happenings: []};
+const SILENT: Choice = 'none';
 
 // Where a machine lives, and what each area is called - enough to put a
 // machine somebody trains on under the area it actually sits in.
@@ -154,15 +172,6 @@ type EquipmentPlacement = {
 
 type AreaName = {id: string; name: string};
 
-// Why an area is in somebody's list. Owning it and training in it are
-// different relationships, and a row that cannot say which is harder to trust.
-const roleNote = (owns: boolean, trains: boolean): O.Option<string> => {
-  if (owns && trains) {
-    return O.some('owner and trainer');
-  }
-  return owns ? O.some('owner') : trains ? O.some('trainer') : O.none;
-};
-
 // The tree a member sees: what they are responsible for first, then the rest.
 // An area is listed when they own it or train on something in it - the two
 // usually go together, and where they do not, somebody training in an area
@@ -170,7 +179,8 @@ const roleNote = (owns: boolean, trains: boolean): O.Option<string> => {
 export const preferencesFor = (
   member: Pick<Member, 'ownerOf' | 'trainerFor'>,
   equipment: ReadonlyArray<EquipmentPlacement> = [],
-  areas: ReadonlyArray<AreaName> = []
+  areas: ReadonlyArray<AreaName> = [],
+  stored: ReadonlyMap<string, string> = new Map()
 ): ReadonlyArray<ScopeNode> => {
   const areaById = new Map<string, string>([
     ...areas.map(area => [area.id, area.name] as const),
@@ -194,13 +204,68 @@ export const preferencesFor = (
     ]);
   }
 
-  const myAreaIds = [
-    ...new Set([...ownedAreaIds, ...trainedByArea.keys()]),
-  ].sort((a, b) =>
-    (areaById.get(a) ?? '').localeCompare(areaById.get(b) ?? '', ['en-GB'])
+  const myAreaIds = [...new Set([...ownedAreaIds, ...trainedByArea.keys()])];
+
+  // Every machine in an area, so that each area reads as the list of what is
+  // in it. An owner wanting to mute one noisy machine should not have to be
+  // its trainer first.
+  const machinesByArea = new Map<string, EquipmentPlacement[]>();
+  for (const item of equipment) {
+    machinesByArea.set(item.areaId, [
+      ...(machinesByArea.get(item.areaId) ?? []),
+      item,
+    ]);
+  }
+
+  const byName = (a: string, b: string) =>
+    (areaById.get(a) ?? '').localeCompare(areaById.get(b) ?? '', ['en-GB']);
+
+  myAreaIds.sort(byName);
+
+  const otherAreaIds = [...areaById.keys()]
+    .filter(areaId => !myAreaIds.includes(areaId))
+    .sort(byName);
+
+  const trainedOn = new Set(
+    member.trainerFor.map(trained => trained.equipment_id as string)
   );
 
+  const areaNode = (
+    areaId: string,
+    parentLabel: string,
+    parentChoice: Choice
+  ): ScopeNode =>
+    node({
+      trainedOn,
+      stored,
+      id: `area:${areaId}`,
+      kind: 'area',
+      label: areaById.get(areaId) ?? 'Unnamed area',
+      inheritsFrom: O.some(parentLabel),
+      parentChoice,
+      children: areaChoice =>
+        (machinesByArea.get(areaId) ?? [])
+          .slice()
+          .sort((a, b) => a.name.localeCompare(b.name, ['en-GB']))
+          .map(machine =>
+            node({
+              trainedOn,
+              stored,
+              id: `equipment:${machine.id}`,
+              kind: 'equipment',
+              label: machine.name,
+              inheritsFrom: O.some(areaById.get(areaId) ?? 'the area above'),
+              parentChoice: areaChoice,
+            })
+          ),
+    });
+
+  // Three things somebody can be told about, side by side. There is no rule
+  // above these: a parent whose only job was to be inherited from added a
+  // level to read past without answering a question anybody had.
   const reportedByMe = node({
+    trainedOn,
+    stored,
     id: 'reported-by-me',
     kind: 'reported-by-me',
     label: 'Tickets I reported',
@@ -208,58 +273,35 @@ export const preferencesFor = (
     parentChoice: SILENT,
   });
 
-  const everything = node({
-    id: 'everything',
-    kind: 'everything',
-    label: 'Everything else',
+  const MY_AREAS_LABEL = "Areas I'm an owner or trainer in";
+  const myAreas = node({
+    trainedOn,
+    stored,
+    id: 'my-areas',
+    kind: 'my-areas',
+    label: MY_AREAS_LABEL,
     inheritsFrom: O.none,
     parentChoice: SILENT,
-    children: everythingChoice => [
-      node({
-        id: 'my-areas',
-        kind: 'my-areas',
-        label: "Areas I'm an owner or trainer in",
-        inheritsFrom: O.some('Everything else'),
-        parentChoice: everythingChoice,
-        children: areasChoice =>
-          myAreaIds.map(areaId =>
-            node({
-              id: `area:${areaId}`,
-              kind: 'area',
-              label: areaById.get(areaId) ?? 'Unnamed area',
-              note: roleNote(
-                ownedAreaIds.has(areaId),
-                trainedByArea.has(areaId)
-              ),
-              inheritsFrom: O.some("Areas I'm an owner or trainer in"),
-              parentChoice: areasChoice,
-              children: areaChoice =>
-                (trainedByArea.get(areaId) ?? []).map(machine =>
-                  node({
-                    id: `equipment:${machine.id}`,
-                    kind: 'equipment',
-                    label: machine.name,
-                    note: O.some('I train on this'),
-                    inheritsFrom: O.some(
-                      areaById.get(areaId) ?? 'the area above'
-                    ),
-                    parentChoice: areaChoice,
-                  })
-                ),
-            })
-          ),
-      }),
-      node({
-        id: 'everywhere-else',
-        kind: 'everywhere-else',
-        label: 'Anywhere else in Makespace',
-        inheritsFrom: O.some('Everything else'),
-        parentChoice: everythingChoice,
-      }),
-    ],
+    children: areasChoice =>
+      myAreaIds.map(areaId => areaNode(areaId, MY_AREAS_LABEL, areasChoice)),
   });
 
-  return [reportedByMe, everything];
+  const OTHER_AREAS_LABEL = 'Other areas in Makespace';
+  const otherAreas = node({
+    trainedOn,
+    stored,
+    id: 'other-areas',
+    kind: 'other-areas',
+    label: OTHER_AREAS_LABEL,
+    inheritsFrom: O.none,
+    parentChoice: SILENT,
+    children: otherChoice =>
+      otherAreaIds.map(areaId =>
+        areaNode(areaId, OTHER_AREAS_LABEL, otherChoice)
+      ),
+  });
+
+  return [reportedByMe, myAreas, otherAreas];
 };
 
 // Every row in the tree, flattened - for counting, and for a form that wants
@@ -274,8 +316,4 @@ export const allScopes = (
 export const soundingScopes = (
   nodes: ReadonlyArray<ScopeNode>
 ): ReadonlyArray<ScopeNode> =>
-  allScopes(nodes).filter(
-    scope =>
-      scope.effective.delivery !== 'never' &&
-      scope.effective.happenings.length > 0
-  );
+  allScopes(nodes).filter(scope => scope.effective !== 'none');

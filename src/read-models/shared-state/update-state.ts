@@ -5,6 +5,7 @@ import {
   areaNameAliasesTable,
   areasTable,
   equipmentNameAliasesTable,
+  memberNotificationPreferencesTable,
   equipmentTable,
   eventStateTable,
   failedEventsTable,
@@ -732,6 +733,40 @@ const _updateState =
             .onConflictDoNothing()
             .run();
         }
+        break;
+      }
+      case 'MemberNotificationPreferenceSet': {
+        // Following is the absence of a row rather than a row saying
+        // 'follow', so there is one way to say it and a member who changes
+        // their mind back leaves nothing behind.
+        if (event.preference === 'follow') {
+          tx.delete(memberNotificationPreferencesTable)
+            .where(
+              and(
+                eq(
+                  memberNotificationPreferencesTable.memberNumber,
+                  event.memberNumber
+                ),
+                eq(memberNotificationPreferencesTable.scope, event.scope)
+              )
+            )
+            .run();
+          break;
+        }
+        tx.insert(memberNotificationPreferencesTable)
+          .values({
+            memberNumber: event.memberNumber,
+            scope: event.scope,
+            preference: event.preference,
+          })
+          .onConflictDoUpdate({
+            target: [
+              memberNotificationPreferencesTable.memberNumber,
+              memberNotificationPreferencesTable.scope,
+            ],
+            set: {preference: event.preference},
+          })
+          .run();
         break;
       }
       case 'EquipmentNameAliasAdded': {

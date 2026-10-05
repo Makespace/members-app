@@ -18,8 +18,15 @@ const scopes = preferencesFor(
       },
     ],
   },
-  [{id: 'e1', name: 'Band Saw', areaId: 'a1'}],
-  [{id: 'a1', name: 'Wood Shop'}]
+  [
+    {id: 'e1', name: 'Band Saw', areaId: 'a1'},
+    // An area this member has nothing to do with, and a machine in it.
+    {id: 'e2', name: 'Vinyl Cutter', areaId: 'a2'},
+  ],
+  [
+    {id: 'a1', name: 'Wood Shop'},
+    {id: 'a2', name: 'Craft Room'},
+  ]
 );
 
 const viewModel: ViewModel = {
@@ -58,11 +65,39 @@ const rowNamed = (body: HTMLElement, label: string): Element => {
 const ownPart = (row: Element, className: string): Element | undefined =>
   [...row.children].find(child => child.classList.contains(className));
 
+// A top-level group keeps its areas behind a disclosure, so they are one
+// level further in than a nested row's children.
+const areaListOf = (row: Element): Element | null | undefined =>
+  ownPart(row, 'ns-areas')?.querySelector('.ns-children');
+
 describe('the notification settings page', () => {
-  // Honesty while this is a preview: somebody who changes a dropdown and
-  // walks away must not think they have changed anything.
-  it('says plainly that nothing is saved yet', () => {
-    expect(text(page())).toContain('Nothing you choose here is saved yet');
+  it('saves to the settings page it came from', () => {
+    const form = page().querySelector<HTMLFormElement>('form');
+    expect(form?.getAttribute('method')).toBe('post');
+    expect(form?.getAttribute('action')).toBe('/notification-settings');
+    expect(form?.querySelector('button[type="submit"]')).not.toBeNull();
+  });
+
+  // A following row's options are disabled, so the browser sends nothing for
+  // it. Without this, switching a row back to following would leave whatever
+  // was stored before in place.
+  it('makes a following row say so rather than say nothing', () => {
+    const woodShop = rowNamed(page(), 'Wood Shop');
+    const field = ownPart(woodShop, 'ns-row__controls')?.querySelector(
+      '[data-ns-follow-field]'
+    );
+    expect(field?.getAttribute('name')).toBe('subscription:area:a1');
+    expect(field?.getAttribute('value')).toBe('follow');
+    expect(field?.hasAttribute('disabled')).toBe(false);
+  });
+
+  it('keeps that out of the way of a rule that speaks for itself', () => {
+    const group = rowNamed(page(), "Areas I'm an owner or trainer in");
+    const field = ownPart(group, 'ns-row__controls')?.querySelector(
+      '[data-ns-follow-field]'
+    );
+    // Nothing above it to follow, so there is nothing to send.
+    expect(field).toBeNull();
   });
 
   it('shows a rule for each level of the tree', () => {
@@ -73,14 +108,13 @@ describe('the notification settings page', () => {
     expect(labels).toContain("Areas I'm an owner or trainer in");
     expect(labels).toContain('Wood Shop');
     expect(labels).toContain('Band Saw');
-    expect(labels).toContain('Anywhere else in Makespace');
+    expect(labels).toContain('Other areas in Makespace');
   });
 
-  it('nests a machine inside the group it follows', () => {
+  it('nests an area inside the group it follows', () => {
     const owned = rowNamed(page(), "Areas I'm an owner or trainer in");
     expect(
-      ownPart(owned, 'ns-children')?.querySelector('.ns-row__label')
-        ?.textContent?.trim()
+      areaListOf(owned)?.querySelector('.ns-row__label')?.textContent?.trim()
     ).toBe('Wood Shop');
   });
 
@@ -93,22 +127,22 @@ describe('the notification settings page', () => {
     ).toBe('Band Saw');
   });
 
-  it('says why an area is in the list', () => {
-    const woodShop = rowNamed(page(), 'Wood Shop');
-    expect(
-      ownPart(woodShop, 'ns-row__head')?.querySelector('.ns-row__why')
-        ?.textContent?.trim()
-    ).toBe('owner and trainer');
-  });
-
   // The thing that makes the model reviewable: a row that follows its parent
-  // still does something, and the page says what.
-  it('says what each rule comes to, not only what it says', () => {
-    const woodShop = rowNamed(page(), 'Wood Shop');
-    expect(
-      ownPart(woodShop, 'ns-row__head')?.querySelector('.ns-row__effect')
-        ?.textContent
-    ).toContain('reported');
+  // still does something, and the page shows what - greyed, so it reads as
+  // inherited rather than chosen.
+  it('shows a following row the choice it is following', () => {
+    const controls = ownPart(
+      rowNamed(page(), 'Wood Shop'),
+      'ns-row__controls'
+    );
+    const chosen = [
+      ...(controls?.querySelectorAll('.ns-option input') ?? []),
+    ].filter(option => option.hasAttribute('checked'));
+    expect(chosen).toHaveLength(1);
+    expect(chosen[0]?.getAttribute('value')).toBe('weekly');
+    expect(controls?.classList.contains('ns-row__controls--following')).toBe(
+      true
+    );
   });
 
   // Following is not a kind of delivery, so it is not an option in that list.
@@ -118,7 +152,7 @@ describe('the notification settings page', () => {
         '[data-ns-differ]'
       );
 
-    expect(differ('Everything else')).toBeNull();
+    expect(differ('Tickets I reported')).toBeNull();
     expect(differ('Wood Shop')).not.toBeNull();
   });
 
@@ -143,24 +177,22 @@ describe('the notification settings page', () => {
     expect(controls?.classList.contains('ns-row__controls--following')).toBe(
       true
     );
-    const happenings = controls?.querySelector('.ns-row__happenings');
-    expect(happenings).not.toBeNull();
-    expect(happenings?.hasAttribute('disabled')).toBe(true);
-    expect(
-      controls?.querySelector('.ns-row__delivery')?.hasAttribute('disabled')
-    ).toBe(true);
+    const choice = controls?.querySelector('.ns-row__subscription');
+    expect(choice).not.toBeNull();
+    expect(choice?.hasAttribute('disabled')).toBe(true);
   });
 
-  it('shows the inherited values rather than empty boxes', () => {
+  it('shows the inherited choice rather than an empty one', () => {
     const controls = ownPart(
       rowNamed(page(), 'Wood Shop'),
       'ns-row__controls'
     );
-    const ticked = [
-      ...(controls?.querySelectorAll('.ns-check input') ?? []),
-    ].filter(box => box.hasAttribute('checked'));
-    // Wood Shop follows the group, which hears about reported and needs-help.
-    expect(ticked).toHaveLength(2);
+    const chosen = [
+      ...(controls?.querySelectorAll('.ns-option input') ?? []),
+    ].filter(option => option.hasAttribute('checked'));
+    // Wood Shop follows the group, which gets a weekly summary.
+    expect(chosen).toHaveLength(1);
+    expect(chosen[0]?.getAttribute('value')).toBe('weekly');
   });
 
   it('leaves a rule that speaks for itself switched on', () => {
@@ -172,16 +204,89 @@ describe('the notification settings page', () => {
       false
     );
     expect(
-      controls?.querySelector('.ns-row__happenings')?.hasAttribute('disabled')
+      controls?.querySelector('.ns-row__subscription')?.hasAttribute('disabled')
     ).toBe(false);
   });
 
-  it('offers every happening to a rule that speaks for itself', () => {
+  // One choice rather than five boxes: nobody has a view on parked versus
+  // picked up.
+  // One question per rule: how often somebody hears and how much they hear
+  // were the same question wearing two controls.
+  it('asks one question per rule, with four answers', () => {
     const owned = rowNamed(page(), "Areas I'm an owner or trainer in");
-    const boxes = ownPart(owned, 'ns-row__controls')?.querySelectorAll(
-      '.ns-check input'
+    const controls = ownPart(owned, 'ns-row__controls');
+    const options = controls?.querySelectorAll('.ns-option input');
+    expect(options?.length).toBe(4);
+    options?.forEach(option =>
+      expect(option.getAttribute('type')).toBe('radio')
     );
-    expect(boxes?.length).toBe(5);
+    expect(controls?.querySelectorAll('select')).toHaveLength(0);
+  });
+
+  it('names each answer', () => {
+    const owned = rowNamed(page(), "Areas I'm an owner or trainer in");
+    const shown = ownPart(owned, 'ns-row__controls')?.textContent ?? '';
+    expect(shown).toContain('Live feed');
+    expect(shown).toContain('Daily summary');
+    expect(shown).toContain('Weekly summary');
+    expect(shown).toContain('No notifications');
+  });
+
+  // A title for each of the three, subtitles for what sits inside them.
+  it('ranks the rules by heading level', () => {
+    const level = (label: string) =>
+      ownPart(rowNamed(page(), label), 'ns-row__head')?.querySelector(
+        '.ns-row__label'
+      )?.tagName;
+    expect(level('Tickets I reported')).toBe('H2');
+    expect(level('Wood Shop')).toBe('H3');
+    expect(level('Band Saw')).toBe('H4');
+  });
+
+  it('asks the same question about the tickets somebody reported', () => {
+    const mine = rowNamed(page(), 'Tickets I reported');
+    const controls = ownPart(mine, 'ns-row__controls');
+    expect(controls?.querySelectorAll('.ns-option input')).toHaveLength(4);
+  });
+
+  // Some areas hold a dozen machines, and every one of them follows the area
+  // unless somebody says otherwise. Listing them all says nothing.
+  it('folds away the machines under an area that follows the group', () => {
+    const woodShop = rowNamed(page(), 'Wood Shop');
+    const kids = ownPart(woodShop, 'ns-children');
+    expect(kids?.classList.contains('ns-children--folded')).toBe(true);
+  });
+
+  it('says how many machines are folded away, so they can be found', () => {
+    const woodShop = rowNamed(page(), 'Wood Shop');
+    expect(
+      ownPart(woodShop, 'ns-row__folded')?.textContent?.replace(/\s+/g, ' ')
+    ).toContain('1 machine here follows this');
+  });
+
+  // Somebody's own areas double as a way round their own patch, so that list
+  // starts open; every other area in the building does not.
+  it('opens the areas somebody is responsible for and shuts the rest', () => {
+    const mine = ownPart(
+      rowNamed(page(), "Areas I'm an owner or trainer in"),
+      'ns-areas'
+    );
+    const others = ownPart(
+      rowNamed(page(), 'Other areas in Makespace'),
+      'ns-areas'
+    );
+    expect(mine?.hasAttribute('open')).toBe(true);
+    expect(others?.hasAttribute('open')).toBe(false);
+  });
+
+  it('says how many areas are behind each disclosure', () => {
+    const summary = ownPart(
+      rowNamed(page(), 'Other areas in Makespace'),
+      'ns-areas'
+    )?.querySelector('summary');
+    expect(summary?.textContent?.replace(/\s+/g, ' ')).toContain(
+      'View specific areas (1)'
+    );
   });
 
   it('leads with how many rules actually send something', () => {
