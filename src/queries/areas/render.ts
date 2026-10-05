@@ -10,6 +10,7 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {
   AreaViewModel,
   EquipmentViewModel,
+  OwnerVerdict,
   OwnerViewModel,
   ViewModel,
 } from './view-model';
@@ -17,18 +18,14 @@ import {renderReasonChips} from '../../templates/recurly-reasons';
 import {renderMember} from '../../templates/member';
 import {renderTrainingSparkline} from '../../templates/training-sparkline';
 import {tooltip} from '../shared-render/tool-tip';
-import * as O from 'fp-ts/Option';
 import {displayDate, displayDateShort} from '../../templates/display-date';
+import * as O from 'fp-ts/Option';
 import {DateTime} from 'luxon';
-import {
-  Area,
-  Owner,
-} from '../../read-models/shared-state/return-types';
 import { mailTo } from '../../templates/mailto';
 import {categoryDot} from '../../templates/equipment-category';
 
 
-const renderSignedAt = (owner: Owner) => {
+const renderSignedAt = (owner: OwnerViewModel) => {
   if (O.isSome(owner.agreementSigned)) {
     const signedAt = DateTime.fromJSDate(owner.agreementSigned.value);
     // Compact date in the cell; full timestamp on hover.
@@ -39,7 +36,7 @@ const renderSignedAt = (owner: Owner) => {
   return html`Not signed`;
 };
 
-const renderSignedAtForManager = (owner: Owner) => {
+const renderSignedAtForManager = (owner: OwnerViewModel) => {
   if (O.isSome(owner.agreementSigned)) {
     return renderSignedAt(owner);
   }
@@ -67,6 +64,16 @@ const renderRemoveOwner = (
 const trainingsTotal = (owner: OwnerViewModel): number =>
   owner.trainingsByQuarter.reduce((sum, quarter) => sum + quarter.count, 0);
 
+// The verdict is only evaluated for super-users, the only viewers who see the
+// inactive-owners section where it is rendered.
+const getVerdict = (owner: OwnerViewModel): OwnerVerdict =>
+  pipe(
+    owner.verdict,
+    O.getOrElseW(() => {
+      throw new Error('Owner verdict was never evaluated for this viewer');
+    })
+  );
+
 const trainingsHeader = html`<th>
   Trainings
   ${tooltip(
@@ -77,7 +84,7 @@ const trainingsHeader = html`<th>
 </th>`;
 
 const ownerRow = (
-  areaId: Area['id'],
+  areaId: AreaViewModel['id'],
   owner: OwnerViewModel,
   canManageAreas: boolean,
   canSeeOwnerPrivateDetails: boolean,
@@ -100,7 +107,7 @@ const ownerRow = (
 `;
 
 const renderActiveOwners = (
-  areaId: Area['id'],
+  areaId: AreaViewModel['id'],
   owners: ReadonlyArray<OwnerViewModel>,
   hasInactiveOwners: boolean,
   canManageAreas: boolean,
@@ -144,7 +151,7 @@ const renderActiveOwners = (
 };
 
 const renderInactiveOwners = (
-  areaId: Area['id'],
+  areaId: AreaViewModel['id'],
   owners: ReadonlyArray<OwnerViewModel>,
   canManageAreas: boolean,
   canSeeOwnerPrivateDetails: boolean,
@@ -178,7 +185,7 @@ const renderInactiveOwners = (
                 canManageAreas,
                 canSeeOwnerPrivateDetails,
                 showTrainings,
-                html`<td>${renderReasonChips(owner.reasons)}</td>`
+                html`<td>${renderReasonChips(getVerdict(owner).reasons)}</td>`
               )
             )
           )}
@@ -219,8 +226,13 @@ const renderEquipment = (equipment: ReadonlyArray<EquipmentViewModel>) => {
 const renderArea =
   (viewModel: ViewModel) =>
   (area: AreaViewModel) => {
-  const activeOwners = area.owners.filter(owner => owner.isActiveOwner);
-  const inactiveOwners = area.owners.filter(owner => !owner.isActiveOwner);
+  // The verdict is only evaluated for super-users, the only viewers of the
+  // inactive-owners section; everyone else sees the full owner list.
+  const evaluatedOwners = area.owners
+    .filter(owner => O.isSome(owner.verdict))
+    .map(owner => ({...owner, ...getVerdict(owner)}));
+  const activeOwners = evaluatedOwners.filter(owner => owner.isActiveOwner);
+  const inactiveOwners = evaluatedOwners.filter(owner => !owner.isActiveOwner);
   const publiclyVisibleOwners = viewModel.canManageAreas
     ? activeOwners
     : area.owners;

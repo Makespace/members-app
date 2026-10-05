@@ -7,6 +7,8 @@ import {Actor, UserActor} from '../src/types/actor';
 import {EmailAddress, EmailAddressCodec} from '../src/types/email-address';
 import {ExternalStateDB} from '../src/sync-worker/external-state-db';
 import {recurlySubscriptionTable} from '../src/sync-worker/recurly/recurly-data-table';
+import * as betterSqlite3 from 'better-sqlite3';
+import * as libsqlClient from '@libsql/client';
 
 export const getRightOrFail = <A>(input: E.Either<unknown, A>): A =>
   pipe(
@@ -81,3 +83,49 @@ export const insertRecurlySubscription = (
       ...values,
     })
     .run();
+
+// Statement-count helpers shared by the query-count tests (issue #414). They
+// take narrow structural types so they can live here without importing the
+// test framework.
+
+// better-sqlite3's Database#prepare is the funnel every drizzle query passes
+// through, so wrapping it counts shared-state statements issued while the
+// action runs. The action is awaited before the counter is restored, so
+// statements issued after an await inside the action are counted too.
+export const countSharedStatements = async <A>(
+  sharedReadModel: {_underlyingReadModelDb: betterSqlite3.Database},
+  action: () => A | Promise<A>
+): Promise<{result: A; queryCount: number}> => {
+  let queryCount = 0;
+  const db = sharedReadModel._underlyingReadModelDb;
+  const originalPrepare = db.prepare.bind(db);
+  db.prepare = ((...args: Parameters<typeof originalPrepare>) => {
+    queryCount += 1;
+    return originalPrepare(...args);
+  }) as typeof db.prepare;
+  try {
+    const result = await action();
+    return {result, queryCount};
+  } finally {
+    db.prepare = originalPrepare;
+  }
+};
+
+// The recurly cache runs through the libsql client's execute funnel.
+export const countExternalStatements = async <A>(
+  extDBClient: libsqlClient.Client,
+  action: () => Promise<A>
+): Promise<{result: A; queryCount: number}> => {
+  let queryCount = 0;
+  const originalExecute = extDBClient.execute.bind(extDBClient);
+  extDBClient.execute = ((...args: Parameters<typeof originalExecute>) => {
+    queryCount += 1;
+    return originalExecute(...args);
+  }) as typeof extDBClient.execute;
+  try {
+    const result = await action();
+    return {result, queryCount};
+  } finally {
+    extDBClient.execute = originalExecute;
+  }
+};

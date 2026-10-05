@@ -238,6 +238,12 @@ export const createRecurlyIndexes = [
   sql`CREATE INDEX IF NOT EXISTS recurly_transactions_account ON recurly_transactions (accountId);`,
   sql`CREATE INDEX IF NOT EXISTS recurly_subscription_history_email ON recurly_subscription_history (email);`,
   sql`CREATE INDEX IF NOT EXISTS recurly_subscription_history_account ON recurly_subscription_history (accountId);`,
+  // The member page matches cached rows case-insensitively (lower(email)),
+  // which the plain-email indexes above cannot serve: rows written before the
+  // cache started lowercasing addresses may still be mixed-case, so the
+  // expression index has to cover both.
+  sql`CREATE INDEX IF NOT EXISTS recurly_subscriptions_lower_email ON recurly_subscriptions (lower(email), cacheLastUpdated);`,
+  sql`CREATE INDEX IF NOT EXISTS recurly_invoices_lower_email ON recurly_invoices (lower(email));`,
 ];
 
 const createRecurlySchemaVersionTable = sql`

@@ -14,9 +14,14 @@ type ChangeLogEntry = {
 
 export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
-    date: '2026-10-02',
+    date: '2026-10-05',
     headline:
       "When a returning member is given a new number, the admin sees how long they were away (from their Recurly subscriptions) and confirms whether their old training still counts - it lapses after 6 months away",
+  },
+  {
+    date: '2026-10-05',
+    headline:
+      'The areas page now loads much faster, even with thousands of members on the books',
   },
   {
     date: '2026-10-01',

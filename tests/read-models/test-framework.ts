@@ -61,6 +61,9 @@ export type TestFramework = {
   depsForCommands: Dependencies;
   eventStoreDb: libsqlClient.Client;
   extDB: ExternalStateDB;
+  // The libsql client under extDB, exposed so tests can count external-cache
+  // statements by wrapping execute.
+  extDBClient: libsqlClient.Client;
   getTroubleTicketData: ReturnType<typeof getTroubleTicketData>;
   updateTrainingSheetCache: SyncWorkerDependencies['updateTrainingSheetCache'];
   updateTroubleTicketCache: SyncWorkerDependencies['updateTroubleTicketCache'];
@@ -155,6 +158,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     updateTroubleTicketCache: updateTroubleTicketCache(extDBDrizzle),
     eventStoreDb: eventDB,
     extDB: extDBDrizzle,
+    extDBClient,
     sharedReadModel,
     depsForCommands,
     close: () => {

@@ -116,3 +116,10 @@ export const getRecurlyReasonsForMember = (extDB: ExternalStateDB) => async (
     );
     return {flags, reasons: recurlyReasons(flags)};
 };
+
+// Same flags as getRecurlyReasonsForMember, for callers that already hold
+// *verified* email addresses (e.g. the /areas page resolves owner emails in
+// bulk) and so need no per-member expansion at all.
+export const getRecurlyFlagsForVerifiedEmails = (extDB: ExternalStateDB) => async (
+    verifiedEmails: ReadonlyArray<EmailAddress>
+): Promise<O.Option<RecurlyFlags>> => _getRecurlyFlags(extDB)([...verifiedEmails]);

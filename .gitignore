@@ -6,5 +6,8 @@
 .devcontainer/db/
 .vscode
 
+# Benchmark outputs; the numbers that matter live in PR descriptions
+scripts/bench-*.txt
+
 # Google OAuth client files, as downloaded from the Cloud Console
 client_secret*.json

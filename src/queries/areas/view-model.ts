@@ -1,23 +1,48 @@
-import {Area, Equipment, Owner} from '../../read-models/shared-state/return-types';
+import {EmailAddress} from '../../types';
+import {EquipmentCategory} from '../../types/equipment-category';
 import {RecurlyReason} from '../../read-models/external-state/recurly-status';
 import {QuarterCount} from '../../read-models/shared-state/member/training-delivered';
+import {UUID} from 'io-ts-types';
+import * as O from 'fp-ts/Option';
 
-// An owner decorated with this page's active/inactive verdict and, when
-// inactive, the reason(s) behind it. `isActiveOwner` is computed in
-// construct-view-model (past-due counts as inactive here); `reasons` is empty
-// for active owners. `trainingsByQuarter` holds the trainings this owner has
-// delivered, bucketed into the last few quarters for the sparkline.
-export type OwnerViewModel = Owner & {
+// Narrow view-model for the /areas page: only the fields the renderer reads,
+// not the full Area/Equipment expansions. The full equipment/area read-model
+// APIs remain available for pages that need expanded relationships (issue
+// #414, deliverables C+D).
+
+// The page's active/inactive verdict for an owner, evaluated only for
+// super-users (the only viewers of the inactive-owners section). `O.none` on
+// the owner means "not evaluated" - the type cannot present an unevaluated
+// owner as active. `isActiveOwner` is computed in construct-view-model
+// (past-due counts as inactive here); `reasons` is empty for active owners.
+export type OwnerVerdict = {
   isActiveOwner: boolean;
   reasons: ReadonlyArray<RecurlyReason>;
+};
+
+// `trainingsByQuarter` holds the trainings this owner has delivered in this
+// area, bucketed into the last four quarters - computed only when the viewer
+// can see that column.
+export type OwnerViewModel = {
+  memberNumber: number;
+  name: O.Option<string>;
+  primaryEmailAddress: EmailAddress;
+  agreementSigned: O.Option<Date>;
+  verdict: O.Option<OwnerVerdict>;
   trainingsByQuarter: ReadonlyArray<QuarterCount>;
 };
 
-export type EquipmentViewModel = Equipment & {
+export type EquipmentViewModel = {
+  id: UUID;
+  name: string;
+  category: EquipmentCategory;
   trainingsByQuarter: ReadonlyArray<QuarterCount>;
 };
 
-export type AreaViewModel = Omit<Area, 'owners' | 'equipment'> & {
+export type AreaViewModel = {
+  id: UUID;
+  name: string;
+  email: O.Option<EmailAddress>;
   owners: ReadonlyArray<OwnerViewModel>;
   equipment: ReadonlyArray<EquipmentViewModel>;
 };
