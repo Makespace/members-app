@@ -7,6 +7,7 @@ import {EmailAddress} from '../../../src/types';
 import {getRightOrFail} from '../../helpers';
 import {initTestFramework, TestFramework} from '../../read-models/test-framework';
 import {arbitraryUser} from '../../types/user.helper';
+import {recurlySubscriptionHistoryTable} from '../../../src/sync-worker/recurly/recurly-data-table';
 
 describe('mark member rejoined with new number form', () => {
   let framework: TestFramework;
@@ -25,13 +26,38 @@ describe('mark member rejoined with new number form', () => {
       })()
     );
 
-  const addMember = (memberNumber: number) =>
+  const addMember = (
+    memberNumber: number,
+    email = faker.internet.email() as EmailAddress
+  ) =>
     framework.commands.memberNumbers.linkNumberToEmail({
       memberNumber,
-      email: faker.internet.email() as EmailAddress,
+      email,
       name: faker.person.fullName(),
       formOfAddress: undefined,
     });
+
+  // What the Recurly sync would have cached, lowercased as it stores them.
+  const cacheSubscription = (
+    email: EmailAddress,
+    row: {state: string; activatedAt: Date; expiresAt?: Date}
+  ) =>
+    framework.extDB
+      .insert(recurlySubscriptionHistoryTable)
+      .values({
+        id: faker.string.uuid(),
+        email: email.toLowerCase(),
+        accountId: null,
+        state: row.state,
+        planCode: 'standard',
+        activatedAt: row.activatedAt,
+        canceledAt: null,
+        expiresAt: row.expiresAt ?? null,
+        currentPeriodEndsAt: null,
+        updatedAt: null,
+        cachedAt: new Date(),
+      })
+      .run();
 
   beforeEach(async () => {
     framework = await initTestFramework();
@@ -107,8 +133,63 @@ describe('mark member rejoined with new number form', () => {
       'oldRecord.trainedOn',
       expect.arrayContaining([expect.objectContaining({id: equipment.id})])
     );
-    // No Recurly data in tests, so the reason reflects that rather than guessing.
-    expect(viewModel).toHaveProperty('oldRecord.recurlyReasons', ['no-data']);
+    // Nothing cached from Recurly, so no answer is suggested.
+    expect(viewModel).toMatchObject({
+      gap: {tag: 'no-data'},
+      suggestedCarryOver: O.none,
+    });
+  });
+
+  it('suggests removing training when Recurly shows them away for over 6 months', async () => {
+    const oldEmail = 'Returning@Example.com' as EmailAddress;
+    const newEmail = faker.internet.email() as EmailAddress;
+    await addMember(oldMemberNumber, oldEmail);
+    await addMember(newMemberNumber, newEmail);
+    await cacheSubscription(oldEmail, {
+      state: 'expired',
+      activatedAt: new Date('2022-01-10'),
+      expiresAt: new Date('2024-11-14'),
+    });
+    await cacheSubscription(newEmail, {
+      state: 'active',
+      activatedAt: new Date('2026-09-28'),
+    });
+
+    const viewModel = await construct({
+      oldMemberNumber: String(oldMemberNumber),
+      newMemberNumber: String(newMemberNumber),
+    });
+
+    expect(viewModel).toMatchObject({
+      gap: {tag: 'known', monthsAway: 22, lapsed: true},
+      suggestedCarryOver: O.some(false),
+    });
+    expect(viewModel).toHaveProperty('subscriptions.length', 2);
+  });
+
+  it('suggests keeping training after a short break under one email', async () => {
+    const email = faker.internet.email() as EmailAddress;
+    await addMember(oldMemberNumber, email);
+    await cacheSubscription(email, {
+      state: 'expired',
+      activatedAt: new Date('2022-01-10'),
+      expiresAt: new Date('2026-06-01'),
+    });
+    await cacheSubscription(email, {
+      state: 'active',
+      activatedAt: new Date('2026-09-28'),
+    });
+
+    const viewModel = await construct({
+      oldMemberNumber: String(oldMemberNumber),
+      newMemberNumber: String(newMemberNumber),
+    });
+
+    expect(viewModel).toMatchObject({
+      newRecord: O.none,
+      gap: {tag: 'known', monthsAway: 3, lapsed: false},
+      suggestedCarryOver: O.some(true),
+    });
   });
 
   it('summarises both records when the new number is already registered', async () => {

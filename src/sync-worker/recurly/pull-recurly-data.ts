@@ -8,6 +8,7 @@ import {DateTime, Duration} from 'luxon';
 import { ExternalStateDB } from '../external-state-db';
 import {
   recurlyInvoiceTable,
+  recurlySubscriptionHistoryTable,
   recurlySubscriptionTable,
   recurlySyncMetadataTable,
   recurlyTransactionTable,
@@ -74,6 +75,18 @@ type RecurlyTransaction = {
     merchantReasonCode?: string | null;
 };
 
+type RecurlySubscription = {
+    id?: string | null;
+    account?: RecurlyAccountMini | null;
+    plan?: {code?: string | null} | null;
+    state?: string | null;
+    activatedAt?: Date | null;
+    canceledAt?: Date | null;
+    expiresAt?: Date | null;
+    currentPeriodEndsAt?: Date | null;
+    updatedAt?: Date | null;
+};
+
 export type RecurlyClientFactory = (token: string) => {
     listAccounts: () => {
         each: () => AsyncIterable<RecurlyAccount>;
@@ -84,12 +97,20 @@ export type RecurlyClientFactory = (token: string) => {
     listTransactions: (options?: object) => {
         each: () => AsyncIterable<RecurlyTransaction>;
     };
+    listSubscriptions: (options?: object) => {
+        each: () => AsyncIterable<RecurlySubscription>;
+    };
 };
 
-// How far back the first pull reaches. Long enough to show a member's recent
-// billing history and to catch anybody already deep in arrears, without
-// dragging in the whole history of the site.
+// How far back the first pull of invoices and transactions reaches. Long
+// enough to show a member's recent billing history and to catch anybody
+// already deep in arrears, without dragging in the whole history of the site.
 const BACKFILL_WINDOW = Duration.fromObject({months: 18});
+
+// Subscriptions are different: the point of keeping them is to know when a
+// returning member's old membership ended, and that can be years ago. There
+// are few enough that the first pull simply takes all of them.
+const FROM_THE_BEGINNING = new Date(0);
 
 // The cursor is rewound by this much each time it advances. Recurly orders by
 // updated_at, and two records written in the same instant can straddle a page
@@ -110,14 +131,15 @@ const emailOf = (address: string | null | undefined): string | undefined =>
 
 const readCursor = async (
     extDB: ExternalStateDB,
-    resource: string
+    resource: string,
+    firstPullFrom: Date
 ): Promise<Date> => {
     const row = await extDB
         .select({cursor: recurlySyncMetadataTable.cursor})
         .from(recurlySyncMetadataTable)
         .where(eq(recurlySyncMetadataTable.resource, resource))
         .get();
-    return row?.cursor ?? DateTime.now().minus(BACKFILL_WINDOW).toJSDate();
+    return row?.cursor ?? firstPullFrom;
 };
 
 const writeCursor = async (
@@ -143,9 +165,10 @@ const incrementalPull = async <T>(
     resource: string,
     list: (options?: object) => {each: () => AsyncIterable<T>},
     updatedAtOf: (record: T) => Date | null | undefined,
-    store: (record: T) => Promise<boolean>
+    store: (record: T) => Promise<boolean>,
+    firstPullFrom: Date = DateTime.now().minus(BACKFILL_WINDOW).toJSDate()
 ): Promise<{seen: number; stored: number}> => {
-    const cursor = await readCursor(extDB, resource);
+    const cursor = await readCursor(extDB, resource, firstPullFrom);
     let newest = cursor.getTime();
     let seen = 0;
     let stored = 0;
@@ -154,7 +177,11 @@ const incrementalPull = async <T>(
         params: {
             sort: 'updated_at',
             order: 'asc',
-            beginTime: cursor,
+            // A pull from the beginning asks for no window at all rather than
+            // one starting in 1970.
+            ...(cursor.getTime() > FROM_THE_BEGINNING.getTime()
+                ? {beginTime: cursor}
+                : {}),
             limit: PAGE_LIMIT,
         },
     });
@@ -262,6 +289,36 @@ const storeTransaction = (extDB: ExternalStateDB) => async (
     return true;
 };
 
+const storeSubscription = (extDB: ExternalStateDB) => async (
+    subscription: RecurlySubscription
+): Promise<boolean> => {
+    if (!subscription.id) {
+        return false;
+    }
+    const values = {
+        id: subscription.id,
+        email: emailOf(subscription.account?.email) ?? null,
+        accountId: subscription.account?.id ?? null,
+        state: subscription.state ?? 'unknown',
+        planCode: subscription.plan?.code ?? null,
+        activatedAt: subscription.activatedAt ?? null,
+        canceledAt: subscription.canceledAt ?? null,
+        expiresAt: subscription.expiresAt ?? null,
+        currentPeriodEndsAt: subscription.currentPeriodEndsAt ?? null,
+        updatedAt: subscription.updatedAt ?? null,
+        cachedAt: new Date(),
+    };
+    await extDB
+        .insert(recurlySubscriptionHistoryTable)
+        .values(values)
+        .onConflictDoUpdate({
+            target: recurlySubscriptionHistoryTable.id,
+            set: values,
+        })
+        .run();
+    return true;
+};
+
 // Recurly does not always give an address on the record itself, so a row can
 // arrive with nobody attached to it. Rather than drop it - which loses the
 // payment history behind an unpaid invoice, and hides the gap - it is stored as
@@ -298,6 +355,17 @@ const reconcileEmails = async (extDB: ExternalStateDB): Promise<void> => {
           );
     `);
     await extDB.run(sql`
+        UPDATE recurly_subscription_history SET email = (
+            SELECT s.email FROM recurly_subscriptions s
+            WHERE s.accountId = recurly_subscription_history.accountId
+        )
+        WHERE email IS NULL AND accountId IS NOT NULL
+          AND EXISTS (
+            SELECT 1 FROM recurly_subscriptions s
+            WHERE s.accountId = recurly_subscription_history.accountId
+          );
+    `);
+    await extDB.run(sql`
         UPDATE recurly_transactions SET email = (
             SELECT i.email FROM recurly_invoices i
             WHERE i.id = recurly_transactions.invoiceId
@@ -315,16 +383,20 @@ const reconcileEmails = async (extDB: ExternalStateDB): Promise<void> => {
 // page that reads this cache.
 const unmatchedCounts = async (
     extDB: ExternalStateDB
-): Promise<{invoices: number; transactions: number}> => {
+): Promise<{invoices: number; transactions: number; subscriptions: number}> => {
     const invoices = await extDB.all<{n: number}>(
         sql`SELECT COUNT(*) AS n FROM recurly_invoices WHERE email IS NULL;`
     );
     const transactions = await extDB.all<{n: number}>(
         sql`SELECT COUNT(*) AS n FROM recurly_transactions WHERE email IS NULL;`
     );
+    const subscriptions = await extDB.all<{n: number}>(
+        sql`SELECT COUNT(*) AS n FROM recurly_subscription_history WHERE email IS NULL;`
+    );
     return {
         invoices: invoices[0]?.n ?? 0,
         transactions: transactions[0]?.n ?? 0,
+        subscriptions: subscriptions[0]?.n ?? 0,
     };
 };
 
@@ -407,10 +479,22 @@ export const pullRecurlyData = (
             transaction => transaction.updatedAt,
             storeTransaction(extDB)
         );
+        const subscriptions = await incrementalPull(
+            extDB,
+            'subscriptions',
+            options => client.listSubscriptions(options),
+            subscription => subscription.updatedAt,
+            storeSubscription(extDB),
+            FROM_THE_BEGINNING
+        );
 
         await reconcileEmails(extDB);
         const unmatched = await unmatchedCounts(extDB);
-        if (unmatched.invoices > 0 || unmatched.transactions > 0) {
+        if (
+            unmatched.invoices > 0 ||
+            unmatched.transactions > 0 ||
+            unmatched.subscriptions > 0
+        ) {
             logger.warn(
                 unmatched,
                 'Recurly records that could not be matched to an account'
@@ -418,7 +502,7 @@ export const pullRecurlyData = (
         }
 
         logger.info(
-            {invoices, transactions, unmatched},
+            {invoices, transactions, subscriptions, unmatched},
             'Finished fetching recurly data'
         );
     }

@@ -16,30 +16,32 @@ import {
   toLoggedInContent,
 } from '../../types/html';
 import {Form} from '../../types/form';
-import {Dependencies} from '../../dependencies';
 import {EmailAddress} from '../../types';
 import {Member, TrainedOn} from '../../read-models/shared-state/return-types';
 import {
-  getRecurlyReasonsForMember,
-  RecurlyReason,
-} from '../../read-models/external-state/recurly-status';
-import {renderReasonChips} from '../../templates/recurly-reasons';
+  getSubscriptionHistoryForEmails,
+  MembershipGap,
+  membershipGap,
+  SubscriptionSummary,
+  TRAINING_LAPSES_AFTER,
+} from '../../read-models/external-state/membership-gap';
 import {renderMemberNumber} from '../../templates/member-number';
-import {displayDate} from '../../templates/display-date';
+import {displayDate, displayDateOnly} from '../../templates/display-date';
 import {tag} from '../../templates/member-status';
 
 // Rejoining is a two-step form. Step one asks for the two numbers (a GET back
-// to this page); step two shows what the app and Recurly know about each record
+// to this page); step two shows what the app and Recurly know about the member
 // so the admin can decide whether the old training still counts, then POSTs.
-// Recurly only tells us whether a subscription is live today, not when the old
-// one ended, so the 6-month judgement stays with the admin.
+//
+// The decision turns on how long they were away. Recurly's subscription
+// history gives the end of the old membership and the start of the new one,
+// so where both are known the page works the gap out and pre-selects the
+// answer; the admin still confirms it.
 
 type MemberSummary = {
   memberNumber: number;
   name: O.Option<string>;
   emails: ReadonlyArray<EmailAddress>;
-  joined: Date;
-  recurlyReasons: ReadonlyArray<RecurlyReason>;
   trainedOn: ReadonlyArray<TrainedOn>;
   ownerOf: ReadonlyArray<string>;
   trainerFor: ReadonlyArray<string>;
@@ -55,7 +57,14 @@ type ViewModel =
       // The new number may not have been registered in the app yet.
       newRecord: O.Option<MemberSummary>;
       alreadyLinked: boolean;
+      // Everything Recurly holds against either record's addresses.
+      subscriptions: ReadonlyArray<SubscriptionSummary>;
+      gap: MembershipGap;
+      // What the gap implies, when it is known well enough to say.
+      suggestedCarryOver: O.Option<boolean>;
     };
+
+const lapseMonths = TRAINING_LAPSES_AFTER.as('months');
 
 const renderPickNumbers = (error: O.Option<string>) => html`
   <h1>Mark member rejoined with new number</h1>
@@ -67,8 +76,8 @@ const renderPickNumbers = (error: O.Option<string>) => html`
     )
   )}
   <p>
-    Enter both numbers and you'll be shown what the app knows about each
-    record before anything is changed.
+    Enter both numbers and you'll be shown what the app and Recurly know
+    about the member before anything is changed.
   </p>
   <form action="/members/rejoined-with-new" method="get">
     <label for="oldMemberNumber"
@@ -146,34 +155,123 @@ const renderSummary = (summary: MemberSummary): Html => html`
         commaHtml
       )}
     </li>
-    <li>Registered in the app: ${displayDate(summary.joined.getTime())}</li>
-    <li>
-      Recurly:
-      ${summary.recurlyReasons.length === 0
-        ? tag(html`Active subscription`, 'green')
-        : renderReasonChips(summary.recurlyReasons)}
-    </li>
     ${renderNames('Owner of', summary.ownerOf)}
     ${renderNames('Trainer for', summary.trainerFor)}
   </ul>
 `;
 
+const optionalDate = (date: Date | null) =>
+  date === null ? safe('-') : displayDateOnly(date);
+
+const renderSubscriptions = (subscriptions: ReadonlyArray<SubscriptionSummary>) =>
+  pipe(
+    subscriptions,
+    RA.match(
+      () => html`<p>
+        Recurly has no subscriptions under any of these email addresses. If
+        the old membership was paid for under a different address, add it to
+        the member's record and come back to this page.
+      </p>`,
+      rows => html`
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Plan</th>
+              <th>State</th>
+              <th>Started</th>
+              <th>Ended</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pipe(
+              rows,
+              RA.map(
+                row => html`<tr>
+                  <td>${sanitizeString(row.email)}</td>
+                  <td>${sanitizeString(row.planCode ?? '-')}</td>
+                  <td>${sanitizeString(row.state)}</td>
+                  <td>${optionalDate(row.startedAt)}</td>
+                  <td>${optionalDate(row.endedAt)}</td>
+                </tr>`
+              ),
+              joinHtml
+            )}
+          </tbody>
+        </table>
+      `
+    )
+  );
+
+const monthsAway = (months: number) =>
+  months === 1 ? html`1 month` : html`${months} months`;
+
+// Chips are short by design (see .tag); the sentence after carries the dates.
+const lapsedTag = (lapsed: boolean) =>
+  lapsed
+    ? tag(html`Training has lapsed`, 'red')
+    : tag(html`Training still counts`, 'green');
+
+const renderGap = (gap: MembershipGap): Html => {
+  switch (gap.tag) {
+    case 'known':
+      return html`
+        <p>${lapsedTag(gap.lapsed)}</p>
+        <p>
+          Previous membership ended <b>${displayDateOnly(gap.previousEndedAt)}</b>.
+          Current membership started <b>${displayDateOnly(gap.currentStartedAt)}</b>.
+          That is <b>${monthsAway(gap.monthsAway)}</b> away, which is
+          ${gap.lapsed ? html`${lapseMonths} months or more` : html`less than ${lapseMonths} months`}.
+        </p>
+      `;
+    case 'no-current':
+      return html`
+        <p>
+          ${gap.lapsed ? lapsedTag(true) : tag(html`Not settled yet`, 'yellow')}
+        </p>
+        <p>
+          Previous membership ended <b>${displayDateOnly(gap.previousEndedAt)}</b>,
+          <b>${monthsAway(gap.monthsAway)}</b> ago. Recurly shows nothing live for
+          the member yet, so that is the gap so far${gap.lapsed
+            ? html` - already ${lapseMonths} months or more.`
+            : html`. Check how they are paying now before deciding.`}
+        </p>
+      `;
+    case 'no-previous':
+      return html`
+        <p>${tag(html`Gap unknown`, 'yellow')}</p>
+        <p>
+          A live membership started <b>${displayDateOnly(gap.currentStartedAt)}</b>,
+          but Recurly shows nothing before it that ended. Either they never
+          actually left, or the old membership was under an email address the
+          app doesn't have.
+        </p>
+      `;
+    case 'no-data':
+      return html`<p>${tag(html`Gap unknown`, 'yellow')}</p>`;
+  }
+};
+
+const checkedIf = (condition: boolean) => (condition ? safe('checked') : safe(''));
+
 const renderDecision = (
-  oldMemberNumber: number,
-  newMemberNumber: number
+  viewModel: Extract<ViewModel, {step: 'confirm'}>
 ) => html`
   <h2>Should their old training still count?</h2>
   <p>
     Makespace policy is that training lapses if someone has not been a member
-    for 6 months or more, and they must be trained again. Recurly can only tell
-    us whether a subscription is live today, not when the old one ended, so use
-    the dates above and what you know about the member to decide.
+    for ${lapseMonths} months or more, and they must be trained again.
+    ${O.isSome(viewModel.suggestedCarryOver)
+      ? html`The answer below is filled in from the Recurly dates above - check
+        it before confirming.`
+      : html`Recurly can't settle it here, so use the table above and what you
+        know about the member.`}
   </p>
   <form action="/members/rejoined-with-new" method="post">
-    <input type="hidden" name="oldMemberNumber" value="${oldMemberNumber}" />
-    <input type="hidden" name="newMemberNumber" value="${newMemberNumber}" />
+    <input type="hidden" name="oldMemberNumber" value="${viewModel.oldMemberNumber}" />
+    <input type="hidden" name="newMemberNumber" value="${viewModel.newMemberNumber}" />
     <fieldset>
-      <legend>Training recorded on ${oldMemberNumber}:</legend>
+      <legend>Training recorded on ${viewModel.oldMemberNumber}:</legend>
       <div class="fieldset-item">
         <input
           type="radio"
@@ -181,10 +279,12 @@ const renderDecision = (
           name="carryOverTraining"
           value="true"
           required="true"
+          ${checkedIf(O.getOrElse(() => false)(viewModel.suggestedCarryOver))}
         />
         <label for="carry-over-training">
           <span
-            >Keep it &mdash; they were away for less than 6 months</span
+            >Keep it &mdash; they were away for less than ${lapseMonths}
+            months</span
           >
         </label>
       </div>
@@ -195,11 +295,17 @@ const renderDecision = (
           name="carryOverTraining"
           value="false"
           required="true"
+          ${checkedIf(
+            pipe(
+              viewModel.suggestedCarryOver,
+              O.exists(carryOver => !carryOver)
+            )
+          )}
         />
         <label for="drop-training">
           <span
-            >Remove it &mdash; they were away for 6 months or more and must
-            be trained again</span
+            >Remove it &mdash; they were away for ${lapseMonths} months or more
+            and must be trained again</span
           >
         </label>
       </div>
@@ -240,9 +346,10 @@ const renderConfirm = (
       renderSummary
     )
   )}
-  ${viewModel.alreadyLinked
-    ? html``
-    : renderDecision(viewModel.oldMemberNumber, viewModel.newMemberNumber)}
+  <h2>How long were they away?</h2>
+  ${renderGap(viewModel.gap)}
+  ${renderSubscriptions(viewModel.subscriptions)}
+  ${viewModel.alreadyLinked ? html`` : renderDecision(viewModel)}
 `;
 
 const renderForm = (viewModel: ViewModel) =>
@@ -263,21 +370,28 @@ const pickNumbers = (error: O.Option<string>): ViewModel => ({
   error,
 });
 
-const summarise =
-  (deps: Pick<Dependencies, 'extDB'>) =>
-  async (member: Member): Promise<MemberSummary> => {
-    const {reasons} = await getRecurlyReasonsForMember(deps.extDB)(member);
-    return {
-      memberNumber: member.memberNumber,
-      name: member.name,
-      emails: member.emails.map(email => email.emailAddress),
-      joined: member.joined,
-      recurlyReasons: reasons,
-      trainedOn: member.trainedOn,
-      ownerOf: member.ownerOf.map(area => area.name),
-      trainerFor: member.trainerFor.map(equipment => equipment.equipment_name),
-    };
-  };
+const summarise = (member: Member): MemberSummary => ({
+  memberNumber: member.memberNumber,
+  name: member.name,
+  emails: member.emails.map(email => email.emailAddress),
+  trainedOn: member.trainedOn,
+  ownerOf: member.ownerOf.map(area => area.name),
+  trainerFor: member.trainerFor.map(equipment => equipment.equipment_name),
+});
+
+// Only a gap that Recurly actually pins down (or one already past the
+// threshold however it ends) is turned into a pre-selected answer.
+const suggestCarryOver = (gap: MembershipGap): O.Option<boolean> => {
+  switch (gap.tag) {
+    case 'known':
+      return O.some(!gap.lapsed);
+    case 'no-current':
+      return gap.lapsed ? O.some(false) : O.none;
+    case 'no-previous':
+    case 'no-data':
+      return O.none;
+  }
+};
 
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
@@ -309,15 +423,28 @@ const constructForm: Form<ViewModel>['constructForm'] =
       const alreadyLinked =
         O.isSome(newMember) && newMember.value.userId === oldMember.value.userId;
 
+      const oldRecord = summarise(oldMember.value);
+      const newRecord = pipe(newMember, O.map(summarise));
+      const subscriptions = await getSubscriptionHistoryForEmails(deps.extDB)([
+        ...oldRecord.emails,
+        ...pipe(
+          newRecord,
+          O.map(record => record.emails),
+          O.getOrElseW(() => [])
+        ),
+      ]);
+      const gap = membershipGap(subscriptions, new Date());
+
       return {
         step: 'confirm',
         oldMemberNumber,
         newMemberNumber,
-        oldRecord: await summarise(deps)(oldMember.value),
-        newRecord: O.isSome(newMember)
-          ? O.some(await summarise(deps)(newMember.value))
-          : O.none,
+        oldRecord,
+        newRecord,
         alreadyLinked,
+        subscriptions,
+        gap,
+        suggestedCarryOver: suggestCarryOver(gap),
       };
     });
 

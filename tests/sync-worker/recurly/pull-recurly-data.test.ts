@@ -11,6 +11,7 @@ import {pullRecurlyData} from '../../../src/sync-worker/recurly/pull-recurly-dat
 import type {RecurlyClientFactory} from '../../../src/sync-worker/recurly/pull-recurly-data';
 import {
   recurlyInvoiceTable,
+  recurlySubscriptionHistoryTable,
   recurlySubscriptionTable,
   recurlySyncMetadataTable,
   recurlyTransactionTable,
@@ -77,15 +78,28 @@ async function* iterate<T>(rows: ReadonlyArray<T>) {
   }
 }
 
+type RecurlyTestSubscription = {
+  id?: string | null;
+  account?: {id?: string | null; email?: string | null} | null;
+  plan?: {code?: string | null} | null;
+  state?: string | null;
+  activatedAt?: Date | null;
+  canceledAt?: Date | null;
+  expiresAt?: Date | null;
+  currentPeriodEndsAt?: Date | null;
+  updatedAt?: Date | null;
+};
+
 type RecurlyTestData = {
   accounts?: ReadonlyArray<RecurlyTestAccount>;
   invoices?: ReadonlyArray<RecurlyTestInvoice>;
   transactions?: ReadonlyArray<RecurlyTestTransaction>;
+  subscriptions?: ReadonlyArray<RecurlyTestSubscription>;
 };
 
 // What pullRecurlyData passes to the list endpoints, so a test can assert on
 // the window it asked Recurly for.
-type ListOptions = {params: {beginTime: Date}};
+type ListOptions = {params: {beginTime?: Date}};
 
 type Page<T> = {each: () => AsyncGenerator<T, void, unknown>};
 
@@ -93,6 +107,7 @@ type RecurlyTestMocks = {
   listAccounts: jest.Mock<Page<RecurlyTestAccount>, []>;
   listInvoices: jest.Mock<Page<RecurlyTestInvoice>, [object?]>;
   listTransactions: jest.Mock<Page<RecurlyTestTransaction>, [object?]>;
+  listSubscriptions: jest.Mock<Page<RecurlyTestSubscription>, [object?]>;
 };
 
 // The list endpoints take a bag of url parameters, so reading one back out is
@@ -103,13 +118,19 @@ const beginTimeOf = (call: [object?] | undefined): Date | undefined =>
 const recurlyClientFactory = (
   data: RecurlyTestData | ReadonlyArray<RecurlyTestAccount>
 ): [RecurlyClientFactory, RecurlyTestMocks] => {
-  const {accounts = [], invoices = [], transactions = []} = Array.isArray(data)
+  const {
+    accounts = [],
+    invoices = [],
+    transactions = [],
+    subscriptions = [],
+  } = Array.isArray(data)
     ? {accounts: data as ReadonlyArray<RecurlyTestAccount>}
     : (data as RecurlyTestData);
   const mocks: RecurlyTestMocks = {
     listAccounts: jest.fn(() => ({each: () => iterate(accounts)})),
     listInvoices: jest.fn(() => ({each: () => iterate(invoices)})),
     listTransactions: jest.fn(() => ({each: () => iterate(transactions)})),
+    listSubscriptions: jest.fn(() => ({each: () => iterate(subscriptions)})),
   };
   return [jest.fn(() => mocks), mocks];
 };
@@ -628,5 +649,105 @@ describe('pull recurly data', () => {
     const rows = await extDB.select().from(recurlyInvoiceTable).all();
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({id: 'inv_1', state: 'paid', balance: 0});
+  });
+
+  describe('subscription history', () => {
+    const expired: RecurlyTestSubscription = {
+      id: 'sub_old',
+      account: {id: 'acct_1', email: 'Returning@Example.com'},
+      plan: {code: 'standard'},
+      state: 'expired',
+      activatedAt: new Date('2022-01-10T00:00:00.000Z'),
+      canceledAt: new Date('2024-10-14T00:00:00.000Z'),
+      expiresAt: new Date('2024-11-14T00:00:00.000Z'),
+      updatedAt: new Date('2024-11-14T00:00:00.000Z'),
+    };
+    const live: RecurlyTestSubscription = {
+      id: 'sub_new',
+      account: {id: 'acct_1', email: 'Returning@Example.com'},
+      plan: {code: 'standard'},
+      state: 'active',
+      activatedAt: new Date('2026-09-28T09:05:00.000Z'),
+      currentPeriodEndsAt: new Date('2026-10-28T09:05:00.000Z'),
+      updatedAt: new Date('2026-09-28T09:05:00.000Z'),
+    };
+
+    it('caches every subscription, expired ones included, by lowercased email', async () => {
+      const [createRecurlyClient] = recurlyClientFactory({
+        subscriptions: [expired, live],
+      });
+
+      await pullRecurlyData(
+        createLogger({level: 'silent'}),
+        extDB,
+        'token',
+        createRecurlyClient
+      )(Duration.fromMillis(0));
+
+      const rows = await extDB
+        .select()
+        .from(recurlySubscriptionHistoryTable)
+        .orderBy(recurlySubscriptionHistoryTable.id)
+        .all();
+      expect(rows).toHaveLength(2);
+      expect(rows[0]).toMatchObject({
+        id: 'sub_new',
+        email: 'returning@example.com',
+        accountId: 'acct_1',
+        state: 'active',
+        planCode: 'standard',
+        activatedAt: live.activatedAt,
+        expiresAt: null,
+      });
+      expect(rows[1]).toMatchObject({
+        id: 'sub_old',
+        email: 'returning@example.com',
+        state: 'expired',
+        canceledAt: expired.canceledAt,
+        expiresAt: expired.expiresAt,
+      });
+    });
+
+    it('takes the whole history on the first pull rather than the billing backfill window', async () => {
+      const [createRecurlyClient, mocks] = recurlyClientFactory({
+        subscriptions: [expired],
+      });
+      const pull = pullRecurlyData(
+        createLogger({level: 'silent'}),
+        extDB,
+        'token',
+        createRecurlyClient
+      );
+
+      await pull(Duration.fromMillis(0));
+      expect(beginTimeOf(mocks.listSubscriptions.mock.calls[0])).toBeUndefined();
+
+      // And then only what has changed since, like the other resources.
+      await pull(Duration.fromMillis(0));
+      expect(beginTimeOf(mocks.listSubscriptions.mock.calls[1])).toEqual(
+        new Date('2024-11-13T23:55:00.000Z')
+      );
+    });
+
+    it('matches a subscription to its member by account id when Recurly gave no address', async () => {
+      const [createRecurlyClient] = recurlyClientFactory({
+        accounts: [{id: 'acct_1', email: 'returning@example.com'}],
+        subscriptions: [{...expired, account: {id: 'acct_1', email: null}}],
+      });
+
+      await pullRecurlyData(
+        createLogger({level: 'silent'}),
+        extDB,
+        'token',
+        createRecurlyClient
+      )(Duration.fromMillis(0));
+
+      const row = await extDB
+        .select()
+        .from(recurlySubscriptionHistoryTable)
+        .where(eq(recurlySubscriptionHistoryTable.id, 'sub_old'))
+        .get();
+      expect(row?.email).toStrictEqual('returning@example.com');
+    });
   });
 });

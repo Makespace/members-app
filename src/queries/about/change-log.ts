@@ -16,7 +16,7 @@ export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
     date: '2026-10-02',
     headline:
-      "When a returning member is given a new number, the admin now sees both records and chooses whether their old training still counts - it lapses after 6 months away",
+      "When a returning member is given a new number, the admin sees how long they were away (from their Recurly subscriptions) and confirms whether their old training still counts - it lapses after 6 months away",
   },
   {
     date: '2026-10-01',
