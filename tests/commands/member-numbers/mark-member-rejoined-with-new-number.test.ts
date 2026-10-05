@@ -1,9 +1,11 @@
+import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
 import {EmailAddress, constructEvent, isEventOfType} from '../../../src/types';
 import {pipe} from 'fp-ts/lib/function';
 import {
   arbitraryActor,
+  getRightOrFail,
   getSomeOrFail,
   getTaskEitherRightOrFail,
 } from '../../helpers';
@@ -40,6 +42,7 @@ describe('markMemberRejoinedWithNewNumber', () => {
     newMemberNumber: faker.number.int({
       min: oldMemberNumber + 1,
     }) as Int,
+    carryOverTraining: true,
     actor: arbitraryActor(),
   };
 
@@ -84,7 +87,50 @@ describe('markMemberRejoinedWithNewNumber', () => {
 
       expect(event.oldMemberNumber).toStrictEqual(command.oldMemberNumber);
       expect(event.newMemberNumber).toStrictEqual(command.newMemberNumber);
+      expect(event.carryOverTraining).toStrictEqual(true);
       expect(event.actor).toStrictEqual(command.actor);
+    });
+
+    it('records the decision not to carry old training over', async () => {
+      const event = pipe(
+        await getTaskEitherRightOrFail(
+          markMemberRejoinedWithNewNumber.process({
+            command: {...command, carryOverTraining: false},
+            rm: framework.sharedReadModel,
+          })
+        ),
+        O.filter(isEventOfType('MemberRejoinedWithNewNumber')),
+        getSomeOrFail
+      );
+
+      expect(event.carryOverTraining).toStrictEqual(false);
+    });
+  });
+
+  describe('decoding form input', () => {
+    it.each([
+      ['true', true],
+      ['false', false],
+    ])("reads the radio value '%s' as %s", (value, expected) => {
+      const decoded = getRightOrFail(
+        markMemberRejoinedWithNewNumber.decode({
+          oldMemberNumber: '1820',
+          newMemberNumber: '2160',
+          carryOverTraining: value,
+        })
+      );
+      expect(decoded.carryOverTraining).toStrictEqual(expected);
+    });
+
+    it('rejects a submission that does not say whether training carries over', () => {
+      expect(
+        E.isLeft(
+          markMemberRejoinedWithNewNumber.decode({
+            oldMemberNumber: '1820',
+            newMemberNumber: '2160',
+          })
+        )
+      ).toBe(true);
     });
   });
 
@@ -105,6 +151,7 @@ describe('markMemberRejoinedWithNewNumber', () => {
       constructEvent('MemberRejoinedWithNewNumber')({
         oldMemberNumber: command.oldMemberNumber,
         newMemberNumber: command.newMemberNumber,
+        carryOverTraining: true,
         actor: arbitraryActor(),
       })
     );

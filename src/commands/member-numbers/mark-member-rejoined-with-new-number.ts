@@ -9,6 +9,8 @@ import { isAdminOrSuperUser } from '../authentication-helpers/is-admin-or-super-
 const codec = t.strict({
   oldMemberNumber: tt.IntFromString,
   newMemberNumber: tt.IntFromString,
+  // 'true' / 'false' from the form's radio buttons; a real boolean over the API.
+  carryOverTraining: t.union([t.boolean, tt.BooleanFromString]),
 });
 
 export type MarkMemberRejoinedWithNewNumber = t.TypeOf<typeof codec>;

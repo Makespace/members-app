@@ -221,6 +221,7 @@ describe('construct-view-model semantics', () => {
       await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
         oldMemberNumber: pastMember.memberNumber,
         newMemberNumber: owner.memberNumber,
+        carryOverTraining: true,
       });
 
       const viewModel = await runAs(superUser)();

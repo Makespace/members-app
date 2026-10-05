@@ -282,6 +282,7 @@ describe('send-log-in-link', () => {
       await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
         oldMemberNumber,
         newMemberNumber,
+        carryOverTraining: true,
       });
     });
 

@@ -345,6 +345,11 @@ const RevokeTrainedOnEquipment = defineEvent('RevokeTrainedOnEquipment', {
 const MemberRejoinedWithNewNumber = defineEvent('MemberRejoinedWithNewNumber', {
   oldMemberNumber: t.number,
   newMemberNumber: t.number,
+  // Whether the training recorded against the old number still counts.
+  // Makespace policy is that training lapses after 6+ months away, so the
+  // admin marking the rejoin decides. Rejoins recorded before this existed
+  // always carried training over, hence the fallback.
+  carryOverTraining: tt.withFallback(t.boolean, true),
 });
 
 const MemberRejoinedWithExistingNumber = defineEvent(

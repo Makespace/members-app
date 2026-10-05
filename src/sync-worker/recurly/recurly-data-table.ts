@@ -102,12 +102,37 @@ export const recurlyTransactionTable = sqliteTable(
   }
 );
 
+// One row per Recurly subscription, including the long-expired ones. This is
+// what says when somebody's membership *ended*, which the per-account flags
+// above cannot: it is how the rejoin form works out how long a returning
+// member was away.
+export const recurlySubscriptionHistoryTable = sqliteTable(
+  'recurly_subscription_history',
+  {
+    id: text('id').primaryKey(),
+    // As on invoices: null until something can be matched to it.
+    email: text('email'),
+    accountId: text('accountId'),
+    // active | canceled | expired | future | paused
+    state: text('state').notNull(),
+    planCode: text('planCode'),
+    activatedAt: integer('activatedAt', {mode: 'timestamp_ms'}),
+    // When they asked to cancel; the subscription runs to expiresAt.
+    canceledAt: integer('canceledAt', {mode: 'timestamp_ms'}),
+    // When access actually ended. Null while the subscription is live.
+    expiresAt: integer('expiresAt', {mode: 'timestamp_ms'}),
+    currentPeriodEndsAt: integer('currentPeriodEndsAt', {mode: 'timestamp_ms'}),
+    updatedAt: integer('updatedAt', {mode: 'timestamp_ms'}),
+    cachedAt: integer('cachedAt', {mode: 'timestamp_ms'}).notNull(),
+  }
+);
+
 // Where each incremental pull got to, so the next one asks Recurly only for
 // what has changed since.
 export const recurlySyncMetadataTable = sqliteTable(
   'recurly_sync_metadata',
   {
-    // 'invoices' | 'transactions'
+    // 'invoices' | 'transactions' | 'subscriptions'
     resource: text('resource').primaryKey(),
     cursor: integer('cursor', {mode: 'timestamp_ms'}).notNull(),
   }
@@ -175,6 +200,22 @@ const createRecurlyTransactionTable = sql`
   );
 `;
 
+const createRecurlySubscriptionHistoryTable = sql`
+  CREATE TABLE IF NOT EXISTS recurly_subscription_history (
+    id TEXT PRIMARY KEY,
+    email TEXT,
+    accountId TEXT,
+    state TEXT NOT NULL,
+    planCode TEXT,
+    activatedAt INTEGER,
+    canceledAt INTEGER,
+    expiresAt INTEGER,
+    currentPeriodEndsAt INTEGER,
+    updatedAt INTEGER,
+    cachedAt INTEGER NOT NULL
+  );
+`;
+
 const createRecurlySyncMetadataTable = sql`
   CREATE TABLE IF NOT EXISTS recurly_sync_metadata (
     resource TEXT PRIMARY KEY,
@@ -195,6 +236,8 @@ export const createRecurlyIndexes = [
   sql`CREATE INDEX IF NOT EXISTS recurly_subscriptions_account ON recurly_subscriptions (accountId);`,
   sql`CREATE INDEX IF NOT EXISTS recurly_invoices_account ON recurly_invoices (accountId);`,
   sql`CREATE INDEX IF NOT EXISTS recurly_transactions_account ON recurly_transactions (accountId);`,
+  sql`CREATE INDEX IF NOT EXISTS recurly_subscription_history_email ON recurly_subscription_history (email);`,
+  sql`CREATE INDEX IF NOT EXISTS recurly_subscription_history_account ON recurly_subscription_history (accountId);`,
   // The member page matches cached rows case-insensitively (lower(email)),
   // which the plain-email indexes above cannot serve: rows written before the
   // cache started lowercasing addresses may still be mixed-case, so the
@@ -215,6 +258,7 @@ export const createTables = [
   createRecurlySubscriptionTable,
   createRecurlyInvoiceTable,
   createRecurlyTransactionTable,
+  createRecurlySubscriptionHistoryTable,
   createRecurlySyncMetadataTable,
 ];
 

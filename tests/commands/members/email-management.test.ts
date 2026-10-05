@@ -183,6 +183,7 @@ describe('member email commands', () => {
       await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
         oldMemberNumber,
         newMemberNumber,
+        carryOverTraining: true,
       });
     });
 
@@ -234,6 +235,7 @@ describe('member email commands', () => {
       await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
         oldMemberNumber,
         newMemberNumber,
+        carryOverTraining: true,
       });
     });
 
