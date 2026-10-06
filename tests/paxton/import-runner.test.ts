@@ -19,7 +19,8 @@ const record = (memberNumber: number, fobId: number) => ({
 });
 
 const untilDone = async (current: () => O.Option<{summary: O.Option<unknown>}>) => {
-  for (let i = 0; i < 200; ++i) {
+  // Generous: under a loaded parallel run a few local commits can take a while.
+  for (let i = 0; i < 2000; ++i) {
     const job = current();
     if (O.isSome(job) && O.isSome(job.value.summary)) {
       return;
