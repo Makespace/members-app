@@ -4,6 +4,7 @@ import {runQuizMigration} from '../training-quiz/migrate';
 import {runTroubleTicketIngest} from '../trouble-tickets/ingest';
 import {notifyTroubleTicketChanges} from './notify_trouble_tickets';
 import {notifyDigests} from './notify_digests';
+import {notifyRoleChanges} from './notify_role_changes';
 import {notifySiteNotifications} from './notify_site_notifications';
 import {createGmailClientFactory, pullGmailData} from './gmail/pull_gmail_data';
 import {initDependencies} from './init-dependencies';
@@ -133,13 +134,17 @@ async function syncExternDataPeriodically(
 
       if (lastTroubleTicketNotifyAgoMs > TROUBLE_TICKET_NOTIFY_INTERVAL_MS) {
         await notifyTroubleTicketChanges(deps);
+        // Somebody made a trainer wants to know what that changed about their
+        // email before the first one arrives, so this rides with the live
+        // notifier rather than waiting for the hourly summary pass.
+        await notifyRoleChanges(deps);
+        await notifySiteNotifications(deps);
+        lastTroubleTicketNotify = Date.now();
       }
 
       if (lastTroubleTicketDigestAgoMs > TROUBLE_TICKET_DIGEST_INTERVAL_MS) {
         lastTroubleTicketDigest = Date.now();
         await notifyDigests(deps);
-        await notifySiteNotifications(deps);
-        lastTroubleTicketNotify = Date.now();
       }
 
       if (
