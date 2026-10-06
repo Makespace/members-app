@@ -5,6 +5,8 @@ import fs from 'node:fs';
 import * as T from 'fp-ts/Task';
 import * as O from 'fp-ts/Option';
 import {
+  DigestWatermark,
+  getDigestWatermark,
   getMembersWithNotificationPreferences,
   getNotificationPreferences,
 } from './notification-preferences/get';
@@ -160,6 +162,10 @@ export type SharedReadModel = {
   notificationPreferences: {
     forMember: (memberNumber: number) => ReadonlyMap<string, string>;
     membersWithAny: () => ReadonlyArray<number>;
+    lastDigest: (
+      memberNumber: number,
+      cadence: string
+    ) => O.Option<DigestWatermark>;
   };
   troubleTickets: {
     hasRowHash: (rowHash: string) => boolean;
@@ -256,6 +262,7 @@ export const initSharedReadModel = (
     notificationPreferences: {
       forMember: getNotificationPreferences(readModelDb),
       membersWithAny: getMembersWithNotificationPreferences(readModelDb),
+      lastDigest: getDigestWatermark(readModelDb),
     },
     troubleTickets: {
       hasRowHash: hasTroubleTicketRowHash(readModelDb),

@@ -160,6 +160,27 @@ export const memberNotificationPreferencesTable = defineTable(
   }
 );
 
+// When each member was last sent a summary, and how far through the log it
+// reached. One row per member and cadence; absent until the first one is sent.
+export const memberDigestsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS memberDigests (
+      memberNumber INTEGER NOT NULL,
+      cadence TEXT NOT NULL,
+      sentAt INTEGER NOT NULL,
+      upToEventIndex INTEGER NOT NULL,
+      PRIMARY KEY (memberNumber, cadence)
+    )
+  `,
+  'memberDigests' as const,
+  {
+    memberNumber: integer('memberNumber').notNull(),
+    cadence: text('cadence').notNull(),
+    sentAt: integer('sentAt', {mode: 'timestamp_ms'}).notNull(),
+    upToEventIndex: integer('upToEventIndex').notNull(),
+  }
+);
+
 export const equipmentNameAliasesTable = defineTable(
   sql`
     CREATE TABLE IF NOT EXISTS equipmentNameAliases (

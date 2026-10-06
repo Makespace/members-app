@@ -3,6 +3,7 @@ import {syncEquipmentTrainingSheets} from './sync_training_sheet';
 import {runQuizMigration} from '../training-quiz/migrate';
 import {runTroubleTicketIngest} from '../trouble-tickets/ingest';
 import {notifyTroubleTicketChanges} from './notify_trouble_tickets';
+import {notifyDigests} from './notify_digests';
 import {notifySiteNotifications} from './notify_site_notifications';
 import {createGmailClientFactory, pullGmailData} from './gmail/pull_gmail_data';
 import {initDependencies} from './init-dependencies';
@@ -19,6 +20,10 @@ const TRAINING_SUMMARY_EMAIL_CHECK_INTERVAL_MS = 20 * 60 * 1000;
 const EQUIPMENT_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 const TROUBLE_TICKET_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 const TROUBLE_TICKET_NOTIFY_INTERVAL_MS = 30 * 1000;
+// Summaries are due by the day or the week, so checking hourly is plenty: the
+// check itself costs nothing when nobody is due, and nobody notices an email
+// arriving an hour either side of when it could have.
+const TROUBLE_TICKET_DIGEST_INTERVAL_MS = 60 * 60 * 1000;
 // Gmail's history API is cheap (a couple of quota units per call against a
 // per-user budget of 250 per second), and managers want the mailbox to feel
 // live, so this beats far more often than the sheet syncs.
@@ -38,6 +43,7 @@ async function syncExternDataPeriodically(
   let lastEquipmentSyncCheck = Date.now();
   let lastTroubleTicketCheck = Date.now();
   let lastTroubleTicketNotify = Date.now();
+  let lastTroubleTicketDigest = 0;
   let lastGmailSync = 0;
   const gmailClientFactory = createGmailClientFactory(
     deps.conf.GOOGLE_SERVICE_ACCOUNT_KEY_JSON,
@@ -52,6 +58,7 @@ async function syncExternDataPeriodically(
       const lastEquipmentSyncCheckAgoMs = now - lastEquipmentSyncCheck;
       const lastTroubleTicketCheckAgoMs = now - lastTroubleTicketCheck;
       const lastTroubleTicketNotifyAgoMs = now - lastTroubleTicketNotify;
+      const lastTroubleTicketDigestAgoMs = now - lastTroubleTicketDigest;
       const lastGmailSyncAgoMs = now - lastGmailSync;
       const lastTrainingSummaryEmailCheckAgoMs =
         now - lastTrainingSummaryEmailCheck;
@@ -126,6 +133,11 @@ async function syncExternDataPeriodically(
 
       if (lastTroubleTicketNotifyAgoMs > TROUBLE_TICKET_NOTIFY_INTERVAL_MS) {
         await notifyTroubleTicketChanges(deps);
+      }
+
+      if (lastTroubleTicketDigestAgoMs > TROUBLE_TICKET_DIGEST_INTERVAL_MS) {
+        lastTroubleTicketDigest = Date.now();
+        await notifyDigests(deps);
         await notifySiteNotifications(deps);
         lastTroubleTicketNotify = Date.now();
       }

@@ -5,6 +5,7 @@ import {
   areaNameAliasesTable,
   areasTable,
   equipmentNameAliasesTable,
+  memberDigestsTable,
   memberNotificationPreferencesTable,
   equipmentTable,
   eventStateTable,
@@ -733,6 +734,27 @@ const _updateState =
             .onConflictDoNothing()
             .run();
         }
+        break;
+      }
+      case 'MemberTicketDigestSent': {
+        tx.insert(memberDigestsTable)
+          .values({
+            memberNumber: event.memberNumber,
+            cadence: event.cadence,
+            sentAt: event.recordedAt,
+            upToEventIndex: event.upToEventIndex,
+          })
+          .onConflictDoUpdate({
+            target: [
+              memberDigestsTable.memberNumber,
+              memberDigestsTable.cadence,
+            ],
+            set: {
+              sentAt: event.recordedAt,
+              upToEventIndex: event.upToEventIndex,
+            },
+          })
+          .run();
         break;
       }
       case 'MemberNotificationPreferenceSet': {

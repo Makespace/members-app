@@ -266,6 +266,18 @@ const MemberNotificationPreferenceSet = defineEvent(
   }
 );
 
+// One summary email, to one member, covering everything up to a point in the
+// log. The watermark is what stops the next one repeating it, and recording it
+// only when something was actually sent is what keeps a quiet week silent.
+const MemberTicketDigestSent = defineEvent('MemberTicketDigestSent', {
+  memberNumber: t.number,
+  cadence: t.keyof({daily: null, weekly: null}),
+  // The last event this summary covered.
+  upToEventIndex: t.number,
+  // How many changes it carried, so the log says whether it was worth sending.
+  changeCount: t.number,
+});
+
 const NotificationCreated = defineEvent('NotificationCreated', {
   id: tt.UUID,
   title: t.string,
@@ -570,6 +582,7 @@ export const events = [
   TroubleTicketTitleEdited,
   TroubleTicketNotificationSent,
   MemberNotificationPreferenceSet,
+  MemberTicketDigestSent,
   NotificationCreated,
   NotificationDismissed,
   NotificationRevoked,
@@ -630,6 +643,7 @@ export const DomainEvent = t.union([
   TroubleTicketTitleEdited.codec,
   TroubleTicketNotificationSent.codec,
   MemberNotificationPreferenceSet.codec,
+  MemberTicketDigestSent.codec,
   NotificationCreated.codec,
   NotificationDismissed.codec,
   NotificationRevoked.codec,
