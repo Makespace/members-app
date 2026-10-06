@@ -1,6 +1,6 @@
 import * as TE from 'fp-ts/TaskEither';
 import {faker} from '@faker-js/faker';
-import {UUID} from 'io-ts-types';
+import {NonEmptyString, UUID} from 'io-ts-types';
 import {constructEvent, Email} from '../../src/types';
 import {EmailAddress} from '../../src/types/email-address';
 import {Config} from '../../src/configuration';
@@ -79,6 +79,74 @@ describe('confirming a newly raised ticket', () => {
 
   afterEach(() => {
     framework.close();
+  });
+
+  // An owner hearing about somebody else's report is not being thanked for
+  // making it, so the email does not say they were.
+  it('tells an owner there is a new ticket, not that we logged their report', async () => {
+    const OWNER = 62;
+    const areaId = faker.string.uuid() as UUID;
+    const equipmentId = faker.string.uuid() as UUID;
+    await framework.commands.memberNumbers.linkNumberToEmail({
+      memberNumber: OWNER,
+      email: 'owner@test.com' as EmailAddress,
+      name: undefined,
+      formOfAddress: undefined,
+    });
+    await framework.commands.area.create({
+      id: areaId,
+      name: 'Wood Shop' as NonEmptyString,
+    });
+    await framework.commands.equipment.add({
+      id: equipmentId,
+      name: 'Band Saw' as NonEmptyString,
+      areaId,
+    });
+    await framework.commands.area.addOwner({areaId, memberNumber: OWNER});
+    await framework.commands.notificationPreferences.set({
+      memberNumber: OWNER,
+      scope: 'my-areas' as NonEmptyString,
+      preference: 'live',
+    });
+    await commit(
+      constructEvent('TroubleTicketCreated')({
+        actor: systemActor(),
+        id: faker.string.uuid() as UUID,
+        rowHash: faker.string.hexadecimal({length: 64}),
+        sheetId: 'sheet',
+        submittedAt: new Date(),
+        submittedMemberNumber: SUBMITTER,
+        submittedEmail: 'submitter@test.com',
+        submittedName: 'Sam Submitter',
+        submittedEquipment: 'Band Saw',
+        equipmentId,
+        machine: '',
+        areaId: null,
+        title: 'The blade is blunt',
+        mailboxConversationId: '',
+        source: 'sheet',
+        otherEquipmentDetail: '',
+        status: 'Broken',
+        attempting: '',
+        issue: 'The blade is blunt',
+        steps: '',
+      })
+    );
+
+    await notifyTroubleTicketChanges(deps);
+
+    const toOwner = sentEmails.find(
+      email => email.recipient === 'owner@test.com'
+    );
+    expect(toOwner?.subject).toStrictEqual(
+      'New trouble ticket: The blade is blunt'
+    );
+    expect(toOwner?.text).not.toContain('your report');
+    // The person who did report it is still thanked for it.
+    const toSubmitter = sentEmails.find(
+      email => email.recipient === 'submitter@test.com'
+    );
+    expect(toSubmitter?.subject).toContain("We've logged your report");
   });
 
   it('emails the member who raised it in the app', async () => {

@@ -197,11 +197,12 @@ const troubleTicketActionForm = (
                           .map(entry => entry.email)
                     )
                   ),
-                  subject: ticketNotificationSubject(ticket.title, false),
+                  subject: ticketNotificationSubject(ticket.title, false, false),
                   text: ticketNotificationText(
                     deps.conf.PUBLIC_URL,
                     ticket.title,
                     describeTicketChange(config.change, actor),
+                    false,
                     false
                   ),
                 },

@@ -65,13 +65,20 @@ const buildEmail = (
   recipient: EmailAddress,
   ticket: TroubleTicket,
   change: string,
-  isNew: boolean
+  isNew: boolean,
+  theirs: boolean
 ): Email => {
-  const opening = ticketNotificationOpening(ticket.title, isNew);
-  const text = ticketNotificationText(publicUrl, ticket.title, change, isNew);
+  const opening = ticketNotificationOpening(ticket.title, isNew, theirs);
+  const text = ticketNotificationText(
+    publicUrl,
+    ticket.title,
+    change,
+    isNew,
+    theirs
+  );
   return {
     recipient,
-    subject: ticketNotificationSubject(ticket.title, isNew),
+    subject: ticketNotificationSubject(ticket.title, isNew, theirs),
     text,
     html: mjml2html(`
       <mjml>
@@ -158,15 +165,15 @@ export const notifyTroubleTicketChanges = async (
     if (O.isNone(happening)) {
       continue;
     }
-    const recipients = audienceFor(rm, ticket.value, happening.value)
-      .filter(entry => entry.when === 'live')
-      .map(entry => entry.email);
+    const recipients = audienceFor(rm, ticket.value, happening.value).filter(
+      entry => entry.when === 'live'
+    );
     const commitResp = await deps.commitEvent(rm.getCurrentEventIndex())(
       constructEvent('TroubleTicketNotificationSent')({
         actor: {tag: 'system'},
         ticketId: ticketIdOf(event),
         notifiedEventIndex: event.event_index,
-        recipients: [...recipients],
+        recipients: recipients.map(entry => entry.email),
       })
     )();
     if (E.isLeft(commitResp)) {
@@ -179,20 +186,21 @@ export const notifyTroubleTicketChanges = async (
     }
 
     const change = describeTicketChange(event, actorName(event.actor, rm));
-    for (const recipient of recipients) {
+    for (const entry of recipients) {
       const sent = await deps.sendEmail(
         buildEmail(
           deps.conf.PUBLIC_URL,
-          recipient,
+          entry.email,
           ticket.value,
           change,
-          event.type === 'TroubleTicketCreated'
+          event.type === 'TroubleTicketCreated',
+          entry.theirs
         )
       )();
       if (E.isLeft(sent)) {
         deps.logger.error(
           "Failed to send trouble ticket notification to '%s': %o",
-          recipient,
+          entry.email,
           sent.left
         );
       }

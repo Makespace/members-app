@@ -157,6 +157,8 @@ type Audience = {
   memberNumber: number;
   email: Member['primaryEmailAddress'];
   when: Choice;
+  // Whether this is their own report, which changes how the email reads.
+  theirs: boolean;
 };
 
 // Who should be told about this change, and how soon each of them asked to
@@ -190,7 +192,7 @@ export const audienceFor = (
           E.match(
             () => [],
             (email): ReadonlyArray<Audience> => [
-              {memberNumber: -1, email, when: 'live'},
+              {memberNumber: -1, email, when: 'live', theirs: true},
             ]
           )
         )
@@ -216,6 +218,7 @@ export const audienceFor = (
         memberNumber: member.memberNumber,
         email: member.primaryEmailAddress,
         when,
+        theirs: ticket.submittedMemberNumber === member.memberNumber,
       };
     })
       .filter(

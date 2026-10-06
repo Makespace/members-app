@@ -40,30 +40,45 @@ export const describeTicketChange = (
   }
 };
 
+// A new ticket reads differently to the person who reported it than to the
+// owner of the machine it is about: one is being thanked, the other is being
+// told there is something to look at. Only consulted for a new ticket - an
+// update to one reads the same either way.
 export const ticketNotificationSubject = (
   title: string,
-  isNew: boolean
-): string =>
-  isNew
+  isNew: boolean,
+  theirs: boolean
+): string => {
+  if (!isNew) {
+    return `Trouble ticket update: ${title}`;
+  }
+  return theirs
     ? `We've logged your report: ${title}`
-    : `Trouble ticket update: ${title}`;
+    : `New trouble ticket: ${title}`;
+};
 
 export const ticketNotificationOpening = (
   title: string,
-  isNew: boolean
-): string =>
-  isNew
+  isNew: boolean,
+  theirs: boolean
+): string => {
+  if (!isNew) {
+    return `There's an update on the trouble ticket "${title}".`;
+  }
+  return theirs
     ? `We've logged your report about "${title}".`
-    : `There's an update on the trouble ticket "${title}".`;
+    : `Somebody has reported a problem: "${title}".`;
+};
 
 // The plain-text body, which is also what the confirmation page shows.
 export const ticketNotificationText = (
   publicUrl: string,
   title: string,
   change: string,
-  isNew: boolean
+  isNew: boolean,
+  theirs: boolean
 ): string =>
-  `Hi,\n\n${ticketNotificationOpening(title, isNew)}\n\n${change}\n\nSee the trouble tickets page: ${publicUrl}/trouble-tickets\n`;
+  `Hi,\n\n${ticketNotificationOpening(title, isNew, theirs)}\n\n${change}\n\nSee the trouble tickets page: ${publicUrl}/trouble-tickets\n`;
 
 // Everyone who hears about a change: the submitter - by their current
 // primary address when they are a known member, else the address they gave

@@ -267,7 +267,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       commitEvent: frameworkCommitEvent,
       sharedReadModel,
       getSheetData: getSheetData(extDBDrizzle),
-      sendEmail: jest.fn(() => TE.right('success')),
+      // A plain stub rather than a jest mock, so this framework can also be
+      // built by a script outside the test runner.
+      sendEmail: () => TE.right('success'),
       lastQuizSync: lastSync(extDBDrizzle),
       conf: {
         PUBLIC_URL: 'https://localhost' as NonEmptyString,
