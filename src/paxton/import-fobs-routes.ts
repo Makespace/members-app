@@ -18,18 +18,17 @@ import {
   CompleteHtmlDocument,
   HttpResponse,
   safe,
-  toLoggedInContent,
   toLoggedInContentWithBackLink,
 } from '../types/html';
 import {oopsPage} from '../templates';
 import {User} from '../types';
-import {applyImportPlan} from './apply-plan';
+import {ImportRunner, createImportRunner} from './import-runner';
 import {decodeExport, parsePaxtonExport} from './parse-export';
 import {matchFobs} from './match-fobs';
-import {PREVIEW_PATH, UPLOAD_PATH, renderUploadForm} from './render-upload-form';
+import {PREVIEW_PATH, STATUS_PATH, UPLOAD_PATH, renderUploadForm} from './render-upload-form';
 import {renderPreview} from './render-preview';
 import {planFromForm} from './plan-from-form';
-import {renderSummary} from './render-summary';
+import {renderStatus} from './render-summary';
 
 // A Paxton export is ~100 bytes a row; 10 MB is far beyond any membership.
 const upload = multer({
@@ -40,10 +39,26 @@ const upload = multer({
 // The rest of the app posts urlencoded bodies, which Express parses before
 // the router. These pages post multipart (for the file, and so the preview's
 // few thousand fields are not bound by the urlencoded body limit), so each
-// runs multer first and turns its errors into an oops page.
+// runs multer itself and turns its errors into an oops page. The body is
+// only read once the request is known to come from a logged-in super user,
+// so nobody else can have the server buffer an upload.
 const withMultipart =
-  (parse: RequestHandler, handler: RequestHandler): RequestHandler =>
-  (req, res, next) =>
+  (deps: Dependencies, parse: RequestHandler, handler: RequestHandler): RequestHandler =>
+  (req, res, next) => {
+    const user = getUserFromSession(deps)(req.session);
+    if (O.isNone(user)) {
+      res.redirect(logInPath);
+      return;
+    }
+    const member = deps.sharedReadModel.members.getByMemberNumber(
+      user.value.memberNumber
+    );
+    if (O.isNone(member) || !member.value.isSuperUser) {
+      res
+        .status(StatusCodes.FORBIDDEN)
+        .send(oopsPage(safe('Only super-users can import fobs.')));
+      return;
+    }
     parse(req, res, err => {
       if (err) {
         res
@@ -53,6 +68,7 @@ const withMultipart =
       }
       handler(req, res, next);
     });
+  };
 
 const uploadForm: Query = deps => user =>
   pipe(
@@ -97,20 +113,40 @@ const preview =
       )
     );
 
+// Starts the import and sends the admin to the status page; see
+// import-runner.ts for why it is not applied within this request.
 const confirm =
-  (deps: Dependencies, body: Record<string, unknown>) =>
+  (deps: Dependencies, runner: ImportRunner, body: Record<string, unknown>) =>
   (user: User): TE.TaskEither<FailureWithStatus, HttpResponse> =>
     pipe(
       mustBeSuperuser(deps.sharedReadModel, user),
-      TE.chain(() =>
-        TE.fromTask(() =>
-          applyImportPlan(deps, {tag: 'user', user}, planFromForm(body))
+      TE.chainEitherKW(() =>
+        pipe(
+          runner.start(deps, {tag: 'user', user}, planFromForm(body)),
+          E.mapLeft(() =>
+            failureWithStatus(
+              'An import is already running; wait for it to finish, then upload again if anything is left.',
+              StatusCodes.BAD_REQUEST
+            )()
+          )
         )
       ),
-      TE.map(summary =>
+      TE.map(() => HttpResponse.Redirect(STATUS_PATH))
+    );
+
+const status =
+  (runner: ImportRunner): Query =>
+  deps =>
+  user =>
+    pipe(
+      mustBeSuperuser(deps.sharedReadModel, user),
+      TE.map(() =>
         pipe(
-          renderSummary(summary),
-          toLoggedInContent(safe('Import fobs from Paxton'))
+          renderStatus(runner.current()),
+          toLoggedInContentWithBackLink(safe('Import fobs from Paxton'), {
+            href: '/admin',
+            label: 'Admin',
+          })
         )
       )
     );
@@ -141,32 +177,39 @@ const postPage =
     );
   };
 
+// The file if one was chosen, else whatever was pasted.
 const exportText = (req: Request): string => {
-  if (req.file !== undefined) {
+  if (req.file !== undefined && req.file.size > 0) {
     return decodeExport(req.file.buffer);
   }
   const pasted = (req.body as Record<string, unknown>).csv;
   return typeof pasted === 'string' ? pasted : '';
 };
 
-export const importFobsRoutes = (deps: Dependencies): ReadonlyArray<Route> => [
-  get(UPLOAD_PATH, expressAsyncHandler(queryGet(deps, uploadForm))),
-  post(
-    PREVIEW_PATH,
-    withMultipart(
-      upload.single('file'),
-      expressAsyncHandler(
-        postPage(deps, req => preview(deps, exportText(req)))
+export const importFobsRoutes = (deps: Dependencies): ReadonlyArray<Route> => {
+  const runner = createImportRunner();
+  return [
+    get(UPLOAD_PATH, expressAsyncHandler(queryGet(deps, uploadForm))),
+    get(STATUS_PATH, expressAsyncHandler(queryGet(deps, status(runner)))),
+    post(
+      PREVIEW_PATH,
+      withMultipart(
+        deps,
+        upload.single('file'),
+        expressAsyncHandler(postPage(deps, req => preview(deps, exportText(req))))
       )
-    )
-  ),
-  post(
-    UPLOAD_PATH,
-    withMultipart(
-      upload.none(),
-      expressAsyncHandler(
-        postPage(deps, req => confirm(deps, req.body as Record<string, unknown>))
+    ),
+    post(
+      UPLOAD_PATH,
+      withMultipart(
+        deps,
+        upload.none(),
+        expressAsyncHandler(
+          postPage(deps, req =>
+            confirm(deps, runner, req.body as Record<string, unknown>)
+          )
+        )
       )
-    )
-  ),
-];
+    ),
+  ];
+};

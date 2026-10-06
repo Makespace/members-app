@@ -2,6 +2,7 @@ import {html, safe} from '../types/html';
 
 export const UPLOAD_PATH = safe('/members/import-fobs');
 export const PREVIEW_PATH = safe('/members/import-fobs/preview');
+export const STATUS_PATH = safe('/members/import-fobs/status');
 
 export const renderUploadForm = () => html`
   <h1>Import fobs from Paxton</h1>
