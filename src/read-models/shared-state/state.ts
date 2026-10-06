@@ -139,6 +139,48 @@ export const equipmentTable = defineTable(
 // Alternative names that resolve to equipment (e.g. the trouble-ticket form's
 // labels). One alias maps to exactly one equipment; matching is case- and
 // whitespace-insensitive via the NOCASE collation plus trimming at write time.
+// What each member has said they want to hear about, one row per scope they
+// have an opinion on. Saying "follow whatever is above me" removes the row:
+// the absence of a row is what following means, so there is one way to say it
+// rather than two.
+export const memberNotificationPreferencesTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS memberNotificationPreferences (
+      memberNumber INTEGER NOT NULL,
+      scope TEXT NOT NULL,
+      preference TEXT NOT NULL,
+      PRIMARY KEY (memberNumber, scope)
+    )
+  `,
+  'memberNotificationPreferences' as const,
+  {
+    memberNumber: integer('memberNumber').notNull(),
+    scope: text('scope').notNull(),
+    preference: text('preference').notNull(),
+  }
+);
+
+// When each member was last sent a summary, and how far through the log it
+// reached. One row per member and cadence; absent until the first one is sent.
+export const memberDigestsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS memberDigests (
+      memberNumber INTEGER NOT NULL,
+      cadence TEXT NOT NULL,
+      sentAt INTEGER NOT NULL,
+      upToEventIndex INTEGER NOT NULL,
+      PRIMARY KEY (memberNumber, cadence)
+    )
+  `,
+  'memberDigests' as const,
+  {
+    memberNumber: integer('memberNumber').notNull(),
+    cadence: text('cadence').notNull(),
+    sentAt: integer('sentAt', {mode: 'timestamp_ms'}).notNull(),
+    upToEventIndex: integer('upToEventIndex').notNull(),
+  }
+);
+
 export const equipmentNameAliasesTable = defineTable(
   sql`
     CREATE TABLE IF NOT EXISTS equipmentNameAliases (

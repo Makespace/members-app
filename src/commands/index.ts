@@ -11,7 +11,10 @@ import {troubleTickets} from './trouble-tickets';
 import {notifications} from './notifications';
 import {mailbox} from './mailbox';
 
+import {notificationPreferences} from './notification-preferences';
+
 export const commands = {
+  notificationPreferences,
   area,
   equipment,
   trainers,
