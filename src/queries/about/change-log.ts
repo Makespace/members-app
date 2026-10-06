@@ -16,6 +16,11 @@ export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
     date: '2026-10-06',
     headline:
+      'Super users can upload the token export from the Paxton PC and, after checking a preview, record every member\'s fobs in one go',
+  },
+  {
+    date: '2026-10-06',
+    headline:
       "Super users can record a member's Paxton fobs (fob id and access level) on their profile, as a first step towards syncing with the door system",
   },
   {

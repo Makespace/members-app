@@ -27,6 +27,7 @@ export const render = () => html`
         >Mark member rejoined with new number</a
       >`,
       html`<a href="/super-users">Manage super-users</a>`,
+      html`<a href="/members/import-fobs">Import fobs from Paxton</a>`,
     ])}
 
     ${section(html`Membership payments`, [
