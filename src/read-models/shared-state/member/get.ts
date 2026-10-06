@@ -3,8 +3,13 @@ import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, desc, eq, inArray, isNotNull, sql} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
-import {MemberCoreInfo, MemberEmail} from '../return-types';
-import {memberEmailsTable, memberNumbersTable, membersTable} from '../state';
+import {MemberCoreInfo, MemberEmail, MemberFob} from '../return-types';
+import {
+  memberEmailsTable,
+  memberFobsTable,
+  memberNumbersTable,
+  membersTable,
+} from '../state';
 import {EmailAddress, UserId} from '../../../types';
 import {normaliseEmailAddress} from '../normalise-email-address';
 
@@ -45,6 +50,22 @@ const getMemberEmails =
             ]
       )
     );
+
+const getMemberFobs =
+  (db: BetterSQLite3Database) =>
+  (userId: UserId): ReadonlyArray<MemberFob> =>
+    db
+      .select()
+      .from(memberFobsTable)
+      .where(eq(memberFobsTable.userId, userId))
+      .orderBy(desc(memberFobsTable.recordedAt))
+      .all()
+      .map(row => ({
+        fobId: row.fobId,
+        accessLevel: row.accessLevel,
+        paxtonName: row.paxtonName,
+        recordedAt: row.recordedAt,
+      }));
 
 export const findUserIdByMemberNumber = (
   db: BetterSQLite3Database
@@ -139,6 +160,7 @@ export const getMemberCoreByUserId =
       pastMemberNumbers: memberNumbers.filter(n => n !== memberNumber),
       primaryEmailAddress: row.primaryEmailAddress,
       emails: getMemberEmails(db)(userId),
+      fobs: getMemberFobs(db)(userId),
       name: row.name,
       formOfAddress: row.formOfAddress,
       agreementSigned: O.fromNullable(row.agreementSigned),

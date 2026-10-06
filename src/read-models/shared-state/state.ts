@@ -78,6 +78,32 @@ export const memberEmailsTable = defineTable(
   }
 );
 
+// Paxton fobs, keyed by Paxton's fob id so a fob reassigned to another
+// member moves rather than duplicates. A member may hold several.
+export const memberFobsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS memberFobs (
+      fobId INTEGER PRIMARY KEY,
+      userId TEXT NOT NULL,
+      accessLevel TEXT NOT NULL,
+      paxtonName TEXT NOT NULL,
+      recordedAt INTEGER NOT NULL,
+      FOREIGN KEY (userId) REFERENCES members(userId) ON DELETE CASCADE
+    );
+  `,
+  'memberFobs' as const,
+  {
+    fobId: integer('fobId').primaryKey(),
+    userId: text('userId')
+      .notNull()
+      .$type<UserId>()
+      .references(() => membersTable.userId, {onDelete: 'cascade'}),
+    accessLevel: text('accessLevel').notNull(),
+    paxtonName: text('paxtonName').notNull(),
+    recordedAt: integer('recordedAt', {mode: 'timestamp_ms'}).notNull(),
+  }
+);
+
 // Individual members may have multiple member numbers so we give each member a unique id
 // and then member numbers map to this.
 export const memberNumbersTable = defineTable(

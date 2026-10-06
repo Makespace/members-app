@@ -214,6 +214,8 @@ export const initTestFramework = async (): Promise<TestFramework> => {
           commands.members.sendEmailVerification
         ),
         verifyEmail: frameworkify(commands.members.verifyEmail),
+        recordFob: frameworkify(commands.members.recordFob),
+        removeFob: frameworkify(commands.members.removeFob),
       },
       memberNumbers: {
         linkNumberToEmail: frameworkify(

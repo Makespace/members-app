@@ -18,6 +18,7 @@ const member = (
   pastMemberNumbers: [],
   primaryEmailAddress: `member-${memberNumber}@example.com` as EmailAddress,
   emails: [],
+  fobs: [],
   name: O.none,
   formOfAddress: O.none,
   agreementSigned: O.none,

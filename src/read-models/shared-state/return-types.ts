@@ -64,6 +64,14 @@ export type MemberEmail = {
   addedAt: Date;
 };
 
+export type MemberFob = {
+  fobId: number;
+  accessLevel: string;
+  // The holder's name as it appeared in the Paxton export.
+  paxtonName: string;
+  recordedAt: Date;
+};
+
 export type OwnerOf = {
   id: string;
   name: string;
@@ -76,6 +84,8 @@ export type MemberCoreInfo = {
   pastMemberNumbers: ReadonlyArray<number>;
   primaryEmailAddress: EmailAddress;
   emails: ReadonlyArray<MemberEmail>;
+  // Only visible to super users; see member/redact.ts.
+  fobs: ReadonlyArray<MemberFob>;
   name: O.Option<string>;
   formOfAddress: O.Option<string>;
   agreementSigned: O.Option<Date>;

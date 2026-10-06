@@ -14,6 +14,11 @@ type ChangeLogEntry = {
 
 export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
+    date: '2026-10-06',
+    headline:
+      "Super users can record a member's Paxton fobs (fob id and access level) on their profile, as a first step towards syncing with the door system",
+  },
+  {
     date: '2026-10-05',
     headline:
       "When a returning member is given a new number, the admin sees how long they were away (from their Recurly subscriptions) and confirms whether their old training still counts - it lapses after 6 months away",

@@ -9,6 +9,7 @@ import {
   eventStateTable,
   failedEventsTable,
   memberEmailsTable,
+  memberFobsTable,
   membersTable,
   ownersTable,
   trainedMemberstable,
@@ -217,6 +218,50 @@ const _updateState =
             `Unable to update email verification requested '${event.email}' for member number: '${event.memberNumber}' - unknown email address`
           )
         }
+        break;
+      }
+      case 'MemberFobRecorded': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to record fob '${event.fobId}', unknown member number: '${event.memberNumber}'`);
+        }
+        // Keyed on fob id: a fob seen again takes the latest access level,
+        // and one now held by a different member moves to them.
+        tx.insert(memberFobsTable)
+          .values({
+            fobId: event.fobId,
+            userId: userId.value,
+            accessLevel: event.accessLevel,
+            paxtonName: event.paxtonName,
+            recordedAt: event.recordedAt,
+          })
+          .onConflictDoUpdate({
+            target: memberFobsTable.fobId,
+            set: {
+              userId: userId.value,
+              accessLevel: event.accessLevel,
+              paxtonName: event.paxtonName,
+              recordedAt: event.recordedAt,
+            },
+          })
+          .run();
+        break;
+      }
+      case 'MemberFobRemoved': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to remove fob '${event.fobId}', unknown member number: '${event.memberNumber}'`);
+        }
+        // Scoped to the member so a stale removal can't take a fob that has
+        // since been reassigned to someone else.
+        tx.delete(memberFobsTable)
+          .where(
+            and(
+              eq(memberFobsTable.fobId, event.fobId),
+              eq(memberFobsTable.userId, userId.value)
+            )
+          )
+          .run();
         break;
       }
       case 'MemberDetailsUpdated': {
