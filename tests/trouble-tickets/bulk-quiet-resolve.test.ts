@@ -116,6 +116,10 @@ describe('bulkQuietResolve', () => {
     await addTicket('2024-02-03T09:00:00.000Z', 'older one');
     await bulkQuietResolve(deps())(CUTOFF, {dryRun: false});
 
+    // Logging a ticket tells whoever reported it, so this asks a month later:
+    // the confirmations are long out of the window, and what is left to send
+    // is whatever the bulk resolve wrote - which should be nothing.
+    const muchLater = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await notifyTroubleTicketChanges({
       logger: framework.depsForCommands.logger,
       sharedReadModel: framework.sharedReadModel,
@@ -126,7 +130,7 @@ describe('bulkQuietResolve', () => {
         return TE.right('sent');
       },
       conf: {PUBLIC_URL: 'https://members.makespace.org'} as unknown as Config,
-    });
+    }, muchLater);
 
     expect(sentEmails).toHaveLength(0);
   });

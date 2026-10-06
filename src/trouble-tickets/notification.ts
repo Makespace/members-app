@@ -1,9 +1,3 @@
-import * as E from 'fp-ts/Either';
-import * as O from 'fp-ts/Option';
-import {pipe} from 'fp-ts/lib/function';
-import {EmailAddress, EmailAddressCodec} from '../types/email-address';
-import {SharedReadModel} from '../read-models/shared-state';
-import {TroubleTicket} from '../types/trouble-ticket';
 
 // What a trouble ticket notification says and who it goes to, in one place:
 // the notifier sends it, and the confirmation page for each action shows the
@@ -76,44 +70,3 @@ export const ticketNotificationText = (
 // if it is one - plus, for Needs Help, the equipment's trainers, so someone
 // else can pick it up. Nobody is copied in. Each recipient gets their own
 // email.
-export const ticketNotificationRecipients = (
-  rm: SharedReadModel,
-  ticket: TroubleTicket,
-  changeType: TicketChange['type']
-): ReadonlyArray<EmailAddress> => {
-  const emails = new Set<EmailAddress>();
-
-  const submitterEmail =
-    ticket.submittedMemberNumber !== null
-      ? pipe(
-          rm.members.getByMemberNumber(ticket.submittedMemberNumber),
-          O.map(member => member.primaryEmailAddress)
-        )
-      : O.none;
-  if (O.isSome(submitterEmail)) {
-    emails.add(submitterEmail.value);
-  } else if (ticket.submittedEmail) {
-    pipe(
-      EmailAddressCodec.decode(ticket.submittedEmail),
-      E.match(
-        () => {},
-        email => emails.add(email)
-      )
-    );
-  }
-
-  if (changeType === 'TroubleTicketNeedsHelp' && ticket.equipmentId) {
-    pipe(
-      rm.equipment.get(ticket.equipmentId),
-      O.match(
-        () => {},
-        equipment =>
-          equipment.trainers.forEach(trainer =>
-            emails.add(trainer.primaryEmailAddress)
-          )
-      )
-    );
-  }
-
-  return [...emails];
-};

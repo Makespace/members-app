@@ -92,22 +92,36 @@ describe('confirming a newly raised ticket', () => {
     expect(sentEmails[0].text).toContain('will address it soon');
   });
 
-  it('never emails about tickets imported from the sheet', async () => {
+  // What keeps the imported history quiet is its age, not the route it came
+  // in by. The backfill records each ticket at the time it was actually
+  // reported, so years-old tickets fall outside the window.
+  it('never emails about a ticket reported long ago', async () => {
     await addTicket('sheet');
 
-    await notifyTroubleTicketChanges(deps);
+    const muchLater = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+    await notifyTroubleTicketChanges(deps, muchLater);
 
     expect(sentEmails).toHaveLength(0);
   });
 
-  // The sender of an email did not use the app; any reply belongs in the
-  // conversation, not in an automated confirmation.
-  it('never emails about tickets raised from the mailbox', async () => {
+  // The fix this replaced a source check for: somebody who reports a problem
+  // on the Google form hears that it was logged, same as everybody else.
+  it('tells the submitter about a ticket that came in on the form', async () => {
+    await addTicket('sheet');
+
+    await notifyTroubleTicketChanges(deps);
+
+    expect(sentEmails).toHaveLength(1);
+    expect(sentEmails[0].recipient).toStrictEqual('submitter@test.com');
+  });
+
+  it('tells the member who wrote in to management', async () => {
     await addTicket('email');
 
     await notifyTroubleTicketChanges(deps);
 
-    expect(sentEmails).toHaveLength(0);
+    expect(sentEmails).toHaveLength(1);
+    expect(sentEmails[0].recipient).toStrictEqual('submitter@test.com');
   });
 
   it('does not confirm the same ticket twice', async () => {

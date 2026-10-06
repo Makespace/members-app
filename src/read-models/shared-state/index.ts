@@ -4,7 +4,10 @@ import os from 'node:os';
 import fs from 'node:fs';
 import * as T from 'fp-ts/Task';
 import * as O from 'fp-ts/Option';
-import {getNotificationPreferences} from './notification-preferences/get';
+import {
+  getMembersWithNotificationPreferences,
+  getNotificationPreferences,
+} from './notification-preferences/get';
 import {createTables} from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
@@ -156,6 +159,7 @@ export type SharedReadModel = {
   };
   notificationPreferences: {
     forMember: (memberNumber: number) => ReadonlyMap<string, string>;
+    membersWithAny: () => ReadonlyArray<number>;
   };
   troubleTickets: {
     hasRowHash: (rowHash: string) => boolean;
@@ -251,6 +255,7 @@ export const initSharedReadModel = (
     },
     notificationPreferences: {
       forMember: getNotificationPreferences(readModelDb),
+      membersWithAny: getMembersWithNotificationPreferences(readModelDb),
     },
     troubleTickets: {
       hasRowHash: hasTroubleTicketRowHash(readModelDb),

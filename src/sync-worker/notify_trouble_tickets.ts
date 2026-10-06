@@ -10,9 +10,12 @@ import {TroubleTicket} from '../types/trouble-ticket';
 import {StoredEventOfType} from '../types/domain-event';
 import {SyncWorkerDependencies} from './dependencies';
 import {
+  audienceFor,
+  happeningOfEvent,
+} from '../trouble-tickets/notification-audience';
+import {
   describeTicketChange,
   ticketNotificationOpening,
-  ticketNotificationRecipients,
   ticketNotificationSubject,
   ticketNotificationText,
 } from '../trouble-tickets/notification';
@@ -97,8 +100,13 @@ const buildEmail = (
 // TroubleTicketNotificationSent event per change so it isn't sent twice. Commits the
 // "sent" marker before emailing (preferring a missed email over a duplicate, matching the
 // training-summary emailer).
+// Far enough back to cover a worker that has been down for a few days, and
+// nowhere near far enough to reach the imported history.
+const NOTIFY_EVENTS_WITHIN_MS = 7 * 24 * 60 * 60 * 1000;
+
 export const notifyTroubleTicketChanges = async (
-  deps: NotifyTroubleTicketDependencies
+  deps: NotifyTroubleTicketDependencies,
+  now: Date = new Date()
 ): Promise<void> => {
   await deps.sharedReadModel.asyncRefresh()();
   const rm = deps.sharedReadModel;
@@ -122,9 +130,16 @@ export const notifyTroubleTicketChanges = async (
     if (event.type === 'TroubleTicketResolved' && event.quiet) {
       continue;
     }
-    // Only tickets raised in the app get a creation confirmation: the
-    // imported sheet history must never email anybody.
-    if (event.type === 'TroubleTicketCreated' && event.source !== 'app') {
+    // Nothing older than this is worth emailing anybody about. This replaces
+    // a check that only app-raised tickets notify, which was standing in for
+    // the real rule: the imported history must never email anybody. Saying it
+    // by age says it for every kind of change rather than only creation, and
+    // it lets a ticket raised on the Google form tell its submitter - which
+    // the old check silenced, because a form ticket is not app-raised.
+    if (
+      now.getTime() - event.recordedAt.getTime() >
+      NOTIFY_EVENTS_WITHIN_MS
+    ) {
       continue;
     }
     if (rm.troubleTickets.hasNotifiedForEvent(event.event_index)) {
@@ -136,11 +151,16 @@ export const notifyTroubleTicketChanges = async (
     }
     // Who it is going to is decided first and recorded with the marker, so
     // the ticket's own history can say who was told.
-    const recipients = ticketNotificationRecipients(
-      rm,
-      ticket.value,
-      event.type
-    );
+    //
+    // Only the people who asked to hear as it happens are emailed now;
+    // everybody else asked for a summary, and the summary will carry it.
+    const happening = happeningOfEvent(event.type);
+    if (O.isNone(happening)) {
+      continue;
+    }
+    const recipients = audienceFor(rm, ticket.value, happening.value)
+      .filter(entry => entry.when === 'live')
+      .map(entry => entry.email);
     const commitResp = await deps.commitEvent(rm.getCurrentEventIndex())(
       constructEvent('TroubleTicketNotificationSent')({
         actor: {tag: 'system'},

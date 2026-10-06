@@ -39,20 +39,16 @@ export const subscriptionLabel = (subscription: Subscription): string => {
   }
 };
 
-// What a choice comes to in the events the notifier will match on. Your own
-// ticket is the exception: you know it was reported, so what is left to tell
-// you is what became of it.
+// What a choice comes to in the events the notifier will match on. Every
+// subscription covers every change; only the frequency differs.
+//
+// Reporting is included for a ticket somebody reported themselves. It looked
+// redundant - they know they reported it - but the email that goes out then is
+// "we have logged your report", which is the most useful one they get.
 export const happeningsOf = (
-  subscription: Subscription,
-  kind: ScopeKind
-): ReadonlyArray<TicketHappening> => {
-  if (subscription === 'none') {
-    return [];
-  }
-  return kind === 'reported-by-me'
-    ? TICKET_HAPPENINGS.filter(happening => happening !== 'reported')
-    : TICKET_HAPPENINGS;
-};
+  subscription: Subscription
+): ReadonlyArray<TicketHappening> =>
+  subscription === 'none' ? [] : TICKET_HAPPENINGS;
 
 export type Choice = Subscription;
 

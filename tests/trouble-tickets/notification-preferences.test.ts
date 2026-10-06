@@ -199,7 +199,7 @@ describe('what somebody hears by default', () => {
     const scopes = preferencesFor(member, equipment, areas);
     const mine = find(scopes, 'my-areas');
     expect(mine.effective).toBe('weekly');
-    expect(happeningsOf(mine.effective, mine.kind)).toContain('reported');
+    expect(happeningsOf(mine.effective)).toContain('reported');
   });
 
   it('stays quiet about areas they have nothing to do with', () => {
@@ -221,12 +221,15 @@ describe('what somebody hears by default', () => {
 
   // Your own ticket is the exception: you know it was reported, so what is
   // left to tell you is what became of it, whatever the interest says.
+  // Including that it was reported: the email that goes out then says "we
+  // have logged your report", which is the most useful one they get.
   it('always tells them what became of a ticket they reported', () => {
     const mine = find(
       preferencesFor(member, equipment, areas),
       'reported-by-me'
     );
-    expect(happeningsOf(mine.effective, mine.kind)).toEqual([
+    expect(happeningsOf(mine.effective)).toEqual([
+      'reported',
       'picked-up',
       'needs-help',
       'parked',
@@ -239,7 +242,7 @@ describe('what somebody hears by default', () => {
   it.each(['live', 'daily', 'weekly'] as const)(
     'matches every event when subscribed %s',
     subscription => {
-      expect(happeningsOf(subscription, 'area')).toEqual([
+      expect(happeningsOf(subscription)).toEqual([
         'reported',
         'picked-up',
         'needs-help',
@@ -250,7 +253,7 @@ describe('what somebody hears by default', () => {
   );
 
   it('matches nothing when somebody has turned it off', () => {
-    expect(happeningsOf('none', 'area')).toEqual([]);
+    expect(happeningsOf('none')).toEqual([]);
   });
 
   it('counts only the rules that actually send something', () => {
