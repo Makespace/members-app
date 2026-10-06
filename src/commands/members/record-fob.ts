@@ -10,7 +10,7 @@ import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-us
 
 const codec = t.strict({
   memberNumber: tt.NumberFromString,
-  fobId: tt.NumberFromString,
+  fobId: tt.IntFromString,
   accessLevel: tt.NonEmptyString,
   paxtonName: tt.NonEmptyString,
 });

@@ -1,5 +1,6 @@
 import {flow, pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
+import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {html, safe, toLoggedInContent} from '../../types/html';
 import {User} from '../../types';
@@ -43,9 +44,11 @@ const paramsCodec = t.strict({
   fob: tt.NumberFromString,
 });
 
+// A stale link (the fob since reassigned or removed) gets a 404 here rather
+// than a confirmation page whose submit would quietly do nothing.
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({user}) =>
+  ({user, readModel}) =>
     pipe(
       input,
       paramsCodec.decode,
@@ -58,11 +61,19 @@ const constructForm: Form<ViewModel>['constructForm'] =
           )
         )
       ),
-      E.map(params => ({
-        user,
-        memberNumber: params.member,
-        fobId: params.fob,
-      })),
+      E.chain(params =>
+        pipe(
+          readModel.members.getByMemberNumber(params.member),
+          O.filter(member => member.fobs.some(fob => fob.fobId === params.fob)),
+          E.fromOption(
+            failureWithStatus(
+              'That member does not hold the requested fob',
+              StatusCodes.NOT_FOUND
+            )
+          ),
+          E.map(() => ({user, memberNumber: params.member, fobId: params.fob}))
+        )
+      ),
       TE.fromEither
     );
 

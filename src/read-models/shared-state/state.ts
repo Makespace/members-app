@@ -504,6 +504,9 @@ createTables.push(
   sql`CREATE INDEX IF NOT EXISTS memberEmails_userId_addedAt_idx ON memberEmails (userId, addedAt);`
 );
 createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS memberFobs_userId_recordedAt_idx ON memberFobs (userId, recordedAt);`
+);
+createTables.push(
   sql`CREATE INDEX IF NOT EXISTS trainedMembers_userId_idx ON trainedMembers (userId);`
 );
 createTables.push(

@@ -2,7 +2,9 @@ import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
 import {recordFob} from '../../../src/commands/members/record-fob';
 import {removeFob} from '../../../src/commands/members/remove-fob';
+import {Int} from 'io-ts';
 import {NonEmptyString} from 'io-ts-types';
+import {StatusCodes} from 'http-status-codes';
 import {EmailAddress} from '../../../src/types';
 import {
   arbitraryActor,
@@ -34,7 +36,7 @@ describe('member fob commands', () => {
 
   const fob = {
     memberNumber,
-    fobId: 4321,
+    fobId: 4321 as Int,
     accessLevel: 'Member' as NonEmptyString,
     paxtonName: 'Molly 1337 Millions' as NonEmptyString,
   };
@@ -54,7 +56,7 @@ describe('member fob commands', () => {
     });
 
     it('rejects an empty access level', () => {
-      getLeftOrFail(
+      const errors = getLeftOrFail(
         recordFob.decode({
           memberNumber: String(memberNumber),
           fobId: '4321',
@@ -62,15 +64,31 @@ describe('member fob commands', () => {
           paxtonName: 'Molly',
         })
       );
+      expect(errors).not.toHaveLength(0);
+    });
+
+    // The read model keys fobs on an INTEGER column, so a fractional id
+    // must be refused here rather than stored and then break replay.
+    it('rejects a non-integer fob id', () => {
+      const errors = getLeftOrFail(
+        recordFob.decode({
+          memberNumber: String(memberNumber),
+          fobId: '1.5',
+          accessLevel: 'Member',
+          paxtonName: 'Molly',
+        })
+      );
+      expect(errors).not.toHaveLength(0);
     });
 
     it('fails for an unknown member', async () => {
-      getLeftOrFail(
+      const failure = getLeftOrFail(
         await recordFob.process({
           command: {...fob, memberNumber: memberNumber + 1, actor: arbitraryActor()},
           rm: framework.sharedReadModel,
         })()
       );
+      expect(failure.status).toStrictEqual(StatusCodes.NOT_FOUND);
     });
 
     it('produces a MemberFobRecorded event', async () => {
@@ -171,7 +189,7 @@ describe('member fob commands', () => {
     it('produces nothing for a fob the member does not hold', async () => {
       const result = await getTaskEitherRightOrFail(
         removeFob.process({
-          command: {memberNumber, fobId: 999, actor: arbitraryActor()},
+          command: {memberNumber, fobId: 999 as Int, actor: arbitraryActor()},
           rm: framework.sharedReadModel,
         })
       );

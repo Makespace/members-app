@@ -312,14 +312,16 @@ const MemberDetailsUpdated = defineEvent('MemberDetailsUpdated', {
 // it was matched to can be checked later.
 const MemberFobRecorded = defineEvent('MemberFobRecorded', {
   memberNumber: t.number,
-  fobId: t.number,
+  // Integer, not number: the read model keys on this as an INTEGER PRIMARY
+  // KEY, and a stored non-integer would stop replay at this event for good.
+  fobId: t.Int,
   accessLevel: t.string,
   paxtonName: t.string,
 });
 
 const MemberFobRemoved = defineEvent('MemberFobRemoved', {
   memberNumber: t.number,
-  fobId: t.number,
+  fobId: t.Int,
 });
 
 const OwnerAgreementSigned = defineEvent('OwnerAgreementSigned', {

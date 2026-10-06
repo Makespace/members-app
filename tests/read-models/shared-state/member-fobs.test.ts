@@ -39,7 +39,7 @@ describe('member fob projection', () => {
   it('records a fob with its access level and Paxton name', async () => {
     await framework.commands.members.recordFob({
       memberNumber,
-      fobId: 4321,
+      fobId: 4321 as Int,
       accessLevel: member,
       paxtonName: 'Molly 1337 Millions' as NonEmptyString,
     });
@@ -47,7 +47,7 @@ describe('member fob projection', () => {
     const fobs = getFobs(memberNumber);
     expect(fobs).toHaveLength(1);
     expect(fobs[0]).toMatchObject({
-      fobId: 4321,
+      fobId: 4321 as Int,
       accessLevel: member,
       paxtonName: 'Molly 1337 Millions' as NonEmptyString,
     });
@@ -57,13 +57,13 @@ describe('member fob projection', () => {
   it('a member can hold several fobs', async () => {
     await framework.commands.members.recordFob({
       memberNumber,
-      fobId: 1,
+      fobId: 1 as Int,
       accessLevel: member,
       paxtonName: molly,
     });
     await framework.commands.members.recordFob({
       memberNumber,
-      fobId: 2,
+      fobId: 2 as Int,
       accessLevel: owner,
       paxtonName: molly,
     });
@@ -76,13 +76,13 @@ describe('member fob projection', () => {
   it('recording a known fob again updates its access level', async () => {
     await framework.commands.members.recordFob({
       memberNumber,
-      fobId: 7,
+      fobId: 7 as Int,
       accessLevel: member,
       paxtonName: molly,
     });
     await framework.commands.members.recordFob({
       memberNumber,
-      fobId: 7,
+      fobId: 7 as Int,
       accessLevel: owner,
       paxtonName: molly,
     });
@@ -102,13 +102,13 @@ describe('member fob projection', () => {
     });
     await framework.commands.members.recordFob({
       memberNumber,
-      fobId: 7,
+      fobId: 7 as Int,
       accessLevel: member,
       paxtonName: molly,
     });
     await framework.commands.members.recordFob({
       memberNumber: otherMemberNumber,
-      fobId: 7,
+      fobId: 7 as Int,
       accessLevel: member,
       paxtonName: 'Case' as NonEmptyString,
     });
@@ -122,17 +122,17 @@ describe('member fob projection', () => {
   it('removes a fob', async () => {
     await framework.commands.members.recordFob({
       memberNumber,
-      fobId: 7,
+      fobId: 7 as Int,
       accessLevel: member,
       paxtonName: molly,
     });
     await framework.commands.members.recordFob({
       memberNumber,
-      fobId: 8,
+      fobId: 8 as Int,
       accessLevel: member,
       paxtonName: molly,
     });
-    await framework.commands.members.removeFob({memberNumber, fobId: 7});
+    await framework.commands.members.removeFob({memberNumber, fobId: 7 as Int});
 
     expect(getFobs(memberNumber).map(fob => fob.fobId)).toStrictEqual([8]);
   });
@@ -157,13 +157,13 @@ describe('member fob projection', () => {
     });
     await framework.commands.members.recordFob({
       memberNumber: oldMemberNumber,
-      fobId: 10,
+      fobId: 10 as Int,
       accessLevel: member,
       paxtonName: molly,
     });
     await framework.commands.members.recordFob({
       memberNumber: newMemberNumber,
-      fobId: 11,
+      fobId: 11 as Int,
       accessLevel: member,
       paxtonName: molly,
     });
@@ -184,7 +184,7 @@ describe('member fob projection', () => {
     beforeEach(async () => {
       await framework.commands.members.recordFob({
         memberNumber,
-        fobId: 7,
+        fobId: 7 as Int,
         accessLevel: member,
         paxtonName: molly,
       });

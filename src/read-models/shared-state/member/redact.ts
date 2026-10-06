@@ -32,31 +32,22 @@ const isPrivileged = (actor: Actor) => (members: MultipleMembers) => {
   }
 };
 
-// If a given |actor|, with the context of |details| is viewing |member|
-// should sensitive details (email) about that member be redacted.
-const shouldRedactEmail =
-  (actor: Actor) => (members: MultipleMembers) => (member: Member) => {
-    if (isPrivileged(actor)(members)) {
-      return false;
-    }
-    return !(
-      actor.tag === 'user' &&
-      actor.user.memberNumber === member.memberNumber
-    );
-  };
+const isSelf = (actor: Actor, member: Member) =>
+  actor.tag === 'user' && actor.user.memberNumber === member.memberNumber;
 
+// An unprivileged |actor| sees their own email but nobody else's, and no
+// fob details at all.
 export const redactDetailsForActor =
   (actor: Actor) => (members: MultipleMembers) => {
-    const needsEmailRedaction = shouldRedactEmail(actor)(members);
-    const needsFobRedaction = !isPrivileged(actor)(members);
+    const privileged = isPrivileged(actor)(members);
     const redactedDetails = new Map();
     for (const [memberNumber, member] of members.entries()) {
       let redacted = member;
-      if (needsEmailRedaction(member)) {
-        redacted = redactEmail(redacted);
-      }
-      if (needsFobRedaction) {
+      if (!privileged) {
         redacted = redactFobs(redacted);
+        if (!isSelf(actor, member)) {
+          redacted = redactEmail(redacted);
+        }
       }
       redactedDetails.set(memberNumber, redacted);
     }

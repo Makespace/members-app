@@ -48,7 +48,7 @@ const paramsCodec = t.strict({
 
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({user}) =>
+  ({user, readModel}) =>
     pipe(
       input,
       paramsCodec.decode,
@@ -61,10 +61,18 @@ const constructForm: Form<ViewModel>['constructForm'] =
           )
         )
       ),
-      E.map(params => ({
-        user,
-        memberNumber: params.member,
-      })),
+      E.chain(params =>
+        pipe(
+          readModel.members.getByMemberNumber(params.member),
+          E.fromOption(
+            failureWithStatus(
+              'The requested member does not exist',
+              StatusCodes.NOT_FOUND
+            )
+          ),
+          E.map(member => ({user, memberNumber: member.memberNumber}))
+        )
+      ),
       TE.fromEither
     );
 
