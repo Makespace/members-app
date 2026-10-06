@@ -11,6 +11,11 @@ import {
   happeningOfEvent,
 } from '../trouble-tickets/notification-audience';
 import {digestEmail, DigestLine} from '../trouble-tickets/digest';
+import {
+  audienceOf,
+  heldBackSendEmail,
+  mayEmail,
+} from '../trouble-tickets/notification-gate';
 
 // The summaries. Everybody who asked to hear about tickets daily or weekly
 // gets one email covering everything since their last, and nothing at all when
@@ -157,6 +162,13 @@ export const notifyDigests = async (
         continue;
       }
 
+      // The watermark moves either way, so a held-back stretch does not pile
+      // up into a backlog the day the mail is switched on. The event says
+      // which it was, rather than claiming a summary that never arrived.
+      const willSend = mayEmail(
+        audienceOf(deps),
+        member.value.primaryEmailAddress
+      );
       const committed = await deps.commitEvent(rm.getCurrentEventIndex())(
         constructEvent('MemberTicketDigestSent')({
           actor: {tag: 'system'},
@@ -164,6 +176,7 @@ export const notifyDigests = async (
           cadence,
           upToEventIndex: upTo,
           changeCount: lines.length,
+          suppressed: !willSend,
         })
       )();
       if (E.isLeft(committed)) {
@@ -174,7 +187,7 @@ export const notifyDigests = async (
         continue;
       }
 
-      const sent = await deps.sendEmail(
+      const sent = await heldBackSendEmail(deps)(
         buildDigest(
           deps.conf.PUBLIC_URL,
           member.value.primaryEmailAddress,

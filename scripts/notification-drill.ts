@@ -132,7 +132,12 @@ const buildStage = (
       sent.push(email);
       return TE.right('sent' as const);
     },
-    conf: {PUBLIC_URL} as unknown as Config,
+    conf: {
+      PUBLIC_URL,
+      // The drill is the one place that always wants the mail worked out and
+      // handed over; whether it then leaves the building is --send's job.
+      TROUBLE_TICKET_NOTIFY_TO: 'all',
+    } as unknown as Config,
   });
 
   const commit = (event: Parameters<ReturnType<TestFramework['depsForCommands']['commitEvent']>>[0]) =>

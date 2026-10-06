@@ -9,6 +9,7 @@ import {SharedReadModel} from '../read-models/shared-state';
 import {TroubleTicket} from '../types/trouble-ticket';
 import {StoredEventOfType} from '../types/domain-event';
 import {SyncWorkerDependencies} from './dependencies';
+import {heldBackSendEmail} from '../trouble-tickets/notification-gate';
 import {
   audienceFor,
   happeningOfEvent,
@@ -186,8 +187,9 @@ export const notifyTroubleTicketChanges = async (
     }
 
     const change = describeTicketChange(event, actorName(event.actor, rm));
+    const send = heldBackSendEmail(deps);
     for (const entry of recipients) {
-      const sent = await deps.sendEmail(
+      const sent = await send(
         buildEmail(
           deps.conf.PUBLIC_URL,
           entry.email,

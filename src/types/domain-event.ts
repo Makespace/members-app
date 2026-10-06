@@ -276,6 +276,10 @@ const MemberTicketDigestSent = defineEvent('MemberTicketDigestSent', {
   upToEventIndex: t.number,
   // How many changes it carried, so the log says whether it was worth sending.
   changeCount: t.number,
+  // True when the summary was worked out but held back rather than sent,
+  // which is how the stack runs before the mail is switched on. The
+  // watermark still moves, so switching on causes no backlog.
+  suppressed: tt.withFallback(t.boolean, false),
 });
 
 const NotificationCreated = defineEvent('NotificationCreated', {

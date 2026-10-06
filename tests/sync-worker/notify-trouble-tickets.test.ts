@@ -39,7 +39,11 @@ describe('notifyTroubleTicketChanges', () => {
         sentEmails.push(email);
         return TE.right('sent');
       },
-      conf: {PUBLIC_URL: 'https://members.makespace.org'} as unknown as Config,
+      conf: {
+        PUBLIC_URL: 'https://members.makespace.org',
+        // These tests are about what gets sent, so the mail is switched on.
+        TROUBLE_TICKET_NOTIFY_TO: 'all',
+      } as unknown as Config,
     };
 
     ticketId = faker.string.uuid() as UUID;

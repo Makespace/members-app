@@ -5,6 +5,7 @@ import {constructEvent, Email} from '../types';
 import {EmailAddress} from '../types/email-address';
 import {StoredEventOfType} from '../types/domain-event';
 import {SyncWorkerDependencies} from './dependencies';
+import {audienceOf, mayEmail} from '../trouble-tickets/notification-gate';
 
 // Taking on a machine or an area is taking on the job of looking after it, and
 // hearing about it is part of that job. So a role change sets what somebody
@@ -129,6 +130,22 @@ export const notifyRoleChanges = async (
     }
     const member = rm.members.getByMemberNumber(event.memberNumber);
     if (O.isNone(member)) {
+      continue;
+    }
+
+    // Overruling somebody's choice is only fair because they are told it
+    // happened and given the link to undo it. With the mail held back, the
+    // telling cannot happen, so neither does the overruling - the whole
+    // reaction waits until there is somebody to send it to.
+    if (!mayEmail(audienceOf(deps), member.value.primaryEmailAddress)) {
+      deps.logger.info(
+        {
+          memberNumber: event.memberNumber,
+          scope,
+          wouldHaveEmailed: member.value.primaryEmailAddress,
+        },
+        'Held back a role change, so their notifications are left as they are'
+      );
       continue;
     }
 

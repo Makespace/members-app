@@ -26,7 +26,11 @@ describe('telling somebody a new job changed their email', () => {
       sentEmails.push(email);
       return TE.right('sent' as const);
     },
-    conf: {PUBLIC_URL: 'https://members.makespace.org'} as unknown as Config,
+    conf: {
+        PUBLIC_URL: 'https://members.makespace.org',
+        // These tests are about what gets sent, so the mail is switched on.
+        TROUBLE_TICKET_NOTIFY_TO: 'all',
+      } as unknown as Config,
   });
 
   const stored = () =>

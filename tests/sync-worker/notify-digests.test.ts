@@ -28,7 +28,11 @@ describe('the trouble ticket summaries', () => {
       sentEmails.push(email);
       return TE.right('sent' as const);
     },
-    conf: {PUBLIC_URL: 'https://members.makespace.org'} as unknown as Config,
+    conf: {
+        PUBLIC_URL: 'https://members.makespace.org',
+        // These tests are about what gets sent, so the mail is switched on.
+        TROUBLE_TICKET_NOTIFY_TO: 'all',
+      } as unknown as Config,
   });
 
   const commit = (event: Parameters<typeof framework.depsForCommands.commitEvent>[0] extends never ? never : Parameters<ReturnType<typeof framework.depsForCommands.commitEvent>>[0]) =>
