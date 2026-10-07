@@ -455,6 +455,8 @@ export const initRoutes = (
       'send-email-verification',
       commands.members.sendEmailVerification
     ),
+    ...command('members', 'record-fob', commands.members.recordFob),
+    ...command('members', 'remove-fob', commands.members.removeFob),
     ...command(
       'members',
       'rejoined-with-new',

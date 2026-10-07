@@ -40,6 +40,14 @@ const buildViewModel = (isSuperUser: boolean, isSelf: boolean): ViewModel => ({
         verificationLastSent: O.none,
       },
     ],
+    fobs: [
+      {
+        fobId: 4321,
+        accessLevel: 'Member',
+        paxtonName: 'Molly 123 Millions',
+        recordedAt: new Date('2025-01-04T00:00:00.000Z'),
+      },
+    ],
     name: O.none,
     formOfAddress: O.none,
     agreementSigned: O.none,
@@ -103,6 +111,18 @@ describe('member render', () => {
         'active'
       );
     });
+
+    it('shows the Paxton fobs with record and remove actions', () => {
+      expect(page.textContent).toContain('Paxton fobs');
+      expect(page.textContent).toContain('4321');
+      expect(page.textContent).toContain('Molly 123 Millions');
+      expect(
+        page.querySelector('a[href="/members/record-fob?member=123"]')
+      ).not.toBeNull();
+      expect(
+        page.querySelector('a[href="/members/remove-fob?member=123&fob=4321"]')
+      ).not.toBeNull();
+    });
   });
 
   describe('as self', () => {
@@ -120,6 +140,11 @@ describe('member render', () => {
         )!.textContent
       ).toContain('Add New Email');
     });
+
+    it('does not show Paxton fobs, even their own', () => {
+      expect(page.textContent).not.toContain('Paxton fobs');
+      expect(page.textContent).not.toContain('Molly 123 Millions');
+    });
   });
 
   describe('non-superuser non-self', () => {
@@ -134,6 +159,11 @@ describe('member render', () => {
       expect(page.querySelector<HTMLAnchorElement>(
         'a[href="/members/add-email?member=123"]'
       )).toBeNull();
+    });
+
+    it('does not show Paxton fobs', () => {
+      expect(page.textContent).not.toContain('Paxton fobs');
+      expect(page.textContent).not.toContain('Molly 123 Millions');
     });
   });
 });

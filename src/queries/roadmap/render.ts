@@ -129,6 +129,11 @@ export const render = () => html`
       non-payment, so it can be put back when they pay`),
 
       heading(html`Fob-based access control`),
+      done(html`Record each member's Paxton fobs (fob id and access level)
+      against their profile, visible to super users`),
+      inProgress(html`Upload a Paxton export to bring every member's fobs up
+      to date in one go, matching rows on the member number in the Paxton
+      name`),
       todo(html`Set fob access to machines based on who has training — this
       needs the app to talk to the fob system, alongside a training push`),
       todo(html`Show a log of who's using machines`),

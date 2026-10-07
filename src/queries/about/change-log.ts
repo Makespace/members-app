@@ -14,6 +14,11 @@ type ChangeLogEntry = {
 
 export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
+    date: '2026-10-07',
+    headline:
+      "Super users can record a member's Paxton fobs (fob id and access level) on their profile, as a first step towards syncing with the door system",
+  },
+  {
     date: '2026-10-06',
     headline:
       'Choose what you hear about trouble tickets - the ones you reported, the areas you look after, or a single machine - as it happens, daily, weekly, or not at all',

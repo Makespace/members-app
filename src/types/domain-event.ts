@@ -345,6 +345,25 @@ const MemberDetailsUpdated = defineEvent('MemberDetailsUpdated', {
   formOfAddress: t.union([t.string, t.undefined]),
 });
 
+// A Paxton fob held by a member, as exported from the Paxton PC. The fob id
+// is Paxton's number for the fob; recording the same fob id again updates
+// its access level (and reassigns it if another member held it before).
+// The Paxton-side name is kept as it appeared in the export, so the member
+// it was matched to can be checked later.
+const MemberFobRecorded = defineEvent('MemberFobRecorded', {
+  memberNumber: t.number,
+  // Integer, not number: the read model keys on this as an INTEGER PRIMARY
+  // KEY, and a stored non-integer would stop replay at this event for good.
+  fobId: t.Int,
+  accessLevel: t.string,
+  paxtonName: t.string,
+});
+
+const MemberFobRemoved = defineEvent('MemberFobRemoved', {
+  memberNumber: t.number,
+  fobId: t.Int,
+});
+
 const OwnerAgreementSigned = defineEvent('OwnerAgreementSigned', {
   memberNumber: t.number,
   signedAt: tt.DateFromISOString,
@@ -566,6 +585,8 @@ export const events = [
   EquipmentTrainingQuizResult,
   EquipmentTrainingQuizSync,
   MemberDetailsUpdated,
+  MemberFobRecorded,
+  MemberFobRemoved,
   OwnerAgreementSigned,
   MemberTrainedOnEquipment,
   MemberTrainedOnEquipmentBy,
@@ -627,6 +648,8 @@ export const DomainEvent = t.union([
   EquipmentTrainingQuizResult.codec,
   EquipmentTrainingQuizSync.codec,
   MemberDetailsUpdated.codec,
+  MemberFobRecorded.codec,
+  MemberFobRemoved.codec,
   OwnerAgreementSigned.codec,
   MemberTrainedOnEquipment.codec,
   MemberTrainedOnEquipmentBy.codec,
