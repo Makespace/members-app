@@ -88,6 +88,7 @@ export type SharedReadModel = {
   updateState: (event: StoredDomainEvent) => void;
   getCurrentEventIndex: () => Int;
   reset: () => Promise<void>;
+  close: () => void;
   members: {
     getById: (userId: UserId) => O.Option<Member>;
     getByMemberNumber: (memberNumber: number) => O.Option<Member>;
@@ -186,7 +187,8 @@ export const initSharedReadModel = (
   fs.rmSync(uri, {force: true});
   const _underlyingReadModelDb = new Database(uri);
   const readModelDb = drizzle(_underlyingReadModelDb);
-  const readOnlyReadModelDb = drizzle(new Database(uri, {readonly: true}));
+  const readOnlyReadModelDbInstance = new Database(uri, {readonly: true});
+  const readOnlyReadModelDb = drizzle(readOnlyReadModelDbInstance);
 
   createTables.forEach(statement => readModelDb.run(statement));
   const getCurrentEventIndex_ = getCurrentEventIndex(readModelDb);
@@ -202,6 +204,13 @@ export const initSharedReadModel = (
     updateState: updateState_,
     reset: reset(eventStoreClient, readModelDb, logger),
     getCurrentEventIndex: getCurrentEventIndex_,
+    close: () => {
+      // The readonly connection must close before the write connection's file
+      // can be removed on Windows; on POSIX closing both then unlinking is safe.
+      readOnlyReadModelDbInstance.close();
+      _underlyingReadModelDb.close();
+      fs.rmSync(uri, {force: true});
+    },
     members: {
       getByMemberNumber: getMemberFullByMemberNumber(readModelDb),
       getByEmail: getMemberFullByEmail(readModelDb),

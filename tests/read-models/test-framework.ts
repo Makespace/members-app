@@ -164,6 +164,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     close: () => {
       eventDB.close();
       extDBClient.close();
+      sharedReadModel.close();
     },
     lastSync: lastSync(extDBDrizzle),
     getSheetData: getSheetData(extDBDrizzle),
