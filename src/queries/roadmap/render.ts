@@ -131,9 +131,12 @@ export const render = () => html`
       heading(html`Fob-based access control`),
       done(html`Record each member's Paxton fobs (fob id and access level)
       against their profile, visible to super users`),
-      inProgress(html`Upload a Paxton export to bring every member's fobs up
-      to date in one go, matching rows on the member number in the Paxton
-      name`),
+      done(html`Upload a Paxton export to bring every member's fobs up to
+      date in one go, matching rows on the member number (or failing that
+      the name) in the Paxton name`),
+      inProgress(html`A summary of who has door access against who should:
+      active members without a live fob, and live fobs whose membership has
+      lapsed or been parked`),
       todo(html`Set fob access to machines based on who has training — this
       needs the app to talk to the fob system, alongside a training push`),
       todo(html`Show a log of who's using machines`),

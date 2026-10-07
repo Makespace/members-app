@@ -11,6 +11,7 @@ import {authRoutes} from './authentication';
 import {queryToHandler, commandToHandlers, ping} from './http';
 import {formGet} from './http/form-get';
 import {bulkAddForm} from './commands/equipment/bulk-add-form';
+import {importFobsRoutes} from './paxton/import-fobs-routes';
 import {canSetNotificationPreferences} from './commands/notification-preferences/set';
 import {apiToHandlers} from './http/api-to-handlers';
 import {emailHandler} from './http/email-handler';
@@ -457,6 +458,7 @@ export const initRoutes = (
     ),
     ...command('members', 'record-fob', commands.members.recordFob),
     ...command('members', 'remove-fob', commands.members.removeFob),
+    ...importFobsRoutes(deps),
     ...command(
       'members',
       'rejoined-with-new',
