@@ -17,6 +17,27 @@ const shownChoice = (scope: ScopeNode): Choice =>
 const isFollowing = (scope: ScopeNode): boolean =>
   scope.setting.kind === 'inherit' && O.isSome(scope.inheritsFrom);
 
+// Whether anything underneath has been set differently. An area that follows
+// the group can still hold a machine that does not - being made a trainer on
+// one does exactly that - and folding the area away would be the only reason
+// somebody could not see it.
+const holdsSomethingSetDifferently = (scope: ScopeNode): boolean =>
+  scope.children.some(
+    child => !isFollowing(child) || holdsSomethingSetDifferently(child)
+  );
+
+// How many of an area's children are worth looking at: the ones set
+// differently, or holding something that is.
+const settingsBelow = (scope: ScopeNode): number =>
+  scope.children.filter(
+    child => !isFollowing(child) || holdsSomethingSetDifferently(child)
+  ).length;
+
+// The machines in an area that simply follow it, which are the ones that can
+// be folded away without hiding a decision somebody made.
+const followers = (scope: ScopeNode): ReadonlyArray<ScopeNode> =>
+  scope.children.filter(isFollowing);
+
 // Four options, each saying what it means. A rule asks one question now, so
 // there is nothing to group or label beyond the row's own name.
 const subscriptionChoices = (scope: ScopeNode): Html => html`
@@ -96,8 +117,13 @@ const heading = (depth: number, inner: Html): Html => {
     : html`<h4 class="ns-row__label">${inner}</h4>`;
 };
 
-const row = (scope: ScopeNode, depth: number): Html => html`
-  <li class="ns-row ns-row--depth-${safe(String(Math.min(depth, 2)))}">
+const row = (scope: ScopeNode, depth: number, folded = false): Html => html`
+  <li
+    class="ns-row ns-row--depth-${safe(String(Math.min(depth, 2)))} ${folded
+      ? safe('ns-row--folded')
+      : safe('')}"
+    ${isFollowing(scope) ? safe('data-ns-follows-parent') : safe('')}
+  >
     <div class="ns-row__head">
       ${heading(depth, html`${sanitizeString(scope.label)}`)}
     </div>
@@ -113,10 +139,20 @@ const row = (scope: ScopeNode, depth: number): Html => html`
       ? html``
       : depth === 0
         ? html`
-            <details class="ns-areas" ${scope.kind === 'my-areas' ? safe('open') : safe('')}>
+            <details
+              class="ns-areas"
+              ${scope.kind === 'my-areas' || holdsSomethingSetDifferently(scope)
+                ? safe('open')
+                : safe('')}
+            >
               <summary>
                 View specific areas
-                (${sanitizeString(String(scope.children.length))})
+                (${sanitizeString(String(scope.children.length))}${settingsBelow(
+                  scope
+                ) === 0
+                  ? html``
+                  : html`, ${sanitizeString(String(settingsBelow(scope)))} set
+                    differently`})
               </summary>
               <ul class="ns-children" data-ns-children>
                 ${joinHtml(scope.children.map(child => row(child, depth + 1)))}
@@ -124,22 +160,24 @@ const row = (scope: ScopeNode, depth: number): Html => html`
             </details>
           `
         : html`
-          ${isFollowing(scope)
+          ${isFollowing(scope) && followers(scope).length > 0
             ? html`<p class="ns-row__folded" data-ns-folded-note>
-                ${sanitizeString(String(scope.children.length))}
-                ${scope.children.length === 1
+                ${sanitizeString(String(followers(scope).length))}
+                ${followers(scope).length === scope.children.length
+                  ? html``
+                  : html`other`}
+                ${followers(scope).length === 1
                   ? html`machine here follows`
                   : html`machines here follow`}
                 this.
               </p>`
             : html``}
-          <ul
-            class="ns-children ${isFollowing(scope)
-              ? safe('ns-children--folded')
-              : safe('')}"
-            data-ns-children
-          >
-            ${joinHtml(scope.children.map(child => row(child, depth + 1)))}
+          <ul class="ns-children" data-ns-children>
+            ${joinHtml(
+              scope.children.map(child =>
+                row(child, depth + 1, isFollowing(scope) && isFollowing(child))
+              )
+            )}
           </ul>
         `}
   </li>
@@ -190,14 +228,22 @@ export const render = (viewModel: ViewModel): Html => html`
                 return child.matches('[data-ns-folded-note]');
               })
             : null;
+          // Only the children that follow this row can be folded away. One
+          // that has been set differently stays visible whatever happens
+          // here, or its setting would be unreachable.
+          var followers = kids
+            ? Array.prototype.filter.call(kids.children, function (child) {
+                return child.matches('[data-ns-follows-parent]');
+              })
+            : [];
           var apply = function () {
             controls.classList.toggle(
               'ns-row__controls--following',
               !differ.checked
             );
-            if (kids) {
-              kids.classList.toggle('ns-children--folded', !differ.checked);
-            }
+            Array.prototype.forEach.call(followers, function (follower) {
+              follower.classList.toggle('ns-row--folded', !differ.checked);
+            });
             if (foldedNote) {
               foldedNote.hidden = differ.checked;
             }
