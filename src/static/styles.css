@@ -3280,9 +3280,11 @@ a.eq-capsule--dead:visited {
   opacity: 1;
 }
 
-/* An area that follows the group has nothing under it worth listing - every
-   machine in it follows too - and some areas hold a dozen machines. */
-.ns-children--folded {
+/* Some areas hold a dozen machines, so a machine that simply follows its area
+   is folded away. One that has been set differently never is, however its
+   area is set - being made a trainer on a machine sets it, and that would
+   otherwise be the one setting nobody could see. */
+.ns-row--folded {
   display: none;
 }
 

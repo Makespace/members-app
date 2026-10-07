@@ -249,19 +249,56 @@ describe('the notification settings page', () => {
     expect(controls?.querySelectorAll('.ns-option input')).toHaveLength(4);
   });
 
-  // Some areas hold a dozen machines, and every one of them follows the area
-  // unless somebody says otherwise. Listing them all says nothing.
-  it('folds away the machines under an area that follows the group', () => {
-    const woodShop = rowNamed(page(), 'Wood Shop');
-    const kids = ownPart(woodShop, 'ns-children');
-    expect(kids?.classList.contains('ns-children--folded')).toBe(true);
+  // Some areas hold a dozen machines, and most of them follow the area, so
+  // listing them all says nothing.
+  it('folds away a machine that simply follows its area', () => {
+    const cutter = rowNamed(page(), 'Vinyl Cutter');
+
+    expect(cutter.classList.contains('ns-row--folded')).toBe(true);
   });
 
-  it('says how many machines are folded away, so they can be found', () => {
+  // The setting somebody would most want to see is the one that is not the
+  // default, and being made a trainer on a machine creates exactly that
+  // inside an area that still follows the group. Folding the area away would
+  // make it the one setting they could not reach.
+  it('keeps a machine set differently visible, though its area follows the group', () => {
     const woodShop = rowNamed(page(), 'Wood Shop');
+    const bandSaw = rowNamed(page(), 'Band Saw');
+
     expect(
-      ownPart(woodShop, 'ns-row__folded')?.textContent?.replace(/\s+/g, ' ')
+      ownPart(woodShop, 'ns-row__controls')?.classList.contains(
+        'ns-row__controls--following'
+      )
+    ).toBe(true);
+    expect(bandSaw.classList.contains('ns-row--folded')).toBe(false);
+  });
+
+  it('says how many machines it folded away, so they can be found', () => {
+    const craftRoom = rowNamed(page(), 'Craft Room');
+
+    expect(
+      ownPart(craftRoom, 'ns-row__folded')?.textContent?.replace(/\s+/g, ' ')
     ).toContain('1 machine here follows this');
+  });
+
+  // An area whose machines all follow it has nothing worth announcing.
+  it('says nothing about folded machines when none are set differently', () => {
+    const woodShop = rowNamed(page(), 'Wood Shop');
+
+    expect(ownPart(woodShop, 'ns-row__folded')).toBeUndefined();
+  });
+
+  // A shut disclosure would hide it otherwise, and somebody looking for the
+  // odd one out has no way of knowing which area to open.
+  it('says on the disclosure how many areas hold something set differently', () => {
+    const summary = ownPart(
+      rowNamed(page(), "Areas I'm an owner or trainer in"),
+      'ns-areas'
+    )?.querySelector('summary');
+
+    expect(summary?.textContent?.replace(/\s+/g, ' ')).toContain(
+      '1 set differently'
+    );
   });
 
   // Somebody's own areas double as a way round their own patch, so that list
