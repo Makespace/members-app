@@ -85,8 +85,6 @@ export const render = () => html`
       todo(html`Dual confirmation for marking someone as trained: the trainer
       marks them as trained, then the trainee confirms by email that they were
       trained satisfactorily`),
-      todo(html`Filter inactive members out of the 'awaiting training'
-      lists`),
       inProgress(html`Remove 'trained' status for people who haven't been
       members for a while, or who have been banned - an admin linking a
       returning member's new number now chooses whether their old training

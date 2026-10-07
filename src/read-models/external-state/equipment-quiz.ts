@@ -9,6 +9,7 @@ import {DateTime, Duration} from 'luxon';
 import {ReadonlyRecord} from 'fp-ts/lib/ReadonlyRecord';
 import {EquipmentId} from '../../types/equipment-id';
 import {TrainingQuizCompletionRow} from '../shared-state/training-quiz/get';
+import {getRecurlyFlagsForVerifiedEmails} from './recurly-status';
 
 export type OrphanedPassedQuiz = {
   waitingSince: Date;
@@ -61,7 +62,7 @@ export type FullQuizResultsForEquipment = {
 };
 
 export const getFullQuizResultsForEquipment = (
-  deps: Pick<Dependencies, 'sharedReadModel' | 'lastQuizSync'>,
+  deps: Pick<Dependencies, 'sharedReadModel' | 'lastQuizSync' | 'extDB'>,
   sheetId: string,
   equipment: Equipment
 ): TE.TaskEither<string, FullQuizResultsForEquipment> =>
@@ -85,6 +86,13 @@ export const getFullQuizResultsForEquipment = (
         m => m.memberNumber
       );
 
+      // A member may pass the quiz any number of times; what places them in
+      // the queue is the latest pass, so keep one entry per member number at
+      // its most recent completion. Unknown passes are deduped the same way,
+      // keyed on the number as typed.
+      const latestKnownByMemberNumber = new Map<number, MemberAwaitingTraining>();
+      const latestUnknownByMemberNumber = new Map<number, OrphanedPassedQuiz>();
+
       for (const row of completions.filter(isPassed)) {
         // A passed row with no member number is dropped (not surfaced as
         // unknown) - preserving the previous behaviour.
@@ -98,18 +106,33 @@ export const getFullQuizResultsForEquipment = (
         const member =
           deps.sharedReadModel.members.getByMemberNumber(memberNumber);
         if (O.isNone(member)) {
-          unknownMembersAwaitingTraining.push({
-            waitingSince: row.completedAt,
-            memberNumberProvided: row.memberNumberProvided,
-            emailProvided: row.emailProvided,
-          });
+          const previous = latestUnknownByMemberNumber.get(memberNumber);
+          if (
+            previous === undefined ||
+            row.completedAt.getTime() > previous.waitingSince.getTime()
+          ) {
+            latestUnknownByMemberNumber.set(memberNumber, {
+              waitingSince: row.completedAt,
+              memberNumberProvided: row.memberNumberProvided,
+              emailProvided: row.emailProvided,
+            });
+          }
           continue;
         }
-        membersAwaitingTraining.push({
-          ...member.value,
-          waitingSince: row.completedAt,
-        });
+        const previous = latestKnownByMemberNumber.get(memberNumber);
+        if (
+          previous === undefined ||
+          row.completedAt.getTime() > previous.waitingSince.getTime()
+        ) {
+          latestKnownByMemberNumber.set(memberNumber, {
+            ...member.value,
+            waitingSince: row.completedAt,
+          });
+        }
       }
+
+      membersAwaitingTraining.push(...latestKnownByMemberNumber.values());
+      unknownMembersAwaitingTraining.push(...latestUnknownByMemberNumber.values());
 
       return {
         lastQuizSync,
@@ -117,7 +140,55 @@ export const getFullQuizResultsForEquipment = (
         membersAwaitingTraining,
         unknownMembersAwaitingTraining,
       };
-    })
+    }),
+    // Someone no longer a member is not queueing for anything, so known
+    // members with a fresh inactive Recurly status are dropped. No fresh
+    // Recurly row at all is treated as still-active: the safer failure mode
+    // is to keep showing demand when the cache has gone stale. Unknown rows
+    // (a member number that matches no account) are kept - there is no
+    // account to attach a status to, and the quiz-results page shows them.
+    TE.chain(results =>
+      pipe(
+        TE.tryCatch(
+          () =>
+            Promise.all(
+              results.membersAwaitingTraining.map(member =>
+                pipe(
+                  deps.sharedReadModel.members.getByMemberNumber(
+                    member.memberNumber
+                  ),
+                  O.fold(
+                    () => Promise.resolve(O.none),
+                    fullMember =>
+                      getRecurlyFlagsForVerifiedEmails(deps.extDB)(
+                        fullMember.emails
+                          .filter(e => O.isSome(e.verifiedAt))
+                          .map(e => e.emailAddress)
+                      )
+                  )
+                )
+              )
+            ),
+          err => `Failed to read Recurly status: ${String(err)}`
+        ),
+        // Drop only members whose fresh Recurly row says definitely inactive.
+        // O.none (no fresh data) keeps them, because a stale cache must not
+        // empty the waiting list.
+        TE.map(flagsPerMember => ({
+          ...results,
+          membersAwaitingTraining: results.membersAwaitingTraining.filter(
+            (_member, index) =>
+              pipe(
+                flagsPerMember[index],
+                O.fold(
+                  () => true,
+                  flags => flags.hasActiveSubscription
+                )
+              )
+          ),
+        }))
+      )
+    )
   );
 
 export type FullQuizResultsForMember = {

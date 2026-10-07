@@ -5,7 +5,7 @@ import {NonEmptyString, UUID} from 'io-ts-types';
 
 import {EmailAddress} from '../../../src/types';
 import {Int} from 'io-ts';
-import {getRightOrFail, getSomeOrFail} from '../../helpers';
+import {getRightOrFail, getSomeOrFail, insertRecurlySubscription} from '../../helpers';
 import {
   FullQuizResultsForEquipment,
   FullQuizResultsForMember,
@@ -29,6 +29,7 @@ const runGetQuizResultsByEquipment = async (
       {
         sharedReadModel: framework.sharedReadModel,
         lastQuizSync: framework.lastSync,
+        extDB: framework.extDB,
       },
       trainingSheetId,
       getSomeOrFail(framework.sharedReadModel.equipment.get(equipmentId))
@@ -159,6 +160,13 @@ describe('Get equipment quiz', () => {
         quizSyncDate
       )()
     );
+
+    // Known members must have an active (or absent) Recurly status to stay
+    // on the waiting list; make the awaiting member explicitly active.
+    await insertRecurlySubscription(framework.extDB, {
+      email: addAwaitingTrainingMember.email,
+      hasActiveSubscription: true,
+    });
   });
 
   afterEach(() => {
@@ -193,6 +201,64 @@ describe('Get equipment quiz', () => {
       expect(results.unknownMembersAwaitingTraining[0].waitingSince).toStrictEqual(
         recentDate
       );
+    });
+
+    it('counts a member who passed twice only once, waiting since the latest pass', async () => {
+      const laterDate = DateTime.now()
+        .minus({weeks: 1})
+        .startOf('second')
+        .toJSDate();
+      await recordQuiz({
+        completedAt: laterDate,
+        memberNumber: addAwaitingTrainingMember.memberNumber,
+        email: addAwaitingTrainingMember.email,
+        score: 10,
+        maxScore: 10,
+      });
+
+      const after = await runGetQuizResultsByEquipment(
+        framework,
+        addTrainingSheet.trainingSheetId,
+        addTrainingSheet.equipmentId
+      );
+
+      expect(after.membersAwaitingTraining).toHaveLength(1);
+      expect(after.membersAwaitingTraining[0].waitingSince).toStrictEqual(
+        laterDate
+      );
+    });
+
+    it('excludes a waiting member whose Recurly subscription is inactive', async () => {
+      const inactiveMember = {
+        memberNumber: faker.number.int({max: 100000}) as Int,
+        email: faker.internet.email() as EmailAddress,
+        name: undefined,
+        formOfAddress: undefined,
+      };
+      await framework.commands.memberNumbers.linkNumberToEmail(inactiveMember);
+      await recordQuiz({
+        completedAt: recentDate,
+        memberNumber: inactiveMember.memberNumber,
+        email: inactiveMember.email,
+        score: 10,
+        maxScore: 10,
+      });
+      await insertRecurlySubscription(framework.extDB, {
+        email: inactiveMember.email,
+        hasActiveSubscription: false,
+      });
+
+      const after = await runGetQuizResultsByEquipment(
+        framework,
+        addTrainingSheet.trainingSheetId,
+        addTrainingSheet.equipmentId
+      );
+
+      expect(after.membersAwaitingTraining.map(m => m.memberNumber)).toStrictEqual(
+        [addAwaitingTrainingMember.memberNumber]
+      );
+      // The unknown pass stays: there is no account to attach a status to.
+      expect(after.unknownMembersAwaitingTraining).toHaveLength(1);
     });
 
     it('reports failed quizes with a computed percentage', () => {
