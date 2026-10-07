@@ -4,6 +4,7 @@ import * as RR from 'fp-ts/ReadonlyRecord';
 
 import {Dependencies} from '../../dependencies';
 import {pipe} from 'fp-ts/lib/function';
+import {EmailAddress} from '../../types';
 import {Equipment, MemberCoreInfo} from '../shared-state/return-types';
 import {DateTime, Duration} from 'luxon';
 import {ReadonlyRecord} from 'fp-ts/lib/ReadonlyRecord';
@@ -61,6 +62,13 @@ export type FullQuizResultsForEquipment = {
   failedQuizes: ReadonlyArray<QuizRow>;
 };
 
+// Everything the two passes between lastQuizSync and the Recurly filter hand
+// to each other: the published results plus the verified emails collected on
+// the way, so the Recurly check needs no second lookup per member.
+type QuizResultsWithVerifiedEmails = FullQuizResultsForEquipment & {
+  verifiedEmailsByMemberNumber: Map<number, EmailAddress[]>;
+};
+
 export const getFullQuizResultsForEquipment = (
   deps: Pick<Dependencies, 'sharedReadModel' | 'lastQuizSync' | 'extDB'>,
   sheetId: string,
@@ -92,6 +100,10 @@ export const getFullQuizResultsForEquipment = (
       // keyed on the number as typed.
       const latestKnownByMemberNumber = new Map<number, MemberAwaitingTraining>();
       const latestUnknownByMemberNumber = new Map<number, OrphanedPassedQuiz>();
+      // The verified emails come out of the same member lookup that builds
+      // the queue entry, so they are kept here rather than fetched again
+      // when the Recurly check below runs.
+      const verifiedEmailsByMemberNumber = new Map<number, EmailAddress[]>();
 
       for (const row of completions.filter(isPassed)) {
         // A passed row with no member number is dropped (not surfaced as
@@ -128,6 +140,12 @@ export const getFullQuizResultsForEquipment = (
             ...member.value,
             waitingSince: row.completedAt,
           });
+          verifiedEmailsByMemberNumber.set(
+            memberNumber,
+            member.value.emails
+              .filter(e => O.isSome(e.verifiedAt))
+              .map(e => e.emailAddress)
+          );
         }
       }
 
@@ -139,6 +157,7 @@ export const getFullQuizResultsForEquipment = (
         failedQuizes: completions.filter(row => !isPassed(row)).map(toQuizRow),
         membersAwaitingTraining,
         unknownMembersAwaitingTraining,
+        verifiedEmailsByMemberNumber,
       };
     }),
     // Someone no longer a member is not queueing for anything, so known
@@ -147,25 +166,16 @@ export const getFullQuizResultsForEquipment = (
     // is to keep showing demand when the cache has gone stale. Unknown rows
     // (a member number that matches no account) are kept - there is no
     // account to attach a status to, and the quiz-results page shows them.
-    TE.chain(results =>
+    TE.chain((results: QuizResultsWithVerifiedEmails) =>
       pipe(
         TE.tryCatch(
           () =>
             Promise.all(
               results.membersAwaitingTraining.map(member =>
-                pipe(
-                  deps.sharedReadModel.members.getByMemberNumber(
+                getRecurlyFlagsForVerifiedEmails(deps.extDB)(
+                  results.verifiedEmailsByMemberNumber.get(
                     member.memberNumber
-                  ),
-                  O.fold(
-                    () => Promise.resolve(O.none),
-                    fullMember =>
-                      getRecurlyFlagsForVerifiedEmails(deps.extDB)(
-                        fullMember.emails
-                          .filter(e => O.isSome(e.verifiedAt))
-                          .map(e => e.emailAddress)
-                      )
-                  )
+                  ) ?? []
                 )
               )
             ),
@@ -174,19 +184,25 @@ export const getFullQuizResultsForEquipment = (
         // Drop only members whose fresh Recurly row says definitely inactive.
         // O.none (no fresh data) keeps them, because a stale cache must not
         // empty the waiting list.
-        TE.map(flagsPerMember => ({
-          ...results,
-          membersAwaitingTraining: results.membersAwaitingTraining.filter(
-            (_member, index) =>
-              pipe(
-                flagsPerMember[index],
-                O.fold(
-                  () => true,
-                  flags => flags.hasActiveSubscription
+        TE.map(flagsPerMember => {
+          const {
+            verifiedEmailsByMemberNumber: _verified,
+            ...published
+          } = results;
+          return {
+            ...published,
+            membersAwaitingTraining: published.membersAwaitingTraining.filter(
+              (_member, index) =>
+                pipe(
+                  flagsPerMember[index],
+                  O.fold(
+                    () => true,
+                    flags => flags.hasActiveSubscription
+                  )
                 )
-              )
-          ),
-        }))
+            ),
+          };
+        })
       )
     )
   );
