@@ -18,6 +18,7 @@ export {members} from './members';
 export {member} from './member';
 export {memberBilling} from './member-billing';
 export {outstandingInvoices} from './outstanding-invoices';
+export {accessAudit} from './access-audit';
 export {equipmentLinks} from './equipment-links';
 export {notificationSettings} from './notification-settings';
 export {log} from './log';

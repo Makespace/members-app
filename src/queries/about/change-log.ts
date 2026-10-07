@@ -16,6 +16,11 @@ export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
     date: '2026-10-07',
     headline:
+      'A door access audit for super users: who can get in but should not, and who should but cannot, from the imported Paxton fobs against Recurly',
+  },
+  {
+    date: '2026-10-07',
+    headline:
       'Super users can upload the token export from the Paxton PC and, after checking a preview, record every member\'s fobs in one go',
   },
   {
