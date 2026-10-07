@@ -4,6 +4,12 @@ import os from 'node:os';
 import fs from 'node:fs';
 import * as T from 'fp-ts/Task';
 import * as O from 'fp-ts/Option';
+import {
+  DigestWatermark,
+  getDigestWatermark,
+  getMembersWithNotificationPreferences,
+  getNotificationPreferences,
+} from './notification-preferences/get';
 import {createTables} from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
@@ -153,6 +159,14 @@ export type SharedReadModel = {
       memberNumber: number
     ) => ReadonlyArray<TrainingQuizCompletionRow>;
   };
+  notificationPreferences: {
+    forMember: (memberNumber: number) => ReadonlyMap<string, string>;
+    membersWithAny: () => ReadonlyArray<number>;
+    lastDigest: (
+      memberNumber: number,
+      cadence: string
+    ) => O.Option<DigestWatermark>;
+  };
   troubleTickets: {
     hasRowHash: (rowHash: string) => boolean;
     getAll: () => ReadonlyArray<TroubleTicket>;
@@ -244,6 +258,11 @@ export const initSharedReadModel = (
       importedRowHashes: getImportedQuizRowHashes(readModelDb),
       getCompletionsForSheet: getCompletionsForSheet(readModelDb),
       getCompletionsForMember: getCompletionsForMember(readModelDb),
+    },
+    notificationPreferences: {
+      forMember: getNotificationPreferences(readModelDb),
+      membersWithAny: getMembersWithNotificationPreferences(readModelDb),
+      lastDigest: getDigestWatermark(readModelDb),
     },
     troubleTickets: {
       hasRowHash: hasTroubleTicketRowHash(readModelDb),

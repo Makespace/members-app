@@ -242,6 +242,46 @@ const TroubleTicketResponseSubmitted = defineEvent(
 // audience. The banner content is structured (title/message/link) so it can
 // be rendered safely; the optional email body is markdown, converted to HTML
 // when the go-live email is sent by the sync worker.
+// What one member wants to hear about one scope - an area, a machine, or one
+// of the standing groups. 'follow' means they have said nothing of their own
+// and take whatever sits above them, which is also how a choice is undone.
+//
+// The actor says who decided: a member setting their own, or the system doing
+// it because they were made a trainer or an owner. The two read very
+// differently in a member's history, so they are not flattened together.
+const MemberNotificationPreferenceSet = defineEvent(
+  'MemberNotificationPreferenceSet',
+  {
+    memberNumber: t.number,
+    // 'reported-by-me' | 'my-areas' | 'other-areas' | 'area:<id>' |
+    // 'equipment:<id>'
+    scope: t.string,
+    preference: t.keyof({
+      live: null,
+      daily: null,
+      weekly: null,
+      none: null,
+      follow: null,
+    }),
+  }
+);
+
+// One summary email, to one member, covering everything up to a point in the
+// log. The watermark is what stops the next one repeating it, and recording it
+// only when something was actually sent is what keeps a quiet week silent.
+const MemberTicketDigestSent = defineEvent('MemberTicketDigestSent', {
+  memberNumber: t.number,
+  cadence: t.keyof({daily: null, weekly: null}),
+  // The last event this summary covered.
+  upToEventIndex: t.number,
+  // How many changes it carried, so the log says whether it was worth sending.
+  changeCount: t.number,
+  // True when the summary was worked out but held back rather than sent,
+  // which is how the stack runs before the mail is switched on. The
+  // watermark still moves, so switching on causes no backlog.
+  suppressed: tt.withFallback(t.boolean, false),
+});
+
 const NotificationCreated = defineEvent('NotificationCreated', {
   id: tt.UUID,
   title: t.string,
@@ -566,6 +606,8 @@ export const events = [
   TroubleTicketEquipmentSet,
   TroubleTicketTitleEdited,
   TroubleTicketNotificationSent,
+  MemberNotificationPreferenceSet,
+  MemberTicketDigestSent,
   NotificationCreated,
   NotificationDismissed,
   NotificationRevoked,
@@ -627,6 +669,8 @@ export const DomainEvent = t.union([
   TroubleTicketEquipmentSet.codec,
   TroubleTicketTitleEdited.codec,
   TroubleTicketNotificationSent.codec,
+  MemberNotificationPreferenceSet.codec,
+  MemberTicketDigestSent.codec,
   NotificationCreated.codec,
   NotificationDismissed.codec,
   NotificationRevoked.codec,

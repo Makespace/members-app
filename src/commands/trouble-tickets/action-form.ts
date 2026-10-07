@@ -19,10 +19,13 @@ import {isTicketOwner} from './authorization';
 import {
   describeTicketChange,
   TicketChange,
-  ticketNotificationRecipients,
   ticketNotificationSubject,
   ticketNotificationText,
 } from '../../trouble-tickets/notification';
+import {
+  audienceFor,
+  happeningOfEvent,
+} from '../../trouble-tickets/notification-audience';
 
 // A trouble-ticket action confirmation page. Shows the ticket, what the
 // action does, exactly who will be emailed and what the email will say, any
@@ -181,16 +184,25 @@ const troubleTicketActionForm = (
                 ticketId,
                 title: ticket.title,
                 email: {
-                  recipients: ticketNotificationRecipients(
-                    readModel,
-                    ticket,
-                    config.change.type
+                  // The same answer the notifier will reach, so the page
+                  // cannot promise an email that preferences will stop, or
+                  // stay quiet about one they will send.
+                  recipients: pipe(
+                    happeningOfEvent(config.change.type),
+                    O.match(
+                      () => [],
+                      happening =>
+                        audienceFor(readModel, ticket, happening)
+                          .filter(entry => entry.when === 'live')
+                          .map(entry => entry.email)
+                    )
                   ),
-                  subject: ticketNotificationSubject(ticket.title, false),
+                  subject: ticketNotificationSubject(ticket.title, false, false),
                   text: ticketNotificationText(
                     deps.conf.PUBLIC_URL,
                     ticket.title,
                     describeTicketChange(config.change, actor),
+                    false,
                     false
                   ),
                 },
