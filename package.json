@@ -49,6 +49,9 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.56.1"
   },
+  "overrides": {
+    "proxy-addr": "2.0.8"
+  },
   "dependencies": {
     "@faker-js/faker": "^8.4.1",
     "@fortawesome/fontawesome-free": "7.0.0",

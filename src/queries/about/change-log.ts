@@ -14,14 +14,24 @@ type ChangeLogEntry = {
 
 export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
-    date: '2026-10-06',
+    date: '2026-10-07',
     headline:
       'Super users can upload the token export from the Paxton PC and, after checking a preview, record every member\'s fobs in one go',
   },
   {
-    date: '2026-10-06',
+    date: '2026-10-07',
     headline:
       "Super users can record a member's Paxton fobs (fob id and access level) on their profile, as a first step towards syncing with the door system",
+  },
+  {
+    date: '2026-10-06',
+    headline:
+      'Choose what you hear about trouble tickets - the ones you reported, the areas you look after, or a single machine - as it happens, daily, weekly, or not at all',
+  },
+  {
+    date: '2026-10-06',
+    headline:
+      'Owners and trainers now get a summary of what was reported about their machines, and taking on a machine starts the emails that go with it',
   },
   {
     date: '2026-10-05',

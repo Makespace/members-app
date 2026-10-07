@@ -3059,3 +3059,254 @@ a.eq-capsule--dead:visited {
 .eq-links td {
   vertical-align: middle;
 }
+
+/* Trouble ticket notification settings. Each of the three things somebody can
+   be told about is a card with a title; the areas and machines under it are
+   subtitles inside that card rather than boxes within boxes. Nesting by type
+   size and a light rule leaves the width for the four options to sit on one
+   line, which boxes inside boxes did not. */
+.ns-tree,
+.ns-children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ns-row--depth-0 {
+  border: 1px solid color-mix(in oklch, white 55%, var(--border-color));
+  border-radius: 8px;
+  background: #fff;
+  padding: 14px 16px;
+  margin-top: 12px;
+}
+
+.ns-tree > .ns-row:first-child {
+  margin-top: 0;
+}
+
+/* Inside a card, a rule is told apart by its heading and a hairline, not by a
+   box of its own. */
+.ns-row--depth-1,
+.ns-row--depth-2 {
+  border-top: 1px solid color-mix(in oklch, white 70%, var(--border-color));
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
+.ns-row--depth-1 {
+  padding-left: 0.9rem;
+}
+
+.ns-row--depth-2 {
+  padding-left: 1.8rem;
+}
+
+.ns-children {
+  margin-top: 10px;
+}
+
+.ns-row__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.7rem;
+}
+
+.ns-row__label {
+  margin: 0;
+}
+
+.ns-row--depth-0 > .ns-row__head > .ns-row__label {
+  font-size: 1.15rem;
+}
+
+.ns-row--depth-1 > .ns-row__head > .ns-row__label {
+  font-size: 1rem;
+}
+
+.ns-row--depth-2 > .ns-row__head > .ns-row__label {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+/* What a rule following another one comes to. */
+.ns-row__effect {
+  color: color-mix(in oklch, black 55%, var(--grey-color));
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.ns-row__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1.5rem;
+  margin-top: 8px;
+}
+
+/* The four answers, on one line wherever there is room for them. */
+.ns-row__subscription {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.4rem;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.ns-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.ns-option__label {
+  font-size: 0.92rem;
+}
+
+/* "Set differently from Areas I'm an owner or trainer in" is longer than a
+   phone is wide, so it wraps rather than pushing the whole page sideways. */
+.ns-row__differ {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: color-mix(in oklch, black 60%, var(--grey-color));
+  max-width: 100%;
+}
+
+/* A row that follows the one above it shows what it is following, greyed and
+   turned off. Hiding it was right when a row carried five boxes and a
+   dropdown; now that a rule is four words on one line, showing it costs a line
+   and saves somebody working out what they would be changing. */
+.ns-row__controls--following .ns-row__subscription {
+  opacity: 0.45;
+}
+
+/* The switch itself never greys - it is the way back out. */
+.ns-row__controls--following .ns-row__differ {
+  opacity: 1;
+}
+
+@media (max-width: 40rem) {
+  .ns-row--depth-0 {
+    padding: 12px 11px;
+  }
+
+  .ns-row--depth-1 {
+    padding-left: 0.5rem;
+  }
+
+  .ns-row--depth-2 {
+    padding-left: 1rem;
+  }
+}
+
+.ns-preview {
+  border-left: 5px solid var(--yellow-color);
+  background: color-mix(in oklch, white 85%, var(--yellow-color));
+  padding: 10px 14px;
+  border-radius: 4px;
+  margin: 0;
+}
+
+
+/* A row that follows the one above it puts its controls away. Greying them
+   kept five rows of boxes on screen that only repeated the row above, which
+   buried the handful of rules somebody had actually set. What the row comes to
+   is still said beside its name, so nothing is lost by folding the rest. */
+.ns-row__controls--following .ns-row__subscription {
+  display: none;
+}
+
+/* A rule asks one question, so its answers sit in one block. Each answer
+   says what it means underneath its name - "Daily summary" alone does not
+   say whether it covers everything or only some of it. */
+.ns-row__controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 8px;
+}
+
+.ns-row__subscription {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.ns-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.ns-option__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ns-option__label {
+  font-size: 0.95rem;
+}
+
+.ns-option__note {
+  font-size: 0.78rem;
+  color: color-mix(in oklch, black 50%, var(--grey-color));
+}
+
+/* "Set differently from Areas I'm an owner or trainer in" is longer than a
+   phone is wide, so it wraps rather than pushing the whole page sideways. */
+.ns-row__differ {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: color-mix(in oklch, black 60%, var(--grey-color));
+  max-width: 100%;
+}
+
+/* The switch itself never greys - it is the way back out. */
+.ns-row__controls--following .ns-row__differ {
+  opacity: 1;
+}
+
+/* Some areas hold a dozen machines, so a machine that simply follows its area
+   is folded away. One that has been set differently never is, however its
+   area is set - being made a trainer on a machine sets it, and that would
+   otherwise be the one setting nobody could see. */
+.ns-row--folded {
+  display: none;
+}
+
+.ns-row__folded {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: color-mix(in oklch, black 50%, var(--grey-color));
+}
+
+/* The list of areas under each of the three headings. Open for the areas
+   somebody is responsible for - it doubles as a way round their own patch -
+   and shut for everything else, which is every other area in the building. */
+.ns-areas {
+  margin-top: 10px;
+}
+
+.ns-areas > summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--link-color);
+}
+
+.ns-areas[open] > summary {
+  margin-bottom: 4px;
+}

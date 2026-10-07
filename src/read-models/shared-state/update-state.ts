@@ -5,6 +5,8 @@ import {
   areaNameAliasesTable,
   areasTable,
   equipmentNameAliasesTable,
+  memberDigestsTable,
+  memberNotificationPreferencesTable,
   equipmentTable,
   eventStateTable,
   failedEventsTable,
@@ -777,6 +779,61 @@ const _updateState =
             .onConflictDoNothing()
             .run();
         }
+        break;
+      }
+      case 'MemberTicketDigestSent': {
+        tx.insert(memberDigestsTable)
+          .values({
+            memberNumber: event.memberNumber,
+            cadence: event.cadence,
+            sentAt: event.recordedAt,
+            upToEventIndex: event.upToEventIndex,
+          })
+          .onConflictDoUpdate({
+            target: [
+              memberDigestsTable.memberNumber,
+              memberDigestsTable.cadence,
+            ],
+            set: {
+              sentAt: event.recordedAt,
+              upToEventIndex: event.upToEventIndex,
+            },
+          })
+          .run();
+        break;
+      }
+      case 'MemberNotificationPreferenceSet': {
+        // Following is the absence of a row rather than a row saying
+        // 'follow', so there is one way to say it and a member who changes
+        // their mind back leaves nothing behind.
+        if (event.preference === 'follow') {
+          tx.delete(memberNotificationPreferencesTable)
+            .where(
+              and(
+                eq(
+                  memberNotificationPreferencesTable.memberNumber,
+                  event.memberNumber
+                ),
+                eq(memberNotificationPreferencesTable.scope, event.scope)
+              )
+            )
+            .run();
+          break;
+        }
+        tx.insert(memberNotificationPreferencesTable)
+          .values({
+            memberNumber: event.memberNumber,
+            scope: event.scope,
+            preference: event.preference,
+          })
+          .onConflictDoUpdate({
+            target: [
+              memberNotificationPreferencesTable.memberNumber,
+              memberNotificationPreferencesTable.scope,
+            ],
+            set: {preference: event.preference},
+          })
+          .run();
         break;
       }
       case 'EquipmentNameAliasAdded': {
