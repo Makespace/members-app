@@ -1116,8 +1116,17 @@ export function updateState (db: BetterSQLite3Database, logger: Logger, trackedE
       let reason: string | null = null;
       if (err instanceof InconsistentEventError) {
         reason = err.message;
-      } else if (err instanceof Error){
-        const errType = err as Error & {code?: string};
+      } else {
+        // Do not gate on `instanceof Error`: a SqliteError can arrive from a
+        // different vm realm (seen under `jest -i`, where the native addon is
+        // cached process-wide and first-loaded in another context) where
+        // instanceof fails. Duck-typing .code is safe here because
+        // better-sqlite3 sets it unconditionally on every SqliteError, so the
+        // classification is stable across realms. Note the
+        // InconsistentEventError branch above keeps its instanceof check:
+        // those errors are constructed by this module, so they stay
+        // same-realm in practice.
+        const errType = err as {code?: string};
         const code = errType.code ?? '';
         if (['SQLITE_CONSTRAINT_PRIMARYKEY', 'SQLITE_CONSTRAINT_FOREIGNKEY'].includes(code)) {
           reason = code;
