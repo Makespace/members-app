@@ -11,6 +11,7 @@ import {
   happeningOfEvent,
 } from '../trouble-tickets/notification-audience';
 import {digestEmail, DigestLine} from '../trouble-tickets/digest';
+import {summariseForEmail} from '../trouble-tickets/ticket-email-summary';
 import {
   audienceOf,
   heldBackSendEmail,
@@ -148,11 +149,22 @@ export const notifyDigests = async (
         if (wanted === undefined) {
           continue;
         }
+        const summary = summariseForEmail(
+          rm,
+          deps.conf.PUBLIC_URL,
+          ticket.value
+        );
         lines.push({
-          title: ticket.value.title === '' ? 'A trouble ticket' : ticket.value.title,
+          title:
+            ticket.value.title === '' ? 'A trouble ticket' : ticket.value.title,
           place: placeOf(rm, ticket.value.equipmentId),
           happening: happening.value,
           at: event.recordedAt,
+          status: ticket.value.status,
+          equipmentName: summary.equipmentName,
+          areaName: summary.areaName,
+          rawEquipment: summary.rawEquipment,
+          url: summary.url,
         });
       }
 

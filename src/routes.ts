@@ -480,6 +480,8 @@ export const initRoutes = (
     query('/equipment-signs', queries.equipmentSigns),
     query('/trouble-tickets', queries.troubleTicketsHome),
     query('/trouble-tickets/board', queries.troubleTickets),
+    // After /board, so the static path is not eaten by the :id pattern.
+    query('/trouble-tickets/:id', queries.troubleTicket),
     // Site notification banners: admin management + member dismissal.
     query('/notifications', queries.notifications),
     // Imported management mailbox. The commands go before the :id route,

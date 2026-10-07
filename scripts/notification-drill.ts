@@ -20,6 +20,7 @@
  *   ./scripts/notification-drill.ts --list              the situations it plays
  *   ./scripts/notification-drill.ts --only weekly,live  just those
  *   ./scripts/notification-drill.ts --text              with the full wording
+ *   ./scripts/notification-drill.ts --html <dir>        write them out to look at
  *
  *   DRILL_TO=you@example.com SMTP_HOST=... SMTP_USER=... SMTP_PASSWORD=... \
  *     ./scripts/notification-drill.ts --send
@@ -32,6 +33,8 @@
 import * as TE from 'fp-ts/TaskEither';
 import {faker} from '@faker-js/faker';
 import nodemailer from 'nodemailer';
+import {mkdirSync, writeFileSync} from 'node:fs';
+import {join} from 'node:path';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {constructEvent, Email} from '../src/types';
 import {EmailAddress} from '../src/types/email-address';
@@ -602,6 +605,15 @@ const main = async () => {
   const args = process.argv.slice(2);
   const sending = args.includes('--send');
   const showText = args.includes('--text');
+  // Writing the HTML out is the only way to see what these actually look
+  // like without sending one.
+  const htmlDir =
+    args.indexOf('--html') === -1
+      ? undefined
+      : args[args.indexOf('--html') + 1];
+  if (htmlDir !== undefined) {
+    mkdirSync(htmlDir, {recursive: true});
+  }
   const onlyArg = args.find(arg => arg.startsWith('--only'));
   const only =
     onlyArg === undefined
@@ -672,6 +684,17 @@ const main = async () => {
               .join('\n')}\n`
           );
         }
+      }
+
+      if (htmlDir !== undefined) {
+        sent.forEach((email, index) => {
+          const file = join(
+            htmlDir,
+            `${situation.key}-${index + 1}.html`
+          );
+          writeFileSync(file, email.html);
+          console.log(`       wrote ${file}`);
+        });
       }
 
       if (transport !== undefined) {

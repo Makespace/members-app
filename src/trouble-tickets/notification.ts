@@ -76,9 +76,16 @@ export const ticketNotificationText = (
   title: string,
   change: string,
   isNew: boolean,
-  theirs: boolean
+  theirs: boolean,
+  // The ticket's own address, when there is one to give. A notification about
+  // one thing should land on that thing rather than on a list to search.
+  url?: string
 ): string =>
-  `Hi,\n\n${ticketNotificationOpening(title, isNew, theirs)}\n\n${change}\n\nSee the trouble tickets page: ${publicUrl}/trouble-tickets\n`;
+  `Hi,\n\n${ticketNotificationOpening(title, isNew, theirs)}\n\n${change}\n\n${
+    url === undefined
+      ? `See the trouble tickets page: ${publicUrl}/trouble-tickets`
+      : `See this ticket: ${url}`
+  }\n`;
 
 // Everyone who hears about a change: the submitter - by their current
 // primary address when they are a known member, else the address they gave
