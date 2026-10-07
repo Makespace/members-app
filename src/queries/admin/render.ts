@@ -28,6 +28,7 @@ export const render = () => html`
       >`,
       html`<a href="/super-users">Manage super-users</a>`,
       html`<a href="/members/import-fobs">Import fobs from Paxton</a>`,
+      html`<a href="/access-audit">Door access audit</a>`,
     ])}
 
     ${section(html`Membership payments`, [

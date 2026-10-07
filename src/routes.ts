@@ -63,6 +63,7 @@ export const initRoutes = (
     query('/domain-events', queries.domainEvents),
     query('/unlinked-recurly', queries.unlinkedRecurly),
     query('/outstanding-invoices', queries.outstandingInvoices),
+    query('/access-audit', queries.accessAudit),
     query('/areas', queries.areas),
     query('/community', queries.community),
     query('/equipment-catalogue', queries.equipmentCatalogue),
