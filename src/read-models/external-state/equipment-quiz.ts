@@ -107,11 +107,14 @@ export const getFullQuizResultsForEquipment = (
       // window) rather than any later retake. Retaking the quiz does not
       // reset how long they have been waiting: the list is read as a queue,
       // and a voluntary retake should not send someone to the back of it.
-      // "Earliest pass" is compared against current trainedMembers only -
-      // passes from before a training that was later revoked still count.
-      // That only matters once training can be taken away (roadmap: in
-      // progress); until then it cannot happen. Unknown passes are deduped
-      // the same way, keyed on the number as typed.
+      // "Earliest pass" is compared against current trainedMembers only: a
+      // member whose training is revoked (RevokeTrainedOnEquipment) reappears
+      // here waiting since their original pre-training pass, which with the
+      // queue order can put them straight at the front. Accepted for now -
+      // scoping passes to after the latest revocation would need the
+      // revocation time kept, which the read model does not record.
+      // Unknown passes are deduped the same way, keyed on the number as
+      // typed.
       const earliestKnownByMemberNumber = new Map<number, MemberAwaitingTraining>();
       const earliestUnknownByMemberNumber = new Map<number, OrphanedPassedQuiz>();
       // Which of each member's addresses may match a Recurly account comes
