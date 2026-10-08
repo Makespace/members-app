@@ -10,6 +10,8 @@ import {TroubleTicket} from '../types/trouble-ticket';
 import {StoredEventOfType} from '../types/domain-event';
 import {SyncWorkerDependencies} from './dependencies';
 import {heldBackSendEmail} from '../trouble-tickets/notification-gate';
+import {summariseForEmail} from '../trouble-tickets/ticket-email-summary';
+import {ticketCardHtml, ticketUrl} from '../templates/trouble-ticket-email';
 import {
   audienceFor,
   happeningOfEvent,
@@ -67,7 +69,8 @@ const buildEmail = (
   ticket: TroubleTicket,
   change: string,
   isNew: boolean,
-  theirs: boolean
+  theirs: boolean,
+  summaryHtml: string
 ): Email => {
   const opening = ticketNotificationOpening(ticket.title, isNew, theirs);
   const text = ticketNotificationText(
@@ -75,7 +78,8 @@ const buildEmail = (
     ticket.title,
     change,
     isNew,
-    theirs
+    theirs,
+    ticketUrl(publicUrl, ticket.id)
   );
   return {
     recipient,
@@ -95,7 +99,8 @@ const buildEmail = (
                 <p>${opening.replace(`"${ticket.title}"`, `<strong>${ticket.title}</strong>`)}</p>
                 <p>${change.replace(/\n/g, '<br/>')}</p>
               </mj-text>
-              <mj-button background-color="#00703c" href="${publicUrl}/trouble-tickets">View trouble tickets</mj-button>
+              <mj-raw>${summaryHtml}</mj-raw>
+              <mj-button background-color="#00703c" href="${ticketUrl(publicUrl, ticket.id)}">View this ticket</mj-button>
             </mj-column>
           </mj-section>
         </mj-body>
@@ -196,7 +201,10 @@ export const notifyTroubleTicketChanges = async (
           ticket.value,
           change,
           event.type === 'TroubleTicketCreated',
-          entry.theirs
+          entry.theirs,
+          ticketCardHtml(
+            summariseForEmail(rm, deps.conf.PUBLIC_URL, ticket.value)
+          )
         )
       )();
       if (E.isLeft(sent)) {

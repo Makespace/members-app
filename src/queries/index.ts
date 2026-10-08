@@ -32,6 +32,7 @@ export {me} from './me';
 export {dumpSharedDbAsJson, dumpSharedDbAsBuffer} from './debug';
 export {domainEvents} from './domain-events';
 export {troubleTickets} from './trouble-tickets';
+export {troubleTicket} from './trouble-ticket';
 export {troubleTicketsHome} from './trouble-tickets-home';
 export {equipmentSigns} from './equipment-signs';
 export {notifications} from './notifications';

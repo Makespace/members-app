@@ -1,3 +1,6 @@
+import {TroubleTicketStatus} from '../types/trouble-ticket';
+import {ticketLineHtml} from '../templates/trouble-ticket-email';
+
 // What a summary email says. Kept apart from the job that sends it so the
 // wording can be read, and tested, without a database or a mail server.
 
@@ -6,6 +9,14 @@ export type DigestLine = {
   place: string;
   happening: 'reported' | 'picked-up' | 'needs-help' | 'parked' | 'resolved';
   at: Date;
+  // Enough of the ticket to draw it the way the app does, and an address to
+  // send somebody to. A summary is for scanning, so this is the short form of
+  // the card rather than the whole thing.
+  status: TroubleTicketStatus;
+  equipmentName: string | null;
+  areaName: string | null;
+  rawEquipment: string | null;
+  url: string;
 };
 
 const happeningWords = (happening: DigestLine['happening']): string => {
@@ -55,7 +66,10 @@ export const digestEmail = (
     '',
     ...groups.flatMap(([place, theirs]) => [
       place,
-      ...theirs.map(line => `  - ${line.title} - ${happeningWords(line.happening)}`),
+      ...theirs.flatMap(line => [
+        `  - ${line.title} - ${happeningWords(line.happening)}`,
+        `    ${line.url}`,
+      ]),
       '',
     ]),
     `See them all: ${publicUrl}/trouble-tickets`,
@@ -85,17 +99,17 @@ export const digestEmail = (
               ${groups
                 .map(
                   ([place, theirs]) => `
-                    <p><strong>${escape(place)}</strong></p>
-                    <ul>
+                    <p style="margin:14px 0 2px;"><strong>${escape(place)}</strong></p>
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                       ${theirs
-                        .map(
-                          line =>
-                            `<li>${escape(line.title)} &mdash; ${escape(
-                              happeningWords(line.happening)
-                            )}</li>`
+                        .map(line =>
+                          ticketLineHtml({
+                            ...line,
+                            happening: happeningWords(line.happening),
+                          })
                         )
                         .join('')}
-                    </ul>`
+                    </table>`
                 )
                 .join('')}
             </mj-text>

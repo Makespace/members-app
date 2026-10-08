@@ -54,7 +54,7 @@ const actorName = (actor: Actor, rm: SharedReadModel): string => {
 // Fold a ticket's change rows into display lines, tracking status so the
 // first assignment reads "assigned themselves and set the ticket to In
 // Progress". Rows come from the read-model projection, not the event store.
-const buildChangeLog = (
+export const buildChangeLog = (
   rows: ReadonlyArray<TroubleTicketChangeRow>,
   rm: SharedReadModel
 ): ReadonlyArray<ChangeLogEntry> => {
@@ -186,7 +186,7 @@ type TicketScope = {
   onMyTrainerMachine: boolean;
 };
 
-const toScope =
+export const toScope =
   (
     equipmentById: ReadonlyMap<string, MinimalEquipment>,
     areaNameById: ReadonlyMap<string, string>,
@@ -228,7 +228,7 @@ const toScope =
   };
 
 // The full card view, built only for tickets on the visible page.
-const toView =
+export const toView =
   (rm: SharedReadModel, viewer: Member) =>
   (scope: TicketScope): Omit<TroubleTicketView, 'changeLog'> => {
     const {
