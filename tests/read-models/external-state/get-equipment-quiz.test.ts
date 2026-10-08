@@ -255,6 +255,29 @@ describe('Get equipment quiz', () => {
       );
     });
 
+    // Failing the quiz again while already waiting is not a retake - it
+    // neither drops the member from the queue nor moves their place in it.
+    it('does not move a waiting member when they fail a retake', async () => {
+      await recordQuiz({
+        completedAt: DateTime.now().minus({weeks: 1}).startOf('second').toJSDate(),
+        memberNumber: addAwaitingTrainingMember.memberNumber,
+        email: addAwaitingTrainingMember.email,
+        score: 5,
+        maxScore: 10,
+      });
+
+      const after = await runGetQuizResultsByEquipment(
+        framework,
+        addTrainingSheet.trainingSheetId,
+        addTrainingSheet.equipmentId
+      );
+
+      expect(after.membersAwaitingTraining).toHaveLength(1);
+      expect(after.membersAwaitingTraining[0].waitingSince).toStrictEqual(
+        recentDate
+      );
+    });
+
     it('excludes a waiting member whose Recurly subscription is inactive', async () => {
       const inactiveMember = {
         memberNumber: faker.number.int({max: 100000}) as Int,

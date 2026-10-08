@@ -102,12 +102,13 @@ export const getFullQuizResultsForEquipment = (
         m => m.memberNumber
       );
 
-      // A member may pass the quiz any number of times; they appear in the
-      // queue once, waiting since their earliest pass (within the one-year
-      // window) rather than any later retake. Retaking the quiz does not
-      // reset how long they have been waiting: the list is read as a queue,
-      // and a voluntary retake should not send someone to the back of it.
-      // "Earliest pass" is compared against current trainedMembers only: a
+      // A member enters the queue when they pass (full marks - a failed
+      // attempt never creates or moves an entry), and may pass any number of
+      // times; they appear once, waiting since their earliest pass (within
+      // the one-year window) rather than any later retake: passing again
+      // while already waiting does not reset the clock. The list is read as a
+      // queue, and a voluntary retake should not send someone to the back of
+      // it. "Earliest pass" is compared against current trainedMembers only: a
       // member whose training is revoked (RevokeTrainedOnEquipment) reappears
       // here waiting since their original pre-training pass, which with the
       // queue order can put them straight at the front. Accepted for now -
