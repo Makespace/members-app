@@ -28,6 +28,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   delete it afterwards, it contains member data)
 - `BASE_URL=... TOKEN=... ./scripts/seed-guide-urls.sh` - One-off: record the
   guide address for the machines that had one as of 2026-09-24
+- `make notification-drill` - Play the trouble-ticket notification situations
+  (summaries, live mail, role changes, opting out) through a throwaway
+  in-memory copy of the app and report who would be told what. It checks its
+  own expectations, so it fails if the stack misbehaves.
+  `make notification-drill ARGS=--list` lists the situations, `ARGS=--text`
+  prints the full wording, and `DRILL_TO=you@example.com SMTP_HOST=... make
+  notification-drill ARGS=--send` sends them to one inbox, plus-addressed per
+  imaginary person, so the emails can be read in a real mail client
+- Trouble ticket notifications are held back until `TROUBLE_TICKET_NOTIFY_TO`
+  is set: unset means nobody, a comma-separated list means only those
+  addresses, `all` means everybody. Everything else still runs and held-back
+  mail is logged, so the stack can be deployed and watched before anybody's
+  inbox is involved - see `docs/trouble-ticket-notifications.md`
 - Local app: http://localhost:8080
 - Mailcatcher (dev emails): http://localhost:1080
 

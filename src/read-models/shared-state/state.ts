@@ -78,6 +78,32 @@ export const memberEmailsTable = defineTable(
   }
 );
 
+// Paxton fobs, keyed by Paxton's fob id so a fob reassigned to another
+// member moves rather than duplicates. A member may hold several.
+export const memberFobsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS memberFobs (
+      fobId INTEGER PRIMARY KEY,
+      userId TEXT NOT NULL,
+      accessLevel TEXT NOT NULL,
+      paxtonName TEXT NOT NULL,
+      recordedAt INTEGER NOT NULL,
+      FOREIGN KEY (userId) REFERENCES members(userId) ON DELETE CASCADE
+    );
+  `,
+  'memberFobs' as const,
+  {
+    fobId: integer('fobId').primaryKey(),
+    userId: text('userId')
+      .notNull()
+      .$type<UserId>()
+      .references(() => membersTable.userId, {onDelete: 'cascade'}),
+    accessLevel: text('accessLevel').notNull(),
+    paxtonName: text('paxtonName').notNull(),
+    recordedAt: integer('recordedAt', {mode: 'timestamp_ms'}).notNull(),
+  }
+);
+
 // Individual members may have multiple member numbers so we give each member a unique id
 // and then member numbers map to this.
 export const memberNumbersTable = defineTable(
@@ -139,6 +165,48 @@ export const equipmentTable = defineTable(
 // Alternative names that resolve to equipment (e.g. the trouble-ticket form's
 // labels). One alias maps to exactly one equipment; matching is case- and
 // whitespace-insensitive via the NOCASE collation plus trimming at write time.
+// What each member has said they want to hear about, one row per scope they
+// have an opinion on. Saying "follow whatever is above me" removes the row:
+// the absence of a row is what following means, so there is one way to say it
+// rather than two.
+export const memberNotificationPreferencesTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS memberNotificationPreferences (
+      memberNumber INTEGER NOT NULL,
+      scope TEXT NOT NULL,
+      preference TEXT NOT NULL,
+      PRIMARY KEY (memberNumber, scope)
+    )
+  `,
+  'memberNotificationPreferences' as const,
+  {
+    memberNumber: integer('memberNumber').notNull(),
+    scope: text('scope').notNull(),
+    preference: text('preference').notNull(),
+  }
+);
+
+// When each member was last sent a summary, and how far through the log it
+// reached. One row per member and cadence; absent until the first one is sent.
+export const memberDigestsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS memberDigests (
+      memberNumber INTEGER NOT NULL,
+      cadence TEXT NOT NULL,
+      sentAt INTEGER NOT NULL,
+      upToEventIndex INTEGER NOT NULL,
+      PRIMARY KEY (memberNumber, cadence)
+    )
+  `,
+  'memberDigests' as const,
+  {
+    memberNumber: integer('memberNumber').notNull(),
+    cadence: text('cadence').notNull(),
+    sentAt: integer('sentAt', {mode: 'timestamp_ms'}).notNull(),
+    upToEventIndex: integer('upToEventIndex').notNull(),
+  }
+);
+
 export const equipmentNameAliasesTable = defineTable(
   sql`
     CREATE TABLE IF NOT EXISTS equipmentNameAliases (
@@ -476,6 +544,9 @@ createTables.push(
 );
 createTables.push(
   sql`CREATE INDEX IF NOT EXISTS memberEmails_userId_addedAt_idx ON memberEmails (userId, addedAt);`
+);
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS memberFobs_userId_recordedAt_idx ON memberFobs (userId, recordedAt);`
 );
 createTables.push(
   sql`CREATE INDEX IF NOT EXISTS trainedMembers_userId_idx ON trainedMembers (userId);`

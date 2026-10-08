@@ -50,6 +50,29 @@ describe('DomainEvent', () => {
     });
   });
 
+  it('validates MemberFobRecorded', () => {
+    const event: unknown = {
+      type: 'MemberFobRecorded',
+      actor: {tag: 'system'},
+      recordedAt: '1991-02-20T00:00:00.000Z',
+      memberNumber: 1337,
+      fobId: 4321,
+      accessLevel: 'Member',
+      paxtonName: 'Molly 1337 Millions',
+    };
+
+    const decoded = unwrap(DomainEvent.decode(event));
+    expect(decoded).toEqual({
+      type: 'MemberFobRecorded',
+      actor: {tag: 'system'},
+      recordedAt: new Date(1991, 1, 20),
+      memberNumber: 1337,
+      fobId: 4321,
+      accessLevel: 'Member',
+      paxtonName: 'Molly 1337 Millions',
+    });
+  });
+
   it('validates stored events with event ids', () => {
     const event: unknown = {
       event_index: 1,

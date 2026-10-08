@@ -46,6 +46,7 @@ describe('/me render', () => {
           verificationLastSent: O.none,
         },
       ],
+      fobs: [],
       name: O.none,
       formOfAddress: O.none,
       agreementSigned: O.none,

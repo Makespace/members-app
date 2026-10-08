@@ -43,7 +43,9 @@ export const render = () => html`
       reporting a problem`),
       done(html`Show a machine's open trouble tickets on an e-ink
       display mounted on it (trial)`),
-      todo(html`Let members follow the tickets they've reported`),
+      done(html`Choose what you hear about: the tickets you reported, the
+      areas you look after, a single machine, or anywhere in Makespace - as
+      it happens, once a day, once a week, or not at all`),
       todo(html`Mark a ticket as sensitive and hide it, rather than hiding
       every ticket that came from management email - so members can see the
       rest`),
@@ -51,6 +53,10 @@ export const render = () => html`
       heading(html`Notifications`, {done: true}),
       done(html`Banners at the top of the app for events and things that need
       your attention, targetable at owners or specific areas`),
+      done(html`Daily and weekly trouble ticket summaries, grouped by
+      machine, and nothing at all in a quiet week`),
+      done(html`Taking on a machine or an area starts the emails that go with
+      it, and says so, with a link to change them`),
 
       heading(html`Managing member emails in the app`),
       inProgress(html`Bring the management mailbox into the app so managers
@@ -123,6 +129,14 @@ export const render = () => html`
       non-payment, so it can be put back when they pay`),
 
       heading(html`Fob-based access control`),
+      done(html`Record each member's Paxton fobs (fob id and access level)
+      against their profile, visible to super users`),
+      done(html`Upload a Paxton export to bring every member's fobs up to
+      date in one go, matching rows on the member number (or failing that
+      the name) in the Paxton name`),
+      done(html`A summary of who has door access against who should: live
+      fobs whose membership has lapsed, and entitled members whose fob is
+      cancelled or missing`),
       todo(html`Set fob access to machines based on who has training — this
       needs the app to talk to the fob system, alongside a training push`),
       todo(html`Show a log of who's using machines`),

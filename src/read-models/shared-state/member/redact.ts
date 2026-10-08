@@ -13,39 +13,43 @@ const redactEmail = (member: Member): Member =>
     })),
   });
 
-// If a given |actor|, with the context of |details| is viewing |member|
-// should sensitive details (email) about that member be redacted.
-const shouldRedact =
-  (actor: Actor) => (members: MultipleMembers) => (member: Member) => {
-    switch (actor.tag) {
-      case 'token':
-        return false;
-      case 'system':
-        return false;
-      case 'user': {
-        const viewingUser = actor.user;
-        const viewingMember = members.get(viewingUser.memberNumber);
-        if (viewingMember !== undefined && viewingMember.isSuperUser) {
-          return false;
-        }
-        if (viewingUser.memberNumber === member.memberNumber) {
-          return false;
-        }
-        return true;
-      }
-    }
-  };
+// Fob details are admin-only: unlike emails, a member doesn't see their own.
+const redactFobs = (member: Member): Member =>
+  Object.assign({}, member, {fobs: []});
 
+// Is |actor| privileged enough (a token, the system, or a super user) to see
+// every member's sensitive details?
+const isPrivileged = (actor: Actor) => (members: MultipleMembers) => {
+  switch (actor.tag) {
+    case 'token':
+      return true;
+    case 'system':
+      return true;
+    case 'user': {
+      const viewingMember = members.get(actor.user.memberNumber);
+      return viewingMember !== undefined && viewingMember.isSuperUser;
+    }
+  }
+};
+
+const isSelf = (actor: Actor, member: Member) =>
+  actor.tag === 'user' && actor.user.memberNumber === member.memberNumber;
+
+// An unprivileged |actor| sees their own email but nobody else's, and no
+// fob details at all.
 export const redactDetailsForActor =
   (actor: Actor) => (members: MultipleMembers) => {
-    const needsRedaction = shouldRedact(actor)(members);
+    const privileged = isPrivileged(actor)(members);
     const redactedDetails = new Map();
     for (const [memberNumber, member] of members.entries()) {
-      if (needsRedaction(member)) {
-        redactedDetails.set(memberNumber, redactEmail(member));
-      } else {
-        redactedDetails.set(memberNumber, member);
+      let redacted = member;
+      if (!privileged) {
+        redacted = redactFobs(redacted);
+        if (!isSelf(actor, member)) {
+          redacted = redactEmail(redacted);
+        }
       }
+      redactedDetails.set(memberNumber, redacted);
     }
     return redactedDetails;
   };

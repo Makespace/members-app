@@ -8,7 +8,10 @@ import {StatusCodes} from 'http-status-codes';
 import {oopsPage, pageTemplate} from '../templates';
 import {Query, Params} from '../queries/query';
 import {logInPath} from '../authentication/login/routes';
-import {CompleteHtmlDocument, sanitizeString} from '../types/html';
+import {CompleteHtmlDocument, HttpResponse, sanitizeString} from '../types/html';
+import {User} from '../types';
+import {Member} from '../read-models/shared-state/return-types';
+import {FailureWithStatus} from '../types/failure-with-status';
 import * as O from 'fp-ts/Option';
 import {match} from '../types/tagged-union';
 import {ParsedQs} from 'qs';
@@ -28,22 +31,16 @@ const simplifyExpressQuery = (qs: ParsedQs) => {
   return params;
 };
 
-export const queryGet =
-  (deps: Dependencies, query: Query) =>
-  async (req: Request, res: Response<CompleteHtmlDocument>) => {
-    const user = getUserFromSession(deps)(req.session);
-    if (O.isNone(user)) {
-      deps.logger.info('Did not respond to query as user was not logged in.');
-      res.redirect(logInPath);
-      return;
-    }
-    const member = deps.sharedReadModel.members.getByMemberNumber(user.value.memberNumber);
-    if (O.isNone(member)) {
-      res.redirect(logInPath);
-      return;
-    }
-    await pipe(
-      query(deps)(user.value, req.params, simplifyExpressQuery(req.query)),
+// Sends a query-style result as a full page for the logged-in |user| (who
+// is |member| in the read model): the shared chrome around LoggedInContent,
+// or the redirect / raw body / oops page the result asks for. Bespoke POST
+// handlers that render a page (rather than redirect) use this too.
+export const sendQueryResult =
+  (deps: Dependencies) =>
+  (req: Request, res: Response<CompleteHtmlDocument>, user: User, member: Member) =>
+  (result: TE.TaskEither<FailureWithStatus, HttpResponse>) =>
+    pipe(
+      result,
       TE.matchW(
         failure => {
           deps.logger.error(failure, 'Failed respond to a query');
@@ -61,10 +58,10 @@ export const queryGet =
               .send(
                 pageTemplate(
                   title,
-                  user.value,
+                  user,
                   {
-                    isSuperUser: member.value.isSuperUser,
-                    isOwner: member.value.ownerOf.length > 0,
+                    isSuperUser: member.isSuperUser,
+                    isOwner: member.ownerOf.length > 0,
                   },
                   navBarViewModel(
                     deps.sharedReadModel.area.getAllMinimal(),
@@ -72,9 +69,9 @@ export const queryGet =
                   ),
                   renderBanners(
                     [
-                      ...systemBanners(member.value),
+                      ...systemBanners(member),
                       ...deps.sharedReadModel.notifications
-                        .getForMember(member.value, new Date())
+                        .getForMember(member, new Date())
                         .map(toBanner),
                     ],
                     req.path
@@ -92,4 +89,22 @@ export const queryGet =
         })
       )
     )();
+
+export const queryGet =
+  (deps: Dependencies, query: Query) =>
+  async (req: Request, res: Response<CompleteHtmlDocument>) => {
+    const user = getUserFromSession(deps)(req.session);
+    if (O.isNone(user)) {
+      deps.logger.info('Did not respond to query as user was not logged in.');
+      res.redirect(logInPath);
+      return;
+    }
+    const member = deps.sharedReadModel.members.getByMemberNumber(user.value.memberNumber);
+    if (O.isNone(member)) {
+      res.redirect(logInPath);
+      return;
+    }
+    await sendQueryResult(deps)(req, res, user.value, member.value)(
+      query(deps)(user.value, req.params, simplifyExpressQuery(req.query))
+    );
   };

@@ -11,6 +11,8 @@ import {authRoutes} from './authentication';
 import {queryToHandler, commandToHandlers, ping} from './http';
 import {formGet} from './http/form-get';
 import {bulkAddForm} from './commands/equipment/bulk-add-form';
+import {importFobsRoutes} from './paxton/import-fobs-routes';
+import {canSetNotificationPreferences} from './commands/notification-preferences/set';
 import {apiToHandlers} from './http/api-to-handlers';
 import {emailHandler} from './http/email-handler';
 import expressAsyncHandler from 'express-async-handler';
@@ -61,10 +63,12 @@ export const initRoutes = (
     query('/domain-events', queries.domainEvents),
     query('/unlinked-recurly', queries.unlinkedRecurly),
     query('/outstanding-invoices', queries.outstandingInvoices),
+    query('/access-audit', queries.accessAudit),
     query('/areas', queries.areas),
     query('/community', queries.community),
     query('/equipment-catalogue', queries.equipmentCatalogue),
     query('/equipment-links', queries.equipmentLinks),
+    query('/notification-settings', queries.notificationSettings),
     ...command('areas', 'create', commands.area.create),
     ...command('areas', 'add-owner', commands.area.addOwner),
     ...command('areas', 'remove-owner', commands.area.removeOwner),
@@ -82,6 +86,76 @@ export const initRoutes = (
       commands.equipment.setRiskAssessmentUrl
     ),
     ...command('equipment', 'set-machines', commands.equipment.setMachines),
+    // Saving the notification settings page. A bespoke POST for the same
+    // reason as bulk-add below: the command pipeline commits one event per
+    // request, and this page is a screenful of rules at once. Only the rows
+    // that actually changed become events - the command itself drops the rest.
+    post(
+      '/notification-settings',
+      expressAsyncHandler(async (req, res) => {
+        const user = getUserFromSession(deps)(req.session);
+        if (O.isNone(user)) {
+          res.redirect(logInPath);
+          return;
+        }
+        const actor: Actor = {tag: 'user', user: user.value};
+        const body = t.record(t.string, t.unknown).decode(req.body);
+        if (E.isLeft(body)) {
+          res
+            .status(StatusCodes.BAD_REQUEST)
+            .send(oopsPage(safe('That submission was not valid.')));
+          return;
+        }
+        // One field per rule, named subscription:<scope>. A rule the member
+        // left following sends nothing, which is how following is recorded.
+        const chosen = new Map<string, string>();
+        for (const [field, value] of Object.entries(body.right)) {
+          if (!field.startsWith('subscription:') || typeof value !== 'string') {
+            continue;
+          }
+          chosen.set(field.slice('subscription:'.length), value);
+        }
+        // applyCommand does not check authorization, so the handler does.
+        // Every row here is this member's own, so one check covers the lot.
+        if (
+          !canSetNotificationPreferences({
+            actor,
+            rm: deps.sharedReadModel,
+            input: {memberNumber: user.value.memberNumber},
+          })
+        ) {
+          res
+            .status(StatusCodes.FORBIDDEN)
+            .send(oopsPage(safe('Those are not yours to set.')));
+          return;
+        }
+        for (const [scope, preference] of chosen) {
+          const decoded = commands.notificationPreferences.set.decode({
+            memberNumber: String(user.value.memberNumber),
+            scope,
+            preference,
+          });
+          if (E.isLeft(decoded)) {
+            // A field we do not recognise is somebody poking at the form,
+            // not a member changing their mind.
+            deps.logger.warn({scope, preference}, 'Ignoring an unknown rule');
+            continue;
+          }
+          const result = await applyCommand(
+            deps,
+            commands.notificationPreferences.set
+          )(decoded.right, actor)();
+          if (E.isLeft(result)) {
+            deps.logger.warn(
+              {scope, failure: result.left},
+              'Could not save a notification preference'
+            );
+          }
+        }
+        res.redirect('/notification-settings');
+      })
+    ),
+
     // Bulk-add: one EquipmentAdded per pasted line. A bespoke POST because
     // the command pipeline commits exactly one event per request; the GET is
     // the standard form renderer.
@@ -383,6 +457,9 @@ export const initRoutes = (
       'send-email-verification',
       commands.members.sendEmailVerification
     ),
+    ...command('members', 'record-fob', commands.members.recordFob),
+    ...command('members', 'remove-fob', commands.members.removeFob),
+    ...importFobsRoutes(deps),
     ...command(
       'members',
       'rejoined-with-new',
@@ -403,6 +480,8 @@ export const initRoutes = (
     query('/equipment-signs', queries.equipmentSigns),
     query('/trouble-tickets', queries.troubleTicketsHome),
     query('/trouble-tickets/board', queries.troubleTickets),
+    // After /board, so the static path is not eaten by the :id pattern.
+    query('/trouble-tickets/:id', queries.troubleTicket),
     // Site notification banners: admin management + member dismissal.
     query('/notifications', queries.notifications),
     // Imported management mailbox. The commands go before the :id route,

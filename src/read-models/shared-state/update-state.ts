@@ -5,10 +5,13 @@ import {
   areaNameAliasesTable,
   areasTable,
   equipmentNameAliasesTable,
+  memberDigestsTable,
+  memberNotificationPreferencesTable,
   equipmentTable,
   eventStateTable,
   failedEventsTable,
   memberEmailsTable,
+  memberFobsTable,
   membersTable,
   ownersTable,
   trainedMemberstable,
@@ -217,6 +220,50 @@ const _updateState =
             `Unable to update email verification requested '${event.email}' for member number: '${event.memberNumber}' - unknown email address`
           )
         }
+        break;
+      }
+      case 'MemberFobRecorded': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to record fob '${event.fobId}', unknown member number: '${event.memberNumber}'`);
+        }
+        // Keyed on fob id: a fob seen again takes the latest access level,
+        // and one now held by a different member moves to them.
+        tx.insert(memberFobsTable)
+          .values({
+            fobId: event.fobId,
+            userId: userId.value,
+            accessLevel: event.accessLevel,
+            paxtonName: event.paxtonName,
+            recordedAt: event.recordedAt,
+          })
+          .onConflictDoUpdate({
+            target: memberFobsTable.fobId,
+            set: {
+              userId: userId.value,
+              accessLevel: event.accessLevel,
+              paxtonName: event.paxtonName,
+              recordedAt: event.recordedAt,
+            },
+          })
+          .run();
+        break;
+      }
+      case 'MemberFobRemoved': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to remove fob '${event.fobId}', unknown member number: '${event.memberNumber}'`);
+        }
+        // Scoped to the member so a stale removal can't take a fob that has
+        // since been reassigned to someone else.
+        tx.delete(memberFobsTable)
+          .where(
+            and(
+              eq(memberFobsTable.fobId, event.fobId),
+              eq(memberFobsTable.userId, userId.value)
+            )
+          )
+          .run();
         break;
       }
       case 'MemberDetailsUpdated': {
@@ -732,6 +779,61 @@ const _updateState =
             .onConflictDoNothing()
             .run();
         }
+        break;
+      }
+      case 'MemberTicketDigestSent': {
+        tx.insert(memberDigestsTable)
+          .values({
+            memberNumber: event.memberNumber,
+            cadence: event.cadence,
+            sentAt: event.recordedAt,
+            upToEventIndex: event.upToEventIndex,
+          })
+          .onConflictDoUpdate({
+            target: [
+              memberDigestsTable.memberNumber,
+              memberDigestsTable.cadence,
+            ],
+            set: {
+              sentAt: event.recordedAt,
+              upToEventIndex: event.upToEventIndex,
+            },
+          })
+          .run();
+        break;
+      }
+      case 'MemberNotificationPreferenceSet': {
+        // Following is the absence of a row rather than a row saying
+        // 'follow', so there is one way to say it and a member who changes
+        // their mind back leaves nothing behind.
+        if (event.preference === 'follow') {
+          tx.delete(memberNotificationPreferencesTable)
+            .where(
+              and(
+                eq(
+                  memberNotificationPreferencesTable.memberNumber,
+                  event.memberNumber
+                ),
+                eq(memberNotificationPreferencesTable.scope, event.scope)
+              )
+            )
+            .run();
+          break;
+        }
+        tx.insert(memberNotificationPreferencesTable)
+          .values({
+            memberNumber: event.memberNumber,
+            scope: event.scope,
+            preference: event.preference,
+          })
+          .onConflictDoUpdate({
+            target: [
+              memberNotificationPreferencesTable.memberNumber,
+              memberNotificationPreferencesTable.scope,
+            ],
+            set: {preference: event.preference},
+          })
+          .run();
         break;
       }
       case 'EquipmentNameAliasAdded': {
