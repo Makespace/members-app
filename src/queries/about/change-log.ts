@@ -14,6 +14,11 @@ type ChangeLogEntry = {
 
 export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
+    date: '2026-10-08',
+    headline:
+      "Members are now matched to Recurly by the account code (their signup email) as well as the address Recurly bills, so a changed billing email no longer makes someone look inactive; the unlinked-accounts page leads with the ones that are paying",
+  },
+  {
     date: '2026-10-07',
     headline:
       'A door access audit for super users: who can get in but should not, and who should but cannot, from the imported Paxton fobs against Recurly',

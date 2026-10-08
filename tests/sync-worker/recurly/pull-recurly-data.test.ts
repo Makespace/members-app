@@ -20,6 +20,7 @@ import {EmailAddress} from '../../../src/types/email-address';
 
 type RecurlyTestAccount = {
   id?: string | null;
+  code?: string | null;
   email: string;
   hasActiveSubscription?: boolean | null;
   hasFutureSubscription?: boolean | null;
@@ -316,6 +317,30 @@ describe('pull recurly data', () => {
       .where(eq(recurlySubscriptionTable.email, 'withid@example.com'))
       .get();
     expect(row?.accountId).toBe('acct_1');
+  });
+
+  // The account code is the email the member signed up with, which can be
+  // the only address the app knows them by.
+  it('records the account code, lowercased, beside the billing email', async () => {
+    const [createRecurlyClient] = recurlyClientFactory([
+      {id: 'acct_1', code: 'Signup@Example.com ', email: 'billing@example.com'},
+      {id: 'acct_2', email: 'nocode@example.com'},
+    ]);
+
+    await pullRecurlyData(
+      createLogger({level: 'silent'}),
+      extDB,
+      'token',
+      createRecurlyClient
+    )(Duration.fromMillis(0));
+
+    const rows = await extDB.select().from(recurlySubscriptionTable).all();
+    expect(
+      rows.map(row => [row.email, row.accountCode]).sort()
+    ).toEqual([
+      ['billing@example.com', 'signup@example.com'],
+      ['nocode@example.com', null],
+    ]);
   });
 
   it('caches invoices against the lowercased account email', async () => {

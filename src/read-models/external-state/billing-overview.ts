@@ -8,6 +8,10 @@ import {
 } from '../../sync-worker/recurly/recurly-data-table';
 import {MemberCoreInfo} from '../shared-state/return-types';
 import {InvoiceIssue, invoiceIssues, PaymentAttempt} from './recurly-billing';
+import {
+  memberRecurlyEmails,
+  resolveAccountEmailsFrom,
+} from './recurly-account-match';
 
 // Everybody whose membership payments may need a person to do something,
 // gathered in a handful of queries rather than one per member.
@@ -62,11 +66,6 @@ const RECENTLY_LAPSED_WITHIN = 183 * MS_PER_DAY;
 const daysBetween = (from: Date, to: Date): number =>
   Math.floor((to.getTime() - from.getTime()) / MS_PER_DAY);
 
-const verifiedEmails = (member: Pick<MemberCoreInfo, 'emails'>): string[] =>
-  member.emails
-    .filter(email => O.isSome(email.verifiedAt))
-    .map(email => email.emailAddress.toLowerCase());
-
 type InvoiceRow = typeof recurlyInvoiceTable.$inferSelect;
 
 // Everything owed by one address, reduced to the facts a page needs.
@@ -115,6 +114,9 @@ export const getBillingOverview =
       .select()
       .from(recurlySubscriptionTable)
       .all();
+    // Members name accounts by billing email or account code; everything
+    // below is keyed by billing email, so resolve once per member in memory.
+    const accountEmailsFor = resolveAccountEmailsFrom(subscriptions);
 
     // When each address was last invoiced at all, to tell a lapse from a
     // departure. One aggregate rather than a scan per member.
@@ -210,7 +212,7 @@ export const getBillingOverview =
     const claimedEmails = new Set<string>();
 
     for (const member of members) {
-      const emails = verifiedEmails(member);
+      const emails = accountEmailsFor(memberRecurlyEmails(member));
       emails.forEach(email => claimedEmails.add(email));
 
       const owed = emails.flatMap(email => owedByEmail.get(email) ?? []);

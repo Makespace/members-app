@@ -16,6 +16,7 @@ import {
 
 type RecurlyAccount = {
     id?: string | null;
+    code?: string | null;
     email?: string | null;
     hasActiveSubscription?: boolean | null;
     hasFutureSubscription?: boolean | null;
@@ -429,6 +430,7 @@ export const pullRecurlyData = (
         for await (const account of accounts.each()) {
             const {
                 id,
+                code,
                 email,
                 hasActiveSubscription,
                 hasFutureSubscription,
@@ -445,6 +447,7 @@ export const pullRecurlyData = (
 
             const values = {
                 accountId: id ?? null,
+                accountCode: code ? code.trim().toLowerCase() : null,
                 cacheLastUpdated: new Date(),
                 hasActiveSubscription: hasActiveSubscription ?? false,
                 hasFutureSubscription: hasFutureSubscription ?? false,

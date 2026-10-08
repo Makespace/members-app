@@ -13,6 +13,10 @@ export const recurlySubscriptionTable = sqliteTable(
     // Recurly's own id for the account. Null for rows cached before it was
     // recorded, and until the next sync refreshes them.
     accountId: text('accountId'),
+    // The account code, lowercased. Makespace sets it to the email the member
+    // signed up with, which can differ from the address Recurly now bills
+    // (`email`), so a member is matched on either. Null until the next sync.
+    accountCode: text('accountCode'),
     cacheLastUpdated: integer('cacheLastUpdated', {mode: 'timestamp_ms'}).notNull(),
     hasActiveSubscription: integer('hasActiveSubscription', {mode: 'boolean'}).notNull(),
     hasFutureSubscription: integer('hasFutureSubscription', {mode: 'boolean'}).notNull(),
@@ -244,6 +248,7 @@ export const createRecurlyIndexes = [
   // expression index has to cover both.
   sql`CREATE INDEX IF NOT EXISTS recurly_subscriptions_lower_email ON recurly_subscriptions (lower(email), cacheLastUpdated);`,
   sql`CREATE INDEX IF NOT EXISTS recurly_invoices_lower_email ON recurly_invoices (lower(email));`,
+  sql`CREATE INDEX IF NOT EXISTS recurly_subscriptions_account_code ON recurly_subscriptions (accountCode);`,
 ];
 
 const createRecurlySchemaVersionTable = sql`
@@ -284,4 +289,5 @@ export const rebuildBillingCaches = [
 // ensureRecurlyDBTablesExist, which forgives exactly that error.
 export const addRecurlyColumns = [
   sql`ALTER TABLE recurly_subscriptions ADD COLUMN accountId TEXT;`,
+  sql`ALTER TABLE recurly_subscriptions ADD COLUMN accountCode TEXT;`,
 ];

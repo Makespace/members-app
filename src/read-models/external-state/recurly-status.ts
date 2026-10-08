@@ -1,31 +1,27 @@
 import { ExternalStateDB } from "../../sync-worker/external-state-db";
 import { recurlySubscriptionTable } from "../../sync-worker/recurly/recurly-data-table";
 import { EmailAddress } from "../../types";
-import { gt, inArray, and, sql } from 'drizzle-orm';
+import { gt, and } from 'drizzle-orm';
 import { DateTime, Duration } from "luxon";
 import { MemberCoreInfo } from "../shared-state/return-types";
 import * as O from 'fp-ts/Option';
+import { memberRecurlyEmails, subscriptionMatches } from "./recurly-account-match";
 
 // If we haven't had a recurly update for an entry in the last 3 days then consider it stale and ignore it.
 const RECURLY_TTL = Duration.fromObject({days: 3});
 
 export type RecurlyStatus = 'inactive' | 'active';
 
-// Recurly emails can differ in case from our records (e.g. Foo@HotMail.com),
-// so match case-insensitively on both sides. New cache rows are stored
-// lowercased, but rows written before that change may still be mixed-case.
-const lowercasedEmailColumn = sql`lower(${recurlySubscriptionTable.email})`;
-const lowercased = (emails: EmailAddress[]) =>
-    emails.map(email => email.toLowerCase());
-
-const _getRecurlyStatus = (extDB: ExternalStateDB) => async (emails: EmailAddress[]): Promise<RecurlyStatus> => {
+// How a member's addresses are matched to accounts (by billing email or
+// account code, case-insensitively) lives in recurly-account-match.ts.
+const _getRecurlyStatus = (extDB: ExternalStateDB) => async (emails: ReadonlyArray<string>): Promise<RecurlyStatus> => {
     const entries = await extDB
         .select({
             hasActiveSubscription: recurlySubscriptionTable.hasActiveSubscription,
         })
         .from(recurlySubscriptionTable)
         .where(and(
-            inArray(lowercasedEmailColumn, lowercased(emails)),
+            subscriptionMatches(emails),
             gt(recurlySubscriptionTable.cacheLastUpdated, DateTime.now().minus(RECURLY_TTL).toJSDate())
         ))
         .all();
@@ -33,7 +29,7 @@ const _getRecurlyStatus = (extDB: ExternalStateDB) => async (emails: EmailAddres
 };
 
 export const getRecurlyStatusForMember = (extDB: ExternalStateDB) => async (member: Pick<MemberCoreInfo, 'emails'>): Promise<RecurlyStatus> => {
-    return _getRecurlyStatus(extDB)(member.emails.filter(e => O.isSome(e.verifiedAt)).map(e => e.emailAddress));
+    return _getRecurlyStatus(extDB)(memberRecurlyEmails(member));
 }
 
 // --- Detailed membership reasons ---------------------------------------------
@@ -61,7 +57,7 @@ export type RecurlyFlags = {
 // Aggregates every fresh recurly row for the given emails into one set of flags.
 // Returns O.none when there's no fresh data at all, so callers can distinguish
 // "we know there's nothing live" (expired) from "we don't currently know" (no-data).
-const _getRecurlyFlags = (extDB: ExternalStateDB) => async (emails: EmailAddress[]): Promise<O.Option<RecurlyFlags>> => {
+const _getRecurlyFlags = (extDB: ExternalStateDB) => async (emails: ReadonlyArray<string>): Promise<O.Option<RecurlyFlags>> => {
     if (emails.length === 0) {
         return O.none;
     }
@@ -75,7 +71,7 @@ const _getRecurlyFlags = (extDB: ExternalStateDB) => async (emails: EmailAddress
         })
         .from(recurlySubscriptionTable)
         .where(and(
-            inArray(lowercasedEmailColumn, lowercased(emails)),
+            subscriptionMatches(emails),
             gt(recurlySubscriptionTable.cacheLastUpdated, DateTime.now().minus(RECURLY_TTL).toJSDate())
         ))
         .all();
@@ -111,9 +107,7 @@ export const recurlyReasons = (flags: O.Option<RecurlyFlags>): ReadonlyArray<Rec
 export const getRecurlyReasonsForMember = (extDB: ExternalStateDB) => async (
     member: Pick<MemberCoreInfo, 'emails'>
 ): Promise<{flags: O.Option<RecurlyFlags>; reasons: ReadonlyArray<RecurlyReason>}> => {
-    const flags = await _getRecurlyFlags(extDB)(
-        member.emails.filter(e => O.isSome(e.verifiedAt)).map(e => e.emailAddress)
-    );
+    const flags = await _getRecurlyFlags(extDB)(memberRecurlyEmails(member));
     return {flags, reasons: recurlyReasons(flags)};
 };
 

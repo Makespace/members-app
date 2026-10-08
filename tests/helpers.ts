@@ -70,6 +70,7 @@ export const insertRecurlySubscription = (
     hasCanceledSubscription?: boolean;
     hasPausedSubscription?: boolean;
     hasPastDueInvoice?: boolean;
+    accountCode?: string;
   }
 ) =>
   extDB
