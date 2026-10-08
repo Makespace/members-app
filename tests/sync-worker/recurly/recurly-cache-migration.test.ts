@@ -10,6 +10,10 @@ import {
   recurlySubscriptionTable,
   recurlySyncMetadataTable,
 } from '../../../src/sync-worker/recurly/recurly-data-table';
+import * as O from 'fp-ts/Option';
+import {EmailAddress} from '../../../src/types';
+import {getRecurlyStatusForMember} from '../../../src/read-models/external-state/recurly-status';
+import {resolveAccountEmails} from '../../../src/read-models/external-state/recurly-account-match';
 
 // The Recurly cache is persistent, so CREATE TABLE IF NOT EXISTS silently does
 // nothing once it exists: accountId, added to the schema later, never reaches a
@@ -55,6 +59,60 @@ describe('the recurly cache picking up new columns', () => {
       accountId: null,
       hasActiveSubscription: true,
     });
+  });
+
+  // The shape production had when account-code matching shipped: accountId
+  // present, accountCode not. The new column, its index and the lookups that
+  // use it must all work on that database, and keep working on the next boot.
+  it('adds accountCode to a cache that already has accountId, and matches on it once filled', async () => {
+    await extDB.run(
+      sql`CREATE TABLE recurly_subscriptions (
+        email TEXT PRIMARY KEY,
+        cacheLastUpdated INTEGER NOT NULL,
+        hasActiveSubscription INTEGER NOT NULL,
+        hasFutureSubscription INTEGER NOT NULL,
+        hasCanceledSubscription INTEGER NOT NULL,
+        hasPausedSubscription INTEGER NOT NULL,
+        hasPastDueInvoice INTEGER NOT NULL,
+        accountId TEXT
+      );`
+    );
+    await extDB.run(
+      sql`INSERT INTO recurly_subscriptions VALUES (
+        'billing@example.com', ${Date.now()}, 1, 0, 0, 0, 0, 'acct_1'
+      );`
+    );
+
+    await ensureExtDBTablesExist(extDB)();
+
+    const member = {
+      emails: [
+        {
+          emailAddress: 'signup@example.com' as EmailAddress,
+          verifiedAt: O.some(new Date()),
+          verificationLastSent: O.none,
+          addedAt: new Date(),
+        },
+      ],
+    };
+    // Before the next sync fills the code in, nothing changes for anyone.
+    expect(await getRecurlyStatusForMember(extDB)(member)).toBe('inactive');
+    expect(await resolveAccountEmails(extDB)(['signup@example.com'])).toStrictEqual([
+      'signup@example.com',
+    ]);
+
+    // The sync writes the code; from then on the signup address matches.
+    await extDB.run(
+      sql`UPDATE recurly_subscriptions SET accountCode = 'signup@example.com' WHERE email = 'billing@example.com';`
+    );
+    expect(await getRecurlyStatusForMember(extDB)(member)).toBe('active');
+
+    // And the index named the column, so a second boot is clean.
+    await expect(ensureExtDBTablesExist(extDB)()).resolves.not.toThrow();
+    const indexes = await extDB.all<{name: string}>(
+      sql`SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'recurly_subscriptions';`
+    );
+    expect(indexes.map(i => i.name)).toContain('recurly_subscriptions_account_code');
   });
 
   it('is safe to run against a cache that is already up to date', async () => {
