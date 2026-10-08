@@ -144,7 +144,7 @@ export const notifyDigests = async (
         }
         const wanted = audienceFor(rm, ticket.value, happening.value).find(
           entry =>
-            entry.memberNumber === memberNumber && entry.when === cadence
+            entry.memberNumber === memberNumber && entry.digest === cadence
         );
         if (wanted === undefined) {
           continue;

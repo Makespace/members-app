@@ -193,7 +193,7 @@ const troubleTicketActionForm = (
                       () => [],
                       happening =>
                         audienceFor(readModel, ticket, happening)
-                          .filter(entry => entry.when === 'live')
+                          .filter(entry => entry.live)
                           .map(entry => entry.email)
                     )
                   ),
