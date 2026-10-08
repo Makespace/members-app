@@ -5,7 +5,7 @@ import {NonEmptyString, UUID} from 'io-ts-types';
 
 import {EmailAddress} from '../../../src/types';
 import {Int} from 'io-ts';
-import {getRightOrFail, getSomeOrFail, insertRecurlySubscription} from '../../helpers';
+import {getRightOrFail, getSomeOrFail, insertRecurlySubscription, countExternalStatements} from '../../helpers';
 import {
   FullQuizResultsForEquipment,
   FullQuizResultsForMember,
@@ -30,6 +30,31 @@ const runGetQuizResultsByEquipment = async (
         sharedReadModel: framework.sharedReadModel,
         lastQuizSync: framework.lastSync,
         extDB: framework.extDB,
+        logger: framework.depsForCommands.logger,
+      },
+      trainingSheetId,
+      getSomeOrFail(framework.sharedReadModel.equipment.get(equipmentId))
+    )()
+  );
+
+// A Recurly cache that fails every read, to prove the queue degrades to
+// unfiltered rather than erroring the whole page.
+const runGetQuizResultsWithBrokenRecurly = async (
+  framework: TestFramework,
+  trainingSheetId: string,
+  equipmentId: UUID
+): Promise<FullQuizResultsForEquipment> =>
+  getRightOrFail(
+    await getFullQuizResultsForEquipment(
+      {
+        sharedReadModel: framework.sharedReadModel,
+        lastQuizSync: framework.lastSync,
+        extDB: new Proxy({} as TestFramework['extDB'], {
+          get: () => {
+            throw new Error('Recurly cache unavailable');
+          },
+        }),
+        logger: framework.depsForCommands.logger,
       },
       trainingSheetId,
       getSomeOrFail(framework.sharedReadModel.equipment.get(equipmentId))
@@ -203,7 +228,9 @@ describe('Get equipment quiz', () => {
       );
     });
 
-    it('counts a member who passed twice only once, waiting since the latest pass', async () => {
+    // Retaking the quiz does not reset how long someone has been waiting:
+    // the list is a queue, so their place is set by the earliest pass.
+    it('counts a member who passed twice only once, waiting since the earliest pass', async () => {
       const laterDate = DateTime.now()
         .minus({weeks: 1})
         .startOf('second')
@@ -224,7 +251,7 @@ describe('Get equipment quiz', () => {
 
       expect(after.membersAwaitingTraining).toHaveLength(1);
       expect(after.membersAwaitingTraining[0].waitingSince).toStrictEqual(
-        laterDate
+        recentDate
       );
     });
 
@@ -298,6 +325,73 @@ describe('Get equipment quiz', () => {
       expect(after.membersAwaitingTraining.map(m => m.memberNumber)).toStrictEqual(
         [addAwaitingTrainingMember.memberNumber]
       );
+    });
+
+    // A stat is not worth taking the equipment page down over: when the
+    // Recurly cache cannot be read, the list degrades to unfiltered (everyone
+    // stays) rather than erroring - the same rule as a stale cache.
+    it('keeps everyone waiting when the Recurly cache cannot be read', async () => {
+      const after = await runGetQuizResultsWithBrokenRecurly(
+        framework,
+        addTrainingSheet.trainingSheetId,
+        addTrainingSheet.equipmentId
+      );
+
+      expect(after.membersAwaitingTraining.map(m => m.memberNumber)).toStrictEqual(
+        [addAwaitingTrainingMember.memberNumber]
+      );
+      expect(after.unknownMembersAwaitingTraining).toHaveLength(1);
+    });
+
+    // The equipment page is one of the busiest in the app: checking the queue
+    // against Recurly must not cost one query per waiting member.
+    it('checks the whole queue against Recurly in a bounded number of queries', async () => {
+      // Three more waiting members, all active, on top of the one from
+      // beforeEach.
+      for (let i = 0; i < 3; i++) {
+        const member = {
+          memberNumber: faker.number.int({max: 100000}) as Int,
+          email: faker.internet.email() as EmailAddress,
+          name: undefined,
+          formOfAddress: undefined,
+        };
+        await framework.commands.memberNumbers.linkNumberToEmail(member);
+        await recordQuiz({
+          completedAt: recentDate,
+          memberNumber: member.memberNumber,
+          email: member.email,
+          score: 10,
+          maxScore: 10,
+        });
+        await insertRecurlySubscription(framework.extDB, {
+          email: member.email,
+          hasActiveSubscription: true,
+        });
+      }
+
+      const {result, queryCount} = await countExternalStatements(
+        framework.extDBClient,
+        async () =>
+          getRightOrFail(
+            await getFullQuizResultsForEquipment(
+              {
+                sharedReadModel: framework.sharedReadModel,
+                lastQuizSync: framework.lastSync,
+                extDB: framework.extDB,
+                logger: framework.depsForCommands.logger,
+              },
+              addTrainingSheet.trainingSheetId,
+              getSomeOrFail(
+                framework.sharedReadModel.equipment.get(addTrainingSheet.equipmentId)
+              )
+            )()
+          )
+      );
+
+      expect(result.membersAwaitingTraining).toHaveLength(4);
+      // Bounded regardless of how many members are waiting: one sheet-sync
+      // metadata read, one account-codes read, one subscriptions read.
+      expect(queryCount).toBeLessThanOrEqual(3);
     });
 
     it('reports failed quizes with a computed percentage', () => {

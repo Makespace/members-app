@@ -9,8 +9,12 @@ import {DateTime, Duration} from 'luxon';
 import {ReadonlyRecord} from 'fp-ts/lib/ReadonlyRecord';
 import {EquipmentId} from '../../types/equipment-id';
 import {TrainingQuizCompletionRow} from '../shared-state/training-quiz/get';
-import {getRecurlyFlagsForVerifiedEmails} from './recurly-status';
-import {memberRecurlyEmails} from './recurly-account-match';
+import {getActiveStatusByEmail} from './recurly-status';
+import {
+  loadAccountCodesAmong,
+  memberRecurlyEmails,
+  resolveAccountEmailsFrom,
+} from './recurly-account-match';
 
 export type OrphanedPassedQuiz = {
   waitingSince: Date;
@@ -71,7 +75,10 @@ type QuizResultsWithRecurlyEmails = FullQuizResultsForEquipment & {
 };
 
 export const getFullQuizResultsForEquipment = (
-  deps: Pick<Dependencies, 'sharedReadModel' | 'lastQuizSync' | 'extDB'>,
+  deps: Pick<
+    Dependencies,
+    'sharedReadModel' | 'lastQuizSync' | 'extDB' | 'logger'
+  >,
   sheetId: string,
   equipment: Equipment
 ): TE.TaskEither<string, FullQuizResultsForEquipment> =>
@@ -95,12 +102,14 @@ export const getFullQuizResultsForEquipment = (
         m => m.memberNumber
       );
 
-      // A member may pass the quiz any number of times; what places them in
-      // the queue is the latest pass, so keep one entry per member number at
-      // its most recent completion. Unknown passes are deduped the same way,
-      // keyed on the number as typed.
-      const latestKnownByMemberNumber = new Map<number, MemberAwaitingTraining>();
-      const latestUnknownByMemberNumber = new Map<number, OrphanedPassedQuiz>();
+      // A member may pass the quiz any number of times; they appear in the
+      // queue once, waiting since their *earliest* un-trained pass. Retaking
+      // the quiz does not reset how long they have been waiting: the list is
+      // read as a queue, and a voluntary retake should not send someone to
+      // the back of it. Unknown passes are deduped the same way, keyed on
+      // the number as typed.
+      const earliestKnownByMemberNumber = new Map<number, MemberAwaitingTraining>();
+      const earliestUnknownByMemberNumber = new Map<number, OrphanedPassedQuiz>();
       // Which of each member's addresses may match a Recurly account comes
       // out of the same member lookup that builds the queue entry, so it is
       // kept here rather than fetched again when the Recurly check below
@@ -121,12 +130,12 @@ export const getFullQuizResultsForEquipment = (
         const member =
           deps.sharedReadModel.members.getByMemberNumber(memberNumber);
         if (O.isNone(member)) {
-          const previous = latestUnknownByMemberNumber.get(memberNumber);
+          const previous = earliestUnknownByMemberNumber.get(memberNumber);
           if (
             previous === undefined ||
-            row.completedAt.getTime() > previous.waitingSince.getTime()
+            row.completedAt.getTime() < previous.waitingSince.getTime()
           ) {
-            latestUnknownByMemberNumber.set(memberNumber, {
+            earliestUnknownByMemberNumber.set(memberNumber, {
               waitingSince: row.completedAt,
               memberNumberProvided: row.memberNumberProvided,
               emailProvided: row.emailProvided,
@@ -134,12 +143,12 @@ export const getFullQuizResultsForEquipment = (
           }
           continue;
         }
-        const previous = latestKnownByMemberNumber.get(memberNumber);
+        const previous = earliestKnownByMemberNumber.get(memberNumber);
         if (
           previous === undefined ||
-          row.completedAt.getTime() > previous.waitingSince.getTime()
+          row.completedAt.getTime() < previous.waitingSince.getTime()
         ) {
-          latestKnownByMemberNumber.set(memberNumber, {
+          earliestKnownByMemberNumber.set(memberNumber, {
             ...member.value,
             waitingSince: row.completedAt,
           });
@@ -150,8 +159,8 @@ export const getFullQuizResultsForEquipment = (
         }
       }
 
-      membersAwaitingTraining.push(...latestKnownByMemberNumber.values());
-      unknownMembersAwaitingTraining.push(...latestUnknownByMemberNumber.values());
+      membersAwaitingTraining.push(...earliestKnownByMemberNumber.values());
+      unknownMembersAwaitingTraining.push(...earliestUnknownByMemberNumber.values());
 
       return {
         lastQuizSync,
@@ -167,45 +176,64 @@ export const getFullQuizResultsForEquipment = (
     // is to keep showing demand when the cache has gone stale. Unknown rows
     // (a member number that matches no account) are kept - there is no
     // account to attach a status to, and the quiz-results page shows them.
-    TE.chain((results: QuizResultsWithRecurlyEmails) =>
-      pipe(
+    //
+    // The whole queue is checked in one bulk query rather than one per
+    // member: a machine with a long waiting list must not multiply the cost
+    // of the equipment page.
+    TE.chain((results: QuizResultsWithRecurlyEmails) => {
+      const dropInactive = async (): Promise<FullQuizResultsForEquipment> => {
+        const {recurlyEmailsByMemberNumber, ...published} = results;
+        const allAddresses = [
+          ...new Set([...recurlyEmailsByMemberNumber.values()].flat()),
+        ];
+        // Two queries total: one to resolve account codes to billing emails,
+        // one for the subscription rows those emails name.
+        const resolveBillingEmails = resolveAccountEmailsFrom(
+          await loadAccountCodesAmong(deps.extDB)(allAddresses)
+        );
+        const activeByEmail = await getActiveStatusByEmail(deps.extDB)(
+          allAddresses
+        );
+        return {
+          ...published,
+          membersAwaitingTraining: published.membersAwaitingTraining.filter(
+            member => {
+              const addresses =
+                recurlyEmailsByMemberNumber.get(member.memberNumber) ?? [];
+              const billingEmails = resolveBillingEmails(addresses);
+              // No fresh row for any of their billing emails = no data =
+              // keep them (a stale cache must not empty the list).
+              const matched = billingEmails.filter(email =>
+                activeByEmail.has(email)
+              );
+              if (matched.length === 0) {
+                return true;
+              }
+              return matched.some(email => activeByEmail.get(email) === true);
+            }
+          ),
+        };
+      };
+
+      // A Recurly read failure must not take down the page over a stat:
+      // log it and keep everyone, matching the rule that a stale cache
+      // should not empty the list.
+      return pipe(
         TE.tryCatch(
-          () =>
-            Promise.all(
-              results.membersAwaitingTraining.map(member =>
-                getRecurlyFlagsForVerifiedEmails(deps.extDB)(
-                  results.recurlyEmailsByMemberNumber.get(
-                    member.memberNumber
-                  ) ?? []
-                )
-              )
-            ),
+          dropInactive,
           err => `Failed to read Recurly status: ${String(err)}`
         ),
-        // Drop only members whose fresh Recurly row says definitely inactive.
-        // O.none (no fresh data) keeps them, because a stale cache must not
-        // empty the waiting list.
-        TE.map(flagsPerMember => {
-          const {
-            recurlyEmailsByMemberNumber: _recurlyEmails,
-            ...published
-          } = results;
-          return {
-            ...published,
-            membersAwaitingTraining: published.membersAwaitingTraining.filter(
-              (_member, index) =>
-                pipe(
-                  flagsPerMember[index],
-                  O.fold(
-                    () => true,
-                    flags => flags.hasActiveSubscription
-                  )
-                )
-            ),
-          };
+        TE.orElse(error => {
+          deps.logger.warn(
+            '%s; leaving the waiting-for-training list unfiltered',
+            error
+          );
+          const {recurlyEmailsByMemberNumber: _recurlyEmails, ...published} =
+            results;
+          return TE.right(published);
         })
-      )
-    )
+      );
+    })
   );
 
 export type FullQuizResultsForMember = {

@@ -118,3 +118,39 @@ export const getRecurlyReasonsForMember = (extDB: ExternalStateDB) => async (
 export const getRecurlyFlagsForVerifiedEmails = (extDB: ExternalStateDB) => async (
     verifiedEmails: ReadonlyArray<string>
 ): Promise<O.Option<RecurlyFlags>> => _getRecurlyFlags(extDB)([...verifiedEmails]);
+
+// Bulk form of the active check, for lists (e.g. the waiting-for-training
+// queue): one query over everyone's addresses rather than one per member.
+//
+// Returns the active status of every fresh subscription row whose billing
+// email matches any of the given addresses, keyed by lowercased billing
+// email. The caller maps each member's addresses to the billing emails they
+// resolve to (resolveAccountEmailsFrom) and looks the answer up: a member is
+// active iff any of their billing emails is active here, and a member whose
+// addresses resolve to nothing in this map is "no data" (the caller decides
+// what to do with that - the queue keeps them, so a stale cache cannot empty
+// it).
+export const getActiveStatusByEmail = (extDB: ExternalStateDB) => async (
+    emails: ReadonlyArray<string>
+): Promise<ReadonlyMap<string, boolean>> => {
+    if (emails.length === 0) {
+        return new Map();
+    }
+    const rows = await extDB
+        .select({
+            email: recurlySubscriptionTable.email,
+            hasActiveSubscription: recurlySubscriptionTable.hasActiveSubscription,
+        })
+        .from(recurlySubscriptionTable)
+        .where(and(
+            subscriptionMatches(emails),
+            gt(recurlySubscriptionTable.cacheLastUpdated, DateTime.now().minus(RECURLY_TTL).toJSDate())
+        ))
+        .all();
+    const activeByEmail = new Map<string, boolean>();
+    for (const row of rows) {
+        const key = row.email.toLowerCase();
+        activeByEmail.set(key, (activeByEmail.get(key) ?? false) || row.hasActiveSubscription);
+    }
+    return activeByEmail;
+};
