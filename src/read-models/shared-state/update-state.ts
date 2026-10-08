@@ -1228,8 +1228,8 @@ export function updateState (db: BetterSQLite3Database, logger: Logger, trackedE
         // InconsistentEventError branch above keeps its instanceof check:
         // those errors are constructed by this module, so they stay
         // same-realm in practice.
-        const errType = err as {code?: string};
-        const code = errType.code ?? '';
+        const errType = err as {code?: string} | null;
+        const code = errType?.code ?? '';
         if (['SQLITE_CONSTRAINT_PRIMARYKEY', 'SQLITE_CONSTRAINT_FOREIGNKEY'].includes(code)) {
           reason = code;
         }
