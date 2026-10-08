@@ -261,6 +261,45 @@ describe('Get equipment quiz', () => {
       expect(after.unknownMembersAwaitingTraining).toHaveLength(1);
     });
 
+    // A member can be known to Recurly under a different email than the one
+    // they use in the app; the account code is what ties the two together.
+    // Without account-code matching this member would read as "no data" and
+    // stay in the queue even though Recurly positively says inactive.
+    it('excludes a waiting member matched to an inactive subscription only by account code', async () => {
+      const mismatchedMember = {
+        memberNumber: faker.number.int({max: 100000}) as Int,
+        email: faker.internet.email() as EmailAddress,
+        name: undefined,
+        formOfAddress: undefined,
+      };
+      const recurlyBillingEmail = faker.internet.email() as EmailAddress;
+      await framework.commands.memberNumbers.linkNumberToEmail(mismatchedMember);
+      await recordQuiz({
+        completedAt: recentDate,
+        memberNumber: mismatchedMember.memberNumber,
+        email: mismatchedMember.email,
+        score: 10,
+        maxScore: 10,
+      });
+      // The Recurly account bills a different address; the account code is
+      // the member's app email.
+      await insertRecurlySubscription(framework.extDB, {
+        email: recurlyBillingEmail,
+        hasActiveSubscription: false,
+        accountCode: mismatchedMember.email,
+      });
+
+      const after = await runGetQuizResultsByEquipment(
+        framework,
+        addTrainingSheet.trainingSheetId,
+        addTrainingSheet.equipmentId
+      );
+
+      expect(after.membersAwaitingTraining.map(m => m.memberNumber)).toStrictEqual(
+        [addAwaitingTrainingMember.memberNumber]
+      );
+    });
+
     it('reports failed quizes with a computed percentage', () => {
       expect(results.failedQuizes).toHaveLength(1);
       expect(results.failedQuizes[0]).toMatchObject({

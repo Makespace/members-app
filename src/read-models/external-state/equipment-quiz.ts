@@ -4,13 +4,13 @@ import * as RR from 'fp-ts/ReadonlyRecord';
 
 import {Dependencies} from '../../dependencies';
 import {pipe} from 'fp-ts/lib/function';
-import {EmailAddress} from '../../types';
 import {Equipment, MemberCoreInfo} from '../shared-state/return-types';
 import {DateTime, Duration} from 'luxon';
 import {ReadonlyRecord} from 'fp-ts/lib/ReadonlyRecord';
 import {EquipmentId} from '../../types/equipment-id';
 import {TrainingQuizCompletionRow} from '../shared-state/training-quiz/get';
 import {getRecurlyFlagsForVerifiedEmails} from './recurly-status';
+import {memberRecurlyEmails} from './recurly-account-match';
 
 export type OrphanedPassedQuiz = {
   waitingSince: Date;
@@ -63,10 +63,11 @@ export type FullQuizResultsForEquipment = {
 };
 
 // Everything the two passes between lastQuizSync and the Recurly filter hand
-// to each other: the published results plus the verified emails collected on
-// the way, so the Recurly check needs no second lookup per member.
-type QuizResultsWithVerifiedEmails = FullQuizResultsForEquipment & {
-  verifiedEmailsByMemberNumber: Map<number, EmailAddress[]>;
+// to each other: the published results plus the matchable member addresses
+// collected on the way, so the Recurly check needs no second lookup per
+// member.
+type QuizResultsWithRecurlyEmails = FullQuizResultsForEquipment & {
+  recurlyEmailsByMemberNumber: Map<number, string[]>;
 };
 
 export const getFullQuizResultsForEquipment = (
@@ -100,10 +101,12 @@ export const getFullQuizResultsForEquipment = (
       // keyed on the number as typed.
       const latestKnownByMemberNumber = new Map<number, MemberAwaitingTraining>();
       const latestUnknownByMemberNumber = new Map<number, OrphanedPassedQuiz>();
-      // The verified emails come out of the same member lookup that builds
-      // the queue entry, so they are kept here rather than fetched again
-      // when the Recurly check below runs.
-      const verifiedEmailsByMemberNumber = new Map<number, EmailAddress[]>();
+      // Which of each member's addresses may match a Recurly account comes
+      // out of the same member lookup that builds the queue entry, so it is
+      // kept here rather than fetched again when the Recurly check below
+      // runs. memberRecurlyEmails is the codebase's one definition of that
+      // (verified addresses, lowercased).
+      const recurlyEmailsByMemberNumber = new Map<number, string[]>();
 
       for (const row of completions.filter(isPassed)) {
         // A passed row with no member number is dropped (not surfaced as
@@ -140,11 +143,9 @@ export const getFullQuizResultsForEquipment = (
             ...member.value,
             waitingSince: row.completedAt,
           });
-          verifiedEmailsByMemberNumber.set(
+          recurlyEmailsByMemberNumber.set(
             memberNumber,
-            member.value.emails
-              .filter(e => O.isSome(e.verifiedAt))
-              .map(e => e.emailAddress)
+            [...memberRecurlyEmails(member.value)]
           );
         }
       }
@@ -157,7 +158,7 @@ export const getFullQuizResultsForEquipment = (
         failedQuizes: completions.filter(row => !isPassed(row)).map(toQuizRow),
         membersAwaitingTraining,
         unknownMembersAwaitingTraining,
-        verifiedEmailsByMemberNumber,
+        recurlyEmailsByMemberNumber,
       };
     }),
     // Someone no longer a member is not queueing for anything, so known
@@ -166,14 +167,14 @@ export const getFullQuizResultsForEquipment = (
     // is to keep showing demand when the cache has gone stale. Unknown rows
     // (a member number that matches no account) are kept - there is no
     // account to attach a status to, and the quiz-results page shows them.
-    TE.chain((results: QuizResultsWithVerifiedEmails) =>
+    TE.chain((results: QuizResultsWithRecurlyEmails) =>
       pipe(
         TE.tryCatch(
           () =>
             Promise.all(
               results.membersAwaitingTraining.map(member =>
                 getRecurlyFlagsForVerifiedEmails(deps.extDB)(
-                  results.verifiedEmailsByMemberNumber.get(
+                  results.recurlyEmailsByMemberNumber.get(
                     member.memberNumber
                   ) ?? []
                 )
@@ -186,7 +187,7 @@ export const getFullQuizResultsForEquipment = (
         // empty the waiting list.
         TE.map(flagsPerMember => {
           const {
-            verifiedEmailsByMemberNumber: _verified,
+            recurlyEmailsByMemberNumber: _recurlyEmails,
             ...published
           } = results;
           return {

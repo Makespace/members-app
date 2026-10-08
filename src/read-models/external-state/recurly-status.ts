@@ -1,6 +1,5 @@
 import { ExternalStateDB } from "../../sync-worker/external-state-db";
 import { recurlySubscriptionTable } from "../../sync-worker/recurly/recurly-data-table";
-import { EmailAddress } from "../../types";
 import { gt, and } from 'drizzle-orm';
 import { DateTime, Duration } from "luxon";
 import { MemberCoreInfo } from "../shared-state/return-types";
@@ -113,7 +112,9 @@ export const getRecurlyReasonsForMember = (extDB: ExternalStateDB) => async (
 
 // Same flags as getRecurlyReasonsForMember, for callers that already hold
 // *verified* email addresses (e.g. the /areas page resolves owner emails in
-// bulk) and so need no per-member expansion at all.
+// bulk) and so need no per-member expansion at all. Takes plain strings
+// because the Recurly match is case-insensitive text against the cache; the
+// EmailAddress brand is for identity, not for this lookup.
 export const getRecurlyFlagsForVerifiedEmails = (extDB: ExternalStateDB) => async (
-    verifiedEmails: ReadonlyArray<EmailAddress>
+    verifiedEmails: ReadonlyArray<string>
 ): Promise<O.Option<RecurlyFlags>> => _getRecurlyFlags(extDB)([...verifiedEmails]);
