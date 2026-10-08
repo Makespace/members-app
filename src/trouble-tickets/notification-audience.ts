@@ -44,13 +44,22 @@ export const happeningOfEvent = (
   }
 };
 
-// Sooner wins. Somebody who reported a ticket in an area they get a weekly
-// summary of should still hear about their own ticket when they asked to -
-// the two rules both apply, and the more immediate of them is the answer.
+// Two rules can both apply to one ticket: where it is, and whether they
+// reported it. They are separate interests rather than competing answers, so
+// they are not collapsed into one.
+//
+// Live mail is a notification - if either rule asks to hear at once, they do.
+// A summary is a record of a period, and a record that quietly leaves things
+// out is not one: so a ticket belongs in the summary its rules put it in,
+// whether or not it was also emailed at the time. What a summary must not do
+// is carry the same ticket twice, so where both rules name a summary, the
+// sooner of the two wins.
 const SOONEST: ReadonlyArray<Choice> = ['live', 'daily', 'weekly', 'none'];
 
-const soonest = (a: Choice, b: Choice): Choice =>
-  SOONEST.indexOf(a) <= SOONEST.indexOf(b) ? a : b;
+type DigestCadence = 'daily' | 'weekly';
+
+const isDigest = (choice: Choice): choice is DigestCadence =>
+  choice === 'daily' || choice === 'weekly';
 
 const findScope = (
   scopes: ReadonlyArray<ScopeNode>,
@@ -58,10 +67,14 @@ const findScope = (
 ): O.Option<ScopeNode> =>
   O.fromNullable(allScopes(scopes).find(scope => scope.id === id));
 
-// What one member's rules come to for one ticket. The most specific rule that
-// covers it wins, and a rule about a ticket they reported is weighed alongside
-// it rather than instead of it.
-export const subscriptionForTicket = (
+// How one member hears about one ticket: at once, in a summary, both, or not
+// at all.
+type Delivery = {
+  live: boolean;
+  digest: DigestCadence | null;
+};
+
+export const deliveryForTicket = (
   scopes: ReadonlyArray<ScopeNode>,
   memberNumber: number,
   ticket: Pick<
@@ -69,7 +82,38 @@ export const subscriptionForTicket = (
     'equipmentId' | 'areaId' | 'submittedMemberNumber'
   >,
   areaOfEquipment: ReadonlyMap<string, string>
-): Choice => {
+): Delivery => {
+  const [byPlace, mine] = rulesForTicket(
+    scopes,
+    memberNumber,
+    ticket,
+    areaOfEquipment
+  );
+  const digests = [byPlace, mine].filter(isDigest);
+  return {
+    live: byPlace === 'live' || mine === 'live',
+    digest:
+      digests.length === 0
+        ? null
+        : digests.reduce((a, b) =>
+            SOONEST.indexOf(a) <= SOONEST.indexOf(b) ? a : b
+          ),
+  };
+};
+
+// What one member's rules come to for one ticket. The most specific rule that
+// covers it wins, and a rule about a ticket they reported is weighed alongside
+// it rather than instead of it.
+const rulesForTicket = (
+  scopes: ReadonlyArray<ScopeNode>,
+  memberNumber: number,
+  ticket: Pick<
+    TroubleTicket,
+    'equipmentId' | 'areaId' | 'submittedMemberNumber'
+  >,
+  areaOfEquipment: ReadonlyMap<string, string>
+  // Where it is, and whether it is theirs - in that order.
+): readonly [Choice, Choice] => {
   const byPlace = (): Choice => {
     if (ticket.equipmentId !== null) {
       const machine = findScope(scopes, `equipment:${ticket.equipmentId}`);
@@ -105,7 +149,7 @@ export const subscriptionForTicket = (
         )
       : 'none';
 
-  return soonest(byPlace(), mine);
+  return [byPlace(), mine] as const;
 };
 
 // Everybody who could plausibly want to hear about a ticket: the people it
@@ -156,7 +200,11 @@ const candidates = (
 type Audience = {
   memberNumber: number;
   email: Member['primaryEmailAddress'];
-  when: Choice;
+  // Whether to write to them now, and which summary this belongs in. Both
+  // can be true: being told at once and seeing it again in the record of the
+  // day are different things.
+  live: boolean;
+  digest: DigestCadence | null;
   // Whether this is their own report, which changes how the email reads.
   theirs: boolean;
 };
@@ -192,7 +240,13 @@ export const audienceFor = (
           E.match(
             () => [],
             (email): ReadonlyArray<Audience> => [
-              {memberNumber: -1, email, when: 'live', theirs: true},
+              {
+                memberNumber: -1,
+                email,
+                live: true,
+                digest: null,
+                theirs: true,
+              },
             ]
           )
         )
@@ -208,7 +262,7 @@ export const audienceFor = (
         areas,
         rm.notificationPreferences.forMember(member.memberNumber)
       );
-      const when = subscriptionForTicket(
+      const delivery = deliveryForTicket(
         scopes,
         member.memberNumber,
         ticket,
@@ -217,13 +271,16 @@ export const audienceFor = (
       return {
         memberNumber: member.memberNumber,
         email: member.primaryEmailAddress,
-        when,
+        ...delivery,
         theirs: ticket.submittedMemberNumber === member.memberNumber,
       };
     })
       .filter(
         entry =>
-          entry.when !== 'none' && happeningsOf(entry.when).includes(happening)
+          (entry.live || entry.digest !== null) &&
+          happeningsOf(entry.live ? 'live' : (entry.digest as Choice)).includes(
+            happening
+          )
       ),
   ];
 };

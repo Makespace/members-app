@@ -1,5 +1,5 @@
 import {UUID} from 'io-ts-types';
-import {subscriptionForTicket} from '../../src/trouble-tickets/notification-audience';
+import {deliveryForTicket} from '../../src/trouble-tickets/notification-audience';
 import {preferencesFor} from '../../src/trouble-tickets/notification-preferences';
 import {TroubleTicket} from '../../src/types/trouble-ticket';
 
@@ -58,102 +58,138 @@ const ticket = (
   ...over,
 });
 
-const whenFor = (
-  t: Parameters<typeof subscriptionForTicket>[2],
+const deliveryFor = (
+  t: Parameters<typeof deliveryForTicket>[2],
   stored?: ReadonlyMap<string, string>
-) => subscriptionForTicket(scopesFor(stored), ME, t, areaOfEquipment);
+) => deliveryForTicket(scopesFor(stored), ME, t, areaOfEquipment);
+
+const inSummary = (cadence: 'daily' | 'weekly') => ({
+  live: false,
+  digest: cadence,
+});
+const atOnce = {live: true, digest: null};
+const nothing = {live: false, digest: null};
 
 describe('how soon somebody hears about one ticket', () => {
   it('uses the machine when the ticket names one they are named on', () => {
-    expect(whenFor(ticket({equipmentId: BANDSAW as UUID}))).toBe('daily');
+    expect(deliveryFor(ticket({equipmentId: BANDSAW as UUID}))).toStrictEqual(
+      inSummary('daily')
+    );
   });
 
   // The machine has no rule of its own, so the area it sits in answers.
   it('falls back to the area for a machine they are not named on', () => {
-    expect(whenFor(ticket({equipmentId: PLANER as UUID}))).toBe('weekly');
+    expect(deliveryFor(ticket({equipmentId: PLANER as UUID}))).toStrictEqual(
+      inSummary('weekly')
+    );
   });
 
   it('uses the area when the ticket names an area and no machine', () => {
-    expect(whenFor(ticket({areaId: WOOD as UUID}))).toBe('weekly');
+    expect(deliveryFor(ticket({areaId: WOOD as UUID}))).toStrictEqual(
+      inSummary('weekly')
+    );
   });
 
   it('says nothing about an area they have nothing to do with', () => {
-    expect(whenFor(ticket({equipmentId: LASER as UUID}))).toBe('none');
+    expect(deliveryFor(ticket({equipmentId: LASER as UUID}))).toStrictEqual(
+      nothing
+    );
   });
 
   // A ticket that matched no machine and no area at all.
   it('falls to the rule about everywhere else when it belongs nowhere', () => {
-    expect(whenFor(ticket({}))).toBe('none');
+    expect(deliveryFor(ticket({}))).toStrictEqual(nothing);
   });
 
   describe('a ticket they reported themselves', () => {
-    it('is heard about as it happens, whatever the area says', () => {
+    // Both rules apply, and they are different interests rather than
+    // competing answers: being told at once, and the week's record being
+    // complete. A summary that quietly left this out would be claiming less
+    // happened than did.
+    it('is heard about at once and still counted in the area’s summary', () => {
       expect(
-        whenFor(
-          ticket({areaId: WOOD as UUID, submittedMemberNumber: ME})
-        )
-      ).toBe('live');
+        deliveryFor(ticket({areaId: WOOD as UUID, submittedMemberNumber: ME}))
+      ).toStrictEqual({live: true, digest: 'weekly'});
     });
 
-    // Both rules apply; the more immediate of them is the answer, so a weekly
-    // area does not hold back news about your own ticket.
-    it('still applies somewhere they hear nothing about', () => {
+    it('is heard about at once somewhere they hear nothing else about', () => {
       expect(
-        whenFor(
+        deliveryFor(
           ticket({equipmentId: LASER as UUID, submittedMemberNumber: ME})
         )
-      ).toBe('live');
+      ).toStrictEqual(atOnce);
     });
 
     it('does not apply to somebody else’s ticket', () => {
       expect(
-        whenFor(
+        deliveryFor(
           ticket({
             equipmentId: LASER as UUID,
             submittedMemberNumber: SOMEBODY_ELSE,
           })
         )
-      ).toBe('none');
+      ).toStrictEqual(nothing);
+    });
+
+    // Their own machine is on a daily summary and their own report is live:
+    // both say something, and neither is discarded.
+    it('lands in the machine’s summary as well, when it has one', () => {
+      expect(
+        deliveryFor(
+          ticket({equipmentId: BANDSAW as UUID, submittedMemberNumber: ME})
+        )
+      ).toStrictEqual({live: true, digest: 'daily'});
+    });
+
+    // One ticket in two summaries would be the same thing said twice, which
+    // is the duplication actually worth avoiding.
+    it('never lands in two summaries at once', () => {
+      const delivery = deliveryFor(
+        ticket({equipmentId: PLANER as UUID, submittedMemberNumber: ME}),
+        new Map([['reported-by-me', 'daily']])
+      );
+
+      expect(delivery).toStrictEqual(inSummary('daily'));
     });
   });
 
   describe('once somebody has said something of their own', () => {
     it('takes what they chose for that machine', () => {
       expect(
-        whenFor(
+        deliveryFor(
           ticket({equipmentId: PLANER as UUID}),
           new Map([[`equipment:${PLANER}`, 'live']])
         )
-      ).toBe('live');
+      ).toStrictEqual(atOnce);
     });
 
     it('takes what they chose for the area beneath it', () => {
       expect(
-        whenFor(
+        deliveryFor(
           ticket({equipmentId: PLANER as UUID}),
           new Map([[`area:${WOOD}`, 'none']])
         )
-      ).toBe('none');
+      ).toStrictEqual(nothing);
     });
 
     // Following an area they have nothing to do with, which is the whole
     // point of listing every area on the page.
     it('lets them follow an area that is not theirs', () => {
       expect(
-        whenFor(
+        deliveryFor(
           ticket({equipmentId: LASER as UUID}),
           new Map([[`area:${METAL}`, 'live']])
         )
-      ).toBe('live');
+      ).toStrictEqual(atOnce);
     });
 
     it('lets them go quiet about their own machine', () => {
       expect(
-        whenFor(
+        deliveryFor(
           ticket({equipmentId: BANDSAW as UUID}),
           new Map([[`equipment:${BANDSAW}`, 'none']])
         )
-      ).toBe('none');
+      ).toStrictEqual(nothing);
     });
   });
 });

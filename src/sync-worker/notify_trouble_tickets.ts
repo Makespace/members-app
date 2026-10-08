@@ -172,7 +172,7 @@ export const notifyTroubleTicketChanges = async (
       continue;
     }
     const recipients = audienceFor(rm, ticket.value, happening.value).filter(
-      entry => entry.when === 'live'
+      entry => entry.live
     );
     const commitResp = await deps.commitEvent(rm.getCurrentEventIndex())(
       constructEvent('TroubleTicketNotificationSent')({

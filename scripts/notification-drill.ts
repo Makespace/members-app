@@ -493,6 +493,46 @@ const SITUATIONS: ReadonlyArray<Situation> = [
     },
   },
   {
+    key: 'my-own-machine',
+    what: 'Reporting a fault on your own machine: told at once, and still in the summary',
+    play: async stage => {
+      await stage.join(CAST.trainer);
+      const wood = await stage.area('Wood Shop');
+      const saw = await stage.machine('Band Saw', wood);
+      await stage.own(wood, CAST.trainer);
+      await stage.train(saw, CAST.trainer);
+      await stage.alreadyInPost();
+
+      // Their own report, on the machine they look after: live because they
+      // reported it, daily because it is theirs. Both are true.
+      await stage.raise({
+        issue: 'The blade is wandering',
+        equipmentId: saw,
+        by: CAST.trainer,
+      });
+      await stage.raise({issue: 'The guard rattles', equipmentId: saw});
+      await stage.everything();
+
+      return {
+        expected: [
+          {
+            who: CAST.trainer,
+            subject: "We've logged your report: The blade is wandering",
+          },
+          // The other one is on a daily rule and nothing more, so it waits
+          // for the summary rather than arriving twice.
+          {
+            who: CAST.trainer,
+            subject: 'today',
+            // The day's record is complete: the one they were emailed about
+            // is counted alongside the one they were not.
+            mentions: ['The blade is wandering', 'The guard rattles'],
+          },
+        ],
+      };
+    },
+  },
+  {
     key: 'reporter',
     what: 'Whoever reported a ticket hears what happened to it, straight away',
     play: async stage => {
