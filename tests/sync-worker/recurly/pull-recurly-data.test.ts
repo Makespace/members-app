@@ -10,6 +10,7 @@ import {
 import {pullRecurlyData} from '../../../src/sync-worker/recurly/pull-recurly-data';
 import type {RecurlyClientFactory} from '../../../src/sync-worker/recurly/pull-recurly-data';
 import {
+  recurlyAccountCodeTable,
   recurlyInvoiceTable,
   recurlySubscriptionHistoryTable,
   recurlySubscriptionTable,
@@ -20,6 +21,7 @@ import {EmailAddress} from '../../../src/types/email-address';
 
 type RecurlyTestAccount = {
   id?: string | null;
+  code?: string | null;
   email: string;
   hasActiveSubscription?: boolean | null;
   hasFutureSubscription?: boolean | null;
@@ -316,6 +318,49 @@ describe('pull recurly data', () => {
       .where(eq(recurlySubscriptionTable.email, 'withid@example.com'))
       .get();
     expect(row?.accountId).toBe('acct_1');
+  });
+
+  // The account code is the email the member signed up with, which can be
+  // the only address the app knows them by.
+  it('records the account code, lowercased, beside the billing email', async () => {
+    const [createRecurlyClient] = recurlyClientFactory([
+      {id: 'acct_1', code: 'Signup@Example.com ', email: 'billing@example.com'},
+      {id: 'acct_2', email: 'nocode@example.com'},
+    ]);
+
+    await pullRecurlyData(
+      createLogger({level: 'silent'}),
+      extDB,
+      'token',
+      createRecurlyClient
+    )(Duration.fromMillis(0));
+
+    const codes = await extDB.select().from(recurlyAccountCodeTable).all();
+    expect(codes.map(row => [row.code, row.email, row.accountId])).toEqual([
+      ['signup@example.com', 'billing@example.com', 'acct_1'],
+    ]);
+  });
+
+  // Two accounts billing one address (a member who rejoined under a new
+  // account) must each keep their own code.
+  it('keeps a code per account when two accounts bill the same email', async () => {
+    const [createRecurlyClient] = recurlyClientFactory([
+      {id: 'acct_old', code: 'old@example.com', email: 'new@example.com'},
+      {id: 'acct_new', code: 'new@example.com', email: 'new@example.com'},
+    ]);
+
+    await pullRecurlyData(
+      createLogger({level: 'silent'}),
+      extDB,
+      'token',
+      createRecurlyClient
+    )(Duration.fromMillis(0));
+
+    const codes = await extDB.select().from(recurlyAccountCodeTable).all();
+    expect(codes.map(row => [row.code, row.email]).sort()).toEqual([
+      ['new@example.com', 'new@example.com'],
+      ['old@example.com', 'new@example.com'],
+    ]);
   });
 
   it('caches invoices against the lowercased account email', async () => {

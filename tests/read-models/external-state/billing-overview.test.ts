@@ -6,6 +6,7 @@ import {
   initExternalStateDB,
 } from '../../../src/sync-worker/external-state-db';
 import {
+  recurlyAccountCodeTable,
   recurlyInvoiceTable,
   recurlySubscriptionTable,
 } from '../../../src/sync-worker/recurly/recurly-data-table';
@@ -183,6 +184,29 @@ describe('the outstanding invoices overview', () => {
       NOW
     );
     expect(overview.concerns).toHaveLength(1);
+    expect(overview.unlinked).toHaveLength(0);
+  });
+
+  // Recurly bills one address while the account code - the signup email,
+  // which is how the app knows the member - is another.
+  it('matches a member by the account code when the billing email differs', async () => {
+    await addInvoice({id: 'i1', email: 'billing@example.com'});
+    await addSubscription('billing@example.com');
+    await extDB
+      .insert(recurlyAccountCodeTable)
+      .values({
+        code: 'signup@example.com',
+        email: 'billing@example.com',
+        cacheLastUpdated: NOW,
+      })
+      .run();
+
+    const overview = await getBillingOverview(extDB)(
+      [memberWith(1, 'signup@example.com')],
+      NOW
+    );
+    expect(overview.concerns).toHaveLength(1);
+    expect(overview.concerns[0]?.memberNumber).toBe(1);
     expect(overview.unlinked).toHaveLength(0);
   });
 
