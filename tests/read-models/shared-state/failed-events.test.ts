@@ -7,6 +7,8 @@ import {initTestFramework, TestFramework} from '../test-framework';
 import { Int } from 'io-ts';
 import * as O from 'fp-ts/Option';
 import { allMemberNumbers } from '../../../src/read-models/shared-state/return-types';
+import {updateState} from '../../../src/read-models/shared-state/update-state';
+import {Logger} from 'pino';
 
 const arbitraryLinkNumberEvent = () => ({
   type: 'MemberNumberLinkedToEmail' as const,
@@ -80,6 +82,52 @@ describe('failed-events', () => {
 
     expect(rows).toHaveLength(1);
     expect(rows[0].eventId).toStrictEqual(failedEvent.event_id);
+  });
+
+  it('classifies a constraint error thrown as a plain object (cross-realm safe)', () => {
+    // Regression guard for the realm-sensitive instanceof removal: better-
+    // sqlite3's SqliteError can arrive from a different vm realm where
+    // `instanceof Error` fails. Duck-typing .code must classify it. This stub
+    // throws a plain object (NOT an Error instance) with the FK code - if the
+    // duck-type is ever reverted to instanceof, this test fails with the
+    // original error propagating instead of a failedEvents row.
+    const storedEvent = framework.insertIntoSharedReadModel(
+      arbitraryFailingOwnerAddedEvent()
+    );
+    // Remove the row the real db just wrote so this test's stub run is the
+    // only author.
+    framework.sharedReadModel.db.delete(failedEventsTable).run();
+
+    let transactionCalls = 0;
+    const stubDb = {
+      transaction: (fn: (tx: unknown) => unknown) => {
+        transactionCalls += 1;
+        if (transactionCalls === 1) {
+          // First transaction = the projection: throw a bare plain object
+          // (deliberately not an Error instance - that's the whole scenario).
+          // eslint-disable-next-line @typescript-eslint/only-throw-error
+          throw {code: 'SQLITE_CONSTRAINT_FOREIGNKEY'};
+        }
+        // Second transaction = the failed-event record: delegate to the real
+        // db so the row is actually written and observable.
+        return framework.sharedReadModel.db.transaction(tx => fn(tx as unknown));
+      },
+    } as unknown as Parameters<typeof updateState>[0];
+
+    const silentLogger = {error: () => undefined} as unknown as Logger;
+    // With the duck-type: no throw. With an instanceof revert: the plain
+    // object propagates and this expectation fails.
+    expect(() =>
+      updateState(stubDb as never, silentLogger as unknown as Logger, true)(storedEvent)
+    ).not.toThrow();
+
+    expect(transactionCalls).toBe(2);
+    const rows = framework.sharedReadModel.db
+      .select()
+      .from(failedEventsTable)
+      .all();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].error).toBe('SQLITE_CONSTRAINT_FOREIGNKEY');
   });
 
   it('continues applying later tracked events after a failure', () => {
