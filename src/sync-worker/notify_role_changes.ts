@@ -5,7 +5,20 @@ import {constructEvent, Email} from '../types';
 import {EmailAddress} from '../types/email-address';
 import {StoredEventOfType} from '../types/domain-event';
 import {SyncWorkerDependencies} from './dependencies';
-import {audienceOf, mayEmail} from '../trouble-tickets/notification-gate';
+import {
+  audienceOf,
+  heldBackSendEmail,
+  mayEmail,
+} from '../trouble-tickets/notification-gate';
+
+// A role change that cannot be acted on is reconsidered every cycle, so
+// saying so every time would be thousands of identical lines a day. Once per
+// change, per run of the worker, is enough to know it is waiting.
+const announced = new Set<number>();
+
+// The set above outlives a single call, which is the point of it. Tests need
+// a way back to a clean worker.
+export const forgetAnnouncedRoleChanges = (): void => announced.clear();
 
 // Taking on a machine or an area is taking on the job of looking after it, and
 // hearing about it is part of that job. So a role change sets what somebody
@@ -138,14 +151,17 @@ export const notifyRoleChanges = async (
     // telling cannot happen, so neither does the overruling - the whole
     // reaction waits until there is somebody to send it to.
     if (!mayEmail(audienceOf(deps), member.value.primaryEmailAddress)) {
-      deps.logger.info(
-        {
-          memberNumber: event.memberNumber,
-          scope,
-          wouldHaveEmailed: member.value.primaryEmailAddress,
-        },
-        'Held back a role change, so their notifications are left as they are'
-      );
+      if (!announced.has(event.event_index)) {
+        announced.add(event.event_index);
+        deps.logger.info(
+          {
+            memberNumber: event.memberNumber,
+            scope,
+            wouldHaveEmailed: member.value.primaryEmailAddress,
+          },
+          'Held back a role change, so their notifications are left as they are'
+        );
+      }
       continue;
     }
 
@@ -165,7 +181,7 @@ export const notifyRoleChanges = async (
       continue;
     }
 
-    const sent = await deps.sendEmail(
+    const sent = await heldBackSendEmail(deps)(
       buildRoleChangeEmail(
         deps.conf.PUBLIC_URL,
         member.value.primaryEmailAddress,

@@ -1,4 +1,5 @@
 import * as TE from 'fp-ts/TaskEither';
+import {pipe} from 'fp-ts/lib/function';
 import {Logger} from 'pino';
 import {Config} from '../configuration';
 import {Email, Failure} from '../types';
@@ -72,13 +73,25 @@ export const audienceOf = (deps: Pick<GateDependencies, 'conf'>): Audience =>
   whoMayBeEmailed(deps.conf.TROUBLE_TICKET_NOTIFY_TO);
 
 // A sendEmail that holds back anything not addressed to the allowed list, and
-// says in the log what it held and who it was for.
+// says in the log what it did either way. Saying so on the way out matters as
+// much as on the way back: without it, a notification that worked and one that
+// never happened look identical from the log, which is no way to check that
+// the thing is running.
 export const heldBackSendEmail =
   (deps: GateDependencies): SendEmail =>
   email => {
     const audience = audienceOf(deps);
     if (mayEmail(audience, email.recipient)) {
-      return deps.sendEmail(email);
+      return pipe(
+        deps.sendEmail(email),
+        TE.map(result => {
+          deps.logger.info(
+            {emailed: email.recipient, about: email.subject},
+            'Sent a trouble ticket notification'
+          );
+          return result;
+        })
+      );
     }
     deps.logger.info(
       {
