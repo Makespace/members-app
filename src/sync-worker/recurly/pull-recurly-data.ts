@@ -7,6 +7,7 @@ import {EmailAddressCodec} from '../../types/email-address';
 import {DateTime, Duration} from 'luxon';
 import { ExternalStateDB } from '../external-state-db';
 import {
+  recurlyAccountCodeTable,
   recurlyInvoiceTable,
   recurlySubscriptionHistoryTable,
   recurlySubscriptionTable,
@@ -447,7 +448,6 @@ export const pullRecurlyData = (
 
             const values = {
                 accountId: id ?? null,
-                accountCode: code ? code.trim().toLowerCase() : null,
                 cacheLastUpdated: new Date(),
                 hasActiveSubscription: hasActiveSubscription ?? false,
                 hasFutureSubscription: hasFutureSubscription ?? false,
@@ -466,6 +466,22 @@ export const pullRecurlyData = (
                     set: values,
                 }
             ).run();
+
+            const accountCode = code?.trim().toLowerCase();
+            if (accountCode) {
+                const codeValues = {
+                    email: maybeEmail,
+                    accountId: id ?? null,
+                    cacheLastUpdated: values.cacheLastUpdated,
+                };
+                await extDB.insert(recurlyAccountCodeTable)
+                    .values({code: accountCode, ...codeValues})
+                    .onConflictDoUpdate({
+                        target: recurlyAccountCodeTable.code,
+                        set: codeValues,
+                    })
+                    .run();
+            }
         }
 
         const invoices = await incrementalPull(

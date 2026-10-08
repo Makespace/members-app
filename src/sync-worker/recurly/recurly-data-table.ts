@@ -13,10 +13,6 @@ export const recurlySubscriptionTable = sqliteTable(
     // Recurly's own id for the account. Null for rows cached before it was
     // recorded, and until the next sync refreshes them.
     accountId: text('accountId'),
-    // The account code, lowercased. Makespace sets it to the email the member
-    // signed up with, which can differ from the address Recurly now bills
-    // (`email`), so a member is matched on either. Null until the next sync.
-    accountCode: text('accountCode'),
     cacheLastUpdated: integer('cacheLastUpdated', {mode: 'timestamp_ms'}).notNull(),
     hasActiveSubscription: integer('hasActiveSubscription', {mode: 'boolean'}).notNull(),
     hasFutureSubscription: integer('hasFutureSubscription', {mode: 'boolean'}).notNull(),
@@ -131,6 +127,25 @@ export const recurlySubscriptionHistoryTable = sqliteTable(
   }
 );
 
+// One row per Recurly account code, pointing at the billing email the
+// subscription cache is keyed by. Makespace sets the code to the email the
+// member signed up with, which can differ from the address Recurly now
+// bills, so a member is matched on either; see recurly-account-match.ts.
+// Its own table rather than a column on the subscription cache: that cache
+// is keyed by billing email, and two accounts billing one address (a member
+// who rejoined under a new account) would otherwise overwrite each other's
+// code every sync. Codes are unique in Recurly, so they key cleanly.
+export const recurlyAccountCodeTable = sqliteTable(
+  'recurly_account_codes',
+  {
+    // Lowercased, as the subscription cache's email is.
+    code: text('code').primaryKey(),
+    email: text('email').notNull(),
+    accountId: text('accountId'),
+    cacheLastUpdated: integer('cacheLastUpdated', {mode: 'timestamp_ms'}).notNull(),
+  }
+);
+
 // Where each incremental pull got to, so the next one asks Recurly only for
 // what has changed since.
 export const recurlySyncMetadataTable = sqliteTable(
@@ -151,6 +166,15 @@ const createRecurlySubscriptionTable = sql`
     hasCanceledSubscription INTEGER NOT NULL,
     hasPausedSubscription INTEGER NOT NULL,
     hasPastDueInvoice INTEGER NOT NULL
+  );
+`;
+
+const createRecurlyAccountCodeTable = sql`
+  CREATE TABLE IF NOT EXISTS recurly_account_codes (
+    code TEXT PRIMARY KEY,
+    email TEXT NOT NULL,
+    accountId TEXT,
+    cacheLastUpdated INTEGER NOT NULL
   );
 `;
 
@@ -248,7 +272,9 @@ export const createRecurlyIndexes = [
   // expression index has to cover both.
   sql`CREATE INDEX IF NOT EXISTS recurly_subscriptions_lower_email ON recurly_subscriptions (lower(email), cacheLastUpdated);`,
   sql`CREATE INDEX IF NOT EXISTS recurly_invoices_lower_email ON recurly_invoices (lower(email));`,
-  sql`CREATE INDEX IF NOT EXISTS recurly_subscriptions_account_code ON recurly_subscriptions (accountCode);`,
+  // The unlinked-accounts page and the billing overview read codes by
+  // billing email; member lookups go the other way, through the key.
+  sql`CREATE INDEX IF NOT EXISTS recurly_account_codes_email ON recurly_account_codes (email);`,
 ];
 
 const createRecurlySchemaVersionTable = sql`
@@ -261,6 +287,7 @@ const createRecurlySchemaVersionTable = sql`
 export const createTables = [
   createRecurlySchemaVersionTable,
   createRecurlySubscriptionTable,
+  createRecurlyAccountCodeTable,
   createRecurlyInvoiceTable,
   createRecurlyTransactionTable,
   createRecurlySubscriptionHistoryTable,
@@ -289,5 +316,4 @@ export const rebuildBillingCaches = [
 // ensureRecurlyDBTablesExist, which forgives exactly that error.
 export const addRecurlyColumns = [
   sql`ALTER TABLE recurly_subscriptions ADD COLUMN accountId TEXT;`,
-  sql`ALTER TABLE recurly_subscriptions ADD COLUMN accountCode TEXT;`,
 ];

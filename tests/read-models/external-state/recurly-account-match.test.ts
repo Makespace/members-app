@@ -38,9 +38,8 @@ describe('memberRecurlyEmails', () => {
 
 describe('resolveAccountEmailsFrom', () => {
   const accounts = [
-    {email: 'billing@example.com', accountCode: 'signup@example.com'},
-    {email: 'same@example.com', accountCode: 'same@example.com'},
-    {email: 'old@example.com', accountCode: null},
+    {code: 'signup@example.com', email: 'billing@example.com'},
+    {code: 'same@example.com', email: 'same@example.com'},
   ];
 
   it('adds the billing email of an account whose code is one of the addresses', () => {
@@ -53,6 +52,16 @@ describe('resolveAccountEmailsFrom', () => {
     expect(resolveAccountEmailsFrom(accounts)(['old@example.com'])).toStrictEqual([
       'old@example.com',
     ]);
+  });
+
+  // The case the table exists for: two accounts bill one address.
+  it('lets two codes point at the same billing email', () => {
+    const resolve = resolveAccountEmailsFrom([
+      {code: 'old@example.com', email: 'new@example.com'},
+      {code: 'new@example.com', email: 'new@example.com'},
+    ]);
+    expect(resolve(['old@example.com'])).toContain('new@example.com');
+    expect(resolve(['new@example.com'])).toStrictEqual(['new@example.com']);
   });
 
   it('matches codes case-insensitively', () => {

@@ -1,7 +1,10 @@
 import {inArray, or, sql} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
 import {ExternalStateDB} from '../../sync-worker/external-state-db';
-import {recurlySubscriptionTable} from '../../sync-worker/recurly/recurly-data-table';
+import {
+  recurlyAccountCodeTable,
+  recurlySubscriptionTable,
+} from '../../sync-worker/recurly/recurly-data-table';
 import {MemberCoreInfo} from '../shared-state/return-types';
 
 // The one place that says how a member is matched to Recurly.
@@ -13,6 +16,10 @@ import {MemberCoreInfo} from '../shared-state/return-types';
 // cached from Recurly (invoices, transactions, subscription history) is keyed
 // by the account's *email*, so matching resolves a member's addresses to the
 // account emails they stand for, and lookups go on from there.
+//
+// Addresses and codes are stored lowercased by the sync and compared
+// lowercased here; every path lowercases its input once and then compares
+// exactly.
 
 // Which of a member's addresses may be matched: verified ones, lowercased as
 // the cache stores them.
@@ -26,27 +33,30 @@ export const memberRecurlyEmails = (
   ),
 ];
 
-type AccountRow = {email: string; accountCode: string | null};
+type AccountCodeRow = {code: string; email: string};
 
-// Pure: given every cached account, the account emails that a set of member
-// addresses resolve to. The addresses themselves are kept, so an account the
-// subscription cache has not seen yet (its invoices arrived first) still
-// matches by email as before.
-export const resolveAccountEmailsFrom =
-  (accounts: ReadonlyArray<AccountRow>) =>
-  (emails: ReadonlyArray<string>): ReadonlyArray<string> => {
-    const wanted = new Set(emails.map(email => email.toLowerCase()));
-    const resolved = new Set(wanted);
-    for (const account of accounts) {
-      if (
-        account.accountCode !== null &&
-        wanted.has(account.accountCode.toLowerCase())
-      ) {
-        resolved.add(account.email.toLowerCase());
+// Pure, for a caller that has already loaded every account code: the account
+// emails a set of member addresses resolve to. The addresses themselves are
+// kept, so an account the subscription cache has not seen yet (its invoices
+// arrived first) still matches by email as before. Built once per table of
+// codes, then cheap per member.
+export const resolveAccountEmailsFrom = (
+  codes: ReadonlyArray<AccountCodeRow>
+): ((emails: ReadonlyArray<string>) => ReadonlyArray<string>) => {
+  const emailByCode = new Map(
+    codes.map(row => [row.code.toLowerCase(), row.email.toLowerCase()])
+  );
+  return emails => {
+    const resolved = new Set(emails.map(email => email.toLowerCase()));
+    for (const email of [...resolved]) {
+      const viaCode = emailByCode.get(email);
+      if (viaCode !== undefined) {
+        resolved.add(viaCode);
       }
     }
     return [...resolved];
   };
+};
 
 // As above, for one member at a time: one query for the accounts their
 // addresses name by code.
@@ -57,23 +67,31 @@ export const resolveAccountEmails =
     if (lowered.length === 0) {
       return [];
     }
-    const accounts = await extDB
+    const codes = await extDB
       .select({
-        email: recurlySubscriptionTable.email,
-        accountCode: recurlySubscriptionTable.accountCode,
+        code: recurlyAccountCodeTable.code,
+        email: recurlyAccountCodeTable.email,
       })
-      .from(recurlySubscriptionTable)
-      .where(inArray(recurlySubscriptionTable.accountCode, lowered))
+      .from(recurlyAccountCodeTable)
+      .where(inArray(recurlyAccountCodeTable.code, lowered))
       .all();
-    return resolveAccountEmailsFrom(accounts)(lowered);
+    return resolveAccountEmailsFrom(codes)(lowered);
   };
 
 // A where-clause for the subscription cache itself: rows whose billing email
-// or account code is one of these addresses.
+// is one of these addresses, or is what one of them resolves to by code.
 export const subscriptionMatches = (emails: ReadonlyArray<string>) => {
   const lowered = emails.map(email => email.toLowerCase());
+  const billingEmail = sql`lower(${recurlySubscriptionTable.email})`;
   return or(
-    inArray(sql`lower(${recurlySubscriptionTable.email})`, lowered),
-    inArray(recurlySubscriptionTable.accountCode, lowered)
+    inArray(billingEmail, lowered),
+    inArray(billingEmail, billingEmailsForCodes(lowered))
   );
 };
+
+// Subquery: the billing emails of the accounts whose code is one of these.
+const billingEmailsForCodes = (codes: ReadonlyArray<string>) =>
+  sql`(select ${recurlyAccountCodeTable.email} from ${recurlyAccountCodeTable} where ${inArray(
+    recurlyAccountCodeTable.code,
+    [...codes]
+  )})`;

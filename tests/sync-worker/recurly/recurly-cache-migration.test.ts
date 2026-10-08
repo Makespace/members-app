@@ -6,6 +6,7 @@ import {
   initExternalStateDB,
 } from '../../../src/sync-worker/external-state-db';
 import {
+  recurlyAccountCodeTable,
   recurlyInvoiceTable,
   recurlySubscriptionTable,
   recurlySyncMetadataTable,
@@ -61,10 +62,10 @@ describe('the recurly cache picking up new columns', () => {
     });
   });
 
-  // The shape production had when account-code matching shipped: accountId
-  // present, accountCode not. The new column, its index and the lookups that
-  // use it must all work on that database, and keep working on the next boot.
-  it('adds accountCode to a cache that already has accountId, and matches on it once filled', async () => {
+  // The shape production had when account-code matching shipped: no codes
+  // table at all. It must appear on boot, the lookups must work before and
+  // after the sync fills it, and the next boot must be clean.
+  it('creates the account-codes table beside an existing cache, and matches on it once filled', async () => {
     await extDB.run(
       sql`CREATE TABLE recurly_subscriptions (
         email TEXT PRIMARY KEY,
@@ -95,24 +96,29 @@ describe('the recurly cache picking up new columns', () => {
         },
       ],
     };
-    // Before the next sync fills the code in, nothing changes for anyone.
+    // Before the next sync fills the codes in, nothing changes for anyone.
     expect(await getRecurlyStatusForMember(extDB)(member)).toBe('inactive');
     expect(await resolveAccountEmails(extDB)(['signup@example.com'])).toStrictEqual([
       'signup@example.com',
     ]);
 
     // The sync writes the code; from then on the signup address matches.
-    await extDB.run(
-      sql`UPDATE recurly_subscriptions SET accountCode = 'signup@example.com' WHERE email = 'billing@example.com';`
-    );
+    await extDB
+      .insert(recurlyAccountCodeTable)
+      .values({
+        code: 'signup@example.com',
+        email: 'billing@example.com',
+        accountId: 'acct_1',
+        cacheLastUpdated: new Date(),
+      })
+      .run();
     expect(await getRecurlyStatusForMember(extDB)(member)).toBe('active');
 
-    // And the index named the column, so a second boot is clean.
     await expect(ensureExtDBTablesExist(extDB)()).resolves.not.toThrow();
     const indexes = await extDB.all<{name: string}>(
-      sql`SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'recurly_subscriptions';`
+      sql`SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'recurly_account_codes';`
     );
-    expect(indexes.map(i => i.name)).toContain('recurly_subscriptions_account_code');
+    expect(indexes.map(i => i.name)).toContain('recurly_account_codes_email');
   });
 
   it('is safe to run against a cache that is already up to date', async () => {

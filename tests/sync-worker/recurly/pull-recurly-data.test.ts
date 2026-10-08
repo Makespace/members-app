@@ -10,6 +10,7 @@ import {
 import {pullRecurlyData} from '../../../src/sync-worker/recurly/pull-recurly-data';
 import type {RecurlyClientFactory} from '../../../src/sync-worker/recurly/pull-recurly-data';
 import {
+  recurlyAccountCodeTable,
   recurlyInvoiceTable,
   recurlySubscriptionHistoryTable,
   recurlySubscriptionTable,
@@ -334,12 +335,31 @@ describe('pull recurly data', () => {
       createRecurlyClient
     )(Duration.fromMillis(0));
 
-    const rows = await extDB.select().from(recurlySubscriptionTable).all();
-    expect(
-      rows.map(row => [row.email, row.accountCode]).sort()
-    ).toEqual([
-      ['billing@example.com', 'signup@example.com'],
-      ['nocode@example.com', null],
+    const codes = await extDB.select().from(recurlyAccountCodeTable).all();
+    expect(codes.map(row => [row.code, row.email, row.accountId])).toEqual([
+      ['signup@example.com', 'billing@example.com', 'acct_1'],
+    ]);
+  });
+
+  // Two accounts billing one address (a member who rejoined under a new
+  // account) must each keep their own code.
+  it('keeps a code per account when two accounts bill the same email', async () => {
+    const [createRecurlyClient] = recurlyClientFactory([
+      {id: 'acct_old', code: 'old@example.com', email: 'new@example.com'},
+      {id: 'acct_new', code: 'new@example.com', email: 'new@example.com'},
+    ]);
+
+    await pullRecurlyData(
+      createLogger({level: 'silent'}),
+      extDB,
+      'token',
+      createRecurlyClient
+    )(Duration.fromMillis(0));
+
+    const codes = await extDB.select().from(recurlyAccountCodeTable).all();
+    expect(codes.map(row => [row.code, row.email]).sort()).toEqual([
+      ['new@example.com', 'new@example.com'],
+      ['old@example.com', 'new@example.com'],
     ]);
   });
 

@@ -6,7 +6,7 @@ import {identity, pipe} from 'fp-ts/lib/function';
 import {Actor, UserActor} from '../src/types/actor';
 import {EmailAddress, EmailAddressCodec} from '../src/types/email-address';
 import {ExternalStateDB} from '../src/sync-worker/external-state-db';
-import {recurlySubscriptionTable} from '../src/sync-worker/recurly/recurly-data-table';
+import {recurlyAccountCodeTable, recurlySubscriptionTable} from '../src/sync-worker/recurly/recurly-data-table';
 import * as betterSqlite3 from 'better-sqlite3';
 import * as libsqlClient from '@libsql/client';
 
@@ -70,10 +70,12 @@ export const insertRecurlySubscription = (
     hasCanceledSubscription?: boolean;
     hasPausedSubscription?: boolean;
     hasPastDueInvoice?: boolean;
+    // Written to the account-codes table, which is what the sync does.
     accountCode?: string;
   }
-) =>
-  extDB
+) => {
+  const {accountCode, ...subscription} = values;
+  const insert = extDB
     .insert(recurlySubscriptionTable)
     .values({
       cacheLastUpdated: new Date(),
@@ -81,9 +83,23 @@ export const insertRecurlySubscription = (
       hasCanceledSubscription: false,
       hasPausedSubscription: false,
       hasPastDueInvoice: false,
-      ...values,
+      ...subscription,
     })
     .run();
+  if (accountCode === undefined) {
+    return insert;
+  }
+  return insert.then(() =>
+    extDB
+      .insert(recurlyAccountCodeTable)
+      .values({
+        code: accountCode.toLowerCase(),
+        email: values.email.toLowerCase(),
+        cacheLastUpdated: values.cacheLastUpdated ?? new Date(),
+      })
+      .run()
+  );
+};
 
 // Statement-count helpers shared by the query-count tests (issue #414). They
 // take narrow structural types so they can live here without importing the

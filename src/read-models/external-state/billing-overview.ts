@@ -2,6 +2,7 @@ import {and, gt, ne, sql} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
 import {ExternalStateDB} from '../../sync-worker/external-state-db';
 import {
+  recurlyAccountCodeTable,
   recurlyInvoiceTable,
   recurlySubscriptionTable,
   recurlyTransactionTable,
@@ -115,8 +116,17 @@ export const getBillingOverview =
       .from(recurlySubscriptionTable)
       .all();
     // Members name accounts by billing email or account code; everything
-    // below is keyed by billing email, so resolve once per member in memory.
-    const accountEmailsFor = resolveAccountEmailsFrom(subscriptions);
+    // below is keyed by billing email, so resolve in memory from one read of
+    // the codes rather than a query per member.
+    const accountEmailsFor = resolveAccountEmailsFrom(
+      await extDB
+        .select({
+          code: recurlyAccountCodeTable.code,
+          email: recurlyAccountCodeTable.email,
+        })
+        .from(recurlyAccountCodeTable)
+        .all()
+    );
 
     // When each address was last invoiced at all, to tell a lapse from a
     // departure. One aggregate rather than a scan per member.

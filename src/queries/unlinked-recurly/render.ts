@@ -1,4 +1,3 @@
-import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import {html, Html, joinHtml, sanitizeString} from '../../types/html';
 import * as RA from 'fp-ts/ReadonlyArray';
@@ -9,35 +8,31 @@ import {DateTime} from 'luxon';
 
 // One tag per thing true of the account, so a row reads as a sentence
 // rather than a grid of yes/no.
-const statusTags = (entry: UnlinkedRecurlyEntry): Html =>
-  joinHtml(
-    [
-      entry.hasActiveSubscription ? tag(html`active`, 'green') : null,
-      entry.hasFutureSubscription ? tag(html`starts later`, 'green') : null,
-      entry.hasPastDueInvoice ? tag(html`past due`, 'red') : null,
-      entry.hasPausedSubscription ? tag(html`paused`, 'grey') : null,
-      entry.hasCanceledSubscription ? tag(html`cancelled`, 'grey') : null,
-    ]
-      .filter((t): t is Html => t !== null)
-      .map(t => html`${t} `)
-  );
-
-// The account code is only worth showing when it is a different address
-// from the one billed - that difference is usually why the row is here.
-const accountCodeCell = (entry: UnlinkedRecurlyEntry): Html =>
-  pipe(
-    entry.accountCode,
-    O.filter(code => code !== entry.email.toLowerCase()),
-    O.match(
-      () => html``,
-      code => html`${sanitizeString(code)}`
+const statusTags = (entry: UnlinkedRecurlyEntry): Html => {
+  const tags = [
+    entry.hasActiveSubscription ? tag(html`active`, 'green') : null,
+    entry.hasFutureSubscription ? tag(html`starts later`, 'green') : null,
+    entry.hasPastDueInvoice ? tag(html`past due`, 'red') : null,
+    entry.hasPausedSubscription ? tag(html`paused`, 'grey') : null,
+    entry.hasCanceledSubscription ? tag(html`cancelled`, 'grey') : null,
+    entry.isFresh ? null : tag(html`no longer synced`, 'grey'),
+  ].filter((t): t is Html => t !== null);
+  return joinHtml(
+    (tags.length === 0 ? [tag(html`never subscribed`, 'grey')] : tags).map(
+      t => html`${t} `
     )
   );
+};
+
+// The account codes are only worth showing when they differ from the billing
+// email - that difference is usually why the row is here.
+const accountCodesCell = (entry: UnlinkedRecurlyEntry): Html =>
+  joinHtml(entry.otherCodes.map(code => html`<div>${sanitizeString(code)}</div>`));
 
 const renderEntry = (entry: UnlinkedRecurlyEntry) => html`
   <tr>
     <td>${sanitizeString(entry.email)}</td>
-    <td>${accountCodeCell(entry)}</td>
+    <td>${accountCodesCell(entry)}</td>
     <td>${statusTags(entry)}</td>
     <td>${displayDateShort(DateTime.fromJSDate(entry.cacheLastUpdated))}</td>
   </tr>
@@ -77,12 +72,16 @@ export const render = (viewModel: ViewModel) => html`
   <h2>Paying, but linked to nobody (${viewModel.needingAction.length})</h2>
   <p>
     Active, starting soon, or with an invoice past due. To link one, open the
-    member and add the billing email to their addresses.
+    member, add the billing email to their addresses and have them verify it:
+    only a verified address links.
   </p>
   ${renderTable(viewModel.needingAction)}
   <details>
-    <summary>Lapsed, cancelled or paused (${viewModel.theRest.length})</summary>
-    <p>Nothing to do for these unless the person comes back.</p>
+    <summary>Not paying (${viewModel.theRest.length})</summary>
+    <p>
+      Lapsed, cancelled, paused, never subscribed, or no longer synced from
+      Recurly. Nothing to do for these unless the person comes back.
+    </p>
     ${renderTable(viewModel.theRest)}
   </details>
 `;

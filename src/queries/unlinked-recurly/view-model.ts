@@ -1,26 +1,29 @@
-import * as O from 'fp-ts/Option';
-
 export type UnlinkedRecurlyEntry = {
   email: string;
-  // The account code, usually the email the member signed up with; the app
-  // may know them by that address rather than the one Recurly now bills.
-  accountCode: O.Option<string>;
+  // Account codes pointing at this billing email that differ from it: usually
+  // the email the member signed up with, and why the row is here at all.
+  otherCodes: ReadonlyArray<string>;
   hasActiveSubscription: boolean;
   hasFutureSubscription: boolean;
   hasCanceledSubscription: boolean;
   hasPausedSubscription: boolean;
   hasPastDueInvoice: boolean;
   cacheLastUpdated: Date;
+  // Refreshed by the sync within the window every other Recurly reader
+  // trusts. Rows the sync has stopped touching (an account deleted or merged
+  // in Recurly) go stale and are never deleted here.
+  isFresh: boolean;
 };
 
 export type ViewModel = {
-  // Paying (or about to) but matched to nobody: the rows that need an admin.
+  // Paying (or about to) and fresh, but matched to nobody: needs an admin.
   needingAction: ReadonlyArray<UnlinkedRecurlyEntry>;
-  // Lapsed, cancelled or paused accounts nobody in the app answers to.
+  // Lapsed, cancelled, paused, never subscribed, or no longer synced.
   theRest: ReadonlyArray<UnlinkedRecurlyEntry>;
 };
 
 export const needsAction = (entry: UnlinkedRecurlyEntry): boolean =>
-  entry.hasActiveSubscription ||
-  entry.hasFutureSubscription ||
-  entry.hasPastDueInvoice;
+  entry.isFresh &&
+  (entry.hasActiveSubscription ||
+    entry.hasFutureSubscription ||
+    entry.hasPastDueInvoice);
