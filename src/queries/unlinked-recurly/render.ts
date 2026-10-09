@@ -43,6 +43,8 @@ const linkCell = (entry: UnlinkedRecurlyEntry): Html => html`
       size="6"
       name="member"
       aria-label="Member number"
+      required
+      min="1"
       value="${pipe(
         entry.suggestedMember,
         O.map(member => safe(String(member.memberNumber))),

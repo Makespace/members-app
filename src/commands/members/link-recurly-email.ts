@@ -29,10 +29,20 @@ const process: Command<LinkRecurlyEmail>['process'] = input => {
       failureWithStatus('The requested member does not exist', StatusCodes.NOT_FOUND)()
     );
   }
-  const email = normaliseEmailAddress(input.command.email);
+  // Addresses are stored with the local part's case as given, so compare
+  // lowercased: Recurly holds the lowercased form, and a member may have
+  // added theirs with capitals.
+  const wanted = normaliseEmailAddress(input.command.email).toLowerCase();
+  const sameAddress = (candidate: string) => candidate.toLowerCase() === wanted;
 
-  const holder = input.rm.members.getByEmail(email, false);
-  if (O.isSome(holder) && holder.value.userId !== member.value.userId) {
+  const otherHolder = input.rm.members
+    .getAllCore()
+    .find(
+      other =>
+        other.userId !== member.value.userId &&
+        other.emails.some(e => sameAddress(e.emailAddress))
+    );
+  if (otherHolder !== undefined) {
     return TE.left(
       failureWithStatus(
         'That address already belongs to another member',
@@ -40,10 +50,13 @@ const process: Command<LinkRecurlyEmail>['process'] = input => {
       )()
     );
   }
-  const existing = member.value.emails.find(e => e.emailAddress === email);
+  const existing = member.value.emails.find(e => sameAddress(e.emailAddress));
   if (existing !== undefined && O.isSome(existing.verifiedAt)) {
     return TE.right(O.none);
   }
+  // Keep the spelling the member already has, so the event verifies that
+  // row rather than adding a second one in another case.
+  const email = existing?.emailAddress ?? input.command.email;
 
   const deps = input.deps;
   if (deps === undefined) {
@@ -63,7 +76,7 @@ const process: Command<LinkRecurlyEmail>['process'] = input => {
               constructEvent('MemberEmailLinkedByAdmin')({
                 actor: input.command.actor,
                 memberNumber: input.command.memberNumber,
-                email: input.command.email,
+                email,
               })
             )
           )

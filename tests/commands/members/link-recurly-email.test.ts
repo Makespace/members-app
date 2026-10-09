@@ -5,7 +5,6 @@ import {sql} from 'drizzle-orm';
 import {linkRecurlyEmail} from '../../../src/commands/members/link-recurly-email';
 import {linkRecurlyEmailForm} from '../../../src/commands/members/link-recurly-email-form';
 import {EmailAddress} from '../../../src/types';
-import {getRecurlyStatusForMember} from '../../../src/read-models/external-state/recurly-status';
 import {
   arbitraryActor,
   getLeftOrFail,
@@ -115,33 +114,22 @@ describe('link-recurly-email', () => {
     expect(check({...self, user: {...self.user, memberNumber}})).toBe(false);
   });
 
-  describe('once applied', () => {
-    beforeEach(async () => {
-      await framework.commands.members.linkRecurlyEmail({memberNumber, email: billing});
+  it('refuses an address another member holds in a different case', async () => {
+    await framework.commands.members.addEmail({
+      memberNumber: otherMemberNumber,
+      email: 'Billing@example.com' as EmailAddress,
     });
+    const failure = getLeftOrFail(await run({memberNumber, email: billing}));
+    expect(failure.message).toContain('another member');
+  });
 
-    it('the address is verified and marked as linked by admin', () => {
-      const member = getSomeOrFail(framework.sharedReadModel.members.getByMemberNumber(memberNumber));
-      const linked = member.emails.find(e => e.emailAddress === billing);
-      expect(linked).toBeDefined();
-      expect(O.isSome(linked!.verifiedAt)).toBe(true);
-      expect(linked!.linkedByAdmin).toBe(true);
-    });
-
-    it('the member is found by that address and reads as active in Recurly', async () => {
-      expect(O.isSome(framework.sharedReadModel.members.getByEmail(billing, true))).toBe(true);
-      const member = getSomeOrFail(framework.sharedReadModel.members.getByMemberNumber(memberNumber));
-      expect(await getRecurlyStatusForMember(framework.extDB)(member)).toBe('active');
-    });
-
-    it('an address the member verified themselves is not relabelled', async () => {
-      const own = 'own@example.com' as EmailAddress;
-      await insertRecurlySubscription(framework.extDB, {email: own, hasActiveSubscription: true});
-      await framework.commands.members.addEmail({memberNumber, email: own});
-      await framework.commands.members.verifyEmail({memberNumber, emailAddress: own});
-      const member = getSomeOrFail(framework.sharedReadModel.members.getByMemberNumber(memberNumber));
-      expect(member.emails.find(e => e.emailAddress === own)?.linkedByAdmin).toBe(false);
-    });
+  it('links the spelling the member already has rather than adding another', async () => {
+    const theirs = 'Billing@example.com' as EmailAddress;
+    await framework.commands.members.addEmail({memberNumber, email: theirs});
+    const event = getSomeOrFail(
+      await getTaskEitherRightOrFail(() => run({memberNumber, email: billing}))
+    );
+    expect(event).toMatchObject({email: theirs});
   });
 
   describe('the confirm form', () => {

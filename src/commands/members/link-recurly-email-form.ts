@@ -4,7 +4,8 @@ import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
-import {eq} from 'drizzle-orm';
+import {eq, or} from 'drizzle-orm';
+import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {StatusCodes} from 'http-status-codes';
 import {
@@ -80,19 +81,16 @@ const recurlyNameFor =
   async (email: string): Promise<O.Option<string>> => {
     const lowered = email.toLowerCase();
     const rows = await extDB
-      .select({name: recurlyAccountCodeTable.name, email: recurlyAccountCodeTable.email})
-      .from(recurlyAccountCodeTable)
-      .where(eq(recurlyAccountCodeTable.email, lowered))
-      .all();
-    const byCode = await extDB
       .select({name: recurlyAccountCodeTable.name})
       .from(recurlyAccountCodeTable)
-      .where(eq(recurlyAccountCodeTable.code, lowered))
+      .where(
+        or(
+          eq(recurlyAccountCodeTable.email, lowered),
+          eq(recurlyAccountCodeTable.code, lowered)
+        )
+      )
       .all();
-    return O.fromNullable(
-      [...rows, ...byCode].map(row => row.name).find(name => name !== null) ??
-        null
-    );
+    return O.fromNullable(rows.map(row => row.name).find(name => name !== null) ?? null);
   };
 
 const constructForm: Form<ViewModel>['constructForm'] =
@@ -134,8 +132,10 @@ const constructForm: Form<ViewModel>['constructForm'] =
       )
     );
 
+// The page shows what Recurly knows about an address, which is for super
+// users only, as the POST and /unlinked-recurly are.
 export const linkRecurlyEmailForm: Form<ViewModel> = {
   renderForm,
   constructForm,
-  formIsAuthorized: null,
+  formIsAuthorized: isAdminOrSuperUser,
 };
