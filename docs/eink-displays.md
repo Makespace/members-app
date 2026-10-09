@@ -4,7 +4,7 @@ A machine's open trouble tickets are served as an image for an e-ink display
 mounted on it:
 
 ```
-GET /equipment/<machine>/trouble-tickets.png?width=800&height=480&tones=4
+GET /equipment/<machine>/trouble-tickets.png?width=800&height=480&tones=4&wait=0
 ```
 
 `<machine>` is the machine's uuid or its readable slug (`wood-shop-band-saw`).
@@ -23,6 +23,7 @@ option a display asks for, never by changing what an existing request gets.
 | --- | --- | --- |
 | `width`, `height` | the panel's size in pixels, 64 to 2000 | 800, 480 |
 | `tones` | how many tones the panel shows: `4`, or `2` for black and white | 4 |
+| `wait` | seconds the display will wait for a change (see Polling); over 55 counts as 55 | 0 |
 
 Anything else in the query is ignored. A value that cannot be honoured is
 answered `400` with a plain-text reason; an unknown machine is `404`.
@@ -52,3 +53,20 @@ answered `400` with a plain-text reason; an unknown machine is `404`.
   serve a stored copy.
 - No cookies. The request is not given a session, so nothing is set on the
   response and a display has nothing to store or send back.
+
+### Waiting for a change
+
+A display that sends `If-None-Match` with the tag it has, and `wait=N`, is held
+for up to `N` seconds (55 at most) instead of being answered at once:
+
+- the image changes while it waits: `200` with the new image and tag, as soon
+  as the change reaches the app's read model (refreshed every 10 seconds);
+- the wait runs out: `304 Not Modified`, as if it had not waited.
+
+A display that does not already have the current image is answered at once,
+whatever `wait` says. The cap keeps a held request inside the 60 seconds of
+silence after which Fly's proxy drops a connection, so a display can simply
+ask again the moment it is answered - one request a minute when nothing
+changes, and changes on the glass within seconds. A held request costs a
+timer and a read of the read model's event index once a second; the image is
+only redrawn when that index moves.

@@ -129,6 +129,24 @@ describe('the e-ink display contract', () => {
     expect(response.headers.etag).not.toBe(etag);
   });
 
+  it('holds a display that already has the image and asks to wait, then answers 304', async () => {
+    const etag = (await getImage()).headers.etag!;
+    const started = Date.now();
+    const response = await getImage('?wait=1', {'If-None-Match': etag});
+    expect(response.status).toBe(304);
+    expect(Date.now() - started).toBeGreaterThanOrEqual(900);
+  });
+
+  it('answers a held display with the new image as soon as a ticket changes it', async () => {
+    const etag = (await getImage()).headers.etag!;
+    const started = Date.now();
+    setTimeout(raiseTicket, 100);
+    const response = await getImage('?wait=30', {'If-None-Match': etag});
+    expect(response.status).toBe(200);
+    expect(response.headers.etag).not.toBe(etag);
+    expect(Date.now() - started).toBeLessThan(5_000);
+  });
+
   it('asks anything in between to check back rather than serve a stored copy', async () => {
     const response = await getImage();
     expect(response.headers['cache-control']).toBe('no-cache');
