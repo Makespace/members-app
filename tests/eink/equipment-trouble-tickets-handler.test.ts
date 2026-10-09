@@ -4,7 +4,7 @@ import * as E from 'fp-ts/Either';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {
   equipmentTroubleTicketsImage,
-  parseDisplaySize,
+  parseDisplayOptions,
 } from '../../src/eink/equipment-trouble-tickets-handler';
 import {constructEvent} from '../../src/types/domain-event';
 import {arbitraryActor} from '../helpers';
@@ -30,16 +30,22 @@ const makeReq = (
   query: Record<string, string>
 ): Request => ({params: {equipment}, query}) as unknown as Request;
 
-describe('parseDisplaySize', () => {
-  it('defaults to 800x480', () => {
-    expect(parseDisplaySize({})).toStrictEqual(
-      E.right({width: 800, height: 480})
+describe('parseDisplayOptions', () => {
+  it('defaults to 800x480 in four tones', () => {
+    expect(parseDisplayOptions({})).toStrictEqual(
+      E.right({width: 800, height: 480, tones: 4})
     );
   });
 
   it('reads width and height', () => {
-    expect(parseDisplaySize({width: '296', height: '128'})).toStrictEqual(
-      E.right({width: 296, height: 128})
+    expect(parseDisplayOptions({width: '296', height: '128'})).toStrictEqual(
+      E.right({width: 296, height: 128, tones: 4})
+    );
+  });
+
+  it('reads two tones for a black-and-white panel', () => {
+    expect(parseDisplayOptions({tones: '2'})).toStrictEqual(
+      E.right({width: 800, height: 480, tones: 2})
     );
   });
 
@@ -49,8 +55,11 @@ describe('parseDisplaySize', () => {
     [{height: '10'}],
     [{height: '5000'}],
     [{width: ['300', '400']}],
+    [{tones: '3'}],
+    [{tones: 'two'}],
+    [{tones: ['2', '4']}],
   ])('rejects %j', query => {
-    expect(E.isLeft(parseDisplaySize(query))).toBe(true);
+    expect(E.isLeft(parseDisplayOptions(query))).toBe(true);
   });
 });
 
@@ -103,6 +112,11 @@ describe('equipmentTroubleTicketsImage', () => {
 
   it('answers 400 for a size it cannot draw', () => {
     const res = handle(makeReq(equipmentId, {width: 'huge'}));
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  it('answers 400 for tones it cannot draw', () => {
+    const res = handle(makeReq(equipmentId, {tones: '16'}));
     expect(res.status).toHaveBeenCalledWith(400);
   });
 

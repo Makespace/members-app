@@ -1,4 +1,5 @@
 import {faker} from '@faker-js/faker';
+import {inflateSync} from 'node:zlib';
 import {UUID} from 'io-ts-types';
 import {
   openTickets,
@@ -98,5 +99,45 @@ describe('renderTroubleTicketsImage', () => {
     };
     expect(() => renderTroubleTicketsImage(many, 64, 64)).not.toThrow();
     expect(() => renderTroubleTicketsImage(many, 800, 480)).not.toThrow();
+  });
+});
+
+describe('renderTroubleTicketsImage for a black-and-white panel', () => {
+  const model = {
+    equipmentName: 'Band Saw',
+    tickets: openTickets([
+      ticket('Todo', new Date('2026-09-01'), 'Blade guide is loose'),
+      ticket('Needs Help', new Date('2026-09-02'), 'Fence will not lock'),
+    ]),
+  };
+
+  // The PNG this renderer writes is one IHDR then one IDAT.
+  const idat = (png: Buffer) => png.subarray(41, 41 + png.readUInt32BE(33));
+
+  it('draws a 1-bit greyscale PNG: one bit, black or white, per pixel', () => {
+    const png = renderTroubleTicketsImage(model, 1280, 720, 2);
+    expect(png.readUInt32BE(16)).toBe(1280);
+    expect(png.readUInt32BE(20)).toBe(720);
+    expect(png[24]).toBe(1);
+    expect(png[25]).toBe(0);
+    expect(inflateSync(idat(png)).length).toBe((1280 / 8 + 1) * 720);
+  });
+
+  it('draws the same tickets identically every time', () => {
+    expect(renderTroubleTicketsImage(model, 400, 300, 2)).toEqual(
+      renderTroubleTicketsImage(model, 400, 300, 2)
+    );
+  });
+
+  it('draws something different when the tickets change', () => {
+    expect(renderTroubleTicketsImage(model, 400, 300, 2)).not.toEqual(
+      renderTroubleTicketsImage({...model, tickets: []}, 400, 300, 2)
+    );
+  });
+
+  it('leaves a display that does not ask with exactly the four-tone image', () => {
+    const png = renderTroubleTicketsImage(model, 400, 300);
+    expect(png).toEqual(renderTroubleTicketsImage(model, 400, 300, 4));
+    expect(png[24]).toBe(2);
   });
 });

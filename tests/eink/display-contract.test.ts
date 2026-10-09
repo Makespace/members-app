@@ -98,6 +98,15 @@ describe('the e-ink display contract', () => {
     });
   });
 
+  it('is 1-bit greyscale, non-interlaced, for a display that asks for two tones', async () => {
+    const png = (await getImage('?tones=2')).body;
+    expect(header(png)).toMatchObject({
+      bitDepth: 1,
+      colourType: 0,
+      interlace: 0,
+    });
+  });
+
   it('tags the image with a hash of its bytes', async () => {
     const response = await getImage();
     const hash = createHash('sha256').update(response.body).digest('hex');

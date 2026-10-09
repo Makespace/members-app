@@ -4,7 +4,7 @@ A machine's open trouble tickets are served as an image for an e-ink display
 mounted on it:
 
 ```
-GET /equipment/<machine>/trouble-tickets.png?width=800&height=480
+GET /equipment/<machine>/trouble-tickets.png?width=800&height=480&tones=4
 ```
 
 `<machine>` is the machine's uuid or its readable slug (`wood-shop-band-saw`).
@@ -22,6 +22,7 @@ option a display asks for, never by changing what an existing request gets.
 | parameter | meaning | default |
 | --- | --- | --- |
 | `width`, `height` | the panel's size in pixels, 64 to 2000 | 800, 480 |
+| `tones` | how many tones the panel shows: `4`, or `2` for black and white | 4 |
 
 Anything else in the query is ignored. A value that cannot be honoured is
 answered `400` with a plain-text reason; an unknown machine is `404`.
@@ -29,8 +30,14 @@ answered `400` with a plain-text reason; an unknown machine is `404`.
 ## The image
 
 - A PNG exactly `width` × `height`, whatever the content.
-- Greyscale (colour type 0), non-interlaced, 2 bits per pixel: four tones, `0`
-  black to `3` white. Never RGBA, palette or interlaced.
+- Greyscale (colour type 0), non-interlaced. Never RGBA, palette or
+  interlaced.
+  - `tones=4`: 2 bits per pixel, `0` black, `1` dark grey, `2` light grey, `3`
+    white.
+  - `tones=2`: 1 bit per pixel, `0` black, `1` white. Drawn for black and
+    white rather than reduced from grey: secondary text is black, separators
+    are thin black lines, and anti-aliased edges are cut at mid-grey here, so
+    every two-tone panel shows the same picture.
 - Drawn from the tickets alone - no clock, no counter - so the same tickets
   always give the same bytes and a display only redraws when something it shows
   has changed.
