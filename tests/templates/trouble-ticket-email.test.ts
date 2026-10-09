@@ -1,4 +1,5 @@
 import {
+  introBannerHtml,
   ticketCardHtml,
   ticketLineHtml,
   TicketEmailSummary,
@@ -95,5 +96,38 @@ describe('a trouble ticket in an email', () => {
     expect(ticketLineHtml({...summary, title: '', happening: 'reported'})).toContain(
       'Trouble ticket'
     );
+  });
+
+  // MJML styles its own blocks and leaves raw markup alone, so anything here
+  // that does not name a font comes out in the client's default serif
+  // alongside text that does not. It looked like two emails stuck together.
+  describe('matching the font of the email around it', () => {
+    const MJML_FONT = 'Ubuntu, Helvetica, Arial, sans-serif';
+
+    // Every cell that carries words of its own has to say it: clients are
+    // unreliable about inheriting font-family through table cells.
+    const cellsWithBareText = (markup: string) =>
+      (markup.match(/<(?:td|div|span)\s[^>]*>\s*[A-Za-z]/g) ?? []).filter(
+        tag => !tag.includes('font-family')
+      );
+
+    it('says so on the card', () => {
+      expect(ticketCardHtml(summary)).toContain(MJML_FONT);
+      expect(cellsWithBareText(ticketCardHtml(summary))).toStrictEqual([]);
+    });
+
+    it('says so on a summary row', () => {
+      const line = ticketLineHtml({...summary, happening: 'reported'});
+
+      expect(line).toContain(MJML_FONT);
+      expect(cellsWithBareText(line)).toStrictEqual([]);
+    });
+
+    it('says so on the banner', () => {
+      const banner = introBannerHtml('https://members.makespace.org');
+
+      expect(banner).toContain(MJML_FONT);
+      expect(cellsWithBareText(banner)).toStrictEqual([]);
+    });
   });
 });

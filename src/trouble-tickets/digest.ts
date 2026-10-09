@@ -79,7 +79,7 @@ export const digestEmail = (
       ]),
       '',
     ]),
-    `See them all: ${publicUrl}/trouble-tickets`,
+    `View all trouble tickets: ${publicUrl}/trouble-tickets`,
     '',
     `You are getting this because you asked for a ${cadence} summary. Change that: ${publicUrl}/notification-settings`,
   ].join('\n');
@@ -121,7 +121,7 @@ export const digestEmail = (
                 )
                 .join('')}
             </mj-text>
-            <mj-button background-color="#00703c" href="${publicUrl}/trouble-tickets">See them all</mj-button>
+            <mj-button background-color="#00703c" href="${publicUrl}/trouble-tickets">View all trouble tickets</mj-button>
             <mj-text font-size="13px" color="#555">
               <p>
                 You are getting this because you asked for a ${cadence}
