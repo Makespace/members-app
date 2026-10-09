@@ -5,7 +5,11 @@ import {NonEmptyString, UUID} from 'io-ts-types';
 import {equipmentTroubleTicketsImage} from '../../src/eink/equipment-trouble-tickets-handler';
 import {constructEvent} from '../../src/types/domain-event';
 import {arbitraryActor} from '../helpers';
-import {initTestFramework, TestFramework} from '../read-models/test-framework';
+import {
+  displayAuthorization,
+  initTestFramework,
+  TestFramework,
+} from '../read-models/test-framework';
 import {serve} from './serve';
 
 // What a display's firmware relies on (docs/eink-displays.md), checked over
@@ -26,7 +30,10 @@ describe('the e-ink display contract', () => {
   const equipmentId = faker.string.uuid() as UUID;
 
   const getImage = (query = '', headers: Record<string, string> = {}) =>
-    server.get(`/equipment/${equipmentId}/trouble-tickets.png${query}`, headers);
+    server.get(`/equipment/${equipmentId}/trouble-tickets.png${query}`, {
+      ...displayAuthorization,
+      ...headers,
+    });
 
   const raiseTicket = () =>
     framework.insertIntoSharedReadModel(
@@ -150,5 +157,43 @@ describe('the e-ink display contract', () => {
   it('asks anything in between to check back rather than serve a stored copy', async () => {
     const response = await getImage();
     expect(response.headers['cache-control']).toBe('no-cache');
+  });
+
+  describe('the display token', () => {
+    const unauthenticated = (path: string, headers: Record<string, string> = {}) =>
+      server.get(path, headers);
+
+    it('is required: without it the answer is 401 and no image', async () => {
+      const response = await unauthenticated(
+        `/equipment/${equipmentId}/trouble-tickets.png`
+      );
+      expect(response.status).toBe(401);
+      expect(response.headers['www-authenticate']).toBe(
+        'Bearer realm="e-ink displays"'
+      );
+      expect(response.headers['content-type']).not.toBe('image/png');
+      expect(response.body.subarray(0, 4)).not.toEqual(
+        Buffer.from([137, 80, 78, 71])
+      );
+    });
+
+    it('is only accepted as a bearer header, never in the address', async () => {
+      const token = displayAuthorization.authorization.replace('Bearer ', '');
+      const response = await unauthenticated(
+        `/equipment/${equipmentId}/trouble-tickets.png?token=${token}`
+      );
+      expect(response.status).toBe(401);
+    });
+
+    it('hides whether a machine exists from anyone without it', async () => {
+      const real = await unauthenticated(
+        `/equipment/${equipmentId}/trouble-tickets.png`
+      );
+      const madeUp = await unauthenticated(
+        '/equipment/no-such-machine/trouble-tickets.png'
+      );
+      expect(madeUp.status).toBe(real.status);
+      expect(madeUp.body).toEqual(real.body);
+    });
   });
 });

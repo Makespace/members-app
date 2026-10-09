@@ -5,6 +5,7 @@ import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import {StatusCodes} from 'http-status-codes';
 import {Dependencies} from '../dependencies';
+import {constantTimeEqual} from '../http/constant-time-equal';
 import {resolveEquipmentReference} from '../queries/equipment/resolve-reference';
 import {openTickets, renderTroubleTicketsImage} from './trouble-tickets-image';
 import {Tones} from './render-to-png';
@@ -13,10 +14,11 @@ import {Tones} from './render-to-png';
 //
 // A machine's open trouble tickets as a four-tone PNG - two-tone for a panel
 // that asks for tones=2 - for an e-ink display that polls this URL and redraws
-// when the image changes. Deliberately public: the display cannot log in, and
-// the image shows nothing a member standing at the machine couldn't read -
-// titles and statuses, no submitter details. A display that sends back the
-// ETag it has, with wait=N, is held up to N seconds for the image to change.
+// when the image changes. A display cannot log in, so it presents the shared
+// display token (EINK_DISPLAY_TOKEN) as a bearer token instead; nothing else
+// gets an image, or learns which machines exist. The image still leaves out
+// who reported each ticket. A display that sends back the ETag it has, with
+// wait=N, is held up to N seconds for the image to change.
 //
 // Displays are reflashed rarely, so what they rely on is written down in
 // docs/eink-displays.md and pinned by tests/eink/display-contract.test.ts.
@@ -179,8 +181,20 @@ const hold = (
   res.on('close', stop);
 };
 
+// Whether the request carries the display token. Checked before anything
+// else, so a request without it costs no rendering and cannot tell a real
+// machine from a made-up one.
+const hasDisplayToken = (req: Request, token: string) =>
+  constantTimeEqual(req.headers.authorization ?? '', `Bearer ${token}`);
+
 export const equipmentTroubleTicketsImage =
   (deps: Dependencies) => (req: Request, res: Response) => {
+    if (!hasDisplayToken(req, deps.conf.EINK_DISPLAY_TOKEN)) {
+      res.status(StatusCodes.UNAUTHORIZED);
+      res.setHeader('WWW-Authenticate', 'Bearer realm="e-ink displays"');
+      res.type('text/plain').send('Display token required');
+      return;
+    }
     const options = parseDisplayOptions(req.query);
     if (E.isLeft(options)) {
       res.status(StatusCodes.BAD_REQUEST).type('text/plain').send(options.left);

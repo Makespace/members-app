@@ -7,8 +7,8 @@ import {sessionOptions} from './session-config';
 // session. cookieSessionPassportWorkaround gives each new session its
 // regenerate/save shims, which counts as populating it, so cookie-session
 // answers a visitor with no cookie by setting an empty one (`{}`). That is
-// harmless for a person in a browser, but a display polling a public image
-// never logs in and would be handed a fresh cookie on every poll - so those
+// harmless for a person in a browser, but a display polling its image never
+// logs in and would be handed a fresh cookie on every poll - so those
 // requests skip the session altogether and req.session stays undefined.
 export const sessionMiddleware = (
   conf: Config,

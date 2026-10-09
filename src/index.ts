@@ -51,7 +51,7 @@ const app: Application = express();
 app.use(httpLogger({logger: deps.logger, useLevel: 'debug', genReqId: generateRequestId} as any));
 app.use(express.urlencoded({extended: true}));
 app.use(express.json());
-// E-ink displays poll a public image and never log in: no session, no cookie.
+// E-ink displays present a token and never log in: no session, no cookie.
 app.use(sessionMiddleware(conf, isTroubleTicketsImagePath));
 app.use(cookieSessionPassportWorkaround);
 app.set('trust proxy', true);

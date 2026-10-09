@@ -429,7 +429,8 @@ export const initRoutes = (
       '/equipment/:equipment/failed-quizzes',
       queries.equipmentFailedQuizzes
     ),
-    // For an e-ink display on the machine. Public - the display cannot log in.
+    // For an e-ink display on the machine: it presents the display token, as it
+    // cannot log in.
     get(troubleTicketsImageRoute, equipmentTroubleTicketsImage(deps)),
     query('/equipment/:equipment', queries.equipment),
     query('/super-users', queries.superUsers),

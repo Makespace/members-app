@@ -9,7 +9,11 @@ import {
 } from '../../src/eink/equipment-trouble-tickets-handler';
 import {constructEvent} from '../../src/types/domain-event';
 import {arbitraryActor} from '../helpers';
-import {initTestFramework, TestFramework} from '../read-models/test-framework';
+import {
+  displayAuthorization,
+  initTestFramework,
+  TestFramework,
+} from '../read-models/test-framework';
 
 type FakeResponse = Response & {
   status: jest.Mock;
@@ -28,8 +32,9 @@ const makeRes = (): FakeResponse =>
 
 const makeReq = (
   equipment: string,
-  query: Record<string, string>
-): Request => ({params: {equipment}, query}) as unknown as Request;
+  query: Record<string, string>,
+  headers: Record<string, string> = displayAuthorization
+): Request => ({params: {equipment}, query, headers}) as unknown as Request;
 
 describe('parseDisplayOptions', () => {
   it('defaults to 800x480 in four tones, answered at once', () => {
@@ -106,7 +111,7 @@ describe('equipmentTroubleTicketsImage', () => {
 
   afterEach(() => framework.close());
 
-  it('serves a PNG to anyone, without a login', () => {
+  it('serves a PNG to a display presenting the display token', () => {
     const res = handle(
       makeReq(equipmentId, {width: '296', height: '128'})
     );
@@ -125,6 +130,46 @@ describe('equipmentTroubleTicketsImage', () => {
   it('answers 404 for an unknown machine', () => {
     const res = handle(makeReq(faker.string.uuid(), {}));
     expect(res.status).toHaveBeenCalledWith(404);
+  });
+
+  describe('without the display token', () => {
+    const expectRefused = (res: FakeResponse) => {
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'WWW-Authenticate',
+        'Bearer realm="e-ink displays"'
+      );
+      expect(res.type).toHaveBeenCalledWith('text/plain');
+      expect(res.type).not.toHaveBeenCalledWith('image/png');
+    };
+
+    it('answers 401 and draws nothing', () => {
+      expectRefused(handle(makeReq(equipmentId, {}, {})));
+    });
+
+    it('answers 401 to the wrong token', () => {
+      expectRefused(
+        handle(makeReq(equipmentId, {}, {authorization: 'Bearer guess'}))
+      );
+    });
+
+    it('answers 401 to the token sent without the Bearer scheme', () => {
+      expectRefused(
+        handle(
+          makeReq(equipmentId, {}, {
+            authorization: displayAuthorization.authorization.replace('Bearer ', ''),
+          })
+        )
+      );
+    });
+
+    it('answers 401 for an unknown machine too, so machines cannot be probed', () => {
+      expectRefused(handle(makeReq(faker.string.uuid(), {}, {})));
+    });
+
+    it('answers 401 before reading the query', () => {
+      expectRefused(handle(makeReq(equipmentId, {width: 'huge'}, {})));
+    });
   });
 
   it('answers 400 for a size it cannot draw', () => {
@@ -188,7 +233,10 @@ describe('equipmentTroubleTicketsImage for a display that asks to wait', () => {
     ({
       params: {equipment: equipmentId},
       query,
-      headers: ifNoneMatch === undefined ? {} : {'if-none-match': ifNoneMatch},
+      headers:
+        ifNoneMatch === undefined
+          ? displayAuthorization
+          : {...displayAuthorization, 'if-none-match': ifNoneMatch},
     }) as unknown as Request;
 
   const handle = (req: Request) => {

@@ -8,14 +8,32 @@ GET /equipment/<machine>/trouble-tickets.png?width=800&height=480&tones=4&wait=0
 ```
 
 `<machine>` is the machine's uuid or its readable slug (`wood-shop-band-saw`).
-The address is public - a display cannot log in - and the image only shows what
-a member standing at the machine could read anyway: titles, statuses and the
-date each was reported, never who reported it.
+A display cannot log in, so it identifies itself with the display token
+instead (below). The image shows titles, statuses and the date each ticket was
+reported, never who reported it.
 
 This page is the contract a display's firmware can rely on. Displays are small
 devices that are reflashed rarely and often run deliberately minimal code, so a
 change to anything below breaks them silently. Change it only by adding an
 option a display asks for, never by changing what an existing request gets.
+
+## The display token
+
+Every request carries the display token as a bearer token:
+
+```
+Authorization: Bearer <EINK_DISPLAY_TOKEN>
+```
+
+- Without it, or with anything else, the answer is `401` with
+  `WWW-Authenticate: Bearer` and a plain-text reason. The token is checked
+  before anything else, so such a request draws nothing and cannot tell a real
+  machine from a made-up one.
+- It is only accepted in that header, never in the address, so it stays out of
+  URLs; the request log records the header redacted.
+- One token is shared by every display. It is the `EINK_DISPLAY_TOKEN` secret
+  (required: the app will not start without it); changing it means updating
+  every display.
 
 ## Asking
 
@@ -25,8 +43,9 @@ option a display asks for, never by changing what an existing request gets.
 | `tones` | how many tones the panel shows: `4`, or `2` for black and white | 4 |
 | `wait` | seconds the display will wait for a change (see Polling); over 55 counts as 55 | 0 |
 
-Anything else in the query is ignored. A value that cannot be honoured is
-answered `400` with a plain-text reason; an unknown machine is `404`.
+Anything else in the query is ignored. With the token, a value that cannot be
+honoured is answered `400` with a plain-text reason, and an unknown machine is
+`404`.
 
 ## The image
 

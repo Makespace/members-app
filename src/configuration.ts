@@ -19,6 +19,9 @@ const LogLevel = t.keyof({
 
 const Config = t.strict({
   ADMIN_API_BEARER_TOKEN: tt.NonEmptyString,
+  // Shared secret every e-ink display sends as a bearer token to fetch its
+  // machine's image (docs/eink-displays.md). Required, like the admin token.
+  EINK_DISPLAY_TOKEN: tt.NonEmptyString,
   PORT: withDefaultIfEmpty(tt.IntFromString, 8080 as t.Int),
   PUBLIC_URL: tt.NonEmptyString,
   SESSION_SECRET: tt.NonEmptyString,
