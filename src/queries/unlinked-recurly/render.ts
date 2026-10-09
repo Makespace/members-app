@@ -1,5 +1,7 @@
 import {pipe} from 'fp-ts/lib/function';
-import {html, Html, joinHtml, sanitizeString} from '../../types/html';
+import * as O from 'fp-ts/Option';
+import {html, Html, joinHtml, safe, sanitizeOption, sanitizeString} from '../../types/html';
+import {renderMemberNumber} from '../../templates/member-number';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {ViewModel, UnlinkedRecurlyEntry} from './view-model';
 import {displayDateShort} from '../../templates/display-date';
@@ -29,19 +31,55 @@ const statusTags = (entry: UnlinkedRecurlyEntry): Html => {
 const accountCodesCell = (entry: UnlinkedRecurlyEntry): Html =>
   joinHtml(entry.otherCodes.map(code => html`<div>${sanitizeString(code)}</div>`));
 
-const renderEntry = (entry: UnlinkedRecurlyEntry) => html`
+// A member-number box per row, pre-filled when exactly one member's name
+// matches Recurly's, leading to the confirm page rather than linking here.
+const linkCell = (entry: UnlinkedRecurlyEntry): Html => html`
+  <form action="/members/link-recurly-email" method="get" class="row-form">
+    <input type="hidden" name="email" value="${sanitizeString(entry.email)}" />
+    <input
+      type="text"
+      inputmode="numeric"
+      pattern="[0-9]*"
+      size="6"
+      name="member"
+      aria-label="Member number"
+      required
+      min="1"
+      value="${pipe(
+        entry.suggestedMember,
+        O.map(member => safe(String(member.memberNumber))),
+        O.getOrElse(() => safe(''))
+      )}"
+    />
+    <button type="submit">Link…</button>
+    ${pipe(
+      entry.suggestedMember,
+      O.match(
+        () => html``,
+        member => html`<small>suggested: ${renderMemberNumber(member.memberNumber)} ${sanitizeOption(member.name)}</small>`
+      )
+    )}
+  </form>
+`;
+
+const renderEntry = (withLink: boolean) => (entry: UnlinkedRecurlyEntry) => html`
   <tr>
     <td>${sanitizeString(entry.email)}</td>
     <td>${accountCodesCell(entry)}</td>
+    <td>${sanitizeOption(entry.recurlyName)}</td>
     <td>${statusTags(entry)}</td>
     <td>${displayDateShort(DateTime.fromJSDate(entry.cacheLastUpdated))}</td>
+    ${withLink ? html`<td>${linkCell(entry)}</td>` : html``}
   </tr>
 `;
 
-const renderTable = (entries: ReadonlyArray<UnlinkedRecurlyEntry>) =>
+const renderTable = (
+  entries: ReadonlyArray<UnlinkedRecurlyEntry>,
+  withLink: boolean
+) =>
   pipe(
     entries,
-    RA.map(renderEntry),
+    RA.map(renderEntry(withLink)),
     RA.match(
       () => html`<p><i>None.</i></p>`,
       rows => html`
@@ -50,8 +88,10 @@ const renderTable = (entries: ReadonlyArray<UnlinkedRecurlyEntry>) =>
             <tr>
               <th>Billing email</th>
               <th>Account code (signup email)</th>
+              <th>Name in Recurly</th>
               <th>Status</th>
               <th>Last synced</th>
+              ${withLink ? html`<th>Link to member</th>` : html``}
             </tr>
           </thead>
           <tbody>
@@ -71,17 +111,18 @@ export const render = (viewModel: ViewModel) => html`
   </p>
   <h2>Paying, but linked to nobody (${viewModel.needingAction.length})</h2>
   <p>
-    Active, starting soon, or with an invoice past due. To link one, open the
-    member, add the billing email to their addresses and have them verify it:
-    only a verified address links.
+    Active, starting soon, or with an invoice past due. Type the member
+    number and press Link: the next page shows both names before anything
+    is recorded. Where one member's name matches the account's, the number
+    is filled in for you to check.
   </p>
-  ${renderTable(viewModel.needingAction)}
+  ${renderTable(viewModel.needingAction, true)}
   <details>
     <summary>Not paying (${viewModel.theRest.length})</summary>
     <p>
       Lapsed, cancelled, paused, never subscribed, or no longer synced from
       Recurly. Nothing to do for these unless the person comes back.
     </p>
-    ${renderTable(viewModel.theRest)}
+    ${renderTable(viewModel.theRest, false)}
   </details>
 `;

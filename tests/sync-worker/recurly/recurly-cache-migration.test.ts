@@ -92,6 +92,7 @@ describe('the recurly cache picking up new columns', () => {
           emailAddress: 'signup@example.com' as EmailAddress,
           verifiedAt: O.some(new Date()),
           verificationLastSent: O.none,
+          linkedByAdmin: false,
           addedAt: new Date(),
         },
       ],
@@ -119,6 +120,26 @@ describe('the recurly cache picking up new columns', () => {
       sql`SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'recurly_account_codes';`
     );
     expect(indexes.map(i => i.name)).toContain('recurly_account_codes_email');
+  });
+
+  // The codes table shipped first without the account name.
+  it('adds name to a codes table created by an older version', async () => {
+    await extDB.run(
+      sql`CREATE TABLE recurly_account_codes (
+        code TEXT PRIMARY KEY,
+        email TEXT NOT NULL,
+        accountId TEXT,
+        cacheLastUpdated INTEGER NOT NULL
+      );`
+    );
+    await extDB.run(
+      sql`INSERT INTO recurly_account_codes VALUES ('signup@example.com', 'billing@example.com', 'acct_1', ${Date.now()});`
+    );
+
+    await ensureExtDBTablesExist(extDB)();
+
+    const rows = await extDB.select().from(recurlyAccountCodeTable).all();
+    expect(rows[0]).toMatchObject({code: 'signup@example.com', name: null});
   });
 
   it('is safe to run against a cache that is already up to date', async () => {

@@ -34,6 +34,11 @@ export const changeLog: ReadonlyArray<ChangeLogEntry> = [
     subject: 'equipment',
     date: '2026-10-09',
     headline:
+      "Super users can link a Recurly billing address to a member in one step from the unlinked-accounts page - the page suggests the member by name and shows both names before anything is recorded - so a member whose payments come from a different address no longer looks inactive until they verify it",
+  },
+  {
+    date: '2026-10-09',
+    headline:
       'Owners and trainers can write what a machine\'s sign lists under "Learn" - such as how to empty it or put it away - and the line by its code now says what scanning leads to',
   },
   {

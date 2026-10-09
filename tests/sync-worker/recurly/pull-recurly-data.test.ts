@@ -23,6 +23,8 @@ type RecurlyTestAccount = {
   id?: string | null;
   code?: string | null;
   email: string;
+  firstName?: string | null;
+  lastName?: string | null;
   hasActiveSubscription?: boolean | null;
   hasFutureSubscription?: boolean | null;
   hasCanceledSubscription?: boolean | null;
@@ -324,7 +326,7 @@ describe('pull recurly data', () => {
   // the only address the app knows them by.
   it('records the account code, lowercased, beside the billing email', async () => {
     const [createRecurlyClient] = recurlyClientFactory([
-      {id: 'acct_1', code: 'Signup@Example.com ', email: 'billing@example.com'},
+      {id: 'acct_1', code: 'Signup@Example.com ', email: 'billing@example.com', firstName: ' Molly', lastName: 'Millions'},
       {id: 'acct_2', email: 'nocode@example.com'},
     ]);
 
@@ -336,8 +338,8 @@ describe('pull recurly data', () => {
     )(Duration.fromMillis(0));
 
     const codes = await extDB.select().from(recurlyAccountCodeTable).all();
-    expect(codes.map(row => [row.code, row.email, row.accountId])).toEqual([
-      ['signup@example.com', 'billing@example.com', 'acct_1'],
+    expect(codes.map(row => [row.code, row.email, row.accountId, row.name])).toEqual([
+      ['signup@example.com', 'billing@example.com', 'acct_1', 'Molly Millions'],
     ]);
   });
 
