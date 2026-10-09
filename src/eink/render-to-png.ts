@@ -7,7 +7,8 @@ import {encodeGreyPng} from './encode-png';
 // image has no system fonts), and a PNG reduced to the tones the panel can
 // show - four, or two for a panel that only does black and white.
 // A display polls its URL and redraws when the image changes, so anything
-// drawn here should change only when its content does - no clocks.
+// drawn here should change only when its content does - no clocks, beyond a
+// date that turns over once a day.
 
 export const FONT_FAMILY = 'Atkinson Hyperlegible';
 

@@ -73,7 +73,7 @@ export const changeLog: ReadonlyArray<ChangeLogEntry> = [
     subject: 'tickets',
     date: '2026-09-29',
     headline:
-      "A machine's open trouble tickets can be shown on an e-ink display mounted on it (trial)",
+      "A machine's e-ink display shows whether it's usable, its open tickets and a QR code to its page (trial)",
   },
   {
     subject: 'profile',

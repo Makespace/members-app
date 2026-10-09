@@ -9,8 +9,8 @@ GET /equipment/<machine>/trouble-tickets.png?width=800&height=480&tones=4&wait=0
 
 `<machine>` is the machine's uuid or its readable slug (`wood-shop-band-saw`).
 A display cannot log in, so it identifies itself with the display token
-instead (below). The image shows titles, statuses and the date each ticket was
-reported, never who reported it.
+instead (below). The image shows each open ticket's title, status and how long
+it's been open, never who reported it.
 
 This page is the contract a display's firmware can rely on. Displays are small
 devices that are reflashed rarely and often run deliberately minimal code, so a
@@ -58,9 +58,12 @@ honoured is answered `400` with a plain-text reason, and an unknown machine is
     white rather than reduced from grey: secondary text is black, separators
     are thin black lines, and anti-aliased edges are cut at mid-grey here, so
     every two-tone panel shows the same picture.
-- Drawn from the tickets alone - no clock, no counter - so the same tickets
-  always give the same bytes and a display only redraws when something it shows
-  has changed.
+- Drawn from the tickets and today's date alone. The date (London time) sits
+  in a corner, so the bytes change when a ticket does and once a day at
+  midnight, and a display showing today's date is visibly still updating.
+  Nothing else - no clock, no counter - moves it.
+- What's drawn may change (it did when the usability headline and QR code
+  arrived); the format above doesn't.
 
 ## Polling
 
@@ -79,7 +82,8 @@ A display that sends `If-None-Match` with the tag it has, and `wait=N`, is held
 for up to `N` seconds (55 at most) instead of being answered at once:
 
 - the image changes while it waits: `200` with the new image and tag, as soon
-  as the change reaches the app's read model (refreshed every 10 seconds);
+  as the change reaches the app's read model (refreshed every 10 seconds), or
+  at midnight in London when the date turns over;
 - the wait runs out: `304 Not Modified`, as if it had not waited.
 
 A display that does not already have the current image is answered at once,
