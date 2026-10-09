@@ -49,7 +49,7 @@ describe('/about render', () => {
         h => h.textContent?.trim() === subjects[group.subject]
       );
       const list = heading?.nextElementSibling;
-      expect(list?.tagName).toBe('UL');
+      expect(list?.tagName).toBe('DL');
       for (const entry of group.entries) {
         expect(list?.textContent).toContain(entry.headline);
       }
@@ -60,7 +60,7 @@ describe('/about render', () => {
     const page = await renderPage();
     const shown = [...page.querySelectorAll('h3')]
       .filter(h => (Object.values(subjects) as string[]).includes(h.textContent?.trim() ?? ''))
-      .flatMap(h => [...(h.nextElementSibling?.querySelectorAll('li') ?? [])]);
+      .flatMap(h => [...(h.nextElementSibling?.querySelectorAll('dd') ?? [])]);
     expect(shown.length).toBe(changeLog.length);
   });
 

@@ -64,18 +64,16 @@ const renderChangeLog = () => html`
     changeLogBySubject().map(
       group => html`
         <h3>${sanitizeString(group.heading)}</h3>
-        <ul>
+        <dl class="change-log">
           ${joinHtml(
             group.entries.map(
               entry => html`
-                <li>
-                  <strong title="${safe(entry.date)}">${sanitizeString(shortDate(entry.date))}</strong>
-                  — ${sanitizeString(entry.headline)}
-                </li>
+                <dt title="${safe(entry.date)}">${sanitizeString(shortDate(entry.date))}</dt>
+                <dd>${sanitizeString(entry.headline)}</dd>
               `
             )
           )}
-        </ul>
+        </dl>
       `
     )
   )}
