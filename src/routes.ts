@@ -486,8 +486,10 @@ export const initRoutes = (
     query('/equipment-signs', queries.equipmentSigns),
     query('/trouble-tickets', queries.troubleTicketsHome),
     query('/trouble-tickets/board', queries.troubleTickets),
-    // After /board, so the static path is not eaten by the :id pattern.
-    query('/trouble-tickets/:id', queries.troubleTicket),
+    // Under /view/ because every ticket action registers its confirmation
+    // page at /trouble-tickets/<verb>, and a bare :id here swallows all of
+    // them - raise, assign, resolve, park, needs-help.
+    query('/trouble-tickets/view/:id', queries.troubleTicket),
     // Site notification banners: admin management + member dismissal.
     query('/notifications', queries.notifications),
     // Imported management mailbox. The commands go before the :id route,

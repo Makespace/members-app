@@ -266,7 +266,7 @@ export const ticketCard = (
       ${statusBadge(ticket.status)}
       <h3>
         ${linkTitle
-          ? html`<a href="/trouble-tickets/${safe(encodeURIComponent(ticket.id))}"
+          ? html`<a href="/trouble-tickets/view/${safe(encodeURIComponent(ticket.id))}"
               >${sanitizeString(ticket.title)}</a
             >`
           : html`${sanitizeString(ticket.title)}`}
