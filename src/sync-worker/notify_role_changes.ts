@@ -246,7 +246,7 @@ const buildRoleChangeEmail = (
         <mj-body width="600px">
           <mj-section background-color="#fa990e">
             <mj-column>
-              <mj-text align="center" color="#111" font-size="28px">MakeSpace</mj-text>
+              <mj-text align="center" color="#111" font-size="28px">Makespace</mj-text>
             </mj-column>
           </mj-section>
           <mj-section>

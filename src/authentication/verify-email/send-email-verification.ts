@@ -25,7 +25,7 @@ const toEmail =
       <mj-body width="800px">
         <mj-section background-color="#fa990e">
           <mj-column>
-            <mj-text align="center" color="#111" font-size="40px">MakeSpace</mj-text>
+            <mj-text align="center" color="#111" font-size="40px">Makespace</mj-text>
             <mj-text font-style="italic" align="center" color="#111" font-size="30px">Member App</mj-text>
           </mj-column>
         </mj-section>
