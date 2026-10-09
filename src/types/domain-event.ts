@@ -270,6 +270,11 @@ const MemberNotificationPreferenceSet = defineEvent(
       none: null,
       follow: null,
     }),
+    // True when this was the app changing somebody's mind for them and
+    // telling them so - a new trainer, a new owner. Somebody setting their
+    // own preference is not being written to, and the two cannot be told
+    // apart by the actor: the API sets preferences as the system too.
+    notified: tt.withFallback(t.boolean, false),
   }
 );
 
@@ -557,6 +562,10 @@ const TroubleTicketNotificationSent = defineEvent(
     // for markers recorded before this was kept, and when nobody had an
     // address to send to.
     recipients: tt.withFallback(t.array(t.string), []),
+    // The same people by member number, where we know it. Addresses change
+    // and some senders are not members at all, so counting how much somebody
+    // has heard from us cannot be done by matching strings.
+    recipientMemberNumbers: tt.withFallback(t.array(t.number), []),
   }
 );
 

@@ -49,6 +49,8 @@ const process: Command<SetNotificationPreference>['process'] = input => {
       : O.some(
           constructEvent('MemberNotificationPreferenceSet')({
             memberNumber: input.command.memberNumber,
+            // Somebody choosing for themselves; nothing is sent about it.
+            notified: false,
             scope: input.command.scope,
             preference: input.command.preference,
             actor: input.command.actor,

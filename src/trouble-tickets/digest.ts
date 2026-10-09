@@ -1,5 +1,9 @@
 import {TroubleTicketStatus} from '../types/trouble-ticket';
-import {ticketLineHtml} from '../templates/trouble-ticket-email';
+import {
+  introBannerHtml,
+  introBannerText,
+  ticketLineHtml,
+} from '../templates/trouble-ticket-email';
 
 // What a summary email says. Kept apart from the job that sends it so the
 // wording can be read, and tested, without a database or a mail server.
@@ -54,7 +58,9 @@ const byPlace = (
 export const digestEmail = (
   publicUrl: string,
   cadence: 'daily' | 'weekly',
-  lines: ReadonlyArray<DigestLine>
+  lines: ReadonlyArray<DigestLine>,
+  // Their first few summaries say what this is; after that they know.
+  introduce = false
 ): {subject: string; text: string; html: string} => {
   const period = cadence === 'daily' ? 'today' : 'this week';
   const subject = `Trouble tickets ${period}: ${countWords(lines.length)}`;
@@ -62,6 +68,7 @@ export const digestEmail = (
   const groups = byPlace(lines);
 
   const text = [
+    ...(introduce ? [introBannerText(publicUrl), ''] : []),
     `Here is what happened to trouble tickets ${period}.`,
     '',
     ...groups.flatMap(([place, theirs]) => [
@@ -94,6 +101,7 @@ export const digestEmail = (
         </mj-section>
         <mj-section>
           <mj-column>
+            ${introduce ? `<mj-raw>${introBannerHtml(publicUrl)}</mj-raw>` : ''}
             <mj-text font-size="16px" color="#111">
               <p>Here is what happened to trouble tickets ${period}.</p>
               ${groups

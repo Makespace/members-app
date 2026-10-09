@@ -7,6 +7,7 @@ import * as O from 'fp-ts/Option';
 import {
   DigestWatermark,
   getDigestWatermark,
+  getNotificationEmailCount,
   getMembersWithNotificationPreferences,
   getNotificationPreferences,
 } from './notification-preferences/get';
@@ -166,6 +167,7 @@ export type SharedReadModel = {
       memberNumber: number,
       cadence: string
     ) => O.Option<DigestWatermark>;
+    emailsSentTo: (memberNumber: number) => number;
   };
   troubleTickets: {
     hasRowHash: (rowHash: string) => boolean;
@@ -263,6 +265,7 @@ export const initSharedReadModel = (
       forMember: getNotificationPreferences(readModelDb),
       membersWithAny: getMembersWithNotificationPreferences(readModelDb),
       lastDigest: getDigestWatermark(readModelDb),
+      emailsSentTo: getNotificationEmailCount(readModelDb),
     },
     troubleTickets: {
       hasRowHash: hasTroubleTicketRowHash(readModelDb),

@@ -154,3 +154,40 @@ export const ticketLineHtml = (
 
 export const ticketUrl = (publicUrl: string, id: string): string =>
   `${publicUrl}/trouble-tickets/view/${encodeURIComponent(id)}`;
+
+// Somebody's first few notifications arrive from a system they have never
+// been told about, so those say what it is and where to change it. After
+// that they know, and repeating it would be noise on every email forever.
+export const INTRO_AFTER_EMAILS = 5;
+
+export const shouldIntroduce = (emailsAlreadySent: number): boolean =>
+  emailsAlreadySent < INTRO_AFTER_EMAILS;
+
+// "app.makespace.org", not "https://app.makespace.org/" - the sentence names
+// the place rather than quoting an address at somebody.
+const siteName = (publicUrl: string) =>
+  publicUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+export const introBannerHtml = (publicUrl: string): string => `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+         style="background:#f3f8fb;border:1px solid #b1d4ea;border-radius:6px;margin-bottom:14px;">
+    <tr>
+      <td style="padding:12px 16px;font-size:14px;color:${TEXT};line-height:1.45;">
+        Trouble tickets can now be submitted and tracked in
+        <a href="${publicUrl}" style="color:#1d70b8;">${escape(
+          siteName(publicUrl)
+        )}</a>!
+        To edit your notification settings, including following specific
+        pieces of equipment only,
+        <a href="${publicUrl}/notification-settings" style="color:#1d70b8;">log in to the app</a>.
+      </td>
+    </tr>
+  </table>
+`;
+
+export const introBannerText = (publicUrl: string): string =>
+  [
+    `Trouble tickets can now be submitted and tracked in ${siteName(publicUrl)}!`,
+    'To edit your notification settings, including following specific pieces',
+    `of equipment only, log in to the app: ${publicUrl}/notification-settings`,
+  ].join('\n');

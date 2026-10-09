@@ -10,6 +10,11 @@ import {
   heldBackSendEmail,
   mayEmail,
 } from '../trouble-tickets/notification-gate';
+import {
+  introBannerHtml,
+  introBannerText,
+  shouldIntroduce,
+} from '../templates/trouble-ticket-email';
 
 // A role change that cannot be acted on is reconsidered every cycle, so
 // saying so every time would be thousands of identical lines a day. Once per
@@ -165,12 +170,16 @@ export const notifyRoleChanges = async (
       continue;
     }
 
+    const introduce = shouldIntroduce(
+      rm.notificationPreferences.emailsSentTo(event.memberNumber)
+    );
     const committed = await deps.commitEvent(rm.getCurrentEventIndex())(
       constructEvent('MemberNotificationPreferenceSet')({
         actor: {tag: 'system'},
         memberNumber: event.memberNumber,
         scope,
         preference,
+        notified: true,
       })
     )();
     if (E.isLeft(committed)) {
@@ -187,7 +196,8 @@ export const notifyRoleChanges = async (
         member.value.primaryEmailAddress,
         thing,
         became,
-        preference
+        preference,
+        introduce
       )
     )();
     if (E.isLeft(sent)) {
@@ -204,7 +214,8 @@ const buildRoleChangeEmail = (
   recipient: EmailAddress,
   thing: string,
   became: string,
-  preference: 'daily' | 'follow'
+  preference: 'daily' | 'follow',
+  introduce: boolean
 ): Email => {
   const nowHears =
     preference === 'daily'
@@ -219,7 +230,9 @@ const buildRoleChangeEmail = (
     nowHears,
     '',
     `If that is not what you want, you can change it: ${publicUrl}/notification-settings`,
-  ].join('\n');
+  ]
+    .concat(introduce ? ['', introBannerText(publicUrl)] : [])
+    .join('\n');
 
   const escape = (value: string) =>
     value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -238,6 +251,7 @@ const buildRoleChangeEmail = (
           </mj-section>
           <mj-section>
             <mj-column>
+              ${introduce ? `<mj-raw>${introBannerHtml(publicUrl)}</mj-raw>` : ''}
               <mj-text font-size="16px" color="#111">
                 <p>You are now ${escape(became)} <strong>${escape(thing)}</strong>, so we have changed what you hear about it.</p>
                 <p>${escape(nowHears)}</p>
