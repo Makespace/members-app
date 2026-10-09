@@ -65,19 +65,24 @@ describe('the signs stylesheet', () => {
     expect(block.slice(0, block.indexOf('}'))).toContain('width: fit-content');
   });
 
-  // The sections are only as tall as their words, so the one code gets
-  // whatever space the band, the name and the sections leave behind.
-  it('gives the code the space the words do not need', () => {
+  // The words are what a member reads, so they get the room; the code is
+  // held to a fifth of the sign, which still scans from arm's length.
+  it('gives the words the space, and the code a fifth of the sign', () => {
     const rule = (selector: string) => {
       const from = css.slice(css.indexOf(selector));
       return from.slice(0, from.indexOf('}'));
     };
 
-    expect(rule('.sign__sections {')).toContain('flex: 0 0 auto');
-    expect(rule('.sign__code {')).toContain('flex: 1 1 auto');
-    // Square, and as tall as its share allows - not a fixed width.
+    expect(rule('.sign__sections {')).toContain('flex: 1 1 auto');
+    // Each sign is an article, and the site's article flow spacing would
+    // otherwise add a fixed 1rem here - enough to push the longest (orange)
+    // sign's words into its code.
+    expect(rule('.sign__sections {')).toContain('margin: 0;');
+    expect(rule('.sign__code {')).toContain('flex: 0 0 auto');
     expect(rule('.sign__qr {')).toContain('aspect-ratio: 1');
-    expect(rule('.sign__qr {')).toContain('height: min(100%');
+    expect(rule('.sign__qr {')).toContain(
+      'height: calc(var(--sign-h) * 0.2)'
+    );
   });
 
   it('has no rules left from the one-code-per-section design', () => {

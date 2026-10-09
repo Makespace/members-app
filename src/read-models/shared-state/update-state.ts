@@ -611,6 +611,21 @@ const _updateState =
         }
         break;
       }
+      case 'EquipmentLearnPointsSet': {
+        const rows = tx
+          .update(equipmentTable)
+          .set({
+            learnPoints: event.learnPoints === '' ? null : event.learnPoints,
+          })
+          .where(eq(equipmentTable.id, event.equipmentId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(
+            `Unable to set the learn points for equipment '${event.equipmentId}' - unknown equipment`
+          );
+        }
+        break;
+      }
       case 'EquipmentRiskAssessmentUrlSet': {
         const rows = tx
           .update(equipmentTable)

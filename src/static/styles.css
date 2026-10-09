@@ -2491,7 +2491,7 @@ label img {
   margin: 0;
   /* Between the band and the codes, with about as much air above as below
      so it sits on neither. */
-  padding: 0.7em 0.5em 0.1em;
+  padding: 0.45em 0.5em 0.1em;
   flex: 0 1 auto;
   min-height: 0;
   display: flex;
@@ -2514,12 +2514,19 @@ label img {
   display: flex;
   flex-direction: column;
   gap: 0.4em;
+  /* Each sign is an article, whose flow spacing would otherwise add a
+     screen-sized margin here that does not scale with the paper. */
+  margin: 0;
   padding: 0 0.6em;
-  flex: 0 0 auto;
+  /* The words are what a member reads, so they get the room the code does
+     not need, with any to spare split evenly around them. */
+  flex: 1 1 auto;
+  min-height: 0;
+  justify-content: center;
 }
 
 .sign__section {
-  padding: 0.45em 0.8em 0.5em;
+  padding: 0.8em 1.2em 0.85em;
   text-align: left;
   min-width: 0;
   /* A capsule per section, tinted by what it is about: three things to
@@ -2558,7 +2565,7 @@ label img {
   margin: 0;
   /* Two or three words, read from across the room, so set as a heading
      rather than as a label. */
-  font-size: 1.45em;
+  font-size: 1.6em;
   color: var(--scan-colour);
   font-weight: 800;
   line-height: 1.15;
@@ -2569,11 +2576,22 @@ label img {
    colour; the words under it stay black, so the colour is a signal rather
    than decoration. */
 .sign__section-note {
-  margin: 0.25em 0 0;
-  font-size: 1.12em;
+  margin: 0.3em 0 0;
+  font-size: 1.2em;
   line-height: 1.3;
   color: #2b2b2b;
-  text-wrap: pretty;
+}
+
+/* A machine's own learn points. Qualified by element because the reset's
+   ul[class] would otherwise take the bullets and the indent away. */
+ul.sign__points {
+  list-style: disc;
+  margin: 0;
+  padding-left: 1.1em;
+}
+
+ul.sign__points li + li {
+  margin-top: 0.15em;
 }
 
 .sign__icon {
@@ -2583,19 +2601,17 @@ label img {
   margin-top: 0.1em;
 }
 
-/* The one code on the sign, leading to the machine's page. It takes every
-   millimetre the band, the name and the sections leave behind: a poster
-   prints a bigger code than a postcard without either needing a layout of
-   its own, and one big code scans from further away than three small ones. */
+/* The one code on the sign, leading to the machine's page. Sized from the
+   paper rather than the space left over, so a poster prints a bigger code
+   than a postcard and the sections above keep the room for their words. */
 .sign__code {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.8em;
-  margin: 0.5em 0.6em 0.6em;
-  padding: 0.5em 0.8em;
+  margin: 0.4em 0.6em 0.6em;
+  padding: 0.4em 0.8em;
   border-radius: 1em;
   background: #f1f1f1;
 }
@@ -2608,12 +2624,13 @@ label img {
   border-radius: 0.4em;
   padding: 0.3em;
   flex: 0 0 auto;
-  /* Square, and as tall as the space allows - but never so wide that the
-     words beside it are squeezed into a column. */
+  /* Square, and a fifth of the sign's height: plenty to scan from arm's
+     length, and no more, so the words above get the rest. */
   aspect-ratio: 1;
-  height: min(100%, 16em);
+  height: calc(var(--sign-h) * 0.2);
   width: auto;
   max-width: 50%;
+  box-sizing: border-box;
 }
 
 .sign__qr svg {

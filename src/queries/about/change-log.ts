@@ -16,6 +16,11 @@ export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
     date: '2026-10-09',
     headline:
+      'Owners and trainers can write what a machine\'s sign lists under "Learn" - such as how to empty it or put it away - and the line by its code now says what scanning leads to',
+  },
+  {
+    date: '2026-10-09',
+    headline:
       "Equipment signs now carry one bigger QR code, to the machine's page, instead of one per section",
   },
   {

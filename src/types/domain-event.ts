@@ -93,6 +93,13 @@ const EquipmentRiskAssessmentUrlSet = defineEvent(
   }
 );
 
+// What to learn about this machine, printed as points under "Learn" on its
+// sign. One point per line; empty clears them.
+const EquipmentLearnPointsSet = defineEvent('EquipmentLearnPointsSet', {
+  equipmentId: tt.UUID,
+  learnPoints: t.string,
+});
+
 const EquipmentNameChanged = defineEvent('EquipmentNameChanged', {
   equipmentId: tt.UUID,
   name: t.string,
@@ -562,6 +569,7 @@ export const events = [
   EquipmentMachinesSet,
   EquipmentNameChanged,
   EquipmentRiskAssessmentUrlSet,
+  EquipmentLearnPointsSet,
   EquipmentMarkedObsolete,
   EquipmentNameAliasAdded,
   EquipmentNameAliasRemoved,
@@ -625,6 +633,7 @@ export const DomainEvent = t.union([
   EquipmentMachinesSet.codec,
   EquipmentNameChanged.codec,
   EquipmentRiskAssessmentUrlSet.codec,
+  EquipmentLearnPointsSet.codec,
   EquipmentMarkedObsolete.codec,
   EquipmentNameAliasAdded.codec,
   EquipmentNameAliasRemoved.codec,

@@ -41,6 +41,8 @@ export const render = () => html`
       done(html`Printable signs for each machine: its name, what its colour
       means, and one QR code to its page - for learning about it, getting
       trained on it, and reporting a problem`),
+      done(html`Let owners and trainers say what each machine's sign lists
+      under "Learn"`),
       done(html`Show a machine's open trouble tickets on an e-ink
       display mounted on it (trial)`),
       done(html`Choose what you hear about: the tickets you reported, the

@@ -215,9 +215,32 @@ const guideLink = (viewModel: ViewModel) =>
         ${O.isSome(vm.equipment.guideUrl)
           ? html``
           : tooltip(
-              html`Without it, this machine's sign prints without its "Learn"
-              code and its training page has no guide to send members to.`
+              html`Without it, this machine's page and training page have no
+              guide to send members to.`
             )}
+      </li>`
+    ),
+    O.getOrElse(() => html``)
+  );
+
+// What its sign lists under "Learn" - the things worth knowing before using
+// this machine in particular, rather than the general sentence.
+const learnPointsLink = (viewModel: ViewModel) =>
+  pipe(
+    viewModel,
+    O.of,
+    O.filter(isTrainerOrOwner),
+    O.map(
+      vm => html` <li>
+        <a href="/equipment/set-learn-points?equipmentId=${vm.equipment.id}"
+          >${vm.equipment.learnPoints.length > 0
+            ? safe('Change what its sign says to learn')
+            : safe('Say what its sign should list to learn')}</a
+        >
+        ${tooltip(
+          html`A few short points, printed under "Learn" on this machine's
+          sign - for example, how to empty it or put it away.`
+        )}
       </li>`
     ),
     O.getOrElse(() => html``)
@@ -543,6 +566,7 @@ const equipmentActions = (viewModel: ViewModel) => html`
     setMachines(viewModel),
     setRiskAssessment(viewModel),
     guideLink(viewModel),
+    learnPointsLink(viewModel),
     changeCategory(viewModel),
     printSign(viewModel),
     ...(viewModel.equipment.category === 'red'
