@@ -11,7 +11,8 @@ import {
   sanitizeString,
   toLoggedInContent,
 } from '../../types/html';
-import {changeLog} from './change-log';
+import {changeLogBySubject} from './change-log';
+import {DateTime} from 'luxon';
 
 type ViewModel = {
   memberNumber: number;
@@ -47,19 +48,37 @@ I'm interested in contributing to, or have a suggestion about, app.makespace.org
 `)
   );
 
+// Grouped by subject so a member can find the part of the app they use,
+// rather than reading one long list in date order. The date is kept short
+// ("9 Oct") because the year is almost always this one; the full date is on
+// hover.
+const shortDate = (iso: string) =>
+  DateTime.fromISO(iso).setLocale('en-GB').toFormat('d LLL');
+
 const renderChangeLog = () => html`
-  <ul>
-    ${joinHtml(
-      changeLog.map(
-        entry => html`
-          <li>
-            <strong>${safe(entry.date)}</strong> —
-            ${sanitizeString(entry.headline)}
-          </li>
-        `
-      )
-    )}
-  </ul>
+  <p>
+    The newest change is also under the "About this app" button at the top
+    of every page.
+  </p>
+  ${joinHtml(
+    changeLogBySubject().map(
+      group => html`
+        <h3>${sanitizeString(group.heading)}</h3>
+        <ul>
+          ${joinHtml(
+            group.entries.map(
+              entry => html`
+                <li>
+                  <strong title="${safe(entry.date)}">${sanitizeString(shortDate(entry.date))}</strong>
+                  — ${sanitizeString(entry.headline)}
+                </li>
+              `
+            )
+          )}
+        </ul>
+      `
+    )
+  )}
 `;
 
 const render = (viewModel: ViewModel) => html`
