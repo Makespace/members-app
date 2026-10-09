@@ -136,6 +136,7 @@ export const equipmentTable = defineTable(
       trainingSheetId TEXT,
       guideUrl TEXT,
       riskAssessmentUrl TEXT,
+      learnPoints TEXT,
       removedAt INTEGER,
       FOREIGN KEY(areaId) REFERENCES areas(id) ON DELETE CASCADE
     );
@@ -156,6 +157,8 @@ export const equipmentTable = defineTable(
     // The machine's page on equipment.makespace.org, as recorded by an owner.
     guideUrl: text('guideUrl'),
     riskAssessmentUrl: text('riskAssessmentUrl'),
+    // What to learn before using it, one point per line, for its sign.
+    learnPoints: text('learnPoints'),
     // When set, the equipment is obsolete: hidden from members browsing for
     // training, but kept (with its history) for owners/admins.
     removedAt: integer('removedAt', {mode: 'timestamp_ms'}),

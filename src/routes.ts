@@ -85,6 +85,11 @@ export const initRoutes = (
       'set-risk-assessment-url',
       commands.equipment.setRiskAssessmentUrl
     ),
+    ...command(
+      'equipment',
+      'set-learn-points',
+      commands.equipment.setLearnPoints
+    ),
     ...command('equipment', 'set-machines', commands.equipment.setMachines),
     // Saving the notification settings page. A bespoke POST for the same
     // reason as bulk-add below: the command pipeline commits one event per

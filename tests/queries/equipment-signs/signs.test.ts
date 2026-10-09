@@ -21,6 +21,7 @@ const viewModel = (overrides: Partial<ViewModel> = {}): ViewModel => ({
       category: 'red',
       url: 'https://app.makespace.org/equipment/metal-shop-metal-lathe',
       hasGuide: true,
+      learnPoints: [],
       areaEmail: O.none,
     },
   ],
@@ -136,6 +137,54 @@ describe('printable equipment signs', () => {
       });
     });
 
+    // An owner can say what to learn about this machine in particular, and
+    // the sign lists it in place of the general sentence.
+    describe('with learn points written for the machine', () => {
+      const withPoints = (hasGuide: boolean) =>
+        renderPage(
+          viewModel({
+            signs: [
+              {
+                ...viewModel().signs[0],
+                hasGuide,
+                learnPoints: [
+                  'How to change the dust bag and dispose of it',
+                  'How to tidy the equipment away after use',
+                ],
+              },
+            ],
+          })
+        );
+
+      it('lists them under "Learn", instead of the general sentence', () => {
+        const learn = withPoints(true).querySelector('.sign__section--learn');
+        const points = [...(learn?.querySelectorAll('li') ?? [])].map(
+          li => li.textContent?.trim()
+        );
+
+        expect(points).toStrictEqual([
+          'How to change the dust bag and dispose of it',
+          'How to tidy the equipment away after use',
+        ]);
+        expect(learn?.textContent).not.toContain('What this equipment is for');
+      });
+
+      it('shows them even when no guide is recorded', () => {
+        expect(
+          withPoints(false).querySelectorAll('.sign__section--learn')
+        ).toHaveLength(1);
+      });
+
+      it('fits them to the sign before printing', () => {
+        const printed = renderPrintDocument(viewModel());
+
+        expect(printed).toContain('window.fitSigns');
+        expect(printed.indexOf('fitSigns().then')).toBeLessThan(
+          printed.lastIndexOf('window.print()')
+        );
+      });
+    });
+
     // A machine with no guide recorded has none on its page, so the sign
     // does not promise one.
     describe('when no equipment guide has been recorded', () => {
@@ -201,6 +250,27 @@ describe('printable equipment signs', () => {
         'app.makespace.org/equipment/metal-shop-metal-lathe',
       ]);
     });
+
+    // The line by the code names only what the page has for this machine.
+    it.each([
+      ['red', true, 'Scan for resources, training and trouble tickets'],
+      ['red', false, 'Scan for training and trouble tickets'],
+      ['orange', true, 'Scan for resources and trouble tickets'],
+      ['green', false, 'Scan for trouble tickets'],
+    ] as const)(
+      'says what scanning gets you for %s equipment (guide recorded: %s)',
+      (category, hasGuide, expected) => {
+        const page = renderPage(
+          viewModel({
+            signs: [{...viewModel().signs[0], category, hasGuide}],
+          })
+        );
+
+        expect(
+          page.querySelector('.sign__code-title')?.textContent?.trim()
+        ).toBe(expected);
+      }
+    );
 
     it('uses a readable slug rather than a uuid in the printed URL', () => {
       expect(

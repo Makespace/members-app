@@ -25,6 +25,9 @@ export type Sign = {
   // Whether a guide is recorded against the machine. Without one the page
   // has no guide to show, so the sign leaves out the line promising one.
   hasGuide: boolean;
+  // What to learn about this machine in particular, listed under "Learn" in
+  // place of the general sentence. Empty when nobody has written any.
+  learnPoints: ReadonlyArray<string>;
   // Where to send a question about orange equipment, which has no training
   // to point at and no trainers to ask.
   areaEmail: O.Option<string>;
@@ -93,6 +96,7 @@ export const constructViewModel =
               item.name
             )}`,
             hasGuide: O.isSome(item.guideUrl),
+            learnPoints: item.learnPoints,
             areaEmail: pipe(
               O.fromNullable(areas.get(item.areaId as string)),
               O.chain(area => area.email),

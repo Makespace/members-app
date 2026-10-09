@@ -132,21 +132,62 @@ const section = (block: {
 }) => html`
   <div class="sign__section sign__section--${safe(block.variant)}">
     <p class="sign__section-title">${block.icon} ${safe(block.title)}</p>
-    <p class="sign__section-note">${block.note}</p>
+    <div class="sign__section-note">${block.note}</div>
   </div>
 `;
 
-// The one code, given whatever the sections leave: one big code scans from
-// further away than three small ones did.
-const codeBlock = (url: string) => html`
+// Says what scanning gets you, naming only what this machine's page has: a
+// guide only if one is recorded, training only for red equipment.
+const scanFor = (sign: Sign) => {
+  const things = [
+    ...(sign.hasGuide ? ['resources'] : []),
+    ...(sign.category === 'red' ? ['training'] : []),
+    'trouble tickets',
+  ];
+  const list =
+    things.length === 1
+      ? things[0]
+      : `${things.slice(0, -1).join(', ')} and ${things[things.length - 1]}`;
+  return `Scan for ${list}`;
+};
+
+// The one code, leading to the machine's page, where each section above is a
+// click away.
+const codeBlock = (sign: Sign) => html`
   <div class="sign__code">
-    <div class="sign__qr">${qrCodeSvg(url, 200)}</div>
+    <div class="sign__qr">${qrCodeSvg(sign.url, 200)}</div>
     <div class="sign__code-text">
-      <p class="sign__code-title">Scan for this equipment's page</p>
-      <p class="sign__url">${sanitizeString(forReading(url))}</p>
+      <p class="sign__code-title">${safe(scanFor(sign))}</p>
+      <p class="sign__url">${sanitizeString(forReading(sign.url))}</p>
     </div>
   </div>
 `;
+
+// What to learn: the machine's own points where an owner has written them,
+// otherwise the general sentence - and with neither a guide nor points, no
+// section at all, rather than a promise the page cannot keep.
+const learnSection = (sign: Sign) =>
+  sign.learnPoints.length > 0
+    ? section({
+        variant: 'learn',
+        icon: bookIcon,
+        title: 'Learn',
+        note: html`<ul class="sign__points">
+          ${joinHtml(
+            sign.learnPoints.map(
+              point => html`<li>${sanitizeString(point)}</li>`
+            )
+          )}
+        </ul>`,
+      })
+    : sign.hasGuide
+      ? section({
+          variant: 'learn',
+          icon: bookIcon,
+          title: 'Learn',
+          note: html`What this equipment is for and how to use it.`,
+        })
+      : html``;
 
 // The middle block is the one that depends on the colour: red equipment has
 // training to get, orange has a rule to keep, and green has neither.
@@ -202,16 +243,7 @@ const signCard = (sign: Sign) => html`
       </header>
       <h2 class="sign__name">${sanitizeString(sign.name)}</h2>
       <div class="sign__sections">
-        ${sign.hasGuide
-          ? section({
-              variant: 'learn',
-              icon: bookIcon,
-              title: 'Learn',
-              note: html`What this equipment is for and how to use it.`,
-            })
-          : // No guide recorded: the page has none to show, so the sign
-            // does not promise one.
-            html``}
+        ${learnSection(sign)}
         ${trainingBlock(sign)}
         ${section({
           variant: 'fault',
@@ -221,7 +253,7 @@ const signCard = (sign: Sign) => html`
             issues.`,
         })}
       </div>
-      ${codeBlock(sign.url)}
+      ${codeBlock(sign)}
     </article>
 `;
 
@@ -291,6 +323,38 @@ const interFont = html`
   </style>
 `;
 
+// A machine's own learn points can run longer than the general sentence, and
+// the longest signs (orange, with its contact line) have little to spare. So
+// once the font has arrived - its widths decide the wrapping - any sign whose
+// sections overflow has their text stepped down until they fit, rather than
+// running into the code. Only that sign shrinks; the rest keep their size.
+const fitSignsScript = html`
+  <script>
+    window.fitSigns = function () {
+      var fonts = document.fonts ? document.fonts.ready : Promise.resolve();
+      return fonts.then(function () {
+        document.querySelectorAll('.sign__sections').forEach(function (el) {
+          var overflows = function () {
+            var first = el.firstElementChild;
+            var last = el.lastElementChild;
+            if (!first || !last) return false;
+            var used =
+              last.getBoundingClientRect().bottom -
+              first.getBoundingClientRect().top;
+            return used > el.clientHeight;
+          };
+          var scale = 1;
+          el.style.fontSize = '';
+          while (overflows() && scale > 0.7) {
+            scale = Math.round((scale - 0.05) * 100) / 100;
+            el.style.fontSize = scale + 'em';
+          }
+        });
+      });
+    };
+  </script>
+`;
+
 // Opened to print: a document of its own, with none of the app around it.
 // The printed page and the page on screen are then the same thing, so a
 // preview cannot lie about what comes out - and nothing from the rest of the
@@ -316,9 +380,12 @@ export const renderPrintDocument = (viewModel: ViewModel): Html => html`
       <div class="signs-page signs-page--${safe(viewModel.size)}">
         ${joinHtml(viewModel.signs.map(renderSignForPrint))}
       </div>
+      ${fitSignsScript}
       <script>
         window.addEventListener('load', function () {
-          window.print();
+          window.fitSigns().then(function () {
+            window.print();
+          });
         });
       </script>
     </body>
@@ -404,8 +471,12 @@ export const render = (viewModel: ViewModel) => {
             </p>
           </div>`}
       ${joinHtml(viewModel.signs.map(renderSign(size)))}
+      ${fitSignsScript}
       <script>
         (function () {
+          window.addEventListener('load', function () {
+            window.fitSigns();
+          });
           var button = document.querySelector('[data-print-signs]');
           if (button) {
             button.addEventListener('click', function () {

@@ -35,6 +35,9 @@ export type MinimalEquipment = {
   guideUrl: O.Option<string>;
   // Where the written risk assessment for this machine lives.
   riskAssessmentUrl: O.Option<string>;
+  // What to learn before using it, printed under "Learn" on its sign. Empty
+  // when nobody has written any.
+  learnPoints: ReadonlyArray<string>;
   // Set when the equipment has been marked obsolete (soft-hidden).
   removedAt: O.Option<Date>;
 };
