@@ -153,4 +153,4 @@ export const ticketLineHtml = (
 `;
 
 export const ticketUrl = (publicUrl: string, id: string): string =>
-  `${publicUrl}/trouble-tickets/${encodeURIComponent(id)}`;
+  `${publicUrl}/trouble-tickets/view/${encodeURIComponent(id)}`;
