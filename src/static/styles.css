@@ -3357,3 +3357,38 @@ a.eq-capsule--dead:visited {
   font-size: 100%;
   padding: 0.3rem 0.8rem;
 }
+
+/* The change log on /about: under each subject, a date column and the text
+   column aligned at one left edge, the whole list indented a little under
+   its heading. The base dl rule above splits 3:7, which leaves the date
+   column mostly empty; here it is a fixed width that fits "30 Sep", the
+   same under every subject so the text lines up across the page. On a
+   narrow screen the date sits above its line instead. */
+dl.change-log {
+  padding: 0 0 0 1rem;
+  margin-bottom: 1rem;
+
+  @media screen and (min-width: 60ch) {
+    grid-template-columns: 4.5em 1fr;
+    column-gap: 1.25rem;
+    row-gap: 0.4rem;
+  }
+
+  dt {
+    font-weight: bold;
+    white-space: nowrap;
+  }
+
+  dd {
+    margin: 0;
+  }
+
+  @media screen and (max-width: 60ch) {
+    dt {
+      margin-top: 0.6rem;
+    }
+    dd {
+      margin-bottom: 0;
+    }
+  }
+}
