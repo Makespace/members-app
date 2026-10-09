@@ -10,7 +10,7 @@ import {User} from '../../types';
 import {Dependencies} from '../../dependencies';
 import {EquipmentCategory} from '../../types/equipment-category';
 import {sizeFrom} from './render';
-import {equipmentSlug, toSlug} from '../../templates/slug';
+import {equipmentPageUrl, equipmentSlug, toSlug} from '../../templates/slug';
 import {getGuideLinkChecks} from '../../read-models/external-state/guide-links';
 
 export type Sign = {
@@ -91,10 +91,11 @@ export const constructViewModel =
             areaId: item.areaId as string,
             areaName: areaNames.get(item.areaId as string) ?? '',
             category: item.category,
-            url: `${deps.conf.PUBLIC_URL}/equipment/${equipmentSlug(
+            url: equipmentPageUrl(
+              deps.conf.PUBLIC_URL,
               areaNames.get(item.areaId as string) ?? '',
               item.name
-            )}`,
+            ),
             hasGuide: O.isSome(item.guideUrl),
             learnPoints: item.learnPoints,
             areaEmail: pipe(
