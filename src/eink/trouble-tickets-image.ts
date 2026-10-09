@@ -1,7 +1,13 @@
 import {SKRSContext2D} from '@napi-rs/canvas';
 import {DateTime, IANAZone} from 'luxon';
 import {TroubleTicket, TroubleTicketStatus} from '../types/trouble-ticket';
-import {FONT_FAMILY, renderToPng, TONE} from './render-to-png';
+import {
+  FONT_FAMILY,
+  Palette,
+  renderToPng,
+  TONE,
+  Tones,
+} from './render-to-png';
 
 // The open trouble tickets for one machine, drawn for an e-ink display
 // mounted on it: the machine's name in a band across the top, then one entry
@@ -117,14 +123,14 @@ const wrap = (
 
 const draw =
   (model: TroubleTicketsImageModel, width: number, height: number) =>
-  (ctx: SKRSContext2D) => {
+  (ctx: SKRSContext2D, palette: Palette) => {
     const layout = layoutFor(width, height);
     const textWidth = width - 2 * layout.pad;
     ctx.textBaseline = 'top';
 
     // Header band: the machine's name, white on black.
     const bandHeight = Math.round(layout.header * 1.6);
-    ctx.fillStyle = TONE.black;
+    ctx.fillStyle = palette.ink;
     ctx.fillRect(0, 0, width, bandHeight);
     ctx.fillStyle = TONE.white;
     ctx.font = font(layout.header, true);
@@ -138,7 +144,7 @@ const draw =
     const bottom = height - layout.pad;
 
     if (model.tickets.length === 0) {
-      ctx.fillStyle = TONE.black;
+      ctx.fillStyle = palette.ink;
       ctx.font = font(layout.title, true);
       ctx.fillText(
         fitWidth(ctx, 'No open trouble tickets', textWidth),
@@ -162,7 +168,7 @@ const draw =
         Math.floor((room - layout.meta) / titleLine)
       );
       if (maxTitleLines < 1) {
-        ctx.fillStyle = TONE.dark;
+        ctx.fillStyle = palette.muted;
         ctx.font = font(layout.meta, true);
         ctx.fillText(
           `+ ${remaining} more open ticket${remaining === 1 ? '' : 's'}`,
@@ -173,11 +179,16 @@ const draw =
       }
 
       if (i > 0) {
-        ctx.fillStyle = TONE.light;
-        ctx.fillRect(layout.pad, y - Math.round(gap / 2), textWidth, layout.rule);
+        ctx.fillStyle = palette.rule;
+        ctx.fillRect(
+          layout.pad,
+          y - Math.round(gap / 2),
+          textWidth,
+          Math.max(1, Math.round(layout.rule * palette.ruleWeight))
+        );
       }
 
-      ctx.fillStyle = TONE.black;
+      ctx.fillStyle = palette.ink;
       ctx.font = font(layout.title);
       const title = ticket.title.trim() === '' ? '(untitled)' : ticket.title;
       for (const line of wrap(ctx, title, textWidth, maxTitleLines)) {
@@ -185,7 +196,7 @@ const draw =
         y += titleLine;
       }
 
-      ctx.fillStyle = TONE.dark;
+      ctx.fillStyle = palette.muted;
       ctx.font = font(layout.meta);
       ctx.fillText(
         fitWidth(
@@ -203,5 +214,6 @@ const draw =
 export const renderTroubleTicketsImage = (
   model: TroubleTicketsImageModel,
   width: number,
-  height: number
-): Buffer => renderToPng(width, height, draw(model, width, height));
+  height: number,
+  tones: Tones = 4
+): Buffer => renderToPng(width, height, tones, draw(model, width, height));

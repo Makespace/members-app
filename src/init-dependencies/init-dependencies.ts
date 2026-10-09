@@ -2,7 +2,7 @@ import {Config} from '../configuration';
 import {Dependencies} from '../dependencies';
 import {createRateLimiter} from './rate-limit-sending-of-emails';
 import {sendEmail} from './send-email';
-import createLogger, {LoggerOptions} from 'pino';
+import createLogger, {DestinationStream, LoggerOptions} from 'pino';
 import nodemailer from 'nodemailer';
 import {commitEvent} from './event-store/commit-event';
 import {
@@ -21,7 +21,17 @@ import {lastSync} from '../sync-worker/db/last_sync';
 import {getSheetData, getSheetDataByMemberNumber} from '../sync-worker/db/get_sheet_data';
 import { initExternalStateDB } from '../sync-worker/external-state-db';
 
-export const initLogger = (conf: Config) => {
+// pino-http logs every request's headers at debug, and production logs at
+// debug, on to Sentry Logs too: without this the bearer tokens (the admin
+// API's, and the one every e-ink display sends once a minute) and members'
+// session cookies would sit in the logs. Redacted here, before any transport.
+const redact = {
+  paths: ['req.headers.authorization', 'req.headers.cookie'],
+  censor: '[redacted]',
+};
+
+// `destination` is for tests; the pino-pretty transport (localhost) ignores it.
+export const initLogger = (conf: Config, destination?: DestinationStream) => {
   let loggerOptions: LoggerOptions;
   loggerOptions = {
     formatters: {
@@ -30,6 +40,7 @@ export const initLogger = (conf: Config) => {
       },
     },
     level: conf.LOG_LEVEL,
+    redact,
   };
 
   if (conf.PUBLIC_URL.includes('localhost')) {
@@ -46,7 +57,9 @@ export const initLogger = (conf: Config) => {
       },
     };
   }
-  return createLogger(loggerOptions);
+  return destination
+    ? createLogger(loggerOptions, destination)
+    : createLogger(loggerOptions);
 };
 
 export const initDependencies = (
