@@ -19,7 +19,7 @@ const summary: TicketEmailSummary = {
   attempting: 'Cutting plywood',
   issue: 'It will not cut straight',
   steps: 'Tried a new blade',
-  url: 'https://members.makespace.org/trouble-tickets/abc',
+  url: 'https://members.makespace.org/trouble-tickets/view/abc',
 };
 
 describe('a trouble ticket in an email', () => {
@@ -34,7 +34,7 @@ describe('a trouble ticket in an email', () => {
   // The whole point of the ticket having an address.
   it('links to the ticket itself', () => {
     expect(ticketCardHtml(summary)).toContain(
-      'https://members.makespace.org/trouble-tickets/abc'
+      'https://members.makespace.org/trouble-tickets/view/abc'
     );
   });
 
@@ -86,7 +86,7 @@ describe('a trouble ticket in an email', () => {
     expect(line).toContain('The blade is blunt');
     expect(line).toContain('reported');
     expect(line).toContain('Band Saw');
-    expect(line).toContain('https://members.makespace.org/trouble-tickets/abc');
+    expect(line).toContain('https://members.makespace.org/trouble-tickets/view/abc');
     // The full answers belong on the ticket, not in a list of them.
     expect(line).not.toContain('Tried a new blade');
   });
