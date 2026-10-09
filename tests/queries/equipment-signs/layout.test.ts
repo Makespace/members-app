@@ -44,7 +44,8 @@ describe('the signs stylesheet', () => {
     '.sign {',
     '.sign__band {',
     '.sign__name {',
-    '.sign__codes {',
+    '.sign__sections {',
+    '.sign__code {',
     '.sign-block {',
   ])('defines %s exactly once', selector => {
     expect(occurrences(selector)).toBe(1);
@@ -64,20 +65,24 @@ describe('the signs stylesheet', () => {
     expect(block.slice(0, block.indexOf('}'))).toContain('width: fit-content');
   });
 
-  // The codes used to sit at the bottom of the sign with the space below the
-  // name left blank. That space is worth more as a bigger code.
-  it('gives the codes the space the name does not need', () => {
+  // The sections are only as tall as their words, so the one code gets
+  // whatever space the band, the name and the sections leave behind.
+  it('gives the code the space the words do not need', () => {
     const rule = (selector: string) => {
       const from = css.slice(css.indexOf(selector));
       return from.slice(0, from.indexOf('}'));
     };
 
-    expect(rule('.sign__codes {')).toContain('flex: 1 1 auto');
-    expect(rule('.sign__codes {')).not.toContain('margin-top: auto');
-    expect(rule('.sign__scan {')).toContain('flex: 1 1 0');
+    expect(rule('.sign__sections {')).toContain('flex: 0 0 auto');
+    expect(rule('.sign__code {')).toContain('flex: 1 1 auto');
     // Square, and as tall as its share allows - not a fixed width.
     expect(rule('.sign__qr {')).toContain('aspect-ratio: 1');
     expect(rule('.sign__qr {')).toContain('height: min(100%');
+  });
+
+  it('has no rules left from the one-code-per-section design', () => {
+    expect(css).not.toContain('.sign__codes');
+    expect(css).not.toContain('.sign__scan');
   });
 
   // Chrome and Safari leave backgrounds off the paper unless the person
@@ -108,7 +113,7 @@ describe('the signs stylesheet', () => {
   });
 
   // The line under each title is what a member actually reads once they are
-  // close enough to scan, so it is set at least as large as the sign's own
+  // close enough, so it is set at least as large as the sign's own
   // base size rather than as small print.
   it('sets the descriptions at reading size', () => {
     const rule = (selector: string) => {
@@ -118,13 +123,13 @@ describe('the signs stylesheet', () => {
     const fontSize = (selector: string) =>
       Number(/font-size:\s*([0-9.]+)em/.exec(rule(selector))?.[1] ?? '0');
 
-    expect(fontSize('.sign__scan-note {')).toBeGreaterThanOrEqual(1);
+    expect(fontSize('.sign__section-note {')).toBeGreaterThanOrEqual(1);
     // Still smaller than the heading it sits under, and bigger than the
-    // address it sits above.
-    expect(fontSize('.sign__scan-note {')).toBeLessThan(
-      fontSize('.sign__scan-title {')
+    // printed address.
+    expect(fontSize('.sign__section-note {')).toBeLessThan(
+      fontSize('.sign__section-title {')
     );
-    expect(fontSize('.sign__scan-note {')).toBeGreaterThan(
+    expect(fontSize('.sign__section-note {')).toBeGreaterThan(
       fontSize('.sign__url {')
     );
   });

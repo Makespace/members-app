@@ -120,37 +120,30 @@ const bookIcon = html`<svg
 // back, and those eight characters are eight more chances to mistype.
 const forReading = (url: string) => url.replace(/^https?:\/\//, '');
 
-// A block on the sign: a code with the words that say what scanning it does,
-// or - where there is nothing to scan, because the answer is the words
-// themselves - the words alone, running the width of the capsule.
-const scanBlock = (block: {
-  qrUrl: O.Option<string>;
+// A section of the sign: a heading and the line under it. None carries a
+// code of its own - the one code on the sign leads to the machine's page,
+// where each of these is a click away - so a section is only as tall as its
+// words.
+const section = (block: {
   variant: 'learn' | 'train' | 'fault' | 'notice';
   icon: Html;
   title: string;
   note: Html;
 }) => html`
-  <div class="sign__scan sign__scan--${safe(block.variant)}">
-    ${pipe(
-      block.qrUrl,
-      O.match(
-        () => html``,
-        qrUrl => html`<div class="sign__qr">${qrCodeSvg(qrUrl, 200)}</div>`
-      )
-    )}
-    <div class="sign__scan-text">
-      <p class="sign__scan-title">${block.icon} ${safe(block.title)}</p>
-      <p class="sign__scan-note">${block.note}</p>
-      ${pipe(
-        block.qrUrl,
-        O.match(
-          () => html``,
-          qrUrl =>
-            html`<p class="sign__url">
-              ${sanitizeString(forReading(qrUrl))}
-            </p>`
-        )
-      )}
+  <div class="sign__section sign__section--${safe(block.variant)}">
+    <p class="sign__section-title">${block.icon} ${safe(block.title)}</p>
+    <p class="sign__section-note">${block.note}</p>
+  </div>
+`;
+
+// The one code, given whatever the sections leave: one big code scans from
+// further away than three small ones did.
+const codeBlock = (url: string) => html`
+  <div class="sign__code">
+    <div class="sign__qr">${qrCodeSvg(url, 200)}</div>
+    <div class="sign__code-text">
+      <p class="sign__code-title">Scan for this equipment's page</p>
+      <p class="sign__url">${sanitizeString(forReading(url))}</p>
     </div>
   </div>
 `;
@@ -160,8 +153,7 @@ const scanBlock = (block: {
 const trainingBlock = (sign: Sign) => {
   switch (sign.category) {
     case 'red':
-      return scanBlock({
-        qrUrl: sign.trainUrl,
+      return section({
         variant: 'train',
         icon: capIcon,
         title: 'Get trained',
@@ -169,8 +161,7 @@ const trainingBlock = (sign: Sign) => {
           online quiz, then attend an in-person training session.`,
       });
     case 'orange':
-      return scanBlock({
-        qrUrl: O.none,
+      return section({
         variant: 'notice',
         icon: memberIcon,
         title: 'Members only',
@@ -187,8 +178,7 @@ const trainingBlock = (sign: Sign) => {
           )}`,
       });
     case 'green':
-      return scanBlock({
-        qrUrl: O.none,
+      return section({
         variant: 'notice',
         icon: tickIcon,
         title: 'Open to all!',
@@ -211,26 +201,19 @@ const signCard = (sign: Sign) => html`
         <p class="sign__band-rule">${categoryDescription(sign.category)}</p>
       </header>
       <h2 class="sign__name">${sanitizeString(sign.name)}</h2>
-      <div class="sign__codes">
-        ${pipe(
-          sign.learnUrl,
-          O.match(
-            // No guide address recorded: the sign prints without the code
-            // rather than sending someone to an address nobody has checked.
-            () => html``,
-            learnUrl =>
-              scanBlock({
-                qrUrl: O.some(learnUrl),
-                variant: 'learn',
-                icon: bookIcon,
-                title: 'Learn',
-                note: html`What this equipment is for and how to use it.`,
-              })
-          )
-        )}
+      <div class="sign__sections">
+        ${sign.hasGuide
+          ? section({
+              variant: 'learn',
+              icon: bookIcon,
+              title: 'Learn',
+              note: html`What this equipment is for and how to use it.`,
+            })
+          : // No guide recorded: the page has none to show, so the sign
+            // does not promise one.
+            html``}
         ${trainingBlock(sign)}
-        ${scanBlock({
-          qrUrl: O.some(sign.url),
+        ${section({
           variant: 'fault',
           icon: spannerIcon,
           title: 'Trouble tickets',
@@ -238,6 +221,7 @@ const signCard = (sign: Sign) => html`
             issues.`,
         })}
       </div>
+      ${codeBlock(sign.url)}
     </article>
 `;
 
@@ -278,7 +262,8 @@ const renderChooser = (viewModel: ViewModel) => html`
     <h1>Equipment signs</h1>
     <p>
       Printable signs for each machine: its name, what its colour means, and a
-      QR code leading to its trouble tickets. Choose an area, then use your
+      QR code leading to its page in the app - its guide, how to get trained,
+      and its trouble tickets. Choose an area, then use your
       browser's print dialog — each sign is laid out to fill one landscape
       page.
     </p>
@@ -400,8 +385,8 @@ export const render = (viewModel: ViewModel) => {
                 these:</strong
               >
               ${sanitizeString(viewModel.missingGuideUrl.join(', '))}. Those
-              signs print without the "Learn" code. Set the guide address from
-              each machine's page to include it.
+              signs print without the "Learn" section. Set the guide address
+              from each machine's page to include it.
             </p>
           </div>`}
       ${viewModel.unreachableGuideUrl.length === 0
@@ -414,8 +399,8 @@ export const render = (viewModel: ViewModel) => {
                 these:</strong
               >
               ${sanitizeString(viewModel.unreachableGuideUrl.join(', '))}.
-              Those signs will print a code that leads nowhere - fix the
-              address before printing them.
+              Those signs send members to a guide that leads nowhere - fix
+              the address before printing them.
             </p>
           </div>`}
       ${joinHtml(viewModel.signs.map(renderSign(size)))}

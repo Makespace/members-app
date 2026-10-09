@@ -39,8 +39,8 @@ export const render = () => html`
       done(html`Report a problem from inside the app, picking the machine from
       a list instead of typing its name`),
       done(html`Printable signs for each machine: its name, what its colour
-      means, and QR codes for learning about it, getting trained on it, and
-      reporting a problem`),
+      means, and one QR code to its page - for learning about it, getting
+      trained on it, and reporting a problem`),
       done(html`Show a machine's open trouble tickets on an e-ink
       display mounted on it (trial)`),
       done(html`Choose what you hear about: the tickets you reported, the

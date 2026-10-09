@@ -18,16 +18,13 @@ export type Sign = {
   name: string;
   areaName: string;
   category: EquipmentCategory;
-  // The page a member reaches by scanning: what is already reported, and the
-  // way to report something new.
+  // The one code on the sign: this machine's page in the app, which carries
+  // its guide, how to get trained, and its trouble tickets - so the sign need
+  // not print a code for each.
   url: string;
-  // The equipment guide, as recorded against the machine. None when nobody
-  // has set one: the sign prints no learn code rather than a guessed address
-  // that may not exist.
-  learnUrl: O.Option<string>;
-  // This machine's page in the app, listing who can train you. Only red
-  // equipment needs training, so only red equipment carries this code.
-  trainUrl: O.Option<string>;
+  // Whether a guide is recorded against the machine. Without one the page
+  // has no guide to show, so the sign leaves out the line promising one.
+  hasGuide: boolean;
   // Where to send a question about orange equipment, which has no training
   // to point at and no trainers to ask.
   areaEmail: O.Option<string>;
@@ -40,8 +37,8 @@ export type ViewModel = {
   // after.
   missingGuideUrl: ReadonlyArray<string>;
   // And those whose recorded address did not answer when it was last checked:
-  // a code that leads to a 404 is worse than no code, and worth knowing about
-  // before it is laminated.
+  // the sign sends members to a guide that leads to a 404, which is worth
+  // knowing about before it is laminated.
   unreachableGuideUrl: ReadonlyArray<string>;
   // Paper size to lay the signs out for.
   size: 'a7' | 'a6' | 'a5' | 'a4';
@@ -91,20 +88,11 @@ export const constructViewModel =
             areaId: item.areaId as string,
             areaName: areaNames.get(item.areaId as string) ?? '',
             category: item.category,
-            url: `${deps.conf.PUBLIC_URL}/trouble-tickets?equipmentId=${equipmentSlug(
+            url: `${deps.conf.PUBLIC_URL}/equipment/${equipmentSlug(
               areaNames.get(item.areaId as string) ?? '',
               item.name
             )}`,
-            learnUrl: item.guideUrl,
-            trainUrl:
-              item.category === 'red'
-                ? O.some(
-                    `${deps.conf.PUBLIC_URL}/equipment/${equipmentSlug(
-                      areaNames.get(item.areaId as string) ?? '',
-                      item.name
-                    )}/training`
-                  )
-                : O.none,
+            hasGuide: O.isSome(item.guideUrl),
             areaEmail: pipe(
               O.fromNullable(areas.get(item.areaId as string)),
               O.chain(area => area.email),
@@ -151,7 +139,7 @@ export const constructViewModel =
           size: sizeFrom(params.size),
           signs: ordered,
           missingGuideUrl: ordered
-            .filter(sign => O.isNone(sign.learnUrl))
+            .filter(sign => !sign.hasGuide)
             .map(sign => sign.name),
           unreachableGuideUrl: ordered
             .filter(sign => {

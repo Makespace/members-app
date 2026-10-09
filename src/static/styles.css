@@ -2505,99 +2505,58 @@ label img {
   overflow-wrap: anywhere;
 }
 
-/* The codes stack, each running the full width of the sign: side by side
-   they would each get a fraction of a portrait page, which is not enough for
-   a scannable code and its explanation. Stacked, each gets the code on the
-   left and its words on the right - how a sign is read. Red equipment
-   carries three (learn, train, tickets); orange and green carry two. */
-.sign__codes {
+/* The sections stack, each running the full width of the sign: what to
+   read, what you must do before using the machine, and where faults go. None
+   carries a code of its own, so each is only as tall as its words. Red
+   equipment has three; orange and green have two or three, depending on
+   whether a guide is recorded. */
+.sign__sections {
   display: flex;
   flex-direction: column;
-  gap: 0.5em;
-  padding: 0 0.6em 0.6em;
-  /* Takes every millimetre the band and the name leave behind, and shares it
-     between the codes: the space below the name is worth more as a bigger
-     code than as white paper, and so was the coloured rule that used to
-     divide them - the band at the top already says which colour this is. */
-  flex: 1 1 auto;
-  min-height: 0;
+  gap: 0.4em;
+  padding: 0 0.6em;
+  flex: 0 0 auto;
 }
 
-.sign__scan {
-  display: flex;
-  /* Each code gets an equal share of the sign, and fills its share. */
-  align-items: center;
-  flex: 1 1 0;
-  gap: 0.8em;
-  padding: 0.5em 0.8em;
+.sign__section {
+  padding: 0.45em 0.8em 0.5em;
   text-align: left;
   min-width: 0;
-  min-height: 0;
-  /* A capsule per code, tinted by what scanning it does: three things to
+  /* A capsule per section, tinted by what it is about: three things to
      choose between read faster as three blocks than as three lines. */
   border-radius: 1em;
   background: var(--scan-tint);
 }
 
-.sign__scan--learn {
+.sign__section--learn {
   --scan-colour: #14568a;
   --scan-tint: #e7f0f8;
 }
 
-.sign__scan--train {
+.sign__section--train {
   --scan-colour: #005a30;
   --scan-tint: #e4f0e9;
 }
 
-.sign__scan--fault {
+.sign__section--fault {
   --scan-colour: #9c1109;
   --scan-tint: #fbeae8;
 }
 
-/* The block that speaks for the machine's own colour, and has nothing to
-   scan: it takes the sign's colour and the words run the full width. */
-.sign__scan--notice {
+/* The section that speaks for the machine's own colour: it takes the sign's
+   colour rather than one of its own. */
+.sign__section--notice {
   --scan-colour: var(--sign-dark);
   --scan-tint: var(--sign-tint);
 }
 
-.sign__scan-text {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.sign__qr {
-  line-height: 0;
-  /* The code keeps its own white ground whatever the capsule is tinted,
-     because a scanner reads contrast, not colour. */
-  background: #fff;
-  border-radius: 0.4em;
-  padding: 0.3em;
-  /* Square, and as tall as its share of the sign allows: the codes are given
-     whatever the name does not need, so a poster prints a bigger code than a
-     postcard without either needing a layout of its own. Capped so a sign
-     with only two codes does not hand half its width to one of them. */
-  flex: 0 0 auto;
-  aspect-ratio: 1;
-  height: min(100%, 12em);
-  width: auto;
-  max-width: 38%;
-}
-
-.sign__qr svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.sign__scan-title {
+.sign__section-title {
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
   gap: 0.3em;
   margin: 0;
-  /* Two or three words, read from across the room: the title does the work
-     of telling a member which code is which, so it is set as a heading
+  /* Two or three words, read from across the room, so set as a heading
      rather than as a label. */
   font-size: 1.45em;
   color: var(--scan-colour);
@@ -2606,25 +2565,74 @@ label img {
   text-wrap: balance;
 }
 
-/* A line of explanation under each title: what scanning actually gets you. */
-.sign__scan-note {
-  /* Space above, so the title reads as a heading rather than as the first
-     line of the sentence under it. */
-  margin: 0.4em 0 0.2em;
+/* A line of explanation under each title. The title carries the capsule's
+   colour; the words under it stay black, so the colour is a signal rather
+   than decoration. */
+.sign__section-note {
+  margin: 0.25em 0 0;
   font-size: 1.12em;
   line-height: 1.3;
   color: #2b2b2b;
   text-wrap: pretty;
 }
 
-/* The title carries the capsule's colour; the words under it stay black, so
-   the colour is a signal rather than decoration. */
-
 .sign__icon {
   flex: none;
   width: 1.1em;
   height: 1.1em;
   margin-top: 0.1em;
+}
+
+/* The one code on the sign, leading to the machine's page. It takes every
+   millimetre the band, the name and the sections leave behind: a poster
+   prints a bigger code than a postcard without either needing a layout of
+   its own, and one big code scans from further away than three small ones. */
+.sign__code {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8em;
+  margin: 0.5em 0.6em 0.6em;
+  padding: 0.5em 0.8em;
+  border-radius: 1em;
+  background: #f1f1f1;
+}
+
+.sign__qr {
+  line-height: 0;
+  /* The code keeps its own white ground, because a scanner reads contrast,
+     not colour. */
+  background: #fff;
+  border-radius: 0.4em;
+  padding: 0.3em;
+  flex: 0 0 auto;
+  /* Square, and as tall as the space allows - but never so wide that the
+     words beside it are squeezed into a column. */
+  aspect-ratio: 1;
+  height: min(100%, 16em);
+  width: auto;
+  max-width: 50%;
+}
+
+.sign__qr svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.sign__code-text {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.sign__code-title {
+  margin: 0;
+  font-size: 1.3em;
+  font-weight: 800;
+  line-height: 1.15;
+  text-wrap: balance;
 }
 
 .sign__url {
