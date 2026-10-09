@@ -220,6 +220,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         verifyEmail: frameworkify(commands.members.verifyEmail),
         recordFob: frameworkify(commands.members.recordFob),
         removeFob: frameworkify(commands.members.removeFob),
+        linkRecurlyEmail: frameworkify(commands.members.linkRecurlyEmail),
       },
       memberNumbers: {
         linkNumberToEmail: frameworkify(

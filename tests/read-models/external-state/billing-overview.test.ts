@@ -24,6 +24,7 @@ const memberWith = (memberNumber: number, email: string) => ({
       verifiedAt: O.some(new Date('2025-01-01T00:00:00.000Z')),
       addedAt: new Date('2025-01-01T00:00:00.000Z'),
       verificationLastSent: O.none,
+      linkedByAdmin: false,
     },
   ],
 });

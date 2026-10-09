@@ -1,3 +1,6 @@
+import * as O from 'fp-ts/Option';
+import {pipe} from 'fp-ts/lib/function';
+import {sql} from 'drizzle-orm';
 import {EmailAddress} from '../../../src/types';
 import {constructViewModel} from '../../../src/queries/unlinked-recurly/construct-view-model';
 import {arbitraryUser} from '../../types/user.helper';
@@ -111,6 +114,39 @@ describe('the unlinked Recurly accounts page', () => {
     });
     const viewModel = getRightOrFail(await page());
     expect(viewModel.needingAction[0]?.otherCodes).toStrictEqual(['signup@example.com']);
+  });
+
+  describe('suggesting a member from the Recurly name', () => {
+    const seed = async (name: string) => {
+      await insertRecurlySubscription(framework.extDB, {
+        email: 'billing@example.com' as EmailAddress,
+        accountCode: 'signup@example.com',
+        hasActiveSubscription: true,
+      });
+      await framework.extDB.run(
+        sql`UPDATE recurly_account_codes SET name = ${name} WHERE code = 'signup@example.com'`
+      );
+    };
+
+    it('offers the one member whose name matches', async () => {
+      await framework.commands.members.editName({memberNumber: member.memberNumber, name: 'Molly Millions'});
+      await seed('Molly Millions');
+      const entry = getRightOrFail(await page()).needingAction[0];
+      expect(entry?.recurlyName).toStrictEqual(O.some('Molly Millions'));
+      expect(pipe(entry?.suggestedMember ?? O.none, O.map(m => m.memberNumber))).toStrictEqual(O.some(member.memberNumber));
+    });
+
+    it('offers nobody when two members share the name', async () => {
+      await framework.commands.members.editName({memberNumber: member.memberNumber, name: 'Molly Millions'});
+      await framework.commands.members.editName({memberNumber: superUser.memberNumber, name: 'Molly Millions'});
+      await seed('Molly Millions');
+      expect(getRightOrFail(await page()).needingAction[0]?.suggestedMember).toStrictEqual(O.none);
+    });
+
+    it('offers nobody when the name matches no member', async () => {
+      await seed('Henry Case');
+      expect(getRightOrFail(await page()).needingAction[0]?.suggestedMember).toStrictEqual(O.none);
+    });
   });
 
   it('refuses an ordinary member', async () => {

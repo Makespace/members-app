@@ -3335,3 +3335,25 @@ a.eq-capsule--dead:visited {
 .ns-areas[open] > summary {
   margin-bottom: 4px;
 }
+
+/* A one-line form inside a table cell (e.g. a member-number box and a button
+   per row on /unlinked-recurly): the text-input reset above makes inputs
+   full-width block elements with a wide margin, which a row cannot afford. */
+.row-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.row-form input[type='text'] {
+  display: inline-block;
+  width: 6em;
+  margin: 0;
+  padding: 0.3rem 0.5rem;
+}
+
+.row-form button {
+  font-size: 100%;
+  padding: 0.3rem 0.8rem;
+}

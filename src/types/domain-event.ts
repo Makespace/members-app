@@ -184,6 +184,15 @@ const MemberEmailVerified = defineEvent('MemberEmailVerified', {
   email: EmailAddressCodec,
 });
 
+// An admin attached an address Recurly bills for this member, taking the
+// billing record as proof it is theirs: the address counts as verified from
+// here on without the member clicking anything. Its own event, rather than
+// an add followed by a verify, so the timeline says who vouched for it.
+const MemberEmailLinkedByAdmin = defineEvent('MemberEmailLinkedByAdmin', {
+  memberNumber: t.number,
+  email: EmailAddressCodec,
+});
+
 const MemberPrimaryEmailChanged = defineEvent('MemberPrimaryEmailChanged', {
   memberNumber: t.number,
   email: EmailAddressCodec,
@@ -585,6 +594,7 @@ export const events = [
   MemberEmailAdded,
   MemberEmailVerificationRequested,
   MemberEmailVerified,
+  MemberEmailLinkedByAdmin,
   MemberPrimaryEmailChanged,
   LinkingMemberNumberToAnAlreadyUsedEmailAttempted,
   EquipmentTrainingSheetRegistered,
@@ -649,6 +659,7 @@ export const DomainEvent = t.union([
   MemberEmailAdded.codec,
   MemberEmailVerificationRequested.codec,
   MemberEmailVerified.codec,
+  MemberEmailLinkedByAdmin.codec,
   MemberPrimaryEmailChanged.codec,
   LinkingMemberNumberToAnAlreadyUsedEmailAttempted.codec,
   EquipmentTrainingSheetRegistered.codec,

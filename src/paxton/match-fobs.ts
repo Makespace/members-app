@@ -1,6 +1,12 @@
 import * as O from 'fp-ts/Option';
+import {pipe} from 'fp-ts/lib/function';
 import {MemberCoreInfo, MemberFob} from '../read-models/shared-state/return-types';
 import {PaxtonFobRow} from './parse-export';
+import {
+  indexMembersByName,
+  nameTokens,
+  sharesAToken,
+} from '../read-models/shared-state/member/name-match';
 
 // Paxton access levels are numbered. 5, 6 and 7 are door, university and
 // varsity tokens that belong to no member; everything else (active, parked,
@@ -50,49 +56,12 @@ export const memberNumberInName = (name: string): O.Option<number> => {
   return numbers.length === 1 ? O.some(Number(numbers[0])) : O.none;
 };
 
-// Name tokens for loose comparison: lower-cased letters only, brackets (a
-// nickname, usually) dropped, digits dropped, sorted. "Millions, Molly 1337"
-// and "Molly Millions" both give ["millions", "molly"].
-export const nameTokens = (name: string): ReadonlyArray<string> =>
-  name
-    .toLowerCase()
-    .replace(/\([^)]*\)/g, ' ')
-    .replace(/[^\p{L}]+/gu, ' ')
-    .split(' ')
-    .filter(token => token !== '')
-    .sort();
-
-// Two names are the same person's when their tokens are equal, or one is a
-// subset of the other with at least two tokens shared (a middle name or
-// initial on one side only).
-const sameName = (
-  a: ReadonlyArray<string>,
-  b: ReadonlyArray<string>
-): boolean => {
-  const [shorter, longer] = a.length <= b.length ? [a, b] : [b, a];
-  if (shorter.length < 2) {
-    return shorter.length === 1 && longer.length === 1 && shorter[0] === longer[0];
-  }
-  const longerSet = new Set(longer);
-  return shorter.every(token => longerSet.has(token));
-};
-
-const sharesAToken = (
-  a: ReadonlyArray<string>,
-  b: ReadonlyArray<string>
-): boolean => {
-  const bSet = new Set(b);
-  return a.some(token => bSet.has(token));
-};
-
 export const matchFobs = (
   rows: ReadonlyArray<PaxtonFobRow>,
   members: ReadonlyArray<MemberCoreInfo>
 ): MatchResult => {
   const byNumber = new Map<number, MemberCoreInfo>();
   const holderOfFob = new Map<number, {member: MemberCoreInfo; fob: MemberFob}>();
-  const byNameToken = new Map<string, Set<MemberCoreInfo>>();
-  const tokensOf = new Map<MemberCoreInfo, ReadonlyArray<string>>();
   for (const member of members) {
     for (const number of [member.memberNumber, ...member.pastMemberNumbers]) {
       byNumber.set(number, member);
@@ -100,16 +69,8 @@ export const matchFobs = (
     for (const fob of member.fobs) {
       holderOfFob.set(fob.fobId, {member, fob});
     }
-    if (O.isSome(member.name)) {
-      const tokens = nameTokens(member.name.value);
-      tokensOf.set(member, tokens);
-      for (const token of tokens) {
-        const set = byNameToken.get(token) ?? new Set();
-        set.add(member);
-        byNameToken.set(token, set);
-      }
-    }
   }
+  const byName = indexMembersByName(members);
 
   const change = (
     row: PaxtonFobRow,
@@ -145,35 +106,27 @@ export const matchFobs = (
       if (member === undefined) {
         return {row, outcome: {kind: 'unknown-number', memberNumber: number.value}};
       }
-      const memberTokens = tokensOf.get(member);
       return {
         row,
         outcome: {
           kind: 'matched',
           member,
           how: 'number',
-          nameAgrees:
-            memberTokens === undefined
-              ? O.none
-              : O.some(sharesAToken(rowTokens, memberTokens)),
+          nameAgrees: pipe(
+            member.name,
+            O.map(name => sharesAToken(rowTokens, nameTokens(name)))
+          ),
           ...change(row, member),
         },
       };
     }
 
-    const candidates = new Set<MemberCoreInfo>();
-    for (const token of rowTokens) {
-      for (const member of byNameToken.get(token) ?? []) {
-        if (sameName(rowTokens, tokensOf.get(member) ?? [])) {
-          candidates.add(member);
-        }
-      }
-    }
-    if (candidates.size === 0) {
+    const candidates = byName.candidates(row.paxtonName);
+    if (candidates.length === 0) {
       return {row, outcome: {kind: 'unmatched'}};
     }
-    if (candidates.size > 1) {
-      return {row, outcome: {kind: 'ambiguous', candidates: [...candidates]}};
+    if (candidates.length > 1) {
+      return {row, outcome: {kind: 'ambiguous', candidates}};
     }
     const [member] = candidates;
     return {

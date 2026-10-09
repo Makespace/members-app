@@ -65,6 +65,8 @@ export type MemberEmail = {
   verifiedAt: O.Option<Date>;
   verificationLastSent: O.Option<Date>;
   addedAt: Date;
+  // See MemberEmailLinkedByAdmin.
+  linkedByAdmin: boolean;
 };
 
 export type MemberFob = {
