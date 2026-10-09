@@ -14,6 +14,9 @@ import {openTickets, renderTroubleTicketsImage} from './trouble-tickets-image';
 // that polls this URL and redraws when the image changes. Deliberately public:
 // the display cannot log in, and the image shows nothing a member standing at
 // the machine couldn't read - titles and statuses, no submitter details.
+//
+// Displays are reflashed rarely, so what they rely on is written down in
+// docs/eink-displays.md and pinned by tests/eink/display-contract.test.ts.
 
 const DEFAULT_SIZE = {width: 800, height: 480};
 const MIN_SIDE = 64;
