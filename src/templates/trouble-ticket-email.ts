@@ -7,6 +7,12 @@ import {TroubleTicketStatus} from '../types/trouble-ticket';
 // shape are copied from .trouble-ticket-card and .tt-badge so the two read as
 // the same object, and they have to be changed together.
 
+// MJML styles its own blocks and leaves raw markup alone, so anything here
+// that does not say otherwise comes out in the mail client's default serif
+// beside text that is not. This is what MJML puts on an mj-text, and these
+// have to match.
+const FONT = 'Ubuntu, Helvetica, Arial, sans-serif';
+
 const TEXT = '#0b0c0c';
 const BORDER = '#b1b4b6';
 const GREY = '#505a5f';
@@ -46,7 +52,7 @@ const escape = (value: string) =>
 
 const statusChip = (status: TroubleTicketStatus): string => {
   const {background, text} = STATUS_COLOUR[status];
-  return `<span style="display:inline-block;padding:2px 8px;border-radius:4px;background:${background};color:${text};font-size:13px;font-weight:700;">${escape(
+  return `<span style="display:inline-block;padding:2px 8px;border-radius:4px;background:${background};color:${text};font-family:${FONT};font-size:13px;font-weight:700;">${escape(
     status
   )}</span>`;
 };
@@ -81,10 +87,10 @@ const answer = (label: string, value: string): string =>
   value.trim() === ''
     ? ''
     : `<tr>
-         <td style="padding:3px 12px 3px 0;color:${MUTED};vertical-align:top;white-space:nowrap;">${escape(
+         <td style="padding:3px 12px 3px 0;font-family:${FONT};color:${MUTED};vertical-align:top;white-space:nowrap;">${escape(
            label
          )}</td>
-         <td style="padding:3px 0;color:${TEXT};">${escape(value)}</td>
+         <td style="padding:3px 0;font-family:${FONT};color:${TEXT};">${escape(value)}</td>
        </tr>`;
 
 // The full ticket, for the email that confirms it was logged. The person
@@ -98,22 +104,22 @@ export const ticketCardHtml = (summary: TicketEmailSummary): string => `
     <tr>
       <td style="padding:14px 18px;">
         <div style="margin-bottom:8px;">${statusChip(summary.status)}</div>
-        <div style="font-size:17px;font-weight:700;color:${TEXT};margin-bottom:10px;">
+        <div style="font-family:${FONT};font-size:17px;font-weight:700;color:${TEXT};margin-bottom:10px;">
           <a href="${summary.url}" style="color:${TEXT};text-decoration:none;">${escape(
             summary.title === '' ? 'Trouble ticket' : summary.title
           )}</a>
         </div>
-        <table role="presentation" cellpadding="0" cellspacing="0" style="font-size:14px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" style="font-family:${FONT};font-size:14px;">
           <tr>
-            <td style="padding:3px 12px 3px 0;color:${MUTED};vertical-align:top;white-space:nowrap;">Equipment</td>
-            <td style="padding:3px 0;color:${TEXT};">${ticketPlace(summary)}</td>
+            <td style="padding:3px 12px 3px 0;font-family:${FONT};color:${MUTED};vertical-align:top;white-space:nowrap;">Equipment</td>
+            <td style="padding:3px 0;font-family:${FONT};color:${TEXT};">${ticketPlace(summary)}</td>
           </tr>
           ${
             summary.reportedBy === null
               ? ''
               : `<tr>
-                   <td style="padding:3px 12px 3px 0;color:${MUTED};vertical-align:top;white-space:nowrap;">Reported by</td>
-                   <td style="padding:3px 0;color:${TEXT};">${escape(
+                   <td style="padding:3px 12px 3px 0;font-family:${FONT};color:${MUTED};vertical-align:top;white-space:nowrap;">Reported by</td>
+                   <td style="padding:3px 0;font-family:${FONT};color:${TEXT};">${escape(
                      summary.reportedBy
                    )}</td>
                  </tr>`
@@ -137,12 +143,12 @@ export const ticketLineHtml = (
   > & {happening: string}
 ): string => `
   <tr>
-    <td style="padding:7px 0;border-bottom:1px solid #eee;">
+    <td style="padding:7px 0;font-family:${FONT};font-size:14px;border-bottom:1px solid #eee;">
       <a href="${summary.url}" style="color:#1d70b8;font-weight:600;text-decoration:none;">${escape(
         summary.title === '' ? 'Trouble ticket' : summary.title
       )}</a>
       <span style="color:${MUTED};"> &mdash; ${escape(summary.happening)}</span>
-      <div style="font-size:13px;color:${MUTED};margin-top:2px;">
+      <div style="font-family:${FONT};font-size:13px;color:${MUTED};margin-top:2px;">
         ${ticketPlace(summary)}
       </div>
     </td>
@@ -154,3 +160,40 @@ export const ticketLineHtml = (
 
 export const ticketUrl = (publicUrl: string, id: string): string =>
   `${publicUrl}/trouble-tickets/view/${encodeURIComponent(id)}`;
+
+// Somebody's first few notifications arrive from a system they have never
+// been told about, so those say what it is and where to change it. After
+// that they know, and repeating it would be noise on every email forever.
+export const INTRO_AFTER_EMAILS = 5;
+
+export const shouldIntroduce = (emailsAlreadySent: number): boolean =>
+  emailsAlreadySent < INTRO_AFTER_EMAILS;
+
+// "app.makespace.org", not "https://app.makespace.org/" - the sentence names
+// the place rather than quoting an address at somebody.
+const siteName = (publicUrl: string) =>
+  publicUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+export const introBannerHtml = (publicUrl: string): string => `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+         style="background:#f3f8fb;border:1px solid #b1d4ea;border-radius:6px;margin-bottom:14px;">
+    <tr>
+      <td style="padding:12px 16px;font-family:${FONT};font-size:14px;color:${TEXT};line-height:1.45;">
+        Trouble tickets can now be submitted and tracked in
+        <a href="${publicUrl}" style="color:#1d70b8;">${escape(
+          siteName(publicUrl)
+        )}</a>!
+        To edit your notification settings, including following specific
+        pieces of equipment only,
+        <a href="${publicUrl}/notification-settings" style="color:#1d70b8;">log in to the app</a>.
+      </td>
+    </tr>
+  </table>
+`;
+
+export const introBannerText = (publicUrl: string): string =>
+  [
+    `Trouble tickets can now be submitted and tracked in ${siteName(publicUrl)}!`,
+    'To edit your notification settings, including following specific pieces',
+    `of equipment only, log in to the app: ${publicUrl}/notification-settings`,
+  ].join('\n');

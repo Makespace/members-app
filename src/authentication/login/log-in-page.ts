@@ -20,7 +20,7 @@ export const logInPage = pipe(
             class="mb-2"
           />
           <p class="text-sm text-gray mb-6">
-            Either the email address linked to your MakeSpace membership, or
+            Either the email address linked to your Makespace membership, or
             your member number - in which case your login link will be sent to
             the <strong>primary email</strong> we hold for you.
           </p>
@@ -31,5 +31,5 @@ export const logInPage = pipe(
       </div>
     </div>
   `,
-  isolatedPageTemplate(safe('MakeSpace Members App'))
+  isolatedPageTemplate(safe('Makespace Members App'))
 );

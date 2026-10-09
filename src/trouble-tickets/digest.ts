@@ -1,5 +1,9 @@
 import {TroubleTicketStatus} from '../types/trouble-ticket';
-import {ticketLineHtml} from '../templates/trouble-ticket-email';
+import {
+  introBannerHtml,
+  introBannerText,
+  ticketLineHtml,
+} from '../templates/trouble-ticket-email';
 
 // What a summary email says. Kept apart from the job that sends it so the
 // wording can be read, and tested, without a database or a mail server.
@@ -54,7 +58,9 @@ const byPlace = (
 export const digestEmail = (
   publicUrl: string,
   cadence: 'daily' | 'weekly',
-  lines: ReadonlyArray<DigestLine>
+  lines: ReadonlyArray<DigestLine>,
+  // Their first few summaries say what this is; after that they know.
+  introduce = false
 ): {subject: string; text: string; html: string} => {
   const period = cadence === 'daily' ? 'today' : 'this week';
   const subject = `Trouble tickets ${period}: ${countWords(lines.length)}`;
@@ -62,6 +68,7 @@ export const digestEmail = (
   const groups = byPlace(lines);
 
   const text = [
+    ...(introduce ? [introBannerText(publicUrl), ''] : []),
     `Here is what happened to trouble tickets ${period}.`,
     '',
     ...groups.flatMap(([place, theirs]) => [
@@ -72,7 +79,7 @@ export const digestEmail = (
       ]),
       '',
     ]),
-    `See them all: ${publicUrl}/trouble-tickets`,
+    `View all trouble tickets: ${publicUrl}/trouble-tickets`,
     '',
     `You are getting this because you asked for a ${cadence} summary. Change that: ${publicUrl}/notification-settings`,
   ].join('\n');
@@ -89,11 +96,12 @@ export const digestEmail = (
       <mj-body width="600px">
         <mj-section background-color="#fa990e">
           <mj-column>
-            <mj-text align="center" color="#111" font-size="28px">MakeSpace</mj-text>
+            <mj-text align="center" color="#111" font-size="28px">Makespace</mj-text>
           </mj-column>
         </mj-section>
         <mj-section>
           <mj-column>
+            ${introduce ? `<mj-raw>${introBannerHtml(publicUrl)}</mj-raw>` : ''}
             <mj-text font-size="16px" color="#111">
               <p>Here is what happened to trouble tickets ${period}.</p>
               ${groups
@@ -113,7 +121,7 @@ export const digestEmail = (
                 )
                 .join('')}
             </mj-text>
-            <mj-button background-color="#00703c" href="${publicUrl}/trouble-tickets">See them all</mj-button>
+            <mj-button background-color="#00703c" href="${publicUrl}/trouble-tickets">View all trouble tickets</mj-button>
             <mj-text font-size="13px" color="#555">
               <p>
                 You are getting this because you asked for a ${cadence}

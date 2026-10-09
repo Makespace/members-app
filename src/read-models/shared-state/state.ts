@@ -195,6 +195,22 @@ export const memberNotificationPreferencesTable = defineTable(
 
 // When each member was last sent a summary, and how far through the log it
 // reached. One row per member and cadence; absent until the first one is sent.
+// How many trouble ticket notifications somebody has been sent. Only used to
+// stop explaining the system to people who have clearly met it already.
+export const memberNotificationEmailsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS memberNotificationEmails (
+      memberNumber INTEGER PRIMARY KEY,
+      sent INTEGER NOT NULL
+    )
+  `,
+  'memberNotificationEmails' as const,
+  {
+    memberNumber: integer('memberNumber').notNull().primaryKey(),
+    sent: integer('sent').notNull(),
+  }
+);
+
 export const memberDigestsTable = defineTable(
   sql`
     CREATE TABLE IF NOT EXISTS memberDigests (
