@@ -2,11 +2,8 @@ import * as O from 'fp-ts/Option';
 import {Int} from 'io-ts';
 import {UUID} from 'io-ts-types';
 import {faker} from '@faker-js/faker';
-import {
-  matchFobs,
-  memberNumberInName,
-  nameTokens,
-} from '../../src/paxton/match-fobs';
+import {matchFobs, memberNumberInName} from '../../src/paxton/match-fobs';
+import {nameTokens} from '../../src/read-models/shared-state/member/name-match';
 import {PaxtonFobRow} from '../../src/paxton/parse-export';
 import {
   MemberCoreInfo,

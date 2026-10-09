@@ -62,6 +62,7 @@ export const memberEmailsTable = defineTable(
       addedAt INTEGER NOT NULL,
       verifiedAt INTEGER,
       verificationLastSent INTEGER,
+      linkedByAdmin INTEGER NOT NULL DEFAULT 0,
       FOREIGN KEY (userId) REFERENCES members(userId) ON DELETE CASCADE
     );
   `,
@@ -75,6 +76,9 @@ export const memberEmailsTable = defineTable(
     addedAt: integer('addedAt', {mode: 'timestamp_ms'}).notNull(),
     verifiedAt: integer('verifiedAt', {mode: 'timestamp_ms'}),
     verificationLastSent: integer('verificationLastSent', {mode: 'timestamp_ms'}),
+    // Verified on an admin's say-so from the Recurly billing record rather
+    // than by the member; shown as such.
+    linkedByAdmin: integer('linkedByAdmin', {mode: 'boolean'}).notNull().default(false),
   }
 );
 

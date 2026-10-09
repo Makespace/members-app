@@ -1,8 +1,16 @@
+import * as O from 'fp-ts/Option';
+import {MemberCoreInfo} from '../../read-models/shared-state/return-types';
+
 export type UnlinkedRecurlyEntry = {
   email: string;
   // Account codes pointing at this billing email that differ from it: usually
   // the email the member signed up with, and why the row is here at all.
   otherCodes: ReadonlyArray<string>;
+  // The holder's name on the Recurly account, and the one member whose
+  // recorded name matches it, when there is exactly one. A suggestion for
+  // the admin to check, never acted on by itself.
+  recurlyName: O.Option<string>;
+  suggestedMember: O.Option<MemberCoreInfo>;
   hasActiveSubscription: boolean;
   hasFutureSubscription: boolean;
   hasCanceledSubscription: boolean;

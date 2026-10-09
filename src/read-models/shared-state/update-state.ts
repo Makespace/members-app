@@ -174,6 +174,42 @@ const _updateState =
         }
         break;
       }
+      case 'MemberEmailLinkedByAdmin': {
+        const normalisedEmailAddress = normaliseEmailAddress(event.email);
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to link email '${normalisedEmailAddress}', unknown member number: '${event.memberNumber}'`);
+        }
+        const existingEmailUsage = findUserIdByEmail(tx)(normalisedEmailAddress, false);
+        if (O.isSome(existingEmailUsage) && existingEmailUsage.value !== userId.value) {
+          throw new InconsistentEventError(
+            `Attempted to link email '${event.email}' to ${event.memberNumber} but that email already exists on user id '${existingEmailUsage.value}'`
+          );
+        }
+        // New to this member, or already added but never verified: either
+        // way it is verified from now, on the admin's word. Inserted
+        // unverified so the one update below covers both cases, while an
+        // address the member verified themselves keeps that standing (the
+        // command raises no event for one anyway).
+        insertMemberEmail(
+          tx,
+          userId.value,
+          normalisedEmailAddress,
+          event.recordedAt,
+          null,
+        );
+        tx.update(memberEmailsTable)
+          .set({verifiedAt: event.recordedAt, linkedByAdmin: true})
+          .where(
+            and(
+              eq(memberEmailsTable.userId, userId.value),
+              eq(memberEmailsTable.emailAddress, normalisedEmailAddress),
+              isNull(memberEmailsTable.verifiedAt)
+            )
+          )
+          .run();
+        break;
+      }
       case 'MemberPrimaryEmailChanged': {
         const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
         if (O.isNone(userId)) {

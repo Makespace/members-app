@@ -19,6 +19,7 @@ const email = (emailAddress: string, verified: boolean) => ({
   emailAddress: emailAddress as EmailAddress,
   verifiedAt: verified ? O.some(new Date()) : O.none,
   verificationLastSent: O.none,
+  linkedByAdmin: false,
   addedAt: new Date(),
 });
 

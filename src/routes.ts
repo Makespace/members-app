@@ -464,6 +464,7 @@ export const initRoutes = (
     ),
     ...command('members', 'record-fob', commands.members.recordFob),
     ...command('members', 'remove-fob', commands.members.removeFob),
+    ...command('members', 'link-recurly-email', commands.members.linkRecurlyEmail),
     ...importFobsRoutes(deps),
     ...command(
       'members',
