@@ -6,7 +6,7 @@ import {loadConfig} from './configuration';
 import {
   cookieSessionPassportWorkaround,
   magicLink,
-  sessionConfig,
+  sessionMiddleware,
   startMagicLinkEmailPubSub,
 } from './authentication';
 import {createTerminus} from '@godaddy/terminus';
@@ -16,10 +16,10 @@ import * as TE from 'fp-ts/TaskEither';
 import {ensureEventTableExists} from './init-dependencies/event-store/ensure-events-table-exists';
 import {initDependencies} from './init-dependencies';
 import * as libsqlClient from '@libsql/client';
-import cookieSession from 'cookie-session';
 import {initRoutes} from './routes';
 import { startVerifyEmailPubSub } from './authentication/verify-email/start-verify-email-pub-sub';
 import {generateRequestId} from './http/request-id';
+import {isTroubleTicketsImagePath} from './eink/equipment-trouble-tickets-handler';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -51,7 +51,8 @@ const app: Application = express();
 app.use(httpLogger({logger: deps.logger, useLevel: 'debug', genReqId: generateRequestId} as any));
 app.use(express.urlencoded({extended: true}));
 app.use(express.json());
-app.use(cookieSession(sessionConfig(conf)));
+// E-ink displays poll a public image and never log in: no session, no cookie.
+app.use(sessionMiddleware(conf, isTroubleTicketsImagePath));
 app.use(cookieSessionPassportWorkaround);
 app.set('trust proxy', true);
 app.use(createRouter(routes));

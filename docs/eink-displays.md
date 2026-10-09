@@ -50,3 +50,5 @@ answered `400` with a plain-text reason; an unknown machine is `404`.
   `304 Not Modified` with no body - nothing to download, nothing to redraw.
 - `Cache-Control: no-cache`: anything in between must check back rather than
   serve a stored copy.
+- No cookies. The request is not given a session, so nothing is set on the
+  response and a display has nothing to store or send back.

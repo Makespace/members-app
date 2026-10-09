@@ -20,6 +20,16 @@ import {Tones} from './render-to-png';
 // Displays are reflashed rarely, so what they rely on is written down in
 // docs/eink-displays.md and pinned by tests/eink/display-contract.test.ts.
 
+export const troubleTicketsImageRoute =
+  '/equipment/:equipment/trouble-tickets.png';
+
+// Whether a request is for that image, without a router: the session
+// middleware runs before routing and must leave these requests alone (see
+// src/index.ts). Case-insensitive and tolerant of a trailing slash, as
+// express's own route matching is.
+export const isTroubleTicketsImagePath = (path: string) =>
+  /^\/equipment\/[^/]+\/trouble-tickets\.png\/?$/i.test(path);
+
 const DEFAULT_SIZE = {width: 800, height: 480};
 const MIN_SIDE = 64;
 const MAX_SIDE = 2000;
