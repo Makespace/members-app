@@ -9,6 +9,12 @@ import {DateTime, Duration} from 'luxon';
 import {ReadonlyRecord} from 'fp-ts/lib/ReadonlyRecord';
 import {EquipmentId} from '../../types/equipment-id';
 import {TrainingQuizCompletionRow} from '../shared-state/training-quiz/get';
+import {getActiveStatusByEmail} from './recurly-status';
+import {
+  loadAccountCodesAmong,
+  memberRecurlyEmails,
+  resolveAccountEmailsFrom,
+} from './recurly-account-match';
 
 export type OrphanedPassedQuiz = {
   waitingSince: Date;
@@ -60,8 +66,19 @@ export type FullQuizResultsForEquipment = {
   failedQuizes: ReadonlyArray<QuizRow>;
 };
 
+// Everything the two passes between lastQuizSync and the Recurly filter hand
+// to each other: the published results plus the matchable member addresses
+// collected on the way, so the Recurly check needs no second lookup per
+// member.
+type QuizResultsWithRecurlyEmails = FullQuizResultsForEquipment & {
+  recurlyEmailsByMemberNumber: Map<number, string[]>;
+};
+
 export const getFullQuizResultsForEquipment = (
-  deps: Pick<Dependencies, 'sharedReadModel' | 'lastQuizSync'>,
+  deps: Pick<
+    Dependencies,
+    'sharedReadModel' | 'lastQuizSync' | 'extDB' | 'logger'
+  >,
   sheetId: string,
   equipment: Equipment
 ): TE.TaskEither<string, FullQuizResultsForEquipment> =>
@@ -85,6 +102,29 @@ export const getFullQuizResultsForEquipment = (
         m => m.memberNumber
       );
 
+      // A member enters the queue when they pass (full marks - a failed
+      // attempt never creates or moves an entry), and may pass any number of
+      // times; they appear once, waiting since their earliest pass (within
+      // the one-year window) rather than any later retake: passing again
+      // while already waiting does not reset the clock. The list is read as a
+      // queue, and a voluntary retake should not send someone to the back of
+      // it. "Earliest pass" is compared against current trainedMembers only: a
+      // member whose training is revoked (RevokeTrainedOnEquipment) reappears
+      // here waiting since their original pre-training pass, which with the
+      // queue order can put them straight at the front. Accepted for now -
+      // scoping passes to after the latest revocation would need the
+      // revocation time kept, which the read model does not record.
+      // Unknown passes are deduped the same way, keyed on the number as
+      // typed.
+      const earliestKnownByMemberNumber = new Map<number, MemberAwaitingTraining>();
+      const earliestUnknownByMemberNumber = new Map<number, OrphanedPassedQuiz>();
+      // Which of each member's addresses may match a Recurly account comes
+      // out of the same member lookup that builds the queue entry, so it is
+      // kept here rather than fetched again when the Recurly check below
+      // runs. memberRecurlyEmails is the codebase's one definition of that
+      // (verified addresses, lowercased).
+      const recurlyEmailsByMemberNumber = new Map<number, string[]>();
+
       for (const row of completions.filter(isPassed)) {
         // A passed row with no member number is dropped (not surfaced as
         // unknown) - preserving the previous behaviour.
@@ -98,25 +138,109 @@ export const getFullQuizResultsForEquipment = (
         const member =
           deps.sharedReadModel.members.getByMemberNumber(memberNumber);
         if (O.isNone(member)) {
-          unknownMembersAwaitingTraining.push({
-            waitingSince: row.completedAt,
-            memberNumberProvided: row.memberNumberProvided,
-            emailProvided: row.emailProvided,
-          });
+          const previous = earliestUnknownByMemberNumber.get(memberNumber);
+          if (
+            previous === undefined ||
+            row.completedAt.getTime() < previous.waitingSince.getTime()
+          ) {
+            earliestUnknownByMemberNumber.set(memberNumber, {
+              waitingSince: row.completedAt,
+              memberNumberProvided: row.memberNumberProvided,
+              emailProvided: row.emailProvided,
+            });
+          }
           continue;
         }
-        membersAwaitingTraining.push({
-          ...member.value,
-          waitingSince: row.completedAt,
-        });
+        const previous = earliestKnownByMemberNumber.get(memberNumber);
+        if (
+          previous === undefined ||
+          row.completedAt.getTime() < previous.waitingSince.getTime()
+        ) {
+          earliestKnownByMemberNumber.set(memberNumber, {
+            ...member.value,
+            waitingSince: row.completedAt,
+          });
+          recurlyEmailsByMemberNumber.set(
+            memberNumber,
+            [...memberRecurlyEmails(member.value)]
+          );
+        }
       }
+
+      membersAwaitingTraining.push(...earliestKnownByMemberNumber.values());
+      unknownMembersAwaitingTraining.push(...earliestUnknownByMemberNumber.values());
 
       return {
         lastQuizSync,
         failedQuizes: completions.filter(row => !isPassed(row)).map(toQuizRow),
         membersAwaitingTraining,
         unknownMembersAwaitingTraining,
+        recurlyEmailsByMemberNumber,
       };
+    }),
+    // Someone no longer a member is not queueing for anything, so known
+    // members with a fresh inactive Recurly status are dropped. No fresh
+    // Recurly row at all is treated as still-active: the safer failure mode
+    // is to keep showing demand when the cache has gone stale. Unknown rows
+    // (a member number that matches no account) are kept - there is no
+    // account to attach a status to, and the quiz-results page shows them.
+    //
+    // The whole queue is checked in one bulk query rather than one per
+    // member: a machine with a long waiting list must not multiply the cost
+    // of the equipment page.
+    TE.chain((results: QuizResultsWithRecurlyEmails) => {
+      const dropInactive = async (): Promise<FullQuizResultsForEquipment> => {
+        const {recurlyEmailsByMemberNumber, ...published} = results;
+        const allAddresses = [
+          ...new Set([...recurlyEmailsByMemberNumber.values()].flat()),
+        ];
+        // Two queries total: one to resolve account codes to billing emails,
+        // one for the subscription rows those emails name.
+        const resolveBillingEmails = resolveAccountEmailsFrom(
+          await loadAccountCodesAmong(deps.extDB)(allAddresses)
+        );
+        const activeByEmail = await getActiveStatusByEmail(deps.extDB)(
+          allAddresses
+        );
+        return {
+          ...published,
+          membersAwaitingTraining: published.membersAwaitingTraining.filter(
+            member => {
+              const addresses =
+                recurlyEmailsByMemberNumber.get(member.memberNumber) ?? [];
+              const billingEmails = resolveBillingEmails(addresses);
+              // No fresh row for any of their billing emails = no data =
+              // keep them (a stale cache must not empty the list).
+              const matched = billingEmails.filter(email =>
+                activeByEmail.has(email)
+              );
+              if (matched.length === 0) {
+                return true;
+              }
+              return matched.some(email => activeByEmail.get(email) === true);
+            }
+          ),
+        };
+      };
+
+      // A Recurly read failure must not take down the page over a stat:
+      // log it and keep everyone, matching the rule that a stale cache
+      // should not empty the list.
+      return pipe(
+        TE.tryCatch(
+          dropInactive,
+          err => `Failed to read Recurly status: ${String(err)}`
+        ),
+        TE.orElse(error => {
+          deps.logger.warn(
+            '%s; leaving the waiting-for-training list unfiltered',
+            error
+          );
+          const {recurlyEmailsByMemberNumber: _recurlyEmails, ...published} =
+            results;
+          return TE.right(published);
+        })
+      );
     })
   );
 

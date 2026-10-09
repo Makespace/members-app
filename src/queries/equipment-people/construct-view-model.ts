@@ -90,9 +90,6 @@ const rowDate = (row: TrainingRow): Date =>
         ? row.standing.at
         : row.standing.since;
 
-const mostRecentFirst = (a: TrainingRow, b: TrainingRow) =>
-  rowDate(b).getTime() - rowDate(a).getTime();
-
 // A pass the app could not match still names an address, and that address
 // may well belong to a member whose number was typed wrong. Saying so is
 // not the same as linking them - only adding the address to their record
@@ -111,6 +108,12 @@ const toUnknownRow =
       O.map(summarise)
     ),
   });
+
+// The waiting list is a queue: longest-waiting first, so the people at the
+// top are the ones a trainer should get to next. waitingSince is the
+// member's earliest un-trained pass, so oldest-first is the fair order.
+const longestWaitingFirst = (a: TrainingRow, b: TrainingRow) =>
+  rowDate(a).getTime() - rowDate(b).getTime();
 
 const toWaitingRows = (
   rm: SharedReadModel,
@@ -132,7 +135,7 @@ const toWaitingRows = (
       })
     ),
     ...results.unknownMembersAwaitingTraining.map(toUnknownRow(rm)),
-  ].sort(mostRecentFirst);
+  ].sort(longestWaitingFirst);
 
 // A number finds exactly that member - including somebody who used to have
 // it - so typing 872 shows one account, not everybody with 872 somewhere in
