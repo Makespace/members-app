@@ -19,13 +19,8 @@ const viewModel = (overrides: Partial<ViewModel> = {}): ViewModel => ({
       name: 'Metal Lathe',
       areaName: 'Metal Shop',
       category: 'red',
-      url: 'https://app.makespace.org/trouble-tickets?equipmentId=metal-shop-metal-lathe',
-      learnUrl: O.some(
-        'https://equipment.makespace.org/metal-shop/metal-lathe'
-      ),
-      trainUrl: O.some(
-        'https://app.makespace.org/equipment/metal-shop-metal-lathe'
-      ),
+      url: 'https://app.makespace.org/equipment/metal-shop-metal-lathe',
+      hasGuide: true,
       areaEmail: O.none,
     },
   ],
@@ -64,19 +59,19 @@ describe('printable equipment signs', () => {
       );
     });
 
-    it('says what each QR code is for, so scanning is a decision', () => {
-      const label = sign.querySelector('.sign__codes')?.textContent ?? '';
+    it('says what is on the page the code leads to', () => {
+      const label = sign.querySelector('.sign__sections')?.textContent ?? '';
       const text = label.replace(/\s+/g, ' ');
       expect(text).toContain('Learn');
       expect(text).toContain('Get trained');
       expect(text).toContain('Trouble tickets');
-      // Each title carries a line saying what scanning gets you.
+      // Each title carries a line saying what it is about.
       expect(text).toContain('view active issues');
       expect(text).toContain('Pass the online quiz');
     });
 
     it('reads down the sign in the order a member meets the machine', () => {
-      const titles = [...sign.querySelectorAll('.sign__scan-title')].map(
+      const titles = [...sign.querySelectorAll('.sign__section-title')].map(
         node => (node.textContent ?? '').replace(/\s+/g, ' ').trim()
       );
 
@@ -96,7 +91,6 @@ describe('printable equipment signs', () => {
               {
                 ...viewModel().signs[0],
                 category,
-                trainUrl: O.none,
                 areaEmail,
               },
             ],
@@ -112,15 +106,13 @@ describe('printable equipment signs', () => {
         expect(text).toContain('Pass the online quiz');
       });
 
-      it('tells orange equipment it is members only, with no code to scan', () => {
+      it('tells orange equipment it is members only', () => {
         const orange = ofCategory('orange');
         const text = (orange.textContent ?? '').replace(/\s+/g, ' ');
 
         expect(text).toContain('Members only');
         expect(text).toContain("You don't need formal training");
         expect(text).not.toContain('Get trained');
-        // Learn and trouble tickets only: there is nothing to scan here.
-        expect(orange.querySelectorAll('.sign__qr svg')).toHaveLength(2);
       });
 
       it('points an orange question at the area, when the area has an address', () => {
@@ -141,26 +133,25 @@ describe('printable equipment signs', () => {
 
         expect(text).toContain('Open to all!');
         expect(text).toContain('free for all members and non-members');
-        expect(green.querySelectorAll('.sign__qr svg')).toHaveLength(2);
       });
     });
 
-    // The app never guesses a guide address, so a machine without one prints
-    // a sign with no learn code rather than a code that 404s on the wall.
+    // A machine with no guide recorded has none on its page, so the sign
+    // does not promise one.
     describe('when no equipment guide has been recorded', () => {
       const withoutGuide = () =>
         renderPage(
           viewModel({
-            signs: [{...viewModel().signs[0], learnUrl: O.none}],
+            signs: [{...viewModel().signs[0], hasGuide: false}],
             missingGuideUrl: ['Metal Lathe'],
           })
         );
 
-      it('prints the sign without the learn code', () => {
+      it('prints the sign without the learn section', () => {
         const page = withoutGuide();
 
-        expect(page.querySelectorAll('.sign__scan--learn')).toHaveLength(0);
-        expect(page.querySelectorAll('.sign__qr svg')).toHaveLength(2);
+        expect(page.querySelectorAll('.sign__section--learn')).toHaveLength(0);
+        expect(page.querySelectorAll('.sign__qr svg')).toHaveLength(1);
       });
 
       it('warns whoever is about to print, naming the machines', () => {
@@ -177,7 +168,7 @@ describe('printable equipment signs', () => {
       });
 
       // A recorded address that has since gone dead is worse than none: the
-      // sign prints a code, and it leads nowhere.
+      // sign sends members to a guide that leads nowhere.
       it('warns separately when a recorded guide stopped answering', () => {
         const page = renderPage(
           viewModel({unreachableGuideUrl: ['Metal Lathe']})
@@ -189,28 +180,26 @@ describe('printable equipment signs', () => {
       });
     });
 
-    it('carries all three QR codes, drawn on the server', () => {
+    // One code, to the machine's page, rather than one per section: the page
+    // carries the guide, the training and the tickets.
+    it('carries one QR code, drawn on the server', () => {
       const codes = sign.querySelectorAll('.sign__qr svg');
-      expect(codes).toHaveLength(3);
-      const svg = codes[0];
+      expect(codes).toHaveLength(1);
       // A QR code of this URL needs many modules; a handful of paths would
       // mean it had not really been encoded.
       expect(
-        (svg?.querySelector('path')?.getAttribute('d') ?? '').length
+        (codes[0]?.querySelector('path')?.getAttribute('d') ?? '').length
       ).toBeGreaterThan(500);
     });
 
-    it('prints every URL in full, for anyone without a camera to hand', () => {
+    it('prints the URL in full, for anyone without a camera to hand', () => {
       const urls = [...sign.querySelectorAll('.sign__url')].map(
         node => node.textContent?.trim() ?? ''
       );
-      // Whole addresses, so they can be typed - no ellipsis, no truncation.
-      expect(urls).toContain('equipment.makespace.org/metal-shop/metal-lathe');
-      expect(urls).toContain(
-        'app.makespace.org/trouble-tickets?equipmentId=metal-shop-metal-lathe'
-      );
-      expect(urls).toContain('app.makespace.org/equipment/metal-shop-metal-lathe');
-      expect(urls.join(' ')).not.toContain('…');
+      // The whole address, so it can be typed - no ellipsis, no truncation.
+      expect(urls).toStrictEqual([
+        'app.makespace.org/equipment/metal-shop-metal-lathe',
+      ]);
     });
 
     it('uses a readable slug rather than a uuid in the printed URL', () => {
