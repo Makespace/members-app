@@ -7,7 +7,12 @@ import {StatusCodes} from 'http-status-codes';
 import {Dependencies} from '../dependencies';
 import {constantTimeEqual} from '../http/constant-time-equal';
 import {resolveEquipmentReference} from '../queries/equipment/resolve-reference';
-import {openTickets, renderTroubleTicketsImage} from './trouble-tickets-image';
+import {equipmentPageUrl} from '../templates/slug';
+import {
+  msUntilLondonMidnight,
+  openTickets,
+  renderTroubleTicketsImage,
+} from './trouble-tickets-image';
 import {Tones} from './render-to-png';
 
 // GET /equipment/:equipment/trouble-tickets.png?width=800&height=480&tones=4&wait=0
@@ -45,6 +50,9 @@ const MAX_WAIT_SECONDS = 55;
 // event index. The image is only redrawn when that has moved, which happens
 // at most once per read-model refresh (every 10s).
 const CHANGE_CHECK_MS = 1000;
+// Timers run off a millisecond-truncated clock and can fire a hair before
+// midnight, which would redraw yesterday's date; this lands them after it.
+const MIDNIGHT_MARGIN_MS = 50;
 
 type DisplayOptions = {
   width: number;
@@ -108,6 +116,12 @@ const currentImage =
         renderTroubleTicketsImage(
           {
             equipmentName: equipment.name,
+            pageUrl: equipmentPageUrl(
+              deps.conf.PUBLIC_URL,
+              equipment.area.name,
+              equipment.name
+            ),
+            today: new Date(),
             tickets: openTickets(
               deps.sharedReadModel.troubleTickets.getByEquipment(equipment.id)
             ),
@@ -123,9 +137,9 @@ const currentImage =
       }))
     );
 
-// The image only changes when the tickets do, so the ETag lets a display (or
-// anything between) skip the download; express answers 304 itself when
-// If-None-Match matches.
+// The image only changes when the tickets or the date do, so the ETag lets a
+// display (or anything between) skip the download; express answers 304
+// itself when If-None-Match matches.
 const sendImage = (res: Response, image: Image) => {
   res.setHeader('ETag', image.etag);
   res.setHeader('Cache-Control', 'no-cache');
@@ -152,19 +166,19 @@ const hold = (
   waitSeconds: number,
   res: Response
 ) => {
-  const timers: {check?: NodeJS.Timeout; deadline?: NodeJS.Timeout} = {};
+  const timers: {
+    check?: NodeJS.Timeout;
+    midnight?: NodeJS.Timeout;
+    deadline?: NodeJS.Timeout;
+  } = {};
   const stop = () => {
     clearInterval(timers.check);
+    clearTimeout(timers.midnight);
     clearTimeout(timers.deadline);
     res.off('close', stop);
   };
-  let eventIndex = deps.sharedReadModel.getCurrentEventIndex();
-  timers.check = setInterval(() => {
-    const latest = deps.sharedReadModel.getCurrentEventIndex();
-    if (latest === eventIndex) {
-      return;
-    }
-    eventIndex = latest;
+  // Redraw, and answer if the picture has moved on.
+  const recheck = () => {
     const now = imageNow();
     if (O.isNone(now)) {
       stop();
@@ -173,7 +187,21 @@ const hold = (
       stop();
       sendImage(res, now.value);
     }
+  };
+  let eventIndex = deps.sharedReadModel.getCurrentEventIndex();
+  timers.check = setInterval(() => {
+    const latest = deps.sharedReadModel.getCurrentEventIndex();
+    if (latest !== eventIndex) {
+      eventIndex = latest;
+      recheck();
+    }
   }, CHANGE_CHECK_MS);
+  // The date in the corner turns over at midnight in London, with no event
+  // to say so.
+  const untilMidnight = msUntilLondonMidnight(new Date());
+  if (untilMidnight < waitSeconds * 1000) {
+    timers.midnight = setTimeout(recheck, untilMidnight + MIDNIGHT_MARGIN_MS);
+  }
   timers.deadline = setTimeout(() => {
     stop();
     sendImage(res, image);

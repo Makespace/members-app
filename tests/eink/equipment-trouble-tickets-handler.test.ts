@@ -107,9 +107,14 @@ describe('equipmentTroubleTicketsImage', () => {
       name: 'Band Saw' as NonEmptyString,
       areaId,
     });
+    // The image carries the date: pin the clock so ETags compare within a day.
+    jest.useFakeTimers({now: new Date('2026-10-09T12:00:00Z')});
   });
 
-  afterEach(() => framework.close());
+  afterEach(() => {
+    jest.useRealTimers();
+    framework.close();
+  });
 
   it('serves a PNG to a display presenting the display token', () => {
     const res = handle(
@@ -287,8 +292,9 @@ describe('equipmentTroubleTicketsImage for a display that asks to wait', () => {
       name: 'Band Saw' as NonEmptyString,
       areaId,
     });
+    // The image carries the date, so the clock is pinned before drawing it.
+    jest.useFakeTimers({now: new Date('2026-10-09T12:00:00Z')});
     currentEtag = etagOf(handle(request({})))!;
-    jest.useFakeTimers();
   });
 
   afterEach(() => {
@@ -343,6 +349,30 @@ describe('equipmentTroubleTicketsImage for a display that asks to wait', () => {
       raiseTicket(equipmentId);
       jest.advanceTimersByTime(60_000);
       expect(res.send).not.toHaveBeenCalled();
+      expect(jest.getTimerCount()).toBe(0);
+    });
+  });
+
+  describe('when midnight in London passes while it waits', () => {
+    let res: HoldableResponse;
+    let beforeMidnight: string;
+
+    beforeEach(() => {
+      jest.setSystemTime(new Date('2026-10-09T22:59:50Z')); // 23:59:50 BST
+      beforeMidnight = etagOf(handle(request({})))!;
+      res = handle(request({wait: '30'}, beforeMidnight));
+    });
+
+    it('sends the new day\'s image just after midnight, not at the end of the wait', () => {
+      jest.advanceTimersByTime(10_000);
+      expect(res.send).not.toHaveBeenCalled();
+      jest.advanceTimersByTime(100);
+      expect(res.send).toHaveBeenCalledTimes(1);
+      expect(etagOf(res)).not.toBe(beforeMidnight);
+    });
+
+    it('stops waiting for midnight once the display hangs up', () => {
+      res.emit('close');
       expect(jest.getTimerCount()).toBe(0);
     });
   });
