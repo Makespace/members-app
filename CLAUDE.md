@@ -199,10 +199,13 @@ Every `command()` route in `src/routes.ts` also registers a bearer-token twin at
 
 `scripts/populate-local-dev.sh` shows working curl examples for the common ones.
 
+E-ink displays use a separate token: `GET /equipment/<machine>/trouble-tickets.png`
+takes `Authorization: Bearer <EINK_DISPLAY_TOKEN>` (see docs/eink-displays.md).
+
 ## Development Notes
 
 - Server renders pages server-side with minimal client JS (e.g., GridJS for tables)
 - Use `deps.logger` (pino) for logging, not console.log
 - Configuration loaded from environment via `src/configuration.ts`
-- Session secret and token secret must be set in production
+- Session secret, token secret and the e-ink display token (`EINK_DISPLAY_TOKEN`) must be set in production
 - Deployment to Fly.io (makespace-app.fly.dev) and app.makespace.org

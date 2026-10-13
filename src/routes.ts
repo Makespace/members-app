@@ -23,7 +23,10 @@ import {
 } from './trouble-tickets/backfill-timeline';
 import {constantTimeEqual} from './http/constant-time-equal';
 import {bulkQuietResolve} from './trouble-tickets/bulk-quiet-resolve';
-import {equipmentTroubleTicketsImage} from './eink/equipment-trouble-tickets-handler';
+import {
+  equipmentTroubleTicketsImage,
+  troubleTicketsImageRoute,
+} from './eink/equipment-trouble-tickets-handler';
 import * as t from 'io-ts';
 import {v4} from 'uuid';
 import {StatusCodes} from 'http-status-codes';
@@ -426,11 +429,9 @@ export const initRoutes = (
       '/equipment/:equipment/failed-quizzes',
       queries.equipmentFailedQuizzes
     ),
-    // For an e-ink display on the machine. Public - the display cannot log in.
-    get(
-      '/equipment/:equipment/trouble-tickets.png',
-      equipmentTroubleTicketsImage(deps)
-    ),
+    // For an e-ink display on the machine: it presents the display token, as it
+    // cannot log in.
+    get(troubleTicketsImageRoute, equipmentTroubleTicketsImage(deps)),
     query('/equipment/:equipment', queries.equipment),
     query('/super-users', queries.superUsers),
     ...command('super-users', 'declare', commands.superUser.declare),
