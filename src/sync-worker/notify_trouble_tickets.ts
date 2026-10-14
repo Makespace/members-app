@@ -9,10 +9,22 @@ import {SharedReadModel} from '../read-models/shared-state';
 import {TroubleTicket} from '../types/trouble-ticket';
 import {StoredEventOfType} from '../types/domain-event';
 import {SyncWorkerDependencies} from './dependencies';
+import {heldBackSendEmail} from '../trouble-tickets/notification-gate';
+import {summariseForEmail} from '../trouble-tickets/ticket-email-summary';
+import {
+  introBannerHtml,
+  introBannerText,
+  shouldIntroduce,
+  ticketCardHtml,
+  ticketUrl,
+} from '../templates/trouble-ticket-email';
+import {
+  audienceFor,
+  happeningOfEvent,
+} from '../trouble-tickets/notification-audience';
 import {
   describeTicketChange,
   ticketNotificationOpening,
-  ticketNotificationRecipients,
   ticketNotificationSubject,
   ticketNotificationText,
 } from '../trouble-tickets/notification';
@@ -62,29 +74,41 @@ const buildEmail = (
   recipient: EmailAddress,
   ticket: TroubleTicket,
   change: string,
-  isNew: boolean
+  isNew: boolean,
+  theirs: boolean,
+  summaryHtml: string,
+  introduce: boolean
 ): Email => {
-  const opening = ticketNotificationOpening(ticket.title, isNew);
-  const text = ticketNotificationText(publicUrl, ticket.title, change, isNew);
+  const opening = ticketNotificationOpening(ticket.title, isNew, theirs);
+  const text = ticketNotificationText(
+    publicUrl,
+    ticket.title,
+    change,
+    isNew,
+    theirs,
+    ticketUrl(publicUrl, ticket.id)
+  );
   return {
     recipient,
-    subject: ticketNotificationSubject(ticket.title, isNew),
-    text,
+    subject: ticketNotificationSubject(ticket.title, isNew, theirs),
+    text: introduce ? `${introBannerText(publicUrl)}\n\n${text}` : text,
     html: mjml2html(`
       <mjml>
         <mj-body width="600px">
           <mj-section background-color="#fa990e">
             <mj-column>
-              <mj-text align="center" color="#111" font-size="28px">MakeSpace</mj-text>
+              <mj-text align="center" color="#111" font-size="28px">Makespace</mj-text>
             </mj-column>
           </mj-section>
           <mj-section>
             <mj-column>
+              ${introduce ? `<mj-raw>${introBannerHtml(publicUrl)}</mj-raw>` : ''}
               <mj-text font-size="16px" color="#111">
                 <p>${opening.replace(`"${ticket.title}"`, `<strong>${ticket.title}</strong>`)}</p>
                 <p>${change.replace(/\n/g, '<br/>')}</p>
               </mj-text>
-              <mj-button background-color="#00703c" href="${publicUrl}/trouble-tickets">View trouble tickets</mj-button>
+              <mj-raw>${summaryHtml}</mj-raw>
+              <mj-button background-color="#00703c" href="${ticketUrl(publicUrl, ticket.id)}">View this ticket</mj-button>
             </mj-column>
           </mj-section>
         </mj-body>
@@ -97,8 +121,13 @@ const buildEmail = (
 // TroubleTicketNotificationSent event per change so it isn't sent twice. Commits the
 // "sent" marker before emailing (preferring a missed email over a duplicate, matching the
 // training-summary emailer).
+// Far enough back to cover a worker that has been down for a few days, and
+// nowhere near far enough to reach the imported history.
+const NOTIFY_EVENTS_WITHIN_MS = 7 * 24 * 60 * 60 * 1000;
+
 export const notifyTroubleTicketChanges = async (
-  deps: NotifyTroubleTicketDependencies
+  deps: NotifyTroubleTicketDependencies,
+  now: Date = new Date()
 ): Promise<void> => {
   await deps.sharedReadModel.asyncRefresh()();
   const rm = deps.sharedReadModel;
@@ -122,9 +151,16 @@ export const notifyTroubleTicketChanges = async (
     if (event.type === 'TroubleTicketResolved' && event.quiet) {
       continue;
     }
-    // Only tickets raised in the app get a creation confirmation: the
-    // imported sheet history must never email anybody.
-    if (event.type === 'TroubleTicketCreated' && event.source !== 'app') {
+    // Nothing older than this is worth emailing anybody about. This replaces
+    // a check that only app-raised tickets notify, which was standing in for
+    // the real rule: the imported history must never email anybody. Saying it
+    // by age says it for every kind of change rather than only creation, and
+    // it lets a ticket raised on the Google form tell its submitter - which
+    // the old check silenced, because a form ticket is not app-raised.
+    if (
+      now.getTime() - event.recordedAt.getTime() >
+      NOTIFY_EVENTS_WITHIN_MS
+    ) {
       continue;
     }
     if (rm.troubleTickets.hasNotifiedForEvent(event.event_index)) {
@@ -136,17 +172,41 @@ export const notifyTroubleTicketChanges = async (
     }
     // Who it is going to is decided first and recorded with the marker, so
     // the ticket's own history can say who was told.
-    const recipients = ticketNotificationRecipients(
-      rm,
-      ticket.value,
-      event.type
+    //
+    // Only the people who asked to hear as it happens are emailed now;
+    // everybody else asked for a summary, and the summary will carry it.
+    const happening = happeningOfEvent(event.type);
+    if (O.isNone(happening)) {
+      continue;
+    }
+    const recipients = audienceFor(rm, ticket.value, happening.value).filter(
+      entry => entry.live
+    );
+    // Worked out before the marker is written, because writing it is what
+    // the count is made of: ask afterwards and everybody's first email looks
+    // like their second.
+    const introduceTo = new Set<number>(
+      recipients
+        .filter(
+          entry =>
+            entry.memberNumber > 0 &&
+            shouldIntroduce(
+              rm.notificationPreferences.emailsSentTo(entry.memberNumber)
+            )
+        )
+        .map(entry => entry.memberNumber)
     );
     const commitResp = await deps.commitEvent(rm.getCurrentEventIndex())(
       constructEvent('TroubleTicketNotificationSent')({
         actor: {tag: 'system'},
         ticketId: ticketIdOf(event),
         notifiedEventIndex: event.event_index,
-        recipients: [...recipients],
+        recipients: recipients.map(entry => entry.email),
+        // Somebody who wrote in without being a member has no number, and
+        // -1 is how the audience says so.
+        recipientMemberNumbers: recipients
+          .map(entry => entry.memberNumber)
+          .filter(memberNumber => memberNumber > 0),
       })
     )();
     if (E.isLeft(commitResp)) {
@@ -159,20 +219,26 @@ export const notifyTroubleTicketChanges = async (
     }
 
     const change = describeTicketChange(event, actorName(event.actor, rm));
-    for (const recipient of recipients) {
-      const sent = await deps.sendEmail(
+    const send = heldBackSendEmail(deps);
+    for (const entry of recipients) {
+      const sent = await send(
         buildEmail(
           deps.conf.PUBLIC_URL,
-          recipient,
+          entry.email,
           ticket.value,
           change,
-          event.type === 'TroubleTicketCreated'
+          event.type === 'TroubleTicketCreated',
+          entry.theirs,
+          ticketCardHtml(
+            summariseForEmail(rm, deps.conf.PUBLIC_URL, ticket.value)
+          ),
+          introduceTo.has(entry.memberNumber)
         )
       )();
       if (E.isLeft(sent)) {
         deps.logger.error(
           "Failed to send trouble ticket notification to '%s': %o",
-          recipient,
+          entry.email,
           sent.left
         );
       }

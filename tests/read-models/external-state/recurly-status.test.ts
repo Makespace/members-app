@@ -17,6 +17,7 @@ const verifiedEmail = (emailAddress: EmailAddress) => ({
   emailAddress,
   verifiedAt: O.some(new Date()),
   verificationLastSent: O.none,
+  linkedByAdmin: false,
   addedAt: new Date(),
 });
 
@@ -24,6 +25,7 @@ const unverifiedEmail = (emailAddress: EmailAddress) => ({
   emailAddress,
   verifiedAt: O.none,
   verificationLastSent: O.none,
+  linkedByAdmin: false,
   addedAt: new Date(),
 });
 

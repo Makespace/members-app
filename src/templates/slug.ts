@@ -18,3 +18,11 @@ export const toSlug = (value: string): string =>
 // "Band Saw" without colliding: wood-shop-band-saw, metal-shop-band-saw.
 export const equipmentSlug = (areaName: string, equipmentName: string) =>
   [toSlug(areaName), toSlug(equipmentName)].filter(part => part !== '').join('-');
+
+// A machine's page in the app: what its printed sign's QR code and its e-ink
+// display's both lead to.
+export const equipmentPageUrl = (
+  publicUrl: string,
+  areaName: string,
+  equipmentName: string
+) => `${publicUrl}/equipment/${equipmentSlug(areaName, equipmentName)}`;

@@ -11,6 +11,7 @@ import {UUID} from 'io-ts-types';
 import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord';
 import { TrainingSheetId } from '../../../types/training-sheet';
 import { EquipmentId } from '../../../types/equipment-id';
+import {parseLearnPoints} from '../../../types/learn-points';
 
 // Stored as JSON; anything unparseable means "no named units" rather than a
 // crash while projecting.
@@ -39,6 +40,7 @@ const transformRow = <
     trainingSheetId: string | undefined | null;
     guideUrl: string | undefined | null;
     riskAssessmentUrl: string | undefined | null;
+    learnPoints: string | undefined | null;
     removedAt: Date | undefined | null;
   },
 >(
@@ -52,6 +54,7 @@ const transformRow = <
   trainingSheetId: O.fromNullable(row.trainingSheetId),
   guideUrl: O.fromNullable(row.guideUrl),
   riskAssessmentUrl: O.fromNullable(row.riskAssessmentUrl),
+  learnPoints: parseLearnPoints(row.learnPoints),
   removedAt: O.fromNullable(row.removedAt),
 });
 

@@ -35,6 +35,9 @@ export type MinimalEquipment = {
   guideUrl: O.Option<string>;
   // Where the written risk assessment for this machine lives.
   riskAssessmentUrl: O.Option<string>;
+  // What to learn before using it, printed under "Learn" on its sign. Empty
+  // when nobody has written any.
+  learnPoints: ReadonlyArray<string>;
   // Set when the equipment has been marked obsolete (soft-hidden).
   removedAt: O.Option<Date>;
 };
@@ -62,6 +65,16 @@ export type MemberEmail = {
   verifiedAt: O.Option<Date>;
   verificationLastSent: O.Option<Date>;
   addedAt: Date;
+  // See MemberEmailLinkedByAdmin.
+  linkedByAdmin: boolean;
+};
+
+export type MemberFob = {
+  fobId: number;
+  accessLevel: string;
+  // The holder's name as it appeared in the Paxton export.
+  paxtonName: string;
+  recordedAt: Date;
 };
 
 export type OwnerOf = {
@@ -76,6 +89,8 @@ export type MemberCoreInfo = {
   pastMemberNumbers: ReadonlyArray<number>;
   primaryEmailAddress: EmailAddress;
   emails: ReadonlyArray<MemberEmail>;
+  // Only visible to super users; see member/redact.ts.
+  fobs: ReadonlyArray<MemberFob>;
   name: O.Option<string>;
   formOfAddress: O.Option<string>;
   agreementSigned: O.Option<Date>;

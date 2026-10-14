@@ -1,4 +1,5 @@
 import {desc, inArray} from 'drizzle-orm';
+import {resolveAccountEmails} from './recurly-account-match';
 import {DateTime, Duration} from 'luxon';
 import {ExternalStateDB} from '../../sync-worker/external-state-db';
 import {recurlySubscriptionHistoryTable} from '../../sync-worker/recurly/recurly-data-table';
@@ -109,14 +110,14 @@ export const getSubscriptionHistoryForEmails =
   async (
     emails: ReadonlyArray<EmailAddress>
   ): Promise<ReadonlyArray<SubscriptionSummary>> => {
-    const lowered = [...new Set(emails.map(e => e.toLowerCase()))];
+    const lowered = await resolveAccountEmails(extDB)(emails);
     if (lowered.length === 0) {
       return [];
     }
     const rows = await extDB
       .select()
       .from(recurlySubscriptionHistoryTable)
-      .where(inArray(recurlySubscriptionHistoryTable.email, lowered))
+      .where(inArray(recurlySubscriptionHistoryTable.email, [...lowered]))
       .orderBy(desc(recurlySubscriptionHistoryTable.activatedAt))
       .all();
     return rows.map(row => ({

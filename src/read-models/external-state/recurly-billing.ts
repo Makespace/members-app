@@ -6,6 +6,7 @@ import {
   recurlyTransactionTable,
 } from '../../sync-worker/recurly/recurly-data-table';
 import {MemberCoreInfo} from '../shared-state/return-types';
+import {memberRecurlyEmails, resolveAccountEmails} from './recurly-account-match';
 
 // Why an invoice has not been paid. More than one can be true at once - a
 // manual invoice can also be one Recurly has stopped chasing - so this is a
@@ -171,9 +172,9 @@ export const getBillingForMember =
     member: Pick<MemberCoreInfo, 'emails'>,
     now: Date = new Date()
   ): Promise<MemberBilling> => {
-    const emails = member.emails
-      .filter(email => O.isSome(email.verifiedAt))
-      .map(email => (email.emailAddress).toLowerCase());
+    const emails = await resolveAccountEmails(extDB)(
+      memberRecurlyEmails(member)
+    );
 
     const empty: MemberBilling = {
       invoices: [],
@@ -190,7 +191,7 @@ export const getBillingForMember =
     const invoiceRows = await extDB
       .select()
       .from(recurlyInvoiceTable)
-      .where(and(inArray(lowercasedInvoiceEmail, emails)))
+      .where(and(inArray(lowercasedInvoiceEmail, [...emails])))
       .all();
     if (invoiceRows.length === 0) {
       return empty;

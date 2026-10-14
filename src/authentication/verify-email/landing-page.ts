@@ -33,7 +33,7 @@ const verificationSuccessful = pipe(
         <a href=/me>Back to your homepage</a>
     </div>
   `,
-  isolatedPageTemplate(safe('MakeSpace Members App'))
+  isolatedPageTemplate(safe('Makespace Members App'))
 );
 
 export const landing = 

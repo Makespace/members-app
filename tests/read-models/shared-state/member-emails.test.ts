@@ -3,7 +3,7 @@ import {faker} from '@faker-js/faker';
 import {advanceTo} from 'jest-date-mock';
 import {EmailAddress} from '../../../src/types';
 import {Int} from 'io-ts';
-import {getSomeOrFail} from '../../helpers';
+import {getSomeOrFail, insertRecurlySubscription} from '../../helpers';
 import {
   TestFramework,
   initTestFramework,
@@ -192,5 +192,55 @@ describe('member email projection', () => {
     expect(requestedEmail?.verificationLastSent).toStrictEqual(
       O.some(verificationRequestedAt)
     );
+  });
+
+  describe('an address linked by an admin from Recurly', () => {
+    const memberNumber = faker.number.int({min: 1, max: 100_000});
+    const billing = 'billing@example.com' as EmailAddress;
+
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        memberNumber,
+        email: faker.internet.email() as EmailAddress,
+        name: undefined,
+        formOfAddress: undefined,
+      });
+      await insertRecurlySubscription(framework.extDB, {
+        email: billing,
+        hasActiveSubscription: true,
+      });
+    });
+
+    it('is verified and labelled as linked by admin', async () => {
+      await framework.commands.members.linkRecurlyEmail({memberNumber, email: billing});
+      const member = getSomeOrFail(
+        framework.sharedReadModel.members.getByMemberNumber(memberNumber)
+      );
+      const linked = member.emails.find(e => e.emailAddress === billing);
+      expect(linked).toBeDefined();
+      expect(O.isSome(linked!.verifiedAt)).toBe(true);
+      expect(linked!.linkedByAdmin).toBe(true);
+      expect(O.isSome(framework.sharedReadModel.members.getByEmail(billing, true))).toBe(true);
+    });
+
+    it('verifies an address the member had added but not verified, keeping one row', async () => {
+      await framework.commands.members.addEmail({memberNumber, email: billing});
+      await framework.commands.members.linkRecurlyEmail({memberNumber, email: billing});
+      const member = getSomeOrFail(
+        framework.sharedReadModel.members.getByMemberNumber(memberNumber)
+      );
+      expect(member.emails.filter(e => e.emailAddress === billing)).toHaveLength(1);
+      expect(member.emails.find(e => e.emailAddress === billing)?.linkedByAdmin).toBe(true);
+    });
+
+    it('does not relabel an address the member verified themselves', async () => {
+      await framework.commands.members.addEmail({memberNumber, email: billing});
+      await framework.commands.members.verifyEmail({memberNumber, emailAddress: billing});
+      await framework.commands.members.linkRecurlyEmail({memberNumber, email: billing});
+      const member = getSomeOrFail(
+        framework.sharedReadModel.members.getByMemberNumber(memberNumber)
+      );
+      expect(member.emails.find(e => e.emailAddress === billing)?.linkedByAdmin).toBe(false);
+    });
   });
 });

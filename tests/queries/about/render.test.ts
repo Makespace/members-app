@@ -3,7 +3,7 @@
  */
 
 import {about} from '../../../src/queries/about';
-import {changeLog} from '../../../src/queries/about/change-log';
+import {changeLog, changeLogBySubject, subjects} from '../../../src/queries/about/change-log';
 import {arbitraryUser} from '../../types/user.helper';
 import {getTaskEitherRightOrFail} from '../../helpers';
 import {Dependencies} from '../../../src/dependencies';
@@ -38,6 +38,30 @@ describe('/about render', () => {
     for (const entry of changeLog.slice(0, 3)) {
       expect(page.textContent).toContain(entry.headline);
     }
+  });
+
+  it('groups the change log under subject headings, each entry under its own', async () => {
+    const page = await renderPage();
+    const headings = [...page.querySelectorAll('h3')].map(h => h.textContent?.trim());
+    for (const group of changeLogBySubject()) {
+      expect(headings).toContain(subjects[group.subject]);
+      const heading = [...page.querySelectorAll('h3')].find(
+        h => h.textContent?.trim() === subjects[group.subject]
+      );
+      const list = heading?.nextElementSibling;
+      expect(list?.tagName).toBe('DL');
+      for (const entry of group.entries) {
+        expect(list?.textContent).toContain(entry.headline);
+      }
+    }
+  });
+
+  it('shows every entry exactly once', async () => {
+    const page = await renderPage();
+    const shown = [...page.querySelectorAll('h3')]
+      .filter(h => (Object.values(subjects) as string[]).includes(h.textContent?.trim() ?? ''))
+      .flatMap(h => [...(h.nextElementSibling?.querySelectorAll('dd') ?? [])]);
+    expect(shown.length).toBe(changeLog.length);
   });
 
   it('keeps the raise-an-issue routes: records, contributing, contact', async () => {

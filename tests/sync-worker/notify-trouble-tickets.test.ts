@@ -39,7 +39,11 @@ describe('notifyTroubleTicketChanges', () => {
         sentEmails.push(email);
         return TE.right('sent');
       },
-      conf: {PUBLIC_URL: 'https://members.makespace.org'} as unknown as Config,
+      conf: {
+        PUBLIC_URL: 'https://members.makespace.org',
+        // These tests are about what gets sent, so the mail is switched on.
+        TROUBLE_TICKET_NOTIFY_TO: 'all',
+      } as unknown as Config,
     };
 
     ticketId = faker.string.uuid() as UUID;
@@ -78,11 +82,20 @@ describe('notifyTroubleTicketChanges', () => {
     );
   });
 
+  // Logging a ticket now tells whoever reported it, whatever route it came
+  // in by. Each test below is about a later change, so the confirmation is
+  // sent and cleared first rather than counted in every assertion.
+  const settle = async () => {
+    await notifyTroubleTicketChanges(deps);
+    sentEmails.length = 0;
+  };
+
   afterEach(() => {
     framework.close();
   });
 
   it('emails the submitter on a status change and records it', async () => {
+    await settle();
     await commit(
       constructEvent('TroubleTicketResolved')({
         quiet: false,
@@ -101,12 +114,19 @@ describe('notifyTroubleTicketChanges', () => {
     const notified = await framework.getAllEventsByType(
       'TroubleTicketNotificationSent'
     );
-    expect(notified).toHaveLength(1);
+    // One for logging the ticket, one for resolving it.
+    expect(notified).toHaveLength(2);
     // The record says who was told, so the ticket's history can.
-    expect(notified[0].recipients).toEqual(['submitter@test.com']);
+    expect(notified[notified.length - 1].recipients).toEqual([
+      'submitter@test.com',
+    ]);
   });
 
   it('a quiet resolve sends no email and records no marker', async () => {
+    await settle();
+    const before = await framework.getAllEventsByType(
+      'TroubleTicketNotificationSent'
+    );
     await commit(
       constructEvent('TroubleTicketResolved')({
         quiet: true,
@@ -122,10 +142,11 @@ describe('notifyTroubleTicketChanges', () => {
     const notified = await framework.getAllEventsByType(
       'TroubleTicketNotificationSent'
     );
-    expect(notified).toHaveLength(0);
+    expect(notified).toHaveLength(before.length);
   });
 
   it('does not re-notify on a second run', async () => {
+    await settle();
     await commit(
       constructEvent('TroubleTicketResolved')({
         quiet: false,

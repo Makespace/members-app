@@ -120,48 +120,81 @@ const bookIcon = html`<svg
 // back, and those eight characters are eight more chances to mistype.
 const forReading = (url: string) => url.replace(/^https?:\/\//, '');
 
-// A block on the sign: a code with the words that say what scanning it does,
-// or - where there is nothing to scan, because the answer is the words
-// themselves - the words alone, running the width of the capsule.
-const scanBlock = (block: {
-  qrUrl: O.Option<string>;
+// A section of the sign: a heading and the line under it. None carries a
+// code of its own - the one code on the sign leads to the machine's page,
+// where each of these is a click away - so a section is only as tall as its
+// words.
+const section = (block: {
   variant: 'learn' | 'train' | 'fault' | 'notice';
   icon: Html;
   title: string;
   note: Html;
 }) => html`
-  <div class="sign__scan sign__scan--${safe(block.variant)}">
-    ${pipe(
-      block.qrUrl,
-      O.match(
-        () => html``,
-        qrUrl => html`<div class="sign__qr">${qrCodeSvg(qrUrl, 200)}</div>`
-      )
-    )}
-    <div class="sign__scan-text">
-      <p class="sign__scan-title">${block.icon} ${safe(block.title)}</p>
-      <p class="sign__scan-note">${block.note}</p>
-      ${pipe(
-        block.qrUrl,
-        O.match(
-          () => html``,
-          qrUrl =>
-            html`<p class="sign__url">
-              ${sanitizeString(forReading(qrUrl))}
-            </p>`
-        )
-      )}
+  <div class="sign__section sign__section--${safe(block.variant)}">
+    <p class="sign__section-title">${block.icon} ${safe(block.title)}</p>
+    <div class="sign__section-note">${block.note}</div>
+  </div>
+`;
+
+// Says what scanning gets you, naming only what this machine's page has: a
+// guide only if one is recorded, training only for red equipment.
+const scanFor = (sign: Sign) => {
+  const things = [
+    ...(sign.hasGuide ? ['resources'] : []),
+    ...(sign.category === 'red' ? ['training'] : []),
+    'trouble tickets',
+  ];
+  const list =
+    things.length === 1
+      ? things[0]
+      : `${things.slice(0, -1).join(', ')} and ${things[things.length - 1]}`;
+  return `Scan for ${list}`;
+};
+
+// The one code, leading to the machine's page, where each section above is a
+// click away.
+const codeBlock = (sign: Sign) => html`
+  <div class="sign__code">
+    <div class="sign__qr">${qrCodeSvg(sign.url, 200)}</div>
+    <div class="sign__code-text">
+      <p class="sign__code-title">${safe(scanFor(sign))}</p>
+      <p class="sign__url">${sanitizeString(forReading(sign.url))}</p>
     </div>
   </div>
 `;
+
+// What to learn: the machine's own points where an owner has written them,
+// otherwise the general sentence - and with neither a guide nor points, no
+// section at all, rather than a promise the page cannot keep.
+const learnSection = (sign: Sign) =>
+  sign.learnPoints.length > 0
+    ? section({
+        variant: 'learn',
+        icon: bookIcon,
+        title: 'Learn',
+        note: html`<ul class="sign__points">
+          ${joinHtml(
+            sign.learnPoints.map(
+              point => html`<li>${sanitizeString(point)}</li>`
+            )
+          )}
+        </ul>`,
+      })
+    : sign.hasGuide
+      ? section({
+          variant: 'learn',
+          icon: bookIcon,
+          title: 'Learn',
+          note: html`What this equipment is for and how to use it.`,
+        })
+      : html``;
 
 // The middle block is the one that depends on the colour: red equipment has
 // training to get, orange has a rule to keep, and green has neither.
 const trainingBlock = (sign: Sign) => {
   switch (sign.category) {
     case 'red':
-      return scanBlock({
-        qrUrl: sign.trainUrl,
+      return section({
         variant: 'train',
         icon: capIcon,
         title: 'Get trained',
@@ -169,8 +202,7 @@ const trainingBlock = (sign: Sign) => {
           online quiz, then attend an in-person training session.`,
       });
     case 'orange':
-      return scanBlock({
-        qrUrl: O.none,
+      return section({
         variant: 'notice',
         icon: memberIcon,
         title: 'Members only',
@@ -187,8 +219,7 @@ const trainingBlock = (sign: Sign) => {
           )}`,
       });
     case 'green':
-      return scanBlock({
-        qrUrl: O.none,
+      return section({
         variant: 'notice',
         icon: tickIcon,
         title: 'Open to all!',
@@ -211,26 +242,10 @@ const signCard = (sign: Sign) => html`
         <p class="sign__band-rule">${categoryDescription(sign.category)}</p>
       </header>
       <h2 class="sign__name">${sanitizeString(sign.name)}</h2>
-      <div class="sign__codes">
-        ${pipe(
-          sign.learnUrl,
-          O.match(
-            // No guide address recorded: the sign prints without the code
-            // rather than sending someone to an address nobody has checked.
-            () => html``,
-            learnUrl =>
-              scanBlock({
-                qrUrl: O.some(learnUrl),
-                variant: 'learn',
-                icon: bookIcon,
-                title: 'Learn',
-                note: html`What this equipment is for and how to use it.`,
-              })
-          )
-        )}
+      <div class="sign__sections">
+        ${learnSection(sign)}
         ${trainingBlock(sign)}
-        ${scanBlock({
-          qrUrl: O.some(sign.url),
+        ${section({
           variant: 'fault',
           icon: spannerIcon,
           title: 'Trouble tickets',
@@ -238,6 +253,7 @@ const signCard = (sign: Sign) => html`
             issues.`,
         })}
       </div>
+      ${codeBlock(sign)}
     </article>
 `;
 
@@ -278,7 +294,8 @@ const renderChooser = (viewModel: ViewModel) => html`
     <h1>Equipment signs</h1>
     <p>
       Printable signs for each machine: its name, what its colour means, and a
-      QR code leading to its trouble tickets. Choose an area, then use your
+      QR code leading to its page in the app - its guide, how to get trained,
+      and its trouble tickets. Choose an area, then use your
       browser's print dialog — each sign is laid out to fill one landscape
       page.
     </p>
@@ -306,6 +323,38 @@ const interFont = html`
   </style>
 `;
 
+// A machine's own learn points can run longer than the general sentence, and
+// the longest signs (orange, with its contact line) have little to spare. So
+// once the font has arrived - its widths decide the wrapping - any sign whose
+// sections overflow has their text stepped down until they fit, rather than
+// running into the code. Only that sign shrinks; the rest keep their size.
+const fitSignsScript = html`
+  <script>
+    window.fitSigns = function () {
+      var fonts = document.fonts ? document.fonts.ready : Promise.resolve();
+      return fonts.then(function () {
+        document.querySelectorAll('.sign__sections').forEach(function (el) {
+          var overflows = function () {
+            var first = el.firstElementChild;
+            var last = el.lastElementChild;
+            if (!first || !last) return false;
+            var used =
+              last.getBoundingClientRect().bottom -
+              first.getBoundingClientRect().top;
+            return used > el.clientHeight;
+          };
+          var scale = 1;
+          el.style.fontSize = '';
+          while (overflows() && scale > 0.7) {
+            scale = Math.round((scale - 0.05) * 100) / 100;
+            el.style.fontSize = scale + 'em';
+          }
+        });
+      });
+    };
+  </script>
+`;
+
 // Opened to print: a document of its own, with none of the app around it.
 // The printed page and the page on screen are then the same thing, so a
 // preview cannot lie about what comes out - and nothing from the rest of the
@@ -331,9 +380,12 @@ export const renderPrintDocument = (viewModel: ViewModel): Html => html`
       <div class="signs-page signs-page--${safe(viewModel.size)}">
         ${joinHtml(viewModel.signs.map(renderSignForPrint))}
       </div>
+      ${fitSignsScript}
       <script>
         window.addEventListener('load', function () {
-          window.print();
+          window.fitSigns().then(function () {
+            window.print();
+          });
         });
       </script>
     </body>
@@ -400,8 +452,8 @@ export const render = (viewModel: ViewModel) => {
                 these:</strong
               >
               ${sanitizeString(viewModel.missingGuideUrl.join(', '))}. Those
-              signs print without the "Learn" code. Set the guide address from
-              each machine's page to include it.
+              signs print without the "Learn" section. Set the guide address
+              from each machine's page to include it.
             </p>
           </div>`}
       ${viewModel.unreachableGuideUrl.length === 0
@@ -414,13 +466,17 @@ export const render = (viewModel: ViewModel) => {
                 these:</strong
               >
               ${sanitizeString(viewModel.unreachableGuideUrl.join(', '))}.
-              Those signs will print a code that leads nowhere - fix the
-              address before printing them.
+              Those signs send members to a guide that leads nowhere - fix
+              the address before printing them.
             </p>
           </div>`}
       ${joinHtml(viewModel.signs.map(renderSign(size)))}
+      ${fitSignsScript}
       <script>
         (function () {
+          window.addEventListener('load', function () {
+            window.fitSigns();
+          });
           var button = document.querySelector('[data-print-signs]');
           if (button) {
             button.addEventListener('click', function () {
