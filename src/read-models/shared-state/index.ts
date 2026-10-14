@@ -16,6 +16,7 @@ import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import {
   Area,
+  AreaEquipmentCategory,
   Equipment,
   Member,
   MemberCoreInfo,
@@ -73,7 +74,13 @@ import {
   getEquipmentForAreaMinimal,
   getTrainingSheetIdMapping,
 } from './equipment/get';
-import {getAllAreaMinimal, getAllOwnersBulk, AreaOwnerRow} from './area/get';
+import {
+  getAllAreaMinimal,
+  getAllEquipmentCategories,
+  getAllOwnersBulk,
+  getEquipmentCategories,
+  AreaOwnerRow,
+} from './area/get';
 import { findAllSuperUsers, findStoredEmailForLogin, findUserIdByEmail, findUserIdByMemberNumber, getAllMemberCore, getVerifiedEmailsByUserIds } from './member/get';
 import {getArchivedMailboxMessages} from './mailbox/get';
 import {MailboxArchiveReason} from '../../types/mailbox-archive-reason';
@@ -142,6 +149,10 @@ export type SharedReadModel = {
     getAll: () => ReadonlyArray<Area>;
     getAllMinimal: () => ReadonlyArray<MinimalArea>;
     getAllOwnersBulk: () => ReadonlyArray<AreaOwnerRow>;
+    getEquipmentCategories: (
+      areaId: UUID
+    ) => ReadonlyArray<AreaEquipmentCategory>;
+    getAllEquipmentCategories: () => ReadonlyArray<AreaEquipmentCategory>;
   };
   debug: {
     dump: () => SharedDatabaseDump;
@@ -256,6 +267,8 @@ export const initSharedReadModel = (
       getAll: getAllAreaFull(readModelDb),
       getAllMinimal: () => getAllAreaMinimal(readModelDb),
       getAllOwnersBulk: () => getAllOwnersBulk(readModelDb),
+      getEquipmentCategories: getEquipmentCategories(readModelDb),
+      getAllEquipmentCategories: () => getAllEquipmentCategories(readModelDb),
     },
     debug: {
       dump: dumpCurrentState(readModelDb),

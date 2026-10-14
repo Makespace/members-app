@@ -142,6 +142,7 @@ export const equipmentTable = defineTable(
       riskAssessmentUrl TEXT,
       learnPoints TEXT,
       removedAt INTEGER,
+      areaCategoryId TEXT,
       FOREIGN KEY(areaId) REFERENCES areas(id) ON DELETE CASCADE
     );
   `,
@@ -166,6 +167,8 @@ export const equipmentTable = defineTable(
     // When set, the equipment is obsolete: hidden from members browsing for
     // training, but kept (with its history) for owners/admins.
     removedAt: integer('removedAt', {mode: 'timestamp_ms'}),
+    // The area's own grouping for it (areaEquipmentCategories), if any.
+    areaCategoryId: text('areaCategoryId').$type<UUID>(),
   }
 );
 
@@ -337,6 +340,30 @@ export const areasTable = defineTable(
     id: text('id').notNull().primaryKey(),
     name: text('name').notNull(),
     email: text('email'),
+  }
+);
+
+// Groupings an area defines for its own equipment; see
+// AreaEquipmentCategoryAdded. Listed in the order they were added.
+export const areaEquipmentCategoriesTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS areaEquipmentCategories (
+      id TEXT PRIMARY KEY,
+      areaId TEXT NOT NULL,
+      name TEXT NOT NULL,
+      addedAt INTEGER NOT NULL,
+      FOREIGN KEY(areaId) REFERENCES areas(id) ON DELETE CASCADE
+    )
+  `,
+  'areaEquipmentCategories' as const,
+  {
+    id: text('id').notNull().primaryKey().$type<UUID>(),
+    areaId: text('areaId')
+      .notNull()
+      .$type<UUID>()
+      .references(() => areasTable.id, {onDelete: 'cascade'}),
+    name: text('name').notNull(),
+    addedAt: integer('addedAt', {mode: 'timestamp_ms'}).notNull(),
   }
 );
 

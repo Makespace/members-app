@@ -11,6 +11,12 @@ import {setMailingListForm} from './set-mailing-list-form';
 import {addNameAlias} from './add-name-alias';
 import {addNameAliasForm} from './add-name-alias-form';
 import {removeNameAlias} from './remove-name-alias';
+import {addEquipmentCategory} from './add-equipment-category';
+import {addEquipmentCategoryForm} from './add-equipment-category-form';
+import {removeEquipmentCategory} from './remove-equipment-category';
+import {removeEquipmentCategoryForm} from './remove-equipment-category-form';
+import {setEquipmentCategories} from './set-equipment-categories';
+import {setEquipmentCategoriesForm} from './set-equipment-categories-form';
 
 
 export const area = {
@@ -39,4 +45,16 @@ export const area = {
     ...addNameAliasForm,
   },
   removeNameAlias,
+  addEquipmentCategory: {
+    ...addEquipmentCategory,
+    ...addEquipmentCategoryForm,
+  },
+  removeEquipmentCategory: {
+    ...removeEquipmentCategory,
+    ...removeEquipmentCategoryForm,
+  },
+  setEquipmentCategories: {
+    ...setEquipmentCategories,
+    ...setEquipmentCategoriesForm,
+  },
 };

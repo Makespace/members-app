@@ -42,6 +42,7 @@ const transformRow = <
     riskAssessmentUrl: string | undefined | null;
     learnPoints: string | undefined | null;
     removedAt: Date | undefined | null;
+    areaCategoryId: UUID | undefined | null;
   },
 >(
   row: R
@@ -56,6 +57,7 @@ const transformRow = <
   riskAssessmentUrl: O.fromNullable(row.riskAssessmentUrl),
   learnPoints: parseLearnPoints(row.learnPoints),
   removedAt: O.fromNullable(row.removedAt),
+  areaCategoryId: O.fromNullable(row.areaCategoryId),
 });
 
 export const getEquipmentForAreaMinimal =

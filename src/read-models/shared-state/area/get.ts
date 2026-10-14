@@ -1,9 +1,10 @@
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {eq, sql} from 'drizzle-orm';
+import {asc, eq, sql} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {pipe} from 'fp-ts/lib/function';
 import {
+  areaEquipmentCategoriesTable,
   areaNameAliasesTable,
   areasTable,
   memberNumbersTable,
@@ -12,7 +13,7 @@ import {
 } from '../state';
 import {UUID} from 'io-ts-types';
 import {Actor, EmailAddress, UserId} from '../../../types';
-import {MinimalArea} from '../return-types';
+import {AreaEquipmentCategory, MinimalArea} from '../return-types';
 
 const transformRow = <
   R extends {
@@ -138,3 +139,30 @@ export const resolveAreaByName =
       O.map(row => row.id)
     );
   };
+
+const equipmentCategoryColumns = {
+  id: areaEquipmentCategoriesTable.id,
+  areaId: areaEquipmentCategoriesTable.areaId,
+  name: areaEquipmentCategoriesTable.name,
+};
+
+// In the order the area added them, which is the order its page shows them.
+export const getEquipmentCategories =
+  (db: BetterSQLite3Database) =>
+  (areaId: UUID): ReadonlyArray<AreaEquipmentCategory> =>
+    db
+      .select(equipmentCategoryColumns)
+      .from(areaEquipmentCategoriesTable)
+      .where(eq(areaEquipmentCategoriesTable.areaId, areaId))
+      .orderBy(asc(areaEquipmentCategoriesTable.addedAt))
+      .all();
+
+// Every area's categories in one query, for pages that show all areas.
+export const getAllEquipmentCategories = (
+  db: BetterSQLite3Database
+): ReadonlyArray<AreaEquipmentCategory> =>
+  db
+    .select(equipmentCategoryColumns)
+    .from(areaEquipmentCategoriesTable)
+    .orderBy(asc(areaEquipmentCategoriesTable.addedAt))
+    .all();

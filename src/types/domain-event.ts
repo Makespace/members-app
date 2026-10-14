@@ -63,6 +63,40 @@ const EquipmentCategoryChanged = defineEvent('EquipmentCategoryChanged', {
   category: EquipmentCategoryCodec,
 });
 
+// An area's own groupings for its equipment (e.g. Bike Space's "Wheels" or
+// "Bottom brackets"), so a long list can be browsed in sections. Unrelated to
+// the red/orange/green sticker category above; areas with none simply list
+// their equipment flat.
+const AreaEquipmentCategoryAdded = defineEvent('AreaEquipmentCategoryAdded', {
+  areaId: tt.UUID,
+  categoryId: tt.UUID,
+  name: t.string,
+});
+
+// Equipment that was in the category becomes uncategorised.
+const AreaEquipmentCategoryRemoved = defineEvent(
+  'AreaEquipmentCategoryRemoved',
+  {
+    areaId: tt.UUID,
+    categoryId: tt.UUID,
+  }
+);
+
+// One save of an area's category table: only the equipment whose category
+// changed. A null categoryId means uncategorised.
+const AreaEquipmentCategoriesAssigned = defineEvent(
+  'AreaEquipmentCategoriesAssigned',
+  {
+    areaId: tt.UUID,
+    assignments: t.readonlyArray(
+      t.strict({
+        equipmentId: tt.UUID,
+        categoryId: t.union([tt.UUID, t.null]),
+      })
+    ),
+  }
+);
+
 // Some equipment records stand for several identical machines (e.g. three 3D
 // printers under one entry). The names are the units a member picks from when
 // raising a ticket; an empty list means a single machine.
@@ -584,6 +618,9 @@ export const events = [
   AreaEmailUpdated,
   EquipmentAdded,
   EquipmentCategoryChanged,
+  AreaEquipmentCategoryAdded,
+  AreaEquipmentCategoryRemoved,
+  AreaEquipmentCategoriesAssigned,
   EquipmentMachinesSet,
   EquipmentNameChanged,
   EquipmentRiskAssessmentUrlSet,
@@ -649,6 +686,9 @@ export const DomainEvent = t.union([
   AreaEmailUpdated.codec,
   EquipmentAdded.codec,
   EquipmentCategoryChanged.codec,
+  AreaEquipmentCategoryAdded.codec,
+  AreaEquipmentCategoryRemoved.codec,
+  AreaEquipmentCategoriesAssigned.codec,
   EquipmentMachinesSet.codec,
   EquipmentNameChanged.codec,
   EquipmentRiskAssessmentUrlSet.codec,

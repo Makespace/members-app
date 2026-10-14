@@ -3,6 +3,7 @@ import {UUID} from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import {
   areaNameAliasesTable,
+  areaEquipmentCategoriesTable,
   areasTable,
   equipmentNameAliasesTable,
   memberDigestsTable,
@@ -377,6 +378,37 @@ const _updateState =
           .set({category: event.category})
           .where(eq(equipmentTable.id, event.equipmentId))
           .run();
+        break;
+      }
+      case 'AreaEquipmentCategoryAdded': {
+        tx.insert(areaEquipmentCategoriesTable)
+          .values({
+            id: event.categoryId,
+            areaId: event.areaId,
+            name: event.name,
+            addedAt: event.recordedAt,
+          })
+          .onConflictDoNothing()
+          .run();
+        break;
+      }
+      case 'AreaEquipmentCategoryRemoved': {
+        tx.update(equipmentTable)
+          .set({areaCategoryId: null})
+          .where(eq(equipmentTable.areaCategoryId, event.categoryId))
+          .run();
+        tx.delete(areaEquipmentCategoriesTable)
+          .where(eq(areaEquipmentCategoriesTable.id, event.categoryId))
+          .run();
+        break;
+      }
+      case 'AreaEquipmentCategoriesAssigned': {
+        for (const {equipmentId, categoryId} of event.assignments) {
+          tx.update(equipmentTable)
+            .set({areaCategoryId: categoryId})
+            .where(eq(equipmentTable.id, equipmentId))
+            .run();
+        }
         break;
       }
       case 'EquipmentMarkedObsolete': {

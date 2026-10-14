@@ -22,6 +22,7 @@ const equipment = {
   id: equipmentId,
   name: 'Laser Cutter',
   category: 'red' as const,
+  areaCategoryId: O.none,
   trainingsByQuarter: [
     {label: html`Q4 2025`, count: 1},
     {label: html`Q1 2026`, count: 0},
@@ -43,6 +44,8 @@ const area = {
   name: 'Laser Area',
   email: O.some('laser@example.com' as EmailAddress),
   equipment: [equipment],
+  equipmentCategories: [],
+  canManage: false,
   owners: [
     {
       memberNumber: 123,
@@ -90,6 +93,7 @@ describe('areas render', () => {
     expect(page.textContent).not.toContain('Add equipment');
     expect(page.textContent).not.toContain('Set mailing list');
     expect(page.textContent).not.toContain('Remove area');
+    expect(page.textContent).not.toContain('Manage area');
   });
 
   it('shows owners private owner details without management actions', () => {
@@ -108,20 +112,128 @@ describe('areas render', () => {
     expect(page.textContent).not.toContain('Remove area');
   });
 
-  it('shows super users management actions', () => {
+  it('shows super users a Manage area button beside each area title instead of a row of actions', () => {
     const page = renderPage({
-      areas: [area],
+      areas: [{...area, canManage: true}],
       canManageAreas: true,
       canSeeOwnerPrivateDetails: true,
       canSeeTrainings: false,
     });
 
     expect(page.textContent).toContain('Add area of responsibility');
-    expect(page.textContent).toContain('Add owner');
-    expect(page.textContent).toContain('Add equipment');
-    expect(page.textContent).toContain('Set mailing list');
-    expect(page.textContent).toContain('Remove area');
+    const manage = page.querySelector(
+      `#area-${areaId} .area-heading a[href="/areas/manage?area=${areaId}"]`
+    );
+    expect(manage?.textContent).toContain('Manage area');
+    expect(page.textContent).not.toContain('Add owner');
+    expect(page.textContent).not.toContain('Bulk-add');
+    expect(page.textContent).not.toContain('Set mailing list');
+    expect(page.textContent).not.toContain('Remove area');
     expect(page.querySelector(`a[href="/areas/remove-owner?memberNumber=123&areaId=${areaId}"]`)).not.toBeNull();
+  });
+
+  it('shows an owner of the area its Manage area button', () => {
+    const page = renderPage({
+      areas: [{...area, canManage: true}],
+      canManageAreas: false,
+      canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: false,
+    });
+
+    expect(
+      page.querySelector(`a[href="/areas/manage?area=${areaId}"]`)
+    ).not.toBeNull();
+  });
+
+  describe('equipment categories', () => {
+    const wheelsId = '55555555-5555-4555-8555-555555555555' as UUID;
+    const chainsId = '66666666-6666-4666-8666-666666666666' as UUID;
+    const emptyId = '77777777-7777-4777-8777-777777777777' as UUID;
+    const item = (
+      id: string,
+      name: string,
+      category: EquipmentViewModel['category'],
+      areaCategoryId: O.Option<UUID>
+    ): EquipmentViewModel => ({
+      id: id as UUID,
+      name,
+      category,
+      areaCategoryId,
+      trainingsByQuarter: [],
+    });
+    let page: HTMLBodyElement;
+
+    beforeEach(() => {
+      page = renderPage({
+        areas: [
+          {
+            ...area,
+            equipmentCategories: [
+              {id: wheelsId, name: 'Wheels'},
+              {id: chainsId, name: 'Chains'},
+              {id: emptyId, name: 'Nothing here'},
+            ],
+            equipment: [
+              item('a1111111-1111-4111-8111-111111111111', 'Truing Stand', 'orange', O.some(wheelsId)),
+              item('a2222222-2222-4222-8222-222222222222', 'Spoke Meter', 'orange', O.some(wheelsId)),
+              item('a3333333-3333-4333-8333-333333333333', 'Tyre Levers', 'green', O.some(wheelsId)),
+              item('a4444444-4444-4444-8444-444444444444', 'Chain Whip', 'green', O.some(chainsId)),
+              item('a5555555-5555-4555-8555-555555555555', 'Floor Pump', 'green', O.none),
+            ],
+          },
+        ],
+        canManageAreas: false,
+        canSeeOwnerPrivateDetails: false,
+        canSeeTrainings: false,
+      });
+    });
+
+    const groups = () =>
+      [...page.querySelectorAll('details.area-eq-group')].map(group => ({
+        name: group.querySelector('.area-eq-group__name')?.textContent?.trim(),
+        counts: normalizedText(
+          group.querySelector('.area-eq-group__counts') as HTMLElement
+        ),
+        items: [...group.querySelectorAll('.equipment-with-sparkline')].map(
+          equipmentItem => normalizedText(equipmentItem as HTMLElement)
+        ),
+        open: group.hasAttribute('open'),
+      }));
+
+    it('shows one collapsed section per category in use, then the uncategorised under Other', () => {
+      expect(groups().map(group => group.name)).toStrictEqual([
+        'Wheels',
+        'Chains',
+        'Other',
+      ]);
+      expect(groups().every(group => !group.open)).toBe(true);
+    });
+
+    it('tallies each section by sticker colour, leaving out colours it has none of', () => {
+      expect(groups()[0].counts).toBe('Orange:2 Green:1');
+      expect(groups()[1].counts).toBe('Green:1');
+    });
+
+    it('lists the equipment inside its section', () => {
+      expect(groups()[0].items).toStrictEqual([
+        'Truing Stand',
+        'Spoke Meter',
+        'Tyre Levers',
+      ]);
+      expect(groups()[2].items).toStrictEqual(['Floor Pump']);
+    });
+
+    it('lists the equipment flat for an area without categories', () => {
+      const flat = renderPage({
+        areas: [area],
+        canManageAreas: false,
+        canSeeOwnerPrivateDetails: false,
+        canSeeTrainings: false,
+      });
+
+      expect(flat.querySelector('details.area-eq-group')).toBeNull();
+      expect(flat.querySelectorAll('.equipment-with-sparkline')).toHaveLength(1);
+    });
   });
 
   it('shows a clear empty equipment message', () => {

@@ -1934,6 +1934,109 @@ label img {
   border-radius: 50%;
 }
 
+/* An area's title on /areas, with its "Manage area" button beside it. */
+.area-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.area-heading h2 {
+  margin: 0;
+}
+
+/* An area's equipment in categories: one collapsed section each, its name
+   followed by how many red, orange and green items it holds. Only the name
+   reads as the link; the tally is plain text. */
+.area-eq-groups {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.area-eq-group > summary {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.area-eq-group__name {
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.area-eq-group > summary:hover .area-eq-group__name {
+  text-decoration-thickness: 3px;
+}
+
+.area-eq-group__counts {
+  display: inline-flex;
+  gap: 0.75rem;
+  margin-left: 0.75rem;
+  color: var(--text-color);
+}
+
+/* The manage-area page: each action's button with a line about it. */
+.manage-area__action {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.manage-area__action p {
+  margin: 0;
+}
+
+.manage-area__action .button {
+  min-width: 15rem;
+  text-align: center;
+}
+
+/* The equipment-categories page: the list of categories, the add box, and
+   the table with one radio column per category. The table scrolls sideways
+   on its own when an area has more categories than fit. */
+.area-categories__list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.area-categories__list li {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.area-categories__add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.area-categories__table-wrap {
+  overflow-x: auto;
+}
+
+.area-categories__table .area-categories__choice {
+  text-align: center;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+/* The whole cell is the click target, not just the radio. */
+.area-categories__choice label {
+  display: block;
+  cursor: pointer;
+}
+
+.area-categories__table tbody tr:hover {
+  background: var(--tooltip-color);
+}
+
 /* The member-facing "report a problem" form. Questions are grouped with room
    to breathe; hints sit quietly under their labels. */
 .tt-form__question {

@@ -40,6 +40,9 @@ export type MinimalEquipment = {
   learnPoints: ReadonlyArray<string>;
   // Set when the equipment has been marked obsolete (soft-hidden).
   removedAt: O.Option<Date>;
+  // The area's own grouping for it; none when the area has no categories or
+  // nobody has sorted it into one yet.
+  areaCategoryId: O.Option<UUID>;
 };
 
 export type Equipment = {
@@ -108,6 +111,13 @@ export type Member = MemberCoreInfo & {
   trainedOn: ReadonlyArray<TrainedOn>;
   trainerFor: ReadonlyArray<TrainerFor>;
   ownerOf: ReadonlyArray<OwnerOf>;
+};
+
+// One of an area's own groupings for its equipment.
+export type AreaEquipmentCategory = {
+  id: UUID;
+  areaId: UUID;
+  name: string;
 };
 
 export type MinimalArea = {
