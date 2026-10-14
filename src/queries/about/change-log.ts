@@ -34,6 +34,12 @@ type ChangeLogEntry = {
 
 export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
+    subject: 'equipment',
+    date: '2026-10-14',
+    headline:
+      "Areas can sort their equipment into categories, so a long list browses as sections showing their red, orange and green counts; each area's actions now live on its Manage area page",
+  },
+  {
     subject: 'access',
     date: '2026-10-07',
     headline:
