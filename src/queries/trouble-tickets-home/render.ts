@@ -154,6 +154,20 @@ export const render = (viewModel: ViewModel) => html`
               touch about anything you've reported.
             </p>`}
       </section>
+
+      <section class="tt-home__card stack">
+        <h2>What you hear about</h2>
+        <p>
+          Which areas and machines you are told about, what has to happen to a
+          ticket before you are told, and whether that reaches you as it
+          happens or in a summary.
+        </p>
+        <p>
+          <a class="button" href="/notification-settings"
+            >Notification settings</a
+          >
+        </p>
+      </section>
     </div>
   </div>
 `;

@@ -1,12 +1,12 @@
 import {faker} from '@faker-js/faker';
 import {Int} from 'io-ts';
 import {NonEmptyString, UUID} from 'io-ts-types';
-import {constructEvent, EmailAddress} from '../../../src/types';
+import {constructEvent, DomainEvent, EmailAddress} from '../../../src/types';
 import {
   memberNumbersTable,
   trainingStatsNotificationTable,
 } from '../../../src/read-models/shared-state/state';
-import {getSomeOrFail} from '../../helpers';
+import {getRightOrFail, getSomeOrFail} from '../../helpers';
 import {initTestFramework, TestFramework} from '../test-framework';
 
 const sorted = <T>(items: ReadonlyArray<T>) => [...items].sort();
@@ -49,12 +49,14 @@ const notificationRows = (framework: TestFramework) =>
 const insertRejoinedEvent = (
   framework: TestFramework,
   oldMemberNumber: number,
-  newMemberNumber: number
+  newMemberNumber: number,
+  carryOverTraining = true
 ) =>
   framework.insertIntoSharedReadModel(
     constructEvent('MemberRejoinedWithNewNumber')({
       oldMemberNumber,
       newMemberNumber,
+      carryOverTraining,
       actor: {tag: 'token', token: 'admin'},
     })
   );
@@ -170,6 +172,7 @@ describe('rejoined members', () => {
       await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
         oldMemberNumber,
         newMemberNumber,
+        carryOverTraining: true,
       });
 
       framework.insertIntoSharedReadModel(
@@ -305,14 +308,104 @@ describe('rejoined members', () => {
     await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
       oldMemberNumber,
       newMemberNumber,
+      carryOverTraining: true,
     });
     await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
       oldMemberNumber,
       newMemberNumber,
+      carryOverTraining: true,
     });
 
     expect(
       framework.sharedReadModel.db.select().from(memberNumbersTable).all()
     ).toHaveLength(2);
+  });
+
+  describe('when the old training is not carried over', () => {
+    const oldMemberNumber = faker.number.int() as Int;
+    const newMemberNumber = faker.number.int({
+      min: oldMemberNumber + 1,
+    }) as Int;
+
+    it('drops the training recorded on the old number', async () => {
+      const {area, equipment} = await addAreaAndEquipment(framework);
+      await addMember(framework, oldMemberNumber);
+      await framework.commands.area.addOwner({
+        areaId: area.id,
+        memberNumber: oldMemberNumber,
+      });
+      await framework.commands.trainers.add({
+        equipmentId: equipment.id,
+        memberNumber: oldMemberNumber,
+      });
+      await framework.commands.trainers.markTrained({
+        equipmentId: equipment.id,
+        memberNumber: oldMemberNumber,
+      });
+
+      insertRejoinedEvent(framework, oldMemberNumber, newMemberNumber, false);
+
+      const member = getSomeOrFail(
+        framework.sharedReadModel.members.getByMemberNumber(newMemberNumber)
+      );
+      expect(member.trainedOn).toHaveLength(0);
+      expect(member.pastMemberNumbers).toContain(oldMemberNumber);
+      // Roles granted by owners are not training and are left alone.
+      expect(member.ownerOf.map(owner => owner.id)).toStrictEqual([area.id]);
+      expect(member.trainerFor.map(t => t.equipment_id)).toStrictEqual([
+        equipment.id,
+      ]);
+    });
+
+    it('keeps training delivered under the new number since they came back', async () => {
+      const oldResources = await addAreaAndEquipment(framework);
+      const newResources = await addAreaAndEquipment(framework);
+      await addMember(framework, oldMemberNumber);
+      await framework.commands.trainers.markTrained({
+        equipmentId: oldResources.equipment.id,
+        memberNumber: oldMemberNumber,
+      });
+      await addMember(framework, newMemberNumber);
+      await framework.commands.trainers.markTrained({
+        equipmentId: newResources.equipment.id,
+        memberNumber: newMemberNumber,
+      });
+
+      insertRejoinedEvent(framework, oldMemberNumber, newMemberNumber, false);
+
+      const member = getSomeOrFail(
+        framework.sharedReadModel.members.getByMemberNumber(oldMemberNumber)
+      );
+      expect(member.trainedOn.map(equipment => equipment.id)).toStrictEqual([
+        newResources.equipment.id,
+      ]);
+    });
+
+    it('still carries training over for rejoins recorded before the choice existed', async () => {
+      const {equipment} = await addAreaAndEquipment(framework);
+      await addMember(framework, oldMemberNumber);
+      await framework.commands.trainers.markTrained({
+        equipmentId: equipment.id,
+        memberNumber: oldMemberNumber,
+      });
+
+      // An event from before carryOverTraining existed has no such field.
+      framework.insertIntoSharedReadModel(
+        getRightOrFail(
+          DomainEvent.decode({
+            type: 'MemberRejoinedWithNewNumber',
+            oldMemberNumber,
+            newMemberNumber,
+            actor: {tag: 'token', token: 'admin'},
+            recordedAt: new Date().toISOString(),
+          })
+        )
+      );
+
+      const member = getSomeOrFail(
+        framework.sharedReadModel.members.getByMemberNumber(newMemberNumber)
+      );
+      expect(member.trainedOn.map(e => e.id)).toStrictEqual([equipment.id]);
+    });
   });
 });

@@ -116,6 +116,7 @@ describe('removeTrainer', () => {
       await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
         oldMemberNumber: memberNumber,
         newMemberNumber,
+        carryOverTraining: true,
       });
       await applyRemoveTrainer(
         {equipmentId: equipment.id, memberNumber},

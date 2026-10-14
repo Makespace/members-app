@@ -93,6 +93,13 @@ const EquipmentRiskAssessmentUrlSet = defineEvent(
   }
 );
 
+// What to learn about this machine, printed as points under "Learn" on its
+// sign. One point per line; empty clears them.
+const EquipmentLearnPointsSet = defineEvent('EquipmentLearnPointsSet', {
+  equipmentId: tt.UUID,
+  learnPoints: t.string,
+});
+
 const EquipmentNameChanged = defineEvent('EquipmentNameChanged', {
   equipmentId: tt.UUID,
   name: t.string,
@@ -177,6 +184,15 @@ const MemberEmailVerified = defineEvent('MemberEmailVerified', {
   email: EmailAddressCodec,
 });
 
+// An admin attached an address Recurly bills for this member, taking the
+// billing record as proof it is theirs: the address counts as verified from
+// here on without the member clicking anything. Its own event, rather than
+// an add followed by a verify, so the timeline says who vouched for it.
+const MemberEmailLinkedByAdmin = defineEvent('MemberEmailLinkedByAdmin', {
+  memberNumber: t.number,
+  email: EmailAddressCodec,
+});
+
 const MemberPrimaryEmailChanged = defineEvent('MemberPrimaryEmailChanged', {
   memberNumber: t.number,
   email: EmailAddressCodec,
@@ -242,6 +258,51 @@ const TroubleTicketResponseSubmitted = defineEvent(
 // audience. The banner content is structured (title/message/link) so it can
 // be rendered safely; the optional email body is markdown, converted to HTML
 // when the go-live email is sent by the sync worker.
+// What one member wants to hear about one scope - an area, a machine, or one
+// of the standing groups. 'follow' means they have said nothing of their own
+// and take whatever sits above them, which is also how a choice is undone.
+//
+// The actor says who decided: a member setting their own, or the system doing
+// it because they were made a trainer or an owner. The two read very
+// differently in a member's history, so they are not flattened together.
+const MemberNotificationPreferenceSet = defineEvent(
+  'MemberNotificationPreferenceSet',
+  {
+    memberNumber: t.number,
+    // 'reported-by-me' | 'my-areas' | 'other-areas' | 'area:<id>' |
+    // 'equipment:<id>'
+    scope: t.string,
+    preference: t.keyof({
+      live: null,
+      daily: null,
+      weekly: null,
+      none: null,
+      follow: null,
+    }),
+    // True when this was the app changing somebody's mind for them and
+    // telling them so - a new trainer, a new owner. Somebody setting their
+    // own preference is not being written to, and the two cannot be told
+    // apart by the actor: the API sets preferences as the system too.
+    notified: tt.withFallback(t.boolean, false),
+  }
+);
+
+// One summary email, to one member, covering everything up to a point in the
+// log. The watermark is what stops the next one repeating it, and recording it
+// only when something was actually sent is what keeps a quiet week silent.
+const MemberTicketDigestSent = defineEvent('MemberTicketDigestSent', {
+  memberNumber: t.number,
+  cadence: t.keyof({daily: null, weekly: null}),
+  // The last event this summary covered.
+  upToEventIndex: t.number,
+  // How many changes it carried, so the log says whether it was worth sending.
+  changeCount: t.number,
+  // True when the summary was worked out but held back rather than sent,
+  // which is how the stack runs before the mail is switched on. The
+  // watermark still moves, so switching on causes no backlog.
+  suppressed: tt.withFallback(t.boolean, false),
+});
+
 const NotificationCreated = defineEvent('NotificationCreated', {
   id: tt.UUID,
   title: t.string,
@@ -305,6 +366,25 @@ const MemberDetailsUpdated = defineEvent('MemberDetailsUpdated', {
   formOfAddress: t.union([t.string, t.undefined]),
 });
 
+// A Paxton fob held by a member, as exported from the Paxton PC. The fob id
+// is Paxton's number for the fob; recording the same fob id again updates
+// its access level (and reassigns it if another member held it before).
+// The Paxton-side name is kept as it appeared in the export, so the member
+// it was matched to can be checked later.
+const MemberFobRecorded = defineEvent('MemberFobRecorded', {
+  memberNumber: t.number,
+  // Integer, not number: the read model keys on this as an INTEGER PRIMARY
+  // KEY, and a stored non-integer would stop replay at this event for good.
+  fobId: t.Int,
+  accessLevel: t.string,
+  paxtonName: t.string,
+});
+
+const MemberFobRemoved = defineEvent('MemberFobRemoved', {
+  memberNumber: t.number,
+  fobId: t.Int,
+});
+
 const OwnerAgreementSigned = defineEvent('OwnerAgreementSigned', {
   memberNumber: t.number,
   signedAt: tt.DateFromISOString,
@@ -345,6 +425,11 @@ const RevokeTrainedOnEquipment = defineEvent('RevokeTrainedOnEquipment', {
 const MemberRejoinedWithNewNumber = defineEvent('MemberRejoinedWithNewNumber', {
   oldMemberNumber: t.number,
   newMemberNumber: t.number,
+  // Whether the training recorded against the old number still counts.
+  // Makespace policy is that training lapses after 6+ months away, so the
+  // admin marking the rejoin decides. Rejoins recorded before this existed
+  // always carried training over, hence the fallback.
+  carryOverTraining: tt.withFallback(t.boolean, true),
 });
 
 const MemberRejoinedWithExistingNumber = defineEvent(
@@ -486,6 +571,10 @@ const TroubleTicketNotificationSent = defineEvent(
     // for markers recorded before this was kept, and when nobody had an
     // address to send to.
     recipients: tt.withFallback(t.array(t.string), []),
+    // The same people by member number, where we know it. Addresses change
+    // and some senders are not members at all, so counting how much somebody
+    // has heard from us cannot be done by matching strings.
+    recipientMemberNumbers: tt.withFallback(t.array(t.number), []),
   }
 );
 
@@ -498,6 +587,7 @@ export const events = [
   EquipmentMachinesSet,
   EquipmentNameChanged,
   EquipmentRiskAssessmentUrlSet,
+  EquipmentLearnPointsSet,
   EquipmentMarkedObsolete,
   EquipmentNameAliasAdded,
   EquipmentNameAliasRemoved,
@@ -513,6 +603,7 @@ export const events = [
   MemberEmailAdded,
   MemberEmailVerificationRequested,
   MemberEmailVerified,
+  MemberEmailLinkedByAdmin,
   MemberPrimaryEmailChanged,
   LinkingMemberNumberToAnAlreadyUsedEmailAttempted,
   EquipmentTrainingSheetRegistered,
@@ -521,6 +612,8 @@ export const events = [
   EquipmentTrainingQuizResult,
   EquipmentTrainingQuizSync,
   MemberDetailsUpdated,
+  MemberFobRecorded,
+  MemberFobRemoved,
   OwnerAgreementSigned,
   MemberTrainedOnEquipment,
   MemberTrainedOnEquipmentBy,
@@ -540,6 +633,8 @@ export const events = [
   TroubleTicketEquipmentSet,
   TroubleTicketTitleEdited,
   TroubleTicketNotificationSent,
+  MemberNotificationPreferenceSet,
+  MemberTicketDigestSent,
   NotificationCreated,
   NotificationDismissed,
   NotificationRevoked,
@@ -557,6 +652,7 @@ export const DomainEvent = t.union([
   EquipmentMachinesSet.codec,
   EquipmentNameChanged.codec,
   EquipmentRiskAssessmentUrlSet.codec,
+  EquipmentLearnPointsSet.codec,
   EquipmentMarkedObsolete.codec,
   EquipmentNameAliasAdded.codec,
   EquipmentNameAliasRemoved.codec,
@@ -572,6 +668,7 @@ export const DomainEvent = t.union([
   MemberEmailAdded.codec,
   MemberEmailVerificationRequested.codec,
   MemberEmailVerified.codec,
+  MemberEmailLinkedByAdmin.codec,
   MemberPrimaryEmailChanged.codec,
   LinkingMemberNumberToAnAlreadyUsedEmailAttempted.codec,
   EquipmentTrainingSheetRegistered.codec,
@@ -580,6 +677,8 @@ export const DomainEvent = t.union([
   EquipmentTrainingQuizResult.codec,
   EquipmentTrainingQuizSync.codec,
   MemberDetailsUpdated.codec,
+  MemberFobRecorded.codec,
+  MemberFobRemoved.codec,
   OwnerAgreementSigned.codec,
   MemberTrainedOnEquipment.codec,
   MemberTrainedOnEquipmentBy.codec,
@@ -599,6 +698,8 @@ export const DomainEvent = t.union([
   TroubleTicketEquipmentSet.codec,
   TroubleTicketTitleEdited.codec,
   TroubleTicketNotificationSent.codec,
+  MemberNotificationPreferenceSet.codec,
+  MemberTicketDigestSent.codec,
   NotificationCreated.codec,
   NotificationDismissed.codec,
   NotificationRevoked.codec,

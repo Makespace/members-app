@@ -4,6 +4,13 @@ import os from 'node:os';
 import fs from 'node:fs';
 import * as T from 'fp-ts/Task';
 import * as O from 'fp-ts/Option';
+import {
+  DigestWatermark,
+  getDigestWatermark,
+  getNotificationEmailCount,
+  getMembersWithNotificationPreferences,
+  getNotificationPreferences,
+} from './notification-preferences/get';
 import {createTables} from './state';
 import {BetterSQLite3Database, drizzle} from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
@@ -153,6 +160,15 @@ export type SharedReadModel = {
       memberNumber: number
     ) => ReadonlyArray<TrainingQuizCompletionRow>;
   };
+  notificationPreferences: {
+    forMember: (memberNumber: number) => ReadonlyMap<string, string>;
+    membersWithAny: () => ReadonlyArray<number>;
+    lastDigest: (
+      memberNumber: number,
+      cadence: string
+    ) => O.Option<DigestWatermark>;
+    emailsSentTo: (memberNumber: number) => number;
+  };
   troubleTickets: {
     hasRowHash: (rowHash: string) => boolean;
     getAll: () => ReadonlyArray<TroubleTicket>;
@@ -185,6 +201,14 @@ export const initSharedReadModel = (
   const uri = path.join(os.tmpdir(), `${randomFileName}.db`);
   fs.rmSync(uri, {force: true});
   const _underlyingReadModelDb = new Database(uri);
+  // DEVNOTE - synchronous=OFF is safe here because this file is a disposable
+  // projection: it has a random name, is unlinked on every init (the rmSync
+  // above), and is fully rebuilt from the event store on every boot (see
+  // asyncRefresh). Nothing in it survives the process, so per-transaction
+  // fsyncs only slow boot-time event replay (~6ms per commit across ~23k
+  // events, ~2.5 minutes per deploy). Revisit this if the read model file
+  // ever persists across restarts.
+  _underlyingReadModelDb.pragma('synchronous = OFF');
   const readModelDb = drizzle(_underlyingReadModelDb);
   const readOnlyReadModelDb = drizzle(new Database(uri, {readonly: true}));
 
@@ -244,6 +268,12 @@ export const initSharedReadModel = (
       importedRowHashes: getImportedQuizRowHashes(readModelDb),
       getCompletionsForSheet: getCompletionsForSheet(readModelDb),
       getCompletionsForMember: getCompletionsForMember(readModelDb),
+    },
+    notificationPreferences: {
+      forMember: getNotificationPreferences(readModelDb),
+      membersWithAny: getMembersWithNotificationPreferences(readModelDb),
+      lastDigest: getDigestWatermark(readModelDb),
+      emailsSentTo: getNotificationEmailCount(readModelDb),
     },
     troubleTickets: {
       hasRowHash: hasTroubleTicketRowHash(readModelDb),

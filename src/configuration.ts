@@ -19,6 +19,9 @@ const LogLevel = t.keyof({
 
 const Config = t.strict({
   ADMIN_API_BEARER_TOKEN: tt.NonEmptyString,
+  // Shared secret every e-ink display sends as a bearer token to fetch its
+  // machine's image (docs/eink-displays.md). Required, like the admin token.
+  EINK_DISPLAY_TOKEN: tt.NonEmptyString,
   PORT: withDefaultIfEmpty(tt.IntFromString, 8080 as t.Int),
   PUBLIC_URL: tt.NonEmptyString,
   SESSION_SECRET: tt.NonEmptyString,
@@ -29,6 +32,12 @@ const Config = t.strict({
   SMTP_TLS: withDefaultIfEmpty(tt.BooleanFromString, true),
   SMTP_USER: t.string,
   TOKEN_SECRET: tt.NonEmptyString,
+  // Who the trouble ticket notifications may actually be sent to, so the
+  // stack can be deployed and watched before anybody's inbox is involved.
+  // Unset means nobody; 'all' means everybody; otherwise a comma-separated
+  // list of the only addresses that may be written to. See
+  // trouble-tickets/notification-gate.
+  TROUBLE_TICKET_NOTIFY_TO: withDefaultIfEmpty(t.string, ''),
   GOOGLE_DB_URL: withDefaultIfEmpty(
     t.string,
     'file:/google_db_data/makespace-member-app-google.db'

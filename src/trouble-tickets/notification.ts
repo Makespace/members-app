@@ -1,9 +1,3 @@
-import * as E from 'fp-ts/Either';
-import * as O from 'fp-ts/Option';
-import {pipe} from 'fp-ts/lib/function';
-import {EmailAddress, EmailAddressCodec} from '../types/email-address';
-import {SharedReadModel} from '../read-models/shared-state';
-import {TroubleTicket} from '../types/trouble-ticket';
 
 // What a trouble ticket notification says and who it goes to, in one place:
 // the notifier sends it, and the confirmation page for each action shows the
@@ -46,74 +40,55 @@ export const describeTicketChange = (
   }
 };
 
+// A new ticket reads differently to the person who reported it than to the
+// owner of the machine it is about: one is being thanked, the other is being
+// told there is something to look at. Only consulted for a new ticket - an
+// update to one reads the same either way.
 export const ticketNotificationSubject = (
   title: string,
-  isNew: boolean
-): string =>
-  isNew
+  isNew: boolean,
+  theirs: boolean
+): string => {
+  if (!isNew) {
+    return `Trouble ticket update: ${title}`;
+  }
+  return theirs
     ? `We've logged your report: ${title}`
-    : `Trouble ticket update: ${title}`;
+    : `New trouble ticket: ${title}`;
+};
 
 export const ticketNotificationOpening = (
   title: string,
-  isNew: boolean
-): string =>
-  isNew
+  isNew: boolean,
+  theirs: boolean
+): string => {
+  if (!isNew) {
+    return `There's an update on the trouble ticket "${title}".`;
+  }
+  return theirs
     ? `We've logged your report about "${title}".`
-    : `There's an update on the trouble ticket "${title}".`;
+    : `Somebody has reported a problem: "${title}".`;
+};
 
 // The plain-text body, which is also what the confirmation page shows.
 export const ticketNotificationText = (
   publicUrl: string,
   title: string,
   change: string,
-  isNew: boolean
+  isNew: boolean,
+  theirs: boolean,
+  // The ticket's own address, when there is one to give. A notification about
+  // one thing should land on that thing rather than on a list to search.
+  url?: string
 ): string =>
-  `Hi,\n\n${ticketNotificationOpening(title, isNew)}\n\n${change}\n\nSee the trouble tickets page: ${publicUrl}/trouble-tickets\n`;
+  `Hi,\n\n${ticketNotificationOpening(title, isNew, theirs)}\n\n${change}\n\n${
+    url === undefined
+      ? `See the trouble tickets page: ${publicUrl}/trouble-tickets`
+      : `See this ticket: ${url}`
+  }\n`;
 
 // Everyone who hears about a change: the submitter - by their current
 // primary address when they are a known member, else the address they gave
 // if it is one - plus, for Needs Help, the equipment's trainers, so someone
 // else can pick it up. Nobody is copied in. Each recipient gets their own
 // email.
-export const ticketNotificationRecipients = (
-  rm: SharedReadModel,
-  ticket: TroubleTicket,
-  changeType: TicketChange['type']
-): ReadonlyArray<EmailAddress> => {
-  const emails = new Set<EmailAddress>();
-
-  const submitterEmail =
-    ticket.submittedMemberNumber !== null
-      ? pipe(
-          rm.members.getByMemberNumber(ticket.submittedMemberNumber),
-          O.map(member => member.primaryEmailAddress)
-        )
-      : O.none;
-  if (O.isSome(submitterEmail)) {
-    emails.add(submitterEmail.value);
-  } else if (ticket.submittedEmail) {
-    pipe(
-      EmailAddressCodec.decode(ticket.submittedEmail),
-      E.match(
-        () => {},
-        email => emails.add(email)
-      )
-    );
-  }
-
-  if (changeType === 'TroubleTicketNeedsHelp' && ticket.equipmentId) {
-    pipe(
-      rm.equipment.get(ticket.equipmentId),
-      O.match(
-        () => {},
-        equipment =>
-          equipment.trainers.forEach(trainer =>
-            emails.add(trainer.primaryEmailAddress)
-          )
-      )
-    );
-  }
-
-  return [...emails];
-};

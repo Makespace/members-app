@@ -4,7 +4,7 @@ import { InconsistentEventError } from "./inconsistent-event-error";
 import { insertMemberNumber } from "./insert-member-number";
 import * as O from 'fp-ts/Option';
 import { revokeSuperuser } from "./revoke-super-user";
-import { memberEmailsTable, memberNumbersTable, membersTable, ownersTable, trainedMemberstable, trainersTable, trainingStatsNotificationTable } from "./state";
+import { memberEmailsTable, memberFobsTable, memberNumbersTable, membersTable, ownersTable, trainedMemberstable, trainersTable, trainingStatsNotificationTable } from "./state";
 import {eq} from 'drizzle-orm';
 import { dropRecordsByUserId } from "./drop-records";
 import { findUserIdByMemberNumber } from "./member/get";
@@ -86,6 +86,10 @@ const mergeUsers = (
     .set({userId: oldUserId})
     .where(eq(memberEmailsTable.userId, newUserId))
     .run();
+  tx.update(memberFobsTable)
+    .set({userId: oldUserId})
+    .where(eq(memberFobsTable.userId, newUserId))
+    .run();
   tx.update(memberNumbersTable)
     .set({userId: oldUserId})
     .where(eq(memberNumbersTable.userId, newUserId))
@@ -107,10 +111,22 @@ const mergeUsers = (
   
 };
 
+// Training lapses after a long enough gap in membership, so a rejoin can
+// choose not to carry the old record's training across. Done before any merge
+// so that training delivered under the new number (after they came back) is
+// kept. Owner and trainer status are untouched: those are granted by owners
+// and have their own removal flows.
+const dropTrainingFor = (tx: DatabaseTransaction, userId: UserId) =>
+  tx
+    .delete(trainedMemberstable)
+    .where(eq(trainedMemberstable.userId, userId))
+    .run();
+
 export const addMemberNumberToExisting = (
   tx: DatabaseTransaction,
   oldMemberNumber: number,
-  newMemberNumber: number
+  newMemberNumber: number,
+  carryOverTraining: boolean
 ) => {
   // If a user has 2 different membership numbers then we move all the records from the new member
   // and add it onto their old record.
@@ -127,6 +143,10 @@ export const addMemberNumberToExisting = (
 
   if (O.isNone(oldUserId)) {
     throw new InconsistentEventError(`Cannot add member number '${newMemberNumber}' to unknown existing user '${oldMemberNumber}'`);
+  }
+
+  if (!carryOverTraining) {
+    dropTrainingFor(tx, oldUserId.value);
   }
 
   if (O.isNone(newUserId)) {

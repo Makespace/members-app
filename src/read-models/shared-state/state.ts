@@ -62,6 +62,7 @@ export const memberEmailsTable = defineTable(
       addedAt INTEGER NOT NULL,
       verifiedAt INTEGER,
       verificationLastSent INTEGER,
+      linkedByAdmin INTEGER NOT NULL DEFAULT 0,
       FOREIGN KEY (userId) REFERENCES members(userId) ON DELETE CASCADE
     );
   `,
@@ -75,6 +76,35 @@ export const memberEmailsTable = defineTable(
     addedAt: integer('addedAt', {mode: 'timestamp_ms'}).notNull(),
     verifiedAt: integer('verifiedAt', {mode: 'timestamp_ms'}),
     verificationLastSent: integer('verificationLastSent', {mode: 'timestamp_ms'}),
+    // Verified on an admin's say-so from the Recurly billing record rather
+    // than by the member; shown as such.
+    linkedByAdmin: integer('linkedByAdmin', {mode: 'boolean'}).notNull().default(false),
+  }
+);
+
+// Paxton fobs, keyed by Paxton's fob id so a fob reassigned to another
+// member moves rather than duplicates. A member may hold several.
+export const memberFobsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS memberFobs (
+      fobId INTEGER PRIMARY KEY,
+      userId TEXT NOT NULL,
+      accessLevel TEXT NOT NULL,
+      paxtonName TEXT NOT NULL,
+      recordedAt INTEGER NOT NULL,
+      FOREIGN KEY (userId) REFERENCES members(userId) ON DELETE CASCADE
+    );
+  `,
+  'memberFobs' as const,
+  {
+    fobId: integer('fobId').primaryKey(),
+    userId: text('userId')
+      .notNull()
+      .$type<UserId>()
+      .references(() => membersTable.userId, {onDelete: 'cascade'}),
+    accessLevel: text('accessLevel').notNull(),
+    paxtonName: text('paxtonName').notNull(),
+    recordedAt: integer('recordedAt', {mode: 'timestamp_ms'}).notNull(),
   }
 );
 
@@ -110,6 +140,7 @@ export const equipmentTable = defineTable(
       trainingSheetId TEXT,
       guideUrl TEXT,
       riskAssessmentUrl TEXT,
+      learnPoints TEXT,
       removedAt INTEGER,
       FOREIGN KEY(areaId) REFERENCES areas(id) ON DELETE CASCADE
     );
@@ -130,6 +161,8 @@ export const equipmentTable = defineTable(
     // The machine's page on equipment.makespace.org, as recorded by an owner.
     guideUrl: text('guideUrl'),
     riskAssessmentUrl: text('riskAssessmentUrl'),
+    // What to learn before using it, one point per line, for its sign.
+    learnPoints: text('learnPoints'),
     // When set, the equipment is obsolete: hidden from members browsing for
     // training, but kept (with its history) for owners/admins.
     removedAt: integer('removedAt', {mode: 'timestamp_ms'}),
@@ -139,6 +172,64 @@ export const equipmentTable = defineTable(
 // Alternative names that resolve to equipment (e.g. the trouble-ticket form's
 // labels). One alias maps to exactly one equipment; matching is case- and
 // whitespace-insensitive via the NOCASE collation plus trimming at write time.
+// What each member has said they want to hear about, one row per scope they
+// have an opinion on. Saying "follow whatever is above me" removes the row:
+// the absence of a row is what following means, so there is one way to say it
+// rather than two.
+export const memberNotificationPreferencesTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS memberNotificationPreferences (
+      memberNumber INTEGER NOT NULL,
+      scope TEXT NOT NULL,
+      preference TEXT NOT NULL,
+      PRIMARY KEY (memberNumber, scope)
+    )
+  `,
+  'memberNotificationPreferences' as const,
+  {
+    memberNumber: integer('memberNumber').notNull(),
+    scope: text('scope').notNull(),
+    preference: text('preference').notNull(),
+  }
+);
+
+// When each member was last sent a summary, and how far through the log it
+// reached. One row per member and cadence; absent until the first one is sent.
+// How many trouble ticket notifications somebody has been sent. Only used to
+// stop explaining the system to people who have clearly met it already.
+export const memberNotificationEmailsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS memberNotificationEmails (
+      memberNumber INTEGER PRIMARY KEY,
+      sent INTEGER NOT NULL
+    )
+  `,
+  'memberNotificationEmails' as const,
+  {
+    memberNumber: integer('memberNumber').notNull().primaryKey(),
+    sent: integer('sent').notNull(),
+  }
+);
+
+export const memberDigestsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS memberDigests (
+      memberNumber INTEGER NOT NULL,
+      cadence TEXT NOT NULL,
+      sentAt INTEGER NOT NULL,
+      upToEventIndex INTEGER NOT NULL,
+      PRIMARY KEY (memberNumber, cadence)
+    )
+  `,
+  'memberDigests' as const,
+  {
+    memberNumber: integer('memberNumber').notNull(),
+    cadence: text('cadence').notNull(),
+    sentAt: integer('sentAt', {mode: 'timestamp_ms'}).notNull(),
+    upToEventIndex: integer('upToEventIndex').notNull(),
+  }
+);
+
 export const equipmentNameAliasesTable = defineTable(
   sql`
     CREATE TABLE IF NOT EXISTS equipmentNameAliases (
@@ -476,6 +567,9 @@ createTables.push(
 );
 createTables.push(
   sql`CREATE INDEX IF NOT EXISTS memberEmails_userId_addedAt_idx ON memberEmails (userId, addedAt);`
+);
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS memberFobs_userId_recordedAt_idx ON memberFobs (userId, recordedAt);`
 );
 createTables.push(
   sql`CREATE INDEX IF NOT EXISTS trainedMembers_userId_idx ON trainedMembers (userId);`

@@ -55,6 +55,7 @@ describe('rejoined member authentication helpers', () => {
     await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
       oldMemberNumber,
       newMemberNumber,
+      carryOverTraining: true,
     });
 
     [oldActor, newActor].forEach(actor => {
@@ -131,6 +132,7 @@ describe('rejoined member authentication helpers', () => {
     await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
       oldMemberNumber,
       newMemberNumber,
+      carryOverTraining: true,
     });
 
     [oldActor, newActor].forEach(actor => {
@@ -186,6 +188,7 @@ describe('rejoined member authentication helpers', () => {
     await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
       oldMemberNumber,
       newMemberNumber,
+      carryOverTraining: true,
     });
     await framework.commands.superUser.declare({
       memberNumber: newMemberNumber,

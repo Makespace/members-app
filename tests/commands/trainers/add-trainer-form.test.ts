@@ -58,6 +58,7 @@ describe('add trainer form', () => {
     await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
       oldMemberNumber,
       newMemberNumber,
+      carryOverTraining: true,
     });
 
     const viewModel = getRightOrFail(
@@ -107,6 +108,7 @@ describe('add trainer form', () => {
     await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
       oldMemberNumber,
       newMemberNumber,
+      carryOverTraining: true,
     });
 
     const viewModel = getRightOrFail(

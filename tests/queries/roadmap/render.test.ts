@@ -71,7 +71,7 @@ describe('/roadmap render', () => {
   it('marks in-progress items with a half-filled circle and no tick', () => {
     const page = renderPage();
     const inProgress = page.querySelectorAll('li.timeline__item--in-progress');
-    expect(inProgress.length).toBe(2);
+    expect(inProgress.length).toBe(3);
     inProgress.forEach(item => {
       expect(
         item.querySelector('.timeline__marker')?.textContent?.trim()

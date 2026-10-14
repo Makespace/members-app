@@ -48,6 +48,7 @@ describe('add owner form', () => {
     await framework.commands.memberNumbers.markMemberRejoinedWithNewNumber({
       oldMemberNumber,
       newMemberNumber,
+      carryOverTraining: true,
     });
 
     const viewModel = getRightOrFail(

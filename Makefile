@@ -1,4 +1,4 @@
-.phony: check clear-containers dev dev-all fix lint prod release smoketest test typecheck unused-exports watch-typecheck populate-local-dev populate-full update-vendor audit login login-admin login-trainer login-owner
+.phony: check clear-containers dev dev-all fix lint notification-drill prod release smoketest test typecheck unused-exports watch-typecheck populate-local-dev populate-full update-vendor audit login login-admin login-trainer login-owner
 
 check: test lint typecheck unused-exports audit
 
@@ -26,6 +26,12 @@ populate-local-dev:
 
 populate-full:
 	bun ./scripts/populate-full.ts
+
+# Plays the trouble ticket notification situations through a throwaway copy of
+# the app and reports who would be told what. Add --send, with DRILL_TO and
+# SMTP_* set, to have the emails actually arrive somewhere you can read them.
+notification-drill:
+	npx tsx ./scripts/notification-drill.ts $(ARGS)
 
 fix: node_modules
 	bunx eslint --fix

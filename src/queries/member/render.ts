@@ -10,6 +10,7 @@ import {otherMemberNumbersTooltip} from '../shared-render/other-member-numbers-t
 import {renderTrainingMatrix} from '../training-matrix/render';
 import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
 import {renderMemberEmails} from '../shared-render/member-emails';
+import {renderMemberFobs} from '../shared-render/member-fobs';
 import {renderBilling} from './render-billing';
 
 const ownPageBanner = html`<h1>This is your profile!</h1>`;
@@ -73,6 +74,22 @@ export const render = (viewModel: ViewModel) => html`
           <tr>
             <th scope="row">Email addresses</th>
             <td>${renderEmails(viewModel)}</td>
+          </tr>
+        ` : html``
+      }
+      ${
+        viewModel.isSuperUser ? html`
+          <tr>
+            <th scope="row">
+              <p>Paxton fobs</p>
+              <p><small>As recorded from the Paxton export</small></p>
+            </th>
+            <td>
+              ${renderMemberFobs(
+                viewModel.member.memberNumber,
+                viewModel.member.fobs
+              )}
+            </td>
           </tr>
         ` : html``
       }

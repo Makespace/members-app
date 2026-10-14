@@ -84,6 +84,9 @@ export const renderMemberEmails = (
       <td>
         ${sanitizeString(email.emailAddress)}
         ${O.isSome(email.verifiedAt) ? html`✅` : html``}
+        ${email.linkedByAdmin
+          ? html`<small title="Verified on an admin's word from the Recurly billing record, not by the member">linked from Recurly by admin</small>`
+          : html``}
       </td>
       <td>${
         O.isSome(email.verifiedAt)
