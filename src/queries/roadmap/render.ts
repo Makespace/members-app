@@ -39,10 +39,12 @@ export const render = () => html`
       done(html`Report a problem from inside the app, picking the machine from
       a list instead of typing its name`),
       done(html`Printable signs for each machine: its name, what its colour
-      means, and QR codes for learning about it, getting trained on it, and
-      reporting a problem`),
-      done(html`Show a machine's open trouble tickets on an e-ink
-      display mounted on it (trial)`),
+      means, and one QR code to its page - for learning about it, getting
+      trained on it, and reporting a problem`),
+      done(html`Let owners and trainers say what each machine's sign lists
+      under "Learn"`),
+      done(html`An e-ink display on a machine showing whether it's usable,
+      its open tickets and a QR code to its page (trial)`),
       done(html`Choose what you hear about: the tickets you reported, the
       areas you look after, a single machine, or anywhere in Makespace - as
       it happens, once a day, once a week, or not at all`),

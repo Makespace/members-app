@@ -142,6 +142,9 @@ export const recurlyAccountCodeTable = sqliteTable(
     code: text('code').primaryKey(),
     email: text('email').notNull(),
     accountId: text('accountId'),
+    // The account holder's name as Recurly has it, for an admin deciding
+    // which member an unlinked account belongs to. Null until the next sync.
+    name: text('name'),
     cacheLastUpdated: integer('cacheLastUpdated', {mode: 'timestamp_ms'}).notNull(),
   }
 );
@@ -316,4 +319,5 @@ export const rebuildBillingCaches = [
 // ensureRecurlyDBTablesExist, which forgives exactly that error.
 export const addRecurlyColumns = [
   sql`ALTER TABLE recurly_subscriptions ADD COLUMN accountId TEXT;`,
+  sql`ALTER TABLE recurly_account_codes ADD COLUMN name TEXT;`,
 ];

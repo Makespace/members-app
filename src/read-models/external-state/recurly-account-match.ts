@@ -95,3 +95,18 @@ const billingEmailsForCodes = (codes: ReadonlyArray<string>) =>
     recurlyAccountCodeTable.code,
     [...codes]
   )})`;
+
+// Whether Recurly holds this address at all, as an account's billing email
+// or its code. What lets an admin vouch for it as a member's.
+export const isRecurlyAddress =
+  (extDB: ExternalStateDB) =>
+  async (email: string): Promise<boolean> => {
+    const lowered = email.toLowerCase();
+    const rows = await extDB
+      .select({email: recurlySubscriptionTable.email})
+      .from(recurlySubscriptionTable)
+      .where(subscriptionMatches([lowered]))
+      .limit(1)
+      .all();
+    return rows.length > 0;
+  };

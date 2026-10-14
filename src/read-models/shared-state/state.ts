@@ -62,6 +62,7 @@ export const memberEmailsTable = defineTable(
       addedAt INTEGER NOT NULL,
       verifiedAt INTEGER,
       verificationLastSent INTEGER,
+      linkedByAdmin INTEGER NOT NULL DEFAULT 0,
       FOREIGN KEY (userId) REFERENCES members(userId) ON DELETE CASCADE
     );
   `,
@@ -75,6 +76,9 @@ export const memberEmailsTable = defineTable(
     addedAt: integer('addedAt', {mode: 'timestamp_ms'}).notNull(),
     verifiedAt: integer('verifiedAt', {mode: 'timestamp_ms'}),
     verificationLastSent: integer('verificationLastSent', {mode: 'timestamp_ms'}),
+    // Verified on an admin's say-so from the Recurly billing record rather
+    // than by the member; shown as such.
+    linkedByAdmin: integer('linkedByAdmin', {mode: 'boolean'}).notNull().default(false),
   }
 );
 
@@ -136,6 +140,7 @@ export const equipmentTable = defineTable(
       trainingSheetId TEXT,
       guideUrl TEXT,
       riskAssessmentUrl TEXT,
+      learnPoints TEXT,
       removedAt INTEGER,
       FOREIGN KEY(areaId) REFERENCES areas(id) ON DELETE CASCADE
     );
@@ -156,6 +161,8 @@ export const equipmentTable = defineTable(
     // The machine's page on equipment.makespace.org, as recorded by an owner.
     guideUrl: text('guideUrl'),
     riskAssessmentUrl: text('riskAssessmentUrl'),
+    // What to learn before using it, one point per line, for its sign.
+    learnPoints: text('learnPoints'),
     // When set, the equipment is obsolete: hidden from members browsing for
     // training, but kept (with its history) for owners/admins.
     removedAt: integer('removedAt', {mode: 'timestamp_ms'}),
@@ -188,6 +195,22 @@ export const memberNotificationPreferencesTable = defineTable(
 
 // When each member was last sent a summary, and how far through the log it
 // reached. One row per member and cadence; absent until the first one is sent.
+// How many trouble ticket notifications somebody has been sent. Only used to
+// stop explaining the system to people who have clearly met it already.
+export const memberNotificationEmailsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS memberNotificationEmails (
+      memberNumber INTEGER PRIMARY KEY,
+      sent INTEGER NOT NULL
+    )
+  `,
+  'memberNotificationEmails' as const,
+  {
+    memberNumber: integer('memberNumber').notNull().primaryKey(),
+    sent: integer('sent').notNull(),
+  }
+);
+
 export const memberDigestsTable = defineTable(
   sql`
     CREATE TABLE IF NOT EXISTS memberDigests (

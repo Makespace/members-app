@@ -23,7 +23,10 @@ import {
 } from './trouble-tickets/backfill-timeline';
 import {constantTimeEqual} from './http/constant-time-equal';
 import {bulkQuietResolve} from './trouble-tickets/bulk-quiet-resolve';
-import {equipmentTroubleTicketsImage} from './eink/equipment-trouble-tickets-handler';
+import {
+  equipmentTroubleTicketsImage,
+  troubleTicketsImageRoute,
+} from './eink/equipment-trouble-tickets-handler';
 import * as t from 'io-ts';
 import {v4} from 'uuid';
 import {StatusCodes} from 'http-status-codes';
@@ -84,6 +87,11 @@ export const initRoutes = (
       'equipment',
       'set-risk-assessment-url',
       commands.equipment.setRiskAssessmentUrl
+    ),
+    ...command(
+      'equipment',
+      'set-learn-points',
+      commands.equipment.setLearnPoints
     ),
     ...command('equipment', 'set-machines', commands.equipment.setMachines),
     // Saving the notification settings page. A bespoke POST for the same
@@ -421,11 +429,9 @@ export const initRoutes = (
       '/equipment/:equipment/failed-quizzes',
       queries.equipmentFailedQuizzes
     ),
-    // For an e-ink display on the machine. Public - the display cannot log in.
-    get(
-      '/equipment/:equipment/trouble-tickets.png',
-      equipmentTroubleTicketsImage(deps)
-    ),
+    // For an e-ink display on the machine: it presents the display token, as it
+    // cannot log in.
+    get(troubleTicketsImageRoute, equipmentTroubleTicketsImage(deps)),
     query('/equipment/:equipment', queries.equipment),
     query('/super-users', queries.superUsers),
     ...command('super-users', 'declare', commands.superUser.declare),
@@ -459,6 +465,7 @@ export const initRoutes = (
     ),
     ...command('members', 'record-fob', commands.members.recordFob),
     ...command('members', 'remove-fob', commands.members.removeFob),
+    ...command('members', 'link-recurly-email', commands.members.linkRecurlyEmail),
     ...importFobsRoutes(deps),
     ...command(
       'members',
@@ -480,8 +487,10 @@ export const initRoutes = (
     query('/equipment-signs', queries.equipmentSigns),
     query('/trouble-tickets', queries.troubleTicketsHome),
     query('/trouble-tickets/board', queries.troubleTickets),
-    // After /board, so the static path is not eaten by the :id pattern.
-    query('/trouble-tickets/:id', queries.troubleTicket),
+    // Under /view/ because every ticket action registers its confirmation
+    // page at /trouble-tickets/<verb>, and a bare :id here swallows all of
+    // them - raise, assign, resolve, park, needs-help.
+    query('/trouble-tickets/view/:id', queries.troubleTicket),
     // Site notification banners: admin management + member dismissal.
     query('/notifications', queries.notifications),
     // Imported management mailbox. The commands go before the :id route,

@@ -11,7 +11,13 @@ import {StoredEventOfType} from '../types/domain-event';
 import {SyncWorkerDependencies} from './dependencies';
 import {heldBackSendEmail} from '../trouble-tickets/notification-gate';
 import {summariseForEmail} from '../trouble-tickets/ticket-email-summary';
-import {ticketCardHtml, ticketUrl} from '../templates/trouble-ticket-email';
+import {
+  introBannerHtml,
+  introBannerText,
+  shouldIntroduce,
+  ticketCardHtml,
+  ticketUrl,
+} from '../templates/trouble-ticket-email';
 import {
   audienceFor,
   happeningOfEvent,
@@ -70,7 +76,8 @@ const buildEmail = (
   change: string,
   isNew: boolean,
   theirs: boolean,
-  summaryHtml: string
+  summaryHtml: string,
+  introduce: boolean
 ): Email => {
   const opening = ticketNotificationOpening(ticket.title, isNew, theirs);
   const text = ticketNotificationText(
@@ -84,17 +91,18 @@ const buildEmail = (
   return {
     recipient,
     subject: ticketNotificationSubject(ticket.title, isNew, theirs),
-    text,
+    text: introduce ? `${introBannerText(publicUrl)}\n\n${text}` : text,
     html: mjml2html(`
       <mjml>
         <mj-body width="600px">
           <mj-section background-color="#fa990e">
             <mj-column>
-              <mj-text align="center" color="#111" font-size="28px">MakeSpace</mj-text>
+              <mj-text align="center" color="#111" font-size="28px">Makespace</mj-text>
             </mj-column>
           </mj-section>
           <mj-section>
             <mj-column>
+              ${introduce ? `<mj-raw>${introBannerHtml(publicUrl)}</mj-raw>` : ''}
               <mj-text font-size="16px" color="#111">
                 <p>${opening.replace(`"${ticket.title}"`, `<strong>${ticket.title}</strong>`)}</p>
                 <p>${change.replace(/\n/g, '<br/>')}</p>
@@ -174,12 +182,31 @@ export const notifyTroubleTicketChanges = async (
     const recipients = audienceFor(rm, ticket.value, happening.value).filter(
       entry => entry.live
     );
+    // Worked out before the marker is written, because writing it is what
+    // the count is made of: ask afterwards and everybody's first email looks
+    // like their second.
+    const introduceTo = new Set<number>(
+      recipients
+        .filter(
+          entry =>
+            entry.memberNumber > 0 &&
+            shouldIntroduce(
+              rm.notificationPreferences.emailsSentTo(entry.memberNumber)
+            )
+        )
+        .map(entry => entry.memberNumber)
+    );
     const commitResp = await deps.commitEvent(rm.getCurrentEventIndex())(
       constructEvent('TroubleTicketNotificationSent')({
         actor: {tag: 'system'},
         ticketId: ticketIdOf(event),
         notifiedEventIndex: event.event_index,
         recipients: recipients.map(entry => entry.email),
+        // Somebody who wrote in without being a member has no number, and
+        // -1 is how the audience says so.
+        recipientMemberNumbers: recipients
+          .map(entry => entry.memberNumber)
+          .filter(memberNumber => memberNumber > 0),
       })
     )();
     if (E.isLeft(commitResp)) {
@@ -204,7 +231,8 @@ export const notifyTroubleTicketChanges = async (
           entry.theirs,
           ticketCardHtml(
             summariseForEmail(rm, deps.conf.PUBLIC_URL, ticket.value)
-          )
+          ),
+          introduceTo.has(entry.memberNumber)
         )
       )();
       if (E.isLeft(sent)) {

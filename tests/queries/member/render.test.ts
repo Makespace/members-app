@@ -26,18 +26,21 @@ const buildViewModel = (isSuperUser: boolean, isSelf: boolean): ViewModel => ({
         verifiedAt: O.some(new Date('2025-01-01T00:00:00.000Z')),
         addedAt: new Date('2025-01-01T00:00:00.000Z'),
         verificationLastSent: O.none,
+        linkedByAdmin: false,
       },
       {
         emailAddress: unverifiedEmail,
         verifiedAt: O.none,
         addedAt: new Date('2025-01-02T00:00:00.000Z'),
         verificationLastSent: O.none,
+        linkedByAdmin: false,
       },
       {
         emailAddress: verifiedSecondaryEmail,
         verifiedAt: O.some(new Date('2025-01-03T00:00:00.000Z')),
         addedAt: new Date('2025-01-03T00:00:00.000Z'),
         verificationLastSent: O.none,
+        linkedByAdmin: true,
       },
     ],
     fobs: [
@@ -104,6 +107,10 @@ describe('member render', () => {
       expect(page.textContent).toContain('Primary');
       expect(page.textContent).toContain('Send Verification Email');
       expect(page.textContent).toContain('Make Primary Email');
+    });
+
+    it('says when an address was linked from Recurly by an admin', () => {
+      expect(page.textContent).toContain('linked from Recurly by admin');
     });
 
     it('shows the recurly status', () => {

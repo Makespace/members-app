@@ -35,7 +35,7 @@ const generateTrainingSummaryEmail = (
   <mj-body width="800px">
     <mj-section background-color="#fa990e">
       <mj-column>
-        <mj-text align="center" color="#111" font-size="40px">MakeSpace Training Update</mj-text>
+        <mj-text align="center" color="#111" font-size="40px">Makespace Training Update</mj-text>
       </mj-column>
     </mj-section>
     <mj-section>

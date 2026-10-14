@@ -2,6 +2,7 @@ import {and, eq} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {
+  memberNotificationEmailsTable,
   memberDigestsTable,
   memberNotificationPreferencesTable,
 } from '../state';
@@ -70,3 +71,14 @@ export const getDigestWatermark =
         )
         .get() ?? null
     );
+
+// How many trouble ticket notifications somebody has been sent. Used only to
+// decide whether an email still needs to explain what this is.
+export const getNotificationEmailCount =
+  (db: BetterSQLite3Database) =>
+  (memberNumber: number): number =>
+    db
+      .select({sent: memberNotificationEmailsTable.sent})
+      .from(memberNotificationEmailsTable)
+      .where(eq(memberNotificationEmailsTable.memberNumber, memberNumber))
+      .get()?.sent ?? 0;

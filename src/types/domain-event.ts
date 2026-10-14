@@ -93,6 +93,13 @@ const EquipmentRiskAssessmentUrlSet = defineEvent(
   }
 );
 
+// What to learn about this machine, printed as points under "Learn" on its
+// sign. One point per line; empty clears them.
+const EquipmentLearnPointsSet = defineEvent('EquipmentLearnPointsSet', {
+  equipmentId: tt.UUID,
+  learnPoints: t.string,
+});
+
 const EquipmentNameChanged = defineEvent('EquipmentNameChanged', {
   equipmentId: tt.UUID,
   name: t.string,
@@ -173,6 +180,15 @@ const MemberEmailVerificationRequested = defineEvent(
 );
 
 const MemberEmailVerified = defineEvent('MemberEmailVerified', {
+  memberNumber: t.number,
+  email: EmailAddressCodec,
+});
+
+// An admin attached an address Recurly bills for this member, taking the
+// billing record as proof it is theirs: the address counts as verified from
+// here on without the member clicking anything. Its own event, rather than
+// an add followed by a verify, so the timeline says who vouched for it.
+const MemberEmailLinkedByAdmin = defineEvent('MemberEmailLinkedByAdmin', {
   memberNumber: t.number,
   email: EmailAddressCodec,
 });
@@ -263,6 +279,11 @@ const MemberNotificationPreferenceSet = defineEvent(
       none: null,
       follow: null,
     }),
+    // True when this was the app changing somebody's mind for them and
+    // telling them so - a new trainer, a new owner. Somebody setting their
+    // own preference is not being written to, and the two cannot be told
+    // apart by the actor: the API sets preferences as the system too.
+    notified: tt.withFallback(t.boolean, false),
   }
 );
 
@@ -550,6 +571,10 @@ const TroubleTicketNotificationSent = defineEvent(
     // for markers recorded before this was kept, and when nobody had an
     // address to send to.
     recipients: tt.withFallback(t.array(t.string), []),
+    // The same people by member number, where we know it. Addresses change
+    // and some senders are not members at all, so counting how much somebody
+    // has heard from us cannot be done by matching strings.
+    recipientMemberNumbers: tt.withFallback(t.array(t.number), []),
   }
 );
 
@@ -562,6 +587,7 @@ export const events = [
   EquipmentMachinesSet,
   EquipmentNameChanged,
   EquipmentRiskAssessmentUrlSet,
+  EquipmentLearnPointsSet,
   EquipmentMarkedObsolete,
   EquipmentNameAliasAdded,
   EquipmentNameAliasRemoved,
@@ -577,6 +603,7 @@ export const events = [
   MemberEmailAdded,
   MemberEmailVerificationRequested,
   MemberEmailVerified,
+  MemberEmailLinkedByAdmin,
   MemberPrimaryEmailChanged,
   LinkingMemberNumberToAnAlreadyUsedEmailAttempted,
   EquipmentTrainingSheetRegistered,
@@ -625,6 +652,7 @@ export const DomainEvent = t.union([
   EquipmentMachinesSet.codec,
   EquipmentNameChanged.codec,
   EquipmentRiskAssessmentUrlSet.codec,
+  EquipmentLearnPointsSet.codec,
   EquipmentMarkedObsolete.codec,
   EquipmentNameAliasAdded.codec,
   EquipmentNameAliasRemoved.codec,
@@ -640,6 +668,7 @@ export const DomainEvent = t.union([
   MemberEmailAdded.codec,
   MemberEmailVerificationRequested.codec,
   MemberEmailVerified.codec,
+  MemberEmailLinkedByAdmin.codec,
   MemberPrimaryEmailChanged.codec,
   LinkingMemberNumberToAnAlreadyUsedEmailAttempted.codec,
   EquipmentTrainingSheetRegistered.codec,

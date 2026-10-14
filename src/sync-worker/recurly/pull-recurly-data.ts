@@ -19,6 +19,8 @@ type RecurlyAccount = {
     id?: string | null;
     code?: string | null;
     email?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
     hasActiveSubscription?: boolean | null;
     hasFutureSubscription?: boolean | null;
     hasCanceledSubscription?: boolean | null;
@@ -433,6 +435,8 @@ export const pullRecurlyData = (
                 id,
                 code,
                 email,
+                firstName,
+                lastName,
                 hasActiveSubscription,
                 hasFutureSubscription,
                 hasCanceledSubscription,
@@ -469,9 +473,14 @@ export const pullRecurlyData = (
 
             const accountCode = code?.trim().toLowerCase();
             if (accountCode) {
+                const name = [firstName, lastName]
+                    .map(part => part?.trim() ?? '')
+                    .filter(part => part !== '')
+                    .join(' ');
                 const codeValues = {
                     email: maybeEmail,
                     accountId: id ?? null,
+                    name: name === '' ? null : name,
                     cacheLastUpdated: values.cacheLastUpdated,
                 };
                 await extDB.insert(recurlyAccountCodeTable)

@@ -12,6 +12,7 @@ import {
 } from '../trouble-tickets/notification-audience';
 import {digestEmail, DigestLine} from '../trouble-tickets/digest';
 import {summariseForEmail} from '../trouble-tickets/ticket-email-summary';
+import {shouldIntroduce} from '../templates/trouble-ticket-email';
 import {
   audienceOf,
   heldBackSendEmail,
@@ -181,6 +182,11 @@ export const notifyDigests = async (
         audienceOf(deps),
         member.value.primaryEmailAddress
       );
+      // Asked before the record of this summary is written, for the same
+      // reason as the live notifier.
+      const introduce = shouldIntroduce(
+        rm.notificationPreferences.emailsSentTo(memberNumber)
+      );
       const committed = await deps.commitEvent(rm.getCurrentEventIndex())(
         constructEvent('MemberTicketDigestSent')({
           actor: {tag: 'system'},
@@ -204,7 +210,8 @@ export const notifyDigests = async (
           deps.conf.PUBLIC_URL,
           member.value.primaryEmailAddress,
           cadence,
-          lines
+          lines,
+          introduce
         )
       )();
       if (E.isLeft(sent)) {
@@ -221,8 +228,14 @@ const buildDigest = (
   publicUrl: string,
   recipient: EmailAddress,
   cadence: 'daily' | 'weekly',
-  lines: ReadonlyArray<DigestLine>
+  lines: ReadonlyArray<DigestLine>,
+  introduce: boolean
 ): Email => {
-  const {subject, text, html} = digestEmail(publicUrl, cadence, lines);
+  const {subject, text, html} = digestEmail(
+    publicUrl,
+    cadence,
+    lines,
+    introduce
+  );
   return {recipient, subject, text, html: mjml2html(html).html};
 };

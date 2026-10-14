@@ -26,6 +26,7 @@ const renderNav = (
       trainingSheetId: equipment.trainingSheetId,
       guideUrl: equipment.guideUrl,
       riskAssessmentUrl: equipment.riskAssessmentUrl,
+      learnPoints: equipment.learnPoints,
       removedAt: equipment.removedAt,
     }));
   });
@@ -52,6 +53,7 @@ const makeEquipment = (name: string, removed = false): Equipment => ({
     trainingSheetId: O.none,
   guideUrl: O.none,
   riskAssessmentUrl: O.none,
+  learnPoints: [],
   removedAt: removed ? O.some(new Date('2026-01-01T00:00:00.000Z')) : O.none,
   area: {
     id: faker.string.uuid() as UUID,

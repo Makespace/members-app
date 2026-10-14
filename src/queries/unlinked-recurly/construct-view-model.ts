@@ -1,6 +1,7 @@
 import * as TE from 'fp-ts/TaskEither';
 import * as E from 'fp-ts/Either';
 import * as RA from 'fp-ts/ReadonlyArray';
+import {pipe} from 'fp-ts/lib/function';
 import {isNotNull} from 'drizzle-orm';
 import {DateTime} from 'luxon';
 import {FailureWithStatus} from '../../types/failure-with-status';
@@ -15,6 +16,8 @@ import {
 } from '../../sync-worker/recurly/recurly-data-table';
 import {memberEmailsTable} from '../../read-models/shared-state/state';
 import {RECURLY_TTL} from '../../read-models/external-state/recurly-status';
+import * as O from 'fp-ts/Option';
+import {indexMembersByName} from '../../read-models/shared-state/member/name-match';
 
 export const constructViewModel =
   (sharedReadModel: SharedReadModel, extDB: ExternalStateDB) =>
@@ -40,10 +43,15 @@ export const constructViewModel =
     );
 
     const codesByEmail = new Map<string, string[]>();
+    const nameByEmail = new Map<string, string>();
     for (const row of codes) {
       const key = row.email.toLowerCase();
       codesByEmail.set(key, [...(codesByEmail.get(key) ?? []), row.code]);
+      if (row.name !== null) {
+        nameByEmail.set(key, row.name);
+      }
     }
+    const byName = indexMembersByName(sharedReadModel.members.getAllCore());
 
     // Linked by billing email or by account code, as every Recurly lookup is.
     const isLinked = (email: string) =>
@@ -55,11 +63,14 @@ export const constructViewModel =
       .filter(account => !isLinked(account.email.toLowerCase()))
       .map(account => {
         const email = account.email.toLowerCase();
+        const recurlyName = O.fromNullable(nameByEmail.get(email));
         return {
           email: account.email,
           otherCodes: (codesByEmail.get(email) ?? []).filter(
             code => code !== email
           ),
+          recurlyName,
+          suggestedMember: pipe(recurlyName, O.chain(byName.unique)),
           hasActiveSubscription: account.hasActiveSubscription,
           hasFutureSubscription: account.hasFutureSubscription,
           hasCanceledSubscription: account.hasCanceledSubscription,

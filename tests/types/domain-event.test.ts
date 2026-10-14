@@ -50,6 +50,18 @@ describe('DomainEvent', () => {
     });
   });
 
+  it('validates MemberEmailLinkedByAdmin', () => {
+    const event: unknown = {
+      type: 'MemberEmailLinkedByAdmin',
+      actor: {tag: 'system'},
+      recordedAt: '1991-02-20T00:00:00.000Z',
+      memberNumber: 1337,
+      email: 'billing@example.com',
+    };
+    const decoded = unwrap(DomainEvent.decode(event));
+    expect(decoded).toMatchObject({type: 'MemberEmailLinkedByAdmin', memberNumber: 1337, email: 'billing@example.com'});
+  });
+
   it('validates MemberFobRecorded', () => {
     const event: unknown = {
       type: 'MemberFobRecorded',

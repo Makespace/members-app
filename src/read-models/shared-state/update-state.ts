@@ -6,6 +6,7 @@ import {
   areasTable,
   equipmentNameAliasesTable,
   memberDigestsTable,
+  memberNotificationEmailsTable,
   memberNotificationPreferencesTable,
   equipmentTable,
   eventStateTable,
@@ -172,6 +173,42 @@ const _updateState =
             `Unable to verify email '${event.email}' for member number: '${event.memberNumber}' - unknown email address`
           )
         }
+        break;
+      }
+      case 'MemberEmailLinkedByAdmin': {
+        const normalisedEmailAddress = normaliseEmailAddress(event.email);
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to link email '${normalisedEmailAddress}', unknown member number: '${event.memberNumber}'`);
+        }
+        const existingEmailUsage = findUserIdByEmail(tx)(normalisedEmailAddress, false);
+        if (O.isSome(existingEmailUsage) && existingEmailUsage.value !== userId.value) {
+          throw new InconsistentEventError(
+            `Attempted to link email '${event.email}' to ${event.memberNumber} but that email already exists on user id '${existingEmailUsage.value}'`
+          );
+        }
+        // New to this member, or already added but never verified: either
+        // way it is verified from now, on the admin's word. Inserted
+        // unverified so the one update below covers both cases, while an
+        // address the member verified themselves keeps that standing (the
+        // command raises no event for one anyway).
+        insertMemberEmail(
+          tx,
+          userId.value,
+          normalisedEmailAddress,
+          event.recordedAt,
+          null,
+        );
+        tx.update(memberEmailsTable)
+          .set({verifiedAt: event.recordedAt, linkedByAdmin: true})
+          .where(
+            and(
+              eq(memberEmailsTable.userId, userId.value),
+              eq(memberEmailsTable.emailAddress, normalisedEmailAddress),
+              isNull(memberEmailsTable.verifiedAt)
+            )
+          )
+          .run();
         break;
       }
       case 'MemberPrimaryEmailChanged': {
@@ -611,6 +648,21 @@ const _updateState =
         }
         break;
       }
+      case 'EquipmentLearnPointsSet': {
+        const rows = tx
+          .update(equipmentTable)
+          .set({
+            learnPoints: event.learnPoints === '' ? null : event.learnPoints,
+          })
+          .where(eq(equipmentTable.id, event.equipmentId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(
+            `Unable to set the learn points for equipment '${event.equipmentId}' - unknown equipment`
+          );
+        }
+        break;
+      }
       case 'EquipmentRiskAssessmentUrlSet': {
         const rows = tx
           .update(equipmentTable)
@@ -782,6 +834,9 @@ const _updateState =
         break;
       }
       case 'MemberTicketDigestSent': {
+        if (!event.suppressed) {
+          countNotificationEmail(tx)(event.memberNumber);
+        }
         tx.insert(memberDigestsTable)
           .values({
             memberNumber: event.memberNumber,
@@ -803,6 +858,10 @@ const _updateState =
         break;
       }
       case 'MemberNotificationPreferenceSet': {
+        // Only the kind that came with an email counts as one.
+        if (event.notified) {
+          countNotificationEmail(tx)(event.memberNumber);
+        }
         // Following is the absence of a row rather than a row saying
         // 'follow', so there is one way to say it and a member who changes
         // their mind back leaves nothing behind.
@@ -1079,6 +1138,7 @@ const _updateState =
           })
           .onConflictDoNothing()
           .run();
+        event.recipientMemberNumbers.forEach(countNotificationEmail(tx));
         break;
       }
       case 'TroubleTicketTitleEdited': {
@@ -1176,6 +1236,20 @@ const _updateState =
         break;
       }
     }
+  };
+
+// One more trouble ticket notification sent to somebody. Counted so the
+// first few can explain what this is and the rest need not.
+const countNotificationEmail =
+  (tx: DatabaseTransaction) =>
+  (memberNumber: number): void => {
+    tx.insert(memberNotificationEmailsTable)
+      .values({memberNumber, sent: 1})
+      .onConflictDoUpdate({
+        target: [memberNotificationEmailsTable.memberNumber],
+        set: {sent: sql`${memberNotificationEmailsTable.sent} + 1`},
+      })
+      .run();
   };
 
 const _updateEventState = (tx: DatabaseTransaction, event: StoredDomainEvent) => tx.update(eventStateTable)

@@ -46,6 +46,7 @@ const getMemberEmails =
                 verificationLastSent: O.fromNullable(
                   email.verificationLastSent
                 ),
+                linkedByAdmin: email.linkedByAdmin,
               },
             ]
       )

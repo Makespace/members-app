@@ -100,7 +100,11 @@ export const gatherEmailContent = async (
   const membersJoinedWithin30Days = members.filter(
     member => member.joined.getTime() > cutoff30Days
   ).length;
-  for (const equipment of deps.sharedReadModel.equipment.getAll()) {
+  // Only red equipment has training, so orange and green are left out.
+  const redEquipment = deps.sharedReadModel.equipment
+    .getAll()
+    .filter(equipment => equipment.category === 'red');
+  for (const equipment of redEquipment) {
     // Sequential gather as we can afford to be slower.
     result.push(
       await gatherEmailContentForEquipment(deps)(equipment, totalActiveMembers)
