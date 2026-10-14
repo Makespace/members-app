@@ -51,6 +51,13 @@ type ToFrameworkCommands<T> = {
   };
 };
 
+// The e-ink display token the test app is configured with, and the header a
+// display sends with it.
+const TEST_DISPLAY_TOKEN = 'test-display-token';
+export const displayAuthorization = {
+  authorization: `Bearer ${TEST_DISPLAY_TOKEN}`,
+};
+
 export type TestFramework = {
   getAllEvents: () => Promise<ReadonlyArray<StoredDomainEvent>>;
   getAllEventsByType: <T extends EventName>(
@@ -116,6 +123,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       PUBLIC_URL: 'http://localhost:8080',
       GMAIL_IMPORT_MAILBOX: '',
       MANAGEMENT_TEAM_AREA_ID: '',
+      EINK_DISPLAY_TOKEN: TEST_DISPLAY_TOKEN,
     } as Dependencies['conf'],
     commitEvent: frameworkCommitEvent,
     getAllEvents: getAllEvents(eventDB),
@@ -170,6 +178,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     getSheetData: getSheetData(extDBDrizzle),
     getSheetDataByMemberNumber: getSheetDataByMemberNumber(extDBDrizzle),
     commands: {
+      notificationPreferences: {
+        set: frameworkify(commands.notificationPreferences.set),
+      },
       area: {
         create: frameworkify(commands.area.create),
         remove: frameworkify(commands.area.remove),
@@ -189,6 +200,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         setRiskAssessmentUrl: frameworkify(
           commands.equipment.setRiskAssessmentUrl
         ),
+        setLearnPoints: frameworkify(commands.equipment.setLearnPoints),
         removeTrainingSheet: frameworkify(
           commands.equipment.removeTrainingSheet
         ),
@@ -215,6 +227,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
           commands.members.sendEmailVerification
         ),
         verifyEmail: frameworkify(commands.members.verifyEmail),
+        recordFob: frameworkify(commands.members.recordFob),
+        removeFob: frameworkify(commands.members.removeFob),
+        linkRecurlyEmail: frameworkify(commands.members.linkRecurlyEmail),
       },
       memberNumbers: {
         linkNumberToEmail: frameworkify(
@@ -265,7 +280,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       commitEvent: frameworkCommitEvent,
       sharedReadModel,
       getSheetData: getSheetData(extDBDrizzle),
-      sendEmail: jest.fn(() => TE.right('success')),
+      // A plain stub rather than a jest mock, so this framework can also be
+      // built by a script outside the test runner.
+      sendEmail: () => TE.right('success'),
       lastQuizSync: lastSync(extDBDrizzle),
       conf: {
         PUBLIC_URL: 'https://localhost' as NonEmptyString,

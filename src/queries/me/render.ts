@@ -78,6 +78,15 @@ export const render = (viewModel: ViewModel) => html`
       <a class="button" href="/log-out">Log out</a>
     </div>
     <section>
+      <h2>Notifications</h2>
+      <p>
+        <a href="/notification-settings"
+          >Choose what you hear about trouble tickets</a
+        >
+        - which areas and machines, what happens to them, and how often.
+      </p>
+    </section>
+    <section>
       <h2>Your details</h2>
       ${renderMemberDetails(viewModel)}
       ${renderOwnerAgreementStatus(viewModel.member.agreementSigned, false)}

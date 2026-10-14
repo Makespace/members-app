@@ -2491,7 +2491,7 @@ label img {
   margin: 0;
   /* Between the band and the codes, with about as much air above as below
      so it sits on neither. */
-  padding: 0.7em 0.5em 0.1em;
+  padding: 0.45em 0.5em 0.1em;
   flex: 0 1 auto;
   min-height: 0;
   display: flex;
@@ -2505,83 +2505,132 @@ label img {
   overflow-wrap: anywhere;
 }
 
-/* The codes stack, each running the full width of the sign: side by side
-   they would each get a fraction of a portrait page, which is not enough for
-   a scannable code and its explanation. Stacked, each gets the code on the
-   left and its words on the right - how a sign is read. Red equipment
-   carries three (learn, train, tickets); orange and green carry two. */
-.sign__codes {
+/* The sections stack, each running the full width of the sign: what to
+   read, what you must do before using the machine, and where faults go. None
+   carries a code of its own, so each is only as tall as its words. Red
+   equipment has three; orange and green have two or three, depending on
+   whether a guide is recorded. */
+.sign__sections {
   display: flex;
   flex-direction: column;
-  gap: 0.5em;
-  padding: 0 0.6em 0.6em;
-  /* Takes every millimetre the band and the name leave behind, and shares it
-     between the codes: the space below the name is worth more as a bigger
-     code than as white paper, and so was the coloured rule that used to
-     divide them - the band at the top already says which colour this is. */
+  gap: 0.4em;
+  /* Each sign is an article, whose flow spacing would otherwise add a
+     screen-sized margin here that does not scale with the paper. */
+  margin: 0;
+  padding: 0 0.6em;
+  /* The words are what a member reads, so they get the room the code does
+     not need, with any to spare split evenly around them. */
   flex: 1 1 auto;
   min-height: 0;
+  justify-content: center;
 }
 
-.sign__scan {
-  display: flex;
-  /* Each code gets an equal share of the sign, and fills its share. */
-  align-items: center;
-  flex: 1 1 0;
-  gap: 0.8em;
-  padding: 0.5em 0.8em;
+.sign__section {
+  padding: 0.8em 1.2em 0.85em;
   text-align: left;
   min-width: 0;
-  min-height: 0;
-  /* A capsule per code, tinted by what scanning it does: three things to
+  /* A capsule per section, tinted by what it is about: three things to
      choose between read faster as three blocks than as three lines. */
   border-radius: 1em;
   background: var(--scan-tint);
 }
 
-.sign__scan--learn {
+.sign__section--learn {
   --scan-colour: #14568a;
   --scan-tint: #e7f0f8;
 }
 
-.sign__scan--train {
+.sign__section--train {
   --scan-colour: #005a30;
   --scan-tint: #e4f0e9;
 }
 
-.sign__scan--fault {
+.sign__section--fault {
   --scan-colour: #9c1109;
   --scan-tint: #fbeae8;
 }
 
-/* The block that speaks for the machine's own colour, and has nothing to
-   scan: it takes the sign's colour and the words run the full width. */
-.sign__scan--notice {
+/* The section that speaks for the machine's own colour: it takes the sign's
+   colour rather than one of its own. */
+.sign__section--notice {
   --scan-colour: var(--sign-dark);
   --scan-tint: var(--sign-tint);
 }
 
-.sign__scan-text {
-  min-width: 0;
-  flex: 1 1 auto;
+.sign__section-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0.3em;
+  margin: 0;
+  /* Two or three words, read from across the room, so set as a heading
+     rather than as a label. */
+  font-size: 1.6em;
+  color: var(--scan-colour);
+  font-weight: 800;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+/* A line of explanation under each title. The title carries the capsule's
+   colour; the words under it stay black, so the colour is a signal rather
+   than decoration. */
+.sign__section-note {
+  margin: 0.3em 0 0;
+  font-size: 1.2em;
+  line-height: 1.3;
+  color: #2b2b2b;
+}
+
+/* A machine's own learn points. Qualified by element because the reset's
+   ul[class] would otherwise take the bullets and the indent away. */
+ul.sign__points {
+  list-style: disc;
+  margin: 0;
+  padding-left: 1.1em;
+}
+
+ul.sign__points li + li {
+  margin-top: 0.15em;
+}
+
+.sign__icon {
+  flex: none;
+  width: 1.1em;
+  height: 1.1em;
+  margin-top: 0.1em;
+}
+
+/* The one code on the sign, leading to the machine's page. Sized from the
+   paper rather than the space left over, so a poster prints a bigger code
+   than a postcard and the sections above keep the room for their words. */
+.sign__code {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8em;
+  margin: 0.4em 0.6em 0.6em;
+  padding: 0.4em 0.8em;
+  border-radius: 1em;
+  background: #f1f1f1;
 }
 
 .sign__qr {
   line-height: 0;
-  /* The code keeps its own white ground whatever the capsule is tinted,
-     because a scanner reads contrast, not colour. */
+  /* The code keeps its own white ground, because a scanner reads contrast,
+     not colour. */
   background: #fff;
   border-radius: 0.4em;
   padding: 0.3em;
-  /* Square, and as tall as its share of the sign allows: the codes are given
-     whatever the name does not need, so a poster prints a bigger code than a
-     postcard without either needing a layout of its own. Capped so a sign
-     with only two codes does not hand half its width to one of them. */
   flex: 0 0 auto;
+  /* Square, and a fifth of the sign's height: plenty to scan from arm's
+     length, and no more, so the words above get the rest. */
   aspect-ratio: 1;
-  height: min(100%, 12em);
+  height: calc(var(--sign-h) * 0.2);
   width: auto;
-  max-width: 38%;
+  max-width: 50%;
+  box-sizing: border-box;
 }
 
 .sign__qr svg {
@@ -2590,41 +2639,17 @@ label img {
   height: 100%;
 }
 
-.sign__scan-title {
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 0.3em;
+.sign__code-text {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.sign__code-title {
   margin: 0;
-  /* Two or three words, read from across the room: the title does the work
-     of telling a member which code is which, so it is set as a heading
-     rather than as a label. */
-  font-size: 1.45em;
-  color: var(--scan-colour);
+  font-size: 1.3em;
   font-weight: 800;
   line-height: 1.15;
   text-wrap: balance;
-}
-
-/* A line of explanation under each title: what scanning actually gets you. */
-.sign__scan-note {
-  /* Space above, so the title reads as a heading rather than as the first
-     line of the sentence under it. */
-  margin: 0.4em 0 0.2em;
-  font-size: 1.12em;
-  line-height: 1.3;
-  color: #2b2b2b;
-  text-wrap: pretty;
-}
-
-/* The title carries the capsule's colour; the words under it stay black, so
-   the colour is a signal rather than decoration. */
-
-.sign__icon {
-  flex: none;
-  width: 1.1em;
-  height: 1.1em;
-  margin-top: 0.1em;
 }
 
 .sign__url {
@@ -3058,4 +3083,312 @@ a.eq-capsule--dead:visited {
 
 .eq-links td {
   vertical-align: middle;
+}
+
+/* Trouble ticket notification settings. Each of the three things somebody can
+   be told about is a card with a title; the areas and machines under it are
+   subtitles inside that card rather than boxes within boxes. Nesting by type
+   size and a light rule leaves the width for the four options to sit on one
+   line, which boxes inside boxes did not. */
+.ns-tree,
+.ns-children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ns-row--depth-0 {
+  border: 1px solid color-mix(in oklch, white 55%, var(--border-color));
+  border-radius: 8px;
+  background: #fff;
+  padding: 14px 16px;
+  margin-top: 12px;
+}
+
+.ns-tree > .ns-row:first-child {
+  margin-top: 0;
+}
+
+/* Inside a card, a rule is told apart by its heading and a hairline, not by a
+   box of its own. */
+.ns-row--depth-1,
+.ns-row--depth-2 {
+  border-top: 1px solid color-mix(in oklch, white 70%, var(--border-color));
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
+.ns-row--depth-1 {
+  padding-left: 0.9rem;
+}
+
+.ns-row--depth-2 {
+  padding-left: 1.8rem;
+}
+
+.ns-children {
+  margin-top: 10px;
+}
+
+.ns-row__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.7rem;
+}
+
+.ns-row__label {
+  margin: 0;
+}
+
+.ns-row--depth-0 > .ns-row__head > .ns-row__label {
+  font-size: 1.15rem;
+}
+
+.ns-row--depth-1 > .ns-row__head > .ns-row__label {
+  font-size: 1rem;
+}
+
+.ns-row--depth-2 > .ns-row__head > .ns-row__label {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+/* What a rule following another one comes to. */
+.ns-row__effect {
+  color: color-mix(in oklch, black 55%, var(--grey-color));
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.ns-row__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1.5rem;
+  margin-top: 8px;
+}
+
+/* The four answers, on one line wherever there is room for them. */
+.ns-row__subscription {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.4rem;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.ns-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.ns-option__label {
+  font-size: 0.92rem;
+}
+
+/* "Set differently from Areas I'm an owner or trainer in" is longer than a
+   phone is wide, so it wraps rather than pushing the whole page sideways. */
+.ns-row__differ {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: color-mix(in oklch, black 60%, var(--grey-color));
+  max-width: 100%;
+}
+
+/* A row that follows the one above it shows what it is following, greyed and
+   turned off. Hiding it was right when a row carried five boxes and a
+   dropdown; now that a rule is four words on one line, showing it costs a line
+   and saves somebody working out what they would be changing. */
+.ns-row__controls--following .ns-row__subscription {
+  opacity: 0.45;
+}
+
+/* The switch itself never greys - it is the way back out. */
+.ns-row__controls--following .ns-row__differ {
+  opacity: 1;
+}
+
+@media (max-width: 40rem) {
+  .ns-row--depth-0 {
+    padding: 12px 11px;
+  }
+
+  .ns-row--depth-1 {
+    padding-left: 0.5rem;
+  }
+
+  .ns-row--depth-2 {
+    padding-left: 1rem;
+  }
+}
+
+.ns-preview {
+  border-left: 5px solid var(--yellow-color);
+  background: color-mix(in oklch, white 85%, var(--yellow-color));
+  padding: 10px 14px;
+  border-radius: 4px;
+  margin: 0;
+}
+
+
+/* A row that follows the one above it puts its controls away. Greying them
+   kept five rows of boxes on screen that only repeated the row above, which
+   buried the handful of rules somebody had actually set. What the row comes to
+   is still said beside its name, so nothing is lost by folding the rest. */
+.ns-row__controls--following .ns-row__subscription {
+  display: none;
+}
+
+/* A rule asks one question, so its answers sit in one block. Each answer
+   says what it means underneath its name - "Daily summary" alone does not
+   say whether it covers everything or only some of it. */
+.ns-row__controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 8px;
+}
+
+.ns-row__subscription {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.ns-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.ns-option__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ns-option__label {
+  font-size: 0.95rem;
+}
+
+.ns-option__note {
+  font-size: 0.78rem;
+  color: color-mix(in oklch, black 50%, var(--grey-color));
+}
+
+/* "Set differently from Areas I'm an owner or trainer in" is longer than a
+   phone is wide, so it wraps rather than pushing the whole page sideways. */
+.ns-row__differ {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: color-mix(in oklch, black 60%, var(--grey-color));
+  max-width: 100%;
+}
+
+/* The switch itself never greys - it is the way back out. */
+.ns-row__controls--following .ns-row__differ {
+  opacity: 1;
+}
+
+/* Some areas hold a dozen machines, so a machine that simply follows its area
+   is folded away. One that has been set differently never is, however its
+   area is set - being made a trainer on a machine sets it, and that would
+   otherwise be the one setting nobody could see. */
+.ns-row--folded {
+  display: none;
+}
+
+.ns-row__folded {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: color-mix(in oklch, black 50%, var(--grey-color));
+}
+
+/* The list of areas under each of the three headings. Open for the areas
+   somebody is responsible for - it doubles as a way round their own patch -
+   and shut for everything else, which is every other area in the building. */
+.ns-areas {
+  margin-top: 10px;
+}
+
+.ns-areas > summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--link-color);
+}
+
+.ns-areas[open] > summary {
+  margin-bottom: 4px;
+}
+
+/* A one-line form inside a table cell (e.g. a member-number box and a button
+   per row on /unlinked-recurly): the text-input reset above makes inputs
+   full-width block elements with a wide margin, which a row cannot afford. */
+.row-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.row-form input[type='text'] {
+  display: inline-block;
+  width: 6em;
+  margin: 0;
+  padding: 0.3rem 0.5rem;
+}
+
+.row-form button {
+  font-size: 100%;
+  padding: 0.3rem 0.8rem;
+}
+
+/* The change log on /about: under each subject, a date column and the text
+   column aligned at one left edge, the whole list indented a little under
+   its heading. The base dl rule above splits 3:7, which leaves the date
+   column mostly empty; here it is a fixed width that fits "30 Sep", the
+   same under every subject so the text lines up across the page. On a
+   narrow screen the date sits above its line instead. */
+dl.change-log {
+  padding: 0 0 0 1rem;
+  margin-bottom: 1rem;
+
+  @media screen and (min-width: 60ch) {
+    grid-template-columns: 4.5em 1fr;
+    column-gap: 1.25rem;
+    row-gap: 0.4rem;
+  }
+
+  dt {
+    font-weight: bold;
+    white-space: nowrap;
+  }
+
+  dd {
+    margin: 0;
+  }
+
+  @media screen and (max-width: 60ch) {
+    dt {
+      margin-top: 0.6rem;
+    }
+    dd {
+      margin-bottom: 0;
+    }
+  }
 }

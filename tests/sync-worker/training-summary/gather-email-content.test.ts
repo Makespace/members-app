@@ -123,6 +123,31 @@ describe('Training summary', () => {
         expect(content.trainingStatsPerEquipment).toHaveLength(1);
       });
 
+      describe('and an orange and a green piece of equipment', () => {
+        beforeEach(async () => {
+          await framework.commands.equipment.add({
+            id: faker.string.uuid() as UUID,
+            name: 'Orange thing' as NonEmptyString,
+            areaId: createArea.id,
+            category: 'orange',
+          });
+          await framework.commands.equipment.add({
+            id: faker.string.uuid() as UUID,
+            name: 'Green thing' as NonEmptyString,
+            areaId: createArea.id,
+            category: 'green',
+          });
+          content = await gatherEmailContent(framework.trainingSummaryDeps);
+        });
+
+        it('only the red equipment is included', () => {
+          expect(content.trainingStatsPerEquipment).toHaveLength(1);
+          expect(content.trainingStatsPerEquipment[0].name).toStrictEqual(
+            addEquipment.name
+          );
+        });
+      });
+
       it('the equipment link to be correct', () => {
         expect(
           content.trainingStatsPerEquipment[0].equipmentLink.href

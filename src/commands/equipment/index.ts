@@ -14,6 +14,8 @@ import {renameForm} from './rename-form';
 import {setCategory} from './set-category';
 import {setRiskAssessmentUrl} from './set-risk-assessment-url';
 import {setRiskAssessmentUrlForm} from './set-risk-assessment-url-form';
+import {setLearnPoints} from './set-learn-points';
+import {setLearnPointsForm} from './set-learn-points-form';
 import {setCategoryForm} from './set-category-form';
 import {setGuideUrl} from './set-guide-url';
 import {setGuideUrlForm} from './set-guide-url-form';
@@ -40,6 +42,7 @@ export const equipment = {
   rename: {...rename, ...renameForm},
   setCategory: {...setCategory, ...setCategoryForm},
   setRiskAssessmentUrl: {...setRiskAssessmentUrl, ...setRiskAssessmentUrlForm},
+  setLearnPoints: {...setLearnPoints, ...setLearnPointsForm},
   setGuideUrl: {...setGuideUrl, ...setGuideUrlForm},
   setMachines: {...setMachines, ...setMachinesForm},
   addNameAlias: {

@@ -5,10 +5,14 @@ import {
   areaNameAliasesTable,
   areasTable,
   equipmentNameAliasesTable,
+  memberDigestsTable,
+  memberNotificationEmailsTable,
+  memberNotificationPreferencesTable,
   equipmentTable,
   eventStateTable,
   failedEventsTable,
   memberEmailsTable,
+  memberFobsTable,
   membersTable,
   ownersTable,
   trainedMemberstable,
@@ -171,6 +175,42 @@ const _updateState =
         }
         break;
       }
+      case 'MemberEmailLinkedByAdmin': {
+        const normalisedEmailAddress = normaliseEmailAddress(event.email);
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to link email '${normalisedEmailAddress}', unknown member number: '${event.memberNumber}'`);
+        }
+        const existingEmailUsage = findUserIdByEmail(tx)(normalisedEmailAddress, false);
+        if (O.isSome(existingEmailUsage) && existingEmailUsage.value !== userId.value) {
+          throw new InconsistentEventError(
+            `Attempted to link email '${event.email}' to ${event.memberNumber} but that email already exists on user id '${existingEmailUsage.value}'`
+          );
+        }
+        // New to this member, or already added but never verified: either
+        // way it is verified from now, on the admin's word. Inserted
+        // unverified so the one update below covers both cases, while an
+        // address the member verified themselves keeps that standing (the
+        // command raises no event for one anyway).
+        insertMemberEmail(
+          tx,
+          userId.value,
+          normalisedEmailAddress,
+          event.recordedAt,
+          null,
+        );
+        tx.update(memberEmailsTable)
+          .set({verifiedAt: event.recordedAt, linkedByAdmin: true})
+          .where(
+            and(
+              eq(memberEmailsTable.userId, userId.value),
+              eq(memberEmailsTable.emailAddress, normalisedEmailAddress),
+              isNull(memberEmailsTable.verifiedAt)
+            )
+          )
+          .run();
+        break;
+      }
       case 'MemberPrimaryEmailChanged': {
         const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
         if (O.isNone(userId)) {
@@ -217,6 +257,50 @@ const _updateState =
             `Unable to update email verification requested '${event.email}' for member number: '${event.memberNumber}' - unknown email address`
           )
         }
+        break;
+      }
+      case 'MemberFobRecorded': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to record fob '${event.fobId}', unknown member number: '${event.memberNumber}'`);
+        }
+        // Keyed on fob id: a fob seen again takes the latest access level,
+        // and one now held by a different member moves to them.
+        tx.insert(memberFobsTable)
+          .values({
+            fobId: event.fobId,
+            userId: userId.value,
+            accessLevel: event.accessLevel,
+            paxtonName: event.paxtonName,
+            recordedAt: event.recordedAt,
+          })
+          .onConflictDoUpdate({
+            target: memberFobsTable.fobId,
+            set: {
+              userId: userId.value,
+              accessLevel: event.accessLevel,
+              paxtonName: event.paxtonName,
+              recordedAt: event.recordedAt,
+            },
+          })
+          .run();
+        break;
+      }
+      case 'MemberFobRemoved': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to remove fob '${event.fobId}', unknown member number: '${event.memberNumber}'`);
+        }
+        // Scoped to the member so a stale removal can't take a fob that has
+        // since been reassigned to someone else.
+        tx.delete(memberFobsTable)
+          .where(
+            and(
+              eq(memberFobsTable.fobId, event.fobId),
+              eq(memberFobsTable.userId, userId.value)
+            )
+          )
+          .run();
         break;
       }
       case 'MemberDetailsUpdated': {
@@ -564,6 +648,21 @@ const _updateState =
         }
         break;
       }
+      case 'EquipmentLearnPointsSet': {
+        const rows = tx
+          .update(equipmentTable)
+          .set({
+            learnPoints: event.learnPoints === '' ? null : event.learnPoints,
+          })
+          .where(eq(equipmentTable.id, event.equipmentId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(
+            `Unable to set the learn points for equipment '${event.equipmentId}' - unknown equipment`
+          );
+        }
+        break;
+      }
       case 'EquipmentRiskAssessmentUrlSet': {
         const rows = tx
           .update(equipmentTable)
@@ -732,6 +831,68 @@ const _updateState =
             .onConflictDoNothing()
             .run();
         }
+        break;
+      }
+      case 'MemberTicketDigestSent': {
+        if (!event.suppressed) {
+          countNotificationEmail(tx)(event.memberNumber);
+        }
+        tx.insert(memberDigestsTable)
+          .values({
+            memberNumber: event.memberNumber,
+            cadence: event.cadence,
+            sentAt: event.recordedAt,
+            upToEventIndex: event.upToEventIndex,
+          })
+          .onConflictDoUpdate({
+            target: [
+              memberDigestsTable.memberNumber,
+              memberDigestsTable.cadence,
+            ],
+            set: {
+              sentAt: event.recordedAt,
+              upToEventIndex: event.upToEventIndex,
+            },
+          })
+          .run();
+        break;
+      }
+      case 'MemberNotificationPreferenceSet': {
+        // Only the kind that came with an email counts as one.
+        if (event.notified) {
+          countNotificationEmail(tx)(event.memberNumber);
+        }
+        // Following is the absence of a row rather than a row saying
+        // 'follow', so there is one way to say it and a member who changes
+        // their mind back leaves nothing behind.
+        if (event.preference === 'follow') {
+          tx.delete(memberNotificationPreferencesTable)
+            .where(
+              and(
+                eq(
+                  memberNotificationPreferencesTable.memberNumber,
+                  event.memberNumber
+                ),
+                eq(memberNotificationPreferencesTable.scope, event.scope)
+              )
+            )
+            .run();
+          break;
+        }
+        tx.insert(memberNotificationPreferencesTable)
+          .values({
+            memberNumber: event.memberNumber,
+            scope: event.scope,
+            preference: event.preference,
+          })
+          .onConflictDoUpdate({
+            target: [
+              memberNotificationPreferencesTable.memberNumber,
+              memberNotificationPreferencesTable.scope,
+            ],
+            set: {preference: event.preference},
+          })
+          .run();
         break;
       }
       case 'EquipmentNameAliasAdded': {
@@ -977,6 +1138,7 @@ const _updateState =
           })
           .onConflictDoNothing()
           .run();
+        event.recipientMemberNumbers.forEach(countNotificationEmail(tx));
         break;
       }
       case 'TroubleTicketTitleEdited': {
@@ -1076,6 +1238,20 @@ const _updateState =
     }
   };
 
+// One more trouble ticket notification sent to somebody. Counted so the
+// first few can explain what this is and the rest need not.
+const countNotificationEmail =
+  (tx: DatabaseTransaction) =>
+  (memberNumber: number): void => {
+    tx.insert(memberNotificationEmailsTable)
+      .values({memberNumber, sent: 1})
+      .onConflictDoUpdate({
+        target: [memberNotificationEmailsTable.memberNumber],
+        set: {sent: sql`${memberNotificationEmailsTable.sent} + 1`},
+      })
+      .run();
+  };
+
 const _updateEventState = (tx: DatabaseTransaction, event: StoredDomainEvent) => tx.update(eventStateTable)
   .set({
     currentEventIndex: event.event_index
@@ -1116,9 +1292,18 @@ export function updateState (db: BetterSQLite3Database, logger: Logger, trackedE
       let reason: string | null = null;
       if (err instanceof InconsistentEventError) {
         reason = err.message;
-      } else if (err instanceof Error){
-        const errType = err as Error & {code?: string};
-        const code = errType.code ?? '';
+      } else {
+        // Do not gate on `instanceof Error`: a SqliteError can arrive from a
+        // different vm realm (seen under `jest -i`, where the native addon is
+        // cached process-wide and first-loaded in another context) where
+        // instanceof fails. Duck-typing .code is safe here because
+        // better-sqlite3 sets it unconditionally on every SqliteError, so the
+        // classification is stable across realms. Note the
+        // InconsistentEventError branch above keeps its instanceof check:
+        // those errors are constructed by this module, so they stay
+        // same-realm in practice.
+        const errType = err as {code?: string} | null;
+        const code = errType?.code ?? '';
         if (['SQLITE_CONSTRAINT_PRIMARYKEY', 'SQLITE_CONSTRAINT_FOREIGNKEY'].includes(code)) {
           reason = code;
         }

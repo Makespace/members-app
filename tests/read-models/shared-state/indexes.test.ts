@@ -38,6 +38,10 @@ describe('read model indexes', () => {
       'userId',
       'addedAt',
     ]);
+    expect(indexColumns('memberFobs_userId_recordedAt_idx')).toEqual([
+      'userId',
+      'recordedAt',
+    ]);
     expect(indexColumns('trainedMembers_userId_idx')).toEqual(['userId']);
     expect(indexColumns('trainedMembers_equipmentId_trainedAt_idx')).toEqual([
       'equipmentId',
@@ -57,6 +61,9 @@ describe('read model indexes', () => {
     const plans = [
       ...planDetails(
         "SELECT memberNumber FROM memberNumbers WHERE userId = 'no-such-user' ORDER BY memberNumber DESC"
+      ),
+      ...planDetails(
+        "SELECT fobId FROM memberFobs WHERE userId = 'no-such-user' ORDER BY recordedAt DESC"
       ),
       ...planDetails(
         "SELECT id FROM equipment WHERE areaId = 'no-such-area'"

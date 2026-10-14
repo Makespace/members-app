@@ -11,6 +11,12 @@ import {verifyEmail} from './verify-email';
 import {addEmailForm} from './add-email-form';
 import {changePrimaryEmailForm} from './change-primary-email-form';
 import {sendEmailVerificationForm} from './send-email-verification-form';
+import {recordFob} from './record-fob';
+import {recordFobForm} from './record-fob-form';
+import {removeFob} from './remove-fob';
+import {removeFobForm} from './remove-fob-form';
+import {linkRecurlyEmail} from './link-recurly-email';
+import {linkRecurlyEmailForm} from './link-recurly-email-form';
 
 export const members = {
   editName: {
@@ -39,5 +45,17 @@ export const members = {
   },
   verifyEmail: {
     ...verifyEmail,
-  }
+  },
+  recordFob: {
+    ...recordFob,
+    ...recordFobForm,
+  },
+  removeFob: {
+    ...removeFob,
+    ...removeFobForm,
+  },
+  linkRecurlyEmail: {
+    ...linkRecurlyEmail,
+    ...linkRecurlyEmailForm,
+  },
 };

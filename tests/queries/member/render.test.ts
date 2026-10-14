@@ -26,18 +26,29 @@ const buildViewModel = (isSuperUser: boolean, isSelf: boolean): ViewModel => ({
         verifiedAt: O.some(new Date('2025-01-01T00:00:00.000Z')),
         addedAt: new Date('2025-01-01T00:00:00.000Z'),
         verificationLastSent: O.none,
+        linkedByAdmin: false,
       },
       {
         emailAddress: unverifiedEmail,
         verifiedAt: O.none,
         addedAt: new Date('2025-01-02T00:00:00.000Z'),
         verificationLastSent: O.none,
+        linkedByAdmin: false,
       },
       {
         emailAddress: verifiedSecondaryEmail,
         verifiedAt: O.some(new Date('2025-01-03T00:00:00.000Z')),
         addedAt: new Date('2025-01-03T00:00:00.000Z'),
         verificationLastSent: O.none,
+        linkedByAdmin: true,
+      },
+    ],
+    fobs: [
+      {
+        fobId: 4321,
+        accessLevel: 'Member',
+        paxtonName: 'Molly 123 Millions',
+        recordedAt: new Date('2025-01-04T00:00:00.000Z'),
       },
     ],
     name: O.none,
@@ -98,10 +109,26 @@ describe('member render', () => {
       expect(page.textContent).toContain('Make Primary Email');
     });
 
+    it('says when an address was linked from Recurly by an admin', () => {
+      expect(page.textContent).toContain('linked from Recurly by admin');
+    });
+
     it('shows the recurly status', () => {
       expect(page.querySelector('.tag--green')!.textContent).toStrictEqual(
         'active'
       );
+    });
+
+    it('shows the Paxton fobs with record and remove actions', () => {
+      expect(page.textContent).toContain('Paxton fobs');
+      expect(page.textContent).toContain('4321');
+      expect(page.textContent).toContain('Molly 123 Millions');
+      expect(
+        page.querySelector('a[href="/members/record-fob?member=123"]')
+      ).not.toBeNull();
+      expect(
+        page.querySelector('a[href="/members/remove-fob?member=123&fob=4321"]')
+      ).not.toBeNull();
     });
   });
 
@@ -120,6 +147,11 @@ describe('member render', () => {
         )!.textContent
       ).toContain('Add New Email');
     });
+
+    it('does not show Paxton fobs, even their own', () => {
+      expect(page.textContent).not.toContain('Paxton fobs');
+      expect(page.textContent).not.toContain('Molly 123 Millions');
+    });
   });
 
   describe('non-superuser non-self', () => {
@@ -134,6 +166,11 @@ describe('member render', () => {
       expect(page.querySelector<HTMLAnchorElement>(
         'a[href="/members/add-email?member=123"]'
       )).toBeNull();
+    });
+
+    it('does not show Paxton fobs', () => {
+      expect(page.textContent).not.toContain('Paxton fobs');
+      expect(page.textContent).not.toContain('Molly 123 Millions');
     });
   });
 });

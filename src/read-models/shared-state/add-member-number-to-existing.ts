@@ -4,7 +4,7 @@ import { InconsistentEventError } from "./inconsistent-event-error";
 import { insertMemberNumber } from "./insert-member-number";
 import * as O from 'fp-ts/Option';
 import { revokeSuperuser } from "./revoke-super-user";
-import { memberEmailsTable, memberNumbersTable, membersTable, ownersTable, trainedMemberstable, trainersTable, trainingStatsNotificationTable } from "./state";
+import { memberEmailsTable, memberFobsTable, memberNumbersTable, membersTable, ownersTable, trainedMemberstable, trainersTable, trainingStatsNotificationTable } from "./state";
 import {eq} from 'drizzle-orm';
 import { dropRecordsByUserId } from "./drop-records";
 import { findUserIdByMemberNumber } from "./member/get";
@@ -85,6 +85,10 @@ const mergeUsers = (
   tx.update(memberEmailsTable)
     .set({userId: oldUserId})
     .where(eq(memberEmailsTable.userId, newUserId))
+    .run();
+  tx.update(memberFobsTable)
+    .set({userId: oldUserId})
+    .where(eq(memberFobsTable.userId, newUserId))
     .run();
   tx.update(memberNumbersTable)
     .set({userId: oldUserId})
