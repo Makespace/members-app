@@ -47,7 +47,7 @@ export const ownerAgreement = html`
     expected to cover all of these responsibilities on their own.
   </p>
 
-  <h3>For equipment you're an owner of</h3>
+  <h3>For equipment you're an owner of:</h3>
   <ul class="card-grid card-grid--red">
     <li>
       <strong class="card-title"
