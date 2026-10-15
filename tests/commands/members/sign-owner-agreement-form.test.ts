@@ -8,59 +8,142 @@ import {ownerAgreementPages} from '../../../src/commands/members/owner-agreement
 import {arbitraryUser} from '../../types/user.helper';
 
 const lastStep = ownerAgreementPages.length;
+const equipmentStep =
+  ownerAgreementPages.findIndex(page => page.choices?.name === 'equipment') + 1;
+const areaStep =
+  ownerAgreementPages.findIndex(page => page.choices?.name === 'area') + 1;
 
-const renderStep = (step: number) => {
-  const rendered = signOwnerAgreementForm.renderForm({
-    user: arbitraryUser(),
-    step,
-  });
-  const body = document.createElement('body');
-  body.innerHTML = rendered.body;
-  return body;
-};
+const picked = {equipment: 'training', area: 'budget'};
 
-const stepFromQuery = async (query: unknown) => {
+const constructFromQuery = async (query: unknown) => {
   const result = await signOwnerAgreementForm.constructForm(query)({
     user: arbitraryUser(),
   } as never)();
   if (E.isLeft(result)) {
     throw new Error('constructForm failed');
   }
-  return result.right.step;
+  return result.right;
+};
+
+const renderQuery = async (query: unknown) => {
+  const rendered = signOwnerAgreementForm.renderForm(
+    await constructFromQuery(query)
+  );
+  const body = document.createElement('body');
+  body.innerHTML = rendered.body;
+  return body;
 };
 
 describe('sign owner agreement form', () => {
-  it('redirects signing members to /me on success so non-admins do not land on the admin-only /members page', () => {
-    const form = renderStep(lastStep).querySelector<HTMLFormElement>('form');
+  it('redirects signing members to /me on success so non-admins do not land on the admin-only /members page', async () => {
+    const page = await renderQuery({...picked, step: String(lastStep)});
+    const form = page.querySelector<HTMLFormElement>('form[method="post"]');
 
     expect(form!.getAttribute('action')).toStrictEqual('?next=/me');
   });
 
-  it('only offers the sign button on the last page', () => {
+  it('only offers the sign button on the last page', async () => {
     for (let step = 1; step < lastStep; step++) {
-      expect(renderStep(step).querySelector('form')).toBeNull();
+      const page = await renderQuery({...picked, step: String(step)});
+      expect(page.querySelector('form[method="post"]')).toBeNull();
     }
   });
 
-  it('links each page on to the next', () => {
-    const next = renderStep(1).querySelector('.agreement-nav a.button');
-
-    expect(next!.getAttribute('href')).toStrictEqual('?step=2');
-  });
-
-  it('marks the page being read as the current step', () => {
-    const current = renderStep(3).querySelector('[aria-current="step"]');
+  it('marks the page being read as the current step', async () => {
+    const page = await renderQuery({...picked, step: '3'});
+    const current = page.querySelector('[aria-current="step"]');
 
     expect(current!.textContent).toContain(ownerAgreementPages[2].label);
   });
 
   it.each([
     [{}, 1],
-    [{step: '3'}, 3],
     [{step: '0'}, 1],
     [{step: String(lastStep + 1)}, 1],
     [{step: 'nonsense'}, 1],
   ])('reads %j as page %i', async (query, expected) => {
-    expect(await stepFromQuery(query)).toStrictEqual(expected);
+    expect((await constructFromQuery(query)).step).toStrictEqual(expected);
+  });
+
+  describe('responsibility pages', () => {
+    it('sends someone skipping ahead back to the first page still needing a pick', async () => {
+      const viewModel = await constructFromQuery({step: String(lastStep)});
+
+      expect(viewModel.step).toStrictEqual(equipmentStep);
+      expect(viewModel.sentBack).toBe(true);
+    });
+
+    it('sends them back to the area page when only equipment is picked', async () => {
+      const viewModel = await constructFromQuery({
+        step: String(lastStep),
+        equipment: 'training',
+      });
+
+      expect(viewModel.step).toStrictEqual(areaStep);
+    });
+
+    it('lets them reach the last page once both are picked', async () => {
+      const viewModel = await constructFromQuery({
+        ...picked,
+        step: String(lastStep),
+      });
+
+      expect(viewModel.step).toStrictEqual(lastStep);
+      expect(viewModel.sentBack).toBe(false);
+    });
+
+    it('does not send anyone back from pages before the first pick', async () => {
+      const viewModel = await constructFromQuery({step: String(equipmentStep)});
+
+      expect(viewModel.step).toStrictEqual(equipmentStep);
+      expect(viewModel.sentBack).toBe(false);
+    });
+
+    it('ignores responsibilities that are not on the page', async () => {
+      const viewModel = await constructFromQuery({
+        step: String(areaStep),
+        equipment: ['nonsense', 'maintenance'],
+      });
+
+      expect(viewModel.selections.equipment).toStrictEqual(['maintenance']);
+    });
+
+    it('explains why someone was sent back', async () => {
+      const page = await renderQuery({step: String(lastStep)});
+
+      expect(page.querySelector('[role="alert"]')).not.toBeNull();
+    });
+
+    it('keeps earlier picks ticked and carries them forward', async () => {
+      const page = await renderQuery({
+        step: String(areaStep),
+        equipment: ['training', 'maintenance'],
+      });
+      const carried = Array.from(
+        page.querySelectorAll<HTMLInputElement>(
+          'input[type="hidden"][name="equipment"]'
+        )
+      ).map(input => input.value);
+
+      expect(carried).toStrictEqual(['training', 'maintenance']);
+      expect(
+        page.querySelector<HTMLInputElement>('input[name="step"]')!.value
+      ).toStrictEqual(String(areaStep + 1));
+    });
+
+    it('shows previous picks as ticked when coming back to a page', async () => {
+      const page = await renderQuery({
+        step: String(equipmentStep),
+        equipment: 'maintenance',
+      });
+
+      expect(
+        page.querySelector<HTMLInputElement>('input[value="maintenance"]')!
+          .checked
+      ).toBe(true);
+      expect(
+        page.querySelector<HTMLInputElement>('input[value="training"]')!.checked
+      ).toBe(false);
+    });
   });
 });

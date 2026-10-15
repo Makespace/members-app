@@ -3741,6 +3741,89 @@ ol.agreement-progress__steps {
 }
 
 /* With no Back link on the first page, keep Next on the right */
-.agreement-nav > .button:only-child {
+.agreement-nav > button:only-child {
   margin-left: auto;
+}
+
+.callout--red {
+  background-color: color-mix(in oklch, white 92%, var(--red-color));
+  border-left-color: var(--red-color);
+}
+
+/* Responsibilities picked like checkboxes: the whole card is the label, with
+   a tickbox in its corner, and a picked card is drawn more strongly. */
+fieldset.agreement-choices__set {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.agreement-choices__prompt {
+  padding: 0;
+  font-weight: bold;
+}
+
+.agreement-choices__set > * + * {
+  margin-block-start: 0.75rem;
+}
+
+.card-grid > li:has(> .card-choice) {
+  padding: 0;
+}
+
+.card-choice {
+  position: relative;
+  display: block;
+  height: 100%;
+  padding: 0.75rem 3rem 0.75rem 1rem;
+  cursor: pointer;
+}
+
+.card-choice__check {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 2px solid var(--green-color);
+  background: white;
+}
+
+.card-choice input:checked ~ .card-choice__check {
+  background: var(--green-color);
+}
+
+.card-choice input:checked ~ .card-choice__check::after {
+  content: '✓';
+  color: white;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.card-grid > li:has(input:checked) {
+  background-color: color-mix(in oklch, white 80%, var(--green-color));
+  border-color: var(--green-color);
+  box-shadow: inset 0 0 0 1px var(--green-color);
+}
+
+.card-grid > li:hover:has(> .card-choice) {
+  border-color: var(--green-color);
+}
+
+.card-grid > li:has(input:focus-visible) {
+  outline: 3px solid var(--link-color);
+  outline-offset: 2px;
+}
+
+/* Until something is picked, Next looks unavailable. It still submits, and
+   the server sends them back with a message, so nobody is left wondering
+   why nothing happened. */
+.agreement-choices:has(.agreement-choices__set):not(:has(input:checked))
+  .agreement-nav
+  button {
+  opacity: 0.5;
 }
