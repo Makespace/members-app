@@ -1,4 +1,5 @@
 export {areas} from './areas';
+export {manageArea} from './manage-area';
 export {admin} from './admin';
 export {db} from './db';
 export {humans} from './humans';

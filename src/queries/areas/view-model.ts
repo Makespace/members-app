@@ -36,15 +36,27 @@ export type EquipmentViewModel = {
   id: UUID;
   name: string;
   category: EquipmentCategory;
+  // The area's own grouping for it, if the area uses categories.
+  areaCategoryId: O.Option<UUID>;
   trainingsByQuarter: ReadonlyArray<QuarterCount>;
 };
 
+export type AreaEquipmentCategoryViewModel = {
+  id: UUID;
+  name: string;
+};
+
+// `equipmentCategories` is empty for areas that don't use categories, which
+// then list their equipment flat. `canManage` shows the "Manage area" button:
+// super users, and owners of this area.
 export type AreaViewModel = {
   id: UUID;
   name: string;
   email: O.Option<EmailAddress>;
   owners: ReadonlyArray<OwnerViewModel>;
   equipment: ReadonlyArray<EquipmentViewModel>;
+  equipmentCategories: ReadonlyArray<AreaEquipmentCategoryViewModel>;
+  canManage: boolean;
 };
 
 export type ViewModel = {

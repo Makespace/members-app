@@ -28,6 +28,7 @@ const renderNav = (
       riskAssessmentUrl: equipment.riskAssessmentUrl,
       learnPoints: equipment.learnPoints,
       removedAt: equipment.removedAt,
+      areaCategoryId: O.none,
     }));
   });
   const rendered = navBar(
@@ -55,6 +56,7 @@ const makeEquipment = (name: string, removed = false): Equipment => ({
   riskAssessmentUrl: O.none,
   learnPoints: [],
   removedAt: removed ? O.some(new Date('2026-01-01T00:00:00.000Z')) : O.none,
+  areaCategoryId: O.none,
   area: {
     id: faker.string.uuid() as UUID,
     name: 'Parent area',

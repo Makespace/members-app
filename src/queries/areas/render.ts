@@ -4,6 +4,7 @@ import {
   Html,
   joinHtml,
   safe,
+  SanitizedString,
   sanitizeString,
 } from '../../types/html';
 import * as RA from 'fp-ts/ReadonlyArray';
@@ -20,9 +21,14 @@ import {renderTrainingSparkline} from '../../templates/training-sparkline';
 import {tooltip} from '../shared-render/tool-tip';
 import {displayDate, displayDateShort} from '../../templates/display-date';
 import * as O from 'fp-ts/Option';
+import {UUID} from 'io-ts-types';
 import {DateTime} from 'luxon';
 import { mailTo } from '../../templates/mailto';
-import {categoryDot} from '../../templates/equipment-category';
+import {
+  categoryDot,
+  categoryLabel,
+} from '../../templates/equipment-category';
+import {EquipmentCategory} from '../../types/equipment-category';
 
 
 const renderSignedAt = (owner: OwnerViewModel) => {
@@ -195,32 +201,103 @@ const renderInactiveOwners = (
   `;
 };
 
-const renderEquipment = (equipment: ReadonlyArray<EquipmentViewModel>) => {
-  if (equipment.length === 0) {
+const renderEquipmentItem = (item: EquipmentViewModel) => html`
+  <div class="equipment-with-sparkline"
+    >${categoryDot(item.category)}<a href="/equipment/${safe(item.id)}"
+      >${sanitizeString(item.name)}</a
+    >
+    ${item.category === 'red'
+      ? renderTrainingSparkline(item.trainingsByQuarter)
+      : html``}</div
+  >
+`;
+
+const STICKER_ORDER: ReadonlyArray<EquipmentCategory> = [
+  'red',
+  'orange',
+  'green',
+];
+
+// How many red, orange and green items a category holds; colours it has none
+// of are left out.
+const renderStickerCounts = (items: ReadonlyArray<EquipmentViewModel>) =>
+  joinHtml(
+    STICKER_ORDER.flatMap(sticker => {
+      const count = items.filter(item => item.category === sticker).length;
+      return count === 0
+        ? []
+        : [
+            html`<span
+              class="eq-cat eq-cat--${safe(sticker)}"
+              title="${safe(count.toString())} ${categoryLabel(
+                sticker
+              )}"
+              ><span class="eq-cat__dot" aria-hidden="true"></span
+              ><span class="visually-hidden"
+                >${categoryLabel(sticker)}:</span
+              >${safe(count.toString())}</span
+            >`,
+          ];
+    })
+  );
+
+const renderEquipmentGroup = (
+  name: Html | SanitizedString,
+  items: ReadonlyArray<EquipmentViewModel>
+) => html`
+  <details class="area-eq-group">
+    <summary>
+      <span class="area-eq-group__name">${name}</span>
+      <span class="area-eq-group__counts">${renderStickerCounts(items)}</span>
+    </summary>
+    <div>${joinHtml(items.map(renderEquipmentItem))}</div>
+  </details>
+`;
+
+// Areas that use categories show one collapsed section per category (empty
+// ones are skipped), then whatever is not in a category yet under "Other".
+// Areas without categories list everything at once.
+const renderEquipment = (area: AreaViewModel) => {
+  if (area.equipment.length === 0) {
     return html`<p>No equipment currently assigned to this area.</p>`;
   }
-
-  return pipe(
-    equipment,
-    RA.map(
-      item => html`
-        <div class="equipment-with-sparkline"
-          >${categoryDot(item.category)}<a href="/equipment/${safe(item.id)}"
-            >${sanitizeString(item.name)}</a
-          >
-          ${item.category === 'red'
-            ? renderTrainingSparkline(item.trainingsByQuarter)
-            : html``}</div
-        >
-      `
-    ),
-    items => html`
+  if (area.equipmentCategories.length === 0) {
+    return html`
       <div>
         <strong>Equipment:</strong>
-        <div>${joinHtml(items)}</div>
+        <div>${joinHtml(area.equipment.map(renderEquipmentItem))}</div>
       </div>
-    `
+    `;
+  }
+  const inCategory = (id: AreaViewModel['equipmentCategories'][number]['id']) =>
+    area.equipment.filter(item =>
+      O.exists(categoryId => categoryId === id)(item.areaCategoryId)
+    );
+  const known = new Set(area.equipmentCategories.map(category => category.id));
+  const other = area.equipment.filter(
+    item =>
+      !O.exists((categoryId: UUID) => known.has(categoryId))(
+        item.areaCategoryId
+      )
   );
+  return html`
+    <div>
+      <strong>Equipment:</strong>
+      <div class="area-eq-groups">
+        ${joinHtml(
+          area.equipmentCategories.flatMap(category => {
+            const items = inCategory(category.id);
+            return items.length === 0
+              ? []
+              : [renderEquipmentGroup(sanitizeString(category.name), items)];
+          })
+        )}
+        ${other.length === 0
+          ? html``
+          : renderEquipmentGroup(html`Other`, other)}
+      </div>
+    </div>
+  `;
 };
 
 const renderArea =
@@ -243,11 +320,18 @@ const renderArea =
     viewModel.canSeeTrainings;
   return html`
   <article id="area-${safe(area.id)}">
-    <h2>${sanitizeString(area.name)}</h2>
+    <div class="area-heading">
+      <h2>${sanitizeString(area.name)}</h2>
+      ${area.canManage
+        ? html`<a class="button" href="/areas/manage?area=${safe(area.id)}"
+            >Manage area</a
+          >`
+        : html``}
+    </div>
     ${O.isSome(area.email)
       ? html`<p><strong>Mailing list:</strong> ${mailTo(area.email.value, O.none, O.none)}</p>`
       : html``}
-    <div>${renderEquipment(area.equipment)}</div>
+    <div>${renderEquipment(area)}</div>
     ${renderActiveOwners(
       area.id,
       publiclyVisibleOwners,
@@ -257,25 +341,6 @@ const renderArea =
       showTrainings
     )}
     ${viewModel.canManageAreas ? renderInactiveOwners(area.id, inactiveOwners, viewModel.canManageAreas, viewModel.canSeeOwnerPrivateDetails, showTrainings) : html``}
-    ${
-      viewModel.canManageAreas ? html`<div class="wrap">
-      <a class="button" href="/areas/add-owner?area=${safe(area.id)}"
-        >Add owner</a
-      >
-      <a class="button" href="/equipment/add?area=${safe(area.id)}"
-        >Add equipment</a
-      >
-      <a class="button" href="/equipment/bulk-add?area=${safe(area.id)}"
-        >Bulk-add orange/green</a
-      >
-      <a class="button" href="/areas/set-mailing-list?area=${safe(area.id)}"
-        >Set mailing list</a
-      >
-      <a class="button" href="/areas/remove?area=${safe(area.id)}"
-        >Remove area</a
-      >
-    </div>` : html``
-    }
   </article>
 `;
 };

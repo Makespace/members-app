@@ -8,6 +8,7 @@ import {
   FailureWithStatus,
 } from '../../types/failure-with-status';
 import {
+  AreaEquipmentCategoryViewModel,
   AreaViewModel,
   EquipmentViewModel,
   OwnerVerdict,
@@ -70,12 +71,20 @@ export const constructViewModel =
     const areas = sharedReadModel.area.getAllMinimal();
     const equipmentAll = sharedReadModel.equipment.getAllMinimal();
     const ownersAll = sharedReadModel.area.getAllOwnersBulk();
+    const categoriesAll = sharedReadModel.area.getAllEquipmentCategories();
 
     const equipmentByArea = new Map<UUID, MinimalEquipment[]>();
     for (const equipment of equipmentAll) {
       const existing = equipmentByArea.get(equipment.areaId) ?? [];
       existing.push(equipment);
       equipmentByArea.set(equipment.areaId, existing);
+    }
+
+    const categoriesByArea = new Map<UUID, AreaEquipmentCategoryViewModel[]>();
+    for (const category of categoriesAll) {
+      const existing = categoriesByArea.get(category.areaId) ?? [];
+      existing.push({id: category.id, name: category.name});
+      categoriesByArea.set(category.areaId, existing);
     }
 
     const ownersByArea = new Map<UUID, AreaOwnerRow[]>();
@@ -252,6 +261,7 @@ export const constructViewModel =
               id: equipment.id,
               name: equipment.name,
               category: equipment.category,
+              areaCategoryId: equipment.areaCategoryId,
               // Only red machines draw a sparkline; the bucketing is skipped
               // entirely for the rest.
               trainingsByQuarter:
@@ -264,6 +274,10 @@ export const constructViewModel =
             })
           ),
           owners: buildOwners(area.id),
+          equipmentCategories: categoriesByArea.get(area.id) ?? [],
+          canManage:
+            isSuperUser ||
+            member.value.ownerOf.some(owned => owned.id === area.id),
         })
       ),
     });

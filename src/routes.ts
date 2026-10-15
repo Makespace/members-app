@@ -79,6 +79,22 @@ export const initRoutes = (
     ...command('areas', 'set-mailing-List', commands.area.setMailingList),
     ...command('areas', 'add-name-alias', commands.area.addNameAlias),
     ...api('areas', 'remove-name-alias', commands.area.removeNameAlias),
+    query('/areas/manage', queries.manageArea),
+    ...command(
+      'areas',
+      'add-equipment-category',
+      commands.area.addEquipmentCategory
+    ),
+    ...command(
+      'areas',
+      'remove-equipment-category',
+      commands.area.removeEquipmentCategory
+    ),
+    ...command(
+      'areas',
+      'equipment-categories',
+      commands.area.setEquipmentCategories
+    ),
     ...command('equipment', 'add', commands.equipment.add),
     ...command('equipment', 'rename', commands.equipment.rename),
     ...command('equipment', 'set-category', commands.equipment.setCategory),

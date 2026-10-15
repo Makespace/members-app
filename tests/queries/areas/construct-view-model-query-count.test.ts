@@ -144,6 +144,37 @@ describe('construct-view-model query counts', () => {
     expect(large.queryCount).toStrictEqual(small.queryCount);
   });
 
+  it('shared statement count does not grow with equipment categories', async () => {
+    advanceTo(new Date('2026-07-22T12:00:00.000Z'));
+    const asSuperUser = runAs(superUser);
+    const areaId = (await asSuperUser()).areas[0].id;
+
+    const small = await countSharedStatements(framework.sharedReadModel, () => asSuperUser());
+    const categoryIds: UUID[] = [];
+    for (let i = 0; i < 5; i += 1) {
+      const categoryId = faker.string.uuid() as UUID;
+      categoryIds.push(categoryId);
+      await framework.commands.area.addEquipmentCategory({
+        areaId,
+        categoryId,
+        name: `Category ${i}` as NonEmptyString,
+        actor: {tag: 'user', user: superUser},
+      });
+    }
+    await framework.commands.area.setEquipmentCategories({
+      areaId,
+      assignments: {[equipmentId]: categoryIds[2]},
+      actor: {tag: 'user', user: superUser},
+    });
+    const large = await countSharedStatements(framework.sharedReadModel, () => asSuperUser());
+
+    expect(large.result.areas[0].equipmentCategories).toHaveLength(5);
+    expect(large.result.areas[0].equipment[0].areaCategoryId).toStrictEqual(
+      O.some(categoryIds[2])
+    );
+    expect(large.queryCount).toStrictEqual(small.queryCount);
+  });
+
   it('makes zero Recurly cache queries for an ordinary member', async () => {
     advanceTo(new Date('2026-07-22T12:00:00.000Z'));
     await insertRecurlySubscription(framework.extDB, {

@@ -76,6 +76,7 @@ describe('Render equipment page', () => {
         riskAssessmentUrl: O.none,
         learnPoints: [],
         removedAt: O.none,
+        areaCategoryId: O.none,
         area: {
             id: faker.string.uuid() as UUID,
             name: faker.airline.airline().name,
@@ -345,6 +346,7 @@ describe('the equipment guide, when it stopped answering', () => {
             riskAssessmentUrl: O.none,
             learnPoints: [],
             removedAt: O.none,
+            areaCategoryId: O.none,
             area: {id: faker.string.uuid() as UUID, name: 'Wood Shop', email: O.none},
         },
         guideLink: O.some({
@@ -433,6 +435,7 @@ describe('the actions, in groups', () => {
         riskAssessmentUrl: O.none,
         learnPoints: [],
         removedAt: O.none,
+        areaCategoryId: O.none,
         area,
     };
 
