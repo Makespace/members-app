@@ -99,8 +99,6 @@ describe('purchasing area page', () => {
       purchasingAreaId,
       estimatedAmount: 50_000,
       isMemberPaidConsumable: false,
-      isOperations: false,
-      under100PerYear: false,
       summary: 'Bandsaw blades' as never,
       purchases: [{shop: 'Axminster', items: '5 x blade'}],
       justification: 'Worn out' as never,
@@ -123,26 +121,22 @@ describe('purchasing area page', () => {
     const page = pageFor(member);
     expect(page.html).toContain(`href="/areas#area-${areaId}"`);
     expect(page.textContent).toContain('Bandsaw blades');
-    expect(page.textContent).toContain('CapEx - from budget');
+    expect(page.textContent).toContain('Yearly budget');
   });
 
-  it("tags requests that need the directors' approval", async () => {
+  it("doesn't count consumables against the budget", async () => {
     await framework.commands.purchaseRequest.submit({
       id: faker.string.uuid() as UUID,
       purchasingAreaId,
       estimatedAmount: 63_000,
-      isMemberPaidConsumable: false,
-      isOperations: true,
-      under100PerYear: '',
-      summary: 'Fix the planer-thicknesser' as never,
-      purchases: [{shop: 'Repair Co', items: 'Service and parts'}],
-      justification: 'Broken' as never,
+      isMemberPaidConsumable: true,
+      summary: 'Sanding discs' as never,
+      purchases: [{shop: 'Axminster', items: '100 x disc'}],
+      justification: 'Sold to members' as never,
       actor: {tag: 'user', user: purchaser},
     });
     const text = pageFor(member).textContent;
-    expect(text).toContain('OpEx - operations');
-    expect(text).toContain("Directors' approval needed");
-    // Operations spending doesn't come out of the budget.
+    expect(text).toContain('Consumable - not from the budget');
     expect(text).toContain('£1,500.00');
   });
 

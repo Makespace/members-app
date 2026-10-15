@@ -37,7 +37,6 @@ const viewModel: PurchaseRequestFormViewModel = {
   purchasingAreas: [textile, craft],
   preselected: O.some(craft.id),
   proposalThresholdPence: 100_000,
-  directorsApprovalThresholdPence: 50_000,
 };
 
 describe('purchase request form', () => {
@@ -80,26 +79,22 @@ describe('purchase request form', () => {
       expect(names.indexOf('estimatedAmount')).toBeLessThan(
         names.indexOf('summary')
       );
-      expect(names.indexOf('under100PerYear')).toBeLessThan(
+      expect(names.indexOf('isMemberPaidConsumable')).toBeLessThan(
         names.indexOf('summary')
       );
     });
 
-    it('asks the three questions as yes/no radios, requiring only the first', () => {
-      for (const name of [
-        'isMemberPaidConsumable',
-        'isOperations',
-        'under100PerYear',
-      ]) {
-        const radios = form.querySelectorAll<HTMLInputElement>(
-          `.fieldset-item input[type="radio"][name="${name}"]`
-        );
-        expect([...radios].map(radio => radio.value)).toStrictEqual([
-          'true',
-          'false',
-        ]);
-        expect(radios[0].required).toBe(name === 'isMemberPaidConsumable');
-      }
+    it('asks the single consumable question as required yes/no radios', () => {
+      const radios = form.querySelectorAll<HTMLInputElement>(
+        'input[type="radio"][name="isMemberPaidConsumable"]'
+      );
+      expect([...radios].map(radio => radio.value)).toStrictEqual([
+        'true',
+        'false',
+      ]);
+      expect(radios[0].required).toBe(true);
+      expect(form.querySelector('[name="isOperations"]')).toBeNull();
+      expect(form.querySelector('[name="under100PerYear"]')).toBeNull();
     });
 
     it('offers three shop entries without JavaScript, requiring only the first', () => {

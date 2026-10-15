@@ -241,7 +241,7 @@ const PurchaseRequestPurchase = t.strict({
 // submission, and recorded here along with the budget figures it was computed
 // from, so the record says what the member was told even if the budget or the
 // rules change later. The estimate is what counts against the budget, not the
-// sum of the line costs. Answers to questions that were not needed are null.
+// sum of the line costs.
 // There is no approval step yet; one would follow as further events about the
 // same request id.
 const PurchaseRequestSubmitted = defineEvent('PurchaseRequestSubmitted', {
@@ -253,8 +253,6 @@ const PurchaseRequestSubmitted = defineEvent('PurchaseRequestSubmitted', {
   purchases: t.readonlyArray(PurchaseRequestPurchase),
   justification: t.string,
   isMemberPaidConsumable: t.boolean,
-  isOperations: t.union([t.boolean, t.null]),
-  under100PerYear: t.union([t.boolean, t.null]),
   outcome: PurchaseRequestOutcomeCodec,
   // What approval it needs before going ahead; see PurchaseApprovalCodec.
   approval: PurchaseApprovalCodec,

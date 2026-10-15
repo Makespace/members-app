@@ -175,7 +175,7 @@ export type PurchasingArea = PurchasingAreaSummary & {
   purchasers: ReadonlyArray<PurchasingAreaPurchaser>;
   budgetYear: number;
   spentThisYearPence: number;
-  // Negative when CapEx this year has gone past the budget.
+  // Negative when this year's spending has gone past the budget.
   remainingPence: number;
 };
 
@@ -198,8 +198,6 @@ export type PurchaseRequest = {
   purchases: ReadonlyArray<PurchaseRequestPurchase>;
   justification: string;
   isMemberPaidConsumable: boolean;
-  isOperations: boolean | null;
-  under100PerYear: boolean | null;
   outcome: PurchaseRequestOutcome;
   approval: PurchaseApproval;
   outcomeReason: string;

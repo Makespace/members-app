@@ -39,7 +39,7 @@ const renderTable = (viewModel: ViewModel) =>
               <th>Purchasing area</th>
               <th>Areas</th>
               <th>Yearly budget</th>
-              <th>CapEx in ${viewModel.budgetYear}</th>
+              <th>Spent in ${viewModel.budgetYear}</th>
               <th>Remaining</th>
             </tr>
           </thead>
@@ -54,9 +54,10 @@ export const render = (viewModel: ViewModel) => html`
     <h1>Purchasing areas</h1>
     <p>
       Each purchasing area holds a yearly budget (1 January to 31 December) for
-      one or more areas. Only CapEx is spent from it; consumables, running
-      costs and anything under £100 a year are OpEx and are recorded without
-      counting against the budget.
+      one or more areas. It pays for keeping equipment running safely (repairs,
+      servicing, running costs, replacements) as well as improvements.
+      Consumables that members pay for at point of use are recorded without
+      counting against it.
     </p>
     ${viewModel.canRequest || viewModel.canManage
       ? html`<div>

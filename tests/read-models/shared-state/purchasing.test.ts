@@ -37,11 +37,9 @@ describe('purchasing areas in the read model', () => {
         {shop: 'Hobbycraft', link: null, items: '2 x glue gun', costPence: null},
       ],
       justification: 'Needed',
-      isMemberPaidConsumable: false,
-      isOperations: false,
-      under100PerYear: false,
+      isMemberPaidConsumable: outcome === 'consumable',
       outcome,
-      approval: outcome === 'capex-proposal-needed' ? 'proposal' : 'none',
+      approval: outcome === 'budget-proposal-needed' ? 'proposal' : 'none',
       outcomeReason: 'Because',
       budgetYear,
       yearlyBudgetPence: 150_000,
@@ -273,20 +271,20 @@ describe('purchasing areas in the read model', () => {
 
     beforeEach(() => {
       insert(
-        submitted('capex-from-budget', 40_000),
-        submitted('capex-proposal-needed', 120_000),
-        submitted('opex-consumable', 9_000),
-        submitted('opex-operations', 63_000),
-        submitted('opex-low-cost', 5_000),
-        submitted('capex-from-budget', 70_000, 2025),
-        submitted('capex-from-budget', 1_000, 2026, latestId)
+        submitted('budget', 40_000),
+        submitted('budget-proposal-needed', 120_000),
+        submitted('consumable', 9_000),
+        submitted('budget', 63_000),
+        submitted('consumable', 5_000),
+        submitted('budget', 70_000, 2025),
+        submitted('budget', 1_000, 2026, latestId)
       );
     });
 
-    it('counts only this year\'s CapEx as spent', () => {
+    it("counts only this year's non-consumables as spent", () => {
       expect(get()).toMatchObject({
-        spentThisYearPence: 161_000,
-        remainingPence: -11_000,
+        spentThisYearPence: 224_000,
+        remainingPence: -74_000,
       });
     });
 
@@ -313,7 +311,7 @@ describe('purchasing areas in the read model', () => {
           expect.objectContaining({
             id: latestId,
             estimatedAmountPence: 1_000,
-            outcome: 'capex-from-budget',
+            outcome: 'budget',
             purchases: [
               {
                 shop: 'Hobbycraft',

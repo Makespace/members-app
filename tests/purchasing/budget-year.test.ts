@@ -16,14 +16,12 @@ describe('budgetYearOf', () => {
 });
 
 describe('countsAgainstBudget', () => {
-  it('counts CapEx', () => {
-    expect(countsAgainstBudget('capex-from-budget')).toBe(true);
-    expect(countsAgainstBudget('capex-proposal-needed')).toBe(true);
+  it('counts everything from the budget, proposals included', () => {
+    expect(countsAgainstBudget('budget')).toBe(true);
+    expect(countsAgainstBudget('budget-proposal-needed')).toBe(true);
   });
 
-  it('does not count OpEx', () => {
-    expect(countsAgainstBudget('opex-consumable')).toBe(false);
-    expect(countsAgainstBudget('opex-operations')).toBe(false);
-    expect(countsAgainstBudget('opex-low-cost')).toBe(false);
+  it('does not count consumables', () => {
+    expect(countsAgainstBudget('consumable')).toBe(false);
   });
 });

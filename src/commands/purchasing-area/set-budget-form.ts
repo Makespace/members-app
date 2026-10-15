@@ -27,7 +27,7 @@ const renderForm = (purchasingArea: ViewModel) =>
           Currently ${sanitizeString(formatPence(purchasingArea.yearlyBudgetPence))}
           a year, with
           ${sanitizeString(formatPence(purchasingArea.spentThisYearPence))} of
-          CapEx submitted so far in ${purchasingArea.budgetYear}. The budget
+          spent so far in ${purchasingArea.budgetYear}. The budget
           runs for the calendar year; a change applies to this year straight
           away.
         </p>

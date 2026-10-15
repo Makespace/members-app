@@ -43,8 +43,6 @@ describe('submit purchase request', () => {
     purchasingAreaId,
     estimatedAmount: '250.00',
     isMemberPaidConsumable: 'false',
-    isOperations: 'false',
-    under100PerYear: 'false',
     summary: 'Sewing machine',
     purchases: [
       {
@@ -131,7 +129,7 @@ describe('submit purchase request', () => {
     framework.close();
   });
 
-  describe('a CapEx request within the budget', () => {
+  describe('a budget request within the budget', () => {
     it('records it as coming from the budget, with what it was worked out from', async () => {
       const body = formBody();
       expect(await submitted(body)).toMatchObject({
@@ -143,9 +141,7 @@ describe('submit purchase request', () => {
         estimatedAmountPence: 25_000,
         justification: 'The old one is too small for quilts',
         isMemberPaidConsumable: false,
-        isOperations: false,
-        under100PerYear: false,
-        outcome: 'capex-from-budget',
+        outcome: 'budget',
         approval: 'none',
         budgetYear: new Date().getFullYear(),
         yearlyBudgetPence: 150_000,
@@ -166,13 +162,13 @@ describe('submit purchase request', () => {
 
     it('ignores an outcome the browser tries to supply', async () => {
       const event = await submitted(
-        formBody({outcome: 'opex-consumable', estimatedAmount: '100.00'})
+        formBody({outcome: 'consumable', estimatedAmount: '100.00'})
       );
-      expect(event.outcome).toStrictEqual('capex-from-budget');
+      expect(event.outcome).toStrictEqual('budget');
     });
   });
 
-  describe('when earlier CapEx this year leaves too little budget', () => {
+  describe('when earlier spending this year leaves too little budget', () => {
     beforeEach(async () => {
       insert(await submitted(formBody({estimatedAmount: '900.00'})));
     });
@@ -180,7 +176,7 @@ describe('submit purchase request', () => {
     it('needs a proposal', async () => {
       const event = await submitted(formBody({estimatedAmount: '600.01'}));
       expect(event).toMatchObject({
-        outcome: 'capex-proposal-needed',
+        outcome: 'budget-proposal-needed',
         approval: 'proposal',
         spentThisYearPence: 90_000,
       });
@@ -188,7 +184,7 @@ describe('submit purchase request', () => {
 
     it('comes from the budget when it lands exactly on it', async () => {
       const event = await submitted(formBody({estimatedAmount: '600.00'}));
-      expect(event.outcome).toStrictEqual('capex-from-budget');
+      expect(event.outcome).toStrictEqual('budget');
     });
   });
 
@@ -201,7 +197,7 @@ describe('submit purchase request', () => {
       })
     );
     const event = await submitted(formBody({estimatedAmount: '1000'}));
-    expect(event.outcome).toStrictEqual('capex-proposal-needed');
+    expect(event.outcome).toStrictEqual('budget-proposal-needed');
   });
 
   it('uses the estimate, not the shop costs, even when they disagree', async () => {
@@ -213,54 +209,27 @@ describe('submit purchase request', () => {
     );
     expect(event).toMatchObject({
       estimatedAmountPence: 10_000,
-      outcome: 'capex-from-budget',
+      outcome: 'budget',
     });
   });
 
   describe('a consumable members pay for', () => {
-    it('is OpEx, with the questions it did not need dropped', async () => {
+    it("is recorded as a consumable, needing no approval", async () => {
       const event = await submitted(
-        formBody({
-          isMemberPaidConsumable: 'true',
-          isOperations: '',
-          under100PerYear: 'true',
-        })
+        formBody({isMemberPaidConsumable: 'true', estimatedAmount: '2500.00'})
       );
       expect(event).toMatchObject({
-        outcome: 'opex-consumable',
+        outcome: 'consumable',
+        approval: 'none',
         isMemberPaidConsumable: true,
-        isOperations: null,
-        under100PerYear: null,
       });
     });
   });
 
-  it("records that operations spending of £500 needs no approval", async () => {
-    const event = await submitted(
-      formBody({isOperations: 'true', estimatedAmount: '500.00'})
-    );
-    expect(event).toMatchObject({outcome: 'opex-operations', approval: 'none'});
-  });
-
-  it("records that operations spending over £500 needs the directors' approval", async () => {
-    const event = await submitted(
-      formBody({isOperations: 'true', estimatedAmount: '630.00'})
-    );
-    expect(event).toMatchObject({
-      outcome: 'opex-operations',
-      approval: 'directors',
-      under100PerYear: null,
-    });
-  });
-
-  it('asks for the operations answer when it is needed and missing', async () => {
-    const body = formBody();
-    delete (body as Record<string, unknown>).isOperations;
-    expect(await failure(body)).toMatchObject({
-      status: StatusCodes.BAD_REQUEST,
-      message:
-        'Please say whether this is maintenance, a running cost or a like-for-like replacement.',
-    });
+  it('needs the consumable question answered', () => {
+    expect(
+      submit.decode(formBody({isMemberPaidConsumable: ''}))._tag
+    ).toStrictEqual('Left');
   });
 
   describe('the shops', () => {

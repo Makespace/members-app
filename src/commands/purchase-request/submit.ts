@@ -21,10 +21,8 @@ import {budgetYearOf} from '../../purchasing/budget-year';
 import {Command} from '../command';
 import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
 
-// A yes/no radio answer. Later questions may be left unanswered (absent or
-// empty) when an earlier "yes" has already settled the outcome.
+// A yes/no radio answer.
 const answer = t.union([t.boolean, tt.BooleanFromString]);
-const optionalAnswer = t.union([answer, t.undefined, t.literal('')]);
 
 // One shop or website, as typed into the form. The page offers a fixed number
 // of blank entries (more with JavaScript), so entirely blank ones are
@@ -49,8 +47,6 @@ const codec = t.strict({
   // outcome, and the budget, are worked out from this.
   estimatedAmount: PositivePenceFromPoundsString,
   isMemberPaidConsumable: answer,
-  isOperations: optionalAnswer,
-  under100PerYear: optionalAnswer,
   summary: tt.NonEmptyString,
   purchases: rawPurchases,
   justification: tt.NonEmptyString,
@@ -64,9 +60,6 @@ type Purchase = {
   items: string;
   costPence: number | null;
 };
-
-const toAnswer = (value: boolean | '' | undefined): boolean | null =>
-  typeof value === 'boolean' ? value : null;
 
 const fail = (message: string) =>
   failureWithStatus(message, StatusCodes.BAD_REQUEST)();
@@ -178,7 +171,7 @@ const isPurchaserFor = (
     )
   );
 
-// The outcome is always worked out here, from the answers, the estimate and
+// The outcome is always worked out here, from the answer, the estimate and
 // this year's budget figures, whatever the page may have previewed. The line
 // costs are not required to add up to the estimate (an open product
 // question); the estimate is what counts against the budget.
@@ -205,20 +198,13 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
         )
       )
     ),
-    E.bind('classification', ({purchasingArea}) =>
-      pipe(
-        classifyPurchase({
-          answers: {
-            isMemberPaidConsumable: command.isMemberPaidConsumable,
-            isOperations: toAnswer(command.isOperations),
-            under100PerYear: toAnswer(command.under100PerYear),
-          },
-          amountPence: command.estimatedAmount,
-          yearlyBudgetPence: purchasingArea.yearlyBudgetPence,
-          spentThisYearPence: purchasingArea.spentThisYearPence,
-        }),
-        E.mapLeft(unanswered => fail(unanswered.message))
-      )
+    E.let('classification', ({purchasingArea}) =>
+      classifyPurchase({
+        isMemberPaidConsumable: command.isMemberPaidConsumable,
+        amountPence: command.estimatedAmount,
+        yearlyBudgetPence: purchasingArea.yearlyBudgetPence,
+        spentThisYearPence: purchasingArea.spentThisYearPence,
+      })
     ),
     E.bind('purchases', () => normalisePurchases(command.purchases)),
     E.map(
@@ -232,7 +218,7 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
             estimatedAmountPence: command.estimatedAmount,
             purchases,
             justification: command.justification.trim(),
-            ...classification.answers,
+            isMemberPaidConsumable: command.isMemberPaidConsumable,
             outcome: classification.outcome,
             approval: classification.approval,
             outcomeReason: classification.reason,

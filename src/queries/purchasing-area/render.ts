@@ -72,7 +72,7 @@ const renderBudget = (viewModel: ViewModel) => {
             <td>${money(purchasingArea.yearlyBudgetPence)}</td>
           </tr>
           <tr>
-            <th>CapEx submitted this year</th>
+            <th>Spent so far this year</th>
             <td>${money(purchasingArea.spentThisYearPence)}</td>
           </tr>
           <tr>

@@ -3,15 +3,14 @@
 // It only needs the view model below; everything it shows comes from there.
 //
 // The form asks for the purchasing area and an estimated total first, then
-// the three classification questions (which run on that estimate), then the
+// whether it is a consumable (classified with that estimate), then the
 // specifics: a short summary, one entry per shop or website, and why it is
 // needed.
 //
-// It works without JavaScript: all three questions are shown, a fixed number
+// It works without JavaScript: every section is shown, a fixed number
 // of shop entries are offered (blank ones are ignored), and the server works
 // out the outcome on submit. The small inline script at the bottom is a
-// progressive enhancement that hides questions that no longer matter,
-// previews the likely outcome, adds shop entries on request and points out
+// progressive enhancement that // previews the likely outcome, adds shop entries on request and points out
 // when the shop costs don't add up to the estimate. The server is always
 // authoritative - see src/purchasing/classify-purchase.ts.
 
@@ -38,10 +37,8 @@ export type PurchaseRequestFormViewModel = {
     remainingPence: number;
   }>;
   preselected: O.Option<UUID>;
-  // A single CapEx purchase of this much or more needs a proposal.
+  // A single budget purchase of this much or more needs a proposal.
   proposalThresholdPence: number;
-  // Operations spending of more than this needs the directors' approval.
-  directorsApprovalThresholdPence: number;
 };
 
 type PurchasingAreaOption =
@@ -81,7 +78,7 @@ const renderBudgets = (viewModel: PurchaseRequestFormViewModel) => html`
         <tr>
           <th>Purchasing area</th>
           <th>Yearly budget</th>
-          <th>CapEx so far</th>
+          <th>Spent so far</th>
           <th>Remaining</th>
         </tr>
       </thead>
@@ -91,9 +88,8 @@ const renderBudgets = (viewModel: PurchaseRequestFormViewModel) => html`
     </table>
     <p>
       <small
-        >Only CapEx comes out of the budget. Consumables, running costs and
-        anything under £100 a year (OpEx) are recorded but don't count against
-        it.</small
+        >Everything except consumables that members pay for comes out of
+        the budget.</small
       >
     </p>
   </section>
@@ -220,17 +216,9 @@ const enhancementScript = html`
       var form = document.getElementById('purchase-request-form');
       if (!form) return;
       var threshold = Number(form.dataset.proposalThresholdPence);
-      var directorsThreshold = Number(form.dataset.directorsApprovalThresholdPence);
       var preview = form.querySelector('[data-outcome-preview]');
       var costCheck = form.querySelector('[data-cost-check]');
       var shopEntries = form.querySelector('[data-shop-entries]');
-      var questions = {
-        isOperations: form.querySelector('[data-question="isOperations"]'),
-        under100PerYear: form.querySelector('[data-question="under100PerYear"]'),
-      };
-      form.querySelectorAll('.purchase-request__no-js-hint').forEach(function (hint) {
-        hint.style.display = 'none';
-      });
 
       // With JavaScript, start with one shop and add more on request.
       var entries = shopEntries.querySelectorAll('[data-shop-entry]');
@@ -257,14 +245,6 @@ const enhancementScript = html`
         var checked = form.querySelector('input[name="' + name + '"]:checked');
         return checked ? checked.value === 'true' : null;
       }
-      function show(name, visible) {
-        questions[name].style.display = visible ? '' : 'none';
-        if (!visible) {
-          form.querySelectorAll('input[name="' + name + '"]').forEach(function (input) {
-            input.checked = false;
-          });
-        }
-      }
       function pence(value) {
         var cleaned = value.replace(/[£,\\s]/g, '');
         if (!/^\\d+(\\.\\d{1,2})?$/.test(cleaned)) return null;
@@ -285,29 +265,18 @@ const enhancementScript = html`
       }
       function outcome() {
         var consumable = answer('isMemberPaidConsumable');
-        var operations = answer('isOperations');
-        var lowCost = answer('under100PerYear');
         if (consumable === null) return '';
-        if (consumable) return 'OpEx (a consumable) - it will not come out of the budget.';
-        if (operations === null) return '';
-        if (operations) {
-          var estimate = pence(form.elements.estimatedAmount.value);
-          if (estimate === null) return "OpEx (operations) - it will not come out of the budget. Over " + money(directorsThreshold) + " it needs the directors' approval.";
-          if (estimate > directorsThreshold) return "OpEx (operations) - it will not come out of the budget, but at over " + money(directorsThreshold) + " it needs the directors' approval.";
-          return 'OpEx (operations) - it will not come out of the budget.';
-        }
-        if (lowCost === null) return '';
-        if (lowCost) return 'OpEx (under £100 a year) - it will not come out of the budget.';
+        if (consumable) return "a consumable - it won't come out of the yearly budget.";
         var amount = pence(form.elements.estimatedAmount.value);
-        if (amount === null) return 'CapEx - enter the estimated total to see whether it needs a proposal.';
-        if (amount >= threshold) return 'CapEx - a single purchase of ' + money(threshold) + ' or more needs a proposal.';
+        if (amount === null) return 'yearly budget - enter the estimated total to see whether it needs a proposal.';
+        if (amount >= threshold) return 'yearly budget - a single purchase of ' + money(threshold) + ' or more needs a proposal.';
         var figures = selectedBudget();
-        if (figures === null) return 'CapEx - choose the purchasing area to check it against the budget.';
+        if (figures === null) return 'yearly budget - choose the purchasing area to check it against the budget.';
         var after = figures.spent + amount;
         if (after > figures.budget) {
-          return 'CapEx - this would take this year to ' + money(after) + ', over the ' + money(figures.budget) + ' budget, so it needs a proposal.';
+          return 'yearly budget - this would take this year to ' + money(after) + ', over the ' + money(figures.budget) + ' budget, so it needs a proposal.';
         }
-        return 'CapEx from the yearly budget, leaving ' + money(figures.budget - after) + '.';
+        return 'from the yearly budget, leaving ' + money(figures.budget - after) + '.';
       }
       // Shop costs are optional and need not match the estimate; a mismatch
       // is pointed out, not refused.
@@ -323,9 +292,6 @@ const enhancementScript = html`
         return 'The shop costs add up to ' + money(total) + ', but the estimate is ' + money(estimate) + '. The estimate is what counts against the budget.';
       }
       function update() {
-        var consumable = answer('isMemberPaidConsumable');
-        show('isOperations', consumable === false);
-        show('under100PerYear', consumable === false && answer('isOperations') === false);
         var text = outcome();
         preview.textContent = text ? 'Likely outcome: ' + text + ' (confirmed when you submit)' : '';
         preview.hidden = !text;
@@ -349,7 +315,6 @@ const renderForm = (viewModel: PurchaseRequestFormViewModel) => html`
     )}"
     method="post"
     data-proposal-threshold-pence="${viewModel.proposalThresholdPence}"
-    data-directors-approval-threshold-pence="${viewModel.directorsApprovalThresholdPence}"
   >
     <input type="hidden" name="id" value="${viewModel.requestId}" />
     ${renderPurchasingAreaPicker(viewModel)}
@@ -366,33 +331,14 @@ const renderForm = (viewModel: PurchaseRequestFormViewModel) => html`
       required
     />
 
-    <h2>Which kind of spending is it?</h2>
+    <h2>Is it a consumable?</h2>
     ${yesNo(
       'isMemberPaidConsumable',
       html`Is it a consumable you expect members to pay for at point of use?`,
       html`For example 3D printer filament paid for via SumUp.`,
       true
     )}
-    ${yesNo(
-      'isOperations',
-      html`Is it maintenance, a running cost, or a like-for-like replacement
-      needed to keep things running safely?`,
-      html`For example fixing the planer-thicknesser (£630), a technician's
-        yearly fee, or replacing something at the end of its life.
-        <span class="purchase-request__no-js-hint"
-          >Skip this if you answered yes above.</span
-        >`,
-      false
-    )}
-    ${yesNo(
-      'under100PerYear',
-      html`Will it cost under £100 a year, by your estimate?`,
-      html`For example embroidery thread.
-        <span class="purchase-request__no-js-hint"
-          >Skip this if you answered yes to either question above.</span
-        >`,
-      false
-    )}
+
 
     <p class="jsonly" data-outcome-preview aria-live="polite" hidden></p>
 

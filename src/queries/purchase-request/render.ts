@@ -127,17 +127,9 @@ export const render = ({request, purchasingArea, submitterName}: ViewModel) => h
           <td>${yesNo(request.isMemberPaidConsumable)}</td>
         </tr>
         <tr>
-          <th>Maintenance, running cost or like-for-like replacement?</th>
-          <td>${yesNo(request.isOperations)}</td>
-        </tr>
-        <tr>
-          <th>Under £100 a year?</th>
-          <td>${yesNo(request.under100PerYear)}</td>
-        </tr>
-        <tr>
           <th>Budget when submitted</th>
           <td>
-            ${money(request.spentThisYearPence)} of CapEx already submitted in
+            ${money(request.spentThisYearPence)} already spent from the budget in
             ${request.budgetYear}, against a yearly budget of
             ${money(request.yearlyBudgetPence)}
           </td>

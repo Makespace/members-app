@@ -7,9 +7,9 @@ import {PurchaseRequestOutcome} from '../types/purchase-request-outcome';
 export const budgetYearOf = (date: Date): number =>
   DateTime.fromJSDate(date, {zone: 'Europe/London'}).year;
 
-// Only CapEx is spent from the yearly budget; OpEx is recorded but not
-// counted. Proposal-needed CapEx counts too, as the brief defines spent this
-// year as every CapEx request submitted in the year (there is no approval
-// step yet to tell funded proposals apart).
+// Everything but consumables is spent from the yearly budget. Proposal-needed
+// requests count too, as spent this year is every non-consumable request
+// submitted in the year (there is no approval step yet to tell funded
+// proposals apart).
 export const countsAgainstBudget = (outcome: PurchaseRequestOutcome): boolean =>
-  outcome === 'capex-from-budget' || outcome === 'capex-proposal-needed';
+  outcome !== 'consumable';
