@@ -79,6 +79,13 @@ describe('equipment categories page', () => {
       ]);
     });
 
+    it('keeps the save button in the bar that stays on screen', () => {
+      expect(
+        dom.querySelector('.area-categories__save button[type="submit"]')
+          ?.textContent
+      ).toContain('Save categories');
+    });
+
     it('comes back to this page after saving', () => {
       const form = dom.querySelector<HTMLFormElement>(
         'form[action^="/areas/equipment-categories"]'
