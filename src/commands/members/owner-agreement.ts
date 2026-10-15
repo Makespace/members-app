@@ -9,7 +9,7 @@ export const ownerAgreement = html`
   </p>
 
   <p>
-    Owning is a great opportunity to shape your practice group, and Makespace
+    Owning is a great opportunity to shape your area, and Makespace
     as a whole, towards what you and other members feel is important.
   </p>
 
@@ -21,16 +21,21 @@ export const ownerAgreement = html`
       inductions)
     </li>
     <li>
-      The <strong>practice group</strong> that equipment/system belongs to.
+      The <strong>area</strong> that equipment/system belongs to.
     </li>
   </ul>
 
   <div class="callout">
-    <p><strong>What is a practice group?</strong></p>
+    <p><strong>What is an area?</strong></p>
     <p>
       The set of related equipment/systems and the owners responsible for
       them. Decisions about one equipment/system have the potential to affect
-      other equipment/systems within their practice group.
+      other equipment/systems within their area.
+    </p>
+    <p>
+      An area is often a physical space, but it doesn't have to be. For
+      example, the 3D printers are an area even though they're split across
+      multiple locations within Makespace.
     </p>
     <p>
       <em
@@ -108,28 +113,28 @@ export const ownerAgreement = html`
     </li>
   </ul>
 
-  <h3>For the practice group your equipment belongs to</h3>
+  <h3>For the area your equipment belongs to</h3>
   <ul class="card-grid">
     <li>
       <strong class="card-title"
         ><i class="fa-regular fa-file-lines" aria-hidden="true"></i>
         Documentation</strong
       >
-      Keep the practice group's risk assessments up to date.
+      Keep the area's risk assessments up to date.
     </li>
     <li>
       <strong class="card-title"
         ><i class="fa-regular fa-money-bill-1" aria-hidden="true"></i>
         Budget</strong
       >
-      Manage the practice group's budget.
+      Manage the area's budget.
     </li>
     <li>
       <strong class="card-title"
         ><i class="fa-regular fa-face-smile" aria-hidden="true"></i>
         Encourage community</strong
       >
-      Help the practice group's members and owners feel like one community,
+      Help the area's members and owners feel like one community,
       and encourage members to become owners.
     </li>
     <li>
@@ -138,8 +143,8 @@ export const ownerAgreement = html`
         Coordination</strong
       >
       Facilitate and/or participate in meetups and communication between
-      owners within a practice group. Aim to put on an event for your
-      practice group at least once in your six month owner tenure. Examples:
+      owners within an area. Aim to put on an event for your
+      area at least once in your six month owner tenure. Examples:
       Leather Together, Pi Club, Wood Club.
     </li>
     <li>
