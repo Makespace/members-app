@@ -229,7 +229,7 @@ const renderTable = (viewModel: ViewModel) => {
             </tbody>
           </table>
         </div>
-        <div>
+        <div class="area-categories__save">
           <button type="submit" class="button">Save categories</button>
         </div>
       </form>
