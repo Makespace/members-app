@@ -102,6 +102,7 @@ describe('purchasing area page', () => {
       summary: 'Bandsaw blades' as never,
       purchases: [{shop: 'Axminster', items: '5 x blade'}],
       justification: 'Worn out' as never,
+      submittedByMemberNumber: undefined,
       actor: {tag: 'user', user: purchaser},
     });
   });
@@ -133,10 +134,11 @@ describe('purchasing area page', () => {
       summary: 'Sanding discs' as never,
       purchases: [{shop: 'Axminster', items: '100 x disc'}],
       justification: 'Sold to members' as never,
+      submittedByMemberNumber: undefined,
       actor: {tag: 'user', user: purchaser},
     });
     const text = pageFor(member).textContent;
-    expect(text).toContain('Consumable - not from the budget');
+    expect(text).toContain('Consumable (not from the yearly budget)');
     expect(text).toContain('£1,500.00');
   });
 

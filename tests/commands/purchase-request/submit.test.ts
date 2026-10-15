@@ -327,11 +327,29 @@ describe('submit purchase request', () => {
     ).toMatchObject({status: StatusCodes.NOT_FOUND});
   });
 
-  it('must come from a logged-in member', async () => {
+  it('must come from a logged-in member, or the API on behalf of one', async () => {
     expect(await failure(formBody(), arbitraryActor())).toMatchObject({
       status: StatusCodes.BAD_REQUEST,
-      message: 'Purchase requests must be submitted by a logged-in member.',
     });
+  });
+
+  it('can be recorded through the API on behalf of a member', async () => {
+    const event = getSomeOrFail(
+      await getTaskEitherRightOrFail(
+        submitAs(
+          arbitraryActor(),
+          formBody({submittedByMemberNumber: String(otherMemberNumber)})
+        )
+      )
+    );
+    expect(event).toMatchObject({submittedByMemberNumber: otherMemberNumber});
+  });
+
+  it('ignores a member number given by a logged-in member', async () => {
+    const event = await submitted(
+      formBody({submittedByMemberNumber: String(otherMemberNumber)})
+    );
+    expect(event.submittedByMemberNumber).toStrictEqual(purchaserNumber);
   });
 
   it('does nothing when the same request is submitted twice', async () => {

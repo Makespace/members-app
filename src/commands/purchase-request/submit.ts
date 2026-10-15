@@ -50,6 +50,10 @@ const codec = t.strict({
   summary: tt.NonEmptyString,
   purchases: rawPurchases,
   justification: tt.NonEmptyString,
+  // API only: who the request is recorded against when it is entered with
+  // the admin token (seeding, or recording one made elsewhere). Ignored for
+  // a logged-in member, who always submits as themselves.
+  submittedByMemberNumber: t.union([t.number, tt.NumberFromString, t.undefined]),
 });
 
 type SubmitPurchaseRequest = t.TypeOf<typeof codec>;
@@ -152,10 +156,22 @@ const normalisePurchases = (
     : E.right(purchases);
 };
 
-const submitterMemberNumber = (actor: Actor) =>
-  actor.tag === 'user'
-    ? E.right(actor.user.memberNumber)
-    : E.left(fail('Purchase requests must be submitted by a logged-in member.'));
+const submitterMemberNumber = (
+  actor: Actor,
+  onBehalfOf: number | undefined
+) => {
+  if (actor.tag === 'user') {
+    return E.right(actor.user.memberNumber);
+  }
+  if (actor.tag === 'token' && onBehalfOf !== undefined) {
+    return E.right(onBehalfOf);
+  }
+  return E.left(
+    fail(
+      'Purchase requests must be submitted by a logged-in member, or through the API on behalf of one (submittedByMemberNumber).'
+    )
+  );
+};
 
 const isPurchaserFor = (
   rm: SharedReadModel,
@@ -185,7 +201,7 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
   return pipe(
     E.Do,
     E.bind('submittedByMemberNumber', () =>
-      submitterMemberNumber(command.actor)
+      submitterMemberNumber(command.actor, command.submittedByMemberNumber)
     ),
     E.bind('purchasingArea', () =>
       pipe(
