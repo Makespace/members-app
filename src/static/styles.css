@@ -3597,24 +3597,6 @@ ul.card-grid {
   margin-right: 0.35rem;
 }
 
-.card-grid--red > li {
-  background-color: color-mix(in oklch, white 94%, var(--red-color));
-  border-color: color-mix(in oklch, white 55%, var(--red-color));
-}
-
-.card-grid--red .card-title i {
-  color: var(--red-color);
-}
-
-.card-grid--blue > li {
-  background-color: color-mix(in oklch, white 94%, var(--link-color));
-  border-color: color-mix(in oklch, white 55%, var(--link-color));
-}
-
-.card-grid--blue .card-title i {
-  color: var(--link-color);
-}
-
 /* Checklist-style list with empty tickboxes (e.g. active-owner
    contributions). Element in the selector to outrank the ul[class] reset. */
 ul.checklist {

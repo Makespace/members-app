@@ -49,7 +49,7 @@ export const ownerAgreementPages: ReadonlyArray<{label: string; body: Html}> = [
     label: 'Your equipment',
     body: html`
       <h2>Your responsibilities for equipment you're an owner of:</h2>
-      <ul class="card-grid card-grid--red">
+      <ul class="card-grid">
         <li>
           <strong class="card-title"
             ><i class="fa-regular fa-comments" aria-hidden="true"></i>
