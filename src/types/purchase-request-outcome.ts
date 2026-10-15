@@ -18,7 +18,8 @@ export type PurchaseRequestOutcome = t.TypeOf<
 >;
 
 // Whose say-so a purchase request needs before it goes ahead. Operations
-// spending doesn't use the budget but does need the directors to agree; CapEx
+// spending doesn't use the budget, but over £500 needs the directors to
+// agree; CapEx
 // over the limits needs a proposal. Only the requirement is recorded so far -
 // an approval step, when built, attaches to the request by its id.
 export const PurchaseApprovalCodec = t.keyof({

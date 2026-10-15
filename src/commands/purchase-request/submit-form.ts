@@ -9,7 +9,10 @@ import {Form} from '../../types/form';
 import {safe, toLoggedInContentWithBackLink} from '../../types/html';
 import {liftActorOrUser} from '../../read-models/lift-actor-or-user';
 import {budgetYearOf} from '../../purchasing/budget-year';
-import {PROPOSAL_THRESHOLD_PENCE} from '../../purchasing/classify-purchase';
+import {
+  DIRECTORS_APPROVAL_THRESHOLD_PENCE,
+  PROPOSAL_THRESHOLD_PENCE,
+} from '../../purchasing/classify-purchase';
 import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
 import {
   PurchaseRequestFormViewModel,
@@ -60,6 +63,7 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
       })),
       preselected,
       proposalThresholdPence: PROPOSAL_THRESHOLD_PENCE,
+      directorsApprovalThresholdPence: DIRECTORS_APPROVAL_THRESHOLD_PENCE,
     });
   };
 

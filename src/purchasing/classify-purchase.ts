@@ -17,12 +17,16 @@ import {
 // of £1,000 or more, or when it would take this year's CapEx past the
 // purchasing area's yearly budget. Anything else comes out of the budget.
 //
-// Alongside the outcome comes the approval it needs: operations spending
-// needs the directors' approval (though not the budget), a proposal-needed
-// purchase needs a proposal, and everything else needs none.
+// Alongside the outcome comes the approval it needs: operations spending over
+// £500 needs the directors' approval (though not the budget), a
+// proposal-needed purchase needs a proposal, and everything else needs none.
 
 // A single CapEx purchase of this much or more always needs a proposal.
 export const PROPOSAL_THRESHOLD_PENCE = 100_000;
+
+// Operations spending of more than this (strictly) needs the directors'
+// approval; this much or less needs none.
+export const DIRECTORS_APPROVAL_THRESHOLD_PENCE = 50_000;
 
 // Later questions are only asked when every earlier answer was "no", so they
 // may be missing (null) when an earlier answer already settled it.
@@ -84,10 +88,15 @@ export const classifyPurchase = (
     });
   }
   if (answers.isOperations) {
+    const needsDirectors = amountPence > DIRECTORS_APPROVAL_THRESHOLD_PENCE;
     return E.right({
       outcome: 'opex-operations',
-      approval: 'directors',
-      reason: `This keeps things running safely (maintenance, a running cost or a like-for-like replacement). ${OPEX_NOTE} It needs the directors' approval.`,
+      approval: needsDirectors ? 'directors' : 'none',
+      reason: `This keeps things running safely (maintenance, a running cost or a like-for-like replacement). ${OPEX_NOTE}${
+        needsDirectors
+          ? ` At over ${formatPence(DIRECTORS_APPROVAL_THRESHOLD_PENCE)} it needs the directors' approval.`
+          : ''
+      }`,
       answers: {
         isMemberPaidConsumable: false,
         isOperations: true,

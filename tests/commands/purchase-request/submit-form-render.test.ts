@@ -37,6 +37,7 @@ const viewModel: PurchaseRequestFormViewModel = {
   purchasingAreas: [textile, craft],
   preselected: O.some(craft.id),
   proposalThresholdPence: 100_000,
+  directorsApprovalThresholdPence: 50_000,
 };
 
 describe('purchase request form', () => {

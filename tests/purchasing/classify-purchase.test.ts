@@ -1,6 +1,7 @@
 import {
   classifyPurchase,
   ClassificationAnswers,
+  DIRECTORS_APPROVAL_THRESHOLD_PENCE,
   PROPOSAL_THRESHOLD_PENCE,
 } from '../../src/purchasing/classify-purchase';
 import {getLeftOrFail, getRightOrFail} from '../helpers';
@@ -19,6 +20,10 @@ const roomyBudget = {
 describe('classifyPurchase', () => {
   it('treats £1,000 as the proposal threshold', () => {
     expect(PROPOSAL_THRESHOLD_PENCE).toStrictEqual(100_000);
+  });
+
+  it("treats £500 as the directors' approval threshold", () => {
+    expect(DIRECTORS_APPROVAL_THRESHOLD_PENCE).toStrictEqual(50_000);
   });
 
   describe('when it is a consumable members pay for at point of use', () => {
@@ -93,9 +98,9 @@ describe('classifyPurchase', () => {
       expect(result.outcome).toStrictEqual('opex-operations');
     });
 
-    it("needs the directors' approval", () => {
+    it("needs the directors' approval, being over £500", () => {
       expect(result.approval).toStrictEqual('directors');
-      expect(result.reason).toContain("directors' approval");
+      expect(result.reason).toContain("over £500.00 it needs the directors' approval");
     });
 
     it('drops the answer to the under-£100 question', () => {
@@ -104,6 +109,47 @@ describe('classifyPurchase', () => {
         isOperations: true,
         under100PerYear: null,
       });
+    });
+  });
+
+  describe('when operations spending is exactly £500', () => {
+    const result = getRightOrFail(
+      classifyPurchase({
+        answers: {
+          isMemberPaidConsumable: false,
+          isOperations: true,
+          under100PerYear: null,
+        },
+        amountPence: 50_000,
+        ...roomyBudget,
+      })
+    );
+
+    it('is OpEx (operations)', () => {
+      expect(result.outcome).toStrictEqual('opex-operations');
+    });
+
+    it("does not need the directors' approval", () => {
+      expect(result.approval).toStrictEqual('none');
+      expect(result.reason).not.toContain('directors');
+    });
+  });
+
+  describe('when operations spending is £500.01', () => {
+    it("needs the directors' approval", () => {
+      const result = getRightOrFail(
+        classifyPurchase({
+          answers: {
+            isMemberPaidConsumable: false,
+            isOperations: true,
+            under100PerYear: null,
+          },
+          amountPence: 50_001,
+          ...roomyBudget,
+        })
+      );
+      expect(result.outcome).toStrictEqual('opex-operations');
+      expect(result.approval).toStrictEqual('directors');
     });
   });
 

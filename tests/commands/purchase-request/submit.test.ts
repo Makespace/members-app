@@ -235,7 +235,14 @@ describe('submit purchase request', () => {
     });
   });
 
-  it("records that operations spending needs the directors' approval", async () => {
+  it("records that operations spending of £500 needs no approval", async () => {
+    const event = await submitted(
+      formBody({isOperations: 'true', estimatedAmount: '500.00'})
+    );
+    expect(event).toMatchObject({outcome: 'opex-operations', approval: 'none'});
+  });
+
+  it("records that operations spending over £500 needs the directors' approval", async () => {
     const event = await submitted(
       formBody({isOperations: 'true', estimatedAmount: '630.00'})
     );

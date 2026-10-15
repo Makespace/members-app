@@ -40,6 +40,8 @@ export type PurchaseRequestFormViewModel = {
   preselected: O.Option<UUID>;
   // A single CapEx purchase of this much or more needs a proposal.
   proposalThresholdPence: number;
+  // Operations spending of more than this needs the directors' approval.
+  directorsApprovalThresholdPence: number;
 };
 
 type PurchasingAreaOption =
@@ -218,6 +220,7 @@ const enhancementScript = html`
       var form = document.getElementById('purchase-request-form');
       if (!form) return;
       var threshold = Number(form.dataset.proposalThresholdPence);
+      var directorsThreshold = Number(form.dataset.directorsApprovalThresholdPence);
       var preview = form.querySelector('[data-outcome-preview]');
       var costCheck = form.querySelector('[data-cost-check]');
       var shopEntries = form.querySelector('[data-shop-entries]');
@@ -287,7 +290,12 @@ const enhancementScript = html`
         if (consumable === null) return '';
         if (consumable) return 'OpEx (a consumable) - it will not come out of the budget.';
         if (operations === null) return '';
-        if (operations) return "OpEx (operations) - it will not come out of the budget, but needs the directors' approval.";
+        if (operations) {
+          var estimate = pence(form.elements.estimatedAmount.value);
+          if (estimate === null) return "OpEx (operations) - it will not come out of the budget. Over " + money(directorsThreshold) + " it needs the directors' approval.";
+          if (estimate > directorsThreshold) return "OpEx (operations) - it will not come out of the budget, but at over " + money(directorsThreshold) + " it needs the directors' approval.";
+          return 'OpEx (operations) - it will not come out of the budget.';
+        }
         if (lowCost === null) return '';
         if (lowCost) return 'OpEx (under £100 a year) - it will not come out of the budget.';
         var amount = pence(form.elements.estimatedAmount.value);
@@ -341,6 +349,7 @@ const renderForm = (viewModel: PurchaseRequestFormViewModel) => html`
     )}"
     method="post"
     data-proposal-threshold-pence="${viewModel.proposalThresholdPence}"
+    data-directors-approval-threshold-pence="${viewModel.directorsApprovalThresholdPence}"
   >
     <input type="hidden" name="id" value="${viewModel.requestId}" />
     ${renderPurchasingAreaPicker(viewModel)}
