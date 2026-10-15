@@ -102,7 +102,7 @@ describe('purchase request form', () => {
       );
     });
 
-    it('asks only whether it is a consumable, with examples', () => {
+    it('asks only whether it is a consumable, with an example', () => {
       const radios = form.querySelectorAll<HTMLInputElement>(
         '.fieldset-item input[type="radio"][name="isMemberPaidConsumable"]'
       );
@@ -111,9 +111,10 @@ describe('purchase request form', () => {
         'false',
       ]);
       expect(radios[0].required).toBe(true);
-      expect(form.querySelector('details summary')?.textContent).toContain(
-        'Examples'
-      );
+      expect(
+        form.querySelector('[data-consumable-question]')?.textContent
+      ).toContain('3D printer filament');
+      expect(form.querySelector('[data-consumable-question] details')).toBeNull();
       expect(form.querySelector('[name="isOperations"]')).toBeNull();
     });
 

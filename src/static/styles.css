@@ -1210,18 +1210,6 @@ label img {
   align-self: flex-start;
 }
 
-.purchase-example {
-  font-size: 0.95rem;
-}
-
-.purchase-example summary {
-  cursor: pointer;
-}
-
-.purchase-example > div {
-  margin-top: 0.4rem;
-}
-
 .purchase-question {
   border-left: 5px solid var(--border-color);
   padding-left: 1rem;

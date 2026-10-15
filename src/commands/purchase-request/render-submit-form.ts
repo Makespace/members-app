@@ -490,14 +490,9 @@ const renderForm = (viewModel: PurchaseRequestFormViewModel) => html`
         data-consumable-question
       >
         <legend>Is it a consumable that members pay for when they use it?</legend>
-        <details class="purchase-example">
-          <summary>Examples</summary>
-          <div>
-            Yes: 3D printer filament, paid for on SumUp at the point of
-            use.<br />No: repairs, servicing, running costs, replacements and
-            new equipment. These all come out of the yearly budget.
-          </div>
-        </details>
+        <p class="purchase-request__hint text-sm">
+          For example, 3D printer filament, paid for on SumUp when it's used.
+        </p>
         <div class="purchase-request__radios purchase-request__radios--inline">
           <div class="fieldset-item">
             <input
