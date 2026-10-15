@@ -1,6 +1,7 @@
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
-import {html, joinHtml, safe, sanitizeString} from '../../types/html';
+import {DateTime} from 'luxon';
+import {html, joinHtml, sanitizeString} from '../../types/html';
 import {formatPence} from '../../types/money';
 import {
   PurchaseRequest,
@@ -10,9 +11,11 @@ import {
 import {renderMemberNumber} from '../../templates/member-number';
 import {displayDate} from '../../templates/display-date';
 import {renderOutcome} from '../../templates/purchase-request-outcome';
-import {DateTime} from 'luxon';
+import {countsAgainstBudget} from '../../purchasing/budget-year';
 
 type ViewModel = {
+  // Straight after submitting: shown as the confirmation of a sent request.
+  justSent: boolean;
   request: PurchaseRequest;
   purchasingArea: O.Option<PurchasingAreaSummary>;
   submitterName: O.Option<string>;
@@ -20,93 +23,113 @@ type ViewModel = {
 
 const money = (pence: number) => sanitizeString(formatPence(pence));
 
-const yesNo = (value: boolean | null) =>
-  value === null ? html`<small>Not asked</small>` : safe(value ? 'Yes' : 'No');
-
 const isWebLink = (link: string) => /^https?:\/\//i.test(link);
 
-const renderLink = (link: O.Option<string>) =>
+const renderShop = (purchase: PurchaseRequestPurchase) =>
   pipe(
-    link,
+    purchase.link,
+    O.filter(isWebLink),
     O.match(
-      () => html`<small>No link given</small>`,
+      () => html`${sanitizeString(purchase.shop)}`,
       url =>
-        isWebLink(url)
-          ? html`<a href="${sanitizeString(url)}" rel="noreferrer" target="_blank"
-              >${sanitizeString(url)}</a
-            >`
-          : sanitizeString(url)
+        html`<a href="${sanitizeString(url)}" target="_blank" rel="noopener"
+          >${sanitizeString(purchase.shop)}</a
+        >`
     )
   );
 
-const renderPurchase = (purchase: PurchaseRequestPurchase) => html`
-  <article class="stack">
-    <h3>${sanitizeString(purchase.shop)}</h3>
-    <p>${renderLink(purchase.link)}</p>
-    <p style="white-space: pre-line">${sanitizeString(purchase.items)}</p>
-    ${pipe(
-      purchase.costPence,
-      O.match(
-        () => html``,
-        cost => html`<p>Cost: ${money(cost)}</p>`
-      )
-    )}
-  </article>
+const renderPurchaseRow = (purchase: PurchaseRequestPurchase) => html`
+  <tr>
+    <td>${renderShop(purchase)}</td>
+    <td class="purchase-shops-table__items">
+      ${sanitizeString(purchase.items)}
+    </td>
+    <td class="purchase-shops-table__cost">
+      ${pipe(
+        purchase.costPence,
+        O.match(
+          () => html`–`,
+          cost => html`${money(cost)}`
+        )
+      )}
+    </td>
+  </tr>
 `;
 
-const renderPurchases = (request: PurchaseRequest) => {
+const renderCostCheck = (request: PurchaseRequest) => {
   const costs = request.purchases.flatMap(purchase =>
     O.isSome(purchase.costPence) ? [purchase.costPence.value] : []
   );
   const total = costs.reduce((sum, cost) => sum + cost, 0);
-  return html`
-    <section class="stack">
-      <h2>What to buy</h2>
-      ${joinHtml(request.purchases.map(renderPurchase))}
-      ${costs.length > 0 && total !== request.estimatedAmountPence
-        ? html`<p>
-            <small
-              >The shop costs add up to ${money(total)}, not the estimated
-              ${money(request.estimatedAmountPence)}. The estimate is what
-              counts against the budget.</small
-            >
-          </p>`
-        : html``}
-    </section>
-  `;
+  return costs.length > 0 && total !== request.estimatedAmountPence
+    ? html`<p class="text-sm">
+        <span class="tag tag--yellow">Check</span> The shops add up to
+        ${money(total)}, but the estimate was
+        ${money(request.estimatedAmountPence)}. The estimate is what counts
+        against the budget.
+      </p>`
+    : html``;
 };
 
-export const render = ({request, purchasingArea, submitterName}: ViewModel) => html`
-  <div class="stack-large">
-    <h1>${sanitizeString(request.summary)}</h1>
-    <section class="stack">
-      <p>${renderOutcome(request.outcome, request.approval)}</p>
-      <p>${sanitizeString(request.outcomeReason)}</p>
-    </section>
-    <table>
-      <tbody>
-        <tr>
-          <th>Purchasing area</th>
-          <td>
+export const render = ({
+  justSent,
+  request,
+  purchasingArea,
+  submitterName,
+}: ViewModel) => {
+  const areaName = pipe(
+    purchasingArea,
+    O.match(
+      () => 'a purchasing area that no longer exists',
+      summary => summary.name
+    )
+  );
+  // This year's spend as it stood once this request was counted.
+  const spendAfter =
+    request.spentThisYearPence +
+    (countsAgainstBudget(request.outcome) ? request.estimatedAmountPence : 0);
+  const reference = sanitizeString(
+    `${request.summary} · ${formatPence(request.estimatedAmountPence)} · ${areaName}`
+  );
+  return html`
+    <div class="purchase-request purchase-request__sections">
+      <div
+        class="purchase-confirmation${justSent
+          ? html``
+          : html` purchase-confirmation--record`}"
+      >
+        <h1>
+          ${justSent ? html`Request sent` : sanitizeString(request.summary)}
+        </h1>
+        <p>${reference}</p>
+      </div>
+      <div class="purchase-request__stack">
+        <dl class="purchase-summary">
+          <dt>Budget</dt>
+          <dd>${renderOutcome(request.outcome, request.approval)}</dd>
+          <dt>Why</dt>
+          <dd>${sanitizeString(request.outcomeReason)}</dd>
+          <dt>Area</dt>
+          <dd>
             ${pipe(
               purchasingArea,
               O.match(
-                () => html`<small>No longer exists</small>`,
+                () => html`${sanitizeString(areaName)}`,
                 summary =>
                   html`<a href="/purchasing-areas/${summary.id}"
                     >${sanitizeString(summary.name)}</a
                   >`
               )
             )}
-          </td>
-        </tr>
-        <tr>
-          <th>Estimated total</th>
-          <td>${money(request.estimatedAmountPence)}</td>
-        </tr>
-        <tr>
-          <th>Submitted</th>
-          <td>
+          </dd>
+          <dt>${request.budgetYear} spend</dt>
+          <dd>
+            ${money(spendAfter)} of ${money(request.yearlyBudgetPence)}
+          </dd>
+          <dt>Estimate</dt>
+          <dd>${money(request.estimatedAmountPence)}</dd>
+          <dt>Sent</dt>
+          <dd>
             ${displayDate(DateTime.fromJSDate(request.submittedAt))} by
             ${pipe(
               submitterName,
@@ -116,26 +139,33 @@ export const render = ({request, purchasingArea, submitterName}: ViewModel) => h
               )
             )}
             ${renderMemberNumber(request.submittedByMemberNumber)}
-          </td>
-        </tr>
-        <tr>
-          <th>Why it is needed</th>
-          <td>${sanitizeString(request.justification)}</td>
-        </tr>
-        <tr>
-          <th>Consumable members pay for at point of use?</th>
-          <td>${yesNo(request.isMemberPaidConsumable)}</td>
-        </tr>
-        <tr>
-          <th>Budget when submitted</th>
-          <td>
-            ${money(request.spentThisYearPence)} already spent from the budget in
-            ${request.budgetYear}, against a yearly budget of
-            ${money(request.yearlyBudgetPence)}
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    ${renderPurchases(request)}
-  </div>
-`;
+          </dd>
+          <dt>Why it's needed</dt>
+          <dd>${sanitizeString(request.justification)}</dd>
+        </dl>
+        <table class="purchase-shops-table">
+          <thead>
+            <tr>
+              <th>Shop</th>
+              <th>Items</th>
+              <th class="purchase-shops-table__cost">Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${joinHtml(request.purchases.map(renderPurchaseRow))}
+          </tbody>
+        </table>
+        ${renderCostCheck(request)}
+        ${request.approval === 'proposal'
+          ? html`<p>
+              <strong>Next:</strong> write your proposal. Nothing will be bought
+              until it is agreed.
+            </p>`
+          : html`<p>
+              The area's other owners and the treasurer can see this request on
+              the purchasing page.
+            </p>`}
+      </div>
+    </div>
+  `;
+};

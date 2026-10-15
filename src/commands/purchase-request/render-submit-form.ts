@@ -1,28 +1,21 @@
 // The purchase request form, kept in this one file so the design can be
-// swapped out wholesale (it is being iterated on separately via a prototype).
+// swapped out wholesale. It follows the purchase-request prototype: pick the
+// purchasing area, see its budget, give an estimated total, say whether it is
+// a consumable, see the verdict, then say what is being bought and from where.
 // It only needs the view model below; everything it shows comes from there.
+// Its styles are the `.purchase-request` rules in src/static/styles.css.
 //
-// The form asks for the purchasing area and an estimated total first, then
-// whether it is a consumable (classified with that estimate), then the
-// specifics: a short summary, one entry per shop or website, and why it is
-// needed.
-//
-// It works without JavaScript: every section is shown, a fixed number
-// of shop entries are offered (blank ones are ignored), and the server works
-// out the outcome on submit. The small inline script at the bottom is a
-// progressive enhancement that // previews the likely outcome, adds shop entries on request and points out
-// when the shop costs don't add up to the estimate. The server is always
-// authoritative - see src/purchasing/classify-purchase.ts.
+// It works without JavaScript: every section is shown, each purchasing area's
+// budget is listed, three shop entries are offered (blank ones are ignored)
+// and the server works out the outcome on submit. The inline script at the
+// bottom is a progressive enhancement that reveals sections as the questions
+// are answered, keeps the budget bar and the verdict up to date, adds and
+// removes shop entries and compares the shop costs with the estimate. The
+// server is always authoritative - see src/purchasing/classify-purchase.ts.
 
 import * as O from 'fp-ts/Option';
 import {UUID} from 'io-ts-types';
-import {
-  html,
-  Html,
-  joinHtml,
-  safe,
-  sanitizeString,
-} from '../../types/html';
+import {html, joinHtml, safe, sanitizeString} from '../../types/html';
 
 export type PurchaseRequestFormViewModel = {
   requestId: UUID;
@@ -47,188 +40,360 @@ type PurchasingAreaOption =
 // Shop entries offered without JavaScript; blank ones are ignored.
 const SHOP_ENTRIES = 3;
 
-const pounds = (pence: number) =>
+// "£420" for whole pounds, "£420.50" otherwise - as the prototype shows money.
+const gbp = (pence: number) =>
   sanitizeString(
-    (pence / 100).toLocaleString('en-GB', {style: 'currency', currency: 'GBP'})
+    '£' +
+      (pence / 100).toLocaleString('en-GB', {
+        minimumFractionDigits: pence % 100 === 0 ? 0 : 2,
+        maximumFractionDigits: 2,
+      })
   );
 
-const renderBudgetRow = (purchasingArea: PurchasingAreaOption) => html`
-  <tr>
-    <td>
-      <a href="/purchasing-areas/${purchasingArea.id}"
-        >${sanitizeString(purchasingArea.name)}</a
-      >
-      ${purchasingArea.areaNames.length > 0
-        ? html`<br /><small
-              >${sanitizeString(purchasingArea.areaNames.join(', '))}</small
+const percent = (part: number, whole: number) =>
+  safe(((part / whole) * 100).toFixed(2));
+
+const isSelected = (
+  viewModel: PurchaseRequestFormViewModel,
+  purchasingArea: PurchasingAreaOption
+) =>
+  viewModel.purchasingAreas.length === 1 ||
+  (O.isSome(viewModel.preselected) &&
+    viewModel.preselected.value === purchasingArea.id);
+
+const renderAreaRadio =
+  (viewModel: PurchaseRequestFormViewModel) =>
+  (purchasingArea: PurchasingAreaOption) => html`
+    <div class="fieldset-item">
+      <input
+        type="radio"
+        name="purchasingAreaId"
+        id="area-${purchasingArea.id}"
+        value="${purchasingArea.id}"
+        data-budget-pence="${purchasingArea.yearlyBudgetPence}"
+        data-spent-pence="${purchasingArea.spentThisYearPence}"
+        required
+        ${isSelected(viewModel, purchasingArea) ? safe('checked') : safe('')}
+      />
+      <label for="area-${purchasingArea.id}">
+        <span data-area-name>${sanitizeString(purchasingArea.name)}</span>
+        ${purchasingArea.areaNames.length > 1
+          ? html`<span class="purchase-request__hint text-sm"
+              >Shared budget:
+              ${sanitizeString(purchasingArea.areaNames.join(' and '))}</span
             >`
-        : html``}
-    </td>
-    <td>${pounds(purchasingArea.yearlyBudgetPence)}</td>
-    <td>${pounds(purchasingArea.spentThisYearPence)}</td>
-    <td>${pounds(purchasingArea.remainingPence)}</td>
-  </tr>
-`;
+          : html``}
+      </label>
+    </div>
+  `;
 
-const renderBudgets = (viewModel: PurchaseRequestFormViewModel) => html`
-  <section class="stack">
-    <h2>Budgets for ${viewModel.budgetYear}</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Purchasing area</th>
-          <th>Yearly budget</th>
-          <th>Spent so far</th>
-          <th>Remaining</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${joinHtml(viewModel.purchasingAreas.map(renderBudgetRow))}
-      </tbody>
-    </table>
-    <p>
-      <small
-        >Everything except consumables that members pay for comes out of
-        the budget.</small
-      >
-    </p>
-  </section>
-`;
-
-const renderPurchasingAreaOption =
-  (preselected: O.Option<UUID>) => (purchasingArea: PurchasingAreaOption) =>
-    html`<option
-      value="${purchasingArea.id}"
-      data-budget-pence="${purchasingArea.yearlyBudgetPence}"
-      data-spent-pence="${purchasingArea.spentThisYearPence}"
-      ${O.isSome(preselected) && preselected.value === purchasingArea.id
-        ? safe('selected')
-        : safe('')}
+// Spent so far, and the budget limit. The script adds this purchase.
+const renderBar = (
+  purchasingArea: PurchasingAreaOption,
+  budgetYear: number
+) => {
+  const scale =
+    Math.max(
+      purchasingArea.yearlyBudgetPence,
+      purchasingArea.spentThisYearPence
+    ) || 1;
+  return html`
+    <div
+      class="purchase-bar"
+      role="img"
+      aria-label="${gbp(purchasingArea.spentThisYearPence)} spent, of a ${gbp(
+        purchasingArea.yearlyBudgetPence
+      )} budget"
     >
-      ${sanitizeString(purchasingArea.name)}
-    </option>`;
-
-const renderPurchasingAreaPicker = (viewModel: PurchaseRequestFormViewModel) =>
-  viewModel.purchasingAreas.length === 1
-    ? html`
-        <p>
-          For <b>${sanitizeString(viewModel.purchasingAreas[0].name)}</b>
-        </p>
-        <select name="purchasingAreaId" id="purchasingAreaId" hidden>
-          ${renderPurchasingAreaOption(O.some(viewModel.purchasingAreas[0].id))(
-            viewModel.purchasingAreas[0]
-          )}
-        </select>
-      `
-    : html`
-        <label for="purchasingAreaId">Which purchasing area is it for?</label>
-        <select name="purchasingAreaId" id="purchasingAreaId" required>
-          ${O.isNone(viewModel.preselected)
-            ? html`<option value="" selected disabled>Choose one</option>`
-            : html``}
-          ${joinHtml(
-            viewModel.purchasingAreas.map(
-              renderPurchasingAreaOption(viewModel.preselected)
-            )
-          )}
-        </select>
-      `;
-
-const yesNo = (
-  name: string,
-  legend: Html,
-  hint: Html,
-  required: boolean
-) => html`
-  <fieldset data-question="${safe(name)}">
-    <legend>${legend}</legend>
-    <p><small>${hint}</small></p>
-    <div class="fieldset-item">
-      <input
-        type="radio"
-        id="${safe(name)}-yes"
-        name="${safe(name)}"
-        value="true"
-        ${required ? safe('required') : safe('')}
-      />
-      <label for="${safe(name)}-yes"><span>Yes</span></label>
+      <div
+        class="purchase-bar__spent"
+        style="width:${percent(purchasingArea.spentThisYearPence, scale)}%"
+      ></div>
+      <div
+        class="purchase-bar__limit"
+        style="left:calc(${percent(
+          purchasingArea.yearlyBudgetPence,
+          scale
+        )}% - 3px)"
+      ></div>
     </div>
-    <div class="fieldset-item">
-      <input
-        type="radio"
-        id="${safe(name)}-no"
-        name="${safe(name)}"
-        value="false"
-        ${required ? safe('required') : safe('')}
-      />
-      <label for="${safe(name)}-no"><span>No</span></label>
+    <div class="purchase-bar-legend">
+      <span
+        ><span class="purchase-swatch purchase-swatch--spent"></span>Spent in
+        ${budgetYear}</span
+      >
+      <span
+        ><span class="purchase-swatch purchase-swatch--limit"></span>Yearly
+        budget</span
+      >
     </div>
-  </fieldset>
-`;
+  `;
+};
+
+const renderBudget =
+  (budgetYear: number) => (purchasingArea: PurchasingAreaOption) => html`
+    <div
+      class="purchase-budget"
+      data-budget-for="${purchasingArea.id}"
+      aria-live="polite"
+    >
+      <div class="purchase-request__tight">
+        <strong
+          >${sanitizeString(purchasingArea.name)} yearly budget,
+          ${budgetYear}</strong
+        >
+        <span class="purchase-request__hint text-sm"
+          >${purchasingArea.areaNames.length > 0
+            ? html`Covers
+              ${sanitizeString(purchasingArea.areaNames.join(' and '))}. `
+            : html``}Resets on 1 January.</span
+        >
+      </div>
+      <dl>
+        <div>
+          <dt>Yearly budget</dt>
+          <dd>${gbp(purchasingArea.yearlyBudgetPence)}</dd>
+        </div>
+        <div>
+          <dt>Spent so far</dt>
+          <dd>${gbp(purchasingArea.spentThisYearPence)}</dd>
+        </div>
+        <div>
+          <dt>Remaining</dt>
+          <dd>${gbp(Math.max(purchasingArea.remainingPence, 0))}</dd>
+        </div>
+      </dl>
+      <div data-budget-bar>${renderBar(purchasingArea, budgetYear)}</div>
+    </div>
+  `;
 
 const renderShopEntry = (index: number) => {
   const required = index === 0 ? safe('required') : safe('');
   return html`
-    <fieldset class="stack purchase-request__shop" data-shop-entry>
-      <legend>
-        Shop ${index + 1}${index === 0 ? html`` : html` (optional)`}
-      </legend>
-      <label for="purchases-${index}-shop">Shop or website</label>
-      <input
-        type="text"
-        name="purchases[${index}][shop]"
-        id="purchases-${index}-shop"
-        ${required}
-      />
-      <label for="purchases-${index}-link">Link (optional)</label>
-      <input
-        type="text"
-        inputmode="url"
-        name="purchases[${index}][link]"
-        id="purchases-${index}-link"
-      />
-      <label for="purchases-${index}-items">Items and quantities</label>
-      <textarea
-        name="purchases[${index}][items]"
-        id="purchases-${index}-items"
-        rows="3"
-        placeholder="e.g. 2 x 1kg PLA filament (black)"
-        ${required}
-      ></textarea>
-      <label for="purchases-${index}-cost"
-        >Cost from this shop (£, optional)</label
-      >
-      <input
-        type="text"
-        inputmode="decimal"
-        name="purchases[${index}][cost]"
-        id="purchases-${index}-cost"
-        data-shop-cost
-      />
-    </fieldset>
+    <div class="purchase-shop" data-shop-entry>
+      <div class="purchase-shop__head">
+        <strong data-shop-title>Shop ${index + 1}</strong>
+        <button
+          class="purchase-request__link-button jsonly"
+          type="button"
+          data-remove-shop
+          hidden
+        >
+          Remove
+        </button>
+      </div>
+      <div class="purchase-shop__row">
+        <div class="purchase-field">
+          <label class="purchase-field__label" for="purchases-${index}-shop"
+            >Shop or website</label
+          >
+          <input
+            type="text"
+            name="purchases[${index}][shop]"
+            id="purchases-${index}-shop"
+            placeholder="e.g. Axminster Tools"
+            ${required}
+          />
+        </div>
+        <div class="purchase-field">
+          <label class="purchase-field__label" for="purchases-${index}-cost"
+            >Cost</label
+          >
+          <div class="purchase-money">
+            <span>£</span
+            ><input
+              type="text"
+              inputmode="decimal"
+              name="purchases[${index}][cost]"
+              id="purchases-${index}-cost"
+              placeholder="0.00"
+              data-shop-cost
+            />
+          </div>
+        </div>
+      </div>
+      <div class="purchase-field">
+        <label class="purchase-field__label" for="purchases-${index}-link"
+          >Link
+          <span class="purchase-request__hint purchase-request__normal"
+            >(optional)</span
+          ></label
+        >
+        <input
+          type="text"
+          inputmode="url"
+          name="purchases[${index}][link]"
+          id="purchases-${index}-link"
+          placeholder="https://"
+        />
+      </div>
+      <div class="purchase-field">
+        <label class="purchase-field__label" for="purchases-${index}-items"
+          >What you're buying here</label
+        >
+        <span class="purchase-request__hint text-sm"
+          >List each item with its quantity.</span
+        >
+        <textarea
+          name="purchases[${index}][items]"
+          id="purchases-${index}-items"
+          ${required}
+        ></textarea>
+      </div>
+    </div>
   `;
 };
 
-// Plain browser JavaScript, kept free of template substitutions.
+// Plain browser JavaScript, kept free of template substitutions (so no
+// backtick strings in it) and of single backslashes.
 const enhancementScript = html`
   <script>
     (function () {
       var form = document.getElementById('purchase-request-form');
       if (!form) return;
       var threshold = Number(form.dataset.proposalThresholdPence);
-      var preview = form.querySelector('[data-outcome-preview]');
-      var costCheck = form.querySelector('[data-cost-check]');
-      var shopEntries = form.querySelector('[data-shop-entries]');
+      var year = form.dataset.budgetYear;
+      var verdict = form.querySelector('[data-verdict]');
+      var question = form.querySelector('[data-consumable-question]');
+      var submitSection = form.querySelector('[data-submit-section]');
+      var shops = form.querySelector('[data-shop-entries]');
+      var total = form.querySelector('[data-shop-total]');
+      var justificationHint = form.querySelector('[data-justification-hint]');
+      var budgets = form.querySelectorAll('[data-budget-for]');
 
-      // With JavaScript, start with one shop and add more on request.
-      var entries = shopEntries.querySelectorAll('[data-shop-entry]');
-      var template = entries[entries.length - 1].cloneNode(true);
+      function esc(text) {
+        return String(text).replace(/[&<>"']/g, function (c) {
+          return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+        });
+      }
+      function gbp(pence) {
+        return '£' + (pence / 100).toLocaleString('en-GB', {
+          minimumFractionDigits: pence % 100 ? 2 : 0,
+          maximumFractionDigits: 2,
+        });
+      }
+      function pence(value) {
+        var cleaned = value.replace(/[£,\\s]/g, '');
+        if (!/^\\d+(\\.\\d{1,2})?$/.test(cleaned)) return null;
+        var parts = cleaned.split('.');
+        return Number(parts[0]) * 100 + Number((parts[1] || '').padEnd(2, '0'));
+      }
+      function checked(name) {
+        return form.querySelector('input[name="' + name + '"]:checked');
+      }
+      function selectedArea() {
+        var radio = checked('purchasingAreaId');
+        if (!radio) return null;
+        var label = form.querySelector('label[for="' + radio.id + '"] [data-area-name]');
+        return {
+          id: radio.value,
+          name: label ? label.textContent.trim() : '',
+          budget: Number(radio.dataset.budgetPence),
+          spent: Number(radio.dataset.spentPence),
+        };
+      }
+
+      // Mirrors classifyPurchase on the server, which has the final say.
+      function classify(consumable, amount, area) {
+        if (consumable === 'true') return {key: 'consumable'};
+        if (consumable !== 'false') return null;
+        if (amount >= threshold) return {key: 'proposal', reason: 'single'};
+        if (area.spent + amount > area.budget) return {key: 'proposal', reason: 'over'};
+        return {key: 'budget'};
+      }
+
+      function bar(area, amount, showNew) {
+        var after = area.spent + amount;
+        var scale = Math.max(area.budget, after) || 1;
+        function pct(n) { return (n / scale) * 100; }
+        var over = after > area.budget || amount >= threshold;
+        var withNew = showNew && amount > 0;
+        return '<div class="purchase-bar" role="img" aria-label="' + gbp(area.spent) + ' spent' +
+          (withNew ? ', plus ' + gbp(amount) + ' for this purchase' : '') + ', of a ' + gbp(area.budget) + ' budget">' +
+          '<div class="purchase-bar__spent" style="width:' + pct(area.spent) + '%"></div>' +
+          (withNew ? '<div class="purchase-bar__new' + (over ? ' purchase-bar__new--over' : '') +
+            '" style="left:' + pct(area.spent) + '%;width:' + pct(amount) + '%"></div>' : '') +
+          '<div class="purchase-bar__limit" style="left:calc(' + pct(area.budget) + '% - 3px)"></div>' +
+          '</div><div class="purchase-bar-legend">' +
+          '<span><span class="purchase-swatch purchase-swatch--spent"></span>Spent in ' + esc(year) + '</span>' +
+          (withNew ? '<span><span class="purchase-swatch ' + (over ? 'purchase-swatch--over' : 'purchase-swatch--new') +
+            '"></span>This purchase</span>' : '') +
+          '<span><span class="purchase-swatch purchase-swatch--limit"></span>Yearly budget</span></div>';
+      }
+
+      function renderVerdict(r, area, amount) {
+        var after = area.spent + amount;
+        var remaining = area.budget - area.spent;
+        if (r.key === 'consumable') {
+          return '<div class="purchase-verdict purchase-verdict--consumable">' +
+            '<span><span class="tag tag--green">Consumable</span></span>' +
+            '<h2>This doesn' + "'" + 't come out of your yearly budget</h2>' +
+            '<p>Members pay for consumables when they use them, so the cost comes back to Makespace. ' +
+            'Make sure the price on SumUp covers what you' + "'" + 're buying.</p></div>';
+        }
+        if (!amount) {
+          return '<div class="purchase-verdict purchase-verdict--budget">' +
+            '<span><span class="tag tag--grey">Yearly budget</span></span>' +
+            '<h2>This comes out of your yearly budget</h2>' +
+            '<p>Enter how much it will cost above to see whether you' + "'" + 'll need a proposal.</p></div>';
+        }
+        if (r.key === 'budget') {
+          return '<div class="purchase-verdict purchase-verdict--budget">' +
+            '<span><span class="tag tag--yellow">Yearly budget</span></span>' +
+            '<h2>This comes out of your yearly budget. No proposal needed.</h2>' +
+            '<p>It will take ' + esc(area.name) + ' from ' + gbp(area.spent) + ' to <strong>' + gbp(after) +
+            '</strong> of its ' + gbp(area.budget) + ' budget, leaving ' + gbp(area.budget - after) +
+            ' for the rest of ' + esc(year) + '.</p></div>';
+        }
+        var why = r.reason === 'single'
+          ? '<li>It costs ' + gbp(amount) + '. Any single purchase of ' + gbp(threshold) + ' or more needs a proposal.</li>'
+          : '<li>It would take ' + esc(area.name) + ' to ' + gbp(after) + ', which is ' + gbp(after - area.budget) +
+            ' over its ' + gbp(area.budget) + ' budget. You have ' + gbp(Math.max(remaining, 0)) +
+            ' left this year without a proposal.</li>';
+        return '<div class="purchase-verdict purchase-verdict--proposal">' +
+          '<span><span class="tag tag--red">Yearly budget · Proposal needed</span></span>' +
+          '<h2>You' + "'" + 'll need to write a proposal</h2><ul>' + why + '</ul>' +
+          '<p>You can still send this request so it' + "'" + 's on record. Nothing will be bought until the proposal is agreed.</p></div>';
+      }
+
+      function renderTotal(amount) {
+        var sum = 0;
+        form.querySelectorAll('[data-shop-cost]').forEach(function (field) {
+          var cost = pence(field.value);
+          if (cost !== null) sum += cost;
+        });
+        if (!sum) return '';
+        if (sum === amount) {
+          return '<span class="tag tag--green">Matches</span> Total ' + gbp(sum) + ', the same as your estimate.';
+        }
+        return '<span class="tag tag--yellow">Check</span> These add up to ' + gbp(sum) + ', but your estimate above is ' +
+          gbp(amount) + '. Update the estimate if the total has changed, because it affects which budget this comes from.';
+      }
+
+      // Shop entries: start with one, add or remove on request. Field
+      // indices only ever go up, so names stay unique after a removal.
+      var entries = shops.querySelectorAll('[data-shop-entry]');
+      var template = entries[0].cloneNode(true);
       for (var i = 1; i < entries.length; i++) entries[i].remove();
-      var nextIndex = 1;
+      var nextIndex = entries.length;
+      function renumber() {
+        var all = shops.querySelectorAll('[data-shop-entry]');
+        all.forEach(function (entry, index) {
+          entry.querySelector('[data-shop-title]').textContent = all.length > 1 ? 'Shop ' + (index + 1) : 'Where from';
+          entry.querySelector('[data-remove-shop]').hidden = all.length < 2;
+        });
+      }
+      function wireRemove(entry) {
+        entry.querySelector('[data-remove-shop]').addEventListener('click', function () {
+          entry.remove();
+          renumber();
+          update();
+        });
+      }
+      wireRemove(entries[0]);
       form.querySelector('[data-add-shop]').addEventListener('click', function () {
         var index = nextIndex++;
         var entry = template.cloneNode(true);
-        entry.querySelector('legend').textContent = 'Shop ' + (index + 1) + ' (optional)';
         entry.querySelectorAll('[name]').forEach(function (field) {
           field.name = field.name.replace(/\\[\\d+\\]/, '[' + index + ']');
           field.id = field.id.replace(/-\\d+-/, '-' + index + '-');
@@ -237,70 +402,44 @@ const enhancementScript = html`
         entry.querySelectorAll('label[for]').forEach(function (label) {
           label.htmlFor = label.htmlFor.replace(/-\\d+-/, '-' + index + '-');
         });
-        shopEntries.appendChild(entry);
+        wireRemove(entry);
+        shops.appendChild(entry);
+        renumber();
         entry.querySelector('input').focus();
+        update();
       });
+      renumber();
 
-      function answer(name) {
-        var checked = form.querySelector('input[name="' + name + '"]:checked');
-        return checked ? checked.value === 'true' : null;
-      }
-      function pence(value) {
-        var cleaned = value.replace(/[£,\\s]/g, '');
-        if (!/^\\d+(\\.\\d{1,2})?$/.test(cleaned)) return null;
-        var parts = cleaned.split('.');
-        return Number(parts[0]) * 100 + Number((parts[1] || '').padEnd(2, '0'));
-      }
-      function money(amount) {
-        return (amount / 100).toLocaleString('en-GB', {style: 'currency', currency: 'GBP'});
-      }
-      function selectedBudget() {
-        var select = form.elements.purchasingAreaId;
-        var option = select.options[select.selectedIndex];
-        if (!option || !option.value) return null;
-        return {
-          budget: Number(option.dataset.budgetPence),
-          spent: Number(option.dataset.spentPence),
-        };
-      }
-      function outcome() {
-        var consumable = answer('isMemberPaidConsumable');
-        if (consumable === null) return '';
-        if (consumable) return "a consumable - it won't come out of the yearly budget.";
-        var amount = pence(form.elements.estimatedAmount.value);
-        if (amount === null) return 'yearly budget - enter the estimated total to see whether it needs a proposal.';
-        if (amount >= threshold) return 'yearly budget - a single purchase of ' + money(threshold) + ' or more needs a proposal.';
-        var figures = selectedBudget();
-        if (figures === null) return 'yearly budget - choose the purchasing area to check it against the budget.';
-        var after = figures.spent + amount;
-        if (after > figures.budget) {
-          return 'yearly budget - this would take this year to ' + money(after) + ', over the ' + money(figures.budget) + ' budget, so it needs a proposal.';
-        }
-        return 'from the yearly budget, leaving ' + money(figures.budget - after) + '.';
-      }
-      // Shop costs are optional and need not match the estimate; a mismatch
-      // is pointed out, not refused.
-      function costMismatch() {
-        var estimate = pence(form.elements.estimatedAmount.value);
-        var total = 0;
-        var any = false;
-        form.querySelectorAll('[data-shop-cost]').forEach(function (field) {
-          var cost = pence(field.value);
-          if (cost !== null) { total += cost; any = true; }
-        });
-        if (!any || estimate === null || total === estimate) return '';
-        return 'The shop costs add up to ' + money(total) + ', but the estimate is ' + money(estimate) + '. The estimate is what counts against the budget.';
-      }
       function update() {
-        var text = outcome();
-        preview.textContent = text ? 'Likely outcome: ' + text + ' (confirmed when you submit)' : '';
-        preview.hidden = !text;
-        var mismatch = costMismatch();
-        costCheck.textContent = mismatch;
-        costCheck.hidden = !mismatch;
+        var area = selectedArea();
+        var amount = Math.max(pence(form.elements.estimatedAmount.value) || 0, 0);
+        var consumableRadio = checked('isMemberPaidConsumable');
+        var consumable = consumableRadio ? consumableRadio.value : null;
+        question.classList.toggle('purchase-question--answered', !!consumable);
+        var r = area ? classify(consumable, amount, area) : null;
+        var fromBudget = !!r && r.key !== 'consumable';
+
+        budgets.forEach(function (budget) {
+          var shown = !!area && budget.dataset.budgetFor === area.id;
+          budget.hidden = !shown;
+          if (shown) budget.querySelector('[data-budget-bar]').innerHTML = bar(area, amount, fromBudget);
+        });
+
+        var key = r ? [r.key, r.reason || '', area.id, amount].join('|') : '';
+        if (verdict.dataset.key !== key) {
+          verdict.dataset.key = key;
+          verdict.hidden = !r;
+          verdict.innerHTML = r ? renderVerdict(r, area, amount) : '';
+        }
+        submitSection.hidden = !r;
+        total.innerHTML = r ? renderTotal(amount) : '';
+        justificationHint.textContent = r && r.key === 'proposal'
+          ? 'A short summary. You will write the full case in your proposal.'
+          : 'A sentence or two for the people who sign off spending.';
       }
-      form.addEventListener('change', update);
+
       form.addEventListener('input', update);
+      form.addEventListener('change', update);
       update();
     })();
   </script>
@@ -309,73 +448,141 @@ const enhancementScript = html`
 const renderForm = (viewModel: PurchaseRequestFormViewModel) => html`
   <form
     id="purchase-request-form"
-    class="stack"
+    class="purchase-request__sections"
     action="/purchase-requests/submit?next=${safe(
-      encodeURIComponent(`/purchase-requests/view/${viewModel.requestId}`)
+      encodeURIComponent(`/purchase-requests/view/${viewModel.requestId}?sent=1`)
     )}"
     method="post"
     data-proposal-threshold-pence="${viewModel.proposalThresholdPence}"
+    data-budget-year="${viewModel.budgetYear}"
   >
     <input type="hidden" name="id" value="${viewModel.requestId}" />
-    ${renderPurchasingAreaPicker(viewModel)}
 
-    <label for="estimatedAmount"
-      >Estimated total cost, including VAT and delivery (£)</label
-    >
-    <input
-      type="text"
-      inputmode="decimal"
-      name="estimatedAmount"
-      id="estimatedAmount"
-      placeholder="e.g. 630.00"
-      required
-    />
+    <fieldset class="purchase-request__fieldset">
+      <legend>Which area is this for?</legend>
+      <p class="purchase-request__hint text-sm">
+        You can request purchases for areas you own.
+      </p>
+      <div class="purchase-request__radios">
+        ${joinHtml(viewModel.purchasingAreas.map(renderAreaRadio(viewModel)))}
+      </div>
+    </fieldset>
 
-    <h2>Is it a consumable?</h2>
-    ${yesNo(
-      'isMemberPaidConsumable',
-      html`Is it a consumable you expect members to pay for at point of use?`,
-      html`For example 3D printer filament paid for via SumUp.`,
-      true
-    )}
-
-
-    <p class="jsonly" data-outcome-preview aria-live="polite" hidden></p>
-
-    <h2>What are you buying?</h2>
-    <label for="summary">A short name for the whole request</label>
-    <input
-      type="text"
-      name="summary"
-      id="summary"
-      placeholder="e.g. Filament restock"
-      required
-    />
-    <p>
-      <small
-        >List each shop or website separately; one shop can supply several
-        items.</small
-      >
-    </p>
-    <div class="stack" data-shop-entries>
+    <div class="purchase-request__budgets">
       ${joinHtml(
-        Array.from({length: SHOP_ENTRIES}, (_, index) => renderShopEntry(index))
+        viewModel.purchasingAreas.map(renderBudget(viewModel.budgetYear))
       )}
     </div>
-    <button type="button" class="jsonly" data-add-shop>
-      + Add another shop
-    </button>
-    <p class="jsonly" data-cost-check aria-live="polite" hidden></p>
 
-    <label for="justification">Why is it needed?</label>
-    <textarea
-      name="justification"
-      id="justification"
-      rows="4"
-      required
-    ></textarea>
+    <div class="purchase-field">
+      <label class="purchase-field__label" for="estimatedAmount"
+        >How much will it cost in total?</label
+      >
+      <span class="purchase-request__hint text-sm"
+        >Your best estimate, including VAT and delivery. You'll give the details
+        later.</span
+      >
+      <div class="purchase-money purchase-money--narrow">
+        <span>£</span
+        ><input
+          type="text"
+          inputmode="decimal"
+          name="estimatedAmount"
+          id="estimatedAmount"
+          placeholder="0.00"
+          required
+        />
+      </div>
+    </div>
 
-    <button type="submit">Submit purchase request</button>
+    <div class="purchase-request__stack">
+      <h2>Which budget does it come from?</h2>
+      <fieldset
+        class="purchase-request__fieldset purchase-question"
+        data-consumable-question
+      >
+        <legend>Is it a consumable that members pay for when they use it?</legend>
+        <details class="purchase-example">
+          <summary>Examples</summary>
+          <div>
+            Yes: 3D printer filament, paid for on SumUp at the point of
+            use.<br />No: repairs, servicing, running costs, replacements and
+            new equipment. These all come out of the yearly budget.
+          </div>
+        </details>
+        <div class="purchase-request__radios purchase-request__radios--inline">
+          <div class="fieldset-item">
+            <input
+              type="radio"
+              name="isMemberPaidConsumable"
+              id="consumable-yes"
+              value="true"
+              required
+            />
+            <label for="consumable-yes">Yes</label>
+          </div>
+          <div class="fieldset-item">
+            <input
+              type="radio"
+              name="isMemberPaidConsumable"
+              id="consumable-no"
+              value="false"
+              required
+            />
+            <label for="consumable-no">No</label>
+          </div>
+        </div>
+      </fieldset>
+      <div data-verdict hidden aria-live="polite"></div>
+    </div>
+
+    <div class="purchase-request__sections" data-submit-section>
+      <div class="purchase-request__stack">
+        <h2>What are you buying, and where from?</h2>
+        <div class="purchase-field">
+          <label class="purchase-field__label" for="summary">Summary</label>
+          <span class="purchase-request__hint text-sm"
+            >A short name for the request as a whole.</span
+          >
+          <input
+            type="text"
+            name="summary"
+            id="summary"
+            placeholder="e.g. New table saw blades and a blade guard"
+            required
+          />
+        </div>
+        <p class="purchase-request__hint text-sm">
+          Add one entry for each shop or website. If everything comes from one
+          place, you only need one.
+        </p>
+        <div class="purchase-request__stack" data-shop-entries>
+          ${joinHtml(
+            Array.from({length: SHOP_ENTRIES}, (_, index) =>
+              renderShopEntry(index)
+            )
+          )}
+        </div>
+        <button
+          class="purchase-request__link-button jsonly"
+          type="button"
+          data-add-shop
+        >
+          + Add another shop
+        </button>
+        <div class="text-sm" data-shop-total aria-live="polite"></div>
+      </div>
+      <div class="purchase-field">
+        <label class="purchase-field__label" for="justification"
+          >Why is this needed?</label
+        >
+        <span class="purchase-request__hint text-sm" data-justification-hint
+          >A sentence or two for the people who sign off spending.</span
+        >
+        <textarea name="justification" id="justification" required></textarea>
+      </div>
+      <button class="purchase-request__send" type="submit">Send request</button>
+    </div>
   </form>
   ${enhancementScript}
 `;
@@ -391,10 +598,16 @@ const renderNoPurchasingAreas = () => html`
 
 export const renderSubmitForm = (viewModel: PurchaseRequestFormViewModel) =>
   html`
-    <div class="stack-large purchase-request">
-      <h1>Request a purchase</h1>
+    <div class="purchase-request purchase-request__sections">
+      <div class="purchase-request__stack">
+        <h1>Request a purchase</h1>
+        <p>
+          Answer a few questions and we'll tell you which budget your purchase
+          comes out of, and whether you need to write a proposal.
+        </p>
+      </div>
       ${viewModel.purchasingAreas.length === 0
         ? renderNoPurchasingAreas()
-        : html`${renderBudgets(viewModel)} ${renderForm(viewModel)}`}
+        : renderForm(viewModel)}
     </div>
   `;

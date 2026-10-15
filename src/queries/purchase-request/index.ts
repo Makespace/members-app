@@ -12,7 +12,9 @@ import {render} from './render';
 
 // One purchase request as submitted, with the outcome the server worked out.
 // This is where a member lands after submitting one.
-export const purchaseRequest: Query = deps => (_user, params) =>
+// `?sent=1` (added by the form) shows it as the confirmation of a request
+// just sent.
+export const purchaseRequest: Query = deps => (_user, params, queryParams) =>
   pipe(
     params.id,
     UUID.decode,
@@ -47,6 +49,7 @@ export const purchaseRequest: Query = deps => (_user, params) =>
         )
       )(
         render({
+          justSent: queryParams.sent === '1',
           request,
           purchasingArea,
           submitterName: pipe(

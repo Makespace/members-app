@@ -4,10 +4,16 @@ import {
   PurchaseRequestOutcome,
 } from '../types/purchase-request-outcome';
 
-const labels: Record<PurchaseRequestOutcome, string> = {
-  consumable: 'Consumable - not from the budget',
-  budget: 'Yearly budget',
-  'budget-proposal-needed': 'Yearly budget - proposal needed',
+const tags: Record<PurchaseRequestOutcome, {label: string; colour: string}> = {
+  consumable: {
+    label: 'Consumable (not from the yearly budget)',
+    colour: 'green',
+  },
+  budget: {label: 'Yearly budget', colour: 'yellow'},
+  'budget-proposal-needed': {
+    label: 'Yearly budget · Proposal needed',
+    colour: 'red',
+  },
 };
 
 // The outcome, as a tag. The approval a request needs is part of the
@@ -18,7 +24,7 @@ export const renderOutcome = (
   approval: PurchaseApproval
 ) =>
   html`<span
-    class="purchase-outcome purchase-outcome--${safe(outcome)}"
+    class="tag tag--${safe(tags[outcome].colour)} purchase-outcome"
     data-approval="${safe(approval)}"
-    >${safe(labels[outcome])}</span
+    >${safe(tags[outcome].label)}</span
   >`;

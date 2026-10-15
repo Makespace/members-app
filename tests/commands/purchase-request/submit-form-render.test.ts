@@ -14,27 +14,27 @@ const renderToDom = (body: string) => {
   return dom;
 };
 
-const textile = {
+const woodShop = {
   id: '11111111-1111-4111-8111-111111111111' as UUID,
-  name: 'Textiles',
-  areaNames: ['Textiles'],
-  yearlyBudgetPence: 150_000,
-  spentThisYearPence: 40_000,
-  remainingPence: 110_000,
+  name: 'Wood Shop',
+  areaNames: ['Wood Shop'],
+  yearlyBudgetPence: 100_000,
+  spentThisYearPence: 42_000,
+  remainingPence: 58_000,
 };
 const craft = {
   id: '22222222-2222-4222-8222-222222222222' as UUID,
   name: 'Craft & Art',
   areaNames: ['Art Space', 'Craft Room'],
   yearlyBudgetPence: 100_000,
-  spentThisYearPence: 0,
-  remainingPence: 100_000,
+  spentThisYearPence: 88_050,
+  remainingPence: 11_950,
 };
 
 const viewModel: PurchaseRequestFormViewModel = {
   requestId: '33333333-3333-4333-8333-333333333333' as UUID,
   budgetYear: 2026,
-  purchasingAreas: [textile, craft],
+  purchasingAreas: [woodShop, craft],
   preselected: O.some(craft.id),
   proposalThresholdPence: 100_000,
 };
@@ -43,58 +43,82 @@ describe('purchase request form', () => {
   describe('for a purchaser', () => {
     const page = renderToDom(renderSubmitForm(viewModel));
     const form = page.querySelector('form')!;
+    const text = () => page.textContent?.replace(/\s+/g, ' ') ?? '';
 
-    it('posts to the submit command and lands on the new request', () => {
+    it('posts to the submit command and lands on the confirmation', () => {
       expect(form.getAttribute('action')).toBe(
         `/purchase-requests/submit?next=${encodeURIComponent(
-          `/purchase-requests/view/${viewModel.requestId}`
+          `/purchase-requests/view/${viewModel.requestId}?sent=1`
         )}`
       );
     });
 
-    it("shows each purchasing area's budget, spend and what is left", () => {
-      const text = page.textContent ?? '';
-      expect(text).toContain('£1,500.00');
-      expect(text).toContain('£400.00');
-      expect(text).toContain('£1,100.00');
+    it('gives the script the proposal threshold from the server', () => {
+      expect(form.dataset.proposalThresholdPence).toBe('100000');
     });
 
-    it('offers only the given purchasing areas, with the requested one chosen', () => {
-      const options = [
-        ...form.querySelectorAll<HTMLOptionElement>(
-          'select[name="purchasingAreaId"] option[value]:not([value=""])'
+    it('offers the purchasing areas as radios, with the requested one chosen', () => {
+      const radios = [
+        ...form.querySelectorAll<HTMLInputElement>(
+          'input[type="radio"][name="purchasingAreaId"]'
         ),
       ];
-      expect(options.map(option => option.value)).toStrictEqual([
-        textile.id,
+      expect(radios.map(radio => radio.value)).toStrictEqual([
+        woodShop.id,
         craft.id,
       ]);
-      expect(options[1].selected).toBe(true);
+      expect(radios.map(radio => radio.checked)).toStrictEqual([false, true]);
+      expect(radios[1].dataset.budgetPence).toBe('100000');
+      expect(radios[1].dataset.spentPence).toBe('88050');
     });
 
-    it('asks for the estimate before the specifics', () => {
-      const names = [...form.querySelectorAll('[name]')].map(
-        field => field.getAttribute('name')
+    it('says which areas share a budget', () => {
+      expect(text()).toContain('Shared budget: Art Space and Craft Room');
+      expect(text()).not.toContain('Shared budget: Wood Shop');
+    });
+
+    it("shows each purchasing area's budget, spend and what is left", () => {
+      const panel = form.querySelector(`[data-budget-for="${craft.id}"]`)!;
+      const values = [...panel.querySelectorAll('dd')].map(dd =>
+        dd.textContent?.trim()
+      );
+      expect(values).toStrictEqual(['£1,000', '£880.50', '£119.50']);
+      expect(panel.querySelector('.purchase-bar__spent')).not.toBeNull();
+      expect(panel.querySelector('.purchase-bar__limit')).not.toBeNull();
+      expect(
+        form.querySelector(`[data-budget-for="${woodShop.id}"]`)
+      ).not.toBeNull();
+    });
+
+    it('asks for the estimate before the consumable question and the specifics', () => {
+      const names = [...form.querySelectorAll('[name]')].map(field =>
+        field.getAttribute('name')
       );
       expect(names.indexOf('estimatedAmount')).toBeLessThan(
-        names.indexOf('summary')
+        names.indexOf('isMemberPaidConsumable')
       );
       expect(names.indexOf('isMemberPaidConsumable')).toBeLessThan(
         names.indexOf('summary')
       );
     });
 
-    it('asks the single consumable question as required yes/no radios', () => {
+    it('asks only whether it is a consumable, with examples', () => {
       const radios = form.querySelectorAll<HTMLInputElement>(
-        'input[type="radio"][name="isMemberPaidConsumable"]'
+        '.fieldset-item input[type="radio"][name="isMemberPaidConsumable"]'
       );
       expect([...radios].map(radio => radio.value)).toStrictEqual([
         'true',
         'false',
       ]);
       expect(radios[0].required).toBe(true);
+      expect(form.querySelector('details summary')?.textContent).toContain(
+        'Examples'
+      );
       expect(form.querySelector('[name="isOperations"]')).toBeNull();
-      expect(form.querySelector('[name="under100PerYear"]')).toBeNull();
+    });
+
+    it('leaves room for the verdict, which the script fills in', () => {
+      expect(form.querySelector('[data-verdict]')).not.toBeNull();
     });
 
     it('offers three shop entries without JavaScript, requiring only the first', () => {
@@ -111,13 +135,22 @@ describe('purchase request form', () => {
         false,
         false,
       ]);
-      expect(form.querySelector('[name="purchases[2][items]"]')).not.toBeNull();
-      expect(form.querySelector('[name="purchases[2][link]"]')).not.toBeNull();
-      expect(form.querySelector('[name="purchases[2][cost]"]')).not.toBeNull();
+      for (const field of ['items', 'link', 'cost']) {
+        expect(
+          form.querySelector(`[name="purchases[2][${field}]"]`)
+        ).not.toBeNull();
+      }
     });
 
-    it('asks why it is needed', () => {
+    it('asks why it is needed and sends', () => {
       expect(form.querySelector('textarea[name="justification"]')).not.toBeNull();
+      expect(form.querySelector('button[type="submit"]')?.textContent).toContain(
+        'Send request'
+      );
+    });
+
+    it('leaves out the prototype-only parts', () => {
+      expect(text()).not.toContain('Prototype');
     });
   });
 
