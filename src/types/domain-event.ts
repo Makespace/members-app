@@ -4,6 +4,10 @@ import {EmailAddressCodec} from './email-address';
 import {Actor} from './actor';
 import {EquipmentCategoryCodec} from './equipment-category';
 import {MailboxArchiveReason} from './mailbox-archive-reason';
+import {
+  PurchaseApprovalCodec,
+  PurchaseRequestOutcomeCodec,
+} from './purchase-request-outcome';
 
 const defineEvent = <A extends string, T extends t.Props>(
   type: A,
@@ -173,6 +177,91 @@ const OwnerAdded = defineEvent('OwnerAdded', {
 const OwnerRemoved = defineEvent('OwnerRemoved', {
   areaId: tt.UUID,
   memberNumber: t.number,
+});
+
+// A purchasing area holds a yearly budget on behalf of one or more areas
+// (e.g. "Craft & Art" for the Craft Room and the Art Space). Money is in
+// whole pence throughout. The budget year is the calendar year.
+const PurchasingAreaCreated = defineEvent('PurchasingAreaCreated', {
+  id: tt.UUID,
+  name: t.string,
+  yearlyBudgetPence: t.number,
+});
+
+const PurchasingAreaRenamed = defineEvent('PurchasingAreaRenamed', {
+  purchasingAreaId: tt.UUID,
+  name: t.string,
+});
+
+const PurchasingAreaBudgetSet = defineEvent('PurchasingAreaBudgetSet', {
+  purchasingAreaId: tt.UUID,
+  yearlyBudgetPence: t.number,
+});
+
+// An area belongs to at most one purchasing area at a time.
+const AreaAssignedToPurchasingArea = defineEvent(
+  'AreaAssignedToPurchasingArea',
+  {
+    purchasingAreaId: tt.UUID,
+    areaId: tt.UUID,
+  }
+);
+
+const AreaUnassignedFromPurchasingArea = defineEvent(
+  'AreaUnassignedFromPurchasingArea',
+  {
+    purchasingAreaId: tt.UUID,
+    areaId: tt.UUID,
+  }
+);
+
+// Purchasers may submit purchase requests for the purchasing area.
+const PurchaserAdded = defineEvent('PurchaserAdded', {
+  purchasingAreaId: tt.UUID,
+  memberNumber: t.number,
+});
+
+const PurchaserRemoved = defineEvent('PurchaserRemoved', {
+  purchasingAreaId: tt.UUID,
+  memberNumber: t.number,
+});
+
+// One shop or website a purchase request buys from. A request may be split
+// across several; each may list many items (free text, with quantities).
+const PurchaseRequestPurchase = t.strict({
+  shop: t.string,
+  link: t.union([t.string, t.null]),
+  items: t.string,
+  // Optional; not required to add up to the request's estimate.
+  costPence: t.union([t.number, t.null]),
+});
+
+// A purchaser asking to buy something. The outcome is computed by the server
+// (src/purchasing/classify-purchase.ts) from the estimated total at
+// submission, and recorded here along with the budget figures it was computed
+// from, so the record says what the member was told even if the budget or the
+// rules change later. The estimate is what counts against the budget, not the
+// sum of the line costs. Answers to questions that were not needed are null.
+// There is no approval step yet; one would follow as further events about the
+// same request id.
+const PurchaseRequestSubmitted = defineEvent('PurchaseRequestSubmitted', {
+  id: tt.UUID,
+  purchasingAreaId: tt.UUID,
+  submittedByMemberNumber: t.number,
+  summary: t.string,
+  estimatedAmountPence: t.number,
+  purchases: t.readonlyArray(PurchaseRequestPurchase),
+  justification: t.string,
+  isMemberPaidConsumable: t.boolean,
+  isOperations: t.union([t.boolean, t.null]),
+  under100PerYear: t.union([t.boolean, t.null]),
+  outcome: PurchaseRequestOutcomeCodec,
+  // What approval it needs before going ahead; see PurchaseApprovalCodec.
+  approval: PurchaseApprovalCodec,
+  outcomeReason: t.string,
+  budgetYear: t.number,
+  yearlyBudgetPence: t.number,
+  spentThisYearPence: t.number,
 });
 
 const SuperUserDeclared = defineEvent('SuperUserDeclared', {
@@ -632,6 +721,14 @@ export const events = [
   AreaNameAliasRemoved,
   OwnerAdded,
   OwnerRemoved,
+  PurchasingAreaCreated,
+  PurchasingAreaRenamed,
+  PurchasingAreaBudgetSet,
+  AreaAssignedToPurchasingArea,
+  AreaUnassignedFromPurchasingArea,
+  PurchaserAdded,
+  PurchaserRemoved,
+  PurchaseRequestSubmitted,
   SuperUserDeclared,
   SuperUserRevoked,
   TrainerAdded,
@@ -700,6 +797,14 @@ export const DomainEvent = t.union([
   AreaNameAliasRemoved.codec,
   OwnerAdded.codec,
   OwnerRemoved.codec,
+  PurchasingAreaCreated.codec,
+  PurchasingAreaRenamed.codec,
+  PurchasingAreaBudgetSet.codec,
+  AreaAssignedToPurchasingArea.codec,
+  AreaUnassignedFromPurchasingArea.codec,
+  PurchaserAdded.codec,
+  PurchaserRemoved.codec,
+  PurchaseRequestSubmitted.codec,
   SuperUserDeclared.codec,
   SuperUserRevoked.codec,
   TrainerAdded.codec,

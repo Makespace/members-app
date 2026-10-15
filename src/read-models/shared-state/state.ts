@@ -6,6 +6,10 @@ import {
   TroubleTicketStatus,
 } from '../../types/trouble-ticket';
 import {MailboxArchiveReason} from '../../types/mailbox-archive-reason';
+import {
+  PurchaseApproval,
+  PurchaseRequestOutcome,
+} from '../../types/purchase-request-outcome';
 import * as O from 'fp-ts/Option';
 import {blob, integer, SQLiteColumnBuilderBase, sqliteTable, SQLiteTableExtraConfig, text, uniqueIndex} from 'drizzle-orm/sqlite-core';
 
@@ -394,6 +398,126 @@ export const ownersTable = defineTable(
   }
 );
 
+// Budget-holding groups of areas; see PurchasingAreaCreated. Money in pence.
+export const purchasingAreasTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS purchasingAreas (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      yearlyBudgetPence INTEGER NOT NULL,
+      createdAt INTEGER NOT NULL
+    )
+  `,
+  'purchasingAreas' as const,
+  {
+    id: text('id').notNull().primaryKey().$type<UUID>(),
+    name: text('name').notNull(),
+    yearlyBudgetPence: integer('yearlyBudgetPence').notNull(),
+    createdAt: integer('createdAt', {mode: 'timestamp_ms'}).notNull(),
+  }
+);
+
+// Which purchasing area each area belongs to. Keyed on the area, as an area
+// belongs to at most one.
+export const purchasingAreaAreasTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS purchasingAreaAreas (
+      areaId TEXT PRIMARY KEY,
+      purchasingAreaId TEXT NOT NULL,
+      FOREIGN KEY(areaId) REFERENCES areas(id) ON DELETE CASCADE,
+      FOREIGN KEY(purchasingAreaId) REFERENCES purchasingAreas(id) ON DELETE CASCADE
+    )
+  `,
+  'purchasingAreaAreas' as const,
+  {
+    areaId: text('areaId')
+      .notNull()
+      .primaryKey()
+      .$type<UUID>()
+      .references(() => areasTable.id, {onDelete: 'cascade'}),
+    purchasingAreaId: text('purchasingAreaId')
+      .notNull()
+      .$type<UUID>()
+      .references(() => purchasingAreasTable.id, {onDelete: 'cascade'}),
+  }
+);
+
+// Members who may submit purchase requests for a purchasing area. By user id
+// rather than member number, like owners, so a rejoined member keeps it.
+export const purchasersTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS purchasers (
+      purchasingAreaId TEXT NOT NULL,
+      userId TEXT NOT NULL,
+      addedAt INTEGER NOT NULL,
+      PRIMARY KEY (purchasingAreaId, userId),
+      FOREIGN KEY (userId) REFERENCES members(userId) ON DELETE CASCADE,
+      FOREIGN KEY(purchasingAreaId) REFERENCES purchasingAreas(id) ON DELETE CASCADE
+    )
+  `,
+  'purchasers' as const,
+  {
+    purchasingAreaId: text('purchasingAreaId')
+      .notNull()
+      .$type<UUID>()
+      .references(() => purchasingAreasTable.id, {onDelete: 'cascade'}),
+    userId: text('userId')
+      .notNull()
+      .$type<UserId>()
+      .references(() => membersTable.userId, {onDelete: 'cascade'}),
+    addedAt: integer('addedAt', {mode: 'timestamp_ms'}).notNull(),
+  }
+);
+
+// Every purchase request as submitted, with the outcome the server computed.
+// budgetYear is the calendar year (Europe/London) it was submitted in.
+export const purchaseRequestsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS purchaseRequests (
+      id TEXT PRIMARY KEY,
+      purchasingAreaId TEXT NOT NULL,
+      submittedByMemberNumber INTEGER NOT NULL,
+      submittedAt INTEGER NOT NULL,
+      budgetYear INTEGER NOT NULL,
+      summary TEXT NOT NULL,
+      estimatedAmountPence INTEGER NOT NULL,
+      purchasesJson TEXT NOT NULL,
+      justification TEXT NOT NULL,
+      isMemberPaidConsumable INTEGER NOT NULL,
+      isOperations INTEGER,
+      under100PerYear INTEGER,
+      outcome TEXT NOT NULL,
+      approval TEXT NOT NULL,
+      outcomeReason TEXT NOT NULL,
+      yearlyBudgetPence INTEGER NOT NULL,
+      spentThisYearPence INTEGER NOT NULL
+    )
+  `,
+  'purchaseRequests' as const,
+  {
+    id: text('id').notNull().primaryKey().$type<UUID>(),
+    purchasingAreaId: text('purchasingAreaId').notNull().$type<UUID>(),
+    submittedByMemberNumber: integer('submittedByMemberNumber').notNull(),
+    submittedAt: integer('submittedAt', {mode: 'timestamp_ms'}).notNull(),
+    budgetYear: integer('budgetYear').notNull(),
+    summary: text('summary').notNull(),
+    estimatedAmountPence: integer('estimatedAmountPence').notNull(),
+    // The shops/websites and what is bought from each, as JSON.
+    purchasesJson: text('purchasesJson').notNull(),
+    justification: text('justification').notNull(),
+    isMemberPaidConsumable: integer('isMemberPaidConsumable', {
+      mode: 'boolean',
+    }).notNull(),
+    isOperations: integer('isOperations', {mode: 'boolean'}),
+    under100PerYear: integer('under100PerYear', {mode: 'boolean'}),
+    outcome: text('outcome').notNull().$type<PurchaseRequestOutcome>(),
+    approval: text('approval').notNull().$type<PurchaseApproval>(),
+    outcomeReason: text('outcomeReason').notNull(),
+    yearlyBudgetPence: integer('yearlyBudgetPence').notNull(),
+    spentThisYearPence: integer('spentThisYearPence').notNull(),
+  }
+);
+
 export const trainingStatsNotificationTable = defineTable(
   sql`
     CREATE TABLE IF NOT EXISTS trainingStatsNotificationTable (
@@ -618,6 +742,9 @@ createTables.push(
 );
 createTables.push(
   sql`CREATE INDEX IF NOT EXISTS equipment_areaId_idx ON equipment (areaId);`
+);
+createTables.push(
+  sql`CREATE INDEX IF NOT EXISTS purchaseRequests_area_year_idx ON purchaseRequests (purchasingAreaId, budgetYear);`
 );
 
 // Event indices of status changes whose notification emails have been sent.

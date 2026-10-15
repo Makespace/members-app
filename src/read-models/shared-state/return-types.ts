@@ -2,6 +2,10 @@ import {EquipmentCategory} from '../../types/equipment-category';
 import * as O from 'fp-ts/Option';
 import {Actor, EmailAddress, GravatarHash, UserId} from '../../types';
 import {UUID} from 'io-ts-types';
+import {
+  PurchaseApproval,
+  PurchaseRequestOutcome,
+} from '../../types/purchase-request-outcome';
 
 export type TrainedMember = Pick<
   MemberCoreInfo,
@@ -142,4 +146,64 @@ export type Owner = Pick<
 export type Area = MinimalArea & {
   owners: ReadonlyArray<Owner>;
   equipment: ReadonlyArray<Equipment>;
+};
+
+export type PurchasingAreaSummary = {
+  id: UUID;
+  name: string;
+};
+
+export type PurchasingAreaPurchaser = Pick<
+  MemberCoreInfo,
+  | 'userId'
+  | 'memberNumber'
+  | 'pastMemberNumbers'
+  | 'name'
+  | 'primaryEmailAddress'
+> & {
+  addedAt: Date;
+  // Purchasers are expected to own at least one of the purchasing area's
+  // areas; false flags one who has since stopped being an owner.
+  isOwnerOfAnArea: boolean;
+};
+
+// Money in pence. Budget figures are for `budgetYear`, the calendar year the
+// view was asked about.
+export type PurchasingArea = PurchasingAreaSummary & {
+  yearlyBudgetPence: number;
+  areas: ReadonlyArray<{id: UUID; name: string}>;
+  purchasers: ReadonlyArray<PurchasingAreaPurchaser>;
+  budgetYear: number;
+  spentThisYearPence: number;
+  // Negative when CapEx this year has gone past the budget.
+  remainingPence: number;
+};
+
+export type PurchaseRequestPurchase = {
+  shop: string;
+  link: O.Option<string>;
+  items: string;
+  costPence: O.Option<number>;
+};
+
+export type PurchaseRequest = {
+  id: UUID;
+  purchasingAreaId: UUID;
+  submittedByMemberNumber: number;
+  submittedAt: Date;
+  budgetYear: number;
+  summary: string;
+  // What the outcome was worked out from and what counts against the budget.
+  estimatedAmountPence: number;
+  purchases: ReadonlyArray<PurchaseRequestPurchase>;
+  justification: string;
+  isMemberPaidConsumable: boolean;
+  isOperations: boolean | null;
+  under100PerYear: boolean | null;
+  outcome: PurchaseRequestOutcome;
+  approval: PurchaseApproval;
+  outcomeReason: string;
+  // The budget figures the outcome was computed from, at submission.
+  yearlyBudgetPence: number;
+  spentThisYearPence: number;
 };
