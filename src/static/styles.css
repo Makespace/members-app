@@ -3661,3 +3661,104 @@ ul.checklist {
   transform: translate(0.12em, -0.12em) rotate(-6deg);
 }
 
+
+/* Progress through a document read a page at a time (the owner agreement):
+   numbered markers, ticked once read, with the current page in green. */
+.agreement-progress__count {
+  color: var(--grey-color);
+  margin: 0;
+}
+
+ol.agreement-progress__steps {
+  display: flex;
+  gap: 0.5rem;
+  margin-block-start: 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.agreement-progress__step {
+  flex: 1;
+  margin: 0;
+  padding-top: 0.5rem;
+  border-top: 4px solid var(--border-color);
+  color: var(--grey-color);
+}
+
+.agreement-progress__step--done,
+.agreement-progress__step--current {
+  border-top-color: var(--green-color);
+}
+
+.agreement-progress__step--current {
+  color: var(--text-color);
+  font-weight: bold;
+}
+
+.agreement-progress__step a {
+  color: inherit;
+}
+
+.agreement-progress__step--done a:hover .agreement-progress__label {
+  text-decoration: underline;
+}
+
+.agreement-progress__step a,
+.agreement-progress__step--current,
+.agreement-progress__step--todo {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  text-decoration: none;
+}
+
+.agreement-progress__marker {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5em;
+  height: 1.5em;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  font-size: 0.85em;
+  font-weight: bold;
+}
+
+.agreement-progress__step--done .agreement-progress__marker {
+  background: var(--green-color);
+  border-color: var(--green-color);
+  color: white;
+}
+
+.agreement-progress__step--current .agreement-progress__marker {
+  border-color: var(--green-color);
+  color: var(--green-color);
+}
+
+/* On narrow screens there's only room for the current page's name */
+@media (max-width: 40rem) {
+  .agreement-progress__step:not(.agreement-progress__step--current)
+    .agreement-progress__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+.agreement-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-block-start: 1.5rem;
+}
+
+/* With no Back link on the first page, keep Next on the right */
+.agreement-nav > .button:only-child {
+  margin-left: auto;
+}
