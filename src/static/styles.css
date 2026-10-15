@@ -1060,6 +1060,21 @@ label img {
   opacity: 1;
 }
 
+/* Purchase request outcome and approval tags. */
+.purchase-outcome,
+.purchase-approval {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid currentcolor;
+  border-radius: 0.25rem;
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.purchase-approval {
+  font-weight: bold;
+}
+
 .stack > * + * {
   margin-block-start: 1rem;
 }

@@ -41,6 +41,9 @@ export const render = () => html`
 
     ${section(html`Equipment and areas`, [
       html`<a href="/areas">Manage areas and owners</a>`,
+      html`<a href="/purchasing-areas">Purchasing areas and budgets</a> - which
+      areas share a budget, who can request purchases, and what has been
+      requested`,
       html`<a href="/equipment-links">Equipment guides and risk assessments</a>
       - which machines are missing one, and set it from there`,
       html`<a href="/equipment-signs">Print equipment signs</a> - name, colour

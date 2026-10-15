@@ -95,6 +95,45 @@ export const initRoutes = (
       'equipment-categories',
       commands.area.setEquipmentCategories
     ),
+    // Purchasing areas: budget-holding groups of areas. The commands go
+    // before the :id route, which would otherwise take "create" for an id.
+    query('/purchasing-areas', queries.purchasingAreas),
+    ...command('purchasing-areas', 'create', commands.purchasingArea.create),
+    ...command('purchasing-areas', 'rename', commands.purchasingArea.rename),
+    ...command(
+      'purchasing-areas',
+      'set-budget',
+      commands.purchasingArea.setBudget
+    ),
+    ...command(
+      'purchasing-areas',
+      'assign-area',
+      commands.purchasingArea.assignArea
+    ),
+    ...command(
+      'purchasing-areas',
+      'unassign-area',
+      commands.purchasingArea.unassignArea
+    ),
+    ...command(
+      'purchasing-areas',
+      'add-purchaser',
+      commands.purchasingArea.addPurchaser
+    ),
+    ...command(
+      'purchasing-areas',
+      'remove-purchaser',
+      commands.purchasingArea.removePurchaser
+    ),
+    query('/purchasing-areas/:id', queries.purchasingArea),
+    ...command('purchase-requests', 'submit', commands.purchaseRequest.submit),
+    get('/purchase-request', (_req, res) =>
+      res.redirect('/purchase-requests/submit')
+    ),
+    get('/purchase-requests', (_req, res) => res.redirect('/purchasing-areas')),
+    // Under /view/ for the same reason as trouble tickets: a bare :id would
+    // swallow /purchase-requests/submit.
+    query('/purchase-requests/view/:id', queries.purchaseRequest),
     ...command('equipment', 'add', commands.equipment.add),
     ...command('equipment', 'rename', commands.equipment.rename),
     ...command('equipment', 'set-category', commands.equipment.setCategory),
