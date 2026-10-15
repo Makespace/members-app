@@ -30,38 +30,25 @@ export const ownerAgreementPages: ReadonlyArray<{label: string; body: Html}> = [
         </li>
       </ul>
 
-      <div class="callout">
-        <p><strong>What is an area?</strong></p>
-        <p>
-          The set of related equipment/systems and the owners responsible for
-          them. Decisions about one equipment/system have the potential to affect
-          other equipment/systems within their area.
-        </p>
-        <p>
-          An area is often a physical space, but it doesn't have to be. For
-          example, the 3D printers are an area even though they're split across
-          multiple locations within Makespace.
-        </p>
-        <p>
-          <em
-            >e.g. the band saw is in the secure workshop. Decisions that band saw
-            owners make may impact other users/owners of the secure workshop -
-            these decisions should be made collectively.</em
-          >
-        </p>
-      </div>
-
       <p>
         Please note that owners share the work between them. Everyone has their
         own individual strengths and things they want to focus on. No one is
         expected to cover all of these responsibilities on their own.
+      </p>
+
+      <p>
+        <em
+          >And remember: owners are members too! All the usual member
+          responsibilities, like clearing up after yourself, working safely and
+          looking out for others, still apply.</em
+        >
       </p>
     `,
   },
   {
     label: 'Your equipment',
     body: html`
-      <h2>For equipment you're an owner of:</h2>
+      <h2>Your responsibilities for equipment you're an owner of:</h2>
       <ul class="card-grid card-grid--red">
         <li>
           <strong class="card-title"
@@ -126,7 +113,29 @@ export const ownerAgreementPages: ReadonlyArray<{label: string; body: Html}> = [
   {
     label: 'Your area',
     body: html`
-      <h2>For the area your equipment belongs to</h2>
+      <h2>Your responsibilities for the area your equipment belongs to:</h2>
+
+      <div class="callout">
+        <p><strong>What is an area?</strong></p>
+        <p>
+          The set of related equipment/systems and the owners responsible for
+          them. Decisions about one equipment/system have the potential to affect
+          other equipment/systems within their area.
+        </p>
+        <p>
+          An area is often a physical space, but it doesn't have to be. For
+          example, the 3D printers are an area even though they're split across
+          multiple locations within Makespace.
+        </p>
+        <p>
+          <em
+            >e.g. the band saw is in the secure workshop. Decisions that band saw
+            owners make may impact other users/owners of the secure workshop -
+            these decisions should be made collectively.</em
+          >
+        </p>
+      </div>
+
       <ul class="card-grid">
         <li>
           <strong class="card-title"
@@ -169,14 +178,6 @@ export const ownerAgreementPages: ReadonlyArray<{label: string; body: Html}> = [
           be approved by the board.
         </li>
       </ul>
-
-      <p>
-        <em
-          >And remember: owners are members too! All the usual member
-          responsibilities, like clearing up after yourself, working safely and
-          looking out for others, still apply.</em
-        >
-      </p>
     `,
   },
   {
