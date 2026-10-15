@@ -84,7 +84,7 @@ describe('purchase request form', () => {
       );
       expect(values).toStrictEqual(['£1,000', '£880.50', '£119.50']);
       expect(panel.querySelector('.purchase-bar__spent')).not.toBeNull();
-      expect(panel.querySelector('.purchase-bar__limit')).not.toBeNull();
+      expect(panel.querySelector('.purchase-bar__limit')).toBeNull();
       expect(
         form.querySelector(`[data-budget-for="${woodShop.id}"]`)
       ).not.toBeNull();
@@ -151,6 +151,40 @@ describe('purchase request form', () => {
 
     it('leaves out the prototype-only parts', () => {
       expect(text()).not.toContain('Prototype');
+    });
+  });
+
+  describe('the budget bar', () => {
+    const barFor = (spentThisYearPence: number) => {
+      const area = {
+        ...woodShop,
+        spentThisYearPence,
+        remainingPence: woodShop.yearlyBudgetPence - spentThisYearPence,
+      };
+      const page = renderToDom(
+        renderSubmitForm({...viewModel, purchasingAreas: [area]})
+      );
+      return page.querySelector<HTMLElement>(
+        `[data-budget-for="${area.id}"] [data-budget-bar]`
+      )!;
+    };
+
+    it('leaves out the budget line while under budget', () => {
+      const bar = barFor(42_000);
+      expect(bar.querySelector('.purchase-bar__limit')).toBeNull();
+      expect(bar.textContent).not.toContain('Yearly budget');
+    });
+
+    it('leaves out the budget line when exactly on budget', () => {
+      expect(barFor(100_000).querySelector('.purchase-bar__limit')).toBeNull();
+    });
+
+    it('marks where the budget ends once spending has gone past it', () => {
+      const bar = barFor(125_000);
+      const limit = bar.querySelector<HTMLElement>('.purchase-bar__limit');
+      expect(limit).not.toBeNull();
+      expect(limit!.style.left).toBe('calc(80% - 3px)');
+      expect(bar.textContent?.replace(/\s+/g, ' ')).toContain('Yearly budget');
     });
   });
 

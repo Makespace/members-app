@@ -88,11 +88,14 @@ const renderAreaRadio =
     </div>
   `;
 
-// Spent so far, and the budget limit. The script adds this purchase.
+// Spent so far. The bar's full width is the yearly budget, so the budget
+// line is only drawn when spending has gone past it.
 const renderBar = (
   purchasingArea: PurchasingAreaOption,
   budgetYear: number
 ) => {
+  const overBudget =
+    purchasingArea.spentThisYearPence > purchasingArea.yearlyBudgetPence;
   const scale =
     Math.max(
       purchasingArea.yearlyBudgetPence,
@@ -110,23 +113,27 @@ const renderBar = (
         class="purchase-bar__spent"
         style="width:${percent(purchasingArea.spentThisYearPence, scale)}%"
       ></div>
-      <div
-        class="purchase-bar__limit"
-        style="left:calc(${percent(
-          purchasingArea.yearlyBudgetPence,
-          scale
-        )}% - 3px)"
-      ></div>
+      ${overBudget
+        ? html`<div
+            class="purchase-bar__limit"
+            style="left:calc(${percent(
+              purchasingArea.yearlyBudgetPence,
+              scale
+            )}% - 3px)"
+          ></div>`
+        : html``}
     </div>
     <div class="purchase-bar-legend">
       <span
         ><span class="purchase-swatch purchase-swatch--spent"></span>Spent in
         ${budgetYear}</span
       >
-      <span
-        ><span class="purchase-swatch purchase-swatch--limit"></span>Yearly
-        budget</span
-      >
+      ${overBudget
+        ? html`<span
+            ><span class="purchase-swatch purchase-swatch--limit"></span>Yearly
+            budget</span
+          >`
+        : html``}
     </div>
   `;
 };
