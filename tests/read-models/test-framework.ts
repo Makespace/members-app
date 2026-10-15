@@ -281,6 +281,18 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         unarchive: frameworkify(commands.mailbox.unarchive),
         createTicket: frameworkify(commands.mailbox.createTicket),
       },
+      purchasingArea: {
+        create: frameworkify(commands.purchasingArea.create),
+        rename: frameworkify(commands.purchasingArea.rename),
+        setBudget: frameworkify(commands.purchasingArea.setBudget),
+        assignArea: frameworkify(commands.purchasingArea.assignArea),
+        unassignArea: frameworkify(commands.purchasingArea.unassignArea),
+        addPurchaser: frameworkify(commands.purchasingArea.addPurchaser),
+        removePurchaser: frameworkify(commands.purchasingArea.removePurchaser),
+      },
+      purchaseRequest: {
+        submit: frameworkify(commands.purchaseRequest.submit),
+      },
     },
     trainingSummaryDeps: {
       logger,
