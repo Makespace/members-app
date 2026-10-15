@@ -100,18 +100,24 @@ describe('purchase request form script', () => {
     ).toBe(false);
   });
 
-  it('says what a budget purchase leaves, and draws it on the bar', () => {
+  it('says what a budget purchase leaves, without changing the budget bar', () => {
     const form = setUp();
     choose(form, `area-${woodShopId}`);
     typeAmount(form, '185');
     choose(form, 'consumable-no');
     expect(verdict(form).textContent).toContain('No proposal needed');
     expect(verdict(form).textContent).toContain('leaving £395');
-    expect(form.querySelector('.purchase-bar__new')).not.toBeNull();
-    expect(form.querySelector('.purchase-bar__new--over')).toBeNull();
+    const bar = form.querySelector<HTMLElement>(
+      `[data-budget-for="${woodShopId}"] [data-budget-bar]`
+    )!;
+    expect(bar.querySelector('.purchase-bar__new')).toBeNull();
+    expect(bar.textContent).not.toContain('This purchase');
+    expect(
+      bar.querySelector<HTMLElement>('.purchase-bar__spent')!.style.width
+    ).toBe('42%');
   });
 
-  it('needs a proposal for going over the budget, striped red', () => {
+  it('needs a proposal for going over the budget', () => {
     const form = setUp();
     choose(form, `area-${craftId}`);
     typeAmount(form, '120.01');
@@ -120,7 +126,6 @@ describe('purchase request form script', () => {
       verdict(form).querySelector('.purchase-verdict--proposal')
     ).not.toBeNull();
     expect(verdict(form).textContent).toContain('over its £1,000 budget');
-    expect(form.querySelector('.purchase-bar__new--over')).not.toBeNull();
   });
 
   it('needs no proposal when landing exactly on the budget', () => {

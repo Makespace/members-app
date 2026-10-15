@@ -1280,21 +1280,6 @@ label img {
   background: var(--grey-color);
 }
 
-.purchase-bar__new {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  background: var(--green-color);
-}
-
-.purchase-bar__new--over {
-  background: repeating-linear-gradient(
-    -45deg,
-    var(--red-color) 0 6px,
-    color-mix(in oklch, var(--red-color) 70%, white) 6px 12px
-  );
-}
-
 .purchase-bar__limit {
   position: absolute;
   top: -0.35rem;
@@ -1321,14 +1306,6 @@ label img {
 
 .purchase-swatch--spent {
   background: var(--grey-color);
-}
-
-.purchase-swatch--new {
-  background: var(--green-color);
-}
-
-.purchase-swatch--over {
-  background: var(--red-color);
 }
 
 .purchase-swatch--limit {

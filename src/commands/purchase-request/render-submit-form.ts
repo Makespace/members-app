@@ -9,8 +9,9 @@
 // budget is listed, three shop entries are offered (blank ones are ignored)
 // and the server works out the outcome on submit. The inline script at the
 // bottom is a progressive enhancement that reveals sections as the questions
-// are answered, keeps the budget bar and the verdict up to date, adds and
-// removes shop entries and compares the shop costs with the estimate. The
+// are answered, shows the chosen area's budget as it stands, keeps the
+// verdict up to date, adds and removes shop entries and compares the shop
+// costs with the estimate. The
 // server is always authoritative - see src/purchasing/classify-purchase.ts.
 
 import * as O from 'fp-ts/Option';
@@ -302,25 +303,6 @@ const enhancementScript = html`
         return {key: 'budget'};
       }
 
-      function bar(area, amount, showNew) {
-        var after = area.spent + amount;
-        var scale = Math.max(area.budget, after) || 1;
-        function pct(n) { return (n / scale) * 100; }
-        var over = after > area.budget || amount >= threshold;
-        var withNew = showNew && amount > 0;
-        return '<div class="purchase-bar" role="img" aria-label="' + gbp(area.spent) + ' spent' +
-          (withNew ? ', plus ' + gbp(amount) + ' for this purchase' : '') + ', of a ' + gbp(area.budget) + ' budget">' +
-          '<div class="purchase-bar__spent" style="width:' + pct(area.spent) + '%"></div>' +
-          (withNew ? '<div class="purchase-bar__new' + (over ? ' purchase-bar__new--over' : '') +
-            '" style="left:' + pct(area.spent) + '%;width:' + pct(amount) + '%"></div>' : '') +
-          '<div class="purchase-bar__limit" style="left:calc(' + pct(area.budget) + '% - 3px)"></div>' +
-          '</div><div class="purchase-bar-legend">' +
-          '<span><span class="purchase-swatch purchase-swatch--spent"></span>Spent in ' + esc(year) + '</span>' +
-          (withNew ? '<span><span class="purchase-swatch ' + (over ? 'purchase-swatch--over' : 'purchase-swatch--new') +
-            '"></span>This purchase</span>' : '') +
-          '<span><span class="purchase-swatch purchase-swatch--limit"></span>Yearly budget</span></div>';
-      }
-
       function renderVerdict(r, area, amount) {
         var after = area.spent + amount;
         var remaining = area.budget - area.spent;
@@ -417,12 +399,11 @@ const enhancementScript = html`
         var consumable = consumableRadio ? consumableRadio.value : null;
         question.classList.toggle('purchase-question--answered', !!consumable);
         var r = area ? classify(consumable, amount, area) : null;
-        var fromBudget = !!r && r.key !== 'consumable';
 
+        // The budget panel shows where the area stands now; the verdict
+        // explains what this purchase would do to it.
         budgets.forEach(function (budget) {
-          var shown = !!area && budget.dataset.budgetFor === area.id;
-          budget.hidden = !shown;
-          if (shown) budget.querySelector('[data-budget-bar]').innerHTML = bar(area, amount, fromBudget);
+          budget.hidden = !area || budget.dataset.budgetFor !== area.id;
         });
 
         var key = r ? [r.key, r.reason || '', area.id, amount].join('|') : '';
