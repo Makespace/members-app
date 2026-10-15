@@ -100,6 +100,20 @@ describe('purchase request form script', () => {
     ).toBe(false);
   });
 
+  it('moves on once the question is answered, even before an area is chosen', () => {
+    const form = setUp();
+    typeAmount(form, '185');
+    choose(form, 'consumable-no');
+    expect(verdict(form).hidden).toBe(false);
+    expect(verdict(form).textContent).toContain('Choose which area this is for');
+    expect(
+      form.querySelector<HTMLElement>('[data-submit-section]')!.hidden
+    ).toBe(false);
+
+    choose(form, `area-${woodShopId}`);
+    expect(verdict(form).textContent).toContain('No proposal needed');
+  });
+
   it('says what a budget purchase leaves, without changing the budget bar', () => {
     const form = setUp();
     choose(form, `area-${woodShopId}`);

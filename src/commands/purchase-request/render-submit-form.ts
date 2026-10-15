@@ -306,13 +306,14 @@ const enhancementScript = html`
         if (consumable === 'true') return {key: 'consumable'};
         if (consumable !== 'false') return null;
         if (amount >= threshold) return {key: 'proposal', reason: 'single'};
+        if (!area) return {key: 'budget'};
         if (area.spent + amount > area.budget) return {key: 'proposal', reason: 'over'};
         return {key: 'budget'};
       }
 
       function renderVerdict(r, area, amount) {
-        var after = area.spent + amount;
-        var remaining = area.budget - area.spent;
+        var after = area ? area.spent + amount : 0;
+        var remaining = area ? area.budget - area.spent : 0;
         if (r.key === 'consumable') {
           return '<div class="purchase-verdict purchase-verdict--consumable">' +
             '<span><span class="tag tag--green">Consumable</span></span>' +
@@ -325,6 +326,12 @@ const enhancementScript = html`
             '<span><span class="tag tag--grey">Yearly budget</span></span>' +
             '<h2>This comes out of your yearly budget</h2>' +
             '<p>Enter how much it will cost above to see whether you' + "'" + 'll need a proposal.</p></div>';
+        }
+        if (r.key === 'budget' && !area) {
+          return '<div class="purchase-verdict purchase-verdict--budget">' +
+            '<span><span class="tag tag--grey">Yearly budget</span></span>' +
+            '<h2>This comes out of your yearly budget</h2>' +
+            '<p>Choose which area this is for to see whether you' + "'" + 'll need a proposal.</p></div>';
         }
         if (r.key === 'budget') {
           return '<div class="purchase-verdict purchase-verdict--budget">' +
@@ -405,7 +412,9 @@ const enhancementScript = html`
         var consumableRadio = checked('isMemberPaidConsumable');
         var consumable = consumableRadio ? consumableRadio.value : null;
         question.classList.toggle('purchase-question--answered', !!consumable);
-        var r = area ? classify(consumable, amount, area) : null;
+        // Answering the question is enough to move on; without an area the
+        // verdict asks for one rather than holding the rest of the form back.
+        var r = classify(consumable, amount, area);
 
         // The budget panel shows where the area stands now; the verdict
         // explains what this purchase would do to it.
@@ -413,7 +422,7 @@ const enhancementScript = html`
           budget.hidden = !area || budget.dataset.budgetFor !== area.id;
         });
 
-        var key = r ? [r.key, r.reason || '', area.id, amount].join('|') : '';
+        var key = r ? [r.key, r.reason || '', area ? area.id : '', amount].join('|') : '';
         if (verdict.dataset.key !== key) {
           verdict.dataset.key = key;
           verdict.hidden = !r;
