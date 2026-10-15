@@ -10,21 +10,30 @@ type ViewModel = {user: User};
 const renderForm = (viewModel: ViewModel) =>
   pipe(
     html`
-      <h1>Sign the Owner Agreement</h1>
-      ${ownerAgreement}
-      <form action="?next=/me" method="post">
-        <input
-          type="hidden"
-          name="memberNumber"
-          value="${viewModel.user.memberNumber}"
-        />
-        <input
-          type="hidden"
-          name="signedAt"
-          value="${safe(new Date().toISOString())}"
-        />
-        <button type="submit">Sign Agreement</button>
-      </form>
+      <div class="stack prose">
+        <h1>The Owners’ Agreement</h1>
+        ${ownerAgreement}
+        <div class="callout callout--green">
+          <p>
+            By signing this agreement you're confirming that you understand
+            the responsibilities of ownership and want to take an active role
+            in your area.
+          </p>
+          <form action="?next=/me" method="post">
+            <input
+              type="hidden"
+              name="memberNumber"
+              value="${viewModel.user.memberNumber}"
+            />
+            <input
+              type="hidden"
+              name="signedAt"
+              value="${safe(new Date().toISOString())}"
+            />
+            <button type="submit">Sign the Owners’ Agreement</button>
+          </form>
+        </div>
+      </div>
     `,
     toLoggedInContent(safe('Sign Owner Agreement'))
   );

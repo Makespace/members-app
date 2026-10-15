@@ -3523,3 +3523,141 @@ dl.change-log {
     }
   }
 }
+
+/* Callout box for asides and highlights in long-form pages
+   (e.g. the owner agreement) */
+.callout {
+  background-color: var(--tooltip-color);
+  border-left: 5px solid var(--border-color);
+  padding: 0.75rem 1rem;
+}
+
+.callout > * + * {
+  margin-block-start: 0.75rem;
+}
+
+.callout--green {
+  background-color: color-mix(in oklch, white 92%, var(--green-color));
+  border-left-color: var(--green-color);
+}
+
+/* Long-form prose pages (e.g. the owner agreement): give sections room to
+   breathe beyond the default .stack rhythm */
+.prose h2 {
+  margin-block-start: 1.5rem;
+}
+
+.prose h3 {
+  margin-block-start: 1.25rem;
+}
+
+/* Card grid for at-a-glance lists (e.g. owner responsibilities) */
+.card-grid {
+  display: grid;
+  /* At most two columns: each track is at least half the row */
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(max(16rem, calc(50% - 0.375rem)), 1fr)
+  );
+  gap: 0.75rem;
+}
+
+/* The reset's `ul[class] { margin: 0 }` outranks a lone class selector
+   (0-1-1 vs 0-1-0), so the margin needs the element in the selector */
+ul.card-grid {
+  margin-block-start: 1rem;
+}
+
+.card-grid > li {
+  margin: 0;
+  background-color: color-mix(in oklch, white 94%, var(--green-color));
+  border: 1px solid color-mix(in oklch, white 55%, var(--green-color));
+  padding: 0.75rem 1rem;
+}
+
+/* With an odd number of cards, center the lone card on the last row.
+   Only applies when the grid is two columns wide (its max); below that it's
+   a single column and needs no special case. */
+@media (min-width: 35rem) {
+  .card-grid > li:nth-child(odd):last-child {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: calc(50% - 0.375rem);
+  }
+}
+
+.card-grid .card-title {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.card-grid .card-title i {
+  color: var(--green-color);
+  margin-right: 0.35rem;
+}
+
+.card-grid--red > li {
+  background-color: color-mix(in oklch, white 94%, var(--red-color));
+  border-color: color-mix(in oklch, white 55%, var(--red-color));
+}
+
+.card-grid--red .card-title i {
+  color: var(--red-color);
+}
+
+.card-grid--blue > li {
+  background-color: color-mix(in oklch, white 94%, var(--link-color));
+  border-color: color-mix(in oklch, white 55%, var(--link-color));
+}
+
+.card-grid--blue .card-title i {
+  color: var(--link-color);
+}
+
+/* Checklist-style list with empty tickboxes (e.g. active-owner
+   contributions). Element in the selector to outrank the ul[class] reset. */
+ul.checklist {
+  margin-block-start: 1rem;
+}
+
+.checklist > li {
+  display: flex;
+  gap: 0.65em;
+  align-items: baseline;
+  margin-bottom: 0.5em;
+}
+
+/* Longer checklists can split into two columns on wider screens */
+@media (min-width: 35rem) {
+  ul.checklist--columns {
+    columns: 2;
+    column-gap: 2rem;
+  }
+
+  .checklist--columns > li {
+    break-inside: avoid;
+  }
+}
+
+.checklist .checkbox {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  border: 2px solid var(--green-color);
+  transform: translateY(0.15em);
+  background: white;
+}
+
+.checklist .checkbox--checked::after {
+  content: '✓';
+  font-size: 1.3em;
+  font-weight: bold;
+  line-height: 1;
+  color: color-mix(in oklch, white 45%, var(--green-color));
+  transform: translate(0.12em, -0.12em) rotate(-6deg);
+}
+
