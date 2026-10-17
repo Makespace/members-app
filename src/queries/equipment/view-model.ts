@@ -20,5 +20,12 @@ export type ViewModel = {
   // Counted over a rolling thirty days, so the numbers do not fall off a
   // cliff on the first of the month.
   tickets: {active: number; resolvedRecently: number};
-  training: {activeTrainers: number; trainingsRecently: number};
+  training: {
+    activeTrainers: number;
+    trainingsRecently: number;
+    // Passed the quiz but not yet marked as practically trained, excluding
+    // known-inactive members. Sourced from the same quiz results the
+    // quiz-results page lists, so the number matches that page.
+    waitingForTraining: number;
+  };
 };

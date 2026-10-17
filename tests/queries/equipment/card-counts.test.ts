@@ -3,7 +3,7 @@ import {Int} from 'io-ts';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {constructViewModel} from '../../../src/queries/equipment/construct-view-model';
 import {arbitraryUser} from '../../types/user.helper';
-import {getRightOrFail} from '../../helpers';
+import {getRightOrFail, insertRecurlySubscription} from '../../helpers';
 import {
   TestFramework,
   initTestFramework,
@@ -124,5 +124,120 @@ describe('the counts on a machine of its tickets', () => {
     );
 
     expect(view.training.trainingsRecently).toBe(1);
+  });
+});
+
+// "Members waiting for training" comes from the same quiz data as the
+// quiz-results page: passed the quiz, not yet trained, still a member.
+describe('the count of members waiting for training', () => {
+  let framework: TestFramework;
+  const areaId = faker.string.uuid() as UUID;
+  const equipmentId = faker.string.uuid() as UUID;
+  const trainingSheetId = faker.string.alphanumeric(20) as NonEmptyString;
+  const owner = arbitraryUser();
+  const trainee = arbitraryUser();
+
+  const waitingForTraining = async () =>
+    getRightOrFail(
+      await constructViewModel(framework.depsForCommands, owner)(equipmentId)()
+    ).training.waitingForTraining;
+
+  const passQuiz = (memberNumber: number, email: string, completedAt = new Date()) =>
+    framework.commands.trainingQuiz.record({
+      trainingSheetId,
+      completedAt,
+      memberNumberProvided: memberNumber,
+      emailProvided: email,
+      score: 10 as Int,
+      maxScore: 10 as Int,
+      rowHash: faker.string.uuid() as NonEmptyString,
+    });
+
+  beforeEach(async () => {
+    framework = await initTestFramework();
+    await framework.commands.memberNumbers.linkNumberToEmail({
+      memberNumber: owner.memberNumber,
+      email: owner.emailAddress,
+      name: undefined,
+      formOfAddress: undefined,
+    });
+    await framework.commands.memberNumbers.linkNumberToEmail({
+      memberNumber: trainee.memberNumber,
+      email: trainee.emailAddress,
+      name: undefined,
+      formOfAddress: undefined,
+    });
+    await framework.commands.area.create({
+      id: areaId,
+      name: 'Wood Shop' as NonEmptyString,
+    });
+    await framework.commands.equipment.add({
+      id: equipmentId,
+      name: 'Band Saw' as NonEmptyString,
+      areaId,
+    });
+    await framework.commands.area.addOwner({
+      areaId,
+      memberNumber: owner.memberNumber,
+    });
+    await framework.commands.equipment.trainingSheet({
+      equipmentId,
+      trainingSheetId,
+    });
+  });
+
+  afterEach(() => {
+    framework.close();
+  });
+
+  it('is zero when nobody has passed the quiz', async () => {
+    expect(await waitingForTraining()).toBe(0);
+  });
+
+  it('counts a member who passed the quiz, once even if they passed twice', async () => {
+    await passQuiz(trainee.memberNumber, trainee.emailAddress);
+    await passQuiz(trainee.memberNumber, trainee.emailAddress);
+
+    expect(await waitingForTraining()).toBe(1);
+  });
+
+  it('stops counting a member once they are marked as trained', async () => {
+    await passQuiz(trainee.memberNumber, trainee.emailAddress);
+    await framework.commands.trainers.markTrained({
+      equipmentId,
+      memberNumber: trainee.memberNumber as Int,
+    });
+
+    expect(await waitingForTraining()).toBe(0);
+  });
+
+  it('does not count a failed quiz', async () => {
+    await framework.commands.trainingQuiz.record({
+      trainingSheetId,
+      completedAt: new Date(),
+      memberNumberProvided: trainee.memberNumber,
+      emailProvided: trainee.emailAddress,
+      score: 5 as Int,
+      maxScore: 10 as Int,
+      rowHash: faker.string.uuid() as NonEmptyString,
+    });
+
+    expect(await waitingForTraining()).toBe(0);
+  });
+
+  it('counts a passed quiz whose member number is not linked to an account', async () => {
+    await passQuiz(999999, 'whoever@example.com');
+
+    expect(await waitingForTraining()).toBe(1);
+  });
+
+  it('does not count somebody who is no longer a member', async () => {
+    await passQuiz(trainee.memberNumber, trainee.emailAddress);
+    await insertRecurlySubscription(framework.extDB, {
+      email: trainee.emailAddress,
+      hasActiveSubscription: false,
+    });
+
+    expect(await waitingForTraining()).toBe(0);
   });
 });
