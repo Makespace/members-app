@@ -3,7 +3,7 @@ import {body as original} from './2024-original';
 import {pages as october2026} from './2026-10';
 import {AgreementPage} from './types';
 
-export type {AgreementPage, Choices, Responsibility} from './types';
+export type {AgreementPage} from './types';
 
 // Every version of the Owners' Agreement there has been, oldest first. A
 // signature records the key of the version signed, so what someone agreed to
