@@ -14,7 +14,7 @@ import { ViewModel } from '../../../src/queries/equipment/view-model';
 import { Equipment, TrainedMember, TrainerInfo } from '../../../src/read-models/shared-state/return-types';
 import { User } from '../../../src/types/user';
 import { faker } from '@faker-js/faker';
-import { EmailAddress } from '../../../src/types';
+import { EmailAddress, UserId } from '../../../src/types';
 import { UUID } from 'io-ts-types';
 import { FullQuizResultsForEquipment } from '../../../src/read-models/external-state/equipment-quiz';
 
@@ -27,6 +27,7 @@ describe('Render equipment page', () => {
     };
 
     const trainer: Readonly<TrainerInfo> = {
+        userId: faker.string.uuid() as UserId,
         name: O.some(faker.animal.dog()),
         memberNumber: faker.number.int({min: 1}),
         primaryEmailAddress: faker.internet.email() as EmailAddress,

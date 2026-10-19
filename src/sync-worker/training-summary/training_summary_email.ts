@@ -60,6 +60,7 @@ const generateTrainingSummaryEmail = (
             <th style="padding: 0 0 0 0">Trainings in last 30 days</th>
             <th style="padding: 0 0 0 0">Total trainings</th>
             <th style="padding: 0 0 0 0">% of membership trained</th>
+            <th style="padding: 0 0 0 0">Active Owners</th>
             <th style="padding: 0 0 0 0">Quick Link</th>
           </tr>
           ${content.trainingStatsPerEquipment
@@ -72,6 +73,7 @@ const generateTrainingSummaryEmail = (
                 <th>${stats.trainedLast30Days}</th>
                 <th>${stats.trainedTotal}</th>
                 <th>${stats.percentageOfActiveMembershipTrained}%</th>
+                <th>${stats.activeOwnerCount}</th>
                 <th><a href="${stats.equipmentLink.href}">Link</a></th>
               </tr>
               `
@@ -82,6 +84,7 @@ const generateTrainingSummaryEmail = (
             <th>-</th>
             <th>${content.totalTrainingsLast30Days}</th>
             <th>${content.totalTrainings}</th>
+            <th>-</th>
             <th>-</th>
             <th>-</th>
           </tr>
