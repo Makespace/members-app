@@ -25,7 +25,7 @@ const member = (
   fobs,
   name: O.fromNullable(name),
   formOfAddress: O.none,
-  agreementSigned: O.none,
+  ownerAgreement: O.none,
   isSuperUser: false,
   superUserSince: O.none,
   gravatarHash: 'hash' as unknown as GravatarHash,

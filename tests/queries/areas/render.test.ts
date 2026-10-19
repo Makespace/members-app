@@ -51,7 +51,7 @@ const area = {
       memberNumber: 123,
       primaryEmailAddress: ownerEmail,
       name: O.some('Area Owner'),
-      agreementSigned: O.some(signedAt),
+      agreement: {state: 'signed', termEnds: signedAt},
       verdict: O.some({isActiveOwner: true, reasons: []}),
       trainingsByQuarter: [
         {label: html`Q4 2025`, count: 0},

@@ -3,8 +3,12 @@
  */
 
 import * as E from 'fp-ts/Either';
+import * as O from 'fp-ts/Option';
+import {SignedOwnerAgreement} from '../../../src/owner-agreement/agreement';
 import {signOwnerAgreementForm} from '../../../src/commands/members/sign-owner-agreement-form';
-import {ownerAgreementPages} from '../../../src/commands/members/owner-agreement';
+import {currentAgreement} from '../../../src/owner-agreement/versions';
+
+const ownerAgreementPages = currentAgreement.pages;
 import {arbitraryUser} from '../../types/user.helper';
 
 const lastStep = ownerAgreementPages.length;
@@ -15,9 +19,17 @@ const areaStep =
 
 const picked = {equipment: 'training', area: 'budget'};
 
-const constructFromQuery = async (query: unknown) => {
+const constructFromQuery = async (
+  query: unknown,
+  ownerAgreement: O.Option<SignedOwnerAgreement> = O.none
+) => {
   const result = await signOwnerAgreementForm.constructForm(query)({
     user: arbitraryUser(),
+    readModel: {
+      members: {
+        getByMemberNumber: () => O.some({ownerAgreement}),
+      },
+    },
   } as never)();
   if (E.isLeft(result)) {
     throw new Error('constructForm failed');
@@ -25,9 +37,12 @@ const constructFromQuery = async (query: unknown) => {
   return result.right;
 };
 
-const renderQuery = async (query: unknown) => {
+const renderQuery = async (
+  query: unknown,
+  ownerAgreement: O.Option<SignedOwnerAgreement> = O.none
+) => {
   const rendered = signOwnerAgreementForm.renderForm(
-    await constructFromQuery(query)
+    await constructFromQuery(query, ownerAgreement)
   );
   const body = document.createElement('body');
   body.innerHTML = rendered.body;
@@ -144,6 +159,51 @@ describe('sign owner agreement form', () => {
       expect(
         page.querySelector<HTMLInputElement>('input[value="training"]')!.checked
       ).toBe(false);
+    });
+  });
+
+  describe('the last page', () => {
+    const lastPage = {...picked, step: String(lastStep)};
+    const signed = (termEnds: Date): O.Option<SignedOwnerAgreement> =>
+      O.some({
+        version: currentAgreement.key,
+        signedAt: new Date('2026-01-01'),
+        termEnds: O.some(termEnds),
+        interestedIn: {equipment: [], area: []},
+        reminderSent: O.none,
+      });
+    const inAYear = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+    const inAWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    it('sends the picks along with the signature', async () => {
+      const page = await renderQuery(lastPage);
+      const sentWith = (name: string) =>
+        Array.from(
+          page.querySelectorAll<HTMLInputElement>(
+            `form[method="post"] input[name="${name}"]`
+          )
+        ).map(input => input.value);
+
+      expect(sentWith('equipment')).toStrictEqual(['training']);
+      expect(sentWith('area')).toStrictEqual(['budget']);
+    });
+
+    it('says how long a first signature lasts', async () => {
+      const page = await renderQuery(lastPage);
+      expect(page.textContent).toContain('signing up for six months');
+    });
+
+    it('says a renewal carries on from the current term', async () => {
+      const page = await renderQuery(lastPage, signed(inAWeek));
+      expect(page.textContent?.replace(/\s+/g, ' ')).toContain(
+        'Signing now renews it until'
+      );
+    });
+
+    it('does not offer to sign again mid-term', async () => {
+      const page = await renderQuery(lastPage, signed(inAYear));
+      expect(page.querySelector('form[method="post"]')).toBeNull();
+      expect(page.textContent).toContain("You've already signed");
     });
   });
 });

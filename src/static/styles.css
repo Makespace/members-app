@@ -3827,3 +3827,17 @@ fieldset.agreement-choices__set {
   button {
   opacity: 0.5;
 }
+
+/* A responsibility the owner said they're interested in, when reading back
+   the agreement they signed. */
+.card-grid > li.card-grid__picked {
+  background-color: color-mix(in oklch, white 80%, var(--green-color));
+  border-color: var(--green-color);
+  box-shadow: inset 0 0 0 1px var(--green-color);
+}
+
+.card-grid__picked-note {
+  margin: 0.5rem 0 0;
+  font-weight: bold;
+  color: var(--green-color);
+}

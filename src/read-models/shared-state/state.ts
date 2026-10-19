@@ -6,6 +6,8 @@ import {
   TroubleTicketStatus,
 } from '../../types/trouble-ticket';
 import {MailboxArchiveReason} from '../../types/mailbox-archive-reason';
+import {ReminderStage} from '../../owner-agreement/reminder-stage';
+import {InterestedIn} from '../../owner-agreement/agreement';
 import * as O from 'fp-ts/Option';
 import {blob, integer, SQLiteColumnBuilderBase, sqliteTable, SQLiteTableExtraConfig, text, uniqueIndex} from 'drizzle-orm/sqlite-core';
 
@@ -34,6 +36,10 @@ export const membersTable = defineTable(
     isSuperUser INTEGER,
     superUserSince INTEGER,
     agreementSigned INTEGER,
+    agreementVersion TEXT,
+    agreementTermEnds INTEGER,
+    agreementInterestedIn BLOB,
+    agreementReminderSent TEXT,
     joined INTEGER
   );`,
   'members' as const,
@@ -49,7 +55,16 @@ export const membersTable = defineTable(
       .$type<O.Option<string>>(),
     isSuperUser: integer('isSuperUser', {mode: 'boolean'}).notNull(),
     superUserSince: integer('superUserSince', {mode: 'timestamp_ms'}),
+    // The latest owner agreement signed: when, which version, the end of its
+    // term (if that version has one), the responsibilities picked, and the
+    // most urgent renewal reminder sent for that term.
     agreementSigned: integer('agreementSigned', {mode: 'timestamp_ms'}),
+    agreementVersion: text('agreementVersion'),
+    agreementTermEnds: integer('agreementTermEnds', {mode: 'timestamp_ms'}),
+    agreementInterestedIn: blob('agreementInterestedIn', {
+      mode: 'json',
+    }).$type<InterestedIn>(),
+    agreementReminderSent: text('agreementReminderSent').$type<ReminderStage>(),
     joined: integer('joined', {mode: 'timestamp_ms'}).notNull(),
   }
 );

@@ -24,7 +24,7 @@ const expandOwners =
           getMemberCoreByUserId(db)(owner.userId),
           O.map(member => ({
             ...member,
-            agreementSigned: member.agreementSigned,
+            ownerAgreement: member.ownerAgreement,
             superUserSince: member.superUserSince,
             ownershipRecordedAt: owner.ownershipRecordedAt,
             markedOwnerBy: O.fromEither(Actor.decode(owner.markedOwnerByActor)),
