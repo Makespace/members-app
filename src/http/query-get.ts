@@ -69,7 +69,7 @@ export const sendQueryResult =
                   ),
                   renderBanners(
                     [
-                      ...systemBanners(member),
+                      ...systemBanners(member, new Date()),
                       ...deps.sharedReadModel.notifications
                         .getForMember(member, new Date())
                         .map(toBanner),

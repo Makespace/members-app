@@ -1,3 +1,4 @@
+import {SignedOwnerAgreement} from '../../owner-agreement/agreement';
 import {EquipmentCategory} from '../../types/equipment-category';
 import * as O from 'fp-ts/Option';
 import {Actor, EmailAddress, GravatarHash, UserId} from '../../types';
@@ -96,7 +97,7 @@ export type MemberCoreInfo = {
   fobs: ReadonlyArray<MemberFob>;
   name: O.Option<string>;
   formOfAddress: O.Option<string>;
-  agreementSigned: O.Option<Date>;
+  ownerAgreement: O.Option<SignedOwnerAgreement>;
   isSuperUser: boolean;
   superUserSince: O.Option<Date>;
   gravatarHash: GravatarHash;
@@ -133,7 +134,7 @@ export type Owner = Pick<
   | 'name'
   | 'primaryEmailAddress'
   | 'pastMemberNumbers'
-  | 'agreementSigned'
+  | 'ownerAgreement'
 > & {
   ownershipRecordedAt: Date;
   markedOwnerBy: O.Option<Actor>;

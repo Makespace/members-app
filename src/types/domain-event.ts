@@ -4,6 +4,7 @@ import {EmailAddressCodec} from './email-address';
 import {Actor} from './actor';
 import {EquipmentCategoryCodec} from './equipment-category';
 import {MailboxArchiveReason} from './mailbox-archive-reason';
+import {ReminderStage} from '../owner-agreement/reminder-stage';
 
 const defineEvent = <A extends string, T extends t.Props>(
   type: A,
@@ -422,6 +423,26 @@ const MemberFobRemoved = defineEvent('MemberFobRemoved', {
 const OwnerAgreementSigned = defineEvent('OwnerAgreementSigned', {
   memberNumber: t.number,
   signedAt: tt.DateFromISOString,
+  // The key of the version signed (see owner-agreement/versions).
+  // Signatures from before versioning were all of the original agreement.
+  agreementVersion: tt.withFallback(t.string, '2024-original'),
+  // The responsibilities the owner said they're interested in taking on.
+  interestedIn: tt.withFallback(
+    t.strict({
+      equipment: t.readonlyArray(t.string),
+      area: t.readonlyArray(t.string),
+    }),
+    {equipment: [], area: []}
+  ),
+});
+
+// A reminder to re-sign the owner agreement has been emailed (dedup marker,
+// committed before sending - prefer a missed email over duplicates).
+const OwnerAgreementReminderSent = defineEvent('OwnerAgreementReminderSent', {
+  memberNumber: t.number,
+  // The end of the term being reminded about.
+  termEnds: tt.DateFromISOString,
+  stage: ReminderStage,
 });
 
 const MemberTrainedOnEquipment = defineEvent('MemberTrainedOnEquipment', {
@@ -652,6 +673,7 @@ export const events = [
   MemberFobRecorded,
   MemberFobRemoved,
   OwnerAgreementSigned,
+  OwnerAgreementReminderSent,
   MemberTrainedOnEquipment,
   MemberTrainedOnEquipmentBy,
   RevokeTrainedOnEquipment,
@@ -720,6 +742,7 @@ export const DomainEvent = t.union([
   MemberFobRecorded.codec,
   MemberFobRemoved.codec,
   OwnerAgreementSigned.codec,
+  OwnerAgreementReminderSent.codec,
   MemberTrainedOnEquipment.codec,
   MemberTrainedOnEquipmentBy.codec,
   RevokeTrainedOnEquipment.codec,

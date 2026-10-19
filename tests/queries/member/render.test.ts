@@ -53,7 +53,7 @@ const buildViewModel = (isSuperUser: boolean, isSelf: boolean): ViewModel => ({
     ],
     name: O.none,
     formOfAddress: O.none,
-    agreementSigned: O.none,
+    ownerAgreement: O.none,
     isSuperUser,
     superUserSince: O.none,
     gravatarHash: 'hash' as unknown as GravatarHash,

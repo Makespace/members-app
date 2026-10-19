@@ -1,3 +1,4 @@
+import {ownerAgreementStatus} from '../../owner-agreement/agreement';
 import {getGravatarThumbnail} from '../../templates/avatar';
 import {html, sanitizeOption} from '../../types/html';
 import {ViewModel} from './view-model';
@@ -89,7 +90,10 @@ export const render = (viewModel: ViewModel) => html`
     <section>
       <h2>Your details</h2>
       ${renderMemberDetails(viewModel)}
-      ${renderOwnerAgreementStatus(viewModel.member.agreementSigned, false)}
+      ${renderOwnerAgreementStatus(
+        ownerAgreementStatus(viewModel.member.ownerAgreement, new Date()),
+        false
+      )}
     </section>
     <section>
       ${renderTrainingMatrix(viewModel.trainingMatrix)}
