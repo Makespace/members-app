@@ -1,28 +1,10 @@
-import {html, Html} from '../../types/html';
+import {html} from '../../types/html';
+import {AgreementPage} from './types';
 
-type Responsibility = {
-  value: string;
-  icon: string;
-  title: string;
-  description: Html;
-};
-
-// A page whose responsibilities the member picks from, showing which they're
-// interested in. They must pick at least one before moving on.
-type Choices = {
-  name: 'equipment' | 'area';
-  responsibilities: ReadonlyArray<Responsibility>;
-};
-
-type AgreementPage = {
-  label: string;
-  body: Html;
-  choices?: Choices;
-};
-
-// The agreement is read one page at a time (see sign-owner-agreement-form),
-// so each page is a short, self-contained section with its own heading.
-export const ownerAgreementPages: ReadonlyArray<AgreementPage> = [
+// The October 2026 agreement. It's read one page at a time (see
+// sign-owner-agreement-form), so each page is a short, self-contained section
+// with its own heading.
+export const pages: ReadonlyArray<AgreementPage> = [
   {
     label: 'Welcome',
     body: html`

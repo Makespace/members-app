@@ -12,7 +12,15 @@ import {
 } from '../../types/html';
 import {Form} from '../../types/form';
 import {User} from '../../types';
-import {ownerAgreementPages} from './owner-agreement';
+import {currentAgreement} from '../../owner-agreement/versions';
+import * as O from 'fp-ts/Option';
+import {
+  OwnerAgreementStatus,
+  ownerAgreementStatus,
+  renewalOpensAt,
+  termEndsFor,
+} from '../../owner-agreement/agreement';
+import {displayDateOnly} from '../../templates/display-date';
 
 // The agreement is long, so it is read a page at a time (?step=1, ?step=2,
 // ...) to slow people down, with the sign button only on the last page.
@@ -33,7 +41,12 @@ type ViewModel = {
   selections: Selections;
   // They asked for a later page but this one still needs a pick
   sentBack: boolean;
+  // Where they stand with the agreement now, which decides what signing does
+  agreement: OwnerAgreementStatus;
+  now: Date;
 };
+
+const ownerAgreementPages = currentAgreement.pages;
 
 const pageCount = ownerAgreementPages.length;
 
@@ -187,14 +200,60 @@ const renderNext = (viewModel: ViewModel) => {
   `;
 };
 
-const renderSign = (viewModel: ViewModel) => html`
+// What signing now does to their term, said before they sign.
+const renderTerm = ({agreement, now}: ViewModel) => {
+  const renewing = agreement.state === 'renewal-due';
+  return pipe(
+    termEndsFor(
+      currentAgreement.key,
+      now,
+      renewing ? O.some(agreement.termEnds) : O.none
+    ),
+    O.match(
+      () => html``,
+      newTermEnds =>
+        renewing
+          ? html`<p>
+              Your current term ends on
+              ${displayDateOnly(agreement.termEnds)}. Signing now renews it
+              until ${displayDateOnly(newTermEnds)}.
+            </p>`
+          : html`<p>
+              You're signing up for six months, until
+              ${displayDateOnly(newTermEnds)}. We'll remind you to renew
+              before then.
+            </p>`
+    )
+  );
+};
+
+const renderAlreadySigned = (
+  viewModel: ViewModel,
+  termEnds: Date
+) => html`
+  <div class="callout callout--green">
+    <p>
+      You've already signed this agreement. Your current term runs until
+      ${displayDateOnly(termEnds)}, and you can renew it from
+      ${displayDateOnly(renewalOpensAt(termEnds))}.
+    </p>
+  </div>
+  <div class="agreement-nav">${renderBack(viewModel)}</div>
+`;
+
+const renderSign = (viewModel: ViewModel) =>
+  viewModel.agreement.state === 'signed'
+    ? renderAlreadySigned(viewModel, viewModel.agreement.termEnds)
+    : html`
   <div class="callout callout--green">
     <p>
       By signing this agreement you're confirming that you understand the
       responsibilities of ownership and want to take an active role in your
       area.
     </p>
+    ${renderTerm(viewModel)}
     <form action="?next=/me" method="post">
+      ${hiddenInputs(selectionPairs(viewModel.selections))}
       <input
         type="hidden"
         name="memberNumber"
@@ -267,7 +326,8 @@ const furthestAllowedStep = (selections: Selections) => {
 
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({user}) => {
+  ({user, readModel}) => {
+    const now = new Date();
     const selections: Selections = {
       equipment: readSelection(input, 'equipment'),
       area: readSelection(input, 'area'),
@@ -279,6 +339,14 @@ const constructForm: Form<ViewModel>['constructForm'] =
       step,
       selections,
       sentBack: requested > step,
+      agreement: ownerAgreementStatus(
+        pipe(
+          readModel.members.getByMemberNumber(user.memberNumber),
+          O.chain(member => member.ownerAgreement)
+        ),
+        now
+      ),
+      now,
     });
   };
 

@@ -61,7 +61,7 @@ export const formGet =
           ),
           renderBanners(
             [
-              ...systemBanners(member.value),
+              ...systemBanners(member.value, new Date()),
               ...deps.sharedReadModel.notifications
                 .getForMember(member.value, new Date())
                 .map(toBanner),

@@ -1,3 +1,4 @@
+import {OwnerAgreementStatus} from '../../owner-agreement/agreement';
 import {EmailAddress} from '../../types';
 import {EquipmentCategory} from '../../types/equipment-category';
 import {RecurlyReason} from '../../read-models/external-state/recurly-status';
@@ -27,7 +28,7 @@ export type OwnerViewModel = {
   memberNumber: number;
   name: O.Option<string>;
   primaryEmailAddress: EmailAddress;
-  agreementSigned: O.Option<Date>;
+  agreement: OwnerAgreementStatus;
   verdict: O.Option<OwnerVerdict>;
   trainingsByQuarter: ReadonlyArray<QuarterCount>;
 };

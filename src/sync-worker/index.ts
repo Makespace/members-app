@@ -6,6 +6,7 @@ import {notifyTroubleTicketChanges} from './notify_trouble_tickets';
 import {notifyDigests} from './notify_digests';
 import {notifyRoleChanges} from './notify_role_changes';
 import {notifySiteNotifications} from './notify_site_notifications';
+import {notifyOwnerAgreementRenewals} from './notify_owner_agreement_renewals';
 import {createGmailClientFactory, pullGmailData} from './gmail/pull_gmail_data';
 import {initDependencies} from './init-dependencies';
 import {GoogleHelpers} from './google/pull_sheet_data';
@@ -35,6 +36,7 @@ const RECURLY_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 // first check happens shortly after a deploy, which is when links are most
 // likely to have just been recorded.
 const GUIDE_LINK_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const OWNER_AGREEMENT_REMINDER_INTERVAL_MS = 60 * 60 * 1000;
 
 async function syncExternDataPeriodically(
   deps: SyncWorkerDependencies,
@@ -52,6 +54,7 @@ async function syncExternDataPeriodically(
   );
   let lastTrainingSummaryEmailCheck = Date.now();
   let lastGuideLinkCheck = 0;
+  let lastOwnerAgreementReminder = 0;
   while (true) {
     try {
       const now = Date.now();
@@ -64,6 +67,8 @@ async function syncExternDataPeriodically(
       const lastTrainingSummaryEmailCheckAgoMs =
         now - lastTrainingSummaryEmailCheck;
       const lastGuideLinkCheckAgoMs = now - lastGuideLinkCheck;
+      const lastOwnerAgreementReminderAgoMs =
+        now - lastOwnerAgreementReminder;
 
       if (lastHeartbeatAgoMs > HEARTBEAT_INTERVAL_MS) {
         deps.logger.info(
@@ -168,6 +173,20 @@ async function syncExternDataPeriodically(
           deps.logger.error(err, 'Equipment guide link check failed');
         } finally {
           lastGuideLinkCheck = Date.now();
+        }
+      }
+
+      if (
+        lastOwnerAgreementReminderAgoMs > OWNER_AGREEMENT_REMINDER_INTERVAL_MS
+      ) {
+        // Contained, like the guide link check: a failing reminder must not
+        // skip the loop's pause and starve everything after it.
+        try {
+          await notifyOwnerAgreementRenewals(deps);
+        } catch (err) {
+          deps.logger.error(err, 'Owner agreement reminders failed');
+        } finally {
+          lastOwnerAgreementReminder = Date.now();
         }
       }
 

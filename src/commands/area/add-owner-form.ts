@@ -145,12 +145,14 @@ const getExistingAndPotentialOwners = (
     memberNumber: number;
     primaryEmailAddress: EmailAddress;
     name: O.Option<string>;
-    agreementSigned: O.Option<Date>;
+    ownerAgreement: O.Option<{signedAt: Date}>;
   }) => ({
     memberNumber: member.memberNumber,
     emailAddress: member.primaryEmailAddress,
     name: member.name,
-    agreementSigned: member.agreementSigned,
+    agreementSigned: O.map((signed: {signedAt: Date}) => signed.signedAt)(
+      member.ownerAgreement
+    ),
   });
   const existing = pipe(
     readModel.area.get(areaId as UUID),

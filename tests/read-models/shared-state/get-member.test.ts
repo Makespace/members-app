@@ -4,7 +4,17 @@ import {advanceTo} from 'jest-date-mock';
 import {EmailAddress} from '../../../src/types';
 import {TestFramework, initTestFramework} from '../test-framework';
 import {faker} from '@faker-js/faker';
-import {expectMatchSecondsPrecision, getSomeOrFail} from '../../helpers';
+import {
+  arbitraryActor,
+  expectMatchSecondsPrecision,
+  getRightOrFail,
+  getSomeOrFail,
+} from '../../helpers';
+import {constructEvent} from '../../../src/types';
+import {
+  currentAgreement,
+  ORIGINAL_AGREEMENT_KEY,
+} from '../../../src/owner-agreement/versions';
 import {pipe} from 'fp-ts/lib/function';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {Int} from 'io-ts';
@@ -530,18 +540,116 @@ describe('get-via-shared-read-model', () => {
     });
 
     describe('and they have signed the owner agreement', () => {
-      const signedAt = faker.date.past();
-      beforeEach(async () => {
-        advanceTo(signedAt);
+      const signedAt = new Date('2026-11-01T10:00:00.000Z');
+      const sixMonthsOn = new Date('2027-05-01T10:00:00.000Z');
+
+      const sign = async (at: Date, extra = {}) => {
+        advanceTo(at);
         await framework.commands.members.signOwnerAgreement({
-          memberNumber: memberNumber,
-          signedAt,
+          memberNumber,
+          signedAt: at,
+          ...extra,
+        });
+      };
+
+      const agreement = () => getSomeOrFail(runQuery().ownerAgreement);
+
+      describe('before the agreement was versioned', () => {
+        beforeEach(async () => {
+          const {commitEvent, sharedReadModel} =
+            framework.trainingSummaryDeps;
+          // As stored before versioning: no version, no picks.
+          getRightOrFail(
+            await commitEvent(sharedReadModel.getCurrentEventIndex())(
+              constructEvent('OwnerAgreementSigned')({
+                actor: arbitraryActor(),
+                memberNumber,
+                signedAt,
+              } as never)
+            )()
+          );
+        });
+
+        it('counts as the original agreement, with no term', () => {
+          expect(agreement().version).toStrictEqual(ORIGINAL_AGREEMENT_KEY);
+          expect(agreement().signedAt).toStrictEqual(signedAt);
+          expect(agreement().termEnds).toStrictEqual(O.none);
         });
       });
 
-      it('returns the date they signed it', () => {
-        const result = runQuery();
-        expect(result.agreementSigned).toStrictEqual(O.some(signedAt));
+      describe('of the current version', () => {
+        beforeEach(() =>
+          sign(signedAt, {equipment: ['training', 'stock'], area: 'budget'})
+        );
+
+        it('records the version signed and when', () => {
+          expect(agreement().version).toStrictEqual(currentAgreement.key);
+          expect(agreement().signedAt).toStrictEqual(signedAt);
+        });
+
+        it('starts a six month term', () => {
+          expect(agreement().termEnds).toStrictEqual(O.some(sixMonthsOn));
+        });
+
+        it('keeps the responsibilities they picked', () => {
+          expect(agreement().interestedIn).toStrictEqual({
+            equipment: ['training', 'stock'],
+            area: ['budget'],
+          });
+        });
+
+        it('does not start another term if signed again mid-term', async () => {
+          await sign(new Date('2026-12-01T10:00:00.000Z'));
+          expect(agreement().termEnds).toStrictEqual(O.some(sixMonthsOn));
+        });
+
+        it('carries a renewal on from the end of the current term', async () => {
+          await sign(new Date('2027-04-15T10:00:00.000Z'));
+          expect(agreement().termEnds).toStrictEqual(
+            O.some(new Date('2027-11-01T10:00:00.000Z'))
+          );
+        });
+
+        it('starts afresh when re-signed after the term lapsed', async () => {
+          const later = new Date('2027-06-10T10:00:00.000Z');
+          await sign(later);
+          expect(agreement().termEnds).toStrictEqual(
+            O.some(new Date('2027-12-10T10:00:00.000Z'))
+          );
+        });
+
+        describe('and a renewal reminder was sent', () => {
+          const remind = async (termEnds: Date) => {
+            const {commitEvent, sharedReadModel} =
+              framework.trainingSummaryDeps;
+            getRightOrFail(
+              await commitEvent(sharedReadModel.getCurrentEventIndex())(
+                constructEvent('OwnerAgreementReminderSent')({
+                  actor: {tag: 'system'},
+                  memberNumber,
+                  termEnds,
+                  stage: 'week',
+                })
+              )()
+            );
+          };
+
+          it('records it against the term', async () => {
+            await remind(sixMonthsOn);
+            expect(agreement().reminderSent).toStrictEqual(O.some('week'));
+          });
+
+          it('ignores a reminder about a different term', async () => {
+            await remind(new Date('2030-01-01T00:00:00.000Z'));
+            expect(agreement().reminderSent).toStrictEqual(O.none);
+          });
+
+          it('starts reminders afresh once renewed', async () => {
+            await remind(sixMonthsOn);
+            await sign(new Date('2027-04-25T10:00:00.000Z'));
+            expect(agreement().reminderSent).toStrictEqual(O.none);
+          });
+        });
       });
     });
 
