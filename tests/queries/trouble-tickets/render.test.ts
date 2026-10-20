@@ -157,6 +157,25 @@ describe('the board as a table', () => {
     expect(ordinaryRow.querySelector('.tt-private')).toBeNull();
   });
 
+  // Housekeeping for whoever maps aliases, so it waits below the tickets.
+  it('puts the unresolved equipment names below the table', () => {
+    const board = renderBoard({
+      ...viewModel([ticket()]),
+      canMapEquipment: true,
+      unresolvedEquipmentNames: [{raw: 'bandsaw', count: 3}],
+    });
+    const table = board.querySelector('table');
+    const panel = [...board.querySelectorAll('details')].find(node =>
+      (node.textContent ?? '').includes('Unresolved equipment names')
+    );
+
+    expect(panel).toBeDefined();
+    expect(
+      table!.compareDocumentPosition(panel!) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
   // The actions go through the ticket's own page, which says who each one
   // will email; the board is for finding the ticket.
   it('leaves the actions to the ticket page', () => {

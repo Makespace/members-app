@@ -389,22 +389,24 @@ export const render = (viewModel: ViewModel) => {
       <div class="stack">
         <h1>${renderTitle(viewModel)}</h1>
         ${renderScopeAndPages(viewModel)} ${renderStatusFilters(viewModel)}
-        ${renderUnresolvedNames(viewModel)}
         <p>No trouble tickets in this view.</p>
+        ${renderUnresolvedNames(viewModel)}
       </div>
     `;
   }
+  // The unresolved names are housekeeping for whoever maps aliases, not
+  // something everyone reading the board needs first, so they come last.
   return html`
     <div class="stack tt-wrapper">
       <h1>${renderTitle(viewModel)}</h1>
       ${renderScopeAndPages(viewModel)} ${renderStatusFilters(viewModel)}
-      ${renderScopeFilters(viewModel)} ${renderUnresolvedNames(viewModel)}
-      ${renderTable(viewModel.tickets)}
+      ${renderScopeFilters(viewModel)} ${renderTable(viewModel.tickets)}
       ${
         viewModel.pageCount > 1
           ? html`<p>${renderPager(viewModel)}</p>`
           : html``
       }
+      ${renderUnresolvedNames(viewModel)}
     </div>
   `;
 };
