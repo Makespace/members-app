@@ -1503,27 +1503,27 @@ label img {
   line-height: 1.5;
   white-space: nowrap;
   color: #fff;
-  background: var(--grey-color);
+  background: var(--tt-badge-colour, var(--grey-color));
 }
 
 .tt-badge--todo {
-  background: var(--tt-todo);
+  --tt-badge-colour: var(--tt-todo);
 }
 
 .tt-badge--in-progress {
-  background: var(--tt-in-progress);
+  --tt-badge-colour: var(--tt-in-progress);
 }
 
 .tt-badge--needs-help {
-  background: var(--tt-needs-help);
+  --tt-badge-colour: var(--tt-needs-help);
 }
 
 .tt-badge--parked {
-  background: var(--tt-parked);
+  --tt-badge-colour: var(--tt-parked);
 }
 
 .tt-badge--resolved {
-  background: var(--tt-resolved);
+  --tt-badge-colour: var(--tt-resolved);
 }
 
 /* Card header: badge alongside the title */
@@ -1583,6 +1583,36 @@ label img {
   color: var(--text-color);
   background: #fff;
   border: 1px solid var(--border-color);
+}
+
+/* The chips are links, and the site's link colours (a:visited, a:hover,
+   a:active) outrank a single class - so a filter you had used before turned
+   its text link-blue, which vanished on the blue In Progress chip. Pin each
+   chip's own colours in every link state, as the action buttons do. */
+.tt-badge.tt-filter__label,
+.tt-badge.tt-filter__label:visited,
+.tt-badge.tt-filter__label:hover,
+.tt-badge.tt-filter__label:active {
+  color: #fff;
+}
+
+.tt-chip.tt-filter__label,
+.tt-chip.tt-filter__label:visited,
+.tt-chip.tt-filter__label:hover,
+.tt-chip.tt-filter__label:active {
+  color: var(--text-color);
+}
+
+/* a:active would otherwise turn a pressed chip or action yellow. */
+.tt-badge.tt-filter__label:active,
+.tt-badge.tt-action:active {
+  background: var(--tt-badge-colour, var(--grey-color));
+  filter: brightness(0.85);
+}
+
+.tt-chip.tt-filter__label:active {
+  background: #fff;
+  filter: brightness(0.92);
 }
 
 .tt-chip .tt-badge__count {
