@@ -52,6 +52,7 @@ describe('purchasing areas in the read model', () => {
       isMemberPaidConsumable: outcome === 'consumable',
       affectedAreaIds: [],
       healthAndSafetyRisk: false,
+      proposal: null,
       outcome,
       approval: outcome === 'budget-proposal-needed' ? 'proposal' : 'none',
       outcomeReason: 'Because',

@@ -27,6 +27,7 @@ import {
 } from '../../../purchasing/budget-year';
 import {UserId} from '../../../types';
 import {PurchaseCodec} from '../../../purchasing/purchases';
+import {ProposalCodec} from '../../../purchasing/proposal';
 
 const spentInYear =
   (db: BetterSQLite3Database) =>
@@ -206,9 +207,14 @@ const StoredAreaIds = t.readonlyArray(UUID);
 const toPurchaseRequest = ({
   purchasesJson,
   affectedAreaIdsJson,
+  proposalJson,
   ...row
 }: typeof purchaseRequestsTable.$inferSelect): PurchaseRequest => ({
   ...row,
+  proposal: pipe(
+    O.fromNullable(proposalJson),
+    O.chain(json => O.fromEither(ProposalCodec.decode(JSON.parse(json))))
+  ),
   affectedAreaIds: pipe(
     StoredAreaIds.decode(JSON.parse(affectedAreaIdsJson)),
     E.getOrElse((): t.TypeOf<typeof StoredAreaIds> => [])

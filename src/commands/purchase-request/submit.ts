@@ -21,6 +21,11 @@ import {allMemberNumbers} from '../../read-models/shared-state/return-types';
 import {classifyPurchase} from '../../purchasing/classify-purchase';
 import {budgetYearOf} from '../../purchasing/budget-year';
 import {Command} from '../command';
+import {
+  normaliseProposal,
+  RawProposal,
+  typedProposal,
+} from '../../purchasing/proposal';
 import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
 
 // A yes/no radio answer.
@@ -34,6 +39,8 @@ const codec = t.strict({
   // The other areas ticked; one arrives as a string, several as a list.
   affectedAreaIds: t.union([tt.UUID, t.readonlyArray(tt.UUID), t.undefined]),
   healthAndSafetyRisk: answer,
+  // Only read when the request needs a proposal.
+  proposal: t.union([RawProposal, t.undefined]),
   summary: tt.NonEmptyString,
   // Each shop with the items bought there and any delivery charge; their
   // total decides the outcome. See src/purchasing/purchases.ts.
@@ -155,6 +162,19 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
         spentThisYearPence: purchasingArea.spentThisYearPence,
       })
     ),
+    // A request that needs a proposal must come with one; any other ignores
+    // whatever proposal fields were sent.
+    E.bind('proposal', ({classification}) =>
+      classification.approval === 'proposal'
+        ? pipe(
+            normaliseProposal(
+              typedProposal(command.proposal),
+              command.healthAndSafetyRisk
+            ),
+            E.mapLeft(fail)
+          )
+        : E.right(null)
+    ),
     E.map(
       ({
         submittedByMemberNumber,
@@ -163,6 +183,7 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
         purchases,
         totalPence,
         affected,
+        proposal,
       }) =>
         O.some(
           constructEvent('PurchaseRequestSubmitted')({
@@ -176,6 +197,7 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
             isMemberPaidConsumable: command.isMemberPaidConsumable,
             affectedAreaIds: affected.map(area => area.id),
             healthAndSafetyRisk: command.healthAndSafetyRisk,
+            proposal,
             outcome: classification.outcome,
             approval: classification.approval,
             outcomeReason: classification.reason,

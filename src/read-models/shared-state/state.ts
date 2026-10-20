@@ -501,6 +501,7 @@ export const purchaseRequestsTable = defineTable(
       isMemberPaidConsumable INTEGER NOT NULL,
       affectedAreaIdsJson TEXT NOT NULL,
       healthAndSafetyRisk INTEGER NOT NULL,
+      proposalJson TEXT,
       outcome TEXT NOT NULL,
       approval TEXT NOT NULL,
       outcomeReason TEXT NOT NULL,
@@ -527,6 +528,8 @@ export const purchaseRequestsTable = defineTable(
     healthAndSafetyRisk: integer('healthAndSafetyRisk', {
       mode: 'boolean',
     }).notNull(),
+    // The proposal as JSON, when the request needs one.
+    proposalJson: text('proposalJson'),
     outcome: text('outcome').notNull().$type<PurchaseRequestOutcome>(),
     approval: text('approval').notNull().$type<PurchaseApproval>(),
     outcomeReason: text('outcomeReason').notNull(),

@@ -31,6 +31,7 @@ import {
 } from '../../purchasing/purchases';
 import {renderPurchaseBreakdown} from '../../templates/purchase-breakdown';
 import {renderOutcome} from '../../templates/purchase-request-outcome';
+import {TypedProposal} from '../../purchasing/proposal';
 import {
   backHref,
   hiddenInputs,
@@ -67,6 +68,8 @@ export type PurchaseRequestAnswers = {
   // The other areas ticked, by id.
   affectedAreaIds: ReadonlyArray<string>;
   healthAndSafetyRisk: string;
+  // The proposal as typed, if the form comes back with one.
+  proposal: TypedProposal;
 };
 
 export type PurchaseRequestFormViewModel = {
@@ -827,13 +830,326 @@ const renderCheckPage = (viewModel: PurchaseRequestFormViewModel) => html`
       encodeURIComponent(`/purchase-requests/view/${viewModel.requestId}?sent=1`)
     )}"
     method="post"
+    class="purchase-request__sections"
+    id="purchase-check-form"
   >
     ${hiddenInputs(carried(viewModel))}
+    ${pipe(
+      viewModel.result,
+      O.filter(({classification}) => classification.approval === 'proposal'),
+      O.match(
+        () => html``,
+        () => renderProposalForm(viewModel)
+      )
+    )}
     ${renderStepNav({
       back: backHref(viewModel.step, carried(viewModel)),
       next: html`<button type="submit">Send request</button>`,
     })}
   </form>
+  ${proposalScript}
+`;
+
+// Blank options and risks offered without JavaScript; blank ones are ignored.
+const PROPOSAL_ENTRIES = 3;
+
+const textField = (
+  name: string,
+  label: Html,
+  hint: Html,
+  value: string,
+  options: {required?: boolean; rows?: number} = {}
+) => {
+  const id = safe(name.replace(/[[\]]+/g, '-').replace(/-$/, ''));
+  return html`
+    <div class="purchase-field">
+      <label class="purchase-field__label" for="${id}">${label}</label>
+      ${hint ? html`<span class="purchase-request__hint text-sm">${hint}</span>` : html``}
+      <textarea
+        name="${safe(name)}"
+        id="${id}"
+        rows="${options.rows ?? 4}"
+        ${options.required ? safe('required') : safe('')}
+      >
+${sanitizeString(value)}</textarea
+      >
+    </div>
+  `;
+};
+
+const optionalLabel = (text: string) => html`${safe(text)}
+  <span class="purchase-request__hint purchase-request__normal"
+    >(optional)</span
+  >`;
+
+const renderOptionEntry = (
+  option: TypedProposal['options'][number],
+  index: number
+) => {
+  const name = (field: string) => `proposal[options][${index}][${field}]`;
+  const id = (field: string) => safe(`proposal-options-${index}-${field}`);
+  const required = index === 0 ? safe('required') : safe('');
+  return html`
+    <div class="purchase-shop proposal-entry" data-repeat-entry>
+      <div class="purchase-shop__head">
+        <strong data-repeat-title>Option ${index + 1}</strong>
+        <button
+          class="purchase-request__link-button jsonly"
+          type="button"
+          data-repeat-remove
+          hidden
+        >
+          Remove option
+        </button>
+      </div>
+      <div class="purchase-shop__row">
+        <div class="purchase-field">
+          <label class="purchase-field__label" for="${id('description')}"
+            >What is the option?</label
+          >
+          <input
+            type="text"
+            name="${safe(name('description'))}"
+            id="${id('description')}"
+            value="${sanitizeString(option.description)}"
+            ${required}
+          />
+        </div>
+        <div class="purchase-field">
+          <label class="purchase-field__label" for="${id('cost')}"
+            >Cost</label
+          >
+          <div class="purchase-money">
+            <span>£</span
+            ><input
+              type="text"
+              inputmode="decimal"
+              name="${safe(name('cost'))}"
+              id="${id('cost')}"
+              placeholder="0.00"
+              value="${sanitizeString(option.cost)}"
+              ${required}
+            />
+          </div>
+        </div>
+      </div>
+      ${textField(name('pros'), html`Pros`, html``, option.pros, {rows: 3})}
+      ${textField(name('cons'), html`Cons`, html``, option.cons, {rows: 3})}
+    </div>
+  `;
+};
+
+const renderRiskEntry = (
+  risk: TypedProposal['risks'][number],
+  index: number
+) => {
+  const name = (field: string) => `proposal[risks][${index}][${field}]`;
+  return html`
+    <div class="purchase-shop proposal-entry" data-repeat-entry>
+      <div class="purchase-shop__head">
+        <strong data-repeat-title>Risk ${index + 1}</strong>
+        <button
+          class="purchase-request__link-button jsonly"
+          type="button"
+          data-repeat-remove
+          hidden
+        >
+          Remove risk
+        </button>
+      </div>
+      ${textField(
+        name('hazard'),
+        html`Hazard`,
+        html`What could go wrong, e.g. dust, noise, sharp blades, heat.`,
+        risk.hazard,
+        {required: index === 0, rows: 2}
+      )}
+      ${textField(
+        name('harm'),
+        html`Who could be harmed, and how`,
+        html``,
+        risk.harm,
+        {rows: 2}
+      )}
+      ${textField(
+        name('actions'),
+        html`Remedial actions`,
+        html`What will be done to reduce the risk, e.g. guards, extraction,
+          PPE, training, signage.`,
+        risk.actions,
+        {required: index === 0, rows: 3}
+      )}
+    </div>
+  `;
+};
+
+const blankOption = {description: '', pros: '', cons: '', cost: ''};
+const blankRisk = {hazard: '', harm: '', actions: ''};
+
+// The proposal, filled in before sending when the request needs one. The
+// parts that don't apply to every purchase are optional; the risk assessment
+// only appears for a moderate to high health and safety risk.
+const renderProposalForm = (viewModel: PurchaseRequestFormViewModel) => {
+  const proposal = viewModel.answers.proposal;
+  const needsRiskAssessment = viewModel.answers.healthAndSafetyRisk === 'true';
+  return html`
+    <section class="purchase-request__stack proposal-form" data-proposal-form>
+      <h2>Your proposal</h2>
+      <p>
+        This request needs a proposal, sent with it. Fill in what applies; the
+        parts marked optional can be left blank if they don't.
+      </p>
+      ${textField(
+        'proposal[need]',
+        html`The need`,
+        html`What problem does this solve, and for whom?`,
+        proposal.need || viewModel.answers.justification,
+        {required: true, rows: 5}
+      )}
+      <div class="purchase-request__stack">
+        <h3>Options</h3>
+        <p class="purchase-request__hint text-sm">
+          The ways you could meet the need, including doing nothing if that's
+          realistic, each with its pros, cons and cost.
+        </p>
+        <div
+          class="purchase-request__stack"
+          data-repeat="options"
+          data-repeat-label="Option"
+        >
+          ${joinHtml(
+            padded(proposal.options, PROPOSAL_ENTRIES, blankOption).map(
+              renderOptionEntry
+            )
+          )}
+        </div>
+        <button
+          class="purchase-request__link-button jsonly"
+          type="button"
+          data-repeat-add="options"
+        >
+          + Add another option
+        </button>
+      </div>
+      ${textField(
+        'proposal[preferred]',
+        html`Preferred option`,
+        html`Which option you'd go with, and why.`,
+        proposal.preferred,
+        {required: true}
+      )}
+      ${needsRiskAssessment
+        ? html`<div class="purchase-request__stack">
+            <h3>Risk assessment</h3>
+            <p class="purchase-request__hint text-sm">
+              You said this presents a moderate to high health and safety risk.
+              List each hazard, who it could harm, and what will be done about
+              it.
+            </p>
+            <div
+              class="purchase-request__stack"
+              data-repeat="risks"
+              data-repeat-label="Risk"
+            >
+              ${joinHtml(
+                padded(proposal.risks, PROPOSAL_ENTRIES, blankRisk).map(
+                  renderRiskEntry
+                )
+              )}
+            </div>
+            <button
+              class="purchase-request__link-button jsonly"
+              type="button"
+              data-repeat-add="risks"
+            >
+              + Add another risk
+            </button>
+          </div>`
+        : html``}
+      ${textField(
+        'proposal[location]',
+        optionalLabel('Where it goes'),
+        html`Where in the space it will live.`,
+        proposal.location
+      )}
+      ${textField(
+        'proposal[owner]',
+        optionalLabel('Who owns it'),
+        html`Who will look after it.`,
+        proposal.owner
+      )}
+      ${textField(
+        'proposal[training]',
+        optionalLabel('Training and servicing'),
+        html`How members will be trained to use it, and how it will be
+          serviced.`,
+        proposal.training
+      )}
+    </section>
+  `;
+};
+
+// Plain browser JavaScript for page 3: adds and removes proposal options and
+// risks. Kept free of template substitutions (so no backtick strings in it)
+// and of single backslashes.
+const proposalScript = html`
+  <script>
+    (function () {
+      var form = document.getElementById('purchase-check-form');
+      if (!form) return;
+      form.querySelectorAll('[data-repeat]').forEach(function (list) {
+        var kind = list.dataset.repeat;
+        var label = list.dataset.repeatLabel;
+        var entries = list.querySelectorAll('[data-repeat-entry]');
+        var template = entries[0].cloneNode(true);
+        template.querySelectorAll('input, textarea').forEach(function (field) {
+          field.value = '';
+          field.textContent = '';
+          field.required = false;
+        });
+        var next = entries.length;
+        function isBlank(entry) {
+          return Array.prototype.every.call(
+            entry.querySelectorAll('input, textarea'),
+            function (field) { return field.value.trim() === ''; }
+          );
+        }
+        function renumber() {
+          var all = list.querySelectorAll('[data-repeat-entry]');
+          all.forEach(function (entry, index) {
+            entry.querySelector('[data-repeat-title]').textContent = label + ' ' + (index + 1);
+            entry.querySelector('[data-repeat-remove]').hidden = all.length < 2;
+          });
+        }
+        function wire(entry) {
+          entry.querySelector('[data-repeat-remove]').addEventListener('click', function () {
+            entry.remove();
+            renumber();
+          });
+        }
+        for (var i = 1; i < entries.length; i++) {
+          if (isBlank(entries[i])) entries[i].remove();
+        }
+        list.querySelectorAll('[data-repeat-entry]').forEach(wire);
+        form.querySelector('[data-repeat-add="' + kind + '"]').addEventListener('click', function () {
+          var index = next++;
+          var entry = template.cloneNode(true);
+          entry.querySelectorAll('[name]').forEach(function (field) {
+            field.name = field.name.replace(/\\[\\d+\\]/, '[' + index + ']');
+            field.id = field.id.replace(/-[0-9]+-/, '-' + index + '-');
+          });
+          entry.querySelectorAll('label[for]').forEach(function (fieldLabel) {
+            fieldLabel.htmlFor = fieldLabel.htmlFor.replace(/-[0-9]+-/, '-' + index + '-');
+          });
+          list.appendChild(entry);
+          wire(entry);
+          renumber();
+          entry.querySelector('input, textarea').focus();
+        });
+        renumber();
+      });
+    })();
+  </script>
 `;
 
 // Plain browser JavaScript for page 2, kept free of template substitutions

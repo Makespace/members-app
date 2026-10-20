@@ -37,6 +37,7 @@ const setUp = (purchases: ReadonlyArray<TypedPurchase> = []) => {
       affectsOtherAreas: 'false',
       affectedAreaIds: [],
       healthAndSafetyRisk: 'false',
+      proposal: {need: '', options: [], preferred: '', risks: [], location: '', owner: '', training: ''},
     },
     problems: [],
     chosen: O.some(woodShop),

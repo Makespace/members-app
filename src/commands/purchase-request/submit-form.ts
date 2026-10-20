@@ -23,6 +23,7 @@ import {
 import {SharedReadModel} from '../../read-models/shared-state';
 import {User} from '../../types';
 import {readRequestedStep} from '../../templates/multi-page-form';
+import {RawProposal, typedProposal} from '../../purchasing/proposal';
 import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
 import {
   PAGE_LABELS,
@@ -118,6 +119,12 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
       affectsOtherAreas: readAnswer(input, 'affectsOtherAreas'),
       affectedAreaIds: readAll(input, 'affectedAreaIds'),
       healthAndSafetyRisk: readAnswer(input, 'healthAndSafetyRisk'),
+      proposal: pipe(
+        input,
+        t.type({proposal: RawProposal}).decode,
+        E.map(({proposal}) => typedProposal(proposal)),
+        E.getOrElse(() => typedProposal(undefined))
+      ),
     };
 
     const chosen = O.fromNullable(

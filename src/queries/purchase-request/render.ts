@@ -8,6 +8,7 @@ import {
   PurchasingAreaSummary,
 } from '../../read-models/shared-state/return-types';
 import {renderPurchaseBreakdown} from '../../templates/purchase-breakdown';
+import {renderProposal} from '../../templates/proposal';
 import {renderMemberNumber} from '../../templates/member-number';
 import {displayDate} from '../../templates/display-date';
 import {renderOutcome} from '../../templates/purchase-request-outcome';
@@ -96,11 +97,20 @@ export const render = ({
           <dd>${sanitizeString(request.justification)}</dd>
         </dl>
         ${renderPurchaseBreakdown(request.purchases, request.totalPence)}
+        ${pipe(
+          request.proposal,
+          O.match(() => html``, renderProposal)
+        )}
         ${request.approval === 'proposal'
-          ? html`<p>
-              <strong>Next:</strong> write your proposal. Nothing will be bought
-              until it is agreed.
-            </p>`
+          ? O.isSome(request.proposal)
+            ? html`<p>
+                <strong>Next:</strong> the proposal needs agreeing. Nothing will
+                be bought until it is.
+              </p>`
+            : html`<p>
+                <strong>Next:</strong> write your proposal. Nothing will be
+                bought until it is agreed.
+              </p>`
           : html`<p>
               The area's other owners and the treasurer can see this request on
               the purchasing page.

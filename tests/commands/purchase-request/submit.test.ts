@@ -66,6 +66,16 @@ describe('submit purchase request', () => {
       {shop: '', delivery: '', items: [blankItem, blankItem, blankItem]},
     ],
     justification: 'The old one is too small for quilts',
+    // Ignored unless the request needs a proposal.
+    proposal: {
+      need: 'Quilting needs a bigger machine',
+      options: [
+        {description: 'Buy a quilting machine', pros: 'Fast', cons: 'Big', cost: '230'},
+        {description: 'Do nothing', pros: 'Free', cons: 'No quilts', cost: '0'},
+      ],
+      preferred: 'Buy one',
+      risks: [{hazard: 'Needle injuries', harm: 'Users', actions: 'Guard and induction'}],
+    },
     ...overrides,
   });
 
@@ -329,6 +339,42 @@ describe('submit purchase request', () => {
         formBody({isMemberPaidConsumable: 'true', healthAndSafetyRisk: 'true'})
       );
       expect(event).toMatchObject({outcome: 'consumable', approval: 'proposal'});
+    });
+  });
+
+  describe('the proposal', () => {
+    it('is recorded when the request needs one', async () => {
+      const event = await submitted(formBody(costing('1000')));
+      expect(event.approval).toBe('proposal');
+      expect(event.proposal).toMatchObject({
+        need: 'Quilting needs a bigger machine',
+        options: [
+          {description: 'Buy a quilting machine', costPence: 23_000},
+          {description: 'Do nothing', costPence: 0},
+        ],
+        preferred: 'Buy one',
+        risks: [],
+      });
+    });
+
+    it('keeps the risk assessment when there is a health and safety risk', async () => {
+      const event = await submitted(formBody({healthAndSafetyRisk: 'true'}));
+      expect(event.proposal?.risks).toStrictEqual([
+        {hazard: 'Needle injuries', harm: 'Users', actions: 'Guard and induction'},
+      ]);
+    });
+
+    it('is required when the request needs one', async () => {
+      expect(
+        await failure(formBody({...costing('1000'), proposal: undefined}))
+      ).toMatchObject({
+        status: StatusCodes.BAD_REQUEST,
+        message: 'Proposal: please describe the need.',
+      });
+    });
+
+    it('is left out when the request does not need one', async () => {
+      expect((await submitted(formBody())).proposal).toBeNull();
     });
   });
 

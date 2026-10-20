@@ -30,6 +30,7 @@ const request: PurchaseRequest = {
   isMemberPaidConsumable: false,
   affectedAreaIds: [],
   healthAndSafetyRisk: false,
+  proposal: O.none,
   outcome: 'budget',
   approval: 'none',
   outcomeReason: 'This comes out of the yearly budget.',
@@ -83,5 +84,35 @@ describe('purchase request page', () => {
     expect(
       page(true, {outcome: 'consumable', isMemberPaidConsumable: true})
     ).toContain('£420.00 of £1,000.00');
+  });
+
+  it('shows the proposal it was sent with', () => {
+    const html = page(true, {
+      approval: 'proposal',
+      outcome: 'budget-proposal-needed',
+      proposal: O.some({
+        need: 'The planer is unsafe',
+        options: [
+          {description: 'Replace it', pros: 'Safe', cons: 'Dear', costPence: 120_000},
+        ],
+        preferred: 'Replace it',
+        risks: [{hazard: 'Kickback', harm: 'The user', actions: 'Guards'}],
+        location: null,
+        owner: 'The wood shop owners',
+        trainingAndServicing: null,
+      }),
+    }).replace(/\s+/g, ' ');
+    expect(html).toContain('The planer is unsafe');
+    expect(html).toContain('Option 1: Replace it');
+    expect(html).toContain('£1,200.00');
+    expect(html).toContain('Kickback');
+    expect(html).toContain('Who owns it');
+    expect(html).not.toContain('Where it goes');
+    expect(html).toContain('the proposal needs agreeing');
+    expect(html).not.toContain('write your proposal');
+  });
+
+  it('has no proposal section when there is none', () => {
+    expect(page(true)).not.toContain('Proposal</h2>');
   });
 });

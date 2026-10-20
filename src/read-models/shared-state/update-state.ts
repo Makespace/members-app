@@ -1376,6 +1376,8 @@ const _updateState =
             isMemberPaidConsumable: event.isMemberPaidConsumable,
             affectedAreaIdsJson: JSON.stringify(event.affectedAreaIds),
             healthAndSafetyRisk: event.healthAndSafetyRisk,
+            proposalJson:
+              event.proposal === null ? null : JSON.stringify(event.proposal),
             outcome: event.outcome,
             approval: event.approval,
             outcomeReason: event.outcomeReason,

@@ -101,6 +101,7 @@ describe('purchasing area page', () => {
       affectsOtherAreas: false,
       affectedAreaIds: undefined,
       healthAndSafetyRisk: false,
+      proposal: undefined,
       summary: 'Bandsaw blades' as never,
       purchases: [
         {
@@ -160,6 +161,7 @@ describe('purchasing area page', () => {
       affectsOtherAreas: false,
       affectedAreaIds: undefined,
       healthAndSafetyRisk: false,
+      proposal: undefined,
       summary: 'Sanding discs' as never,
       purchases: [
         {

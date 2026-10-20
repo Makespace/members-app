@@ -10,6 +10,7 @@ import {
 } from './purchase-request-outcome';
 import {ReminderStage} from '../owner-agreement/reminder-stage';
 import {PurchaseCodec} from '../purchasing/purchases';
+import {ProposalCodec} from '../purchasing/proposal';
 
 const defineEvent = <A extends string, T extends t.Props>(
   type: A,
@@ -250,6 +251,8 @@ const PurchaseRequestSubmitted = defineEvent('PurchaseRequestSubmitted', {
   affectedAreaIds: t.readonlyArray(tt.UUID),
   // A moderate to high health and safety risk that will need mitigating.
   healthAndSafetyRisk: t.boolean,
+  // The proposal, when the request needs one; see src/purchasing/proposal.ts.
+  proposal: t.union([ProposalCodec, t.null]),
   outcome: PurchaseRequestOutcomeCodec,
   // What approval it needs before going ahead; see PurchaseApprovalCodec.
   approval: PurchaseApprovalCodec,

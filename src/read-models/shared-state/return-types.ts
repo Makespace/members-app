@@ -1,5 +1,6 @@
 import {SignedOwnerAgreement} from '../../owner-agreement/agreement';
 import {Purchase} from '../../purchasing/purchases';
+import {Proposal} from '../../purchasing/proposal';
 import {EquipmentCategory} from '../../types/equipment-category';
 import * as O from 'fp-ts/Option';
 import {Actor, EmailAddress, GravatarHash, UserId} from '../../types';
@@ -199,6 +200,8 @@ export type PurchaseRequest = {
   affectedAreaIds: ReadonlyArray<UUID>;
   // A moderate to high health and safety risk that will need mitigating.
   healthAndSafetyRisk: boolean;
+  // The proposal it was sent with, when it needs one.
+  proposal: O.Option<Proposal>;
   outcome: PurchaseRequestOutcome;
   approval: PurchaseApproval;
   outcomeReason: string;

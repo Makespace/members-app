@@ -92,6 +92,7 @@ const onPage = (
     affectsOtherAreas: 'false',
     affectedAreaIds: [],
     healthAndSafetyRisk: 'false',
+    proposal: {need: '', options: [], preferred: '', risks: [], location: '', owner: '', training: ''},
   },
   problems: [],
   chosen: O.some(woodShop),
@@ -372,6 +373,81 @@ describe('purchase request form', () => {
       );
       expect(text(proposal)).toContain('Proposal needed');
       expect(text(proposal)).toContain('over the yearly budget');
+    });
+  });
+
+  describe('the proposal on page 3', () => {
+    const needingProposal = (risky: boolean) =>
+      render(
+        onPage(3, {
+          answers: {
+            ...onPage(3).answers,
+            healthAndSafetyRisk: risky ? 'true' : 'false',
+          },
+          result: O.some({
+            purchases,
+            totalPence: 25_000,
+            affectedAreaNames: [],
+            classification: classifyPurchase({
+              affectedAreaNames: [],
+              healthAndSafetyRisk: risky,
+              isMemberPaidConsumable: false,
+              amountPence: risky ? 25_000 : 120_000,
+              yearlyBudgetPence: woodShop.yearlyBudgetPence,
+              spentThisYearPence: woodShop.spentThisYearPence,
+            }),
+          }),
+        })
+      );
+    const proposalNames = (page: HTMLElement) => [
+      ...new Set(
+        [...page.querySelectorAll('[data-proposal-form] [name]')].map(field =>
+          field
+            .getAttribute('name')!
+            .replace(/\[\d+\]/g, '[]')
+        )
+      ),
+    ];
+
+    it('is not asked for when no proposal is needed', () => {
+      expect(render(onPage(3)).querySelector('[data-proposal-form]')).toBeNull();
+    });
+
+    it('asks for the need, options, preferred option and what applies', () => {
+      const page = needingProposal(false);
+      expect(proposalNames(page)).toStrictEqual([
+        'proposal[need]',
+        'proposal[options][][description]',
+        'proposal[options][][cost]',
+        'proposal[options][][pros]',
+        'proposal[options][][cons]',
+        'proposal[preferred]',
+        'proposal[location]',
+        'proposal[owner]',
+        'proposal[training]',
+      ]);
+      expect(
+        page.querySelector<HTMLTextAreaElement>('[name="proposal[need]"]')!
+          .value.trim()
+      ).toBe('Blunt');
+      expect(
+        page.querySelector<HTMLTextAreaElement>('[name="proposal[need]"]')!
+          .required
+      ).toBe(true);
+      expect(page.querySelector('[data-proposal-form]')?.closest('form')?.method).toBe('post');
+    });
+
+    it('asks for a risk assessment only when there is a safety risk', () => {
+      const page = needingProposal(true);
+      expect(proposalNames(page)).toEqual(
+        expect.arrayContaining([
+          'proposal[risks][][hazard]',
+          'proposal[risks][][harm]',
+          'proposal[risks][][actions]',
+        ])
+      );
+      expect(text(page)).toContain('Risk assessment');
+      expect(text(needingProposal(false))).not.toContain('Risk assessment');
     });
   });
 
