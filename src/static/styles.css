@@ -1664,9 +1664,22 @@ label img {
   vertical-align: top;
 }
 
+/* The board is a wide table and the one page that needs the room, so it
+   alone gets more than the usual column - the heading and filters widen
+   with it, so everything still lines up. */
+body:has(.tt-wrapper) {
+  max-width: 90rem;
+}
+
+/* Close the rows on the right as the status colour closes them on the left,
+   so their rules end at an edge rather than in mid-air. */
 .tt-table th:last-child,
 .tt-table td:last-child {
-  padding-right: 0;
+  padding-right: 0.6rem;
+}
+
+.tt-table td:last-child {
+  border-right: 1px solid var(--border-color);
 }
 
 /* Opaque, so rows scroll under it rather than through it. A collapsed
@@ -1773,6 +1786,7 @@ label img {
 
   .tt-row {
     border-left: 5px solid var(--grey-color);
+    border-right: 1px solid var(--border-color);
     border-bottom: 1px solid var(--border-color);
     padding: 0.5rem 0 0.5rem 0.6rem;
   }
