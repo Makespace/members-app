@@ -176,6 +176,24 @@ describe('purchase request form', () => {
       expect(page.querySelectorAll('template[data-verdict-template]')).toHaveLength(3);
     });
 
+    it('asks for detailed notes on each item', () => {
+      const page = render(onPage(2));
+      const notes = page.querySelector<HTMLTextAreaElement>(
+        'textarea[name="purchases[0][items][1][notes]"]'
+      )!;
+      expect(notes.value.trim()).toBe('4.8m');
+      const label = page.querySelector(`label[for="${notes.id}"]`)!;
+      expect(label.textContent.replace(/\s+/g, ' ')).toContain(
+        'Notes (important)'
+      );
+      expect(
+        page.querySelector(`#${notes.getAttribute('aria-describedby')}`)!
+          .textContent.replace(/\s+/g, ' ')
+      ).toContain(
+        'Please explain in all possible detail what the item is - lengths, widths, weight, connections'
+      );
+    });
+
     it('needs the first shop, quantity and cost', () => {
       const page = render(onPage(2));
       const required = (name: string) =>

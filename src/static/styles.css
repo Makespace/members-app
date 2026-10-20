@@ -1415,6 +1415,14 @@ label img {
   text-decoration-thickness: 3px;
 }
 
+.purchase-shop__summary {
+  font-size: 1.05rem;
+}
+
+.purchase-shop--collapsed {
+  gap: 0.5rem;
+}
+
 .purchase-item--collapsed {
   padding-block: 0.5rem;
 }

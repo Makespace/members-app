@@ -109,9 +109,11 @@ describe('purchase request cost breakdown script', () => {
     const added = shops(form)[1];
     expect(itemNames(added, 'sku')).toStrictEqual(['purchases[2][items][0][sku]']);
     expect(
-      [...added.querySelectorAll<HTMLInputElement>('input')].map(
-        field => field.value
-      )
+      [
+        ...added.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
+          'input, textarea'
+        ),
+      ].map(field => field.value)
     ).toStrictEqual(['', '', '', '', '', '', '']);
     added.querySelector<HTMLButtonElement>('[data-add-item]')!.click();
     expect(itemNames(added, 'sku')).toStrictEqual([
@@ -305,6 +307,65 @@ describe('purchase request cost breakdown script', () => {
           spentThisYearPence: woodShop.spentThisYearPence,
         }).reason
       );
+    });
+  });
+
+  describe('folding shops', () => {
+    const shopFolded = (shop: HTMLElement) =>
+      shop.querySelector<HTMLElement>('[data-shop-fields]')!.hidden;
+    const shopSummary = (shop: HTMLElement) =>
+      shop.querySelector<HTMLButtonElement>('[data-shop-summary]')!;
+    const visibleItems = (shop: HTMLElement) =>
+      [...shop.querySelectorAll<HTMLElement>('[data-item-entry]')].filter(
+        item => !item.hidden
+      );
+    const withDelivery: TypedPurchase = {...jewson, delivery: '12'};
+
+    it('starts with named shops folded, their items still listed', () => {
+      const form = setUp([withDelivery]);
+      const shop = shops(form)[0];
+      expect(shopFolded(shop)).toBe(true);
+      expect(shopSummary(shop).textContent).toBe(
+        'jewson.co.uk · 2 items · £162 · including £12 deliveryEdit'
+      );
+      expect(visibleItems(shop)).toHaveLength(2);
+      expect(
+        shop.querySelector<HTMLElement>('[data-add-item]')!.hidden
+      ).toBe(true);
+    });
+
+    it('leaves a shop with no name open', () => {
+      const form = setUp();
+      expect(shopFolded(shops(form)[0])).toBe(false);
+    });
+
+    it('folds a shop when another shop is worked on', () => {
+      const form = setUp([jewson]);
+      form.querySelector<HTMLButtonElement>('[data-add-shop]')!.click();
+      const [first, second] = shops(form);
+      expect(shopFolded(first)).toBe(true);
+      expect(visibleItems(first)).toHaveLength(2);
+      expect(shopFolded(second)).toBe(false);
+    });
+
+    it('opens a folded shop when its summary is clicked, folding the others', () => {
+      const form = setUp([jewson]);
+      form.querySelector<HTMLButtonElement>('[data-add-shop]')!.click();
+      fill(form, 'purchases[2][shop]', 'screwfix.com');
+      const [first, second] = shops(form);
+      shopSummary(first).click();
+      expect(shopFolded(first)).toBe(false);
+      expect(shopFolded(second)).toBe(true);
+      expect(document.activeElement?.getAttribute('name')).toBe(
+        'purchases[0][shop]'
+      );
+    });
+
+    it('opens a folded shop when one of its items is opened', () => {
+      const form = setUp([jewson]);
+      const shop = shops(form)[0];
+      shop.querySelector<HTMLButtonElement>('[data-item-summary]')!.click();
+      expect(shopFolded(shop)).toBe(false);
     });
   });
 });

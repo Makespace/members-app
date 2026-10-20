@@ -293,19 +293,22 @@ const renderItemEntry =
           <label class="purchase-field__label" for="${id('notes')}"
             >Notes
             <span class="purchase-request__hint purchase-request__normal"
-              >(optional)</span
+              >(important)</span
             ></label
           >
-          <span class="purchase-request__hint text-sm"
-            >Anything needed to buy the right one, e.g. a length, size or
-            colour.</span
+          <span class="purchase-request__hint text-sm" id="${id('notes')}-hint"
+            >Please explain in all possible detail what the item is - lengths,
+            widths, weight, connections, whatever options are available in the
+            online store that are important for you.</span
           >
-          <input
-            type="text"
+          <textarea
             name="${name('notes')}"
             id="${id('notes')}"
-            value="${sanitizeString(item.notes)}"
-          />
+            rows="3"
+            aria-describedby="${id('notes')}-hint"
+          >
+${sanitizeString(item.notes)}</textarea
+          >
         </div>
         </div>
       </div>
@@ -325,7 +328,14 @@ const renderShopEntry = (shop: TypedPurchase, shopIndex: number) => html`
         Remove shop
       </button>
     </div>
-    <div class="purchase-shop__row">
+    <button
+      class="purchase-item__summary purchase-shop__summary"
+      type="button"
+      data-shop-summary
+      aria-expanded="false"
+      hidden
+    ></button>
+    <div class="purchase-shop__row" data-shop-fields>
       <div class="purchase-field">
         <label class="purchase-field__label" for="purchases-${shopIndex}-shop"
           >Shop or website</label
@@ -778,7 +788,7 @@ const costsScript = html`
       }
 
       function field(item, name) {
-        return item.querySelector('input[name$="[' + name + ']"]').value.trim();
+        return item.querySelector('[name$="[' + name + ']"]').value.trim();
       }
       function hostname(url) {
         try {
@@ -823,9 +833,58 @@ const costsScript = html`
 
       function isBlank(entry) {
         return Array.prototype.every.call(
-          entry.querySelectorAll('input'),
+          entry.querySelectorAll('input, textarea'),
           function (field) { return field.value.trim() === ''; }
         );
+      }
+
+      function shopSum(shop) {
+        var sum = pence(shop.querySelector('[data-shop-delivery]').value) || 0;
+        shop.querySelectorAll('[data-item-entry]').forEach(function (item) {
+          sum += pence(item.querySelector('[data-item-cost]').value) || 0;
+        });
+        return sum;
+      }
+
+      // A shop folds the same way when another shop is being worked on: its
+      // name and delivery become one line, and its items stay listed below,
+      // each folded if finished. A shop with no name yet stays open.
+      function collapseShop(shop) {
+        var name = shop.querySelector('[name$="[shop]"]').value.trim();
+        if (!name) return;
+        shop.querySelectorAll('[data-item-entry]').forEach(collapse);
+        var count = shop.querySelectorAll('[data-item-entry]').length;
+        var delivery = pence(shop.querySelector('[data-shop-delivery]').value) || 0;
+        var parts = [name, count + (count === 1 ? ' item' : ' items'), gbp(shopSum(shop))];
+        if (delivery) parts.push('including ' + gbp(delivery) + ' delivery');
+        var summary = shop.querySelector('[data-shop-summary]');
+        summary.textContent = '';
+        var text = document.createElement('strong');
+        text.textContent = parts.join(' · ');
+        var edit = document.createElement('span');
+        edit.className = 'purchase-item__edit';
+        edit.textContent = 'Edit';
+        summary.appendChild(text);
+        summary.appendChild(edit);
+        summary.hidden = false;
+        summary.setAttribute('aria-expanded', 'false');
+        shop.querySelector('[data-shop-fields]').hidden = true;
+        shop.querySelector('[data-add-item]').hidden = true;
+        shop.classList.add('purchase-shop--collapsed');
+      }
+      function expandShop(shop) {
+        shop.querySelector('[data-shop-summary]').hidden = true;
+        shop.querySelector('[data-shop-summary]').setAttribute('aria-expanded', 'true');
+        shop.querySelector('[data-shop-fields]').hidden = false;
+        shop.querySelector('[data-add-item]').hidden = false;
+        shop.classList.remove('purchase-shop--collapsed');
+      }
+      // Working on one shop folds the others.
+      function focusShop(shop) {
+        expandShop(shop);
+        shops.querySelectorAll('[data-shop-entry]').forEach(function (other) {
+          if (other !== shop) collapseShop(other);
+        });
       }
 
       // Each shop's subtotal (its items' costs plus delivery) and the
@@ -833,10 +892,7 @@ const costsScript = html`
       function update() {
         var total = 0;
         shops.querySelectorAll('[data-shop-entry]').forEach(function (shop) {
-          var sum = pence(shop.querySelector('[data-shop-delivery]').value) || 0;
-          shop.querySelectorAll('[data-item-entry]').forEach(function (item) {
-            sum += pence(item.querySelector('[data-item-cost]').value) || 0;
-          });
+          var sum = shopSum(shop);
           shop.querySelector('[data-shop-total]').innerHTML =
             sum ? '<p>Shop total: ' + gbp(sum) + '</p>' : '';
           total += sum;
@@ -868,8 +924,9 @@ const costsScript = html`
       }
       function emptied(entry) {
         var copy = entry.cloneNode(true);
-        copy.querySelectorAll('input').forEach(function (field) {
+        copy.querySelectorAll('input, textarea').forEach(function (field) {
           field.value = '';
+          field.textContent = '';
           field.required = false;
         });
         return copy;
@@ -937,6 +994,15 @@ const costsScript = html`
           renumberShops();
           update();
         });
+        function openShop() {
+          focusShop(shop);
+          shop.querySelector('[name$="[shop]"]').focus();
+        }
+        shop.querySelector('[data-shop-summary]').addEventListener('focus', openShop);
+        shop.querySelector('[data-shop-summary]').addEventListener('click', openShop);
+        shop.addEventListener('focusin', function () {
+          focusShop(shop);
+        });
         renumberItems(shop);
       }
 
@@ -950,6 +1016,8 @@ const costsScript = html`
         if (isBlank(shopEntries[j])) shopEntries[j].remove();
       }
       shops.querySelectorAll('[data-shop-entry]').forEach(wireShop);
+      // Coming back to the page, every named shop starts folded.
+      shops.querySelectorAll('[data-shop-entry]').forEach(collapseShop);
       form.querySelector('[data-add-shop]').addEventListener('click', function () {
         var shop = shopTemplate.cloneNode(true);
         setShopIndex(shop, nextShop++);
@@ -964,6 +1032,8 @@ const costsScript = html`
       form.addEventListener('invalid', function (event) {
         var item = event.target.closest && event.target.closest('[data-item-entry]');
         if (item) expand(item);
+        var shop = event.target.closest && event.target.closest('[data-shop-entry]');
+        if (shop) expandShop(shop);
       }, true);
       form.addEventListener('input', update);
       form.addEventListener('change', update);
