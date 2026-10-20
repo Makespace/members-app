@@ -1655,6 +1655,148 @@ label img {
   background: color-mix(in oklch, white 92%, var(--green-color));
 }
 
+/* The board: one row per ticket, so a page of them reads at a glance. The
+   left edge of each row carries its status colour, as the cards did, and
+   resolved rows step back so the open ones stand out. */
+.tt-table th,
+.tt-table td {
+  padding: 0.5rem 1rem 0.5rem 0;
+  vertical-align: top;
+}
+
+.tt-table th:last-child,
+.tt-table td:last-child {
+  padding-right: 0;
+}
+
+/* Opaque, so rows scroll under it rather than through it. A collapsed
+   border does not travel with a sticky cell, hence the inset shadow. */
+.tt-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: white;
+  border-bottom: 0;
+  box-shadow: inset 0 -2px 0 var(--border-color);
+}
+
+.tt-table td:first-child,
+.tt-table th:first-child {
+  padding-left: 0.6rem;
+}
+
+.tt-row td:first-child {
+  border-left: 5px solid var(--grey-color);
+}
+
+.tt-row--in-progress td:first-child {
+  border-left-color: var(--link-color);
+}
+
+.tt-row--needs-help td:first-child {
+  border-left-color: var(--red-color);
+}
+
+.tt-row--parked td:first-child {
+  border-left-color: var(--yellow-color);
+}
+
+.tt-row--resolved td:first-child {
+  border-left-color: var(--green-color);
+}
+
+.tt-row--resolved {
+  color: var(--grey-color);
+}
+
+.tt-row:hover {
+  background: var(--tooltip-color);
+}
+
+/* A title or answer pasted from an email can carry an unbreakable string;
+   let it break rather than push the table off the page. */
+.tt-table__ticket {
+  width: 40%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tt-table__sub {
+  display: block;
+  color: var(--grey-color);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+/* Enough of the issue to recognise the ticket; the rest is a click away. */
+.tt-table__issue {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* Too narrow for five columns: each ticket becomes a block, its cells
+   stacked and labelled. */
+@media screen and (max-width: 48rem) {
+  .tt-table,
+  .tt-table tbody,
+  .tt-table tr,
+  .tt-table td {
+    display: block;
+    width: auto;
+  }
+
+  .tt-table thead {
+    display: none;
+  }
+
+  .tt-row {
+    border-left: 5px solid var(--grey-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.5rem 0 0.5rem 0.6rem;
+  }
+
+  .tt-row--in-progress {
+    border-left-color: var(--link-color);
+  }
+
+  .tt-row--needs-help {
+    border-left-color: var(--red-color);
+  }
+
+  .tt-row--parked {
+    border-left-color: var(--yellow-color);
+  }
+
+  .tt-row--resolved {
+    border-left-color: var(--green-color);
+  }
+
+  .tt-table .tt-row td {
+    border: 0;
+    padding: 0.15rem 0;
+  }
+
+  .tt-table td[data-label='Where']::before,
+  .tt-table td[data-label='Submitted']::before,
+  .tt-table td[data-label='Assigned']::before {
+    content: attr(data-label) ': ';
+    font-weight: bold;
+  }
+
+  .tt-table td[data-label='Where'] .tt-table__sub,
+  .tt-table td[data-label='Submitted'] .tt-table__sub {
+    display: inline;
+  }
+
+  .tt-table td[data-label='Where'] .tt-table__sub::before,
+  .tt-table td[data-label='Submitted'] .tt-table__sub::before {
+    content: ' · ';
+  }
+}
+
 
 /* Site notification banners (see templates/banners.ts). Types: orange for
    action needed, green for upcoming events, blue for information. Adjacent

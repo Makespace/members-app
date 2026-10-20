@@ -92,12 +92,12 @@ const renderAssignee = (assignee: AssigneeView) =>
     )
   );
 
-const renderAssignees = (assignees: ReadonlyArray<AssigneeView>) =>
+export const renderAssignees = (assignees: ReadonlyArray<AssigneeView>) =>
   assignees.length === 0
     ? html`<em>Nobody assigned</em>`
     : commaHtml(assignees.map(renderAssignee));
 
-const statusBadge = (status: TroubleTicketStatus) =>
+export const statusBadge = (status: TroubleTicketStatus) =>
   html`<span class="tt-badge tt-badge--${safe(STATUS_SLUG[status])}"
     >${safe(status)}</span
   >`;

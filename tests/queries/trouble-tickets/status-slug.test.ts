@@ -2,7 +2,10 @@
  * @jest-environment jsdom
  */
 import * as O from 'fp-ts/Option';
-import {statusFromSlug} from '../../../src/queries/trouble-tickets/status-slug';
+import {
+  statusFilterFromSlug,
+  statusFromSlug,
+} from '../../../src/queries/trouble-tickets/status-slug';
 import {TroubleTicketStatus} from '../../../src/types/trouble-ticket';
 import {render} from '../../../src/queries/trouble-tickets/render';
 import {ViewModel} from '../../../src/queries/trouble-tickets/view-model';
@@ -27,6 +30,7 @@ const emptyBoard = (): ViewModel => ({
     Parked: 0,
     Resolved: 0,
   },
+  openCount: 0,
   scopeCounts: {mine: 0, 'my-area': 0, 'my-machines': 0},
   activeStatus: O.none,
   activeScope: O.none,
@@ -39,7 +43,10 @@ const emptyBoard = (): ViewModel => ({
 describe('the status in a board URL', () => {
   it.each(STATUSES)('reads %s back from the slug it is written as', status => {
     const body = document.createElement('body');
-    body.innerHTML = render({...emptyBoard(), activeStatus: O.some(status)});
+    body.innerHTML = render({
+      ...emptyBoard(),
+      activeStatus: O.some(status),
+    });
 
     // The chip that clears this filter is the one for the active status, so
     // find the status through every chip and check one round-trips.
@@ -51,7 +58,7 @@ describe('the status in a board URL', () => {
       .filter((value): value is string => value !== null);
 
     expect(
-      written.map(value => statusFromSlug(value)).filter(O.isSome)
+      written.map(value => statusFilterFromSlug(value)).filter(O.isSome)
     ).toHaveLength(written.length);
   });
 
@@ -73,12 +80,9 @@ describe('the status in a board URL', () => {
 
   // A URL that has been through a chat client or a spreadsheet arrives with
   // odd spacing and casing; the filter is not worth losing over it.
-  it.each(['  todo', 'IN-PROGRESS', 'in progress '])(
-    'forgives %p',
-    value => {
-      expect(O.isSome(statusFromSlug(value))).toBe(true);
-    }
-  );
+  it.each(['  todo', 'IN-PROGRESS', 'in progress '])('forgives %p', value => {
+    expect(O.isSome(statusFromSlug(value))).toBe(true);
+  });
 
   it.each(['', 'nonsense', 'to-do'])(
     'ignores %p, which is not a status',
@@ -86,4 +90,22 @@ describe('the status in a board URL', () => {
       expect(statusFromSlug(value)).toStrictEqual(O.none);
     }
   );
+});
+
+// "Open" is every ticket not yet resolved: a filter, not a status a ticket
+// can have.
+describe('the Open filter in a board URL', () => {
+  it.each(['open', ' OPEN '])('reads %p as Open', value => {
+    expect(statusFilterFromSlug(value)).toStrictEqual(O.some('Open'));
+  });
+
+  it('still reads the statuses themselves', () => {
+    expect(statusFilterFromSlug('in-progress')).toStrictEqual(
+      O.some('In Progress')
+    );
+  });
+
+  it('is not a status a ticket can be in', () => {
+    expect(statusFromSlug('open')).toStrictEqual(O.none);
+  });
 });
