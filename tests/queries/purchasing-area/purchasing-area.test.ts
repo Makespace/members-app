@@ -122,6 +122,26 @@ describe('purchasing area page', () => {
     expect(text).toContain('£1,500.00');
   });
 
+  // The requests table's "By" cell for the one request.
+  const byCell = (user: User) => {
+    const {html} = pageFor(user);
+    const table = html.slice(html.indexOf('Purchase requests in'));
+    const row = table.slice(table.indexOf('<tbody>'));
+    return row.slice(0, row.indexOf('Bandsaw blades'));
+  };
+
+  it('shows who sent each request as the member, number linked', () => {
+    expect(byCell(member)).toContain(
+      `href=/member/${purchaser.memberNumber}/`
+    );
+  });
+
+  it("shows the sender's email only to super users and area owners", () => {
+    expect(byCell(superUser)).toContain(purchaser.emailAddress);
+    expect(byCell(purchaser)).toContain(purchaser.emailAddress);
+    expect(byCell(member)).not.toContain(purchaser.emailAddress);
+  });
+
   it('links its areas and lists its requests', () => {
     const page = pageFor(member);
     expect(page.html).toContain(`href="/areas#area-${areaId}"`);

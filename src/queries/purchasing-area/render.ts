@@ -3,11 +3,13 @@ import {pipe} from 'fp-ts/lib/function';
 import {html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {formatPence} from '../../types/money';
 import {
+  Member,
   PurchaseRequest,
   PurchasingArea,
   PurchasingAreaPurchaser,
 } from '../../read-models/shared-state/return-types';
 import {renderMemberNumber} from '../../templates/member-number';
+import {renderMember} from '../../templates/member';
 import {displayDateOnly} from '../../templates/display-date';
 import {renderOutcome} from '../../templates/purchase-request-outcome';
 import {ViewModel} from './construct-view-model';
@@ -159,10 +161,31 @@ const renderPurchasers = (viewModel: ViewModel) => {
   `;
 };
 
-const renderRequestRow = (request: PurchaseRequest) => html`
+const renderSubmitter = (
+  request: PurchaseRequest,
+  submitter: O.Option<Member>,
+  canSeePrivateDetails: boolean
+) =>
+  pipe(
+    submitter,
+    O.match(
+      () => renderMemberNumber(request.submittedByMemberNumber),
+      member => renderMember(member, canSeePrivateDetails)
+    )
+  );
+
+const renderRequestRow =
+  (canSeePrivateDetails: boolean) =>
+  ({
+    request,
+    submitter,
+  }: {
+    request: PurchaseRequest;
+    submitter: O.Option<Member>;
+  }) => html`
   <tr>
     <td>${displayDateOnly(request.submittedAt)}</td>
-    <td>${renderMemberNumber(request.submittedByMemberNumber)}</td>
+    <td>${renderSubmitter(request, submitter, canSeePrivateDetails)}</td>
     <td>
       <a href="/purchase-requests/view/${request.id}"
         >${sanitizeString(request.summary)}</a
@@ -200,7 +223,11 @@ const renderRequests = (viewModel: ViewModel) => html`
             </tr>
           </thead>
           <tbody>
-            ${joinHtml(viewModel.requests.map(renderRequestRow))}
+            ${joinHtml(
+              viewModel.requests.map(
+                renderRequestRow(viewModel.canSeePrivateDetails)
+              )
+            )}
           </tbody>
         </table>`}
   </section>
