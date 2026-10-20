@@ -195,6 +195,10 @@ export type PurchaseRequest = {
   purchases: ReadonlyArray<Purchase>;
   justification: string;
   isMemberPaidConsumable: boolean;
+  // Other areas it affects, whose owners need a chance to give their input.
+  affectedAreaIds: ReadonlyArray<UUID>;
+  // A moderate to high health and safety risk that will need mitigating.
+  healthAndSafetyRisk: boolean;
   outcome: PurchaseRequestOutcome;
   approval: PurchaseApproval;
   outcomeReason: string;

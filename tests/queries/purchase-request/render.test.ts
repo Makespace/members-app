@@ -28,6 +28,8 @@ const request: PurchaseRequest = {
   ],
   justification: 'The old blades are blunt',
   isMemberPaidConsumable: false,
+  affectedAreaIds: [],
+  healthAndSafetyRisk: false,
   outcome: 'budget',
   approval: 'none',
   outcomeReason: 'This comes out of the yearly budget.',

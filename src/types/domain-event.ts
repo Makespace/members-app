@@ -246,6 +246,10 @@ const PurchaseRequestSubmitted = defineEvent('PurchaseRequestSubmitted', {
   purchases: t.readonlyArray(PurchaseCodec),
   justification: t.string,
   isMemberPaidConsumable: t.boolean,
+  // Other areas it affects, whose owners need a chance to give their input.
+  affectedAreaIds: t.readonlyArray(tt.UUID),
+  // A moderate to high health and safety risk that will need mitigating.
+  healthAndSafetyRisk: t.boolean,
   outcome: PurchaseRequestOutcomeCodec,
   // What approval it needs before going ahead; see PurchaseApprovalCodec.
   approval: PurchaseApprovalCodec,

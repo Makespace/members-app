@@ -201,11 +201,18 @@ export const getPurchasingAreaForArea =
 
 const StoredPurchases = t.readonlyArray(PurchaseCodec);
 
+const StoredAreaIds = t.readonlyArray(UUID);
+
 const toPurchaseRequest = ({
   purchasesJson,
+  affectedAreaIdsJson,
   ...row
 }: typeof purchaseRequestsTable.$inferSelect): PurchaseRequest => ({
   ...row,
+  affectedAreaIds: pipe(
+    StoredAreaIds.decode(JSON.parse(affectedAreaIdsJson)),
+    E.getOrElse((): t.TypeOf<typeof StoredAreaIds> => [])
+  ),
   purchases: pipe(
     StoredPurchases.decode(JSON.parse(purchasesJson)),
     E.getOrElse((): t.TypeOf<typeof StoredPurchases> => [])

@@ -16,7 +16,9 @@ export type PurchaseRequestOutcome = t.TypeOf<
 >;
 
 // Whose say-so a purchase request needs before it goes ahead: a proposal for
-// a large purchase or one that would overspend the budget, otherwise none.
+// a large purchase, one that would overspend the budget, one that affects
+// other areas or one with a moderate to high health and safety risk;
+// otherwise none. A consumable can need one too.
 // Only the requirement is recorded so far - an approval step, when built,
 // attaches to the request by its id.
 export const PurchaseApprovalCodec = t.keyof({

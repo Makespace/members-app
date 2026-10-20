@@ -48,6 +48,7 @@ export const PAGE_LABELS = [
 export type PurchasingAreaOption = {
   id: UUID;
   name: string;
+  areaIds: ReadonlyArray<UUID>;
   areaNames: ReadonlyArray<string>;
   yearlyBudgetPence: number;
   spentThisYearPence: number;
@@ -62,6 +63,10 @@ export type PurchaseRequestAnswers = {
   // The shops and their items as typed, blank ones already left out.
   purchases: ReadonlyArray<TypedPurchase>;
   isMemberPaidConsumable: string;
+  affectsOtherAreas: string;
+  // The other areas ticked, by id.
+  affectedAreaIds: ReadonlyArray<string>;
+  healthAndSafetyRisk: string;
 };
 
 export type PurchaseRequestFormViewModel = {
@@ -77,10 +82,13 @@ export type PurchaseRequestFormViewModel = {
   problems: ReadonlyArray<string>;
   // Known from page 2 on.
   chosen: O.Option<PurchasingAreaOption>;
+  // Areas outside the chosen purchasing area, which it might affect.
+  otherAreas: ReadonlyArray<{id: UUID; name: string}>;
   // Known on page 3: the shops, their total, and what that means.
   result: O.Option<{
     purchases: ReadonlyArray<Purchase>;
     totalPence: number;
+    affectedAreaNames: ReadonlyArray<string>;
     classification: Classification;
   }>;
 };
@@ -420,7 +428,20 @@ const carried = ({
     ['justification', answers.justification] as const,
     ...purchaseValues(answers.purchases),
     ['isMemberPaidConsumable', answers.isMemberPaidConsumable] as const,
+    ['affectsOtherAreas', answers.affectsOtherAreas] as const,
+    ...answers.affectedAreaIds.map(id => ['affectedAreaIds', id] as const),
+    ['healthAndSafetyRisk', answers.healthAndSafetyRisk] as const,
   ].filter(([, value]) => value !== '');
+
+// Which of the page 2 questions a name belongs to.
+const askedOnCostsPage = (name: string) =>
+  name.startsWith('purchases[') ||
+  [
+    'isMemberPaidConsumable',
+    'affectsOtherAreas',
+    'affectedAreaIds',
+    'healthAndSafetyRisk',
+  ].includes(name);
 
 // Everything but what the page itself asks for.
 const carriedExcept = (
@@ -517,7 +538,14 @@ ${sanitizeString(viewModel.answers.justification)}</textarea
   </form>
 `;
 
-const verdictStyle = {
+// A request's verdict on the page: where the money comes from, and whether a
+// proposal is needed - which a consumable can need too.
+type VerdictKey = Classification['outcome'] | 'consumable-proposal-needed';
+
+const verdictStyle: Record<
+  VerdictKey,
+  {modifier: string; tag: Html; heading: string}
+> = {
   consumable: {
     modifier: 'consumable',
     tag: html`<span class="tag tag--green">Consumable</span>`,
@@ -533,12 +561,18 @@ const verdictStyle = {
     tag: html`<span class="tag tag--red">Yearly budget · Proposal needed</span>`,
     heading: "You'll need to write a proposal",
   },
-} as const;
+  'consumable-proposal-needed': {
+    modifier: 'proposal',
+    tag: html`<span class="tag tag--red">Consumable · Proposal needed</span>`,
+    heading:
+      "This doesn't come out of your yearly budget, but you'll need to write a proposal",
+  },
+};
 
 // One outcome's box: its colour, tag and heading, with the explanation and
 // anything else below.
 const renderVerdictBox = (
-  outcome: Classification['outcome'],
+  outcome: VerdictKey,
   subtitle: Html,
   reason: Html,
   extra: Html = html``
@@ -555,8 +589,9 @@ const renderVerdictBox = (
   `;
 };
 
-const outcomes: ReadonlyArray<Classification['outcome']> = [
+const verdictKeys: ReadonlyArray<VerdictKey> = [
   'consumable',
+  'consumable-proposal-needed',
   'budget',
   'budget-proposal-needed',
 ];
@@ -579,11 +614,7 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
   >
     <input type="hidden" name="step" value="3" />
     ${hiddenInputs(
-      carriedExcept(
-        viewModel,
-        name =>
-          name.startsWith('purchases[') || name === 'isMemberPaidConsumable'
-      )
+      carriedExcept(viewModel, askedOnCostsPage)
     )}
     ${pipe(
       viewModel.chosen,
@@ -643,9 +674,94 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
         </div>
       </div>
     </fieldset>
+    <fieldset class="purchase-request__fieldset purchase-question">
+      <legend>Will this affect any other areas?</legend>
+      <p class="purchase-request__hint text-sm">
+        For example by using shared space, changing a shared machine, or being
+        noisy or messy nearby. Their owners will need a chance to give their
+        input, so it will need a proposal.
+      </p>
+      <div class="purchase-request__radios purchase-request__radios--inline">
+        <div class="fieldset-item">
+          <input
+            type="radio"
+            name="affectsOtherAreas"
+            id="affects-yes"
+            value="true"
+            required
+            ${checkedIf(viewModel.answers.affectsOtherAreas === 'true')}
+          />
+          <label for="affects-yes">Yes</label>
+        </div>
+        <div class="fieldset-item">
+          <input
+            type="radio"
+            name="affectsOtherAreas"
+            id="affects-no"
+            value="false"
+            required
+            ${checkedIf(viewModel.answers.affectsOtherAreas === 'false')}
+          />
+          <label for="affects-no">No</label>
+        </div>
+      </div>
+      <fieldset class="purchase-request__fieldset purchase-other-areas" data-other-areas>
+        <legend class="purchase-field__label">Which areas?</legend>
+        <ul class="purchase-checkboxes">
+          ${joinHtml(
+            viewModel.otherAreas.map(
+              area => html`<li>
+                <label class="purchase-checkbox">
+                  <input
+                    type="checkbox"
+                    name="affectedAreaIds"
+                    value="${area.id}"
+                    ${checkedIf(viewModel.answers.affectedAreaIds.includes(area.id))}
+                  />
+                  <span data-area-name>${sanitizeString(area.name)}</span>
+                </label>
+              </li>`
+            )
+          )}
+        </ul>
+      </fieldset>
+    </fieldset>
+    <fieldset class="purchase-request__fieldset purchase-question">
+      <legend>
+        Does it present a moderate to high health and safety risk that will
+        need to be mitigated?
+      </legend>
+      <p class="purchase-request__hint text-sm">
+        If so, it will need a proposal that includes a risk assessment.
+      </p>
+      <div class="purchase-request__radios purchase-request__radios--inline">
+        <div class="fieldset-item">
+          <input
+            type="radio"
+            name="healthAndSafetyRisk"
+            id="risk-yes"
+            value="true"
+            required
+            ${checkedIf(viewModel.answers.healthAndSafetyRisk === 'true')}
+          />
+          <label for="risk-yes">Yes</label>
+        </div>
+        <div class="fieldset-item">
+          <input
+            type="radio"
+            name="healthAndSafetyRisk"
+            id="risk-no"
+            value="false"
+            required
+            ${checkedIf(viewModel.answers.healthAndSafetyRisk === 'false')}
+          />
+          <label for="risk-no">No</label>
+        </div>
+      </div>
+    </fieldset>
     <div data-budget-verdict hidden aria-live="polite"></div>
     ${joinHtml(
-      outcomes.map(
+      verdictKeys.map(
         outcome =>
           html`<template data-verdict-template="${safe(outcome)}"
             >${renderVerdictBox(
@@ -667,7 +783,7 @@ const renderCheckPage = (viewModel: PurchaseRequestFormViewModel) => html`
     viewModel.result,
     O.match(
       () => html``,
-      ({purchases, totalPence, classification}) => html`
+      ({purchases, totalPence, affectedAreaNames, classification}) => html`
         <dl class="purchase-summary">
           <dt>Area</dt>
           <dd>
@@ -685,6 +801,18 @@ const renderCheckPage = (viewModel: PurchaseRequestFormViewModel) => html`
           <dd>${sanitizeString(viewModel.answers.justification)}</dd>
           <dt>Total</dt>
           <dd>${gbp(totalPence)}</dd>
+          <dt>Other areas</dt>
+          <dd>
+            ${affectedAreaNames.length > 0
+              ? sanitizeString(affectedAreaNames.join(', '))
+              : html`None`}
+          </dd>
+          <dt>Health and safety</dt>
+          <dd>
+            ${viewModel.answers.healthAndSafetyRisk === 'true'
+              ? html`Moderate to high risk; needs a risk assessment`
+              : html`No moderate or high risk`}
+          </dd>
           <dt>Budget</dt>
           <dd>${renderOutcome(classification.outcome, classification.approval)}</dd>
           <dt>Why</dt>
@@ -742,45 +870,79 @@ const costsScript = html`
       // Mirrors classifyPurchase (src/purchasing/classify-purchase.ts),
       // explanations included - the tests check they say the same. The server
       // works it out again from the same costs on the next page and on send.
-      function classify(consumable, amount) {
+      function listOf(names) {
+        return names.length < 2
+          ? names.join('')
+          : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
+      }
+      function classify(consumable, amount, areaNames, risky) {
+        var others = [];
+        if (areaNames.length) {
+          others.push('It affects ' + listOf(areaNames) +
+            ' too, so it needs a proposal giving their owners a chance to give their input.');
+        }
+        if (risky) {
+          others.push('It presents a moderate to high health and safety risk, so it needs a proposal with a risk assessment.');
+        }
+        function withOthers(sentence) {
+          return [sentence].concat(others).join(' ');
+        }
         if (consumable) {
           return {
-            outcome: 'consumable',
-            reason: "Members pay for this at point of use, so it is a consumable and doesn't come out of the yearly budget.",
+            key: others.length ? 'consumable-proposal-needed' : 'consumable',
+            reason: withOthers("Members pay for this at point of use, so it is a consumable and doesn't come out of the yearly budget."),
           };
         }
         if (amount >= threshold) {
           return {
-            outcome: 'budget-proposal-needed',
-            reason: 'A single purchase of ' + money(threshold) + ' or more needs a proposal.',
+            key: 'budget-proposal-needed',
+            reason: withOthers('A single purchase of ' + money(threshold) + ' or more needs a proposal.'),
           };
         }
         var after = spent + amount;
         if (after > budget) {
           return {
-            outcome: 'budget-proposal-needed',
-            reason: "This would take this year's spending to " + money(after) +
-              ', over the yearly budget of ' + money(budget) + ', so it needs a proposal.',
+            key: 'budget-proposal-needed',
+            reason: withOthers("This would take this year's spending to " + money(after) +
+              ', over the yearly budget of ' + money(budget) + ', so it needs a proposal.'),
           };
         }
         return {
-          outcome: 'budget',
-          reason: 'This comes out of the yearly budget, leaving ' + money(budget - after) +
-            ' of ' + money(budget) + ' for the rest of the year.',
+          key: others.length ? 'budget-proposal-needed' : 'budget',
+          reason: withOthers('This comes out of the yearly budget, leaving ' + money(budget - after) +
+            ' of ' + money(budget) + ' for the rest of the year.'),
         };
       }
 
       // Which budget it comes out of, and whether it needs a proposal, once
       // there is a total and the consumable question is answered.
+      // The list of other areas only matters once they say it affects some.
+      var otherAreas = form.querySelector('[data-other-areas]');
+      function showOtherAreas() {
+        var affects = form.querySelector('input[name="affectsOtherAreas"]:checked');
+        otherAreas.hidden = !(affects && affects.value === 'true');
+      }
+
       function showVerdict(total) {
+        showOtherAreas();
         var answer = form.querySelector('input[name="isMemberPaidConsumable"]:checked');
         if (!answer || !total) {
           verdict.hidden = true;
           verdict.innerHTML = '';
           return;
         }
-        var result = classify(answer.value === 'true', total);
-        var template = form.querySelector('[data-verdict-template="' + result.outcome + '"]');
+        var affects = form.querySelector('input[name="affectsOtherAreas"]:checked');
+        var areaNames = affects && affects.value === 'true'
+          ? Array.prototype.map.call(
+              form.querySelectorAll('input[name="affectedAreaIds"]:checked'),
+              function (box) {
+                return box.closest('label').querySelector('[data-area-name]').textContent.trim();
+              }
+            )
+          : [];
+        var risk = form.querySelector('input[name="healthAndSafetyRisk"]:checked');
+        var result = classify(answer.value === 'true', total, areaNames, !!risk && risk.value === 'true');
+        var template = form.querySelector('[data-verdict-template="' + result.key + '"]');
         verdict.innerHTML = template.innerHTML;
         verdict.querySelector('[data-verdict-total]').textContent = gbp(total);
         verdict.querySelector('[data-verdict-reason]').textContent = result.reason;

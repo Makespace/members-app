@@ -16,15 +16,19 @@ const tags: Record<PurchaseRequestOutcome, {label: string; colour: string}> = {
   },
 };
 
-// The outcome, as a tag. The approval a request needs is part of the
-// outcome's label for now (only a proposal is ever needed); it is passed so
-// pages need not change when other kinds of approval appear.
+// The outcome, as a tag. A consumable usually needs nothing, but can still
+// need a proposal (e.g. for a risk assessment).
 export const renderOutcome = (
   outcome: PurchaseRequestOutcome,
   approval: PurchaseApproval
-) =>
-  html`<span
-    class="tag tag--${safe(tags[outcome].colour)} purchase-outcome"
+) => {
+  const tag =
+    outcome === 'consumable' && approval === 'proposal'
+      ? {label: 'Consumable · Proposal needed', colour: 'red'}
+      : tags[outcome];
+  return html`<span
+    class="tag tag--${safe(tag.colour)} purchase-outcome"
     data-approval="${safe(approval)}"
-    >${safe(tags[outcome].label)}</span
+    >${safe(tag.label)}</span
   >`;
+};

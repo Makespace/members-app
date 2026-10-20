@@ -8,6 +8,7 @@ import {StatusCodes} from 'http-status-codes';
 import {Actor, constructEvent} from '../../types';
 import {
   failureWithStatus,
+  FailureWithStatus,
 } from '../../types/failure-with-status';
 import {
   normalisePurchases,
@@ -29,6 +30,10 @@ const codec = t.strict({
   id: tt.UUID,
   purchasingAreaId: tt.UUID,
   isMemberPaidConsumable: answer,
+  affectsOtherAreas: answer,
+  // The other areas ticked; one arrives as a string, several as a list.
+  affectedAreaIds: t.union([tt.UUID, t.readonlyArray(tt.UUID), t.undefined]),
+  healthAndSafetyRisk: answer,
   summary: tt.NonEmptyString,
   // Each shop with the items bought there and any delivery charge; their
   // total decides the outcome. See src/purchasing/purchases.ts.
@@ -44,6 +49,36 @@ type SubmitPurchaseRequest = t.TypeOf<typeof codec>;
 
 const fail = (message: string) =>
   failureWithStatus(message, StatusCodes.BAD_REQUEST)();
+
+// The other areas it affects, by id and name. Saying it affects others
+// means choosing at least one; areas that don't exist are refused.
+const affectedAreas = (
+  rm: SharedReadModel,
+  command: SubmitPurchaseRequest
+): E.Either<FailureWithStatus, ReadonlyArray<{id: tt.UUID; name: string}>> => {
+  if (!command.affectsOtherAreas) {
+    return E.right([]);
+  }
+  const ids =
+    command.affectedAreaIds === undefined
+      ? []
+      : typeof command.affectedAreaIds === 'string'
+        ? [command.affectedAreaIds]
+        : [...new Set(command.affectedAreaIds)];
+  if (ids.length === 0) {
+    return E.left(fail('Please choose which other areas it affects.'));
+  }
+  return pipe(
+    ids,
+    E.traverseArray(id =>
+      pipe(
+        rm.area.get(id),
+        O.map(area => ({id, name: area.name})),
+        E.fromOption(() => fail('One of the other areas chosen no longer exists.'))
+      )
+    )
+  );
+};
 
 const submitterMemberNumber = (
   actor: Actor,
@@ -109,8 +144,11 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
       )
     ),
     E.let('totalPence', ({purchases}) => totalPence(purchases)),
-    E.let('classification', ({purchasingArea, totalPence}) =>
+    E.bind('affected', () => affectedAreas(rm, command)),
+    E.let('classification', ({purchasingArea, totalPence, affected}) =>
       classifyPurchase({
+        affectedAreaNames: affected.map(area => area.name),
+        healthAndSafetyRisk: command.healthAndSafetyRisk,
         isMemberPaidConsumable: command.isMemberPaidConsumable,
         amountPence: totalPence,
         yearlyBudgetPence: purchasingArea.yearlyBudgetPence,
@@ -124,6 +162,7 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
         classification,
         purchases,
         totalPence,
+        affected,
       }) =>
         O.some(
           constructEvent('PurchaseRequestSubmitted')({
@@ -135,6 +174,8 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
             purchases,
             justification: command.justification.trim(),
             isMemberPaidConsumable: command.isMemberPaidConsumable,
+            affectedAreaIds: affected.map(area => area.id),
+            healthAndSafetyRisk: command.healthAndSafetyRisk,
             outcome: classification.outcome,
             approval: classification.approval,
             outcomeReason: classification.reason,

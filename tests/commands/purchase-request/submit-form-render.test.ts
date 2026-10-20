@@ -29,6 +29,7 @@ const requestId = '33333333-3333-4333-8333-333333333333' as UUID;
 const woodShop = {
   id: '11111111-1111-4111-8111-111111111111' as UUID,
   name: 'Wood Shop',
+  areaIds: ['44444444-4444-4444-8444-444444444444' as UUID],
   areaNames: ['Wood Shop'],
   yearlyBudgetPence: 100_000,
   spentThisYearPence: 42_000,
@@ -88,15 +89,25 @@ const onPage = (
       },
     ],
     isMemberPaidConsumable: 'false',
+    affectsOtherAreas: 'false',
+    affectedAreaIds: [],
+    healthAndSafetyRisk: 'false',
   },
   problems: [],
   chosen: O.some(woodShop),
+  otherAreas: [
+    {id: '66666666-6666-4666-8666-666666666666' as UUID, name: 'Metal Shop'},
+    {id: '77777777-7777-4777-8777-777777777777' as UUID, name: 'Textiles'},
+  ],
   result:
     step === 3
       ? O.some({
           purchases,
           totalPence: 25_000,
+          affectedAreaNames: [],
           classification: classifyPurchase({
+        affectedAreaNames: [],
+        healthAndSafetyRisk: false,
             isMemberPaidConsumable: false,
             amountPence: 25_000,
             yearlyBudgetPence: woodShop.yearlyBudgetPence,
@@ -124,6 +135,8 @@ describe('purchase request form', () => {
         'purchases[0][shop]': 'jewson.co.uk',
         'purchases[0][items][1][notes]': '4.8m',
         isMemberPaidConsumable: 'false',
+        affectsOtherAreas: 'false',
+        healthAndSafetyRisk: 'false',
       });
       expect(hidden(page)).not.toHaveProperty('summary');
     });
@@ -173,7 +186,23 @@ describe('purchase request form', () => {
       expect(
         page.querySelector<HTMLElement>('[data-budget-verdict]')!.hidden
       ).toBe(true);
-      expect(page.querySelectorAll('template[data-verdict-template]')).toHaveLength(3);
+      expect(page.querySelectorAll('template[data-verdict-template]')).toHaveLength(4);
+    });
+
+    it('asks whether it affects other areas, offering them, and about safety', () => {
+      const page = render(onPage(2));
+      expect(page.querySelector('#affects-yes')).not.toBeNull();
+      expect(
+        [
+          ...page.querySelectorAll<HTMLInputElement>(
+            'input[name="affectedAreaIds"]'
+          ),
+        ].map(box => box.closest('label')!.textContent.trim())
+      ).toStrictEqual(['Metal Shop', 'Textiles']);
+      expect(text(page)).toContain(
+        'Does it present a moderate to high health and safety risk that will need to be mitigated?'
+      );
+      expect(page.querySelector('#risk-no')).not.toBeNull();
     });
 
     it('asks for detailed notes on each item', () => {
@@ -245,10 +274,43 @@ describe('purchase request form', () => {
         Summary: 'Saw blades',
         "Why it's needed": 'Blunt',
         Total: '£250',
+        'Other areas': 'None',
+        'Health and safety': 'No moderate or high risk',
         Budget: 'Yearly budget',
         Why: 'This comes out of the yearly budget, leaving £330.00 of £1,000.00 for the rest of the year.',
       });
       expect(text(page)).not.toContain('Wood Shop yearly budget');
+    });
+
+    it('names the other areas and the safety risk when there are some', () => {
+      const page = render(
+        onPage(3, {
+          answers: {
+            ...onPage(3).answers,
+            affectsOtherAreas: 'true',
+            affectedAreaIds: ['66666666-6666-4666-8666-666666666666'],
+            healthAndSafetyRisk: 'true',
+          },
+          result: O.some({
+            purchases,
+            totalPence: 25_000,
+            affectedAreaNames: ['Metal Shop'],
+            classification: classifyPurchase({
+              affectedAreaNames: ['Metal Shop'],
+              healthAndSafetyRisk: true,
+              isMemberPaidConsumable: false,
+              amountPence: 25_000,
+              yearlyBudgetPence: woodShop.yearlyBudgetPence,
+              spentThisYearPence: woodShop.spentThisYearPence,
+            }),
+          }),
+        })
+      );
+      expect(text(page)).toContain('Other areas Metal Shop');
+      expect(text(page)).toContain(
+        'Health and safety Moderate to high risk; needs a risk assessment'
+      );
+      expect(text(page)).toContain('Proposal needed');
     });
 
     it('lists each shop and its items with the total', () => {
@@ -284,6 +346,8 @@ describe('purchase request form', () => {
         'purchases[0][items][0][cost]': '50',
         'purchases[0][items][1][quantity]': '4',
         isMemberPaidConsumable: 'false',
+        affectsOtherAreas: 'false',
+        healthAndSafetyRisk: 'false',
       });
       expect(form.querySelector('button')?.textContent).toContain('Send request');
     });
@@ -294,7 +358,10 @@ describe('purchase request form', () => {
           result: O.some({
             purchases,
             totalPence: 60_000,
+            affectedAreaNames: [],
             classification: classifyPurchase({
+        affectedAreaNames: [],
+        healthAndSafetyRisk: false,
               isMemberPaidConsumable: false,
               amountPence: 60_000,
               yearlyBudgetPence: woodShop.yearlyBudgetPence,

@@ -1374,6 +1374,8 @@ const _updateState =
             purchasesJson: JSON.stringify(event.purchases),
             justification: event.justification,
             isMemberPaidConsumable: event.isMemberPaidConsumable,
+            affectedAreaIdsJson: JSON.stringify(event.affectedAreaIds),
+            healthAndSafetyRisk: event.healthAndSafetyRisk,
             outcome: event.outcome,
             approval: event.approval,
             outcomeReason: event.outcomeReason,

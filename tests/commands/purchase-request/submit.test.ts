@@ -44,6 +44,8 @@ describe('submit purchase request', () => {
     id: faker.string.uuid(),
     purchasingAreaId,
     isMemberPaidConsumable: 'false',
+    affectsOtherAreas: 'false',
+    healthAndSafetyRisk: 'false',
     summary: 'Sewing machine',
     purchases: [
       {
@@ -265,6 +267,69 @@ describe('submit purchase request', () => {
     expect(
       submit.decode(formBody({isMemberPaidConsumable: ''}))._tag
     ).toStrictEqual('Left');
+  });
+
+  describe('other areas and health and safety', () => {
+    const otherAreaId = faker.string.uuid() as UUID;
+    beforeEach(() => {
+      insert(
+        constructEvent('AreaCreated')({
+          actor: arbitraryActor(),
+          id: otherAreaId,
+          name: 'Metal Shop',
+        })
+      );
+    });
+
+    it('records the other areas it affects and needs a proposal', async () => {
+      const event = await submitted(
+        formBody({affectsOtherAreas: 'true', affectedAreaIds: otherAreaId})
+      );
+      expect(event).toMatchObject({
+        affectedAreaIds: [otherAreaId],
+        outcome: 'budget-proposal-needed',
+        approval: 'proposal',
+      });
+      expect(event.outcomeReason).toContain('It affects Metal Shop too');
+    });
+
+    it('needs the other areas chosen when it says it affects some', async () => {
+      expect(
+        await failure(formBody({affectsOtherAreas: 'true'}))
+      ).toMatchObject({
+        status: StatusCodes.BAD_REQUEST,
+        message: 'Please choose which other areas it affects.',
+      });
+    });
+
+    it('refuses an area that does not exist', async () => {
+      expect(
+        await failure(
+          formBody({
+            affectsOtherAreas: 'true',
+            affectedAreaIds: [faker.string.uuid()],
+          })
+        )
+      ).toMatchObject({
+        message: 'One of the other areas chosen no longer exists.',
+      });
+    });
+
+    it('records a health and safety risk and needs a proposal', async () => {
+      const event = await submitted(formBody({healthAndSafetyRisk: 'true'}));
+      expect(event).toMatchObject({
+        healthAndSafetyRisk: true,
+        affectedAreaIds: [],
+        approval: 'proposal',
+      });
+    });
+
+    it('can need a proposal for a consumable without using the budget', async () => {
+      const event = await submitted(
+        formBody({isMemberPaidConsumable: 'true', healthAndSafetyRisk: 'true'})
+      );
+      expect(event).toMatchObject({outcome: 'consumable', approval: 'proposal'});
+    });
   });
 
   describe('the shops', () => {

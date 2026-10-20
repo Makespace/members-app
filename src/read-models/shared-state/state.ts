@@ -499,6 +499,8 @@ export const purchaseRequestsTable = defineTable(
       purchasesJson TEXT NOT NULL,
       justification TEXT NOT NULL,
       isMemberPaidConsumable INTEGER NOT NULL,
+      affectedAreaIdsJson TEXT NOT NULL,
+      healthAndSafetyRisk INTEGER NOT NULL,
       outcome TEXT NOT NULL,
       approval TEXT NOT NULL,
       outcomeReason TEXT NOT NULL,
@@ -519,6 +521,10 @@ export const purchaseRequestsTable = defineTable(
     purchasesJson: text('purchasesJson').notNull(),
     justification: text('justification').notNull(),
     isMemberPaidConsumable: integer('isMemberPaidConsumable', {
+      mode: 'boolean',
+    }).notNull(),
+    affectedAreaIdsJson: text('affectedAreaIdsJson').notNull(),
+    healthAndSafetyRisk: integer('healthAndSafetyRisk', {
       mode: 'boolean',
     }).notNull(),
     outcome: text('outcome').notNull().$type<PurchaseRequestOutcome>(),

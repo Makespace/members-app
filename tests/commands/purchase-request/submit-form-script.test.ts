@@ -14,6 +14,7 @@ import {classifyPurchase} from '../../../src/purchasing/classify-purchase';
 const woodShop = {
   id: '11111111-1111-4111-8111-111111111111' as UUID,
   name: 'Wood Shop',
+  areaIds: ['44444444-4444-4444-8444-444444444444' as UUID],
   areaNames: ['Wood Shop'],
   yearlyBudgetPence: 100_000,
   spentThisYearPence: 42_000,
@@ -33,9 +34,16 @@ const setUp = (purchases: ReadonlyArray<TypedPurchase> = []) => {
       justification: 'Blunt',
       purchases,
       isMemberPaidConsumable: '',
+      affectsOtherAreas: 'false',
+      affectedAreaIds: [],
+      healthAndSafetyRisk: 'false',
     },
     problems: [],
     chosen: O.some(woodShop),
+    otherAreas: [
+      {id: '66666666-6666-4666-8666-666666666666' as UUID, name: 'Metal Shop'},
+      {id: '77777777-7777-4777-8777-777777777777' as UUID, name: 'Textiles'},
+    ],
     result: O.none,
   });
   // Scripts set through innerHTML don't run; a freshly added one does.
@@ -301,6 +309,8 @@ describe('purchase request cost breakdown script', () => {
         verdict(form).querySelector('[data-verdict-reason]')!.textContent
       ).toBe(
         classifyPurchase({
+        affectedAreaNames: [],
+        healthAndSafetyRisk: false,
           isMemberPaidConsumable: consumable,
           amountPence: Math.round(Number(cost) * 100),
           yearlyBudgetPence: woodShop.yearlyBudgetPence,
@@ -366,6 +376,86 @@ describe('purchase request cost breakdown script', () => {
       const shop = shops(form)[0];
       shop.querySelector<HTMLButtonElement>('[data-item-summary]')!.click();
       expect(shopFolded(shop)).toBe(false);
+    });
+  });
+
+  describe('other areas and health and safety', () => {
+    const verdict = (form: HTMLFormElement) =>
+      form.querySelector<HTMLElement>('[data-budget-verdict]')!;
+    const pick = (form: HTMLFormElement, id: string) => {
+      form.querySelector<HTMLInputElement>(`#${id}`)!.checked = true;
+      form.dispatchEvent(new Event('change'));
+    };
+    const tick = (form: HTMLFormElement, name: string) => {
+      [
+        ...form.querySelectorAll<HTMLInputElement>('input[name="affectedAreaIds"]'),
+      ]
+        .find(box => box.closest('label')!.textContent.trim() === name)!
+        .checked = true;
+      form.dispatchEvent(new Event('change'));
+    };
+    const costing = (form: HTMLFormElement, cost: string) => {
+      fill(form, 'purchases[0][items][0][sku]', 'A');
+      fill(form, 'purchases[0][items][0][quantity]', '1');
+      fill(form, 'purchases[0][items][0][cost]', cost);
+    };
+    const otherAreas = (form: HTMLFormElement) =>
+      form.querySelector<HTMLElement>('[data-other-areas]')!;
+
+    it('only lists the other areas once it says it affects some', () => {
+      const form = setUp();
+      expect(otherAreas(form).hidden).toBe(true);
+      pick(form, 'affects-yes');
+      expect(otherAreas(form).hidden).toBe(false);
+      pick(form, 'affects-no');
+      expect(otherAreas(form).hidden).toBe(true);
+    });
+
+    it('needs a proposal once other areas are affected', () => {
+      const form = setUp();
+      pick(form, 'consumable-no');
+      costing(form, '50');
+      expect(verdict(form).querySelector('.purchase-verdict--budget')).not.toBeNull();
+      pick(form, 'affects-yes');
+      tick(form, 'Textiles');
+      expect(verdict(form).querySelector('.purchase-verdict--proposal')).not.toBeNull();
+      expect(verdict(form).textContent).toContain('It affects Textiles too');
+    });
+
+    it('shows a consumable needing a proposal for a safety risk', () => {
+      const form = setUp();
+      pick(form, 'consumable-yes');
+      pick(form, 'risk-yes');
+      costing(form, '50');
+      expect(verdict(form).textContent).toContain('Consumable · Proposal needed');
+    });
+
+    it.each([
+      ['two other areas', false, '50', ['Metal Shop', 'Textiles'], false],
+      ['a safety risk', false, '50', [], true],
+      ['everything at once', false, '1200', ['Metal Shop'], true],
+      ['a risky consumable', true, '50', [], true],
+    ])('explains %s exactly as the server does', (_, consumable, cost, areas, risky) => {
+      const form = setUp();
+      pick(form, consumable ? 'consumable-yes' : 'consumable-no');
+      if (areas.length) {
+        pick(form, 'affects-yes');
+        areas.forEach(area => tick(form, area));
+      }
+      if (risky) pick(form, 'risk-yes');
+      costing(form, cost);
+      expect(
+        verdict(form).querySelector('[data-verdict-reason]')!.textContent
+      ).toBe(
+        classifyPurchase({
+          affectedAreaNames: areas,
+          healthAndSafetyRisk: risky,
+          isMemberPaidConsumable: consumable,
+          amountPence: Math.round(Number(cost) * 100),
+          yearlyBudgetPence: woodShop.yearlyBudgetPence,
+          spentThisYearPence: woodShop.spentThisYearPence,
+        }).reason
+      );
     });
   });
 });

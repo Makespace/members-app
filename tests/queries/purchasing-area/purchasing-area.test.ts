@@ -98,6 +98,9 @@ describe('purchasing area page', () => {
       id: faker.string.uuid() as UUID,
       purchasingAreaId,
       isMemberPaidConsumable: false,
+      affectsOtherAreas: false,
+      affectedAreaIds: undefined,
+      healthAndSafetyRisk: false,
       summary: 'Bandsaw blades' as never,
       purchases: [
         {
@@ -154,6 +157,9 @@ describe('purchasing area page', () => {
       id: faker.string.uuid() as UUID,
       purchasingAreaId,
       isMemberPaidConsumable: true,
+      affectsOtherAreas: false,
+      affectedAreaIds: undefined,
+      healthAndSafetyRisk: false,
       summary: 'Sanding discs' as never,
       purchases: [
         {

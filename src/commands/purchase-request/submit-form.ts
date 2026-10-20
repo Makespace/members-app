@@ -66,6 +66,7 @@ const purchasingAreasFor = (
   ).map(purchasingArea => ({
     id: purchasingArea.id,
     name: purchasingArea.name,
+    areaIds: purchasingArea.areas.map(area => area.id),
     areaNames: purchasingArea.areas.map(area => area.name),
     yearlyBudgetPence: purchasingArea.yearlyBudgetPence,
     spentThisYearPence: purchasingArea.spentThisYearPence,
@@ -80,6 +81,18 @@ const readPurchases = (input: unknown): ReadonlyArray<TypedPurchase> =>
     E.map(({purchases}) => typedPurchases(purchases)),
     E.getOrElse((): ReadonlyArray<TypedPurchase> => [])
   );
+
+// Ticked checkboxes: one arrives as a string, several as a list.
+const readAll = (input: unknown, name: string): ReadonlyArray<string> =>
+  pipe(
+    input,
+    t.type({[name]: t.union([t.string, t.array(t.string)])}).decode,
+    E.map(decoded => ([] as string[]).concat(decoded[name])),
+    E.getOrElse((): ReadonlyArray<string> => [])
+  );
+
+const yesNo = (answer: string) =>
+  answer === 'true' ? O.some(true) : answer === 'false' ? O.some(false) : O.none;
 
 // The form is filled in a page at a time (see render-submit-form.ts). Each
 // request carries every answer so far; the page shown is the one asked for,
@@ -102,18 +115,38 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
       justification: readAnswer(input, 'justification'),
       purchases: readPurchases(input),
       isMemberPaidConsumable: readAnswer(input, 'isMemberPaidConsumable'),
+      affectsOtherAreas: readAnswer(input, 'affectsOtherAreas'),
+      affectedAreaIds: readAll(input, 'affectedAreaIds'),
+      healthAndSafetyRisk: readAnswer(input, 'healthAndSafetyRisk'),
     };
 
     const chosen = O.fromNullable(
       purchasingAreas.find(area => area.id === answers.purchasingAreaId)
     );
     const purchases = normalisePurchases(answers.purchases);
-    const consumable =
-      answers.isMemberPaidConsumable === 'true'
-        ? O.some(true)
-        : answers.isMemberPaidConsumable === 'false'
-          ? O.some(false)
-          : O.none;
+    const consumable = yesNo(answers.isMemberPaidConsumable);
+    const affectsOthers = yesNo(answers.affectsOtherAreas);
+    const risky = yesNo(answers.healthAndSafetyRisk);
+    // Every area outside the chosen purchasing area, by name.
+    const otherAreas = readModel.area
+      .getAllMinimal()
+      .filter(
+        area =>
+          !pipe(
+            chosen,
+            O.exists(purchasingArea => purchasingArea.areaIds.includes(area.id))
+          )
+      )
+      .map(({id, name}) => ({id, name}))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const affectedAreaNames = pipe(
+      affectsOthers,
+      O.exists(Boolean)
+    )
+      ? otherAreas
+          .filter(area => answers.affectedAreaIds.includes(area.id))
+          .map(area => area.name)
+      : [];
 
     const aboutMissing = [
       ...(O.isNone(chosen) ? ['the area it is for'] : []),
@@ -128,6 +161,17 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
         ...(E.isLeft(purchases) ? [purchases.left] : []),
         ...(O.isNone(consumable)
           ? ['Please say whether members pay for it as a consumable.']
+          : []),
+        ...(O.isNone(affectsOthers)
+          ? ['Please say whether it will affect any other areas.']
+          : pipe(affectsOthers, O.exists(Boolean)) &&
+              affectedAreaNames.length === 0
+            ? ['Please choose which other areas it affects.']
+            : []),
+        ...(O.isNone(risky)
+          ? [
+              'Please say whether it presents a moderate to high health and safety risk.',
+            ]
           : []),
       ],
     ];
@@ -151,6 +195,7 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
       answers,
       problems: requested > step ? problemsOn[step - 1] : [],
       chosen,
+      otherAreas,
       result:
         step === 3
           ? pipe(
@@ -158,10 +203,14 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
               O.apS('area', chosen),
               O.apS('purchases', O.fromEither(purchases)),
               O.apS('isMemberPaidConsumable', consumable),
-              O.map(({area, purchases, isMemberPaidConsumable}) => ({
+              O.apS('healthAndSafetyRisk', risky),
+              O.map(({area, purchases, isMemberPaidConsumable, healthAndSafetyRisk}) => ({
                 purchases,
                 totalPence: totalPence(purchases),
+                affectedAreaNames,
                 classification: classifyPurchase({
+                  affectedAreaNames,
+                  healthAndSafetyRisk,
                   isMemberPaidConsumable,
                   amountPence: totalPence(purchases),
                   yearlyBudgetPence: area.yearlyBudgetPence,

@@ -19,6 +19,8 @@ describe('purchase request form pages', () => {
   let framework: TestFramework;
   const woodShopId = faker.string.uuid() as UUID;
   const craftId = faker.string.uuid() as UUID;
+  const woodShopAreaId = faker.string.uuid() as UUID;
+  const craftRoomId = faker.string.uuid() as UUID;
   const purchaserNumber = faker.number.int({min: 1, max: 50_000});
   const user = {
     memberNumber: purchaserNumber,
@@ -84,6 +86,8 @@ describe('purchase request form pages', () => {
     ...aboutAnswers,
     purchases: [jewson()],
     isMemberPaidConsumable: 'false',
+    affectsOtherAreas: 'false',
+    healthAndSafetyRisk: 'false',
   };
 
   beforeEach(async () => {
@@ -96,8 +100,8 @@ describe('purchase request form pages', () => {
         name: undefined,
         formOfAddress: undefined,
       }),
-      ...purchasingArea(woodShopId, 'Wood Shop', faker.string.uuid() as UUID),
-      ...purchasingArea(craftId, 'Craft & Art', faker.string.uuid() as UUID)
+      ...purchasingArea(woodShopId, 'Wood Shop', woodShopAreaId),
+      ...purchasingArea(craftId, 'Craft & Art', craftRoomId)
     );
   });
 
@@ -161,6 +165,8 @@ describe('purchase request form pages', () => {
       problems: [
         'Please add at least one shop or website to buy from.',
         'Please say whether members pay for it as a consumable.',
+        'Please say whether it will affect any other areas.',
+        'Please say whether it presents a moderate to high health and safety risk.',
       ],
     });
     const noPrice = jewson();
@@ -210,6 +216,58 @@ describe('purchase request form pages', () => {
     );
     expect(proposal.totalPence).toBe(100_000);
     expect(proposal.classification.outcome).toBe('budget-proposal-needed');
+  });
+
+  it("offers the areas outside the chosen purchasing area as ones it might affect", async () => {
+    const viewModel = await page({...aboutAnswers, step: '2'});
+    expect(viewModel.otherAreas.map(area => area.id)).toStrictEqual([
+      craftRoomId,
+    ]);
+  });
+
+  it('needs the other areas chosen when it affects some', async () => {
+    expect(
+      await page({...allAnswers, affectsOtherAreas: 'true', step: '3'})
+    ).toMatchObject({
+      step: 2,
+      problems: ['Please choose which other areas it affects.'],
+    });
+  });
+
+  it('needs a proposal when it affects other areas or is a safety risk', async () => {
+    const result = getSomeOrFail(
+      (
+        await page({
+          ...allAnswers,
+          affectsOtherAreas: 'true',
+          affectedAreaIds: [craftRoomId],
+          healthAndSafetyRisk: 'true',
+          step: '3',
+        } as never)
+      ).result
+    );
+    expect(result.affectedAreaNames).toStrictEqual(['Craft & Art']);
+    expect(result.classification).toMatchObject({
+      outcome: 'budget-proposal-needed',
+      approval: 'proposal',
+    });
+    expect(result.classification.reason).toContain(
+      'It affects Craft & Art too'
+    );
+    expect(result.classification.reason).toContain('risk assessment');
+  });
+
+  it('ignores areas chosen when it says it affects none', async () => {
+    const result = getSomeOrFail(
+      (
+        await page({
+          ...allAnswers,
+          affectedAreaIds: craftRoomId,
+          step: '3',
+        })
+      ).result
+    );
+    expect(result.affectedAreaNames).toStrictEqual([]);
   });
 
   it('starts a new request id, then keeps it', async () => {
