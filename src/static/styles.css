@@ -1065,7 +1065,6 @@ label img {
 .purchase-request {
   --purchase-panel: #f3f2f1;
   --purchase-bar-track: #e5e4e2;
-  max-width: 70ch;
 }
 
 .purchase-request [hidden] {
