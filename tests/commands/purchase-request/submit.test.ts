@@ -58,6 +58,12 @@ describe('submit purchase request', () => {
     ...overrides,
   });
 
+  // One shop costing this much, in pounds: the itemised total that decides
+  // the outcome.
+  const costing = (cost: string) => ({
+    purchases: [{shop: 'Sewing Direct', items: '1 x thing', cost}],
+  });
+
   const submitAs = (actor: Actor, body: Record<string, unknown>) =>
     submit.process({
       command: {...getRightOrFail(submit.decode(body)), actor},
@@ -170,11 +176,11 @@ describe('submit purchase request', () => {
 
   describe('when earlier spending this year leaves too little budget', () => {
     beforeEach(async () => {
-      insert(await submitted(formBody({estimatedAmount: '900.00'})));
+      insert(await submitted(formBody(costing('900.00'))));
     });
 
     it('needs a proposal', async () => {
-      const event = await submitted(formBody({estimatedAmount: '600.01'}));
+      const event = await submitted(formBody(costing('600.01')));
       expect(event).toMatchObject({
         outcome: 'budget-proposal-needed',
         approval: 'proposal',
@@ -183,7 +189,7 @@ describe('submit purchase request', () => {
     });
 
     it('comes from the budget when it lands exactly on it', async () => {
-      const event = await submitted(formBody({estimatedAmount: '600.00'}));
+      const event = await submitted(formBody(costing('600.00')));
       expect(event.outcome).toStrictEqual('budget');
     });
   });
@@ -196,21 +202,32 @@ describe('submit purchase request', () => {
         yearlyBudgetPence: 1_000_000,
       })
     );
-    const event = await submitted(formBody({estimatedAmount: '1000'}));
+    const event = await submitted(formBody(costing('1000')));
     expect(event.outcome).toStrictEqual('budget-proposal-needed');
   });
 
-  it('uses the estimate, not the shop costs, even when they disagree', async () => {
+  it('uses the shop total, not the earlier estimate, when they disagree', async () => {
     const event = await submitted(
       formBody({
         estimatedAmount: '100.00',
-        purchases: [{shop: 'A', items: 'thing', cost: '5000.00'}],
+        purchases: [
+          {shop: 'A', items: 'thing', cost: '600.00'},
+          {shop: 'B', items: 'other thing', cost: '500.00'},
+        ],
       })
     );
     expect(event).toMatchObject({
       estimatedAmountPence: 10_000,
-      outcome: 'budget',
+      totalPence: 110_000,
+      outcome: 'budget-proposal-needed',
     });
+  });
+
+  it('can come in under budget when the shops cost less than estimated', async () => {
+    const event = await submitted(
+      formBody({estimatedAmount: '1500.00', ...costing('80.00')})
+    );
+    expect(event).toMatchObject({totalPence: 8_000, outcome: 'budget'});
   });
 
   describe('a consumable members pay for', () => {
@@ -247,8 +264,8 @@ describe('submit purchase request', () => {
         await failure(
           formBody({
             purchases: [
-              {shop: 'A', items: 'thing'},
-              {shop: 'Hobbycraft', items: ' '},
+              {shop: 'A', items: 'thing', cost: '1'},
+              {shop: 'Hobbycraft', items: ' ', cost: '1'},
             ],
           })
         )
@@ -274,6 +291,15 @@ describe('submit purchase request', () => {
       ).toMatchObject({status: StatusCodes.BAD_REQUEST});
     });
 
+    it('needs a cost for each shop', async () => {
+      expect(
+        await failure(formBody({purchases: [{shop: 'A', items: 'x', cost: ''}]}))
+      ).toMatchObject({
+        status: StatusCodes.BAD_REQUEST,
+        message: 'A: please say how much it costs.',
+      });
+    });
+
     it('refuses a cost that is not an amount', async () => {
       expect(
         await failure(
@@ -288,8 +314,8 @@ describe('submit purchase request', () => {
       const event = await submitted(
         formBody({
           purchases: {
-            '21': {shop: 'Second', items: 'b'},
-            '3': {shop: 'First', items: 'a', link: '', cost: ''},
+            '21': {shop: 'Second', items: 'b', cost: '2'},
+            '3': {shop: 'First', items: 'a', link: '', cost: '1'},
           },
         })
       );
@@ -303,15 +329,16 @@ describe('submit purchase request', () => {
       const event = await submitted(
         formBody({
           purchases: [
-            {shop: 'A', items: '2 x a'},
+            {shop: 'A', items: '2 x a', cost: '2'},
             {shop: 'B', items: '1 x b', cost: '3.50'},
           ],
         })
       );
       expect(event.purchases).toStrictEqual([
-        {shop: 'A', link: null, items: '2 x a', costPence: null},
+        {shop: 'A', link: null, items: '2 x a', costPence: 200},
         {shop: 'B', link: null, items: '1 x b', costPence: 350},
       ]);
+      expect(event.totalPence).toBe(550);
     });
   });
 

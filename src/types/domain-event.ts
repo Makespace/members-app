@@ -232,16 +232,16 @@ const PurchaseRequestPurchase = t.strict({
   shop: t.string,
   link: t.union([t.string, t.null]),
   items: t.string,
-  // Optional; not required to add up to the request's estimate.
-  costPence: t.union([t.number, t.null]),
+  costPence: t.number,
 });
 
 // A purchaser asking to buy something. The outcome is computed by the server
-// (src/purchasing/classify-purchase.ts) from the estimated total at
-// submission, and recorded here along with the budget figures it was computed
-// from, so the record says what the member was told even if the budget or the
-// rules change later. The estimate is what counts against the budget, not the
-// sum of the line costs.
+// (src/purchasing/classify-purchase.ts) from the itemised total - the sum of
+// the shop costs - at submission, and recorded here along with the budget
+// figures it was computed from, so the record says what the member was told
+// even if the budget or the rules change later. The itemised total is also
+// what counts against the budget; the member's earlier estimate is kept for
+// comparison.
 // There is no approval step yet; one would follow as further events about the
 // same request id.
 const PurchaseRequestSubmitted = defineEvent('PurchaseRequestSubmitted', {
@@ -250,6 +250,7 @@ const PurchaseRequestSubmitted = defineEvent('PurchaseRequestSubmitted', {
   submittedByMemberNumber: t.number,
   summary: t.string,
   estimatedAmountPence: t.number,
+  totalPence: t.number,
   purchases: t.readonlyArray(PurchaseRequestPurchase),
   justification: t.string,
   isMemberPaidConsumable: t.boolean,

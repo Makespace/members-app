@@ -183,7 +183,7 @@ export type PurchaseRequestPurchase = {
   shop: string;
   link: O.Option<string>;
   items: string;
-  costPence: O.Option<number>;
+  costPence: number;
 };
 
 export type PurchaseRequest = {
@@ -193,8 +193,11 @@ export type PurchaseRequest = {
   submittedAt: Date;
   budgetYear: number;
   summary: string;
-  // What the outcome was worked out from and what counts against the budget.
+  // The member's estimate on the form, kept for comparison.
   estimatedAmountPence: number;
+  // The sum of the shop costs: what the outcome was worked out from and what
+  // counts against the budget.
+  totalPence: number;
   purchases: ReadonlyArray<PurchaseRequestPurchase>;
   justification: string;
   isMemberPaidConsumable: boolean;

@@ -1116,6 +1116,39 @@ label img {
   gap: 0.25rem;
 }
 
+/* The form's three pages. Without JavaScript they all show, in order. */
+.purchase-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.purchase-page[hidden] {
+  display: none;
+}
+
+.purchase-page > * + * {
+  margin-block-start: 0;
+}
+
+.purchase-page h2:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.purchase-step {
+  color: var(--grey-color);
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.purchase-page__nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem;
+}
+
 .purchase-request__hint {
   color: var(--grey-color);
 }

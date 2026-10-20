@@ -11,12 +11,13 @@ const request: PurchaseRequest = {
   budgetYear: 2026,
   summary: 'Table saw blades',
   estimatedAmountPence: 18_500,
+  totalPence: 15_000,
   purchases: [
     {
       shop: 'Axminster Tools',
       link: O.some('https://www.axminstertools.com/'),
       items: '2 x blade\n1 x guard',
-      costPence: O.some(15_000),
+      costPence: 15_000,
     },
   ],
   justification: 'The old blades are blunt',
@@ -40,7 +41,7 @@ describe('purchase request page', () => {
   it('confirms a request just sent', () => {
     const html = page(true);
     expect(html).toContain('Request sent');
-    expect(html).toContain('Table saw blades · £185.00 · Wood Shop');
+    expect(html).toContain('Table saw blades · £150.00 · Wood Shop');
   });
 
   it('heads a request looked at later with its summary', () => {
@@ -50,7 +51,7 @@ describe('purchase request page', () => {
   it("shows the budget and this year's spend once it was counted", () => {
     const html = page(true);
     expect(html).toContain('Yearly budget');
-    expect(html).toContain('£605.00 of £1,000.00');
+    expect(html).toContain('£570.00 of £1,000.00');
   });
 
   it('lists each shop with its items and cost', () => {
@@ -59,6 +60,15 @@ describe('purchase request page', () => {
     expect(html).toContain('2 x blade\n1 x guard');
     expect(html).toContain('£150.00');
     expect(html).toContain('The shops add up to');
+    const text = html.replace(/\s+/g, ' ');
+    expect(text).toContain('less than the £185.00 estimate');
+    expect(text).toContain('The shop total is what counts');
+  });
+
+  it('says nothing about the estimate when the shops match it', () => {
+    expect(page(true, {estimatedAmountPence: 15_000})).not.toContain(
+      'The shops add up to'
+    );
   });
 
   it('says a proposal comes next when one is needed', () => {

@@ -44,32 +44,24 @@ const renderPurchaseRow = (purchase: PurchaseRequestPurchase) => html`
     <td class="purchase-shops-table__items">
       ${sanitizeString(purchase.items)}
     </td>
-    <td class="purchase-shops-table__cost">
-      ${pipe(
-        purchase.costPence,
-        O.match(
-          () => html`–`,
-          cost => html`${money(cost)}`
-        )
-      )}
-    </td>
+    <td class="purchase-shops-table__cost">${money(purchase.costPence)}</td>
   </tr>
 `;
 
-const renderCostCheck = (request: PurchaseRequest) => {
-  const costs = request.purchases.flatMap(purchase =>
-    O.isSome(purchase.costPence) ? [purchase.costPence.value] : []
-  );
-  const total = costs.reduce((sum, cost) => sum + cost, 0);
-  return costs.length > 0 && total !== request.estimatedAmountPence
+// The itemised total decides the outcome; say so when it differs from the
+// estimate the member gave first.
+const renderCostCheck = (request: PurchaseRequest) =>
+  request.totalPence !== request.estimatedAmountPence
     ? html`<p class="text-sm">
-        <span class="tag tag--yellow">Check</span> The shops add up to
-        ${money(total)}, but the estimate was
-        ${money(request.estimatedAmountPence)}. The estimate is what counts
-        against the budget.
+        <span class="tag tag--yellow">Note</span> The shops add up to
+        ${money(request.totalPence)},
+        ${request.totalPence > request.estimatedAmountPence
+          ? html`more`
+          : html`less`}
+        than the ${money(request.estimatedAmountPence)} estimate. The shop
+        total is what counts against the budget.
       </p>`
     : html``;
-};
 
 export const render = ({
   justSent,
@@ -87,9 +79,9 @@ export const render = ({
   // This year's spend as it stood once this request was counted.
   const spendAfter =
     request.spentThisYearPence +
-    (countsAgainstBudget(request.outcome) ? request.estimatedAmountPence : 0);
+    (countsAgainstBudget(request.outcome) ? request.totalPence : 0);
   const reference = sanitizeString(
-    `${request.summary} · ${formatPence(request.estimatedAmountPence)} · ${areaName}`
+    `${request.summary} · ${formatPence(request.totalPence)} · ${areaName}`
   );
   return html`
     <div class="purchase-request purchase-request__sections">
@@ -126,7 +118,9 @@ export const render = ({
           <dd>
             ${money(spendAfter)} of ${money(request.yearlyBudgetPence)}
           </dd>
-          <dt>Estimate</dt>
+          <dt>Total</dt>
+          <dd>${money(request.totalPence)}</dd>
+          <dt>First estimate</dt>
           <dd>${money(request.estimatedAmountPence)}</dd>
           <dt>Sent</dt>
           <dd>

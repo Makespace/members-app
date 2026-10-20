@@ -481,6 +481,7 @@ export const purchaseRequestsTable = defineTable(
       budgetYear INTEGER NOT NULL,
       summary TEXT NOT NULL,
       estimatedAmountPence INTEGER NOT NULL,
+      totalPence INTEGER NOT NULL,
       purchasesJson TEXT NOT NULL,
       justification TEXT NOT NULL,
       isMemberPaidConsumable INTEGER NOT NULL,
@@ -500,6 +501,7 @@ export const purchaseRequestsTable = defineTable(
     budgetYear: integer('budgetYear').notNull(),
     summary: text('summary').notNull(),
     estimatedAmountPence: integer('estimatedAmountPence').notNull(),
+    totalPence: integer('totalPence').notNull(),
     // The shops/websites and what is bought from each, as JSON.
     purchasesJson: text('purchasesJson').notNull(),
     justification: text('justification').notNull(),

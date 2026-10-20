@@ -32,7 +32,7 @@ const rawPurchase = t.partial({
   shop: t.string,
   link: t.string,
   items: t.string,
-  // In pounds, e.g. "42.50"; optional.
+  // In pounds, e.g. "42.50".
   cost: t.string,
 });
 const rawPurchases = t.union([
@@ -43,8 +43,8 @@ const rawPurchases = t.union([
 const codec = t.strict({
   id: tt.UUID,
   purchasingAreaId: tt.UUID,
-  // The estimated total in pounds, e.g. "630.00"; recorded in pence. The
-  // outcome, and the budget, are worked out from this.
+  // The member's first estimate in pounds, e.g. "630.00"; recorded in pence
+  // for comparison. The outcome uses the shop costs, which are itemised later.
   estimatedAmount: PositivePenceFromPoundsString,
   isMemberPaidConsumable: answer,
   summary: tt.NonEmptyString,
@@ -62,7 +62,7 @@ type Purchase = {
   shop: string;
   link: string | null;
   items: string;
-  costPence: number | null;
+  costPence: number;
 };
 
 const fail = (message: string) =>
@@ -97,9 +97,9 @@ const normaliseLink = (
 const normaliseCost = (
   raw: string,
   where: string
-): E.Either<FailureWithStatus, number | null> =>
+): E.Either<FailureWithStatus, number> =>
   raw.trim() === ''
-    ? E.right(null)
+    ? E.left(fail(`${where}: please say how much it costs.`))
     : pipe(
         PenceFromPoundsString.decode(raw),
         E.mapLeft(() =>
@@ -187,10 +187,10 @@ const isPurchaserFor = (
     )
   );
 
-// The outcome is always worked out here, from the answer, the estimate and
-// this year's budget figures, whatever the page may have previewed. The line
-// costs are not required to add up to the estimate (an open product
-// question); the estimate is what counts against the budget.
+// The outcome is always worked out here, from the answer, the itemised total
+// (the sum of the shop costs) and this year's budget figures, whatever the
+// page may have previewed. The total need not match the earlier estimate; the
+// total is what counts against the budget.
 const process: Command<SubmitPurchaseRequest>['process'] = input => {
   const {command, rm} = input;
   if (O.isSome(rm.purchasing.getRequest(command.id))) {
@@ -214,17 +214,26 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
         )
       )
     ),
-    E.let('classification', ({purchasingArea}) =>
+    E.bind('purchases', () => normalisePurchases(command.purchases)),
+    E.let('totalPence', ({purchases}) =>
+      purchases.reduce((sum, purchase) => sum + purchase.costPence, 0)
+    ),
+    E.let('classification', ({purchasingArea, totalPence}) =>
       classifyPurchase({
         isMemberPaidConsumable: command.isMemberPaidConsumable,
-        amountPence: command.estimatedAmount,
+        amountPence: totalPence,
         yearlyBudgetPence: purchasingArea.yearlyBudgetPence,
         spentThisYearPence: purchasingArea.spentThisYearPence,
       })
     ),
-    E.bind('purchases', () => normalisePurchases(command.purchases)),
     E.map(
-      ({submittedByMemberNumber, purchasingArea, classification, purchases}) =>
+      ({
+        submittedByMemberNumber,
+        purchasingArea,
+        classification,
+        purchases,
+        totalPence,
+      }) =>
         O.some(
           constructEvent('PurchaseRequestSubmitted')({
             id: command.id,
@@ -232,6 +241,7 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
             submittedByMemberNumber,
             summary: command.summary.trim(),
             estimatedAmountPence: command.estimatedAmount,
+            totalPence,
             purchases,
             justification: command.justification.trim(),
             isMemberPaidConsumable: command.isMemberPaidConsumable,

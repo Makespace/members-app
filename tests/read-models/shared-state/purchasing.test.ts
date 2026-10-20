@@ -24,7 +24,8 @@ describe('purchasing areas in the read model', () => {
     outcome: PurchaseRequestOutcome,
     amountPence: number,
     budgetYear = 2026,
-    id = faker.string.uuid() as UUID
+    id = faker.string.uuid() as UUID,
+    estimatedAmountPence = amountPence
   ) =>
     constructEvent('PurchaseRequestSubmitted')({
       actor: systemActor(),
@@ -32,9 +33,15 @@ describe('purchasing areas in the read model', () => {
       purchasingAreaId,
       submittedByMemberNumber: memberNumber,
       summary: faker.commerce.productName(),
-      estimatedAmountPence: amountPence,
+      estimatedAmountPence,
+      totalPence: amountPence,
       purchases: [
-        {shop: 'Hobbycraft', link: null, items: '2 x glue gun', costPence: null},
+        {
+          shop: 'Hobbycraft',
+          link: null,
+          items: '2 x glue gun',
+          costPence: amountPence,
+        },
       ],
       justification: 'Needed',
       isMemberPaidConsumable: outcome === 'consumable',
@@ -297,6 +304,12 @@ describe('purchasing areas in the read model', () => {
       expect(requests[0].id).toStrictEqual(latestId);
     });
 
+    it('counts the shop total, not the earlier estimate, as spent', () => {
+      const before = get().spentThisYearPence;
+      insert(submitted('budget', 20_000, 2026, faker.string.uuid() as UUID, 5_000));
+      expect(get().spentThisYearPence).toBe(before + 20_000);
+    });
+
     it('lists another year separately', () => {
       expect(
         framework.sharedReadModel.purchasing.getRequests(purchasingAreaId, 2025)
@@ -317,7 +330,7 @@ describe('purchasing areas in the read model', () => {
                 shop: 'Hobbycraft',
                 link: O.none,
                 items: '2 x glue gun',
-                costPence: O.none,
+                costPence: 1_000,
               },
             ],
           })

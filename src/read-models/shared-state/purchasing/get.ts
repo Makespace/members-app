@@ -32,7 +32,7 @@ const spentInYear =
   (purchasingAreaId: UUID, budgetYear: number): number =>
     db
       .select({
-        amountPence: purchaseRequestsTable.estimatedAmountPence,
+        amountPence: purchaseRequestsTable.totalPence,
         outcome: purchaseRequestsTable.outcome,
       })
       .from(purchaseRequestsTable)
@@ -203,7 +203,7 @@ const StoredPurchases = t.readonlyArray(
     shop: t.string,
     link: t.union([t.string, t.null]),
     items: t.string,
-    costPence: t.union([t.number, t.null]),
+    costPence: t.number,
   })
 );
 
@@ -219,7 +219,7 @@ const toPurchaseRequest = ({
       shop: purchase.shop,
       link: O.fromNullable(purchase.link),
       items: purchase.items,
-      costPence: O.fromNullable(purchase.costPence),
+      costPence: purchase.costPence,
     }))
   ),
 });

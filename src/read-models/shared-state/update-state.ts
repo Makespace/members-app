@@ -1336,6 +1336,7 @@ const _updateState =
             budgetYear: event.budgetYear,
             summary: event.summary,
             estimatedAmountPence: event.estimatedAmountPence,
+            totalPence: event.totalPence,
             purchasesJson: JSON.stringify(event.purchases),
             justification: event.justification,
             isMemberPaidConsumable: event.isMemberPaidConsumable,

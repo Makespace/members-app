@@ -61,17 +61,57 @@ const verdict = (form: HTMLFormElement) =>
 
 const visible = (element: Element) => !(element as HTMLElement).hidden;
 
+const shownPage = (form: HTMLFormElement) =>
+  [...form.querySelectorAll<HTMLElement>('[data-page]')]
+    .filter(visible)
+    .map(page => page.dataset.page);
+
+const fill = (form: HTMLFormElement, selector: string, value: string) => {
+  form.querySelector<HTMLInputElement>(selector)!.value = value;
+  form.dispatchEvent(new Event('input'));
+};
+
+const continueFrom = (form: HTMLFormElement, page: number) =>
+  form
+    .querySelector<HTMLButtonElement>(`[data-page="${page}"] [data-next-page]`)!
+    .click();
+
+const finalVerdict = (form: HTMLFormElement) =>
+  form.querySelector<HTMLElement>('[data-final-verdict]')!;
+
 describe('purchase request form script', () => {
-  it('starts with nothing chosen: no budget, no verdict, no specifics, one shop', () => {
+  it('starts on the first page with nothing chosen and one shop', () => {
     const form = setUp();
+    expect(shownPage(form)).toStrictEqual(['1']);
     expect(
       [...form.querySelectorAll('[data-budget-for]')].filter(visible)
     ).toHaveLength(0);
     expect(verdict(form).hidden).toBe(true);
-    expect(
-      form.querySelector<HTMLElement>('[data-submit-section]')!.hidden
-    ).toBe(true);
     expect(form.querySelectorAll('[data-shop-entry]')).toHaveLength(1);
+  });
+
+  it("stays on a page until its questions are answered, and goes back", () => {
+    const form = setUp();
+    continueFrom(form, 1);
+    expect(shownPage(form)).toStrictEqual(['1']);
+
+    choose(form, `area-${woodShopId}`);
+    fill(form, '#summary', 'Saw blades');
+    fill(form, '#justification', 'The old ones are blunt');
+    continueFrom(form, 1);
+    expect(shownPage(form)).toStrictEqual(['2']);
+
+    continueFrom(form, 2);
+    expect(shownPage(form)).toStrictEqual(['2']);
+    typeAmount(form, '185');
+    choose(form, 'consumable-no');
+    continueFrom(form, 2);
+    expect(shownPage(form)).toStrictEqual(['3']);
+
+    form
+      .querySelector<HTMLButtonElement>('[data-page="3"] [data-previous-page]')!
+      .click();
+    expect(shownPage(form)).toStrictEqual(['2']);
   });
 
   it("shows only the chosen area's budget", () => {
@@ -95,20 +135,14 @@ describe('purchase request form script', () => {
     expect(
       verdict(form).querySelector('.purchase-verdict--consumable')
     ).not.toBeNull();
-    expect(
-      form.querySelector<HTMLElement>('[data-submit-section]')!.hidden
-    ).toBe(false);
   });
 
-  it('moves on once the question is answered, even before an area is chosen', () => {
+  it('asks for an area when none is chosen yet', () => {
     const form = setUp();
     typeAmount(form, '185');
     choose(form, 'consumable-no');
     expect(verdict(form).hidden).toBe(false);
     expect(verdict(form).textContent).toContain('Choose which area this is for');
-    expect(
-      form.querySelector<HTMLElement>('[data-submit-section]')!.hidden
-    ).toBe(false);
 
     choose(form, `area-${woodShopId}`);
     expect(verdict(form).textContent).toContain('No proposal needed');
@@ -181,16 +215,40 @@ describe('purchase request form script', () => {
     expect(names()).toStrictEqual(['purchases[0][shop]', 'purchases[4][shop]']);
   });
 
-  it('flags shop costs that do not add up to the estimate', () => {
+  it('points out shop costs that differ from the estimate, and goes by the costs', () => {
     const form = setUp();
     choose(form, `area-${woodShopId}`);
     typeAmount(form, '185');
     choose(form, 'consumable-no');
-    form.querySelector<HTMLInputElement>('[name="purchases[0][cost]"]')!.value =
-      '150';
-    form.dispatchEvent(new Event('input'));
+    expect(verdict(form).textContent).toContain('No proposal needed');
+
+    fill(form, '[name="purchases[0][cost]"]', '650');
     expect(form.querySelector('[data-shop-total]')!.textContent).toContain(
-      'These add up to £150, but your estimate above is £185'
+      'These add up to £650, more than your £185 estimate. The budget below uses £650.'
     );
+    expect(
+      finalVerdict(form).querySelector('.purchase-verdict--proposal')
+    ).not.toBeNull();
+    expect(finalVerdict(form).textContent).toContain('over its £1,000 budget');
+  });
+
+  it('says nothing about the estimate when the costs match it', () => {
+    const form = setUp();
+    choose(form, `area-${woodShopId}`);
+    typeAmount(form, '185');
+    choose(form, 'consumable-no');
+    fill(form, '[name="purchases[0][cost]"]', '185');
+    expect(form.querySelector('[data-shop-total]')!.textContent).toContain(
+      'the same as your estimate'
+    );
+    expect(finalVerdict(form).textContent).toContain('No proposal needed');
+  });
+
+  it('shows no final verdict until a cost is given', () => {
+    const form = setUp();
+    choose(form, `area-${woodShopId}`);
+    typeAmount(form, '185');
+    choose(form, 'consumable-no');
+    expect(finalVerdict(form).hidden).toBe(true);
   });
 });

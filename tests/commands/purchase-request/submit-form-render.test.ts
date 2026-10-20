@@ -90,19 +90,43 @@ describe('purchase request form', () => {
       ).not.toBeNull();
     });
 
-    it('asks for the summary first, then the area, estimate, question and shops', () => {
-      const names = [...form.querySelectorAll('[name]')]
-        .map(field => field.getAttribute('name'))
-        .filter(name => name !== 'id');
-      expect(names[0]).toBe('summary');
-      const order = [
-        'summary',
+    it('puts each question on its page', () => {
+      const namesOn = (page: string) =>
+        new Set(
+          [
+            ...form.querySelectorAll(`[data-page="${page}"] [name]`),
+          ].map(field => field.getAttribute('name'))
+        );
+      expect([...namesOn('1')]).toStrictEqual([
         'purchasingAreaId',
+        'summary',
+        'justification',
+      ]);
+      expect([...namesOn('2')]).toStrictEqual([
         'estimatedAmount',
         'isMemberPaidConsumable',
-        'purchases[0][shop]',
-      ].map(name => names.indexOf(name));
-      expect(order).toStrictEqual([...order].sort((a, b) => a - b));
+      ]);
+      expect(namesOn('3').has('purchases[0][shop]')).toBe(true);
+      expect(namesOn('3').has('purchases[0][cost]')).toBe(true);
+    });
+
+    it('shows every page without JavaScript, with Back and Continue hidden', () => {
+      const pages = [...form.querySelectorAll<HTMLElement>('[data-page]')];
+      expect(pages.map(page => page.hidden)).toStrictEqual([
+        false,
+        false,
+        false,
+      ]);
+      form
+        .querySelectorAll<HTMLElement>('[data-next-page], [data-previous-page]')
+        .forEach(button => expect(button.hidden).toBe(true));
+    });
+
+    it("needs the first shop's cost", () => {
+      expect(
+        form.querySelector<HTMLInputElement>('[name="purchases[0][cost]"]')!
+          .required
+      ).toBe(true);
     });
 
     it('asks only whether it is a consumable, with an example', () => {

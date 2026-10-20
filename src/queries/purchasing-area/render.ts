@@ -168,7 +168,7 @@ const renderRequestRow = (request: PurchaseRequest) => html`
         >${sanitizeString(request.summary)}</a
       >
     </td>
-    <td>${money(request.estimatedAmountPence)}</td>
+    <td>${money(request.totalPence)}</td>
     <td>${renderOutcome(request.outcome, request.approval)}</td>
   </tr>
 `;
@@ -195,7 +195,7 @@ const renderRequests = (viewModel: ViewModel) => html`
               <th>Submitted</th>
               <th>By</th>
               <th>What</th>
-              <th>Estimate</th>
+              <th>Cost</th>
               <th>Outcome</th>
             </tr>
           </thead>

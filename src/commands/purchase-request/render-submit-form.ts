@@ -1,19 +1,20 @@
 // The purchase request form, kept in this one file so the design can be
-// swapped out wholesale. It follows the purchase-request prototype: give a
-// summary, pick the purchasing area, see its budget, give an estimated total,
-// say whether it is a consumable, see the verdict, then say what is being
-// bought and from where.
+// swapped out wholesale. It comes in three pages: about the request (area,
+// summary, why it's needed), budget and estimate (the area's budget, an
+// estimated total, whether it is a consumable, and a first verdict), and the
+// cost breakdown (each shop with its cost, and the final verdict worked out
+// from those costs, which is what the server uses too).
 // It only needs the view model below; everything it shows comes from there.
 // Its styles are the `.purchase-request` rules in src/static/styles.css.
 //
-// It works without JavaScript: every section is shown, each purchasing area's
-// budget is listed, three shop entries are offered (blank ones are ignored)
-// and the server works out the outcome on submit. The inline script at the
-// bottom is a progressive enhancement that reveals sections as the questions
-// are answered, shows the chosen area's budget as it stands, keeps the
-// verdict up to date, adds and removes shop entries and compares the shop
-// costs with the estimate. The
-// server is always authoritative - see src/purchasing/classify-purchase.ts.
+// It works without JavaScript: all three pages show one after another, each
+// purchasing area's budget is listed, three shop entries are offered (blank
+// ones are ignored) and the server works out the outcome on submit. The
+// inline script at the bottom is a progressive enhancement that shows one page
+// at a time, shows the chosen area's budget as it stands, keeps both verdicts
+// up to date, adds and removes shop entries and points out when the shop
+// costs differ from the estimate. The server is always authoritative - see
+// src/purchasing/classify-purchase.ts.
 
 import * as O from 'fp-ts/Option';
 import {UUID} from 'io-ts-types';
@@ -217,6 +218,7 @@ const renderShopEntry = (index: number) => {
               id="purchases-${index}-cost"
               placeholder="0.00"
               data-shop-cost
+              ${required}
             />
           </div>
         </div>
@@ -264,11 +266,11 @@ const enhancementScript = html`
       var year = form.dataset.budgetYear;
       var verdict = form.querySelector('[data-verdict]');
       var question = form.querySelector('[data-consumable-question]');
-      var submitSection = form.querySelector('[data-submit-section]');
+      var finalVerdict = form.querySelector('[data-final-verdict]');
       var shops = form.querySelector('[data-shop-entries]');
       var total = form.querySelector('[data-shop-total]');
-      var justificationHint = form.querySelector('[data-justification-hint]');
       var budgets = form.querySelectorAll('[data-budget-for]');
+      var pages = form.querySelectorAll('[data-page]');
 
       function esc(text) {
         return String(text).replace(/[&<>"']/g, function (c) {
@@ -353,18 +355,24 @@ const enhancementScript = html`
           '<p>You can still send this request so it' + "'" + 's on record. Nothing will be bought until the proposal is agreed.</p></div>';
       }
 
-      function renderTotal(amount) {
+      // The sum of the shop costs typed so far. It decides the outcome.
+      function itemisedTotal() {
         var sum = 0;
         form.querySelectorAll('[data-shop-cost]').forEach(function (field) {
           var cost = pence(field.value);
           if (cost !== null) sum += cost;
         });
+        return sum;
+      }
+
+      function renderTotal(sum, estimate) {
         if (!sum) return '';
-        if (sum === amount) {
-          return '<span class="tag tag--green">Matches</span> Total ' + gbp(sum) + ', the same as your estimate.';
+        if (sum === estimate) {
+          return 'Total ' + gbp(sum) + ', the same as your estimate.';
         }
-        return '<span class="tag tag--yellow">Check</span> These add up to ' + gbp(sum) + ', but your estimate above is ' +
-          gbp(amount) + '. Update the estimate if the total has changed, because it affects which budget this comes from.';
+        return '<span class="tag tag--yellow">Note</span> These add up to <strong>' + gbp(sum) + '</strong>, ' +
+          (sum > estimate ? 'more' : 'less') + ' than your ' + gbp(estimate) + ' estimate. ' +
+          'The budget below uses ' + gbp(sum) + '.';
       }
 
       // Shop entries: start with one, add or remove on request. Field
@@ -429,18 +437,94 @@ const enhancementScript = html`
           verdict.hidden = !r;
           verdict.innerHTML = r ? renderVerdict(r, area, amount) : '';
         }
-        submitSection.hidden = !r;
-        total.innerHTML = r ? renderTotal(amount) : '';
-        justificationHint.textContent = r && r.key === 'proposal'
-          ? 'A short summary. You will write the full case in your proposal.'
-          : 'A sentence or two for the people who sign off spending.';
+        // Page 3: the same verdict, worked out from the shop costs instead.
+        var sum = itemisedTotal();
+        total.innerHTML = renderTotal(sum, amount);
+        var final = sum ? classify(consumable, sum, area) : null;
+        var finalKey = final ? [final.key, final.reason || '', area ? area.id : '', sum].join('|') : '';
+        if (finalVerdict.dataset.key !== finalKey) {
+          finalVerdict.dataset.key = finalKey;
+          finalVerdict.hidden = !final;
+          finalVerdict.innerHTML = final ? renderVerdict(final, area, sum) : '';
+        }
       }
+
+      // One page at a time. Continue checks the page's own fields first, so
+      // the browser points at whatever is missing before moving on.
+      var current = 0;
+      function showPage(index, focus) {
+        current = index;
+        pages.forEach(function (page, i) {
+          page.hidden = i !== index;
+        });
+        if (focus) {
+          var heading = pages[index].querySelector('h2');
+          if (heading) heading.focus();
+          try { window.scrollTo(0, 0); } catch (e) { /* not in every browser */ }
+        }
+      }
+      function pageIsComplete(page) {
+        var fields = page.querySelectorAll('input, textarea, select');
+        for (var i = 0; i < fields.length; i++) {
+          if (!fields[i].checkValidity()) {
+            fields[i].reportValidity();
+            return false;
+          }
+        }
+        return true;
+      }
+      pages.forEach(function (page, index) {
+        page.querySelectorAll('[data-next-page]').forEach(function (button) {
+          button.hidden = false;
+          button.addEventListener('click', function () {
+            if (pageIsComplete(page)) showPage(index + 1, true);
+          });
+        });
+        page.querySelectorAll('[data-previous-page]').forEach(function (button) {
+          button.hidden = false;
+          button.addEventListener('click', function () {
+            showPage(index - 1, true);
+          });
+        });
+      });
 
       form.addEventListener('input', update);
       form.addEventListener('change', update);
       update();
+      showPage(0, false);
     })();
   </script>
+`;
+
+const renderPageHeading = (page: number, title: string) => html`
+  <div class="purchase-request__tight">
+    <span class="purchase-step">Step ${page} of 3</span>
+    <h2 id="purchase-page-${page}-title" tabindex="-1">${safe(title)}</h2>
+  </div>
+`;
+
+// Back and Continue only work with JavaScript; without it every page shows,
+// one after another, so they start hidden and the script reveals them.
+const renderPageNav = (
+  options: {back: boolean; next: boolean},
+  extra = html``
+) => html`
+  <div class="purchase-page__nav">
+    ${options.next
+      ? html`<button type="button" data-next-page hidden>Continue</button>`
+      : html``}
+    ${extra}
+    ${options.back
+      ? html`<button
+          class="purchase-request__link-button"
+          type="button"
+          data-previous-page
+          hidden
+        >
+          Back
+        </button>`
+      : html``}
+  </div>
 `;
 
 const renderForm = (viewModel: PurchaseRequestFormViewModel) => html`
@@ -456,59 +540,79 @@ const renderForm = (viewModel: PurchaseRequestFormViewModel) => html`
   >
     <input type="hidden" name="id" value="${viewModel.requestId}" />
 
-    <div class="purchase-field">
-      <label class="purchase-field__label" for="summary">Summary</label>
-      <span class="purchase-request__hint text-sm"
-        >A short name for the request as a whole.</span
-      >
-      <input
-        type="text"
-        name="summary"
-        id="summary"
-        placeholder="e.g. New table saw blades and a blade guard"
-        required
-      />
-    </div>
-
-    <fieldset class="purchase-request__fieldset">
-      <legend>Which area is this for?</legend>
-      <p class="purchase-request__hint text-sm">
-        You can request purchases for areas you own.
-      </p>
-      <div class="purchase-request__radios">
-        ${joinHtml(viewModel.purchasingAreas.map(renderAreaRadio(viewModel)))}
-      </div>
-    </fieldset>
-
-    <div class="purchase-request__budgets">
-      ${joinHtml(
-        viewModel.purchasingAreas.map(renderBudget(viewModel.budgetYear))
-      )}
-    </div>
-
-    <div class="purchase-field">
-      <label class="purchase-field__label" for="estimatedAmount"
-        >How much will it cost in total?</label
-      >
-      <span class="purchase-request__hint text-sm"
-        >Your best estimate, including VAT and delivery. You'll give the details
-        later.</span
-      >
-      <div class="purchase-money purchase-money--narrow">
-        <span>£</span
-        ><input
+    <section
+      class="purchase-page"
+      data-page="1"
+      aria-labelledby="purchase-page-1-title"
+    >
+      ${renderPageHeading(1, 'About the request')}
+      <fieldset class="purchase-request__fieldset">
+        <legend>Which area is this for?</legend>
+        <p class="purchase-request__hint text-sm">
+          You can request purchases for areas you own.
+        </p>
+        <div class="purchase-request__radios">
+          ${joinHtml(
+            viewModel.purchasingAreas.map(renderAreaRadio(viewModel))
+          )}
+        </div>
+      </fieldset>
+      <div class="purchase-field">
+        <label class="purchase-field__label" for="summary">Summary</label>
+        <span class="purchase-request__hint text-sm"
+          >A short name for the request as a whole.</span
+        >
+        <input
           type="text"
-          inputmode="decimal"
-          name="estimatedAmount"
-          id="estimatedAmount"
-          placeholder="0.00"
+          name="summary"
+          id="summary"
+          placeholder="e.g. New table saw blades and a blade guard"
           required
         />
       </div>
-    </div>
+      <div class="purchase-field">
+        <label class="purchase-field__label" for="justification"
+          >Why is it needed?</label
+        >
+        <span class="purchase-request__hint text-sm"
+          >A sentence or two for the people who sign off spending.</span
+        >
+        <textarea name="justification" id="justification" required></textarea>
+      </div>
+      ${renderPageNav({back: false, next: true})}
+    </section>
 
-    <div class="purchase-request__stack">
-      <h2>Which budget does it come from?</h2>
+    <section
+      class="purchase-page"
+      data-page="2"
+      aria-labelledby="purchase-page-2-title"
+    >
+      ${renderPageHeading(2, 'Budget and estimate')}
+      <div class="purchase-request__budgets">
+        ${joinHtml(
+          viewModel.purchasingAreas.map(renderBudget(viewModel.budgetYear))
+        )}
+      </div>
+      <div class="purchase-field">
+        <label class="purchase-field__label" for="estimatedAmount"
+          >How much will it cost in total?</label
+        >
+        <span class="purchase-request__hint text-sm"
+          >Your best estimate, including VAT and delivery. You'll break it down
+          on the next page.</span
+        >
+        <div class="purchase-money purchase-money--narrow">
+          <span>£</span
+          ><input
+            type="text"
+            inputmode="decimal"
+            name="estimatedAmount"
+            id="estimatedAmount"
+            placeholder="0.00"
+            required
+          />
+        </div>
+      </div>
       <fieldset
         class="purchase-request__fieldset purchase-question"
         data-consumable-question
@@ -541,42 +645,43 @@ const renderForm = (viewModel: PurchaseRequestFormViewModel) => html`
         </div>
       </fieldset>
       <div data-verdict hidden aria-live="polite"></div>
-    </div>
+      ${renderPageNav({back: true, next: true})}
+    </section>
 
-    <div class="purchase-request__sections" data-submit-section>
-      <div class="purchase-request__stack">
-        <h2>What are you buying, and where from?</h2>
-        <p class="purchase-request__hint text-sm">
-          Add one entry for each shop or website. If everything comes from one
-          place, you only need one.
-        </p>
-        <div class="purchase-request__stack" data-shop-entries>
-          ${joinHtml(
-            Array.from({length: SHOP_ENTRIES}, (_, index) =>
-              renderShopEntry(index)
-            )
-          )}
-        </div>
-        <button
-          class="purchase-request__link-button jsonly"
-          type="button"
-          data-add-shop
-        >
-          + Add another shop
-        </button>
-        <div class="text-sm" data-shop-total aria-live="polite"></div>
+    <section
+      class="purchase-page"
+      data-page="3"
+      aria-labelledby="purchase-page-3-title"
+    >
+      ${renderPageHeading(3, 'Cost breakdown')}
+      <p class="purchase-request__hint text-sm">
+        Add one entry for each shop or website. If everything comes from one
+        place, you only need one. These costs decide which budget it comes from
+        and whether you need a proposal.
+      </p>
+      <div class="purchase-request__stack" data-shop-entries>
+        ${joinHtml(
+          Array.from({length: SHOP_ENTRIES}, (_, index) =>
+            renderShopEntry(index)
+          )
+        )}
       </div>
-      <div class="purchase-field">
-        <label class="purchase-field__label" for="justification"
-          >Why is this needed?</label
-        >
-        <span class="purchase-request__hint text-sm" data-justification-hint
-          >A sentence or two for the people who sign off spending.</span
-        >
-        <textarea name="justification" id="justification" required></textarea>
-      </div>
-      <button class="purchase-request__send" type="submit">Send request</button>
-    </div>
+      <button
+        class="purchase-request__link-button jsonly"
+        type="button"
+        data-add-shop
+      >
+        + Add another shop
+      </button>
+      <div class="text-sm" data-shop-total aria-live="polite"></div>
+      <div data-final-verdict hidden aria-live="polite"></div>
+      ${renderPageNav(
+        {back: true, next: false},
+        html`<button class="purchase-request__send" type="submit">
+          Send request
+        </button>`
+      )}
+    </section>
   </form>
   ${enhancementScript}
 `;
