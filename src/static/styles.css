@@ -1153,6 +1153,11 @@ label img {
   margin-bottom: 0;
 }
 
+/* The area names sit a little further from their radios. */
+.purchase-request__radios--areas .fieldset-item input {
+  margin-right: 1.5rem;
+}
+
 .purchase-request .fieldset-item label {
   flex-direction: column;
   align-items: flex-start;

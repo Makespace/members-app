@@ -324,7 +324,7 @@ const renderAboutPage = (viewModel: PurchaseRequestFormViewModel) => html`
       <p class="purchase-request__hint text-sm">
         You can request purchases for areas you own.
       </p>
-      <div class="purchase-request__radios">
+      <div class="purchase-request__radios purchase-request__radios--areas">
         ${joinHtml(
           viewModel.purchasingAreas.map(renderAreaRadio(viewModel.answers))
         )}
