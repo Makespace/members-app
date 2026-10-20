@@ -19,7 +19,7 @@ import {
   allMemberNumbers,
 } from '../../read-models/shared-state/return-types';
 import {resolveFocus} from './focus';
-import {ticketsVisibleTo} from './management-tickets';
+import {isManagementArea, ticketsVisibleTo} from './management-tickets';
 import {StatusFilter} from './status-slug';
 
 // Rows per page. The board serves the viewer's own areas by default, but a
@@ -180,13 +180,15 @@ type TicketScope = {
   inMyOwnerArea: boolean;
   assignedToMe: boolean;
   onMyTrainerMachine: boolean;
+  managementOnly: boolean;
 };
 
 export const toScope =
   (
     equipmentById: ReadonlyMap<string, MinimalEquipment>,
     areaNameById: ReadonlyMap<string, string>,
-    viewer: Member
+    viewer: Member,
+    managementTeamAreaId: string
   ) =>
   (ticket: TroubleTicket): TicketScope => {
     const equipment = ticket.equipmentId
@@ -220,6 +222,7 @@ export const toScope =
       onMyTrainerMachine:
         ticket.equipmentId !== null &&
         viewer.trainerFor.some(t => t.equipment_id === ticket.equipmentId),
+      managementOnly: isManagementArea(areaId ?? null, managementTeamAreaId),
     };
   };
 
@@ -235,6 +238,7 @@ export const toView =
       inMyOwnerArea,
       assignedToMe,
       onMyTrainerMachine,
+      managementOnly,
     } = scope;
     return {
       id: ticket.id,
@@ -263,6 +267,7 @@ export const toView =
       assignedToMe,
       inMyOwnerArea,
       onMyTrainerMachine,
+      managementOnly,
       // All owners are maintainers: any owner of the equipment's area may work
       // the ticket (trainers are a subset of area owners).
       canChangeStatus: viewer.isSuperUser || inMyOwnerArea,
@@ -379,7 +384,14 @@ export const constructViewModel =
           rm,
           deps.conf.MANAGEMENT_TEAM_AREA_ID,
           loggedInMember
-        ).map(toScope(equipmentById, areaNameById, loggedInMember));
+        ).map(
+          toScope(
+            equipmentById,
+            areaNameById,
+            loggedInMember,
+            deps.conf.MANAGEMENT_TEAM_AREA_ID
+          )
+        );
         // Default to the viewer's own areas; a viewer who owns none (e.g. a
         // super-user who isn't an owner) would see an empty page, so they get
         // everything. ?show=all is the explicit escape hatch for owners.

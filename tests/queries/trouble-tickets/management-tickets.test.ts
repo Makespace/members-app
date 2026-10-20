@@ -162,6 +162,20 @@ describe('tickets raised from management email', () => {
 
       expect(view.tickets).toHaveLength(2);
     });
+
+    // Those who can see them are told they are private, so nobody takes one
+    // for something every owner can read.
+    it('are marked as management only, and nothing else is', async () => {
+      const view = await board(superUser, {showAll: true});
+      const marked = Object.fromEntries(
+        view.tickets.map(ticket => [ticket.title, ticket.managementOnly])
+      );
+
+      expect(marked).toStrictEqual({
+        'Something a member wrote to management': true,
+        'The band saw is blunt': false,
+      });
+    });
   });
 
   // Both pages read tickets through one function, so a page added later -

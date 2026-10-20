@@ -35,6 +35,7 @@ const ticket = (overrides: Partial<BoardTicketView> = {}): BoardTicketView => ({
   assignedToMe: false,
   inMyOwnerArea: true,
   onMyTrainerMachine: false,
+  managementOnly: false,
   canChangeStatus: true,
   ...overrides,
 });
@@ -97,7 +98,7 @@ describe('the board as a table', () => {
       }),
     ]);
 
-    expect(row.querySelector('.tt-badge')?.textContent?.trim()).toBe(
+    expect(row.querySelector('.tt-status')?.textContent?.trim()).toBe(
       'In Progress'
     );
     expect(row.querySelector('[data-label="Where"]')?.textContent).toMatch(
@@ -142,6 +143,37 @@ describe('the board as a table', () => {
         .querySelector('a[href^="/trouble-tickets/view/"]')
         ?.textContent?.trim()
     ).toBe('Untitled ticket');
+  });
+
+  it('marks a management-only ticket as private, and no other', () => {
+    const [privateRow, ordinaryRow] = rowsOf([
+      ticket({managementOnly: true}),
+      ticket({managementOnly: false}),
+    ]);
+
+    expect(privateRow.querySelector('.tt-private')?.textContent?.trim()).toBe(
+      'Management only'
+    );
+    expect(ordinaryRow.querySelector('.tt-private')).toBeNull();
+  });
+
+  // Housekeeping for whoever maps aliases, so it waits below the tickets.
+  it('puts the unresolved equipment names below the table', () => {
+    const board = renderBoard({
+      ...viewModel([ticket()]),
+      canMapEquipment: true,
+      unresolvedEquipmentNames: [{raw: 'bandsaw', count: 3}],
+    });
+    const table = board.querySelector('table');
+    const panel = [...board.querySelectorAll('details')].find(node =>
+      (node.textContent ?? '').includes('Unresolved equipment names')
+    );
+
+    expect(panel).toBeDefined();
+    expect(
+      table!.compareDocumentPosition(panel!) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
   });
 
   // The actions go through the ticket's own page, which says who each one

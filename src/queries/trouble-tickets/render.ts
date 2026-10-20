@@ -5,6 +5,7 @@ import {DateTime} from 'luxon';
 import {ViewModel, BoardTicketView} from './view-model';
 import {Focus} from './focus';
 import {
+  managementOnlyMarker,
   renderAssignees,
   statusBadge,
 } from '../../templates/trouble-ticket-card';
@@ -229,12 +230,14 @@ const renderFocus = (vm: ViewModel) =>
 const renderScopeAndPages = (vm: ViewModel) => {
   if (O.isSome(vm.focus)) {
     return html`
-      ${renderFocus(vm)}
-      ${vm.pageCount > 1 ? html`<p>${renderPager(vm)}</p>` : html``}
+      <div class="tt-summary">
+        ${renderFocus(vm)}
+        ${vm.pageCount > 1 ? html`<p>${renderPager(vm)}</p>` : html``}
+      </div>
     `;
   }
   return html`
-    <p>
+    <p class="tt-summary">
       ${
         vm.scopedToMine
           ? html`Showing <strong>${vm.totalInScope}</strong> ticket${
@@ -328,7 +331,8 @@ const renderRow = (ticket: BoardTicketView) => {
               ? html`<em>Untitled ticket</em>`
               : sanitizeString(ticket.title)
           }</a
-        >${
+        >
+        ${managementOnlyMarker(ticket)}${
           ticket.response.issue.trim() === ''
             ? html``
             : html`<small class="tt-table__sub tt-table__issue"
@@ -387,22 +391,24 @@ export const render = (viewModel: ViewModel) => {
       <div class="stack">
         <h1>${renderTitle(viewModel)}</h1>
         ${renderScopeAndPages(viewModel)} ${renderStatusFilters(viewModel)}
-        ${renderUnresolvedNames(viewModel)}
         <p>No trouble tickets in this view.</p>
+        ${renderUnresolvedNames(viewModel)}
       </div>
     `;
   }
+  // The unresolved names are housekeeping for whoever maps aliases, not
+  // something everyone reading the board needs first, so they come last.
   return html`
     <div class="stack tt-wrapper">
       <h1>${renderTitle(viewModel)}</h1>
       ${renderScopeAndPages(viewModel)} ${renderStatusFilters(viewModel)}
-      ${renderScopeFilters(viewModel)} ${renderUnresolvedNames(viewModel)}
-      ${renderTable(viewModel.tickets)}
+      ${renderScopeFilters(viewModel)} ${renderTable(viewModel.tickets)}
       ${
         viewModel.pageCount > 1
           ? html`<p>${renderPager(viewModel)}</p>`
           : html``
       }
+      ${renderUnresolvedNames(viewModel)}
     </div>
   `;
 };
