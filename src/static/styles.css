@@ -1343,11 +1343,42 @@ label img {
   font-size: 1.05rem;
 }
 
-.purchase-shop textarea {
-  min-height: 4.5rem;
+/* Items within a shop: a lighter box each, with SKU, quantity and price
+   side by side. */
+.purchase-shop__items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-/* A request's page: the confirmation box, a summary list and a shop table. */
+.purchase-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  background: var(--purchase-panel);
+  border-left: 4px solid var(--border-color);
+}
+
+.purchase-item__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.purchase-item__row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 7rem) minmax(0, 11rem);
+  gap: 0.75rem;
+}
+
+.purchase-shop__total {
+  font-weight: bold;
+}
+
+/* A request's page: the confirmation box, a summary list and the breakdown
+   of what it buys (src/templates/purchase-breakdown.ts). */
 .purchase-confirmation {
   display: flex;
   flex-direction: column;
@@ -1386,31 +1417,51 @@ label img {
   margin: 0;
 }
 
-.purchase-shops-table {
+.purchase-breakdown__scroll {
+  overflow-x: auto;
+}
+
+.purchase-breakdown {
   width: 100%;
   border-collapse: collapse;
 }
 
-.purchase-shops-table th,
-.purchase-shops-table td {
+.purchase-breakdown th,
+.purchase-breakdown td {
   padding: 0.4rem 1rem 0.4rem 0;
   border-bottom: 1px solid var(--border-color);
   text-align: left;
   vertical-align: top;
 }
 
-.purchase-shops-table .purchase-shops-table__items {
-  white-space: pre-line;
-}
-
-.purchase-shops-table .purchase-shops-table__cost {
+.purchase-breakdown .purchase-breakdown__number {
   padding-right: 0;
+  padding-left: 1rem;
   text-align: right;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
+.purchase-breakdown__shop th {
+  padding-top: 1.25rem;
+  font-size: 1.1rem;
+}
+
+.purchase-breakdown__subtotal td {
+  font-weight: bold;
+}
+
+.purchase-breakdown tfoot th,
+.purchase-breakdown tfoot td {
+  border-top: 3px solid var(--text-color);
+  border-bottom: 0;
+  font-size: 1.15rem;
+  font-weight: bold;
+}
+
 @media (max-width: 480px) {
-  .purchase-shop__row {
+  .purchase-shop__row,
+  .purchase-item__row {
     grid-template-columns: 1fr;
   }
 

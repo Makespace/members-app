@@ -3,9 +3,9 @@
 // Agreement, using the shared pieces in src/templates/multi-page-form.ts:
 //
 //   1. About the request: which purchasing area, a summary, why it's needed.
-//   2. Cost breakdown: each shop with what is bought there and its cost -
-//      their total is the cost of the request - and whether it is a
-//      consumable members pay for.
+//   2. Cost breakdown: each shop, the items wanted from it (link, SKU,
+//      quantity, price each, notes) and any delivery - together the cost of
+//      the request - and whether it is a consumable members pay for.
 //   3. Budget: the area's budget as it stands and which budget this comes out
 //      of, worked out on the server, before sending.
 //
@@ -13,8 +13,8 @@
 // posts everything to the submit command, which works the outcome out again
 // itself (src/purchasing/classify-purchase.ts). Which page to show, and what
 // is still missing, is decided in submit-form.ts. Everything works without
-// JavaScript; on page 2 a small script adds and removes shops and keeps a
-// running total.
+// JavaScript; on page 2 a small script adds and removes shops and items and
+// keeps running totals.
 // Its styles are the `.purchase-request` rules in src/static/styles.css.
 
 import * as O from 'fp-ts/Option';
@@ -22,7 +22,12 @@ import {pipe} from 'fp-ts/lib/function';
 import {UUID} from 'io-ts-types';
 import {html, Html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {Classification} from '../../purchasing/classify-purchase';
-import {Purchase, RawPurchase} from '../../purchasing/purchases';
+import {
+  Purchase,
+  TypedItem,
+  TypedPurchase,
+} from '../../purchasing/purchases';
+import {renderPurchaseBreakdown} from '../../templates/purchase-breakdown';
 import {
   backHref,
   hiddenInputs,
@@ -51,8 +56,8 @@ export type PurchaseRequestAnswers = {
   purchasingAreaId: string;
   summary: string;
   justification: string;
-  // The shops as typed, blank ones already left out.
-  purchases: ReadonlyArray<RawPurchase>;
+  // The shops and their items as typed, blank ones already left out.
+  purchases: ReadonlyArray<TypedPurchase>;
   isMemberPaidConsumable: string;
 };
 
@@ -76,9 +81,6 @@ export type PurchaseRequestFormViewModel = {
     classification: Classification;
   }>;
 };
-
-// Shop entries offered without JavaScript; blank ones are ignored.
-const SHOP_ENTRIES = 3;
 
 // "£420" for whole pounds, "£420.50" otherwise - as the prototype shows money.
 const gbp = (pence: number) =>
@@ -180,103 +182,203 @@ const renderBudget =
     </div>
   `;
 
-const purchaseFields = ['shop', 'cost', 'link', 'items'] as const;
+// Blank entries offered without JavaScript; blank ones are ignored.
+const SHOP_ENTRIES = 2;
+const ITEM_ENTRIES = 3;
 
-const renderShopEntry = (index: number, typed: RawPurchase) => {
-  const required = index === 0 ? safe('required') : safe('');
-  const value = (field: (typeof purchaseFields)[number]) =>
-    sanitizeString(typed[field] ?? '');
-  return html`
-    <div class="purchase-shop" data-shop-entry>
-      <div class="purchase-shop__head">
-        <strong data-shop-title>Shop ${index + 1}</strong>
-        <button
-          class="purchase-request__link-button jsonly"
-          type="button"
-          data-remove-shop
-          hidden
-        >
-          Remove
-        </button>
-      </div>
-      <div class="purchase-shop__row">
-        <div class="purchase-field">
-          <label class="purchase-field__label" for="purchases-${index}-shop"
-            >Shop or website</label
+const blankItem: TypedItem = {url: '', sku: '', quantity: '', price: '', notes: ''};
+const blankShop: TypedPurchase = {shop: '', delivery: '', items: []};
+
+// Typed entries first, then blanks up to the minimum.
+const padded = <A>(typed: ReadonlyArray<A>, minimum: number, blank: A) => [
+  ...typed,
+  ...Array.from({length: Math.max(minimum - typed.length, 0)}, () => blank),
+];
+
+const itemFields = ['url', 'sku', 'quantity', 'price', 'notes'] as const;
+
+const renderItemEntry =
+  (shopIndex: number) => (item: TypedItem, itemIndex: number) => {
+    const name = (field: (typeof itemFields)[number]) =>
+      safe(`purchases[${shopIndex}][items][${itemIndex}][${field}]`);
+    const id = (field: (typeof itemFields)[number]) =>
+      safe(`purchases-${shopIndex}-items-${itemIndex}-${field}`);
+    const required =
+      shopIndex === 0 && itemIndex === 0 ? safe('required') : safe('');
+    return html`
+      <div class="purchase-item" data-item-entry>
+        <div class="purchase-item__head">
+          <strong data-item-title>Item ${itemIndex + 1}</strong>
+          <button
+            class="purchase-request__link-button jsonly"
+            type="button"
+            data-remove-item
+            hidden
           >
-          <input
-            type="text"
-            name="purchases[${index}][shop]"
-            id="purchases-${index}-shop"
-            placeholder="e.g. Axminster Tools"
-            value="${value('shop')}"
-            ${required}
-          />
+            Remove item
+          </button>
         </div>
         <div class="purchase-field">
-          <label class="purchase-field__label" for="purchases-${index}-cost"
-            >Cost</label
-          >
-          <div class="purchase-money">
-            <span>£</span
-            ><input
+          <label class="purchase-field__label" for="${id('url')}">Link</label>
+          <input
+            type="text"
+            inputmode="url"
+            name="${name('url')}"
+            id="${id('url')}"
+            placeholder="https://"
+            value="${sanitizeString(item.url)}"
+          />
+        </div>
+        <div class="purchase-item__row">
+          <div class="purchase-field">
+            <label class="purchase-field__label" for="${id('sku')}">SKU</label>
+            <input
               type="text"
-              inputmode="decimal"
-              name="purchases[${index}][cost]"
-              id="purchases-${index}-cost"
-              placeholder="0.00"
-              value="${value('cost')}"
-              data-shop-cost
+              name="${name('sku')}"
+              id="${id('sku')}"
+              value="${sanitizeString(item.sku)}"
+            />
+          </div>
+          <div class="purchase-field">
+            <label class="purchase-field__label" for="${id('quantity')}"
+              >Quantity</label
+            >
+            <input
+              type="text"
+              inputmode="numeric"
+              name="${name('quantity')}"
+              id="${id('quantity')}"
+              value="${sanitizeString(item.quantity)}"
+              data-item-quantity
               ${required}
             />
           </div>
+          <div class="purchase-field">
+            <label class="purchase-field__label" for="${id('price')}"
+              >Price each</label
+            >
+            <div class="purchase-money">
+              <span>£</span
+              ><input
+                type="text"
+                inputmode="decimal"
+                name="${name('price')}"
+                id="${id('price')}"
+                placeholder="0.00"
+                value="${sanitizeString(item.price)}"
+                data-item-price
+                ${required}
+              />
+            </div>
+          </div>
+        </div>
+        <div class="purchase-field">
+          <label class="purchase-field__label" for="${id('notes')}"
+            >Notes
+            <span class="purchase-request__hint purchase-request__normal"
+              >(optional)</span
+            ></label
+          >
+          <span class="purchase-request__hint text-sm"
+            >Anything needed to buy the right one, e.g. a length, size or
+            colour.</span
+          >
+          <input
+            type="text"
+            name="${name('notes')}"
+            id="${id('notes')}"
+            value="${sanitizeString(item.notes)}"
+          />
         </div>
       </div>
+    `;
+  };
+
+const renderShopEntry = (shop: TypedPurchase, shopIndex: number) => html`
+  <div class="purchase-shop" data-shop-entry data-shop-index="${shopIndex}">
+    <div class="purchase-shop__head">
+      <strong data-shop-title>Shop ${shopIndex + 1}</strong>
+      <button
+        class="purchase-request__link-button jsonly"
+        type="button"
+        data-remove-shop
+        hidden
+      >
+        Remove shop
+      </button>
+    </div>
+    <div class="purchase-shop__row">
       <div class="purchase-field">
-        <label class="purchase-field__label" for="purchases-${index}-link"
-          >Link
+        <label class="purchase-field__label" for="purchases-${shopIndex}-shop"
+          >Shop or website</label
+        >
+        <input
+          type="text"
+          name="purchases[${shopIndex}][shop]"
+          id="purchases-${shopIndex}-shop"
+          placeholder="e.g. jewson.co.uk"
+          value="${sanitizeString(shop.shop)}"
+          ${shopIndex === 0 ? safe('required') : safe('')}
+        />
+      </div>
+      <div class="purchase-field">
+        <label
+          class="purchase-field__label"
+          for="purchases-${shopIndex}-delivery"
+          >Delivery
           <span class="purchase-request__hint purchase-request__normal"
             >(optional)</span
           ></label
         >
-        <input
-          type="text"
-          inputmode="url"
-          name="purchases[${index}][link]"
-          id="purchases-${index}-link"
-          placeholder="https://"
-          value="${value('link')}"
-        />
-      </div>
-      <div class="purchase-field">
-        <label class="purchase-field__label" for="purchases-${index}-items"
-          >What you're buying here</label
-        >
-        <span class="purchase-request__hint text-sm"
-          >List each item with its quantity.</span
-        >
-        <textarea
-          name="purchases[${index}][items]"
-          id="purchases-${index}-items"
-          ${required}
-        >
-${value('items')}</textarea
-        >
+        <div class="purchase-money">
+          <span>£</span
+          ><input
+            type="text"
+            inputmode="decimal"
+            name="purchases[${shopIndex}][delivery]"
+            id="purchases-${shopIndex}-delivery"
+            placeholder="0.00"
+            value="${sanitizeString(shop.delivery)}"
+            data-shop-delivery
+          />
+        </div>
       </div>
     </div>
-  `;
-};
+    <div class="purchase-shop__items" data-item-entries>
+      ${joinHtml(
+        padded(shop.items, ITEM_ENTRIES, blankItem).map(
+          renderItemEntry(shopIndex)
+        )
+      )}
+    </div>
+    <button
+      class="purchase-request__link-button jsonly"
+      type="button"
+      data-add-item
+    >
+      + Add another item from this shop
+    </button>
+    <div class="purchase-shop__total" data-shop-total aria-live="polite"></div>
+  </div>
+`;
 
-// The shops as carried between pages: numbered from 0 in order.
+// The shops and items as carried between pages: numbered from 0 in order.
 const purchaseValues = (
-  purchases: ReadonlyArray<RawPurchase>
+  purchases: ReadonlyArray<TypedPurchase>
 ): StepValues =>
-  purchases.flatMap((purchase, index) =>
-    purchaseFields.map(
-      field =>
-        [`purchases[${index}][${field}]`, purchase[field] ?? ''] as const
-    )
-  );
+  purchases.flatMap((purchase, shopIndex) => [
+    [`purchases[${shopIndex}][shop]`, purchase.shop] as const,
+    [`purchases[${shopIndex}][delivery]`, purchase.delivery] as const,
+    ...purchase.items.flatMap((item, itemIndex) =>
+      itemFields.map(
+        field =>
+          [
+            `purchases[${shopIndex}][items][${itemIndex}][${field}]`,
+            item[field],
+          ] as const
+      )
+    ),
+  ]);
 
 // Every answer so far, in page order, to carry to another page.
 const carried = ({
@@ -425,88 +527,72 @@ const renderVerdictBox = (
   `;
 };
 
-const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => {
-  const typed = viewModel.answers.purchases;
-  const entries = [
-    ...typed,
-    ...Array.from(
-      {length: Math.max(SHOP_ENTRIES - typed.length, 0)},
-      (): RawPurchase => ({})
-    ),
-  ];
-  return html`
-    <form method="get" class="purchase-request__sections" id="purchase-costs-form">
-      <input type="hidden" name="step" value="3" />
-      ${hiddenInputs(
-        carriedExcept(
-          viewModel,
-          name =>
-            name.startsWith('purchases[') || name === 'isMemberPaidConsumable'
-        )
-      )}
-      <div class="purchase-request__stack">
-        <h2>What are you buying, and where from?</h2>
-        <p class="purchase-request__hint text-sm">
-          Add one entry for each shop or website, with what it costs including
-          VAT and delivery. If everything comes from one place, you only need
-          one. Together they make the cost of the request.
-        </p>
-        <div class="purchase-request__stack" data-shop-entries>
-          ${joinHtml(entries.map((entry, index) => renderShopEntry(index, entry)))}
-        </div>
-        <button
-          class="purchase-request__link-button jsonly"
-          type="button"
-          data-add-shop
-        >
-          + Add another shop
-        </button>
-        <div data-shop-total aria-live="polite"></div>
+const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
+  <form method="get" class="purchase-request__sections" id="purchase-costs-form">
+    <input type="hidden" name="step" value="3" />
+    ${hiddenInputs(
+      carriedExcept(
+        viewModel,
+        name =>
+          name.startsWith('purchases[') || name === 'isMemberPaidConsumable'
+      )
+    )}
+    <div class="purchase-request__stack">
+      <h2>What are you buying, and where from?</h2>
+      <p class="purchase-request__hint text-sm">
+        Start with the shop or website, then add each item you want from it,
+        with its price including VAT. Add another shop if some things come from
+        somewhere else. Together they make the cost of the request.
+      </p>
+      <div class="purchase-request__stack" data-shop-entries>
+        ${joinHtml(
+          padded(viewModel.answers.purchases, SHOP_ENTRIES, blankShop).map(
+            renderShopEntry
+          )
+        )}
       </div>
-      <fieldset class="purchase-request__fieldset purchase-question">
-        <legend>Is it a consumable that members pay for when they use it?</legend>
-        <p class="purchase-request__hint text-sm">
-          For example, 3D printer filament, paid for on SumUp when it's used.
-        </p>
-        <div class="purchase-request__radios purchase-request__radios--inline">
-          <div class="fieldset-item">
-            <input
-              type="radio"
-              name="isMemberPaidConsumable"
-              id="consumable-yes"
-              value="true"
-              required
-              ${checkedIf(viewModel.answers.isMemberPaidConsumable === 'true')}
-            />
-            <label for="consumable-yes">Yes</label>
-          </div>
-          <div class="fieldset-item">
-            <input
-              type="radio"
-              name="isMemberPaidConsumable"
-              id="consumable-no"
-              value="false"
-              required
-              ${checkedIf(viewModel.answers.isMemberPaidConsumable === 'false')}
-            />
-            <label for="consumable-no">No</label>
-          </div>
+      <button
+        class="purchase-request__link-button jsonly"
+        type="button"
+        data-add-shop
+      >
+        + Add another shop
+      </button>
+      <div data-request-total aria-live="polite"></div>
+    </div>
+    <fieldset class="purchase-request__fieldset purchase-question">
+      <legend>Is it a consumable that members pay for when they use it?</legend>
+      <p class="purchase-request__hint text-sm">
+        For example, 3D printer filament, paid for on SumUp when it's used.
+      </p>
+      <div class="purchase-request__radios purchase-request__radios--inline">
+        <div class="fieldset-item">
+          <input
+            type="radio"
+            name="isMemberPaidConsumable"
+            id="consumable-yes"
+            value="true"
+            required
+            ${checkedIf(viewModel.answers.isMemberPaidConsumable === 'true')}
+          />
+          <label for="consumable-yes">Yes</label>
         </div>
-      </fieldset>
-      ${renderNext(viewModel)}
-    </form>
-    ${costsScript}
-  `;
-};
-
-const renderShopRow = (purchase: Purchase) => html`
-  <tr>
-    <td>${sanitizeString(purchase.shop)}</td>
-    <td class="purchase-shops-table__items">
-      ${sanitizeString(purchase.items)}
-    </td>
-    <td class="purchase-shops-table__cost">${gbp(purchase.costPence)}</td>
-  </tr>
+        <div class="fieldset-item">
+          <input
+            type="radio"
+            name="isMemberPaidConsumable"
+            id="consumable-no"
+            value="false"
+            required
+            ${checkedIf(viewModel.answers.isMemberPaidConsumable === 'false')}
+          />
+          <label for="consumable-no">No</label>
+        </div>
+      </div>
+    </fieldset>
+    ${renderNext(viewModel)}
+  </form>
+  ${costsScript}
 `;
 
 const renderBudgetPage = (viewModel: PurchaseRequestFormViewModel) => html`
@@ -524,24 +610,7 @@ const renderBudgetPage = (viewModel: PurchaseRequestFormViewModel) => html`
           html`For the ${gbp(totalPence)} total`,
           html`${sanitizeString(classification.reason)}`
         )}
-        <table class="purchase-shops-table">
-          <thead>
-            <tr>
-              <th>Shop</th>
-              <th>Items</th>
-              <th class="purchase-shops-table__cost">Cost</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${joinHtml(purchases.map(renderShopRow))}
-          </tbody>
-          <tfoot>
-            <tr>
-              <th colspan="2">Total</th>
-              <td class="purchase-shops-table__cost">${gbp(totalPence)}</td>
-            </tr>
-          </tfoot>
-        </table>
+        ${renderPurchaseBreakdown(purchases, totalPence)}
       `
     )
   )}
@@ -567,7 +636,7 @@ const costsScript = html`
       var form = document.getElementById('purchase-costs-form');
       if (!form) return;
       var shops = form.querySelector('[data-shop-entries]');
-      var total = form.querySelector('[data-shop-total]');
+      var requestTotal = form.querySelector('[data-request-total]');
 
       function gbp(pence) {
         return '£' + (pence / 100).toLocaleString('en-GB', {
@@ -582,69 +651,136 @@ const costsScript = html`
         return Number(parts[0]) * 100 + Number((parts[1] || '').padEnd(2, '0'));
       }
 
-      // The running total of the shop costs: the cost of the request.
-      function update() {
-        var sum = 0;
-        form.querySelectorAll('[data-shop-cost]').forEach(function (field) {
-          var cost = pence(field.value);
-          if (cost !== null) sum += cost;
-        });
-        total.innerHTML = sum ? '<p><strong>Total: ' + gbp(sum) + '</strong></p>' : '';
+      function quantity(value) {
+        var trimmed = value.trim();
+        return /^[0-9]+$/.test(trimmed) ? Number(trimmed) : 0;
       }
-
       function isBlank(entry) {
         return Array.prototype.every.call(
-          entry.querySelectorAll('input, textarea'),
+          entry.querySelectorAll('input'),
           function (field) { return field.value.trim() === ''; }
         );
       }
 
-      // Shop entries: keep the ones already filled in (at least one), add or
-      // remove on request. Field indices only ever go up, so names stay
-      // unique after a removal.
-      var entries = shops.querySelectorAll('[data-shop-entry]');
-      var template = entries[0].cloneNode(true);
-      template.querySelectorAll('input, textarea').forEach(function (field) {
-        field.value = '';
-        field.textContent = '';
-      });
-      var nextIndex = entries.length;
-      for (var i = 1; i < entries.length; i++) {
-        if (isBlank(entries[i])) entries[i].remove();
+      // Each shop's subtotal (items at quantity times price, plus delivery)
+      // and the request's total, which is what decides the budget.
+      function update() {
+        var total = 0;
+        shops.querySelectorAll('[data-shop-entry]').forEach(function (shop) {
+          var sum = pence(shop.querySelector('[data-shop-delivery]').value) || 0;
+          shop.querySelectorAll('[data-item-entry]').forEach(function (item) {
+            var price = pence(item.querySelector('[data-item-price]').value) || 0;
+            sum += quantity(item.querySelector('[data-item-quantity]').value) * price;
+          });
+          shop.querySelector('[data-shop-total]').innerHTML =
+            sum ? '<p>Shop total: ' + gbp(sum) + '</p>' : '';
+          total += sum;
+        });
+        requestTotal.innerHTML = total ? '<p><strong>Total: ' + gbp(total) + '</strong></p>' : '';
       }
-      function renumber() {
-        var all = shops.querySelectorAll('[data-shop-entry]');
-        all.forEach(function (entry, index) {
-          entry.querySelector('[data-shop-title]').textContent = all.length > 1 ? 'Shop ' + (index + 1) : 'Where from';
-          entry.querySelector('[data-remove-shop]').hidden = all.length < 2;
+
+      // Names look like purchases[2][items][1][sku] and ids like
+      // purchases-2-items-1-sku; these renumber a copied entry.
+      function setShopIndex(entry, index) {
+        entry.dataset.shopIndex = index;
+        entry.querySelectorAll('[name]').forEach(function (field) {
+          field.name = field.name.replace(/^purchases\\[\\d+\\]/, 'purchases[' + index + ']');
+          field.id = field.id.replace(/^purchases-\\d+-/, 'purchases-' + index + '-');
+        });
+        entry.querySelectorAll('label[for]').forEach(function (label) {
+          label.htmlFor = label.htmlFor.replace(/^purchases-\\d+-/, 'purchases-' + index + '-');
         });
       }
-      function wireRemove(entry) {
-        entry.querySelector('[data-remove-shop]').addEventListener('click', function () {
-          entry.remove();
-          renumber();
+      function setItemIndex(entry, index) {
+        entry.querySelectorAll('[name]').forEach(function (field) {
+          field.name = field.name.replace(/\\[items\\]\\[\\d+\\]/, '[items][' + index + ']');
+          field.id = field.id.replace(/-items-\\d+-/, '-items-' + index + '-');
+        });
+        entry.querySelectorAll('label[for]').forEach(function (label) {
+          label.htmlFor = label.htmlFor.replace(/-items-\\d+-/, '-items-' + index + '-');
+        });
+      }
+      function emptied(entry) {
+        var copy = entry.cloneNode(true);
+        copy.querySelectorAll('input').forEach(function (field) {
+          field.value = '';
+          field.required = false;
+        });
+        return copy;
+      }
+
+      function renumberItems(shop) {
+        var items = shop.querySelectorAll('[data-item-entry]');
+        items.forEach(function (item, index) {
+          item.querySelector('[data-item-title]').textContent = 'Item ' + (index + 1);
+          item.querySelector('[data-remove-item]').hidden = items.length < 2;
+        });
+      }
+      function renumberShops() {
+        var all = shops.querySelectorAll('[data-shop-entry]');
+        all.forEach(function (shop, index) {
+          shop.querySelector('[data-shop-title]').textContent = 'Shop ' + (index + 1);
+          shop.querySelector('[data-remove-shop]').hidden = all.length < 2;
+        });
+      }
+
+      // Item and shop indices only ever go up, so names stay unique after a
+      // removal; blank ones are ignored when the form is read.
+      function wireItem(shop, item) {
+        item.querySelector('[data-remove-item]').addEventListener('click', function () {
+          item.remove();
+          renumberItems(shop);
           update();
         });
       }
-      shops.querySelectorAll('[data-shop-entry]').forEach(wireRemove);
+      function wireShop(shop) {
+        var list = shop.querySelector('[data-item-entries]');
+        var items = list.querySelectorAll('[data-item-entry]');
+        var itemTemplate = emptied(items[0]);
+        var nextItem = items.length;
+        for (var i = 1; i < items.length; i++) {
+          if (isBlank(items[i])) items[i].remove();
+        }
+        list.querySelectorAll('[data-item-entry]').forEach(function (item) {
+          wireItem(shop, item);
+        });
+        shop.querySelector('[data-add-item]').addEventListener('click', function () {
+          var item = itemTemplate.cloneNode(true);
+          setItemIndex(item, nextItem++);
+          list.appendChild(item);
+          wireItem(shop, item);
+          renumberItems(shop);
+          item.querySelector('input').focus();
+          update();
+        });
+        shop.querySelector('[data-remove-shop]').addEventListener('click', function () {
+          shop.remove();
+          renumberShops();
+          update();
+        });
+        renumberItems(shop);
+      }
+
+      var shopEntries = shops.querySelectorAll('[data-shop-entry]');
+      var shopTemplate = emptied(shopEntries[0]);
+      shopTemplate.querySelectorAll('[data-item-entry]').forEach(function (item, index) {
+        if (index > 0) item.remove();
+      });
+      var nextShop = shopEntries.length;
+      for (var j = 1; j < shopEntries.length; j++) {
+        if (isBlank(shopEntries[j])) shopEntries[j].remove();
+      }
+      shops.querySelectorAll('[data-shop-entry]').forEach(wireShop);
       form.querySelector('[data-add-shop]').addEventListener('click', function () {
-        var index = nextIndex++;
-        var entry = template.cloneNode(true);
-        entry.querySelectorAll('[name]').forEach(function (field) {
-          field.name = field.name.replace(/\\[\\d+\\]/, '[' + index + ']');
-          field.id = field.id.replace(/-\\d+-/, '-' + index + '-');
-          field.required = false;
-        });
-        entry.querySelectorAll('label[for]').forEach(function (label) {
-          label.htmlFor = label.htmlFor.replace(/-\\d+-/, '-' + index + '-');
-        });
-        wireRemove(entry);
-        shops.appendChild(entry);
-        renumber();
-        entry.querySelector('input').focus();
+        var shop = shopTemplate.cloneNode(true);
+        setShopIndex(shop, nextShop++);
+        shops.appendChild(shop);
+        wireShop(shop);
+        renumberShops();
+        shop.querySelector('input').focus();
         update();
       });
-      renumber();
+      renumberShops();
 
       form.addEventListener('input', update);
       update();

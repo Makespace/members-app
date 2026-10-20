@@ -1,13 +1,13 @@
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import {DateTime} from 'luxon';
-import {html, joinHtml, sanitizeString} from '../../types/html';
+import {html, sanitizeString} from '../../types/html';
 import {formatPence} from '../../types/money';
 import {
   PurchaseRequest,
-  PurchaseRequestPurchase,
   PurchasingAreaSummary,
 } from '../../read-models/shared-state/return-types';
+import {renderPurchaseBreakdown} from '../../templates/purchase-breakdown';
 import {renderMemberNumber} from '../../templates/member-number';
 import {displayDate} from '../../templates/display-date';
 import {renderOutcome} from '../../templates/purchase-request-outcome';
@@ -22,31 +22,6 @@ type ViewModel = {
 };
 
 const money = (pence: number) => sanitizeString(formatPence(pence));
-
-const isWebLink = (link: string) => /^https?:\/\//i.test(link);
-
-const renderShop = (purchase: PurchaseRequestPurchase) =>
-  pipe(
-    purchase.link,
-    O.filter(isWebLink),
-    O.match(
-      () => html`${sanitizeString(purchase.shop)}`,
-      url =>
-        html`<a href="${sanitizeString(url)}" target="_blank" rel="noopener"
-          >${sanitizeString(purchase.shop)}</a
-        >`
-    )
-  );
-
-const renderPurchaseRow = (purchase: PurchaseRequestPurchase) => html`
-  <tr>
-    <td>${renderShop(purchase)}</td>
-    <td class="purchase-shops-table__items">
-      ${sanitizeString(purchase.items)}
-    </td>
-    <td class="purchase-shops-table__cost">${money(purchase.costPence)}</td>
-  </tr>
-`;
 
 export const render = ({
   justSent,
@@ -120,18 +95,7 @@ export const render = ({
           <dt>Why it's needed</dt>
           <dd>${sanitizeString(request.justification)}</dd>
         </dl>
-        <table class="purchase-shops-table">
-          <thead>
-            <tr>
-              <th>Shop</th>
-              <th>Items</th>
-              <th class="purchase-shops-table__cost">Cost</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${joinHtml(request.purchases.map(renderPurchaseRow))}
-          </tbody>
-        </table>
+        ${renderPurchaseBreakdown(request.purchases, request.totalPence)}
         ${request.approval === 'proposal'
           ? html`<p>
               <strong>Next:</strong> write your proposal. Nothing will be bought

@@ -1,49 +1,113 @@
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
-import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import {PenceFromPoundsString} from '../types/money';
 
-// The shops or websites a purchase request buys from, as typed into the form:
-// read by the submit command and by the form's own pages, so both accept and
-// refuse the same things with the same messages.
+// What a purchase request buys: one or more shops or websites, each with the
+// items bought there and any delivery charge. Read by the submit command and
+// by the form's own pages, so both accept and refuse the same things with the
+// same messages.
 
-// One shop, as typed. The form offers a few blank entries (more with
-// JavaScript), so entirely blank ones are ignored. Posted, or carried in a
-// page link, as purchases[0][shop] etc., which Express reads as an array - or
+// Posted, or carried in a page link, as purchases[0][shop],
+// purchases[0][items][0][sku] etc. Express reads each level as an array - or
 // as an object keyed by index once there are more than 20.
+const indexed = <C extends t.Mixed>(codec: C) =>
+  t.union([t.readonlyArray(codec), t.record(t.string, codec)]);
+
+const RawItem = t.partial({
+  url: t.string,
+  sku: t.string,
+  quantity: t.string,
+  // Each, in pounds, e.g. "42.50".
+  price: t.string,
+  notes: t.string,
+});
+
 const RawPurchase = t.partial({
   shop: t.string,
-  link: t.string,
-  items: t.string,
-  // In pounds, e.g. "42.50".
-  cost: t.string,
+  // In pounds; optional.
+  delivery: t.string,
+  items: indexed(RawItem),
 });
-export type RawPurchase = t.TypeOf<typeof RawPurchase>;
 
-export const RawPurchases = t.union([
-  t.readonlyArray(RawPurchase),
-  t.record(t.string, RawPurchase),
-]);
+export const RawPurchases = indexed(RawPurchase);
 
-export type Purchase = {
-  shop: string;
-  link: string | null;
-  items: string;
-  costPence: number;
+// As typed, in page order, with entirely blank shops and items left out.
+export type TypedItem = {
+  url: string;
+  sku: string;
+  quantity: string;
+  price: string;
+  notes: string;
 };
 
-// In page order, whichever way they arrived; nothing at all is no shops.
-export const rawPurchasesInOrder = (
-  raw: t.TypeOf<typeof RawPurchases> | undefined
-): ReadonlyArray<RawPurchase> =>
+export type TypedPurchase = {
+  shop: string;
+  delivery: string;
+  items: ReadonlyArray<TypedItem>;
+};
+
+// As recorded on the PurchaseRequestSubmitted event and kept in the read
+// model.
+const PurchaseItemCodec = t.strict({
+  url: t.union([t.string, t.null]),
+  sku: t.union([t.string, t.null]),
+  quantity: t.number,
+  unitPricePence: t.number,
+  // e.g. the length or colour wanted, when the item comes in several
+  notes: t.union([t.string, t.null]),
+});
+
+export const PurchaseCodec = t.strict({
+  shop: t.string,
+  items: t.readonlyArray(PurchaseItemCodec),
+  deliveryPence: t.number,
+});
+
+export type PurchaseItem = t.TypeOf<typeof PurchaseItemCodec>;
+export type Purchase = t.TypeOf<typeof PurchaseCodec>;
+
+const inOrder = <A>(
+  raw: ReadonlyArray<A> | Record<string, A> | undefined
+): ReadonlyArray<A> =>
   raw === undefined
     ? []
     : Array.isArray(raw)
-      ? (raw as ReadonlyArray<RawPurchase>)
+      ? (raw as ReadonlyArray<A>)
       : Object.entries(raw)
           .sort(([a], [b]) => Number(a) - Number(b))
           .map(([, entry]) => entry);
+
+const isBlank = (values: ReadonlyArray<string>) =>
+  values.every(value => value.trim() === '');
+
+export const typedPurchases = (
+  raw: t.TypeOf<typeof RawPurchases> | undefined
+): ReadonlyArray<TypedPurchase> =>
+  inOrder(raw)
+    .map(purchase => ({
+      shop: purchase.shop ?? '',
+      delivery: purchase.delivery ?? '',
+      items: inOrder(purchase.items)
+        .map(item => ({
+          url: item.url ?? '',
+          sku: item.sku ?? '',
+          quantity: item.quantity ?? '',
+          price: item.price ?? '',
+          notes: item.notes ?? '',
+        }))
+        .filter(
+          item =>
+            !isBlank([item.url, item.sku, item.quantity, item.price, item.notes])
+        ),
+    }))
+    .filter(
+      purchase =>
+        !isBlank([purchase.shop, purchase.delivery]) || purchase.items.length > 0
+    );
+
+const optional = (value: string) =>
+  value.trim() === '' ? null : value.trim();
 
 // Optional. A bare "example.com/thing" is taken to mean https; anything that
 // still isn't a web address is refused rather than stored as a broken link.
@@ -71,58 +135,99 @@ const normaliseLink = (
   }
 };
 
-const normaliseCost = (raw: string, where: string): E.Either<string, number> =>
+const normaliseQuantity = (
+  raw: string,
+  where: string
+): E.Either<string, number> => {
+  const trimmed = raw.trim();
+  if (trimmed === '') {
+    return E.left(`${where}: please give a quantity.`);
+  }
+  return /^\d+$/.test(trimmed) && Number(trimmed) > 0
+    ? E.right(Number(trimmed))
+    : E.left(`${where}: the quantity should be a whole number, e.g. 4.`);
+};
+
+const normaliseMoney = (
+  raw: string,
+  where: string,
+  missing: string
+): E.Either<string, number> =>
   raw.trim() === ''
-    ? E.left(`${where}: please say how much it costs.`)
+    ? E.left(`${where}: ${missing}`)
     : pipe(
         PenceFromPoundsString.decode(raw),
-        E.mapLeft(() => `${where}: the cost should be in pounds, e.g. 42.50.`)
+        E.mapLeft(() => `${where}: amounts should be in pounds, e.g. 42.50.`)
+      );
+
+const normaliseItem = (
+  item: TypedItem,
+  where: string
+): E.Either<string, PurchaseItem> =>
+  isBlank([item.url, item.sku, item.notes])
+    ? E.left(`${where}: please give a link, SKU or note saying what it is.`)
+    : pipe(
+        E.Do,
+        E.bind('url', () => normaliseLink(item.url, where)),
+        E.bind('quantity', () => normaliseQuantity(item.quantity, where)),
+        E.bind('unitPricePence', () =>
+          normaliseMoney(item.price, where, 'please say how much each one costs.')
+        ),
+        E.map(({url, quantity, unitPricePence}) => ({
+          url,
+          sku: optional(item.sku),
+          quantity,
+          unitPricePence,
+          notes: optional(item.notes),
+        }))
       );
 
 const normalisePurchase = (
-  raw: RawPurchase,
-  where: string
-): E.Either<string, O.Option<Purchase>> => {
-  const shop = (raw.shop ?? '').trim();
-  const items = (raw.items ?? '').trim();
-  const link = raw.link ?? '';
-  const cost = raw.cost ?? '';
-  if (shop === '' && items === '' && link.trim() === '' && cost.trim() === '') {
-    return E.right(O.none);
-  }
+  purchase: TypedPurchase,
+  index: number
+): E.Either<string, Purchase> => {
+  const shop = purchase.shop.trim();
   if (shop === '') {
-    return E.left(`${where}: please say which shop or website.`);
+    return E.left(`Shop ${index + 1}: please say which shop or website.`);
   }
-  if (items === '') {
-    return E.left(`${where}: please list what to buy from ${shop}.`);
+  if (purchase.items.length === 0) {
+    return E.left(`${shop}: please add at least one item.`);
   }
   return pipe(
     E.Do,
-    E.bind('link', () => normaliseLink(link, shop)),
-    E.bind('costPence', () => normaliseCost(cost, shop)),
-    E.map(({link, costPence}) => O.some({shop, link, items, costPence}))
+    E.bind('items', () =>
+      pipe(
+        purchase.items,
+        E.traverseArrayWithIndex((itemIndex, item) =>
+          normaliseItem(item, `${shop}, item ${itemIndex + 1}`)
+        )
+      )
+    ),
+    E.bind('deliveryPence', () =>
+      purchase.delivery.trim() === ''
+        ? E.right(0)
+        : normaliseMoney(purchase.delivery, `${shop} delivery`, '')
+    ),
+    E.map(({items, deliveryPence}) => ({shop, items, deliveryPence}))
   );
 };
 
-// Blank entries dropped; at least one shop is required. The first problem
-// found is reported.
+// At least one shop is required. The first problem found is reported.
 export const normalisePurchases = (
-  raw: ReadonlyArray<RawPurchase>
-): E.Either<string, ReadonlyArray<Purchase>> => {
-  const purchases: Purchase[] = [];
-  for (const [index, entry] of raw.entries()) {
-    const normalised = normalisePurchase(entry, `Shop ${index + 1}`);
-    if (E.isLeft(normalised)) {
-      return normalised;
-    }
-    if (O.isSome(normalised.right)) {
-      purchases.push(normalised.right.value);
-    }
-  }
-  return purchases.length === 0
+  purchases: ReadonlyArray<TypedPurchase>
+): E.Either<string, ReadonlyArray<Purchase>> =>
+  purchases.length === 0
     ? E.left('Please add at least one shop or website to buy from.')
-    : E.right(purchases);
-};
+    : pipe(purchases, E.traverseArrayWithIndex((index, purchase) =>
+        normalisePurchase(purchase, index)
+      ));
+
+export const lineTotalPence = (item: PurchaseItem) =>
+  item.quantity * item.unitPricePence;
+
+export const shopTotalPence = (purchase: Purchase) =>
+  purchase.items.reduce((sum, item) => sum + lineTotalPence(item), 0) +
+  purchase.deliveryPence;
 
 export const totalPence = (purchases: ReadonlyArray<Purchase>) =>
-  purchases.reduce((sum, purchase) => sum + purchase.costPence, 0);
+  purchases.reduce((sum, purchase) => sum + shopTotalPence(purchase), 0);

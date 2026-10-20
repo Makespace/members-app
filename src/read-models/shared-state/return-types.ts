@@ -1,4 +1,5 @@
 import {SignedOwnerAgreement} from '../../owner-agreement/agreement';
+import {Purchase} from '../../purchasing/purchases';
 import {EquipmentCategory} from '../../types/equipment-category';
 import * as O from 'fp-ts/Option';
 import {Actor, EmailAddress, GravatarHash, UserId} from '../../types';
@@ -180,12 +181,6 @@ export type PurchasingArea = PurchasingAreaSummary & {
   remainingPence: number;
 };
 
-export type PurchaseRequestPurchase = {
-  shop: string;
-  link: O.Option<string>;
-  items: string;
-  costPence: number;
-};
 
 export type PurchaseRequest = {
   id: UUID;
@@ -197,7 +192,7 @@ export type PurchaseRequest = {
   // The sum of the shop costs: what the outcome was worked out from and what
   // counts against the budget.
   totalPence: number;
-  purchases: ReadonlyArray<PurchaseRequestPurchase>;
+  purchases: ReadonlyArray<Purchase>;
   justification: string;
   isMemberPaidConsumable: boolean;
   outcome: PurchaseRequestOutcome;

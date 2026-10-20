@@ -11,9 +11,9 @@ import {
 } from '../../types/failure-with-status';
 import {
   normalisePurchases,
-  rawPurchasesInOrder,
   RawPurchases,
   totalPence,
+  typedPurchases,
 } from '../../purchasing/purchases';
 import {SharedReadModel} from '../../read-models/shared-state';
 import {allMemberNumbers} from '../../read-models/shared-state/return-types';
@@ -30,8 +30,8 @@ const codec = t.strict({
   purchasingAreaId: tt.UUID,
   isMemberPaidConsumable: answer,
   summary: tt.NonEmptyString,
-  // Each shop with what is bought there and its cost; their total decides
-  // the outcome. See src/purchasing/purchases.ts.
+  // Each shop with the items bought there and any delivery charge; their
+  // total decides the outcome. See src/purchasing/purchases.ts.
   purchases: RawPurchases,
   justification: tt.NonEmptyString,
   // API only: who the request is recorded against when it is entered with
@@ -104,7 +104,7 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
     ),
     E.bind('purchases', () =>
       pipe(
-        normalisePurchases(rawPurchasesInOrder(command.purchases)),
+        normalisePurchases(typedPurchases(command.purchases)),
         E.mapLeft(fail)
       )
     ),

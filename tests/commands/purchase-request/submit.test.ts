@@ -36,8 +36,10 @@ describe('submit purchase request', () => {
     ...events: Parameters<TestFramework['insertIntoSharedReadModel']>[0][]
   ) => events.forEach(event => framework.insertIntoSharedReadModel(event));
 
+  const blankItem = {url: '', sku: '', quantity: '', price: '', notes: ''};
+
   // What the browser posts, before decoding: pounds as strings, yes/no as
-  // "true"/"false", and the fixed shop entries (blank ones included).
+  // "true"/"false", and the fixed shop and item entries (blank ones included).
   const formBody = (overrides: Record<string, unknown> = {}) => ({
     id: faker.string.uuid(),
     purchasingAreaId,
@@ -46,21 +48,31 @@ describe('submit purchase request', () => {
     purchases: [
       {
         shop: 'Sewing Direct',
-        link: 'sewingdirect.com/machine',
-        items: '1 x sewing machine',
-        cost: '240',
+        delivery: '10',
+        items: [
+          {
+            url: 'sewingdirect.com/machine',
+            sku: 'SD-200',
+            quantity: '1',
+            price: '230',
+            notes: 'Quilting model',
+          },
+          blankItem,
+          blankItem,
+        ],
       },
-      {shop: '', link: '', items: '', cost: ''},
-      {shop: '', link: '', items: '', cost: ''},
+      {shop: '', delivery: '', items: [blankItem, blankItem, blankItem]},
     ],
     justification: 'The old one is too small for quilts',
     ...overrides,
   });
 
-  // One shop costing this much, in pounds: the itemised total that decides
-  // the outcome.
-  const costing = (cost: string) => ({
-    purchases: [{shop: 'Sewing Direct', items: '1 x thing', cost}],
+  // One shop with one item costing this much, in pounds: the itemised total
+  // that decides the outcome.
+  const costing = (price: string) => ({
+    purchases: [
+      {shop: 'Sewing Direct', items: [{notes: 'Thing', quantity: '1', price}]},
+    ],
   });
 
   const submitAs = (actor: Actor, body: Record<string, unknown>) =>
@@ -154,13 +166,20 @@ describe('submit purchase request', () => {
       });
     });
 
-    it('keeps only the filled-in shops, with the link and cost tidied', async () => {
+    it('keeps only the filled-in shops and items, tidied', async () => {
       expect((await submitted(formBody())).purchases).toStrictEqual([
         {
           shop: 'Sewing Direct',
-          link: 'https://sewingdirect.com/machine',
-          items: '1 x sewing machine',
-          costPence: 24_000,
+          items: [
+            {
+              url: 'https://sewingdirect.com/machine',
+              sku: 'SD-200',
+              quantity: 1,
+              unitPricePence: 23_000,
+              notes: 'Quilting model',
+            },
+          ],
+          deliveryPence: 1_000,
         },
       ]);
     });
@@ -209,8 +228,12 @@ describe('submit purchase request', () => {
     const event = await submitted(
       formBody({
         purchases: [
-          {shop: 'A', items: 'thing', cost: '600.00'},
-          {shop: 'B', items: 'other thing', cost: '500.00'},
+          {
+            shop: 'A',
+            delivery: '20',
+            items: [{notes: 'Thing', quantity: '2', price: '240.00'}],
+          },
+          {shop: 'B', items: [{sku: 'B1', quantity: '1', price: '600.00'}]},
         ],
       })
     );
@@ -218,6 +241,10 @@ describe('submit purchase request', () => {
       totalPence: 110_000,
       outcome: 'budget-proposal-needed',
     });
+    expect(event.purchases.map(purchase => purchase.shop)).toStrictEqual([
+      'A',
+      'B',
+    ]);
   });
 
 
@@ -241,72 +268,39 @@ describe('submit purchase request', () => {
   });
 
   describe('the shops', () => {
-    it('needs at least one', async () => {
-      expect(
-        await failure(formBody({purchases: [{shop: '', items: ''}]}))
-      ).toMatchObject({
-        status: StatusCodes.BAD_REQUEST,
-        message: 'Please add at least one shop or website to buy from.',
-      });
-    });
-
-    it('needs the items for each shop given', async () => {
+    it('turns the request down with the problem when a shop is not right', async () => {
       expect(
         await failure(
           formBody({
-            purchases: [
-              {shop: 'A', items: 'thing', cost: '1'},
-              {shop: 'Hobbycraft', items: ' ', cost: '1'},
-            ],
+            purchases: [{shop: 'A', items: [{notes: 'x', quantity: '1'}]}],
           })
         )
       ).toMatchObject({
         status: StatusCodes.BAD_REQUEST,
-        message: 'Shop 2: please list what to buy from Hobbycraft.',
+        message: 'A, item 1: please say how much each one costs.',
       });
     });
 
-    it('needs the shop for each list of items', async () => {
+    it('needs at least one', async () => {
       expect(
-        await failure(formBody({purchases: [{shop: '', items: 'thing'}]}))
+        await failure(formBody({purchases: [{shop: '', items: [blankItem]}]}))
       ).toMatchObject({
-        message: 'Shop 1: please say which shop or website.',
+        message: 'Please add at least one shop or website to buy from.',
       });
     });
 
-    it('refuses a link that is not a web address', async () => {
-      expect(
-        await failure(
-          formBody({purchases: [{shop: 'A', items: 'x', link: 'ftp://a.b'}]})
-        )
-      ).toMatchObject({status: StatusCodes.BAD_REQUEST});
-    });
-
-    it('needs a cost for each shop', async () => {
-      expect(
-        await failure(formBody({purchases: [{shop: 'A', items: 'x', cost: ''}]}))
-      ).toMatchObject({
-        status: StatusCodes.BAD_REQUEST,
-        message: 'A: please say how much it costs.',
-      });
-    });
-
-    it('refuses a cost that is not an amount', async () => {
-      expect(
-        await failure(
-          formBody({purchases: [{shop: 'A', items: 'x', cost: 'lots'}]})
-        )
-      ).toMatchObject({
-        message: 'A: the cost should be in pounds, e.g. 42.50.',
-      });
-    });
-
-    it('accepts shops posted keyed by index, in index order', async () => {
+    it('accepts shops and items posted keyed by index, in index order', async () => {
       const event = await submitted(
         formBody({
           purchases: {
-            '21': {shop: 'Second', items: 'b', cost: '2'},
-            '3': {shop: 'First', items: 'a', link: '', cost: '1'},
+            '21': {shop: 'Second', items: [{notes: 'b', quantity: '1', price: '2'}]},
+            '3': {
+              shop: 'First',
+              items: {
+                '25': {notes: 'later', quantity: '1', price: '1'},
+                '4': {notes: 'earlier', quantity: '1', price: '1'},
+              },
+            },
           },
         })
       );
@@ -314,25 +308,12 @@ describe('submit purchase request', () => {
         'First',
         'Second',
       ]);
-    });
-
-    it('records several shops', async () => {
-      const event = await submitted(
-        formBody({
-          purchases: [
-            {shop: 'A', items: '2 x a', cost: '2'},
-            {shop: 'B', items: '1 x b', cost: '3.50'},
-          ],
-        })
-      );
-      expect(event.purchases).toStrictEqual([
-        {shop: 'A', link: null, items: '2 x a', costPence: 200},
-        {shop: 'B', link: null, items: '1 x b', costPence: 350},
+      expect(event.purchases[0].items.map(item => item.notes)).toStrictEqual([
+        'earlier',
+        'later',
       ]);
-      expect(event.totalPence).toBe(550);
     });
   });
-
 
   it('fails for a purchasing area that does not exist', async () => {
     expect(

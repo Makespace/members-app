@@ -99,7 +99,12 @@ describe('purchasing area page', () => {
       purchasingAreaId,
       isMemberPaidConsumable: false,
       summary: 'Bandsaw blades' as never,
-      purchases: [{shop: 'Axminster', items: '5 x blade', cost: '500.00'}],
+      purchases: [
+        {
+          shop: 'Axminster',
+          items: [{notes: 'Bandsaw blade', quantity: '5', price: '100.00'}],
+        },
+      ],
       justification: 'Worn out' as never,
       submittedByMemberNumber: undefined,
       actor: {tag: 'user', user: purchaser},
@@ -130,7 +135,12 @@ describe('purchasing area page', () => {
       purchasingAreaId,
       isMemberPaidConsumable: true,
       summary: 'Sanding discs' as never,
-      purchases: [{shop: 'Axminster', items: '100 x disc', cost: '630.00'}],
+      purchases: [
+        {
+          shop: 'Axminster',
+          items: [{notes: 'Sanding disc', quantity: '100', price: '6.30'}],
+        },
+      ],
       justification: 'Sold to members' as never,
       submittedByMemberNumber: undefined,
       actor: {tag: 'user', user: purchaser},

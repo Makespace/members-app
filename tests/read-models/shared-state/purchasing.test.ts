@@ -36,9 +36,16 @@ describe('purchasing areas in the read model', () => {
       purchases: [
         {
           shop: 'Hobbycraft',
-          link: null,
-          items: '2 x glue gun',
-          costPence: amountPence,
+          items: [
+            {
+              url: null,
+              sku: null,
+              quantity: 1,
+              unitPricePence: amountPence,
+              notes: 'Glue gun',
+            },
+          ],
+          deliveryPence: 0,
         },
       ],
       justification: 'Needed',
@@ -326,9 +333,16 @@ describe('purchasing areas in the read model', () => {
             purchases: [
               {
                 shop: 'Hobbycraft',
-                link: O.none,
-                items: '2 x glue gun',
-                costPence: 1_000,
+                items: [
+                  {
+                    url: null,
+                    sku: null,
+                    quantity: 1,
+                    unitPricePence: 1_000,
+                    notes: 'Glue gun',
+                  },
+                ],
+                deliveryPence: 0,
               },
             ],
           })

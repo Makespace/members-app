@@ -14,9 +14,16 @@ const request: PurchaseRequest = {
   purchases: [
     {
       shop: 'Axminster Tools',
-      link: O.some('https://www.axminstertools.com/'),
-      items: '2 x blade\n1 x guard',
-      costPence: 15_000,
+      items: [
+        {
+          url: 'https://www.axminstertools.com/blade',
+          sku: 'AX123',
+          quantity: 2,
+          unitPricePence: 6_000,
+          notes: '254mm',
+        },
+      ],
+      deliveryPence: 3_000,
     },
   ],
   justification: 'The old blades are blunt',
@@ -55,8 +62,12 @@ describe('purchase request page', () => {
 
   it('lists each shop with its items and cost', () => {
     const html = page(true);
-    expect(html).toContain('href="https://www.axminstertools.com/"');
-    expect(html).toContain('2 x blade\n1 x guard');
+    expect(html).toContain('href="https://www.axminstertools.com/blade"');
+    expect(html).toContain('AX123');
+    expect(html).toContain('254mm');
+    expect(html).toContain('£60.00');
+    expect(html).toContain('£120.00');
+    expect(html).toContain('Delivery');
     expect(html).toContain('£150.00');
   });
 

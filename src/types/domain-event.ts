@@ -9,6 +9,7 @@ import {
   PurchaseRequestOutcomeCodec,
 } from './purchase-request-outcome';
 import {ReminderStage} from '../owner-agreement/reminder-stage';
+import {PurchaseCodec} from '../purchasing/purchases';
 
 const defineEvent = <A extends string, T extends t.Props>(
   type: A,
@@ -227,15 +228,6 @@ const PurchaserRemoved = defineEvent('PurchaserRemoved', {
   memberNumber: t.number,
 });
 
-// One shop or website a purchase request buys from. A request may be split
-// across several; each may list many items (free text, with quantities).
-const PurchaseRequestPurchase = t.strict({
-  shop: t.string,
-  link: t.union([t.string, t.null]),
-  items: t.string,
-  costPence: t.number,
-});
-
 // A purchaser asking to buy something. The outcome is computed by the server
 // (src/purchasing/classify-purchase.ts) from the itemised total - the sum of
 // the shop costs - at submission, and recorded here along with the budget
@@ -250,7 +242,8 @@ const PurchaseRequestSubmitted = defineEvent('PurchaseRequestSubmitted', {
   submittedByMemberNumber: t.number,
   summary: t.string,
   totalPence: t.number,
-  purchases: t.readonlyArray(PurchaseRequestPurchase),
+  // Each shop with the items bought there and any delivery charge.
+  purchases: t.readonlyArray(PurchaseCodec),
   justification: t.string,
   isMemberPaidConsumable: t.boolean,
   outcome: PurchaseRequestOutcomeCodec,

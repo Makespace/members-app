@@ -15,10 +15,10 @@ import {
 } from '../../purchasing/classify-purchase';
 import {
   normalisePurchases,
-  RawPurchase,
   RawPurchases,
-  rawPurchasesInOrder,
   totalPence,
+  TypedPurchase,
+  typedPurchases,
 } from '../../purchasing/purchases';
 import {SharedReadModel} from '../../read-models/shared-state';
 import {User} from '../../types';
@@ -72,19 +72,13 @@ const purchasingAreasFor = (
     remainingPence: purchasingArea.remainingPence,
   }));
 
-// The shops as typed, in order, with entirely blank ones left out.
-const readPurchases = (input: unknown): ReadonlyArray<RawPurchase> =>
+// The shops and items as typed, in order, with entirely blank ones left out.
+const readPurchases = (input: unknown): ReadonlyArray<TypedPurchase> =>
   pipe(
     input,
     t.type({purchases: RawPurchases}).decode,
-    E.map(({purchases}) => rawPurchasesInOrder(purchases)),
-    E.getOrElse((): ReadonlyArray<RawPurchase> => []),
-    entries =>
-      entries.filter(entry =>
-        [entry.shop, entry.link, entry.items, entry.cost].some(
-          value => (value ?? '').trim() !== ''
-        )
-      )
+    E.map(({purchases}) => typedPurchases(purchases)),
+    E.getOrElse((): ReadonlyArray<TypedPurchase> => [])
   );
 
 // The form is filled in a page at a time (see render-submit-form.ts). Each

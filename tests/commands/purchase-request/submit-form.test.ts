@@ -55,26 +55,11 @@ describe('purchase request form pages', () => {
     }),
   ];
 
-  // As Express's query parser hands it over: purchases[0][shop] etc. become
-  // a list of shops.
-  const parsed = (query: Record<string, string>) => {
-    const purchases: Record<string, string>[] = [];
-    const rest: Record<string, string> = {};
-    Object.entries(query).forEach(([name, value]) => {
-      const match = /^purchases\[(\d+)\]\[(\w+)\]$/.exec(name);
-      if (match) {
-        const index = Number(match[1]);
-        purchases[index] = {...purchases[index], [match[2]]: value};
-      } else {
-        rest[name] = value;
-      }
-    });
-    return purchases.length ? {...rest, purchases} : rest;
-  };
-
-  const page = (query: Record<string, string>) =>
+  // As Express's query parser hands it over: purchases[0][items][0][sku]
+  // etc. arrive as nested lists.
+  const page = (query: Record<string, unknown>) =>
     getTaskEitherRightOrFail(
-      submitForm.constructForm(parsed(query))({
+      submitForm.constructForm(query)({
         user,
         readModel: framework.sharedReadModel,
         deps: {} as never,
@@ -87,14 +72,17 @@ describe('purchase request form pages', () => {
     summary: 'Saw blades',
     justification: 'The old ones are blunt',
   };
+  const jewson = (price = '50') => ({
+    shop: 'jewson.co.uk',
+    delivery: '',
+    items: [
+      {url: '', sku: 'PEGF8418', quantity: '1', price, notes: ''},
+      {url: '', sku: 'PBJT4750', quantity: '4', price: '25', notes: '4.8m'},
+    ],
+  });
   const allAnswers = {
     ...aboutAnswers,
-    'purchases[0][shop]': 'Axminster',
-    'purchases[0][items]': '2 x blade',
-    'purchases[0][cost]': '150',
-    'purchases[1][shop]': 'Toolstation',
-    'purchases[1][items]': '1 x guard',
-    'purchases[1][cost]': '100',
+    purchases: [jewson()],
     isMemberPaidConsumable: 'false',
   };
 
@@ -175,37 +163,49 @@ describe('purchase request form pages', () => {
         'Please say whether members pay for it as a consumable.',
       ],
     });
+    const noPrice = jewson();
     expect(
-      await page({...allAnswers, 'purchases[1][cost]': '', step: '3'})
+      await page({
+        ...allAnswers,
+        purchases: [
+          {...noPrice, items: [noPrice.items[0], {...noPrice.items[1], price: ''}]},
+        ],
+        step: '3',
+      })
     ).toMatchObject({
       step: 2,
-      problems: ['Toolstation: please say how much it costs.'],
+      problems: ['jewson.co.uk, item 2: please say how much each one costs.'],
     });
   });
 
-  it('keeps only the shops filled in, in order', async () => {
+  it('keeps only the shops and items filled in, in order', async () => {
     const viewModel = await page({
       ...aboutAnswers,
-      'purchases[0][shop]': '',
-      'purchases[1][shop]': 'Axminster',
-      'purchases[1][items]': 'blade',
+      purchases: [
+        {shop: '', items: [{sku: ''}]},
+        {shop: 'jewson.co.uk', items: [{sku: ''}, {sku: 'PEGF8418'}]},
+      ],
       step: '2',
     });
     expect(viewModel.answers.purchases).toStrictEqual([
-      {shop: 'Axminster', items: 'blade'},
+      {
+        shop: 'jewson.co.uk',
+        delivery: '',
+        items: [{url: '', sku: 'PEGF8418', quantity: '', price: '', notes: ''}],
+      },
     ]);
   });
 
   it('works out the actual budget from the shop total on page 3', async () => {
     const result = getSomeOrFail((await page({...allAnswers, step: '3'})).result);
-    expect(result.totalPence).toBe(25_000);
-    expect(result.purchases.map(purchase => purchase.shop)).toStrictEqual([
-      'Axminster',
-      'Toolstation',
+    expect(result.totalPence).toBe(15_000);
+    expect(result.purchases[0].items.map(item => item.sku)).toStrictEqual([
+      'PEGF8418',
+      'PBJT4750',
     ]);
     expect(result.classification.outcome).toBe('budget');
     const proposal = getSomeOrFail(
-      (await page({...allAnswers, 'purchases[0][cost]': '900', step: '3'}))
+      (await page({...allAnswers, purchases: [jewson('900')], step: '3'}))
         .result
     );
     expect(proposal.totalPence).toBe(100_000);

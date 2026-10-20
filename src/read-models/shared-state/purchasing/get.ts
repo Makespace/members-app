@@ -26,6 +26,7 @@ import {
   countsAgainstBudget,
 } from '../../../purchasing/budget-year';
 import {UserId} from '../../../types';
+import {PurchaseCodec} from '../../../purchasing/purchases';
 
 const spentInYear =
   (db: BetterSQLite3Database) =>
@@ -198,14 +199,7 @@ export const getPurchasingAreaForArea =
       O.fromNullable
     );
 
-const StoredPurchases = t.readonlyArray(
-  t.strict({
-    shop: t.string,
-    link: t.union([t.string, t.null]),
-    items: t.string,
-    costPence: t.number,
-  })
-);
+const StoredPurchases = t.readonlyArray(PurchaseCodec);
 
 const toPurchaseRequest = ({
   purchasesJson,
@@ -214,13 +208,7 @@ const toPurchaseRequest = ({
   ...row,
   purchases: pipe(
     StoredPurchases.decode(JSON.parse(purchasesJson)),
-    E.getOrElse((): t.TypeOf<typeof StoredPurchases> => []),
-    RA.map(purchase => ({
-      shop: purchase.shop,
-      link: O.fromNullable(purchase.link),
-      items: purchase.items,
-      costPence: purchase.costPence,
-    }))
+    E.getOrElse((): t.TypeOf<typeof StoredPurchases> => [])
   ),
 });
 

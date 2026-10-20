@@ -36,8 +36,26 @@ const woodShop = {
 };
 
 const purchases = [
-  {shop: 'Axminster', link: null, items: '2 x blade', costPence: 15_000},
-  {shop: 'Toolstation', link: null, items: '1 x guard', costPence: 10_000},
+  {
+    shop: 'jewson.co.uk',
+    items: [
+      {
+        url: 'https://www.jewson.co.uk/p/plywood-PEGF8418',
+        sku: 'PEGF8418',
+        quantity: 1,
+        unitPricePence: 5_000,
+        notes: null,
+      },
+      {
+        url: null,
+        sku: 'PBJT4750',
+        quantity: 4,
+        unitPricePence: 2_500,
+        notes: '4.8m',
+      },
+    ],
+    deliveryPence: 10_000,
+  },
 ];
 
 const onPage = (
@@ -54,8 +72,20 @@ const onPage = (
     summary: 'Saw blades',
     justification: 'Blunt',
     purchases: [
-      {shop: 'Axminster', items: '2 x blade', cost: '150', link: ''},
-      {shop: 'Toolstation', items: '1 x guard', cost: '100', link: ''},
+      {
+        shop: 'jewson.co.uk',
+        delivery: '100',
+        items: [
+          {
+            url: 'https://www.jewson.co.uk/p/plywood-PEGF8418',
+            sku: 'PEGF8418',
+            quantity: '1',
+            price: '50',
+            notes: '',
+          },
+          {url: '', sku: 'PBJT4750', quantity: '4', price: '25', notes: '4.8m'},
+        ],
+      },
     ],
     isMemberPaidConsumable: 'false',
   },
@@ -91,7 +121,8 @@ describe('purchase request form', () => {
       expect(hidden(page)).toMatchObject({
         step: '2',
         id: requestId,
-        'purchases[1][shop]': 'Toolstation',
+        'purchases[0][shop]': 'jewson.co.uk',
+        'purchases[0][items][1][notes]': '4.8m',
         isMemberPaidConsumable: 'false',
       });
       expect(hidden(page)).not.toHaveProperty('summary');
@@ -106,39 +137,53 @@ describe('purchase request form', () => {
   });
 
   describe('page 2', () => {
-    it('asks for each shop with its cost, then the consumable question', () => {
+    it('asks for the shop, then each item from it, then the consumable question', () => {
       const page = render(onPage(2));
       expect(text(page)).toContain('Page 2 of 3');
       const names = [...page.querySelectorAll('form [name]')].map(field =>
         field.getAttribute('name')
       );
-      expect(names.indexOf('purchases[0][cost]')).toBeLessThan(
+      expect(names).toEqual(
+        expect.arrayContaining([
+          'purchases[0][shop]',
+          'purchases[0][delivery]',
+          'purchases[0][items][0][url]',
+          'purchases[0][items][0][sku]',
+          'purchases[0][items][0][quantity]',
+          'purchases[0][items][0][price]',
+          'purchases[0][items][0][notes]',
+        ])
+      );
+      expect(names.indexOf('purchases[0][items][0][price]')).toBeLessThan(
         names.indexOf('isMemberPaidConsumable')
       );
       expect(
-        page.querySelector<HTMLInputElement>('[name="purchases[1][shop]"]')!
-          .value
-      ).toBe('Toolstation');
+        page.querySelector<HTMLInputElement>(
+          '[name="purchases[0][items][1][notes]"]'
+        )!.value
+      ).toBe('4.8m');
       expect(
         page.querySelector<HTMLInputElement>('#consumable-no')!.checked
       ).toBe(true);
-      expect(
-        page.querySelector<HTMLInputElement>('[name="purchases[0][cost]"]')!
-          .required
-      ).toBe(true);
-      expect(page.querySelector('#estimatedAmount')).toBeNull();
-      expect(page.querySelector('.purchase-question')?.textContent).toContain(
-        '3D printer filament'
-      );
     });
 
-    it('offers blank shops up to three without JavaScript', () => {
+    it('needs the first shop, quantity and price', () => {
+      const page = render(onPage(2));
+      const required = (name: string) =>
+        page.querySelector<HTMLInputElement>(`[name="${name}"]`)!.required;
+      expect(required('purchases[0][shop]')).toBe(true);
+      expect(required('purchases[0][items][0][quantity]')).toBe(true);
+      expect(required('purchases[0][items][0][price]')).toBe(true);
+      expect(required('purchases[0][items][0][sku]')).toBe(false);
+    });
+
+    it('offers blank shops and items without JavaScript', () => {
       const page = render(
-        onPage(2, {
-          answers: {...onPage(2).answers, purchases: []},
-        })
+        onPage(2, {answers: {...onPage(2).answers, purchases: []}})
       );
-      expect(page.querySelectorAll('[data-shop-entry]')).toHaveLength(3);
+      const shops = page.querySelectorAll('[data-shop-entry]');
+      expect(shops).toHaveLength(2);
+      expect(shops[0].querySelectorAll('[data-item-entry]')).toHaveLength(3);
     });
 
     it('carries page 1, and goes back to it with everything', () => {
@@ -153,7 +198,7 @@ describe('purchase request form', () => {
       const back = page.querySelector('.step-nav a')!.getAttribute('href')!;
       const query = new URLSearchParams(back.slice(1));
       expect(query.get('step')).toBe('1');
-      expect(query.get('purchases[0][shop]')).toBe('Axminster');
+      expect(query.get('purchases[0][items][0][sku]')).toBe('PEGF8418');
     });
   });
 
@@ -169,15 +214,23 @@ describe('purchase request form', () => {
       expect(text(page)).toContain('leaving £330.00 of £1,000.00');
     });
 
-    it('lists the shops with the total', () => {
-      const rows = [...page.querySelectorAll('.purchase-shops-table tbody tr')];
-      expect(rows.map(row => row.textContent.replace(/\s+/g, ' ').trim())).toStrictEqual([
-        'Axminster 2 x blade £150',
-        'Toolstation 1 x guard £100',
+    it('lists each shop and its items with the total', () => {
+      const rows = [...page.querySelectorAll('.purchase-breakdown tbody tr')];
+      expect(
+        rows.map(row => row.textContent.replace(/\s+/g, ' ').trim())
+      ).toStrictEqual([
+        'jewson.co.uk',
+        'jewson.co.uk PEGF8418 1 £50.00 £50.00',
+        'PBJT4750 4.8m 4 £25.00 £100.00',
+        'Delivery £100.00',
+        'jewson.co.uk total £250.00',
       ]);
-      expect(page.querySelector('.purchase-shops-table tfoot')?.textContent).toContain(
-        '£250'
-      );
+      expect(
+        page.querySelector('.purchase-breakdown a')?.getAttribute('href')
+      ).toBe('https://www.jewson.co.uk/p/plywood-PEGF8418');
+      expect(
+        page.querySelector('.purchase-breakdown tfoot')?.textContent
+      ).toContain('£250.00');
     });
 
     it('sends everything to the submit command', () => {
@@ -190,8 +243,9 @@ describe('purchase request form', () => {
       expect(hidden(page)).toMatchObject({
         id: requestId,
         summary: 'Saw blades',
-        'purchases[0][cost]': '150',
-        'purchases[1][items]': '1 x guard',
+        'purchases[0][delivery]': '100',
+        'purchases[0][items][0][price]': '50',
+        'purchases[0][items][1][quantity]': '4',
         isMemberPaidConsumable: 'false',
       });
       expect(form.querySelector('button')?.textContent).toContain('Send request');
@@ -219,10 +273,12 @@ describe('purchase request form', () => {
 
   it('says what still needs sorting out when sent back', () => {
     const page = render(
-      onPage(2, {problems: ['Toolstation: please say how much it costs.']})
+      onPage(2, {
+        problems: ['jewson.co.uk, item 2: please say how much each one costs.'],
+      })
     );
     expect(page.querySelector('[role="alert"]')?.textContent).toContain(
-      'Toolstation: please say how much it costs.'
+      'jewson.co.uk, item 2: please say how much each one costs.'
     );
   });
 
