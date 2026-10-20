@@ -139,4 +139,95 @@ describe('purchase request cost breakdown script', () => {
     fill(form, 'purchases[2][items][0][cost]', '3.50');
     expect(totalText(form)).toContain('Total: £60.50');
   });
+
+  describe('folding finished items', () => {
+    const items = (form: HTMLFormElement) =>
+      [...shops(form)[0].querySelectorAll<HTMLElement>('[data-item-entry]')];
+    const folded = (item: HTMLElement) =>
+      item.querySelector<HTMLElement>('[data-item-body]')!.hidden;
+    const summary = (item: HTMLElement) =>
+      item.querySelector<HTMLButtonElement>('[data-item-summary]')!;
+    const fillItem = (
+      form: HTMLFormElement,
+      index: number,
+      fields: Record<string, string>
+    ) =>
+      Object.entries(fields).forEach(([field, value]) =>
+        fill(form, `purchases[0][items][${index}][${field}]`, value)
+      );
+
+    it('starts with finished items folded when coming back to the page', () => {
+      const form = setUp([jewson]);
+      expect(items(form).map(folded)).toStrictEqual([true, true]);
+      expect(summary(items(form)[1]).textContent).toBe(
+        'PBJT4750 · Qty 4 · £100 · 4.8mEdit'
+      );
+    });
+
+    it('leaves a blank item open', () => {
+      const form = setUp();
+      expect(folded(items(form)[0])).toBe(false);
+    });
+
+    it('folds an item once it is finished and focus moves on', () => {
+      const form = setUp();
+      fillItem(form, 0, {sku: 'PEGF8418', quantity: '1', cost: '50'});
+      form
+        .querySelector<HTMLInputElement>('[name="purchases[0][items][0][sku]"]')!
+        .focus();
+      form.querySelector<HTMLInputElement>('[name="purchases[0][shop]"]')!.focus();
+      expect(folded(items(form)[0])).toBe(true);
+      expect(summary(items(form)[0]).textContent).toContain(
+        'PEGF8418 · Qty 1 · £50'
+      );
+    });
+
+    it('stays open while focus moves within the item', () => {
+      const form = setUp();
+      fillItem(form, 0, {sku: 'PEGF8418', quantity: '1', cost: '50'});
+      form
+        .querySelector<HTMLInputElement>('[name="purchases[0][items][0][sku]"]')!
+        .focus();
+      form
+        .querySelector<HTMLInputElement>('[name="purchases[0][items][0][cost]"]')!
+        .focus();
+      expect(folded(items(form)[0])).toBe(false);
+    });
+
+    it('keeps an unfinished item open so nothing wrong is hidden', () => {
+      const form = setUp();
+      fillItem(form, 0, {sku: 'PEGF8418', quantity: '1'});
+      form
+        .querySelector<HTMLInputElement>('[name="purchases[0][items][0][sku]"]')!
+        .focus();
+      form.querySelector<HTMLInputElement>('[name="purchases[0][shop]"]')!.focus();
+      expect(folded(items(form)[0])).toBe(false);
+    });
+
+    it('opens a folded item to edit when its summary is clicked', () => {
+      const form = setUp([jewson]);
+      summary(items(form)[0]).click();
+      expect(folded(items(form)[0])).toBe(false);
+      expect(document.activeElement?.getAttribute('name')).toBe(
+        'purchases[0][items][0][url]'
+      );
+    });
+
+    it('opens a folded item when tabbed onto', () => {
+      const form = setUp([jewson]);
+      summary(items(form)[1]).focus();
+      expect(folded(items(form)[1])).toBe(false);
+    });
+
+    it('opens a folded item holding a field the browser says is missing', () => {
+      const form = setUp([jewson]);
+      const sku = form.querySelector<HTMLInputElement>(
+        '[name="purchases[0][items][0][sku]"]'
+      )!;
+      sku.required = true;
+      sku.value = '';
+      sku.dispatchEvent(new Event('invalid'));
+      expect(folded(items(form)[0])).toBe(false);
+    });
+  });
 });

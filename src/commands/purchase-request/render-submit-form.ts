@@ -218,6 +218,14 @@ const renderItemEntry =
             Remove item
           </button>
         </div>
+        <button
+          class="purchase-item__summary"
+          type="button"
+          data-item-summary
+          aria-expanded="false"
+          hidden
+        ></button>
+        <div class="purchase-item__body" data-item-body>
         <div class="purchase-field">
           <label class="purchase-field__label" for="${id('url')}">Link</label>
           <input
@@ -295,6 +303,7 @@ const renderItemEntry =
             id="${id('notes')}"
             value="${sanitizeString(item.notes)}"
           />
+        </div>
         </div>
       </div>
     `;
@@ -658,6 +667,50 @@ const costsScript = html`
         return Number(parts[0]) * 100 + Number((parts[1] || '').padEnd(2, '0'));
       }
 
+      function field(item, name) {
+        return item.querySelector('input[name$="[' + name + ']"]').value.trim();
+      }
+      function hostname(url) {
+        try {
+          return new URL(/^[a-z]+:/i.test(url) ? url : 'https://' + url).hostname.replace(/^www[.]/, '');
+        } catch (e) {
+          return url;
+        }
+      }
+      // A finished item - something saying what it is, a quantity and a
+      // cost - folds down to one line so the whole order is easy to see.
+      // Anything unfinished stays open, so nothing wrong is hidden.
+      function isFinished(item) {
+        return (field(item, 'url') || field(item, 'sku') || field(item, 'notes')) !== '' &&
+          /^[0-9]+$/.test(field(item, 'quantity')) && Number(field(item, 'quantity')) > 0 &&
+          pence(field(item, 'cost')) !== null;
+      }
+      function collapse(item) {
+        if (!isFinished(item)) return;
+        var summary = item.querySelector('[data-item-summary]');
+        var name = field(item, 'sku') || hostname(field(item, 'url')) || field(item, 'notes');
+        var parts = [name, 'Qty ' + field(item, 'quantity'), gbp(pence(field(item, 'cost')))];
+        if (field(item, 'notes') && field(item, 'notes') !== name) parts.push(field(item, 'notes'));
+        summary.textContent = '';
+        var text = document.createElement('span');
+        text.textContent = parts.join(' · ');
+        var edit = document.createElement('span');
+        edit.className = 'purchase-item__edit';
+        edit.textContent = 'Edit';
+        summary.appendChild(text);
+        summary.appendChild(edit);
+        summary.hidden = false;
+        summary.setAttribute('aria-expanded', 'false');
+        item.querySelector('[data-item-body]').hidden = true;
+        item.classList.add('purchase-item--collapsed');
+      }
+      function expand(item) {
+        item.querySelector('[data-item-summary]').hidden = true;
+        item.querySelector('[data-item-summary]').setAttribute('aria-expanded', 'true');
+        item.querySelector('[data-item-body]').hidden = false;
+        item.classList.remove('purchase-item--collapsed');
+      }
+
       function isBlank(entry) {
         return Array.prototype.every.call(
           entry.querySelectorAll('input'),
@@ -734,6 +787,19 @@ const costsScript = html`
           renumberItems(shop);
           update();
         });
+        // Clicking or tabbing onto the summary opens the item to edit.
+        item.querySelector('[data-item-summary]').addEventListener('focus', function () {
+          expand(item);
+          item.querySelector('[data-item-body] input').focus();
+        });
+        item.querySelector('[data-item-summary]').addEventListener('click', function () {
+          expand(item);
+          item.querySelector('[data-item-body] input').focus();
+        });
+        item.addEventListener('focusout', function (event) {
+          if (!event.relatedTarget || !item.contains(event.relatedTarget)) collapse(item);
+        });
+        collapse(item);
       }
       function wireShop(shop) {
         var list = shop.querySelector('[data-item-entries]');
@@ -784,6 +850,10 @@ const costsScript = html`
       });
       renumberShops();
 
+      form.addEventListener('invalid', function (event) {
+        var item = event.target.closest && event.target.closest('[data-item-entry]');
+        if (item) expand(item);
+      }, true);
       form.addEventListener('input', update);
       update();
     })();

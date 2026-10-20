@@ -1367,6 +1367,58 @@ label img {
   gap: 1rem;
 }
 
+.purchase-item__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* A finished item folded to one line; clicking or focusing it opens it.
+   Overrides the global green button styling. */
+.purchase-item__summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-color);
+  font: inherit;
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.purchase-item__summary:hover {
+  background: none;
+}
+
+.purchase-item__summary:active {
+  top: 0;
+}
+
+.purchase-item__summary > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.purchase-item__edit {
+  flex: none;
+  color: var(--link-color);
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.purchase-item__summary:hover .purchase-item__edit {
+  text-decoration-thickness: 3px;
+}
+
+.purchase-item--collapsed {
+  padding-block: 0.5rem;
+}
+
 .purchase-item__row {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 7rem) minmax(0, 11rem);
