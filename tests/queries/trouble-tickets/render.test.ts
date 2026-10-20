@@ -6,14 +6,12 @@ import {faker} from '@faker-js/faker';
 import {UUID} from 'io-ts-types';
 import {render} from '../../../src/queries/trouble-tickets/render';
 import {
-  TroubleTicketView,
+  BoardTicketView,
   ViewModel,
 } from '../../../src/queries/trouble-tickets/view-model';
 import {TroubleTicketStatus} from '../../../src/types/trouble-ticket';
 
-const ticket = (
-  overrides: Partial<TroubleTicketView> = {}
-): TroubleTicketView => ({
+const ticket = (overrides: Partial<BoardTicketView> = {}): BoardTicketView => ({
   id: faker.string.uuid() as UUID,
   title: 'Bandsaw is making a noise',
   status: 'Todo' as TroubleTicketStatus,
@@ -38,11 +36,10 @@ const ticket = (
   inMyOwnerArea: true,
   onMyTrainerMachine: false,
   canChangeStatus: true,
-  changeLog: [],
   ...overrides,
 });
 
-const viewModel = (tickets: ReadonlyArray<TroubleTicketView>): ViewModel => ({
+const viewModel = (tickets: ReadonlyArray<BoardTicketView>): ViewModel => ({
   focus: O.none,
   tickets,
   scopedToMine: false,
@@ -54,6 +51,7 @@ const viewModel = (tickets: ReadonlyArray<TroubleTicketView>): ViewModel => ({
     Parked: 0,
     'Needs Help': 0,
   },
+  openCount: 0,
   scopeCounts: {},
   activeStatus: O.none,
   activeScope: O.none,
@@ -70,81 +68,122 @@ const renderBoard = (vm: ViewModel) => {
   return body;
 };
 
-// A ticket raised from the mailbox is one step removed from the email that
-// prompted it, where the sender's own words and any reply live.
-describe('where a ticket came from', () => {
-  const cardFor = (overrides: Partial<TroubleTicketView>) =>
-    renderBoard(viewModel([{...ticket(), ...overrides}]));
+// The board is for taking in a lot of tickets at once: one row each, with
+// the details and the actions a click away on the ticket's own page.
+describe('the board as a table', () => {
+  const rowsOf = (tickets: ReadonlyArray<BoardTicketView>) => [
+    ...renderBoard(viewModel(tickets)).querySelectorAll('tbody tr'),
+  ];
 
-  it('links a ticket raised from the mailbox back to its conversation', () => {
-    const link = cardFor({
-      mailboxConversationId: 'first-message',
-    }).querySelector('a[href^="/mailbox/"]');
-
-    expect(link?.getAttribute('href')).toBe('/mailbox/first-message');
-    expect(link?.textContent?.trim()).toBe('an email in the mailbox');
+  it('gives each ticket one row', () => {
+    expect(rowsOf([ticket(), ticket(), ticket()])).toHaveLength(3);
   });
 
-  it('says nothing of the mailbox for a ticket raised any other way', () => {
-    const card = cardFor({mailboxConversationId: null});
+  it("links each ticket's title to its own page", () => {
+    const view = ticket({title: 'Lathe chuck stuck'});
+    const link = rowsOf([view])[0].querySelector(
+      'a[href^="/trouble-tickets/view/"]'
+    );
 
-    expect(card.querySelector('a[href^="/mailbox/"]')).toBeNull();
-    expect(card.textContent).not.toContain('Raised from');
+    expect(link?.getAttribute('href')).toBe(`/trouble-tickets/view/${view.id}`);
+    expect(link?.textContent?.trim()).toBe('Lathe chuck stuck');
+  });
+
+  it('shows the status, the machine and its area, and who is on it', () => {
+    const [row] = rowsOf([
+      ticket({
+        status: 'In Progress',
+        assignees: [{memberNumber: 7, name: O.some('Tara Trainer')}],
+      }),
+    ]);
+
+    expect(row.querySelector('.tt-badge')?.textContent?.trim()).toBe(
+      'In Progress'
+    );
+    expect(row.querySelector('[data-label="Where"]')?.textContent).toMatch(
+      /Bandsaw\s*Wood Shop/
+    );
+    expect(
+      row.querySelector('[data-label="Assigned"]')?.textContent?.trim()
+    ).toBe('Tara Trainer');
+  });
+
+  it('includes the issue, so a ticket can be recognised without opening it', () => {
+    expect(rowsOf([ticket()])[0].textContent).toContain('noise');
+  });
+
+  it('marks each row with its status, so resolved ones can step back', () => {
+    const [open, resolved] = rowsOf([
+      ticket({status: 'Todo'}),
+      ticket({status: 'Resolved'}),
+    ]);
+
+    expect(open.classList).toContain('tt-row--todo');
+    expect(resolved.classList).toContain('tt-row--resolved');
+  });
+
+  it('says what the form said when no machine or area matched', () => {
+    const where = rowsOf([
+      ticket({
+        equipmentName: O.none,
+        equipmentCategory: O.none,
+        areaName: O.none,
+        rawEquipment: 'the big saw',
+      }),
+    ])[0].querySelector('[data-label="Where"]');
+
+    expect(where?.textContent).toContain('Unassigned');
+    expect(where?.textContent).toContain('the big saw');
+  });
+
+  it('still gives an untitled ticket something to click', () => {
+    expect(
+      rowsOf([ticket({title: ''})])[0]
+        .querySelector('a[href^="/trouble-tickets/view/"]')
+        ?.textContent?.trim()
+    ).toBe('Untitled ticket');
+  });
+
+  // The actions go through the ticket's own page, which says who each one
+  // will email; the board is for finding the ticket.
+  it('leaves the actions to the ticket page', () => {
+    expect(
+      renderBoard(viewModel([ticket()])).querySelector('a.tt-action')
+    ).toBeNull();
   });
 });
 
-// Opened from a machine, the page says so and offers the way back out.
-// An owner reading a ticket usually wants to know who this is and what else
-// they are trained on, which is one click away if the name is a link.
-describe('who submitted a ticket', () => {
-  const cardFor = (overrides: Partial<TroubleTicketView>) => {
-    const body = document.createElement('body');
-    body.innerHTML = render(viewModel([{...ticket(), ...overrides}]));
-    return body;
-  };
+// "Which tickets still need doing" is the question most people arrive with.
+describe('the Open filter', () => {
+  const chip = (vm: ViewModel) =>
+    [...renderBoard(vm).querySelectorAll('.tt-filters a')].find(node =>
+      (node.textContent ?? '').trim().startsWith('Open')
+    );
 
-  it('links a matched member to their record, by name and by number', () => {
-    const links = [
-      ...cardFor({
-        submittedName: 'Sam Submitter',
-        submittedMemberNumber: 42,
-      }).querySelectorAll('a[href="/member/42"], a[href="/member/42/"]'),
-    ].map(node => (node.textContent ?? '').trim());
-
-    expect(links).toContain('Sam Submitter');
-    expect(links).toContain('42');
+  it('counts every ticket that is not resolved', () => {
+    expect(
+      chip({...viewModel([ticket()]), openCount: 4})
+        ?.querySelector('.tt-badge__count')
+        ?.textContent?.trim()
+    ).toBe('4');
   });
 
-  it('leaves what they typed as plain text when nobody matched', () => {
-    const card = cardFor({
-      submittedName: 'Someone Unmatched',
-      submittedMemberNumber: null,
+  it('links to status=open, keeping the rest of the view', () => {
+    expect(chip(viewModel([ticket()]))?.getAttribute('href')).toBe(
+      '/trouble-tickets/board?show=all&status=open'
+    );
+  });
+
+  it('clears itself when clicked while active', () => {
+    const active = chip({
+      ...viewModel([ticket()]),
+      activeStatus: O.some('Open'),
     });
 
-    expect(card.textContent).toContain('Someone Unmatched');
-    expect(card.querySelector('a[href^="/member/"]')).toBeNull();
-  });
-
-  it('falls back to the address when there is no name', () => {
-    const card = cardFor({
-      submittedName: null,
-      submittedEmail: 'someone@example.com',
-      submittedMemberNumber: 42,
-    });
-
-    expect(
-      card.querySelector('a[href="/member/42"]')?.textContent?.trim()
-    ).toBe('someone@example.com');
-  });
-
-  it('says so when the form carried nothing at all', () => {
-    expect(
-      cardFor({
-        submittedName: null,
-        submittedEmail: null,
-        submittedMemberNumber: null,
-      }).textContent
-    ).toContain('Not provided');
+    expect(active?.classList).toContain('tt-filter__label--active');
+    expect(active?.getAttribute('href')).toBe(
+      '/trouble-tickets/board?show=all'
+    );
   });
 });
 
@@ -159,7 +198,7 @@ describe('the board pointed at one machine', () => {
     areaSlug: O.some('wood-shop'),
   };
 
-  const page = (tickets: ReadonlyArray<TroubleTicketView>) => {
+  const page = (tickets: ReadonlyArray<BoardTicketView>) => {
     const body = document.createElement('body');
     body.innerHTML = render({...viewModel(tickets), focus: O.some(focused)});
     return body;
@@ -212,88 +251,3 @@ describe('the board pointed at one machine', () => {
     );
   });
 });
-
-// Nothing on the card sends an email. Every change goes through its
-// confirmation page, which says who will be emailed and what it will say -
-// the one-click "resolve silently" went round that, and is gone.
-describe('/trouble-tickets board actions', () => {
-  it('offers no one-click resolve; every action goes through its page', () => {
-    const dom = renderBoard(viewModel([ticket()]));
-
-    expect(dom.querySelector('form.tt-quiet-resolve')).toBeNull();
-    expect(dom.querySelectorAll('form')).toHaveLength(0);
-    expect(
-      dom.querySelector('a[href^="/trouble-tickets/resolve?"]')
-    ).not.toBeNull();
-  });
-
-  it('says on each action who it will email', () => {
-    const hints = [
-      ...renderBoard(
-        viewModel([ticket({status: 'In Progress'})])
-      ).querySelectorAll('a.tt-action'),
-    ].map(link => link.getAttribute('title') ?? '');
-
-    expect(hints.length).toBeGreaterThan(0);
-    for (const hint of hints) {
-      expect(hint).toMatch(/^Emails the submitter/);
-    }
-    expect(hints).toContain("Emails the submitter and the machine's trainers");
-  });
-
-  it('offers no actions on a resolved ticket, nor to a viewer who cannot act', () => {
-    expect(
-      renderBoard(viewModel([ticket({status: 'Resolved'})])).querySelector(
-        'a.tt-action'
-      )
-    ).toBeNull();
-    expect(
-      renderBoard(viewModel([ticket({canChangeStatus: false})])).querySelector(
-        'a.tt-action'
-      )
-    ).toBeNull();
-  });
-});
-
-// The change log says who was told about each change, so nobody has to
-// wonder whether an email went out or to whom.
-describe('what the change log says about emails', () => {
-  const entry = (over: Partial<TroubleTicketView['changeLog'][number]>) => ({
-    at: new Date('2026-09-02T10:00:00.000Z'),
-    actor: 'Tara Trainer',
-    summary: 'marked this ticket as Resolved',
-    details: [],
-    status: 'Resolved' as TroubleTicketStatus,
-    emailedTo: null,
-    quiet: false,
-    ...over,
-  });
-
-  const logOf = (over: Partial<TroubleTicketView['changeLog'][number]>) =>
-    renderBoard(viewModel([ticket({changeLog: [entry(over)]})])).querySelector(
-      '.tt-emailed'
-    );
-
-  it('names who was emailed', () => {
-    expect(logOf({emailedTo: ['sam@example.com']})?.textContent?.trim()).toBe(
-      'Emailed sam@example.com'
-    );
-  });
-
-  it('says when nobody could be emailed', () => {
-    expect(logOf({emailedTo: []})?.textContent?.trim()).toBe(
-      'No email sent: nobody had a usable address.'
-    );
-  });
-
-  it('says when a resolve was quiet by choice', () => {
-    expect(logOf({emailedTo: null, quiet: true})?.textContent?.trim()).toBe(
-      'No email sent: resolved quietly.'
-    );
-  });
-
-  it('says nothing while an email is still to be sent', () => {
-    expect(logOf({emailedTo: null, quiet: false})).toBeNull();
-  });
-});
-

@@ -1,18 +1,16 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
-import {
-  html,
-  joinHtml,
-  safe,
-  sanitizeString,
-} from '../../types/html';
-import {
-  ViewModel,
-  TroubleTicketView,
-} from './view-model';
+import {html, joinHtml, safe, sanitizeString} from '../../types/html';
+import {DateTime} from 'luxon';
+import {ViewModel, BoardTicketView} from './view-model';
 import {Focus} from './focus';
-import {ticketCard} from '../../templates/trouble-ticket-card';
-import {STATUS_SLUG} from './status-slug';
+import {
+  renderAssignees,
+  statusBadge,
+} from '../../templates/trouble-ticket-card';
+import {categoryDot} from '../../templates/equipment-category';
+import {displayDate, displayDateShort} from '../../templates/display-date';
+import {STATUS_SLUG, StatusFilter, statusFilterSlug} from './status-slug';
 import {TroubleTicketStatus} from '../../types/trouble-ticket';
 
 // Default sort order for the flat list - active work first, done last.
@@ -24,26 +22,13 @@ const STATUS_ORDER: ReadonlyArray<TroubleTicketStatus> = [
   'Resolved',
 ];
 
-// Slug used for the per-status modifier class (accent colour, badge colour) and the status
-// filter data attribute.
-// The "show only" scope filters - relationship of a ticket to the viewing member.
-const SCOPES: ReadonlyArray<{
-  key: string;
-  label: string;
-  test: (ticket: TroubleTicketView) => boolean;
-}> = [
-  {key: 'mine', label: 'Assigned to me', test: t => t.assignedToMe},
-  {key: 'my-area', label: 'My area', test: t => t.inMyOwnerArea},
-  {key: 'my-machines', label: 'My machines', test: t => t.onMyTrainerMachine},
+// The "show only" scope filters - relationship of a ticket to the viewing
+// member. The counting and filtering happen server-side.
+const SCOPES: ReadonlyArray<{key: string; label: string}> = [
+  {key: 'mine', label: 'Assigned to me'},
+  {key: 'my-area', label: 'My area'},
+  {key: 'my-machines', label: 'My machines'},
 ];
-
-// Space-separated scope tokens a card belongs to (read by the filter script).
-const cardScopes = (ticket: TroubleTicketView): string =>
-  SCOPES.filter(scope => scope.test(ticket))
-    .map(scope => scope.key)
-    .join(' ');
-
-// The card itself lives in templates, shared with the ticket's own page.
 
 // A board URL with one filter changed and the rest kept. Changing a filter
 // returns to page one: page 7 of a different set is meaningless.
@@ -72,7 +57,7 @@ const boardUrl = (
   const status =
     change.status !== undefined
       ? change.status
-      : O.toNullable(viewModel.activeStatus);
+      : pipe(viewModel.activeStatus, O.map(statusFilterSlug), O.toNullable);
   const only =
     change.only !== undefined
       ? change.only
@@ -94,36 +79,44 @@ const activeClass = (active: boolean) =>
   active ? safe(' tt-filter__label--active') : safe('');
 
 // Status chips, each showing what it would find across every page. Clicking
-// one filters server-side, so the count and the result agree.
-const renderStatusFilters = (viewModel: ViewModel) => html`
-  <fieldset class="tt-filters">
-    <legend class="tt-filters__legend">Filter by status</legend>
-    ${joinHtml(
-      STATUS_ORDER.map(status => {
-        const slug = safe(STATUS_SLUG[status]);
-        const active = pipe(
-          viewModel.activeStatus,
-          O.match(
-            () => false,
-            current => current === status
+// one filters server-side, so the count and the result agree. "Open" comes
+// first: everything still needing work is the question most people ask.
+const renderStatusFilters = (viewModel: ViewModel) => {
+  const chip = (filter: StatusFilter, badgeClass: string, count: number) => {
+    const active = pipe(
+      viewModel.activeStatus,
+      O.match(
+        () => false,
+        current => current === filter
+      )
+    );
+    return html`<a
+      class="${safe(badgeClass)} tt-filter__label${activeClass(active)}"
+      href="${safe(
+        boardUrl(viewModel, {
+          status: active ? null : statusFilterSlug(filter),
+        })
+      )}"
+      >${safe(filter)}
+      <span class="tt-badge__count">${safe(count.toString())}</span></a
+    >`;
+  };
+  return html`
+    <fieldset class="tt-filters">
+      <legend class="tt-filters__legend">Filter by status</legend>
+      ${chip('Open', 'tt-chip', viewModel.openCount)}
+      ${joinHtml(
+        STATUS_ORDER.map(status =>
+          chip(
+            status,
+            `tt-badge tt-badge--${STATUS_SLUG[status]}`,
+            viewModel.statusCounts[status]
           )
-        );
-        return html`<a
-          class="tt-badge tt-badge--${slug} tt-filter__label${activeClass(
-            active
-          )}"
-          href="${safe(
-            boardUrl(viewModel, {status: active ? null : STATUS_SLUG[status]})
-          )}"
-          >${safe(status)}
-          <span class="tt-badge__count"
-            >${safe(viewModel.statusCounts[status].toString())}</span
-          ></a
-        >`;
-      })
-    )}
-  </fieldset>
-`;
+        )
+      )}
+    </fieldset>
+  `;
+};
 
 // "Show only" chips, counted and filtered the same way.
 const renderScopeFilters = (viewModel: ViewModel) => html`
@@ -164,14 +157,13 @@ const renderUnresolvedNames = (vm: ViewModel) => {
   return html`
     <details class="tt-changelog">
       <summary>
-        Unresolved equipment names (${safe(
-          vm.unresolvedEquipmentNames.length.toString()
-        )})
+        Unresolved equipment names
+        (${safe(vm.unresolvedEquipmentNames.length.toString())})
       </summary>
       <p>
         These form answers don't match any equipment name or alias, so their
-        tickets sit in Unassigned. Map a name to link its tickets - now and
-        for future submissions.
+        tickets sit in Unassigned. Map a name to link its tickets - now and for
+        future submissions.
       </p>
       <ul>
         ${joinHtml(
@@ -220,12 +212,12 @@ const renderFocus = (vm: ViewModel) =>
             focus.areaSlug,
             O.match(
               () => html``,
-              areaSlug => html`<a
-                  href="/trouble-tickets/board?areaId=${safe(areaSlug)}"
-                  >all in
-                  ${sanitizeString(O.getOrElse(() => '')(focus.areaName))}</a
-                >
-                · `
+              areaSlug =>
+                html`<a href="/trouble-tickets/board?areaId=${safe(areaSlug)}"
+                    >all in
+                    ${sanitizeString(O.getOrElse(() => '')(focus.areaName))}</a
+                  >
+                  · `
             )
           )}
           <a href="${safe(boardUrl(vm, {focus: null}))}">all tickets</a>
@@ -238,48 +230,147 @@ const renderScopeAndPages = (vm: ViewModel) => {
   if (O.isSome(vm.focus)) {
     return html`
       ${renderFocus(vm)}
-      ${vm.pageCount > 1
-        ? html`<p>
-            page ${vm.page} of ${vm.pageCount}
-            ${vm.page > 1
-              ? html`· ${renderPageLink(vm, vm.page - 1, '← previous')}`
-              : html``}
-            ${vm.page < vm.pageCount
-              ? html`· ${renderPageLink(vm, vm.page + 1, 'next →')}`
-              : html``}
-          </p>`
-        : html``}
+      ${vm.pageCount > 1 ? html`<p>${renderPager(vm)}</p>` : html``}
     `;
   }
   return html`
     <p>
-      ${vm.scopedToMine
-        ? html`Showing <strong>${vm.totalInScope}</strong> ticket${vm.totalInScope ===
-            1
-              ? ''
-              : safe('s')}
-            in <strong>your areas</strong> ·
-            <a href="/trouble-tickets/board?show=all">show all areas</a>`
-        : html`Showing <strong>all ${vm.totalInScope}</strong> ticket${vm.totalInScope ===
-            1
-              ? ''
-              : safe('s')}
-            · <a href="/trouble-tickets/board">show just your areas</a>`}
-      ${vm.pageCount > 1
-        ? html`· page ${vm.page} of ${vm.pageCount}
-            ${vm.page > 1
-              ? html`· ${renderPageLink(vm, vm.page - 1, '← previous')}`
-              : html``}
-            ${vm.page < vm.pageCount
-              ? html`· ${renderPageLink(vm, vm.page + 1, 'next →')}`
-              : html``}`
-        : html``}
+      ${
+        vm.scopedToMine
+          ? html`Showing <strong>${vm.totalInScope}</strong> ticket${
+                vm.totalInScope === 1 ? '' : safe('s')
+              }
+              in <strong>your areas</strong> ·
+              <a href="/trouble-tickets/board?show=all">show all areas</a>`
+          : html`Showing <strong>all ${vm.totalInScope}</strong> ticket${
+                vm.totalInScope === 1 ? '' : safe('s')
+              }
+              · <a href="/trouble-tickets/board">show just your areas</a>`
+      }
+      ${vm.pageCount > 1 ? html`· ${renderPager(vm)}` : html``}
     </p>
   `;
 };
 
 const renderPageLink = (vm: ViewModel, page: number, label: string) =>
   html`<a href="${safe(boardUrl(vm, {page}))}">${safe(label)}</a>`;
+
+const renderPager = (vm: ViewModel) =>
+  html`page ${vm.page} of ${vm.pageCount}
+  ${
+    vm.page > 1
+      ? html`· ${renderPageLink(vm, vm.page - 1, '← previous')}`
+      : html``
+  }
+  ${
+    vm.page < vm.pageCount
+      ? html`· ${renderPageLink(vm, vm.page + 1, 'next →')}`
+      : html``
+  }`;
+
+// Where the ticket is: the machine, with its area beneath; or just the area;
+// or, when the form's answer matched nothing, what the form said.
+const renderWhere = (ticket: BoardTicketView) =>
+  pipe(
+    ticket.equipmentName,
+    O.match(
+      () =>
+        pipe(
+          ticket.areaName,
+          O.match(
+            () =>
+              html`<em>Unassigned</em>${
+                  ticket.rawEquipment
+                    ? html`<small class="tt-table__sub"
+                        >form said:
+                        ${sanitizeString(ticket.rawEquipment)}</small
+                      >`
+                    : html``
+                }`,
+            areaName => html`${sanitizeString(areaName)}`
+          )
+        ),
+      name =>
+        html`${pipe(
+          ticket.equipmentCategory,
+          O.match(
+            () => html``,
+            category => categoryDot(category)
+          )
+        )}${sanitizeString(name)}${pipe(
+          ticket.areaName,
+          O.match(
+            () => html``,
+            areaName =>
+              html`<small class="tt-table__sub"
+                >${sanitizeString(areaName)}</small
+              >`
+          )
+        )}`
+    )
+  );
+
+const submitterName = (ticket: BoardTicketView) =>
+  ticket.submittedName ?? ticket.submittedEmail;
+
+// One line per ticket, so a whole page of them can be taken in at a glance.
+// The ticket's own page has the rest: the form's answers, the change log
+// and the actions.
+const renderRow = (ticket: BoardTicketView) => {
+  const submitter = submitterName(ticket);
+  return html`
+    <tr class="tt-row tt-row--${safe(STATUS_SLUG[ticket.status])}">
+      <td data-label="Status">${statusBadge(ticket.status)}</td>
+      <td data-label="Ticket" class="tt-table__ticket">
+        <a href="/trouble-tickets/view/${safe(encodeURIComponent(ticket.id))}"
+          >${
+            ticket.title.trim() === ''
+              ? html`<em>Untitled ticket</em>`
+              : sanitizeString(ticket.title)
+          }</a
+        >${
+          ticket.response.issue.trim() === ''
+            ? html``
+            : html`<small class="tt-table__sub tt-table__issue"
+                >${sanitizeString(ticket.response.issue)}</small
+              >`
+        }
+      </td>
+      <td data-label="Where">${renderWhere(ticket)}</td>
+      <td data-label="Submitted">
+        <span title="${displayDate(DateTime.fromJSDate(ticket.submittedAt))}"
+          >${displayDateShort(DateTime.fromJSDate(ticket.submittedAt))}</span
+        >${
+          submitter === null
+            ? html``
+            : html`<small class="tt-table__sub"
+                >${sanitizeString(submitter)}</small
+              >`
+        }
+      </td>
+      <td data-label="Assigned">${renderAssignees(ticket.assignees)}</td>
+    </tr>
+  `;
+};
+
+const renderTable = (tickets: ReadonlyArray<BoardTicketView>) => html`
+  <div class="tt-table-wrap">
+    <table class="tt-table">
+      <thead>
+        <tr>
+          <th scope="col">Status</th>
+          <th scope="col">Ticket</th>
+          <th scope="col">Where</th>
+          <th scope="col">Submitted</th>
+          <th scope="col">Assigned</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${joinHtml(tickets.map(renderRow))}
+      </tbody>
+    </table>
+  </div>
+`;
 
 const renderTitle = (vm: ViewModel) =>
   pipe(
@@ -295,24 +386,23 @@ export const render = (viewModel: ViewModel) => {
     return html`
       <div class="stack">
         <h1>${renderTitle(viewModel)}</h1>
-        ${renderScopeAndPages(viewModel)}
-        ${renderStatusFilters(viewModel)}
+        ${renderScopeAndPages(viewModel)} ${renderStatusFilters(viewModel)}
         ${renderUnresolvedNames(viewModel)}
         <p>No trouble tickets in this view.</p>
       </div>
     `;
   }
-  const sorted = viewModel.tickets;
   return html`
     <div class="stack tt-wrapper">
       <h1>${renderTitle(viewModel)}</h1>
-      ${renderScopeAndPages(viewModel)}
-      ${renderStatusFilters(viewModel)} ${renderScopeFilters(viewModel)}
-      ${renderUnresolvedNames(viewModel)}
-      <div class="tt-board stack">${joinHtml(
-          sorted.map(ticket => ticketCard(ticket, cardScopes(ticket)))
-        )}</div>
+      ${renderScopeAndPages(viewModel)} ${renderStatusFilters(viewModel)}
+      ${renderScopeFilters(viewModel)} ${renderUnresolvedNames(viewModel)}
+      ${renderTable(viewModel.tickets)}
+      ${
+        viewModel.pageCount > 1
+          ? html`<p>${renderPager(viewModel)}</p>`
+          : html``
+      }
     </div>
-    
   `;
 };

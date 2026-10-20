@@ -37,3 +37,17 @@ export const statusFromSlug = (
     ? O.none
     : O.some(written as TroubleTicketStatus);
 };
+
+// The board can also filter to every ticket still needing work - anything
+// not Resolved - which is the question most people arrive with.
+const OPEN_SLUG = 'open';
+
+export type StatusFilter = TroubleTicketStatus | 'Open';
+
+export const statusFilterFromSlug = (value: string): O.Option<StatusFilter> =>
+  value.trim().toLowerCase() === OPEN_SLUG
+    ? O.some('Open')
+    : statusFromSlug(value);
+
+export const statusFilterSlug = (filter: StatusFilter): string =>
+  filter === 'Open' ? OPEN_SLUG : STATUS_SLUG[filter];

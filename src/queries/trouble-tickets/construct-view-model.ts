@@ -4,7 +4,7 @@ import {
   failureWithStatus,
   FailureWithStatus,
 } from '../../types/failure-with-status';
-import {ViewModel, TroubleTicketView, ChangeLogEntry} from './view-model';
+import {ViewModel, ChangeLogEntry, BoardTicketView} from './view-model';
 import {User, Actor} from '../../types';
 import {pipe} from 'fp-ts/lib/function';
 import {StatusCodes} from 'http-status-codes';
@@ -12,10 +12,7 @@ import {SharedReadModel} from '../../read-models/shared-state';
 import {TroubleTicketChangeRow} from '../../read-models/shared-state/trouble-tickets/get';
 import {Dependencies} from '../../dependencies';
 import {EquipmentCategory} from '../../types/equipment-category';
-import {
-  TroubleTicket,
-  TroubleTicketStatus,
-} from '../../types/trouble-ticket';
+import {TroubleTicket, TroubleTicketStatus} from '../../types/trouble-ticket';
 import {
   Member,
   MinimalEquipment,
@@ -23,8 +20,9 @@ import {
 } from '../../read-models/shared-state/return-types';
 import {resolveFocus} from './focus';
 import {ticketsVisibleTo} from './management-tickets';
+import {StatusFilter} from './status-slug';
 
-// Cards per page. The board serves the viewer's own areas by default, but a
+// Rows per page. The board serves the viewer's own areas by default, but a
 // super-user's "show all" can span the whole backlog - keep the DOM bounded.
 export const PAGE_SIZE = 100;
 
@@ -66,9 +64,7 @@ export const buildChangeLog = (
     switch (row.eventType) {
       case 'TroubleTicketAssigned': {
         const movedToInProgress =
-          status === 'Todo' ||
-          status === 'Needs Help' ||
-          status === 'Parked';
+          status === 'Todo' || status === 'Needs Help' || status === 'Parked';
         if (movedToInProgress) {
           status = 'In Progress';
         }
@@ -227,10 +223,10 @@ export const toScope =
     };
   };
 
-// The full card view, built only for tickets on the visible page.
+// The full ticket view, built only for tickets on the visible page.
 export const toView =
   (rm: SharedReadModel, viewer: Member) =>
-  (scope: TicketScope): Omit<TroubleTicketView, 'changeLog'> => {
+  (scope: TicketScope): BoardTicketView => {
     const {
       ticket,
       equipmentName,
@@ -334,7 +330,7 @@ export const constructViewModel =
       page: number;
       // Filters applied before paging, so the page is a page of the filtered
       // set rather than a filtered page.
-      status: O.Option<TroubleTicketStatus>;
+      status: O.Option<StatusFilter>;
       only: O.Option<(typeof SCOPE_KEYS)[number]>;
       // One machine or one area, when the board was opened from it. The
       // counts and the filters then describe that thing rather than the
@@ -423,6 +419,9 @@ export const constructViewModel =
           (scope, status) => scope.ticket.status === status
         );
         const scopeCounts = countBy(scoped, SCOPE_KEYS, matchesScope);
+        const openCount = scoped.filter(
+          scope => scope.ticket.status !== 'Resolved'
+        ).length;
 
         const filtered = scoped
           .filter(scope =>
@@ -430,7 +429,10 @@ export const constructViewModel =
               options.status,
               O.match(
                 () => true,
-                status => scope.ticket.status === status
+                status =>
+                  status === 'Open'
+                    ? scope.ticket.status !== 'Resolved'
+                    : scope.ticket.status === status
               )
             )
           )
@@ -455,27 +457,14 @@ export const constructViewModel =
           (page - 1) * PAGE_SIZE,
           page * PAGE_SIZE
         );
-        // Full card views (member-name lookups) and change logs only for the
-        // cards actually shown.
-        const pageTickets = pageScopes.map(toView(rm, loggedInMember));
-        const changeRows = rm.troubleTickets.getChangeLog(
-          pageTickets.map(ticket => ticket.id)
-        );
-        const rowsByTicket = new Map<string, TroubleTicketChangeRow[]>();
-        for (const row of changeRows) {
-          const bucket = rowsByTicket.get(row.ticketId) ?? [];
-          bucket.push(row);
-          rowsByTicket.set(row.ticketId, bucket);
-        }
+        // Full views (member-name lookups) only for the rows actually shown.
         return {
           focus,
-          tickets: pageTickets.map(ticket => ({
-            ...ticket,
-            changeLog: buildChangeLog(rowsByTicket.get(ticket.id) ?? [], rm),
-          })),
+          tickets: pageScopes.map(toView(rm, loggedInMember)),
           scopedToMine,
           totalInScope: sorted.length,
           statusCounts,
+          openCount,
           scopeCounts,
           activeStatus: options.status,
           activeScope: options.only,
