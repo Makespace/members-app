@@ -73,11 +73,6 @@ export const constructViewModel =
     const equipmentAll = sharedReadModel.equipment.getAllMinimal();
     const ownersAll = sharedReadModel.area.getAllOwnersBulk();
     const categoriesAll = sharedReadModel.area.getAllEquipmentCategories();
-    const purchasingAreaByArea = new Map(
-      sharedReadModel.purchasing
-        .getAllAreaAssignments()
-        .map(({areaId, id, name}) => [areaId, {id, name}])
-    );
 
     const equipmentByArea = new Map<UUID, MinimalEquipment[]>();
     for (const equipment of equipmentAll) {
@@ -284,7 +279,6 @@ export const constructViewModel =
           canManage:
             isSuperUser ||
             member.value.ownerOf.some(owned => owned.id === area.id),
-          purchasingArea: O.fromNullable(purchasingAreaByArea.get(area.id)),
         })
       ),
     });

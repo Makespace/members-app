@@ -58,8 +58,6 @@ export type AreaViewModel = {
   equipment: ReadonlyArray<EquipmentViewModel>;
   equipmentCategories: ReadonlyArray<AreaEquipmentCategoryViewModel>;
   canManage: boolean;
-  // The budget-holding purchasing area this area belongs to, if any.
-  purchasingArea: O.Option<{id: UUID; name: string}>;
 };
 
 export type ViewModel = {

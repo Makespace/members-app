@@ -1,6 +1,7 @@
 /**
  * @jest-environment jsdom
  */
+import * as O from 'fp-ts/Option';
 import {UUID} from 'io-ts-types';
 import {render} from '../../../src/queries/manage-area/render';
 import {ViewModel} from '../../../src/queries/manage-area/view-model';
@@ -14,6 +15,7 @@ const viewModel: ViewModel = {
   equipmentCount: 70,
   categoryCount: 0,
   uncategorisedCount: 70,
+  purchasingArea: O.none,
 };
 
 const links = (viewModel: ViewModel) => {
@@ -53,5 +55,36 @@ describe('manage area page', () => {
     expect(body.textContent?.replace(/\s+/g, ' ')).toContain(
       '6 categories; 12 of 70 items not in one yet.'
     );
+  });
+
+  describe('purchasing', () => {
+    const text = (viewModel: ViewModel) => {
+      const body = document.createElement('body');
+      body.innerHTML = render(viewModel);
+      return body;
+    };
+    const purchasingAreaId = '55555555-5555-4555-8555-555555555555' as UUID;
+
+    it('links the purchasing area whose budget the area spends from', () => {
+      const page = text({
+        ...viewModel,
+        isSuperUser: false,
+        purchasingArea: O.some({id: purchasingAreaId, name: 'Craft & Art'}),
+      });
+      expect(page.textContent?.replace(/\s+/g, ' ')).toContain(
+        "This area's purchases come out of the Craft & Art budget."
+      );
+      expect(
+        page
+          .querySelector(`a[href="/purchasing-areas/${purchasingAreaId}"]`)
+          ?.textContent
+      ).toBe('Craft & Art');
+    });
+
+    it('says when the area is not in a purchasing area', () => {
+      expect(text(viewModel).textContent).toContain(
+        "This area isn't in a purchasing area yet."
+      );
+    });
   });
 });

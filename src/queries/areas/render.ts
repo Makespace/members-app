@@ -327,14 +327,6 @@ const renderArea =
     ${O.isSome(area.email)
       ? html`<p><strong>Mailing list:</strong> ${mailTo(area.email.value, O.none, O.none)}</p>`
       : html``}
-    ${O.isSome(area.purchasingArea)
-      ? html`<p>
-          <strong>Purchasing area:</strong>
-          <a href="/purchasing-areas/${area.purchasingArea.value.id}"
-            >${sanitizeString(area.purchasingArea.value.name)}</a
-          >
-        </p>`
-      : html``}
     <div>${renderEquipment(area)}</div>
     ${renderActiveOwners(
       area.id,

@@ -46,7 +46,6 @@ const area = {
   equipment: [equipment],
   equipmentCategories: [],
   canManage: false,
-  purchasingArea: O.none,
   owners: [
     {
       memberNumber: 123,
@@ -75,32 +74,16 @@ const normalizedText = (page: HTMLElement): string =>
   page.textContent?.replace(/\s+/g, ' ').trim() ?? '';
 
 describe('areas render', () => {
-  it('links an area to the purchasing area it belongs to', () => {
-    const purchasingAreaId = '55555555-5555-4555-8555-555555555555' as UUID;
-    const page = renderPage({
-      areas: [
-        {...area, purchasingArea: O.some({id: purchasingAreaId, name: 'Lasers'})},
-      ],
-      canManageAreas: false,
-      canSeeOwnerPrivateDetails: false,
-      canSeeTrainings: false,
-    });
-
-    const link = page.querySelector(
-      `#area-${areaId} a[href="/purchasing-areas/${purchasingAreaId}"]`
-    );
-    expect(link?.textContent).toContain('Lasers');
-  });
-
-  it('says nothing about purchasing for an area outside any purchasing area', () => {
+  it('says nothing about purchasing areas, which live on the manage page', () => {
     const page = renderPage({
       areas: [area],
-      canManageAreas: false,
-      canSeeOwnerPrivateDetails: false,
-      canSeeTrainings: false,
+      canManageAreas: true,
+      canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: true,
     });
 
     expect(page.textContent).not.toContain('Purchasing area');
+    expect(page.querySelector('a[href^="/purchasing-areas/"]')).toBeNull();
   });
 
   it('shows normal members equipment and only public owner details', () => {
