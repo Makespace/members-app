@@ -1,3 +1,4 @@
+import {signedOwnerAgreementFromRow} from '../../../owner-agreement/agreement';
 import {pipe} from 'fp-ts/lib/function';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, desc, eq, inArray, isNotNull, sql} from 'drizzle-orm';
@@ -164,7 +165,7 @@ export const getMemberCoreByUserId =
       fobs: getMemberFobs(db)(userId),
       name: row.name,
       formOfAddress: row.formOfAddress,
-      agreementSigned: O.fromNullable(row.agreementSigned),
+      ownerAgreement: signedOwnerAgreementFromRow(row),
       isSuperUser: row.isSuperUser,
       superUserSince: O.fromNullable(row.superUserSince),
       gravatarHash: row.gravatarHash,

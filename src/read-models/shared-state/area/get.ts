@@ -1,3 +1,7 @@
+import {
+  SignedOwnerAgreement,
+  signedOwnerAgreementFromRow,
+} from '../../../owner-agreement/agreement';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {asc, eq, sql} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
@@ -50,7 +54,7 @@ export type AreaOwnerRow = {
   pastMemberNumbers: ReadonlyArray<number>;
   name: O.Option<string>;
   primaryEmailAddress: EmailAddress;
-  agreementSigned: O.Option<Date>;
+  ownerAgreement: O.Option<SignedOwnerAgreement>;
   ownershipRecordedAt: Date;
   markedOwnerBy: O.Option<Actor>;
 };
@@ -70,6 +74,10 @@ export const getAllOwnersBulk = (
         name: membersTable.name,
         primaryEmailAddress: membersTable.primaryEmailAddress,
         agreementSigned: membersTable.agreementSigned,
+        agreementVersion: membersTable.agreementVersion,
+        agreementTermEnds: membersTable.agreementTermEnds,
+        agreementInterestedIn: membersTable.agreementInterestedIn,
+        agreementReminderSent: membersTable.agreementReminderSent,
         ownershipRecordedAt: ownersTable.ownershipRecordedAt,
         markedOwnerByActor: ownersTable.markedOwnerByActor,
         memberNumber: memberNumbersTable.memberNumber,
@@ -107,7 +115,7 @@ export const getAllOwnersBulk = (
             pastMemberNumbers: sorted.slice(1),
             name: row.name,
             primaryEmailAddress: row.primaryEmailAddress,
-            agreementSigned: O.fromNullable(row.agreementSigned),
+            ownerAgreement: signedOwnerAgreementFromRow(row),
             ownershipRecordedAt: row.ownershipRecordedAt,
             markedOwnerBy: O.fromEither(Actor.decode(row.markedOwnerByActor)),
           };

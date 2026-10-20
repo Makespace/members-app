@@ -53,6 +53,7 @@ export const initRoutes = (
     get('/raise-issue', (_req, res) => res.redirect('/about')),
     query('/humans', queries.humans),
     query('/roadmap', queries.roadmap),
+    query('/owner-agreement', queries.ownerAgreement),
     query('/event-log', queries.log),
     query('/event-log-order', queries.eventLogOrder),
     query('/event-log-order/:index', queries.eventLogOrder),

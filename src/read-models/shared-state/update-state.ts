@@ -50,6 +50,7 @@ import { setPrimaryEmailAddress } from './set-primary-email';
 import { getEquipmentMinimal, resolveEquipmentByName } from './equipment/get';
 import { resolveAreaByName } from './area/get';
 import { generateUserId } from './member/generate-user-id';
+import {termEndsFor} from '../../owner-agreement/agreement';
 import { gravatarHashFromEmail } from '../avatar';
 
 // Appends a board change-log row for a ticket status-change event. The
@@ -105,7 +106,6 @@ const _updateState =
             name: O.fromNullable(event.name),
             formOfAddress: O.fromNullable(event.formOfAddress),
             isSuperUser: false,
-            agreementSigned: undefined,
             superUserSince: undefined,
             joined: event.recordedAt,
           })
@@ -606,9 +606,44 @@ const _updateState =
         if (O.isNone(userId)) {
           throw new InconsistentEventError(`Unable to mark owner agreement signed, unknown member number: '${event.memberNumber}'`);
         }
-        tx.update(membersTable)
-          .set({agreementSigned: event.signedAt})
+        const previous = tx
+          .select({agreementTermEnds: membersTable.agreementTermEnds})
+          .from(membersTable)
           .where(eq(membersTable.userId, userId.value))
+          .get();
+        // Renewing carries on from the end of the term already signed for.
+        const termEnds = termEndsFor(
+          event.agreementVersion,
+          event.signedAt,
+          O.fromNullable(previous?.agreementTermEnds)
+        );
+        tx.update(membersTable)
+          .set({
+            agreementSigned: event.signedAt,
+            agreementVersion: event.agreementVersion,
+            agreementTermEnds: O.toNullable(termEnds),
+            agreementInterestedIn: event.interestedIn,
+            agreementReminderSent: null,
+          })
+          .where(eq(membersTable.userId, userId.value))
+          .run();
+        break;
+      }
+      case 'OwnerAgreementReminderSent': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          break;
+        }
+        // Only counts for the term it was sent about; a renewal since has
+        // moved the term on and starts its reminders afresh.
+        tx.update(membersTable)
+          .set({agreementReminderSent: event.stage})
+          .where(
+            and(
+              eq(membersTable.userId, userId.value),
+              eq(membersTable.agreementTermEnds, event.termEnds)
+            )
+          )
           .run();
         break;
       }

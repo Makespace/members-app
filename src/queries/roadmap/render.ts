@@ -79,7 +79,7 @@ export const render = () => html`
       haven't read and acknowledged the agreement`),
       inProgress(html`Create a new owner's agreement that is up-to-date and
       readable`),
-      todo(html`Allow owners to re-read the agreement after they've signed
+      done(html`Allow owners to re-read the agreement after they've signed
       it`),
       todo(html`Prompt all owners to read and acknowledge it`),
 

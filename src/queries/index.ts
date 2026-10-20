@@ -7,6 +7,7 @@ export {admin} from './admin';
 export {db} from './db';
 export {humans} from './humans';
 export {roadmap} from './roadmap';
+export {ownerAgreement} from './owner-agreement';
 export {about} from './about';
 export {superUsers} from './super-users';
 export {equipment} from './equipment';

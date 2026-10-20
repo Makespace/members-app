@@ -1,6 +1,8 @@
 import {html} from '../../types/html';
 
-export const ownerAgreement = html`
+// The original agreement, signed from 2024 until October 2026. Kept as it was
+// so owners who signed it can read back exactly what they agreed to.
+export const body = html`
 <p>Owners are positioned such that they can make decisions about how their area operates and evolves, and are a key part of driving and expanding capabilities at Makespace.</p>
 
 <p>

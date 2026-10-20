@@ -1,3 +1,4 @@
+import {ownerAgreementStatus} from '../../owner-agreement/agreement';
 import {getGravatarProfile, getGravatarThumbnail} from '../../templates/avatar';
 import {Html, html, sanitizeOption} from '../../types/html';
 import {ViewModel} from './view-model';
@@ -132,7 +133,10 @@ export const render = (viewModel: ViewModel) => html`
             <th scope="row">Owner agreement</th>
             <td>
               ${renderOwnerAgreementStatus(
-                viewModel.member.agreementSigned,
+                ownerAgreementStatus(
+                  viewModel.member.ownerAgreement,
+                  new Date()
+                ),
                 true
               )}
             </td>

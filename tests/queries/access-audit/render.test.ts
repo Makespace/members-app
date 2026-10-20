@@ -29,7 +29,7 @@ const row = (
     })),
     name: O.some(name),
     formOfAddress: O.none,
-    agreementSigned: O.none,
+    ownerAgreement: O.none,
     isSuperUser: false,
     superUserSince: O.none,
     gravatarHash: 'hash' as unknown as GravatarHash,

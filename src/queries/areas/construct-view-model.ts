@@ -1,3 +1,4 @@
+import {ownerAgreementStatus} from '../../owner-agreement/agreement';
 import {User, UserId} from '../../types';
 import {Dependencies} from '../../dependencies';
 import * as TE from 'fp-ts/TaskEither';
@@ -229,7 +230,7 @@ export const constructViewModel =
         memberNumber: owner.memberNumber,
         name: owner.name,
         primaryEmailAddress: owner.primaryEmailAddress,
-        agreementSigned: owner.agreementSigned,
+        agreement: ownerAgreementStatus(owner.ownerAgreement, now.toJSDate()),
         // Only super-users pay for the Recurly lookups behind the verdict;
         // for everyone else it stays unevaluated.
         verdict: isSuperUser

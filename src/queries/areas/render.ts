@@ -19,10 +19,9 @@ import {renderReasonChips} from '../../templates/recurly-reasons';
 import {renderMember} from '../../templates/member';
 import {renderTrainingSparkline} from '../../templates/training-sparkline';
 import {tooltip} from '../shared-render/tool-tip';
-import {displayDate, displayDateShort} from '../../templates/display-date';
+import {renderOwnerAgreementCell} from '../shared-render/owner-agreement';
 import * as O from 'fp-ts/Option';
 import {UUID} from 'io-ts-types';
-import {DateTime} from 'luxon';
 import { mailTo } from '../../templates/mailto';
 import {
   categoryDot,
@@ -31,22 +30,19 @@ import {
 import {EquipmentCategory} from '../../types/equipment-category';
 
 
-const renderSignedAt = (owner: OwnerViewModel) => {
-  if (O.isSome(owner.agreementSigned)) {
-    const signedAt = DateTime.fromJSDate(owner.agreementSigned.value);
-    // Compact date in the cell; full timestamp on hover.
-    return html`<span title="${displayDate(signedAt)}"
-      >${displayDateShort(signedAt)}</span
-    >`;
-  }
-  return html`Not signed`;
-};
+const renderSignedAt = (owner: OwnerViewModel) =>
+  renderOwnerAgreementCell(owner.agreement);
 
+// Anyone who needs to sign, or sign again, can be sent the invite.
 const renderSignedAtForManager = (owner: OwnerViewModel) => {
-  if (O.isSome(owner.agreementSigned)) {
+  if (
+    owner.agreement.state === 'signed' ||
+    owner.agreement.state === 'renewal-due'
+  ) {
     return renderSignedAt(owner);
   }
   return html`
+    ${owner.agreement.state === 'unsigned' ? html`` : renderSignedAt(owner)}
     <form action="/send-email/owner-agreement-invite" method="post">
       <input type="hidden" name="recipient" value="${owner.memberNumber}" />
       <button type="submit">Ask to sign</button>

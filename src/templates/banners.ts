@@ -1,7 +1,8 @@
 import {Html, html, joinHtml, safe, sanitizeString} from '../types/html';
 import {Notification} from '../read-models/shared-state/notifications/get';
 import {Member} from '../read-models/shared-state/return-types';
-import * as O from 'fp-ts/Option';
+import {ownerAgreementStatus} from '../owner-agreement/agreement';
+import {displayDateOnly} from './display-date';
 
 // One banner, ready to render. System banners (derived from member state,
 // like the unsigned owner's agreement) and stored notifications both reduce
@@ -16,21 +17,74 @@ export type Banner = {
   dismissableId: string | null;
 };
 
+const agreementLink = '/members/sign-owner-agreement';
+
+const date = (value: Date) => String(displayDateOnly(value));
+
+// What an owner is asked to do about the Owners' Agreement, if anything.
+// The wording for those who signed only the original agreement is gentle
+// for now; it becomes a firmer ask once everyone has had time to read it.
+const ownerAgreementBanner = (
+  member: Member,
+  now: Date
+): Banner | null => {
+  if (member.ownerOf.length === 0) {
+    return null;
+  }
+  const status = ownerAgreementStatus(member.ownerAgreement, now);
+  const banner = (
+    title: string,
+    message: string,
+    linkLabel: string
+  ): Banner => ({
+    bannerType: 'action',
+    title,
+    message,
+    linkUrl: agreementLink,
+    linkLabel,
+    dismissableId: null,
+  });
+  switch (status.state) {
+    case 'unsigned':
+      return banner(
+        "Please sign the Owners' Agreement",
+        'As an owner you need to read and sign the agreement.',
+        'Read and sign it now'
+      );
+    case 'outdated':
+      return banner(
+        "There's a new Owners' Agreement",
+        "Please have a read, and sign it if you're happy with it.",
+        'Read the new agreement'
+      );
+    case 'renewal-due':
+      return banner(
+        "Time to renew your Owners' Agreement",
+        `Your term ends on ${date(status.termEnds)}.`,
+        'Read and re-sign it'
+      );
+    case 'lapsed':
+      return banner(
+        "Your Owners' Agreement has lapsed",
+        `Your term ended on ${date(status.termEnds)}.`,
+        'Read and re-sign it'
+      );
+    case 'signed':
+      return null;
+  }
+};
+
 // Banners derived from the member's own state rather than stored
 // notifications. Non-dismissable by nature: they disappear when the
 // underlying condition is resolved.
-export const systemBanners = (member: Member): ReadonlyArray<Banner> => {
+export const systemBanners = (
+  member: Member,
+  now: Date
+): ReadonlyArray<Banner> => {
   const banners: Banner[] = [];
-  if (member.ownerOf.length > 0 && O.isNone(member.agreementSigned)) {
-    banners.push({
-      bannerType: 'action',
-      title: "Please sign the Owner's Agreement",
-      message:
-        'As an owner you need to read and sign the agreement before it can be renewed.',
-      linkUrl: '/members/sign-owner-agreement',
-      linkLabel: 'Read and sign it now',
-      dismissableId: null,
-    });
+  const agreement = ownerAgreementBanner(member, now);
+  if (agreement) {
+    banners.push(agreement);
   }
   return banners;
 };
