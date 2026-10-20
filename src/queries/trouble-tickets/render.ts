@@ -230,12 +230,14 @@ const renderFocus = (vm: ViewModel) =>
 const renderScopeAndPages = (vm: ViewModel) => {
   if (O.isSome(vm.focus)) {
     return html`
-      ${renderFocus(vm)}
-      ${vm.pageCount > 1 ? html`<p>${renderPager(vm)}</p>` : html``}
+      <div class="tt-summary">
+        ${renderFocus(vm)}
+        ${vm.pageCount > 1 ? html`<p>${renderPager(vm)}</p>` : html``}
+      </div>
     `;
   }
   return html`
-    <p>
+    <p class="tt-summary">
       ${
         vm.scopedToMine
           ? html`Showing <strong>${vm.totalInScope}</strong> ticket${

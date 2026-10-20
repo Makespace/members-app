@@ -1549,6 +1549,14 @@ label img {
   padding: 0;
 }
 
+/* "Showing N tickets" belongs to the heading above it and introduces the
+   filters below, so it sits close under the heading with the room after it.
+   (The filters' own margin: 0 above would otherwise leave them touching.) */
+.stack > .tt-summary {
+  margin-block-start: 0.25rem;
+  margin-block-end: 1rem;
+}
+
 /* Give each filter group clear separation from the previous one. */
 .tt-filters + .tt-filters {
   margin-block-start: 1rem;
