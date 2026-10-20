@@ -31,7 +31,12 @@ import {
 } from '../../purchasing/purchases';
 import {renderPurchaseBreakdown} from '../../templates/purchase-breakdown';
 import {renderOutcome} from '../../templates/purchase-request-outcome';
-import {TypedProposal} from '../../purchasing/proposal';
+import {
+  PROBABILITY_SCALE,
+  SEVERITY_SCALE,
+  TypedProposal,
+  TypedRisk,
+} from '../../purchasing/proposal';
 import {
   backHref,
   hiddenInputs,
@@ -939,11 +944,72 @@ const renderOptionEntry = (
   `;
 };
 
-const renderRiskEntry = (
-  risk: TypedProposal['risks'][number],
-  index: number
+const ratingField = (
+  name: string,
+  label: Html,
+  hint: Html,
+  scale: ReadonlyArray<string>,
+  value: string,
+  required: boolean
 ) => {
+  const id = safe(name.replace(/[[\]]+/g, '-').replace(/-$/, ''));
+  return html`
+    <div class="purchase-field">
+      <label class="purchase-field__label" for="${id}">${label}</label>
+      <span class="purchase-request__hint text-sm">${hint}</span>
+      <select
+        class="proposal-rating"
+        name="${safe(name)}"
+        id="${id}"
+        ${required ? safe('required') : safe('')}
+      >
+        <option value="">Choose 1 to 5</option>
+        ${joinHtml(
+          scale.map(
+            (description, index) => html`<option
+              value="${index + 1}"
+              ${value === String(index + 1) ? safe('selected') : safe('')}
+            >
+              ${index + 1} - ${safe(description)}
+            </option>`
+          )
+        )}
+      </select>
+    </div>
+  `;
+};
+
+// Severity and probability side by side, before or after the actions.
+const renderRatings = (
+  name: (field: string) => string,
+  risk: TypedRisk,
+  fields: {severity: 'severity' | 'residualSeverity'; probability: 'probability' | 'residualProbability'},
+  after: boolean,
+  required: boolean
+) => html`
+  <div class="proposal-ratings">
+    ${ratingField(
+      name(fields.severity),
+      after ? html`Severity once those are done` : html`Severity`,
+      html`If something goes wrong, how bad will it be?`,
+      SEVERITY_SCALE,
+      risk[fields.severity],
+      required
+    )}
+    ${ratingField(
+      name(fields.probability),
+      after ? html`Probability once those are done` : html`Probability`,
+      html`How likely is it to actually happen?`,
+      PROBABILITY_SCALE,
+      risk[fields.probability],
+      required
+    )}
+  </div>
+`;
+
+const renderRiskEntry = (risk: TypedRisk, index: number) => {
   const name = (field: string) => `proposal[risks][${index}][${field}]`;
+  const required = index === 0;
   return html`
     <div class="purchase-shop proposal-entry" data-repeat-entry>
       <div class="purchase-shop__head">
@@ -962,29 +1028,52 @@ const renderRiskEntry = (
         html`Hazard`,
         html`What could go wrong, e.g. dust, noise, sharp blades, heat.`,
         risk.hazard,
-        {required: index === 0, rows: 2}
+        {required, rows: 2}
       )}
       ${textField(
         name('harm'),
         html`Who could be harmed, and how`,
-        html``,
+        html`What's the scope of the risk? Is it just to the user, people in
+          the surrounding area, equipment, infrastructure?`,
         risk.harm,
         {rows: 2}
+      )}
+      ${renderRatings(
+        name,
+        risk,
+        {severity: 'severity', probability: 'probability'},
+        false,
+        required
       )}
       ${textField(
         name('actions'),
         html`Remedial actions`,
-        html`What will be done to reduce the risk, e.g. guards, extraction,
-          PPE, training, signage.`,
+        html`What will be done to reduce both the probability and severity,
+          e.g. guards, extraction, PPE, training, signage.`,
         risk.actions,
-        {required: index === 0, rows: 3}
+        {required, rows: 3}
+      )}
+      ${renderRatings(
+        name,
+        risk,
+        {severity: 'residualSeverity', probability: 'residualProbability'},
+        true,
+        required
       )}
     </div>
   `;
 };
 
 const blankOption = {description: '', pros: '', cons: '', cost: ''};
-const blankRisk = {hazard: '', harm: '', actions: ''};
+const blankRisk: TypedRisk = {
+  hazard: '',
+  harm: '',
+  severity: '',
+  probability: '',
+  actions: '',
+  residualSeverity: '',
+  residualProbability: '',
+};
 
 // The proposal, filled in before sending when the request needs one. The
 // parts that don't apply to every purchase are optional; the risk assessment
@@ -1102,15 +1191,18 @@ const proposalScript = html`
         var label = list.dataset.repeatLabel;
         var entries = list.querySelectorAll('[data-repeat-entry]');
         var template = entries[0].cloneNode(true);
-        template.querySelectorAll('input, textarea').forEach(function (field) {
+        template.querySelectorAll('input, textarea, select').forEach(function (field) {
           field.value = '';
-          field.textContent = '';
+          if (field.tagName !== 'SELECT') field.textContent = '';
+          field.querySelectorAll('option[selected]').forEach(function (option) {
+            option.removeAttribute('selected');
+          });
           field.required = false;
         });
         var next = entries.length;
         function isBlank(entry) {
           return Array.prototype.every.call(
-            entry.querySelectorAll('input, textarea'),
+            entry.querySelectorAll('input, textarea, select'),
             function (field) { return field.value.trim() === ''; }
           );
         }

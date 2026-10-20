@@ -13,7 +13,17 @@ const raw = {
     {description: 'Repair it', pros: 'Cheap', cons: 'Short-lived', cost: '300.50'},
   ],
   preferred: 'Replace it - repairs keep failing',
-  risks: [{hazard: 'Kickback', harm: 'The user, badly', actions: 'Guards and training'}],
+  risks: [
+    {
+      hazard: 'Kickback',
+      harm: 'The user, badly',
+      severity: '4',
+      probability: '3',
+      actions: 'Guards and training',
+      residualSeverity: '4',
+      residualProbability: '1',
+    },
+  ],
   location: 'Where the old one is',
   owner: '',
   training: ' Induction for all users ',
@@ -39,7 +49,15 @@ describe('proposals', () => {
       ],
       preferred: 'Replace it - repairs keep failing',
       risks: [
-        {hazard: 'Kickback', harm: 'The user, badly', actions: 'Guards and training'},
+        {
+          hazard: 'Kickback',
+          severity: 4,
+          probability: 3,
+          actions: 'Guards and training',
+          residualSeverity: 4,
+          residualProbability: 1,
+          harm: 'The user, badly',
+        },
       ],
       location: 'Where the old one is',
       owner: null,
@@ -88,11 +106,31 @@ describe('proposals', () => {
     expect(problem({risks: []}, true)).toBe(
       'Proposal: please assess the health and safety risks, with what will be done about each.'
     );
-    expect(problem({risks: [{hazard: 'Dust'}]}, true)).toBe(
+    const rated = {
+      hazard: 'Dust',
+      severity: '3',
+      probability: '4',
+      actions: 'Extraction',
+      residualSeverity: '3',
+      residualProbability: '2',
+    };
+    expect(problem({risks: [{...rated, actions: ''}]}, true)).toBe(
       'Risk 1: please say what will be done to reduce the risk.'
     );
-    expect(problem({risks: [{actions: 'Extraction'}]}, true)).toBe(
+    expect(problem({risks: [{...rated, hazard: ''}]}, true)).toBe(
       'Risk 1: please say what the hazard is.'
+    );
+    expect(problem({risks: [{...rated, severity: ''}]}, true)).toBe(
+      'Risk 1: please rate how bad it would be, from 1 to 5.'
+    );
+    expect(problem({risks: [{...rated, probability: '6'}]}, true)).toBe(
+      'Risk 1: please rate how likely it is, from 1 to 5.'
+    );
+    expect(problem({risks: [{...rated, residualSeverity: '0'}]}, true)).toBe(
+      'Risk 1: please rate how bad it would be once those actions are taken, from 1 to 5.'
+    );
+    expect(problem({risks: [{...rated, residualProbability: 'x'}]}, true)).toBe(
+      'Risk 1: please rate how likely it would be once those actions are taken, from 1 to 5.'
     );
   });
 });

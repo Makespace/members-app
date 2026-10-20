@@ -74,7 +74,17 @@ describe('submit purchase request', () => {
         {description: 'Do nothing', pros: 'Free', cons: 'No quilts', cost: '0'},
       ],
       preferred: 'Buy one',
-      risks: [{hazard: 'Needle injuries', harm: 'Users', actions: 'Guard and induction'}],
+      risks: [
+        {
+          hazard: 'Needle injuries',
+          harm: 'Users',
+          severity: '2',
+          probability: '3',
+          actions: 'Guard and induction',
+          residualSeverity: '2',
+          residualProbability: '1',
+        },
+      ],
     },
     ...overrides,
   });
@@ -360,7 +370,15 @@ describe('submit purchase request', () => {
     it('keeps the risk assessment when there is a health and safety risk', async () => {
       const event = await submitted(formBody({healthAndSafetyRisk: 'true'}));
       expect(event.proposal?.risks).toStrictEqual([
-        {hazard: 'Needle injuries', harm: 'Users', actions: 'Guard and induction'},
+        {
+          hazard: 'Needle injuries',
+          harm: 'Users',
+          severity: 2,
+          probability: 3,
+          actions: 'Guard and induction',
+          residualSeverity: 2,
+          residualProbability: 1,
+        },
       ]);
     });
 

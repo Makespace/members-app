@@ -1,6 +1,12 @@
 import {html, joinHtml, sanitizeString} from '../types/html';
 import {formatPence} from '../types/money';
-import {Proposal, ProposalOption, ProposalRisk} from '../purchasing/proposal';
+import {
+  PROBABILITY_SCALE,
+  Proposal,
+  ProposalOption,
+  ProposalRisk,
+  SEVERITY_SCALE,
+} from '../purchasing/proposal';
 
 // A purchase request's proposal, as sent: shown on the request's own page.
 // Sections that didn't apply (no risk assessment, or nothing said about
@@ -27,11 +33,23 @@ const renderOption = (option: ProposalOption, index: number) => html`
   </li>
 `;
 
+// "4 Major × 3 Possible = 12": severity times probability, as on a risk
+// matrix.
+const renderRating = (severity: number, probability: number) => html`
+  <span class="proposal__rating">
+    ${severity} ${sanitizeString(SEVERITY_SCALE[severity - 1])} ×
+    ${probability} ${sanitizeString(PROBABILITY_SCALE[probability - 1])} =
+    <strong>${severity * probability}</strong>
+  </span>
+`;
+
 const renderRisk = (risk: ProposalRisk) => html`
   <tr>
     <td class="proposal__text">${sanitizeString(risk.hazard)}</td>
     <td class="proposal__text">${sanitizeString(risk.harm)}</td>
+    <td>${renderRating(risk.severity, risk.probability)}</td>
     <td class="proposal__text">${sanitizeString(risk.actions)}</td>
+    <td>${renderRating(risk.residualSeverity, risk.residualProbability)}</td>
   </tr>
 `;
 
@@ -62,7 +80,9 @@ export const renderProposal = (proposal: Proposal) => html`
                 <tr>
                   <th>Hazard</th>
                   <th>Who could be harmed, and how</th>
+                  <th>Risk before</th>
                   <th>Remedial actions</th>
+                  <th>Risk after</th>
                 </tr>
               </thead>
               <tbody>

@@ -96,7 +96,17 @@ describe('purchase request page', () => {
           {description: 'Replace it', pros: 'Safe', cons: 'Dear', costPence: 120_000},
         ],
         preferred: 'Replace it',
-        risks: [{hazard: 'Kickback', harm: 'The user', actions: 'Guards'}],
+        risks: [
+          {
+            hazard: 'Kickback',
+            harm: 'The user',
+            severity: 4,
+            probability: 3,
+            actions: 'Guards',
+            residualSeverity: 4,
+            residualProbability: 1,
+          },
+        ],
         location: null,
         owner: 'The wood shop owners',
         trainingAndServicing: null,
@@ -106,6 +116,8 @@ describe('purchase request page', () => {
     expect(html).toContain('Option 1: Replace it');
     expect(html).toContain('£1,200.00');
     expect(html).toContain('Kickback');
+    expect(html).toContain('4 Major × 3 Possible = <strong>12</strong>');
+    expect(html).toContain('4 Major × 1 Rare = <strong>4</strong>');
     expect(html).toContain('Who owns it');
     expect(html).not.toContain('Where it goes');
     expect(html).toContain('the proposal needs agreeing');

@@ -443,8 +443,41 @@ describe('purchase request form', () => {
         expect.arrayContaining([
           'proposal[risks][][hazard]',
           'proposal[risks][][harm]',
+          'proposal[risks][][severity]',
+          'proposal[risks][][probability]',
           'proposal[risks][][actions]',
+          'proposal[risks][][residualSeverity]',
+          'proposal[risks][][residualProbability]',
         ])
+      );
+      const names = proposalNames(page);
+      expect(
+        [
+          'proposal[risks][][harm]',
+          'proposal[risks][][severity]',
+          'proposal[risks][][probability]',
+          'proposal[risks][][actions]',
+          'proposal[risks][][residualSeverity]',
+          'proposal[risks][][residualProbability]',
+        ].map(name => names.indexOf(name))
+      ).toStrictEqual([...Array(6).keys()].map(i => names.indexOf('proposal[risks][][harm]') + i));
+      const severity = page.querySelector<HTMLSelectElement>(
+        'select[name="proposal[risks][0][severity]"]'
+      )!;
+      expect(severity.required).toBe(true);
+      expect([...severity.options].map(option => option.textContent.trim())).toStrictEqual([
+        'Choose 1 to 5',
+        '1 - Negligible',
+        '2 - Minor',
+        '3 - Moderate',
+        '4 - Major',
+        '5 - Severe',
+      ]);
+      expect(text(page)).toContain(
+        "What's the scope of the risk? Is it just to the user, people in the surrounding area, equipment, infrastructure?"
+      );
+      expect(text(page)).toContain(
+        'What will be done to reduce both the probability and severity'
       );
       expect(text(page)).toContain('Risk assessment');
       expect(text(needingProposal(false))).not.toContain('Risk assessment');

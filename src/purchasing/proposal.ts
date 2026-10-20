@@ -24,10 +24,16 @@ const RawOption = t.partial({
   cost: t.string,
 });
 
+// Severity and probability are rated 1 to 5, before and after the remedial
+// actions, as on a standard risk matrix.
 const RawRisk = t.partial({
   hazard: t.string,
   harm: t.string,
+  severity: t.string,
+  probability: t.string,
   actions: t.string,
+  residualSeverity: t.string,
+  residualProbability: t.string,
 });
 
 export const RawProposal = t.partial({
@@ -49,12 +55,42 @@ const ProposalOptionCodec = t.strict({
   costPence: t.number,
 });
 
+// The 1 to 5 scales for a risk, as on a standard risk matrix.
+export const SEVERITY_SCALE = [
+  'Negligible',
+  'Minor',
+  'Moderate',
+  'Major',
+  'Severe',
+] as const;
+export const PROBABILITY_SCALE = [
+  'Rare',
+  'Unlikely',
+  'Possible',
+  'Likely',
+  'Almost certain',
+] as const;
+
+// 1 (least) to 5 (most).
+const Rating = t.refinement(
+  t.number,
+  rating => Number.isInteger(rating) && rating >= 1 && rating <= 5,
+  'Rating'
+);
+
 const ProposalRiskCodec = t.strict({
   hazard: t.string,
-  // Who could be harmed, and how
+  // Who or what could be harmed, and how: the user, people nearby,
+  // equipment, the building
   harm: t.string,
-  // What will be done to reduce the risk
+  // If it goes wrong, how bad; and how likely it is - before the actions
+  severity: Rating,
+  probability: Rating,
+  // What will be done to reduce the probability and severity
   actions: t.string,
+  // The same ratings once the actions are in place
+  residualSeverity: Rating,
+  residualProbability: Rating,
 });
 
 const optionalText = t.union([t.string, t.null]);
@@ -74,6 +110,16 @@ export type Proposal = t.TypeOf<typeof ProposalCodec>;
 export type ProposalOption = t.TypeOf<typeof ProposalOptionCodec>;
 export type ProposalRisk = t.TypeOf<typeof ProposalRiskCodec>;
 
+export type TypedRisk = {
+  hazard: string;
+  harm: string;
+  severity: string;
+  probability: string;
+  actions: string;
+  residualSeverity: string;
+  residualProbability: string;
+};
+
 // As typed, for showing back in the form: lists in order, entirely blank
 // entries left out.
 export type TypedProposal = {
@@ -85,7 +131,7 @@ export type TypedProposal = {
     cost: string;
   }>;
   preferred: string;
-  risks: ReadonlyArray<{hazard: string; harm: string; actions: string}>;
+  risks: ReadonlyArray<TypedRisk>;
   location: string;
   owner: string;
   training: string;
@@ -124,9 +170,23 @@ export const typedProposal = (
     .map(risk => ({
       hazard: risk.hazard ?? '',
       harm: risk.harm ?? '',
+      severity: risk.severity ?? '',
+      probability: risk.probability ?? '',
       actions: risk.actions ?? '',
+      residualSeverity: risk.residualSeverity ?? '',
+      residualProbability: risk.residualProbability ?? '',
     }))
-    .filter(risk => someText([risk.hazard, risk.harm, risk.actions])),
+    .filter(risk =>
+      someText([
+        risk.hazard,
+        risk.harm,
+        risk.severity,
+        risk.probability,
+        risk.actions,
+        risk.residualSeverity,
+        risk.residualProbability,
+      ])
+    ),
   location: raw?.location ?? '',
   owner: raw?.owner ?? '',
   training: raw?.training ?? '',
@@ -167,8 +227,11 @@ const normaliseOption = (
   );
 };
 
+const rating = (value: string, message: string): E.Either<string, number> =>
+  /^[1-5]$/.test(value.trim()) ? E.right(Number(value.trim())) : E.left(message);
+
 const normaliseRisk = (
-  risk: TypedProposal['risks'][number],
+  risk: TypedRisk,
   index: number
 ): E.Either<string, ProposalRisk> => {
   const where = `Risk ${index + 1}`;
@@ -177,13 +240,37 @@ const normaliseRisk = (
     E.bind('hazard', () =>
       required(risk.hazard, `${where}: please say what the hazard is.`)
     ),
+    E.bind('severity', () =>
+      rating(
+        risk.severity,
+        `${where}: please rate how bad it would be, from 1 to 5.`
+      )
+    ),
+    E.bind('probability', () =>
+      rating(
+        risk.probability,
+        `${where}: please rate how likely it is, from 1 to 5.`
+      )
+    ),
     E.bind('actions', () =>
       required(
         risk.actions,
         `${where}: please say what will be done to reduce the risk.`
       )
     ),
-    E.map(({hazard, actions}) => ({hazard, harm: risk.harm.trim(), actions}))
+    E.bind('residualSeverity', () =>
+      rating(
+        risk.residualSeverity,
+        `${where}: please rate how bad it would be once those actions are taken, from 1 to 5.`
+      )
+    ),
+    E.bind('residualProbability', () =>
+      rating(
+        risk.residualProbability,
+        `${where}: please rate how likely it would be once those actions are taken, from 1 to 5.`
+      )
+    ),
+    E.map(fields => ({...fields, harm: risk.harm.trim()}))
   );
 };
 

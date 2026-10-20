@@ -120,4 +120,24 @@ describe('proposal options and risks script', () => {
     ]);
     expect(names(form, 'options', 'description')).toHaveLength(1);
   });
+
+  it('starts an added risk with its ratings unchosen', () => {
+    const form = setUp();
+    form.querySelector<HTMLSelectElement>(
+      'select[name="proposal[risks][0][severity]"]'
+    )!.value = '4';
+    form.querySelector<HTMLButtonElement>('[data-repeat-add="risks"]')!.click();
+    const added = [
+      ...form.querySelectorAll<HTMLSelectElement>(
+        '[data-repeat="risks"] [data-repeat-entry]:last-child select'
+      ),
+    ];
+    expect(added.map(select => select.name)).toStrictEqual([
+      'proposal[risks][3][severity]',
+      'proposal[risks][3][probability]',
+      'proposal[risks][3][residualSeverity]',
+      'proposal[risks][3][residualProbability]',
+    ]);
+    expect(added.map(select => select.value)).toStrictEqual(['', '', '', '']);
+  });
 });
