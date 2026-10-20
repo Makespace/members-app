@@ -128,9 +128,9 @@ describe('purchase request form', () => {
       expect(hidden(page)).not.toHaveProperty('summary');
     });
 
-    it('moves on to the cost breakdown, with no Back', () => {
+    it('moves on to the costs and budget, with no Back', () => {
       expect(page.querySelector('form button')?.textContent).toContain(
-        'Next: Cost breakdown'
+        'Next: Costs and budget'
       );
       expect(page.querySelector('.step-nav a')).toBeNull();
     });
@@ -165,6 +165,15 @@ describe('purchase request form', () => {
       expect(
         page.querySelector<HTMLInputElement>('#consumable-no')!.checked
       ).toBe(true);
+    });
+
+    it("shows the area's budget, with room for the result", () => {
+      const page = render(onPage(2));
+      expect(text(page)).toContain('Wood Shop yearly budget');
+      expect(
+        page.querySelector<HTMLElement>('[data-budget-verdict]')!.hidden
+      ).toBe(true);
+      expect(page.querySelectorAll('template[data-verdict-template]')).toHaveLength(3);
     });
 
     it('needs the first shop, quantity and cost', () => {
@@ -205,13 +214,23 @@ describe('purchase request form', () => {
   describe('page 3', () => {
     const page = render(onPage(3));
 
-    it('shows the area budget and the budget it actually comes out of', () => {
-      expect(text(page)).toContain('Wood Shop yearly budget');
-      expect(text(page)).toContain('For the £250 total');
-      expect(text(page)).toContain(
-        'This comes out of your yearly budget. No proposal needed.'
+    it('sums up the request, with the budget it comes out of', () => {
+      expect(text(page)).toContain('Page 3 of 3');
+      const summary = Object.fromEntries(
+        [...page.querySelectorAll('.purchase-summary dt')].map(dt => [
+          dt.textContent.trim(),
+          dt.nextElementSibling!.textContent.replace(/\s+/g, ' ').trim(),
+        ])
       );
-      expect(text(page)).toContain('leaving £330.00 of £1,000.00');
+      expect(summary).toStrictEqual({
+        Area: 'Wood Shop',
+        Summary: 'Saw blades',
+        "Why it's needed": 'Blunt',
+        Total: '£250',
+        Budget: 'Yearly budget',
+        Why: 'This comes out of the yearly budget, leaving £330.00 of £1,000.00 for the rest of the year.',
+      });
+      expect(text(page)).not.toContain('Wood Shop yearly budget');
     });
 
     it('lists each shop and its items with the total', () => {
@@ -266,8 +285,8 @@ describe('purchase request form', () => {
           }),
         })
       );
-      expect(text(proposal)).toContain("You'll need to write a proposal");
-      expect(proposal.querySelector('.purchase-verdict--proposal')).not.toBeNull();
+      expect(text(proposal)).toContain('Proposal needed');
+      expect(text(proposal)).toContain('over the yearly budget');
     });
   });
 
@@ -296,7 +315,7 @@ describe('purchase request form', () => {
         remainingPence: woodShop.yearlyBudgetPence - spentThisYearPence,
       };
       return render(
-        onPage(3, {purchasingAreas: [area], chosen: O.some(area)})
+        onPage(2, {purchasingAreas: [area], chosen: O.some(area)})
       ).querySelector<HTMLElement>(`[data-budget-for="${area.id}"]`)!;
     };
 

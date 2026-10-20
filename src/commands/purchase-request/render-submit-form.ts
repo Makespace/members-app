@@ -3,18 +3,20 @@
 // Agreement, using the shared pieces in src/templates/multi-page-form.ts:
 //
 //   1. About the request: which purchasing area, a summary, why it's needed.
-//   2. Cost breakdown: each shop, the items wanted from it (link, SKU,
-//      quantity, price each, notes) and any delivery - together the cost of
-//      the request - and whether it is a consumable members pay for.
-//   3. Budget: the area's budget as it stands and which budget this comes out
-//      of, worked out on the server, before sending.
+//   2. Costs and budget: the area's budget as it stands; each shop, the
+//      items wanted from it (link, SKU, quantity, cost, notes) and any
+//      delivery - together the cost of the request; whether it is a
+//      consumable members pay for; and, as those are filled in, which budget
+//      it comes out of and whether it needs a proposal.
+//   3. Check and send: everything in one summary, with the budget worked out
+//      on the server, before sending.
 //
 // Pages 1 and 2 move on with a GET form carrying the answers so far; page 3
 // posts everything to the submit command, which works the outcome out again
 // itself (src/purchasing/classify-purchase.ts). Which page to show, and what
 // is still missing, is decided in submit-form.ts. Everything works without
-// JavaScript; on page 2 a small script adds and removes shops and items and
-// keeps running totals.
+// JavaScript; on page 2 a small script adds, removes and folds shops and
+// items, keeps running totals and shows the budget result.
 // Its styles are the `.purchase-request` rules in src/static/styles.css.
 
 import * as O from 'fp-ts/Option';
@@ -28,6 +30,7 @@ import {
   TypedPurchase,
 } from '../../purchasing/purchases';
 import {renderPurchaseBreakdown} from '../../templates/purchase-breakdown';
+import {renderOutcome} from '../../templates/purchase-request-outcome';
 import {
   backHref,
   hiddenInputs,
@@ -38,8 +41,8 @@ import {
 
 export const PAGE_LABELS = [
   'About the request',
-  'Cost breakdown',
-  'Budget',
+  'Costs and budget',
+  'Check and send',
 ] as const;
 
 export type PurchasingAreaOption = {
@@ -542,8 +545,28 @@ const renderVerdictBox = (
   `;
 };
 
+const outcomes: ReadonlyArray<Classification['outcome']> = [
+  'consumable',
+  'budget',
+  'budget-proposal-needed',
+];
+
 const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
-  <form method="get" class="purchase-request__sections" id="purchase-costs-form">
+  <form
+    method="get"
+    class="purchase-request__sections"
+    id="purchase-costs-form"
+    data-proposal-threshold-pence="${viewModel.proposalThresholdPence}"
+    ${pipe(
+      viewModel.chosen,
+      O.match(
+        () => html``,
+        area =>
+          html`data-budget-pence="${area.yearlyBudgetPence}"
+          data-spent-pence="${area.spentThisYearPence}"`
+      )
+    )}
+  >
     <input type="hidden" name="step" value="3" />
     ${hiddenInputs(
       carriedExcept(
@@ -551,6 +574,10 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
         name =>
           name.startsWith('purchases[') || name === 'isMemberPaidConsumable'
       )
+    )}
+    ${pipe(
+      viewModel.chosen,
+      O.match(() => html``, renderBudget(viewModel.budgetYear))
     )}
     <div class="purchase-request__stack">
       <h2>What are you buying, and where from?</h2>
@@ -606,26 +633,53 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
         </div>
       </div>
     </fieldset>
+    <div data-budget-verdict hidden aria-live="polite"></div>
+    ${joinHtml(
+      outcomes.map(
+        outcome =>
+          html`<template data-verdict-template="${safe(outcome)}"
+            >${renderVerdictBox(
+              outcome,
+              html`For the <span data-verdict-total></span> total`,
+              html`<span data-verdict-reason></span>`
+            )}</template
+          >`
+      )
+    )}
     ${renderNext(viewModel)}
   </form>
   ${costsScript}
 `;
 
-const renderBudgetPage = (viewModel: PurchaseRequestFormViewModel) => html`
-  ${pipe(
-    viewModel.chosen,
-    O.match(() => html``, renderBudget(viewModel.budgetYear))
-  )}
+const renderCheckPage = (viewModel: PurchaseRequestFormViewModel) => html`
+  <p>Check the request, then send it.</p>
   ${pipe(
     viewModel.result,
     O.match(
       () => html``,
       ({purchases, totalPence, classification}) => html`
-        ${renderVerdictBox(
-          classification.outcome,
-          html`For the ${gbp(totalPence)} total`,
-          html`${sanitizeString(classification.reason)}`
-        )}
+        <dl class="purchase-summary">
+          <dt>Area</dt>
+          <dd>
+            ${pipe(
+              viewModel.chosen,
+              O.match(
+                () => html``,
+                area => html`${sanitizeString(area.name)}`
+              )
+            )}
+          </dd>
+          <dt>Summary</dt>
+          <dd>${sanitizeString(viewModel.answers.summary)}</dd>
+          <dt>Why it's needed</dt>
+          <dd>${sanitizeString(viewModel.answers.justification)}</dd>
+          <dt>Total</dt>
+          <dd>${gbp(totalPence)}</dd>
+          <dt>Budget</dt>
+          <dd>${renderOutcome(classification.outcome, classification.approval)}</dd>
+          <dt>Why</dt>
+          <dd>${sanitizeString(classification.reason)}</dd>
+        </dl>
         ${renderPurchaseBreakdown(purchases, totalPence)}
       `
     )
@@ -653,6 +707,10 @@ const costsScript = html`
       if (!form) return;
       var shops = form.querySelector('[data-shop-entries]');
       var requestTotal = form.querySelector('[data-request-total]');
+      var verdict = form.querySelector('[data-budget-verdict]');
+      var budget = Number(form.dataset.budgetPence);
+      var spent = Number(form.dataset.spentPence);
+      var threshold = Number(form.dataset.proposalThresholdPence);
 
       function gbp(pence) {
         return '£' + (pence / 100).toLocaleString('en-GB', {
@@ -665,6 +723,58 @@ const costsScript = html`
         if (!/^\\d+(\\.\\d{1,2})?$/.test(cleaned)) return null;
         var parts = cleaned.split('.');
         return Number(parts[0]) * 100 + Number((parts[1] || '').padEnd(2, '0'));
+      }
+
+      function money(amount) {
+        return new Intl.NumberFormat('en-GB', {style: 'currency', currency: 'GBP'}).format(amount / 100);
+      }
+
+      // Mirrors classifyPurchase (src/purchasing/classify-purchase.ts),
+      // explanations included - the tests check they say the same. The server
+      // works it out again from the same costs on the next page and on send.
+      function classify(consumable, amount) {
+        if (consumable) {
+          return {
+            outcome: 'consumable',
+            reason: "Members pay for this at point of use, so it is a consumable and doesn't come out of the yearly budget.",
+          };
+        }
+        if (amount >= threshold) {
+          return {
+            outcome: 'budget-proposal-needed',
+            reason: 'A single purchase of ' + money(threshold) + ' or more needs a proposal.',
+          };
+        }
+        var after = spent + amount;
+        if (after > budget) {
+          return {
+            outcome: 'budget-proposal-needed',
+            reason: "This would take this year's spending to " + money(after) +
+              ', over the yearly budget of ' + money(budget) + ', so it needs a proposal.',
+          };
+        }
+        return {
+          outcome: 'budget',
+          reason: 'This comes out of the yearly budget, leaving ' + money(budget - after) +
+            ' of ' + money(budget) + ' for the rest of the year.',
+        };
+      }
+
+      // Which budget it comes out of, and whether it needs a proposal, once
+      // there is a total and the consumable question is answered.
+      function showVerdict(total) {
+        var answer = form.querySelector('input[name="isMemberPaidConsumable"]:checked');
+        if (!answer || !total) {
+          verdict.hidden = true;
+          verdict.innerHTML = '';
+          return;
+        }
+        var result = classify(answer.value === 'true', total);
+        var template = form.querySelector('[data-verdict-template="' + result.outcome + '"]');
+        verdict.innerHTML = template.innerHTML;
+        verdict.querySelector('[data-verdict-total]').textContent = gbp(total);
+        verdict.querySelector('[data-verdict-reason]').textContent = result.reason;
+        verdict.hidden = false;
       }
 
       function field(item, name) {
@@ -732,6 +842,7 @@ const costsScript = html`
           total += sum;
         });
         requestTotal.innerHTML = total ? '<p><strong>Total: ' + gbp(total) + '</strong></p>' : '';
+        showVerdict(total);
       }
 
       // Names look like purchases[2][items][1][sku] and ids like
@@ -855,12 +966,13 @@ const costsScript = html`
         if (item) expand(item);
       }, true);
       form.addEventListener('input', update);
+      form.addEventListener('change', update);
       update();
     })();
   </script>
 `;
 
-const pages = [renderAboutPage, renderCostsPage, renderBudgetPage];
+const pages = [renderAboutPage, renderCostsPage, renderCheckPage];
 
 const renderNoPurchasingAreas = () => html`
   <p>
