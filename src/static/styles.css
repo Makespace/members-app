@@ -1563,35 +1563,12 @@ label img {
   font-weight: 700;
 }
 
-/* Visually hide the checkbox but keep it focusable for keyboard users. */
-/* Visually hidden but keyboard-focusable; pointer-events:none so the hidden inputs never
-   intercept clicks (the visible label toggles them via `for`). */
-.tt-filter {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  border: 0;
-  opacity: 0;
-  pointer-events: none;
-}
-
+/* The chips are links, each filtering the board server-side. (They were once
+   checkboxes, drawn at half strength until ticked; that rule outlived them
+   and left every chip looking permanently switched off.) */
 .tt-filter__label {
   cursor: pointer;
-  opacity: 0.5;
   user-select: none;
-}
-
-.tt-filter:checked + .tt-filter__label {
-  opacity: 1;
-  box-shadow: 0 0 0 2px var(--text-color);
-}
-
-.tt-filter:focus-visible + .tt-filter__label {
-  outline: 3px solid var(--focus-color);
-  outline-offset: 1px;
 }
 
 /* Neutral chip used for the "show only" scope filters. */
@@ -2660,10 +2637,12 @@ body:has(.tt-wrapper) {
 }
 
 /* An active filter chip: the board is showing only this, and clicking it
-   again clears the filter. */
+   again clears the filter. A dark ring rather than the yellow outline, which
+   is keyboard focus everywhere else and should mean only that. */
 .tt-filter__label--active {
-  outline: 3px solid var(--focus-color);
-  outline-offset: 1px;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px var(--text-color);
 }
 
 /* Each sign carries its own print button, tucked into the corner of the
