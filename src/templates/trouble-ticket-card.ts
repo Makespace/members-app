@@ -97,6 +97,18 @@ export const renderAssignees = (assignees: ReadonlyArray<AssigneeView>) =>
     ? html`<em>Nobody assigned</em>`
     : commaHtml(assignees.map(renderAssignee));
 
+// Tickets in the management team's area are kept to that team and to
+// super-users. Say so wherever one is shown, so nobody who can see it takes
+// it for something every owner can read.
+export const managementOnlyMarker = (ticket: {managementOnly: boolean}) =>
+  ticket.managementOnly
+    ? html`<span
+        class="tt-private"
+        title="Only the management team and super-users can see this ticket"
+        >Management only</span
+      >`
+    : html``;
+
 export const statusBadge = (status: TroubleTicketStatus) =>
   html`<span class="tt-badge tt-badge--${safe(STATUS_SLUG[status])}"
     >${safe(status)}</span
@@ -195,7 +207,7 @@ const renderChangeLog = (entries: ReadonlyArray<ChangeLogEntry>) => {
     return html``;
   }
   return html`
-    <details class="tt-changelog">
+    <details class="tt-changelog" open>
       <summary>Change log (${safe(entries.length.toString())})</summary>
       <ol class="tt-changelog__list">
         ${joinHtml(
@@ -263,7 +275,7 @@ export const ticketCard = (
     data-scopes="${safe(scopes)}"
   >
     <div class="tt-card__header">
-      ${statusBadge(ticket.status)}
+      ${statusBadge(ticket.status)} ${managementOnlyMarker(ticket)}
       <h3>
         ${linkTitle
           ? html`<a href="/trouble-tickets/view/${safe(encodeURIComponent(ticket.id))}"

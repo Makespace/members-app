@@ -1728,6 +1728,25 @@ label img {
   line-height: 1.4;
 }
 
+/* A ticket only the management team can see. Outlined rather than filled,
+   so it reads as a note about the ticket and not as another status. */
+.tt-private {
+  display: inline-block;
+  padding: 1px 8px;
+  border: 1.5px solid #4c2c92;
+  border-radius: 999px;
+  color: #4c2c92;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.tt-private::before {
+  content: '\1F512\FE0E  ';
+}
+
 /* Enough of the issue to recognise the ticket; the rest is a click away. */
 .tt-table__issue {
   display: -webkit-box;

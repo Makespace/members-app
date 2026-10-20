@@ -56,7 +56,12 @@ export const constructViewModel =
         const areaNameById = new Map(
           rm.area.getAllMinimal().map(area => [area.id as string, area.name])
         );
-        const scope = toScope(equipmentById, areaNameById, viewer)(ticket);
+        const scope = toScope(
+          equipmentById,
+          areaNameById,
+          viewer,
+          deps.conf.MANAGEMENT_TEAM_AREA_ID
+        )(ticket);
         // A member number can change; the ticket keeps the one it was raised
         // with, so an old number still counts as theirs.
         const theirs =

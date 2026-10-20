@@ -27,13 +27,22 @@ const ticketAreaId = (
     ? (areaOfEquipment.get(ticket.equipmentId) ?? null)
     : ticket.areaId;
 
+// Whether an area is the management team's, so that tickets in it are kept
+// to that team. Also what pages use to mark such a ticket as private.
+export const isManagementArea = (
+  areaId: string | null,
+  managementTeamAreaId: string
+): boolean => managementTeamAreaId !== '' && areaId === managementTeamAreaId;
+
 const isManagementTicket = (
   ticket: {equipmentId: string | null; areaId: string | null},
   areaOfEquipment: ReadonlyMap<string, string>,
   managementTeamAreaId: string
 ): boolean =>
-  managementTeamAreaId !== '' &&
-  ticketAreaId(ticket, areaOfEquipment) === managementTeamAreaId;
+  isManagementArea(
+    ticketAreaId(ticket, areaOfEquipment),
+    managementTeamAreaId
+  );
 
 // The one way to read trouble tickets for a particular person. Every page
 // that lists or counts tickets goes through here, so that a page added later

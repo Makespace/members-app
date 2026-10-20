@@ -54,6 +54,9 @@ export type TroubleTicketView = {
   assignedToMe: boolean;
   inMyOwnerArea: boolean;
   onMyTrainerMachine: boolean;
+  // In the management team's area, so only that team and super-users can see
+  // it. Marked as such wherever it is shown.
+  managementOnly: boolean;
   // Whether the viewer may change this ticket's status (trainer on its machine, or a
   // super-user). Drives whether the action buttons are shown.
   canChangeStatus: boolean;

@@ -37,6 +37,7 @@ const ticket = (
   assignedToMe: false,
   inMyOwnerArea: true,
   onMyTrainerMachine: false,
+  managementOnly: false,
   canChangeStatus: true,
   changeLog: [],
   ...overrides,
@@ -198,5 +199,46 @@ describe('what the change log says about emails', () => {
 
   it('says nothing while an email is still to be sent', () => {
     expect(logOf({emailedTo: null, quiet: false})).toBeNull();
+  });
+});
+
+// On the ticket's own page the history is the point, so it starts open.
+describe('the change log on a ticket', () => {
+  it('starts open', () => {
+    const log = renderCard(
+      ticket({
+        changeLog: [
+          {
+            at: new Date('2026-09-02T10:00:00.000Z'),
+            actor: 'Tara Trainer',
+            summary: 'marked this ticket as Resolved',
+            details: [],
+            status: 'Resolved' as TroubleTicketStatus,
+            emailedTo: null,
+            quiet: false,
+          },
+        ],
+      })
+    ).querySelector('details.tt-changelog');
+
+    expect(log?.hasAttribute('open')).toBe(true);
+  });
+});
+
+// Only the management team and super-users can see one of these; the card
+// says so, so nobody takes it for something every owner can read.
+describe('a management-only ticket', () => {
+  it('is marked as private', () => {
+    expect(
+      renderCard(ticket({managementOnly: true}))
+        .querySelector('.tt-private')
+        ?.textContent?.trim()
+    ).toBe('Management only');
+  });
+
+  it('leaves every other ticket unmarked', () => {
+    expect(
+      renderCard(ticket({managementOnly: false})).querySelector('.tt-private')
+    ).toBeNull();
   });
 });

@@ -5,6 +5,7 @@ import {DateTime} from 'luxon';
 import {ViewModel, BoardTicketView} from './view-model';
 import {Focus} from './focus';
 import {
+  managementOnlyMarker,
   renderAssignees,
   statusBadge,
 } from '../../templates/trouble-ticket-card';
@@ -328,7 +329,8 @@ const renderRow = (ticket: BoardTicketView) => {
               ? html`<em>Untitled ticket</em>`
               : sanitizeString(ticket.title)
           }</a
-        >${
+        >
+        ${managementOnlyMarker(ticket)}${
           ticket.response.issue.trim() === ''
             ? html``
             : html`<small class="tt-table__sub tt-table__issue"
