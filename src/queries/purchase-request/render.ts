@@ -48,21 +48,6 @@ const renderPurchaseRow = (purchase: PurchaseRequestPurchase) => html`
   </tr>
 `;
 
-// The itemised total decides the outcome; say so when it differs from the
-// estimate the member gave first.
-const renderCostCheck = (request: PurchaseRequest) =>
-  request.totalPence !== request.estimatedAmountPence
-    ? html`<p class="text-sm">
-        <span class="tag tag--yellow">Note</span> The shops add up to
-        ${money(request.totalPence)},
-        ${request.totalPence > request.estimatedAmountPence
-          ? html`more`
-          : html`less`}
-        than the ${money(request.estimatedAmountPence)} estimate. The shop
-        total is what counts against the budget.
-      </p>`
-    : html``;
-
 export const render = ({
   justSent,
   request,
@@ -120,8 +105,6 @@ export const render = ({
           </dd>
           <dt>Total</dt>
           <dd>${money(request.totalPence)}</dd>
-          <dt>First estimate</dt>
-          <dd>${money(request.estimatedAmountPence)}</dd>
           <dt>Sent</dt>
           <dd>
             ${displayDate(DateTime.fromJSDate(request.submittedAt))} by
@@ -149,7 +132,6 @@ export const render = ({
             ${joinHtml(request.purchases.map(renderPurchaseRow))}
           </tbody>
         </table>
-        ${renderCostCheck(request)}
         ${request.approval === 'proposal'
           ? html`<p>
               <strong>Next:</strong> write your proposal. Nothing will be bought

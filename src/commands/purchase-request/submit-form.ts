@@ -13,7 +13,13 @@ import {
   classifyPurchase,
   PROPOSAL_THRESHOLD_PENCE,
 } from '../../purchasing/classify-purchase';
-import {PositivePenceFromPoundsString} from '../../types/money';
+import {
+  normalisePurchases,
+  RawPurchase,
+  RawPurchases,
+  rawPurchasesInOrder,
+  totalPence,
+} from '../../purchasing/purchases';
 import {SharedReadModel} from '../../read-models/shared-state';
 import {User} from '../../types';
 import {readRequestedStep} from '../../templates/multi-page-form';
@@ -66,18 +72,30 @@ const purchasingAreasFor = (
     remainingPence: purchasingArea.remainingPence,
   }));
 
+// The shops as typed, in order, with entirely blank ones left out.
+const readPurchases = (input: unknown): ReadonlyArray<RawPurchase> =>
+  pipe(
+    input,
+    t.type({purchases: RawPurchases}).decode,
+    E.map(({purchases}) => rawPurchasesInOrder(purchases)),
+    E.getOrElse((): ReadonlyArray<RawPurchase> => []),
+    entries =>
+      entries.filter(entry =>
+        [entry.shop, entry.link, entry.items, entry.cost].some(
+          value => (value ?? '').trim() !== ''
+        )
+      )
+  );
+
 // The form is filled in a page at a time (see render-submit-form.ts). Each
 // request carries every answer so far; the page shown is the one asked for,
-// unless an earlier page still has something missing, in which case that
-// page is shown with a note of what's needed - so editing ?step= can't skip
-// ahead.
+// unless an earlier page still has something to sort out, in which case that
+// page is shown saying what - so editing ?step= can't skip ahead.
 const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
   input =>
   ({readModel, user}) => {
     const now = new Date();
     const purchasingAreas = purchasingAreasFor(readModel, user, now);
-    const given = (name: keyof PurchaseRequestAnswers) =>
-      readAnswer(input, name);
     // ?purchasingArea= (from a purchasing area's page) or being a purchaser
     // for only one area picks it to start with.
     const startingArea =
@@ -85,20 +103,17 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
         ? purchasingAreas[0].id
         : readAnswer(input, 'purchasingArea');
     const answers: PurchaseRequestAnswers = {
-      purchasingAreaId: given('purchasingAreaId') || startingArea,
-      summary: given('summary'),
-      justification: given('justification'),
-      estimatedAmount: given('estimatedAmount'),
-      isMemberPaidConsumable: given('isMemberPaidConsumable'),
+      purchasingAreaId: readAnswer(input, 'purchasingAreaId') || startingArea,
+      summary: readAnswer(input, 'summary'),
+      justification: readAnswer(input, 'justification'),
+      purchases: readPurchases(input),
+      isMemberPaidConsumable: readAnswer(input, 'isMemberPaidConsumable'),
     };
 
     const chosen = O.fromNullable(
       purchasingAreas.find(area => area.id === answers.purchasingAreaId)
     );
-    const estimatePence = pipe(
-      PositivePenceFromPoundsString.decode(answers.estimatedAmount),
-      O.fromEither
-    );
+    const purchases = normalisePurchases(answers.purchases);
     const consumable =
       answers.isMemberPaidConsumable === 'true'
         ? O.some(true)
@@ -106,20 +121,23 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
           ? O.some(false)
           : O.none;
 
-    const missingFrom = [
+    const aboutMissing = [
+      ...(O.isNone(chosen) ? ['the area it is for'] : []),
+      ...(answers.summary === '' ? ['a summary'] : []),
+      ...(answers.justification === '' ? ['why it is needed'] : []),
+    ];
+    const problemsOn = [
+      aboutMissing.length > 0
+        ? [`Please give ${aboutMissing.join(', ')} before moving on.`]
+        : [],
       [
-        ...(O.isNone(chosen) ? ['the area it is for'] : []),
-        ...(answers.summary === '' ? ['a summary'] : []),
-        ...(answers.justification === '' ? ['why it is needed'] : []),
-      ],
-      [
-        ...(O.isNone(estimatePence) ? ['an estimate of the cost'] : []),
+        ...(E.isLeft(purchases) ? [purchases.left] : []),
         ...(O.isNone(consumable)
-          ? ['whether members pay for it as a consumable']
+          ? ['Please say whether members pay for it as a consumable.']
           : []),
       ],
     ];
-    const firstIncomplete = missingFrom.findIndex(missing => missing.length);
+    const firstIncomplete = problemsOn.findIndex(problems => problems.length);
     const furthest =
       firstIncomplete === -1 ? PAGE_LABELS.length : firstIncomplete + 1;
     const requested = readRequestedStep(input, PAGE_LABELS.length);
@@ -137,20 +155,21 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
       proposalThresholdPence: PROPOSAL_THRESHOLD_PENCE,
       step,
       answers,
-      missing: requested > step ? missingFrom[step - 1] : [],
+      problems: requested > step ? problemsOn[step - 1] : [],
       chosen,
-      estimate:
+      result:
         step === 3
           ? pipe(
               O.Do,
               O.apS('area', chosen),
-              O.apS('amountPence', estimatePence),
+              O.apS('purchases', O.fromEither(purchases)),
               O.apS('isMemberPaidConsumable', consumable),
-              O.map(({area, amountPence, isMemberPaidConsumable}) => ({
-                amountPence,
+              O.map(({area, purchases, isMemberPaidConsumable}) => ({
+                purchases,
+                totalPence: totalPence(purchases),
                 classification: classifyPurchase({
                   isMemberPaidConsumable,
-                  amountPence,
+                  amountPence: totalPence(purchases),
                   yearlyBudgetPence: area.yearlyBudgetPence,
                   spentThisYearPence: area.spentThisYearPence,
                 }),

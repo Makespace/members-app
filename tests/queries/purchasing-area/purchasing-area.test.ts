@@ -97,7 +97,6 @@ describe('purchasing area page', () => {
     await framework.commands.purchaseRequest.submit({
       id: faker.string.uuid() as UUID,
       purchasingAreaId,
-      estimatedAmount: 50_000,
       isMemberPaidConsumable: false,
       summary: 'Bandsaw blades' as never,
       purchases: [{shop: 'Axminster', items: '5 x blade', cost: '500.00'}],
@@ -129,7 +128,6 @@ describe('purchasing area page', () => {
     await framework.commands.purchaseRequest.submit({
       id: faker.string.uuid() as UUID,
       purchasingAreaId,
-      estimatedAmount: 63_000,
       isMemberPaidConsumable: true,
       summary: 'Sanding discs' as never,
       purchases: [{shop: 'Axminster', items: '100 x disc', cost: '630.00'}],

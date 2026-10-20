@@ -1370,7 +1370,6 @@ const _updateState =
             submittedAt: event.recordedAt,
             budgetYear: event.budgetYear,
             summary: event.summary,
-            estimatedAmountPence: event.estimatedAmountPence,
             totalPence: event.totalPence,
             purchasesJson: JSON.stringify(event.purchases),
             justification: event.justification,

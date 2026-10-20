@@ -241,8 +241,7 @@ const PurchaseRequestPurchase = t.strict({
 // the shop costs - at submission, and recorded here along with the budget
 // figures it was computed from, so the record says what the member was told
 // even if the budget or the rules change later. The itemised total is also
-// what counts against the budget; the member's earlier estimate is kept for
-// comparison.
+// what counts against the budget.
 // There is no approval step yet; one would follow as further events about the
 // same request id.
 const PurchaseRequestSubmitted = defineEvent('PurchaseRequestSubmitted', {
@@ -250,7 +249,6 @@ const PurchaseRequestSubmitted = defineEvent('PurchaseRequestSubmitted', {
   purchasingAreaId: tt.UUID,
   submittedByMemberNumber: t.number,
   summary: t.string,
-  estimatedAmountPence: t.number,
   totalPence: t.number,
   purchases: t.readonlyArray(PurchaseRequestPurchase),
   justification: t.string,

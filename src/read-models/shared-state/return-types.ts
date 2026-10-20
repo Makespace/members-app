@@ -194,8 +194,6 @@ export type PurchaseRequest = {
   submittedAt: Date;
   budgetYear: number;
   summary: string;
-  // The member's estimate on the form, kept for comparison.
-  estimatedAmountPence: number;
   // The sum of the shop costs: what the outcome was worked out from and what
   // counts against the budget.
   totalPence: number;

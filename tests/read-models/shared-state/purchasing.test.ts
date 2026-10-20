@@ -24,8 +24,7 @@ describe('purchasing areas in the read model', () => {
     outcome: PurchaseRequestOutcome,
     amountPence: number,
     budgetYear = 2026,
-    id = faker.string.uuid() as UUID,
-    estimatedAmountPence = amountPence
+    id = faker.string.uuid() as UUID
   ) =>
     constructEvent('PurchaseRequestSubmitted')({
       actor: systemActor(),
@@ -33,7 +32,6 @@ describe('purchasing areas in the read model', () => {
       purchasingAreaId,
       submittedByMemberNumber: memberNumber,
       summary: faker.commerce.productName(),
-      estimatedAmountPence,
       totalPence: amountPence,
       purchases: [
         {
@@ -304,16 +302,16 @@ describe('purchasing areas in the read model', () => {
       expect(requests[0].id).toStrictEqual(latestId);
     });
 
-    it('counts the shop total, not the earlier estimate, as spent', () => {
+    it('counts the shop total as spent', () => {
       const before = get().spentThisYearPence;
-      insert(submitted('budget', 20_000, 2026, faker.string.uuid() as UUID, 5_000));
+      insert(submitted('budget', 20_000));
       expect(get().spentThisYearPence).toBe(before + 20_000);
     });
 
     it('lists another year separately', () => {
       expect(
         framework.sharedReadModel.purchasing.getRequests(purchasingAreaId, 2025)
-      ).toStrictEqual([expect.objectContaining({estimatedAmountPence: 70_000})]);
+      ).toStrictEqual([expect.objectContaining({totalPence: 70_000})]);
     });
 
     it('finds a request by id', () => {
@@ -323,7 +321,7 @@ describe('purchasing areas in the read model', () => {
         O.some(
           expect.objectContaining({
             id: latestId,
-            estimatedAmountPence: 1_000,
+            totalPence: 1_000,
             outcome: 'budget',
             purchases: [
               {

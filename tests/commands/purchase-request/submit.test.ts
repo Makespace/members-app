@@ -41,7 +41,6 @@ describe('submit purchase request', () => {
   const formBody = (overrides: Record<string, unknown> = {}) => ({
     id: faker.string.uuid(),
     purchasingAreaId,
-    estimatedAmount: '250.00',
     isMemberPaidConsumable: 'false',
     summary: 'Sewing machine',
     purchases: [
@@ -144,7 +143,7 @@ describe('submit purchase request', () => {
         purchasingAreaId,
         submittedByMemberNumber: purchaserNumber,
         summary: 'Sewing machine',
-        estimatedAmountPence: 25_000,
+        totalPence: 24_000,
         justification: 'The old one is too small for quilts',
         isMemberPaidConsumable: false,
         outcome: 'budget',
@@ -168,7 +167,7 @@ describe('submit purchase request', () => {
 
     it('ignores an outcome the browser tries to supply', async () => {
       const event = await submitted(
-        formBody({outcome: 'consumable', estimatedAmount: '100.00'})
+        formBody({outcome: 'consumable'})
       );
       expect(event.outcome).toStrictEqual('budget');
     });
@@ -206,10 +205,9 @@ describe('submit purchase request', () => {
     expect(event.outcome).toStrictEqual('budget-proposal-needed');
   });
 
-  it('uses the shop total, not the earlier estimate, when they disagree', async () => {
+  it('adds up the shops to decide the outcome', async () => {
     const event = await submitted(
       formBody({
-        estimatedAmount: '100.00',
         purchases: [
           {shop: 'A', items: 'thing', cost: '600.00'},
           {shop: 'B', items: 'other thing', cost: '500.00'},
@@ -217,23 +215,16 @@ describe('submit purchase request', () => {
       })
     );
     expect(event).toMatchObject({
-      estimatedAmountPence: 10_000,
       totalPence: 110_000,
       outcome: 'budget-proposal-needed',
     });
   });
 
-  it('can come in under budget when the shops cost less than estimated', async () => {
-    const event = await submitted(
-      formBody({estimatedAmount: '1500.00', ...costing('80.00')})
-    );
-    expect(event).toMatchObject({totalPence: 8_000, outcome: 'budget'});
-  });
 
   describe('a consumable members pay for', () => {
     it("is recorded as a consumable, needing no approval", async () => {
       const event = await submitted(
-        formBody({isMemberPaidConsumable: 'true', estimatedAmount: '2500.00'})
+        formBody({isMemberPaidConsumable: 'true', ...costing('2500.00')})
       );
       expect(event).toMatchObject({
         outcome: 'consumable',
@@ -342,11 +333,6 @@ describe('submit purchase request', () => {
     });
   });
 
-  it('refuses an estimate of nothing', () => {
-    expect(submit.decode(formBody({estimatedAmount: '0'}))._tag).toStrictEqual(
-      'Left'
-    );
-  });
 
   it('fails for a purchasing area that does not exist', async () => {
     expect(

@@ -3,24 +3,26 @@
 // Agreement, using the shared pieces in src/templates/multi-page-form.ts:
 //
 //   1. About the request: which purchasing area, a summary, why it's needed.
-//   2. Budget and estimate: the area's budget as it stands, an estimated
-//      total, and whether it is a consumable members pay for.
-//   3. Cost breakdown: what the estimate means for the budget, then each shop
-//      with its cost. The shop costs, not the estimate, decide the outcome.
+//   2. Cost breakdown: each shop with what is bought there and its cost -
+//      their total is the cost of the request - and whether it is a
+//      consumable members pay for.
+//   3. Budget: the area's budget as it stands and which budget this comes out
+//      of, worked out on the server, before sending.
 //
 // Pages 1 and 2 move on with a GET form carrying the answers so far; page 3
-// posts everything to the submit command, which works out the outcome itself
-// (src/purchasing/classify-purchase.ts). Which page to show, and what is still
-// missing, is decided in submit-form.ts. Everything works without JavaScript;
-// on page 3 a small script adds and removes shops and says what the shop
-// costs add up to.
+// posts everything to the submit command, which works the outcome out again
+// itself (src/purchasing/classify-purchase.ts). Which page to show, and what
+// is still missing, is decided in submit-form.ts. Everything works without
+// JavaScript; on page 2 a small script adds and removes shops and keeps a
+// running total.
 // Its styles are the `.purchase-request` rules in src/static/styles.css.
 
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import {UUID} from 'io-ts-types';
-import {html, joinHtml, safe, sanitizeString} from '../../types/html';
+import {html, Html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {Classification} from '../../purchasing/classify-purchase';
+import {Purchase, RawPurchase} from '../../purchasing/purchases';
 import {
   backHref,
   hiddenInputs,
@@ -31,8 +33,8 @@ import {
 
 export const PAGE_LABELS = [
   'About the request',
-  'Budget and estimate',
   'Cost breakdown',
+  'Budget',
 ] as const;
 
 export type PurchasingAreaOption = {
@@ -49,7 +51,8 @@ export type PurchaseRequestAnswers = {
   purchasingAreaId: string;
   summary: string;
   justification: string;
-  estimatedAmount: string;
+  // The shops as typed, blank ones already left out.
+  purchases: ReadonlyArray<RawPurchase>;
   isMemberPaidConsumable: string;
 };
 
@@ -62,12 +65,16 @@ export type PurchaseRequestFormViewModel = {
   proposalThresholdPence: number;
   step: number;
   answers: PurchaseRequestAnswers;
-  // What they still need to answer, when they asked for a later page.
-  missing: ReadonlyArray<string>;
+  // What still needs sorting out, when they asked for a later page.
+  problems: ReadonlyArray<string>;
   // Known from page 2 on.
   chosen: O.Option<PurchasingAreaOption>;
-  // Known on page 3: the estimate, and what it would mean.
-  estimate: O.Option<{amountPence: number; classification: Classification}>;
+  // Known on page 3: the shops, their total, and what that means.
+  result: O.Option<{
+    purchases: ReadonlyArray<Purchase>;
+    totalPence: number;
+    classification: Classification;
+  }>;
 };
 
 // Shop entries offered without JavaScript; blank ones are ignored.
@@ -173,8 +180,12 @@ const renderBudget =
     </div>
   `;
 
-const renderShopEntry = (index: number) => {
+const purchaseFields = ['shop', 'cost', 'link', 'items'] as const;
+
+const renderShopEntry = (index: number, typed: RawPurchase) => {
   const required = index === 0 ? safe('required') : safe('');
+  const value = (field: (typeof purchaseFields)[number]) =>
+    sanitizeString(typed[field] ?? '');
   return html`
     <div class="purchase-shop" data-shop-entry>
       <div class="purchase-shop__head">
@@ -198,6 +209,7 @@ const renderShopEntry = (index: number) => {
             name="purchases[${index}][shop]"
             id="purchases-${index}-shop"
             placeholder="e.g. Axminster Tools"
+            value="${value('shop')}"
             ${required}
           />
         </div>
@@ -213,6 +225,7 @@ const renderShopEntry = (index: number) => {
               name="purchases[${index}][cost]"
               id="purchases-${index}-cost"
               placeholder="0.00"
+              value="${value('cost')}"
               data-shop-cost
               ${required}
             />
@@ -232,6 +245,7 @@ const renderShopEntry = (index: number) => {
           name="purchases[${index}][link]"
           id="purchases-${index}-link"
           placeholder="https://"
+          value="${value('link')}"
         />
       </div>
       <div class="purchase-field">
@@ -245,39 +259,51 @@ const renderShopEntry = (index: number) => {
           name="purchases[${index}][items]"
           id="purchases-${index}-items"
           ${required}
-        ></textarea>
+        >
+${value('items')}</textarea
+        >
       </div>
     </div>
   `;
 };
 
-// Every answer so far, in page order, to carry to another page.
-const carried = ({requestId, answers}: PurchaseRequestFormViewModel) =>
-  (
-    [
-      ['id', requestId],
-      ['purchasingAreaId', answers.purchasingAreaId],
-      ['summary', answers.summary],
-      ['justification', answers.justification],
-      ['estimatedAmount', answers.estimatedAmount],
-      ['isMemberPaidConsumable', answers.isMemberPaidConsumable],
-    ] as const
-  ).filter(([, value]) => value !== '');
+// The shops as carried between pages: numbered from 0 in order.
+const purchaseValues = (
+  purchases: ReadonlyArray<RawPurchase>
+): StepValues =>
+  purchases.flatMap((purchase, index) =>
+    purchaseFields.map(
+      field =>
+        [`purchases[${index}][${field}]`, purchase[field] ?? ''] as const
+    )
+  );
 
-// Everything but the named fields, which the page itself asks for.
+// Every answer so far, in page order, to carry to another page.
+const carried = ({
+  requestId,
+  answers,
+}: PurchaseRequestFormViewModel): StepValues =>
+  [
+    ['id', requestId] as const,
+    ['purchasingAreaId', answers.purchasingAreaId] as const,
+    ['summary', answers.summary] as const,
+    ['justification', answers.justification] as const,
+    ...purchaseValues(answers.purchases),
+    ['isMemberPaidConsumable', answers.isMemberPaidConsumable] as const,
+  ].filter(([, value]) => value !== '');
+
+// Everything but what the page itself asks for.
 const carriedExcept = (
   viewModel: PurchaseRequestFormViewModel,
-  names: ReadonlyArray<string>
-): StepValues => carried(viewModel).filter(([name]) => !names.includes(name));
+  asks: (name: string) => boolean
+): StepValues => carried(viewModel).filter(([name]) => !asks(name));
 
 const checkedIf = (condition: boolean) => (condition ? safe('checked') : '');
 
-const renderMissing = ({missing}: PurchaseRequestFormViewModel) =>
-  missing.length > 0
+const renderProblems = ({problems}: PurchaseRequestFormViewModel) =>
+  problems.length > 0
     ? html`<div class="callout callout--red" role="alert">
-        <p>
-          Please give ${sanitizeString(missing.join(', '))} before moving on.
-        </p>
+        ${joinHtml(problems.map(problem => html`<p>${sanitizeString(problem)}</p>`))}
       </div>`
     : html``;
 
@@ -317,7 +343,9 @@ const renderAboutPage = (viewModel: PurchaseRequestFormViewModel) => html`
   <form method="get" class="purchase-request__sections">
     <input type="hidden" name="step" value="2" />
     ${hiddenInputs(
-      carriedExcept(viewModel, ['purchasingAreaId', 'summary', 'justification'])
+      carriedExcept(viewModel, name =>
+        ['purchasingAreaId', 'summary', 'justification'].includes(name)
+      )
     )}
     <fieldset class="purchase-request__fieldset">
       <legend>Which area is this for?</legend>
@@ -359,71 +387,6 @@ ${sanitizeString(viewModel.answers.justification)}</textarea
   </form>
 `;
 
-const renderBudgetPage = (viewModel: PurchaseRequestFormViewModel) => html`
-  <form method="get" class="purchase-request__sections">
-    <input type="hidden" name="step" value="3" />
-    ${hiddenInputs(
-      carriedExcept(viewModel, ['estimatedAmount', 'isMemberPaidConsumable'])
-    )}
-    ${pipe(
-      viewModel.chosen,
-      O.match(() => html``, renderBudget(viewModel.budgetYear))
-    )}
-    <div class="purchase-field">
-      <label class="purchase-field__label" for="estimatedAmount"
-        >How much will it cost in total?</label
-      >
-      <span class="purchase-request__hint text-sm"
-        >Your best estimate, including VAT and delivery. You'll break it down
-        on the next page.</span
-      >
-      <div class="purchase-money purchase-money--narrow">
-        <span>£</span
-        ><input
-          type="text"
-          inputmode="decimal"
-          name="estimatedAmount"
-          id="estimatedAmount"
-          placeholder="0.00"
-          value="${sanitizeString(viewModel.answers.estimatedAmount)}"
-          required
-        />
-      </div>
-    </div>
-    <fieldset class="purchase-request__fieldset purchase-question">
-      <legend>Is it a consumable that members pay for when they use it?</legend>
-      <p class="purchase-request__hint text-sm">
-        For example, 3D printer filament, paid for on SumUp when it's used.
-      </p>
-      <div class="purchase-request__radios purchase-request__radios--inline">
-        <div class="fieldset-item">
-          <input
-            type="radio"
-            name="isMemberPaidConsumable"
-            id="consumable-yes"
-            value="true"
-            required
-            ${checkedIf(viewModel.answers.isMemberPaidConsumable === 'true')}
-          />
-          <label for="consumable-yes">Yes</label>
-        </div>
-        <div class="fieldset-item">
-          <input
-            type="radio"
-            name="isMemberPaidConsumable"
-            id="consumable-no"
-            value="false"
-            required
-            ${checkedIf(viewModel.answers.isMemberPaidConsumable === 'false')}
-          />
-          <label for="consumable-no">No</label>
-        </div>
-      </div>
-    </fieldset>
-    ${renderNext(viewModel)}
-  </form>
-`;
-
 const verdictStyle = {
   consumable: {
     modifier: 'consumable',
@@ -442,101 +405,54 @@ const verdictStyle = {
   },
 } as const;
 
-// What the estimate means, in the classifier's own words, and how much the
-// shops can come to before a proposal is needed.
-const renderEstimateVerdict = (
-  viewModel: PurchaseRequestFormViewModel,
-  amountPence: number,
-  classification: Classification
+// One outcome's box: its colour, tag and heading, with the explanation and
+// anything else below.
+const renderVerdictBox = (
+  outcome: Classification['outcome'],
+  subtitle: Html,
+  reason: Html,
+  extra: Html = html``
 ) => {
-  const style = verdictStyle[classification.outcome];
-  const limit = pipe(
-    viewModel.chosen,
-    O.match(
-      () => html``,
-      area =>
-        classification.outcome === 'consumable'
-          ? html``
-          : area.remainingPence < viewModel.proposalThresholdPence
-            ? html`<p>
-                What counts is what the shops below add up to. Up to
-                ${gbp(Math.max(area.remainingPence, 0))} needs no proposal.
-              </p>`
-            : html`<p>
-                What counts is what the shops below add up to. Under
-                ${gbp(viewModel.proposalThresholdPence)} needs no proposal.
-              </p>`
-    )
-  );
+  const style = verdictStyle[outcome];
   return html`
-    <div
-      class="purchase-verdict purchase-verdict--${safe(style.modifier)}"
-      data-estimate-verdict
-    >
-      <span class="purchase-request__hint text-sm"
-        >Based on your ${gbp(amountPence)} estimate</span
-      >
+    <div class="purchase-verdict purchase-verdict--${safe(style.modifier)}">
+      <span class="purchase-request__hint text-sm">${subtitle}</span>
       <span>${style.tag}</span>
       <h2>${safe(style.heading)}</h2>
-      <p>${sanitizeString(classification.reason)}</p>
-      ${limit}
+      <p>${reason}</p>
+      ${extra}
     </div>
   `;
 };
 
 const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => {
-  const estimatePence = pipe(
-    viewModel.estimate,
-    O.match(
-      () => 0,
-      ({amountPence}) => amountPence
-    )
-  );
-  const remainingPence = pipe(
-    viewModel.chosen,
-    O.match(
-      () => 0,
-      area => area.remainingPence
-    )
-  );
+  const typed = viewModel.answers.purchases;
+  const entries = [
+    ...typed,
+    ...Array.from(
+      {length: Math.max(SHOP_ENTRIES - typed.length, 0)},
+      (): RawPurchase => ({})
+    ),
+  ];
   return html`
-    ${pipe(
-      viewModel.estimate,
-      O.match(
-        () => html``,
-        ({amountPence, classification}) =>
-          renderEstimateVerdict(viewModel, amountPence, classification)
-      )
-    )}
-    <form
-      id="purchase-request-form"
-      class="purchase-request__sections"
-      action="/purchase-requests/submit?next=${safe(
-        encodeURIComponent(
-          `/purchase-requests/view/${viewModel.requestId}?sent=1`
+    <form method="get" class="purchase-request__sections" id="purchase-costs-form">
+      <input type="hidden" name="step" value="3" />
+      ${hiddenInputs(
+        carriedExcept(
+          viewModel,
+          name =>
+            name.startsWith('purchases[') || name === 'isMemberPaidConsumable'
         )
-      )}"
-      method="post"
-      data-estimate-pence="${estimatePence}"
-      data-remaining-pence="${remainingPence}"
-      data-proposal-threshold-pence="${viewModel.proposalThresholdPence}"
-      data-consumable="${sanitizeString(
-        viewModel.answers.isMemberPaidConsumable
-      )}"
-    >
-      ${hiddenInputs(carried(viewModel))}
+      )}
       <div class="purchase-request__stack">
         <h2>What are you buying, and where from?</h2>
         <p class="purchase-request__hint text-sm">
-          Add one entry for each shop or website. If everything comes from one
-          place, you only need one.
+          Add one entry for each shop or website, with what it costs including
+          VAT and delivery. If everything comes from one place, you only need
+          one. Together they make the cost of the request.
         </p>
         <div class="purchase-request__stack" data-shop-entries>
-          ${joinHtml(
-            Array.from({length: SHOP_ENTRIES}, (_, index) =>
-              renderShopEntry(index)
-            )
-          )}
+          ${joinHtml(entries.map((entry, index) => renderShopEntry(index, entry)))}
         </div>
         <button
           class="purchase-request__link-button jsonly"
@@ -547,26 +463,109 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => {
         </button>
         <div data-shop-total aria-live="polite"></div>
       </div>
-      ${renderStepNav({
-        back: backHref(viewModel.step, carried(viewModel)),
-        next: html`<button type="submit">Send request</button>`,
-      })}
+      <fieldset class="purchase-request__fieldset purchase-question">
+        <legend>Is it a consumable that members pay for when they use it?</legend>
+        <p class="purchase-request__hint text-sm">
+          For example, 3D printer filament, paid for on SumUp when it's used.
+        </p>
+        <div class="purchase-request__radios purchase-request__radios--inline">
+          <div class="fieldset-item">
+            <input
+              type="radio"
+              name="isMemberPaidConsumable"
+              id="consumable-yes"
+              value="true"
+              required
+              ${checkedIf(viewModel.answers.isMemberPaidConsumable === 'true')}
+            />
+            <label for="consumable-yes">Yes</label>
+          </div>
+          <div class="fieldset-item">
+            <input
+              type="radio"
+              name="isMemberPaidConsumable"
+              id="consumable-no"
+              value="false"
+              required
+              ${checkedIf(viewModel.answers.isMemberPaidConsumable === 'false')}
+            />
+            <label for="consumable-no">No</label>
+          </div>
+        </div>
+      </fieldset>
+      ${renderNext(viewModel)}
     </form>
-    ${enhancementScript}
+    ${costsScript}
   `;
 };
 
-// Plain browser JavaScript for page 3, kept free of template substitutions
+const renderShopRow = (purchase: Purchase) => html`
+  <tr>
+    <td>${sanitizeString(purchase.shop)}</td>
+    <td class="purchase-shops-table__items">
+      ${sanitizeString(purchase.items)}
+    </td>
+    <td class="purchase-shops-table__cost">${gbp(purchase.costPence)}</td>
+  </tr>
+`;
+
+const renderBudgetPage = (viewModel: PurchaseRequestFormViewModel) => html`
+  ${pipe(
+    viewModel.chosen,
+    O.match(() => html``, renderBudget(viewModel.budgetYear))
+  )}
+  ${pipe(
+    viewModel.result,
+    O.match(
+      () => html``,
+      ({purchases, totalPence, classification}) => html`
+        ${renderVerdictBox(
+          classification.outcome,
+          html`For the ${gbp(totalPence)} total`,
+          html`${sanitizeString(classification.reason)}`
+        )}
+        <table class="purchase-shops-table">
+          <thead>
+            <tr>
+              <th>Shop</th>
+              <th>Items</th>
+              <th class="purchase-shops-table__cost">Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${joinHtml(purchases.map(renderShopRow))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th colspan="2">Total</th>
+              <td class="purchase-shops-table__cost">${gbp(totalPence)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      `
+    )
+  )}
+  <form
+    action="/purchase-requests/submit?next=${safe(
+      encodeURIComponent(`/purchase-requests/view/${viewModel.requestId}?sent=1`)
+    )}"
+    method="post"
+  >
+    ${hiddenInputs(carried(viewModel))}
+    ${renderStepNav({
+      back: backHref(viewModel.step, carried(viewModel)),
+      next: html`<button type="submit">Send request</button>`,
+    })}
+  </form>
+`;
+
+// Plain browser JavaScript for page 2, kept free of template substitutions
 // (so no backtick strings in it) and of single backslashes.
-const enhancementScript = html`
+const costsScript = html`
   <script>
     (function () {
-      var form = document.getElementById('purchase-request-form');
+      var form = document.getElementById('purchase-costs-form');
       if (!form) return;
-      var estimate = Number(form.dataset.estimatePence);
-      var remaining = Number(form.dataset.remainingPence);
-      var threshold = Number(form.dataset.proposalThresholdPence);
-      var consumable = form.dataset.consumable === 'true';
       var shops = form.querySelector('[data-shop-entries]');
       var total = form.querySelector('[data-shop-total]');
 
@@ -583,38 +582,36 @@ const enhancementScript = html`
         return Number(parts[0]) * 100 + Number((parts[1] || '').padEnd(2, '0'));
       }
 
-      // What the shop costs add up to, and what that means. The server works
-      // the outcome out again from the same costs when the form is sent.
+      // The running total of the shop costs: the cost of the request.
       function update() {
         var sum = 0;
         form.querySelectorAll('[data-shop-cost]').forEach(function (field) {
           var cost = pence(field.value);
           if (cost !== null) sum += cost;
         });
-        if (!sum) {
-          total.innerHTML = '';
-          return;
-        }
-        var text = sum === estimate
-          ? 'These add up to <strong>' + gbp(sum) + '</strong>, the same as your estimate.'
-          : '<span class="tag tag--yellow">Note</span> These add up to <strong>' + gbp(sum) + '</strong>, ' +
-            (sum > estimate ? 'more' : 'less') + ' than your ' + gbp(estimate) + ' estimate. ' +
-            'The shop total is what counts.';
-        if (!consumable) {
-          var needsProposal = sum >= threshold || sum > remaining;
-          text += needsProposal
-            ? ' <strong>At this total you will need to write a proposal.</strong>'
-            : ' At this total it comes out of your yearly budget with no proposal needed.';
-        }
-        total.innerHTML = '<p class="text-sm">' + text + '</p>';
+        total.innerHTML = sum ? '<p><strong>Total: ' + gbp(sum) + '</strong></p>' : '';
       }
 
-      // Shop entries: start with one, add or remove on request. Field
-      // indices only ever go up, so names stay unique after a removal.
+      function isBlank(entry) {
+        return Array.prototype.every.call(
+          entry.querySelectorAll('input, textarea'),
+          function (field) { return field.value.trim() === ''; }
+        );
+      }
+
+      // Shop entries: keep the ones already filled in (at least one), add or
+      // remove on request. Field indices only ever go up, so names stay
+      // unique after a removal.
       var entries = shops.querySelectorAll('[data-shop-entry]');
       var template = entries[0].cloneNode(true);
-      for (var i = 1; i < entries.length; i++) entries[i].remove();
+      template.querySelectorAll('input, textarea').forEach(function (field) {
+        field.value = '';
+        field.textContent = '';
+      });
       var nextIndex = entries.length;
+      for (var i = 1; i < entries.length; i++) {
+        if (isBlank(entries[i])) entries[i].remove();
+      }
       function renumber() {
         var all = shops.querySelectorAll('[data-shop-entry]');
         all.forEach(function (entry, index) {
@@ -629,14 +626,14 @@ const enhancementScript = html`
           update();
         });
       }
-      wireRemove(entries[0]);
+      shops.querySelectorAll('[data-shop-entry]').forEach(wireRemove);
       form.querySelector('[data-add-shop]').addEventListener('click', function () {
         var index = nextIndex++;
         var entry = template.cloneNode(true);
         entry.querySelectorAll('[name]').forEach(function (field) {
           field.name = field.name.replace(/\\[\\d+\\]/, '[' + index + ']');
           field.id = field.id.replace(/-\\d+-/, '-' + index + '-');
-          field.value = '';
+          field.required = false;
         });
         entry.querySelectorAll('label[for]').forEach(function (label) {
           label.htmlFor = label.htmlFor.replace(/-\\d+-/, '-' + index + '-');
@@ -655,7 +652,7 @@ const enhancementScript = html`
   </script>
 `;
 
-const pages = [renderAboutPage, renderBudgetPage, renderCostsPage];
+const pages = [renderAboutPage, renderCostsPage, renderBudgetPage];
 
 const renderNoPurchasingAreas = () => html`
   <p>
@@ -687,7 +684,7 @@ export const renderSubmitForm = (viewModel: PurchaseRequestFormViewModel) =>
               values: carried(viewModel),
               name: 'Purchase request progress',
             })}
-            ${renderMissing(viewModel)} ${pages[viewModel.step - 1](viewModel)}
+            ${renderProblems(viewModel)} ${pages[viewModel.step - 1](viewModel)}
           `}
     </div>
   `;

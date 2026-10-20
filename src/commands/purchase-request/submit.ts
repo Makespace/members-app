@@ -8,12 +8,13 @@ import {StatusCodes} from 'http-status-codes';
 import {Actor, constructEvent} from '../../types';
 import {
   failureWithStatus,
-  FailureWithStatus,
 } from '../../types/failure-with-status';
 import {
-  PenceFromPoundsString,
-  PositivePenceFromPoundsString,
-} from '../../types/money';
+  normalisePurchases,
+  rawPurchasesInOrder,
+  RawPurchases,
+  totalPence,
+} from '../../purchasing/purchases';
 import {SharedReadModel} from '../../read-models/shared-state';
 import {allMemberNumbers} from '../../read-models/shared-state/return-types';
 import {classifyPurchase} from '../../purchasing/classify-purchase';
@@ -24,31 +25,14 @@ import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-us
 // A yes/no radio answer.
 const answer = t.union([t.boolean, tt.BooleanFromString]);
 
-// One shop or website, as typed into the form. The page offers a fixed number
-// of blank entries (more with JavaScript), so entirely blank ones are
-// ignored. Posted as purchases[0][shop] etc., which Express reads as an array
-// - or as an object keyed by index once there are more than 20.
-const rawPurchase = t.partial({
-  shop: t.string,
-  link: t.string,
-  items: t.string,
-  // In pounds, e.g. "42.50".
-  cost: t.string,
-});
-const rawPurchases = t.union([
-  t.readonlyArray(rawPurchase),
-  t.record(t.string, rawPurchase),
-]);
-
 const codec = t.strict({
   id: tt.UUID,
   purchasingAreaId: tt.UUID,
-  // The member's first estimate in pounds, e.g. "630.00"; recorded in pence
-  // for comparison. The outcome uses the shop costs, which are itemised later.
-  estimatedAmount: PositivePenceFromPoundsString,
   isMemberPaidConsumable: answer,
   summary: tt.NonEmptyString,
-  purchases: rawPurchases,
+  // Each shop with what is bought there and its cost; their total decides
+  // the outcome. See src/purchasing/purchases.ts.
+  purchases: RawPurchases,
   justification: tt.NonEmptyString,
   // API only: who the request is recorded against when it is entered with
   // the admin token (seeding, or recording one made elsewhere). Ignored for
@@ -58,103 +42,8 @@ const codec = t.strict({
 
 type SubmitPurchaseRequest = t.TypeOf<typeof codec>;
 
-type Purchase = {
-  shop: string;
-  link: string | null;
-  items: string;
-  costPence: number;
-};
-
 const fail = (message: string) =>
   failureWithStatus(message, StatusCodes.BAD_REQUEST)();
-
-// Optional. A bare "example.com/thing" is taken to mean https; anything that
-// still isn't a web address is refused rather than stored as a broken link.
-const normaliseLink = (
-  raw: string,
-  where: string
-): E.Either<FailureWithStatus, string | null> => {
-  const trimmed = raw.trim();
-  if (trimmed === '') {
-    return E.right(null);
-  }
-  const withScheme = /^[a-z][a-z0-9+.-]*:/i.test(trimmed)
-    ? trimmed
-    : `https://${trimmed}`;
-  const refused = E.left(
-    fail(`${where}: the link must be a web address (http or https).`)
-  );
-  try {
-    const url = new URL(withScheme);
-    return url.protocol === 'http:' || url.protocol === 'https:'
-      ? E.right(url.toString())
-      : refused;
-  } catch {
-    return refused;
-  }
-};
-
-const normaliseCost = (
-  raw: string,
-  where: string
-): E.Either<FailureWithStatus, number> =>
-  raw.trim() === ''
-    ? E.left(fail(`${where}: please say how much it costs.`))
-    : pipe(
-        PenceFromPoundsString.decode(raw),
-        E.mapLeft(() =>
-          fail(`${where}: the cost should be in pounds, e.g. 42.50.`)
-        )
-      );
-
-const normalisePurchase = (
-  raw: t.TypeOf<typeof rawPurchase>,
-  where: string
-): E.Either<FailureWithStatus, O.Option<Purchase>> => {
-  const shop = (raw.shop ?? '').trim();
-  const items = (raw.items ?? '').trim();
-  const link = raw.link ?? '';
-  const cost = raw.cost ?? '';
-  if (shop === '' && items === '' && link.trim() === '' && cost.trim() === '') {
-    return E.right(O.none);
-  }
-  if (shop === '') {
-    return E.left(fail(`${where}: please say which shop or website.`));
-  }
-  if (items === '') {
-    return E.left(fail(`${where}: please list what to buy from ${shop}.`));
-  }
-  return pipe(
-    E.Do,
-    E.bind('link', () => normaliseLink(link, shop)),
-    E.bind('costPence', () => normaliseCost(cost, shop)),
-    E.map(({link, costPence}) => O.some({shop, link, items, costPence}))
-  );
-};
-
-// Blank entries dropped; at least one shop is required.
-const normalisePurchases = (
-  raw: t.TypeOf<typeof rawPurchases>
-): E.Either<FailureWithStatus, ReadonlyArray<Purchase>> => {
-  const entries = Array.isArray(raw)
-    ? (raw as ReadonlyArray<t.TypeOf<typeof rawPurchase>>)
-    : Object.entries(raw)
-        .sort(([a], [b]) => Number(a) - Number(b))
-        .map(([, entry]) => entry);
-  const purchases: Purchase[] = [];
-  for (const [index, entry] of entries.entries()) {
-    const normalised = normalisePurchase(entry, `Shop ${index + 1}`);
-    if (E.isLeft(normalised)) {
-      return normalised;
-    }
-    if (O.isSome(normalised.right)) {
-      purchases.push(normalised.right.value);
-    }
-  }
-  return purchases.length === 0
-    ? E.left(fail('Please add at least one shop or website to buy from.'))
-    : E.right(purchases);
-};
 
 const submitterMemberNumber = (
   actor: Actor,
@@ -189,8 +78,7 @@ const isPurchaserFor = (
 
 // The outcome is always worked out here, from the answer, the itemised total
 // (the sum of the shop costs) and this year's budget figures, whatever the
-// page may have previewed. The total need not match the earlier estimate; the
-// total is what counts against the budget.
+// page may have shown.
 const process: Command<SubmitPurchaseRequest>['process'] = input => {
   const {command, rm} = input;
   if (O.isSome(rm.purchasing.getRequest(command.id))) {
@@ -214,10 +102,13 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
         )
       )
     ),
-    E.bind('purchases', () => normalisePurchases(command.purchases)),
-    E.let('totalPence', ({purchases}) =>
-      purchases.reduce((sum, purchase) => sum + purchase.costPence, 0)
+    E.bind('purchases', () =>
+      pipe(
+        normalisePurchases(rawPurchasesInOrder(command.purchases)),
+        E.mapLeft(fail)
+      )
     ),
+    E.let('totalPence', ({purchases}) => totalPence(purchases)),
     E.let('classification', ({purchasingArea, totalPence}) =>
       classifyPurchase({
         isMemberPaidConsumable: command.isMemberPaidConsumable,
@@ -240,7 +131,6 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
             purchasingAreaId: purchasingArea.id,
             submittedByMemberNumber,
             summary: command.summary.trim(),
-            estimatedAmountPence: command.estimatedAmount,
             totalPence,
             purchases,
             justification: command.justification.trim(),

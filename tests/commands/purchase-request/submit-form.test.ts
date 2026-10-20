@@ -55,9 +55,26 @@ describe('purchase request form pages', () => {
     }),
   ];
 
+  // As Express's query parser hands it over: purchases[0][shop] etc. become
+  // a list of shops.
+  const parsed = (query: Record<string, string>) => {
+    const purchases: Record<string, string>[] = [];
+    const rest: Record<string, string> = {};
+    Object.entries(query).forEach(([name, value]) => {
+      const match = /^purchases\[(\d+)\]\[(\w+)\]$/.exec(name);
+      if (match) {
+        const index = Number(match[1]);
+        purchases[index] = {...purchases[index], [match[2]]: value};
+      } else {
+        rest[name] = value;
+      }
+    });
+    return purchases.length ? {...rest, purchases} : rest;
+  };
+
   const page = (query: Record<string, string>) =>
     getTaskEitherRightOrFail(
-      submitForm.constructForm(query)({
+      submitForm.constructForm(parsed(query))({
         user,
         readModel: framework.sharedReadModel,
         deps: {} as never,
@@ -72,7 +89,12 @@ describe('purchase request form pages', () => {
   };
   const allAnswers = {
     ...aboutAnswers,
-    estimatedAmount: '250',
+    'purchases[0][shop]': 'Axminster',
+    'purchases[0][items]': '2 x blade',
+    'purchases[0][cost]': '150',
+    'purchases[1][shop]': 'Toolstation',
+    'purchases[1][items]': '1 x guard',
+    'purchases[1][cost]': '100',
     isMemberPaidConsumable: 'false',
   };
 
@@ -97,7 +119,7 @@ describe('purchase request form pages', () => {
 
   it('starts on page 1 with nothing answered', async () => {
     const viewModel = await page({});
-    expect(viewModel).toMatchObject({step: 1, missing: []});
+    expect(viewModel).toMatchObject({step: 1, problems: []});
     expect(viewModel.purchasingAreas.map(area => area.name).sort()).toStrictEqual(
       ['Craft & Art', 'Wood Shop']
     );
@@ -129,7 +151,7 @@ describe('purchase request form pages', () => {
     });
     expect(viewModel).toMatchObject({
       step: 1,
-      missing: ['a summary', 'why it is needed'],
+      problems: ['Please give a summary, why it is needed before moving on.'],
     });
   });
 
@@ -139,27 +161,54 @@ describe('purchase request form pages', () => {
       purchasingAreaId: faker.string.uuid(),
       step: '2',
     });
-    expect(viewModel).toMatchObject({step: 1, missing: ['the area it is for']});
-  });
-
-  it('sends them back to page 2 with what is missing', async () => {
-    const viewModel = await page({...aboutAnswers, estimatedAmount: 'lots', step: '3'});
     expect(viewModel).toMatchObject({
-      step: 2,
-      missing: [
-        'an estimate of the cost',
-        'whether members pay for it as a consumable',
-      ],
+      step: 1,
+      problems: ['Please give the area it is for before moving on.'],
     });
   });
 
-  it('works out what the estimate means on page 3', async () => {
-    const estimate = getSomeOrFail((await page({...allAnswers, step: '3'})).estimate);
-    expect(estimate.amountPence).toBe(25_000);
-    expect(estimate.classification.outcome).toBe('budget');
+  it('sends them back to page 2 until the shops and the question are sorted', async () => {
+    expect(await page({...aboutAnswers, step: '3'})).toMatchObject({
+      step: 2,
+      problems: [
+        'Please add at least one shop or website to buy from.',
+        'Please say whether members pay for it as a consumable.',
+      ],
+    });
+    expect(
+      await page({...allAnswers, 'purchases[1][cost]': '', step: '3'})
+    ).toMatchObject({
+      step: 2,
+      problems: ['Toolstation: please say how much it costs.'],
+    });
+  });
+
+  it('keeps only the shops filled in, in order', async () => {
+    const viewModel = await page({
+      ...aboutAnswers,
+      'purchases[0][shop]': '',
+      'purchases[1][shop]': 'Axminster',
+      'purchases[1][items]': 'blade',
+      step: '2',
+    });
+    expect(viewModel.answers.purchases).toStrictEqual([
+      {shop: 'Axminster', items: 'blade'},
+    ]);
+  });
+
+  it('works out the actual budget from the shop total on page 3', async () => {
+    const result = getSomeOrFail((await page({...allAnswers, step: '3'})).result);
+    expect(result.totalPence).toBe(25_000);
+    expect(result.purchases.map(purchase => purchase.shop)).toStrictEqual([
+      'Axminster',
+      'Toolstation',
+    ]);
+    expect(result.classification.outcome).toBe('budget');
     const proposal = getSomeOrFail(
-      (await page({...allAnswers, estimatedAmount: '1000', step: '3'})).estimate
+      (await page({...allAnswers, 'purchases[0][cost]': '900', step: '3'}))
+        .result
     );
+    expect(proposal.totalPence).toBe(100_000);
     expect(proposal.classification.outcome).toBe('budget-proposal-needed');
   });
 

@@ -10,7 +10,6 @@ const request: PurchaseRequest = {
   submittedAt: new Date('2026-10-15T12:00:00Z'),
   budgetYear: 2026,
   summary: 'Table saw blades',
-  estimatedAmountPence: 18_500,
   totalPence: 15_000,
   purchases: [
     {
@@ -59,17 +58,8 @@ describe('purchase request page', () => {
     expect(html).toContain('href="https://www.axminstertools.com/"');
     expect(html).toContain('2 x blade\n1 x guard');
     expect(html).toContain('£150.00');
-    expect(html).toContain('The shops add up to');
-    const text = html.replace(/\s+/g, ' ');
-    expect(text).toContain('less than the £185.00 estimate');
-    expect(text).toContain('The shop total is what counts');
   });
 
-  it('says nothing about the estimate when the shops match it', () => {
-    expect(page(true, {estimatedAmountPence: 15_000})).not.toContain(
-      'The shops add up to'
-    );
-  });
 
   it('says a proposal comes next when one is needed', () => {
     expect(
