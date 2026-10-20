@@ -100,17 +100,24 @@ export const renderAssignees = (assignees: ReadonlyArray<AssigneeView>) =>
 // Tickets in the management team's area are kept to that team and to
 // super-users. Say so wherever one is shown, so nobody who can see it takes
 // it for something every owner can read.
+// A small padlock: the fact is yes-or-no, so it needs no colour or box.
 export const managementOnlyMarker = (ticket: {managementOnly: boolean}) =>
   ticket.managementOnly
     ? html`<span
         class="tt-private"
-        title="Only the management team and super-users can see this ticket"
-        >Management only</span
+        title="Management only: only the management team and super-users can see this ticket"
+        ><svg viewBox="0 0 12 14" aria-hidden="true" focusable="false">
+          <path
+            d="M3 6V4a3 3 0 0 1 6 0v2h.5A1.5 1.5 0 0 1 11 7.5v5A1.5 1.5 0 0 1 9.5 14h-7A1.5 1.5 0 0 1 1 12.5v-5A1.5 1.5 0 0 1 2.5 6H3zm1.5 0h3V4a1.5 1.5 0 0 0-3 0v2z"
+          /></svg
+        ><span class="visually-hidden">Management only</span></span
       >`
     : html``;
 
+// A ticket's status where it is read rather than clicked. Filter chips and
+// action buttons, which are clicked, keep the filled tt-badge.
 export const statusBadge = (status: TroubleTicketStatus) =>
-  html`<span class="tt-badge tt-badge--${safe(STATUS_SLUG[status])}"
+  html`<span class="tt-status tt-status--${safe(STATUS_SLUG[status])}"
     >${safe(status)}</span
   >`;
 

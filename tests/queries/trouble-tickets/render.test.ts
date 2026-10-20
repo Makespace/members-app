@@ -98,7 +98,7 @@ describe('the board as a table', () => {
       }),
     ]);
 
-    expect(row.querySelector('.tt-badge')?.textContent?.trim()).toBe(
+    expect(row.querySelector('.tt-status')?.textContent?.trim()).toBe(
       'In Progress'
     );
     expect(row.querySelector('[data-label="Where"]')?.textContent).toMatch(
