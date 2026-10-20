@@ -1116,39 +1116,6 @@ label img {
   gap: 0.25rem;
 }
 
-/* The form's three pages. Without JavaScript they all show, in order. */
-.purchase-page {
-  display: flex;
-  flex-direction: column;
-  gap: 1.75rem;
-}
-
-.purchase-page[hidden] {
-  display: none;
-}
-
-.purchase-page > * + * {
-  margin-block-start: 0;
-}
-
-.purchase-page h2:focus:not(:focus-visible) {
-  outline: none;
-}
-
-.purchase-step {
-  color: var(--grey-color);
-  font-size: 0.85rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.purchase-page__nav {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1.5rem;
-}
-
 .purchase-request__hint {
   color: var(--grey-color);
 }
@@ -1239,26 +1206,12 @@ label img {
   text-decoration-thickness: 3px;
 }
 
-.purchase-request__send {
-  align-self: flex-start;
-}
-
 .purchase-question {
   border-left: 5px solid var(--border-color);
   padding-left: 1rem;
 }
 
-.purchase-question--answered {
-  border-left-color: var(--text-color);
-}
-
-/* Budget summary, with spent / this purchase / limit bar. */
-.purchase-request__budgets {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
+/* The area's budget as it stands: figures and a spent bar. */
 .purchase-budget {
   display: flex;
   flex-direction: column;

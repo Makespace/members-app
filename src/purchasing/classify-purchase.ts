@@ -29,7 +29,7 @@ type ClassificationInput = {
   spentThisYearPence: number;
 };
 
-type Classification = {
+export type Classification = {
   outcome: PurchaseRequestOutcome;
   approval: PurchaseApproval;
   reason: string;
