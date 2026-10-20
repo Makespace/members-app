@@ -90,16 +90,19 @@ describe('purchase request form', () => {
       ).not.toBeNull();
     });
 
-    it('asks for the estimate before the consumable question and the specifics', () => {
-      const names = [...form.querySelectorAll('[name]')].map(field =>
-        field.getAttribute('name')
-      );
-      expect(names.indexOf('estimatedAmount')).toBeLessThan(
-        names.indexOf('isMemberPaidConsumable')
-      );
-      expect(names.indexOf('isMemberPaidConsumable')).toBeLessThan(
-        names.indexOf('summary')
-      );
+    it('asks for the summary first, then the area, estimate, question and shops', () => {
+      const names = [...form.querySelectorAll('[name]')]
+        .map(field => field.getAttribute('name'))
+        .filter(name => name !== 'id');
+      expect(names[0]).toBe('summary');
+      const order = [
+        'summary',
+        'purchasingAreaId',
+        'estimatedAmount',
+        'isMemberPaidConsumable',
+        'purchases[0][shop]',
+      ].map(name => names.indexOf(name));
+      expect(order).toStrictEqual([...order].sort((a, b) => a - b));
     });
 
     it('asks only whether it is a consumable, with an example', () => {

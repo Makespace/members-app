@@ -1,7 +1,8 @@
 // The purchase request form, kept in this one file so the design can be
-// swapped out wholesale. It follows the purchase-request prototype: pick the
-// purchasing area, see its budget, give an estimated total, say whether it is
-// a consumable, see the verdict, then say what is being bought and from where.
+// swapped out wholesale. It follows the purchase-request prototype: give a
+// summary, pick the purchasing area, see its budget, give an estimated total,
+// say whether it is a consumable, see the verdict, then say what is being
+// bought and from where.
 // It only needs the view model below; everything it shows comes from there.
 // Its styles are the `.purchase-request` rules in src/static/styles.css.
 //
@@ -455,6 +456,20 @@ const renderForm = (viewModel: PurchaseRequestFormViewModel) => html`
   >
     <input type="hidden" name="id" value="${viewModel.requestId}" />
 
+    <div class="purchase-field">
+      <label class="purchase-field__label" for="summary">Summary</label>
+      <span class="purchase-request__hint text-sm"
+        >A short name for the request as a whole.</span
+      >
+      <input
+        type="text"
+        name="summary"
+        id="summary"
+        placeholder="e.g. New table saw blades and a blade guard"
+        required
+      />
+    </div>
+
     <fieldset class="purchase-request__fieldset">
       <legend>Which area is this for?</legend>
       <p class="purchase-request__hint text-sm">
@@ -531,19 +546,6 @@ const renderForm = (viewModel: PurchaseRequestFormViewModel) => html`
     <div class="purchase-request__sections" data-submit-section>
       <div class="purchase-request__stack">
         <h2>What are you buying, and where from?</h2>
-        <div class="purchase-field">
-          <label class="purchase-field__label" for="summary">Summary</label>
-          <span class="purchase-request__hint text-sm"
-            >A short name for the request as a whole.</span
-          >
-          <input
-            type="text"
-            name="summary"
-            id="summary"
-            placeholder="e.g. New table saw blades and a blade guard"
-            required
-          />
-        </div>
         <p class="purchase-request__hint text-sm">
           Add one entry for each shop or website. If everything comes from one
           place, you only need one.
