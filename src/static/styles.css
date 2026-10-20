@@ -4046,14 +4046,15 @@ ul.checklist {
 }
 
 
-/* Progress through a document read a page at a time (the owner agreement):
-   numbered markers, ticked once read, with the current page in green. */
-.agreement-progress__count {
+/* Progress through a form filled in a page at a time (the owner agreement,
+   purchase requests - see src/templates/multi-page-form.ts): numbered
+   markers, ticked once done, with the current page in green. */
+.step-progress__count {
   color: var(--grey-color);
   margin: 0;
 }
 
-ol.agreement-progress__steps {
+ol.step-progress__steps {
   display: flex;
   gap: 0.5rem;
   margin-block-start: 0.5rem;
@@ -4061,7 +4062,7 @@ ol.agreement-progress__steps {
   list-style: none;
 }
 
-.agreement-progress__step {
+.step-progress__step {
   flex: 1;
   margin: 0;
   padding-top: 0.5rem;
@@ -4069,34 +4070,34 @@ ol.agreement-progress__steps {
   color: var(--grey-color);
 }
 
-.agreement-progress__step--done,
-.agreement-progress__step--current {
+.step-progress__step--done,
+.step-progress__step--current {
   border-top-color: var(--green-color);
 }
 
-.agreement-progress__step--current {
+.step-progress__step--current {
   color: var(--text-color);
   font-weight: bold;
 }
 
-.agreement-progress__step a {
+.step-progress__step a {
   color: inherit;
 }
 
-.agreement-progress__step--done a:hover .agreement-progress__label {
+.step-progress__step--done a:hover .step-progress__label {
   text-decoration: underline;
 }
 
-.agreement-progress__step a,
-.agreement-progress__step--current,
-.agreement-progress__step--todo {
+.step-progress__step a,
+.step-progress__step--current,
+.step-progress__step--todo {
   display: flex;
   align-items: baseline;
   gap: 0.4rem;
   text-decoration: none;
 }
 
-.agreement-progress__marker {
+.step-progress__marker {
   flex: none;
   display: inline-flex;
   align-items: center;
@@ -4109,21 +4110,21 @@ ol.agreement-progress__steps {
   font-weight: bold;
 }
 
-.agreement-progress__step--done .agreement-progress__marker {
+.step-progress__step--done .step-progress__marker {
   background: var(--green-color);
   border-color: var(--green-color);
   color: white;
 }
 
-.agreement-progress__step--current .agreement-progress__marker {
+.step-progress__step--current .step-progress__marker {
   border-color: var(--green-color);
   color: var(--green-color);
 }
 
 /* On narrow screens there's only room for the current page's name */
 @media (max-width: 40rem) {
-  .agreement-progress__step:not(.agreement-progress__step--current)
-    .agreement-progress__label {
+  .step-progress__step:not(.step-progress__step--current)
+    .step-progress__label {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -4133,7 +4134,7 @@ ol.agreement-progress__steps {
   }
 }
 
-.agreement-nav {
+.step-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -4143,7 +4144,7 @@ ol.agreement-progress__steps {
 }
 
 /* With no Back link on the first page, keep Next on the right */
-.agreement-nav > button:only-child {
+.step-nav > button:only-child {
   margin-left: auto;
 }
 
@@ -4225,7 +4226,7 @@ fieldset.agreement-choices__set {
    the server sends them back with a message, so nobody is left wondering
    why nothing happened. */
 .agreement-choices:has(.agreement-choices__set):not(:has(input:checked))
-  .agreement-nav
+  .step-nav
   button {
   opacity: 0.5;
 }
