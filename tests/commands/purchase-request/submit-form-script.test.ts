@@ -65,8 +65,8 @@ const jewson: TypedPurchase = {
   shop: 'jewson.co.uk',
   delivery: '',
   items: [
-    {url: '', sku: 'PEGF8418', quantity: '1', price: '50', notes: ''},
-    {url: '', sku: 'PBJT4750', quantity: '4', price: '25', notes: '4.8m'},
+    {url: '', sku: 'PEGF8418', quantity: '1', cost: '50', notes: ''},
+    {url: '', sku: 'PBJT4750', quantity: '4', cost: '100', notes: '4.8m'},
   ],
 };
 
@@ -126,17 +126,17 @@ describe('purchase request cost breakdown script', () => {
     expect(shops(form)).toHaveLength(1);
   });
 
-  it('totals each shop, with delivery, and the whole request', () => {
+  it('adds up each shop, with delivery, and the whole request', () => {
     const form = setUp();
     fill(form, 'purchases[0][items][0][quantity]', '4');
-    fill(form, 'purchases[0][items][0][price]', '12.50');
+    fill(form, 'purchases[0][items][0][cost]', '50');
     fill(form, 'purchases[0][delivery]', '7');
     expect(
       shops(form)[0].querySelector('[data-shop-total]')!.textContent
     ).toContain('Shop total: £57');
     form.querySelector<HTMLButtonElement>('[data-add-shop]')!.click();
     fill(form, 'purchases[2][items][0][quantity]', '1');
-    fill(form, 'purchases[2][items][0][price]', '3.50');
+    fill(form, 'purchases[2][items][0][cost]', '3.50');
     expect(totalText(form)).toContain('Total: £60.50');
   });
 });

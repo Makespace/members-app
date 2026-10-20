@@ -11,7 +11,7 @@ const item = (fields: Record<string, string>) => ({
   url: '',
   sku: '',
   quantity: '1',
-  price: '10',
+  cost: '10',
   notes: '',
   ...fields,
 });
@@ -41,8 +41,8 @@ describe('purchases', () => {
           shop: 'jewson.co.uk',
           delivery: '',
           items: [
-            {url: '', sku: 'PEGF8418', quantity: '1', price: '', notes: ''},
-            {url: '', sku: 'PBJT4750', quantity: '4', price: '', notes: '4.8m'},
+            {url: '', sku: 'PEGF8418', quantity: '1', cost: '', notes: ''},
+            {url: '', sku: 'PBJT4750', quantity: '4', cost: '', notes: '4.8m'},
           ],
         },
       ]);
@@ -66,7 +66,7 @@ describe('purchases', () => {
                   url: 'www.jewson.co.uk/p/joist-PBJT4750',
                   sku: 'PBJT4750',
                   quantity: '4',
-                  price: '12.50',
+                  cost: '50',
                   notes: '4.8m',
                 }),
               ],
@@ -82,7 +82,7 @@ describe('purchases', () => {
               url: 'https://www.jewson.co.uk/p/joist-PBJT4750',
               sku: 'PBJT4750',
               quantity: 4,
-              unitPricePence: 1_250,
+              costPence: 5_000,
               notes: '4.8m',
             },
           ],
@@ -130,14 +130,14 @@ describe('purchases', () => {
       ).toBe(`J, item 2: ${message}`);
     });
 
-    it('needs a price for each item', () => {
-      expect(problem([{shop: 'J', items: [item({sku: 'A', price: ''})]}])).toBe(
-        'J, item 1: please say how much each one costs.'
+    it('needs a cost for each item', () => {
+      expect(problem([{shop: 'J', items: [item({sku: 'A', cost: ''})]}])).toBe(
+        'J, item 1: please say how much they cost in total.'
       );
     });
 
     it('turns down amounts that are not in pounds', () => {
-      expect(problem([{shop: 'J', items: [item({sku: 'A', price: 'lots'})]}])).toBe(
+      expect(problem([{shop: 'J', items: [item({sku: 'A', cost: 'lots'})]}])).toBe(
         'J, item 1: amounts should be in pounds, e.g. 42.50.'
       );
       expect(

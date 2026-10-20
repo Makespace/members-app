@@ -186,7 +186,7 @@ const renderBudget =
 const SHOP_ENTRIES = 2;
 const ITEM_ENTRIES = 3;
 
-const blankItem: TypedItem = {url: '', sku: '', quantity: '', price: '', notes: ''};
+const blankItem: TypedItem = {url: '', sku: '', quantity: '', cost: '', notes: ''};
 const blankShop: TypedPurchase = {shop: '', delivery: '', items: []};
 
 // Typed entries first, then blanks up to the minimum.
@@ -195,7 +195,7 @@ const padded = <A>(typed: ReadonlyArray<A>, minimum: number, blank: A) => [
   ...Array.from({length: Math.max(minimum - typed.length, 0)}, () => blank),
 ];
 
-const itemFields = ['url', 'sku', 'quantity', 'price', 'notes'] as const;
+const itemFields = ['url', 'sku', 'quantity', 'cost', 'notes'] as const;
 
 const renderItemEntry =
   (shopIndex: number) => (item: TypedItem, itemIndex: number) => {
@@ -254,22 +254,28 @@ const renderItemEntry =
             />
           </div>
           <div class="purchase-field">
-            <label class="purchase-field__label" for="${id('price')}"
-              >Price each</label
+            <label class="purchase-field__label" for="${id('cost')}"
+              >Cost</label
             >
             <div class="purchase-money">
               <span>£</span
               ><input
                 type="text"
                 inputmode="decimal"
-                name="${name('price')}"
-                id="${id('price')}"
+                name="${name('cost')}"
+                id="${id('cost')}"
                 placeholder="0.00"
-                value="${sanitizeString(item.price)}"
-                data-item-price
+                value="${sanitizeString(item.cost)}"
+                aria-describedby="${id('cost')}-hint"
+                data-item-cost
                 ${required}
               />
             </div>
+            <span
+              class="purchase-request__hint text-sm"
+              id="${id('cost')}-hint"
+              >For the whole quantity, after any discount.</span
+            >
           </div>
         </div>
         <div class="purchase-field">
@@ -541,7 +547,8 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
       <h2>What are you buying, and where from?</h2>
       <p class="purchase-request__hint text-sm">
         Start with the shop or website, then add each item you want from it,
-        with its price including VAT. Add another shop if some things come from
+        with what it costs for that quantity, including VAT and any bulk
+        discount. Add another shop if some things come from
         somewhere else. Together they make the cost of the request.
       </p>
       <div class="purchase-request__stack" data-shop-entries>
@@ -651,10 +658,6 @@ const costsScript = html`
         return Number(parts[0]) * 100 + Number((parts[1] || '').padEnd(2, '0'));
       }
 
-      function quantity(value) {
-        var trimmed = value.trim();
-        return /^[0-9]+$/.test(trimmed) ? Number(trimmed) : 0;
-      }
       function isBlank(entry) {
         return Array.prototype.every.call(
           entry.querySelectorAll('input'),
@@ -662,15 +665,14 @@ const costsScript = html`
         );
       }
 
-      // Each shop's subtotal (items at quantity times price, plus delivery)
-      // and the request's total, which is what decides the budget.
+      // Each shop's subtotal (its items' costs plus delivery) and the
+      // request's total, which is what decides the budget.
       function update() {
         var total = 0;
         shops.querySelectorAll('[data-shop-entry]').forEach(function (shop) {
           var sum = pence(shop.querySelector('[data-shop-delivery]').value) || 0;
           shop.querySelectorAll('[data-item-entry]').forEach(function (item) {
-            var price = pence(item.querySelector('[data-item-price]').value) || 0;
-            sum += quantity(item.querySelector('[data-item-quantity]').value) * price;
+            sum += pence(item.querySelector('[data-item-cost]').value) || 0;
           });
           shop.querySelector('[data-shop-total]').innerHTML =
             sum ? '<p>Shop total: ' + gbp(sum) + '</p>' : '';

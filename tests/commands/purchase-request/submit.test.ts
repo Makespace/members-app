@@ -36,7 +36,7 @@ describe('submit purchase request', () => {
     ...events: Parameters<TestFramework['insertIntoSharedReadModel']>[0][]
   ) => events.forEach(event => framework.insertIntoSharedReadModel(event));
 
-  const blankItem = {url: '', sku: '', quantity: '', price: '', notes: ''};
+  const blankItem = {url: '', sku: '', quantity: '', cost: '', notes: ''};
 
   // What the browser posts, before decoding: pounds as strings, yes/no as
   // "true"/"false", and the fixed shop and item entries (blank ones included).
@@ -54,7 +54,7 @@ describe('submit purchase request', () => {
             url: 'sewingdirect.com/machine',
             sku: 'SD-200',
             quantity: '1',
-            price: '230',
+            cost: '230',
             notes: 'Quilting model',
           },
           blankItem,
@@ -69,9 +69,9 @@ describe('submit purchase request', () => {
 
   // One shop with one item costing this much, in pounds: the itemised total
   // that decides the outcome.
-  const costing = (price: string) => ({
+  const costing = (cost: string) => ({
     purchases: [
-      {shop: 'Sewing Direct', items: [{notes: 'Thing', quantity: '1', price}]},
+      {shop: 'Sewing Direct', items: [{notes: 'Thing', quantity: '1', cost}]},
     ],
   });
 
@@ -175,7 +175,7 @@ describe('submit purchase request', () => {
               url: 'https://sewingdirect.com/machine',
               sku: 'SD-200',
               quantity: 1,
-              unitPricePence: 23_000,
+              costPence: 23_000,
               notes: 'Quilting model',
             },
           ],
@@ -231,9 +231,9 @@ describe('submit purchase request', () => {
           {
             shop: 'A',
             delivery: '20',
-            items: [{notes: 'Thing', quantity: '2', price: '240.00'}],
+            items: [{notes: 'Thing', quantity: '2', cost: '480.00'}],
           },
-          {shop: 'B', items: [{sku: 'B1', quantity: '1', price: '600.00'}]},
+          {shop: 'B', items: [{sku: 'B1', quantity: '1', cost: '600.00'}]},
         ],
       })
     );
@@ -277,7 +277,7 @@ describe('submit purchase request', () => {
         )
       ).toMatchObject({
         status: StatusCodes.BAD_REQUEST,
-        message: 'A, item 1: please say how much each one costs.',
+        message: 'A, item 1: please say how much they cost in total.',
       });
     });
 
@@ -293,12 +293,12 @@ describe('submit purchase request', () => {
       const event = await submitted(
         formBody({
           purchases: {
-            '21': {shop: 'Second', items: [{notes: 'b', quantity: '1', price: '2'}]},
+            '21': {shop: 'Second', items: [{notes: 'b', quantity: '1', cost: '2'}]},
             '3': {
               shop: 'First',
               items: {
-                '25': {notes: 'later', quantity: '1', price: '1'},
-                '4': {notes: 'earlier', quantity: '1', price: '1'},
+                '25': {notes: 'later', quantity: '1', cost: '1'},
+                '4': {notes: 'earlier', quantity: '1', cost: '1'},
               },
             },
           },

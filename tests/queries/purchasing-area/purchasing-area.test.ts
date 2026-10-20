@@ -102,7 +102,7 @@ describe('purchasing area page', () => {
       purchases: [
         {
           shop: 'Axminster',
-          items: [{notes: 'Bandsaw blade', quantity: '5', price: '100.00'}],
+          items: [{notes: 'Bandsaw blade', quantity: '5', cost: '500.00'}],
         },
       ],
       justification: 'Worn out' as never,
@@ -138,7 +138,7 @@ describe('purchasing area page', () => {
       purchases: [
         {
           shop: 'Axminster',
-          items: [{notes: 'Sanding disc', quantity: '100', price: '6.30'}],
+          items: [{notes: 'Sanding disc', quantity: '100', cost: '630.00'}],
         },
       ],
       justification: 'Sold to members' as never,

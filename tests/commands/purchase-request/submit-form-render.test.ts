@@ -43,14 +43,14 @@ const purchases = [
         url: 'https://www.jewson.co.uk/p/plywood-PEGF8418',
         sku: 'PEGF8418',
         quantity: 1,
-        unitPricePence: 5_000,
+        costPence: 5_000,
         notes: null,
       },
       {
         url: null,
         sku: 'PBJT4750',
         quantity: 4,
-        unitPricePence: 2_500,
+        costPence: 10_000,
         notes: '4.8m',
       },
     ],
@@ -80,10 +80,10 @@ const onPage = (
             url: 'https://www.jewson.co.uk/p/plywood-PEGF8418',
             sku: 'PEGF8418',
             quantity: '1',
-            price: '50',
+            cost: '50',
             notes: '',
           },
-          {url: '', sku: 'PBJT4750', quantity: '4', price: '25', notes: '4.8m'},
+          {url: '', sku: 'PBJT4750', quantity: '4', cost: '100', notes: '4.8m'},
         ],
       },
     ],
@@ -150,11 +150,11 @@ describe('purchase request form', () => {
           'purchases[0][items][0][url]',
           'purchases[0][items][0][sku]',
           'purchases[0][items][0][quantity]',
-          'purchases[0][items][0][price]',
+          'purchases[0][items][0][cost]',
           'purchases[0][items][0][notes]',
         ])
       );
-      expect(names.indexOf('purchases[0][items][0][price]')).toBeLessThan(
+      expect(names.indexOf('purchases[0][items][0][cost]')).toBeLessThan(
         names.indexOf('isMemberPaidConsumable')
       );
       expect(
@@ -167,13 +167,13 @@ describe('purchase request form', () => {
       ).toBe(true);
     });
 
-    it('needs the first shop, quantity and price', () => {
+    it('needs the first shop, quantity and cost', () => {
       const page = render(onPage(2));
       const required = (name: string) =>
         page.querySelector<HTMLInputElement>(`[name="${name}"]`)!.required;
       expect(required('purchases[0][shop]')).toBe(true);
       expect(required('purchases[0][items][0][quantity]')).toBe(true);
-      expect(required('purchases[0][items][0][price]')).toBe(true);
+      expect(required('purchases[0][items][0][cost]')).toBe(true);
       expect(required('purchases[0][items][0][sku]')).toBe(false);
     });
 
@@ -220,8 +220,8 @@ describe('purchase request form', () => {
         rows.map(row => row.textContent.replace(/\s+/g, ' ').trim())
       ).toStrictEqual([
         'jewson.co.uk',
-        'jewson.co.uk PEGF8418 1 £50.00 £50.00',
-        'PBJT4750 4.8m 4 £25.00 £100.00',
+        'jewson.co.uk PEGF8418 1 £50.00',
+        'PBJT4750 4.8m 4 £100.00',
         'Delivery £100.00',
         'jewson.co.uk total £250.00',
       ]);
@@ -244,7 +244,7 @@ describe('purchase request form', () => {
         id: requestId,
         summary: 'Saw blades',
         'purchases[0][delivery]': '100',
-        'purchases[0][items][0][price]': '50',
+        'purchases[0][items][0][cost]': '50',
         'purchases[0][items][1][quantity]': '4',
         isMemberPaidConsumable: 'false',
       });
@@ -274,11 +274,11 @@ describe('purchase request form', () => {
   it('says what still needs sorting out when sent back', () => {
     const page = render(
       onPage(2, {
-        problems: ['jewson.co.uk, item 2: please say how much each one costs.'],
+        problems: ['jewson.co.uk, item 2: please say how much they cost in total.'],
       })
     );
     expect(page.querySelector('[role="alert"]')?.textContent).toContain(
-      'jewson.co.uk, item 2: please say how much each one costs.'
+      'jewson.co.uk, item 2: please say how much they cost in total.'
     );
   });
 

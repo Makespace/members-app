@@ -1,15 +1,10 @@
 import {html, joinHtml, sanitizeString} from '../types/html';
 import {formatPence} from '../types/money';
-import {
-  lineTotalPence,
-  Purchase,
-  PurchaseItem,
-  shopTotalPence,
-} from '../purchasing/purchases';
+import {Purchase, PurchaseItem, shopTotalPence} from '../purchasing/purchases';
 
 // What a purchase request buys, shop by shop: each item with its link, SKU,
-// notes, quantity, price and cost, then delivery and the shop's subtotal, and
-// the total at the end. Used before sending (the form's last page) and on the
+// notes, quantity and cost, then delivery and the shop's subtotal, and the
+// total at the end. Used before sending (the form's last page) and on the
 // request's own page.
 
 const money = (pence: number) => sanitizeString(formatPence(pence));
@@ -31,27 +26,26 @@ const renderItem = (item: PurchaseItem) => html`
       ${sanitizeString(item.notes ?? '')}
     </td>
     <td class="purchase-breakdown__number">${item.quantity}</td>
-    <td class="purchase-breakdown__number">${money(item.unitPricePence)}</td>
-    <td class="purchase-breakdown__number">${money(lineTotalPence(item))}</td>
+    <td class="purchase-breakdown__number">${money(item.costPence)}</td>
   </tr>
 `;
 
 const renderShop = (purchase: Purchase) => html`
   <tbody>
     <tr class="purchase-breakdown__shop">
-      <th colspan="6" scope="rowgroup">${sanitizeString(purchase.shop)}</th>
+      <th colspan="5" scope="rowgroup">${sanitizeString(purchase.shop)}</th>
     </tr>
     ${joinHtml(purchase.items.map(renderItem))}
     ${purchase.deliveryPence > 0
       ? html`<tr>
-          <td colspan="5">Delivery</td>
+          <td colspan="4">Delivery</td>
           <td class="purchase-breakdown__number">
             ${money(purchase.deliveryPence)}
           </td>
         </tr>`
       : html``}
     <tr class="purchase-breakdown__subtotal">
-      <td colspan="5">${sanitizeString(purchase.shop)} total</td>
+      <td colspan="4">${sanitizeString(purchase.shop)} total</td>
       <td class="purchase-breakdown__number">
         ${money(shopTotalPence(purchase))}
       </td>
@@ -71,14 +65,13 @@ export const renderPurchaseBreakdown = (
           <th>SKU</th>
           <th>Notes</th>
           <th class="purchase-breakdown__number">Qty</th>
-          <th class="purchase-breakdown__number">Each</th>
           <th class="purchase-breakdown__number">Cost</th>
         </tr>
       </thead>
       ${joinHtml(purchases.map(renderShop))}
       <tfoot>
         <tr>
-          <th colspan="5">Total</th>
+          <th colspan="4">Total</th>
           <td class="purchase-breakdown__number">${money(totalPence)}</td>
         </tr>
       </tfoot>

@@ -72,12 +72,12 @@ describe('purchase request form pages', () => {
     summary: 'Saw blades',
     justification: 'The old ones are blunt',
   };
-  const jewson = (price = '50') => ({
+  const jewson = (cost = '50') => ({
     shop: 'jewson.co.uk',
     delivery: '',
     items: [
-      {url: '', sku: 'PEGF8418', quantity: '1', price, notes: ''},
-      {url: '', sku: 'PBJT4750', quantity: '4', price: '25', notes: '4.8m'},
+      {url: '', sku: 'PEGF8418', quantity: '1', cost, notes: ''},
+      {url: '', sku: 'PBJT4750', quantity: '4', cost: '100', notes: '4.8m'},
     ],
   });
   const allAnswers = {
@@ -168,13 +168,13 @@ describe('purchase request form pages', () => {
       await page({
         ...allAnswers,
         purchases: [
-          {...noPrice, items: [noPrice.items[0], {...noPrice.items[1], price: ''}]},
+          {...noPrice, items: [noPrice.items[0], {...noPrice.items[1], cost: ''}]},
         ],
         step: '3',
       })
     ).toMatchObject({
       step: 2,
-      problems: ['jewson.co.uk, item 2: please say how much each one costs.'],
+      problems: ['jewson.co.uk, item 2: please say how much they cost in total.'],
     });
   });
 
@@ -191,7 +191,7 @@ describe('purchase request form pages', () => {
       {
         shop: 'jewson.co.uk',
         delivery: '',
-        items: [{url: '', sku: 'PEGF8418', quantity: '', price: '', notes: ''}],
+        items: [{url: '', sku: 'PEGF8418', quantity: '', cost: '', notes: ''}],
       },
     ]);
   });

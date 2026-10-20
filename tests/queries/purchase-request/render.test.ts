@@ -19,7 +19,7 @@ const request: PurchaseRequest = {
           url: 'https://www.axminstertools.com/blade',
           sku: 'AX123',
           quantity: 2,
-          unitPricePence: 6_000,
+          costPence: 12_000,
           notes: '254mm',
         },
       ],
@@ -65,7 +65,6 @@ describe('purchase request page', () => {
     expect(html).toContain('href="https://www.axminstertools.com/blade"');
     expect(html).toContain('AX123');
     expect(html).toContain('254mm');
-    expect(html).toContain('£60.00');
     expect(html).toContain('£120.00');
     expect(html).toContain('Delivery');
     expect(html).toContain('£150.00');

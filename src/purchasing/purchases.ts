@@ -18,8 +18,9 @@ const RawItem = t.partial({
   url: t.string,
   sku: t.string,
   quantity: t.string,
-  // Each, in pounds, e.g. "42.50".
-  price: t.string,
+  // For the whole quantity, in pounds, e.g. "42.50" - so bulk discounts are
+  // whatever the shop charges.
+  cost: t.string,
   notes: t.string,
 });
 
@@ -37,7 +38,7 @@ export type TypedItem = {
   url: string;
   sku: string;
   quantity: string;
-  price: string;
+  cost: string;
   notes: string;
 };
 
@@ -53,7 +54,8 @@ const PurchaseItemCodec = t.strict({
   url: t.union([t.string, t.null]),
   sku: t.union([t.string, t.null]),
   quantity: t.number,
-  unitPricePence: t.number,
+  // For the whole quantity
+  costPence: t.number,
   // e.g. the length or colour wanted, when the item comes in several
   notes: t.union([t.string, t.null]),
 });
@@ -93,12 +95,12 @@ export const typedPurchases = (
           url: item.url ?? '',
           sku: item.sku ?? '',
           quantity: item.quantity ?? '',
-          price: item.price ?? '',
+          cost: item.cost ?? '',
           notes: item.notes ?? '',
         }))
         .filter(
           item =>
-            !isBlank([item.url, item.sku, item.quantity, item.price, item.notes])
+            !isBlank([item.url, item.sku, item.quantity, item.cost, item.notes])
         ),
     }))
     .filter(
@@ -170,14 +172,14 @@ const normaliseItem = (
         E.Do,
         E.bind('url', () => normaliseLink(item.url, where)),
         E.bind('quantity', () => normaliseQuantity(item.quantity, where)),
-        E.bind('unitPricePence', () =>
-          normaliseMoney(item.price, where, 'please say how much each one costs.')
+        E.bind('costPence', () =>
+          normaliseMoney(item.cost, where, 'please say how much they cost in total.')
         ),
-        E.map(({url, quantity, unitPricePence}) => ({
+        E.map(({url, quantity, costPence}) => ({
           url,
           sku: optional(item.sku),
           quantity,
-          unitPricePence,
+          costPence,
           notes: optional(item.notes),
         }))
       );
@@ -222,11 +224,8 @@ export const normalisePurchases = (
         normalisePurchase(purchase, index)
       ));
 
-export const lineTotalPence = (item: PurchaseItem) =>
-  item.quantity * item.unitPricePence;
-
 export const shopTotalPence = (purchase: Purchase) =>
-  purchase.items.reduce((sum, item) => sum + lineTotalPence(item), 0) +
+  purchase.items.reduce((sum, item) => sum + item.costPence, 0) +
   purchase.deliveryPence;
 
 export const totalPence = (purchases: ReadonlyArray<Purchase>) =>
