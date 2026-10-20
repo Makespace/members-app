@@ -19,7 +19,20 @@ const woodShop = {
   remainingPence: 58_000,
 };
 
-const setUp = () => {
+type Prefill = {
+  options?: ReadonlyArray<{description: string; pros: string; cons: string; cost: string}>;
+  risks?: ReadonlyArray<{
+    hazard: string;
+    harm: string;
+    severity: string;
+    probability: string;
+    actions: string;
+    residualSeverity: string;
+    residualProbability: string;
+  }>;
+};
+
+const setUp = (prefill: Prefill = {}) => {
   document.body.innerHTML = renderSubmitForm({
     requestId: '33333333-3333-4333-8333-333333333333' as UUID,
     budgetYear: 2026,
@@ -37,9 +50,9 @@ const setUp = () => {
       healthAndSafetyRisk: 'true',
       proposal: {
         need: '',
-        options: [],
+        options: prefill.options ?? [],
         preferred: '',
-        risks: [],
+        risks: prefill.risks ?? [],
         location: '',
         owner: '',
         training: '',
@@ -139,5 +152,81 @@ describe('proposal options and risks script', () => {
       'proposal[risks][3][residualProbability]',
     ]);
     expect(added.map(select => select.value)).toStrictEqual(['', '', '', '']);
+  });
+
+  describe('folding', () => {
+    const option = {description: 'Build our own', pros: 'Fits', cons: 'Slow', cost: '1022.20'};
+    const risk = {
+      hazard: 'Tipping over',
+      harm: 'People nearby',
+      severity: '4',
+      probability: '3',
+      actions: 'Fix to the wall',
+      residualSeverity: '4',
+      residualProbability: '1',
+    };
+    const entries = (form: HTMLFormElement, list: string) => [
+      ...form.querySelectorAll<HTMLElement>(
+        `[data-repeat="${list}"] [data-repeat-entry]`
+      ),
+    ];
+    const folded = (entry: HTMLElement) =>
+      entry.querySelector<HTMLElement>('[data-repeat-body]')!.hidden;
+    const summary = (entry: HTMLElement) =>
+      entry.querySelector<HTMLButtonElement>('[data-repeat-summary]')!;
+
+    it('starts finished options and risks folded when coming back', () => {
+      const form = setUp({options: [option], risks: [risk]});
+      const [firstOption] = entries(form, 'options');
+      const [firstRisk] = entries(form, 'risks');
+      expect(folded(firstOption)).toBe(true);
+      expect(summary(firstOption).textContent).toBe('Build our own · £1,022.20Edit');
+      expect(folded(firstRisk)).toBe(true);
+      expect(summary(firstRisk).textContent).toBe(
+        'Tipping over · risk 12, 4 once reducedEdit'
+      );
+    });
+
+    it('leaves blank and unfinished ones open', () => {
+      const form = setUp({risks: [{...risk, residualProbability: ''}]});
+      expect(folded(entries(form, 'options')[0])).toBe(false);
+      expect(folded(entries(form, 'risks')[0])).toBe(false);
+    });
+
+    it('folds an option once it is finished and focus moves on', () => {
+      const form = setUp();
+      const description = form.querySelector<HTMLInputElement>(
+        '[name="proposal[options][0][description]"]'
+      )!;
+      description.value = 'Buy a rack';
+      form.querySelector<HTMLInputElement>(
+        '[name="proposal[options][0][cost]"]'
+      )!.value = '1400';
+      description.focus();
+      form.querySelector<HTMLTextAreaElement>('[name="proposal[preferred]"]')!.focus();
+      expect(folded(entries(form, 'options')[0])).toBe(true);
+      expect(summary(entries(form, 'options')[0]).textContent).toContain(
+        'Buy a rack · £1,400'
+      );
+    });
+
+    it('opens a folded one to edit when its line is clicked', () => {
+      const form = setUp({options: [option]});
+      const [first] = entries(form, 'options');
+      summary(first).click();
+      expect(folded(first)).toBe(false);
+      expect(document.activeElement?.getAttribute('name')).toBe(
+        'proposal[options][0][description]'
+      );
+    });
+
+    it('opens a folded one holding a field the browser says is missing', () => {
+      const form = setUp({options: [option]});
+      const [first] = entries(form, 'options');
+      const cost = first.querySelector<HTMLInputElement>('[name$="[cost]"]')!;
+      cost.value = '';
+      cost.dispatchEvent(new Event('invalid'));
+      expect(folded(first)).toBe(false);
+    });
   });
 });

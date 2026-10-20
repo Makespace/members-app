@@ -907,6 +907,14 @@ const renderOptionEntry = (
           Remove option
         </button>
       </div>
+      <button
+        class="purchase-item__summary"
+        type="button"
+        data-repeat-summary
+        aria-expanded="false"
+        hidden
+      ></button>
+      <div class="proposal-entry__body" data-repeat-body>
       <div class="purchase-shop__row">
         <div class="purchase-field">
           <label class="purchase-field__label" for="${id('description')}"
@@ -940,6 +948,7 @@ const renderOptionEntry = (
       </div>
       ${textField(name('pros'), html`Pros`, html``, option.pros, {rows: 3})}
       ${textField(name('cons'), html`Cons`, html``, option.cons, {rows: 3})}
+      </div>
     </div>
   `;
 };
@@ -1023,6 +1032,14 @@ const renderRiskEntry = (risk: TypedRisk, index: number) => {
           Remove risk
         </button>
       </div>
+      <button
+        class="purchase-item__summary"
+        type="button"
+        data-repeat-summary
+        aria-expanded="false"
+        hidden
+      ></button>
+      <div class="proposal-entry__body" data-repeat-body>
       ${textField(
         name('hazard'),
         html`Hazard`,
@@ -1060,6 +1077,7 @@ const renderRiskEntry = (risk: TypedRisk, index: number) => {
         true,
         required
       )}
+      </div>
     </div>
   `;
 };
@@ -1186,6 +1204,71 @@ const proposalScript = html`
     (function () {
       var form = document.getElementById('purchase-check-form');
       if (!form) return;
+
+      function gbp(pence) {
+        return '£' + (pence / 100).toLocaleString('en-GB', {
+          minimumFractionDigits: pence % 100 ? 2 : 0,
+          maximumFractionDigits: 2,
+        });
+      }
+      function pence(value) {
+        var cleaned = value.replace(/[£,\\s]/g, '');
+        if (!/^\\d+(\\.\\d{1,2})?$/.test(cleaned)) return null;
+        var parts = cleaned.split('.');
+        return Number(parts[0]) * 100 + Number((parts[1] || '').padEnd(2, '0'));
+      }
+      function value(entry, field) {
+        return entry.querySelector('[name$="[' + field + ']"]').value.trim();
+      }
+      function rated(entry, field) {
+        return /^[1-5]$/.test(value(entry, field));
+      }
+
+      // A finished option or risk folds down to one line, so the whole
+      // proposal is easy to see; unfinished ones stay open so nothing
+      // missing is hidden. Each kind says what finished means and what its
+      // line shows.
+      var summaries = {
+        options: function (entry) {
+          var cost = pence(value(entry, 'cost'));
+          if (!value(entry, 'description') || cost === null) return null;
+          return value(entry, 'description') + ' · ' + gbp(cost);
+        },
+        risks: function (entry) {
+          var fields = ['severity', 'probability', 'residualSeverity', 'residualProbability'];
+          if (!value(entry, 'hazard') || !value(entry, 'actions') ||
+              !fields.every(function (field) { return rated(entry, field); })) {
+            return null;
+          }
+          var before = Number(value(entry, 'severity')) * Number(value(entry, 'probability'));
+          var after = Number(value(entry, 'residualSeverity')) * Number(value(entry, 'residualProbability'));
+          return value(entry, 'hazard') + ' · risk ' + before + ', ' + after + ' once reduced';
+        },
+      };
+      function collapse(kind, entry) {
+        var text = summaries[kind](entry);
+        if (text === null) return;
+        var summary = entry.querySelector('[data-repeat-summary]');
+        summary.textContent = '';
+        var line = document.createElement('span');
+        line.textContent = text;
+        var edit = document.createElement('span');
+        edit.className = 'purchase-item__edit';
+        edit.textContent = 'Edit';
+        summary.appendChild(line);
+        summary.appendChild(edit);
+        summary.hidden = false;
+        summary.setAttribute('aria-expanded', 'false');
+        entry.querySelector('[data-repeat-body]').hidden = true;
+        entry.classList.add('proposal-entry--collapsed');
+      }
+      function expand(entry) {
+        entry.querySelector('[data-repeat-summary]').hidden = true;
+        entry.querySelector('[data-repeat-summary]').setAttribute('aria-expanded', 'true');
+        entry.querySelector('[data-repeat-body]').hidden = false;
+        entry.classList.remove('proposal-entry--collapsed');
+      }
+
       form.querySelectorAll('[data-repeat]').forEach(function (list) {
         var kind = list.dataset.repeat;
         var label = list.dataset.repeatLabel;
@@ -1218,6 +1301,16 @@ const proposalScript = html`
             entry.remove();
             renumber();
           });
+          function open() {
+            expand(entry);
+            entry.querySelector('[data-repeat-body] input, [data-repeat-body] textarea').focus();
+          }
+          entry.querySelector('[data-repeat-summary]').addEventListener('focus', open);
+          entry.querySelector('[data-repeat-summary]').addEventListener('click', open);
+          entry.addEventListener('focusout', function (event) {
+            if (!event.relatedTarget || !entry.contains(event.relatedTarget)) collapse(kind, entry);
+          });
+          collapse(kind, entry);
         }
         for (var i = 1; i < entries.length; i++) {
           if (isBlank(entries[i])) entries[i].remove();
@@ -1240,6 +1333,12 @@ const proposalScript = html`
         });
         renumber();
       });
+
+      // A field the browser flags as missing opens the entry holding it.
+      form.addEventListener('invalid', function (event) {
+        var entry = event.target.closest && event.target.closest('[data-repeat-entry]');
+        if (entry) expand(entry);
+      }, true);
     })();
   </script>
 `;

@@ -4447,3 +4447,14 @@ select.proposal-rating {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+
+.proposal-entry__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.proposal-entry--collapsed {
+  gap: 0.5rem;
+  padding-block: 0.6rem;
+}
