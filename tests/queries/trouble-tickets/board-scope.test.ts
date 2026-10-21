@@ -84,7 +84,7 @@ describe('/trouble-tickets scope and pagination', () => {
   const viewFiltered = (
     user: typeof owner,
     filters: {
-      status?: 'Todo' | 'Resolved';
+      status?: 'Todo' | 'Resolved' | 'Open';
       only?: 'mine' | 'my-area' | 'my-machines';
       page?: number;
       equipmentId?: string;
@@ -179,9 +179,7 @@ describe('/trouble-tickets scope and pagination', () => {
     it('narrows to the viewer relationship asked for', async () => {
       const board = await viewFiltered(owner, {only: 'my-area'});
 
-      expect(
-        board.tickets.every(ticket => ticket.inMyOwnerArea)
-      ).toBe(true);
+      expect(board.tickets.every(ticket => ticket.inMyOwnerArea)).toBe(true);
       expect(board.scopeCounts['my-area']).toBe(board.tickets.length);
     });
 
@@ -190,6 +188,34 @@ describe('/trouble-tickets scope and pagination', () => {
 
       expect(board.activeStatus).toStrictEqual(O.some('Todo'));
       expect(board.activeScope).toStrictEqual(O.none);
+    });
+
+    describe('with one ticket resolved', () => {
+      beforeEach(async () => {
+        const [first] = (await view(superUser, true)).tickets;
+        await framework.commands.troubleTickets.resolve({
+          ticketId: first.id,
+          summary: 'Fixed it',
+          quiet: false,
+        });
+      });
+
+      it('counts the rest as open', async () => {
+        const board = await viewFiltered(superUser, {});
+
+        expect(board.openCount).toBe(2);
+        expect(board.statusCounts.Resolved).toBe(1);
+      });
+
+      it('shows only the unresolved tickets under Open', async () => {
+        const board = await viewFiltered(superUser, {status: 'Open'});
+
+        expect(board.tickets).toHaveLength(2);
+        expect(
+          board.tickets.every(ticket => ticket.status !== 'Resolved')
+        ).toBe(true);
+        expect(board.activeStatus).toStrictEqual(O.some('Open'));
+      });
     });
   });
 
@@ -202,9 +228,7 @@ describe('/trouble-tickets scope and pagination', () => {
       });
 
       expect(board.tickets).toHaveLength(1);
-      expect(board.tickets[0].equipmentName).toStrictEqual(
-        O.some('Band Saw')
-      );
+      expect(board.tickets[0].equipmentName).toStrictEqual(O.some('Band Saw'));
       expect(board.totalInScope).toBe(1);
     });
 
@@ -275,7 +299,7 @@ describe('/trouble-tickets scope and pagination', () => {
     });
   });
 
-  it('serves change logs from the read model projection', async () => {
+  it('shows who has taken a ticket on', async () => {
     const [woodTicket] = (await view(owner, false)).tickets;
     await framework.commands.troubleTickets.assign({
       ticketId: woodTicket.id,
@@ -291,9 +315,10 @@ describe('/trouble-tickets scope and pagination', () => {
 
     const vm = await view(owner, false);
     const refreshed = vm.tickets.find(t => t.id === woodTicket.id);
-    expect(refreshed?.changeLog).toHaveLength(1);
-    expect(refreshed?.changeLog[0].summary).toContain(
-      'assigned themselves and set the ticket to In Progress'
-    );
+    expect(refreshed?.status).toBe('In Progress');
+    expect(refreshed?.assignedToMe).toBe(true);
+    expect(refreshed?.assignees.map(a => a.memberNumber)).toStrictEqual([
+      owner.memberNumber,
+    ]);
   });
 });

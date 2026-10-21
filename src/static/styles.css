@@ -1896,23 +1896,23 @@ ul.purchase-checkboxes {
 }
 
 .trouble-ticket-card--todo {
-  border-left-color: var(--grey-color);
+  border-left-color: var(--tt-todo);
 }
 
 .trouble-ticket-card--in-progress {
-  border-left-color: var(--link-color);
+  border-left-color: var(--tt-in-progress);
 }
 
 .trouble-ticket-card--needs-help {
-  border-left-color: var(--red-color);
+  border-left-color: var(--tt-needs-help);
 }
 
 .trouble-ticket-card--parked {
-  border-left-color: var(--yellow-color);
+  border-left-color: var(--tt-parked);
 }
 
 .trouble-ticket-card--resolved {
-  border-left-color: var(--green-color);
+  border-left-color: var(--tt-resolved);
 }
 
 /* Before an action is taken, the page says who will be emailed and shows
@@ -1940,7 +1940,65 @@ ul.purchase-checkboxes {
   color: var(--grey-color);
 }
 
-/* Status badges (used on cards and as filter chips) */
+/* Trouble ticket status colours: every status mark - the board's dots and
+   row edges, the filter chips, the card, the change log, the action
+   buttons - takes its colour from here, so a colour means one thing.
+   They stay clear of the equipment safety colours (red, orange, green), so
+   a red mark on the board only ever means a red machine. Needs Help, the
+   one status meant to stand out, is the only strong one; Resolved is a
+   neutral grey because a finished ticket has nothing left to say. */
+:root {
+  --tt-todo: var(--grey-color);
+  --tt-in-progress: var(--link-color);
+  --tt-needs-help: #a15c00;
+  --tt-parked: #8c6d00;
+  --tt-resolved: #6b7378;
+}
+
+/* A ticket's status where it is read rather than clicked: a small dot of
+   colour beside the word, so a column of them stays quiet. Needs Help alone
+   is filled, because it is the one that wants somebody. */
+.tt-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  --tt-status-colour: var(--tt-todo);
+}
+
+.tt-status::before {
+  content: '';
+  flex: none;
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 50%;
+  background: var(--tt-status-colour);
+}
+
+.tt-status--in-progress {
+  --tt-status-colour: var(--tt-in-progress);
+}
+
+.tt-status--parked {
+  --tt-status-colour: var(--tt-parked);
+}
+
+.tt-status--resolved {
+  --tt-status-colour: var(--border-color);
+  color: var(--grey-color);
+}
+
+.tt-status--needs-help {
+  padding: 1px 10px;
+  border-radius: 999px;
+  background: var(--tt-needs-help);
+  color: #fff;
+  font-weight: 700;
+  --tt-status-colour: #fff;
+}
+
+/* Status badges: the filter chips and the action buttons */
 .tt-badge {
   display: inline-block;
   padding: 3px 12px;
@@ -1950,28 +2008,27 @@ ul.purchase-checkboxes {
   line-height: 1.5;
   white-space: nowrap;
   color: #fff;
-  background: var(--grey-color);
+  background: var(--tt-badge-colour, var(--grey-color));
 }
 
 .tt-badge--todo {
-  background: var(--grey-color);
+  --tt-badge-colour: var(--tt-todo);
 }
 
 .tt-badge--in-progress {
-  background: var(--link-color);
+  --tt-badge-colour: var(--tt-in-progress);
 }
 
 .tt-badge--needs-help {
-  background: var(--red-color);
+  --tt-badge-colour: var(--tt-needs-help);
 }
 
 .tt-badge--parked {
-  background: var(--yellow-color);
-  color: var(--text-color);
+  --tt-badge-colour: var(--tt-parked);
 }
 
 .tt-badge--resolved {
-  background: var(--green-color);
+  --tt-badge-colour: var(--tt-resolved);
 }
 
 /* Card header: badge alongside the title */
@@ -1997,6 +2054,14 @@ ul.purchase-checkboxes {
   padding: 0;
 }
 
+/* "Showing N tickets" belongs to the heading above it and introduces the
+   filters below, so it sits close under the heading with the room after it.
+   (The filters' own margin: 0 above would otherwise leave them touching.) */
+.stack > .tt-summary {
+  margin-block-start: 0.25rem;
+  margin-block-end: 1rem;
+}
+
 /* Give each filter group clear separation from the previous one. */
 .tt-filters + .tt-filters {
   margin-block-start: 1rem;
@@ -2011,35 +2076,12 @@ ul.purchase-checkboxes {
   font-weight: 700;
 }
 
-/* Visually hide the checkbox but keep it focusable for keyboard users. */
-/* Visually hidden but keyboard-focusable; pointer-events:none so the hidden inputs never
-   intercept clicks (the visible label toggles them via `for`). */
-.tt-filter {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  border: 0;
-  opacity: 0;
-  pointer-events: none;
-}
-
+/* The chips are links, each filtering the board server-side. (They were once
+   checkboxes, drawn at half strength until ticked; that rule outlived them
+   and left every chip looking permanently switched off.) */
 .tt-filter__label {
   cursor: pointer;
-  opacity: 0.5;
   user-select: none;
-}
-
-.tt-filter:checked + .tt-filter__label {
-  opacity: 1;
-  box-shadow: 0 0 0 2px var(--text-color);
-}
-
-.tt-filter:focus-visible + .tt-filter__label {
-  outline: 3px solid var(--focus-color);
-  outline-offset: 1px;
 }
 
 /* Neutral chip used for the "show only" scope filters. */
@@ -2054,6 +2096,36 @@ ul.purchase-checkboxes {
   color: var(--text-color);
   background: #fff;
   border: 1px solid var(--border-color);
+}
+
+/* The chips are links, and the site's link colours (a:visited, a:hover,
+   a:active) outrank a single class - so a filter you had used before turned
+   its text link-blue, which vanished on the blue In Progress chip. Pin each
+   chip's own colours in every link state, as the action buttons do. */
+.tt-badge.tt-filter__label,
+.tt-badge.tt-filter__label:visited,
+.tt-badge.tt-filter__label:hover,
+.tt-badge.tt-filter__label:active {
+  color: #fff;
+}
+
+.tt-chip.tt-filter__label,
+.tt-chip.tt-filter__label:visited,
+.tt-chip.tt-filter__label:hover,
+.tt-chip.tt-filter__label:active {
+  color: var(--text-color);
+}
+
+/* a:active would otherwise turn a pressed chip or action yellow. */
+.tt-badge.tt-filter__label:active,
+.tt-badge.tt-action:active {
+  background: var(--tt-badge-colour, var(--grey-color));
+  filter: brightness(0.85);
+}
+
+.tt-chip.tt-filter__label:active {
+  background: #fff;
+  filter: brightness(0.92);
 }
 
 .tt-chip .tt-badge__count {
@@ -2072,10 +2144,6 @@ ul.purchase-checkboxes {
   text-align: center;
 }
 
-.tt-badge--parked .tt-badge__count {
-  background: rgb(11 12 12 / 12%);
-}
-
 /* Card action buttons (links to the confirmation pages) */
 .tt-actions {
   display: flex;
@@ -2092,13 +2160,6 @@ ul.purchase-checkboxes {
 .tt-action:active {
   color: #fff;
   text-decoration: none;
-}
-
-.tt-badge--parked.tt-action,
-.tt-badge--parked.tt-action:visited,
-.tt-badge--parked.tt-action:hover,
-.tt-badge--parked.tt-action:active {
-  color: var(--text-color);
 }
 
 .tt-action:hover {
@@ -2136,28 +2197,208 @@ ul.purchase-checkboxes {
 }
 
 .tt-log-entry--todo {
-  border-left-color: var(--grey-color);
-  background: color-mix(in oklch, white 92%, var(--grey-color));
+  border-left-color: var(--tt-todo);
+  background: color-mix(in oklch, white 92%, var(--tt-todo));
 }
 
 .tt-log-entry--in-progress {
-  border-left-color: var(--link-color);
-  background: color-mix(in oklch, white 92%, var(--link-color));
+  border-left-color: var(--tt-in-progress);
+  background: color-mix(in oklch, white 92%, var(--tt-in-progress));
 }
 
 .tt-log-entry--needs-help {
-  border-left-color: var(--red-color);
-  background: color-mix(in oklch, white 92%, var(--red-color));
+  border-left-color: var(--tt-needs-help);
+  background: color-mix(in oklch, white 92%, var(--tt-needs-help));
 }
 
 .tt-log-entry--parked {
-  border-left-color: var(--yellow-color);
-  background: color-mix(in oklch, white 88%, var(--yellow-color));
+  border-left-color: var(--tt-parked);
+  background: color-mix(in oklch, white 92%, var(--tt-parked));
 }
 
 .tt-log-entry--resolved {
-  border-left-color: var(--green-color);
-  background: color-mix(in oklch, white 92%, var(--green-color));
+  border-left-color: var(--tt-resolved);
+  background: color-mix(in oklch, white 92%, var(--tt-resolved));
+}
+
+/* The board: one row per ticket, so a page of them reads at a glance. The
+   left edge of each row carries its status colour, as the cards did, and
+   resolved rows step back so the open ones stand out. */
+.tt-table th,
+.tt-table td {
+  padding: 0.5rem 1rem 0.5rem 0;
+  vertical-align: top;
+}
+
+/* The board is a wide table and the one page that needs the room, so it
+   alone gets more than the usual column - the heading and filters widen
+   with it, so everything still lines up. */
+body:has(.tt-wrapper) {
+  max-width: 90rem;
+}
+
+/* Close the rows on the right as the status colour closes them on the left,
+   so their rules end at an edge rather than in mid-air. */
+.tt-table th:last-child,
+.tt-table td:last-child {
+  padding-right: 0.6rem;
+}
+
+.tt-table td:last-child {
+  border-right: 1px solid var(--border-color);
+}
+
+/* Opaque, so rows scroll under it rather than through it. A collapsed
+   border does not travel with a sticky cell, hence the inset shadow. */
+.tt-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: white;
+  border-bottom: 0;
+  box-shadow: inset 0 -2px 0 var(--border-color);
+}
+
+.tt-table td:first-child,
+.tt-table th:first-child {
+  padding-left: 0.6rem;
+}
+
+/* A thin edge in the status colour: enough to follow a status down the
+   page without a column of coloured bands. */
+.tt-row td:first-child {
+  border-left: 2px solid var(--tt-todo);
+}
+
+.tt-row--in-progress td:first-child {
+  border-left-color: var(--tt-in-progress);
+}
+
+.tt-row--needs-help td:first-child {
+  border-left-color: var(--tt-needs-help);
+}
+
+.tt-row--parked td:first-child {
+  border-left-color: var(--tt-parked);
+}
+
+/* A finished ticket steps right back: no colour anywhere in the row, its
+   link included (the underline still says it is one). */
+.tt-row--resolved td:first-child {
+  border-left-color: transparent;
+}
+
+.tt-row--resolved,
+.tt-row--resolved a,
+.tt-row--resolved a:visited {
+  color: var(--grey-color);
+}
+
+.tt-row:hover {
+  background: var(--tooltip-color);
+}
+
+/* A title or answer pasted from an email can carry an unbreakable string;
+   let it break rather than push the table off the page. */
+.tt-table__ticket {
+  width: 40%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tt-table__sub {
+  display: block;
+  color: var(--grey-color);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+/* A ticket only the management team can see: one small grey padlock, a
+   yes-or-no fact that needs no colour or box of its own. What it means is
+   on hover and read out to screen readers. */
+.tt-private {
+  display: inline-block;
+  margin-left: 0.25rem;
+  color: var(--grey-color);
+  vertical-align: -0.1em;
+  cursor: help;
+}
+
+.tt-private svg {
+  display: block;
+  width: 0.85em;
+  height: 0.95em;
+  fill: currentColor;
+}
+
+/* Enough of the issue to recognise the ticket; the rest is a click away. */
+.tt-table__issue {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* Too narrow for five columns: each ticket becomes a block, its cells
+   stacked and labelled. */
+@media screen and (max-width: 48rem) {
+  .tt-table,
+  .tt-table tbody,
+  .tt-table tr,
+  .tt-table td {
+    display: block;
+    width: auto;
+  }
+
+  .tt-table thead {
+    display: none;
+  }
+
+  .tt-row {
+    border-left: 2px solid var(--tt-todo);
+    border-right: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.5rem 0 0.5rem 0.6rem;
+  }
+
+  .tt-row--in-progress {
+    border-left-color: var(--tt-in-progress);
+  }
+
+  .tt-row--needs-help {
+    border-left-color: var(--tt-needs-help);
+  }
+
+  .tt-row--parked {
+    border-left-color: var(--tt-parked);
+  }
+
+  .tt-row--resolved {
+    border-left-color: var(--border-color);
+  }
+
+  .tt-table .tt-row td {
+    border: 0;
+    padding: 0.15rem 0;
+  }
+
+  .tt-table td[data-label='Where']::before,
+  .tt-table td[data-label='Submitted']::before,
+  .tt-table td[data-label='Assigned']::before {
+    content: attr(data-label) ': ';
+    font-weight: bold;
+  }
+
+  .tt-table td[data-label='Where'] .tt-table__sub,
+  .tt-table td[data-label='Submitted'] .tt-table__sub {
+    display: inline;
+  }
+
+  .tt-table td[data-label='Where'] .tt-table__sub::before,
+  .tt-table td[data-label='Submitted'] .tt-table__sub::before {
+    content: ' · ';
+  }
 }
 
 
@@ -2939,10 +3180,12 @@ ul.purchase-checkboxes {
 }
 
 /* An active filter chip: the board is showing only this, and clicking it
-   again clears the filter. */
+   again clears the filter. A dark ring rather than the yellow outline, which
+   is keyboard focus everywhere else and should mean only that. */
 .tt-filter__label--active {
-  outline: 3px solid var(--focus-color);
-  outline-offset: 1px;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px var(--text-color);
 }
 
 /* Each sign carries its own print button, tucked into the corner of the

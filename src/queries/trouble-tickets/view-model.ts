@@ -6,6 +6,7 @@ import {
   TroubleTicketStatus,
 } from '../../types/trouble-ticket';
 import {Focus} from './focus';
+import {StatusFilter} from './status-slug';
 
 export type AssigneeView = {
   memberNumber: number;
@@ -53,6 +54,9 @@ export type TroubleTicketView = {
   assignedToMe: boolean;
   inMyOwnerArea: boolean;
   onMyTrainerMachine: boolean;
+  // In the management team's area, so only that team and super-users can see
+  // it. Marked as such wherever it is shown.
+  managementOnly: boolean;
   // Whether the viewer may change this ticket's status (trainer on its machine, or a
   // super-user). Drives whether the action buttons are shown.
   canChangeStatus: boolean;
@@ -60,12 +64,16 @@ export type TroubleTicketView = {
   changeLog: ReadonlyArray<ChangeLogEntry>;
 };
 
+// A row on the board. The board is for scanning, so it carries no change
+// log: that, and the actions, are on the ticket's own page.
+export type BoardTicketView = Omit<TroubleTicketView, 'changeLog'>;
+
 export type ViewModel = {
   // The machine or area the board was opened for, when it was opened from
   // one. Everything on the page - the cards, the counts, the filters -
   // describes what is in focus.
   focus: O.Option<Focus>;
-  tickets: ReadonlyArray<TroubleTicketView>;
+  tickets: ReadonlyArray<BoardTicketView>;
   // True when the board is showing only the viewer's own areas (the default
   // for owners); false = everything (?show=all, or a viewer with no areas).
   scopedToMine: boolean;
@@ -74,8 +82,10 @@ export type ViewModel = {
   // How many tickets each filter would show, over everything in scope - not
   // just the page, which would make the numbers meaningless.
   statusCounts: Record<TroubleTicketStatus, number>;
+  // Everything not yet Resolved.
+  openCount: number;
   scopeCounts: Record<string, number>;
-  activeStatus: O.Option<TroubleTicketStatus>;
+  activeStatus: O.Option<StatusFilter>;
   activeScope: O.Option<string>;
   page: number;
   pageCount: number;

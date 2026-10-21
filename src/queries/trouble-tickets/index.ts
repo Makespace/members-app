@@ -1,6 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
-import {statusFromSlug} from './status-slug';
+import {statusFilterFromSlug} from './status-slug';
 import * as TE from 'fp-ts/TaskEither';
 import {constructViewModel} from './construct-view-model';
 import {render} from './render';
@@ -15,7 +15,7 @@ export const troubleTickets: Query = deps => (user, _params, queryParams) =>
       status: pipe(
         O.fromNullable(queryParams.status),
         O.filter((value): value is string => typeof value === 'string'),
-        O.chain(statusFromSlug)
+        O.chain(statusFilterFromSlug)
       ),
       only: pipe(
         O.fromNullable(queryParams.only),
