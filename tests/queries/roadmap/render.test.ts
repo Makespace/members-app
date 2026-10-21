@@ -16,7 +16,7 @@ describe('/roadmap render', () => {
     const page = renderPage();
     expect(page.querySelectorAll('ul.timeline').length).toBe(1);
     const headings = page.querySelectorAll('li.timeline__item--heading');
-    expect(headings.length).toBe(13);
+    expect(headings.length).toBe(14);
     headings.forEach(item => {
       expect(item.querySelector('h2')).not.toBeNull();
     });
@@ -71,7 +71,7 @@ describe('/roadmap render', () => {
   it('marks in-progress items with a half-filled circle and no tick', () => {
     const page = renderPage();
     const inProgress = page.querySelectorAll('li.timeline__item--in-progress');
-    expect(inProgress.length).toBe(3);
+    expect(inProgress.length).toBe(6);
     inProgress.forEach(item => {
       expect(
         item.querySelector('.timeline__marker')?.textContent?.trim()

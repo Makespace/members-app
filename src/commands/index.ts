@@ -10,6 +10,8 @@ import {trainingQuiz} from './training-quiz';
 import {troubleTickets} from './trouble-tickets';
 import {notifications} from './notifications';
 import {mailbox} from './mailbox';
+import {purchasingArea} from './purchasing-area';
+import {purchaseRequest} from './purchase-request';
 
 import {notificationPreferences} from './notification-preferences';
 
@@ -29,6 +31,8 @@ type Commands = {
   troubleTickets: typeof troubleTickets;
   notifications: typeof notifications;
   mailbox: typeof mailbox;
+  purchasingArea: typeof purchasingArea;
+  purchaseRequest: typeof purchaseRequest;
 };
 
 export const commands: Commands = {
@@ -44,6 +48,8 @@ export const commands: Commands = {
   troubleTickets,
   notifications,
   mailbox,
+  purchasingArea,
+  purchaseRequest,
 };
 
 export const sendEmailCommands = {

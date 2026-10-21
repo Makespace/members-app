@@ -4,7 +4,13 @@ import {EmailAddressCodec} from './email-address';
 import {Actor} from './actor';
 import {EquipmentCategoryCodec} from './equipment-category';
 import {MailboxArchiveReason} from './mailbox-archive-reason';
+import {
+  PurchaseApprovalCodec,
+  PurchaseRequestOutcomeCodec,
+} from './purchase-request-outcome';
 import {ReminderStage} from '../owner-agreement/reminder-stage';
+import {PurchaseCodec} from '../purchasing/purchases';
+import {ProposalCodec} from '../purchasing/proposal';
 
 const defineEvent = <A extends string, T extends t.Props>(
   type: A,
@@ -174,6 +180,86 @@ const OwnerAdded = defineEvent('OwnerAdded', {
 const OwnerRemoved = defineEvent('OwnerRemoved', {
   areaId: tt.UUID,
   memberNumber: t.number,
+});
+
+// A purchasing area holds a yearly budget on behalf of one or more areas
+// (e.g. "Craft & Art" for the Craft Room and the Art Space). Money is in
+// whole pence throughout. The budget year is the calendar year.
+const PurchasingAreaCreated = defineEvent('PurchasingAreaCreated', {
+  id: tt.UUID,
+  name: t.string,
+  yearlyBudgetPence: t.number,
+});
+
+const PurchasingAreaRenamed = defineEvent('PurchasingAreaRenamed', {
+  purchasingAreaId: tt.UUID,
+  name: t.string,
+});
+
+const PurchasingAreaBudgetSet = defineEvent('PurchasingAreaBudgetSet', {
+  purchasingAreaId: tt.UUID,
+  yearlyBudgetPence: t.number,
+});
+
+// An area belongs to at most one purchasing area at a time.
+const AreaAssignedToPurchasingArea = defineEvent(
+  'AreaAssignedToPurchasingArea',
+  {
+    purchasingAreaId: tt.UUID,
+    areaId: tt.UUID,
+  }
+);
+
+const AreaUnassignedFromPurchasingArea = defineEvent(
+  'AreaUnassignedFromPurchasingArea',
+  {
+    purchasingAreaId: tt.UUID,
+    areaId: tt.UUID,
+  }
+);
+
+// Purchasers may submit purchase requests for the purchasing area.
+const PurchaserAdded = defineEvent('PurchaserAdded', {
+  purchasingAreaId: tt.UUID,
+  memberNumber: t.number,
+});
+
+const PurchaserRemoved = defineEvent('PurchaserRemoved', {
+  purchasingAreaId: tt.UUID,
+  memberNumber: t.number,
+});
+
+// A purchaser asking to buy something. The outcome is computed by the server
+// (src/purchasing/classify-purchase.ts) from the itemised total - the sum of
+// the shop costs - at submission, and recorded here along with the budget
+// figures it was computed from, so the record says what the member was told
+// even if the budget or the rules change later. The itemised total is also
+// what counts against the budget.
+// There is no approval step yet; one would follow as further events about the
+// same request id.
+const PurchaseRequestSubmitted = defineEvent('PurchaseRequestSubmitted', {
+  id: tt.UUID,
+  purchasingAreaId: tt.UUID,
+  submittedByMemberNumber: t.number,
+  summary: t.string,
+  totalPence: t.number,
+  // Each shop with the items bought there and any delivery charge.
+  purchases: t.readonlyArray(PurchaseCodec),
+  justification: t.string,
+  isMemberPaidConsumable: t.boolean,
+  // Other areas it affects, whose owners need a chance to give their input.
+  affectedAreaIds: t.readonlyArray(tt.UUID),
+  // A moderate to high health and safety risk that will need mitigating.
+  healthAndSafetyRisk: t.boolean,
+  // The proposal, when the request needs one; see src/purchasing/proposal.ts.
+  proposal: t.union([ProposalCodec, t.null]),
+  outcome: PurchaseRequestOutcomeCodec,
+  // What approval it needs before going ahead; see PurchaseApprovalCodec.
+  approval: PurchaseApprovalCodec,
+  outcomeReason: t.string,
+  budgetYear: t.number,
+  yearlyBudgetPence: t.number,
+  spentThisYearPence: t.number,
 });
 
 const SuperUserDeclared = defineEvent('SuperUserDeclared', {
@@ -653,6 +739,14 @@ export const events = [
   AreaNameAliasRemoved,
   OwnerAdded,
   OwnerRemoved,
+  PurchasingAreaCreated,
+  PurchasingAreaRenamed,
+  PurchasingAreaBudgetSet,
+  AreaAssignedToPurchasingArea,
+  AreaUnassignedFromPurchasingArea,
+  PurchaserAdded,
+  PurchaserRemoved,
+  PurchaseRequestSubmitted,
   SuperUserDeclared,
   SuperUserRevoked,
   TrainerAdded,
@@ -722,6 +816,14 @@ export const DomainEvent = t.union([
   AreaNameAliasRemoved.codec,
   OwnerAdded.codec,
   OwnerRemoved.codec,
+  PurchasingAreaCreated.codec,
+  PurchasingAreaRenamed.codec,
+  PurchasingAreaBudgetSet.codec,
+  AreaAssignedToPurchasingArea.codec,
+  AreaUnassignedFromPurchasingArea.codec,
+  PurchaserAdded.codec,
+  PurchaserRemoved.codec,
+  PurchaseRequestSubmitted.codec,
   SuperUserDeclared.codec,
   SuperUserRevoked.codec,
   TrainerAdded.codec,

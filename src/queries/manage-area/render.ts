@@ -1,3 +1,5 @@
+import * as O from 'fp-ts/Option';
+import {pipe} from 'fp-ts/lib/function';
 import {html, Html, safe, sanitizeString} from '../../types/html';
 import {equipmentCategoriesPath} from '../../commands/area/set-equipment-categories-form';
 import {ViewModel} from './view-model';
@@ -42,6 +44,23 @@ export const render = (viewModel: ViewModel) => {
           equipmentCategoriesPath(viewModel.areaId),
           'Equipment categories',
           categoriesSummary(viewModel)
+        )}
+      </section>
+      <section class="stack">
+        <h2>Purchasing</h2>
+        ${pipe(
+          viewModel.purchasingArea,
+          O.match(
+            () => html`<p>This area isn't in a purchasing area yet.</p>`,
+            purchasingArea =>
+              html`<p>
+                This area's purchases come out of the
+                <a href="/purchasing-areas/${purchasingArea.id}"
+                  >${sanitizeString(purchasingArea.name)}</a
+                >
+                budget.
+              </p>`
+          )
         )}
       </section>
       ${viewModel.isSuperUser

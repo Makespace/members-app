@@ -29,6 +29,10 @@ import {
   notificationAreaTargetsTable,
   notificationDismissalsTable,
   mailboxArchivedMessagesTable,
+  purchasingAreasTable,
+  purchasingAreaAreasTable,
+  purchasersTable,
+  purchaseRequestsTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, eq, inArray, isNull, sql} from 'drizzle-orm';
@@ -1270,6 +1274,116 @@ const _updateState =
         tx.update(notificationsTable)
           .set({emailSent: true})
           .where(eq(notificationsTable.id, event.notificationId))
+          .run();
+        break;
+      }
+      case 'PurchasingAreaCreated': {
+        tx.insert(purchasingAreasTable)
+          .values({
+            id: event.id,
+            name: event.name,
+            yearlyBudgetPence: event.yearlyBudgetPence,
+            createdAt: event.recordedAt,
+          })
+          .run();
+        break;
+      }
+      case 'PurchasingAreaRenamed': {
+        const rows = tx.update(purchasingAreasTable)
+          .set({name: event.name})
+          .where(eq(purchasingAreasTable.id, event.purchasingAreaId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to rename purchasing area ${event.purchasingAreaId} - unknown purchasing area`);
+        }
+        break;
+      }
+      case 'PurchasingAreaBudgetSet': {
+        const rows = tx.update(purchasingAreasTable)
+          .set({yearlyBudgetPence: event.yearlyBudgetPence})
+          .where(eq(purchasingAreasTable.id, event.purchasingAreaId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to set budget of purchasing area ${event.purchasingAreaId} - unknown purchasing area`);
+        }
+        break;
+      }
+      case 'AreaAssignedToPurchasingArea': {
+        // An area belongs to at most one purchasing area, so assigning it
+        // moves it.
+        tx.insert(purchasingAreaAreasTable)
+          .values({areaId: event.areaId, purchasingAreaId: event.purchasingAreaId})
+          .onConflictDoUpdate({
+            target: purchasingAreaAreasTable.areaId,
+            set: {purchasingAreaId: event.purchasingAreaId},
+          })
+          .run();
+        break;
+      }
+      case 'AreaUnassignedFromPurchasingArea': {
+        tx.delete(purchasingAreaAreasTable)
+          .where(
+            and(
+              eq(purchasingAreaAreasTable.areaId, event.areaId),
+              eq(purchasingAreaAreasTable.purchasingAreaId, event.purchasingAreaId)
+            )
+          )
+          .run();
+        break;
+      }
+      case 'PurchaserAdded': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to add purchaser, unknown member number: '${event.memberNumber}'`);
+        }
+        tx.insert(purchasersTable)
+          .values({
+            purchasingAreaId: event.purchasingAreaId,
+            userId: userId.value,
+            addedAt: event.recordedAt,
+          })
+          .onConflictDoNothing()
+          .run();
+        break;
+      }
+      case 'PurchaserRemoved': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        if (O.isNone(userId)) {
+          throw new InconsistentEventError(`Unable to remove purchaser, unknown member number: '${event.memberNumber}'`);
+        }
+        tx.delete(purchasersTable)
+          .where(
+            and(
+              eq(purchasersTable.purchasingAreaId, event.purchasingAreaId),
+              eq(purchasersTable.userId, userId.value)
+            )
+          )
+          .run();
+        break;
+      }
+      case 'PurchaseRequestSubmitted': {
+        tx.insert(purchaseRequestsTable)
+          .values({
+            id: event.id,
+            purchasingAreaId: event.purchasingAreaId,
+            submittedByMemberNumber: event.submittedByMemberNumber,
+            submittedAt: event.recordedAt,
+            budgetYear: event.budgetYear,
+            summary: event.summary,
+            totalPence: event.totalPence,
+            purchasesJson: JSON.stringify(event.purchases),
+            justification: event.justification,
+            isMemberPaidConsumable: event.isMemberPaidConsumable,
+            affectedAreaIdsJson: JSON.stringify(event.affectedAreaIds),
+            healthAndSafetyRisk: event.healthAndSafetyRisk,
+            proposalJson:
+              event.proposal === null ? null : JSON.stringify(event.proposal),
+            outcome: event.outcome,
+            approval: event.approval,
+            outcomeReason: event.outcomeReason,
+            yearlyBudgetPence: event.yearlyBudgetPence,
+            spentThisYearPence: event.spentThisYearPence,
+          })
           .run();
         break;
       }

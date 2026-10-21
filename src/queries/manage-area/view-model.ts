@@ -1,3 +1,4 @@
+import * as O from 'fp-ts/Option';
 import {UUID} from 'io-ts-types';
 
 export type ViewModel = {
@@ -9,4 +10,7 @@ export type ViewModel = {
   equipmentCount: number;
   categoryCount: number;
   uncategorisedCount: number;
+  // The purchasing area whose yearly budget this area's purchases come out
+  // of, if it is in one.
+  purchasingArea: O.Option<{id: UUID; name: string}>;
 };

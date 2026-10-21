@@ -65,6 +65,10 @@ export const constructViewModel =
           uncategorisedCount: visible.filter(item =>
             O.isNone(item.areaCategoryId)
           ).length,
+          purchasingArea: pipe(
+            deps.sharedReadModel.purchasing.getForArea(area.id),
+            O.map(({id, name}) => ({id, name}))
+          ),
         };
       })
     );

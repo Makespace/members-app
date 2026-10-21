@@ -1,8 +1,14 @@
 import {SignedOwnerAgreement} from '../../owner-agreement/agreement';
+import {Purchase} from '../../purchasing/purchases';
+import {Proposal} from '../../purchasing/proposal';
 import {EquipmentCategory} from '../../types/equipment-category';
 import * as O from 'fp-ts/Option';
 import {Actor, EmailAddress, GravatarHash, UserId} from '../../types';
 import {UUID} from 'io-ts-types';
+import {
+  PurchaseApproval,
+  PurchaseRequestOutcome,
+} from '../../types/purchase-request-outcome';
 
 export type TrainedMember = Pick<
   MemberCoreInfo,
@@ -143,4 +149,63 @@ export type Owner = Pick<
 export type Area = MinimalArea & {
   owners: ReadonlyArray<Owner>;
   equipment: ReadonlyArray<Equipment>;
+};
+
+export type PurchasingAreaSummary = {
+  id: UUID;
+  name: string;
+};
+
+export type PurchasingAreaPurchaser = Pick<
+  MemberCoreInfo,
+  | 'userId'
+  | 'memberNumber'
+  | 'pastMemberNumbers'
+  | 'name'
+  | 'primaryEmailAddress'
+> & {
+  addedAt: Date;
+  // Purchasers are expected to own at least one of the purchasing area's
+  // areas; false flags one who has since stopped being an owner.
+  isOwnerOfAnArea: boolean;
+};
+
+// Money in pence. Budget figures are for `budgetYear`, the calendar year the
+// view was asked about.
+export type PurchasingArea = PurchasingAreaSummary & {
+  yearlyBudgetPence: number;
+  areas: ReadonlyArray<{id: UUID; name: string}>;
+  purchasers: ReadonlyArray<PurchasingAreaPurchaser>;
+  budgetYear: number;
+  spentThisYearPence: number;
+  // Negative when this year's spending has gone past the budget.
+  remainingPence: number;
+};
+
+
+export type PurchaseRequest = {
+  id: UUID;
+  purchasingAreaId: UUID;
+  submittedByMemberNumber: number;
+  submittedAt: Date;
+  budgetYear: number;
+  summary: string;
+  // The sum of the shop costs: what the outcome was worked out from and what
+  // counts against the budget.
+  totalPence: number;
+  purchases: ReadonlyArray<Purchase>;
+  justification: string;
+  isMemberPaidConsumable: boolean;
+  // Other areas it affects, whose owners need a chance to give their input.
+  affectedAreaIds: ReadonlyArray<UUID>;
+  // A moderate to high health and safety risk that will need mitigating.
+  healthAndSafetyRisk: boolean;
+  // The proposal it was sent with, when it needs one.
+  proposal: O.Option<Proposal>;
+  outcome: PurchaseRequestOutcome;
+  approval: PurchaseApproval;
+  outcomeReason: string;
+  // The budget figures the outcome was computed from, at submission.
+  yearlyBudgetPence: number;
+  spentThisYearPence: number;
 };
