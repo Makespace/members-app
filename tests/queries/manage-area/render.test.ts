@@ -87,4 +87,38 @@ describe('manage area page', () => {
       );
     });
   });
+
+  describe('super-user actions', () => {
+    const page = (viewModel: ViewModel) => {
+      const body = document.createElement('body');
+      body.innerHTML = render(viewModel);
+      return body;
+    };
+    const superUserHrefs = (body: HTMLElement) =>
+      [...body.querySelectorAll('a.button--super-user')].map(link =>
+        link.getAttribute('href')
+      );
+
+    it('are drawn in the super-user style, inside a box saying so', () => {
+      const body = page(viewModel);
+      expect(superUserHrefs(body)).toStrictEqual([
+        `/equipment/add?area=${areaId}`,
+        `/areas/add-owner?area=${areaId}`,
+        `/areas/set-mailing-list?area=${areaId}`,
+        `/areas/remove?area=${areaId}`,
+      ]);
+      expect(body.querySelector('.super-user-actions')?.textContent).toContain(
+        'Super users only'
+      );
+      expect(
+        body.querySelector('a[href^="/equipment/bulk-add"]')?.classList.contains('button--super-user')
+      ).toBe(false);
+    });
+
+    it("aren't shown to an owner", () => {
+      const body = page({...viewModel, isSuperUser: false});
+      expect(superUserHrefs(body)).toStrictEqual([]);
+      expect(body.querySelector('.super-user-actions')).toBeNull();
+    });
+  });
 });

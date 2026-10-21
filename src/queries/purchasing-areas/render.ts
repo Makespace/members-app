@@ -1,6 +1,7 @@
 import {html, joinHtml, sanitizeString} from '../../types/html';
 import {formatPence} from '../../types/money';
 import {PurchasingArea} from '../../read-models/shared-state/return-types';
+import {superUserActions, superUserButton} from '../../templates/super-user';
 
 type ViewModel = {
   budgetYear: number;
@@ -59,19 +60,17 @@ export const render = (viewModel: ViewModel) => html`
       Things members pay for themselves (e.g. filament paid for on SumUp) are
       recorded without counting against it.
     </p>
-    ${viewModel.canRequest || viewModel.canManage
+    ${viewModel.canRequest
       ? html`<div>
-          ${viewModel.canRequest
-            ? html`<a class="button" href="/purchase-requests/submit"
-                >Request a purchase</a
-              >`
-            : html``}
-          ${viewModel.canManage
-            ? html`<a class="button" href="/purchasing-areas/create"
-                >Create purchasing area</a
-              >`
-            : html``}
+          <a class="button" href="/purchase-requests/submit"
+            >Request a purchase</a
+          >
         </div>`
+      : html``}
+    ${viewModel.canManage
+      ? superUserActions(
+          superUserButton('/purchasing-areas/create', html`Create purchasing area`)
+        )
       : html``}
     ${renderTable(viewModel)}
   </div>

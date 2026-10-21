@@ -12,6 +12,11 @@ import {renderMemberNumber} from '../../templates/member-number';
 import {renderMember} from '../../templates/member';
 import {displayDateOnly} from '../../templates/display-date';
 import {renderOutcome} from '../../templates/purchase-request-outcome';
+import {
+  superUserActions,
+  superUserButton,
+  superUserLink,
+} from '../../templates/super-user';
 import {ViewModel} from './construct-view-model';
 
 const money = (pence: number) => sanitizeString(formatPence(pence));
@@ -35,28 +40,27 @@ const renderAreas = (viewModel: ViewModel) => {
                   >
                   ${canManage
                     ? html`-
-                        <a
-                          href="/purchasing-areas/unassign-area?${query({
+                        ${superUserLink(
+                          `/purchasing-areas/unassign-area?${query({
                             purchasingArea: purchasingArea.id,
                             area: area.id,
-                          })}"
-                          >Remove</a
-                        >`
+                          })}`,
+                          html`Remove`
+                        )}`
                     : html``}
                 </li>`
               )
             )}
           </ul>`}
       ${canManage
-        ? html`<div>
-            <a
-              class="button"
-              href="/purchasing-areas/assign-area?${query({
+        ? superUserActions(
+            superUserButton(
+              `/purchasing-areas/assign-area?${query({
                 purchasingArea: purchasingArea.id,
-              })}"
-              >Add area</a
-            >
-          </div>`
+              })}`,
+              html`Add area`
+            )
+          )
         : html``}
     </section>
   `;
@@ -90,13 +94,13 @@ const renderRecordedSpend = (
                     <td>${money(spend.amountPence)}</td>
                     ${canManage
                       ? html`<td>
-                          <a
-                            href="/purchasing-areas/remove-spend?${query({
+                          ${superUserLink(
+                            `/purchasing-areas/remove-spend?${query({
                               purchasingArea: purchasingArea.id,
                               spend: spend.id,
-                            })}"
-                            >Remove</a
-                          >
+                            })}`,
+                            html`Remove`
+                          )}
                         </td>`
                       : html``}
                   </tr>
@@ -138,36 +142,32 @@ const renderBudget = (viewModel: ViewModel) => {
       </table>
       ${renderRecordedSpend(purchasingArea, canManage)}
       ${canManage
-        ? html`<div class="wrap">
-            <a
-              class="button"
-              href="/purchasing-areas/record-spend?${query({
+        ? superUserActions(html`
+            ${superUserButton(
+              `/purchasing-areas/record-spend?${query({
                 purchasingArea: purchasingArea.id,
-              })}"
-              >Record spending</a
-            >
-            <a
-              class="button"
-              href="/purchasing-areas/set-year-budget?${query({
+              })}`,
+              html`Record spending`
+            )}
+            ${superUserButton(
+              `/purchasing-areas/set-year-budget?${query({
                 purchasingArea: purchasingArea.id,
-              })}"
-              >Set ${purchasingArea.budgetYear}'s budget</a
-            >
-            <a
-              class="button"
-              href="/purchasing-areas/set-budget?${query({
+              })}`,
+              html`Set ${purchasingArea.budgetYear}'s budget`
+            )}
+            ${superUserButton(
+              `/purchasing-areas/set-budget?${query({
                 purchasingArea: purchasingArea.id,
-              })}"
-              >Set usual budget</a
-            >
-            <a
-              class="button"
-              href="/purchasing-areas/rename?${query({
+              })}`,
+              html`Set usual budget`
+            )}
+            ${superUserButton(
+              `/purchasing-areas/rename?${query({
                 purchasingArea: purchasingArea.id,
-              })}"
-              >Rename</a
-            >
-          </div>`
+              })}`,
+              html`Rename`
+            )}
+          `)
         : html``}
     </section>
   `;
@@ -188,13 +188,13 @@ const renderPurchaser =
         : html`<small>(no longer owns any of these areas)</small>`}
       ${canManage
         ? html`-
-            <a
-              href="/purchasing-areas/remove-purchaser?${query({
+            ${superUserLink(
+              `/purchasing-areas/remove-purchaser?${query({
                 purchasingArea: purchasingArea.id,
                 member: purchaser.memberNumber.toString(),
-              })}"
-              >Remove</a
-            >`
+              })}`,
+              html`Remove`
+            )}`
         : html``}
     </li>
   `;
@@ -215,15 +215,14 @@ const renderPurchasers = (viewModel: ViewModel) => {
             )}
           </ul>`}
       ${canManage
-        ? html`<div>
-            <a
-              class="button"
-              href="/purchasing-areas/add-purchaser?${query({
+        ? superUserActions(
+            superUserButton(
+              `/purchasing-areas/add-purchaser?${query({
                 purchasingArea: purchasingArea.id,
-              })}"
-              >Add purchaser</a
-            >
-          </div>`
+              })}`,
+              html`Add purchaser`
+            )
+          )
         : html``}
     </section>
   `;
