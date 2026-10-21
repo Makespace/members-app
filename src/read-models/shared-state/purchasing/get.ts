@@ -77,6 +77,7 @@ const getRecordedSpend =
         id: purchasingAreaSpendTable.id,
         amountPence: purchasingAreaSpendTable.amountPence,
         description: purchasingAreaSpendTable.description,
+        kind: purchasingAreaSpendTable.kind,
         recordedAt: purchasingAreaSpendTable.recordedAt,
       })
       .from(purchasingAreaSpendTable)
@@ -151,9 +152,12 @@ const expand =
     const budgetYear = budgetYearOf(now);
     const areas = getAreasOf(db)(row.id);
     const recordedSpend = getRecordedSpend(db)(row.id, budgetYear);
+    const recordedOfKind = (kind: RecordedSpend['kind']) =>
+      recordedSpend
+        .filter(spend => spend.kind === kind)
+        .reduce((total, spend) => total + spend.amountPence, 0);
     const spentThisYearPence =
-      spentInYear(db)(row.id, budgetYear) +
-      recordedSpend.reduce((total, spend) => total + spend.amountPence, 0);
+      spentInYear(db)(row.id, budgetYear) + recordedOfKind('budget');
     const yearlyBudgetPence = pipe(
       getYearBudget(db)(row.id, budgetYear),
       O.getOrElse(() => row.yearlyBudgetPence)
@@ -164,6 +168,7 @@ const expand =
       yearlyBudgetPence,
       usualBudgetPence: row.yearlyBudgetPence,
       recordedSpend,
+      approvedSpendThisYearPence: recordedOfKind('approved'),
       areas,
       purchasers: getPurchasersOf(db)(
         row.id,

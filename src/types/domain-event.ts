@@ -11,6 +11,7 @@ import {
 import {ReminderStage} from '../owner-agreement/reminder-stage';
 import {PurchaseCodec} from '../purchasing/purchases';
 import {ProposalCodec} from '../purchasing/proposal';
+import {RecordedSpendKindCodec} from './recorded-spend-kind';
 
 const defineEvent = <A extends string, T extends t.Props>(
   type: A,
@@ -221,6 +222,9 @@ const PurchasingAreaSpendRecorded = defineEvent('PurchasingAreaSpendRecorded', {
   budgetYear: t.number,
   amountPence: t.number,
   description: t.string,
+  // Out of the yearly budget, or approved spending outside it. Recorded
+  // before approved spending existed means the budget.
+  kind: tt.withFallback(RecordedSpendKindCodec, 'budget'),
 });
 
 // Takes back spending recorded by mistake.

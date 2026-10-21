@@ -2,6 +2,7 @@ import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {constructEvent, DomainEvent} from '../../../src/types';
+import {DomainEvent as DomainEventCodec} from '../../../src/types/domain-event';
 import {setYearBudget} from '../../../src/commands/purchasing-area/set-year-budget';
 import {setBudget} from '../../../src/commands/purchasing-area/set-budget';
 import {recordSpend} from '../../../src/commands/purchasing-area/record-spend';
@@ -9,6 +10,7 @@ import {removeSpend} from '../../../src/commands/purchasing-area/remove-spend';
 import {budgetYearOf} from '../../../src/purchasing/budget-year';
 import {
   arbitraryActor,
+  getRightOrFail,
   getSomeOrFail,
   getTaskEitherRightOrFail,
 } from '../../helpers';
@@ -153,6 +155,7 @@ describe('purchasing area budget adjustments', () => {
           purchasingAreaId,
           amount: 300_000,
           description: ' Spending before requests were in the app ' as NonEmptyString,
+          kind: 'budget',
           actor,
         },
         rm: rm(),
@@ -166,6 +169,7 @@ describe('purchasing area budget adjustments', () => {
         budgetYear: thisYear,
         amountPence: 300_000,
         description: 'Spending before requests were in the app',
+        kind: 'budget',
       });
     });
 
@@ -216,6 +220,7 @@ describe('purchasing area budget adjustments', () => {
           budgetYear: thisYear - 1,
           amountPence: 50_000,
           description: 'Last year',
+          kind: 'budget',
         })
       );
       expect(area().spentThisYearPence).toBe(0);
@@ -231,5 +236,71 @@ describe('purchasing area budget adjustments', () => {
         )
       ).toStrictEqual(O.none);
     });
+  });
+
+  describe('approved spending outside the budget', () => {
+    beforeEach(() => {
+      insert(
+        constructEvent('PurchasingAreaSpendRecorded')({
+          actor,
+          id: faker.string.uuid() as UUID,
+          purchasingAreaId,
+          budgetYear: thisYear,
+          amountPence: 100_000,
+          description: 'Extraction repair, approved by the directors',
+          kind: 'approved',
+        })
+      );
+    });
+
+    it("is listed, but doesn't use up the budget", () => {
+      expect(area()).toMatchObject({
+        spentThisYearPence: 0,
+        remainingPence: 200_000,
+        approvedSpendThisYearPence: 100_000,
+        recordedSpend: [
+          expect.objectContaining({
+            amountPence: 100_000,
+            kind: 'approved',
+          }),
+        ],
+      });
+    });
+
+    it('is recorded as approved', async () => {
+      const event = getSomeOrFail(
+        await getTaskEitherRightOrFail(
+          recordSpend.process({
+            command: {
+              id: faker.string.uuid() as UUID,
+              purchasingAreaId,
+              amount: 100_000,
+              description: 'Extraction repair' as NonEmptyString,
+              kind: 'approved',
+              actor,
+            },
+            rm: rm(),
+          })
+        )
+      );
+      expect(event).toMatchObject({kind: 'approved', amountPence: 100_000});
+    });
+  });
+
+  it('reads spending recorded before approved spending existed as out of the budget', () => {
+    const recorded = DomainEventCodec.decode({
+      type: 'PurchasingAreaSpendRecorded',
+      actor,
+      recordedAt: new Date().toISOString(),
+      id: faker.string.uuid(),
+      purchasingAreaId,
+      budgetYear: thisYear,
+      amountPence: 300_000,
+      description: 'Before requests were in the app',
+    });
+    const event = getRightOrFail(recorded);
+    expect(event).toMatchObject({kind: 'budget'});
+    insert(event);
+    expect(area().spentThisYearPence).toBe(300_000);
   });
 });

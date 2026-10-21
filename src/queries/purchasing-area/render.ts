@@ -80,6 +80,7 @@ const renderRecordedSpend = (
             <tr>
               <th>Recorded</th>
               <th>What it was for</th>
+              <th>Budget</th>
               <th>Amount</th>
               ${canManage ? html`<th></th>` : html``}
             </tr>
@@ -91,6 +92,11 @@ const renderRecordedSpend = (
                   <tr>
                     <td>${displayDateOnly(spend.recordedAt)}</td>
                     <td>${sanitizeString(spend.description)}</td>
+                    <td>
+                      ${spend.kind === 'approved'
+                        ? html`Approved, outside the budget`
+                        : html`Yearly budget`}
+                    </td>
                     <td>${money(spend.amountPence)}</td>
                     ${canManage
                       ? html`<td>
@@ -138,6 +144,12 @@ const renderBudget = (viewModel: ViewModel) => {
             <th>Remaining</th>
             <td>${money(purchasingArea.remainingPence)}</td>
           </tr>
+          ${purchasingArea.approvedSpendThisYearPence > 0
+            ? html`<tr>
+                <th>Approved spending (outside the budget)</th>
+                <td>${money(purchasingArea.approvedSpendThisYearPence)}</td>
+              </tr>`
+            : html``}
         </tbody>
       </table>
       ${renderRecordedSpend(purchasingArea, canManage)}

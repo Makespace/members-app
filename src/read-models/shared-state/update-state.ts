@@ -1335,6 +1335,7 @@ const _updateState =
             budgetYear: event.budgetYear,
             amountPence: event.amountPence,
             description: event.description,
+            kind: event.kind,
             recordedAt: event.recordedAt,
           })
           .run();
