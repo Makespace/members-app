@@ -229,7 +229,25 @@ describe('purchase request form', () => {
         render(onPage(2))
           .querySelector('.purchase-question legend')
           ?.textContent?.trim()
-      ).toBe('Do members pay for this?');
+      ).toBe('Do members pay for this on SumUp?');
+    });
+
+    it("makes clear an item's cost is its total, including VAT", () => {
+      const page = render(onPage(2));
+      const cost = page.querySelector<HTMLInputElement>(
+        '[name="purchases[0][items][0][cost]"]'
+      )!;
+      expect(
+        page.querySelector(`label[for="${cost.id}"]`)!.textContent.trim()
+      ).toBe('Total cost (inc. VAT)');
+      expect(
+        page
+          .querySelector(`#${cost.getAttribute('aria-describedby')}`)!
+          .textContent.replace(/\s+/g, ' ')
+          .trim()
+      ).toBe(
+        'The total for the whole quantity, including VAT and after any discount - not the price of one.'
+      );
     });
 
     it('needs the first shop, quantity and cost', () => {
