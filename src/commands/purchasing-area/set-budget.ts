@@ -17,13 +17,14 @@ const codec = t.strict({
 
 type SetPurchasingAreaBudget = t.TypeOf<typeof codec>;
 
-// The budget is per calendar year and applies to the year it is looked at in;
-// changing it mid-year changes what is left for the rest of this year.
+// The usual budget, for every calendar year that hasn't had its own set
+// (see set-year-budget.ts). Changing it mid-year changes what is left for the
+// rest of this year, unless this year has its own budget.
 const process: Command<SetPurchasingAreaBudget>['process'] = input =>
   pipe(
     getPurchasingAreaOrFail(input.rm, input.command.purchasingAreaId),
     TE.map(purchasingArea =>
-      purchasingArea.yearlyBudgetPence === input.command.yearlyBudget
+      purchasingArea.usualBudgetPence === input.command.yearlyBudget
         ? O.none
         : O.some(
             constructEvent('PurchasingAreaBudgetSet')({

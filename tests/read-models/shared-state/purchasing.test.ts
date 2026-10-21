@@ -93,10 +93,12 @@ describe('purchasing areas in the read model', () => {
         id: purchasingAreaId,
         name: 'Craft & Art',
         yearlyBudgetPence: 150_000,
+        usualBudgetPence: 150_000,
         areas: [],
         purchasers: [],
         budgetYear: 2026,
         spentThisYearPence: 0,
+        recordedSpend: [],
         remainingPence: 150_000,
       });
     });

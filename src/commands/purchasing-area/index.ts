@@ -12,6 +12,12 @@ import {addPurchaser} from './add-purchaser';
 import {addPurchaserForm} from './add-purchaser-form';
 import {removePurchaser} from './remove-purchaser';
 import {removePurchaserForm} from './remove-purchaser-form';
+import {setYearBudget} from './set-year-budget';
+import {setYearBudgetForm} from './set-year-budget-form';
+import {recordSpend} from './record-spend';
+import {recordSpendForm} from './record-spend-form';
+import {removeSpend} from './remove-spend';
+import {removeSpendForm} from './remove-spend-form';
 
 export const purchasingArea = {
   create: {
@@ -41,5 +47,17 @@ export const purchasingArea = {
   removePurchaser: {
     ...removePurchaser,
     ...removePurchaserForm,
+  },
+  setYearBudget: {
+    ...setYearBudget,
+    ...setYearBudgetForm,
+  },
+  recordSpend: {
+    ...recordSpend,
+    ...recordSpendForm,
+  },
+  removeSpend: {
+    ...removeSpend,
+    ...removeSpendForm,
   },
 };

@@ -192,11 +192,55 @@ describe('purchasing area page', () => {
   it('lets a super user manage areas, budget and purchasers', () => {
     const page = pageFor(superUser);
     expect(page.textContent).toContain('Add area');
-    expect(page.textContent).toContain('Set budget');
+    expect(page.textContent).toContain('Set usual budget');
     expect(page.textContent).toContain('Add purchaser');
     expect(page.html).toContain(
       `href="/purchasing-areas/remove-purchaser?purchasingArea=${purchasingAreaId}&amp;member=${purchaser.memberNumber}"`
     );
+  });
+
+  describe("with this year's own budget and recorded spending", () => {
+    const spendId = faker.string.uuid() as UUID;
+    beforeEach(() => {
+      framework.insertIntoSharedReadModel(
+        constructEvent('PurchasingAreaYearBudgetSet')({
+          actor: arbitraryActor(),
+          purchasingAreaId,
+          budgetYear: now.getFullYear(),
+          yearlyBudgetPence: 500_000,
+        })
+      );
+      framework.insertIntoSharedReadModel(
+        constructEvent('PurchasingAreaSpendRecorded')({
+          actor: arbitraryActor(),
+          id: spendId,
+          purchasingAreaId,
+          budgetYear: now.getFullYear(),
+          amountPence: 300_000,
+          description: 'Before requests were in the app',
+        })
+      );
+    });
+
+    it('shows the budget for the year against the usual one, and the recorded spending', () => {
+      const text = pageFor(member).textContent;
+      expect(text).toContain('£5,000.00 (usually £2,000.00)');
+      expect(text).toContain('Before requests were in the app');
+      expect(text).toContain('£3,000.00');
+      expect(text).toContain('£3,500.00');
+    });
+
+    it('lets only super users record spending, set the year budget or remove spending', () => {
+      const removeLink = `href="/purchasing-areas/remove-spend?purchasingArea=${purchasingAreaId}&amp;spend=${spendId}"`;
+      const forSuperUser = pageFor(superUser);
+      expect(forSuperUser.textContent).toContain('Record spending');
+      expect(forSuperUser.textContent).toContain(`Set ${now.getFullYear()}'s budget`);
+      expect(forSuperUser.textContent).toContain('Set usual budget');
+      expect(forSuperUser.html).toContain(removeLink);
+      const forMember = pageFor(member);
+      expect(forMember.textContent).not.toContain('Record spending');
+      expect(forMember.html).not.toContain(removeLink);
+    });
   });
 
   it('is not found for an unknown purchasing area', () => {

@@ -62,6 +62,51 @@ const renderAreas = (viewModel: ViewModel) => {
   `;
 };
 
+// Spending super users recorded directly, rather than through requests.
+const renderRecordedSpend = (
+  purchasingArea: PurchasingArea,
+  canManage: boolean
+) =>
+  purchasingArea.recordedSpend.length === 0
+    ? html``
+    : html`
+        <h3>Recorded spending</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Recorded</th>
+              <th>What it was for</th>
+              <th>Amount</th>
+              ${canManage ? html`<th></th>` : html``}
+            </tr>
+          </thead>
+          <tbody>
+            ${joinHtml(
+              purchasingArea.recordedSpend.map(
+                spend => html`
+                  <tr>
+                    <td>${displayDateOnly(spend.recordedAt)}</td>
+                    <td>${sanitizeString(spend.description)}</td>
+                    <td>${money(spend.amountPence)}</td>
+                    ${canManage
+                      ? html`<td>
+                          <a
+                            href="/purchasing-areas/remove-spend?${query({
+                              purchasingArea: purchasingArea.id,
+                              spend: spend.id,
+                            })}"
+                            >Remove</a
+                          >
+                        </td>`
+                      : html``}
+                  </tr>
+                `
+              )
+            )}
+          </tbody>
+        </table>
+      `;
+
 const renderBudget = (viewModel: ViewModel) => {
   const {purchasingArea, canManage} = viewModel;
   return html`
@@ -71,7 +116,15 @@ const renderBudget = (viewModel: ViewModel) => {
         <tbody>
           <tr>
             <th>Yearly budget</th>
-            <td>${money(purchasingArea.yearlyBudgetPence)}</td>
+            <td>
+              ${money(purchasingArea.yearlyBudgetPence)}
+              ${purchasingArea.yearlyBudgetPence !==
+              purchasingArea.usualBudgetPence
+                ? html`<span class="text-gray"
+                    >(usually ${money(purchasingArea.usualBudgetPence)})</span
+                  >`
+                : html``}
+            </td>
           </tr>
           <tr>
             <th>Spent so far this year</th>
@@ -83,14 +136,29 @@ const renderBudget = (viewModel: ViewModel) => {
           </tr>
         </tbody>
       </table>
+      ${renderRecordedSpend(purchasingArea, canManage)}
       ${canManage
-        ? html`<div>
+        ? html`<div class="wrap">
+            <a
+              class="button"
+              href="/purchasing-areas/record-spend?${query({
+                purchasingArea: purchasingArea.id,
+              })}"
+              >Record spending</a
+            >
+            <a
+              class="button"
+              href="/purchasing-areas/set-year-budget?${query({
+                purchasingArea: purchasingArea.id,
+              })}"
+              >Set ${purchasingArea.budgetYear}'s budget</a
+            >
             <a
               class="button"
               href="/purchasing-areas/set-budget?${query({
                 purchasingArea: purchasingArea.id,
               })}"
-              >Set budget</a
+              >Set usual budget</a
             >
             <a
               class="button"

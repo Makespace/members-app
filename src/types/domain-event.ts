@@ -201,6 +201,33 @@ const PurchasingAreaBudgetSet = defineEvent('PurchasingAreaBudgetSet', {
   yearlyBudgetPence: t.number,
 });
 
+// A different budget for one calendar year only, e.g. an extension: the
+// usual budget (PurchasingAreaBudgetSet) applies again the year after.
+const PurchasingAreaYearBudgetSet = defineEvent(
+  'PurchasingAreaYearBudgetSet',
+  {
+    purchasingAreaId: tt.UUID,
+    budgetYear: t.number,
+    yearlyBudgetPence: t.number,
+  }
+);
+
+// Spending a super user records directly against a purchasing area's budget
+// for a year - e.g. what was spent before purchase requests were in the app -
+// alongside the spending from purchase requests.
+const PurchasingAreaSpendRecorded = defineEvent('PurchasingAreaSpendRecorded', {
+  id: tt.UUID,
+  purchasingAreaId: tt.UUID,
+  budgetYear: t.number,
+  amountPence: t.number,
+  description: t.string,
+});
+
+// Takes back spending recorded by mistake.
+const PurchasingAreaSpendRemoved = defineEvent('PurchasingAreaSpendRemoved', {
+  id: tt.UUID,
+});
+
 // An area belongs to at most one purchasing area at a time.
 const AreaAssignedToPurchasingArea = defineEvent(
   'AreaAssignedToPurchasingArea',
@@ -742,6 +769,9 @@ export const events = [
   PurchasingAreaCreated,
   PurchasingAreaRenamed,
   PurchasingAreaBudgetSet,
+  PurchasingAreaYearBudgetSet,
+  PurchasingAreaSpendRecorded,
+  PurchasingAreaSpendRemoved,
   AreaAssignedToPurchasingArea,
   AreaUnassignedFromPurchasingArea,
   PurchaserAdded,
@@ -819,6 +849,9 @@ export const DomainEvent = t.union([
   PurchasingAreaCreated.codec,
   PurchasingAreaRenamed.codec,
   PurchasingAreaBudgetSet.codec,
+  PurchasingAreaYearBudgetSet.codec,
+  PurchasingAreaSpendRecorded.codec,
+  PurchasingAreaSpendRemoved.codec,
   AreaAssignedToPurchasingArea.codec,
   AreaUnassignedFromPurchasingArea.codec,
   PurchaserAdded.codec,

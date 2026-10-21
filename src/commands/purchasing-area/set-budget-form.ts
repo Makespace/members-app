@@ -22,14 +22,16 @@ const renderForm = (purchasingArea: ViewModel) =>
   pipe(
     html`
       <div class="stack-large">
-        <h1>Set the yearly budget for ${sanitizeString(purchasingArea.name)}</h1>
+        <h1>Set the usual yearly budget for ${sanitizeString(purchasingArea.name)}</h1>
         <p>
-          Currently ${sanitizeString(formatPence(purchasingArea.yearlyBudgetPence))}
-          a year, with
-          ${sanitizeString(formatPence(purchasingArea.spentThisYearPence))} of
-          spent so far in ${purchasingArea.budgetYear}. The budget
-          runs for the calendar year; a change applies to this year straight
-          away.
+          Usually ${sanitizeString(formatPence(purchasingArea.usualBudgetPence))}
+          a year. The budget runs for the calendar year; a change applies to
+          this year straight away${purchasingArea.yearlyBudgetPence !==
+          purchasingArea.usualBudgetPence
+            ? html`, except that ${purchasingArea.budgetYear} has its own
+                budget of
+                ${sanitizeString(formatPence(purchasingArea.yearlyBudgetPence))}`
+            : html``}.
         </p>
         <form
           action="${safe(actionReturningTo('set-budget', purchasingArea.id))}"
@@ -41,7 +43,7 @@ const renderForm = (purchasingArea: ViewModel) =>
             inputmode="decimal"
             name="yearlyBudget"
             id="yearlyBudget"
-            value="${safe((purchasingArea.yearlyBudgetPence / 100).toFixed(2))}"
+            value="${safe((purchasingArea.usualBudgetPence / 100).toFixed(2))}"
             required
           />
           <input
