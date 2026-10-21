@@ -229,7 +229,7 @@ describe('purchase request form', () => {
         render(onPage(2))
           .querySelector('.purchase-question legend')
           ?.textContent?.trim()
-      ).toBe('Do members pay for this?');
+      ).toBe('Do members pay for this on SumUp?');
     });
 
     it("makes clear an item's cost is its total, including VAT", () => {

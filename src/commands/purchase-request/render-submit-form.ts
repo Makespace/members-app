@@ -664,7 +664,7 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
       <div data-request-total aria-live="polite"></div>
     </div>
     <fieldset class="purchase-request__fieldset purchase-question">
-      <legend>Do members pay for this?</legend>
+      <legend>Do members pay for this on SumUp?</legend>
       <p class="purchase-request__hint text-sm">
         For example, 3D printer filament, paid for on SumUp when it's used.
       </p>
