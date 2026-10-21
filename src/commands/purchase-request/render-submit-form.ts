@@ -282,7 +282,7 @@ const renderItemEntry =
           </div>
           <div class="purchase-field">
             <label class="purchase-field__label" for="${id('cost')}"
-              >Cost</label
+              >Total cost (inc. VAT)</label
             >
             <div class="purchase-money">
               <span>£</span
@@ -301,7 +301,8 @@ const renderItemEntry =
             <span
               class="purchase-request__hint text-sm"
               id="${id('cost')}-hint"
-              >For the whole quantity, after any discount.</span
+              >The total for the whole quantity, including VAT and after any
+              discount - not the price of one.</span
             >
           </div>
         </div>
