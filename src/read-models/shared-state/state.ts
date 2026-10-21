@@ -14,6 +14,7 @@ import {ReminderStage} from '../../owner-agreement/reminder-stage';
 import {InterestedIn} from '../../owner-agreement/agreement';
 import * as O from 'fp-ts/Option';
 import {blob, integer, SQLiteColumnBuilderBase, sqliteTable, SQLiteTableExtraConfig, text, uniqueIndex} from 'drizzle-orm/sqlite-core';
+import {RecordedSpendKind} from '../../types/recorded-spend-kind';
 
 export const createTables: SQL[] = [];
 export const truncateTables: SQL[] = [];
@@ -461,6 +462,7 @@ export const purchasingAreaSpendTable = defineTable(
       budgetYear INTEGER NOT NULL,
       amountPence INTEGER NOT NULL,
       description TEXT NOT NULL,
+      kind TEXT NOT NULL,
       recordedAt INTEGER NOT NULL
     )
   `,
@@ -471,6 +473,7 @@ export const purchasingAreaSpendTable = defineTable(
     budgetYear: integer('budgetYear').notNull(),
     amountPence: integer('amountPence').notNull(),
     description: text('description').notNull(),
+    kind: text('kind').notNull().$type<RecordedSpendKind>(),
     recordedAt: integer('recordedAt', {mode: 'timestamp_ms'}).notNull(),
   }
 );

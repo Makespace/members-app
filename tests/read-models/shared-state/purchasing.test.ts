@@ -99,6 +99,7 @@ describe('purchasing areas in the read model', () => {
         budgetYear: 2026,
         spentThisYearPence: 0,
         recordedSpend: [],
+        approvedSpendThisYearPence: 0,
         remainingPence: 150_000,
       });
     });

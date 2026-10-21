@@ -27,10 +27,10 @@ const renderForm = (purchasingArea: ViewModel) =>
       <div class="stack-large">
         <h1>Record spending for ${sanitizeString(purchasingArea.name)}</h1>
         <p>
-          Spending against ${purchasingArea.budgetYear}'s budget that didn't
-          come through a purchase request, e.g. what was spent before requests
-          were in the app. ${money(purchasingArea.spentThisYearPence)} of
-          ${money(purchasingArea.yearlyBudgetPence)} has been spent so far.
+          Spending in ${purchasingArea.budgetYear} that didn't come through a
+          purchase request. ${money(purchasingArea.spentThisYearPence)} of
+          ${money(purchasingArea.yearlyBudgetPence)} of the yearly budget has
+          been spent so far.
         </p>
         <form
           action="${safe(actionReturningTo('record-spend', purchasingArea.id))}"
@@ -50,9 +50,38 @@ const renderForm = (purchasingArea: ViewModel) =>
             type="text"
             name="description"
             id="description"
-            placeholder="e.g. Spending before purchase requests were in the app"
+            placeholder="e.g. Extraction repair, approved by the directors"
             required
           />
+          <fieldset class="mb-6">
+            <legend>Does it come out of the yearly budget?</legend>
+            <div class="fieldset-item">
+              <input
+                type="radio"
+                name="kind"
+                id="kind-budget"
+                value="budget"
+                required
+              />
+              <label for="kind-budget"
+                >Yes - e.g. what was spent before purchase requests were in the
+                app</label
+              >
+            </div>
+            <div class="fieldset-item">
+              <input
+                type="radio"
+                name="kind"
+                id="kind-approved"
+                value="approved"
+                required
+              />
+              <label for="kind-approved"
+                >No - approved spending outside the budget, e.g. approved by
+                the directors</label
+              >
+            </div>
+          </fieldset>
           <input
             type="hidden"
             name="purchasingAreaId"

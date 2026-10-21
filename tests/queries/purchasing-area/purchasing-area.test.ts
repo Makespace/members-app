@@ -218,6 +218,7 @@ describe('purchasing area page', () => {
           budgetYear: now.getFullYear(),
           amountPence: 300_000,
           description: 'Before requests were in the app',
+          kind: 'budget',
         })
       );
     });
@@ -228,6 +229,26 @@ describe('purchasing area page', () => {
       expect(text).toContain('Before requests were in the app');
       expect(text).toContain('£3,000.00');
       expect(text).toContain('£3,500.00');
+    });
+
+    it('shows approved spending apart from the budget', () => {
+      framework.insertIntoSharedReadModel(
+        constructEvent('PurchasingAreaSpendRecorded')({
+          actor: arbitraryActor(),
+          id: faker.string.uuid() as UUID,
+          purchasingAreaId,
+          budgetYear: now.getFullYear(),
+          amountPence: 100_000,
+          description: 'Extraction repair, approved by the directors',
+          kind: 'approved',
+        })
+      );
+      const text = pageFor(member).textContent;
+      expect(text).toContain('Approved spending (outside the budget) £1,000.00');
+      expect(text).toContain(
+        'Extraction repair, approved by the directors Approved, outside the budget £1,000.00'
+      );
+      expect(text).toContain('Remaining £1,500.00');
     });
 
     it('lets only super users record spending, set the year budget or remove spending', () => {

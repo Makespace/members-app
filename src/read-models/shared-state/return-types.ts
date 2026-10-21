@@ -9,6 +9,7 @@ import {
   PurchaseApproval,
   PurchaseRequestOutcome,
 } from '../../types/purchase-request-outcome';
+import {RecordedSpendKind} from '../../types/recorded-spend-kind';
 
 export type TrainedMember = Pick<
   MemberCoreInfo,
@@ -177,6 +178,8 @@ export type RecordedSpend = {
   id: UUID;
   amountPence: number;
   description: string;
+  // Out of the yearly budget, or approved spending outside it.
+  kind: RecordedSpendKind;
   recordedAt: Date;
 };
 
@@ -189,8 +192,11 @@ export type PurchasingArea = PurchasingAreaSummary & {
   areas: ReadonlyArray<{id: UUID; name: string}>;
   purchasers: ReadonlyArray<PurchasingAreaPurchaser>;
   budgetYear: number;
-  // Purchase requests that count against the budget, plus recorded spending.
+  // Purchase requests that count against the budget, plus spending recorded
+  // against it.
   spentThisYearPence: number;
+  // Recorded spending approved outside the budget, which doesn't count.
+  approvedSpendThisYearPence: number;
   // This budget year's recorded spending, oldest first.
   recordedSpend: ReadonlyArray<RecordedSpend>;
   // Negative when this year's spending has gone past the budget.
