@@ -1106,6 +1106,11 @@ const blankRisk: TypedRisk = {
 // The proposal, filled in before sending when the request needs one. The
 // parts that don't apply to every purchase are optional; the risk assessment
 // only appears for a moderate to high health and safety risk.
+// One part of the proposal, set apart from the others with a rule above it.
+const proposalSection = (body: Html) => html`
+  <section class="proposal-form__section">${body}</section>
+`;
+
 const renderProposalForm = (viewModel: PurchaseRequestFormViewModel) => {
   const proposal = viewModel.answers.proposal;
   const needsRiskAssessment = viewModel.answers.healthAndSafetyRisk === 'true';
@@ -1116,54 +1121,64 @@ const renderProposalForm = (viewModel: PurchaseRequestFormViewModel) => {
         This request needs a proposal, sent with it. Fill in what applies; the
         parts marked optional can be left blank if they don't.
       </p>
-      ${textField(
-        'proposal[need]',
-        html`The need`,
-        html`What problem does this solve, and for whom?`,
-        proposal.need || viewModel.answers.justification,
-        {required: true, rows: 5}
+      ${proposalSection(
+        textField(
+          'proposal[need]',
+          html`The need`,
+          html`What problem does this solve, and for whom?`,
+          proposal.need || viewModel.answers.justification,
+          {required: true, rows: 5}
+        )
       )}
-      <details class="proposal-section" data-proposal-section open>
-        <summary>
-          <h3>Options</h3>
-          <span class="purchase-request__hint">(optional)</span>
-          <span class="purchase-request__hint" data-section-count></span>
-        </summary>
-        <div class="purchase-request__stack">
-        <p class="purchase-request__hint text-sm">
-          Your proposal is more likely to be accepted if you show that you've
-          considered multiple options and settled on one for a particular
-          reason. Give each its pros, cons and cost - doing nothing can be one
-          of them.
-        </p>
-        <div
-          class="purchase-request__stack"
-          data-repeat="options"
-          data-repeat-label="Option"
-        >
-          ${joinHtml(
-            padded(proposal.options, PROPOSAL_ENTRIES, blankOption).map(
-              renderOptionEntry
-            )
-          )}
-        </div>
-        <button
-          class="purchase-request__link-button jsonly"
-          type="button"
-          data-repeat-add="options"
-        >
-          + Add another option
-        </button>
-        ${textField(
-          'proposal[preferred]',
-          html`Preferred option`,
-          html`Which option you'd go with, and why.`,
-          proposal.preferred
-        )}
-        </div>
-      </details>
+      ${proposalSection(html`
+        <details class="proposal-section" data-proposal-section open>
+          <summary class="proposal-section__summary">
+            <span class="proposal-section__title">
+              <h3>Options</h3>
+              <span class="purchase-request__hint">(optional)</span>
+              <span class="proposal-section__count" data-section-count></span>
+            </span>
+            <span class="proposal-section__why">
+              Your proposal is more likely to be accepted if you show that
+              you've considered multiple options and settled on one for a
+              particular reason. Give each its pros, cons and cost - doing
+              nothing can be one of them.
+            </span>
+            <span class="proposal-section__toggle" aria-hidden="true">
+              <span class="proposal-section__when-closed">Add options</span>
+              <span class="proposal-section__when-open">Hide options</span>
+            </span>
+          </summary>
+          <div class="purchase-request__stack">
+            <div
+              class="purchase-request__stack"
+              data-repeat="options"
+              data-repeat-label="Option"
+            >
+              ${joinHtml(
+                padded(proposal.options, PROPOSAL_ENTRIES, blankOption).map(
+                  renderOptionEntry
+                )
+              )}
+            </div>
+            <button
+              class="purchase-request__link-button jsonly"
+              type="button"
+              data-repeat-add="options"
+            >
+              + Add another option
+            </button>
+            ${textField(
+              'proposal[preferred]',
+              html`Preferred option`,
+              html`Which option you'd go with, and why.`,
+              proposal.preferred
+            )}
+          </div>
+        </details>
+      `)}
       ${needsRiskAssessment
-        ? html`<div class="purchase-request__stack">
+        ? proposalSection(html`<div class="purchase-request__stack">
             <h3>Risk assessment</h3>
             <p class="purchase-request__hint text-sm">
               You said this presents a moderate to high health and safety risk.
@@ -1188,26 +1203,32 @@ const renderProposalForm = (viewModel: PurchaseRequestFormViewModel) => {
             >
               + Add another risk
             </button>
-          </div>`
+          </div>`)
         : html``}
-      ${textField(
-        'proposal[location]',
-        optionalLabel('Where it goes'),
-        html`Where in the space it will live.`,
-        proposal.location
+      ${proposalSection(
+        textField(
+          'proposal[location]',
+          optionalLabel('Where it goes'),
+          html`Where in the space it will live.`,
+          proposal.location
+        )
       )}
-      ${textField(
-        'proposal[owner]',
-        optionalLabel('Who owns it'),
-        html`Who will look after it.`,
-        proposal.owner
+      ${proposalSection(
+        textField(
+          'proposal[owner]',
+          optionalLabel('Who owns it'),
+          html`Who will look after it.`,
+          proposal.owner
+        )
       )}
-      ${textField(
-        'proposal[training]',
-        optionalLabel('Training and servicing'),
-        html`How members will be trained to use it, and how it will be
-          serviced.`,
-        proposal.training
+      ${proposalSection(
+        textField(
+          'proposal[training]',
+          optionalLabel('Training and servicing'),
+          html`How members will be trained to use it, and how it will be
+            serviced.`,
+          proposal.training
+        )
       )}
     </section>
   `;

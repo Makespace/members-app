@@ -457,6 +457,37 @@ describe('purchase request form', () => {
       ).toBe(false);
     });
 
+    it('explains why to add options before the section is opened', () => {
+      const summary = needingProposal(false).querySelector(
+        'details[data-proposal-section] > summary'
+      )!;
+      const text = summary.textContent.replace(/\s+/g, ' ');
+      expect(text).toContain(
+        "Your proposal is more likely to be accepted if you show that you've considered multiple options and settled on one for a particular reason. Give each its pros, cons and cost - doing nothing can be one of them."
+      );
+      expect(text).toContain('Add options');
+    });
+
+    it('sets each part of the proposal apart in its own section', () => {
+      const sections = needingProposal(true).querySelectorAll(
+        '[data-proposal-form] .proposal-form__section'
+      );
+      expect(
+        [...sections].map(section =>
+          (section.querySelector('label, h3')!.textContent ?? '')
+            .replace(/\s+/g, ' ')
+            .trim()
+        )
+      ).toStrictEqual([
+        'The need',
+        'Options',
+        'Risk assessment',
+        'Where it goes (optional)',
+        'Who owns it (optional)',
+        'Training and servicing (optional)',
+      ]);
+    });
+
     it('asks for a risk assessment only when there is a safety risk', () => {
       const page = needingProposal(true);
       expect(proposalNames(page)).toEqual(
