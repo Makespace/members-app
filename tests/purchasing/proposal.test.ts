@@ -65,6 +65,14 @@ describe('proposals', () => {
     });
   });
 
+  it('accepts a proposal without options or a preferred one', () => {
+    const proposal = getRightOrFail(
+      normaliseProposal(typedProposal({...raw, options: [], preferred: ' '}), false)
+    );
+    expect(proposal.options).toStrictEqual([]);
+    expect(proposal.preferred).toBeNull();
+  });
+
   it('leaves out a risk assessment that is not needed', () => {
     expect(
       getRightOrFail(normaliseProposal(typedProposal(raw), false)).risks
@@ -84,7 +92,6 @@ describe('proposals', () => {
 
   it.each([
     [{need: ' '}, 'Proposal: please describe the need.'],
-    [{options: []}, 'Proposal: please give at least one option.'],
     [
       {options: [{description: '', cost: '5'}]},
       'Option 1: please describe the option.',
@@ -97,7 +104,6 @@ describe('proposals', () => {
       {options: [{description: 'A', cost: 'lots'}]},
       'Option 1: the cost should be in pounds, e.g. 630.00.',
     ],
-    [{preferred: ''}, 'Proposal: please say which option you prefer, and why.'],
   ])('turns down %j', (fields, message) => {
     expect(problem(fields)).toBe(message);
   });

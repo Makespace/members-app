@@ -4701,3 +4701,39 @@ select.proposal-rating {
   gap: 0.5rem;
   padding-block: 0.6rem;
 }
+
+/* An open item's Add item / Done button, with what it still needs. */
+.purchase-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+/* A proposal section that opens and closes, e.g. Options. Overrides the
+   app-wide details styling (link-coloured summary, indented body). */
+details.proposal-section > summary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  color: var(--text-color);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+details.proposal-section > summary h3 {
+  display: inline;
+  color: var(--link-color);
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+details.proposal-section > summary:hover h3 {
+  text-decoration-thickness: 3px;
+}
+
+details.proposal-section > *:not(summary) {
+  margin-top: 0.75rem;
+  padding: 0;
+  border-left: 0;
+}

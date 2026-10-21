@@ -326,6 +326,14 @@ const renderItemEntry =
 ${sanitizeString(item.notes)}</textarea
           >
         </div>
+        <div class="purchase-item__actions jsonly" data-item-actions hidden>
+          <button type="button" data-item-done>Add item</button>
+          <span
+            class="purchase-request__hint text-sm"
+            data-item-message
+            aria-live="polite"
+          ></span>
+        </div>
         </div>
       </div>
     `;
@@ -893,7 +901,9 @@ const renderOptionEntry = (
 ) => {
   const name = (field: string) => `proposal[options][${index}][${field}]`;
   const id = (field: string) => safe(`proposal-options-${index}-${field}`);
-  const required = index === 0 ? safe('required') : safe('');
+  // Options are optional, so none of their fields is required up front;
+  // the server still needs a description and cost for any option given.
+  const required = safe('');
   return html`
     <div class="purchase-shop proposal-entry" data-repeat-entry>
       <div class="purchase-shop__head">
@@ -1113,11 +1123,18 @@ const renderProposalForm = (viewModel: PurchaseRequestFormViewModel) => {
         proposal.need || viewModel.answers.justification,
         {required: true, rows: 5}
       )}
-      <div class="purchase-request__stack">
-        <h3>Options</h3>
+      <details class="proposal-section" data-proposal-section open>
+        <summary>
+          <h3>Options</h3>
+          <span class="purchase-request__hint">(optional)</span>
+          <span class="purchase-request__hint" data-section-count></span>
+        </summary>
+        <div class="purchase-request__stack">
         <p class="purchase-request__hint text-sm">
-          The ways you could meet the need, including doing nothing if that's
-          realistic, each with its pros, cons and cost.
+          Your proposal is more likely to be accepted if you show that you've
+          considered multiple options and settled on one for a particular
+          reason. Give each its pros, cons and cost - doing nothing can be one
+          of them.
         </p>
         <div
           class="purchase-request__stack"
@@ -1137,14 +1154,14 @@ const renderProposalForm = (viewModel: PurchaseRequestFormViewModel) => {
         >
           + Add another option
         </button>
-      </div>
-      ${textField(
-        'proposal[preferred]',
-        html`Preferred option`,
-        html`Which option you'd go with, and why.`,
-        proposal.preferred,
-        {required: true}
-      )}
+        ${textField(
+          'proposal[preferred]',
+          html`Preferred option`,
+          html`Which option you'd go with, and why.`,
+          proposal.preferred
+        )}
+        </div>
+      </details>
       ${needsRiskAssessment
         ? html`<div class="purchase-request__stack">
             <h3>Risk assessment</h3>
@@ -1334,8 +1351,30 @@ const proposalScript = html`
         renumber();
       });
 
-      // A field the browser flags as missing opens the entry holding it.
+      // Sections like Options start closed (they're open without
+      // JavaScript), saying how many have been added.
+      var sections = form.querySelectorAll('[data-proposal-section]');
+      function countSections() {
+        sections.forEach(function (section) {
+          var list = section.querySelector('[data-repeat]');
+          var added = Array.prototype.filter.call(
+            list.querySelectorAll('[data-repeat-entry]'),
+            function (entry) { return summaries[list.dataset.repeat](entry) !== null; }
+          ).length;
+          section.querySelector('[data-section-count]').textContent =
+            added ? added + ' added' : 'none added yet';
+        });
+      }
+      sections.forEach(function (section) { section.open = false; });
+      form.addEventListener('input', countSections);
+      form.addEventListener('change', countSections);
+      countSections();
+
+      // A field the browser flags as missing opens the section and the entry
+      // holding it.
       form.addEventListener('invalid', function (event) {
+        var section = event.target.closest && event.target.closest('[data-proposal-section]');
+        if (section) section.open = true;
         var entry = event.target.closest && event.target.closest('[data-repeat-entry]');
         if (entry) expand(entry);
       }, true);
@@ -1492,8 +1531,13 @@ const costsScript = html`
         summary.setAttribute('aria-expanded', 'false');
         item.querySelector('[data-item-body]').hidden = true;
         item.classList.add('purchase-item--collapsed');
+        item.dataset.added = 'true';
       }
       function expand(item) {
+        // A new item is added; one already added is just finished with.
+        item.querySelector('[data-item-done]').textContent =
+          item.dataset.added ? 'Done' : 'Add item';
+        item.querySelector('[data-item-message]').textContent = '';
         item.querySelector('[data-item-summary]').hidden = true;
         item.querySelector('[data-item-summary]').setAttribute('aria-expanded', 'true');
         item.querySelector('[data-item-body]').hidden = false;
@@ -1633,10 +1677,20 @@ const costsScript = html`
           expand(item);
           item.querySelector('[data-item-body] input').focus();
         });
-        item.addEventListener('focusout', function (event) {
-          if (!event.relatedTarget || !item.contains(event.relatedTarget)) collapse(item);
+        // An item folds when it is added (or done with), not when focus
+        // wanders off it. Until it's finished, say what it still needs.
+        item.querySelector('[data-item-actions]').hidden = false;
+        item.querySelector('[data-item-done]').addEventListener('click', function () {
+          if (!isFinished(item)) {
+            item.querySelector('[data-item-message]').textContent =
+              'Give a link, SKU or notes, a whole-number quantity and a cost to add it.';
+            return;
+          }
+          collapse(item);
+          shop.querySelector('[data-add-item]').focus();
         });
         collapse(item);
+        if (!item.dataset.added) expand(item);
       }
       function wireShop(shop) {
         var list = shop.querySelector('[data-item-entries]');

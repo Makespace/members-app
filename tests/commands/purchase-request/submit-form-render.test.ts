@@ -437,6 +437,26 @@ describe('purchase request form', () => {
       expect(page.querySelector('[data-proposal-form]')?.closest('form')?.method).toBe('post');
     });
 
+    it('offers options and a preferred one as optional, open without JavaScript', () => {
+      const page = needingProposal(false);
+      const options = page.querySelector<HTMLDetailsElement>(
+        'details[data-proposal-section]'
+      )!;
+      expect(options.open).toBe(true);
+      expect(options.querySelector('summary')!.textContent.replace(/\s+/g, ' ')).toContain(
+        'Options (optional)'
+      );
+      expect(options.textContent.replace(/\s+/g, ' ')).toContain(
+        "Your proposal is more likely to be accepted if you show that you've considered multiple options and settled on one for a particular reason."
+      );
+      expect(options.querySelector('[name="proposal[preferred]"]')).not.toBeNull();
+      expect(
+        [...options.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea')].some(
+          field => field.required
+        )
+      ).toBe(false);
+    });
+
     it('asks for a risk assessment only when there is a safety risk', () => {
       const page = needingProposal(true);
       expect(proposalNames(page)).toEqual(

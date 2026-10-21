@@ -3,9 +3,10 @@ import * as E from 'fp-ts/Either';
 import {pipe} from 'fp-ts/lib/function';
 import {PenceFromPoundsString} from '../types/money';
 
-// The proposal a purchase request carries when it needs one: the need, the
-// options considered (each with pros, cons and cost), the preferred option,
-// a risk assessment with remedial actions (only when it presents a moderate
+// The proposal a purchase request carries when it needs one: the need;
+// optionally the options considered (each with pros, cons and cost) and the
+// one preferred - a proposal is more likely to be accepted with them; a risk
+// assessment with remedial actions (only when it presents a moderate
 // to high health and safety risk), and - where they apply - where it goes,
 // who owns it and how it'll be trained for and serviced. Read by the submit
 // command and by the form, so both accept and refuse the same things.
@@ -97,8 +98,9 @@ const optionalText = t.union([t.string, t.null]);
 
 export const ProposalCodec = t.strict({
   need: t.string,
+  // Optional: none, if they chose not to compare options.
   options: t.readonlyArray(ProposalOptionCodec),
-  preferred: t.string,
+  preferred: optionalText,
   // Empty unless it presents a moderate to high health and safety risk.
   risks: t.readonlyArray(ProposalRiskCodec),
   location: optionalText,
@@ -274,9 +276,10 @@ const normaliseRisk = (
   );
 };
 
-// The need, at least one option and the preferred option are always needed;
-// a risk assessment only when it presents a moderate to high health and
-// safety risk (and is left out otherwise). The first problem is reported.
+// The need is always needed, and a risk assessment when it presents a
+// moderate to high health and safety risk (it's left out otherwise). Options
+// and the preferred one are optional, but any option given needs a
+// description and a cost. The first problem is reported.
 export const normaliseProposal = (
   proposal: TypedProposal,
   needsRiskAssessment: boolean
@@ -287,18 +290,14 @@ export const normaliseProposal = (
       required(proposal.need, 'Proposal: please describe the need.')
     ),
     E.bind('options', () =>
-      proposal.options.length === 0
-        ? E.left('Proposal: please give at least one option.')
-        : pipe(proposal.options, E.traverseArrayWithIndex((index, option) =>
-            normaliseOption(option, index)
-          ))
-    ),
-    E.bind('preferred', () =>
-      required(
-        proposal.preferred,
-        'Proposal: please say which option you prefer, and why.'
+      pipe(
+        proposal.options,
+        E.traverseArrayWithIndex((index, option) =>
+          normaliseOption(option, index)
+        )
       )
     ),
+    E.let('preferred', () => optional(proposal.preferred)),
     E.bind('risks', () =>
       !needsRiskAssessment
         ? E.right([])

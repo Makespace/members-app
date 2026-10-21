@@ -9,8 +9,9 @@ import {
 } from '../purchasing/proposal';
 
 // A purchase request's proposal, as sent: shown on the request's own page.
-// Sections that didn't apply (no risk assessment, or nothing said about
-// where it goes, who owns it or training and servicing) are left out.
+// Sections that didn't apply or were left blank (options, the preferred one,
+// the risk assessment, where it goes, who owns it, training and servicing)
+// are left out.
 
 const paragraphs = (text: string) => html`<p class="proposal__text">
   ${sanitizeString(text)}
@@ -64,13 +65,17 @@ export const renderProposal = (proposal: Proposal) => html`
   <div class="proposal">
     <h2>Proposal</h2>
     ${section('The need', paragraphs(proposal.need))}
-    ${section(
-      'Options',
-      html`<ol class="proposal__options">
-        ${joinHtml(proposal.options.map(renderOption))}
-      </ol>`
-    )}
-    ${section('Preferred option', paragraphs(proposal.preferred))}
+    ${proposal.options.length > 0
+      ? section(
+          'Options',
+          html`<ol class="proposal__options">
+            ${joinHtml(proposal.options.map(renderOption))}
+          </ol>`
+        )
+      : html``}
+    ${proposal.preferred !== null
+      ? section('Preferred option', paragraphs(proposal.preferred))
+      : html``}
     ${proposal.risks.length > 0
       ? section(
           'Risk assessment',

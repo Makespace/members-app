@@ -229,4 +229,36 @@ describe('proposal options and risks script', () => {
       expect(folded(first)).toBe(false);
     });
   });
+
+  describe('the options section', () => {
+    const section = (form: HTMLFormElement) =>
+      form.querySelector<HTMLDetailsElement>('[data-proposal-section]')!;
+    const count = (form: HTMLFormElement) =>
+      section(form).querySelector('[data-section-count]')!.textContent;
+
+    it('starts closed, saying none have been added', () => {
+      const form = setUp();
+      expect(section(form).open).toBe(false);
+      expect(count(form)).toBe('none added yet');
+    });
+
+    it('says how many options have been added', () => {
+      const form = setUp({
+        options: [
+          {description: 'Build', pros: '', cons: '', cost: '100'},
+          {description: 'Buy', pros: '', cons: '', cost: '200'},
+        ],
+      });
+      expect(count(form)).toBe('2 added');
+    });
+
+    it('opens when a field in it is flagged as missing', () => {
+      const form = setUp();
+      const description = form.querySelector<HTMLInputElement>(
+        '[name="proposal[options][0][description]"]'
+      )!;
+      description.dispatchEvent(new Event('invalid'));
+      expect(section(form).open).toBe(true);
+    });
+  });
 });
