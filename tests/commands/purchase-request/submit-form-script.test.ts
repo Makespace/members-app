@@ -181,17 +181,49 @@ describe('purchase request cost breakdown script', () => {
       expect(folded(items(form)[0])).toBe(false);
     });
 
-    it('folds an item once it is finished and focus moves on', () => {
+    const done = (item: HTMLElement) =>
+      item.querySelector<HTMLButtonElement>('[data-item-done]')!;
+
+    it('stays open when focus moves away, until it is added', () => {
       const form = setUp();
       fillItem(form, 0, {sku: 'PEGF8418', quantity: '1', cost: '50'});
       form
         .querySelector<HTMLInputElement>('[name="purchases[0][items][0][sku]"]')!
         .focus();
-      form.querySelector<HTMLInputElement>('[name="purchases[0][shop]"]')!.focus();
+      form.querySelector<HTMLInputElement>('[name="purchases[0][delivery]"]')!.focus();
+      expect(folded(items(form)[0])).toBe(false);
+    });
+
+    it('folds an item when Add item is pressed, ready for the next', () => {
+      const form = setUp();
+      fillItem(form, 0, {sku: 'PEGF8418', quantity: '1', cost: '50'});
+      expect(done(items(form)[0]).textContent).toBe('Add item');
+      done(items(form)[0]).click();
       expect(folded(items(form)[0])).toBe(true);
       expect(summary(items(form)[0]).textContent).toContain(
         'PEGF8418 · Qty 1 · £50'
       );
+      expect(document.activeElement?.hasAttribute('data-add-item')).toBe(true);
+    });
+
+    it('says what an unfinished item still needs when Add item is pressed', () => {
+      const form = setUp();
+      fillItem(form, 0, {sku: 'PEGF8418', quantity: '1'});
+      done(items(form)[0]).click();
+      expect(folded(items(form)[0])).toBe(false);
+      expect(
+        items(form)[0].querySelector('[data-item-message]')!.textContent
+      ).toBe(
+        'Give a link, SKU or notes, a whole-number quantity and a cost to add it.'
+      );
+    });
+
+    it('calls it Done when editing an item already added', () => {
+      const form = setUp([jewson]);
+      summary(items(form)[0]).click();
+      expect(done(items(form)[0]).textContent).toBe('Done');
+      done(items(form)[0]).click();
+      expect(folded(items(form)[0])).toBe(true);
     });
 
     it('stays open while focus moves within the item', () => {

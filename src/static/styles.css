@@ -4701,3 +4701,119 @@ select.proposal-rating {
   gap: 0.5rem;
   padding-block: 0.6rem;
 }
+
+/* An open item's Add item / Done button, with what it still needs. */
+.purchase-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+/* The proposal's parts, each set apart with a rule and a heading-sized
+   title, so it's clear where one ends and the next begins. */
+.proposal-form {
+  gap: 0;
+}
+
+.proposal-form > * + * {
+  margin-block-start: 1rem;
+}
+
+.proposal-form__section {
+  padding-top: 1.5rem;
+  margin-top: 0.5rem;
+  border-top: 2px solid var(--border-color);
+}
+
+.proposal-form__section > .purchase-field > .purchase-field__label,
+.proposal-form__section h3 {
+  font-size: 1.25rem;
+}
+
+/* A proposal section that opens and closes, e.g. Options: the closed
+   summary is a box that reads as clickable, says why it's worth opening,
+   and shows "Add options" with an arrow that turns when it opens.
+   Overrides the app-wide details styling. */
+details.proposal-section > summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 2px solid var(--border-color);
+  background: var(--purchase-panel, #f3f2f1);
+  color: var(--text-color);
+  text-decoration: none;
+  cursor: pointer;
+  list-style: none;
+}
+
+details.proposal-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.proposal-section > summary:hover {
+  border-color: var(--link-color);
+}
+
+details.proposal-section[open] > summary {
+  border-bottom-width: 0;
+}
+
+.proposal-section__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.proposal-section__title h3 {
+  display: inline;
+  margin: 0;
+}
+
+.proposal-section__count {
+  color: var(--grey-color);
+}
+
+.proposal-section__why {
+  max-width: 60ch;
+}
+
+.proposal-section__toggle {
+  align-self: flex-start;
+  color: var(--link-color);
+  font-weight: bold;
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+details.proposal-section > summary:hover .proposal-section__toggle {
+  text-decoration-thickness: 3px;
+}
+
+.proposal-section__toggle::after {
+  content: ' ▸';
+  display: inline-block;
+  margin-left: 0.25rem;
+  text-decoration: none;
+}
+
+details.proposal-section[open] .proposal-section__toggle::after {
+  content: ' ▾';
+}
+
+.proposal-section__when-open,
+details.proposal-section[open] .proposal-section__when-closed {
+  display: none;
+}
+
+details.proposal-section[open] .proposal-section__when-open {
+  display: inline;
+}
+
+details.proposal-section > *:not(summary) {
+  padding: 1rem;
+  border: 2px solid var(--border-color);
+  border-top: 0;
+}
