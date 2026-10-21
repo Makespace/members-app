@@ -56,8 +56,8 @@ export const render = (viewModel: ViewModel) => html`
       Each purchasing area holds a yearly budget (1 January to 31 December) for
       one or more areas. It pays for keeping equipment running safely (repairs,
       servicing, running costs, replacements) as well as improvements.
-      Consumables that members pay for at point of use are recorded without
-      counting against it.
+      Things members pay for themselves (e.g. filament paid for on SumUp) are
+      recorded without counting against it.
     </p>
     ${viewModel.canRequest || viewModel.canManage
       ? html`<div>

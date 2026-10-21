@@ -460,7 +460,7 @@ describe('purchase request cost breakdown script', () => {
       pick(form, 'consumable-yes');
       pick(form, 'risk-yes');
       costing(form, '50');
-      expect(verdict(form).textContent).toContain('Consumable · Proposal needed');
+      expect(verdict(form).textContent).toContain('Paid for by members · Proposal needed');
     });
 
     it.each([

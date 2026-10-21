@@ -164,7 +164,7 @@ describe('purchase request form pages', () => {
       step: 2,
       problems: [
         'Please add at least one shop or website to buy from.',
-        'Please say whether members pay for it as a consumable.',
+        'Please say whether members pay for it.',
         'Please say whether it will affect any other areas.',
         'Please say whether it presents a moderate to high health and safety risk.',
       ],

@@ -564,7 +564,7 @@ const verdictStyle: Record<
 > = {
   consumable: {
     modifier: 'consumable',
-    tag: html`<span class="tag tag--green">Consumable</span>`,
+    tag: html`<span class="tag tag--green">Paid for by members</span>`,
     heading: "This doesn't come out of your yearly budget",
   },
   budget: {
@@ -579,7 +579,9 @@ const verdictStyle: Record<
   },
   'consumable-proposal-needed': {
     modifier: 'proposal',
-    tag: html`<span class="tag tag--red">Consumable · Proposal needed</span>`,
+    tag: html`<span class="tag tag--red"
+      >Paid for by members · Proposal needed</span
+    >`,
     heading:
       "This doesn't come out of your yearly budget, but you'll need to write a proposal",
   },
@@ -661,7 +663,7 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
       <div data-request-total aria-live="polite"></div>
     </div>
     <fieldset class="purchase-request__fieldset purchase-question">
-      <legend>Is it a consumable that members pay for when they use it?</legend>
+      <legend>Do members pay for this?</legend>
       <p class="purchase-request__hint text-sm">
         For example, 3D printer filament, paid for on SumUp when it's used.
       </p>
@@ -1457,7 +1459,7 @@ const costsScript = html`
         if (consumable) {
           return {
             key: others.length ? 'consumable-proposal-needed' : 'consumable',
-            reason: withOthers("Members pay for this at point of use, so it is a consumable and doesn't come out of the yearly budget."),
+            reason: withOthers("Members pay for this, so it doesn't come out of the yearly budget."),
           };
         }
         if (amount >= threshold) {

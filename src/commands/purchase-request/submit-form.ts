@@ -167,7 +167,7 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
       [
         ...(E.isLeft(purchases) ? [purchases.left] : []),
         ...(O.isNone(consumable)
-          ? ['Please say whether members pay for it as a consumable.']
+          ? ['Please say whether members pay for it.']
           : []),
         ...(O.isNone(affectsOthers)
           ? ['Please say whether it will affect any other areas.']

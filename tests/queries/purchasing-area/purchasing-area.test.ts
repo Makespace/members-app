@@ -174,7 +174,7 @@ describe('purchasing area page', () => {
       actor: {tag: 'user', user: purchaser},
     });
     const text = pageFor(member).textContent;
-    expect(text).toContain('Consumable (not from the yearly budget)');
+    expect(text).toContain('Paid for by members (not from the yearly budget)');
     expect(text).toContain('£1,500.00');
   });
 
