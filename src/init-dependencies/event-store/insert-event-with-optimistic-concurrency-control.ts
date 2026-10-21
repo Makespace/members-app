@@ -14,6 +14,22 @@ const insertEventRow = `
     VALUES (?, ?, ?, ?);
   `;
 
+// Another event already took this event_index: someone else committed first.
+// A local SQLite database reports the extended code SQLITE_CONSTRAINT_UNIQUE,
+// but Turso (production) reports just SQLITE_CONSTRAINT, so match either.
+const isConstraintViolation = (err: Error) =>
+  'code' in err &&
+  typeof err['code'] === 'string' &&
+  err['code'].startsWith('SQLITE_CONSTRAINT');
+
+// An Error's own fields don't survive JSON logging (it logs as {}), so log
+// what explains the failure.
+const describeError = (err: Error) => ({
+  name: err.name,
+  message: err.message,
+  ...('code' in err ? {code: err['code']} : {}),
+});
+
 export const insertEventWithOptimisticConcurrencyControl = (
   event: DomainEvent,
   lastSeenEventIndex: Int,
@@ -35,12 +51,12 @@ export const insertEventWithOptimisticConcurrencyControl = (
     }
   ),
   TE.orElse<Error, 'raised-event' | 'last-known-version-out-of-date', FailureWithStatus>(err => {
-    if ('code' in err && err['code'] === 'SQLITE_CONSTRAINT_UNIQUE') {
+    if (isConstraintViolation(err)) {
       return TE.right('last-known-version-out-of-date');
     }
     return TE.left(failureWithStatus(
       'Failed to insert event into database',
       StatusCodes.INTERNAL_SERVER_ERROR
-    )(err));
+    )(describeError(err)));
   }),
 );
