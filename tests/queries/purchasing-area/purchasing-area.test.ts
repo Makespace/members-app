@@ -243,6 +243,14 @@ describe('purchasing area page', () => {
     });
   });
 
+  it('draws super-user controls in their own style', () => {
+    const {html} = pageFor(superUser);
+    expect(html).toContain('Super users only');
+    expect(html).toMatch(/class="button button--super-user"[^>]*>Set usual budget</);
+    expect(html).toMatch(/class="super-user-link"[^>]*>Remove</);
+    expect(pageFor(purchaser).html).not.toContain('Super users only');
+  });
+
   it('is not found for an unknown purchasing area', () => {
     const result = constructViewModel(
       framework.sharedReadModel,

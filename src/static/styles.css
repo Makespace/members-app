@@ -4817,3 +4817,72 @@ details.proposal-section > *:not(summary) {
   border: 2px solid var(--border-color);
   border-top: 0;
 }
+
+/* Controls only super users can see (src/templates/super-user.ts): purple
+   rather than the usual green, and grouped in a dashed box labelled "Super
+   users only", so nobody mistakes them for something every member has. */
+:root {
+  --super-user-color: #5b2a86;
+}
+
+.super-user-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 1rem;
+  border: 2px dashed var(--super-user-color);
+  background: color-mix(in oklch, white 94%, var(--super-user-color));
+}
+
+.super-user-actions__label {
+  color: var(--super-user-color);
+  font-size: 0.8rem;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.super-user-actions--section {
+  gap: 1.5rem;
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.super-user-actions--section > * + * {
+  margin-block-start: 0;
+}
+
+/* A super-user-only form button, e.g. Ask to sign. */
+button.button--super-user {
+  font-size: 1rem;
+  padding: 6px 14px;
+}
+
+.super-user-actions__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.button--super-user,
+a.button--super-user,
+a.button--super-user:visited {
+  background: white;
+  color: var(--super-user-color);
+  border: 2px solid var(--super-user-color);
+  border-bottom-width: 3px;
+}
+
+.button--super-user:hover,
+a.button--super-user:hover {
+  background: color-mix(in oklch, white 85%, var(--super-user-color));
+  color: var(--super-user-color);
+}
+
+a.super-user-link,
+a.super-user-link:visited {
+  color: var(--super-user-color);
+}
+
+a.super-user-link:hover {
+  color: color-mix(in oklch, black 25%, var(--super-user-color));
+}
