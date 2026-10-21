@@ -224,6 +224,14 @@ describe('purchase request form', () => {
       );
     });
 
+    it('asks whether members pay for it', () => {
+      expect(
+        render(onPage(2))
+          .querySelector('.purchase-question legend')
+          ?.textContent?.trim()
+      ).toBe('Do members pay for this?');
+    });
+
     it('needs the first shop, quantity and cost', () => {
       const page = render(onPage(2));
       const required = (name: string) =>

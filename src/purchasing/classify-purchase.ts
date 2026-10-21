@@ -84,7 +84,7 @@ export const classifyPurchase = (
       outcome: 'consumable',
       approval: others.length > 0 ? 'proposal' : 'none',
       reason: withOthers(
-        "Members pay for this at point of use, so it is a consumable and doesn't come out of the yearly budget."
+        "Members pay for this, so it doesn't come out of the yearly budget."
       ),
     };
   }

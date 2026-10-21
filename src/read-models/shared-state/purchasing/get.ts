@@ -12,7 +12,9 @@ import {
   purchaseRequestsTable,
   purchasersTable,
   purchasingAreaAreasTable,
+  purchasingAreaSpendTable,
   purchasingAreasTable,
+  purchasingAreaYearBudgetsTable,
 } from '../state';
 import {getMemberCoreByUserId} from '../member/get';
 import {
@@ -20,6 +22,7 @@ import {
   PurchasingArea,
   PurchasingAreaPurchaser,
   PurchasingAreaSummary,
+  RecordedSpend,
 } from '../return-types';
 import {
   budgetYearOf,
@@ -47,6 +50,44 @@ const spentInYear =
       .all()
       .filter(row => countsAgainstBudget(row.outcome))
       .reduce((total, row) => total + row.amountPence, 0);
+
+const getYearBudget =
+  (db: BetterSQLite3Database) =>
+  (purchasingAreaId: UUID, budgetYear: number): O.Option<number> =>
+    pipe(
+      db
+        .select({yearlyBudgetPence: purchasingAreaYearBudgetsTable.yearlyBudgetPence})
+        .from(purchasingAreaYearBudgetsTable)
+        .where(
+          and(
+            eq(purchasingAreaYearBudgetsTable.purchasingAreaId, purchasingAreaId),
+            eq(purchasingAreaYearBudgetsTable.budgetYear, budgetYear)
+          )
+        )
+        .get(),
+      O.fromNullable,
+      O.map(row => row.yearlyBudgetPence)
+    );
+
+const getRecordedSpend =
+  (db: BetterSQLite3Database) =>
+  (purchasingAreaId: UUID, budgetYear: number): ReadonlyArray<RecordedSpend> =>
+    db
+      .select({
+        id: purchasingAreaSpendTable.id,
+        amountPence: purchasingAreaSpendTable.amountPence,
+        description: purchasingAreaSpendTable.description,
+        recordedAt: purchasingAreaSpendTable.recordedAt,
+      })
+      .from(purchasingAreaSpendTable)
+      .where(
+        and(
+          eq(purchasingAreaSpendTable.purchasingAreaId, purchasingAreaId),
+          eq(purchasingAreaSpendTable.budgetYear, budgetYear)
+        )
+      )
+      .orderBy(asc(purchasingAreaSpendTable.recordedAt))
+      .all();
 
 const getAreasOf =
   (db: BetterSQLite3Database) =>
@@ -109,11 +150,20 @@ const expand =
   (row: typeof purchasingAreasTable.$inferSelect): PurchasingArea => {
     const budgetYear = budgetYearOf(now);
     const areas = getAreasOf(db)(row.id);
-    const spentThisYearPence = spentInYear(db)(row.id, budgetYear);
+    const recordedSpend = getRecordedSpend(db)(row.id, budgetYear);
+    const spentThisYearPence =
+      spentInYear(db)(row.id, budgetYear) +
+      recordedSpend.reduce((total, spend) => total + spend.amountPence, 0);
+    const yearlyBudgetPence = pipe(
+      getYearBudget(db)(row.id, budgetYear),
+      O.getOrElse(() => row.yearlyBudgetPence)
+    );
     return {
       id: row.id,
       name: row.name,
-      yearlyBudgetPence: row.yearlyBudgetPence,
+      yearlyBudgetPence,
+      usualBudgetPence: row.yearlyBudgetPence,
+      recordedSpend,
       areas,
       purchasers: getPurchasersOf(db)(
         row.id,
@@ -121,7 +171,7 @@ const expand =
       ),
       budgetYear,
       spentThisYearPence,
-      remainingPence: row.yearlyBudgetPence - spentThisYearPence,
+      remainingPence: yearlyBudgetPence - spentThisYearPence,
     };
   };
 

@@ -33,6 +33,8 @@ import {
   purchasingAreaAreasTable,
   purchasersTable,
   purchaseRequestsTable,
+  purchasingAreaSpendTable,
+  purchasingAreaYearBudgetsTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, eq, inArray, isNull, sql} from 'drizzle-orm';
@@ -1306,6 +1308,42 @@ const _updateState =
         if (rows.changes === 0) {
           throw new InconsistentEventError(`Unable to set budget of purchasing area ${event.purchasingAreaId} - unknown purchasing area`);
         }
+        break;
+      }
+      case 'PurchasingAreaYearBudgetSet': {
+        tx.insert(purchasingAreaYearBudgetsTable)
+          .values({
+            purchasingAreaId: event.purchasingAreaId,
+            budgetYear: event.budgetYear,
+            yearlyBudgetPence: event.yearlyBudgetPence,
+          })
+          .onConflictDoUpdate({
+            target: [
+              purchasingAreaYearBudgetsTable.purchasingAreaId,
+              purchasingAreaYearBudgetsTable.budgetYear,
+            ],
+            set: {yearlyBudgetPence: event.yearlyBudgetPence},
+          })
+          .run();
+        break;
+      }
+      case 'PurchasingAreaSpendRecorded': {
+        tx.insert(purchasingAreaSpendTable)
+          .values({
+            id: event.id,
+            purchasingAreaId: event.purchasingAreaId,
+            budgetYear: event.budgetYear,
+            amountPence: event.amountPence,
+            description: event.description,
+            recordedAt: event.recordedAt,
+          })
+          .run();
+        break;
+      }
+      case 'PurchasingAreaSpendRemoved': {
+        tx.delete(purchasingAreaSpendTable)
+          .where(eq(purchasingAreaSpendTable.id, event.id))
+          .run();
         break;
       }
       case 'AreaAssignedToPurchasingArea': {

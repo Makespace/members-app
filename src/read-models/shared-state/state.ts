@@ -432,6 +432,49 @@ export const purchasingAreasTable = defineTable(
   }
 );
 
+// A purchasing area's budget for one calendar year, where it differs from
+// the usual one; see PurchasingAreaYearBudgetSet.
+export const purchasingAreaYearBudgetsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS purchasingAreaYearBudgets (
+      purchasingAreaId TEXT NOT NULL,
+      budgetYear INTEGER NOT NULL,
+      yearlyBudgetPence INTEGER NOT NULL,
+      PRIMARY KEY (purchasingAreaId, budgetYear)
+    )
+  `,
+  'purchasingAreaYearBudgets' as const,
+  {
+    purchasingAreaId: text('purchasingAreaId').notNull().$type<UUID>(),
+    budgetYear: integer('budgetYear').notNull(),
+    yearlyBudgetPence: integer('yearlyBudgetPence').notNull(),
+  }
+);
+
+// Spending recorded directly against a purchasing area for a year; see
+// PurchasingAreaSpendRecorded. Removed rows are deleted.
+export const purchasingAreaSpendTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS purchasingAreaSpend (
+      id TEXT PRIMARY KEY,
+      purchasingAreaId TEXT NOT NULL,
+      budgetYear INTEGER NOT NULL,
+      amountPence INTEGER NOT NULL,
+      description TEXT NOT NULL,
+      recordedAt INTEGER NOT NULL
+    )
+  `,
+  'purchasingAreaSpend' as const,
+  {
+    id: text('id').notNull().primaryKey().$type<UUID>(),
+    purchasingAreaId: text('purchasingAreaId').notNull().$type<UUID>(),
+    budgetYear: integer('budgetYear').notNull(),
+    amountPence: integer('amountPence').notNull(),
+    description: text('description').notNull(),
+    recordedAt: integer('recordedAt', {mode: 'timestamp_ms'}).notNull(),
+  }
+);
+
 // Which purchasing area each area belongs to. Keyed on the area, as an area
 // belongs to at most one.
 export const purchasingAreaAreasTable = defineTable(

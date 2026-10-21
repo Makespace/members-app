@@ -6,7 +6,7 @@ import {
 
 const tags: Record<PurchaseRequestOutcome, {label: string; colour: string}> = {
   consumable: {
-    label: 'Consumable (not from the yearly budget)',
+    label: 'Paid for by members (not from the yearly budget)',
     colour: 'green',
   },
   budget: {label: 'Yearly budget', colour: 'yellow'},
@@ -24,7 +24,7 @@ export const renderOutcome = (
 ) => {
   const tag =
     outcome === 'consumable' && approval === 'proposal'
-      ? {label: 'Consumable · Proposal needed', colour: 'red'}
+      ? {label: 'Paid for by members · Proposal needed', colour: 'red'}
       : tags[outcome];
   return html`<span
     class="tag tag--${safe(tag.colour)} purchase-outcome"

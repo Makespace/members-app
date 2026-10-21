@@ -172,12 +172,27 @@ export type PurchasingAreaPurchaser = Pick<
 
 // Money in pence. Budget figures are for `budgetYear`, the calendar year the
 // view was asked about.
+// Spending a super user recorded directly against a year's budget.
+export type RecordedSpend = {
+  id: UUID;
+  amountPence: number;
+  description: string;
+  recordedAt: Date;
+};
+
 export type PurchasingArea = PurchasingAreaSummary & {
+  // This budget year's budget: the usual one, unless it has been set
+  // differently for this year (e.g. extended).
   yearlyBudgetPence: number;
+  // The budget every year has unless set differently for that year.
+  usualBudgetPence: number;
   areas: ReadonlyArray<{id: UUID; name: string}>;
   purchasers: ReadonlyArray<PurchasingAreaPurchaser>;
   budgetYear: number;
+  // Purchase requests that count against the budget, plus recorded spending.
   spentThisYearPence: number;
+  // This budget year's recorded spending, oldest first.
+  recordedSpend: ReadonlyArray<RecordedSpend>;
   // Negative when this year's spending has gone past the budget.
   remainingPence: number;
 };
