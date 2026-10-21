@@ -3,7 +3,10 @@ import {pipe} from 'fp-ts/lib/function';
 import {faker} from '@faker-js/faker';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {StatusCodes} from 'http-status-codes';
-import {assignForm} from '../../../src/commands/trouble-tickets/action-form';
+import {
+  assignForm,
+  assignToForm,
+} from '../../../src/commands/trouble-tickets/action-form';
 import {arbitraryUser} from '../../types/user.helper';
 import { getTaskEitherRightOrFail} from '../../helpers';
 import {TestFramework, initTestFramework} from '../../read-models/test-framework';
@@ -174,5 +177,76 @@ describe('trouble-ticket action form (assign)', () => {
     const page = pipe(viewModel, assignForm.renderForm);
     expect(page.body).toContain('Sensitive submitter free text');
     expect(page.body).toContain(ticketId);
+  });
+
+  // Super-users only, for now: the page offers the people who could work on
+  // the ticket themselves.
+  describe('assigning to someone else', () => {
+    const superUser = arbitraryUser();
+
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        memberNumber: superUser.memberNumber,
+        email: superUser.emailAddress,
+        name: undefined,
+        formOfAddress: undefined,
+      });
+      await framework.commands.superUser.declare({
+        memberNumber: superUser.memberNumber,
+      });
+    });
+
+    const pageFor = (user: typeof trainer) =>
+      assignToForm.constructForm({ticketId})({
+        user,
+        deps: framework.depsForCommands,
+        readModel: framework.sharedReadModel,
+      });
+
+    const offered = async () =>
+      (await getTaskEitherRightOrFail(pageFor(superUser))).assignable.map(
+        member => member.memberNumber
+      );
+
+    it('is refused to an owner of the area', async () => {
+      expect(await pageFor(trainer)()).toMatchObject(
+        E.left({status: StatusCodes.FORBIDDEN})
+      );
+    });
+
+    it("offers the area's owners and the super-users", async () => {
+      expect((await offered()).sort()).toStrictEqual(
+        [
+          trainer.memberNumber,
+          ownerNotTrainer.memberNumber,
+          superUser.memberNumber,
+        ].sort()
+      );
+    });
+
+    // They could not open the ticket.
+    it('does not offer somebody with no claim on it', async () => {
+      expect(await offered()).not.toContain(bystander.memberNumber);
+    });
+
+    it('leaves out somebody already assigned', async () => {
+      await framework.commands.troubleTickets.assignTo({
+        ticketId,
+        memberNumber: trainer.memberNumber,
+        comment: '',
+      });
+
+      expect(await offered()).not.toContain(trainer.memberNumber);
+    });
+
+    it('says the member chosen is emailed too', async () => {
+      const page = pipe(
+        await getTaskEitherRightOrFail(pageFor(superUser)),
+        assignToForm.renderForm
+      );
+
+      expect(page.body).toContain('name="memberNumber"');
+      expect(page.body).toContain('The member you choose is emailed too');
+    });
   });
 });

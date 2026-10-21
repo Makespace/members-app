@@ -23,6 +23,7 @@ import {
   happeningOfEvent,
 } from '../trouble-tickets/notification-audience';
 import {
+  describeAssignmentToAssignee,
   describeTicketChange,
   ticketNotificationOpening,
   ticketNotificationSubject,
@@ -65,6 +66,17 @@ const actorName = (actor: Actor, rm: SharedReadModel): string => {
       return 'The system';
   }
 };
+
+// The member a ticket was assigned to by somebody else; null for a member
+// picking it up themselves, and for every other kind of change.
+const handedToOf = (event: NotifyEvent): number | null =>
+  event.type === 'TroubleTicketAssigned' &&
+  !(
+    event.actor.tag === 'user' &&
+    event.actor.user.memberNumber === event.trainerMemberNumber
+  )
+    ? event.trainerMemberNumber
+    : null;
 
 // What the email says and who gets it live with the confirmation pages, so
 // what a page promises is what is sent: see trouble-tickets/notification.
@@ -179,8 +191,34 @@ export const notifyTroubleTicketChanges = async (
     if (O.isNone(happening)) {
       continue;
     }
-    const recipients = audienceFor(rm, ticket.value, happening.value).filter(
+    // A ticket handed to somebody by somebody else: the one it was handed
+    // to is told, whatever their preferences say, because it is now theirs.
+    const handedTo = handedToOf(event);
+    const assignee = pipe(
+      O.fromNullable(handedTo),
+      O.chain(memberNumber => rm.members.getByMemberNumber(memberNumber))
+    );
+    const audience = audienceFor(rm, ticket.value, happening.value).filter(
       entry => entry.live
+    );
+    const recipients = pipe(
+      assignee,
+      O.match(
+        () => audience,
+        member =>
+          audience.some(entry => entry.memberNumber === member.memberNumber)
+            ? audience
+            : [
+                ...audience,
+                {
+                  memberNumber: member.memberNumber,
+                  email: member.primaryEmailAddress,
+                  live: true,
+                  digest: null,
+                  theirs: false,
+                },
+              ]
+      )
     );
     // Worked out before the marker is written, because writing it is what
     // the count is made of: ask afterwards and everybody's first email looks
@@ -218,15 +256,33 @@ export const notifyTroubleTicketChanges = async (
       continue;
     }
 
-    const change = describeTicketChange(event, actorName(event.actor, rm));
+    const actor = actorName(event.actor, rm);
+    const change = describeTicketChange(
+      pipe(
+        assignee,
+        O.match(
+          () => event,
+          member => ({
+            ...event,
+            assignee: O.getOrElse(() => `Member ${member.memberNumber}`)(
+              member.name
+            ),
+          })
+        )
+      ),
+      actor
+    );
     const send = heldBackSendEmail(deps);
     for (const entry of recipients) {
+      const toAssignee =
+        event.type === 'TroubleTicketAssigned' &&
+        entry.memberNumber === handedTo;
       const sent = await send(
         buildEmail(
           deps.conf.PUBLIC_URL,
           entry.email,
           ticket.value,
-          change,
+          toAssignee ? describeAssignmentToAssignee(actor, event.comment) : change,
           event.type === 'TroubleTicketCreated',
           entry.theirs,
           ticketCardHtml(

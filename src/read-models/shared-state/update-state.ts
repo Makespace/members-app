@@ -1099,11 +1099,12 @@ const _updateState =
             .where(eq(troubleTicketsTable.id, event.ticketId))
             .run();
         }
-        recordTicketChange(
-          tx,
-          event,
-          event.comment !== '' ? {comment: event.comment} : {}
-        );
+        // Who it went to, so the change log can tell somebody picking a
+        // ticket up from somebody handing it on.
+        recordTicketChange(tx, event, {
+          assignee: String(event.trainerMemberNumber),
+          ...(event.comment !== '' ? {comment: event.comment} : {}),
+        });
         break;
       }
       case 'TroubleTicketResolved': {

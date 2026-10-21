@@ -39,6 +39,7 @@ const ticket = (
   onMyTrainerMachine: false,
   managementOnly: false,
   canChangeStatus: true,
+  canAssignOthers: false,
   changeLog: [],
   ...overrides,
 });
@@ -239,6 +240,33 @@ describe('a management-only ticket', () => {
   it('leaves every other ticket unmarked', () => {
     expect(
       renderCard(ticket({managementOnly: false})).querySelector('.tt-private')
+    ).toBeNull();
+  });
+});
+
+// Handing a ticket to somebody else is for super-users, for now.
+describe('assigning a ticket to someone else', () => {
+  const assignToLink = (overrides: Partial<TroubleTicketView>) =>
+    renderCard(ticket(overrides)).querySelector(
+      'a[href^="/trouble-tickets/assign-to?"]'
+    );
+
+  it('is offered to a super-user on an open ticket', () => {
+    expect(
+      assignToLink({canAssignOthers: true, status: 'Todo'})?.textContent?.trim()
+    ).toBe('Assign to…');
+    expect(
+      assignToLink({canAssignOthers: true, status: 'In Progress'})
+    ).not.toBeNull();
+  });
+
+  it('is not offered to anybody else', () => {
+    expect(assignToLink({canAssignOthers: false})).toBeNull();
+  });
+
+  it('is not offered on a resolved ticket', () => {
+    expect(
+      assignToLink({canAssignOthers: true, status: 'Resolved'})
     ).toBeNull();
   });
 });

@@ -525,6 +525,11 @@ export const initRoutes = (
     ...api('trouble-tickets', 'create', commands.troubleTickets.create),
     ...command('trouble-tickets', 'raise', commands.troubleTickets.raise),
     ...command('trouble-tickets', 'assign', commands.troubleTickets.assign),
+    ...command(
+      'trouble-tickets',
+      'assign-to',
+      commands.troubleTickets.assignTo
+    ),
     ...command('trouble-tickets', 'resolve', commands.troubleTickets.resolve),
     ...command('trouble-tickets', 'park', commands.troubleTickets.park),
     ...command(

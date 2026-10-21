@@ -9,13 +9,21 @@ import {StatusCodes} from 'http-status-codes';
 import {
   html,
   Html,
+  joinHtml,
   safe,
   sanitizeString,
   toLoggedInContent,
 } from '../../types/html';
 import {Form} from '../../types/form';
 import {failureWithStatus} from '../../types/failure-with-status';
-import {isTicketOwner} from './authorization';
+import {
+  AssignableMember,
+  assignableMembers,
+  isTicketOwner,
+} from './authorization';
+import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
+import {Actor} from '../../types';
+import {SharedReadModel} from '../../read-models/shared-state';
 import {
   describeTicketChange,
   TicketChange,
@@ -42,6 +50,8 @@ type ActionViewModel = {
     subject: string;
     text: string;
   };
+  // Who the ticket could be handed to, for a page that asks.
+  assignable: ReadonlyArray<AssignableMember>;
 };
 
 type ActionConfig = {
@@ -55,6 +65,15 @@ type ActionConfig = {
   change: TicketChange;
   // Whether the page offers to send nothing at all.
   canBeQuiet?: boolean;
+  // Fields that depend on the ticket, in place of fixed ones.
+  fieldsFor?: (viewModel: ActionViewModel) => Html;
+  // Who may open the page; by default whoever may act on the ticket.
+  allowed?: (input: {
+    actor: Actor;
+    rm: SharedReadModel;
+    input: {ticketId: UUID};
+  }) => boolean;
+  forbidden?: string;
 };
 
 // A required multi-line text field.
@@ -126,7 +145,7 @@ const troubleTicketActionForm = (
               name="ticketId"
               value="${safe(viewModel.ticketId)}"
             />
-            ${config.fields ?? html``}
+            ${config.fieldsFor?.(viewModel) ?? config.fields ?? html``}
             <div class="tt-actions">
               <button type="submit">${safe(config.submitLabel)}</button>
               <a href="/trouble-tickets/board">Cancel</a>
@@ -153,14 +172,15 @@ const troubleTicketActionForm = (
         // unauthorized viewer cannot probe which ticket ids exist.
         E.filterOrElse(
           ({ticketId}) =>
-            isTicketOwner({
+            (config.allowed ?? isTicketOwner)({
               actor: {tag: 'user', user},
               rm: readModel,
               input: {ticketId},
             }),
           () =>
             failureWithStatus(
-              "Only owners of the ticket's equipment's area (or admins) can act on it",
+              config.forbidden ??
+                "Only owners of the ticket's equipment's area (or admins) can act on it",
               StatusCodes.FORBIDDEN
             )()
         ),
@@ -183,6 +203,15 @@ const troubleTicketActionForm = (
               return {
                 ticketId,
                 title: ticket.title,
+                // Nobody already on it: assigning them again does nothing.
+                assignable: config.fieldsFor
+                  ? assignableMembers(readModel, ticketId).filter(
+                      member =>
+                        !ticket.assignedMemberNumbers.includes(
+                          member.memberNumber
+                        )
+                    )
+                  : [],
                 email: {
                   // The same answer the notifier will reach, so the page
                   // cannot promise an email that preferences will stop, or
@@ -230,6 +259,56 @@ export const assignForm = troubleTicketActionForm({
     'Add a comment for the submitter (optional)'
   ),
   submitLabel: 'Assign to me',
+});
+
+// Stands in, on the page, for whoever is picked below.
+const THEM = '(the member you choose)';
+
+const memberPicker = (viewModel: ActionViewModel): Html =>
+  viewModel.assignable.length === 0
+    ? html`<p>
+        Everybody who can work on this ticket is already assigned to it.
+      </p>`
+    : html`
+        <label class="stack">
+          <strong>Assign to</strong>
+          <select name="memberNumber" required>
+            <option value="" selected disabled>Choose a member…</option>
+            ${joinHtml(
+              viewModel.assignable.map(
+                member =>
+                  html`<option value="${safe(String(member.memberNumber))}">
+                    ${sanitizeString(
+                      O.getOrElse(() => `Member ${member.memberNumber}`)(
+                        member.name
+                      )
+                    )}
+                    (${safe(String(member.memberNumber))})
+                  </option>`
+              )
+            )}
+          </select>
+        </label>
+        ${optionalTextField(
+          'comment',
+          'Add a comment for the submitter (optional)'
+        )}
+      `;
+
+// Super-users only, for now: hand a ticket to somebody else.
+export const assignToForm = troubleTicketActionForm({
+  verb: 'assign-to',
+  pageTitle: 'Assign this ticket to someone',
+  intro: html`This assigns the ticket to the member you choose and emails the
+  submitter. The member you choose is emailed too, to say it is theirs. If it
+  isn't already In Progress, it will be moved there. Only owners of the
+  ticket's area and super-users can be chosen, because only they can work on
+  it.`,
+  change: {type: 'TroubleTicketAssigned', comment: YOUR_ANSWER, assignee: THEM},
+  fieldsFor: memberPicker,
+  allowed: isAdminOrSuperUser,
+  forbidden: 'Only super-users can assign a ticket to someone else',
+  submitLabel: 'Assign',
 });
 
 export const resolveForm = troubleTicketActionForm({

@@ -85,3 +85,41 @@ export const canSetTicketEquipment = (input: {
   );
   return ownsTarget || ownsCurrent;
 };
+
+// Who a ticket can be handed to: the people who could work it themselves -
+// the owners of its area and super-users - sorted by name. Anybody else could
+// not open the ticket, and a management-only ticket must not reach them.
+export type AssignableMember = {
+  memberNumber: number;
+  name: O.Option<string>;
+};
+
+export const assignableMembers = (
+  rm: SharedReadModel,
+  ticketId: UUID
+): ReadonlyArray<AssignableMember> => {
+  const byNumber = new Map<number, AssignableMember>();
+  for (const member of rm.members.findAllSuperUsers()) {
+    byNumber.set(member.memberNumber, {
+      memberNumber: member.memberNumber,
+      name: member.name,
+    });
+  }
+  pipe(
+    ticketAreaId(rm, ticketId),
+    O.chain(areaId => rm.area.get(areaId)),
+    O.map(area =>
+      area.owners.forEach(owner =>
+        byNumber.set(owner.memberNumber, {
+          memberNumber: owner.memberNumber,
+          name: owner.name,
+        })
+      )
+    )
+  );
+  const label = (member: AssignableMember) =>
+    O.getOrElse(() => `Member ${member.memberNumber}`)(member.name);
+  return [...byNumber.values()].sort((a, b) =>
+    label(a).localeCompare(label(b))
+  );
+};
