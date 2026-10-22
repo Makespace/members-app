@@ -272,6 +272,14 @@ describe('purchasing area page', () => {
     expect(pageFor(purchaser).html).not.toContain('Super users only');
   });
 
+  it("puts this year's purchase requests first, above the budget and management", () => {
+    const text = pageFor(superUser).textContent;
+    const requests = text.indexOf(`Purchase requests in ${now.getFullYear()}`);
+    expect(requests).toBeGreaterThan(-1);
+    expect(requests).toBeLessThan(text.indexOf('Budget for'));
+    expect(requests).toBeLessThan(text.indexOf('Super users only'));
+  });
+
   it('is not found for an unknown purchasing area', () => {
     const result = constructViewModel(
       framework.sharedReadModel,
