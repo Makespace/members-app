@@ -2,6 +2,7 @@ import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import {html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {formatPence} from '../../types/money';
+import {renderRemaining} from '../../templates/remaining-budget';
 import {
   Member,
   PurchaseRequest,
@@ -143,7 +144,7 @@ const renderBudget = (viewModel: ViewModel) => {
           </tr>
           <tr>
             <th>Remaining</th>
-            <td>${money(purchasingArea.remainingPence)}</td>
+            <td>${renderRemaining(purchasingArea.remainingPence)}</td>
           </tr>
           ${purchasingArea.awaitingApprovalPence > 0
             ? html`<tr>

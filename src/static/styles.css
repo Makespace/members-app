@@ -1216,6 +1216,14 @@ label img {
 }
 
 /* The area's budget as it stands: figures and a spent bar. */
+/* A purchasing area's remaining budget once it has gone below zero: a
+   warning rather than an alarm, as spending can still be approved. Dark
+   enough orange to read as text on white. */
+.budget-overspent {
+  color: #b35a00;
+  font-weight: bold;
+}
+
 .purchase-budget {
   display: flex;
   flex-direction: column;
