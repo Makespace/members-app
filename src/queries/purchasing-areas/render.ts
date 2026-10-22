@@ -1,5 +1,6 @@
 import {html, joinHtml, sanitizeString} from '../../types/html';
 import {formatPence} from '../../types/money';
+import {renderRemaining} from '../../templates/remaining-budget';
 import {PurchasingArea} from '../../read-models/shared-state/return-types';
 import {superUserActions, superUserButton} from '../../templates/super-user';
 
@@ -25,7 +26,7 @@ const renderRow = (purchasingArea: PurchasingArea) => html`
     </td>
     <td>${money(purchasingArea.yearlyBudgetPence)}</td>
     <td>${money(purchasingArea.spentThisYearPence)}</td>
-    <td>${money(purchasingArea.remainingPence)}</td>
+    <td>${renderRemaining(purchasingArea.remainingPence)}</td>
   </tr>
 `;
 
