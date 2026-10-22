@@ -14,7 +14,7 @@ import {render} from './render';
 // This is where a member lands after submitting one.
 // `?sent=1` (added by the form) shows it as the confirmation of a request
 // just sent.
-export const purchaseRequest: Query = deps => (_user, params, queryParams) =>
+export const purchaseRequest: Query = deps => (user, params, queryParams) =>
   pipe(
     params.id,
     UUID.decode,
@@ -57,6 +57,15 @@ export const purchaseRequest: Query = deps => (_user, params, queryParams) =>
               request.submittedByMemberNumber
             ),
             O.chain(member => member.name)
+          ),
+          deciderName: pipe(
+            request.decidedByMemberNumber,
+            O.chain(deps.sharedReadModel.members.getByMemberNumber),
+            O.chain(member => member.name)
+          ),
+          canDecide: pipe(
+            deps.sharedReadModel.members.getByMemberNumber(user.memberNumber),
+            O.exists(member => member.isSuperUser)
           ),
         })
       );

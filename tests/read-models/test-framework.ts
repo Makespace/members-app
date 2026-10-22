@@ -295,6 +295,8 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       },
       purchaseRequest: {
         submit: frameworkify(commands.purchaseRequest.submit),
+        approve: frameworkify(commands.purchaseRequest.approve),
+        decline: frameworkify(commands.purchaseRequest.decline),
       },
     },
     trainingSummaryDeps: {

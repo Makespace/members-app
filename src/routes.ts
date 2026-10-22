@@ -143,10 +143,12 @@ export const initRoutes = (
     ),
     query('/purchasing-areas/:id', queries.purchasingArea),
     ...command('purchase-requests', 'submit', commands.purchaseRequest.submit),
+    ...command('purchase-requests', 'approve', commands.purchaseRequest.approve),
+    ...command('purchase-requests', 'decline', commands.purchaseRequest.decline),
     get('/purchase-request', (_req, res) =>
       res.redirect('/purchase-requests/submit')
     ),
-    get('/purchase-requests', (_req, res) => res.redirect('/purchasing-areas')),
+    query('/purchase-requests', queries.purchaseRequests),
     // Under /view/ for the same reason as trouble tickets: a bare :id would
     // swallow /purchase-requests/submit.
     query('/purchase-requests/view/:id', queries.purchaseRequest),

@@ -151,7 +151,7 @@ describe('purchase request form', () => {
   });
 
   describe('page 2', () => {
-    it('asks for the shop, then each item from it, then the consumable question', () => {
+    it('asks for the shop and each item from it, and the consumable question', () => {
       const page = render(onPage(2));
       expect(text(page)).toContain('Page 2 of 3');
       const names = [...page.querySelectorAll('form [name]')].map(field =>
@@ -167,9 +167,6 @@ describe('purchase request form', () => {
           'purchases[0][items][0][cost]',
           'purchases[0][items][0][notes]',
         ])
-      );
-      expect(names.indexOf('purchases[0][items][0][cost]')).toBeLessThan(
-        names.indexOf('isMemberPaidConsumable')
       );
       expect(
         page.querySelector<HTMLInputElement>(
@@ -610,9 +607,9 @@ describe('purchase request form', () => {
     });
   });
 
-  it('explains instead of showing the form to someone who purchases for nothing', () => {
+  it('explains instead of showing the form when there are no purchasing areas', () => {
     const page = render(onPage(1, {purchasingAreas: []}));
     expect(page.querySelector('form')).toBeNull();
-    expect(page.textContent).toContain("You aren't a purchaser");
+    expect(page.textContent).toContain("There aren't any purchasing areas yet");
   });
 });

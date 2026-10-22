@@ -518,7 +518,8 @@ const renderAboutPage = (viewModel: PurchaseRequestFormViewModel) => html`
     <fieldset class="purchase-request__fieldset">
       <legend>Which area is this for?</legend>
       <p class="purchase-request__hint text-sm">
-        You can request purchases for areas you own.
+        The area whose budget it would come out of. A director will
+        approve your request.
       </p>
       <div class="purchase-request__radios purchase-request__radios--areas">
         ${joinHtml(
@@ -635,34 +636,6 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
     ${hiddenInputs(
       carriedExcept(viewModel, askedOnCostsPage)
     )}
-    ${pipe(
-      viewModel.chosen,
-      O.match(() => html``, renderBudget(viewModel.budgetYear))
-    )}
-    <div class="purchase-request__stack">
-      <h2>What are you buying, and where from?</h2>
-      <p class="purchase-request__hint text-sm">
-        Start with the shop or website, then add each item you want from it,
-        with what it costs for that quantity, including VAT and any bulk
-        discount. Add another shop if some things come from
-        somewhere else. Together they make the cost of the request.
-      </p>
-      <div class="purchase-request__stack" data-shop-entries>
-        ${joinHtml(
-          padded(viewModel.answers.purchases, SHOP_ENTRIES, blankShop).map(
-            renderShopEntry
-          )
-        )}
-      </div>
-      <button
-        class="purchase-request__link-button jsonly"
-        type="button"
-        data-add-shop
-      >
-        + Add another shop
-      </button>
-      <div data-request-total aria-live="polite"></div>
-    </div>
     <fieldset class="purchase-request__fieldset purchase-question">
       <legend>Do members pay for this on SumUp?</legend>
       <p class="purchase-request__hint text-sm">
@@ -778,6 +751,34 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
         </div>
       </div>
     </fieldset>
+    ${pipe(
+      viewModel.chosen,
+      O.match(() => html``, renderBudget(viewModel.budgetYear))
+    )}
+    <div class="purchase-request__stack">
+      <h2>What are you buying, and where from?</h2>
+      <p class="purchase-request__hint text-sm">
+        Start with the shop or website, then add each item you want from it,
+        with what it costs for that quantity, including VAT and any bulk
+        discount. Add another shop if some things come from
+        somewhere else. Together they make the cost of the request.
+      </p>
+      <div class="purchase-request__stack" data-shop-entries>
+        ${joinHtml(
+          padded(viewModel.answers.purchases, SHOP_ENTRIES, blankShop).map(
+            renderShopEntry
+          )
+        )}
+      </div>
+      <button
+        class="purchase-request__link-button jsonly"
+        type="button"
+        data-add-shop
+      >
+        + Add another shop
+      </button>
+      <div data-request-total aria-live="polite"></div>
+    </div>
     <div data-budget-verdict hidden aria-live="polite"></div>
     ${joinHtml(
       verdictKeys.map(
@@ -1793,9 +1794,8 @@ const pages = [renderAboutPage, renderCostsPage, renderCheckPage];
 
 const renderNoPurchasingAreas = () => html`
   <p>
-    You aren't a purchaser for any purchasing area yet. Purchasers are chosen
-    from area owners by the super users - ask one if you need to buy something
-    for an area you look after.
+    There aren't any purchasing areas yet, so there's no budget to request a
+    purchase from. Ask a super user to set one up.
   </p>
   <p><a href="/purchasing-areas">See the purchasing areas</a></p>
 `;

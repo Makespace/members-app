@@ -17,7 +17,6 @@ import {
   typedPurchases,
 } from '../../purchasing/purchases';
 import {SharedReadModel} from '../../read-models/shared-state';
-import {allMemberNumbers} from '../../read-models/shared-state/return-types';
 import {classifyPurchase} from '../../purchasing/classify-purchase';
 import {budgetYearOf} from '../../purchasing/budget-year';
 import {Command} from '../command';
@@ -103,20 +102,6 @@ const submitterMemberNumber = (
     )
   );
 };
-
-const isPurchaserFor = (
-  rm: SharedReadModel,
-  memberNumber: number,
-  purchasingAreaId: tt.UUID
-) =>
-  pipe(
-    rm.purchasing.get(purchasingAreaId, new Date()),
-    O.exists(purchasingArea =>
-      purchasingArea.purchasers.some(purchaser =>
-        allMemberNumbers(purchaser).includes(memberNumber)
-      )
-    )
-  );
 
 // The outcome is always worked out here, from the answer, the itemised total
 // (the sum of the shop costs) and this year's budget figures, whatever the
@@ -212,15 +197,12 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
   );
 };
 
-// Purchasers for this purchasing area, and super users.
+// Any logged-in member can request a purchase; it then waits for a super
+// user to approve it. The admin API can submit on a member's behalf.
 const isAuthorized: Command<SubmitPurchaseRequest>['isAuthorized'] = ({
   actor,
   rm,
-  input,
-}) =>
-  isAdminOrSuperUser({actor, rm}) ||
-  (actor.tag === 'user' &&
-    isPurchaserFor(rm, actor.user.memberNumber, input.purchasingAreaId));
+}) => actor.tag === 'user' || isAdminOrSuperUser({actor, rm});
 
 export const submit: Command<SubmitPurchaseRequest> = {
   process,
