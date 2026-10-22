@@ -32,7 +32,8 @@ const money = (pence: number) => sanitizeString(formatPence(pence));
 
 const renderDecision = (
   request: PurchaseRequest,
-  deciderName: O.Option<string>
+  deciderName: O.Option<string>,
+  submitterName: O.Option<string>
 ) => {
   const by = html`${pipe(
     deciderName,
@@ -56,6 +57,20 @@ const renderDecision = (
           ${sanitizeString(
             O.getOrElse(() => '')(request.declineReason)
           )}</p>`;
+    // Bought for Makespace, not by someone who then claims it back.
+    case 'bought-directly':
+      return html`<p>
+        <strong>Bought directly</strong> by
+        ${pipe(
+          submitterName,
+          O.match(
+            () => renderMemberNumber(request.submittedByMemberNumber),
+            name => html`${sanitizeString(name)}`
+          )
+        )}
+        on Makespace's behalf (e.g. with Capital on Tap), so it didn't need
+        approving.
+      </p>`;
     case 'awaiting-approval':
       return html`<p>
         <strong>Next:</strong> a director needs to approve this
@@ -155,12 +170,14 @@ export const render = ({
           <dt>Why it's needed</dt>
           <dd>${sanitizeString(request.justification)}</dd>
         </dl>
-        ${renderPurchaseBreakdown(request.purchases, request.totalPence)}
+        ${request.purchases.length > 0
+          ? renderPurchaseBreakdown(request.purchases, request.totalPence)
+          : html``}
         ${pipe(
           request.proposal,
           O.match(() => html``, renderProposal)
         )}
-        ${renderDecision(request, deciderName)}
+        ${renderDecision(request, deciderName, submitterName)}
         ${canDecide && request.status === 'awaiting-approval'
           ? renderDecide(request)
           : html``}

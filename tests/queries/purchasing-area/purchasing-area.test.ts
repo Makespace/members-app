@@ -112,6 +112,8 @@ describe('purchasing area page', () => {
       ],
       justification: 'Worn out' as never,
       submittedByMemberNumber: undefined,
+      buyingDirectly: undefined,
+      amount: undefined,
       actor: {tag: 'user', user: purchaser},
     });
     await framework.commands.purchaseRequest.approve({
@@ -176,6 +178,8 @@ describe('purchasing area page', () => {
       ],
       justification: 'Sold to members' as never,
       submittedByMemberNumber: undefined,
+      buyingDirectly: undefined,
+      amount: undefined,
       actor: {tag: 'user', user: purchaser},
     });
     const text = pageFor(member).textContent;
@@ -204,6 +208,8 @@ describe('purchasing area page', () => {
       ],
       justification: 'Needed' as never,
       submittedByMemberNumber: undefined,
+      buyingDirectly: undefined,
+      amount: undefined,
       actor: {tag: 'user', user: member},
     });
     const text = pageFor(member).textContent;

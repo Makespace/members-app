@@ -31,6 +31,7 @@ import {
 } from '../../purchasing/purchases';
 import {renderPurchaseBreakdown} from '../../templates/purchase-breakdown';
 import {renderOutcome} from '../../templates/purchase-request-outcome';
+import {BuyerRole, NEEDS_APPROVAL} from '../../purchasing/buy-directly';
 import {
   PROBABILITY_SCALE,
   SEVERITY_SCALE,
@@ -53,6 +54,8 @@ export const PAGE_LABELS = [
 
 export type PurchasingAreaOption = {
   id: UUID;
+  // Who can buy for it directly, besides super users.
+  purchaserMemberNumbers: ReadonlyArray<number>;
   name: string;
   areaIds: ReadonlyArray<UUID>;
   areaNames: ReadonlyArray<string>;
@@ -73,6 +76,10 @@ export type PurchaseRequestAnswers = {
   // The other areas ticked, by id.
   affectedAreaIds: ReadonlyArray<string>;
   healthAndSafetyRisk: string;
+  // 'true' when a super user or purchaser is buying it themselves; then
+  // only what it cost (amount, in pounds) is asked for, not the shops.
+  buyingDirectly: string;
+  amount: string;
   // The proposal as typed, if the form comes back with one.
   proposal: TypedProposal;
 };
@@ -92,6 +99,9 @@ export type PurchaseRequestFormViewModel = {
   chosen: O.Option<PurchasingAreaOption>;
   // Areas outside the chosen purchasing area, which it might affect.
   otherAreas: ReadonlyArray<{id: UUID; name: string}>;
+  // Whether whoever is filling it in can buy it directly, for the area
+  // chosen; see src/purchasing/buy-directly.ts.
+  buyerRole: BuyerRole;
   // Known on page 3: the shops, their total, and what that means.
   result: O.Option<{
     purchases: ReadonlyArray<Purchase>;
@@ -448,6 +458,8 @@ const carried = ({
     ['affectsOtherAreas', answers.affectsOtherAreas] as const,
     ...answers.affectedAreaIds.map(id => ['affectedAreaIds', id] as const),
     ['healthAndSafetyRisk', answers.healthAndSafetyRisk] as const,
+    ['buyingDirectly', answers.buyingDirectly] as const,
+    ['amount', answers.amount] as const,
   ].filter(([, value]) => value !== '');
 
 // Which of the page 2 questions a name belongs to.
@@ -458,6 +470,8 @@ const askedOnCostsPage = (name: string) =>
     'affectsOtherAreas',
     'affectedAreaIds',
     'healthAndSafetyRisk',
+    'buyingDirectly',
+    'amount',
   ].includes(name);
 
 // Everything but what the page itself asks for.
@@ -616,6 +630,81 @@ const verdictKeys: ReadonlyArray<VerdictKey> = [
   'budget-proposal-needed',
 ];
 
+// Super users and the area's purchasers can make the purchase themselves;
+// everyone else sees the option greyed out, saying why.
+const renderBuyDirectly = ({
+  buyerRole,
+  answers,
+}: PurchaseRequestFormViewModel) => {
+  const allowed = buyerRole !== 'neither';
+  const direct = allowed && answers.buyingDirectly === 'true';
+  return html`
+    <div class="buy-directly${allowed ? html`` : html` buy-directly--unavailable`}">
+    <span class="buy-directly__label">Super users and purchasers</span>
+    <fieldset
+      class="purchase-request__fieldset"
+      data-buy-directly
+      data-buyer-role="${safe(buyerRole)}"
+      ${allowed ? html`` : html`disabled`}
+    >
+      <legend>
+        Are you making this purchase yourself, e.g. with Capital on Tap?
+      </legend>
+      ${allowed
+        ? html`<p class="purchase-request__hint text-sm">
+            If so, it's recorded as bought straight away, without waiting for
+            approval, and you only need to say what it cost.
+            ${buyerRole === 'purchaser'
+              ? html`Only when it doesn't need a proposal.`
+              : html`Not when it affects other areas or carries a health and
+                safety risk.`}
+          </p>`
+        : html`<p class="purchase-request__hint text-sm">
+            ${safe(NEEDS_APPROVAL)}
+          </p>`}
+      <div class="purchase-request__radios">
+        <div class="fieldset-item">
+          <input
+            type="radio"
+            name="buyingDirectly"
+            id="direct-yes"
+            value="true"
+            ${checkedIf(direct)}
+          />
+          <label for="direct-yes">Yes, I'm buying it</label>
+        </div>
+        <div class="fieldset-item">
+          <input
+            type="radio"
+            name="buyingDirectly"
+            id="direct-no"
+            value="false"
+            ${checkedIf(!direct)}
+          />
+          <label for="direct-no">No, send it for approval</label>
+        </div>
+      </div>
+      ${allowed
+        ? html`<div class="purchase-field" data-direct-amount>
+            <label class="purchase-field__label" for="amount"
+              >What does it cost, in total (inc. VAT and delivery)?</label
+            >
+            <input
+              type="text"
+              inputmode="decimal"
+              name="amount"
+              id="amount"
+              placeholder="e.g. 42.50"
+              value="${sanitizeString(answers.amount)}"
+            />
+          </div>
+          <p class="buy-directly__message" data-direct-message aria-live="polite"></p>`
+        : html``}
+    </fieldset>
+    </div>
+  `;
+};
+
 const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
   <form
     method="get"
@@ -755,7 +844,8 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
       viewModel.chosen,
       O.match(() => html``, renderBudget(viewModel.budgetYear))
     )}
-    <div class="purchase-request__stack">
+    ${renderBuyDirectly(viewModel)}
+    <div class="purchase-request__stack" data-itemised>
       <h2>What are you buying, and where from?</h2>
       <p class="purchase-request__hint text-sm">
         Start with the shop or website, then add each item you want from it,
@@ -797,8 +887,16 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
   ${costsScript}
 `;
 
+// Buying directly, as allowed when page 2 was left.
+const isBuyingDirectly = ({answers, buyerRole}: PurchaseRequestFormViewModel) =>
+  answers.buyingDirectly === 'true' && buyerRole !== 'neither';
+
 const renderCheckPage = (viewModel: PurchaseRequestFormViewModel) => html`
-  <p>Check the request, then send it.</p>
+  <p>
+    ${isBuyingDirectly(viewModel)
+      ? html`Check the purchase, then record it.`
+      : html`Check the request, then send it.`}
+  </p>
   ${pipe(
     viewModel.result,
     O.match(
@@ -821,6 +919,13 @@ const renderCheckPage = (viewModel: PurchaseRequestFormViewModel) => html`
           <dd>${sanitizeString(viewModel.answers.justification)}</dd>
           <dt>Total</dt>
           <dd>${gbp(totalPence)}</dd>
+          ${isBuyingDirectly(viewModel)
+            ? html`<dt>Bought</dt>
+                <dd>
+                  Directly by you, on Makespace's behalf. It counts against
+                  the budget straight away, without waiting for approval.
+                </dd>`
+            : html``}
           <dt>Other areas</dt>
           <dd>
             ${affectedAreaNames.length > 0
@@ -838,7 +943,9 @@ const renderCheckPage = (viewModel: PurchaseRequestFormViewModel) => html`
           <dt>Why</dt>
           <dd>${sanitizeString(classification.reason)}</dd>
         </dl>
-        ${renderPurchaseBreakdown(purchases, totalPence)}
+        ${purchases.length > 0
+          ? renderPurchaseBreakdown(purchases, totalPence)
+          : html``}
       `
     )
   )}
@@ -853,7 +960,10 @@ const renderCheckPage = (viewModel: PurchaseRequestFormViewModel) => html`
     ${hiddenInputs(carried(viewModel))}
     ${pipe(
       viewModel.result,
-      O.filter(({classification}) => classification.approval === 'proposal'),
+      O.filter(
+        ({classification}) =>
+          classification.approval === 'proposal' && !isBuyingDirectly(viewModel)
+      ),
       O.match(
         () => html``,
         () => renderProposalForm(viewModel)
@@ -861,7 +971,9 @@ const renderCheckPage = (viewModel: PurchaseRequestFormViewModel) => html`
     )}
     ${renderStepNav({
       back: backHref(viewModel.step, carried(viewModel)),
-      next: html`<button type="submit">Send request</button>`,
+      next: isBuyingDirectly(viewModel)
+        ? html`<button type="submit">Record purchase</button>`
+        : html`<button type="submit">Send request</button>`,
     })}
   </form>
   ${proposalScript}
@@ -1420,6 +1532,11 @@ const costsScript = html`
       var budget = Number(form.dataset.budgetPence);
       var spent = Number(form.dataset.spentPence);
       var threshold = Number(form.dataset.proposalThresholdPence);
+      var buy = form.querySelector('[data-buy-directly]');
+      var itemised = form.querySelector('[data-itemised]');
+      var amountBox = form.querySelector('[data-direct-amount]');
+      var amountField = form.querySelector('input[name="amount"]');
+      var directMessage = form.querySelector('[data-direct-message]');
 
       function gbp(pence) {
         return '£' + (pence / 100).toLocaleString('en-GB', {
@@ -1494,8 +1611,39 @@ const costsScript = html`
         otherAreas.hidden = !(affects && affects.value === 'true');
       }
 
+      // Buying directly asks only for what it cost, in place of the shops.
+      function buyingDirectly() {
+        var yes = form.querySelector('input[name="buyingDirectly"]:checked');
+        return !!buy && !buy.disabled && !!yes && yes.value === 'true';
+      }
+      function showBuyingDirectly() {
+        if (!amountBox) return;
+        var direct = buyingDirectly();
+        amountBox.hidden = !direct;
+        amountField.required = direct;
+        itemised.hidden = direct;
+        itemised.querySelectorAll('input, textarea').forEach(function (field) {
+          field.disabled = direct;
+        });
+      }
+
+      // Mirrors canBuyDirectly (src/purchasing/buy-directly.ts), so they
+      // know before moving on; the server checks again.
+      function buyingDirectlyMessage(result, areaNames, risky) {
+        if (areaNames.length || risky) {
+          return "Purchases that affect other areas or carry a health and safety risk need a proposal, so they can't be bought directly.";
+        }
+        var needsProposal = /proposal-needed$/.test(result.key);
+        if (buy.dataset.buyerRole === 'purchaser' && needsProposal) {
+          return "This needs a proposal, so a purchaser can't buy it directly. Send it as a request for a director to approve.";
+        }
+        return needsProposal ? 'As a super user, you can buy this directly without a proposal.' : '';
+      }
+
       function showVerdict(total) {
         showOtherAreas();
+        showBuyingDirectly();
+        if (directMessage) directMessage.textContent = '';
         var answer = form.querySelector('input[name="isMemberPaidConsumable"]:checked');
         if (!answer || !total) {
           verdict.hidden = true;
@@ -1518,6 +1666,9 @@ const costsScript = html`
         verdict.querySelector('[data-verdict-total]').textContent = gbp(total);
         verdict.querySelector('[data-verdict-reason]').textContent = result.reason;
         verdict.hidden = false;
+        if (directMessage && buyingDirectly()) {
+          directMessage.textContent = buyingDirectlyMessage(result, areaNames, !!risk && risk.value === 'true');
+        }
       }
 
       function field(item, name) {
@@ -1636,6 +1787,7 @@ const costsScript = html`
           total += sum;
         });
         requestTotal.innerHTML = total ? '<p><strong>Total: ' + gbp(total) + '</strong></p>' : '';
+        if (buyingDirectly()) total = pence(amountField.value) || 0;
         showVerdict(total);
       }
 

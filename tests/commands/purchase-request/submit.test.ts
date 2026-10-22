@@ -529,4 +529,71 @@ describe('submit purchase request', () => {
       ).toBe(true);
     });
   });
+
+  describe('buying directly', () => {
+    // Just what it cost, in place of the shops.
+    const direct = (amount: string, overrides: Record<string, unknown> = {}) =>
+      formBody({purchases: undefined, buyingDirectly: 'true', amount, ...overrides});
+
+    it('records what a purchaser bought, as bought directly', async () => {
+      const event = await submitted(direct('42.50'));
+      expect(event).toMatchObject({
+        boughtDirectly: true,
+        totalPence: 4_250,
+        purchases: [],
+        proposal: null,
+        approval: 'none',
+      });
+    });
+
+    it('needs what it cost', async () => {
+      expect(await failure(direct(''))).toMatchObject({
+        status: StatusCodes.BAD_REQUEST,
+      });
+    });
+
+    it('is not for anyone but super users and the purchasers', async () => {
+      expect(
+        await failure(direct('42.50'), userActor(otherMemberNumber))
+      ).toMatchObject({status: StatusCodes.FORBIDDEN});
+    });
+
+    it("isn't for a purchaser when it would need a proposal", async () => {
+      expect(await failure(direct('1000.00'))).toMatchObject({
+        status: StatusCodes.FORBIDDEN,
+      });
+    });
+
+    describe('by a super user', () => {
+      const superUser = userActor(otherMemberNumber);
+      beforeEach(() => {
+        insert(
+          constructEvent('SuperUserDeclared')({
+            actor: arbitraryActor(),
+            memberNumber: otherMemberNumber,
+          })
+        );
+      });
+
+      it('can go ahead without a proposal when only the cost needs one', async () => {
+        const event = getSomeOrFail(
+          await getTaskEitherRightOrFail(
+            submitAs(superUser, direct('1200.00', {proposal: undefined}))
+          )
+        );
+        expect(event).toMatchObject({
+          boughtDirectly: true,
+          totalPence: 120_000,
+          approval: 'proposal',
+          proposal: null,
+        });
+      });
+
+      it("can't when it carries a health and safety risk", async () => {
+        expect(
+          await failure(direct('42.50', {healthAndSafetyRisk: 'true'}), superUser)
+        ).toMatchObject({status: StatusCodes.FORBIDDEN});
+      });
+    });
+  });
 });

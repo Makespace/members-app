@@ -14,6 +14,7 @@ const woodShop = {
   name: 'Wood Shop',
   areaIds: ['44444444-4444-4444-8444-444444444444' as UUID],
   areaNames: ['Wood Shop'],
+  purchaserMemberNumbers: [],
   yearlyBudgetPence: 100_000,
   spentThisYearPence: 42_000,
   remainingPence: 58_000,
@@ -48,6 +49,8 @@ const setUp = (prefill: Prefill = {}) => {
       affectsOtherAreas: 'false',
       affectedAreaIds: [],
       healthAndSafetyRisk: 'true',
+      buyingDirectly: '',
+      amount: '',
       proposal: {
         need: '',
         options: prefill.options ?? [],
@@ -60,6 +63,7 @@ const setUp = (prefill: Prefill = {}) => {
     },
     problems: [],
     chosen: O.some(woodShop),
+    buyerRole: 'neither',
     otherAreas: [],
     result: O.some({
       purchases: [],
