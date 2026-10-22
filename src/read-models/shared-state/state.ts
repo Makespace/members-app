@@ -15,6 +15,7 @@ import {InterestedIn} from '../../owner-agreement/agreement';
 import * as O from 'fp-ts/Option';
 import {blob, integer, SQLiteColumnBuilderBase, sqliteTable, SQLiteTableExtraConfig, text, uniqueIndex} from 'drizzle-orm/sqlite-core';
 import {RecordedSpendKind} from '../../types/recorded-spend-kind';
+import {PurchaseRequestStatus} from '../../types/purchase-request-status';
 
 export const createTables: SQL[] = [];
 export const truncateTables: SQL[] = [];
@@ -548,6 +549,10 @@ export const purchaseRequestsTable = defineTable(
       affectedAreaIdsJson TEXT NOT NULL,
       healthAndSafetyRisk INTEGER NOT NULL,
       proposalJson TEXT,
+      status TEXT NOT NULL,
+      decidedAt INTEGER,
+      decidedByMemberNumber INTEGER,
+      declineReason TEXT,
       outcome TEXT NOT NULL,
       approval TEXT NOT NULL,
       outcomeReason TEXT NOT NULL,
@@ -576,6 +581,11 @@ export const purchaseRequestsTable = defineTable(
     }).notNull(),
     // The proposal as JSON, when the request needs one.
     proposalJson: text('proposalJson'),
+    // Awaiting approval until a super user approves or declines it.
+    status: text('status').notNull().$type<PurchaseRequestStatus>(),
+    decidedAt: integer('decidedAt', {mode: 'timestamp_ms'}),
+    decidedByMemberNumber: integer('decidedByMemberNumber'),
+    declineReason: text('declineReason'),
     outcome: text('outcome').notNull().$type<PurchaseRequestOutcome>(),
     approval: text('approval').notNull().$type<PurchaseApproval>(),
     outcomeReason: text('outcomeReason').notNull(),

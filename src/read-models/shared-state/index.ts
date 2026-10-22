@@ -100,6 +100,7 @@ import {
   getAllAreaAssignments,
   getAllPurchasingAreas,
   getPurchaseRequest,
+  getAllPurchaseRequests,
   getPurchaseRequests,
   getPurchasingArea,
   getPurchasingAreaForArea,
@@ -233,6 +234,7 @@ export type SharedReadModel = {
       budgetYear: number
     ) => ReadonlyArray<PurchaseRequest>;
     getRequest: (id: UUID) => O.Option<PurchaseRequest>;
+    getAllRequests: () => ReadonlyArray<PurchaseRequest>;
   };
 };
 
@@ -354,6 +356,7 @@ export const initSharedReadModel = (
       getAllAreaAssignments: () => getAllAreaAssignments(readModelDb),
       getRequests: getPurchaseRequests(readModelDb),
       getRequest: getPurchaseRequest(readModelDb),
+      getAllRequests: getAllPurchaseRequests(readModelDb),
     },
   };
 };

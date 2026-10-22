@@ -10,6 +10,7 @@ import {
   PurchaseRequestOutcome,
 } from '../../types/purchase-request-outcome';
 import {RecordedSpendKind} from '../../types/recorded-spend-kind';
+import {PurchaseRequestStatus} from '../../types/purchase-request-status';
 
 export type TrainedMember = Pick<
   MemberCoreInfo,
@@ -197,6 +198,8 @@ export type PurchasingArea = PurchasingAreaSummary & {
   spentThisYearPence: number;
   // Recorded spending approved outside the budget, which doesn't count.
   approvedSpendThisYearPence: number;
+  // This year's requests still waiting for approval, which don't count yet.
+  awaitingApprovalPence: number;
   // This budget year's recorded spending, oldest first.
   recordedSpend: ReadonlyArray<RecordedSpend>;
   // Negative when this year's spending has gone past the budget.
@@ -223,6 +226,12 @@ export type PurchaseRequest = {
   healthAndSafetyRisk: boolean;
   // The proposal it was sent with, when it needs one.
   proposal: O.Option<Proposal>;
+  // Awaiting approval until a super user approves or declines it; only
+  // approved requests count against the budget.
+  status: PurchaseRequestStatus;
+  decidedAt: O.Option<Date>;
+  decidedByMemberNumber: O.Option<number>;
+  declineReason: O.Option<string>;
   outcome: PurchaseRequestOutcome;
   approval: PurchaseApproval;
   outcomeReason: string;

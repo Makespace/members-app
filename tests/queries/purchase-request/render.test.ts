@@ -31,6 +31,10 @@ const request: PurchaseRequest = {
   affectedAreaIds: [],
   healthAndSafetyRisk: false,
   proposal: O.none,
+  status: 'awaiting-approval',
+  decidedAt: O.none,
+  decidedByMemberNumber: O.none,
+  declineReason: O.none,
   outcome: 'budget',
   approval: 'none',
   outcomeReason: 'This comes out of the yearly budget.',
@@ -38,12 +42,18 @@ const request: PurchaseRequest = {
   spentThisYearPence: 42_000,
 };
 
-const page = (justSent: boolean, overrides: Partial<PurchaseRequest> = {}) =>
+const page = (
+  justSent: boolean,
+  overrides: Partial<PurchaseRequest> = {},
+  canDecide = false
+) =>
   render({
     justSent,
     request: {...request, ...overrides},
     purchasingArea: O.some({id: request.purchasingAreaId, name: 'Wood Shop'}),
     submitterName: O.some('Ada Admin'),
+    deciderName: O.some('Dee Director'),
+    canDecide,
   });
 
 describe('purchase request page', () => {
@@ -74,10 +84,50 @@ describe('purchase request page', () => {
   });
 
 
-  it('says a proposal comes next when one is needed', () => {
+  it('says a director needs to approve it next, and its proposal if it has one', () => {
+    expect(page(true).replace(/\s+/g, ' ')).toContain(
+      'a director needs to approve this request.'
+    );
     expect(
-      page(true, {outcome: 'budget-proposal-needed', approval: 'proposal'})
-    ).toContain('write your proposal');
+      page(true, {outcome: 'budget-proposal-needed', approval: 'proposal'}).replace(
+        /\s+/g,
+        ' '
+      )
+    ).toContain('a director needs to approve this request and its proposal.');
+  });
+
+  it('offers Approve and Decline only to super users, while it awaits approval', () => {
+    expect(page(false, {}, true)).toContain(
+      `href="/purchase-requests/approve?request=${request.id}"`
+    );
+    expect(page(false, {}, true)).toContain(
+      `href="/purchase-requests/decline?request=${request.id}"`
+    );
+    expect(page(false)).not.toContain('/purchase-requests/approve');
+    expect(page(false, {status: 'approved'}, true)).not.toContain(
+      '/purchase-requests/approve'
+    );
+  });
+
+  it('says who approved or declined it, and why it was declined', () => {
+    expect(
+      page(false, {
+        status: 'approved',
+        decidedAt: O.some(new Date('2026-10-16T09:00:00Z')),
+      }).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ')
+    ).toContain('Approved by Dee Director');
+    expect(
+      page(false, {
+        status: 'declined',
+        declineReason: O.some('No budget left this year'),
+      }).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ')
+    ).toContain('Declined by Dee Director');
+    expect(
+      page(false, {
+        status: 'declined',
+        declineReason: O.some('No budget left this year'),
+      })
+    ).toContain('No budget left this year');
   });
 
   it("doesn't add a consumable to this year's spend", () => {
@@ -120,7 +170,7 @@ describe('purchase request page', () => {
     expect(html).toContain('4 Major × 1 Rare = <strong>4</strong>');
     expect(html).toContain('Who owns it');
     expect(html).not.toContain('Where it goes');
-    expect(html).toContain('the proposal needs agreeing');
+    expect(html).toContain('and its proposal');
     expect(html).not.toContain('write your proposal');
   });
 

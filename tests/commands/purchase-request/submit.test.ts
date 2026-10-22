@@ -216,7 +216,14 @@ describe('submit purchase request', () => {
 
   describe('when earlier spending this year leaves too little budget', () => {
     beforeEach(async () => {
-      insert(await submitted(formBody(costing('900.00'))));
+      const earlier = await submitted(formBody(costing('900.00')));
+      insert(
+        earlier,
+        constructEvent('PurchaseRequestApproved')({
+          actor: arbitraryActor(),
+          id: earlier.id,
+        })
+      );
     });
 
     it('needs a proposal', async () => {
@@ -496,14 +503,14 @@ describe('submit purchase request', () => {
       ).toBe(true);
     });
 
-    it('is not any other member', () => {
+    it('is any other member too, as requests wait for approval', () => {
       expect(
         submit.isAuthorized({
           actor: userActor(otherMemberNumber),
           rm: framework.sharedReadModel,
           input: input(),
         })
-      ).toBe(false);
+      ).toBe(true);
     });
 
     it('is a super user', () => {

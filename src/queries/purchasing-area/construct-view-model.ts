@@ -6,7 +6,6 @@ import {UUID} from 'io-ts-types';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {SharedReadModel} from '../../read-models/shared-state';
 import {
-  allMemberNumbers,
   Member,
   PurchaseRequest,
   PurchasingArea,
@@ -26,7 +25,6 @@ export type ViewModel = {
     submitter: O.Option<Member>;
   }>;
   canManage: boolean;
-  canRequest: boolean;
   // Email addresses are shown, as on the areas page, to super users and
   // area owners only.
   canSeePrivateDetails: boolean;
@@ -63,9 +61,6 @@ export const constructViewModel =
           viewer,
           O.exists(member => member.ownerOf.length > 0)
         );
-        const isPurchaser = purchasingArea.purchasers.some(purchaser =>
-          allMemberNumbers(purchaser).includes(user.memberNumber)
-        );
         return {
           purchasingArea,
           requests: rm.purchasing
@@ -77,7 +72,6 @@ export const constructViewModel =
               ),
             })),
           canManage: isSuperUser,
-          canRequest: isSuperUser || isPurchaser,
           canSeePrivateDetails: isSuperUser || isOwnerOfAnyArea,
         };
       })

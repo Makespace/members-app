@@ -32,13 +32,16 @@ import {UserId} from '../../../types';
 import {PurchaseCodec} from '../../../purchasing/purchases';
 import {ProposalCodec} from '../../../purchasing/proposal';
 
-const spentInYear =
+// This year's requests that would come out of the budget, by status: only
+// approved ones count as spent; those awaiting approval are shown apart.
+const budgetRequestsInYear =
   (db: BetterSQLite3Database) =>
-  (purchasingAreaId: UUID, budgetYear: number): number =>
-    db
+  (purchasingAreaId: UUID, budgetYear: number) => {
+    const rows = db
       .select({
         amountPence: purchaseRequestsTable.totalPence,
         outcome: purchaseRequestsTable.outcome,
+        status: purchaseRequestsTable.status,
       })
       .from(purchaseRequestsTable)
       .where(
@@ -48,8 +51,16 @@ const spentInYear =
         )
       )
       .all()
-      .filter(row => countsAgainstBudget(row.outcome))
-      .reduce((total, row) => total + row.amountPence, 0);
+      .filter(row => countsAgainstBudget(row.outcome));
+    const totalWith = (status: string) =>
+      rows
+        .filter(row => row.status === status)
+        .reduce((total, row) => total + row.amountPence, 0);
+    return {
+      approvedPence: totalWith('approved'),
+      awaitingApprovalPence: totalWith('awaiting-approval'),
+    };
+  };
 
 const getYearBudget =
   (db: BetterSQLite3Database) =>
@@ -156,8 +167,8 @@ const expand =
       recordedSpend
         .filter(spend => spend.kind === kind)
         .reduce((total, spend) => total + spend.amountPence, 0);
-    const spentThisYearPence =
-      spentInYear(db)(row.id, budgetYear) + recordedOfKind('budget');
+    const requests = budgetRequestsInYear(db)(row.id, budgetYear);
+    const spentThisYearPence = requests.approvedPence + recordedOfKind('budget');
     const yearlyBudgetPence = pipe(
       getYearBudget(db)(row.id, budgetYear),
       O.getOrElse(() => row.yearlyBudgetPence)
@@ -169,6 +180,7 @@ const expand =
       usualBudgetPence: row.yearlyBudgetPence,
       recordedSpend,
       approvedSpendThisYearPence: recordedOfKind('approved'),
+      awaitingApprovalPence: requests.awaitingApprovalPence,
       areas,
       purchasers: getPurchasersOf(db)(
         row.id,
@@ -263,9 +275,15 @@ const toPurchaseRequest = ({
   purchasesJson,
   affectedAreaIdsJson,
   proposalJson,
+  decidedAt,
+  decidedByMemberNumber,
+  declineReason,
   ...row
 }: typeof purchaseRequestsTable.$inferSelect): PurchaseRequest => ({
   ...row,
+  decidedAt: O.fromNullable(decidedAt),
+  decidedByMemberNumber: O.fromNullable(decidedByMemberNumber),
+  declineReason: O.fromNullable(declineReason),
   proposal: pipe(
     O.fromNullable(proposalJson),
     O.chain(json => O.fromEither(ProposalCodec.decode(JSON.parse(json))))
@@ -297,6 +315,16 @@ export const getPurchaseRequests =
         )
       )
       // rowid breaks ties between requests recorded in the same millisecond.
+      .orderBy(desc(purchaseRequestsTable.submittedAt), sql`rowid desc`)
+      .all()
+      .map(toPurchaseRequest);
+
+// Every purchase request, newest first.
+export const getAllPurchaseRequests =
+  (db: BetterSQLite3Database) => (): ReadonlyArray<PurchaseRequest> =>
+    db
+      .select()
+      .from(purchaseRequestsTable)
       .orderBy(desc(purchaseRequestsTable.submittedAt), sql`rowid desc`)
       .all()
       .map(toPurchaseRequest);

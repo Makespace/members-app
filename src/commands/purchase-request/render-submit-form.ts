@@ -518,7 +518,8 @@ const renderAboutPage = (viewModel: PurchaseRequestFormViewModel) => html`
     <fieldset class="purchase-request__fieldset">
       <legend>Which area is this for?</legend>
       <p class="purchase-request__hint text-sm">
-        You can request purchases for areas you own.
+        The area whose budget it would come out of. A director will
+        approve your request.
       </p>
       <div class="purchase-request__radios purchase-request__radios--areas">
         ${joinHtml(
@@ -1793,9 +1794,8 @@ const pages = [renderAboutPage, renderCostsPage, renderCheckPage];
 
 const renderNoPurchasingAreas = () => html`
   <p>
-    You aren't a purchaser for any purchasing area yet. Purchasers are chosen
-    from area owners by the super users - ask one if you need to buy something
-    for an area you look after.
+    There aren't any purchasing areas yet, so there's no budget to request a
+    purchase from. Ask a super user to set one up.
   </p>
   <p><a href="/purchasing-areas">See the purchasing areas</a></p>
 `;

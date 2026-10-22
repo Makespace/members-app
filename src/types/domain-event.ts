@@ -293,6 +293,18 @@ const PurchaseRequestSubmitted = defineEvent('PurchaseRequestSubmitted', {
   spentThisYearPence: t.number,
 });
 
+// A super user approving a purchase request, so it can go ahead and counts
+// against its purchasing area's budget.
+const PurchaseRequestApproved = defineEvent('PurchaseRequestApproved', {
+  id: tt.UUID,
+});
+
+// A super user turning a purchase request down, saying why.
+const PurchaseRequestDeclined = defineEvent('PurchaseRequestDeclined', {
+  id: tt.UUID,
+  reason: t.string,
+});
+
 const SuperUserDeclared = defineEvent('SuperUserDeclared', {
   memberNumber: t.number,
 });
@@ -781,6 +793,8 @@ export const events = [
   PurchaserAdded,
   PurchaserRemoved,
   PurchaseRequestSubmitted,
+  PurchaseRequestApproved,
+  PurchaseRequestDeclined,
   SuperUserDeclared,
   SuperUserRevoked,
   TrainerAdded,
@@ -861,6 +875,8 @@ export const DomainEvent = t.union([
   PurchaserAdded.codec,
   PurchaserRemoved.codec,
   PurchaseRequestSubmitted.codec,
+  PurchaseRequestApproved.codec,
+  PurchaseRequestDeclined.codec,
   SuperUserDeclared.codec,
   SuperUserRevoked.codec,
   TrainerAdded.codec,

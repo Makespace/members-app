@@ -1417,6 +1417,7 @@ const _updateState =
             healthAndSafetyRisk: event.healthAndSafetyRisk,
             proposalJson:
               event.proposal === null ? null : JSON.stringify(event.proposal),
+            status: 'awaiting-approval',
             outcome: event.outcome,
             approval: event.approval,
             outcomeReason: event.outcomeReason,
@@ -1424,6 +1425,23 @@ const _updateState =
             spentThisYearPence: event.spentThisYearPence,
           })
           .run();
+        break;
+      }
+      case 'PurchaseRequestApproved':
+      case 'PurchaseRequestDeclined': {
+        const rows = tx.update(purchaseRequestsTable)
+          .set({
+            status: event.type === 'PurchaseRequestApproved' ? 'approved' : 'declined',
+            decidedAt: event.recordedAt,
+            decidedByMemberNumber:
+              event.actor.tag === 'user' ? event.actor.user.memberNumber : null,
+            declineReason: event.type === 'PurchaseRequestDeclined' ? event.reason : null,
+          })
+          .where(eq(purchaseRequestsTable.id, event.id))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to decide purchase request ${event.id} - unknown purchase request`);
+        }
         break;
       }
       case 'MailboxConversationArchived': {

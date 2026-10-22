@@ -100,6 +100,7 @@ describe('purchasing areas in the read model', () => {
         spentThisYearPence: 0,
         recordedSpend: [],
         approvedSpendThisYearPence: 0,
+        awaitingApprovalPence: 0,
         remainingPence: 150_000,
       });
     });
@@ -284,18 +285,30 @@ describe('purchasing areas in the read model', () => {
     });
   });
 
+  // A request and a super user approving it.
+  const approvedRequest = (...args: Parameters<typeof submitted>) => {
+    const request = submitted(...args);
+    return [
+      request,
+      constructEvent('PurchaseRequestApproved')({
+        actor: systemActor(),
+        id: request.id,
+      }),
+    ];
+  };
+
   describe('with purchase requests', () => {
     const latestId = faker.string.uuid() as UUID;
 
     beforeEach(() => {
       insert(
-        submitted('budget', 40_000),
-        submitted('budget-proposal-needed', 120_000),
-        submitted('consumable', 9_000),
-        submitted('budget', 63_000),
-        submitted('consumable', 5_000),
-        submitted('budget', 70_000, 2025),
-        submitted('budget', 1_000, 2026, latestId)
+        ...approvedRequest('budget', 40_000),
+        ...approvedRequest('budget-proposal-needed', 120_000),
+        ...approvedRequest('consumable', 9_000),
+        ...approvedRequest('budget', 63_000),
+        ...approvedRequest('consumable', 5_000),
+        ...approvedRequest('budget', 70_000, 2025),
+        ...approvedRequest('budget', 1_000, 2026, latestId)
       );
     });
 
@@ -315,10 +328,72 @@ describe('purchasing areas in the read model', () => {
       expect(requests[0].id).toStrictEqual(latestId);
     });
 
-    it('counts the shop total as spent', () => {
+    it('counts the shop total as spent once approved', () => {
       const before = get().spentThisYearPence;
-      insert(submitted('budget', 20_000));
+      insert(...approvedRequest('budget', 20_000));
       expect(get().spentThisYearPence).toBe(before + 20_000);
+    });
+
+    describe('a request not yet approved', () => {
+      const pendingId = faker.string.uuid() as UUID;
+      beforeEach(() => {
+        insert(submitted('budget', 25_000, 2026, pendingId));
+      });
+
+      it("awaits approval, and doesn't count as spent", () => {
+        expect(get()).toMatchObject({
+          spentThisYearPence: 224_000,
+          awaitingApprovalPence: 25_000,
+        });
+        expect(
+          framework.sharedReadModel.purchasing.getRequest(pendingId)
+        ).toStrictEqual(
+          O.some(
+            expect.objectContaining({
+              status: 'awaiting-approval',
+              decidedAt: O.none,
+              declineReason: O.none,
+            })
+          )
+        );
+      });
+
+      it('counts once a super user approves it', () => {
+        insert(
+          constructEvent('PurchaseRequestApproved')({
+            actor: systemActor(),
+            id: pendingId,
+          })
+        );
+        expect(get()).toMatchObject({
+          spentThisYearPence: 249_000,
+          awaitingApprovalPence: 0,
+        });
+      });
+
+      it('never counts if declined, keeping the reason', () => {
+        insert(
+          constructEvent('PurchaseRequestDeclined')({
+            actor: systemActor(),
+            id: pendingId,
+            reason: 'Over budget this year',
+          })
+        );
+        expect(get()).toMatchObject({
+          spentThisYearPence: 224_000,
+          awaitingApprovalPence: 0,
+        });
+        expect(
+          framework.sharedReadModel.purchasing.getRequest(pendingId)
+        ).toStrictEqual(
+          O.some(
+            expect.objectContaining({
+              status: 'declined',
+              declineReason: O.some('Over budget this year'),
+            })
+          )
+        );
+      });
     });
 
     it('lists another year separately', () => {

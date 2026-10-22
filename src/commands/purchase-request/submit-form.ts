@@ -7,7 +7,6 @@ import {UUID} from 'io-ts-types';
 import {v4} from 'uuid';
 import {Form} from '../../types/form';
 import {safe, toLoggedInContentWithBackLink} from '../../types/html';
-import {liftActorOrUser} from '../../read-models/lift-actor-or-user';
 import {budgetYearOf} from '../../purchasing/budget-year';
 import {
   classifyPurchase,
@@ -21,10 +20,8 @@ import {
   typedPurchases,
 } from '../../purchasing/purchases';
 import {SharedReadModel} from '../../read-models/shared-state';
-import {User} from '../../types';
 import {readRequestedStep} from '../../templates/multi-page-form';
 import {RawProposal, typedProposal} from '../../purchasing/proposal';
-import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
 import {
   PAGE_LABELS,
   PurchaseRequestAnswers,
@@ -48,23 +45,13 @@ const readAnswer = (input: unknown, name: string) =>
     E.getOrElse(() => '')
   );
 
-// Purchasers see the purchasing areas they purchase for; super users see
-// them all. Anyone else gets the page explaining how to become a purchaser.
+// Any member can request a purchase for any purchasing area; a super user
+// then approves it.
 const purchasingAreasFor = (
   readModel: SharedReadModel,
-  user: User,
   now: Date
 ): ReadonlyArray<PurchasingAreaOption> =>
-  (isAdminOrSuperUser({actor: liftActorOrUser(user), rm: readModel})
-    ? readModel.purchasing.getAll(now)
-    : pipe(
-        readModel.members.getByMemberNumber(user.memberNumber),
-        O.match(
-          () => [],
-          member => readModel.purchasing.getForPurchaser(member.userId, now)
-        )
-      )
-  ).map(purchasingArea => ({
+  readModel.purchasing.getAll(now).map(purchasingArea => ({
     id: purchasingArea.id,
     name: purchasingArea.name,
     areaIds: purchasingArea.areas.map(area => area.id),
@@ -101,9 +88,9 @@ const yesNo = (answer: string) =>
 // page is shown saying what - so editing ?step= can't skip ahead.
 const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
   input =>
-  ({readModel, user}) => {
+  ({readModel}) => {
     const now = new Date();
-    const purchasingAreas = purchasingAreasFor(readModel, user, now);
+    const purchasingAreas = purchasingAreasFor(readModel, now);
     // ?purchasingArea= (from a purchasing area's page) or being a purchaser
     // for only one area picks it to start with.
     const startingArea =

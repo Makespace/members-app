@@ -17,20 +17,11 @@ export const purchasingAreas: Query = deps => user => {
     member,
     O.exists(m => m.isSuperUser)
   );
-  const canRequest =
-    isSuperUser ||
-    pipe(
-      member,
-      O.exists(
-        m => deps.sharedReadModel.purchasing.getForPurchaser(m.userId, now).length > 0
-      )
-    );
   return pipe(
     render({
       budgetYear: budgetYearOf(now),
       purchasingAreas: deps.sharedReadModel.purchasing.getAll(now),
       canManage: isSuperUser,
-      canRequest,
     }),
     toLoggedInContent(safe('Purchasing areas')),
     TE.right

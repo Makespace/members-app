@@ -607,9 +607,9 @@ describe('purchase request form', () => {
     });
   });
 
-  it('explains instead of showing the form to someone who purchases for nothing', () => {
+  it('explains instead of showing the form when there are no purchasing areas', () => {
     const page = render(onPage(1, {purchasingAreas: []}));
     expect(page.querySelector('form')).toBeNull();
-    expect(page.textContent).toContain("You aren't a purchaser");
+    expect(page.textContent).toContain("There aren't any purchasing areas yet");
   });
 });

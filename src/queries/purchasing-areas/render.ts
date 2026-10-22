@@ -7,7 +7,6 @@ type ViewModel = {
   budgetYear: number;
   purchasingAreas: ReadonlyArray<PurchasingArea>;
   canManage: boolean;
-  canRequest: boolean;
 };
 
 const money = (pence: number) => sanitizeString(formatPence(pence));
@@ -60,13 +59,10 @@ export const render = (viewModel: ViewModel) => html`
       Things members pay for themselves (e.g. filament paid for on SumUp) are
       recorded without counting against it.
     </p>
-    ${viewModel.canRequest
-      ? html`<div>
-          <a class="button" href="/purchase-requests/submit"
-            >Request a purchase</a
-          >
-        </div>`
-      : html``}
+    <div class="wrap">
+      <a class="button" href="/purchase-requests/submit">Request a purchase</a>
+      <a href="/purchase-requests">All purchase requests</a>
+    </div>
     ${viewModel.canManage
       ? superUserActions(
           superUserButton('/purchasing-areas/create', html`Create purchasing area`)

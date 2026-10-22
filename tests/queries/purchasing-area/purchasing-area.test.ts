@@ -94,8 +94,9 @@ describe('purchasing area page', () => {
         memberNumber: purchaser.memberNumber,
       })
     );
+    const bandsawBlades = faker.string.uuid() as UUID;
     await framework.commands.purchaseRequest.submit({
-      id: faker.string.uuid() as UUID,
+      id: bandsawBlades,
       purchasingAreaId,
       isMemberPaidConsumable: false,
       affectsOtherAreas: false,
@@ -112,6 +113,10 @@ describe('purchasing area page', () => {
       justification: 'Worn out' as never,
       submittedByMemberNumber: undefined,
       actor: {tag: 'user', user: purchaser},
+    });
+    await framework.commands.purchaseRequest.approve({
+      id: bandsawBlades,
+      actor: arbitraryActor(),
     });
   });
 
@@ -178,10 +183,33 @@ describe('purchasing area page', () => {
     expect(text).toContain('£1,500.00');
   });
 
-  it('lets a member look without changing anything or requesting', () => {
+  it('lets any member request a purchase, without changing anything', () => {
     const page = pageFor(member);
     expect(page.textContent).not.toContain('Add purchaser');
-    expect(page.textContent).not.toContain('Request a purchase');
+    expect(page.textContent).toContain('Request a purchase');
+  });
+
+  it("shows requests awaiting approval apart from what's spent", async () => {
+    await framework.commands.purchaseRequest.submit({
+      id: faker.string.uuid() as UUID,
+      purchasingAreaId,
+      isMemberPaidConsumable: false,
+      affectsOtherAreas: false,
+      affectedAreaIds: undefined,
+      healthAndSafetyRisk: false,
+      proposal: undefined,
+      summary: 'Router bits' as never,
+      purchases: [
+        {shop: 'Axminster', items: [{notes: 'Router bit set', quantity: '1', cost: '80.00'}]},
+      ],
+      justification: 'Needed' as never,
+      submittedByMemberNumber: undefined,
+      actor: {tag: 'user', user: member},
+    });
+    const text = pageFor(member).textContent;
+    expect(text).toContain('Spent so far this year £500.00');
+    expect(text).toContain('Requests awaiting approval £80.00');
+    expect(text).toContain('Router bits £80.00 Yearly budget Awaiting approval');
   });
 
   it('lets a purchaser request a purchase', () => {

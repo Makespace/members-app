@@ -3,6 +3,7 @@ export {manageArea} from './manage-area';
 export {purchasingAreas} from './purchasing-areas';
 export {purchasingArea} from './purchasing-area';
 export {purchaseRequest} from './purchase-request';
+export {purchaseRequests} from './purchase-requests';
 export {admin} from './admin';
 export {db} from './db';
 export {humans} from './humans';

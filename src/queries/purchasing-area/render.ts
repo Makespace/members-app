@@ -12,6 +12,7 @@ import {renderMemberNumber} from '../../templates/member-number';
 import {renderMember} from '../../templates/member';
 import {displayDateOnly} from '../../templates/display-date';
 import {renderOutcome} from '../../templates/purchase-request-outcome';
+import {renderStatus} from '../../templates/purchase-request-status';
 import {
   superUserActions,
   superUserButton,
@@ -144,6 +145,12 @@ const renderBudget = (viewModel: ViewModel) => {
             <th>Remaining</th>
             <td>${money(purchasingArea.remainingPence)}</td>
           </tr>
+          ${purchasingArea.awaitingApprovalPence > 0
+            ? html`<tr>
+                <th>Requests awaiting approval</th>
+                <td>${money(purchasingArea.awaitingApprovalPence)}</td>
+              </tr>`
+            : html``}
           ${purchasingArea.approvedSpendThisYearPence > 0
             ? html`<tr>
                 <th>Approved spending (outside the budget)</th>
@@ -272,23 +279,22 @@ const renderRequestRow =
     </td>
     <td>${money(request.totalPence)}</td>
     <td>${renderOutcome(request.outcome, request.approval)}</td>
+    <td>${renderStatus(request.status)}</td>
   </tr>
 `;
 
 const renderRequests = (viewModel: ViewModel) => html`
   <section class="stack">
     <h2>Purchase requests in ${viewModel.purchasingArea.budgetYear}</h2>
-    ${viewModel.canRequest
-      ? html`<div>
-          <a
-            class="button"
-            href="/purchase-requests/submit?${query({
-              purchasingArea: viewModel.purchasingArea.id,
-            })}"
-            >Request a purchase</a
-          >
-        </div>`
-      : html``}
+    <div>
+      <a
+        class="button"
+        href="/purchase-requests/submit?${query({
+          purchasingArea: viewModel.purchasingArea.id,
+        })}"
+        >Request a purchase</a
+      >
+    </div>
     ${viewModel.requests.length === 0
       ? html`<p>None yet this year.</p>`
       : html`<table>
@@ -299,6 +305,7 @@ const renderRequests = (viewModel: ViewModel) => html`
               <th>What</th>
               <th>Cost</th>
               <th>Outcome</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>
