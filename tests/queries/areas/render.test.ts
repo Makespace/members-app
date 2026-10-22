@@ -74,6 +74,18 @@ const normalizedText = (page: HTMLElement): string =>
   page.textContent?.replace(/\s+/g, ' ').trim() ?? '';
 
 describe('areas render', () => {
+  it('says nothing about purchasing areas, which live on the manage page', () => {
+    const page = renderPage({
+      areas: [area],
+      canManageAreas: true,
+      canSeeOwnerPrivateDetails: true,
+      canSeeTrainings: true,
+    });
+
+    expect(page.textContent).not.toContain('Purchasing area');
+    expect(page.querySelector('a[href^="/purchasing-areas/"]')).toBeNull();
+  });
+
   it('shows normal members equipment and only public owner details', () => {
     const page = renderPage({
       areas: [area],

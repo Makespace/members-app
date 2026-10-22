@@ -130,6 +130,23 @@ export const render = () => html`
       todo(html`Keep track of who has had their access removed for
       non-payment, so it can be put back when they pay`),
 
+      heading(html`Area budgets and purchasing`),
+      done(html`Purchasing areas: one or more areas sharing a yearly budget
+      (the craft room and art space share one), showing what has been spent
+      so far this calendar year`),
+      done(html`Choose which owners can request purchases for each purchasing
+      area`),
+      done(html`A purchase request form that says where the money comes from -
+      members paying for it, or the yearly budget - and whether a proposal is
+      needed (£1,000 or more in one go, going over the budget, affecting other
+      areas, or a health and safety risk)`),
+      done(html`Send a proposal with a request that needs one, with a risk
+      assessment for a health and safety risk`),
+      todo(html`Approve purchase requests and their proposals in the app, and
+      count only approved spending against the budget`),
+      todo(html`Let the owners of other areas a request affects know, so they
+      can give their input`),
+
       heading(html`Fob-based access control`),
       done(html`Record each member's Paxton fobs (fob id and access level)
       against their profile, visible to super users`),

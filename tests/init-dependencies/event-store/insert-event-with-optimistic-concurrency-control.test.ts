@@ -100,4 +100,38 @@ describe('insertEventWithOptimisticConcurrencyControl', () => {
       });
     });
   });
+
+  describe('when the database is Turso', () => {
+    const failingClient = (error: Error) =>
+      ({execute: () => Promise.reject(error)}) as unknown as libsqlClient.Client;
+
+    it('treats its plain SQLITE_CONSTRAINT as someone else committing first', async () => {
+      const turso = Object.assign(new Error('UNIQUE constraint failed'), {
+        code: 'SQLITE_CONSTRAINT',
+      });
+      const result = await insertEventWithOptimisticConcurrencyControl(
+        arbitaryEvent(),
+        0 as t.Int,
+        failingClient(turso)
+      )();
+      expect(getRightOrFail(result)).toStrictEqual(
+        'last-known-version-out-of-date'
+      );
+    });
+
+    it('reports any other failure with what went wrong', async () => {
+      const outage = Object.assign(new Error('fetch failed'), {
+        code: 'SERVER_ERROR',
+      });
+      const result = await insertEventWithOptimisticConcurrencyControl(
+        arbitaryEvent(),
+        0 as t.Int,
+        failingClient(outage)
+      )();
+      expect(E.isLeft(result) && result.left).toMatchObject({
+        message: 'Failed to insert event into database',
+        payload: {name: 'Error', message: 'fetch failed', code: 'SERVER_ERROR'},
+      });
+    });
+  });
 });
