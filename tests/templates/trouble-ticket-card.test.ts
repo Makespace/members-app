@@ -40,6 +40,9 @@ const ticket = (
   managementOnly: false,
   canChangeStatus: true,
   canAssignOthers: false,
+  invited: [],
+  invitedBy: O.none,
+  canInvite: false,
   changeLog: [],
   ...overrides,
 });
@@ -268,5 +271,40 @@ describe('assigning a ticket to someone else', () => {
     expect(
       assignToLink({canAssignOthers: true, status: 'Resolved'})
     ).toBeNull();
+  });
+});
+
+describe('invitations to help', () => {
+  it('lets the member invited accept, by assigning themselves, or decline', () => {
+    const card = renderCard(ticket({invitedBy: O.some('Olu Owner')}));
+    const invitation = card.querySelector('.tt-invitation');
+
+    expect(invitation?.textContent).toContain(
+      'Olu Owner has invited you to help'
+    );
+    expect(
+      invitation
+        ?.querySelector('a[href^="/trouble-tickets/assign?"]')
+        ?.textContent?.trim()
+    ).toBe('Accept');
+    expect(
+      invitation
+        ?.querySelector('a[href^="/trouble-tickets/decline-invitation?"]')
+        ?.textContent?.trim()
+    ).toBe('Decline');
+  });
+
+  it('shows nothing of the sort to anybody not invited', () => {
+    expect(renderCard(ticket()).querySelector('.tt-invitation')).toBeNull();
+  });
+
+  it('offers to invite somebody only to those working on it', () => {
+    const inviteLink = (canInvite: boolean) =>
+      renderCard(ticket({canInvite})).querySelector(
+        'a[href^="/trouble-tickets/invite?"]'
+      );
+
+    expect(inviteLink(true)).not.toBeNull();
+    expect(inviteLink(false)).toBeNull();
   });
 });

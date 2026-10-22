@@ -22,6 +22,7 @@ import {
   trainingStatsNotificationTable,
   deletedTroubleTicketRowHashesTable,
   troubleTicketAssigneesTable,
+  troubleTicketInvitationsTable,
   troubleTicketChangeLogTable,
   troubleTicketNotificationsTable,
   troubleTicketsTable,
@@ -1105,6 +1106,18 @@ const _updateState =
             .where(eq(troubleTicketsTable.id, event.ticketId))
             .run();
         }
+        // Joining a ticket answers any invitation to it.
+        tx.delete(troubleTicketInvitationsTable)
+          .where(
+            and(
+              eq(troubleTicketInvitationsTable.ticketId, event.ticketId),
+              eq(
+                troubleTicketInvitationsTable.inviteeMemberNumber,
+                event.trainerMemberNumber
+              )
+            )
+          )
+          .run();
         // Who it went to, so the change log can tell somebody picking a
         // ticket up from somebody handing it on.
         recordTicketChange(tx, event, {
@@ -1124,9 +1137,13 @@ const _updateState =
             `Unable to resolve unknown trouble ticket '${event.ticketId}'`
           );
         }
-        // A resolved ticket is done - clear its assignees.
+        // A resolved ticket is done - clear its assignees, and nobody is
+        // still being asked to help.
         tx.delete(troubleTicketAssigneesTable)
           .where(eq(troubleTicketAssigneesTable.ticketId, event.ticketId))
+          .run();
+        tx.delete(troubleTicketInvitationsTable)
+          .where(eq(troubleTicketInvitationsTable.ticketId, event.ticketId))
           .run();
         // Whether the submitter was told. A quiet resolution is usually
         // tidying up - the historic backlog was closed this way - so pages
@@ -1134,6 +1151,46 @@ const _updateState =
         recordTicketChange(tx, event, {
           summary: event.summary,
           quiet: event.quiet ? 'true' : 'false',
+        });
+        break;
+      }
+      case 'TroubleTicketInvitationSent': {
+        if (event.actor.tag !== 'user') {
+          throw new InconsistentEventError(
+            `Only a member can invite somebody to trouble ticket '${event.ticketId}'`
+          );
+        }
+        tx.insert(troubleTicketInvitationsTable)
+          .values({
+            ticketId: event.ticketId,
+            inviteeMemberNumber: event.inviteeMemberNumber,
+            inviterMemberNumber: event.actor.user.memberNumber,
+            invitedAt: event.recordedAt,
+          })
+          .onConflictDoNothing()
+          .run();
+        recordTicketChange(tx, event, {
+          invitee: String(event.inviteeMemberNumber),
+          ...(event.message !== '' ? {message: event.message} : {}),
+        });
+        break;
+      }
+      case 'TroubleTicketInvitationDeclined': {
+        if (event.actor.tag === 'user') {
+          tx.delete(troubleTicketInvitationsTable)
+            .where(
+              and(
+                eq(troubleTicketInvitationsTable.ticketId, event.ticketId),
+                eq(
+                  troubleTicketInvitationsTable.inviteeMemberNumber,
+                  event.actor.user.memberNumber
+                )
+              )
+            )
+            .run();
+        }
+        recordTicketChange(tx, event, {
+          inviter: String(event.inviterMemberNumber),
         });
         break;
       }

@@ -19,10 +19,14 @@ import {failureWithStatus} from '../../types/failure-with-status';
 import {
   AssignableMember,
   assignableMembers,
+  hasInvitation,
   isTicketOwner,
+  isWorkingOnTicket,
 } from './authorization';
 import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
-import {Actor} from '../../types';
+import {Actor, User} from '../../types';
+import {TroubleTicket} from '../../types/trouble-ticket';
+import {allMemberNumbers} from '../../read-models/shared-state/return-types';
 import {SharedReadModel} from '../../read-models/shared-state';
 import {
   describeTicketChange,
@@ -60,9 +64,18 @@ type ActionConfig = {
   intro: Html;
   fields?: Html;
   submitLabel: string;
-  // The change as the email will describe it, with placeholders where the
-  // answers typed below will go.
-  change: TicketChange;
+  // The change as the submitter's email will describe it, with placeholders
+  // where the answers typed below will go. Left out by a page that does not
+  // email the submitter, which says what it does send in `notice` instead.
+  change?: TicketChange;
+  notice?: Html;
+  // Who the page's member picker offers.
+  candidates?: (input: {
+    ticketId: UUID;
+    ticket: TroubleTicket;
+    readModel: SharedReadModel;
+    user: User;
+  }) => ReadonlyArray<AssignableMember>;
   // Whether the page offers to send nothing at all.
   canBeQuiet?: boolean;
   // Fields that depend on the ticket, in place of fixed ones.
@@ -134,7 +147,11 @@ const troubleTicketActionForm = (
           <h1>${safe(config.pageTitle)}</h1>
           <p>Ticket: <strong>${sanitizeString(viewModel.title)}</strong></p>
           <p>${config.intro}</p>
-          ${emailNotice(viewModel.email, config.canBeQuiet === true)}
+          ${config.change === undefined
+            ? html`<aside class="tt-email-notice stack">
+                ${config.notice ?? html``}
+              </aside>`
+            : emailNotice(viewModel.email, config.canBeQuiet === true)}
           <form
             action="/trouble-tickets/${safe(config.verb)}?next=/trouble-tickets/board"
             method="post"
@@ -203,21 +220,16 @@ const troubleTicketActionForm = (
               return {
                 ticketId,
                 title: ticket.title,
-                // Nobody already on it: assigning them again does nothing.
-                assignable: config.fieldsFor
-                  ? assignableMembers(readModel, ticketId).filter(
-                      member =>
-                        !ticket.assignedMemberNumbers.includes(
-                          member.memberNumber
-                        )
-                    )
-                  : [],
+                assignable:
+                  config.candidates?.({ticketId, ticket, readModel, user}) ??
+                  [],
                 email: {
                   // The same answer the notifier will reach, so the page
                   // cannot promise an email that preferences will stop, or
                   // stay quiet about one they will send.
                   recipients: pipe(
-                    happeningOfEvent(config.change.type),
+                    O.fromNullable(config.change),
+                    O.chain(change => happeningOfEvent(change.type)),
                     O.match(
                       () => [],
                       happening =>
@@ -230,7 +242,9 @@ const troubleTicketActionForm = (
                   text: ticketNotificationText(
                     deps.conf.PUBLIC_URL,
                     ticket.title,
-                    describeTicketChange(config.change, actor),
+                    config.change === undefined
+                      ? ''
+                      : describeTicketChange(config.change, actor),
                     false,
                     false
                   ),
@@ -264,11 +278,11 @@ export const assignForm = troubleTicketActionForm({
 // Stands in, on the page, for whoever is picked below.
 const THEM = '(the member you choose)';
 
-const memberPicker = (viewModel: ActionViewModel): Html =>
+const memberPicker =
+  (comment: {name: string; label: string}, nobody: string) =>
+  (viewModel: ActionViewModel): Html =>
   viewModel.assignable.length === 0
-    ? html`<p>
-        Everybody who can work on this ticket is already assigned to it.
-      </p>`
+    ? html`<p>${safe(nobody)}</p>`
     : html`
         <label class="stack">
           <strong>Assign to</strong>
@@ -289,10 +303,7 @@ const memberPicker = (viewModel: ActionViewModel): Html =>
             )}
           </select>
         </label>
-        ${optionalTextField(
-          'comment',
-          'Add a comment for the submitter (optional)'
-        )}
+        ${optionalTextField(comment.name, comment.label)}
       `;
 
 // Super-users only, for now: hand a ticket to somebody else.
@@ -305,7 +316,15 @@ export const assignToForm = troubleTicketActionForm({
   ticket's area and super-users can be chosen, because only they can work on
   it.`,
   change: {type: 'TroubleTicketAssigned', comment: YOUR_ANSWER, assignee: THEM},
-  fieldsFor: memberPicker,
+  fieldsFor: memberPicker(
+    {name: 'comment', label: 'Add a comment for the submitter (optional)'},
+    'Everybody who can work on this ticket is already assigned to it.'
+  ),
+  // Nobody already on it: assigning them again does nothing.
+  candidates: ({ticketId, ticket, readModel}) =>
+    assignableMembers(readModel, ticketId).filter(
+      member => !ticket.assignedMemberNumbers.includes(member.memberNumber)
+    ),
   allowed: isAdminOrSuperUser,
   forbidden: 'Only super-users can assign a ticket to someone else',
   submitLabel: 'Assign',
@@ -394,4 +413,58 @@ export const parkForm = troubleTicketActionForm({
     'What intermediate actions can be taken?'
   )}`,
   submitLabel: 'Park ticket',
+});
+
+// Somebody working a ticket asks another owner to help. Only the invitee is
+// emailed; the submitter hears nothing until somebody actually joins.
+export const inviteForm = troubleTicketActionForm({
+  verb: 'invite',
+  pageTitle: 'Invite someone to help',
+  intro: html`This asks another owner of the ticket's area to help you with
+  it. They are emailed an invitation and can accept or decline it from the
+  ticket. Nothing changes for the ticket, and the submitter is not told,
+  unless they accept.`,
+  notice: html`<p>
+    <strong>The member you choose will be emailed an invitation</strong>,
+    with your message if you add one. Nobody else is emailed.
+  </p>`,
+  fieldsFor: memberPicker(
+    {name: 'message', label: 'Add a message for them (optional)'},
+    'Everybody who could help is already on this ticket or has been asked.'
+  ),
+  // Not anybody already on it or already asked - nor yourself.
+  candidates: ({ticketId, ticket, readModel, user}) => {
+    const asked = readModel.troubleTickets
+      .getInvitations([ticketId])
+      .map(invitation => invitation.inviteeMemberNumber);
+    const yours = pipe(
+      readModel.members.getByMemberNumber(user.memberNumber),
+      O.match(() => [user.memberNumber], allMemberNumbers)
+    );
+    return assignableMembers(readModel, ticketId).filter(
+      member =>
+        !ticket.assignedMemberNumbers.includes(member.memberNumber) &&
+        !asked.includes(member.memberNumber) &&
+        !yours.includes(member.memberNumber)
+    );
+  },
+  allowed: isWorkingOnTicket,
+  forbidden: 'Only somebody working on this ticket can invite others to help',
+  submitLabel: 'Send invitation',
+});
+
+// Turning an invitation down. Accepting needs no page of its own: it is
+// assigning yourself, which has one.
+export const declineInvitationForm = troubleTicketActionForm({
+  verb: 'decline-invitation',
+  pageTitle: 'Decline the invitation',
+  intro: html`This turns down the invitation to help with this ticket. You
+  will not be assigned to it.`,
+  notice: html`<p>
+    <strong>Whoever invited you will be emailed</strong> to say you can't
+    help. Nobody else is emailed.
+  </p>`,
+  allowed: hasInvitation,
+  forbidden: 'You have not been invited to help with this ticket',
+  submitLabel: 'Decline',
 });

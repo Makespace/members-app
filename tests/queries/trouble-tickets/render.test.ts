@@ -38,6 +38,9 @@ const ticket = (overrides: Partial<BoardTicketView> = {}): BoardTicketView => ({
   managementOnly: false,
   canChangeStatus: true,
   canAssignOthers: false,
+  invited: [],
+  invitedBy: O.none,
+  canInvite: false,
   ...overrides,
 });
 

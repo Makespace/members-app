@@ -35,6 +35,12 @@ type ChangeLogEntry = {
 export const changeLog: ReadonlyArray<ChangeLogEntry> = [
   {
     subject: 'tickets',
+    date: '2026-10-22',
+    headline:
+      'Owners working on a trouble ticket can invite another owner of the area to help, who can accept or decline',
+  },
+  {
+    subject: 'tickets',
     date: '2026-10-21',
     headline:
       "Super users can assign a trouble ticket to one of its area's owners, who is emailed to say it is theirs",

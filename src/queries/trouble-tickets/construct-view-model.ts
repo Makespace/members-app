@@ -9,7 +9,10 @@ import {User, Actor} from '../../types';
 import {pipe} from 'fp-ts/lib/function';
 import {StatusCodes} from 'http-status-codes';
 import {SharedReadModel} from '../../read-models/shared-state';
-import {TroubleTicketChangeRow} from '../../read-models/shared-state/trouble-tickets/get';
+import {
+  TroubleTicketChangeRow,
+  TroubleTicketInvitation,
+} from '../../read-models/shared-state/trouble-tickets/get';
 import {Dependencies} from '../../dependencies';
 import {EquipmentCategory} from '../../types/equipment-category';
 import {TroubleTicket, TroubleTicketStatus} from '../../types/trouble-ticket';
@@ -48,6 +51,15 @@ const actorName = (actor: Actor, rm: SharedReadModel): string => {
       return 'The system';
   }
 };
+
+// A member's name from a member number kept in a change row's details.
+const memberName = (rm: SharedReadModel, memberNumber: string | undefined) =>
+  pipe(
+    O.fromNullable(memberNumber),
+    O.chain(number => rm.members.getByMemberNumber(Number(number))),
+    O.chain(member => member.name),
+    O.getOrElse(() => `Member ${memberNumber ?? 'unknown'}`)
+  );
 
 // Fold a ticket's change rows into display lines, tracking status so the
 // first assignment reads "assigned themselves and set the ticket to In
@@ -177,6 +189,30 @@ export const buildChangeLog = (
           details: [],
         });
         break;
+      case 'TroubleTicketInvitationSent':
+        entries.push({
+          status,
+          at,
+          actor,
+          emailedTo: row.emailedTo,
+          quiet: false,
+          summary: `invited ${memberName(rm, row.details.invitee)} to help with this ticket`,
+          details: row.details.message
+            ? [{label: 'Message', value: row.details.message}]
+            : [],
+        });
+        break;
+      case 'TroubleTicketInvitationDeclined':
+        entries.push({
+          status,
+          at,
+          actor,
+          emailedTo: row.emailedTo,
+          quiet: false,
+          summary: `declined ${memberName(rm, row.details.inviter)}'s invitation to help`,
+          details: [],
+        });
+        break;
     }
   }
   return entries;
@@ -242,7 +278,13 @@ export const toScope =
 
 // The full ticket view, built only for tickets on the visible page.
 export const toView =
-  (rm: SharedReadModel, viewer: Member) =>
+  (
+    rm: SharedReadModel,
+    viewer: Member,
+    // Outstanding invitations for the tickets being shown; fetched once for
+    // the lot rather than per ticket.
+    invitations: ReadonlyArray<TroubleTicketInvitation>
+  ) =>
   (scope: TicketScope): BoardTicketView => {
     const {
       ticket,
@@ -254,6 +296,9 @@ export const toView =
       onMyTrainerMachine,
       managementOnly,
     } = scope;
+    const mine = invitations.filter(
+      invitation => invitation.ticketId === ticket.id
+    );
     return {
       id: ticket.id,
       title: ticket.title,
@@ -278,6 +323,33 @@ export const toView =
           O.chain(member => member.name)
         ),
       })),
+      invited: mine.map(invitation => ({
+        memberNumber: invitation.inviteeMemberNumber,
+        name: pipe(
+          rm.members.getByMemberNumber(invitation.inviteeMemberNumber),
+          O.chain(member => member.name)
+        ),
+      })),
+      // Who asked the viewer to help, when somebody did.
+      invitedBy: pipe(
+        O.fromNullable(
+          mine.find(invitation =>
+            allMemberNumbers(viewer).includes(invitation.inviteeMemberNumber)
+          )
+        ),
+        O.map(invitation =>
+          pipe(
+            rm.members.getByMemberNumber(invitation.inviterMemberNumber),
+            O.chain(member => member.name),
+            O.getOrElse(() => `Member ${invitation.inviterMemberNumber}`)
+          )
+        )
+      ),
+      // Those working a ticket may ask others to help with it.
+      canInvite:
+        assignedToMe &&
+        (viewer.isSuperUser || inMyOwnerArea) &&
+        ticket.status !== 'Resolved',
       assignedToMe,
       inMyOwnerArea,
       onMyTrainerMachine,
@@ -488,7 +560,15 @@ export const constructViewModel =
         // Full views (member-name lookups) only for the rows actually shown.
         return {
           focus,
-          tickets: pageScopes.map(toView(rm, loggedInMember)),
+          tickets: pageScopes.map(
+            toView(
+              rm,
+              loggedInMember,
+              rm.troubleTickets.getInvitations(
+                pageScopes.map(scope => scope.ticket.id)
+              )
+            )
+          ),
           scopedToMine,
           totalInScope: sorted.length,
           statusCounts,

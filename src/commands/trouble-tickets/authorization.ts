@@ -6,6 +6,7 @@ import {SharedReadModel} from '../../read-models/shared-state';
 import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
 import {allMemberNumbers} from '../../read-models/shared-state/return-types';
 import {isEquipmentOwner} from '../authentication-helpers/is-equipment-owner';
+import {TroubleTicketInvitation} from '../../read-models/shared-state/trouble-tickets/get';
 
 // True when the actor owns the given area (user actors only - admin/super is
 // checked separately by the callers).
@@ -123,3 +124,56 @@ export const assignableMembers = (
     label(a).localeCompare(label(b))
   );
 };
+
+// Every member number the actor has held, or none for a non-member.
+const actorNumbers = (actor: Actor, rm: SharedReadModel) =>
+  actor.tag !== 'user'
+    ? []
+    : pipe(
+        rm.members.getByMemberNumber(actor.user.memberNumber),
+        O.match(() => [actor.user.memberNumber], allMemberNumbers)
+      );
+
+// Inviting somebody to help is for those already working the ticket: an
+// owner of its area (or a super-user) who is assigned to it. It is "come and
+// help me", not a way to hand out work - super-users have Assign to for that.
+export const isWorkingOnTicket = (input: {
+  actor: Actor;
+  rm: SharedReadModel;
+  input: {ticketId: UUID};
+}): boolean => {
+  const numbers = actorNumbers(input.actor, input.rm);
+  return (
+    numbers.length > 0 &&
+    isTicketOwner(input) &&
+    pipe(
+      input.rm.troubleTickets.getById(input.input.ticketId),
+      O.match(
+        () => false,
+        ticket =>
+          numbers.some(number => ticket.assignedMemberNumbers.includes(number))
+      )
+    )
+  );
+};
+
+// The outstanding invitation to this ticket addressed to the actor, if any.
+export const invitationFor = (
+  actor: Actor,
+  rm: SharedReadModel,
+  ticketId: UUID
+): O.Option<TroubleTicketInvitation> => {
+  const numbers = actorNumbers(actor, rm);
+  return O.fromNullable(
+    rm.troubleTickets
+      .getInvitations([ticketId])
+      .find(invitation => numbers.includes(invitation.inviteeMemberNumber))
+  );
+};
+
+export const hasInvitation = (input: {
+  actor: Actor;
+  rm: SharedReadModel;
+  input: {ticketId: UUID};
+}): boolean =>
+  O.isSome(invitationFor(input.actor, input.rm, input.input.ticketId));

@@ -92,6 +92,9 @@ const renderAssignee = (assignee: AssigneeView) =>
     )
   );
 
+export const renderInvitees = (invitees: ReadonlyArray<AssigneeView>) =>
+  commaHtml(invitees.map(renderAssignee));
+
 export const renderAssignees = (assignees: ReadonlyArray<AssigneeView>) =>
   assignees.length === 0
     ? html`<em>Nobody assigned</em>`
@@ -166,10 +169,20 @@ const renderActions = (ticket: TroubleTicketView): Html => {
         'Emails the submitter and the member you choose'
       )
     : html``;
+  // Asking another owner to help: for whoever is working on the ticket. It
+  // changes nothing until they accept, so it is not a status colour.
+  const invite = ticket.canInvite
+    ? action(
+        'invite',
+        'Invite someone…',
+        STATUS_SLUG.Todo,
+        'Emails the member you invite; nobody else'
+      )
+    : html``;
   switch (ticket.status) {
     case 'Todo':
       return html`<div class="tt-actions">
-        ${assign('Mark In Progress')} ${assignTo} ${resolve}
+        ${assign('Mark In Progress')} ${assignTo} ${invite} ${resolve}
       </div>`;
     case 'In Progress':
       return html`<div class="tt-actions">
@@ -187,11 +200,12 @@ const renderActions = (ticket: TroubleTicketView): Html => {
           'Emails the submitter why it is parked'
         )}
         ${ticket.assignedToMe ? html`` : assign('Assign to me')} ${assignTo}
+        ${invite}
       </div>`;
     case 'Needs Help':
     case 'Parked':
       return html`<div class="tt-actions">
-        ${assign('Mark In Progress')} ${assignTo} ${resolve}
+        ${assign('Mark In Progress')} ${assignTo} ${invite} ${resolve}
       </div>`;
     case 'Resolved':
       return html``;
@@ -273,6 +287,49 @@ const renderOrigin = (ticket: TroubleTicketView) =>
           >an email in the mailbox</a
         >`;
 
+// Who has been asked to help and has not yet said.
+const renderInvited = (ticket: TroubleTicketView) =>
+  ticket.invited.length === 0
+    ? html``
+    : html`<br /><strong>Invited:</strong> ${renderInvitees(ticket.invited)}
+        <small>(waiting for a reply)</small>`;
+
+// The viewer's own invitation: accepting is assigning themselves, which has
+// its own page saying what that will send; declining has one too.
+const renderInvitation = (ticket: TroubleTicketView) =>
+  pipe(
+    ticket.invitedBy,
+    O.match(
+      () => html``,
+      inviter => html`
+        <aside class="tt-invitation stack">
+          <p>
+            <strong>${sanitizeString(inviter)}</strong> has invited you to help
+            with this ticket.
+          </p>
+          <div class="tt-actions">
+            <a
+              class="tt-badge tt-badge--${safe(
+                STATUS_SLUG['In Progress']
+              )} tt-action"
+              href="/trouble-tickets/assign?ticketId=${safe(ticket.id)}"
+              title="Joins the ticket, and emails the submitter that you are on it"
+              >Accept</a
+            >
+            <a
+              class="tt-badge tt-badge--${safe(STATUS_SLUG.Todo)} tt-action"
+              href="/trouble-tickets/decline-invitation?ticketId=${safe(
+                ticket.id
+              )}"
+              title="Emails ${sanitizeString(inviter)} that you can't help"
+              >Decline</a
+            >
+          </div>
+        </aside>
+      `
+    )
+  );
+
 // One ticket, rendered the same wherever it appears: the board, its own
 // page, and (in a plainer form, since email cannot reach this stylesheet)
 // the notifications about it.
@@ -307,8 +364,9 @@ export const ticketCard = (
       <strong>Submitted by:</strong> ${renderSubmitter(ticket)} on
       ${displayDate(DateTime.fromJSDate(ticket.submittedAt))}<br />
       <strong>Assigned:</strong> ${renderAssignees(ticket.assignees)}
-      ${renderOrigin(ticket)}
+      ${renderInvited(ticket)} ${renderOrigin(ticket)}
     </p>
+    ${renderInvitation(ticket)}
     <dl>
       <dt><strong>Machine status</strong></dt>
       <dd>${sanitizeString(ticket.response.status)}</dd>

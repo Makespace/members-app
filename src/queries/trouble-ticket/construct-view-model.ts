@@ -73,7 +73,11 @@ export const constructViewModel =
           return TE.left(notFound());
         }
         return TE.right({
-          ...toView(rm, viewer)(scope),
+          ...toView(
+            rm,
+            viewer,
+            rm.troubleTickets.getInvitations([ticket.id])
+          )(scope),
           changeLog: buildChangeLog(
             [...rm.troubleTickets.getChangeLog([ticket.id])],
             rm

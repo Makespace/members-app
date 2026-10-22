@@ -743,6 +743,29 @@ const TroubleTicketTitleEdited = defineEvent('TroubleTicketTitleEdited', {
   title: t.string,
 });
 
+// An owner working a ticket invites another owner to help with it. Nothing
+// changes for the ticket until the invitee accepts - which is simply them
+// assigning themselves - or declines.
+const TroubleTicketInvitationSent = defineEvent(
+  'TroubleTicketInvitationSent',
+  {
+    ticketId: tt.UUID,
+    inviteeMemberNumber: t.number,
+    // Optional note to the invitee. '' means none.
+    message: tt.withFallback(t.string, ''),
+  }
+);
+
+// The invitee turned the invitation down. The inviter is carried here so they
+// can be told without looking up an invitation this event removes.
+const TroubleTicketInvitationDeclined = defineEvent(
+  'TroubleTicketInvitationDeclined',
+  {
+    ticketId: tt.UUID,
+    inviterMemberNumber: t.number,
+  }
+);
+
 // Records that change-notification emails have been sent for a specific
 // status-change event (identified by its event index), so the notifier doesn't
 // send them again.
@@ -833,6 +856,8 @@ export const events = [
   TroubleTicketNeedsHelp,
   TroubleTicketEquipmentSet,
   TroubleTicketTitleEdited,
+  TroubleTicketInvitationSent,
+  TroubleTicketInvitationDeclined,
   TroubleTicketNotificationSent,
   MemberNotificationPreferenceSet,
   MemberTicketDigestSent,
@@ -915,6 +940,8 @@ export const DomainEvent = t.union([
   TroubleTicketNeedsHelp.codec,
   TroubleTicketEquipmentSet.codec,
   TroubleTicketTitleEdited.codec,
+  TroubleTicketInvitationSent.codec,
+  TroubleTicketInvitationDeclined.codec,
   TroubleTicketNotificationSent.codec,
   MemberNotificationPreferenceSet.codec,
   MemberTicketDigestSent.codec,
