@@ -96,6 +96,62 @@ export const initRoutes = (
       'equipment-categories',
       commands.area.setEquipmentCategories
     ),
+    // Purchasing areas: budget-holding groups of areas. The commands go
+    // before the :id route, which would otherwise take "create" for an id.
+    query('/purchasing-areas', queries.purchasingAreas),
+    ...command('purchasing-areas', 'create', commands.purchasingArea.create),
+    ...command('purchasing-areas', 'rename', commands.purchasingArea.rename),
+    ...command(
+      'purchasing-areas',
+      'set-budget',
+      commands.purchasingArea.setBudget
+    ),
+    ...command(
+      'purchasing-areas',
+      'assign-area',
+      commands.purchasingArea.assignArea
+    ),
+    ...command(
+      'purchasing-areas',
+      'unassign-area',
+      commands.purchasingArea.unassignArea
+    ),
+    ...command(
+      'purchasing-areas',
+      'add-purchaser',
+      commands.purchasingArea.addPurchaser
+    ),
+    ...command(
+      'purchasing-areas',
+      'remove-purchaser',
+      commands.purchasingArea.removePurchaser
+    ),
+    ...command(
+      'purchasing-areas',
+      'set-year-budget',
+      commands.purchasingArea.setYearBudget
+    ),
+    ...command(
+      'purchasing-areas',
+      'record-spend',
+      commands.purchasingArea.recordSpend
+    ),
+    ...command(
+      'purchasing-areas',
+      'remove-spend',
+      commands.purchasingArea.removeSpend
+    ),
+    query('/purchasing-areas/:id', queries.purchasingArea),
+    ...command('purchase-requests', 'submit', commands.purchaseRequest.submit),
+    ...command('purchase-requests', 'approve', commands.purchaseRequest.approve),
+    ...command('purchase-requests', 'decline', commands.purchaseRequest.decline),
+    get('/purchase-request', (_req, res) =>
+      res.redirect('/purchase-requests/submit')
+    ),
+    query('/purchase-requests', queries.purchaseRequests),
+    // Under /view/ for the same reason as trouble tickets: a bare :id would
+    // swallow /purchase-requests/submit.
+    query('/purchase-requests/view/:id', queries.purchaseRequest),
     ...command('equipment', 'add', commands.equipment.add),
     ...command('equipment', 'rename', commands.equipment.rename),
     ...command('equipment', 'set-category', commands.equipment.setCategory),
@@ -525,6 +581,11 @@ export const initRoutes = (
     ...api('trouble-tickets', 'create', commands.troubleTickets.create),
     ...command('trouble-tickets', 'raise', commands.troubleTickets.raise),
     ...command('trouble-tickets', 'assign', commands.troubleTickets.assign),
+    ...command(
+      'trouble-tickets',
+      'assign-to',
+      commands.troubleTickets.assignTo
+    ),
     ...command('trouble-tickets', 'resolve', commands.troubleTickets.resolve),
     ...command('trouble-tickets', 'park', commands.troubleTickets.park),
     ...command(

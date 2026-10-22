@@ -60,6 +60,8 @@ export type TroubleTicketView = {
   // Whether the viewer may change this ticket's status (trainer on its machine, or a
   // super-user). Drives whether the action buttons are shown.
   canChangeStatus: boolean;
+  // Whether the viewer may assign the ticket to somebody else.
+  canAssignOthers: boolean;
   // Human-readable history of status/assignment changes, oldest first.
   changeLog: ReadonlyArray<ChangeLogEntry>;
 };

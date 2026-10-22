@@ -161,4 +161,92 @@ describe('notifyTroubleTicketChanges', () => {
 
     expect(sentEmails).toHaveLength(1);
   });
+
+  // A super-user handing a ticket to somebody: the submitter hears who is on
+  // it now, and the one it was handed to hears that it is theirs.
+  describe('when a ticket is assigned to somebody else', () => {
+    const ASSIGNER = 1337;
+    const ASSIGNEE = 7;
+
+    const link = (memberNumber: number, name: string) =>
+      commit(
+        constructEvent('MemberNumberLinkedToEmail')({
+          actor: systemActor(),
+          memberNumber,
+          email: `member${memberNumber}@test.com` as EmailAddress,
+          name,
+          formOfAddress: undefined,
+        })
+      );
+
+    const assignedBy = (actorNumber: number) =>
+      commit(
+        constructEvent('TroubleTicketAssigned')({
+          actor: {
+            tag: 'user',
+            user: {
+              emailAddress: `member${actorNumber}@test.com` as EmailAddress,
+              memberNumber: actorNumber,
+            },
+          },
+          ticketId,
+          trainerMemberNumber: ASSIGNEE,
+          comment: 'Back on Tuesday',
+        })
+      );
+
+    beforeEach(async () => {
+      await link(ASSIGNER, 'Ada Admin');
+      await link(ASSIGNEE, 'Tara Trainer');
+      await settle();
+    });
+
+    const emailTo = (recipient: string) =>
+      sentEmails.find(email => email.recipient === recipient);
+
+    it('tells the submitter who is working on it and who assigned it', async () => {
+      await assignedBy(ASSIGNER);
+      await notifyTroubleTicketChanges(deps);
+
+      expect(emailTo('submitter@test.com')?.text).toContain(
+        'Tara Trainer is now working on this ticket (assigned by Ada Admin).'
+      );
+      // The comment is the assigner's, not the assignee's.
+      expect(emailTo('submitter@test.com')?.text).toContain(
+        'Ada Admin said: Back on Tuesday'
+      );
+    });
+
+    it('tells the member it was assigned to that it is theirs', async () => {
+      await assignedBy(ASSIGNER);
+      await notifyTroubleTicketChanges(deps);
+
+      expect(emailTo('member7@test.com')?.text).toContain(
+        'Ada Admin has assigned this ticket to you.'
+      );
+    });
+
+    it('records the member it was assigned to among those told', async () => {
+      await assignedBy(ASSIGNER);
+      await notifyTroubleTicketChanges(deps);
+
+      const notified = await framework.getAllEventsByType(
+        'TroubleTicketNotificationSent'
+      );
+      expect(notified[notified.length - 1].recipients).toContain(
+        'member7@test.com'
+      );
+    });
+
+    // Picking a ticket up yourself is not news to you.
+    it('does not email somebody who picked the ticket up themselves', async () => {
+      await assignedBy(ASSIGNEE);
+      await notifyTroubleTicketChanges(deps);
+
+      expect(emailTo('member7@test.com')).toBeUndefined();
+      expect(emailTo('submitter@test.com')?.text).toContain(
+        'Tara Trainer is now working on this ticket.'
+      );
+    });
+  });
 });

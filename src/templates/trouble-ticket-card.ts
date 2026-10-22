@@ -157,10 +157,19 @@ const renderActions = (ticket: TroubleTicketView): Html => {
     STATUS_SLUG.Resolved,
     'Emails the submitter what you did - unless you choose not to'
   );
+  // Handing the ticket to somebody else: super-users only, for now.
+  const assignTo = ticket.canAssignOthers
+    ? action(
+        'assign-to',
+        'Assign to…',
+        STATUS_SLUG['In Progress'],
+        'Emails the submitter and the member you choose'
+      )
+    : html``;
   switch (ticket.status) {
     case 'Todo':
       return html`<div class="tt-actions">
-        ${assign('Mark In Progress')} ${resolve}
+        ${assign('Mark In Progress')} ${assignTo} ${resolve}
       </div>`;
     case 'In Progress':
       return html`<div class="tt-actions">
@@ -177,12 +186,12 @@ const renderActions = (ticket: TroubleTicketView): Html => {
           STATUS_SLUG.Parked,
           'Emails the submitter why it is parked'
         )}
-        ${ticket.assignedToMe ? html`` : assign('Assign to me')}
+        ${ticket.assignedToMe ? html`` : assign('Assign to me')} ${assignTo}
       </div>`;
     case 'Needs Help':
     case 'Parked':
       return html`<div class="tt-actions">
-        ${assign('Mark In Progress')} ${resolve}
+        ${assign('Mark In Progress')} ${assignTo} ${resolve}
       </div>`;
     case 'Resolved':
       return html``;

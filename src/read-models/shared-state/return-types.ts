@@ -1,8 +1,16 @@
 import {SignedOwnerAgreement} from '../../owner-agreement/agreement';
+import {Purchase} from '../../purchasing/purchases';
+import {Proposal} from '../../purchasing/proposal';
 import {EquipmentCategory} from '../../types/equipment-category';
 import * as O from 'fp-ts/Option';
 import {Actor, EmailAddress, GravatarHash, UserId} from '../../types';
 import {UUID} from 'io-ts-types';
+import {
+  PurchaseApproval,
+  PurchaseRequestOutcome,
+} from '../../types/purchase-request-outcome';
+import {RecordedSpendKind} from '../../types/recorded-spend-kind';
+import {PurchaseRequestStatus} from '../../types/purchase-request-status';
 
 export type TrainedMember = Pick<
   MemberCoreInfo,
@@ -143,4 +151,91 @@ export type Owner = Pick<
 export type Area = MinimalArea & {
   owners: ReadonlyArray<Owner>;
   equipment: ReadonlyArray<Equipment>;
+};
+
+export type PurchasingAreaSummary = {
+  id: UUID;
+  name: string;
+};
+
+export type PurchasingAreaPurchaser = Pick<
+  MemberCoreInfo,
+  | 'userId'
+  | 'memberNumber'
+  | 'pastMemberNumbers'
+  | 'name'
+  | 'primaryEmailAddress'
+> & {
+  addedAt: Date;
+  // Purchasers are expected to own at least one of the purchasing area's
+  // areas; false flags one who has since stopped being an owner.
+  isOwnerOfAnArea: boolean;
+};
+
+// Money in pence. Budget figures are for `budgetYear`, the calendar year the
+// view was asked about.
+// Spending a super user recorded directly against a year's budget.
+export type RecordedSpend = {
+  id: UUID;
+  amountPence: number;
+  description: string;
+  // Out of the yearly budget, or approved spending outside it.
+  kind: RecordedSpendKind;
+  recordedAt: Date;
+};
+
+export type PurchasingArea = PurchasingAreaSummary & {
+  // This budget year's budget: the usual one, unless it has been set
+  // differently for this year (e.g. extended).
+  yearlyBudgetPence: number;
+  // The budget every year has unless set differently for that year.
+  usualBudgetPence: number;
+  areas: ReadonlyArray<{id: UUID; name: string}>;
+  purchasers: ReadonlyArray<PurchasingAreaPurchaser>;
+  budgetYear: number;
+  // Purchase requests that count against the budget, plus spending recorded
+  // against it.
+  spentThisYearPence: number;
+  // Recorded spending approved outside the budget, which doesn't count.
+  approvedSpendThisYearPence: number;
+  // This year's requests still waiting for approval, which don't count yet.
+  awaitingApprovalPence: number;
+  // This budget year's recorded spending, oldest first.
+  recordedSpend: ReadonlyArray<RecordedSpend>;
+  // Negative when this year's spending has gone past the budget.
+  remainingPence: number;
+};
+
+
+export type PurchaseRequest = {
+  id: UUID;
+  purchasingAreaId: UUID;
+  submittedByMemberNumber: number;
+  submittedAt: Date;
+  budgetYear: number;
+  summary: string;
+  // The sum of the shop costs: what the outcome was worked out from and what
+  // counts against the budget.
+  totalPence: number;
+  purchases: ReadonlyArray<Purchase>;
+  justification: string;
+  isMemberPaidConsumable: boolean;
+  // Other areas it affects, whose owners need a chance to give their input.
+  affectedAreaIds: ReadonlyArray<UUID>;
+  // A moderate to high health and safety risk that will need mitigating.
+  healthAndSafetyRisk: boolean;
+  // The proposal it was sent with, when it needs one.
+  proposal: O.Option<Proposal>;
+  // Awaiting approval until a super user approves or declines it; only
+  // approved requests count against the budget.
+  status: PurchaseRequestStatus;
+  decidedAt: O.Option<Date>;
+  decidedByMemberNumber: O.Option<number>;
+  declineReason: O.Option<string>;
+  outcome: PurchaseRequestOutcome;
+  approval: PurchaseApproval;
+  outcomeReason: string;
+  // The budget figures the outcome was computed from, at submission.
+  yearlyBudgetPence: number;
+  spentThisYearPence: number;
 };

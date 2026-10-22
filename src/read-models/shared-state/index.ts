@@ -22,6 +22,9 @@ import {
   MemberCoreInfo,
   MinimalArea,
   MinimalEquipment,
+  PurchaseRequest,
+  PurchasingArea,
+  PurchasingAreaSummary,
 } from './return-types';
 
 import {Client} from '@libsql/client';
@@ -93,6 +96,16 @@ import { setupEventStateTable } from './setup-event-state-table';
 import { getCurrentEventIndex } from './get-current-event-index';
 import { Int } from 'io-ts';
 import { reset } from './reset';
+import {
+  getAllAreaAssignments,
+  getAllPurchasingAreas,
+  getPurchaseRequest,
+  getAllPurchaseRequests,
+  getPurchaseRequests,
+  getPurchasingArea,
+  getPurchasingAreaForArea,
+  getPurchasingAreasForPurchaser,
+} from './purchasing/get';
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
@@ -202,6 +215,26 @@ export type SharedReadModel = {
   mailbox: {
     // Gmail message ids of every archived conversation's messages, and why.
     archivedMessages: () => ReadonlyMap<string, MailboxArchiveReason>;
+  };
+  // Purchasing areas (budget-holding groups of areas) and purchase requests.
+  // Budget figures are for the calendar year containing `now`.
+  purchasing: {
+    get: (id: UUID, now: Date) => O.Option<PurchasingArea>;
+    getAll: (now: Date) => ReadonlyArray<PurchasingArea>;
+    getForPurchaser: (
+      userId: UserId,
+      now: Date
+    ) => ReadonlyArray<PurchasingArea>;
+    getForArea: (areaId: UUID) => O.Option<PurchasingAreaSummary>;
+    getAllAreaAssignments: () => ReadonlyArray<
+      {areaId: UUID} & PurchasingAreaSummary
+    >;
+    getRequests: (
+      purchasingAreaId: UUID,
+      budgetYear: number
+    ) => ReadonlyArray<PurchaseRequest>;
+    getRequest: (id: UUID) => O.Option<PurchaseRequest>;
+    getAllRequests: () => ReadonlyArray<PurchaseRequest>;
   };
 };
 
@@ -314,6 +347,16 @@ export const initSharedReadModel = (
     },
     mailbox: {
       archivedMessages: getArchivedMailboxMessages(readModelDb),
+    },
+    purchasing: {
+      get: getPurchasingArea(readModelDb),
+      getAll: getAllPurchasingAreas(readModelDb),
+      getForPurchaser: getPurchasingAreasForPurchaser(readModelDb),
+      getForArea: getPurchasingAreaForArea(readModelDb),
+      getAllAreaAssignments: () => getAllAreaAssignments(readModelDb),
+      getRequests: getPurchaseRequests(readModelDb),
+      getRequest: getPurchaseRequest(readModelDb),
+      getAllRequests: getAllPurchaseRequests(readModelDb),
     },
   };
 };

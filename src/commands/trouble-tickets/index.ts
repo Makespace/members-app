@@ -3,6 +3,7 @@ import {raise} from './raise';
 import {raiseForm} from './raise-form';
 import {create} from './create';
 import {assign} from './assign';
+import {assignTo} from './assign-to';
 import {resolve} from './resolve';
 import {park} from './park';
 import {needsHelp} from './needs-help';
@@ -10,6 +11,7 @@ import {setEquipment} from './set-equipment';
 import {editTitle} from './edit-title';
 import {
   assignForm,
+  assignToForm,
   resolveForm,
   needsHelpForm,
   parkForm,
@@ -23,6 +25,7 @@ export const troubleTickets = {
   raise: {...raise, ...raiseForm},
   create,
   assign: {...assign, ...assignForm},
+  assignTo: {...assignTo, ...assignToForm},
   resolve: {...resolve, ...resolveForm},
   park: {...park, ...parkForm},
   needsHelp: {...needsHelp, ...needsHelpForm},

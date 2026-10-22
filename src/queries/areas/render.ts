@@ -28,6 +28,11 @@ import {
   categoryLabel,
 } from '../../templates/equipment-category';
 import {EquipmentCategory} from '../../types/equipment-category';
+import {
+  superUserActions,
+  superUserButton,
+  superUserLink,
+} from '../../templates/super-user';
 
 
 const renderSignedAt = (owner: OwnerViewModel) =>
@@ -45,7 +50,13 @@ const renderSignedAtForManager = (owner: OwnerViewModel) => {
     ${owner.agreement.state === 'unsigned' ? html`` : renderSignedAt(owner)}
     <form action="/send-email/owner-agreement-invite" method="post">
       <input type="hidden" name="recipient" value="${owner.memberNumber}" />
-      <button type="submit">Ask to sign</button>
+      <button
+        type="submit"
+        class="button--super-user"
+        title="Only super users can do this"
+      >
+        Ask to sign
+      </button>
     </form>
   `;
 };
@@ -53,14 +64,11 @@ const renderSignedAtForManager = (owner: OwnerViewModel) => {
 const renderRemoveOwner = (
   areaId: ViewModel['areas'][number]['id'],
   owner: ViewModel['areas'][number]['owners'][number]
-) => html`
-  <a
-    href="/areas/remove-owner?memberNumber=${owner.memberNumber}&areaId=${safe(
-      areaId
-    )}"
-    >Remove</a
-  >
-`;
+) =>
+  superUserLink(
+    `/areas/remove-owner?memberNumber=${owner.memberNumber}&areaId=${areaId}`,
+    html`Remove`
+  );
 
 // Sum of trainings delivered across the shown quarters - used to sort owners.
 const trainingsTotal = (owner: OwnerViewModel): number =>
@@ -348,14 +356,14 @@ const renderAreas = (viewModel: ViewModel) => {
   return pipe(viewModel.areas, RA.map(renderArea(viewModel)), joinHtml);
 };
 
-const addAreaCallToAction = html`
-  <a class="button" href="/areas/create">Add area of responsibility</a>
-`;
+const addAreaCallToAction = superUserActions(
+  superUserButton('/areas/create', html`Add area of responsibility`)
+);
 
 export const render = (viewModel: ViewModel) => html`
   <div class="stack-large">
     <h1>Areas</h1>
-    ${viewModel.canManageAreas ? html`<div>${addAreaCallToAction}</div>` : html``}
+    ${viewModel.canManageAreas ? addAreaCallToAction : html``}
     <section class="stack-large">${renderAreas(viewModel)}</section>
   </div>
 `;

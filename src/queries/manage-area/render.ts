@@ -1,10 +1,20 @@
+import * as O from 'fp-ts/Option';
+import {pipe} from 'fp-ts/lib/function';
 import {html, Html, safe, sanitizeString} from '../../types/html';
 import {equipmentCategoriesPath} from '../../commands/area/set-equipment-categories-form';
+import {superUserButton, superUserSection} from '../../templates/super-user';
 import {ViewModel} from './view-model';
 
-const action = (href: string, label: string, description: Html) => html`
+const action = (
+  href: string,
+  label: string,
+  description: Html,
+  onlySuperUsers = false
+) => html`
   <div class="manage-area__action">
-    <a class="button" href="${safe(href)}">${safe(label)}</a>
+    ${onlySuperUsers
+      ? superUserButton(href, html`${safe(label)}`)
+      : html`<a class="button" href="${safe(href)}">${safe(label)}</a>`}
     <p>${description}</p>
   </div>
 `;
@@ -30,7 +40,8 @@ export const render = (viewModel: ViewModel) => {
               `/equipment/add?area=${area}`,
               'Add equipment',
               html`One item of any colour. Red equipment needs training set
-                up, so only admins add it.`
+                up, so only super users add it.`,
+              true
             )
           : html``}
         ${action(
@@ -44,15 +55,33 @@ export const render = (viewModel: ViewModel) => {
           categoriesSummary(viewModel)
         )}
       </section>
+      <section class="stack">
+        <h2>Purchasing</h2>
+        ${pipe(
+          viewModel.purchasingArea,
+          O.match(
+            () => html`<p>This area isn't in a purchasing area yet.</p>`,
+            purchasingArea =>
+              html`<p>
+                This area's purchases come out of the
+                <a href="/purchasing-areas/${purchasingArea.id}"
+                  >${sanitizeString(purchasingArea.name)}</a
+                >
+                budget.
+              </p>`
+          )
+        )}
+      </section>
       ${viewModel.isSuperUser
-        ? html`
+        ? superUserSection(html`
             <section class="stack">
               <h2>Owners</h2>
               ${action(
                 `/areas/add-owner?area=${area}`,
                 'Add owner',
                 html`Owners look after the area and train on its red
-                  equipment.`
+                  equipment.`,
+                true
               )}
             </section>
             <section class="stack">
@@ -60,15 +89,17 @@ export const render = (viewModel: ViewModel) => {
               ${action(
                 `/areas/set-mailing-list?area=${area}`,
                 'Set mailing list',
-                html`The address shown for contacting the area's owners.`
+                html`The address shown for contacting the area's owners.`,
+                true
               )}
               ${action(
                 `/areas/remove?area=${area}`,
                 'Remove area',
-                html`Asks for confirmation first.`
+                html`Asks for confirmation first.`,
+                true
               )}
             </section>
-          `
+          `)
         : html``}
     </div>
   `;

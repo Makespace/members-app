@@ -1060,6 +1060,511 @@ label img {
   opacity: 1;
 }
 
+/* Purchase requests: the request form (src/commands/purchase-request/
+   render-submit-form.ts) and a request's own page. */
+.purchase-request {
+  --purchase-panel: #f3f2f1;
+  --purchase-bar-track: #e5e4e2;
+}
+
+.purchase-request [hidden] {
+  display: none !important;
+}
+
+.purchase-request .tag,
+.purchase-outcome {
+  max-width: none;
+}
+
+.purchase-request h1,
+.purchase-request h2,
+.purchase-request p {
+  margin: 0;
+}
+
+.purchase-request input,
+.purchase-request textarea {
+  margin: 0;
+}
+
+.purchase-request textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.purchase-request__sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2.75rem;
+}
+
+.purchase-request__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.purchase-request__stack > * + *,
+.purchase-request__sections > * + * {
+  margin-block-start: 0;
+}
+
+.purchase-request__tight {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.purchase-request__hint {
+  color: var(--grey-color);
+}
+
+.purchase-request__normal {
+  font-weight: normal;
+}
+
+.purchase-request__fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.purchase-request legend,
+.purchase-field__label {
+  font-weight: bold;
+  font-size: 1.2rem;
+  padding: 0;
+}
+
+.purchase-request__radios {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 0.25rem;
+}
+
+.purchase-request__radios--inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px 2rem;
+}
+
+.purchase-request .fieldset-item {
+  margin-bottom: 0;
+}
+
+/* The area names sit a little further from their radios. */
+.purchase-request__radios--areas .fieldset-item input {
+  margin-right: 1.5rem;
+}
+
+.purchase-request .fieldset-item label {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.purchase-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.purchase-money {
+  display: flex;
+  align-items: stretch;
+}
+
+.purchase-money--narrow {
+  max-width: 14rem;
+}
+
+.purchase-money span {
+  display: flex;
+  align-items: center;
+  padding: 0 0.8rem;
+  border: 2px solid var(--text-color);
+  border-right: 0;
+  background: var(--purchase-panel);
+  font-weight: bold;
+}
+
+.purchase-money input {
+  font-variant-numeric: tabular-nums;
+}
+
+.purchase-request__link-button {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--link-color);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+  cursor: pointer;
+}
+
+.purchase-request__link-button:hover {
+  background: none;
+  text-decoration-thickness: 3px;
+}
+
+.purchase-question {
+  border-left: 5px solid var(--border-color);
+  padding-left: 1rem;
+}
+
+/* The area's budget as it stands: figures and a spent bar. */
+.purchase-budget {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding-block: 1rem;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.purchase-budget dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem 1rem;
+  margin: 0;
+}
+
+.purchase-budget dt {
+  color: var(--grey-color);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.purchase-budget dd {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+}
+
+.purchase-bar {
+  position: relative;
+  height: 1.1rem;
+  background: var(--purchase-bar-track);
+}
+
+.purchase-bar__spent {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--grey-color);
+}
+
+.purchase-bar__limit {
+  position: absolute;
+  top: -0.35rem;
+  bottom: -0.35rem;
+  width: 3px;
+  background: var(--text-color);
+}
+
+.purchase-bar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  color: var(--grey-color);
+  font-size: 0.9rem;
+}
+
+.purchase-swatch {
+  display: inline-block;
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-right: 0.35rem;
+  vertical-align: -0.05rem;
+}
+
+.purchase-swatch--spent {
+  background: var(--grey-color);
+}
+
+.purchase-swatch--limit {
+  width: 3px;
+  background: var(--text-color);
+}
+
+/* Verdict: green for a consumable, black for the budget, red for a proposal. */
+.purchase-verdict {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border: 3px solid var(--text-color);
+}
+
+.purchase-verdict--consumable {
+  border-color: var(--green-color);
+}
+
+.purchase-verdict--proposal {
+  border-color: var(--red-color);
+}
+
+.purchase-verdict h2 {
+  font-size: 1.5rem;
+}
+
+.purchase-verdict ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+/* One entry per shop or website. */
+.purchase-shop {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 2px solid var(--border-color);
+}
+
+.purchase-shop__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.purchase-shop__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 11rem);
+  gap: 0.75rem;
+}
+
+.purchase-shop .purchase-field__label {
+  font-size: 1.05rem;
+}
+
+/* Items within a shop: a lighter box each, with SKU, quantity and price
+   side by side. */
+.purchase-shop__items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.purchase-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  background: var(--purchase-panel);
+  border-left: 4px solid var(--border-color);
+}
+
+.purchase-item__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+/* The other areas a purchase affects: plain checkboxes, overriding the
+   app-wide full-width input styling. */
+.purchase-other-areas {
+  margin-top: 0.5rem;
+}
+
+ul.purchase-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.purchase-checkboxes li {
+  margin: 0;
+}
+
+.purchase-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.purchase-checkbox input {
+  appearance: auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--green-color);
+}
+
+.purchase-item__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* A finished item folded to one line; clicking or focusing it opens it.
+   Overrides the global green button styling. */
+.purchase-item__summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-color);
+  font: inherit;
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.purchase-item__summary:hover {
+  background: none;
+}
+
+.purchase-item__summary:active {
+  top: 0;
+}
+
+.purchase-item__summary > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.purchase-item__edit {
+  flex: none;
+  color: var(--link-color);
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.purchase-item__summary:hover .purchase-item__edit {
+  text-decoration-thickness: 3px;
+}
+
+.purchase-shop__summary {
+  font-size: 1.05rem;
+}
+
+.purchase-shop--collapsed {
+  gap: 0.5rem;
+}
+
+.purchase-item--collapsed {
+  padding-block: 0.5rem;
+}
+
+.purchase-item__row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 7rem) minmax(0, 11rem);
+  gap: 0.75rem;
+}
+
+.purchase-shop__total {
+  font-weight: bold;
+}
+
+/* A request's page: the confirmation box, a summary list and the breakdown
+   of what it buys (src/templates/purchase-breakdown.ts). */
+.purchase-confirmation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  background: var(--green-color);
+  color: white;
+  text-align: center;
+}
+
+.purchase-confirmation h1 {
+  color: white;
+}
+
+.purchase-confirmation--record {
+  background: var(--purchase-panel);
+  color: var(--text-color);
+}
+
+.purchase-confirmation--record h1 {
+  color: var(--text-color);
+}
+
+.purchase-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 10rem) minmax(0, 1fr);
+  gap: 0.4rem 1rem;
+  margin: 0;
+}
+
+.purchase-summary dt {
+  font-weight: bold;
+}
+
+.purchase-summary dd {
+  margin: 0;
+}
+
+.purchase-breakdown__scroll {
+  overflow-x: auto;
+}
+
+.purchase-breakdown {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.purchase-breakdown th,
+.purchase-breakdown td {
+  padding: 0.4rem 1rem 0.4rem 0;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+  vertical-align: top;
+}
+
+.purchase-breakdown .purchase-breakdown__number {
+  padding-right: 0;
+  padding-left: 1rem;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.purchase-breakdown__shop th {
+  padding-top: 1.25rem;
+  font-size: 1.1rem;
+}
+
+.purchase-breakdown__subtotal td {
+  font-weight: bold;
+}
+
+.purchase-breakdown tfoot th,
+.purchase-breakdown tfoot td {
+  border-top: 3px solid var(--text-color);
+  border-bottom: 0;
+  font-size: 1.15rem;
+  font-weight: bold;
+}
+
+@media (max-width: 480px) {
+  .purchase-shop__row,
+  .purchase-item__row {
+    grid-template-columns: 1fr;
+  }
+
+  .purchase-budget dl {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 .stack > * + * {
   margin-block-start: 1rem;
 }
@@ -4030,14 +4535,15 @@ ul.checklist {
 }
 
 
-/* Progress through a document read a page at a time (the owner agreement):
-   numbered markers, ticked once read, with the current page in green. */
-.agreement-progress__count {
+/* Progress through a form filled in a page at a time (the owner agreement,
+   purchase requests - see src/templates/multi-page-form.ts): numbered
+   markers, ticked once done, with the current page in green. */
+.step-progress__count {
   color: var(--grey-color);
   margin: 0;
 }
 
-ol.agreement-progress__steps {
+ol.step-progress__steps {
   display: flex;
   gap: 0.5rem;
   margin-block-start: 0.5rem;
@@ -4045,7 +4551,7 @@ ol.agreement-progress__steps {
   list-style: none;
 }
 
-.agreement-progress__step {
+.step-progress__step {
   flex: 1;
   margin: 0;
   padding-top: 0.5rem;
@@ -4053,34 +4559,34 @@ ol.agreement-progress__steps {
   color: var(--grey-color);
 }
 
-.agreement-progress__step--done,
-.agreement-progress__step--current {
+.step-progress__step--done,
+.step-progress__step--current {
   border-top-color: var(--green-color);
 }
 
-.agreement-progress__step--current {
+.step-progress__step--current {
   color: var(--text-color);
   font-weight: bold;
 }
 
-.agreement-progress__step a {
+.step-progress__step a {
   color: inherit;
 }
 
-.agreement-progress__step--done a:hover .agreement-progress__label {
+.step-progress__step--done a:hover .step-progress__label {
   text-decoration: underline;
 }
 
-.agreement-progress__step a,
-.agreement-progress__step--current,
-.agreement-progress__step--todo {
+.step-progress__step a,
+.step-progress__step--current,
+.step-progress__step--todo {
   display: flex;
   align-items: baseline;
   gap: 0.4rem;
   text-decoration: none;
 }
 
-.agreement-progress__marker {
+.step-progress__marker {
   flex: none;
   display: inline-flex;
   align-items: center;
@@ -4093,21 +4599,21 @@ ol.agreement-progress__steps {
   font-weight: bold;
 }
 
-.agreement-progress__step--done .agreement-progress__marker {
+.step-progress__step--done .step-progress__marker {
   background: var(--green-color);
   border-color: var(--green-color);
   color: white;
 }
 
-.agreement-progress__step--current .agreement-progress__marker {
+.step-progress__step--current .step-progress__marker {
   border-color: var(--green-color);
   color: var(--green-color);
 }
 
 /* On narrow screens there's only room for the current page's name */
 @media (max-width: 40rem) {
-  .agreement-progress__step:not(.agreement-progress__step--current)
-    .agreement-progress__label {
+  .step-progress__step:not(.step-progress__step--current)
+    .step-progress__label {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -4117,7 +4623,7 @@ ol.agreement-progress__steps {
   }
 }
 
-.agreement-nav {
+.step-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -4127,7 +4633,7 @@ ol.agreement-progress__steps {
 }
 
 /* With no Back link on the first page, keep Next on the right */
-.agreement-nav > button:only-child {
+.step-nav > button:only-child {
   margin-left: auto;
 }
 
@@ -4209,7 +4715,7 @@ fieldset.agreement-choices__set {
    the server sends them back with a message, so nobody is left wondering
    why nothing happened. */
 .agreement-choices:has(.agreement-choices__set):not(:has(input:checked))
-  .agreement-nav
+  .step-nav
   button {
   opacity: 0.5;
 }
@@ -4226,4 +4732,300 @@ fieldset.agreement-choices__set {
   margin: 0.5rem 0 0;
   font-weight: bold;
   color: var(--green-color);
+}
+
+/* A purchase request's proposal: filled in on the form's last page and
+   shown on the request's page (src/templates/proposal.ts). */
+.proposal-form h3,
+.proposal h3 {
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+.proposal {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.proposal > * + * {
+  margin-block-start: 0;
+}
+
+.proposal__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.proposal__text {
+  margin: 0;
+  white-space: pre-line;
+}
+
+ol.proposal__options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.proposal__option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid var(--border-color);
+  background: var(--purchase-panel, #f3f2f1);
+}
+
+.proposal__option-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.proposal__cost {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.proposal__risks {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.proposal__risks th,
+.proposal__risks td {
+  padding: 0.4rem 1rem 0.4rem 0;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+  vertical-align: top;
+}
+
+/* A risk's severity and probability, 1 to 5 each, side by side. */
+.proposal-ratings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 480px) {
+  .proposal-ratings {
+    grid-template-columns: 1fr;
+  }
+}
+
+select.proposal-rating {
+  display: block;
+  width: 100%;
+  padding: 0.6rem;
+  border: 2px solid var(--text-color);
+  background: white;
+  font: inherit;
+}
+
+.proposal__rating {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.proposal-entry__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.proposal-entry--collapsed {
+  gap: 0.5rem;
+  padding-block: 0.6rem;
+}
+
+/* An open item's Add item / Done button, with what it still needs. */
+.purchase-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+/* The proposal's parts, each set apart with a rule and a heading-sized
+   title, so it's clear where one ends and the next begins. */
+.proposal-form {
+  gap: 0;
+}
+
+.proposal-form > * + * {
+  margin-block-start: 1rem;
+}
+
+.proposal-form__section {
+  padding-top: 1.5rem;
+  margin-top: 0.5rem;
+  border-top: 2px solid var(--border-color);
+}
+
+.proposal-form__section > .purchase-field > .purchase-field__label,
+.proposal-form__section h3 {
+  font-size: 1.25rem;
+}
+
+/* A proposal section that opens and closes, e.g. Options: the closed
+   summary is a box that reads as clickable, says why it's worth opening,
+   and shows "Add options" with an arrow that turns when it opens.
+   Overrides the app-wide details styling. */
+details.proposal-section > summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 2px solid var(--border-color);
+  background: var(--purchase-panel, #f3f2f1);
+  color: var(--text-color);
+  text-decoration: none;
+  cursor: pointer;
+  list-style: none;
+}
+
+details.proposal-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.proposal-section > summary:hover {
+  border-color: var(--link-color);
+}
+
+details.proposal-section[open] > summary {
+  border-bottom-width: 0;
+}
+
+.proposal-section__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.proposal-section__title h3 {
+  display: inline;
+  margin: 0;
+}
+
+.proposal-section__count {
+  color: var(--grey-color);
+}
+
+.proposal-section__why {
+  max-width: 60ch;
+}
+
+.proposal-section__toggle {
+  align-self: flex-start;
+  color: var(--link-color);
+  font-weight: bold;
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+details.proposal-section > summary:hover .proposal-section__toggle {
+  text-decoration-thickness: 3px;
+}
+
+.proposal-section__toggle::after {
+  content: ' ▸';
+  display: inline-block;
+  margin-left: 0.25rem;
+  text-decoration: none;
+}
+
+details.proposal-section[open] .proposal-section__toggle::after {
+  content: ' ▾';
+}
+
+.proposal-section__when-open,
+details.proposal-section[open] .proposal-section__when-closed {
+  display: none;
+}
+
+details.proposal-section[open] .proposal-section__when-open {
+  display: inline;
+}
+
+details.proposal-section > *:not(summary) {
+  padding: 1rem;
+  border: 2px solid var(--border-color);
+  border-top: 0;
+}
+
+/* Controls only super users can see (src/templates/super-user.ts): purple
+   rather than the usual green, and grouped in a dashed box labelled "Super
+   users only", so nobody mistakes them for something every member has. */
+:root {
+  --super-user-color: #5b2a86;
+}
+
+.super-user-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 1rem;
+  border: 2px dashed var(--super-user-color);
+  background: color-mix(in oklch, white 94%, var(--super-user-color));
+}
+
+.super-user-actions__label {
+  color: var(--super-user-color);
+  font-size: 0.8rem;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.super-user-actions--section {
+  gap: 1.5rem;
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.super-user-actions--section > * + * {
+  margin-block-start: 0;
+}
+
+/* A super-user-only form button, e.g. Ask to sign. */
+button.button--super-user {
+  font-size: 1rem;
+  padding: 6px 14px;
+}
+
+.super-user-actions__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.button--super-user,
+a.button--super-user,
+a.button--super-user:visited {
+  background: white;
+  color: var(--super-user-color);
+  border: 2px solid var(--super-user-color);
+  border-bottom-width: 3px;
+}
+
+.button--super-user:hover,
+a.button--super-user:hover {
+  background: color-mix(in oklch, white 85%, var(--super-user-color));
+  color: var(--super-user-color);
+}
+
+a.super-user-link,
+a.super-user-link:visited {
+  color: var(--super-user-color);
+}
+
+a.super-user-link:hover {
+  color: color-mix(in oklch, black 25%, var(--super-user-color));
 }

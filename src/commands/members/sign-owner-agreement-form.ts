@@ -2,12 +2,10 @@ import {pipe} from 'fp-ts/lib/function';
 import * as E from 'fp-ts/Either';
 import * as TE from 'fp-ts/TaskEither';
 import * as t from 'io-ts';
-import * as tt from 'io-ts-types';
 import {
   html,
   joinHtml,
   safe,
-  sanitizeString,
   toLoggedInContent,
 } from '../../types/html';
 import {Form} from '../../types/form';
@@ -21,6 +19,13 @@ import {
   termEndsFor,
 } from '../../owner-agreement/agreement';
 import {displayDateOnly} from '../../templates/display-date';
+import {
+  backHref,
+  hiddenInputs,
+  readRequestedStep,
+  renderStepNav,
+  renderStepProgress,
+} from '../../templates/multi-page-form';
 
 // The agreement is long, so it is read a page at a time (?step=1, ?step=2,
 // ...) to slow people down, with the sign button only on the last page.
@@ -57,81 +62,25 @@ const selectionPairs = (selections: Selections, except?: ChoiceName) =>
     .filter(name => name !== except)
     .flatMap(name => selections[name].map(value => [name, value] as const));
 
-const stepLink = (step: number, selections: Selections) => {
-  const query = new URLSearchParams({step: String(step)});
-  selectionPairs(selections).forEach(([name, value]) =>
-    query.append(name, value)
-  );
-  return sanitizeString(`?${query.toString()}`);
-};
-
-const hiddenInputs = (pairs: ReadonlyArray<readonly [string, string]>) =>
-  joinHtml(
-    pairs.map(
-      ([name, value]) =>
-        html`<input
-          type="hidden"
-          name="${sanitizeString(name)}"
-          value="${sanitizeString(value)}"
-        />`
-    )
-  );
-
-const renderProgress = (current: number, selections: Selections) => html`
-  <nav class="agreement-progress" aria-label="Agreement progress">
-    <p class="agreement-progress__count">Page ${current} of ${pageCount}</p>
-    <ol class="agreement-progress__steps">
-      ${joinHtml(
-        ownerAgreementPages.map(({label}, index) => {
-          const step = index + 1;
-          if (step < current) {
-            return html`
-              <li class="agreement-progress__step agreement-progress__step--done">
-                <a href="${stepLink(step, selections)}">
-                  <span class="agreement-progress__marker" aria-hidden="true"
-                    >✓</span
-                  >
-                  <span class="agreement-progress__label"
-                    >${safe(label)}<span class="visually-hidden">
-                      (read)</span
-                    ></span
-                  >
-                </a>
-              </li>
-            `;
-          }
-          return html`
-            <li
-              class="agreement-progress__step agreement-progress__step--${safe(
-                step === current ? 'current' : 'todo'
-              )}"
-              ${step === current ? safe('aria-current="step"') : ''}
-            >
-              <span class="agreement-progress__marker" aria-hidden="true"
-                >${step}</span
-              >
-              <span class="agreement-progress__label">${safe(label)}</span>
-            </li>
-          `;
-        })
-      )}
-    </ol>
-  </nav>
-`;
+const renderProgress = (current: number, selections: Selections) =>
+  renderStepProgress({
+    labels: ownerAgreementPages.map(({label}) => label),
+    current,
+    values: selectionPairs(selections),
+    name: 'Agreement progress',
+    doneSuffix: 'read',
+  });
 
 const renderBack = ({step, selections}: ViewModel) =>
-  step > 1
-    ? html`<a href="${stepLink(step - 1, selections)}">Back</a>`
-    : html``;
+  backHref(step, selectionPairs(selections));
 
-const renderNav = (viewModel: ViewModel) => html`
-  <div class="agreement-nav">
-    ${renderBack(viewModel)}
-    <button type="submit">
+const renderNav = (viewModel: ViewModel) =>
+  renderStepNav({
+    back: renderBack(viewModel),
+    next: html`<button type="submit">
       Next: ${safe(ownerAgreementPages[viewModel.step].label)}
-    </button>
-  </div>
-`;
+    </button>`,
+  });
 
 const renderChoices = (viewModel: ViewModel) => {
   const {choices} = ownerAgreementPages[viewModel.step - 1];
@@ -238,7 +187,7 @@ const renderAlreadySigned = (
       ${displayDateOnly(renewalOpensAt(termEnds))}.
     </p>
   </div>
-  <div class="agreement-nav">${renderBack(viewModel)}</div>
+  ${renderStepNav({back: renderBack(viewModel)})}
 `;
 
 const renderSign = (viewModel: ViewModel) =>
@@ -267,7 +216,7 @@ const renderSign = (viewModel: ViewModel) =>
       <button type="submit">Sign the Owners’ Agreement</button>
     </form>
   </div>
-  <div class="agreement-nav">${renderBack(viewModel)}</div>
+  ${renderStepNav({back: renderBack(viewModel)})}
 `;
 
 const renderForm = (viewModel: ViewModel) =>
@@ -283,19 +232,6 @@ const renderForm = (viewModel: ViewModel) =>
       </div>
     `,
     toLoggedInContent(safe('Sign Owner Agreement'))
-  );
-
-// Anything missing or out of range starts from the first page.
-const readRequestedStep = (input: unknown) =>
-  pipe(
-    input,
-    t.type({step: tt.IntFromString}).decode,
-    E.map(({step}) => step),
-    E.filterOrElseW(
-      step => step >= 1 && step <= pageCount,
-      () => null
-    ),
-    E.getOrElse(() => 1)
   );
 
 // A single pick arrives as a string, several as an array; anything that isn't
@@ -332,7 +268,7 @@ const constructForm: Form<ViewModel>['constructForm'] =
       equipment: readSelection(input, 'equipment'),
       area: readSelection(input, 'area'),
     };
-    const requested = readRequestedStep(input);
+    const requested = readRequestedStep(input, pageCount);
     const step = Math.min(requested, furthestAllowedStep(selections));
     return TE.right({
       user,

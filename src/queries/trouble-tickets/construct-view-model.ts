@@ -68,6 +68,20 @@ export const buildChangeLog = (
         if (movedToInProgress) {
           status = 'In Progress';
         }
+        // Handed on by somebody else, the entry names who it went to.
+        const assignee =
+          row.details.assignee !== undefined &&
+          !(
+            row.actor.tag === 'user' &&
+            String(row.actor.user.memberNumber) === row.details.assignee
+          )
+            ? pipe(
+                rm.members.getByMemberNumber(Number(row.details.assignee)),
+                O.chain(member => member.name),
+                O.getOrElse(() => `Member ${row.details.assignee}`)
+              )
+            : null;
+        const who = assignee === null ? 'themselves' : assignee;
         entries.push({
           status,
           at,
@@ -75,8 +89,8 @@ export const buildChangeLog = (
           emailedTo: row.emailedTo,
           quiet: row.details.quiet === 'true',
           summary: movedToInProgress
-            ? 'assigned themselves and set the ticket to In Progress'
-            : 'assigned themselves to this ticket',
+            ? `assigned ${who} and set the ticket to In Progress`
+            : `assigned ${who} to this ticket`,
           details: row.details.comment
             ? [{label: 'Comment', value: row.details.comment}]
             : [],
@@ -268,6 +282,8 @@ export const toView =
       inMyOwnerArea,
       onMyTrainerMachine,
       managementOnly,
+      // Handing a ticket to somebody else is for super-users, for now.
+      canAssignOthers: viewer.isSuperUser,
       // All owners are maintainers: any owner of the equipment's area may work
       // the ticket (trainers are a subset of area owners).
       canChangeStatus: viewer.isSuperUser || inMyOwnerArea,

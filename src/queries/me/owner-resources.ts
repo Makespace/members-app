@@ -5,6 +5,11 @@ export const ownerResources = html`
     <summary>Resources for owners</summary>
     <ul>
       <li>
+        <a href="/purchasing-areas">Purchasing areas and budgets</a> - and
+        <a href="/purchase-requests/submit">request a purchase</a> if you are a
+        purchaser for an area
+      </li>
+      <li>
         <a href="https://sites.google.com/makespace.org/equipment/home"
           >Equipment pages</a
         >
