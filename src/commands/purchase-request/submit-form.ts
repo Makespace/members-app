@@ -22,6 +22,9 @@ import {
 import {SharedReadModel} from '../../read-models/shared-state';
 import {readRequestedStep} from '../../templates/multi-page-form';
 import {RawProposal, typedProposal} from '../../purchasing/proposal';
+import {BuyerRole, canBuyDirectly} from '../../purchasing/buy-directly';
+import {PositivePenceFromPoundsString} from '../../types/money';
+import {allMemberNumbers} from '../../read-models/shared-state/return-types';
 import {
   PAGE_LABELS,
   PurchaseRequestAnswers,
@@ -53,6 +56,7 @@ const purchasingAreasFor = (
 ): ReadonlyArray<PurchasingAreaOption> =>
   readModel.purchasing.getAll(now).map(purchasingArea => ({
     id: purchasingArea.id,
+    purchaserMemberNumbers: purchasingArea.purchasers.flatMap(allMemberNumbers),
     name: purchasingArea.name,
     areaIds: purchasingArea.areas.map(area => area.id),
     areaNames: purchasingArea.areas.map(area => area.name),
@@ -88,7 +92,7 @@ const yesNo = (answer: string) =>
 // page is shown saying what - so editing ?step= can't skip ahead.
 const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
   input =>
-  ({readModel}) => {
+  ({readModel, user}) => {
     const now = new Date();
     const purchasingAreas = purchasingAreasFor(readModel, now);
     // ?purchasingArea= (from a purchasing area's page) or being a purchaser
@@ -106,6 +110,8 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
       affectsOtherAreas: readAnswer(input, 'affectsOtherAreas'),
       affectedAreaIds: readAll(input, 'affectedAreaIds'),
       healthAndSafetyRisk: readAnswer(input, 'healthAndSafetyRisk'),
+      buyingDirectly: readAnswer(input, 'buyingDirectly'),
+      amount: readAnswer(input, 'amount'),
       proposal: pipe(
         input,
         t.type({proposal: RawProposal}).decode,
@@ -117,7 +123,44 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
     const chosen = O.fromNullable(
       purchasingAreas.find(area => area.id === answers.purchasingAreaId)
     );
-    const purchases = normalisePurchases(answers.purchases);
+    const isSuperUser = pipe(
+      readModel.members.getByMemberNumber(user.memberNumber),
+      O.exists(member => member.isSuperUser)
+    );
+    // Whether they can buy it directly, for the area chosen.
+    const buyerRole: BuyerRole = isSuperUser
+      ? 'super-user'
+      : pipe(
+            chosen,
+            O.exists(area =>
+              area.purchaserMemberNumbers.includes(user.memberNumber)
+            )
+          )
+        ? 'purchaser'
+        : 'neither';
+    const buyingDirectly = answers.buyingDirectly === 'true';
+    // Bought directly, only what it cost is given; otherwise the itemised
+    // shops make the total.
+    const purchases = buyingDirectly
+      ? pipe(
+          PositivePenceFromPoundsString.decode(answers.amount),
+          E.bimap(
+            () => 'Please give what it cost, in pounds, e.g. 42.50.',
+            () => []
+          )
+        )
+      : normalisePurchases(answers.purchases);
+    const total = pipe(
+      purchases,
+      E.map(typed =>
+        buyingDirectly
+          ? pipe(
+              PositivePenceFromPoundsString.decode(answers.amount),
+              E.getOrElse(() => 0)
+            )
+          : totalPence(typed)
+      )
+    );
     const consumable = yesNo(answers.isMemberPaidConsumable);
     const affectsOthers = yesNo(answers.affectsOtherAreas);
     const risky = yesNo(answers.healthAndSafetyRisk);
@@ -141,6 +184,40 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
           .filter(area => answers.affectedAreaIds.includes(area.id))
           .map(area => area.name)
       : [];
+
+    const classification = pipe(
+      O.Do,
+      O.apS('area', chosen),
+      O.apS('totalPence', O.fromEither(total)),
+      O.apS('isMemberPaidConsumable', consumable),
+      O.apS('healthAndSafetyRisk', risky),
+      O.map(({area, totalPence, isMemberPaidConsumable, healthAndSafetyRisk}) =>
+        classifyPurchase({
+          affectedAreaNames,
+          healthAndSafetyRisk,
+          isMemberPaidConsumable,
+          amountPence: totalPence,
+          yearlyBudgetPence: area.yearlyBudgetPence,
+          spentThisYearPence: area.spentThisYearPence,
+        })
+      )
+    );
+    // Only checked once everything it depends on is answered.
+    const buyingDirectlyProblem = pipe(
+      classification,
+      O.filter(() => buyingDirectly),
+      O.chain(found =>
+        pipe(
+          canBuyDirectly(buyerRole, {
+            affectedAreaNames,
+            healthAndSafetyRisk: pipe(risky, O.exists(Boolean)),
+            classification: found,
+          }),
+          E.swap,
+          O.fromEither
+        )
+      )
+    );
 
     const aboutMissing = [
       ...(O.isNone(chosen) ? ['the area it is for'] : []),
@@ -167,6 +244,13 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
               'Please say whether it presents a moderate to high health and safety risk.',
             ]
           : []),
+        ...pipe(
+          buyingDirectlyProblem,
+          O.match(
+            () => [],
+            problem => [problem]
+          )
+        ),
       ],
     ];
     const firstIncomplete = problemsOn.findIndex(problems => problems.length);
@@ -190,26 +274,19 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
       problems: requested > step ? problemsOn[step - 1] : [],
       chosen,
       otherAreas,
+      buyerRole,
       result:
         step === 3
           ? pipe(
               O.Do,
-              O.apS('area', chosen),
               O.apS('purchases', O.fromEither(purchases)),
-              O.apS('isMemberPaidConsumable', consumable),
-              O.apS('healthAndSafetyRisk', risky),
-              O.map(({area, purchases, isMemberPaidConsumable, healthAndSafetyRisk}) => ({
+              O.apS('totalPence', O.fromEither(total)),
+              O.apS('classification', classification),
+              O.map(({purchases, totalPence, classification}) => ({
                 purchases,
-                totalPence: totalPence(purchases),
+                totalPence,
                 affectedAreaNames,
-                classification: classifyPurchase({
-                  affectedAreaNames,
-                  healthAndSafetyRisk,
-                  isMemberPaidConsumable,
-                  amountPence: totalPence(purchases),
-                  yearlyBudgetPence: area.yearlyBudgetPence,
-                  spentThisYearPence: area.spentThisYearPence,
-                }),
+                classification,
               }))
             )
           : O.none,

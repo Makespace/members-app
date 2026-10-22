@@ -59,6 +59,7 @@ describe('purchasing areas in the read model', () => {
       budgetYear,
       yearlyBudgetPence: 150_000,
       spentThisYearPence: 0,
+      boughtDirectly: false,
     });
 
   beforeEach(async () => {
@@ -368,6 +369,14 @@ describe('purchasing areas in the read model', () => {
         expect(get()).toMatchObject({
           spentThisYearPence: 249_000,
           awaitingApprovalPence: 0,
+        });
+      });
+
+      it('counts one bought directly straight away', () => {
+        insert({...submitted('budget', 30_000), boughtDirectly: true});
+        expect(get()).toMatchObject({
+          spentThisYearPence: 254_000,
+          awaitingApprovalPence: 25_000,
         });
       });
 

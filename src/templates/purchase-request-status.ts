@@ -5,6 +5,7 @@ const tags: Record<PurchaseRequestStatus, {label: string; colour: string}> = {
   'awaiting-approval': {label: 'Awaiting approval', colour: 'grey'},
   approved: {label: 'Approved', colour: 'green'},
   declined: {label: 'Declined', colour: 'red'},
+  'bought-directly': {label: 'Bought directly', colour: 'blue'},
 };
 
 // Where a purchase request has got to, as a tag.

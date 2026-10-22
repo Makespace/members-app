@@ -1618,6 +1618,11 @@ ul.purchase-checkboxes {
   color: color-mix(in oklch, black 50%, var(--red-color));
 }
 
+.tag--blue {
+  background-color: color-mix(in oklch, white 75%, var(--link-color));
+  color: color-mix(in oklch, black 40%, var(--link-color));
+}
+
 /* Click-to-copy text (e.g. email under the owner's name).
    Overrides the global green button styling - it should read as a link. */
 .copy-text {
@@ -4959,6 +4964,40 @@ details.proposal-section > *:not(summary) {
   padding: 1rem;
   border: 2px solid var(--border-color);
   border-top: 0;
+}
+
+/* The purchase request form's "making this purchase yourself" option, for
+   super users and the area's purchasers: in the super-user style, and
+   greyed out for everyone else. */
+.buy-directly {
+  --super-user-color: #5b2a86;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 1rem;
+  border: 2px dashed var(--super-user-color);
+  background: color-mix(in oklch, white 94%, var(--super-user-color));
+}
+
+.buy-directly__label {
+  color: var(--super-user-color);
+  font-size: 0.8rem;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.buy-directly--unavailable {
+  --super-user-color: var(--grey-color);
+  opacity: 0.7;
+}
+
+.buy-directly__message:empty {
+  display: none;
+}
+
+.buy-directly__message {
+  font-weight: bold;
 }
 
 /* Controls only super users can see (src/templates/super-user.ts): purple

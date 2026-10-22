@@ -1,4 +1,9 @@
-// Where a purchase request has got to. Every request waits for a super user
-// (in effect, the directors) to approve or decline it; only approved ones
+// Where a purchase request has got to. A request waits for a super user (in
+// effect, the directors) to approve or decline it, unless a super user or the
+// area's purchaser bought it directly. Approved and directly bought ones
 // count against a purchasing area's budget.
-export type PurchaseRequestStatus = 'awaiting-approval' | 'approved' | 'declined';
+export type PurchaseRequestStatus =
+  | 'awaiting-approval'
+  | 'approved'
+  | 'declined'
+  | 'bought-directly';

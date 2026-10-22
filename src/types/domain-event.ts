@@ -291,6 +291,10 @@ const PurchaseRequestSubmitted = defineEvent('PurchaseRequestSubmitted', {
   budgetYear: t.number,
   yearlyBudgetPence: t.number,
   spentThisYearPence: t.number,
+  // Bought by whoever sent it (a super user or the area's purchaser), e.g.
+  // with Capital on Tap, rather than waiting for approval. The purchases are
+  // empty then; totalPence is what it cost.
+  boughtDirectly: tt.withFallback(t.boolean, false),
 });
 
 // A super user approving a purchase request, so it can go ahead and counts

@@ -110,7 +110,7 @@ export const render = (viewModel: ViewModel) => {
           : renderTable(awaiting, viewModel.canSeePrivateDetails)}
       </section>
       <section class="stack">
-        <h2>Approved and declined</h2>
+        <h2>Approved, bought directly or declined</h2>
         ${decided.length === 0
           ? html`<p>None yet.</p>`
           : renderTable(decided, viewModel.canSeePrivateDetails)}

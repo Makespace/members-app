@@ -1418,7 +1418,7 @@ const _updateState =
             healthAndSafetyRisk: event.healthAndSafetyRisk,
             proposalJson:
               event.proposal === null ? null : JSON.stringify(event.proposal),
-            status: 'awaiting-approval',
+            status: event.boughtDirectly ? 'bought-directly' : 'awaiting-approval',
             outcome: event.outcome,
             approval: event.approval,
             outcomeReason: event.outcomeReason,

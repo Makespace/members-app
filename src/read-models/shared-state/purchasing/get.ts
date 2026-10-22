@@ -32,8 +32,9 @@ import {UserId} from '../../../types';
 import {PurchaseCodec} from '../../../purchasing/purchases';
 import {ProposalCodec} from '../../../purchasing/proposal';
 
-// This year's requests that would come out of the budget, by status: only
-// approved ones count as spent; those awaiting approval are shown apart.
+// This year's requests that would come out of the budget, by status: those
+// approved or bought directly count as spent; those awaiting approval are
+// shown apart.
 const budgetRequestsInYear =
   (db: BetterSQLite3Database) =>
   (purchasingAreaId: UUID, budgetYear: number) => {
@@ -57,7 +58,7 @@ const budgetRequestsInYear =
         .filter(row => row.status === status)
         .reduce((total, row) => total + row.amountPence, 0);
     return {
-      approvedPence: totalWith('approved'),
+      approvedPence: totalWith('approved') + totalWith('bought-directly'),
       awaitingApprovalPence: totalWith('awaiting-approval'),
     };
   };
