@@ -2940,6 +2940,149 @@ body:has(.tt-wrapper) {
   margin: 0.25rem 0 0.5rem;
 }
 
+/* The report form's area and equipment picker: each step folds to one line
+   naming what has been chosen, and opens onto a grid of tiles. An area that
+   sorts its equipment into categories opens onto one folded section per
+   category instead. */
+.tt-picker {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.tt-picker__step {
+  border: 2px solid var(--text-color);
+  background: white;
+}
+
+.tt-picker details > *:not(summary) {
+  border-left: 0;
+}
+
+.tt-picker__step > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.75rem;
+  padding: 0.8rem;
+  color: var(--text-color);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tt-picker__step > summary::before {
+  content: '▸';
+  color: var(--link-color);
+}
+
+.tt-picker__step[open] > summary::before {
+  content: '▾';
+}
+
+.tt-picker__label {
+  color: var(--grey-color);
+}
+
+.tt-picker__chosen {
+  font-weight: 700;
+  color: var(--link-color);
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.tt-picker__step > summary:hover .tt-picker__chosen {
+  text-decoration-thickness: 3px;
+}
+
+.tt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.5rem;
+  padding: 0 0.8rem 0.8rem;
+}
+
+.tt-groups {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0 0.8rem 0.8rem;
+}
+
+.tt-group > summary {
+  padding: 0.4rem 0;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tt-group__name {
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.tt-group__count {
+  margin-left: 0.5rem;
+  color: var(--grey-color);
+  font-size: 0.9rem;
+}
+
+.tt-group .tt-grid {
+  padding: 0.25rem 0 0.75rem;
+}
+
+.tt-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 3.5rem;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--border-color);
+  background: white;
+  color: var(--text-color);
+  font: inherit;
+  text-align: left;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.tt-tile:hover {
+  border-color: var(--text-color);
+  background: white;
+}
+
+.tt-tile:active {
+  transform: none;
+}
+
+/* The radio itself is hidden; the tile's border shows the choice. */
+.tt-tile input[type='radio'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.tt-tile:focus-within,
+.tt-tile:focus-visible {
+  outline: var(--focus-color) solid 3px;
+}
+
+.tt-tile[aria-pressed='true'],
+.tt-tile:has(input:checked) {
+  border-color: var(--link-color);
+  box-shadow: inset 0 0 0 2px var(--link-color);
+  background: #eef4fa;
+}
+
+.tt-tile__meta {
+  color: var(--grey-color);
+}
+
+.tt-tile--other {
+  min-height: 0;
+  padding: 0.6rem 0.8rem;
+}
+
 /* Mailbox: a conversation reads top to bottom, each message set apart. */
 .mailbox__count {
   color: var(--grey-color);
