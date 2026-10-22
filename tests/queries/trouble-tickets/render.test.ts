@@ -37,6 +37,7 @@ const ticket = (overrides: Partial<BoardTicketView> = {}): BoardTicketView => ({
   onMyTrainerMachine: false,
   managementOnly: false,
   canChangeStatus: true,
+  canAssignOthers: false,
   ...overrides,
 });
 

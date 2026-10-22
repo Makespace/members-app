@@ -9,7 +9,9 @@
 // made, with placeholders where the answers will go.
 export type TicketChange =
   | {type: 'TroubleTicketCreated'}
-  | {type: 'TroubleTicketAssigned'; comment: string}
+  // assignee is set when somebody assigned the ticket to someone else; a
+  // member picking a ticket up themselves leaves it out.
+  | {type: 'TroubleTicketAssigned'; comment: string; assignee?: string}
   | {type: 'TroubleTicketResolved'; summary: string}
   | {
       type: 'TroubleTicketParked';
@@ -28,6 +30,13 @@ export const describeTicketChange = (
     case 'TroubleTicketCreated':
       return "Thanks for letting us know about this issue. One of the owners of the equipment will address it soon.\n\nIf the equipment is not useable, or is unsafe, please put a sign on it telling other members, and consider a post on the Google group.";
     case 'TroubleTicketAssigned':
+      // Assigned by somebody else, the comment is the assigner's, not the
+      // words of whoever is now working on it.
+      if (change.assignee !== undefined) {
+        return change.comment !== ''
+          ? `${change.assignee} is now working on this ticket (assigned by ${actor}).\n\n${actor} said: ${change.comment}`
+          : `${change.assignee} is now working on this ticket (assigned by ${actor}).`;
+      }
       return change.comment !== ''
         ? `${actor} is now working on this ticket.\n\nThey said: ${change.comment}`
         : `${actor} is now working on this ticket.`;
@@ -39,6 +48,16 @@ export const describeTicketChange = (
       return `${actor} looked at this ticket but needs help, so it's open for another trainer to pick up.\n\nWhat they tried: ${change.whatTried}\nWhy it didn't work: ${change.whyDidntWork}`;
   }
 };
+
+// What the member a ticket was handed to is told: it is theirs now, and who
+// gave it to them.
+export const describeAssignmentToAssignee = (
+  actor: string,
+  comment: string
+): string =>
+  comment !== ''
+    ? `${actor} has assigned this ticket to you.\n\nThey said: ${comment}`
+    : `${actor} has assigned this ticket to you.`;
 
 // A new ticket reads differently to the person who reported it than to the
 // owner of the machine it is about: one is being thanked, the other is being
