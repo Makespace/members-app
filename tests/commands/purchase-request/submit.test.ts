@@ -490,6 +490,14 @@ describe('submit purchase request', () => {
     );
   });
 
+  it("refuses a request id already used by someone else", async () => {
+    const body = formBody();
+    insert(await submitted(body));
+    expect(await failure(body, userActor(otherMemberNumber))).toMatchObject({
+      status: StatusCodes.BAD_REQUEST,
+    });
+  });
+
   describe('who may submit', () => {
     const input = () => getRightOrFail(submit.decode(formBody()));
 

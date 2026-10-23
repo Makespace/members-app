@@ -32,6 +32,11 @@ import {
   PurchasingArea,
 } from '../../read-models/shared-state/return-types';
 import {PositivePenceFromPoundsString} from '../../types/money';
+import {
+  limitedText,
+  LONG_TEXT_MAX,
+  SUMMARY_MAX,
+} from '../../types/limited-text';
 
 // A yes/no radio answer.
 const answer = t.union([t.boolean, tt.BooleanFromString]);
@@ -46,7 +51,7 @@ const codec = t.strict({
   healthAndSafetyRisk: answer,
   // Only read when the request needs a proposal.
   proposal: t.union([RawProposal, t.undefined]),
-  summary: tt.NonEmptyString,
+  summary: limitedText(SUMMARY_MAX),
   // Each shop with the items bought there and any delivery charge; their
   // total decides the outcome. See src/purchasing/purchases.ts. Not needed
   // when buying directly.
@@ -55,11 +60,11 @@ const codec = t.strict({
   // see src/purchasing/buy-directly.ts. Then only what it cost is given.
   buyingDirectly: t.union([answer, t.undefined]),
   amount: t.union([t.string, t.undefined]),
-  justification: tt.NonEmptyString,
+  justification: limitedText(LONG_TEXT_MAX),
   // API only: who the request is recorded against when it is entered with
   // the admin token (seeding, or recording one made elsewhere). Ignored for
   // a logged-in member, who always submits as themselves.
-  submittedByMemberNumber: t.union([t.number, tt.NumberFromString, t.undefined]),
+  submittedByMemberNumber: t.union([t.Int, tt.IntFromString, t.undefined]),
 });
 
 type SubmitPurchaseRequest = t.TypeOf<typeof codec>;
@@ -144,9 +149,25 @@ const directAmount = (amount: string | undefined) =>
 // page may have shown.
 const process: Command<SubmitPurchaseRequest>['process'] = input => {
   const {command, rm} = input;
-  if (O.isSome(rm.purchasing.getRequest(command.id))) {
-    // Already recorded - most likely the form was submitted twice.
-    return TE.right(O.none);
+  const existing = rm.purchasing.getRequest(command.id);
+  if (O.isSome(existing)) {
+    // Already recorded by them - most likely the form was submitted twice.
+    // Someone else's id (e.g. from a link they sent) is refused, rather than
+    // silently dropping this request.
+    const sameSubmitter = pipe(
+      submitterMemberNumber(command.actor, command.submittedByMemberNumber),
+      E.exists(
+        memberNumber => memberNumber === existing.value.submittedByMemberNumber
+      )
+    );
+    return sameSubmitter
+      ? TE.right(O.none)
+      : TE.left(
+          failureWithStatus(
+            'This purchase request has already been sent by someone else. Please start a new one.',
+            StatusCodes.BAD_REQUEST
+          )()
+        );
   }
   const now = new Date();
   return pipe(
@@ -188,10 +209,11 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
         spentThisYearPence: purchasingArea.spentThisYearPence,
       })
     ),
-    E.tap(({boughtDirectly, purchasingArea, affected, classification}) =>
+    E.tap(({boughtDirectly, purchasingArea, affected, classification, totalPence}) =>
       boughtDirectly
         ? pipe(
             canBuyDirectly(buyerRole(rm, command.actor, purchasingArea), {
+              amountPence: totalPence,
               affectedAreaNames: affected.map(area => area.name),
               healthAndSafetyRisk: command.healthAndSafetyRisk,
               classification,

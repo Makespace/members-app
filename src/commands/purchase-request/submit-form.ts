@@ -187,33 +187,39 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
           .map(area => area.name)
       : [];
 
-    const classification = pipe(
+    const classified = pipe(
       O.Do,
       O.apS('area', chosen),
       O.apS('totalPence', O.fromEither(total)),
       O.apS('isMemberPaidConsumable', consumable),
       O.apS('healthAndSafetyRisk', risky),
-      O.map(({area, totalPence, isMemberPaidConsumable, healthAndSafetyRisk}) =>
-        classifyPurchase({
+      O.map(({area, totalPence, isMemberPaidConsumable, healthAndSafetyRisk}) => ({
+        totalPence,
+        classification: classifyPurchase({
           affectedAreaNames,
           healthAndSafetyRisk,
           isMemberPaidConsumable,
           amountPence: totalPence,
           yearlyBudgetPence: area.yearlyBudgetPence,
           spentThisYearPence: area.spentThisYearPence,
-        })
-      )
+        }),
+      }))
+    );
+    const classification = pipe(
+      classified,
+      O.map(found => found.classification)
     );
     // Only checked once everything it depends on is answered.
     const buyingDirectlyProblem = pipe(
-      classification,
+      classified,
       O.filter(() => buyingDirectly),
       O.chain(found =>
         pipe(
           canBuyDirectly(buyerRole, {
+            amountPence: found.totalPence,
             affectedAreaNames,
             healthAndSafetyRisk: pipe(risky, O.exists(Boolean)),
-            classification: found,
+            classification: found.classification,
           }),
           E.swap,
           O.fromEither

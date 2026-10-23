@@ -38,6 +38,18 @@ describe('insertEventWithOptimisticConcurrencyControl', () => {
     dbClient.close();
   });
 
+  it("refuses an event that wouldn't read back, keeping the store loadable", async () => {
+    // Infinity is written to JSON as null, which no event accepts.
+    const event = {...arbitaryEvent(), memberNumber: Infinity};
+    const result = await insertEventWithOptimisticConcurrencyControl(
+      event,
+      0 as t.Int,
+      dbClient
+    )();
+    expect(E.isLeft(result)).toBe(true);
+    expect(await getStoredEvents()).toHaveLength(0);
+  });
+
   describe('inserts the first event', () => {
     const event = arbitaryEvent();
     let result: OCCReturnType;

@@ -32,6 +32,7 @@ import {
 import {renderPurchaseBreakdown} from '../../templates/purchase-breakdown';
 import {renderOutcome} from '../../templates/purchase-request-outcome';
 import {BuyerRole, NEEDS_APPROVAL} from '../../purchasing/buy-directly';
+import {LONG_TEXT_MAX, SUMMARY_MAX} from '../../types/limited-text';
 import {
   PROBABILITY_SCALE,
   SEVERITY_SCALE,
@@ -680,6 +681,7 @@ const renderAboutPage = (viewModel: PurchaseRequestFormViewModel) => html`
         id="summary"
         placeholder="e.g. New table saw blades and a blade guard"
         value="${sanitizeString(viewModel.answers.summary)}"
+        maxlength="${SUMMARY_MAX}"
         required
       />
     </div>
@@ -690,7 +692,12 @@ const renderAboutPage = (viewModel: PurchaseRequestFormViewModel) => html`
       <span class="purchase-request__hint text-sm"
         >A sentence or two for the people who sign off spending.</span
       >
-      <textarea name="justification" id="justification" required>
+      <textarea
+        name="justification"
+        id="justification"
+        maxlength="${LONG_TEXT_MAX}"
+        required
+      >
 ${sanitizeString(viewModel.answers.justification)}</textarea
       >
     </div>
@@ -1675,12 +1682,12 @@ const costsScript = html`
 
       // Mirrors canBuyDirectly (src/purchasing/buy-directly.ts), so they
       // know before moving on; the server checks again.
-      function buyingDirectlyMessage(result, areaNames, risky) {
+      function buyingDirectlyMessage(result, total, areaNames, risky) {
         if (areaNames.length || risky) {
           return "Purchases that affect other areas or carry a health and safety risk need a proposal, so they can't be bought directly.";
         }
         var needsProposal = /proposal-needed$/.test(result.key);
-        if (buy.dataset.buyerRole === 'purchaser' && needsProposal) {
+        if (buy.dataset.buyerRole === 'purchaser' && (needsProposal || total >= threshold)) {
           return "This needs a proposal, so a purchaser can't buy it directly. Send it as a request for a director to approve.";
         }
         return needsProposal ? 'As a super user, you can buy this directly without a proposal.' : '';
@@ -1703,7 +1710,7 @@ const costsScript = html`
         verdict.querySelector('[data-verdict-reason]').textContent = result.reason;
         verdict.hidden = false;
         if (directMessage && buyingDirectly()) {
-          directMessage.textContent = buyingDirectlyMessage(result, areaNames, risky);
+          directMessage.textContent = buyingDirectlyMessage(result, total, areaNames, risky);
         }
       }
 
