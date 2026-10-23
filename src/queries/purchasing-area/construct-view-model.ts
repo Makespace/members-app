@@ -11,6 +11,8 @@ import {
   PurchasingArea,
 } from '../../read-models/shared-state/return-types';
 import {User} from '../../types';
+import {canRequestFor} from '../../purchasing/permissions';
+import {liftActorOrUser} from '../../read-models/lift-actor-or-user';
 import {
   failureWithStatus,
   FailureWithStatus,
@@ -24,6 +26,8 @@ export type ViewModel = {
     request: PurchaseRequest;
     submitter: O.Option<Member>;
   }>;
+  // Owners of its areas, its purchasers and super users.
+  canRequest: boolean;
   canManage: boolean;
   // Email addresses are shown, as on the areas page, to super users and
   // area owners only.
@@ -72,6 +76,7 @@ export const constructViewModel =
               ),
             })),
           canManage: isSuperUser,
+          canRequest: canRequestFor(rm, liftActorOrUser(user), purchasingArea),
           canSeePrivateDetails: isSuperUser || isOwnerOfAnyArea,
         };
       })

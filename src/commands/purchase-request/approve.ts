@@ -5,8 +5,7 @@ import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
 import {constructEvent} from '../../types';
 import {Command} from '../command';
-import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
-import {requestAwaitingDecision} from './decide-helpers';
+import {canDecideById, requestAwaitingDecision} from './decide-helpers';
 
 const codec = t.strict({
   id: tt.UUID,
@@ -33,5 +32,7 @@ const process: Command<ApprovePurchaseRequest>['process'] = input =>
 export const approve: Command<ApprovePurchaseRequest> = {
   process,
   decode: codec.decode,
-  isAuthorized: isAdminOrSuperUser,
+  // A purchaser of its area when it needs no proposal; otherwise a super
+  // user. See src/purchasing/permissions.ts.
+  isAuthorized: ({actor, rm, input}) => canDecideById(rm, actor, input.id),
 };

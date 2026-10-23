@@ -187,10 +187,11 @@ describe('purchasing area page', () => {
     expect(text).toContain('£1,500.00');
   });
 
-  it('lets any member request a purchase, without changing anything', () => {
+  it('points a member who owns none of its areas to trouble tickets', () => {
     const page = pageFor(member);
     expect(page.textContent).not.toContain('Add purchaser');
-    expect(page.textContent).toContain('Request a purchase');
+    expect(page.textContent).not.toContain('Request a purchase');
+    expect(page.textContent).toContain('raise a trouble ticket');
   });
 
   it("shows requests awaiting approval apart from what's spent", async () => {
@@ -210,12 +211,14 @@ describe('purchasing area page', () => {
       submittedByMemberNumber: undefined,
       buyingDirectly: undefined,
       amount: undefined,
-      actor: {tag: 'user', user: member},
+      actor: {tag: 'user', user: purchaser},
     });
     const text = pageFor(member).textContent;
     expect(text).toContain('Spent so far this year £500.00');
     expect(text).toContain('Requests awaiting approval £80.00');
-    expect(text).toContain('Router bits £80.00 Yearly budget Awaiting approval');
+    expect(text).toContain(
+      'Router bits £80.00 Yearly budget Awaiting purchaser approval'
+    );
   });
 
   it('lets a purchaser request a purchase', () => {

@@ -9,7 +9,6 @@ import {
   toLoggedInContentWithBackLink,
 } from '../../types/html';
 import {formatPence} from '../../types/money';
-import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
 import {
   decisionAction,
   decisionFromParams,
@@ -53,7 +52,8 @@ export const declineForm: Form<DecisionViewModel> = {
   renderForm,
   constructForm:
     input =>
-    ({readModel}) =>
-      TE.fromEither(decisionFromParams(readModel, input)),
-  formIsAuthorized: isAdminOrSuperUser,
+    ({readModel, user}) =>
+      TE.fromEither(decisionFromParams(readModel, input, user)),
+  // Checked against the request itself, in decisionFromParams.
+  formIsAuthorized: null,
 };

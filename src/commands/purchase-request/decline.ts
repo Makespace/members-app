@@ -6,8 +6,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {constructEvent} from '../../types';
 import {Command} from '../command';
 import {limitedText, REASON_MAX} from '../../types/limited-text';
-import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
-import {requestAwaitingDecision} from './decide-helpers';
+import {canDecideById, requestAwaitingDecision} from './decide-helpers';
 
 const codec = t.strict({
   id: tt.UUID,
@@ -36,5 +35,7 @@ const process: Command<DeclinePurchaseRequest>['process'] = input =>
 export const decline: Command<DeclinePurchaseRequest> = {
   process,
   decode: codec.decode,
-  isAuthorized: isAdminOrSuperUser,
+  // A purchaser of its area when it needs no proposal; otherwise a super
+  // user. See src/purchasing/permissions.ts.
+  isAuthorized: ({actor, rm, input}) => canDecideById(rm, actor, input.id),
 };

@@ -25,12 +25,8 @@ import {
   RawProposal,
   typedProposal,
 } from '../../purchasing/proposal';
-import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
-import {BuyerRole, canBuyDirectly} from '../../purchasing/buy-directly';
-import {
-  allMemberNumbers,
-  PurchasingArea,
-} from '../../read-models/shared-state/return-types';
+import {canBuyDirectly} from '../../purchasing/buy-directly';
+import {buyerRoleFor, canRequestFor} from '../../purchasing/permissions';
 import {PositivePenceFromPoundsString} from '../../types/money';
 import {
   limitedText,
@@ -119,24 +115,6 @@ const submitterMemberNumber = (
   );
 };
 
-// Who is sending it, as far as buying directly goes. The admin API counts as
-// a super user.
-const buyerRole = (
-  rm: SharedReadModel,
-  actor: Actor,
-  purchasingArea: PurchasingArea
-): BuyerRole => {
-  if (isAdminOrSuperUser({actor, rm})) {
-    return 'super-user';
-  }
-  return actor.tag === 'user' &&
-    purchasingArea.purchasers.some(purchaser =>
-      allMemberNumbers(purchaser).includes(actor.user.memberNumber)
-    )
-    ? 'purchaser'
-    : 'neither';
-};
-
 // What it cost when bought directly: the amount given, in pounds.
 const directAmount = (amount: string | undefined) =>
   pipe(
@@ -212,7 +190,7 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
     E.tap(({boughtDirectly, purchasingArea, affected, classification, totalPence}) =>
       boughtDirectly
         ? pipe(
-            canBuyDirectly(buyerRole(rm, command.actor, purchasingArea), {
+            canBuyDirectly(buyerRoleFor(rm, command.actor, purchasingArea), {
               amountPence: totalPence,
               affectedAreaNames: affected.map(area => area.name),
               healthAndSafetyRisk: command.healthAndSafetyRisk,
@@ -278,13 +256,18 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
   );
 };
 
-// Any logged-in member can request a purchase; it then waits for a super
-// user to approve it. The admin API can submit on a member's behalf. Who
-// may buy directly is checked with the rest of the request, above.
+// Owners of the purchasing area's areas, its purchasers and super users; see
+// src/purchasing/permissions.ts. The admin API can submit on a member's
+// behalf. Who may buy directly is checked with the rest of the request.
 const isAuthorized: Command<SubmitPurchaseRequest>['isAuthorized'] = ({
   actor,
   rm,
-}) => actor.tag === 'user' || isAdminOrSuperUser({actor, rm});
+  input,
+}) =>
+  pipe(
+    rm.purchasing.get(input.purchasingAreaId, new Date()),
+    O.exists(purchasingArea => canRequestFor(rm, actor, purchasingArea))
+  );
 
 export const submit: Command<SubmitPurchaseRequest> = {
   process,

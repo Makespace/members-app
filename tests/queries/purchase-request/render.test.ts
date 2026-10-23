@@ -84,10 +84,11 @@ describe('purchase request page', () => {
   });
 
 
-  it('says a director needs to approve it next, and its proposal if it has one', () => {
+  it("says a purchaser needs to approve it next, or a director if it needs a proposal", () => {
     expect(page(true).replace(/\s+/g, ' ')).toContain(
-      'a director needs to approve this request.'
+      "one of the area's purchasers (or a director) needs to approve this request."
     );
+    expect(page(true)).toContain('Awaiting purchaser approval');
     expect(
       page(true, {outcome: 'budget-proposal-needed', approval: 'proposal'}).replace(
         /\s+/g,
@@ -115,7 +116,7 @@ describe('purchase request page', () => {
         status: 'approved',
         decidedAt: O.some(new Date('2026-10-16T09:00:00Z')),
       }).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ')
-    ).toContain('Approved by Dee Director');
+    ).toContain('Approved (purchaser approval) by Dee Director');
     expect(
       page(false, {
         status: 'declined',

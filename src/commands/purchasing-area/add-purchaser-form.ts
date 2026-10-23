@@ -104,8 +104,11 @@ const renderForm = (viewModel: ViewModel) =>
           Add a purchaser for ${sanitizeString(viewModel.purchasingArea.name)}
         </h1>
         <p>
-          Purchasers can submit purchase requests against this purchasing
-          area's budget. They are chosen from the owners of its areas.
+          Owners of its areas can request purchases. Purchasers approve them,
+          and can make a purchase themselves when it doesn't need a proposal;
+          anything that does goes to the directors. Purchasers are chosen from
+          the owners of its areas, and stop counting as one if they stop being
+          an owner.
         </p>
         ${renderCandidates(viewModel)}
       </div>

@@ -6,6 +6,9 @@ import {pipe} from 'fp-ts/lib/function';
 import {StatusCodes} from 'http-status-codes';
 import {formatValidationErrors} from 'io-ts-reporters';
 import {SharedReadModel} from '../../read-models/shared-state';
+import {Actor, User} from '../../types';
+import {liftActorOrUser} from '../../read-models/lift-actor-or-user';
+import {canDecide} from '../../purchasing/permissions';
 import {
   PurchaseRequest,
   PurchasingArea,
@@ -48,10 +51,19 @@ export type DecisionViewModel = {
   purchasingArea: O.Option<PurchasingArea>;
 };
 
+// Who can approve or decline the request with this id; see
+// src/purchasing/permissions.ts.
+export const canDecideById = (rm: SharedReadModel, actor: Actor, id: tt.UUID) =>
+  pipe(
+    rm.purchasing.getRequest(id),
+    O.exists(request => canDecide(rm, actor, request))
+  );
+
 // For forms reached as /purchase-requests/<verb>?request=<id>.
 export const decisionFromParams = (
   rm: SharedReadModel,
-  input: unknown
+  input: unknown,
+  user: User
 ): E.Either<FailureWithStatus, DecisionViewModel> =>
   pipe(
     input,
@@ -63,6 +75,14 @@ export const decisionFromParams = (
       )(formatValidationErrors(errors))
     ),
     E.chain(({request}) => requestAwaitingDecision(rm, request)),
+    E.filterOrElse(
+      request => canDecide(rm, liftActorOrUser(user), request),
+      () =>
+        failureWithStatus(
+          'You are not authorized to perform this action',
+          StatusCodes.FORBIDDEN
+        )()
+    ),
     E.map(request => ({
       request,
       purchasingArea: rm.purchasing.get(request.purchasingAreaId, new Date()),

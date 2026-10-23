@@ -11,7 +11,6 @@ import {
 import {formatPence} from '../../types/money';
 import {countsAgainstBudget} from '../../purchasing/budget-year';
 import {renderOutcome} from '../../templates/purchase-request-outcome';
-import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
 import {
   decisionAction,
   decisionFromParams,
@@ -72,7 +71,8 @@ export const approveForm: Form<DecisionViewModel> = {
   renderForm,
   constructForm:
     input =>
-    ({readModel}) =>
-      TE.fromEither(decisionFromParams(readModel, input)),
-  formIsAuthorized: isAdminOrSuperUser,
+    ({readModel, user}) =>
+      TE.fromEither(decisionFromParams(readModel, input, user)),
+  // Checked against the request itself, in decisionFromParams.
+  formIsAuthorized: null,
 };

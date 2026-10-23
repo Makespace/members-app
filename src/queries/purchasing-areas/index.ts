@@ -5,9 +5,12 @@ import {Query} from '../query';
 import {safe, toLoggedInContent} from '../../types/html';
 import {budgetYearOf} from '../../purchasing/budget-year';
 import {render} from './render';
+import {canRequestFor} from '../../purchasing/permissions';
+import {liftActorOrUser} from '../../read-models/lift-actor-or-user';
 
 // Every purchasing area with this year's budget figures. Any member may look;
-// only super users change them, and purchasers (or super users) submit.
+// only super users change them, and owners, purchasers and super users
+// request purchases.
 export const purchasingAreas: Query = deps => user => {
   const now = new Date();
   const member = deps.sharedReadModel.members.getByMemberNumber(
@@ -17,11 +20,15 @@ export const purchasingAreas: Query = deps => user => {
     member,
     O.exists(m => m.isSuperUser)
   );
+  const purchasingAreas = deps.sharedReadModel.purchasing.getAll(now);
   return pipe(
     render({
       budgetYear: budgetYearOf(now),
-      purchasingAreas: deps.sharedReadModel.purchasing.getAll(now),
+      purchasingAreas,
       canManage: isSuperUser,
+      canRequest: purchasingAreas.some(purchasingArea =>
+        canRequestFor(deps.sharedReadModel, liftActorOrUser(user), purchasingArea)
+      ),
     }),
     toLoggedInContent(safe('Purchasing areas')),
     TE.right

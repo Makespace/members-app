@@ -511,7 +511,24 @@ describe('submit purchase request', () => {
       ).toBe(true);
     });
 
-    it('is any other member too, as requests wait for approval', () => {
+    it('is not a member who owns none of its areas', () => {
+      expect(
+        submit.isAuthorized({
+          actor: userActor(otherMemberNumber),
+          rm: framework.sharedReadModel,
+          input: input(),
+        })
+      ).toBe(false);
+    });
+
+    it('is an owner of one of its areas', () => {
+      insert(
+        constructEvent('OwnerAdded')({
+          actor: arbitraryActor(),
+          areaId,
+          memberNumber: otherMemberNumber,
+        })
+      );
       expect(
         submit.isAuthorized({
           actor: userActor(otherMemberNumber),
