@@ -22,22 +22,29 @@ const woodShop = {
   remainingPence: 58_000,
 };
 
-const setUp = (purchases: ReadonlyArray<TypedPurchase> = []) => {
+// The page 1 answers page 2's result goes on.
+type Answers = {consumable: boolean; areas: ReadonlyArray<string>; risky: boolean};
+
+const renderPage = (
+  step: number,
+  purchases: ReadonlyArray<TypedPurchase> = [],
+  {consumable, areas, risky}: Answers = {consumable: false, areas: [], risky: false}
+) => {
   document.body.innerHTML = renderSubmitForm({
     requestId: '33333333-3333-4333-8333-333333333333' as UUID,
     budgetYear: 2026,
     purchasingAreas: [woodShop],
     proposalThresholdPence: 100_000,
-    step: 2,
+    step,
     answers: {
       purchasingAreaId: woodShop.id,
       summary: 'Saw blades',
       justification: 'Blunt',
       purchases,
-      isMemberPaidConsumable: '',
-      affectsOtherAreas: 'false',
+      isMemberPaidConsumable: String(consumable),
+      affectsOtherAreas: String(areas.length > 0),
       affectedAreaIds: [],
-      healthAndSafetyRisk: 'false',
+      healthAndSafetyRisk: String(risky),
       buyingDirectly: '',
       amount: '',
       proposal: {need: '', options: [], preferred: '', risks: [], location: '', owner: '', training: ''},
@@ -45,7 +52,8 @@ const setUp = (purchases: ReadonlyArray<TypedPurchase> = []) => {
     problems: [],
     chosen: O.some(woodShop),
     buyerRole: 'neither',
-    otherAreas: [
+    affectedAreaNames: areas,
+    areas: [
       {id: '66666666-6666-4666-8666-666666666666' as UUID, name: 'Metal Shop'},
       {id: '77777777-7777-4777-8777-777777777777' as UUID, name: 'Textiles'},
     ],
@@ -56,6 +64,10 @@ const setUp = (purchases: ReadonlyArray<TypedPurchase> = []) => {
   const script = document.createElement('script');
   script.textContent = inline.textContent;
   inline.replaceWith(script);
+};
+
+const setUp = (purchases: ReadonlyArray<TypedPurchase> = [], answers?: Answers) => {
+  renderPage(2, purchases, answers);
   return document.getElementById('purchase-costs-form') as HTMLFormElement;
 };
 
@@ -282,29 +294,22 @@ describe('purchase request cost breakdown script', () => {
   describe('the budget result', () => {
     const verdict = (form: HTMLFormElement) =>
       form.querySelector<HTMLElement>('[data-budget-verdict]')!;
-    const answer = (form: HTMLFormElement, consumable: boolean) => {
-      form.querySelector<HTMLInputElement>(
-        consumable ? '#consumable-yes' : '#consumable-no'
-      )!.checked = true;
-      form.dispatchEvent(new Event('change'));
-    };
+    const answers = (consumable: boolean) => ({consumable, areas: [], risky: false});
     const costing = (form: HTMLFormElement, cost: string) => {
       fill(form, 'purchases[0][items][0][sku]', 'A');
       fill(form, 'purchases[0][items][0][quantity]', '1');
       fill(form, 'purchases[0][items][0][cost]', cost);
     };
 
-    it('shows nothing until there is a total and the question is answered', () => {
+    it('shows nothing until there is a total', () => {
       const form = setUp();
-      costing(form, '185');
       expect(verdict(form).hidden).toBe(true);
-      answer(form, false);
+      costing(form, '185');
       expect(verdict(form).hidden).toBe(false);
     });
 
     it('says which budget it comes out of, for the total so far', () => {
       const form = setUp();
-      answer(form, false);
       costing(form, '185');
       expect(verdict(form).textContent.replace(/\s+/g, ' ')).toContain(
         'For the £185 total'
@@ -316,7 +321,6 @@ describe('purchase request cost breakdown script', () => {
 
     it('updates as costs change, saying when a proposal is needed', () => {
       const form = setUp();
-      answer(form, false);
       costing(form, '600');
       expect(verdict(form).querySelector('.purchase-verdict--proposal')).not.toBeNull();
       costing(form, '100');
@@ -326,7 +330,6 @@ describe('purchase request cost breakdown script', () => {
     it('shows straight away when coming back to the page with answers', () => {
       document.body.innerHTML = '';
       const form = setUp([jewson]);
-      answer(form, false);
       expect(verdict(form).textContent.replace(/\s+/g, ' ')).toContain(
         'For the £150 total'
       );
@@ -339,15 +342,14 @@ describe('purchase request cost breakdown script', () => {
       ['over the budget', false, '580.01'],
       ['a single purchase of £1,000', false, '1000'],
     ])('explains %s exactly as the server does', (_, consumable, cost) => {
-      const form = setUp();
-      answer(form, consumable);
+      const form = setUp([], answers(consumable));
       costing(form, cost);
       expect(
         verdict(form).querySelector('[data-verdict-reason]')!.textContent
       ).toBe(
         classifyPurchase({
-        affectedAreaNames: [],
-        healthAndSafetyRisk: false,
+          affectedAreaNames: [],
+          healthAndSafetyRisk: false,
           isMemberPaidConsumable: consumable,
           amountPence: Math.round(Number(cost) * 100),
           yearlyBudgetPence: woodShop.yearlyBudgetPence,
@@ -419,50 +421,21 @@ describe('purchase request cost breakdown script', () => {
   describe('other areas and health and safety', () => {
     const verdict = (form: HTMLFormElement) =>
       form.querySelector<HTMLElement>('[data-budget-verdict]')!;
-    const pick = (form: HTMLFormElement, id: string) => {
-      form.querySelector<HTMLInputElement>(`#${id}`)!.checked = true;
-      form.dispatchEvent(new Event('change'));
-    };
-    const tick = (form: HTMLFormElement, name: string) => {
-      [
-        ...form.querySelectorAll<HTMLInputElement>('input[name="affectedAreaIds"]'),
-      ]
-        .find(box => box.closest('label')!.textContent.trim() === name)!
-        .checked = true;
-      form.dispatchEvent(new Event('change'));
-    };
     const costing = (form: HTMLFormElement, cost: string) => {
       fill(form, 'purchases[0][items][0][sku]', 'A');
       fill(form, 'purchases[0][items][0][quantity]', '1');
       fill(form, 'purchases[0][items][0][cost]', cost);
     };
-    const otherAreas = (form: HTMLFormElement) =>
-      form.querySelector<HTMLElement>('[data-other-areas]')!;
 
-    it('only lists the other areas once it says it affects some', () => {
-      const form = setUp();
-      expect(otherAreas(form).hidden).toBe(true);
-      pick(form, 'affects-yes');
-      expect(otherAreas(form).hidden).toBe(false);
-      pick(form, 'affects-no');
-      expect(otherAreas(form).hidden).toBe(true);
-    });
-
-    it('needs a proposal once other areas are affected', () => {
-      const form = setUp();
-      pick(form, 'consumable-no');
+    it('needs a proposal when other areas are affected', () => {
+      const form = setUp([], {consumable: false, areas: ['Textiles'], risky: false});
       costing(form, '50');
-      expect(verdict(form).querySelector('.purchase-verdict--budget')).not.toBeNull();
-      pick(form, 'affects-yes');
-      tick(form, 'Textiles');
       expect(verdict(form).querySelector('.purchase-verdict--proposal')).not.toBeNull();
       expect(verdict(form).textContent).toContain('It affects Textiles too');
     });
 
     it('shows a consumable needing a proposal for a safety risk', () => {
-      const form = setUp();
-      pick(form, 'consumable-yes');
-      pick(form, 'risk-yes');
+      const form = setUp([], {consumable: true, areas: [], risky: true});
       costing(form, '50');
       expect(verdict(form).textContent).toContain('Paid for by members · Proposal needed');
     });
@@ -473,13 +446,7 @@ describe('purchase request cost breakdown script', () => {
       ['everything at once', false, '1200', ['Metal Shop'], true],
       ['a risky consumable', true, '50', [], true],
     ])('explains %s exactly as the server does', (_, consumable, cost, areas, risky) => {
-      const form = setUp();
-      pick(form, consumable ? 'consumable-yes' : 'consumable-no');
-      if (areas.length) {
-        pick(form, 'affects-yes');
-        areas.forEach(area => tick(form, area));
-      }
-      if (risky) pick(form, 'risk-yes');
+      const form = setUp([], {consumable, areas, risky});
       costing(form, cost);
       expect(
         verdict(form).querySelector('[data-verdict-reason]')!.textContent
@@ -494,5 +461,27 @@ describe('purchase request cost breakdown script', () => {
         }).reason
       );
     });
+  });
+});
+
+describe('purchase request page 1 script', () => {
+  const setUpPage1 = () => {
+    renderPage(1);
+    return document.getElementById('purchase-about-form') as HTMLFormElement;
+  };
+  const pick = (form: HTMLFormElement, id: string) => {
+    form.querySelector<HTMLInputElement>(`#${id}`)!.checked = true;
+    form.dispatchEvent(new Event('change'));
+  };
+  const otherAreas = (form: HTMLFormElement) =>
+    form.querySelector<HTMLElement>('[data-other-areas]')!;
+
+  it('only lists the other areas once it says it affects some', () => {
+    const form = setUpPage1();
+    expect(otherAreas(form).hidden).toBe(true);
+    pick(form, 'affects-yes');
+    expect(otherAreas(form).hidden).toBe(false);
+    pick(form, 'affects-no');
+    expect(otherAreas(form).hidden).toBe(true);
   });
 });

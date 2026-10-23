@@ -64,7 +64,8 @@ const setUp = (prefill: Prefill = {}) => {
     problems: [],
     chosen: O.some(woodShop),
     buyerRole: 'neither',
-    otherAreas: [],
+    affectedAreaNames: [],
+    areas: [],
     result: O.some({
       purchases: [],
       totalPence: 50_000,
