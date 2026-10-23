@@ -340,7 +340,7 @@ const renderSpending = (viewModel: ViewModel) => {
 export const render = (viewModel: ViewModel) => html`
   <div class="stack-large">
     <h1>${sanitizeString(viewModel.purchasingArea.name)}</h1>
-    ${renderSpending(viewModel)} ${renderBudget(viewModel)}
+    ${renderBudget(viewModel)} ${renderSpending(viewModel)}
     ${renderAreas(viewModel)} ${renderPurchasers(viewModel)}
   </div>
 `;
