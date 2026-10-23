@@ -47,6 +47,7 @@ const renderPage = (
       healthAndSafetyRisk: String(risky),
       buyingDirectly: '',
       amount: '',
+      outsideBudget: '',
       proposal: {need: '', options: [], preferred: '', risks: [], location: '', owner: '', training: ''},
     },
     problems: [],

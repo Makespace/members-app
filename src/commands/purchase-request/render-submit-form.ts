@@ -86,6 +86,9 @@ export type PurchaseRequestAnswers = {
   // only what it cost (amount, in pounds) is asked for, not the shops.
   buyingDirectly: string;
   amount: string;
+  // 'true' when a super user buying it directly says the directors approved
+  // it outside the yearly budget.
+  outsideBudget: string;
   // The proposal as typed, if the form comes back with one.
   proposal: TypedProposal;
 };
@@ -470,6 +473,7 @@ const carried = ({
     ['healthAndSafetyRisk', answers.healthAndSafetyRisk] as const,
     ['buyingDirectly', answers.buyingDirectly] as const,
     ['amount', answers.amount] as const,
+    ['outsideBudget', answers.outsideBudget] as const,
   ].filter(([, value]) => value !== '');
 
 // Which page's questions a name belongs to.
@@ -485,7 +489,8 @@ const askedOnAboutPage = (name: string) =>
   ].includes(name);
 
 const askedOnCostsPage = (name: string) =>
-  name.startsWith('purchases[') || ['buyingDirectly', 'amount'].includes(name);
+  name.startsWith('purchases[') ||
+  ['buyingDirectly', 'amount', 'outsideBudget'].includes(name);
 
 // Everything but what the page itself asks for.
 const carriedExcept = (
@@ -743,6 +748,13 @@ const verdictStyle: Record<
     heading:
       "This doesn't come out of your yearly budget, but you'll need to write a proposal",
   },
+  'outside-budget': {
+    modifier: 'outside-budget',
+    tag: html`<span class="tag tag--blue"
+      >Approved outside the yearly budget</span
+    >`,
+    heading: "This doesn't come out of your yearly budget",
+  },
 };
 
 // One outcome's box: its colour, tag and heading, with the explanation and
@@ -770,6 +782,7 @@ const verdictKeys: ReadonlyArray<VerdictKey> = [
   'consumable-proposal-needed',
   'budget',
   'budget-proposal-needed',
+  'outside-budget',
 ];
 
 // Super users and the area's purchasers can make the purchase themselves;
@@ -838,6 +851,37 @@ const renderBuyDirectly = ({
               placeholder="e.g. 42.50"
               value="${sanitizeString(answers.amount)}"
             />
+            ${buyerRole === 'super-user'
+              ? html`<fieldset class="purchase-request__fieldset">
+                  <legend class="purchase-field__label">
+                    Does it come out of the yearly budget?
+                  </legend>
+                  <div class="purchase-request__radios">
+                    <div class="fieldset-item">
+                      <input
+                        type="radio"
+                        name="outsideBudget"
+                        id="outside-budget-no"
+                        value="false"
+                        ${checkedIf(answers.outsideBudget !== 'true')}
+                      />
+                      <label for="outside-budget-no">Yes</label>
+                    </div>
+                    <div class="fieldset-item">
+                      <input
+                        type="radio"
+                        name="outsideBudget"
+                        id="outside-budget-yes"
+                        value="true"
+                        ${checkedIf(answers.outsideBudget === 'true')}
+                      />
+                      <label for="outside-budget-yes"
+                        >No, the directors approved it outside the budget</label
+                      >
+                    </div>
+                  </div>
+                </fieldset>`
+              : html``}
           </div>
           <p class="buy-directly__message" data-direct-message aria-live="polite"></p>`
         : html``}
@@ -1661,7 +1705,7 @@ const costsScript = html`
           ? names.join('')
           : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
       }
-      function classify(consumable, amount, areaNames, risky) {
+      function classify(consumable, amount, areaNames, risky, outsideBudget) {
         var others = [];
         if (areaNames.length) {
           others.push('It affects ' + listOf(areaNames) +
@@ -1672,6 +1716,12 @@ const costsScript = html`
         }
         function withOthers(sentence) {
           return [sentence].concat(others).join(' ');
+        }
+        if (outsideBudget) {
+          return {
+            key: others.length ? 'budget-proposal-needed' : 'outside-budget',
+            reason: withOthers("Approved outside the yearly budget, so it doesn't count against it."),
+          };
         }
         if (consumable) {
           return {
@@ -1747,7 +1797,9 @@ const costsScript = html`
           verdict.innerHTML = '';
           return;
         }
-        var result = classify(consumable, total, areaNames, risky);
+        var outside = form.querySelector('input[name="outsideBudget"]:checked');
+        var result = classify(consumable, total, areaNames, risky,
+          buyingDirectly() && !!outside && outside.value === 'true');
         var template = form.querySelector('[data-verdict-template="' + result.key + '"]');
         verdict.innerHTML = template.innerHTML;
         verdict.querySelector('[data-verdict-total]').textContent = gbp(total);

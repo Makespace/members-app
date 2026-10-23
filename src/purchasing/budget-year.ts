@@ -10,4 +10,4 @@ export const budgetYearOf = (date: Date): number =>
 // Everything members don't pay for comes out of the yearly budget - once a
 // super user has approved it; see the purchasing read model.
 export const countsAgainstBudget = (outcome: PurchaseRequestOutcome): boolean =>
-  outcome !== 'consumable';
+  outcome !== 'consumable' && outcome !== 'outside-budget';

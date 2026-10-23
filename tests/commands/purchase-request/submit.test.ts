@@ -583,6 +583,12 @@ describe('submit purchase request', () => {
       ).toMatchObject({status: StatusCodes.FORBIDDEN});
     });
 
+    it("doesn't let a purchaser record one approved outside the budget", async () => {
+      expect(
+        await failure(direct('42.50', {outsideBudget: 'true'}))
+      ).toMatchObject({status: StatusCodes.FORBIDDEN});
+    });
+
     it("isn't for a purchaser when it would need a proposal", async () => {
       expect(await failure(direct('1000.00'))).toMatchObject({
         status: StatusCodes.FORBIDDEN,
@@ -610,6 +616,20 @@ describe('submit purchase request', () => {
           boughtDirectly: true,
           totalPence: 120_000,
           approval: 'proposal',
+          proposal: null,
+        });
+      });
+
+      it('can record one approved outside the budget', async () => {
+        const event = getSomeOrFail(
+          await getTaskEitherRightOrFail(
+            submitAs(superUser, direct('5000.00', {outsideBudget: 'true'}))
+          )
+        );
+        expect(event).toMatchObject({
+          boughtDirectly: true,
+          outcome: 'outside-budget',
+          approval: 'none',
           proposal: null,
         });
       });

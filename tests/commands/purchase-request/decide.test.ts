@@ -51,6 +51,7 @@ describe('approving or declining a purchase request', () => {
       submittedByMemberNumber: undefined,
       buyingDirectly: undefined,
       amount: undefined,
+      outsideBudget: undefined,
       actor: userActor(ownerNumber),
     });
     return id;

@@ -56,6 +56,9 @@ const codec = t.strict({
   // see src/purchasing/buy-directly.ts. Then only what it cost is given.
   buyingDirectly: t.union([answer, t.undefined]),
   amount: t.union([t.string, t.undefined]),
+  // A super user buying directly: the directors approved it outside the
+  // yearly budget. Ignored otherwise.
+  outsideBudget: t.union([answer, t.undefined]),
   justification: limitedText(LONG_TEXT_MAX),
   // API only: who the request is recorded against when it is entered with
   // the admin token (seeding, or recording one made elsewhere). Ignored for
@@ -177,8 +180,26 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
       boughtDirectly ? directAmount(command.amount) : E.right(totalPence(purchases))
     ),
     E.bind('affected', () => affectedAreas(rm, command)),
-    E.let('classification', ({purchasingArea, totalPence, affected}) =>
+    E.let('role', ({purchasingArea}) =>
+      buyerRoleFor(rm, command.actor, purchasingArea)
+    ),
+    // Only a super user buying it directly can say it was approved outside
+    // the budget.
+    E.bind('approvedOutsideBudget', ({boughtDirectly, role}) =>
+      command.outsideBudget !== true
+        ? E.right(false)
+        : boughtDirectly && role === 'super-user'
+          ? E.right(true)
+          : E.left(
+              failureWithStatus(
+                'Only a super user buying it directly can record a purchase approved outside the budget.',
+                StatusCodes.FORBIDDEN
+              )()
+            )
+    ),
+    E.let('classification', ({purchasingArea, totalPence, affected, approvedOutsideBudget}) =>
       classifyPurchase({
+        approvedOutsideBudget,
         affectedAreaNames: affected.map(area => area.name),
         healthAndSafetyRisk: command.healthAndSafetyRisk,
         isMemberPaidConsumable: command.isMemberPaidConsumable,
@@ -187,10 +208,10 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
         spentThisYearPence: purchasingArea.spentThisYearPence,
       })
     ),
-    E.tap(({boughtDirectly, purchasingArea, affected, classification, totalPence}) =>
+    E.tap(({boughtDirectly, role, affected, classification, totalPence}) =>
       boughtDirectly
         ? pipe(
-            canBuyDirectly(buyerRoleFor(rm, command.actor, purchasingArea), {
+            canBuyDirectly(role, {
               amountPence: totalPence,
               affectedAreaNames: affected.map(area => area.name),
               healthAndSafetyRisk: command.healthAndSafetyRisk,

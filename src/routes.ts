@@ -133,11 +133,6 @@ export const initRoutes = (
     ),
     ...command(
       'purchasing-areas',
-      'record-spend',
-      commands.purchasingArea.recordSpend
-    ),
-    ...command(
-      'purchasing-areas',
       'remove-spend',
       commands.purchasingArea.removeSpend
     ),

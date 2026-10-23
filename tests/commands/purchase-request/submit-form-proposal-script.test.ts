@@ -51,6 +51,7 @@ const setUp = (prefill: Prefill = {}) => {
       healthAndSafetyRisk: 'true',
       buyingDirectly: '',
       amount: '',
+      outsideBudget: '',
       proposal: {
         need: '',
         options: prefill.options ?? [],

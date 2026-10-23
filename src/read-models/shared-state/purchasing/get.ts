@@ -32,9 +32,9 @@ import {UserId} from '../../../types';
 import {PurchaseCodec} from '../../../purchasing/purchases';
 import {ProposalCodec} from '../../../purchasing/proposal';
 
-// This year's requests that would come out of the budget, by status: those
-// approved or bought directly count as spent; those awaiting approval are
-// shown apart.
+// This year's requests by status: those approved or bought directly count as
+// spent, or - when approved outside the budget - as approved spending apart
+// from it; those awaiting approval are shown apart.
 const budgetRequestsInYear =
   (db: BetterSQLite3Database) =>
   (purchasingAreaId: UUID, budgetYear: number) => {
@@ -51,15 +51,21 @@ const budgetRequestsInYear =
           eq(purchaseRequestsTable.budgetYear, budgetYear)
         )
       )
-      .all()
-      .filter(row => countsAgainstBudget(row.outcome));
+      .all();
+    const sum = (selected: typeof rows) =>
+      selected.reduce((total, row) => total + row.amountPence, 0);
+    const budgetRows = rows.filter(row => countsAgainstBudget(row.outcome));
     const totalWith = (status: string) =>
-      rows
-        .filter(row => row.status === status)
-        .reduce((total, row) => total + row.amountPence, 0);
+      sum(budgetRows.filter(row => row.status === status));
     return {
       approvedPence: totalWith('approved') + totalWith('bought-directly'),
       awaitingApprovalPence: totalWith('awaiting-approval'),
+      outsideBudgetPence: sum(
+        rows.filter(
+          row =>
+            row.outcome === 'outside-budget' && row.status === 'bought-directly'
+        )
+      ),
     };
   };
 
@@ -180,7 +186,8 @@ const expand =
       yearlyBudgetPence,
       usualBudgetPence: row.yearlyBudgetPence,
       recordedSpend,
-      approvedSpendThisYearPence: recordedOfKind('approved'),
+      approvedSpendThisYearPence:
+        recordedOfKind('approved') + requests.outsideBudgetPence,
       awaitingApprovalPence: requests.awaitingApprovalPence,
       areas,
       purchasers: getPurchasersOf(db)(

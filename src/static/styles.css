@@ -1316,6 +1316,10 @@ label img {
   border-color: var(--red-color);
 }
 
+.purchase-verdict--outside-budget {
+  border-color: var(--link-color);
+}
+
 .purchase-verdict h2 {
   font-size: 1.5rem;
 }

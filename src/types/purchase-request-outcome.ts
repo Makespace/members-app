@@ -9,6 +9,9 @@ export const PurchaseRequestOutcomeCodec = t.keyof({
   consumable: null,
   budget: null,
   'budget-proposal-needed': null,
+  // A super user's direct purchase the directors approved separately: it
+  // doesn't count against the yearly budget.
+  'outside-budget': null,
 });
 
 export type PurchaseRequestOutcome = t.TypeOf<

@@ -1,11 +1,10 @@
 import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
-import {NonEmptyString, UUID} from 'io-ts-types';
+import { UUID} from 'io-ts-types';
 import {constructEvent, DomainEvent} from '../../../src/types';
 import {DomainEvent as DomainEventCodec} from '../../../src/types/domain-event';
 import {setYearBudget} from '../../../src/commands/purchasing-area/set-year-budget';
 import {setBudget} from '../../../src/commands/purchasing-area/set-budget';
-import {recordSpend} from '../../../src/commands/purchasing-area/record-spend';
 import {removeSpend} from '../../../src/commands/purchasing-area/remove-spend';
 import {budgetYearOf} from '../../../src/purchasing/budget-year';
 import {
@@ -147,35 +146,23 @@ describe('purchasing area budget adjustments', () => {
   });
 
   describe('recorded spending', () => {
+    // Recorded by super users before purchases went through the app; new
+    // spending goes through the request form instead.
     const spendId = faker.string.uuid() as UUID;
-    const record = () =>
-      recordSpend.process({
-        command: {
-          id: spendId,
-          purchasingAreaId,
-          amount: 300_000,
-          description: ' Spending before requests were in the app ' as NonEmptyString,
-          kind: 'budget',
-          actor,
-        },
-        rm: rm(),
-      });
-
-    it('is recorded against this year', async () => {
-      expect(getSomeOrFail(await getTaskEitherRightOrFail(record()))).toMatchObject({
-        type: 'PurchasingAreaSpendRecorded',
-        id: spendId,
-        purchasingAreaId,
-        budgetYear: thisYear,
-        amountPence: 300_000,
-        description: 'Spending before requests were in the app',
-        kind: 'budget',
-      });
-    });
 
     describe('once recorded', () => {
-      beforeEach(async () => {
-        insert(getSomeOrFail(await getTaskEitherRightOrFail(record())));
+      beforeEach(() => {
+        insert(
+          constructEvent('PurchasingAreaSpendRecorded')({
+            actor,
+            id: spendId,
+            purchasingAreaId,
+            budgetYear: thisYear,
+            amountPence: 300_000,
+            description: 'Spending before requests were in the app',
+            kind: 'budget',
+          })
+        );
       });
 
       it('counts as spent this year and is listed', () => {
@@ -190,10 +177,6 @@ describe('purchasing area budget adjustments', () => {
             }),
           ],
         });
-      });
-
-      it('is only recorded once if sent twice', async () => {
-        expect(await getTaskEitherRightOrFail(record())).toStrictEqual(O.none);
       });
 
       it('can be removed, no longer counting', async () => {
@@ -265,25 +248,6 @@ describe('purchasing area budget adjustments', () => {
           }),
         ],
       });
-    });
-
-    it('is recorded as approved', async () => {
-      const event = getSomeOrFail(
-        await getTaskEitherRightOrFail(
-          recordSpend.process({
-            command: {
-              id: faker.string.uuid() as UUID,
-              purchasingAreaId,
-              amount: 100_000,
-              description: 'Extraction repair' as NonEmptyString,
-              kind: 'approved',
-              actor,
-            },
-            rm: rm(),
-          })
-        )
-      );
-      expect(event).toMatchObject({kind: 'approved', amountPence: 100_000});
     });
   });
 
