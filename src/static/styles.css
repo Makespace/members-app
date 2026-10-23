@@ -1626,6 +1626,11 @@ ul.purchase-checkboxes {
   color: color-mix(in oklch, black 50%, var(--red-color));
 }
 
+.tag--super-user {
+  background-color: color-mix(in oklch, white 85%, var(--super-user-color));
+  color: var(--super-user-color);
+}
+
 .tag--blue {
   background-color: color-mix(in oklch, white 75%, var(--link-color));
   color: color-mix(in oklch, black 40%, var(--link-color));
@@ -5045,6 +5050,12 @@ details.proposal-section > *:not(summary) {
 button.button--super-user {
   font-size: 1rem;
   padding: 6px 14px;
+}
+
+/* Full size where it stands beside a main button, e.g. at the end of a form. */
+.step-nav button.button--super-user {
+  font-size: 120%;
+  padding: 10px 20px;
 }
 
 .super-user-actions__buttons {

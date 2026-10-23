@@ -32,3 +32,10 @@ export const renderOutcome = (
     >${safe(tag.label)}</span
   >`;
 };
+
+// Next to "Proposal needed" when a super user goes ahead without one: only
+// they can, and only when its cost alone needs one.
+export const renderSuperUserOverride = () =>
+  html`<span class="tag tag--super-user purchase-outcome"
+    >Super user override: no proposal</span
+  >`;
