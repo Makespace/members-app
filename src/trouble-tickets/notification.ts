@@ -59,6 +59,17 @@ export const describeAssignmentToAssignee = (
     ? `${actor} has assigned this ticket to you.\n\nThey said: ${comment}`
     : `${actor} has assigned this ticket to you.`;
 
+// An invitation to help with a ticket, as the invitee reads it.
+export const describeInvitation = (actor: string, message: string): string =>
+  (message !== ''
+    ? `${actor} has invited you to help with this ticket.\n\nThey said: ${message}`
+    : `${actor} has invited you to help with this ticket.`) +
+  '\n\nOpen the ticket to accept or decline.';
+
+// The inviter hearing that somebody cannot help.
+export const describeInvitationDeclined = (actor: string): string =>
+  `${actor} has declined your invitation to help with this ticket.`;
+
 // A new ticket reads differently to the person who reported it than to the
 // owner of the machine it is about: one is being thanked, the other is being
 // told there is something to look at. Only consulted for a new ticket - an

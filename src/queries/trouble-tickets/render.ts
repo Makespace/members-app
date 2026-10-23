@@ -7,6 +7,7 @@ import {Focus} from './focus';
 import {
   managementOnlyMarker,
   renderAssignees,
+  renderInvitees,
   statusBadge,
 } from '../../templates/trouble-ticket-card';
 import {categoryDot} from '../../templates/equipment-category';
@@ -352,7 +353,13 @@ const renderRow = (ticket: BoardTicketView) => {
               >`
         }
       </td>
-      <td data-label="Assigned">${renderAssignees(ticket.assignees)}</td>
+      <td data-label="Assigned">
+        ${renderAssignees(ticket.assignees)}${ticket.invited.length === 0
+          ? html``
+          : html`<small class="tt-table__sub"
+              >invited: ${renderInvitees(ticket.invited)}</small
+            >`}
+      </td>
     </tr>
   `;
 };

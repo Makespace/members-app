@@ -8,6 +8,7 @@ import {
   deletedTroubleTicketRowHashesTable,
   troubleTicketAssigneesTable,
   troubleTicketChangeLogTable,
+  troubleTicketInvitationsTable,
   troubleTicketNotificationsTable,
   troubleTicketsTable,
 } from '../state';
@@ -67,6 +68,27 @@ export const getTroubleTicketChangeLog =
       emailedTo: notified.get(row.eventIndex) ?? null,
     }));
   };
+
+// An outstanding invitation to help with a ticket.
+export type TroubleTicketInvitation = {
+  ticketId: UUID;
+  inviteeMemberNumber: number;
+  inviterMemberNumber: number;
+  invitedAt: Date;
+};
+
+// Outstanding invitations for the given tickets, oldest first.
+export const getTroubleTicketInvitations =
+  (db: BetterSQLite3Database) =>
+  (ticketIds: ReadonlyArray<UUID>): ReadonlyArray<TroubleTicketInvitation> =>
+    ticketIds.length === 0
+      ? []
+      : db
+          .select()
+          .from(troubleTicketInvitationsTable)
+          .where(inArray(troubleTicketInvitationsTable.ticketId, [...ticketIds]))
+          .orderBy(troubleTicketInvitationsTable.invitedAt)
+          .all();
 
 type Row = typeof troubleTicketsTable.$inferSelect;
 

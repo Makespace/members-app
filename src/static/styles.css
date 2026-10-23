@@ -1947,6 +1947,14 @@ ul.purchase-checkboxes {
   font-size: 0.95rem;
 }
 
+/* An invitation to help with a ticket, to the member it was sent to. Tinted
+   with In Progress, which is where accepting it puts them. */
+.tt-invitation {
+  border-left: 4px solid var(--tt-in-progress);
+  padding: 0.75rem 1rem;
+  background: color-mix(in oklch, white 92%, var(--tt-in-progress));
+}
+
 /* In the change log: who was told about a change, or that nobody was. */
 .tt-emailed {
   display: block;
