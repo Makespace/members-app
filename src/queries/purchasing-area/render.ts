@@ -257,7 +257,7 @@ const renderSpendingRow = (viewModel: ViewModel) => (row: SpendingRow) => {
           >
         </td>
         <td>${money(request.totalPence)}</td>
-        <td>${renderOutcome(request.outcome, request.approval)}</td>
+        <td>${renderOutcome(request.outcome, request.approval, request.status)}</td>
         <td>${renderStatus(request)}</td>
         ${canManage ? html`<td></td>` : html``}
       </tr>

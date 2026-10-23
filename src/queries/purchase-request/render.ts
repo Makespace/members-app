@@ -162,7 +162,7 @@ export const render = ({
           <dd>${renderStatus(request)}</dd>
           <dt>Budget</dt>
           <dd>
-            ${renderOutcome(request.outcome, request.approval)}
+            ${renderOutcome(request.outcome, request.approval, request.status)}
             ${request.status === 'bought-directly' &&
             request.approval === 'proposal'
               ? renderSuperUserOverride()
