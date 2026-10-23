@@ -85,9 +85,9 @@ export const getTroubleTicketCandidates = async (
 
   let skippedNoTimestamp = 0;
   const candidates = rows.flatMap(row => {
-    // The DDL has no NOT NULL on response_submitted, so distrust the drizzle
-    // type: a NULL (or out-of-range) stored value must not crash the reader.
-    const submittedAt = row.response_submitted as Date | null;
+    // The DDL has no NOT NULL on response_submitted; older sync versions and
+    // abandoned sheet ids can leave NULL rows that must not crash the reader.
+    const submittedAt = row.response_submitted;
     if (submittedAt === null || !Number.isFinite(submittedAt.getTime())) {
       skippedNoTimestamp++;
       return [];
