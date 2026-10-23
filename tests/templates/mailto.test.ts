@@ -70,7 +70,7 @@ describe('mailTo', () => {
       expect(rendered).toContain(
         '<a href="mailto:%22foo%3Cbar%26baz%22%40example.com">'
       );
-      expect(rendered).toContain('"foo&lt;bar&amp;baz"@example.com');
+      expect(rendered).toContain('&quot;foo&lt;bar&amp;baz&quot;@example.com');
     });
   });
 
