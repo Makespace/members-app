@@ -137,6 +137,8 @@ const normaliseLink = (
   }
 };
 
+const MAX_QUANTITY = 1_000_000;
+
 const normaliseQuantity = (
   raw: string,
   where: string
@@ -145,9 +147,14 @@ const normaliseQuantity = (
   if (trimmed === '') {
     return E.left(`${where}: please give a quantity.`);
   }
-  return /^\d+$/.test(trimmed) && Number(trimmed) > 0
-    ? E.right(Number(trimmed))
-    : E.left(`${where}: the quantity should be a whole number, e.g. 4.`);
+  // Capped well below where numbers lose precision (or become Infinity,
+  // which can't be stored).
+  const quantity = Number(trimmed);
+  return /^\d+$/.test(trimmed) && quantity > 0 && quantity <= MAX_QUANTITY
+    ? E.right(quantity)
+    : E.left(
+        `${where}: the quantity should be a whole number from 1 to ${MAX_QUANTITY.toLocaleString('en-GB')}, e.g. 4.`
+      );
 };
 
 const normaliseMoney = (

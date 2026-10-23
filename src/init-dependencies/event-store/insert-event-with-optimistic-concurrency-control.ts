@@ -1,5 +1,6 @@
 import {v4 as uuidv4} from 'uuid';
 import {Client} from '@libsql/client';
+import * as E from 'fp-ts/Either';
 import {DomainEvent} from '../../types';
 import {dbExecute} from '../../util';
 import * as TE from 'fp-ts/TaskEither';
@@ -30,12 +31,33 @@ const describeError = (err: Error) => ({
   ...('code' in err ? {code: err['code']} : {}),
 });
 
+// An event is only stored if it reads back: one that doesn't (e.g. a number
+// too big for JSON, stored as null) would stop the read model loading every
+// event after it, and the app starting.
+const storablePayload = (
+  event: DomainEvent
+): E.Either<FailureWithStatus, string> => {
+  const payload = JSON.stringify(event);
+  return pipe(
+    DomainEvent.decode(JSON.parse(payload)),
+    E.bimap(
+      () =>
+        failureWithStatus(
+          'Some of what was entered could not be saved. Please check the numbers are sensible.',
+          StatusCodes.BAD_REQUEST
+        )({type: event.type}),
+      () => payload
+    )
+  );
+};
+
 export const insertEventWithOptimisticConcurrencyControl = (
   event: DomainEvent,
   lastSeenEventIndex: Int,
   eventDB: Client
 ): TE.TaskEither<FailureWithStatus, 'raised-event' | 'last-known-version-out-of-date'> => pipe(
-  TE.tryCatch<Error, 'raised-event' | 'last-known-version-out-of-date'>(
+  TE.fromEither(storablePayload(event)),
+  TE.chain(payload => pipe(TE.tryCatch<Error, 'raised-event' | 'last-known-version-out-of-date'>(
     () => dbExecute(
       eventDB,
       insertEventRow,
@@ -43,7 +65,7 @@ export const insertEventWithOptimisticConcurrencyControl = (
         uuidv4(),
         lastSeenEventIndex + 1,
         event.type,
-        JSON.stringify(event)
+        payload
       ]
     ).then(_res => 'raised-event'),
     (err) => {
@@ -58,5 +80,5 @@ export const insertEventWithOptimisticConcurrencyControl = (
       'Failed to insert event into database',
       StatusCodes.INTERNAL_SERVER_ERROR
     )(describeError(err)));
-  }),
+  }))),
 );

@@ -6,7 +6,9 @@ class PathType extends t.Type<string> {
   constructor() {
     super(
       'string',
-      (m): m is string => typeof m === 'string' && m.startsWith('/'),
+      // A path on this site: starts with one slash, so not //host or /\host,
+      // which browsers treat as another site.
+      (m): m is string => typeof m === 'string' && /^\/(?![/\\])/.test(m),
       (m, c) => (this.is(m) ? t.success(m) : t.failure(m, c)),
       t.identity
     );
