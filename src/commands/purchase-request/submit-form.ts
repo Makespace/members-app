@@ -33,11 +33,12 @@ import {
   PurchaseRequestAnswers,
   PurchaseRequestFormViewModel,
   PurchasingAreaOption,
+  formTitle,
   renderSubmitForm,
 } from './render-submit-form';
 
 const renderForm = (viewModel: PurchaseRequestFormViewModel) =>
-  toLoggedInContentWithBackLink(safe('Request a purchase'), {
+  toLoggedInContentWithBackLink(safe(formTitle(viewModel)), {
     href: '/purchasing-areas',
     label: 'Purchasing areas',
   })(renderSubmitForm(viewModel));

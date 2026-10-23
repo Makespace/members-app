@@ -15,6 +15,7 @@ import {renderMember} from '../../templates/member';
 import {displayDateOnly} from '../../templates/display-date';
 import {renderOutcome} from '../../templates/purchase-request-outcome';
 import {renderStatus} from '../../templates/purchase-request-status';
+import {renderRecordPurchaseButton} from '../../templates/record-purchase-button';
 import {
   superUserActions,
   superUserButton,
@@ -315,6 +316,9 @@ const renderSpending = (viewModel: ViewModel) => {
             missing or has run out, such as a consumable,
             <a href="/trouble-tickets/raise">raise a trouble ticket</a>.
           </p>`}
+      ${viewModel.canBuyDirectly
+        ? renderRecordPurchaseButton(viewModel.purchasingArea.id)
+        : html``}
       ${rows.length === 0
         ? html`<p>None yet this year.</p>`
         : html`<table>
