@@ -104,6 +104,13 @@ export const recurlyReasons = (flags: O.Option<RecurlyFlags>): ReadonlyArray<Rec
     return reasons;
 };
 
+// The verdict for ownership-bearing roles (area owners, and through them
+// trainers): a past-due invoice counts as inactive, since cancelling payment
+// is a common way members self-deactivate. Shared by the /areas page and the
+// training stats email; the 'active'/'inactive' calc above is unchanged.
+export const isActiveForOwnership = (flags: O.Option<RecurlyFlags>): boolean =>
+    O.isSome(flags) && flags.value.hasActiveSubscription && !flags.value.hasPastDueInvoice;
+
 export const getRecurlyReasonsForMember = (extDB: ExternalStateDB) => async (
     member: Pick<MemberCoreInfo, 'emails'>
 ): Promise<{flags: O.Option<RecurlyFlags>; reasons: ReadonlyArray<RecurlyReason>}> => {
