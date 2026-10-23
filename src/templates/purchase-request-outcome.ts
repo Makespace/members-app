@@ -14,6 +14,7 @@ const tags: Record<PurchaseRequestOutcome, {label: string; colour: string}> = {
     label: 'Yearly budget · Proposal needed',
     colour: 'red',
   },
+  'outside-budget': {label: 'Approved outside the yearly budget', colour: 'blue'},
 };
 
 // The outcome, as a tag. A consumable usually needs nothing, but can still

@@ -372,6 +372,18 @@ describe('purchasing areas in the read model', () => {
         });
       });
 
+      it('counts one approved outside the budget apart from it', () => {
+        insert({
+          ...submitted('budget', 40_000),
+          outcome: 'outside-budget',
+          boughtDirectly: true,
+        });
+        expect(get()).toMatchObject({
+          spentThisYearPence: 224_000,
+          approvedSpendThisYearPence: 40_000,
+        });
+      });
+
       it('counts one bought directly straight away', () => {
         insert({...submitted('budget', 30_000), boughtDirectly: true});
         expect(get()).toMatchObject({

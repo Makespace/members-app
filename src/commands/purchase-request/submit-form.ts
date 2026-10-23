@@ -124,6 +124,7 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
       healthAndSafetyRisk: readAnswer(input, 'healthAndSafetyRisk'),
       buyingDirectly: readAnswer(input, 'buyingDirectly'),
       amount: readAnswer(input, 'amount'),
+      outsideBudget: readAnswer(input, 'outsideBudget'),
       proposal: pipe(
         input,
         t.type({proposal: RawProposal}).decode,
@@ -208,6 +209,10 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
       O.map(({area, totalPence, isMemberPaidConsumable, healthAndSafetyRisk}) => ({
         totalPence,
         classification: classifyPurchase({
+          approvedOutsideBudget:
+            buyingDirectly &&
+            buyerRole === 'super-user' &&
+            answers.outsideBudget === 'true',
           affectedAreaNames,
           healthAndSafetyRisk,
           isMemberPaidConsumable,

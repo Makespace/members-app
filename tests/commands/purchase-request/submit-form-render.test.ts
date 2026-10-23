@@ -95,6 +95,7 @@ const onPage = (
     healthAndSafetyRisk: 'false',
     buyingDirectly: '',
     amount: '',
+    outsideBudget: '',
     proposal: {need: '', options: [], preferred: '', risks: [], location: '', owner: '', training: ''},
   },
   problems: [],
@@ -208,7 +209,7 @@ describe('purchase request form', () => {
       expect(
         page.querySelector<HTMLElement>('[data-budget-verdict]')!.hidden
       ).toBe(true);
-      expect(page.querySelectorAll('template[data-verdict-template]')).toHaveLength(4);
+      expect(page.querySelectorAll('template[data-verdict-template]')).toHaveLength(5);
     });
 
     it('asks for detailed notes on each item', () => {

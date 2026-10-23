@@ -36,6 +36,9 @@ type ClassificationInput = {
   affectedAreaNames: ReadonlyArray<string>;
   // A moderate to high health and safety risk that will need mitigating.
   healthAndSafetyRisk: boolean;
+  // A super user buying it directly says the directors approved it outside
+  // the yearly budget. Only they can; see src/purchasing/buy-directly.ts.
+  approvedOutsideBudget?: boolean;
 };
 
 export type Classification = {
@@ -78,6 +81,16 @@ export const classifyPurchase = (
   } = input;
   const others = otherReasons(input);
   const withOthers = (sentence: string) => [sentence, ...others].join(' ');
+
+  if (input.approvedOutsideBudget) {
+    return {
+      outcome: 'outside-budget',
+      approval: others.length > 0 ? 'proposal' : 'none',
+      reason: withOthers(
+        "Approved outside the yearly budget, so it doesn't count against it."
+      ),
+    };
+  }
 
   if (isMemberPaidConsumable) {
     return {

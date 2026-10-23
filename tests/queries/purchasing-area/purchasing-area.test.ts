@@ -114,6 +114,7 @@ describe('purchasing area page', () => {
       submittedByMemberNumber: undefined,
       buyingDirectly: undefined,
       amount: undefined,
+      outsideBudget: undefined,
       actor: {tag: 'user', user: purchaser},
     });
     await framework.commands.purchaseRequest.approve({
@@ -136,7 +137,7 @@ describe('purchasing area page', () => {
   // The requests table's "By" cell for the one request.
   const byCell = (user: User) => {
     const {html} = pageFor(user);
-    const table = html.slice(html.indexOf('Purchase requests in'));
+    const table = html.slice(html.indexOf('Spending in'));
     const row = table.slice(table.indexOf('<tbody>'));
     return row.slice(0, row.indexOf('Bandsaw blades'));
   };
@@ -180,6 +181,7 @@ describe('purchasing area page', () => {
       submittedByMemberNumber: undefined,
       buyingDirectly: undefined,
       amount: undefined,
+      outsideBudget: undefined,
       actor: {tag: 'user', user: purchaser},
     });
     const text = pageFor(member).textContent;
@@ -211,6 +213,7 @@ describe('purchasing area page', () => {
       submittedByMemberNumber: undefined,
       buyingDirectly: undefined,
       amount: undefined,
+      outsideBudget: undefined,
       actor: {tag: 'user', user: purchaser},
     });
     const text = pageFor(member).textContent;
@@ -283,20 +286,19 @@ describe('purchasing area page', () => {
       const text = pageFor(member).textContent;
       expect(text).toContain('Approved spending (outside the budget) £1,000.00');
       expect(text).toContain(
-        'Extraction repair, approved by the directors Approved, outside the budget £1,000.00'
+        'Extraction repair, approved by the directors £1,000.00 Approved outside the yearly budget Recorded by a super user'
       );
       expect(text).toContain('Remaining £1,500.00');
     });
 
-    it('lets only super users record spending, set the year budget or remove spending', () => {
+    it('lists recorded spending, letting only super users set the year budget or remove it', () => {
       const removeLink = `href="/purchasing-areas/remove-spend?purchasingArea=${purchasingAreaId}&amp;spend=${spendId}"`;
       const forSuperUser = pageFor(superUser);
-      expect(forSuperUser.textContent).toContain('Record spending');
       expect(forSuperUser.textContent).toContain(`Set ${now.getFullYear()}'s budget`);
       expect(forSuperUser.textContent).toContain('Set usual budget');
       expect(forSuperUser.html).toContain(removeLink);
       const forMember = pageFor(member);
-      expect(forMember.textContent).not.toContain('Record spending');
+      expect(forMember.textContent).toContain('Before requests were in the app');
       expect(forMember.html).not.toContain(removeLink);
     });
   });

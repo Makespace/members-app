@@ -8,6 +8,7 @@ import {
   PurchaseRequest,
   PurchasingArea,
   PurchasingAreaPurchaser,
+  RecordedSpend,
 } from '../../read-models/shared-state/return-types';
 import {renderMemberNumber} from '../../templates/member-number';
 import {renderMember} from '../../templates/member';
@@ -69,56 +70,6 @@ const renderAreas = (viewModel: ViewModel) => {
 };
 
 // Spending super users recorded directly, rather than through requests.
-const renderRecordedSpend = (
-  purchasingArea: PurchasingArea,
-  canManage: boolean
-) =>
-  purchasingArea.recordedSpend.length === 0
-    ? html``
-    : html`
-        <h3>Recorded spending</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Recorded</th>
-              <th>What it was for</th>
-              <th>Budget</th>
-              <th>Amount</th>
-              ${canManage ? html`<th></th>` : html``}
-            </tr>
-          </thead>
-          <tbody>
-            ${joinHtml(
-              purchasingArea.recordedSpend.map(
-                spend => html`
-                  <tr>
-                    <td>${displayDateOnly(spend.recordedAt)}</td>
-                    <td>${sanitizeString(spend.description)}</td>
-                    <td>
-                      ${spend.kind === 'approved'
-                        ? html`Approved, outside the budget`
-                        : html`Yearly budget`}
-                    </td>
-                    <td>${money(spend.amountPence)}</td>
-                    ${canManage
-                      ? html`<td>
-                          ${superUserLink(
-                            `/purchasing-areas/remove-spend?${query({
-                              purchasingArea: purchasingArea.id,
-                              spend: spend.id,
-                            })}`,
-                            html`Remove`
-                          )}
-                        </td>`
-                      : html``}
-                  </tr>
-                `
-              )
-            )}
-          </tbody>
-        </table>
-      `;
-
 const renderBudget = (viewModel: ViewModel) => {
   const {purchasingArea, canManage} = viewModel;
   return html`
@@ -160,15 +111,8 @@ const renderBudget = (viewModel: ViewModel) => {
             : html``}
         </tbody>
       </table>
-      ${renderRecordedSpend(purchasingArea, canManage)}
       ${canManage
         ? superUserActions(html`
-            ${superUserButton(
-              `/purchasing-areas/record-spend?${query({
-                purchasingArea: purchasingArea.id,
-              })}`,
-              html`Record spending`
-            )}
             ${superUserButton(
               `/purchasing-areas/set-year-budget?${query({
                 purchasingArea: purchasingArea.id,
@@ -272,75 +216,131 @@ const renderSubmitter = (
     )
   );
 
-const renderRequestRow =
-  (canSeePrivateDetails: boolean) =>
-  ({
-    request,
-    submitter,
-  }: {
-    request: PurchaseRequest;
-    submitter: O.Option<Member>;
-  }) => html`
-  <tr>
-    <td>${displayDateOnly(request.submittedAt)}</td>
-    <td>${renderSubmitter(request, submitter, canSeePrivateDetails)}</td>
-    <td>
-      <a href="/purchase-requests/view/${request.id}"
-        >${sanitizeString(request.summary)}</a
-      >
-    </td>
-    <td>${money(request.totalPence)}</td>
-    <td>${renderOutcome(request.outcome, request.approval)}</td>
-    <td>${renderStatus(request)}</td>
-  </tr>
-`;
+// This year's spending, as one list: purchase requests (including purchases
+// bought directly) and the spending super users recorded before requests
+// went through the app.
+type SpendingRow =
+  | {
+      tag: 'request';
+      at: Date;
+      request: PurchaseRequest;
+      submitter: O.Option<Member>;
+    }
+  | {tag: 'recorded'; at: Date; spend: RecordedSpend};
 
-const renderRequests = (viewModel: ViewModel) => html`
-  <section class="stack">
-    <h2>Purchase requests in ${viewModel.purchasingArea.budgetYear}</h2>
-    ${viewModel.canRequest
-      ? html`<div>
-          <a
-            class="button"
-            href="/purchase-requests/submit?${query({
-              purchasingArea: viewModel.purchasingArea.id,
-            })}"
-            >Request a purchase</a
+const spendingRows = (viewModel: ViewModel): ReadonlyArray<SpendingRow> =>
+  [
+    ...viewModel.requests.map(
+      ({request, submitter}): SpendingRow => ({
+        tag: 'request',
+        at: request.submittedAt,
+        request,
+        submitter,
+      })
+    ),
+    ...viewModel.purchasingArea.recordedSpend.map(
+      (spend): SpendingRow => ({tag: 'recorded', at: spend.recordedAt, spend})
+    ),
+  ].sort((a, b) => b.at.getTime() - a.at.getTime());
+
+const renderSpendingRow = (viewModel: ViewModel) => (row: SpendingRow) => {
+  const {canManage, canSeePrivateDetails, purchasingArea} = viewModel;
+  if (row.tag === 'request') {
+    const {request, submitter} = row;
+    return html`
+      <tr>
+        <td>${displayDateOnly(request.submittedAt)}</td>
+        <td>${renderSubmitter(request, submitter, canSeePrivateDetails)}</td>
+        <td>
+          <a href="/purchase-requests/view/${request.id}"
+            >${sanitizeString(request.summary)}</a
           >
-        </div>`
-      : html`<p>
-        Purchases are requested by the owners of an area. If something is
-        missing or has run out, such as a consumable,
-        <a href="/trouble-tickets/raise">raise a trouble ticket</a>.
-      </p>`}
-    ${viewModel.requests.length === 0
-      ? html`<p>None yet this year.</p>`
-      : html`<table>
-          <thead>
-            <tr>
-              <th>Submitted</th>
-              <th>By</th>
-              <th>What</th>
-              <th>Cost</th>
-              <th>Outcome</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${joinHtml(
-              viewModel.requests.map(
-                renderRequestRow(viewModel.canSeePrivateDetails)
-              )
+        </td>
+        <td>${money(request.totalPence)}</td>
+        <td>${renderOutcome(request.outcome, request.approval)}</td>
+        <td>${renderStatus(request)}</td>
+        ${canManage ? html`<td></td>` : html``}
+      </tr>
+    `;
+  }
+  const {spend} = row;
+  return html`
+    <tr>
+      <td>${displayDateOnly(spend.recordedAt)}</td>
+      <td>-</td>
+      <td>${sanitizeString(spend.description)}</td>
+      <td>${money(spend.amountPence)}</td>
+      <td>
+        ${spend.kind === 'approved'
+          ? renderOutcome('outside-budget', 'none')
+          : renderOutcome('budget', 'none')}
+      </td>
+      <td>
+        <span class="tag tag--grey purchase-outcome"
+          >Recorded by a super user</span
+        >
+      </td>
+      ${canManage
+        ? html`<td>
+            ${superUserLink(
+              `/purchasing-areas/remove-spend?${query({
+                purchasingArea: purchasingArea.id,
+                spend: spend.id,
+              })}`,
+              html`Remove`
             )}
-          </tbody>
-        </table>`}
-  </section>
-`;
+          </td>`
+        : html``}
+    </tr>
+  `;
+};
+
+const renderSpending = (viewModel: ViewModel) => {
+  const rows = spendingRows(viewModel);
+  return html`
+    <section class="stack">
+      <h2>Spending in ${viewModel.purchasingArea.budgetYear}</h2>
+      ${viewModel.canRequest
+        ? html`<div>
+            <a
+              class="button"
+              href="/purchase-requests/submit?${query({
+                purchasingArea: viewModel.purchasingArea.id,
+              })}"
+              >Request a purchase</a
+            >
+          </div>`
+        : html`<p>
+            Purchases are requested by the owners of an area. If something is
+            missing or has run out, such as a consumable,
+            <a href="/trouble-tickets/raise">raise a trouble ticket</a>.
+          </p>`}
+      ${rows.length === 0
+        ? html`<p>None yet this year.</p>`
+        : html`<table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>By</th>
+                <th>What</th>
+                <th>Cost</th>
+                <th>Budget</th>
+                <th>Status</th>
+                ${viewModel.canManage ? html`<th></th>` : html``}
+              </tr>
+            </thead>
+            <tbody>
+              ${joinHtml(rows.map(renderSpendingRow(viewModel)))}
+            </tbody>
+          </table>`}
+    </section>
+  `;
+};
 
 export const render = (viewModel: ViewModel) => html`
   <div class="stack-large">
     <h1>${sanitizeString(viewModel.purchasingArea.name)}</h1>
-    ${renderRequests(viewModel)} ${renderBudget(viewModel)}
+    ${renderSpending(viewModel)} ${renderBudget(viewModel)}
     ${renderAreas(viewModel)} ${renderPurchasers(viewModel)}
   </div>
 `;
