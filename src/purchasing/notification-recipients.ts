@@ -40,6 +40,8 @@ export type Recipient = {
   // information.
   canDecide: boolean;
   reasons: ReadonlyArray<NotificationReason>;
+  // The areas it could negatively impact that they own, by name.
+  affectedAreas: ReadonlyArray<string>;
 };
 
 type NotificationAreas = {
@@ -66,16 +68,24 @@ const superUsers = (rm: SharedReadModel): ReadonlyArray<Person> =>
 // Collects people, merging the reasons of anyone added more than once.
 const collect = (rm: SharedReadModel, request: PurchaseRequest) => {
   const byMember = new Map<number, Recipient>();
-  const add = (people: ReadonlyArray<Person>, reason: NotificationReason) =>
+  const add = (
+    people: ReadonlyArray<Person>,
+    reason: NotificationReason,
+    affectedArea?: string
+  ) =>
     people.forEach(person => {
       const existing = byMember.get(person.memberNumber);
       if (existing) {
-        if (!existing.reasons.includes(reason)) {
-          byMember.set(person.memberNumber, {
-            ...existing,
-            reasons: [...existing.reasons, reason],
-          });
-        }
+        byMember.set(person.memberNumber, {
+          ...existing,
+          reasons: existing.reasons.includes(reason)
+            ? existing.reasons
+            : [...existing.reasons, reason],
+          affectedAreas:
+            affectedArea === undefined
+              ? existing.affectedAreas
+              : [...existing.affectedAreas, affectedArea],
+        });
         return;
       }
       byMember.set(person.memberNumber, {
@@ -93,6 +103,7 @@ const collect = (rm: SharedReadModel, request: PurchaseRequest) => {
           request
         ),
         reasons: [reason],
+        affectedAreas: affectedArea === undefined ? [] : [affectedArea],
       });
     });
   const without = (...memberNumbers: ReadonlyArray<number>) =>
@@ -150,7 +161,21 @@ export const recipientsForNewRequest = (
   );
   request.affectedAreaIds.forEach(areaId => {
     const {people, fellBack} = orSuperUsers(rm, ownersOf(rm, areaId));
-    add(people, fellBack ? 'super-user' : 'affected-area-owner');
+    if (fellBack) {
+      add(people, 'super-user');
+      return;
+    }
+    add(
+      people,
+      'affected-area-owner',
+      pipe(
+        rm.area.get(areaId),
+        O.match(
+          () => 'an area',
+          area => area.name
+        )
+      )
+    );
   });
   return without(request.submittedByMemberNumber);
 };

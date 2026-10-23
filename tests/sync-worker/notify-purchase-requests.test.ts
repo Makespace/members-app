@@ -215,7 +215,13 @@ describe('purchase request notifications', () => {
       expect(to(emails, METAL_OWNER).subject).toBe(
         'Purchase request that could affect your area: Bandsaw <b>blades</b>'
       );
-      expect(to(emails, METAL_OWNER).text).toContain("monthly owners' forum");
+      expect(to(emails, METAL_OWNER).text).toContain("an owners' meeting");
+      expect(to(emails, METAL_OWNER).text).toContain(
+        "You're an owner in an area it could potentially impact (Metal Shop)."
+      );
+      expect(to(emails, METAL_OWNER).text).not.toContain(
+        "There's nothing you need to do."
+      );
     });
 
     it('needs a note to approve, which everyone who heard is told', async () => {
