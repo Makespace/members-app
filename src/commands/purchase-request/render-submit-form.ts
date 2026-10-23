@@ -843,14 +843,19 @@ const renderBuyDirectly = ({
             <label class="purchase-field__label" for="amount"
               >What does it cost, in total (inc. VAT and delivery)?</label
             >
-            <input
-              type="text"
-              inputmode="decimal"
-              name="amount"
-              id="amount"
-              placeholder="e.g. 42.50"
-              value="${sanitizeString(answers.amount)}"
-            />
+            <div class="purchase-money purchase-money--narrow">
+              <span>£</span
+              ><input
+                type="text"
+                inputmode="decimal"
+                name="amount"
+                id="amount"
+                placeholder="42.50"
+                pattern="[0-9]+([.][0-9]{1,2})?"
+                title="An amount in pounds, e.g. 42.50"
+                value="${sanitizeString(answers.amount)}"
+              />
+            </div>
             ${buyerRole === 'super-user'
               ? html`<fieldset class="purchase-request__fieldset">
                   <legend class="purchase-field__label">
