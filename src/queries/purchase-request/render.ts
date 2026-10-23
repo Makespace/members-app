@@ -11,7 +11,10 @@ import {renderPurchaseBreakdown} from '../../templates/purchase-breakdown';
 import {renderProposal} from '../../templates/proposal';
 import {renderMemberNumber} from '../../templates/member-number';
 import {displayDate} from '../../templates/display-date';
-import {renderOutcome} from '../../templates/purchase-request-outcome';
+import {
+  renderOutcome,
+  renderSuperUserOverride,
+} from '../../templates/purchase-request-outcome';
 import {countsAgainstBudget} from '../../purchasing/budget-year';
 import {renderStatus} from '../../templates/purchase-request-status';
 import {superUserActions, superUserButton} from '../../templates/super-user';
@@ -72,8 +75,11 @@ const renderDecision = (
             name => html`${sanitizeString(name)}`
           )
         )}
-        on Makespace's behalf (e.g. with Capital on Tap), so it didn't need
-        approving.
+        on Makespace's behalf (e.g. with Capital on Tap)${request.approval ===
+        'proposal'
+          ? html`. As a super user, they went ahead without the proposal it
+              would otherwise need.`
+          : html`, so it didn't need approving.`}
       </p>`;
     case 'awaiting-approval':
       return html`<p>
@@ -127,6 +133,7 @@ export const render = ({
   const reference = sanitizeString(
     `${request.summary} · ${formatPence(request.totalPence)} · ${areaName}`
   );
+  const boughtDirectly = request.status === 'bought-directly';
   return html`
     <div class="purchase-request purchase-request__sections">
       <div
@@ -135,7 +142,11 @@ export const render = ({
           : html` purchase-confirmation--record`}"
       >
         <h1>
-          ${justSent ? html`Request sent` : sanitizeString(request.summary)}
+          ${justSent
+            ? request.status === 'bought-directly'
+              ? html`Purchase recorded`
+              : html`Request sent`
+            : sanitizeString(request.summary)}
         </h1>
         <p>${reference}</p>
       </div>
@@ -144,7 +155,13 @@ export const render = ({
           <dt>Status</dt>
           <dd>${renderStatus(request)}</dd>
           <dt>Budget</dt>
-          <dd>${renderOutcome(request.outcome, request.approval)}</dd>
+          <dd>
+            ${renderOutcome(request.outcome, request.approval)}
+            ${request.status === 'bought-directly' &&
+            request.approval === 'proposal'
+              ? renderSuperUserOverride()
+              : html``}
+          </dd>
           <dt>Why</dt>
           <dd>${sanitizeString(request.outcomeReason)}</dd>
           <dt>Area</dt>
@@ -163,11 +180,11 @@ export const render = ({
           <dt>${request.budgetYear} spend with this</dt>
           <dd>
             ${money(spendAfter)} of ${money(request.yearlyBudgetPence)}, as
-            it stood when sent
+            it stood when ${boughtDirectly ? html`recorded` : html`sent`}
           </dd>
           <dt>Total</dt>
           <dd>${money(request.totalPence)}</dd>
-          <dt>Sent</dt>
+          <dt>${boughtDirectly ? html`Recorded` : html`Sent`}</dt>
           <dd>
             ${displayDate(DateTime.fromJSDate(request.submittedAt))} by
             ${pipe(

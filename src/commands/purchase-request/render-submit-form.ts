@@ -30,7 +30,10 @@ import {
   TypedPurchase,
 } from '../../purchasing/purchases';
 import {renderPurchaseBreakdown} from '../../templates/purchase-breakdown';
-import {renderOutcome} from '../../templates/purchase-request-outcome';
+import {
+  renderOutcome,
+  renderSuperUserOverride,
+} from '../../templates/purchase-request-outcome';
 import {BuyerRole, NEEDS_APPROVAL} from '../../purchasing/buy-directly';
 import {LONG_TEXT_MAX, SUMMARY_MAX} from '../../types/limited-text';
 import {
@@ -44,6 +47,7 @@ import {
   hiddenInputs,
   renderStepNav,
   renderStepProgress,
+  stepHref,
   StepValues,
 } from '../../templates/multi-page-form';
 
@@ -920,6 +924,26 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
 const isBuyingDirectly = ({answers, buyerRole}: PurchaseRequestFormViewModel) =>
   answers.buyingDirectly === 'true' && buyerRole !== 'neither';
 
+// A super user buying directly something whose cost alone needs a proposal:
+// they can go ahead without one, or write one and send it for approval.
+const isSuperUserOverride = (viewModel: PurchaseRequestFormViewModel) =>
+  isBuyingDirectly(viewModel) &&
+  viewModel.buyerRole === 'super-user' &&
+  pipe(
+    viewModel.result,
+    O.exists(({classification}) => classification.approval === 'proposal')
+  );
+
+// Back to page 2 as an ordinary request, to list what's being bought and
+// then write the proposal on page 3.
+const sendForApprovalHref = (viewModel: PurchaseRequestFormViewModel) =>
+  stepHref(2, [
+    ...carried(viewModel).filter(
+      ([name]) => name !== 'buyingDirectly' && name !== 'amount'
+    ),
+    ['buyingDirectly', 'false'],
+  ]);
+
 const renderCheckPage = (viewModel: PurchaseRequestFormViewModel) => html`
   <p>
     ${isBuyingDirectly(viewModel)
@@ -968,9 +992,20 @@ const renderCheckPage = (viewModel: PurchaseRequestFormViewModel) => html`
               : html`No moderate or high risk`}
           </dd>
           <dt>Budget</dt>
-          <dd>${renderOutcome(classification.outcome, classification.approval)}</dd>
+          <dd>
+            ${renderOutcome(classification.outcome, classification.approval)}
+            ${isSuperUserOverride(viewModel)
+              ? renderSuperUserOverride()
+              : html``}
+          </dd>
           <dt>Why</dt>
-          <dd>${sanitizeString(classification.reason)}</dd>
+          <dd>
+            ${sanitizeString(classification.reason)}
+            ${isSuperUserOverride(viewModel)
+              ? html`As a super user, you can record it without one, or
+                  write a proposal and send it for approval instead.`
+              : html``}
+          </dd>
         </dl>
         ${purchases.length > 0
           ? renderPurchaseBreakdown(purchases, totalPence)
@@ -1000,9 +1035,18 @@ const renderCheckPage = (viewModel: PurchaseRequestFormViewModel) => html`
     )}
     ${renderStepNav({
       back: backHref(viewModel.step, carried(viewModel)),
-      next: isBuyingDirectly(viewModel)
-        ? html`<button type="submit">Record purchase</button>`
-        : html`<button type="submit">Send request</button>`,
+      next: isSuperUserOverride(viewModel)
+        ? html`<div class="wrap">
+            <a class="button" href="${sendForApprovalHref(viewModel)}"
+              >Write a proposal and send it for approval</a
+            >
+            <button type="submit" class="button--super-user">
+              Record purchase without a proposal
+            </button>
+          </div>`
+        : isBuyingDirectly(viewModel)
+          ? html`<button type="submit">Record purchase</button>`
+          : html`<button type="submit">Send request</button>`,
     })}
   </form>
   ${proposalScript}
