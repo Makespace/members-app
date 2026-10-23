@@ -4,7 +4,11 @@ import {pipe} from 'fp-ts/lib/function';
 import {Query} from '../query';
 import {safe, toLoggedInContent} from '../../types/html';
 import {render} from './render';
-import {canDecide, canRequestFor} from '../../purchasing/permissions';
+import {
+  buyerRoleFor,
+  canDecide,
+  canRequestFor,
+} from '../../purchasing/permissions';
 import {liftActorOrUser} from '../../read-models/lift-actor-or-user';
 
 // Every purchase request, those awaiting approval first. Any member may look;
@@ -37,6 +41,12 @@ export const purchaseRequests: Query = deps => user => {
         .getAll(new Date())
         .some(purchasingArea =>
           canRequestFor(rm, liftActorOrUser(user), purchasingArea)
+        ),
+      canBuyDirectly: rm.purchasing
+        .getAll(new Date())
+        .some(
+          purchasingArea =>
+            buyerRoleFor(rm, liftActorOrUser(user), purchasingArea) !== 'neither'
         ),
     }),
     toLoggedInContent(safe('Purchase requests')),

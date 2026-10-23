@@ -3,6 +3,7 @@ import {formatPence} from '../../types/money';
 import {renderRemaining} from '../../templates/remaining-budget';
 import {PurchasingArea} from '../../read-models/shared-state/return-types';
 import {superUserActions, superUserButton} from '../../templates/super-user';
+import {renderRecordPurchaseButton} from '../../templates/record-purchase-button';
 
 type ViewModel = {
   budgetYear: number;
@@ -10,6 +11,8 @@ type ViewModel = {
   canManage: boolean;
   // Owners, purchasers and super users request purchases.
   canRequest: boolean;
+  // A super user, or an active purchaser for some purchasing area.
+  canBuyDirectly: boolean;
 };
 
 const money = (pence: number) => sanitizeString(formatPence(pence));
@@ -77,6 +80,7 @@ export const render = (viewModel: ViewModel) => html`
         : html``}
       <a href="/purchase-requests">All purchase requests</a>
     </div>
+    ${viewModel.canBuyDirectly ? renderRecordPurchaseButton() : html``}
     ${viewModel.canManage
       ? superUserActions(
           superUserButton('/purchasing-areas/create', html`Create purchasing area`)

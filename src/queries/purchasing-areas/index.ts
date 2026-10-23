@@ -5,7 +5,7 @@ import {Query} from '../query';
 import {safe, toLoggedInContent} from '../../types/html';
 import {budgetYearOf} from '../../purchasing/budget-year';
 import {render} from './render';
-import {canRequestFor} from '../../purchasing/permissions';
+import {buyerRoleFor, canRequestFor} from '../../purchasing/permissions';
 import {liftActorOrUser} from '../../read-models/lift-actor-or-user';
 
 // Every purchasing area with this year's budget figures. Any member may look;
@@ -28,6 +28,11 @@ export const purchasingAreas: Query = deps => user => {
       canManage: isSuperUser,
       canRequest: purchasingAreas.some(purchasingArea =>
         canRequestFor(deps.sharedReadModel, liftActorOrUser(user), purchasingArea)
+      ),
+      canBuyDirectly: purchasingAreas.some(
+        purchasingArea =>
+          buyerRoleFor(deps.sharedReadModel, liftActorOrUser(user), purchasingArea) !==
+          'neither'
       ),
     }),
     toLoggedInContent(safe('Purchasing areas')),

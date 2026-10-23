@@ -11,6 +11,7 @@ import {renderMember} from '../../templates/member';
 import {renderMemberNumber} from '../../templates/member-number';
 import {renderOutcome} from '../../templates/purchase-request-outcome';
 import {renderStatus} from '../../templates/purchase-request-status';
+import {renderRecordPurchaseButton} from '../../templates/record-purchase-button';
 
 type Row = {
   request: PurchaseRequest;
@@ -26,6 +27,8 @@ type ViewModel = {
   // which drop off once decided.
   waitingForViewer: ReadonlyArray<Row>;
   canRequest: boolean;
+  // A super user, or an active purchaser for some purchasing area.
+  canBuyDirectly: boolean;
 };
 
 const renderRow =
@@ -102,6 +105,7 @@ export const render = (viewModel: ViewModel) => {
             : html``}
           <a href="/purchasing-areas">Purchasing areas</a>
         </div>
+        ${viewModel.canBuyDirectly ? renderRecordPurchaseButton() : html``}
       </div>
       ${viewModel.waitingForViewer.length > 0
         ? html`<section class="stack">

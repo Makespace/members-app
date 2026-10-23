@@ -973,6 +973,10 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
 const isBuyingDirectly = ({answers, buyerRole}: PurchaseRequestFormViewModel) =>
   answers.buyingDirectly === 'true' && buyerRole !== 'neither';
 
+// "Record a purchase" when they're buying it themselves.
+export const formTitle = (viewModel: PurchaseRequestFormViewModel) =>
+  isBuyingDirectly(viewModel) ? 'Record a purchase' : 'Request a purchase';
+
 // A super user buying directly something whose cost alone needs a proposal:
 // they can go ahead without one, or write one and send it for approval.
 const isSuperUserOverride = (viewModel: PurchaseRequestFormViewModel) =>
@@ -2127,12 +2131,17 @@ export const renderSubmitForm = (viewModel: PurchaseRequestFormViewModel) =>
   html`
     <div class="purchase-request purchase-request__sections">
       <div class="purchase-request__stack">
-        <h1>Request a purchase</h1>
+        <h1>${safe(formTitle(viewModel))}</h1>
         ${viewModel.step === 1
-          ? html`<p>
-              Answer a few questions and we'll tell you which budget your
-              purchase comes out of, and whether you need to write a proposal.
-            </p>`
+          ? isBuyingDirectly(viewModel)
+            ? html`<p>
+                Answer a few questions, then record what you bought and what it
+                cost.
+              </p>`
+            : html`<p>
+                Answer a few questions and we'll tell you which budget your
+                purchase comes out of, and whether you need to write a proposal.
+              </p>`
           : html``}
       </div>
       ${viewModel.purchasingAreas.length === 0
