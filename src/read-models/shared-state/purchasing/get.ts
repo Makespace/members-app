@@ -10,6 +10,7 @@ import {
   areasTable,
   ownersTable,
   purchaseRequestsTable,
+  purchaseRequestNotificationsTable,
   purchasersTable,
   purchasingAreaAreasTable,
   purchasingAreaSpendTable,
@@ -286,9 +287,11 @@ const toPurchaseRequest = ({
   decidedAt,
   decidedByMemberNumber,
   declineReason,
+  approvalNote,
   ...row
 }: typeof purchaseRequestsTable.$inferSelect): PurchaseRequest => ({
   ...row,
+  approvalNote: O.fromNullable(approvalNote),
   decidedAt: O.fromNullable(decidedAt),
   decidedByMemberNumber: O.fromNullable(decidedByMemberNumber),
   declineReason: O.fromNullable(declineReason),
@@ -326,6 +329,35 @@ export const getPurchaseRequests =
       .orderBy(desc(purchaseRequestsTable.submittedAt), sql`rowid desc`)
       .all()
       .map(toPurchaseRequest);
+
+// Whether the emails for this purchase request event have been sent.
+export const hasNotifiedForPurchaseEvent =
+  (db: BetterSQLite3Database) =>
+  (eventIndex: number): boolean =>
+    db
+      .select({index: purchaseRequestNotificationsTable.notifiedEventIndex})
+      .from(purchaseRequestNotificationsTable)
+      .where(eq(purchaseRequestNotificationsTable.notifiedEventIndex, eventIndex))
+      .get() !== undefined;
+
+// Everyone emailed so far about a purchase request, by member number.
+export const notifiedAboutRequest =
+  (db: BetterSQLite3Database) =>
+  (requestId: UUID): ReadonlyArray<number> => [
+    ...new Set(
+      db
+        .select({json: purchaseRequestNotificationsTable.recipientMemberNumbersJson})
+        .from(purchaseRequestNotificationsTable)
+        .where(eq(purchaseRequestNotificationsTable.requestId, requestId))
+        .all()
+        .flatMap(row =>
+          pipe(
+            t.array(t.number).decode(JSON.parse(row.json)),
+            E.getOrElse((): number[] => [])
+          )
+        )
+    ),
+  ];
 
 // Every purchase request, newest first.
 export const getAllPurchaseRequests =

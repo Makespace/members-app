@@ -57,7 +57,13 @@ const renderDecision = (
     case 'approved':
       return html`<p>
         <strong>Approved</strong> (${safe(awaitedApproval(request))}
-        approval) ${by}.
+        approval) ${by}${pipe(
+          request.approvalNote,
+          O.match(
+            () => html`.`,
+            note => html`: ${sanitizeString(note)}`
+          )
+        )}
       </p>`;
     case 'declined':
       return html`<p><strong>Declined</strong> ${by}:

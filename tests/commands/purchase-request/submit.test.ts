@@ -220,6 +220,7 @@ describe('submit purchase request', () => {
       insert(
         earlier,
         constructEvent('PurchaseRequestApproved')({
+          note: null,
           actor: arbitraryActor(),
           id: earlier.id,
         })

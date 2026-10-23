@@ -15,6 +15,7 @@ import {SyncWorkerDependencies} from './dependencies';
 import {trainingSummaryEmail} from './training-summary/training_summary_email';
 import {checkGuideLinks} from './guide-links/check_guide_links';
 import { Duration } from 'luxon';
+import {notifyPurchaseRequests} from './notify_purchase_requests';
 
 const HEARTBEAT_INTERVAL_MS = 20 * 1000;
 const EQUIPMENT_SYNC_CHECK_INTERVAL_MS = 60 * 1000;
@@ -144,6 +145,7 @@ async function syncExternDataPeriodically(
         // notifier rather than waiting for the hourly summary pass.
         await notifyRoleChanges(deps);
         await notifySiteNotifications(deps);
+        await notifyPurchaseRequests(deps);
         lastTroubleTicketNotify = Date.now();
       }
 

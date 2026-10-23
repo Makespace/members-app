@@ -232,6 +232,8 @@ export type PurchaseRequest = {
   decidedAt: O.Option<Date>;
   decidedByMemberNumber: O.Option<number>;
   declineReason: O.Option<string>;
+  // What was agreed, given when approving.
+  approvalNote: O.Option<string>;
   outcome: PurchaseRequestOutcome;
   approval: PurchaseApproval;
   outcomeReason: string;

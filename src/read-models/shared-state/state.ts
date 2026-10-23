@@ -553,6 +553,7 @@ export const purchaseRequestsTable = defineTable(
       decidedAt INTEGER,
       decidedByMemberNumber INTEGER,
       declineReason TEXT,
+      approvalNote TEXT,
       outcome TEXT NOT NULL,
       approval TEXT NOT NULL,
       outcomeReason TEXT NOT NULL,
@@ -586,6 +587,7 @@ export const purchaseRequestsTable = defineTable(
     decidedAt: integer('decidedAt', {mode: 'timestamp_ms'}),
     decidedByMemberNumber: integer('decidedByMemberNumber'),
     declineReason: text('declineReason'),
+    approvalNote: text('approvalNote'),
     outcome: text('outcome').notNull().$type<PurchaseRequestOutcome>(),
     approval: text('approval').notNull().$type<PurchaseApproval>(),
     outcomeReason: text('outcomeReason').notNull(),
@@ -836,6 +838,24 @@ export const troubleTicketNotificationsTable = defineTable(
     notifiedEventIndex: integer('notifiedEventIndex').primaryKey(),
     // Who was told, as a JSON list of addresses.
     recipientsJson: text('recipientsJson').notNull(),
+  }
+);
+
+// Purchase request events whose emails have been sent, and to whom.
+export const purchaseRequestNotificationsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS purchaseRequestNotifications (
+      notifiedEventIndex INTEGER PRIMARY KEY,
+      requestId TEXT NOT NULL,
+      recipientMemberNumbersJson TEXT NOT NULL
+    )
+  `,
+  'purchaseRequestNotifications' as const,
+  {
+    notifiedEventIndex: integer('notifiedEventIndex').primaryKey(),
+    requestId: text('requestId').notNull(),
+    // Who was told, as a JSON list of member numbers.
+    recipientMemberNumbersJson: text('recipientMemberNumbersJson').notNull(),
   }
 );
 

@@ -58,7 +58,11 @@ describe('approving or declining a purchase request', () => {
   };
 
   const canApprove = (actor: Actor, id: UUID) =>
-    approve.isAuthorized({actor, rm: framework.sharedReadModel, input: {id}}) &&
+    approve.isAuthorized({
+      actor,
+      rm: framework.sharedReadModel,
+      input: {id, note: undefined},
+    }) &&
     decline.isAuthorized({
       actor,
       rm: framework.sharedReadModel,

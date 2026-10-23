@@ -101,6 +101,8 @@ import {
   getAllPurchasingAreas,
   getPurchaseRequest,
   getAllPurchaseRequests,
+  hasNotifiedForPurchaseEvent,
+  notifiedAboutRequest,
   getPurchaseRequests,
   getPurchasingArea,
   getPurchasingAreaForArea,
@@ -235,6 +237,8 @@ export type SharedReadModel = {
     ) => ReadonlyArray<PurchaseRequest>;
     getRequest: (id: UUID) => O.Option<PurchaseRequest>;
     getAllRequests: () => ReadonlyArray<PurchaseRequest>;
+    hasNotifiedForEvent: (eventIndex: number) => boolean;
+    notifiedAbout: (requestId: UUID) => ReadonlyArray<number>;
   };
 };
 
@@ -357,6 +361,8 @@ export const initSharedReadModel = (
       getRequests: getPurchaseRequests(readModelDb),
       getRequest: getPurchaseRequest(readModelDb),
       getAllRequests: getAllPurchaseRequests(readModelDb),
+      hasNotifiedForEvent: hasNotifiedForPurchaseEvent(readModelDb),
+      notifiedAbout: notifiedAboutRequest(readModelDb),
     },
   };
 };
