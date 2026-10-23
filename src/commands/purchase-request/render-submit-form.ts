@@ -648,16 +648,15 @@ const renderBuyDirectly = ({
       ${allowed ? html`` : html`disabled`}
     >
       <legend>
-        Are you making this purchase yourself, e.g. with Capital on Tap?
+        Are you authorising and making this purchase yourself?
       </legend>
       ${allowed
         ? html`<p class="purchase-request__hint text-sm">
-            If so, it's recorded as bought straight away, without waiting for
-            approval, and you only need to say what it cost.
-            ${buyerRole === 'purchaser'
-              ? html`Only when it doesn't need a proposal.`
-              : html`Not when it affects other areas or carries a health and
-                safety risk.`}
+            For example, using Capital on Tap to make a small purchase. In this
+            case, no approval is needed and it's recorded as bought straight
+            away. You just need to record the cost. It may still have to go in
+            as a purchase request if it's a large purchase, takes you over
+            budget, or affects other areas / health &amp; safety.
           </p>`
         : html`<p class="purchase-request__hint text-sm">
             ${safe(NEEDS_APPROVAL)}
