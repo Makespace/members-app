@@ -8,7 +8,7 @@ import {Classification, PROPOSAL_THRESHOLD_PENCE} from './classify-purchase';
 export type BuyerRole = 'super-user' | 'purchaser' | 'neither';
 
 export const NEEDS_APPROVAL =
-  'Your purchase request will have to be approved by a director.';
+  'Your purchase request will have to be approved by a Purchaser for this Purchasing Area, or by a director.';
 
 // Shared by the form (and mirrored by its script) and the submit command, so
 // they refuse the same things with the same messages.

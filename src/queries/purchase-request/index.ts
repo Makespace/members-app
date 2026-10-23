@@ -9,6 +9,8 @@ import {Query} from '../query';
 import {safe, toLoggedInContentWithBackLink} from '../../types/html';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {render} from './render';
+import {canDecide} from '../../purchasing/permissions';
+import {liftActorOrUser} from '../../read-models/lift-actor-or-user';
 
 // One purchase request as submitted, with the outcome the server worked out.
 // This is where a member lands after submitting one.
@@ -63,9 +65,10 @@ export const purchaseRequest: Query = deps => (user, params, queryParams) =>
             O.chain(deps.sharedReadModel.members.getByMemberNumber),
             O.chain(member => member.name)
           ),
-          canDecide: pipe(
-            deps.sharedReadModel.members.getByMemberNumber(user.memberNumber),
-            O.exists(member => member.isSuperUser)
+          canDecide: canDecide(
+            deps.sharedReadModel,
+            liftActorOrUser(user),
+            request
           ),
         })
       );

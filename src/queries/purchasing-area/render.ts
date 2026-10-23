@@ -231,8 +231,10 @@ const renderPurchasers = (viewModel: ViewModel) => {
     <section class="stack">
       <h2>Purchasers</h2>
       <p>
-        Purchasers can make purchases for this purchasing area themselves,
-        without waiting for approval, when no proposal is needed.
+        Owners of its areas can request purchases. Purchasers approve them,
+        and can make a purchase themselves when it doesn't need a proposal;
+        anything that does goes to the directors. A purchaser who no longer
+        owns any of its areas can't do either.
       </p>
       ${purchasingArea.purchasers.length === 0
         ? html`<p>No purchasers yet.</p>`
@@ -289,22 +291,28 @@ const renderRequestRow =
     </td>
     <td>${money(request.totalPence)}</td>
     <td>${renderOutcome(request.outcome, request.approval)}</td>
-    <td>${renderStatus(request.status)}</td>
+    <td>${renderStatus(request)}</td>
   </tr>
 `;
 
 const renderRequests = (viewModel: ViewModel) => html`
   <section class="stack">
     <h2>Purchase requests in ${viewModel.purchasingArea.budgetYear}</h2>
-    <div>
-      <a
-        class="button"
-        href="/purchase-requests/submit?${query({
-          purchasingArea: viewModel.purchasingArea.id,
-        })}"
-        >Request a purchase</a
-      >
-    </div>
+    ${viewModel.canRequest
+      ? html`<div>
+          <a
+            class="button"
+            href="/purchase-requests/submit?${query({
+              purchasingArea: viewModel.purchasingArea.id,
+            })}"
+            >Request a purchase</a
+          >
+        </div>`
+      : html`<p>
+        Purchases are requested by the owners of an area. If something is
+        missing or has run out, such as a consumable,
+        <a href="/trouble-tickets/raise">raise a trouble ticket</a>.
+      </p>`}
     ${viewModel.requests.length === 0
       ? html`<p>None yet this year.</p>`
       : html`<table>

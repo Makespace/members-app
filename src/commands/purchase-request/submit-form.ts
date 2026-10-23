@@ -25,6 +25,9 @@ import {RawProposal, typedProposal} from '../../purchasing/proposal';
 import {BuyerRole, canBuyDirectly} from '../../purchasing/buy-directly';
 import {PositivePenceFromPoundsString} from '../../types/money';
 import {allMemberNumbers} from '../../read-models/shared-state/return-types';
+import {canRequestFor} from '../../purchasing/permissions';
+import {User} from '../../types';
+import {liftActorOrUser} from '../../read-models/lift-actor-or-user';
 import {
   PAGE_LABELS,
   PurchaseRequestAnswers,
@@ -48,15 +51,24 @@ const readAnswer = (input: unknown, name: string) =>
     E.getOrElse(() => '')
   );
 
-// Any member can request a purchase for any purchasing area; a super user
-// then approves it.
+// The purchasing areas they can request for: those with an area they own,
+// those they purchase for, or all of them for a super user. See
+// src/purchasing/permissions.ts.
 const purchasingAreasFor = (
   readModel: SharedReadModel,
+  user: User,
   now: Date
 ): ReadonlyArray<PurchasingAreaOption> =>
-  readModel.purchasing.getAll(now).map(purchasingArea => ({
+  readModel.purchasing
+    .getAll(now)
+    .filter(purchasingArea =>
+      canRequestFor(readModel, liftActorOrUser(user), purchasingArea)
+    )
+    .map(purchasingArea => ({
     id: purchasingArea.id,
-    purchaserMemberNumbers: purchasingArea.purchasers.flatMap(allMemberNumbers),
+    purchaserMemberNumbers: purchasingArea.purchasers
+      .filter(purchaser => purchaser.isOwnerOfAnArea)
+      .flatMap(allMemberNumbers),
     name: purchasingArea.name,
     areaIds: purchasingArea.areas.map(area => area.id),
     areaNames: purchasingArea.areas.map(area => area.name),
@@ -94,7 +106,7 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
   input =>
   ({readModel, user}) => {
     const now = new Date();
-    const purchasingAreas = purchasingAreasFor(readModel, now);
+    const purchasingAreas = purchasingAreasFor(readModel, user, now);
     // ?purchasingArea= (from a purchasing area's page) or being a purchaser
     // for only one area picks it to start with.
     const startingArea =

@@ -5,9 +5,9 @@ import {html, Html, safe, SanitizedString} from '../types/html';
 // labelled "Super users only" around a group of purple-outlined buttons,
 // and purple links for single actions in a list (e.g. Remove).
 
-export const superUserActions = (buttons: Html) => html`
+export const superUserActions = (buttons: Html, label = 'Super users only') => html`
   <div class="super-user-actions">
-    <span class="super-user-actions__label">Super users only</span>
+    <span class="super-user-actions__label">${safe(label)}</span>
     <div class="super-user-actions__buttons">${buttons}</div>
   </div>
 `;

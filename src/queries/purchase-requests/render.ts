@@ -22,7 +22,9 @@ type ViewModel = {
   requests: ReadonlyArray<Row>;
   // Email addresses, as elsewhere, for super users and area owners only.
   canSeePrivateDetails: boolean;
-  isSuperUser: boolean;
+  // Any awaiting approval they can approve or decline.
+  canDecideSome: boolean;
+  canRequest: boolean;
 };
 
 const renderRow =
@@ -57,7 +59,7 @@ const renderRow =
       </td>
       <td>${sanitizeString(formatPence(request.totalPence))}</td>
       <td>${renderOutcome(request.outcome, request.approval)}</td>
-      <td>${renderStatus(request.status)}</td>
+      <td>${renderStatus(request)}</td>
     </tr>
   `;
 
@@ -92,15 +94,17 @@ export const render = (viewModel: ViewModel) => {
       <div class="stack">
         <h1>Purchase requests</h1>
         <div class="wrap">
-          <a class="button" href="/purchase-requests/submit"
-            >Request a purchase</a
-          >
+          ${viewModel.canRequest
+            ? html`<a class="button" href="/purchase-requests/submit"
+                >Request a purchase</a
+              >`
+            : html``}
           <a href="/purchasing-areas">Purchasing areas</a>
         </div>
       </div>
       <section class="stack">
         <h2>Awaiting approval (${awaiting.length})</h2>
-        ${viewModel.isSuperUser && awaiting.length > 0
+        ${viewModel.canDecideSome
           ? html`<p>
               Open a request to approve or decline it.
             </p>`

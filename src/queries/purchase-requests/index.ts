@@ -4,9 +4,12 @@ import {pipe} from 'fp-ts/lib/function';
 import {Query} from '../query';
 import {safe, toLoggedInContent} from '../../types/html';
 import {render} from './render';
+import {canDecide, canRequestFor} from '../../purchasing/permissions';
+import {liftActorOrUser} from '../../read-models/lift-actor-or-user';
 
 // Every purchase request, those awaiting approval first. Any member may look;
-// super users approve or decline them from each request's page.
+// purchasers and super users approve or decline them from each request's
+// page (see src/purchasing/permissions.ts).
 export const purchaseRequests: Query = deps => user => {
   const rm = deps.sharedReadModel;
   const viewer = rm.members.getByMemberNumber(user.memberNumber);
@@ -25,10 +28,16 @@ export const purchaseRequests: Query = deps => user => {
         viewer,
         O.exists(member => member.isSuperUser || member.ownerOf.length > 0)
       ),
-      isSuperUser: pipe(
-        viewer,
-        O.exists(member => member.isSuperUser)
+      canDecideSome: requests.some(
+        ({request}) =>
+          request.status === 'awaiting-approval' &&
+          canDecide(rm, liftActorOrUser(user), request)
       ),
+      canRequest: rm.purchasing
+        .getAll(new Date())
+        .some(purchasingArea =>
+          canRequestFor(rm, liftActorOrUser(user), purchasingArea)
+        ),
     }),
     toLoggedInContent(safe('Purchase requests')),
     TE.right

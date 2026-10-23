@@ -610,9 +610,9 @@ describe('purchase request form', () => {
     });
   });
 
-  it('explains instead of showing the form when there are no purchasing areas', () => {
+  it('points anyone with nothing to request for to trouble tickets', () => {
     const page = render(onPage(1, {purchasingAreas: []}));
     expect(page.querySelector('form')).toBeNull();
-    expect(page.textContent).toContain("There aren't any purchasing areas yet");
+    expect(page.textContent).toContain('raise a trouble ticket');
   });
 });

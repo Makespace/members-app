@@ -55,7 +55,8 @@ export const PAGE_LABELS = [
 
 export type PurchasingAreaOption = {
   id: UUID;
-  // Who can buy for it directly, besides super users.
+  // Who can buy for it directly, besides super users: its purchasers who
+  // still own one of its areas.
   purchaserMemberNumbers: ReadonlyArray<number>;
   name: string;
   areaIds: ReadonlyArray<UUID>;
@@ -661,8 +662,8 @@ const renderAboutPage = (viewModel: PurchaseRequestFormViewModel) => html`
     <fieldset class="purchase-request__fieldset">
       <legend>Which area is this for?</legend>
       <p class="purchase-request__hint text-sm">
-        The area whose budget it would come out of. A director will
-        approve your request.
+        The area whose budget it would come out of. One of its purchasers will
+        approve your request - or a director, if it needs a proposal.
       </p>
       <div class="purchase-request__radios purchase-request__radios--areas">
         ${joinHtml(
@@ -1989,8 +1990,10 @@ const pages = [renderAboutPage, renderCostsPage, renderCheckPage];
 
 const renderNoPurchasingAreas = () => html`
   <p>
-    There aren't any purchasing areas yet, so there's no budget to request a
-    purchase from. Ask a super user to set one up.
+    Purchase requests are made by the owners of an area. If something an area
+    needs has run out or is missing, such as a consumable,
+    <a href="/trouble-tickets/raise">raise a trouble ticket</a> so its owners
+    know.
   </p>
   <p><a href="/purchasing-areas">See the purchasing areas</a></p>
 `;

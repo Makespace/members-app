@@ -8,6 +8,8 @@ type ViewModel = {
   budgetYear: number;
   purchasingAreas: ReadonlyArray<PurchasingArea>;
   canManage: boolean;
+  // Owners, purchasers and super users request purchases.
+  canRequest: boolean;
 };
 
 const money = (pence: number) => sanitizeString(formatPence(pence));
@@ -60,8 +62,19 @@ export const render = (viewModel: ViewModel) => html`
       Things members pay for themselves (e.g. filament paid for on SumUp) are
       recorded without counting against it.
     </p>
+    ${viewModel.canRequest
+      ? html``
+      : html`<p>
+        Purchases are requested by the owners of an area. If something is
+        missing or has run out, such as a consumable,
+        <a href="/trouble-tickets/raise">raise a trouble ticket</a>.
+      </p>`}
     <div class="wrap">
-      <a class="button" href="/purchase-requests/submit">Request a purchase</a>
+      ${viewModel.canRequest
+        ? html`<a class="button" href="/purchase-requests/submit"
+            >Request a purchase</a
+          >`
+        : html``}
       <a href="/purchase-requests">All purchase requests</a>
     </div>
     ${viewModel.canManage

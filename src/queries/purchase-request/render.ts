@@ -1,7 +1,7 @@
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import {DateTime} from 'luxon';
-import {html, sanitizeString} from '../../types/html';
+import {html, safe, sanitizeString} from '../../types/html';
 import {formatPence} from '../../types/money';
 import {
   PurchaseRequest,
@@ -15,6 +15,7 @@ import {renderOutcome} from '../../templates/purchase-request-outcome';
 import {countsAgainstBudget} from '../../purchasing/budget-year';
 import {renderStatus} from '../../templates/purchase-request-status';
 import {superUserActions, superUserButton} from '../../templates/super-user';
+import {awaitedApproval} from '../../templates/purchase-request-status';
 
 type ViewModel = {
   // Straight after submitting: shown as the confirmation of a sent request.
@@ -51,7 +52,10 @@ const renderDecision = (
   )}`;
   switch (request.status) {
     case 'approved':
-      return html`<p><strong>Approved</strong> ${by}.</p>`;
+      return html`<p>
+        <strong>Approved</strong> (${safe(awaitedApproval(request))}
+        approval) ${by}.
+      </p>`;
     case 'declined':
       return html`<p><strong>Declined</strong> ${by}:
           ${sanitizeString(
@@ -73,8 +77,11 @@ const renderDecision = (
       </p>`;
     case 'awaiting-approval':
       return html`<p>
-        <strong>Next:</strong> a director needs to approve this
-        request${request.approval === 'proposal' ? html` and its proposal` : html``}.
+        <strong>Next:</strong>
+        ${request.approval === 'proposal'
+          ? html`a director needs to approve this request and its proposal.`
+          : html`one of the area's purchasers (or a director) needs to approve
+            this request.`}
         Nothing will be bought until they do, and it doesn't count against
         the budget until then.
       </p>`;
@@ -82,7 +89,8 @@ const renderDecision = (
 };
 
 const renderDecide = (request: PurchaseRequest) =>
-  superUserActions(html`
+  superUserActions(
+    html`
     ${superUserButton(
       `/purchase-requests/approve?request=${request.id}`,
       html`Approve`
@@ -91,7 +99,11 @@ const renderDecide = (request: PurchaseRequest) =>
       `/purchase-requests/decline?request=${request.id}`,
       html`Decline`
     )}
-  `);
+  `,
+    awaitedApproval(request) === 'director'
+      ? 'Super users only'
+      : 'Purchasers and super users'
+  );
 
 export const render = ({
   justSent,
@@ -130,7 +142,7 @@ export const render = ({
       <div class="purchase-request__stack">
         <dl class="purchase-summary">
           <dt>Status</dt>
-          <dd>${renderStatus(request.status)}</dd>
+          <dd>${renderStatus(request)}</dd>
           <dt>Budget</dt>
           <dd>${renderOutcome(request.outcome, request.approval)}</dd>
           <dt>Why</dt>
