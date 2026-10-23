@@ -299,7 +299,8 @@ describe('purchase request form', () => {
       );
       expect(summary).toStrictEqual({
         Area: 'Wood Shop',
-        Summary: 'Saw blades',
+        // Editable here, below.
+        Summary: '',
         "Why it's needed": 'Blunt',
         Total: '£250',
         'Other areas': 'None',
@@ -367,9 +368,17 @@ describe('purchase request form', () => {
           `/purchase-requests/view/${requestId}?sent=1`
         )}`
       );
+      // The summary and why can still be edited, so they're sent from their
+      // own fields rather than hidden ones.
+      const summary = page.querySelector<HTMLInputElement>('#summary')!;
+      expect(summary.value).toBe('Saw blades');
+      expect(summary.getAttribute('form')).toBe(form.id);
+      expect(
+        page.querySelector<HTMLTextAreaElement>('#justification')!.getAttribute('form')
+      ).toBe(form.id);
+      expect(hidden(page)).not.toHaveProperty('summary');
       expect(hidden(page)).toMatchObject({
         id: requestId,
-        summary: 'Saw blades',
         'purchases[0][delivery]': '100',
         'purchases[0][items][0][cost]': '50',
         'purchases[0][items][1][quantity]': '4',
