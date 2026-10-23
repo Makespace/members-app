@@ -467,6 +467,18 @@ const stat = (count: number, label: string) => html`
   </li>
 `;
 
+// As `stat`, but the count links somewhere - used where the number answers
+// "how many?" and the link answers "who?". Only offered where the viewer is
+// allowed to open the target.
+const statLink = (count: number, label: string, href: string) => html`
+  <li class="tt-home__stat">
+    <a href="${safe(href)}"
+      ><span class="tt-home__stat-count">${safe(String(count))}</span></a
+    >
+    <span>${safe(label)}</span>
+  </li>
+`;
+
 // Admin actions get the orange: the same colour the app uses to mean "this
 // one is yours to do carefully", so a trainer's button and a member's button
 // are not the same green.
@@ -516,6 +528,16 @@ const equipmentCards = (viewModel: ViewModel) => {
                   viewModel.training.trainingsRecently,
                   'trainings in the last 30 days'
                 )}
+                ${isTrainerOrOwner(viewModel)
+                  ? statLink(
+                      viewModel.training.waitingForTraining,
+                      'members waiting for training',
+                      `/equipment/${id}/quiz-results`
+                    )
+                  : stat(
+                      viewModel.training.waitingForTraining,
+                      'members waiting for training'
+                    )}
               </ul>
               <p class="eq-cards__actions">
                 ${cardButton(`/equipment/${id}/training`, 'Get Trained')}

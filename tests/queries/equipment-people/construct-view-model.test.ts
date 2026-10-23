@@ -168,13 +168,16 @@ describe('searching for a member on the quiz-results page', () => {
   });
 
   describe('the waiting list', () => {
-    it('holds the known passes and the unmatched ones together, newest first', async () => {
+    // The list is a queue: whoever passed first has waited longest and goes
+    // first. The known pass (2026-09-10) predates the unmatched one
+    // (2026-09-12).
+    it('holds the known passes and the unmatched ones together, longest-waiting first', async () => {
       const waiting = (await view(O.none)).waiting;
 
-      expect(waiting.map(row => row.kind)).toStrictEqual(['unknown', 'member']);
+      expect(waiting.map(row => row.kind)).toStrictEqual(['member', 'unknown']);
       expect(memberNumbersOf(waiting)).toStrictEqual([
-        'unknown',
         passed.memberNumber,
+        'unknown',
       ]);
     });
 
