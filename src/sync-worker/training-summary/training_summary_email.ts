@@ -18,7 +18,7 @@ const TRAINING_SUMMARY_EMAIL_INTERVAL: Duration = Duration.fromObject({
   // hours: 12, // Temp for testing.
 });
 
-const generateTrainingSummaryEmail = (
+export const generateTrainingSummaryEmail = (
   emailAddress: EmailAddress,
   content: EmailContent
 ): Email => ({
@@ -60,6 +60,7 @@ const generateTrainingSummaryEmail = (
             <th style="padding: 0 0 0 0">Trainings in last 30 days</th>
             <th style="padding: 0 0 0 0">Total trainings</th>
             <th style="padding: 0 0 0 0">% of membership trained</th>
+            <th style="padding: 0 0 0 0">Open Trouble Tickets</th>
             <th style="padding: 0 0 0 0">Quick Link</th>
           </tr>
           ${content.trainingStatsPerEquipment
@@ -72,6 +73,7 @@ const generateTrainingSummaryEmail = (
                 <th>${stats.trainedLast30Days}</th>
                 <th>${stats.trainedTotal}</th>
                 <th>${stats.percentageOfActiveMembershipTrained}%</th>
+                <th>${stats.openTroubleTickets}</th>
                 <th><a href="${stats.equipmentLink.href}">Link</a></th>
               </tr>
               `
@@ -83,6 +85,7 @@ const generateTrainingSummaryEmail = (
             <th>${content.totalTrainingsLast30Days}</th>
             <th>${content.totalTrainings}</th>
             <th>-</th>
+            <th>${content.totalOpenTroubleTickets}</th>
             <th>-</th>
           </tr>
         </mj-table>
