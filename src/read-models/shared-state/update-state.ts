@@ -33,6 +33,7 @@ import {
   purchasingAreaAreasTable,
   purchasersTable,
   purchaseRequestsTable,
+  purchaseRequestNotificationsTable,
   purchasingAreaSpendTable,
   purchasingAreaYearBudgetsTable,
 } from './state';
@@ -1437,12 +1438,24 @@ const _updateState =
             decidedByMemberNumber:
               event.actor.tag === 'user' ? event.actor.user.memberNumber : null,
             declineReason: event.type === 'PurchaseRequestDeclined' ? event.reason : null,
+            approvalNote: event.type === 'PurchaseRequestApproved' ? event.note : null,
           })
           .where(eq(purchaseRequestsTable.id, event.id))
           .run();
         if (rows.changes === 0) {
           throw new InconsistentEventError(`Unable to decide purchase request ${event.id} - unknown purchase request`);
         }
+        break;
+      }
+      case 'PurchaseRequestNotificationSent': {
+        tx.insert(purchaseRequestNotificationsTable)
+          .values({
+            notifiedEventIndex: event.notifiedEventIndex,
+            requestId: event.requestId,
+            recipientMemberNumbersJson: JSON.stringify(event.recipientMemberNumbers),
+          })
+          .onConflictDoNothing()
+          .run();
         break;
       }
       case 'MailboxConversationArchived': {

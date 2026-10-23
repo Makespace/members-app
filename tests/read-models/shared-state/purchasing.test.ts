@@ -292,6 +292,7 @@ describe('purchasing areas in the read model', () => {
     return [
       request,
       constructEvent('PurchaseRequestApproved')({
+        note: null,
         actor: systemActor(),
         id: request.id,
       }),
@@ -362,6 +363,7 @@ describe('purchasing areas in the read model', () => {
       it('counts once a super user approves it', () => {
         insert(
           constructEvent('PurchaseRequestApproved')({
+            note: null,
             actor: systemActor(),
             id: pendingId,
           })

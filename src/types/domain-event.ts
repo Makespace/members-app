@@ -301,7 +301,22 @@ const PurchaseRequestSubmitted = defineEvent('PurchaseRequestSubmitted', {
 // against its purchasing area's budget.
 const PurchaseRequestApproved = defineEvent('PurchaseRequestApproved', {
   id: tt.UUID,
+  // What was agreed, e.g. at an owners' forum. Required for director
+  // approval; see src/commands/purchase-request/approve.ts.
+  note: tt.withFallback(t.union([t.string, t.null]), null),
 });
+
+// Purchase request emails sent for one event (a request sent, approved or
+// declined), so they aren't sent twice and the outcome can go to everyone
+// who heard about the request. See src/sync-worker/notify_purchase_requests.ts.
+const PurchaseRequestNotificationSent = defineEvent(
+  'PurchaseRequestNotificationSent',
+  {
+    requestId: tt.UUID,
+    notifiedEventIndex: t.number,
+    recipientMemberNumbers: t.readonlyArray(t.number),
+  }
+);
 
 // A super user turning a purchase request down, saying why.
 const PurchaseRequestDeclined = defineEvent('PurchaseRequestDeclined', {
@@ -799,6 +814,7 @@ export const events = [
   PurchaseRequestSubmitted,
   PurchaseRequestApproved,
   PurchaseRequestDeclined,
+  PurchaseRequestNotificationSent,
   SuperUserDeclared,
   SuperUserRevoked,
   TrainerAdded,
@@ -881,6 +897,7 @@ export const DomainEvent = t.union([
   PurchaseRequestSubmitted.codec,
   PurchaseRequestApproved.codec,
   PurchaseRequestDeclined.codec,
+  PurchaseRequestNotificationSent.codec,
   SuperUserDeclared.codec,
   SuperUserRevoked.codec,
   TrainerAdded.codec,

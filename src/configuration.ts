@@ -80,6 +80,9 @@ const Config = t.strict({
   // Area whose owners may view the imported mailbox (super-users always can).
   // '' restricts the page to super-users only.
   MANAGEMENT_TEAM_AREA_ID: tt.withFallback(t.string, ''),
+  // Area whose owners are the directors, who hear about purchase requests
+  // needing director approval. '' falls back to the super users.
+  DIRECTORS_AREA_ID: tt.withFallback(t.string, ''),
 });
 
 export type Config = t.TypeOf<typeof Config>;

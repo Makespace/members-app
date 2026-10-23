@@ -28,7 +28,7 @@ export const purchaseRequests: Query = deps => user => {
         viewer,
         O.exists(member => member.isSuperUser || member.ownerOf.length > 0)
       ),
-      canDecideSome: requests.some(
+      waitingForViewer: requests.filter(
         ({request}) =>
           request.status === 'awaiting-approval' &&
           canDecide(rm, liftActorOrUser(user), request)

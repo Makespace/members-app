@@ -2,6 +2,7 @@ import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
 import {Form} from '../../types/form';
+import {REASON_MAX} from '../../types/limited-text';
 import {
   html,
   safe,
@@ -56,6 +57,27 @@ const renderForm = (viewModel: DecisionViewModel) =>
           action="${safe(decisionAction('approve', viewModel.request.id))}"
           method="post"
         >
+          <label for="note"
+            >${viewModel.request.approval === 'proposal'
+              ? html`What was agreed?`
+              : html`Note (optional)`}</label
+          >
+          <p class="text-sm">
+            Everyone who heard about this request is told, with this note.
+            ${viewModel.request.approval === 'proposal'
+              ? html`For example: "Agreed at the October owners' forum, with
+                  the Metal Shop owners."`
+              : html``}
+          </p>
+          <textarea
+            name="note"
+            id="note"
+            rows="3"
+            maxlength="${REASON_MAX}"
+            ${viewModel.request.approval === 'proposal'
+              ? html`required`
+              : html``}
+          ></textarea>
           <input type="hidden" name="id" value="${viewModel.request.id}" />
           <button type="submit">Approve</button>
         </form>

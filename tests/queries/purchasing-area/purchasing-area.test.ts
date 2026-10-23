@@ -119,6 +119,7 @@ describe('purchasing area page', () => {
     });
     await framework.commands.purchaseRequest.approve({
       id: bandsawBlades,
+      note: undefined,
       actor: arbitraryActor(),
     });
   });

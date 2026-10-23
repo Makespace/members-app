@@ -35,6 +35,7 @@ const request: PurchaseRequest = {
   decidedAt: O.none,
   decidedByMemberNumber: O.none,
   declineReason: O.none,
+  approvalNote: O.none,
   outcome: 'budget',
   approval: 'none',
   outcomeReason: 'This comes out of the yearly budget.',

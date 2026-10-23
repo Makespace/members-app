@@ -22,8 +22,9 @@ type ViewModel = {
   requests: ReadonlyArray<Row>;
   // Email addresses, as elsewhere, for super users and area owners only.
   canSeePrivateDetails: boolean;
-  // Any awaiting approval they can approve or decline.
-  canDecideSome: boolean;
+  // Those awaiting approval they can approve or decline: their to-dos,
+  // which drop off once decided.
+  waitingForViewer: ReadonlyArray<Row>;
   canRequest: boolean;
 };
 
@@ -102,9 +103,19 @@ export const render = (viewModel: ViewModel) => {
           <a href="/purchasing-areas">Purchasing areas</a>
         </div>
       </div>
+      ${viewModel.waitingForViewer.length > 0
+        ? html`<section class="stack">
+            <h2>Waiting for you (${viewModel.waitingForViewer.length})</h2>
+            <p>You can approve or decline these.</p>
+            ${renderTable(
+              [...viewModel.waitingForViewer].reverse(),
+              viewModel.canSeePrivateDetails
+            )}
+          </section>`
+        : html``}
       <section class="stack">
         <h2>Awaiting approval (${awaiting.length})</h2>
-        ${viewModel.canDecideSome
+        ${viewModel.waitingForViewer.length > 0
           ? html`<p>
               Open a request to approve or decline it.
             </p>`
