@@ -12,13 +12,18 @@ export type SanitizedString = string & {
 // Export required as we want to re-export the output of stuff like `export const loginLink = safe('/login')`
 export type Safe = string & {readonly Safe: unique symbol};
 
+// Safe in text and in quoted attribute values alike: sanitize-html escapes
+// <, > and &, but leaves quotes, which would end an attribute early (letting
+// a value like `" onfocus="...` add attributes of its own).
 export const sanitizeString = (input: string): SanitizedString =>
   sanitize(input, {
     // Given our usage of the library we want to escape everything.
     allowedTags: [],
     allowedAttributes: {},
     disallowedTagsMode: 'recursiveEscape',
-  }) as SanitizedString;
+  })
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;') as SanitizedString;
 
 export const sanitizeOption = (
   data: O.Option<string | number>
