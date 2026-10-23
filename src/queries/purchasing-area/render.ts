@@ -193,14 +193,20 @@ const renderBudget = (viewModel: ViewModel) => {
   `;
 };
 
+// Without a name, their email stands in only for those who may see emails;
+// everyone else sees just the member number.
 const renderPurchaser =
-  (purchasingArea: PurchasingArea, canManage: boolean) =>
+  (purchasingArea: PurchasingArea, canManage: boolean, canSeePrivateDetails: boolean) =>
   (purchaser: PurchasingAreaPurchaser) => html`
     <li>
       ${pipe(
         purchaser.name,
         O.map(sanitizeString),
-        O.getOrElseW(() => sanitizeString(purchaser.primaryEmailAddress))
+        O.getOrElseW(() =>
+          canSeePrivateDetails
+            ? sanitizeString(purchaser.primaryEmailAddress)
+            : html``
+        )
       )}
       ${renderMemberNumber(purchaser.memberNumber)}
       ${purchaser.isOwnerOfAnArea
@@ -220,17 +226,20 @@ const renderPurchaser =
   `;
 
 const renderPurchasers = (viewModel: ViewModel) => {
-  const {purchasingArea, canManage} = viewModel;
+  const {purchasingArea, canManage, canSeePrivateDetails} = viewModel;
   return html`
     <section class="stack">
       <h2>Purchasers</h2>
-      <p>Purchasers can submit purchase requests for this purchasing area.</p>
+      <p>
+        Purchasers can make purchases for this purchasing area themselves,
+        without waiting for approval, when no proposal is needed.
+      </p>
       ${purchasingArea.purchasers.length === 0
         ? html`<p>No purchasers yet.</p>`
         : html`<ul>
             ${joinHtml(
               purchasingArea.purchasers.map(
-                renderPurchaser(purchasingArea, canManage)
+                renderPurchaser(purchasingArea, canManage, canSeePrivateDetails)
               )
             )}
           </ul>`}

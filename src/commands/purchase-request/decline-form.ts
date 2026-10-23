@@ -1,6 +1,7 @@
 import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
 import {Form} from '../../types/form';
+import {REASON_MAX} from '../../types/limited-text';
 import {
   html,
   safe,
@@ -30,7 +31,13 @@ const renderForm = (viewModel: DecisionViewModel) =>
           method="post"
         >
           <label for="reason">Why is it being declined?</label>
-          <textarea name="reason" id="reason" rows="4" required></textarea>
+          <textarea
+            name="reason"
+            id="reason"
+            rows="4"
+            maxlength="${REASON_MAX}"
+            required
+          ></textarea>
           <input type="hidden" name="id" value="${viewModel.request.id}" />
           <button type="submit">Decline</button>
         </form>

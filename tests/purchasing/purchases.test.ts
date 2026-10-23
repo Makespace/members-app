@@ -121,9 +121,11 @@ describe('purchases', () => {
 
     it.each([
       ['', 'please give a quantity.'],
-      ['two', 'the quantity should be a whole number, e.g. 4.'],
-      ['1.5', 'the quantity should be a whole number, e.g. 4.'],
-      ['0', 'the quantity should be a whole number, e.g. 4.'],
+      ['two', 'the quantity should be a whole number from 1 to 1,000,000, e.g. 4.'],
+      ['1.5', 'the quantity should be a whole number from 1 to 1,000,000, e.g. 4.'],
+      ['0', 'the quantity should be a whole number from 1 to 1,000,000, e.g. 4.'],
+      // Too big to store: JSON would write it as null.
+      ['1' + '0'.repeat(400), 'the quantity should be a whole number from 1 to 1,000,000, e.g. 4.'],
     ])('turns down a quantity of "%s"', (quantity, message) => {
       expect(
         problem([{shop: 'J', items: [item({sku: 'A'}), item({sku: 'B', quantity})]}])

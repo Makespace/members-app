@@ -5,13 +5,14 @@ import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
 import {constructEvent} from '../../types';
 import {Command} from '../command';
+import {limitedText, REASON_MAX} from '../../types/limited-text';
 import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
 import {requestAwaitingDecision} from './decide-helpers';
 
 const codec = t.strict({
   id: tt.UUID,
   // Shown to whoever sent the request.
-  reason: tt.NonEmptyString,
+  reason: limitedText(REASON_MAX),
 });
 
 type DeclinePurchaseRequest = t.TypeOf<typeof codec>;
