@@ -100,7 +100,8 @@ const onPage = (
   problems: [],
   chosen: O.some(woodShop),
   buyerRole: 'neither',
-  otherAreas: [
+  affectedAreaNames: [],
+  areas: [
     {id: '66666666-6666-4666-8666-666666666666' as UUID, name: 'Metal Shop'},
     {id: '77777777-7777-4777-8777-777777777777' as UUID, name: 'Textiles'},
   ],
@@ -139,11 +140,33 @@ describe('purchase request form', () => {
         id: requestId,
         'purchases[0][shop]': 'jewson.co.uk',
         'purchases[0][items][1][notes]': '4.8m',
-        isMemberPaidConsumable: 'false',
-        affectsOtherAreas: 'false',
-        healthAndSafetyRisk: 'false',
       });
       expect(hidden(page)).not.toHaveProperty('summary');
+      expect(hidden(page)).not.toHaveProperty('isMemberPaidConsumable');
+      expect(
+        page.querySelector<HTMLInputElement>('#consumable-no')!.checked
+      ).toBe(true);
+    });
+
+    it('asks whether members pay for it', () => {
+      expect(
+        page.querySelector('.purchase-question legend')?.textContent?.trim()
+      ).toBe('Do members pay for this on SumUp?');
+    });
+
+    it('asks whether it affects other areas, offering them, and about safety', () => {
+      expect(page.querySelector('#affects-yes')).not.toBeNull();
+      expect(
+        [
+          ...page.querySelectorAll<HTMLInputElement>(
+            'input[name="affectedAreaIds"]'
+          ),
+        ].map(box => box.closest('label')!.textContent.trim())
+      ).toStrictEqual(['Metal Shop', 'Textiles']);
+      expect(text(page)).toContain(
+        'Does it present a moderate to high health and safety risk that will need to be mitigated?'
+      );
+      expect(page.querySelector('#risk-no')).not.toBeNull();
     });
 
     it('moves on to the costs and budget, with no Back', () => {
@@ -155,7 +178,7 @@ describe('purchase request form', () => {
   });
 
   describe('page 2', () => {
-    it('asks for the shop and each item from it, and the consumable question', () => {
+    it('asks for the shop and each item from it', () => {
       const page = render(onPage(2));
       expect(text(page)).toContain('Page 2 of 3');
       const names = [...page.querySelectorAll('form [name]')].map(field =>
@@ -177,9 +200,6 @@ describe('purchase request form', () => {
           '[name="purchases[0][items][1][notes]"]'
         )!.value
       ).toBe('4.8m');
-      expect(
-        page.querySelector<HTMLInputElement>('#consumable-no')!.checked
-      ).toBe(true);
     });
 
     it("shows the area's budget, with room for the result", () => {
@@ -189,22 +209,6 @@ describe('purchase request form', () => {
         page.querySelector<HTMLElement>('[data-budget-verdict]')!.hidden
       ).toBe(true);
       expect(page.querySelectorAll('template[data-verdict-template]')).toHaveLength(4);
-    });
-
-    it('asks whether it affects other areas, offering them, and about safety', () => {
-      const page = render(onPage(2));
-      expect(page.querySelector('#affects-yes')).not.toBeNull();
-      expect(
-        [
-          ...page.querySelectorAll<HTMLInputElement>(
-            'input[name="affectedAreaIds"]'
-          ),
-        ].map(box => box.closest('label')!.textContent.trim())
-      ).toStrictEqual(['Metal Shop', 'Textiles']);
-      expect(text(page)).toContain(
-        'Does it present a moderate to high health and safety risk that will need to be mitigated?'
-      );
-      expect(page.querySelector('#risk-no')).not.toBeNull();
     });
 
     it('asks for detailed notes on each item', () => {
@@ -223,14 +227,6 @@ describe('purchase request form', () => {
       ).toContain(
         'Please explain in all possible detail what the item is - lengths, widths, weight, connections'
       );
-    });
-
-    it('asks whether members pay for it', () => {
-      expect(
-        render(onPage(2))
-          .querySelector('.purchase-question legend')
-          ?.textContent?.trim()
-      ).toBe('Do members pay for this on SumUp?');
     });
 
     it("makes clear an item's cost is its total, including VAT", () => {
@@ -278,6 +274,9 @@ describe('purchase request form', () => {
         purchasingAreaId: woodShop.id,
         summary: 'Saw blades',
         justification: 'Blunt',
+        isMemberPaidConsumable: 'false',
+        affectsOtherAreas: 'false',
+        healthAndSafetyRisk: 'false',
       });
       const back = page.querySelector('.step-nav a')!.getAttribute('href')!;
       const query = new URLSearchParams(back.slice(1));

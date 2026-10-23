@@ -73,6 +73,9 @@ describe('purchase request form pages', () => {
     purchasingAreaId: woodShopId,
     summary: 'Saw blades',
     justification: 'The old ones are blunt',
+    isMemberPaidConsumable: 'false',
+    affectsOtherAreas: 'false',
+    healthAndSafetyRisk: 'false',
   };
   const jewson = (cost = '50') => ({
     shop: 'jewson.co.uk',
@@ -85,9 +88,6 @@ describe('purchase request form pages', () => {
   const allAnswers = {
     ...aboutAnswers,
     purchases: [jewson()],
-    isMemberPaidConsumable: 'false',
-    affectsOtherAreas: 'false',
-    healthAndSafetyRisk: 'false',
   };
 
   beforeEach(async () => {
@@ -143,7 +143,12 @@ describe('purchase request form pages', () => {
     });
     expect(viewModel).toMatchObject({
       step: 1,
-      problems: ['Please give a summary, why it is needed before moving on.'],
+      problems: [
+        'Please give a summary, why it is needed before moving on.',
+        'Please say whether members pay for it.',
+        'Please say whether it will affect any other areas.',
+        'Please say whether it presents a moderate to high health and safety risk.',
+      ],
     });
   });
 
@@ -159,15 +164,10 @@ describe('purchase request form pages', () => {
     });
   });
 
-  it('sends them back to page 2 until the shops and the question are sorted', async () => {
+  it('sends them back to page 2 until the shops are sorted', async () => {
     expect(await page({...aboutAnswers, step: '3'})).toMatchObject({
       step: 2,
-      problems: [
-        'Please add at least one shop or website to buy from.',
-        'Please say whether members pay for it.',
-        'Please say whether it will affect any other areas.',
-        'Please say whether it presents a moderate to high health and safety risk.',
-      ],
+      problems: ['Please add at least one shop or website to buy from.'],
     });
     const noPrice = jewson();
     expect(
@@ -218,18 +218,29 @@ describe('purchase request form pages', () => {
     expect(proposal.classification.outcome).toBe('budget-proposal-needed');
   });
 
-  it("offers the areas outside the chosen purchasing area as ones it might affect", async () => {
-    const viewModel = await page({...aboutAnswers, step: '2'});
-    expect(viewModel.otherAreas.map(area => area.id)).toStrictEqual([
-      craftRoomId,
-    ]);
+  // The page leaves out the chosen purchasing area's own as it is chosen.
+  it('offers every area as one it might affect', async () => {
+    const viewModel = await page({...aboutAnswers, step: '1'});
+    expect(viewModel.areas.map(area => area.id).sort()).toStrictEqual(
+      [craftRoomId, woodShopAreaId].sort()
+    );
+  });
+
+  it("ignores the chosen purchasing area's own areas if ticked", async () => {
+    const viewModel = await page({
+      ...allAnswers,
+      affectsOtherAreas: 'true',
+      affectedAreaIds: [woodShopAreaId, craftRoomId],
+      step: '3',
+    });
+    expect(viewModel.affectedAreaNames).toStrictEqual(['Craft & Art']);
   });
 
   it('needs the other areas chosen when it affects some', async () => {
     expect(
       await page({...allAnswers, affectsOtherAreas: 'true', step: '3'})
     ).toMatchObject({
-      step: 2,
+      step: 1,
       problems: ['Please choose which other areas it affects.'],
     });
   });

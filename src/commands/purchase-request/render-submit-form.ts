@@ -98,7 +98,11 @@ export type PurchaseRequestFormViewModel = {
   // Known from page 2 on.
   chosen: O.Option<PurchasingAreaOption>;
   // Areas outside the chosen purchasing area, which it might affect.
-  otherAreas: ReadonlyArray<{id: UUID; name: string}>;
+  // Every area, for saying which others it affects (the chosen purchasing
+  // area's own are left out on the page).
+  areas: ReadonlyArray<{id: UUID; name: string}>;
+  // The page 1 answers, for page 2's live verdict.
+  affectedAreaNames: ReadonlyArray<string>;
   // Whether whoever is filling it in can buy it directly, for the area
   // chosen; see src/purchasing/buy-directly.ts.
   buyerRole: BuyerRole;
@@ -462,17 +466,20 @@ const carried = ({
     ['amount', answers.amount] as const,
   ].filter(([, value]) => value !== '');
 
-// Which of the page 2 questions a name belongs to.
-const askedOnCostsPage = (name: string) =>
-  name.startsWith('purchases[') ||
+// Which page's questions a name belongs to.
+const askedOnAboutPage = (name: string) =>
   [
+    'purchasingAreaId',
+    'summary',
+    'justification',
     'isMemberPaidConsumable',
     'affectsOtherAreas',
     'affectedAreaIds',
     'healthAndSafetyRisk',
-    'buyingDirectly',
-    'amount',
   ].includes(name);
+
+const askedOnCostsPage = (name: string) =>
+  name.startsWith('purchases[') || ['buyingDirectly', 'amount'].includes(name);
 
 // Everything but what the page itself asks for.
 const carriedExcept = (
@@ -506,6 +513,7 @@ const renderAreaRadio =
         name="purchasingAreaId"
         id="area-${purchasingArea.id}"
         value="${purchasingArea.id}"
+        data-area-ids="${safe(purchasingArea.areaIds.join(' '))}"
         required
         ${checkedIf(answers.purchasingAreaId === purchasingArea.id)}
       />
@@ -521,14 +529,134 @@ const renderAreaRadio =
     </div>
   `;
 
+// Asked on page 1, as they decide whether a proposal is needed whatever it
+// costs.
+const renderQuestions = (viewModel: PurchaseRequestFormViewModel) => html`
+    <fieldset class="purchase-request__fieldset purchase-question">
+      <legend>Do members pay for this on SumUp?</legend>
+      <p class="purchase-request__hint text-sm">
+        For example, 3D printer filament, paid for on SumUp when it's used.
+      </p>
+      <div class="purchase-request__radios purchase-request__radios--inline">
+        <div class="fieldset-item">
+          <input
+            type="radio"
+            name="isMemberPaidConsumable"
+            id="consumable-yes"
+            value="true"
+            required
+            ${checkedIf(viewModel.answers.isMemberPaidConsumable === 'true')}
+          />
+          <label for="consumable-yes">Yes</label>
+        </div>
+        <div class="fieldset-item">
+          <input
+            type="radio"
+            name="isMemberPaidConsumable"
+            id="consumable-no"
+            value="false"
+            required
+            ${checkedIf(viewModel.answers.isMemberPaidConsumable === 'false')}
+          />
+          <label for="consumable-no">No</label>
+        </div>
+      </div>
+    </fieldset>
+    <fieldset class="purchase-request__fieldset purchase-question">
+      <legend>Will this affect any other areas?</legend>
+      <p class="purchase-request__hint text-sm">
+        For example by using shared space, changing a shared machine, or being
+        noisy or messy nearby. Their owners will need a chance to give their
+        input, so it will need a proposal.
+      </p>
+      <div class="purchase-request__radios purchase-request__radios--inline">
+        <div class="fieldset-item">
+          <input
+            type="radio"
+            name="affectsOtherAreas"
+            id="affects-yes"
+            value="true"
+            required
+            ${checkedIf(viewModel.answers.affectsOtherAreas === 'true')}
+          />
+          <label for="affects-yes">Yes</label>
+        </div>
+        <div class="fieldset-item">
+          <input
+            type="radio"
+            name="affectsOtherAreas"
+            id="affects-no"
+            value="false"
+            required
+            ${checkedIf(viewModel.answers.affectsOtherAreas === 'false')}
+          />
+          <label for="affects-no">No</label>
+        </div>
+      </div>
+      <fieldset class="purchase-request__fieldset purchase-other-areas" data-other-areas>
+        <legend class="purchase-field__label">Which areas?</legend>
+        <ul class="purchase-checkboxes">
+          ${joinHtml(
+            viewModel.areas.map(
+              area => html`<li data-area-id="${area.id}">
+                <label class="purchase-checkbox">
+                  <input
+                    type="checkbox"
+                    name="affectedAreaIds"
+                    value="${area.id}"
+                    ${checkedIf(viewModel.answers.affectedAreaIds.includes(area.id))}
+                  />
+                  <span data-area-name>${sanitizeString(area.name)}</span>
+                </label>
+              </li>`
+            )
+          )}
+        </ul>
+      </fieldset>
+    </fieldset>
+    <fieldset class="purchase-request__fieldset purchase-question">
+      <legend>
+        Does it present a moderate to high health and safety risk that will
+        need to be mitigated?
+      </legend>
+      <p class="purchase-request__hint text-sm">
+        If so, it will need a proposal that includes a risk assessment.
+      </p>
+      <div class="purchase-request__radios purchase-request__radios--inline">
+        <div class="fieldset-item">
+          <input
+            type="radio"
+            name="healthAndSafetyRisk"
+            id="risk-yes"
+            value="true"
+            required
+            ${checkedIf(viewModel.answers.healthAndSafetyRisk === 'true')}
+          />
+          <label for="risk-yes">Yes</label>
+        </div>
+        <div class="fieldset-item">
+          <input
+            type="radio"
+            name="healthAndSafetyRisk"
+            id="risk-no"
+            value="false"
+            required
+            ${checkedIf(viewModel.answers.healthAndSafetyRisk === 'false')}
+          />
+          <label for="risk-no">No</label>
+        </div>
+      </div>
+    </fieldset>
+`;
+
 const renderAboutPage = (viewModel: PurchaseRequestFormViewModel) => html`
-  <form method="get" class="purchase-request__sections">
+  <form
+    method="get"
+    class="purchase-request__sections"
+    id="purchase-about-form"
+  >
     <input type="hidden" name="step" value="2" />
-    ${hiddenInputs(
-      carriedExcept(viewModel, name =>
-        ['purchasingAreaId', 'summary', 'justification'].includes(name)
-      )
-    )}
+    ${hiddenInputs(carriedExcept(viewModel, askedOnAboutPage))}
     <fieldset class="purchase-request__fieldset">
       <legend>Which area is this for?</legend>
       <p class="purchase-request__hint text-sm">
@@ -566,8 +694,10 @@ const renderAboutPage = (viewModel: PurchaseRequestFormViewModel) => html`
 ${sanitizeString(viewModel.answers.justification)}</textarea
       >
     </div>
+    ${renderQuestions(viewModel)}
     ${renderNext(viewModel)}
   </form>
+  ${aboutScript}
 `;
 
 // A request's verdict on the page: where the money comes from, and whether a
@@ -711,6 +841,8 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
     class="purchase-request__sections"
     id="purchase-costs-form"
     data-proposal-threshold-pence="${viewModel.proposalThresholdPence}"
+    data-consumable="${safe(String(viewModel.answers.isMemberPaidConsumable === 'true'))}"
+    data-risky="${safe(String(viewModel.answers.healthAndSafetyRisk === 'true'))}"
     ${pipe(
       viewModel.chosen,
       O.match(
@@ -725,121 +857,11 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
     ${hiddenInputs(
       carriedExcept(viewModel, askedOnCostsPage)
     )}
-    <fieldset class="purchase-request__fieldset purchase-question">
-      <legend>Do members pay for this on SumUp?</legend>
-      <p class="purchase-request__hint text-sm">
-        For example, 3D printer filament, paid for on SumUp when it's used.
-      </p>
-      <div class="purchase-request__radios purchase-request__radios--inline">
-        <div class="fieldset-item">
-          <input
-            type="radio"
-            name="isMemberPaidConsumable"
-            id="consumable-yes"
-            value="true"
-            required
-            ${checkedIf(viewModel.answers.isMemberPaidConsumable === 'true')}
-          />
-          <label for="consumable-yes">Yes</label>
-        </div>
-        <div class="fieldset-item">
-          <input
-            type="radio"
-            name="isMemberPaidConsumable"
-            id="consumable-no"
-            value="false"
-            required
-            ${checkedIf(viewModel.answers.isMemberPaidConsumable === 'false')}
-          />
-          <label for="consumable-no">No</label>
-        </div>
-      </div>
-    </fieldset>
-    <fieldset class="purchase-request__fieldset purchase-question">
-      <legend>Will this affect any other areas?</legend>
-      <p class="purchase-request__hint text-sm">
-        For example by using shared space, changing a shared machine, or being
-        noisy or messy nearby. Their owners will need a chance to give their
-        input, so it will need a proposal.
-      </p>
-      <div class="purchase-request__radios purchase-request__radios--inline">
-        <div class="fieldset-item">
-          <input
-            type="radio"
-            name="affectsOtherAreas"
-            id="affects-yes"
-            value="true"
-            required
-            ${checkedIf(viewModel.answers.affectsOtherAreas === 'true')}
-          />
-          <label for="affects-yes">Yes</label>
-        </div>
-        <div class="fieldset-item">
-          <input
-            type="radio"
-            name="affectsOtherAreas"
-            id="affects-no"
-            value="false"
-            required
-            ${checkedIf(viewModel.answers.affectsOtherAreas === 'false')}
-          />
-          <label for="affects-no">No</label>
-        </div>
-      </div>
-      <fieldset class="purchase-request__fieldset purchase-other-areas" data-other-areas>
-        <legend class="purchase-field__label">Which areas?</legend>
-        <ul class="purchase-checkboxes">
-          ${joinHtml(
-            viewModel.otherAreas.map(
-              area => html`<li>
-                <label class="purchase-checkbox">
-                  <input
-                    type="checkbox"
-                    name="affectedAreaIds"
-                    value="${area.id}"
-                    ${checkedIf(viewModel.answers.affectedAreaIds.includes(area.id))}
-                  />
-                  <span data-area-name>${sanitizeString(area.name)}</span>
-                </label>
-              </li>`
-            )
-          )}
-        </ul>
-      </fieldset>
-    </fieldset>
-    <fieldset class="purchase-request__fieldset purchase-question">
-      <legend>
-        Does it present a moderate to high health and safety risk that will
-        need to be mitigated?
-      </legend>
-      <p class="purchase-request__hint text-sm">
-        If so, it will need a proposal that includes a risk assessment.
-      </p>
-      <div class="purchase-request__radios purchase-request__radios--inline">
-        <div class="fieldset-item">
-          <input
-            type="radio"
-            name="healthAndSafetyRisk"
-            id="risk-yes"
-            value="true"
-            required
-            ${checkedIf(viewModel.answers.healthAndSafetyRisk === 'true')}
-          />
-          <label for="risk-yes">Yes</label>
-        </div>
-        <div class="fieldset-item">
-          <input
-            type="radio"
-            name="healthAndSafetyRisk"
-            id="risk-no"
-            value="false"
-            required
-            ${checkedIf(viewModel.answers.healthAndSafetyRisk === 'false')}
-          />
-          <label for="risk-no">No</label>
-        </div>
-      </div>
-    </fieldset>
+    <ul hidden data-affected-areas>
+      ${joinHtml(
+        viewModel.affectedAreaNames.map(name => html`<li>${sanitizeString(name)}</li>`)
+      )}
+    </ul>
     ${pipe(
       viewModel.chosen,
       O.match(() => html``, renderBudget(viewModel.budgetYear))
@@ -1519,6 +1541,31 @@ const proposalScript = html`
   </script>
 `;
 
+// Plain browser JavaScript for page 1: the list of other areas only once
+// they say it affects some, without the chosen purchasing area's own.
+const aboutScript = html`
+  <script>
+    (function () {
+      var form = document.getElementById('purchase-about-form');
+      if (!form) return;
+      var otherAreas = form.querySelector('[data-other-areas]');
+      function update() {
+        var affects = form.querySelector('input[name="affectsOtherAreas"]:checked');
+        otherAreas.hidden = !(affects && affects.value === 'true');
+        var chosen = form.querySelector('input[name="purchasingAreaId"]:checked');
+        var own = chosen ? chosen.dataset.areaIds.split(' ') : [];
+        otherAreas.querySelectorAll('[data-area-id]').forEach(function (item) {
+          var isOwn = own.indexOf(item.dataset.areaId) !== -1;
+          item.hidden = isOwn;
+          if (isOwn) item.querySelector('input').checked = false;
+        });
+      }
+      form.addEventListener('change', update);
+      update();
+    })();
+  </script>
+`;
+
 // Plain browser JavaScript for page 2, kept free of template substitutions
 // (so no backtick strings in it) and of single backslashes.
 const costsScript = html`
@@ -1602,14 +1649,13 @@ const costsScript = html`
         };
       }
 
-      // Which budget it comes out of, and whether it needs a proposal, once
-      // there is a total and the consumable question is answered.
-      // The list of other areas only matters once they say it affects some.
-      var otherAreas = form.querySelector('[data-other-areas]');
-      function showOtherAreas() {
-        var affects = form.querySelector('input[name="affectsOtherAreas"]:checked');
-        otherAreas.hidden = !(affects && affects.value === 'true');
-      }
+      // The answers from page 1.
+      var consumable = form.dataset.consumable === 'true';
+      var risky = form.dataset.risky === 'true';
+      var areaNames = Array.prototype.map.call(
+        form.querySelectorAll('[data-affected-areas] li'),
+        function (item) { return item.textContent; }
+      );
 
       // Buying directly asks only for what it cost, in place of the shops.
       function buyingDirectly() {
@@ -1640,34 +1686,24 @@ const costsScript = html`
         return needsProposal ? 'As a super user, you can buy this directly without a proposal.' : '';
       }
 
+      // Which budget it comes out of, and whether it needs a proposal, once
+      // there is a total.
       function showVerdict(total) {
-        showOtherAreas();
         showBuyingDirectly();
         if (directMessage) directMessage.textContent = '';
-        var answer = form.querySelector('input[name="isMemberPaidConsumable"]:checked');
-        if (!answer || !total) {
+        if (!total) {
           verdict.hidden = true;
           verdict.innerHTML = '';
           return;
         }
-        var affects = form.querySelector('input[name="affectsOtherAreas"]:checked');
-        var areaNames = affects && affects.value === 'true'
-          ? Array.prototype.map.call(
-              form.querySelectorAll('input[name="affectedAreaIds"]:checked'),
-              function (box) {
-                return box.closest('label').querySelector('[data-area-name]').textContent.trim();
-              }
-            )
-          : [];
-        var risk = form.querySelector('input[name="healthAndSafetyRisk"]:checked');
-        var result = classify(answer.value === 'true', total, areaNames, !!risk && risk.value === 'true');
+        var result = classify(consumable, total, areaNames, risky);
         var template = form.querySelector('[data-verdict-template="' + result.key + '"]');
         verdict.innerHTML = template.innerHTML;
         verdict.querySelector('[data-verdict-total]').textContent = gbp(total);
         verdict.querySelector('[data-verdict-reason]').textContent = result.reason;
         verdict.hidden = false;
         if (directMessage && buyingDirectly()) {
-          directMessage.textContent = buyingDirectlyMessage(result, areaNames, !!risk && risk.value === 'true');
+          directMessage.textContent = buyingDirectlyMessage(result, areaNames, risky);
         }
       }
 

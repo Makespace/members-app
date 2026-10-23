@@ -164,9 +164,12 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
     const consumable = yesNo(answers.isMemberPaidConsumable);
     const affectsOthers = yesNo(answers.affectsOtherAreas);
     const risky = yesNo(answers.healthAndSafetyRisk);
-    // Every area outside the chosen purchasing area, by name.
-    const otherAreas = readModel.area
+    const areas = readModel.area
       .getAllMinimal()
+      .map(({id, name}) => ({id, name}))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    // Every area outside the chosen purchasing area, by name.
+    const otherAreas = areas
       .filter(
         area =>
           !pipe(
@@ -174,8 +177,7 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
             O.exists(purchasingArea => purchasingArea.areaIds.includes(area.id))
           )
       )
-      .map(({id, name}) => ({id, name}))
-      .sort((a, b) => a.name.localeCompare(b.name));
+    ;
     const affectedAreaNames = pipe(
       affectsOthers,
       O.exists(Boolean)
@@ -225,11 +227,10 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
       ...(answers.justification === '' ? ['why it is needed'] : []),
     ];
     const problemsOn = [
-      aboutMissing.length > 0
-        ? [`Please give ${aboutMissing.join(', ')} before moving on.`]
-        : [],
       [
-        ...(E.isLeft(purchases) ? [purchases.left] : []),
+        ...(aboutMissing.length > 0
+          ? [`Please give ${aboutMissing.join(', ')} before moving on.`]
+          : []),
         ...(O.isNone(consumable)
           ? ['Please say whether members pay for it.']
           : []),
@@ -244,6 +245,9 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
               'Please say whether it presents a moderate to high health and safety risk.',
             ]
           : []),
+      ],
+      [
+        ...(E.isLeft(purchases) ? [purchases.left] : []),
         ...pipe(
           buyingDirectlyProblem,
           O.match(
@@ -273,7 +277,8 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
       answers,
       problems: requested > step ? problemsOn[step - 1] : [],
       chosen,
-      otherAreas,
+      areas,
+      affectedAreaNames,
       buyerRole,
       result:
         step === 3
