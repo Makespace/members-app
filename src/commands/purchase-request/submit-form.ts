@@ -258,7 +258,7 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
           ? ['Please say whether members pay for it.']
           : []),
         ...(O.isNone(affectsOthers)
-          ? ['Please say whether it will affect any other areas.']
+          ? ['Please say whether it could negatively impact other areas.']
           : pipe(affectsOthers, O.exists(Boolean)) &&
               affectedAreaNames.length === 0
             ? ['Please choose which other areas it affects.']

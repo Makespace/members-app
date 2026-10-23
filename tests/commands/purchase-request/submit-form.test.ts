@@ -146,7 +146,7 @@ describe('purchase request form pages', () => {
       problems: [
         'Please give a summary, why it is needed before moving on.',
         'Please say whether members pay for it.',
-        'Please say whether it will affect any other areas.',
+        'Please say whether it could negatively impact other areas.',
         'Please say whether it presents a moderate to high health and safety risk.',
       ],
     });

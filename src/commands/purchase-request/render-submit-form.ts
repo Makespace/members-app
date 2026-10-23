@@ -574,7 +574,7 @@ const renderQuestions = (viewModel: PurchaseRequestFormViewModel) => html`
       </div>
     </fieldset>
     <fieldset class="purchase-request__fieldset purchase-question">
-      <legend>Will this affect any other areas?</legend>
+      <legend>Does this have the potential to negatively impact other areas?</legend>
       <p class="purchase-request__hint text-sm">
         For example by using shared space, changing a shared machine, or being
         noisy or messy nearby. Their owners will need a chance to give their
@@ -1015,10 +1015,31 @@ const renderCheckPage = (viewModel: PurchaseRequestFormViewModel) => html`
               )
             )}
           </dd>
-          <dt>Summary</dt>
-          <dd>${sanitizeString(viewModel.answers.summary)}</dd>
-          <dt>Why it's needed</dt>
-          <dd>${sanitizeString(viewModel.answers.justification)}</dd>
+          <dt><label for="summary">Summary</label></dt>
+          <dd>
+            <input
+              type="text"
+              name="summary"
+              id="summary"
+              form="purchase-check-form"
+              value="${sanitizeString(viewModel.answers.summary)}"
+              maxlength="${SUMMARY_MAX}"
+              required
+            />
+          </dd>
+          <dt><label for="justification">Why it's needed</label></dt>
+          <dd>
+            <textarea
+              name="justification"
+              id="justification"
+              form="purchase-check-form"
+              rows="3"
+              maxlength="${LONG_TEXT_MAX}"
+              required
+            >
+${sanitizeString(viewModel.answers.justification)}</textarea
+            >
+          </dd>
           <dt>Total</dt>
           <dd>${gbp(totalPence)}</dd>
           ${isBuyingDirectly(viewModel)
@@ -1070,7 +1091,11 @@ const renderCheckPage = (viewModel: PurchaseRequestFormViewModel) => html`
     class="purchase-request__sections"
     id="purchase-check-form"
   >
-    ${hiddenInputs(carried(viewModel))}
+    ${hiddenInputs(
+      carriedExcept(viewModel, name =>
+        ['summary', 'justification'].includes(name)
+      )
+    )}
     ${pipe(
       viewModel.result,
       O.filter(
