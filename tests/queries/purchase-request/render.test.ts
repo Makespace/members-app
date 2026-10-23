@@ -111,6 +111,17 @@ describe('purchase request page', () => {
     );
   });
 
+  it('says a proposal is needed only while it awaits approval', () => {
+    const proposal = {outcome: 'budget-proposal-needed', approval: 'proposal'} as const;
+    expect(page(false, proposal)).toContain('Yearly budget · Proposal needed');
+    expect(page(false, {...proposal, status: 'approved'})).toContain(
+      'Yearly budget · Proposal approved'
+    );
+    expect(page(false, {...proposal, status: 'declined'})).not.toContain(
+      'Proposal'
+    );
+  });
+
   it('says who approved or declined it, and why it was declined', () => {
     expect(
       page(false, {

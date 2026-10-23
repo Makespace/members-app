@@ -83,18 +83,25 @@ const whyYou = (
   }
 };
 
+// As on the pages (src/templates/purchase-request-outcome.ts): "Proposal
+// needed" is red only while the request is still waiting.
 const outcomeTag = (request: PurchaseRequest): Tag => {
-  switch (request.outcome) {
-    case 'consumable':
-      return request.approval === 'proposal'
-        ? {label: 'Paid for by members · Proposal needed', colour: 'red'}
-        : {label: 'Paid for by members', colour: 'green'};
-    case 'budget':
-      return {label: 'Yearly budget', colour: 'yellow'};
-    case 'budget-proposal-needed':
-      return {label: 'Yearly budget · Proposal needed', colour: 'red'};
-    case 'outside-budget':
-      return {label: 'Approved outside the yearly budget', colour: 'blue'};
+  const base: Tag =
+    request.outcome === 'consumable'
+      ? {label: 'Paid for by members', colour: 'green'}
+      : request.outcome === 'outside-budget'
+        ? {label: 'Approved outside the yearly budget', colour: 'blue'}
+        : {label: 'Yearly budget', colour: 'yellow'};
+  if (request.approval !== 'proposal') {
+    return base;
+  }
+  switch (request.status) {
+    case 'awaiting-approval':
+      return {label: `${base.label} · Proposal needed`, colour: 'red'};
+    case 'approved':
+      return {...base, label: `${base.label} · Proposal approved`};
+    default:
+      return base;
   }
 };
 

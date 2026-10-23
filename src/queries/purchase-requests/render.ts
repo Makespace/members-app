@@ -59,7 +59,7 @@ const renderRow =
         >
       </td>
       <td>${sanitizeString(formatPence(request.totalPence))}</td>
-      <td>${renderOutcome(request.outcome, request.approval)}</td>
+      <td>${renderOutcome(request.outcome, request.approval, request.status)}</td>
       <td>${renderStatus(request)}</td>
     </tr>
   `;
