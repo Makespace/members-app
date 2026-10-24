@@ -1,16 +1,24 @@
 # E-ink displays
 
-A machine's open trouble tickets are served as an image for an e-ink display
-mounted on it:
+Each e-ink display has a number, and is flashed once with its own number's
+address:
 
 ```
-GET /equipment/<machine>/trouble-tickets.png?width=800&height=480&tones=4&wait=0
+GET /e-ink/<n>.png?width=800&height=480&tones=4&wait=0
 ```
 
-`<machine>` is the machine's uuid or its readable slug (`wood-shop-band-saw`).
+`<n>` is a whole number from 1 to 999. What a display shows is chosen by a
+super-user at `/e-ink` (linked from the admin page), so moving a display to
+another machine needs no reflash:
+
+- given a machine, it shows that machine's open trouble tickets: each one's
+  title, status and how long it's been open, never who reported it;
+- otherwise - a number nobody has set up, or one that has been cleared - it
+  shows "Display n, not set up yet" and where to set it up, so a new display
+  visibly works before it is given a machine.
+
 A display cannot log in, so it identifies itself with the display token
-instead (below). The image shows each open ticket's title, status and how long
-it's been open, never who reported it.
+instead (below).
 
 This page is the contract a display's firmware can rely on. Displays are small
 devices that are reflashed rarely and often run deliberately minimal code, so a
@@ -27,8 +35,8 @@ Authorization: Bearer <EINK_DISPLAY_TOKEN>
 
 - Without it, or with anything else, the answer is `401` with
   `WWW-Authenticate: Bearer` and a plain-text reason. The token is checked
-  before anything else, so such a request draws nothing and cannot tell a real
-  machine from a made-up one.
+  before anything else, so such a request draws nothing and cannot tell a
+  display that is set up from one that isn't.
 - It is only accepted in that header, never in the address, so it stays out of
   URLs; the request log records the header redacted.
 - One token is shared by every display. It is the `EINK_DISPLAY_TOKEN` secret
@@ -44,8 +52,8 @@ Authorization: Bearer <EINK_DISPLAY_TOKEN>
 | `wait` | seconds the display will wait for a change (see Polling); over 55 counts as 55 | 0 |
 
 Anything else in the query is ignored. With the token, a value that cannot be
-honoured is answered `400` with a plain-text reason, and an unknown machine is
-`404`.
+honoured is answered `400` with a plain-text reason, and a display number
+outside 1 to 999 is `404`.
 
 ## The image
 
@@ -58,10 +66,13 @@ honoured is answered `400` with a plain-text reason, and an unknown machine is
     white rather than reduced from grey: secondary text is black, separators
     are thin black lines, and anti-aliased edges are cut at mid-grey here, so
     every two-tone panel shows the same picture.
-- Drawn from the tickets and today's date alone. The date (London time) sits
-  in a corner, so the bytes change when a ticket does and once a day at
-  midnight, and a display showing today's date is visibly still updating.
-  Nothing else - no clock, no counter - moves it.
+- Drawn from what the display is set to show, the tickets and today's date
+  alone. The date (London time) sits in a corner of the ticket image, so the
+  bytes change when a ticket does, when the display is moved to another
+  machine or cleared, and once a day at midnight, and a display showing
+  today's date is visibly still updating. Nothing else - no clock, no counter
+  - moves it. The "not set up" image has no date: it only changes when the
+  display is given a machine.
 - What's drawn may change (it did when the usability headline and QR code
   arrived); the format above doesn't.
 
@@ -81,9 +92,10 @@ honoured is answered `400` with a plain-text reason, and an unknown machine is
 A display that sends `If-None-Match` with the tag it has, and `wait=N`, is held
 for up to `N` seconds (55 at most) instead of being answered at once:
 
-- the image changes while it waits: `200` with the new image and tag, as soon
-  as the change reaches the app's read model (refreshed every 10 seconds), or
-  at midnight in London when the date turns over;
+- the image changes while it waits - a ticket changes, or the display is
+  moved or cleared at `/e-ink`: `200` with the new image and tag, as soon as
+  the change reaches the app's read model (refreshed every 10 seconds), or at
+  midnight in London when the date turns over;
 - the wait runs out: `304 Not Modified`, as if it had not waited.
 
 A display that does not already have the current image is answered at once,

@@ -199,8 +199,9 @@ Every `command()` route in `src/routes.ts` also registers a bearer-token twin at
 
 `scripts/populate-local-dev.sh` shows working curl examples for the common ones.
 
-E-ink displays use a separate token: `GET /equipment/<machine>/trouble-tickets.png`
-takes `Authorization: Bearer <EINK_DISPLAY_TOKEN>` (see docs/eink-displays.md).
+E-ink displays use a separate token: `GET /e-ink/<n>.png` takes
+`Authorization: Bearer <EINK_DISPLAY_TOKEN>` (see docs/eink-displays.md). Which
+machine display `<n>` shows is set by a super-user at `/e-ink`.
 
 ## Development Notes
 

@@ -989,3 +989,19 @@ export const mailboxArchivedMessagesTable = defineTable(
     archivedAt: integer('archivedAt', {mode: 'timestamp_ms'}).notNull(),
   }
 );
+
+// Which machine each numbered e-ink display shows the trouble tickets of. A
+// display with no row here is not set up yet (see docs/eink-displays.md).
+export const einkDisplaysTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS einkDisplays (
+      displayNumber INTEGER PRIMARY KEY,
+      equipmentId TEXT NOT NULL
+    )
+  `,
+  'einkDisplays' as const,
+  {
+    displayNumber: integer('displayNumber').notNull().primaryKey(),
+    equipmentId: text('equipmentId').notNull().$type<UUID>(),
+  }
+);

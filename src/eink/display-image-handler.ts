@@ -6,37 +6,40 @@ import {pipe} from 'fp-ts/lib/function';
 import {StatusCodes} from 'http-status-codes';
 import {Dependencies} from '../dependencies';
 import {constantTimeEqual} from '../http/constant-time-equal';
-import {resolveEquipmentReference} from '../queries/equipment/resolve-reference';
 import {equipmentPageUrl} from '../templates/slug';
 import {
   msUntilLondonMidnight,
   openTickets,
   renderTroubleTicketsImage,
 } from './trouble-tickets-image';
+import {renderNotSetUpImage} from './not-set-up-image';
 import {Tones} from './render-to-png';
+import {parseDisplayNumber} from './display-number';
 
-// GET /equipment/:equipment/trouble-tickets.png?width=800&height=480&tones=4&wait=0
+// GET /e-ink/:display.png?width=800&height=480&tones=4&wait=0
 //
-// A machine's open trouble tickets as a four-tone PNG - two-tone for a panel
-// that asks for tones=2 - for an e-ink display that polls this URL and redraws
-// when the image changes. A display cannot log in, so it presents the shared
-// display token (EINK_DISPLAY_TOKEN) as a bearer token instead; nothing else
-// gets an image, or learns which machines exist. The image still leaves out
-// who reported each ticket. A display that sends back the ETag it has, with
-// wait=N, is held up to N seconds for the image to change.
+// What a numbered e-ink display shows, as a four-tone PNG - two-tone for a
+// panel that asks for tones=2. Each display is flashed once with its own
+// number's URL; which machine's open trouble tickets that shows is chosen at
+// /e-ink, and a number nobody has set up shows "not set up". The display
+// polls this URL and redraws when the image changes. A display cannot log
+// in, so it presents the shared display token (EINK_DISPLAY_TOKEN) as a
+// bearer token instead; nothing else gets an image, or learns which displays
+// are set up. The image still leaves out who reported each ticket. A display
+// that sends back the ETag it has, with wait=N, is held up to N seconds for
+// the image to change.
 //
 // Displays are reflashed rarely, so what they rely on is written down in
 // docs/eink-displays.md and pinned by tests/eink/display-contract.test.ts.
 
-export const troubleTicketsImageRoute =
-  '/equipment/:equipment/trouble-tickets.png';
+export const displayImageRoute = '/e-ink/:display.png';
 
 // Whether a request is for that image, without a router: the session
 // middleware runs before routing and must leave these requests alone (see
 // src/index.ts). Case-insensitive and tolerant of a trailing slash, as
 // express's own route matching is.
-export const isTroubleTicketsImagePath = (path: string) =>
-  /^\/equipment\/[^/]+\/trouble-tickets\.png\/?$/i.test(path);
+export const isDisplayImagePath = (path: string) =>
+  /^\/e-ink\/[^/]+\.png\/?$/i.test(path);
 
 const DEFAULT_SIZE = {width: 800, height: 480};
 const MIN_SIDE = 64;
@@ -105,36 +108,48 @@ export const parseDisplayOptions = (
 
 type Image = {png: Buffer; etag: string};
 
-// The machine's image as things stand, or none if there is no such machine.
+// The display's image as things stand: its machine's open tickets, or "not
+// set up" if it has no machine.
 const currentImage =
-  (deps: Dependencies, reference: string, options: DisplayOptions) =>
-  (): O.Option<Image> =>
+  (deps: Dependencies, displayNumber: number, options: DisplayOptions) =>
+  (): Image =>
     pipe(
-      resolveEquipmentReference(deps)(reference),
+      deps.sharedReadModel.einkDisplays.get(displayNumber),
       O.chain(deps.sharedReadModel.equipment.get),
-      O.map(equipment =>
-        renderTroubleTicketsImage(
-          {
-            equipmentName: equipment.name,
-            pageUrl: equipmentPageUrl(
-              deps.conf.PUBLIC_URL,
-              equipment.area.name,
-              equipment.name
-            ),
-            today: new Date(),
-            tickets: openTickets(
-              deps.sharedReadModel.troubleTickets.getByEquipment(equipment.id)
-            ),
-          },
-          options.width,
-          options.height,
-          options.tones
-        )
+      O.match(
+        () =>
+          renderNotSetUpImage(
+            displayNumber,
+            `${deps.conf.PUBLIC_URL.replace(/^https?:\/\//, '')}/e-ink`,
+            options.width,
+            options.height,
+            options.tones
+          ),
+        equipment =>
+          renderTroubleTicketsImage(
+            {
+              equipmentName: equipment.name,
+              pageUrl: equipmentPageUrl(
+                deps.conf.PUBLIC_URL,
+                equipment.area.name,
+                equipment.name
+              ),
+              today: new Date(),
+              tickets: openTickets(
+                deps.sharedReadModel.troubleTickets.getByEquipment(
+                  equipment.id
+                )
+              ),
+            },
+            options.width,
+            options.height,
+            options.tones
+          )
       ),
-      O.map(png => ({
+      png => ({
         png,
         etag: `"${createHash('sha256').update(png).digest('hex').slice(0, 32)}"`,
-      }))
+      })
     );
 
 // The image only changes when the tickets or the date do, so the ETag lets a
@@ -144,10 +159,6 @@ const sendImage = (res: Response, image: Image) => {
   res.setHeader('ETag', image.etag);
   res.setHeader('Cache-Control', 'no-cache');
   res.type('image/png').send(image.png);
-};
-
-const sendUnknownEquipment = (res: Response) => {
-  res.status(StatusCodes.NOT_FOUND).type('text/plain').send('Unknown equipment');
 };
 
 const displayAlreadyHas = (req: Request, image: Image) =>
@@ -161,7 +172,7 @@ const displayAlreadyHas = (req: Request, image: Image) =>
 // that hangs up stops the checking.
 const hold = (
   deps: Dependencies,
-  imageNow: () => O.Option<Image>,
+  imageNow: () => Image,
   image: Image,
   waitSeconds: number,
   res: Response
@@ -180,12 +191,9 @@ const hold = (
   // Redraw, and answer if the picture has moved on.
   const recheck = () => {
     const now = imageNow();
-    if (O.isNone(now)) {
+    if (now.etag !== image.etag) {
       stop();
-      sendUnknownEquipment(res);
-    } else if (now.value.etag !== image.etag) {
-      stop();
-      sendImage(res, now.value);
+      sendImage(res, now);
     }
   };
   let eventIndex = deps.sharedReadModel.getCurrentEventIndex();
@@ -210,12 +218,12 @@ const hold = (
 };
 
 // Whether the request carries the display token. Checked before anything
-// else, so a request without it costs no rendering and cannot tell a real
-// machine from a made-up one.
+// else, so a request without it costs no rendering and cannot tell a
+// set-up display from one that isn't.
 const hasDisplayToken = (req: Request, token: string) =>
   constantTimeEqual(req.headers.authorization ?? '', `Bearer ${token}`);
 
-export const equipmentTroubleTicketsImage =
+export const displayImage =
   (deps: Dependencies) => (req: Request, res: Response) => {
     if (!hasDisplayToken(req, deps.conf.EINK_DISPLAY_TOKEN)) {
       res.status(StatusCodes.UNAUTHORIZED);
@@ -223,20 +231,21 @@ export const equipmentTroubleTicketsImage =
       res.type('text/plain').send('Display token required');
       return;
     }
+    const displayNumber = parseDisplayNumber(req.params.display);
+    if (displayNumber === undefined) {
+      res.status(StatusCodes.NOT_FOUND).type('text/plain').send('Unknown display');
+      return;
+    }
     const options = parseDisplayOptions(req.query);
     if (E.isLeft(options)) {
       res.status(StatusCodes.BAD_REQUEST).type('text/plain').send(options.left);
       return;
     }
-    const imageNow = currentImage(deps, req.params.equipment, options.right);
+    const imageNow = currentImage(deps, displayNumber, options.right);
     const image = imageNow();
-    if (O.isNone(image)) {
-      sendUnknownEquipment(res);
+    if (options.right.wait > 0 && displayAlreadyHas(req, image)) {
+      hold(deps, imageNow, image, options.right.wait, res);
       return;
     }
-    if (options.right.wait > 0 && displayAlreadyHas(req, image.value)) {
-      hold(deps, imageNow, image.value, options.right.wait, res);
-      return;
-    }
-    sendImage(res, image.value);
+    sendImage(res, image);
   };

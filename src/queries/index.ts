@@ -26,6 +26,7 @@ export {memberBilling} from './member-billing';
 export {outstandingInvoices} from './outstanding-invoices';
 export {accessAudit} from './access-audit';
 export {equipmentLinks} from './equipment-links';
+export {einkDisplays} from './eink-displays';
 export {notificationSettings} from './notification-settings';
 export {log} from './log';
 export {trainingEventLog} from './training-event-log';

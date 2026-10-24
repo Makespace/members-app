@@ -5,9 +5,9 @@ import {
 } from '../../src/authentication';
 import {Config} from '../../src/configuration';
 import {
-  isTroubleTicketsImagePath,
-  troubleTicketsImageRoute,
-} from '../../src/eink/equipment-trouble-tickets-handler';
+  displayImageRoute,
+  isDisplayImagePath,
+} from '../../src/eink/display-image-handler';
 import {serve} from '../eink/serve';
 
 const conf = {
@@ -18,9 +18,9 @@ const conf = {
 // The same middleware, in the same order, as src/index.ts.
 const app = () => {
   const application = express();
-  application.use(sessionMiddleware(conf, isTroubleTicketsImagePath));
+  application.use(sessionMiddleware(conf, isDisplayImagePath));
   application.use(cookieSessionPassportWorkaround);
-  application.get(troubleTicketsImageRoute, (req, res) => {
+  application.get(displayImageRoute, (req, res) => {
     res.send(req.session ? 'session' : 'no session');
   });
   application.get('/me', (req, res) => {
@@ -38,18 +38,16 @@ describe('sessionMiddleware', () => {
 
   afterEach(() => server.close());
 
-  describe('for a display fetching a trouble-ticket image', () => {
+  describe('for a display fetching its image', () => {
     it('sets no cookie', async () => {
       const response = await server.get(
-        '/equipment/wood-shop-band-saw/trouble-tickets.png?width=1280&height=720'
+        '/e-ink/1.png?width=1280&height=720'
       );
       expect(response.headers['set-cookie']).toBeUndefined();
     });
 
     it('gives the request no session', async () => {
-      const response = await server.get(
-        '/equipment/wood-shop-band-saw/trouble-tickets.png'
-      );
+      const response = await server.get('/e-ink/12.png');
       expect(response.body.toString()).toBe('no session');
     });
   });
@@ -69,23 +67,22 @@ describe('sessionMiddleware', () => {
   });
 });
 
-describe('isTroubleTicketsImagePath', () => {
-  it.each([
-    '/equipment/wood-shop-band-saw/trouble-tickets.png',
-    '/equipment/7f1c5a52-6b1e-4f0e-9d0e-2a1f4c9b3d11/trouble-tickets.png',
-    '/Equipment/wood-shop-band-saw/Trouble-Tickets.PNG',
-    '/equipment/wood-shop-band-saw/trouble-tickets.png/',
-  ])('matches %s, as the route does', path => {
-    expect(isTroubleTicketsImagePath(path)).toBe(true);
-  });
+describe('isDisplayImagePath', () => {
+  it.each(['/e-ink/1.png', '/e-ink/999.png', '/E-Ink/3.PNG', '/e-ink/3.png/'])(
+    'matches %s, as the route does',
+    path => {
+      expect(isDisplayImagePath(path)).toBe(true);
+    }
+  );
 
   it.each([
-    '/equipment/wood-shop-band-saw',
-    '/equipment/wood-shop-band-saw/training',
-    '/equipment/a/b/trouble-tickets.png',
-    '/equipment//trouble-tickets.png',
-    '/equipment/wood-shop-band-saw/trouble-tickets.pngx',
+    '/e-ink',
+    '/e-ink/assign',
+    '/e-ink/unassign',
+    '/e-ink/a/1.png',
+    '/e-ink/.png',
+    '/e-ink/1.pngx',
   ])('does not match %s', path => {
-    expect(isTroubleTicketsImagePath(path)).toBe(false);
+    expect(isDisplayImagePath(path)).toBe(false);
   });
 });

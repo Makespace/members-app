@@ -4,9 +4,9 @@ import {Request, Response} from 'express';
 import * as E from 'fp-ts/Either';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {
-  equipmentTroubleTicketsImage,
+  displayImage,
   parseDisplayOptions,
-} from '../../src/eink/equipment-trouble-tickets-handler';
+} from '../../src/eink/display-image-handler';
 import {constructEvent} from '../../src/types/domain-event';
 import {arbitraryActor} from '../helpers';
 import {
@@ -31,10 +31,10 @@ const makeRes = (): FakeResponse =>
   }) as unknown as FakeResponse;
 
 const makeReq = (
-  equipment: string,
+  display: string,
   query: Record<string, string>,
   headers: Record<string, string> = displayAuthorization
-): Request => ({params: {equipment}, query, headers}) as unknown as Request;
+): Request => ({params: {display}, query, headers}) as unknown as Request;
 
 describe('parseDisplayOptions', () => {
   it('defaults to 800x480 in four tones, answered at once', () => {
@@ -85,14 +85,14 @@ describe('parseDisplayOptions', () => {
   });
 });
 
-describe('equipmentTroubleTicketsImage', () => {
+describe('displayImage', () => {
   let framework: TestFramework;
   const areaId = faker.string.uuid() as UUID;
   const equipmentId = faker.string.uuid() as UUID;
 
   const handle = (req: Request) => {
     const res = makeRes();
-    equipmentTroubleTicketsImage(framework.depsForCommands)(req, res);
+    displayImage(framework.depsForCommands)(req, res);
     return res;
   };
 
@@ -107,6 +107,10 @@ describe('equipmentTroubleTicketsImage', () => {
       name: 'Band Saw' as NonEmptyString,
       areaId,
     });
+    await framework.commands.einkDisplays.assign({
+      displayNumber: 1,
+      equipmentId,
+    });
     // The image carries the date: pin the clock so ETags compare within a day.
     jest.useFakeTimers({now: new Date('2026-10-09T12:00:00Z')});
   });
@@ -117,9 +121,7 @@ describe('equipmentTroubleTicketsImage', () => {
   });
 
   it('serves a PNG to a display presenting the display token', () => {
-    const res = handle(
-      makeReq(equipmentId, {width: '296', height: '128'})
-    );
+    const res = handle(makeReq('1', {width: '296', height: '128'}));
     expect(res.status).not.toHaveBeenCalled();
     expect(res.type).toHaveBeenCalledWith('image/png');
     const png = res.send.mock.calls[0][0];
@@ -127,15 +129,22 @@ describe('equipmentTroubleTicketsImage', () => {
     expect(png.readUInt32BE(20)).toBe(128);
   });
 
-  it('finds the machine by its slug too', () => {
-    const res = handle(makeReq('wood-shop-band-saw', {}));
+  it('serves a "not set up" image for a display with no machine', () => {
+    const res = handle(makeReq('2', {width: '296', height: '128'}));
+    expect(res.status).not.toHaveBeenCalled();
     expect(res.type).toHaveBeenCalledWith('image/png');
+    const png = res.send.mock.calls[0][0];
+    expect(png.readUInt32BE(16)).toBe(296);
   });
 
-  it('answers 404 for an unknown machine', () => {
-    const res = handle(makeReq(faker.string.uuid(), {}));
-    expect(res.status).toHaveBeenCalledWith(404);
-  });
+  it.each(['0', '1000', 'band-saw', '1.5', '01e2'])(
+    'answers 404 for display %j',
+    display => {
+      const res = handle(makeReq(display, {}));
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.type).not.toHaveBeenCalledWith('image/png');
+    }
+  );
 
   describe('without the display token', () => {
     const expectRefused = (res: FakeResponse) => {
@@ -149,49 +158,53 @@ describe('equipmentTroubleTicketsImage', () => {
     };
 
     it('answers 401 and draws nothing', () => {
-      expectRefused(handle(makeReq(equipmentId, {}, {})));
+      expectRefused(handle(makeReq('1', {}, {})));
     });
 
     it('answers 401 to the wrong token', () => {
       expectRefused(
-        handle(makeReq(equipmentId, {}, {authorization: 'Bearer guess'}))
+        handle(makeReq('1', {}, {authorization: 'Bearer guess'}))
       );
     });
 
     it('answers 401 to the token sent without the Bearer scheme', () => {
       expectRefused(
         handle(
-          makeReq(equipmentId, {}, {
+          makeReq('1', {}, {
             authorization: displayAuthorization.authorization.replace('Bearer ', ''),
           })
         )
       );
     });
 
-    it('answers 401 for an unknown machine too, so machines cannot be probed', () => {
-      expectRefused(handle(makeReq(faker.string.uuid(), {}, {})));
+    it('answers 401 for a display that is not set up too, so displays cannot be probed', () => {
+      expectRefused(handle(makeReq('2', {}, {})));
+    });
+
+    it('answers 401 for a display number that cannot exist too', () => {
+      expectRefused(handle(makeReq('band-saw', {}, {})));
     });
 
     it('answers 401 before reading the query', () => {
-      expectRefused(handle(makeReq(equipmentId, {width: 'huge'}, {})));
+      expectRefused(handle(makeReq('1', {width: 'huge'}, {})));
     });
   });
 
   it('answers 400 for a size it cannot draw', () => {
-    const res = handle(makeReq(equipmentId, {width: 'huge'}));
+    const res = handle(makeReq('1', {width: 'huge'}));
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
   it('answers 400 for tones it cannot draw', () => {
-    const res = handle(makeReq(equipmentId, {tones: '16'}));
+    const res = handle(makeReq('1', {tones: '16'}));
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
   it('changes its ETag when a ticket is raised against the machine', () => {
     const etag = (res: FakeResponse) =>
       res.setHeader.mock.calls.find(([name]) => name === 'ETag')?.[1];
-    const before = etag(handle(makeReq(equipmentId, {})));
-    expect(etag(handle(makeReq(equipmentId, {})))).toBe(before);
+    const before = etag(handle(makeReq('1', {})));
+    expect(etag(handle(makeReq('1', {})))).toBe(before);
 
     framework.insertIntoSharedReadModel(
       constructEvent('TroubleTicketCreated')({
@@ -218,13 +231,35 @@ describe('equipmentTroubleTicketsImage', () => {
       })
     );
 
-    expect(etag(handle(makeReq(equipmentId, {})))).not.toBe(
-      before
-    );
+    expect(etag(handle(makeReq('1', {})))).not.toBe(before);
+  });
+
+  it('changes its ETag when the display is moved to another machine', async () => {
+    const etag = (res: FakeResponse) =>
+      res.setHeader.mock.calls.find(([name]) => name === 'ETag')?.[1];
+    const before = etag(handle(makeReq('1', {})));
+    const otherId = faker.string.uuid() as UUID;
+    await framework.commands.equipment.add({
+      id: otherId,
+      name: 'Table Saw' as NonEmptyString,
+      areaId,
+    });
+    await framework.commands.einkDisplays.assign({
+      displayNumber: 1,
+      equipmentId: otherId,
+    });
+    expect(etag(handle(makeReq('1', {})))).not.toBe(before);
+  });
+
+  it('shows "not set up" once the display is cleared', async () => {
+    await framework.commands.einkDisplays.unassign({displayNumber: 1});
+    const res = handle(makeReq('1', {}));
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.type).toHaveBeenCalledWith('image/png');
   });
 });
 
-describe('equipmentTroubleTicketsImage for a display that asks to wait', () => {
+describe('displayImage for a display that asks to wait', () => {
   let framework: TestFramework;
   const areaId = faker.string.uuid() as UUID;
   const equipmentId = faker.string.uuid() as UUID;
@@ -236,7 +271,7 @@ describe('equipmentTroubleTicketsImage for a display that asks to wait', () => {
 
   const request = (query: Record<string, string>, ifNoneMatch?: string) =>
     ({
-      params: {equipment: equipmentId},
+      params: {display: '1'},
       query,
       headers:
         ifNoneMatch === undefined
@@ -246,7 +281,7 @@ describe('equipmentTroubleTicketsImage for a display that asks to wait', () => {
 
   const handle = (req: Request) => {
     const res = makeHoldableRes();
-    equipmentTroubleTicketsImage(framework.depsForCommands)(req, res);
+    displayImage(framework.depsForCommands)(req, res);
     return res;
   };
 
@@ -292,6 +327,10 @@ describe('equipmentTroubleTicketsImage for a display that asks to wait', () => {
       name: 'Band Saw' as NonEmptyString,
       areaId,
     });
+    await framework.commands.einkDisplays.assign({
+      displayNumber: 1,
+      equipmentId,
+    });
     // The image carries the date, so the clock is pinned before drawing it.
     jest.useFakeTimers({now: new Date('2026-10-09T12:00:00Z')});
     currentEtag = etagOf(handle(request({})))!;
@@ -333,6 +372,14 @@ describe('equipmentTroubleTicketsImage for a display that asks to wait', () => {
     it('sends the new image as soon as a ticket changes it', () => {
       jest.advanceTimersByTime(5_000);
       raiseTicket(equipmentId);
+      jest.advanceTimersByTime(1_000);
+      expect(res.send).toHaveBeenCalledTimes(1);
+      expect(etagOf(res)).not.toBe(currentEtag);
+    });
+
+    it('sends the new image as soon as the display is cleared', async () => {
+      jest.advanceTimersByTime(5_000);
+      await framework.commands.einkDisplays.unassign({displayNumber: 1});
       jest.advanceTimersByTime(1_000);
       expect(res.send).toHaveBeenCalledTimes(1);
       expect(etagOf(res)).not.toBe(currentEtag);

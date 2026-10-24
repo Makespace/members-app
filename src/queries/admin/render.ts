@@ -48,6 +48,8 @@ export const render = () => html`
       - which machines are missing one, and set it from there`,
       html`<a href="/equipment-signs">Print equipment signs</a> - name, colour
       and a QR code for reporting problems`,
+      html`<a href="/e-ink">E-ink displays</a> - which machine's trouble
+      tickets each one shows`,
       html`<a href="/training-status.csv"
         >Download current owners and trainers</a
       >`,
