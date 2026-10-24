@@ -15,6 +15,7 @@ import * as RA from 'fp-ts/ReadonlyArray';
 import {DateTime} from 'luxon';
 import {renderMembersAsList} from '../../templates/member-link-list';
 import {currentTrainingSheetButton} from '../shared-render/current-training-sheet-button';
+import {renderUpcomingTrainingSessions} from '../shared-render/upcoming-training-sessions';
 
 
 import {tooltip, tooltipWith} from '../shared-render/tool-tip';
@@ -517,8 +518,16 @@ const equipmentCards = (viewModel: ViewModel) => {
                   'trainings in the last 30 days'
                 )}
               </ul>
+              <h3>Upcoming trainings</h3>
+              ${renderUpcomingTrainingSessions(viewModel.upcomingTrainings)}
               <p class="eq-cards__actions">
                 ${cardButton(`/equipment/${id}/training`, 'Get Trained')}
+                ${viewModel.isTrainer
+                  ? cardButton(
+                      `/equipment/arrange-training?equipmentId=${id}`,
+                      'Arrange training'
+                    )
+                  : html``}
                 ${isTrainerOrOwner(viewModel)
                   ? cardButton(
                       `/equipment/${id}/quiz-results`,

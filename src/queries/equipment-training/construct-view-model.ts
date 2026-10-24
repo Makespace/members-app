@@ -15,6 +15,11 @@ import {
   trainingsByQuarter,
 } from '../../read-models/shared-state/member/training-delivered';
 import {DateTime} from 'luxon';
+import {allMemberNumbers} from '../../read-models/shared-state/return-types';
+import {
+  UpcomingTrainingSession,
+  upcomingTrainingSessions,
+} from '../shared-render/upcoming-training-sessions';
 
 // Where the member has got to with the quiz, told from their own results
 // rather than from a list of everybody: a member on this page is asking about
@@ -49,6 +54,11 @@ export type ViewModel = {
     trainingsByQuarter: ReadonlyArray<QuarterCount>;
   }>;
   lastTraining: O.Option<Date>;
+  upcomingTrainings: ReadonlyArray<UpcomingTrainingSession>;
+  // Not every trainer arranges sessions in the app - plenty use Meetup - so
+  // the page says how many here do, rather than implying an empty list means
+  // nothing is planned.
+  trainersUsingApp: number;
 };
 
 const isPass = (row: {score: number; maxScore: number}) =>
@@ -152,6 +162,20 @@ export const constructViewModel =
                     date > latest ? date : latest
                   )
                 )
+        ),
+        upcomingTrainings: upcomingTrainingSessions(
+          deps.sharedReadModel,
+          equipment,
+          new Date()
+        ),
+        trainersUsingApp: pipe(
+          deps.sharedReadModel.trainingSessions.memberNumbersWhoHaveArranged(
+            equipment.id
+          ),
+          arranged =>
+            equipment.trainers.filter(trainer =>
+              allMemberNumbers(trainer).some(n => arranged.includes(n))
+            ).length
         ),
       }))
     );

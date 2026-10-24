@@ -223,6 +223,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         markMemberTrainedBy: frameworkify(
           commands.trainers.markMemberTrainedBy
         ),
+        arrangeTraining: frameworkify(commands.trainers.arrangeTraining),
       },
       members: {
         editName: frameworkify(commands.members.editName),

@@ -375,6 +375,11 @@ export const initRoutes = (
       'mark-member-trained-by',
       commands.trainers.markMemberTrainedBy
     ),
+    ...command(
+      'equipment',
+      'arrange-training',
+      commands.trainers.arrangeTraining
+    ),
     post(
       '/api/training-quiz/backfill-timeline',
       expressAsyncHandler(async (req, res) => {

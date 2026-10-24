@@ -19,6 +19,7 @@ import {
   FullQuizResultsForEquipment,
   getFullQuizResultsForEquipment,
 } from '../../read-models/external-state/equipment-quiz';
+import {upcomingTrainingSessions} from '../shared-render/upcoming-training-sessions';
 
 export const constructViewModel =
   (deps: Dependencies, user: User) =>
@@ -54,6 +55,9 @@ export const constructViewModel =
           equipment.trainers.findIndex(
             trainer => trainer.memberNumber === user.memberNumber
           ) !== -1
+      ),
+      TE.let('upcomingTrainings', ({equipment}) =>
+        upcomingTrainingSessions(deps.sharedReadModel, equipment, new Date())
       ),
       TE.let(
         'isSuperUserOrOwnerOfArea',
