@@ -543,6 +543,20 @@ const MailboxConversationUnarchived = defineEvent(
   }
 );
 
+// What a numbered e-ink display shows: a machine's open trouble tickets.
+// Displays are flashed once with /e-ink/<n>.png, so moving one to another
+// machine is this rather than a reflash. Assigning a display that already
+// shows something replaces it.
+const EinkDisplayAssigned = defineEvent('EinkDisplayAssigned', {
+  displayNumber: t.number,
+  equipmentId: tt.UUID,
+});
+
+// Back to showing "not set up".
+const EinkDisplayUnassigned = defineEvent('EinkDisplayUnassigned', {
+  displayNumber: t.number,
+});
+
 const MemberDetailsUpdated = defineEvent('MemberDetailsUpdated', {
   memberNumber: t.number,
   name: t.union([t.string, t.undefined]),
@@ -862,6 +876,8 @@ export const events = [
   NotificationEmailSent,
   MailboxConversationArchived,
   MailboxConversationUnarchived,
+  EinkDisplayAssigned,
+  EinkDisplayUnassigned,
 ];
 
 export const DomainEvent = t.union([
@@ -945,6 +961,8 @@ export const DomainEvent = t.union([
   NotificationEmailSent.codec,
   MailboxConversationArchived.codec,
   MailboxConversationUnarchived.codec,
+  EinkDisplayAssigned.codec,
+  EinkDisplayUnassigned.codec,
 ]);
 
 export const StoredDomainEvent = t.intersection([

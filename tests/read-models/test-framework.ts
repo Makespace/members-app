@@ -298,6 +298,10 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         approve: frameworkify(commands.purchaseRequest.approve),
         decline: frameworkify(commands.purchaseRequest.decline),
       },
+      einkDisplays: {
+        assign: frameworkify(commands.einkDisplays.assign),
+        unassign: frameworkify(commands.einkDisplays.unassign),
+      },
     },
     trainingSummaryDeps: {
       logger,

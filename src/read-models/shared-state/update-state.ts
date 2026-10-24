@@ -36,6 +36,7 @@ import {
   purchaseRequestNotificationsTable,
   purchasingAreaSpendTable,
   purchasingAreaYearBudgetsTable,
+  einkDisplaysTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, eq, inArray, isNull, sql} from 'drizzle-orm';
@@ -1482,6 +1483,35 @@ const _updateState =
             )
             .run();
         }
+        break;
+      }
+      case 'EinkDisplayAssigned': {
+        const equipment = tx
+          .select({id: equipmentTable.id})
+          .from(equipmentTable)
+          .where(eq(equipmentTable.id, event.equipmentId))
+          .get();
+        if (!equipment) {
+          throw new InconsistentEventError(
+            `Unable to assign e-ink display ${event.displayNumber} - unknown equipment '${event.equipmentId}'`
+          );
+        }
+        tx.insert(einkDisplaysTable)
+          .values({
+            displayNumber: event.displayNumber,
+            equipmentId: event.equipmentId,
+          })
+          .onConflictDoUpdate({
+            target: einkDisplaysTable.displayNumber,
+            set: {equipmentId: event.equipmentId},
+          })
+          .run();
+        break;
+      }
+      case 'EinkDisplayUnassigned': {
+        tx.delete(einkDisplaysTable)
+          .where(eq(einkDisplaysTable.displayNumber, event.displayNumber))
+          .run();
         break;
       }
       default: {

@@ -10,31 +10,20 @@ import {
   joinHtml,
   safe,
   sanitizeString,
-  SanitizedString,
   toLoggedInContent,
 } from '../../types/html';
 import {Form} from '../../types/form';
+import {
+  areaEquipment,
+  areasWithEquipment,
+  EquipmentPickerModel,
+  equipmentPickerChoices,
+} from '../../templates/equipment-picker';
 import {MACHINE_STATUSES, NOT_LISTED} from './raise';
 
-type MachineOption = {
-  id: string;
-  name: string;
-  areaId: string;
-  areaName: string;
-  machineNames: ReadonlyArray<string>;
-  // The area's own grouping for it, when it has been sorted into one.
-  categoryId: string | null;
-};
-
-type AreaCategory = {id: string; areaId: string; name: string};
-
-type ViewModel = {
-  areas: ReadonlyArray<{id: string; name: string}>;
-  // Areas' own groupings, in the order each area added them.
-  categories: ReadonlyArray<AreaCategory>;
-  equipment: ReadonlyArray<MachineOption>;
-  // Preselected by a QR code or a link from an equipment page.
-  selectedEquipmentId: O.Option<string>;
+// selectedEquipmentId is preselected by a QR code or a link from an
+// equipment page.
+type ViewModel = EquipmentPickerModel & {
   // A QR code on an area's noticeboard names the area rather than one
   // machine, so the area is chosen and its equipment listed ready to pick.
   selectedAreaId: O.Option<string>;
@@ -48,9 +37,6 @@ const OTHER = NOT_LISTED;
 const asJson = (value: unknown) =>
   safe(JSON.stringify(value).replace(/</g, '\\u003c'));
 
-const isSelected = (viewModel: ViewModel, id: string) =>
-  O.getOrElse(() => '')(viewModel.selectedEquipmentId) === id;
-
 // The area the picker starts on: the deep-linked machine's, else the
 // deep-linked area.
 const initialAreaId = (viewModel: ViewModel) =>
@@ -63,92 +49,6 @@ const initialAreaId = (viewModel: ViewModel) =>
     O.alt(() => viewModel.selectedAreaId),
     O.getOrElse(() => '')
   );
-
-// Each machine is a radio styled as a tile, so the choice posts without any
-// script and the browser's own required-check covers it.
-const equipmentTile = (viewModel: ViewModel) => (item: MachineOption) => html`
-  <label class="tt-tile">
-    <input
-      type="radio"
-      class="visually-hidden"
-      name="equipmentId"
-      value="${safe(item.id)}"
-      ${isSelected(viewModel, item.id) ? safe('checked') : safe('')}
-    />
-    <span class="tt-tile__name">${sanitizeString(item.name)}</span>
-  </label>
-`;
-
-const equipmentGrid = (
-  viewModel: ViewModel,
-  items: ReadonlyArray<MachineOption>
-) =>
-  html`<div class="tt-grid">
-    ${joinHtml(items.map(equipmentTile(viewModel)))}
-  </div>`;
-
-// A collapsed section per category, so a big area opens onto a handful of
-// headings rather than every machine at once.
-const equipmentGroup = (
-  viewModel: ViewModel,
-  name: Html | SanitizedString,
-  items: ReadonlyArray<MachineOption>
-) => html`
-  <details class="tt-group" data-tt-group>
-    <summary>
-      <span class="tt-group__name">${name}</span>
-      <span class="tt-group__count">${safe(items.length.toString())}</span>
-    </summary>
-    ${equipmentGrid(viewModel, items)}
-  </details>
-`;
-
-// An area's equipment: straight into the grid when the area has no
-// categories; otherwise one section per category (empty ones skipped) and
-// whatever is not in one yet under "Other".
-const areaEquipment = (
-  viewModel: ViewModel,
-  areaId: string,
-  items: ReadonlyArray<MachineOption>
-) => {
-  const categories = viewModel.categories.filter(
-    category => category.areaId === areaId
-  );
-  if (categories.length === 0) {
-    return equipmentGrid(viewModel, items);
-  }
-  const known = new Set(categories.map(category => category.id));
-  const other = items.filter(
-    item => item.categoryId === null || !known.has(item.categoryId)
-  );
-  return html`<div class="tt-groups">
-    ${joinHtml(
-      categories.flatMap(category => {
-        const inCategory = items.filter(
-          item => item.categoryId === category.id
-        );
-        return inCategory.length === 0
-          ? []
-          : [
-              equipmentGroup(
-                viewModel,
-                sanitizeString(category.name),
-                inCategory
-              ),
-            ];
-      })
-    )}
-    ${other.length === 0
-      ? html``
-      : equipmentGroup(viewModel, html`Other`, other)}
-  </div>`;
-};
-
-const areasWithEquipment = (viewModel: ViewModel) =>
-  viewModel.areas.flatMap(area => {
-    const items = viewModel.equipment.filter(item => item.areaId === area.id);
-    return items.length === 0 ? [] : [{...area, items}];
-  });
 
 // Two steps, each folded to a single line until it is wanted: a grid of
 // areas, then the chosen area's equipment.
@@ -578,37 +478,9 @@ const constructForm: Form<ViewModel>['constructForm'] =
       E.map(({areaId}) => O.fromNullable(areaId)),
       E.getOrElse<unknown, O.Option<string>>(() => O.none)
     );
-    const areas = readModel.area
-      .getAllMinimal()
-      .map(area => ({id: area.id as string, name: area.name}))
-      .sort((a, b) => a.name.localeCompare(b.name));
-    const areaNames = new Map(areas.map(area => [area.id, area.name]));
-    const equipment = readModel.equipment
-      .getAllMinimal()
-      // Retired equipment cannot be reported on.
-      .filter(item => O.isNone(item.removedAt))
-      .map(item => ({
-        id: item.id as string,
-        name: item.name,
-        areaId: item.areaId as string,
-        areaName: areaNames.get(item.areaId as string) ?? '',
-        machineNames: item.machineNames,
-        categoryId: O.getOrElse<string | null>(() => null)(
-          item.areaCategoryId
-        ),
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-    const categories = readModel.area
-      .getAllEquipmentCategories()
-      .map(category => ({
-        id: category.id as string,
-        areaId: category.areaId as string,
-        name: category.name,
-      }));
     return TE.right({
-      areas,
-      categories,
-      equipment,
+      // Retired equipment cannot be reported on, and is not offered.
+      ...equipmentPickerChoices(readModel),
       selectedEquipmentId: selected,
       selectedAreaId: selectedArea,
     });

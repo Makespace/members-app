@@ -12,6 +12,7 @@ import {notifications} from './notifications';
 import {mailbox} from './mailbox';
 import {purchasingArea} from './purchasing-area';
 import {purchaseRequest} from './purchase-request';
+import {einkDisplays} from './eink-displays';
 
 import {notificationPreferences} from './notification-preferences';
 
@@ -33,6 +34,7 @@ type Commands = {
   mailbox: typeof mailbox;
   purchasingArea: typeof purchasingArea;
   purchaseRequest: typeof purchaseRequest;
+  einkDisplays: typeof einkDisplays;
 };
 
 export const commands: Commands = {
@@ -50,6 +52,7 @@ export const commands: Commands = {
   mailbox,
   purchasingArea,
   purchaseRequest,
+  einkDisplays,
 };
 
 export const sendEmailCommands = {

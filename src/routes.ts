@@ -23,10 +23,7 @@ import {
 } from './trouble-tickets/backfill-timeline';
 import {constantTimeEqual} from './http/constant-time-equal';
 import {bulkQuietResolve} from './trouble-tickets/bulk-quiet-resolve';
-import {
-  equipmentTroubleTicketsImage,
-  troubleTicketsImageRoute,
-} from './eink/equipment-trouble-tickets-handler';
+import {displayImage, displayImageRoute} from './eink/display-image-handler';
 import * as t from 'io-ts';
 import {v4} from 'uuid';
 import {StatusCodes} from 'http-status-codes';
@@ -72,6 +69,12 @@ export const initRoutes = (
     query('/community', queries.community),
     query('/equipment-catalogue', queries.equipmentCatalogue),
     query('/equipment-links', queries.equipmentLinks),
+    query('/e-ink', queries.einkDisplays),
+    ...command('e-ink', 'assign', commands.einkDisplays.assign),
+    ...command('e-ink', 'unassign', commands.einkDisplays.unassign),
+    // For an e-ink display: it presents the display token, as it cannot log
+    // in.
+    get(displayImageRoute, displayImage(deps)),
     query('/notification-settings', queries.notificationSettings),
     ...command('areas', 'create', commands.area.create),
     ...command('areas', 'add-owner', commands.area.addOwner),
@@ -497,9 +500,6 @@ export const initRoutes = (
       '/equipment/:equipment/failed-quizzes',
       queries.equipmentFailedQuizzes
     ),
-    // For an e-ink display on the machine: it presents the display token, as it
-    // cannot log in.
-    get(troubleTicketsImageRoute, equipmentTroubleTicketsImage(deps)),
     query('/equipment/:equipment', queries.equipment),
     query('/super-users', queries.superUsers),
     ...command('super-users', 'declare', commands.superUser.declare),

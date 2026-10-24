@@ -19,7 +19,7 @@ import * as libsqlClient from '@libsql/client';
 import {initRoutes} from './routes';
 import { startVerifyEmailPubSub } from './authentication/verify-email/start-verify-email-pub-sub';
 import {generateRequestId} from './http/request-id';
-import {isTroubleTicketsImagePath} from './eink/equipment-trouble-tickets-handler';
+import {isDisplayImagePath} from './eink/display-image-handler';
 
 // Dependencies and Config
 const conf = loadConfig();
@@ -52,7 +52,7 @@ app.use(httpLogger({logger: deps.logger, useLevel: 'debug', genReqId: generateRe
 app.use(express.urlencoded({extended: true}));
 app.use(express.json());
 // E-ink displays present a token and never log in: no session, no cookie.
-app.use(sessionMiddleware(conf, isTroubleTicketsImagePath));
+app.use(sessionMiddleware(conf, isDisplayImagePath));
 app.use(cookieSessionPassportWorkaround);
 app.set('trust proxy', true);
 app.use(createRouter(routes));

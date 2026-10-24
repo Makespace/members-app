@@ -2,7 +2,10 @@ import {createHash} from 'node:crypto';
 import express from 'express';
 import {faker} from '@faker-js/faker';
 import {NonEmptyString, UUID} from 'io-ts-types';
-import {equipmentTroubleTicketsImage} from '../../src/eink/equipment-trouble-tickets-handler';
+import {
+  displayImage,
+  displayImageRoute,
+} from '../../src/eink/display-image-handler';
 import {constructEvent} from '../../src/types/domain-event';
 import {arbitraryActor} from '../helpers';
 import {
@@ -30,7 +33,7 @@ describe('the e-ink display contract', () => {
   const equipmentId = faker.string.uuid() as UUID;
 
   const getImage = (query = '', headers: Record<string, string> = {}) =>
-    server.get(`/equipment/${equipmentId}/trouble-tickets.png${query}`, {
+    server.get(`/e-ink/1.png${query}`, {
       ...displayAuthorization,
       ...headers,
     });
@@ -72,11 +75,12 @@ describe('the e-ink display contract', () => {
       name: 'Band Saw' as NonEmptyString,
       areaId,
     });
+    await framework.commands.einkDisplays.assign({
+      displayNumber: 1,
+      equipmentId,
+    });
     const app = express();
-    app.get(
-      '/equipment/:equipment/trouble-tickets.png',
-      equipmentTroubleTicketsImage(framework.depsForCommands)
-    );
+    app.get(displayImageRoute, displayImage(framework.depsForCommands));
     server = await serve(app);
   });
 
@@ -154,6 +158,46 @@ describe('the e-ink display contract', () => {
     expect(Date.now() - started).toBeLessThan(5_000);
   });
 
+  it('answers a held display with the new image as soon as it is moved to another machine', async () => {
+    const etag = (await getImage()).headers.etag!;
+    const otherId = faker.string.uuid() as UUID;
+    await framework.commands.equipment.add({
+      id: otherId,
+      name: 'Table Saw' as NonEmptyString,
+      areaId,
+    });
+    setTimeout(() => {
+      void framework.commands.einkDisplays.assign({
+        displayNumber: 1,
+        equipmentId: otherId,
+      });
+    }, 100);
+    const response = await getImage('?wait=30', {'If-None-Match': etag});
+    expect(response.status).toBe(200);
+    expect(response.headers.etag).not.toBe(etag);
+  });
+
+  it('answers a display nobody has set up with a "not set up" image of the same format', async () => {
+    const response = await server.get(
+      '/e-ink/2.png?width=960&height=540&tones=2',
+      displayAuthorization
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers['content-type']).toBe('image/png');
+    expect(header(response.body)).toMatchObject({
+      width: 960,
+      height: 540,
+      bitDepth: 1,
+      colourType: 0,
+      interlace: 0,
+    });
+  });
+
+  it('answers 404 for a display number that cannot exist', async () => {
+    const response = await server.get('/e-ink/0.png', displayAuthorization);
+    expect(response.status).toBe(404);
+  });
+
   it('asks anything in between to check back rather than serve a stored copy', async () => {
     const response = await getImage();
     expect(response.headers['cache-control']).toBe('no-cache');
@@ -165,7 +209,7 @@ describe('the e-ink display contract', () => {
 
     it('is required: without it the answer is 401 and no image', async () => {
       const response = await unauthenticated(
-        `/equipment/${equipmentId}/trouble-tickets.png`
+        '/e-ink/1.png'
       );
       expect(response.status).toBe(401);
       expect(response.headers['www-authenticate']).toBe(
@@ -180,18 +224,14 @@ describe('the e-ink display contract', () => {
     it('is only accepted as a bearer header, never in the address', async () => {
       const token = displayAuthorization.authorization.replace('Bearer ', '');
       const response = await unauthenticated(
-        `/equipment/${equipmentId}/trouble-tickets.png?token=${token}`
+        `/e-ink/1.png?token=${token}`
       );
       expect(response.status).toBe(401);
     });
 
-    it('hides whether a machine exists from anyone without it', async () => {
-      const real = await unauthenticated(
-        `/equipment/${equipmentId}/trouble-tickets.png`
-      );
-      const madeUp = await unauthenticated(
-        '/equipment/no-such-machine/trouble-tickets.png'
-      );
+    it('hides whether a display is set up from anyone without it', async () => {
+      const real = await unauthenticated('/e-ink/1.png');
+      const madeUp = await unauthenticated('/e-ink/2.png');
       expect(madeUp.status).toBe(real.status);
       expect(madeUp.body).toEqual(real.body);
     });

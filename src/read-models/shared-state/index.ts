@@ -108,6 +108,11 @@ import {
   getPurchasingAreaForArea,
   getPurchasingAreasForPurchaser,
 } from './purchasing/get';
+import {
+  EinkDisplayAssignment,
+  getAllEinkDisplayAssignments,
+  getEinkDisplayAssignment,
+} from './eink-displays/get';
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
@@ -240,6 +245,10 @@ export type SharedReadModel = {
     hasNotifiedForEvent: (eventIndex: number) => boolean;
     notifiedAbout: (requestId: UUID) => ReadonlyArray<number>;
   };
+  einkDisplays: {
+    get: (displayNumber: number) => O.Option<UUID>;
+    getAll: () => ReadonlyArray<EinkDisplayAssignment>;
+  };
 };
 
 export const initSharedReadModel = (
@@ -363,6 +372,10 @@ export const initSharedReadModel = (
       getAllRequests: getAllPurchaseRequests(readModelDb),
       hasNotifiedForEvent: hasNotifiedForPurchaseEvent(readModelDb),
       notifiedAbout: notifiedAboutRequest(readModelDb),
+    },
+    einkDisplays: {
+      get: getEinkDisplayAssignment(readModelDb),
+      getAll: getAllEinkDisplayAssignments(readModelDb),
     },
   };
 };
