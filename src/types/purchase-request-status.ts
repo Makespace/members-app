@@ -5,5 +5,7 @@
 export type PurchaseRequestStatus =
   | 'awaiting-approval'
   | 'approved'
+  // Approved, then bought by a purchaser or super user.
+  | 'bought'
   | 'declined'
   | 'bought-directly';

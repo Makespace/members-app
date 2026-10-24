@@ -197,9 +197,12 @@ export const recipientsForSkippedProposal = (
   return without(request.submittedByMemberNumber);
 };
 
+// For an outcome (approved, declined or bought): everyone told, and whoever
+// sent it, except whoever did it.
 export const recipientsForOutcome = (
   rm: SharedReadModel,
-  request: PurchaseRequest
+  request: PurchaseRequest,
+  doneBy: O.Option<number>
 ): ReadonlyArray<Recipient> => {
   const {add, without} = collect(rm, request);
   const members = (memberNumbers: ReadonlyArray<number>) =>
@@ -216,7 +219,7 @@ export const recipientsForOutcome = (
   add(members(rm.purchasing.notifiedAbout(request.id)), 'heard-about-it');
   // Nothing is left to decide.
   return pipe(
-    request.decidedByMemberNumber,
+    doneBy,
     O.match(
       () => without(),
       decider => without(decider)

@@ -234,6 +234,11 @@ export type PurchaseRequest = {
   declineReason: O.Option<string>;
   // What was agreed, given when approving.
   approvalNote: O.Option<string>;
+  // Once bought after being approved.
+  boughtAt: O.Option<Date>;
+  boughtByMemberNumber: O.Option<number>;
+  // What it really cost, when different from totalPence.
+  actualCostPence: O.Option<number>;
   outcome: PurchaseRequestOutcome;
   approval: PurchaseApproval;
   outcomeReason: string;

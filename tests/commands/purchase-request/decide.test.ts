@@ -61,7 +61,7 @@ describe('approving or declining a purchase request', () => {
     approve.isAuthorized({
       actor,
       rm: framework.sharedReadModel,
-      input: {id, note: undefined},
+      input: {id, note: undefined, markBought: undefined, actualCost: undefined},
     }) &&
     decline.isAuthorized({
       actor,

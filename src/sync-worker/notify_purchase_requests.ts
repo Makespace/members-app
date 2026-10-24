@@ -23,6 +23,7 @@ const NOTIFY_TYPES = [
   'PurchaseRequestSubmitted',
   'PurchaseRequestApproved',
   'PurchaseRequestDeclined',
+  'PurchaseRequestBought',
 ] as const;
 
 type NotifyEvent = StoredEventOfType<(typeof NOTIFY_TYPES)[number]>;
@@ -55,8 +56,20 @@ const notificationFor = (
   request: PurchaseRequest
 ): O.Option<{kind: NotificationKind; recipients: ReadonlyArray<Recipient>}> => {
   const rm = deps.sharedReadModel;
+  if (event.type === 'PurchaseRequestBought') {
+    return O.some({
+      kind: 'bought',
+      recipients: recipientsForOutcome(rm, request, request.boughtByMemberNumber),
+    });
+  }
   if (event.type !== 'PurchaseRequestSubmitted') {
-    return O.some({kind: 'outcome', recipients: recipientsForOutcome(rm, request)});
+    return O.some({
+      kind:
+        event.type === 'PurchaseRequestApproved' && event.alsoBought
+          ? 'approved-and-bought'
+          : 'outcome',
+      recipients: recipientsForOutcome(rm, request, request.decidedByMemberNumber),
+    });
   }
   if (request.status === 'bought-directly') {
     return skippedProposal(request)
@@ -160,6 +173,13 @@ export const notifyPurchaseRequests = async (
         request.value.decidedByMemberNumber,
         O.match(
           () => 'A super user',
+          memberNumber => nameOf(rm, memberNumber)
+        )
+      ),
+      buyerName: pipe(
+        request.value.boughtByMemberNumber,
+        O.match(
+          () => 'A purchaser',
           memberNumber => nameOf(rm, memberNumber)
         )
       ),

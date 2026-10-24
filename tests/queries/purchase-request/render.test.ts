@@ -36,6 +36,9 @@ const request: PurchaseRequest = {
   decidedByMemberNumber: O.none,
   declineReason: O.none,
   approvalNote: O.none,
+  boughtAt: O.none,
+  boughtByMemberNumber: O.none,
+  actualCostPence: O.none,
   outcome: 'budget',
   approval: 'none',
   outcomeReason: 'This comes out of the yearly budget.',
@@ -54,6 +57,7 @@ const page = (
     purchasingArea: O.some({id: request.purchasingAreaId, name: 'Wood Shop'}),
     submitterName: O.some('Ada Admin'),
     deciderName: O.some('Dee Director'),
+    buyerName: O.some('Pat Purchaser'),
     canDecide,
   });
 
