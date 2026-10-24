@@ -496,6 +496,7 @@ export const initRoutes = (
     ),
     get('/equipment', (_req, res) => res.redirect('/areas')),
     query('/equipment/:equipment/training', queries.equipmentTraining),
+    query('/equipment/:equipment/trainings', queries.equipmentTrainings),
     query(
       '/equipment/:equipment/trained-users',
       queries.equipmentTrainedUsers

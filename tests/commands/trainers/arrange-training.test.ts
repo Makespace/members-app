@@ -21,6 +21,8 @@ import {
   TestFramework,
 } from '../../read-models/test-framework';
 import {constructViewModel} from '../../../src/queries/equipment-training/construct-view-model';
+import {constructViewModel as trainingsViewModel} from '../../../src/queries/equipment-trainings/construct-view-model';
+import {arrangeTrainingForm} from '../../../src/commands/trainers/arrange-training-form';
 
 describe('arranging a training session', () => {
   const sessionId = faker.string.uuid() as UUID;
@@ -47,6 +49,15 @@ describe('arranging a training session', () => {
       );
       expect(decoded.spaces).toStrictEqual(4);
       expect(decoded.attendees).toStrictEqual([]);
+      expect(decoded.description).toStrictEqual('');
+    });
+
+    it('keeps the description, trimmed', () => {
+      expect(
+        getRightOrFail(
+          arrangeTraining.decode(form({description: '  Bring shoes.\n'}))
+        ).description
+      ).toStrictEqual('Bring shoes.');
     });
 
     it.each([
@@ -79,6 +90,7 @@ describe('arranging a training session', () => {
       ['an impossible day', {date: '2026-02-30'}],
       ['a malformed time', {startTime: '6pm'}],
       ['a member given by name', {attendees: 'Ada'}],
+      ['an overlong description', {description: 'x'.repeat(2001)}],
       [
         'more members booked in than spaces',
         {spaces: '2', attendees: ['1', '2', '3']},
@@ -104,6 +116,7 @@ describe('arranging a training session', () => {
         startsAt: startsAt.toJSDate(),
         endsAt: startsAt.plus({hours}).toJSDate(),
         spaces: 4,
+        description: 'Bring closed-toe shoes.',
         attendees: [],
       };
     };
@@ -280,6 +293,7 @@ describe('arranging a training session', () => {
           startsAt: DateTime.now().minus({days: 2}).toJSDate(),
           endsAt: DateTime.now().minus({days: 2, hours: -2}).toJSDate(),
           spaces: 4,
+          description: '',
           attendees: [],
           actor: trainerActor,
           recordedAt: new Date(),
@@ -301,6 +315,145 @@ describe('arranging a training session', () => {
         });
 
         expect((await viewModel()).trainersUsingApp).toStrictEqual(1);
+      });
+    });
+
+    describe('the arrange form', () => {
+      const formFor = async (query: Record<string, unknown>) =>
+        arrangeTrainingForm.constructForm({equipmentId, ...query})({
+          user: trainer,
+          deps: framework.depsForCommands,
+          readModel: framework.sharedReadModel,
+        })();
+
+      it('starts a new training with a link to the machine in the description', async () => {
+        const form = getRightOrFail(await formFor({}));
+        expect(form.duplicating).toBe(false);
+        expect(form.prefill.description).toContain(
+          `[Band Saw](http://localhost:8080/equipment/${equipmentId})`
+        );
+      });
+
+      it('copies an earlier session apart from its day and who was booked in', async () => {
+        const original = {
+          ...inDays(3),
+          startsAt: DateTime.fromISO('2030-01-05T18:30', {
+            zone: 'Europe/London',
+          }).toJSDate(),
+          endsAt: DateTime.fromISO('2030-01-05T21:00', {
+            zone: 'Europe/London',
+          }).toJSDate(),
+          spaces: 6,
+          description: 'Bring closed-toe shoes.',
+          attendees: [otherMember.memberNumber],
+        };
+        await framework.commands.trainers.arrangeTraining({
+          ...original,
+          actor: trainerActor,
+        });
+
+        const form = getRightOrFail(
+          await formFor({from: original.sessionId})
+        );
+
+        expect(form.duplicating).toBe(true);
+        expect(form.prefill).toStrictEqual({
+          startTime: '18:30',
+          endTime: '21:00',
+          spaces: '6',
+          description: 'Bring closed-toe shoes.',
+        });
+        // There is nowhere for a day or members to come through: both are
+        // asked for afresh.
+        expect(Object.keys(form.prefill)).not.toContain('date');
+        expect(Object.keys(form.prefill)).not.toContain('attendees');
+      });
+
+      it('will not copy a session from another machine', async () => {
+        const otherEquipmentId = faker.string.uuid() as UUID;
+        await framework.commands.equipment.add({
+          id: otherEquipmentId,
+          name: 'Lathe' as NonEmptyString,
+          areaId,
+        });
+        await framework.commands.trainers.add({
+          equipmentId: otherEquipmentId,
+          memberNumber: trainer.memberNumber,
+        });
+        const elsewhere = {...inDays(3), equipmentId: otherEquipmentId};
+        await framework.commands.trainers.arrangeTraining({
+          ...elsewhere,
+          actor: trainerActor,
+        });
+
+        const failure = getLeftOrFail(
+          await formFor({from: elsewhere.sessionId})
+        );
+        expect(failure.status).toStrictEqual(StatusCodes.NOT_FOUND);
+      });
+    });
+
+    describe("the machine's trainings page", () => {
+      const trainingsPage = (user = trainer) =>
+        trainingsViewModel(
+          framework.depsForCommands,
+          user,
+          new Date()
+        )(equipmentId)();
+
+      it('is only for trainers on the machine', async () => {
+        const failure = getLeftOrFail(await trainingsPage(otherMember));
+        expect(failure.status).toStrictEqual(StatusCodes.FORBIDDEN);
+      });
+
+      it('splits sessions into upcoming, soonest first, and previous, latest first', async () => {
+        const sessions = {
+          soon: inDays(2),
+          later: inDays(9),
+          lastWeek: inDays(-7),
+          lastMonth: inDays(-30),
+        };
+        for (const command of Object.values(sessions)) {
+          await framework.depsForCommands.commitEvent(
+            framework.sharedReadModel.getCurrentEventIndex()
+          )({
+            type: 'TrainingSessionScheduled',
+            ...command,
+            trainerMemberNumber: trainer.memberNumber,
+            actor: trainerActor,
+            recordedAt: new Date(),
+          })();
+        }
+
+        const page = getRightOrFail(await trainingsPage());
+
+        expect(page.upcoming.map(s => s.id)).toStrictEqual([
+          sessions.soon.sessionId,
+          sessions.later.sessionId,
+        ]);
+        expect(page.previous.map(s => s.id)).toStrictEqual([
+          sessions.lastWeek.sessionId,
+          sessions.lastMonth.sessionId,
+        ]);
+      });
+
+      it("offers to duplicate the reader's own latest session", async () => {
+        expect(getRightOrFail(await trainingsPage()).lastOwnSessionId).toStrictEqual(
+          O.none
+        );
+
+        const earlier = inDays(2);
+        const latest = inDays(9);
+        for (const command of [latest, earlier]) {
+          await framework.commands.trainers.arrangeTraining({
+            ...command,
+            actor: trainerActor,
+          });
+        }
+
+        expect(getRightOrFail(await trainingsPage()).lastOwnSessionId).toStrictEqual(
+          O.some(latest.sessionId)
+        );
       });
     });
   });

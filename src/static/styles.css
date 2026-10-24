@@ -3884,6 +3884,14 @@ ul.sign__points li + li {
   color: var(--grey-color);
 }
 
+.training-description p {
+  margin: 0.25rem 0;
+}
+
+.training-sessions-table td {
+  vertical-align: top;
+}
+
 .eq-cards__actions {
   display: flex;
   flex-wrap: wrap;

@@ -524,7 +524,7 @@ const equipmentCards = (viewModel: ViewModel) => {
                 ${cardButton(`/equipment/${id}/training`, 'Get Trained')}
                 ${viewModel.isTrainer
                   ? cardButton(
-                      `/equipment/arrange-training?equipmentId=${id}`,
+                      `/equipment/${id}/trainings`,
                       'Arrange training'
                     )
                   : html``}

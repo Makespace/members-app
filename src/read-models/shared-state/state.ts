@@ -1015,7 +1015,8 @@ export const trainingSessionsTable = defineTable(
       trainerMemberNumber INTEGER NOT NULL,
       startsAt INTEGER NOT NULL,
       endsAt INTEGER NOT NULL,
-      spaces INTEGER NOT NULL
+      spaces INTEGER NOT NULL,
+      description TEXT NOT NULL
     )
   `,
   'trainingSessions' as const,
@@ -1026,6 +1027,7 @@ export const trainingSessionsTable = defineTable(
     startsAt: integer('startsAt', {mode: 'timestamp_ms'}).notNull(),
     endsAt: integer('endsAt', {mode: 'timestamp_ms'}).notNull(),
     spaces: integer('spaces').notNull(),
+    description: text('description').notNull(),
   }
 );
 

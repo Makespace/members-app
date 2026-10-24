@@ -159,7 +159,9 @@ const practicalStep = (viewModel: ViewModel) => html`
       app to arrange a training session so far.
     </p>
     <h3>Upcoming trainings in the app</h3>
-    ${renderUpcomingTrainingSessions(viewModel.upcomingTrainings)}
+    ${renderUpcomingTrainingSessions(viewModel.upcomingTrainings, {
+      withDescriptions: true,
+    })}
     <p>
       If there is no practical scheduled on Meetup or here, please email
       ${pipe(

@@ -30,6 +30,7 @@ const formCodec = t.intersection([
     spaces: t.union([t.Int, tt.IntFromString]),
   }),
   t.partial({
+    description: t.string,
     attendees: t.union([t.string, t.array(t.string)]),
   }),
 ]);
@@ -40,8 +41,11 @@ const ArrangeTrainingCodec = t.strict({
   startsAt: tt.date,
   endsAt: tt.date,
   spaces: t.number,
+  description: t.string,
   attendees: t.array(t.number),
 });
+
+export const MAX_DESCRIPTION_LENGTH = 2000;
 
 const attendeesFrom = (
   raw: string | ReadonlyArray<string> | undefined
@@ -96,6 +100,14 @@ const codec = new t.Type<ArrangeTraining, ArrangeTraining, unknown>(
             `The number of spaces must be between 1 and ${MAX_SPACES}`
           );
         }
+        const description = (form.description ?? '').trim();
+        if (description.length > MAX_DESCRIPTION_LENGTH) {
+          return t.failure(
+            input,
+            context,
+            `The description must be at most ${MAX_DESCRIPTION_LENGTH} characters`
+          );
+        }
         const attendees = attendeesFrom(form.attendees);
         if (O.isNone(attendees)) {
           return t.failure(
@@ -117,6 +129,7 @@ const codec = new t.Type<ArrangeTraining, ArrangeTraining, unknown>(
           startsAt: startsAt.value.toJSDate(),
           endsAt: endsAt.value.toJSDate(),
           spaces: form.spaces,
+          description,
           attendees: attendees.value,
         });
       })
@@ -166,6 +179,7 @@ const process: Command<ArrangeTraining>['process'] = input =>
               startsAt: input.command.startsAt,
               endsAt: input.command.endsAt,
               spaces: input.command.spaces,
+              description: input.command.description,
               attendees: input.command.attendees,
               actor: input.command.actor,
             })

@@ -561,7 +561,8 @@ const EinkDisplayUnassigned = defineEvent('EinkDisplayUnassigned', {
 // The trainer is whoever scheduled it: sessions are not scheduled on somebody
 // else's behalf. Times are instants; the form reads them as UK local time.
 // attendees are members the trainer booked in when arranging it - someone
-// they arranged it with directly - and take up some of the spaces.
+// they arranged it with directly - and take up some of the spaces. The
+// description is the trainer's own markdown (see templates/markdown.ts).
 const TrainingSessionScheduled = defineEvent('TrainingSessionScheduled', {
   sessionId: tt.UUID,
   equipmentId: tt.UUID,
@@ -569,6 +570,7 @@ const TrainingSessionScheduled = defineEvent('TrainingSessionScheduled', {
   startsAt: tt.DateFromISOString,
   endsAt: tt.DateFromISOString,
   spaces: t.number,
+  description: t.string,
   attendees: t.array(t.number),
 });
 

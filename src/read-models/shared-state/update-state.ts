@@ -1525,6 +1525,7 @@ const _updateState =
             startsAt: event.startsAt,
             endsAt: event.endsAt,
             spaces: event.spaces,
+            description: event.description,
           })
           .onConflictDoNothing()
           .run();

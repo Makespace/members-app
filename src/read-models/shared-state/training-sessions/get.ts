@@ -1,5 +1,5 @@
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {and, asc, eq, gt} from 'drizzle-orm';
+import {and, asc, desc, eq, gt} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import {UUID} from 'io-ts-types';
@@ -12,6 +12,7 @@ export type TrainingSession = {
   startsAt: Date;
   endsAt: Date;
   spaces: number;
+  description: string;
   attendees: ReadonlyArray<number>;
 };
 
@@ -39,6 +40,18 @@ export const getTrainingSession =
       O.fromNullable,
       O.map(withAttendees(db))
     );
+
+// Every session on the machine, past and future, latest first.
+export const getAllTrainingSessionsForEquipment =
+  (db: BetterSQLite3Database) =>
+  (equipmentId: UUID): ReadonlyArray<TrainingSession> =>
+    db
+      .select()
+      .from(trainingSessionsTable)
+      .where(eq(trainingSessionsTable.equipmentId, equipmentId))
+      .orderBy(desc(trainingSessionsTable.startsAt))
+      .all()
+      .map(withAttendees(db));
 
 // Everyone who has ever arranged a session on the machine through the app,
 // past sessions included.

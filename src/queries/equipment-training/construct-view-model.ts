@@ -17,7 +17,7 @@ import {
 import {DateTime} from 'luxon';
 import {allMemberNumbers} from '../../read-models/shared-state/return-types';
 import {
-  UpcomingTrainingSession,
+  TrainingSessionView,
   upcomingTrainingSessions,
 } from '../shared-render/upcoming-training-sessions';
 
@@ -54,7 +54,7 @@ export type ViewModel = {
     trainingsByQuarter: ReadonlyArray<QuarterCount>;
   }>;
   lastTraining: O.Option<Date>;
-  upcomingTrainings: ReadonlyArray<UpcomingTrainingSession>;
+  upcomingTrainings: ReadonlyArray<TrainingSessionView>;
   // Not every trainer arranges sessions in the app - plenty use Meetup - so
   // the page says how many here do, rather than implying an empty list means
   // nothing is planned.

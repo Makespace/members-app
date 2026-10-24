@@ -114,6 +114,7 @@ import {
   getEinkDisplayAssignment,
 } from './eink-displays/get';
 import {
+  getAllTrainingSessionsForEquipment,
   getMemberNumbersWhoHaveArrangedTraining,
   getTrainingSession,
   getUpcomingTrainingSessionsForEquipment,
@@ -262,6 +263,7 @@ export type SharedReadModel = {
       now: Date
     ) => ReadonlyArray<TrainingSession>;
     memberNumbersWhoHaveArranged: (equipmentId: UUID) => ReadonlyArray<number>;
+    allForEquipment: (equipmentId: UUID) => ReadonlyArray<TrainingSession>;
   };
 };
 
@@ -397,6 +399,7 @@ export const initSharedReadModel = (
         getUpcomingTrainingSessionsForEquipment(readModelDb),
       memberNumbersWhoHaveArranged:
         getMemberNumbersWhoHaveArrangedTraining(readModelDb),
+      allForEquipment: getAllTrainingSessionsForEquipment(readModelDb),
     },
   };
 };
