@@ -65,6 +65,11 @@ export const purchaseRequest: Query = deps => (user, params, queryParams) =>
             O.chain(deps.sharedReadModel.members.getByMemberNumber),
             O.chain(member => member.name)
           ),
+          buyerName: pipe(
+            request.boughtByMemberNumber,
+            O.chain(deps.sharedReadModel.members.getByMemberNumber),
+            O.chain(member => member.name)
+          ),
           canDecide: canDecide(
             deps.sharedReadModel,
             liftActorOrUser(user),

@@ -221,6 +221,8 @@ describe('submit purchase request', () => {
         earlier,
         constructEvent('PurchaseRequestApproved')({
           note: null,
+        alsoBought: false,
+        actualCostPence: null,
           actor: arbitraryActor(),
           id: earlier.id,
         })

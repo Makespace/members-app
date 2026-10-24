@@ -293,6 +293,8 @@ describe('purchasing areas in the read model', () => {
       request,
       constructEvent('PurchaseRequestApproved')({
         note: null,
+        alsoBought: false,
+        actualCostPence: null,
         actor: systemActor(),
         id: request.id,
       }),
@@ -364,6 +366,8 @@ describe('purchasing areas in the read model', () => {
         insert(
           constructEvent('PurchaseRequestApproved')({
             note: null,
+        alsoBought: false,
+        actualCostPence: null,
             actor: systemActor(),
             id: pendingId,
           })

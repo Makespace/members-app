@@ -96,3 +96,8 @@ export const canDecide = (
         isActivePurchaser(purchasingArea, memberNumber)
       )
     ));
+
+// Who can mark an approved request as bought: the same people who can
+// approve it, so a purchaser can't record buying something that needed
+// director approval - a manager or director buys that.
+export const canMarkBought = canDecide;

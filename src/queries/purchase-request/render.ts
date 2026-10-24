@@ -30,14 +30,48 @@ type ViewModel = {
   deciderName: O.Option<string>;
   // Super users approve or decline requests.
   canDecide: boolean;
+  // Who marked it bought, once someone has.
+  buyerName: O.Option<string>;
 };
 
 const money = (pence: number) => sanitizeString(formatPence(pence));
 
+// Once approved: bought, or still to buy.
+const renderBought = (request: PurchaseRequest, buyerName: O.Option<string>) =>
+  request.status === 'bought'
+    ? html`<p>
+        <strong>Bought</strong>
+        ${pipe(
+          buyerName,
+          O.match(
+            () => html``,
+            name => html`by ${sanitizeString(name)}`
+          )
+        )}
+        ${pipe(
+          request.boughtAt,
+          O.match(
+            () => html``,
+            at => html`on ${displayDate(DateTime.fromJSDate(at))}`
+          )
+        )}${pipe(
+          request.actualCostPence,
+          O.match(
+            () => html`.`,
+            cost => html`, for ${money(cost)}.`
+          )
+        )}
+      </p>`
+    : html`<p>
+        <strong>Next:</strong> one of the area's purchasers (or a super user)
+        buys it and marks it as bought.
+      </p>`;
+
 const renderDecision = (
   request: PurchaseRequest,
   deciderName: O.Option<string>,
-  submitterName: O.Option<string>
+  submitterName: O.Option<string>,
+  buyerName: O.Option<string>
 ) => {
   const by = html`${pipe(
     deciderName,
@@ -55,6 +89,7 @@ const renderDecision = (
   )}`;
   switch (request.status) {
     case 'approved':
+    case 'bought':
       return html`<p>
         <strong>Approved</strong> (${safe(awaitedApproval(request))}
         approval) ${by}${pipe(
@@ -64,7 +99,8 @@ const renderDecision = (
             note => html`: ${sanitizeString(note)}`
           )
         )}
-      </p>`;
+      </p>
+      ${renderBought(request, buyerName)}`;
     case 'declined':
       return html`<p><strong>Declined</strong> ${by}:
           ${sanitizeString(
@@ -124,6 +160,7 @@ export const render = ({
   submitterName,
   deciderName,
   canDecide,
+  buyerName,
 }: ViewModel) => {
   const areaName = pipe(
     purchasingArea,
@@ -212,9 +249,20 @@ export const render = ({
           request.proposal,
           O.match(() => html``, renderProposal)
         )}
-        ${renderDecision(request, deciderName, submitterName)}
+        ${renderDecision(request, deciderName, submitterName, buyerName)}
         ${canDecide && request.status === 'awaiting-approval'
           ? renderDecide(request)
+          : html``}
+        ${canDecide && request.status === 'approved'
+          ? superUserActions(
+              superUserButton(
+                `/purchase-requests/mark-bought?request=${request.id}`,
+                html`Mark as bought`
+              ),
+              awaitedApproval(request) === 'director'
+                ? 'Super users only'
+                : 'Purchasers and super users'
+            )
           : html``}
       </div>
     </div>

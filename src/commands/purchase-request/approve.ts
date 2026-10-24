@@ -9,13 +9,21 @@ import {constructEvent} from '../../types';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {REASON_MAX} from '../../types/limited-text';
 import {Command} from '../command';
-import {canDecideById, requestAwaitingDecision} from './decide-helpers';
+import {
+  actualCostFrom,
+  canDecideById,
+  requestAwaitingDecision,
+} from './decide-helpers';
 
 const codec = t.strict({
   id: tt.UUID,
   // What was agreed, e.g. at the owners' forum; told to everyone who heard
   // about the request.
   note: t.union([t.string, t.undefined]),
+  // "Approve and mark as bought": they've already bought it.
+  markBought: t.union([t.boolean, tt.BooleanFromString, t.undefined]),
+  // What it really cost, in pounds, when marking it bought.
+  actualCost: t.union([t.string, t.undefined]),
 });
 
 type ApprovePurchaseRequest = t.TypeOf<typeof codec>;
@@ -39,12 +47,19 @@ const process: Command<ApprovePurchaseRequest>['process'] = input =>
       }
       return E.right({request, note: note === '' ? null : note});
     }),
+    E.bind('actualCostPence', ({request}) =>
+      input.command.markBought === true
+        ? actualCostFrom(input.command.actualCost, request)
+        : E.right(null)
+    ),
     TE.fromEither,
-    TE.map(({request, note}) =>
+    TE.map(({request, note, actualCostPence}) =>
       O.some(
         constructEvent('PurchaseRequestApproved')({
           id: request.id,
           note,
+          alsoBought: input.command.markBought === true,
+          actualCostPence,
           actor: input.command.actor,
         })
       )

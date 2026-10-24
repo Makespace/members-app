@@ -140,6 +140,11 @@ export const initRoutes = (
     ...command('purchase-requests', 'submit', commands.purchaseRequest.submit),
     ...command('purchase-requests', 'approve', commands.purchaseRequest.approve),
     ...command('purchase-requests', 'decline', commands.purchaseRequest.decline),
+    ...command(
+      'purchase-requests',
+      'mark-bought',
+      commands.purchaseRequest.markBought
+    ),
     get('/purchase-request', (_req, res) =>
       res.redirect('/purchase-requests/submit')
     ),

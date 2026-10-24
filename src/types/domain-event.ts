@@ -304,6 +304,18 @@ const PurchaseRequestApproved = defineEvent('PurchaseRequestApproved', {
   // What was agreed, e.g. at an owners' forum. Required for director
   // approval; see src/commands/purchase-request/approve.ts.
   note: tt.withFallback(t.union([t.string, t.null]), null),
+  // Approved by someone who has already bought it, e.g. with Capital on
+  // Tap: it goes straight to bought.
+  alsoBought: tt.withFallback(t.boolean, false),
+  // What it really cost, when bought and different from what was asked.
+  actualCostPence: tt.withFallback(t.union([t.number, t.null]), null),
+});
+
+// An approved purchase request bought by a purchaser or super user.
+const PurchaseRequestBought = defineEvent('PurchaseRequestBought', {
+  id: tt.UUID,
+  // What it really cost, when different from what was asked.
+  actualCostPence: t.union([t.number, t.null]),
 });
 
 // Purchase request emails sent for one event (a request sent, approved or
@@ -814,6 +826,7 @@ export const events = [
   PurchaseRequestSubmitted,
   PurchaseRequestApproved,
   PurchaseRequestDeclined,
+  PurchaseRequestBought,
   PurchaseRequestNotificationSent,
   SuperUserDeclared,
   SuperUserRevoked,
@@ -897,6 +910,7 @@ export const DomainEvent = t.union([
   PurchaseRequestSubmitted.codec,
   PurchaseRequestApproved.codec,
   PurchaseRequestDeclined.codec,
+  PurchaseRequestBought.codec,
   PurchaseRequestNotificationSent.codec,
   SuperUserDeclared.codec,
   SuperUserRevoked.codec,
