@@ -581,6 +581,12 @@ export const initRoutes = (
       'assign-to',
       commands.troubleTickets.assignTo
     ),
+    ...command('trouble-tickets', 'invite', commands.troubleTickets.invite),
+    ...command(
+      'trouble-tickets',
+      'decline-invitation',
+      commands.troubleTickets.declineInvitation
+    ),
     ...command('trouble-tickets', 'resolve', commands.troubleTickets.resolve),
     ...command('trouble-tickets', 'park', commands.troubleTickets.park),
     ...command(

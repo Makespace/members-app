@@ -24,6 +24,8 @@ import {
 } from '../trouble-tickets/notification-audience';
 import {
   describeAssignmentToAssignee,
+  describeInvitation,
+  describeInvitationDeclined,
   describeTicketChange,
   ticketNotificationOpening,
   ticketNotificationSubject,
@@ -39,6 +41,10 @@ const NOTIFY_TYPES = [
   'TroubleTicketResolved',
   'TroubleTicketParked',
   'TroubleTicketNeedsHelp',
+  // Between the owners working a ticket: only the invitee, or the inviter,
+  // is told.
+  'TroubleTicketInvitationSent',
+  'TroubleTicketInvitationDeclined',
 ] as const;
 
 type NotifyEvent = StoredEventOfType<(typeof NOTIFY_TYPES)[number]>;
@@ -180,6 +186,74 @@ export const notifyTroubleTicketChanges = async (
     }
     const ticket = rm.troubleTickets.getById(ticketIdOf(event));
     if (O.isNone(ticket)) {
+      continue;
+    }
+    // An invitation concerns one person, whatever anybody's preferences
+    // say: the invitee when it is sent, the inviter when it is declined.
+    if (
+      event.type === 'TroubleTicketInvitationSent' ||
+      event.type === 'TroubleTicketInvitationDeclined'
+    ) {
+      const actor = actorName(event.actor, rm);
+      const recipient = rm.members.getByMemberNumber(
+        event.type === 'TroubleTicketInvitationSent'
+          ? event.inviteeMemberNumber
+          : event.inviterMemberNumber
+      );
+      const marked = await deps.commitEvent(rm.getCurrentEventIndex())(
+        constructEvent('TroubleTicketNotificationSent')({
+          actor: {tag: 'system'},
+          ticketId: event.ticketId,
+          notifiedEventIndex: event.event_index,
+          recipients: pipe(
+            recipient,
+            O.match(
+              () => [],
+              member => [member.primaryEmailAddress]
+            )
+          ),
+          recipientMemberNumbers: pipe(
+            recipient,
+            O.match(
+              () => [],
+              member => [member.memberNumber]
+            )
+          ),
+        })
+      )();
+      if (E.isLeft(marked)) {
+        deps.logger.warn(
+          'Failed to record trouble ticket notification for event %s: %o - will retry',
+          event.event_index,
+          marked.left
+        );
+        continue;
+      }
+      if (O.isSome(recipient)) {
+        const sent = await heldBackSendEmail(deps)(
+          buildEmail(
+            deps.conf.PUBLIC_URL,
+            recipient.value.primaryEmailAddress,
+            ticket.value,
+            event.type === 'TroubleTicketInvitationSent'
+              ? describeInvitation(actor, event.message)
+              : describeInvitationDeclined(actor),
+            false,
+            false,
+            ticketCardHtml(
+              summariseForEmail(rm, deps.conf.PUBLIC_URL, ticket.value)
+            ),
+            false
+          )
+        )();
+        if (E.isLeft(sent)) {
+          deps.logger.error(
+            "Failed to send trouble ticket notification to '%s': %o",
+            recipient.value.primaryEmailAddress,
+            sent.left
+          );
+        }
+      }
       continue;
     }
     // Who it is going to is decided first and recorded with the marker, so

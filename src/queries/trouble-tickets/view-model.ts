@@ -50,6 +50,12 @@ export type TroubleTicketView = {
   rawEquipment: string | null;
   response: TroubleTicketResponse;
   assignees: ReadonlyArray<AssigneeView>;
+  // Asked to help, and not yet answered.
+  invited: ReadonlyArray<AssigneeView>;
+  // Who asked the viewer to help with this ticket, when somebody has.
+  invitedBy: O.Option<string>;
+  // Whether the viewer may ask others to help (they are working on it).
+  canInvite: boolean;
   // Relationship to the viewing member (drives the "show only" scope filters).
   assignedToMe: boolean;
   inMyOwnerArea: boolean;

@@ -56,11 +56,13 @@ import {
   getAllTroubleTickets,
   getTroubleTicketById,
   getTroubleTicketChangeLog,
+  getTroubleTicketInvitations,
   getTroubleTicketsByEquipment,
   getTroubleTicketsByMailboxConversation,
   hasNotifiedForEvent,
   hasTroubleTicketRowHash,
   TroubleTicketChangeRow,
+  TroubleTicketInvitation,
 } from './trouble-tickets/get';
 import {TroubleTicket} from '../../types/trouble-ticket';
 import {
@@ -213,6 +215,9 @@ export type SharedReadModel = {
     getChangeLog: (
       ticketIds: ReadonlyArray<UUID>
     ) => ReadonlyArray<TroubleTicketChangeRow>;
+    getInvitations: (
+      ticketIds: ReadonlyArray<UUID>
+    ) => ReadonlyArray<TroubleTicketInvitation>;
   };
   notifications: {
     getAll: () => ReadonlyArray<Notification>;
@@ -352,6 +357,7 @@ export const initSharedReadModel = (
         getTroubleTicketsByMailboxConversation(readModelDb),
       hasNotifiedForEvent: hasNotifiedForEvent(readModelDb),
       getChangeLog: getTroubleTicketChangeLog(readModelDb),
+      getInvitations: getTroubleTicketInvitations(readModelDb),
     },
     notifications: {
       getAll: getAllNotifications(readModelDb),

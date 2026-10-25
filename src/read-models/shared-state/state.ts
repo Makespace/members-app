@@ -757,6 +757,36 @@ export const troubleTicketAssigneesTable = defineTable(
   })
 );
 
+// Outstanding invitations to help with a ticket: one per invitee, gone once
+// they accept (assign themselves) or decline, or the ticket is resolved.
+export const troubleTicketInvitationsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS troubleTicketInvitations (
+      ticketId TEXT NOT NULL,
+      inviteeMemberNumber INTEGER NOT NULL,
+      inviterMemberNumber INTEGER NOT NULL,
+      invitedAt INTEGER NOT NULL,
+      UNIQUE(ticketId, inviteeMemberNumber),
+      FOREIGN KEY (ticketId) REFERENCES troubleTickets(id) ON DELETE CASCADE
+    )
+  `,
+  'troubleTicketInvitations' as const,
+  {
+    ticketId: text('ticketId')
+      .notNull()
+      .$type<UUID>()
+      .references(() => troubleTicketsTable.id, {onDelete: 'cascade'}),
+    inviteeMemberNumber: integer('inviteeMemberNumber').notNull(),
+    inviterMemberNumber: integer('inviterMemberNumber').notNull(),
+    invitedAt: integer('invitedAt', {mode: 'timestamp_ms'}).notNull(),
+  },
+  table => ({
+    uniqueInvitee: uniqueIndex(
+      'trouble_ticket_invitations_ticket_invitee_unique'
+    ).on(table.ticketId, table.inviteeMemberNumber),
+  })
+);
+
 // One row per ticket status-change event, so the board can render change
 // logs without querying the remote event store on every page load. Keyed by
 // the source event's index for idempotent re-projection.

@@ -249,4 +249,93 @@ describe('notifyTroubleTicketChanges', () => {
       );
     });
   });
+
+  // Between the owners working a ticket: the submitter hears nothing until
+  // somebody actually joins.
+  describe('invitations to help', () => {
+    const INVITER = 21;
+    const INVITEE = 22;
+
+    const userActor = (memberNumber: number) => ({
+      tag: 'user' as const,
+      user: {
+        emailAddress: `member${memberNumber}@test.com` as EmailAddress,
+        memberNumber,
+      },
+    });
+
+    beforeEach(async () => {
+      for (const [memberNumber, name] of [
+        [INVITER, 'Olu Owner'],
+        [INVITEE, 'Tara Trainer'],
+      ] as const) {
+        await commit(
+          constructEvent('MemberNumberLinkedToEmail')({
+            actor: systemActor(),
+            memberNumber,
+            email: `member${memberNumber}@test.com` as EmailAddress,
+            name,
+            formOfAddress: undefined,
+          })
+        );
+      }
+      await commit(
+        constructEvent('TroubleTicketInvitationSent')({
+          actor: userActor(INVITER),
+          ticketId,
+          inviteeMemberNumber: INVITEE,
+          message: 'Two pairs of hands',
+        })
+      );
+    });
+
+    it('emails only the member invited, with the message', async () => {
+      await settle();
+      // settle() sent and cleared the invitation along with the ticket's
+      // logging, so look at what was recorded instead.
+      const notified = await framework.getAllEventsByType(
+        'TroubleTicketNotificationSent'
+      );
+      expect(notified[notified.length - 1].recipients).toStrictEqual([
+        'member22@test.com',
+      ]);
+    });
+
+    it('says who is asking, and what they said', async () => {
+      await notifyTroubleTicketChanges(deps);
+
+      const invitation = sentEmails.find(
+        email => email.recipient === 'member22@test.com'
+      );
+      expect(invitation?.text).toContain(
+        'Olu Owner has invited you to help with this ticket.'
+      );
+      expect(invitation?.text).toContain('They said: Two pairs of hands');
+      expect(
+        sentEmails.filter(email =>
+          email.text.includes('invited you to help')
+        )
+      ).toHaveLength(1);
+    });
+
+    it('tells the inviter, and only them, when it is declined', async () => {
+      await settle();
+      await commit(
+        constructEvent('TroubleTicketInvitationDeclined')({
+          actor: userActor(INVITEE),
+          ticketId,
+          inviterMemberNumber: INVITER,
+        })
+      );
+
+      await notifyTroubleTicketChanges(deps);
+
+      expect(sentEmails.map(email => email.recipient)).toStrictEqual([
+        'member21@test.com',
+      ]);
+      expect(sentEmails[0].text).toContain(
+        'Tara Trainer has declined your invitation to help with this ticket.'
+      );
+    });
+  });
 });

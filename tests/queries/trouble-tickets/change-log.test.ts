@@ -106,4 +106,40 @@ describe('a ticket change log, on assignment', () => {
       summary: 'assigned themselves and set the ticket to In Progress',
     });
   });
+
+  describe('on invitations to help', () => {
+    beforeEach(async () => {
+      await framework.commands.troubleTickets.assign({
+        ticketId,
+        comment: '',
+        actor: actorFor(OWNER),
+      });
+      await framework.commands.troubleTickets.invite({
+        ticketId,
+        memberNumber: SUPER_USER,
+        message: 'Two pairs of hands',
+        actor: actorFor(OWNER),
+      });
+    });
+
+    it('names who was invited, with the message', () => {
+      expect(latestSummary()).toMatchObject({
+        actor: 'Olu Owner',
+        summary: 'invited Ada Admin to help with this ticket',
+        details: [{label: 'Message', value: 'Two pairs of hands'}],
+      });
+    });
+
+    it('says whose invitation was declined', async () => {
+      await framework.commands.troubleTickets.declineInvitation({
+        ticketId,
+        actor: actorFor(SUPER_USER),
+      });
+
+      expect(latestSummary()).toMatchObject({
+        actor: 'Ada Admin',
+        summary: "declined Olu Owner's invitation to help",
+      });
+    });
+  });
 });

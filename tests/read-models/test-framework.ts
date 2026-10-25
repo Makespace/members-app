@@ -271,6 +271,10 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         create: frameworkify(commands.troubleTickets.create),
         assign: frameworkify(commands.troubleTickets.assign),
         assignTo: frameworkify(commands.troubleTickets.assignTo),
+        invite: frameworkify(commands.troubleTickets.invite),
+        declineInvitation: frameworkify(
+          commands.troubleTickets.declineInvitation
+        ),
         resolve: frameworkify(commands.troubleTickets.resolve),
         park: frameworkify(commands.troubleTickets.park),
         needsHelp: frameworkify(commands.troubleTickets.needsHelp),
