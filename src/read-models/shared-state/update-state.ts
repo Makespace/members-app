@@ -37,6 +37,8 @@ import {
   purchasingAreaSpendTable,
   purchasingAreaYearBudgetsTable,
   einkDisplaysTable,
+  trainingSessionsTable,
+  trainingSessionAttendeesTable,
 } from './state';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, eq, inArray, isNull, sql} from 'drizzle-orm';
@@ -1512,6 +1514,27 @@ const _updateState =
         tx.delete(einkDisplaysTable)
           .where(eq(einkDisplaysTable.displayNumber, event.displayNumber))
           .run();
+        break;
+      }
+      case 'TrainingSessionScheduled': {
+        tx.insert(trainingSessionsTable)
+          .values({
+            id: event.sessionId,
+            equipmentId: event.equipmentId,
+            trainerMemberNumber: event.trainerMemberNumber,
+            startsAt: event.startsAt,
+            endsAt: event.endsAt,
+            spaces: event.spaces,
+            description: event.description,
+          })
+          .onConflictDoNothing()
+          .run();
+        for (const memberNumber of event.attendees) {
+          tx.insert(trainingSessionAttendeesTable)
+            .values({sessionId: event.sessionId, memberNumber})
+            .onConflictDoNothing()
+            .run();
+        }
         break;
       }
       default: {

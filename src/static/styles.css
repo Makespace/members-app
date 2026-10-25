@@ -3872,6 +3872,26 @@ ul.sign__points li + li {
   align-items: center;
 }
 
+.upcoming-trainings {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.upcoming-trainings__empty {
+  color: var(--grey-color);
+}
+
+.training-description p {
+  margin: 0.25rem 0;
+}
+
+.training-sessions-table td {
+  vertical-align: top;
+}
+
 .eq-cards__actions {
   display: flex;
   flex-wrap: wrap;

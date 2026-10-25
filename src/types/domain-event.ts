@@ -557,6 +557,23 @@ const EinkDisplayUnassigned = defineEvent('EinkDisplayUnassigned', {
   displayNumber: t.number,
 });
 
+// A trainer putting an in-person training on the calendar for a machine.
+// The trainer is whoever scheduled it: sessions are not scheduled on somebody
+// else's behalf. Times are instants; the form reads them as UK local time.
+// attendees are members the trainer booked in when arranging it - someone
+// they arranged it with directly - and take up some of the spaces. The
+// description is the trainer's own markdown (see templates/markdown.ts).
+const TrainingSessionScheduled = defineEvent('TrainingSessionScheduled', {
+  sessionId: tt.UUID,
+  equipmentId: tt.UUID,
+  trainerMemberNumber: t.number,
+  startsAt: tt.DateFromISOString,
+  endsAt: tt.DateFromISOString,
+  spaces: t.number,
+  description: t.string,
+  attendees: t.array(t.number),
+});
+
 const MemberDetailsUpdated = defineEvent('MemberDetailsUpdated', {
   memberNumber: t.number,
   name: t.union([t.string, t.undefined]),
@@ -878,6 +895,7 @@ export const events = [
   MailboxConversationUnarchived,
   EinkDisplayAssigned,
   EinkDisplayUnassigned,
+  TrainingSessionScheduled,
 ];
 
 export const DomainEvent = t.union([
@@ -963,6 +981,7 @@ export const DomainEvent = t.union([
   MailboxConversationUnarchived.codec,
   EinkDisplayAssigned.codec,
   EinkDisplayUnassigned.codec,
+  TrainingSessionScheduled.codec,
 ]);
 
 export const StoredDomainEvent = t.intersection([

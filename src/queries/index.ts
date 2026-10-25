@@ -13,6 +13,7 @@ export {about} from './about';
 export {superUsers} from './super-users';
 export {equipment} from './equipment';
 export {equipmentTraining} from './equipment-training';
+export {equipmentTrainings} from './equipment-trainings';
 export {
   equipmentTrainedUsers,
   equipmentQuizResults,

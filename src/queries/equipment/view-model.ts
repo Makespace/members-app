@@ -3,6 +3,7 @@ import {GuideLinkCheck} from '../../read-models/external-state/guide-links';
 import {Equipment} from '../../read-models/shared-state/return-types';
 import {User} from '../../types';
 import * as O from 'fp-ts/Option';
+import {TrainingSessionView} from '../shared-render/upcoming-training-sessions';
 
 export type ViewModel = {
   user: User;
@@ -21,4 +22,8 @@ export type ViewModel = {
   // cliff on the first of the month.
   tickets: {active: number; resolvedRecently: number};
   training: {activeTrainers: number; trainingsRecently: number};
+  // Only the machine's own trainers can arrange a training on it; being a
+  // super-user is not enough, because the trainer is whoever arranges it.
+  isTrainer: boolean;
+  upcomingTrainings: ReadonlyArray<TrainingSessionView>;
 };

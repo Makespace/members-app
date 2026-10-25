@@ -9,6 +9,7 @@ import {
   categoryDescription,
 } from '../../templates/equipment-category';
 import {ViewModel} from './construct-view-model';
+import {renderUpcomingTrainingSessions} from '../shared-render/upcoming-training-sessions';
 
 const MEETUP = 'https://www.meetup.com/makespace/';
 const MANAGEMENT_EMAIL = 'management@makespace.org';
@@ -148,10 +149,21 @@ const practicalStep = (viewModel: ViewModel) => html`
     <h2>2. Attend an in-person training session</h2>
     ${practicalState(viewModel)}
     <p>
-      Check the
+      Training sessions can be organised on the
       <a href="${safe(MEETUP)}">Makespace Meetup group</a>
-      for a practical assessment session. If there is no practical scheduled
-      there, please email
+      or through this app.
+      ${safe(String(viewModel.trainersUsingApp))}
+      trainer${viewModel.trainersUsingApp === 1 ? safe('') : safe('s')} on
+      this equipment
+      ${viewModel.trainersUsingApp === 1 ? safe('has') : safe('have')} used the
+      app to arrange a training session so far.
+    </p>
+    <h3>Upcoming trainings in the app</h3>
+    ${renderUpcomingTrainingSessions(viewModel.upcomingTrainings, {
+      withDescriptions: true,
+    })}
+    <p>
+      If there is no practical scheduled on Meetup or here, please email
       ${pipe(
         viewModel.area.email,
         O.match(

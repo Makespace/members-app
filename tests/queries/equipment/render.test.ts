@@ -119,6 +119,8 @@ describe('Render equipment page', () => {
             guideLink: O.none,
             tickets: {active: 0, resolvedRecently: 0},
             training: {activeTrainers: 0, trainingsRecently: 0},
+            isTrainer: false,
+            upcomingTrainings: [],
             quizResults: O.some(quizResults)
         };
         let renderedDom: HTMLElement;
@@ -164,6 +166,8 @@ describe('Render equipment page', () => {
             guideLink: O.none,
             tickets: {active: 0, resolvedRecently: 0},
             training: {activeTrainers: 0, trainingsRecently: 0},
+            isTrainer: false,
+            upcomingTrainings: [],
             quizResults: O.some(quizResults)
         };
         let renderedDom: HTMLElement;
@@ -205,6 +209,8 @@ describe('Render equipment page', () => {
             guideLink: O.none,
             tickets: {active: 0, resolvedRecently: 0},
             training: {activeTrainers: 0, trainingsRecently: 0},
+            isTrainer: false,
+            upcomingTrainings: [],
             quizResults: O.some(quizResultsWithMemberAwaitingTraining)
         };
         let renderedDom: HTMLElement;
@@ -240,6 +246,8 @@ describe('Render equipment page', () => {
             guideLink: O.none,
             tickets: {active: 0, resolvedRecently: 0},
             training: {activeTrainers: 0, trainingsRecently: 0},
+            isTrainer: false,
+            upcomingTrainings: [],
             quizResults: O.some(quizResultsWithMemberAwaitingTraining)
         };
         let renderedDom: HTMLElement;
@@ -280,6 +288,8 @@ describe('Render equipment page', () => {
                 guideLink: O.none,
             tickets: {active: 0, resolvedRecently: 0},
             training: {activeTrainers: 0, trainingsRecently: 0},
+            isTrainer: false,
+            upcomingTrainings: [],
             quizResults: O.some(quizResultsWithMemberAwaitingTraining),
             });
 
@@ -358,6 +368,8 @@ describe('the equipment guide, when it stopped answering', () => {
         quizResults: O.none,
         tickets: {active: 0, resolvedRecently: 0},
         training: {activeTrainers: 0, trainingsRecently: 0},
+        isTrainer: false,
+        upcomingTrainings: [],
     });
 
     // What it is and where it goes - the path says nothing to a reader, and a
@@ -454,6 +466,8 @@ describe('the actions, in groups', () => {
         guideLink: O.none,
         tickets: {active: 0, resolvedRecently: 0},
         training: {activeTrainers: 0, trainingsRecently: 0},
+        isTrainer: false,
+        upcomingTrainings: [],
         quizResults: O.none,
         ...overrides,
     });

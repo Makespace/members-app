@@ -1005,3 +1005,44 @@ export const einkDisplaysTable = defineTable(
     equipmentId: text('equipmentId').notNull().$type<UUID>(),
   }
 );
+
+// In-person training sessions trainers have put on the calendar.
+export const trainingSessionsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS trainingSessions (
+      id TEXT PRIMARY KEY,
+      equipmentId TEXT NOT NULL,
+      trainerMemberNumber INTEGER NOT NULL,
+      startsAt INTEGER NOT NULL,
+      endsAt INTEGER NOT NULL,
+      spaces INTEGER NOT NULL,
+      description TEXT NOT NULL
+    )
+  `,
+  'trainingSessions' as const,
+  {
+    id: text('id').notNull().primaryKey().$type<UUID>(),
+    equipmentId: text('equipmentId').notNull().$type<UUID>(),
+    trainerMemberNumber: integer('trainerMemberNumber').notNull(),
+    startsAt: integer('startsAt', {mode: 'timestamp_ms'}).notNull(),
+    endsAt: integer('endsAt', {mode: 'timestamp_ms'}).notNull(),
+    spaces: integer('spaces').notNull(),
+    description: text('description').notNull(),
+  }
+);
+
+// Who is booked on each training session.
+export const trainingSessionAttendeesTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS trainingSessionAttendees (
+      sessionId TEXT NOT NULL,
+      memberNumber INTEGER NOT NULL,
+      PRIMARY KEY (sessionId, memberNumber)
+    )
+  `,
+  'trainingSessionAttendees' as const,
+  {
+    sessionId: text('sessionId').notNull().$type<UUID>(),
+    memberNumber: integer('memberNumber').notNull(),
+  }
+);

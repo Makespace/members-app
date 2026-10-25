@@ -9,6 +9,8 @@ import {markMemberTrainedByForm} from './mark-member-trained-by-form';
 import {markMemberTrainedForm} from './mark-member-trained-form';
 import {revokeMemberTrained} from './revoke-member-trained';
 import {revokeMemberTrainedForm} from './revoke-member-trained-form';
+import {arrangeTraining} from './arrange-training';
+import {arrangeTrainingForm} from './arrange-training-form';
 
 export const trainers = {
   add: {
@@ -30,5 +32,9 @@ export const trainers = {
   markMemberTrainedBy: {
     ...markMemberTrainedBy,
     ...markMemberTrainedByForm,
+  },
+  arrangeTraining: {
+    ...arrangeTraining,
+    ...arrangeTrainingForm,
   },
 };

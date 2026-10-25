@@ -30,6 +30,8 @@ const viewModel = (overrides: Partial<ViewModel> = {}): ViewModel => ({
     },
   ],
   lastTraining: O.some(new Date('2026-08-11')),
+  upcomingTrainings: [],
+  trainersUsingApp: 0,
   ...overrides,
 });
 

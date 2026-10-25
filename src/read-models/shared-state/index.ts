@@ -113,6 +113,13 @@ import {
   getAllEinkDisplayAssignments,
   getEinkDisplayAssignment,
 } from './eink-displays/get';
+import {
+  getAllTrainingSessionsForEquipment,
+  getMemberNumbersWhoHaveArrangedTraining,
+  getTrainingSession,
+  getUpcomingTrainingSessionsForEquipment,
+  TrainingSession,
+} from './training-sessions/get';
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
@@ -249,6 +256,15 @@ export type SharedReadModel = {
     get: (displayNumber: number) => O.Option<UUID>;
     getAll: () => ReadonlyArray<EinkDisplayAssignment>;
   };
+  trainingSessions: {
+    get: (sessionId: UUID) => O.Option<TrainingSession>;
+    upcomingForEquipment: (
+      equipmentId: UUID,
+      now: Date
+    ) => ReadonlyArray<TrainingSession>;
+    memberNumbersWhoHaveArranged: (equipmentId: UUID) => ReadonlyArray<number>;
+    allForEquipment: (equipmentId: UUID) => ReadonlyArray<TrainingSession>;
+  };
 };
 
 export const initSharedReadModel = (
@@ -376,6 +392,14 @@ export const initSharedReadModel = (
     einkDisplays: {
       get: getEinkDisplayAssignment(readModelDb),
       getAll: getAllEinkDisplayAssignments(readModelDb),
+    },
+    trainingSessions: {
+      get: getTrainingSession(readModelDb),
+      upcomingForEquipment:
+        getUpcomingTrainingSessionsForEquipment(readModelDb),
+      memberNumbersWhoHaveArranged:
+        getMemberNumbersWhoHaveArrangedTraining(readModelDb),
+      allForEquipment: getAllTrainingSessionsForEquipment(readModelDb),
     },
   };
 };
