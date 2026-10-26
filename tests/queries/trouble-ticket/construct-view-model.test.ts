@@ -62,6 +62,7 @@ describe('one trouble ticket on its own page', () => {
           title: 'The blade is blunt',
           mailboxConversationId:
             options.areaId === undefined ? '' : faker.string.alphanumeric(16),
+          providedMemberNumber: null,
           actor: arbitraryActor(),
         })
       )()

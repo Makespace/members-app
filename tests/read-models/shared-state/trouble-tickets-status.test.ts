@@ -25,6 +25,7 @@ const troubleTicketCreated = (
         areaId: null,
         title: '',
         mailboxConversationId: '',
+        providedMemberNumber: null,
     actor: systemActor(),
     id: faker.string.uuid() as UUID,
     rowHash: faker.string.hexadecimal({length: 64}),

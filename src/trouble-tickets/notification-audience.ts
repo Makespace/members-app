@@ -215,8 +215,15 @@ type Audience = {
 export const audienceFor = (
   rm: SharedReadModel,
   ticket: TroubleTicket,
-  happening: TicketHappeningName
+  happening: TicketHappeningName,
+  // Raised without logging in. Its confirmation goes to the address they
+  // typed, which is where they are waiting for it - matched to a member or
+  // not, and whatever that member's preferences say, because the page they
+  // submitted told them it would. The member does not get it twice.
+  options: {publicReport?: boolean} = {}
 ): ReadonlyArray<Audience> => {
+  const confirmToGivenAddress =
+    options.publicReport === true && happening === 'reported';
   const equipment = rm.equipment.getAllMinimal().map(item => ({
     id: item.id as string,
     name: item.name,
@@ -232,16 +239,18 @@ export const audienceFor = (
   // Somebody who reported a problem but is not a member we can match - a
   // form filled in with an address we do not hold - still hears that it was
   // logged. They have no account to keep a preference on, and it is only ever
-  // about their own ticket.
-  const unmatchedReporter: ReadonlyArray<Audience> =
-    ticket.submittedMemberNumber === null && ticket.submittedEmail !== null
+  // about their own ticket. A public report's confirmation goes this way too,
+  // matched or not.
+  const reporterAtGivenAddress: ReadonlyArray<Audience> =
+    (ticket.submittedMemberNumber === null || confirmToGivenAddress) &&
+    ticket.submittedEmail !== null
       ? pipe(
           EmailAddressCodec.decode(ticket.submittedEmail),
           E.match(
             () => [],
             (email): ReadonlyArray<Audience> => [
               {
-                memberNumber: -1,
+                memberNumber: ticket.submittedMemberNumber ?? -1,
                 email,
                 live: true,
                 digest: null,
@@ -253,8 +262,16 @@ export const audienceFor = (
       : [];
 
   return [
-    ...unmatchedReporter,
+    ...reporterAtGivenAddress,
     ...candidates(rm, ticket)
+    .filter(
+      member =>
+        !(
+          confirmToGivenAddress &&
+          reporterAtGivenAddress.length > 0 &&
+          member.memberNumber === ticket.submittedMemberNumber
+        )
+    )
     .map(member => {
       const scopes = preferencesFor(
         member,

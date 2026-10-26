@@ -53,6 +53,7 @@ describe('holding the trouble ticket notifications back', () => {
         areaId: null,
         title: issue,
         mailboxConversationId: '',
+        providedMemberNumber: null,
         source: 'sheet',
         otherEquipmentDetail: '',
         status: 'Broken',

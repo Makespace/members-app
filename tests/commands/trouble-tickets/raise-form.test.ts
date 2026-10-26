@@ -27,6 +27,7 @@ describe('the report-a-problem form and its command', () => {
       ],
       selectedEquipmentId: O.none,
       selectedAreaId: O.none,
+      publicForm: O.none,
     }).body;
     return body;
   };
@@ -116,6 +117,7 @@ describe("the report-a-problem form's area and equipment picker", () => {
       ],
       selectedEquipmentId: selection.selectedEquipmentId ?? O.none,
       selectedAreaId: selection.selectedAreaId ?? O.none,
+      publicForm: O.none,
     }).body;
 
   // The markup alone, as a browser without the page's script would show it.

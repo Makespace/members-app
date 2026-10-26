@@ -36,6 +36,8 @@ export type TroubleTicketView = {
   submittedAt: Date;
   submittedName: string | null;
   submittedMemberNumber: number | null;
+  // Typed on the public form and not confirmed; see TroubleTicketCreated.
+  providedMemberNumber: number | null;
   submittedEmail: string | null;
   // The mailbox conversation the ticket was raised from, when it was: the
   // email is the ticket's context, so the card links back to it.

@@ -53,6 +53,7 @@ describe('tickets raised from management email', () => {
           areaId,
           title,
           mailboxConversationId: faker.string.alphanumeric(16),
+          providedMemberNumber: null,
           actor: arbitraryActor(),
         })
       )()

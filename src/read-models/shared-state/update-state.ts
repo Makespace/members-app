@@ -1045,6 +1045,7 @@ const _updateState =
             submittedAt: event.submittedAt,
             submittedName: event.submittedName,
             submittedMemberNumber: event.submittedMemberNumber,
+            providedMemberNumber: event.providedMemberNumber,
             submittedEmail: event.submittedEmail,
             submittedEquipment: event.submittedEquipment,
             equipmentId,
@@ -1205,6 +1206,25 @@ const _updateState =
         }
         recordTicketChange(tx, event, {
           equipmentId: event.equipmentId ?? '',
+        });
+        break;
+      }
+      case 'TroubleTicketClaimed': {
+        const rows = tx
+          .update(troubleTicketsTable)
+          .set({
+            submittedMemberNumber: event.memberNumber,
+            providedMemberNumber: null,
+          })
+          .where(eq(troubleTicketsTable.id, event.ticketId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(
+            `Unable to claim unknown trouble ticket '${event.ticketId}'`
+          );
+        }
+        recordTicketChange(tx, event, {
+          memberNumber: event.memberNumber.toString(),
         });
         break;
       }

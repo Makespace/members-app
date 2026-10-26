@@ -12,6 +12,7 @@ import {checkYourMailPage} from './check-your-mail';
 import {oopsPage, isolatedPageTemplate} from '../../templates';
 import {StatusCodes} from 'http-status-codes';
 import {getUserFromSession} from './get-user-from-session';
+import {rememberReturnTo} from './return-to';
 import {Dependencies} from '../../dependencies';
 import {
   html,
@@ -28,6 +29,7 @@ export const logIn =
       getUserFromSession(deps),
       O.match(
         () => {
+          rememberReturnTo(req, req.query.next);
           res.status(StatusCodes.OK).send(logInPage);
         },
         _user => res.redirect('/')
@@ -75,5 +77,6 @@ export const landing = (req: Request, res: Response<CompleteHtmlDocument>) => {
 export const callback = (invalidLinkPath: string) =>
   passport.authenticate(magicLink.name, {
     failureRedirect: invalidLinkPath,
-    successRedirect: '/',
+    // Back to the page that sent them to log in, if one did.
+    successReturnToOrRedirect: '/',
   }) as RequestHandler;

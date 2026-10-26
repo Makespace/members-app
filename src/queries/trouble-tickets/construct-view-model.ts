@@ -46,6 +46,8 @@ const actorName = (actor: Actor, rm: SharedReadModel): string => {
       return 'An administrator';
     case 'system':
       return 'The system';
+    case 'public':
+      return "Somebody who wasn't logged in";
   }
 };
 
@@ -166,6 +168,17 @@ export const buildChangeLog = (
           details: [],
         });
         break;
+      case 'TroubleTicketClaimed':
+        entries.push({
+          status,
+          at,
+          actor,
+          emailedTo: row.emailedTo,
+          quiet: row.details.quiet === 'true',
+          summary: 'added this report to their account',
+          details: [],
+        });
+        break;
       case 'TroubleTicketTitleEdited':
         entries.push({
           status,
@@ -261,6 +274,7 @@ export const toView =
       submittedAt: ticket.submittedAt,
       submittedName: ticket.submittedName,
       submittedMemberNumber: ticket.submittedMemberNumber,
+      providedMemberNumber: ticket.providedMemberNumber,
       submittedEmail: ticket.submittedEmail,
       mailboxConversationId: ticket.mailboxConversationId,
       equipmentName,

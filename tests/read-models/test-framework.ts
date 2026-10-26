@@ -121,6 +121,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   const depsForCommands: Dependencies = {
     conf: {
       PUBLIC_URL: 'http://localhost:8080',
+      TOKEN_SECRET: 'test-token-secret',
       GMAIL_IMPORT_MAILBOX: '',
       MANAGEMENT_TEAM_AREA_ID: '',
       EINK_DISPLAY_TOKEN: TEST_DISPLAY_TOKEN,
@@ -269,6 +270,8 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       troubleTickets: {
         record: frameworkify(commands.troubleTickets.record),
         raise: frameworkify(commands.troubleTickets.raise),
+        raisePublic: frameworkify(commands.troubleTickets.raisePublic),
+        claim: frameworkify(commands.troubleTickets.claim),
         create: frameworkify(commands.troubleTickets.create),
         assign: frameworkify(commands.troubleTickets.assign),
         assignTo: frameworkify(commands.troubleTickets.assignTo),

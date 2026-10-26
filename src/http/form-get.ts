@@ -9,6 +9,7 @@ import {oopsPage, pageTemplate} from '../templates';
 import {Form} from '../types/form';
 import {CompleteHtmlDocument, sanitizeString} from '../types/html';
 import {logInPath} from '../authentication/login/routes';
+import {rememberReturnTo} from '../authentication/login/return-to';
 import { liftActorOrUser } from '../read-models/lift-actor-or-user';
 import { FailureWithStatus, failureWithStatus } from '../types/failure-with-status';
 import { StatusCodes } from 'http-status-codes';
@@ -23,6 +24,7 @@ export const formGet =
   async (req: Request, res: Response<CompleteHtmlDocument>) => {
     const user = getUserFromSession(deps)(req.session);
     if (O.isNone(user)) {
+      rememberReturnTo(req, req.originalUrl);
       res.redirect(logInPath);
       return;
     }

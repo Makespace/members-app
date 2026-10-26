@@ -659,6 +659,7 @@ export const troubleTicketsTable = defineTable(
       submittedAt INTEGER NOT NULL,
       submittedName TEXT,
       submittedMemberNumber INTEGER,
+      providedMemberNumber INTEGER,
       submittedEmail TEXT,
       submittedEquipment TEXT,
       equipmentId TEXT,
@@ -677,6 +678,9 @@ export const troubleTicketsTable = defineTable(
     submittedAt: integer('submittedAt', {mode: 'timestamp_ms'}).notNull(),
     submittedName: text('submittedName'),
     submittedMemberNumber: integer('submittedMemberNumber'),
+    // Typed on the public form and not matched to the reporter; see the
+    // TroubleTicketCreated event.
+    providedMemberNumber: integer('providedMemberNumber'),
     submittedEmail: text('submittedEmail'),
     // The raw equipment string from the form; kept so the equipment link can be
     // re-resolved or overridden later.

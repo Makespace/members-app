@@ -10,6 +10,9 @@ export const Actor = t.union(
     UserActor,
     t.strict({tag: t.literal('token'), token: t.literal('admin')}),
     t.strict({tag: t.literal('system')}),
+    // Somebody who used a public form without logging in. Who they said they
+    // were travels with what they submitted, unverified.
+    t.strict({tag: t.literal('public')}),
   ],
   'tag'
 );
@@ -24,5 +27,7 @@ export const renderActor = (actor: Actor): Html | SanitizedString => {
       return html`Admin via API`;
     case 'user':
       return sanitizeString(actor.user.emailAddress);
+    case 'public':
+      return html`Somebody not logged in`;
   }
 };

@@ -31,6 +31,7 @@ describe('a trouble ticket raised from the mailbox', () => {
       areaId,
       title: 'Laser cutter grinding',
       mailboxConversationId: 'first-message',
+      providedMemberNumber: null,
       actor: systemActor(),
       ...over,
     });
