@@ -11,12 +11,13 @@ import {TroubleTicketStatus} from '../types/trouble-ticket';
 // that does not say otherwise comes out in the mail client's default serif
 // beside text that is not. This is what MJML puts on an mj-text, and these
 // have to match.
-const FONT = 'Ubuntu, Helvetica, Arial, sans-serif';
+// Shared with the training session emails, which are drawn the same way.
+export const FONT = 'Ubuntu, Helvetica, Arial, sans-serif';
 
-const TEXT = '#0b0c0c';
-const BORDER = '#b1b4b6';
+export const TEXT = '#0b0c0c';
+export const BORDER = '#b1b4b6';
 const GREY = '#505a5f';
-const MUTED = '#626a6e';
+export const MUTED = '#626a6e';
 
 const STATUS_COLOUR: Record<TroubleTicketStatus, {background: string; text: string}> = {
   Todo: {background: GREY, text: '#fff'},
@@ -43,7 +44,7 @@ export type TicketEmailSummary = {
   url: string;
 };
 
-const escape = (value: string) =>
+export const escape = (value: string) =>
   value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

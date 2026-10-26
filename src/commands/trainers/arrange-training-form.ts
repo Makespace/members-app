@@ -24,6 +24,11 @@ import {
 import {getEquipmentIdFromForm} from '../equipment/get-equipment-id-from-form';
 import {isEquipmentTrainer} from '../authentication-helpers/is-equipment-trainer';
 import {MAX_DESCRIPTION_LENGTH, MAX_SPACES} from './arrange-training';
+import {
+  DEFAULT_SIGN_UPS_CLOSE_HOURS_BEFORE,
+  describeSignUpsClose,
+  SIGN_UPS_CLOSE_CHOICES,
+} from '../../training-sessions/sign-ups';
 
 // What the form starts out with. A duplicate keeps everything about the
 // session it was copied from except the day, which is the thing that has to
@@ -34,6 +39,7 @@ type Prefill = {
   endTime: string;
   spaces: string;
   description: string;
+  signUpsCloseHoursBefore: number;
 };
 
 type ViewModel = {
@@ -113,6 +119,26 @@ const renderForm = (viewModel: ViewModel) =>
           value="${sanitizeString(viewModel.prefill.spaces)}"
           required
         />
+        <label for="signUpsCloseHoursBefore">Close sign-ups</label>
+        <select name="signUpsCloseHoursBefore" id="signUpsCloseHoursBefore">
+          ${joinHtml(
+            SIGN_UPS_CLOSE_CHOICES.map(
+              hours =>
+                html`<option
+                  value="${safe(String(hours))}"
+                  ${hours === viewModel.prefill.signUpsCloseHoursBefore
+                    ? html`selected`
+                    : html``}
+                >
+                  ${safe(describeSignUpsClose(hours))}
+                </option>`
+            )
+          )}
+        </select>
+        <p class="form-hint">
+          After this, members can no longer sign up themselves, so you know who
+          is coming before you set off.
+        </p>
         <label for="description">Description</label>
         <textarea
           name="description"
@@ -215,6 +241,11 @@ const prefillFor = (
                 endTime: londonTime(session.endsAt),
                 spaces: String(session.spaces),
                 description: session.description,
+                signUpsCloseHoursBefore: Math.round(
+                  (session.startsAt.getTime() -
+                    session.signUpsCloseAt.getTime()) /
+                    (60 * 60 * 1000)
+                ),
               })
             )
           )
@@ -265,6 +296,7 @@ const constructForm: Form<ViewModel>['constructForm'] =
                   deps.conf.PUBLIC_URL,
                   equipment
                 ),
+                signUpsCloseHoursBefore: DEFAULT_SIGN_UPS_CLOSE_HOURS_BEFORE,
               }))
             ),
           }))

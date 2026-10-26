@@ -4,6 +4,7 @@ import {UUID} from 'io-ts-types';
 import {html, Html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {
   TrainingSessionView,
+  personLabel,
   renderDescription,
   sessionDay,
   sessionTimes,
@@ -23,28 +24,60 @@ const arrangeHref = (equipmentId: UUID, from: O.Option<UUID>) =>
     )}`
   );
 
-const sessionRow = (equipmentId: UUID) => (session: TrainingSessionView) => html`
-  <tr>
-    <td>${sessionDay(session)}</td>
-    <td>${sessionTimes(session)}</td>
-    <td>${trainerLabel(session)}</td>
-    <td>${spacesLeft(session)}</td>
-    <td>${renderDescription(session)}</td>
-    <td>
-      <a class="button" href="${arrangeHref(equipmentId, O.some(session.id))}"
-        >Duplicate</a
-      >
-    </td>
-  </tr>
-`;
+// Who is coming, by name: the trainer is deciding whether to set off.
+const bookings = (session: TrainingSessionView): Html =>
+  O.isSome(session.cancelled)
+    ? html`<span class="tag tag--cancelled">Cancelled</span>
+        ${session.cancelled.value.reason === ''
+          ? html``
+          : html`<div class="training-session__reason">
+              ${sanitizeString(session.cancelled.value.reason)}
+            </div>`}`
+    : html`
+        <div>${spacesLeft(session)}</div>
+        ${session.attendees.length === 0
+          ? html``
+          : html`<ul class="training-session__attendees">
+              ${joinHtml(
+                session.attendees.map(
+                  attendee => html`<li>${personLabel(attendee)}</li>`
+                )
+              )}
+            </ul>`}
+      `;
+
+const sessionRow =
+  (equipmentId: UUID, canCancel: boolean) =>
+  (session: TrainingSessionView) => html`
+    <tr>
+      <td>${sessionDay(session)}</td>
+      <td>${sessionTimes(session)}</td>
+      <td>${trainerLabel(session)}</td>
+      <td>${bookings(session)}</td>
+      <td>${renderDescription(session)}</td>
+      <td class="training-session__row-actions">
+        <a
+          class="button"
+          href="${arrangeHref(equipmentId, O.some(session.id))}"
+          >Duplicate</a
+        >
+        ${canCancel && O.isNone(session.cancelled)
+          ? html`<a
+              href="/training-sessions/cancel?sessionId=${safe(session.id)}"
+              >Cancel</a
+            >`
+          : html``}
+      </td>
+    </tr>
+  `;
 
 const sessionTable = (
   equipmentId: UUID,
   sessions: ReadonlyArray<TrainingSessionView>,
-  empty: Html
+  options: {empty: Html; canCancel: boolean}
 ) =>
   sessions.length === 0
-    ? html`<p class="upcoming-trainings__empty">${empty}</p>`
+    ? html`<p class="upcoming-trainings__empty">${options.empty}</p>`
     : html`
         <table class="training-sessions-table">
           <thead>
@@ -52,13 +85,15 @@ const sessionTable = (
               <th>Day</th>
               <th>Time</th>
               <th>Trainer</th>
-              <th>Spaces</th>
+              <th>Booked</th>
               <th>Description</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            ${joinHtml(sessions.map(sessionRow(equipmentId)))}
+            ${joinHtml(
+              sessions.map(sessionRow(equipmentId, options.canCancel))
+            )}
           </tbody>
         </table>
       `;
@@ -85,17 +120,15 @@ export const render = (viewModel: ViewModel): Html => html`
       )}
     </p>
     <h2>Upcoming</h2>
-    ${sessionTable(
-      viewModel.equipment.id,
-      viewModel.upcoming,
-      html`No trainings are arranged yet.`
-    )}
+    ${sessionTable(viewModel.equipment.id, viewModel.upcoming, {
+      empty: html`No trainings are arranged yet.`,
+      canCancel: true,
+    })}
     <h2>Previous</h2>
-    ${sessionTable(
-      viewModel.equipment.id,
-      viewModel.previous,
-      html`No trainings have been arranged in the app before.`
-    )}
+    ${sessionTable(viewModel.equipment.id, viewModel.previous, {
+      empty: html`No trainings have been arranged in the app before.`,
+      canCancel: false,
+    })}
     <p>
       <a href="/equipment/${safe(viewModel.equipment.id)}"
         >Back to ${sanitizeString(viewModel.equipment.name)}</a
