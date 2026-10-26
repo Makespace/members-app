@@ -20,6 +20,7 @@ import {initSharedReadModel} from '../read-models/shared-state';
 import {lastSync} from '../sync-worker/db/last_sync';
 import {getSheetData, getSheetDataByMemberNumber} from '../sync-worker/db/get_sheet_data';
 import { initExternalStateDB } from '../sync-worker/external-state-db';
+import {initRecurlyWriteGateway} from '../recurly-write/recurly-write-gateway';
 
 // pino-http logs every request's headers at debug, and production logs at
 // debug, on to Sentry Logs too: without this the bearer tokens (the admin
@@ -106,6 +107,7 @@ export const initDependencies = (
     lastQuizSync: lastSync(extDB),
     getSheetData: getSheetData(extDB),
     getSheetDataByMemberNumber: getSheetDataByMemberNumber(extDB),
+    recurlyWrite: initRecurlyWriteGateway(logger, conf.RECURLY_WRITE_TOKEN),
     // getPassedQuizResults: getPassedQuizResults(dbClient),
     // getFailedQuizResults: getFailedQuizResults(dbClient),
   };

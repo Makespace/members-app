@@ -100,7 +100,11 @@ The codebase maintains separation between the write side and read side:
 - Three actor types: `system`, `token` (API), `user` (logged in member)
 
 ### External Integrations
-- **Recurly**: Subscription status, payment information
+- **Recurly**: Subscription status, payment information. Read via the sync
+  worker on a read-only key. **Writes are guarded**: every write goes through
+  `deps.recurlyWrite` (`src/recurly-write/`), CI fails on any other route, and
+  pull requests that touch it are flagged - read "Recurly writes" in AGENTS.md
+  before changing anything that could alter a subscription, invoice or card.
 - **Google Sheets**: Training quiz results and trouble tickets
 - **Paxton / Net2**: NOT integrated. Fob access control is deliberately left in
   the door system; no code, config or credential for it exists in this app. See
