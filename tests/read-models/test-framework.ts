@@ -296,6 +296,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         removePurchaser: frameworkify(commands.purchasingArea.removePurchaser),
         setYearBudget: frameworkify(commands.purchasingArea.setYearBudget),
         removeSpend: frameworkify(commands.purchasingArea.removeSpend),
+        activate: frameworkify(commands.purchasingArea.activate),
+        deactivate: frameworkify(commands.purchasingArea.deactivate),
+        remove: frameworkify(commands.purchasingArea.remove),
       },
       purchaseRequest: {
         submit: frameworkify(commands.purchaseRequest.submit),

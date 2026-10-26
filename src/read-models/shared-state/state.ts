@@ -422,6 +422,7 @@ export const purchasingAreasTable = defineTable(
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       yearlyBudgetPence INTEGER NOT NULL,
+      active INTEGER NOT NULL,
       createdAt INTEGER NOT NULL
     )
   `,
@@ -430,6 +431,7 @@ export const purchasingAreasTable = defineTable(
     id: text('id').notNull().primaryKey().$type<UUID>(),
     name: text('name').notNull(),
     yearlyBudgetPence: integer('yearlyBudgetPence').notNull(),
+    active: integer('active', {mode: 'boolean'}).notNull(),
     createdAt: integer('createdAt', {mode: 'timestamp_ms'}).notNull(),
   }
 );

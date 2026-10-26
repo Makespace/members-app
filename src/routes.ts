@@ -141,6 +141,17 @@ export const initRoutes = (
       'remove-spend',
       commands.purchasingArea.removeSpend
     ),
+    ...command(
+      'purchasing-areas',
+      'activate',
+      commands.purchasingArea.activate
+    ),
+    ...command(
+      'purchasing-areas',
+      'deactivate',
+      commands.purchasingArea.deactivate
+    ),
+    ...command('purchasing-areas', 'remove', commands.purchasingArea.remove),
     query('/purchasing-areas/:id', queries.purchasingArea),
     ...command('purchase-requests', 'submit', commands.purchaseRequest.submit),
     ...command('purchase-requests', 'approve', commands.purchaseRequest.approve),

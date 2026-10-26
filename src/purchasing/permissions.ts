@@ -18,6 +18,8 @@ import {BuyerRole} from './buy-directly';
 //   area's purchasers, including whoever sent it, or a super user.
 // - One that needs a proposal needs director approval: super users only.
 // - A purchaser counts only while they still own one of its areas.
+// - Nobody, super users included, can request or buy for a purchasing area
+//   until it is active. Requests already made can still be decided.
 
 const memberNumberOf = (actor: Actor) =>
   actor.tag === 'user' ? O.some(actor.user.memberNumber) : O.none;
@@ -51,15 +53,16 @@ export const canRequestFor = (
   actor: Actor,
   purchasingArea: PurchasingArea
 ) =>
-  isAdminOrSuperUser({actor, rm}) ||
-  pipe(
-    memberNumberOf(actor),
-    O.exists(
-      memberNumber =>
-        ownsAnAreaIn(rm, purchasingArea, memberNumber) ||
-        isActivePurchaser(purchasingArea, memberNumber)
-    )
-  );
+  purchasingArea.active &&
+  (isAdminOrSuperUser({actor, rm}) ||
+    pipe(
+      memberNumberOf(actor),
+      O.exists(
+        memberNumber =>
+          ownsAnAreaIn(rm, purchasingArea, memberNumber) ||
+          isActivePurchaser(purchasingArea, memberNumber)
+      )
+    ));
 
 // Who can buy for it directly; see src/purchasing/buy-directly.ts. The admin
 // API counts as a super user.
@@ -68,7 +71,9 @@ export const buyerRoleFor = (
   actor: Actor,
   purchasingArea: PurchasingArea
 ): BuyerRole =>
-  isAdminOrSuperUser({actor, rm})
+  !purchasingArea.active
+    ? 'neither'
+    : isAdminOrSuperUser({actor, rm})
     ? 'super-user'
     : pipe(
           memberNumberOf(actor),
