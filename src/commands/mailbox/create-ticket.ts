@@ -121,6 +121,7 @@ const ticketFrom = (
     title: input.command.title,
     // Named by its earliest message, whichever id the link used.
     mailboxConversationId: first.gmailMessageId,
+    providedMemberNumber: null,
     actor: input.command.actor,
   });
 };

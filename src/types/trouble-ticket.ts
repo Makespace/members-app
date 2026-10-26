@@ -33,6 +33,9 @@ export const TroubleTicket = t.strict({
   submittedAt: tt.DateFromISOString,
   submittedName: t.union([t.string, t.null]),
   submittedMemberNumber: t.union([t.number, t.null]),
+  // The number somebody typed on the public form, when the ticket could not
+  // be put on that member's account. Unverified.
+  providedMemberNumber: t.union([t.number, t.null]),
   submittedEmail: t.union([t.string, t.null]),
   submittedEquipment: t.union([t.string, t.null]),
   equipmentId: t.union([tt.UUID, t.null]),

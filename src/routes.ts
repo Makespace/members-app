@@ -23,6 +23,8 @@ import {
 } from './trouble-tickets/backfill-timeline';
 import {constantTimeEqual} from './http/constant-time-equal';
 import {bulkQuietResolve} from './trouble-tickets/bulk-quiet-resolve';
+import {publicRaiseRoutes} from './trouble-tickets/public-raise-routes';
+import {publicReportGuard} from './trouble-tickets/public-report-guard';
 import {displayImage, displayImageRoute} from './eink/display-image-handler';
 import * as t from 'io-ts';
 import {v4} from 'uuid';
@@ -580,7 +582,11 @@ export const initRoutes = (
     // Trouble ticket write side. create/set-equipment/edit-title are API-only
     // (bearer token); the status actions have confirmation pages.
     ...api('trouble-tickets', 'create', commands.troubleTickets.create),
-    ...command('trouble-tickets', 'raise', commands.troubleTickets.raise),
+    // The form is public: see public-raise-routes. The API stays as it was.
+    ...publicRaiseRoutes(deps, publicReportGuard(conf)),
+    ...api('trouble-tickets', 'raise', commands.troubleTickets.raise),
+    // The link in the confirmation of a report made without logging in.
+    ...command('trouble-tickets', 'claim', commands.troubleTickets.claim),
     ...command('trouble-tickets', 'assign', commands.troubleTickets.assign),
     ...command(
       'trouble-tickets',

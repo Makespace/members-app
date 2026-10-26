@@ -29,6 +29,8 @@ import {
   ticketNotificationSubject,
   ticketNotificationText,
 } from '../trouble-tickets/notification';
+import {publicConfirmationEmail} from '../trouble-tickets/public-confirmation';
+import {claimUrl} from '../trouble-tickets/claim-token';
 
 // The status changes we notify about.
 const NOTIFY_TYPES = [
@@ -64,6 +66,8 @@ const actorName = (actor: Actor, rm: SharedReadModel): string => {
       return 'An administrator';
     case 'system':
       return 'The system';
+    case 'public':
+      return "Somebody who wasn't logged in";
   }
 };
 
@@ -89,7 +93,8 @@ const buildEmail = (
   isNew: boolean,
   theirs: boolean,
   summaryHtml: string,
-  introduce: boolean
+  introduce: boolean,
+  url: string
 ): Email => {
   const opening = ticketNotificationOpening(ticket.title, isNew, theirs);
   const text = ticketNotificationText(
@@ -98,7 +103,7 @@ const buildEmail = (
     change,
     isNew,
     theirs,
-    ticketUrl(publicUrl, ticket.id)
+    url
   );
   return {
     recipient,
@@ -120,7 +125,7 @@ const buildEmail = (
                 <p>${change.replace(/\n/g, '<br/>')}</p>
               </mj-text>
               <mj-raw>${summaryHtml}</mj-raw>
-              <mj-button background-color="#00703c" href="${ticketUrl(publicUrl, ticket.id)}">View this ticket</mj-button>
+              <mj-button background-color="#00703c" href="${url}">View this ticket</mj-button>
             </mj-column>
           </mj-section>
         </mj-body>
@@ -128,6 +133,17 @@ const buildEmail = (
     `).html,
   };
 };
+
+// What a ticket is called to somebody who might not have written it: the
+// machine, as we name it.
+const neutralTitle = (summary: {
+  equipmentName: string | null;
+  areaName: string | null;
+}): string => summary.equipmentName ?? summary.areaName ?? 'your report';
+
+// Members are asked for their number on forms, and mostly do not know it.
+const memberNumberReminder = (memberNumber: number): string =>
+  `Your member number is ${memberNumber}. It's worth knowing: you can log in to the app with it, and it's the quickest way for anybody at Makespace to find you.`;
 
 // Sends notification emails for any status-change events not yet notified, recording a
 // TroubleTicketNotificationSent event per change so it isn't sent twice. Commits the
@@ -198,9 +214,11 @@ export const notifyTroubleTicketChanges = async (
       O.fromNullable(handedTo),
       O.chain(memberNumber => rm.members.getByMemberNumber(memberNumber))
     );
-    const audience = audienceFor(rm, ticket.value, happening.value).filter(
-      entry => entry.live
-    );
+    const publicReport =
+      event.type === 'TroubleTicketCreated' && event.source === 'public';
+    const audience = audienceFor(rm, ticket.value, happening.value, {
+      publicReport,
+    }).filter(entry => entry.live);
     const recipients = pipe(
       assignee,
       O.match(
@@ -273,24 +291,49 @@ export const notifyTroubleTicketChanges = async (
       actor
     );
     const send = heldBackSendEmail(deps);
+    const summary = summariseForEmail(rm, deps.conf.PUBLIC_URL, ticket.value);
+    const isNew = event.type === 'TroubleTicketCreated';
     for (const entry of recipients) {
       const toAssignee =
         event.type === 'TroubleTicketAssigned' &&
         entry.memberNumber === handedTo;
-      const sent = await send(
-        buildEmail(
-          deps.conf.PUBLIC_URL,
-          entry.email,
-          ticket.value,
-          toAssignee ? describeAssignmentToAssignee(actor, event.comment) : change,
-          event.type === 'TroubleTicketCreated',
-          entry.theirs,
-          ticketCardHtml(
-            summariseForEmail(rm, deps.conf.PUBLIC_URL, ticket.value)
-          ),
-          introduceTo.has(entry.memberNumber)
-        )
-      )();
+      // An address that is not on anybody's account could be anybody's, so
+      // it is never sent back what the reporter typed: not the answers, and
+      // not the title, which starts out as the issue they described. It gets
+      // the link to put the ticket on an account instead of one it could
+      // not open.
+      const stranger = entry.memberNumber <= 0;
+      const words = toAssignee
+        ? describeAssignmentToAssignee(actor, event.comment)
+        : change;
+      const email =
+        publicReport && entry.theirs
+          ? publicConfirmationEmail({
+              recipient: entry.email,
+              equipment: summary.equipmentName ?? summary.areaName,
+              memberNumber: stranger ? null : entry.memberNumber,
+              providedMemberNumber: ticket.value.providedMemberNumber,
+              ticketUrl: ticketUrl(deps.conf.PUBLIC_URL, ticket.value.id),
+              claimUrl: claimUrl(deps.conf, ticket.value.id),
+            })
+          : buildEmail(
+              deps.conf.PUBLIC_URL,
+              entry.email,
+              stranger
+                ? {...ticket.value, title: neutralTitle(summary)}
+                : ticket.value,
+              isNew && entry.theirs && !stranger
+                ? `${words}\n\n${memberNumberReminder(entry.memberNumber)}`
+                : words,
+              isNew,
+              entry.theirs,
+              stranger ? '' : ticketCardHtml(summary),
+              introduceTo.has(entry.memberNumber),
+              stranger
+                ? claimUrl(deps.conf, ticket.value.id)
+                : ticketUrl(deps.conf.PUBLIC_URL, ticket.value.id)
+            );
+      const sent = await send(email)();
       if (E.isLeft(sent)) {
         deps.logger.error(
           "Failed to send trouble ticket notification to '%s': %o",

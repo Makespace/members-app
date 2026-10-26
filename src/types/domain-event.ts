@@ -722,8 +722,10 @@ const TroubleTicketCreated = defineEvent('TroubleTicketCreated', {
   // the 'sheet' fallback on every stored event).
   // 'email': raised by a manager from the imported mailbox. The sender is
   // not a member reporting through the app, so no confirmation is sent.
+  // 'public': raised in the app by somebody who was not logged in. The
+  // confirmation goes to the address they gave, whoever it belongs to.
   source: tt.withFallback(
-    t.keyof({sheet: null, app: null, email: null}),
+    t.keyof({sheet: null, app: null, email: null, public: null}),
     'sheet'
   ),
   equipmentId: tt.withFallback(t.union([tt.UUID, t.null]), null),
@@ -737,6 +739,10 @@ const TroubleTicketCreated = defineEvent('TroubleTicketCreated', {
   // The mailbox conversation it was raised from, by that conversation's id;
   // '' when it was not.
   mailboxConversationId: tt.withFallback(t.string, ''),
+  // The member number typed on the public form. Kept apart from
+  // submittedMemberNumber, which is only set when the ticket is known to be
+  // that member's: a number is easy to type and proves nothing.
+  providedMemberNumber: tt.withFallback(t.union([t.number, t.null]), null),
 });
 
 // --- Trouble ticket status workflow ---
@@ -791,6 +797,13 @@ const TroubleTicketEquipmentSet = defineEvent('TroubleTicketEquipmentSet', {
 const TroubleTicketTitleEdited = defineEvent('TroubleTicketTitleEdited', {
   ticketId: tt.UUID,
   title: t.string,
+});
+
+// A member took a ticket raised without logging in onto their account, by
+// following the link that was emailed to the address on the ticket.
+const TroubleTicketClaimed = defineEvent('TroubleTicketClaimed', {
+  ticketId: tt.UUID,
+  memberNumber: t.number,
 });
 
 // Records that change-notification emails have been sent for a specific
@@ -884,6 +897,7 @@ export const events = [
   TroubleTicketNeedsHelp,
   TroubleTicketEquipmentSet,
   TroubleTicketTitleEdited,
+  TroubleTicketClaimed,
   TroubleTicketNotificationSent,
   MemberNotificationPreferenceSet,
   MemberTicketDigestSent,
@@ -970,6 +984,7 @@ export const DomainEvent = t.union([
   TroubleTicketNeedsHelp.codec,
   TroubleTicketEquipmentSet.codec,
   TroubleTicketTitleEdited.codec,
+  TroubleTicketClaimed.codec,
   TroubleTicketNotificationSent.codec,
   MemberNotificationPreferenceSet.codec,
   MemberTicketDigestSent.codec,

@@ -1,6 +1,9 @@
 import {record} from './record';
 import {raise} from './raise';
 import {raiseForm} from './raise-form';
+import {raisePublic} from './raise-public';
+import {claim} from './claim';
+import {claimForm} from './claim-form';
 import {create} from './create';
 import {assign} from './assign';
 import {assignTo} from './assign-to';
@@ -23,6 +26,9 @@ import {
 export const troubleTickets = {
   record,
   raise: {...raise, ...raiseForm},
+  // Wired by hand: the same page as raise, for somebody not logged in.
+  raisePublic,
+  claim: {...claim, ...claimForm},
   create,
   assign: {...assign, ...assignForm},
   assignTo: {...assignTo, ...assignToForm},

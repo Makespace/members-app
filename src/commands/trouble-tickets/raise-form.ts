@@ -20,6 +20,12 @@ import {
   equipmentPickerChoices,
 } from '../../templates/equipment-picker';
 import {MACHINE_STATUSES, NOT_LISTED} from './raise';
+import {SharedReadModel} from '../../read-models/shared-state';
+import {
+  FORM_TOKEN_FIELD,
+  HONEYPOT_FIELD,
+} from '../../trouble-tickets/public-report-guard';
+import {logInPath} from '../../authentication/login/routes';
 
 // selectedEquipmentId is preselected by a QR code or a link from an
 // equipment page.
@@ -27,6 +33,9 @@ type ViewModel = EquipmentPickerModel & {
   // A QR code on an area's noticeboard names the area rather than one
   // machine, so the area is chosen and its equipment listed ready to pick.
   selectedAreaId: O.Option<string>;
+  // Somebody not logged in is asked who they are, and the form carries what
+  // the spam checks need. See public-report-guard.
+  publicForm: O.Option<{formToken: string}>;
 };
 
 // The one word the form and the command agree on for "not listed".
@@ -170,15 +179,100 @@ const question = (
   </div>
 `;
 
-const renderForm = (viewModel: ViewModel) =>
+// Where a link back to this page after logging in would land: the same
+// machine or area, if the QR code named one.
+const raisePathFor = (viewModel: ViewModel) =>
+  pipe(
+    viewModel.selectedEquipmentId,
+    O.map(id => `/trouble-tickets/raise?equipmentId=${id}`),
+    O.alt(() =>
+      pipe(
+        viewModel.selectedAreaId,
+        O.map(id => `/trouble-tickets/raise?areaId=${id}`)
+      )
+    ),
+    O.getOrElse(() => '/trouble-tickets/raise')
+  );
+
+const intro = (viewModel: ViewModel) =>
+  O.isNone(viewModel.publicForm)
+    ? html`<p>
+        Owners of the equipment get your report and will pick it up from
+        here. You'll get an email confirming it.
+      </p>`
+    : html`<p>
+          Owners of the equipment get your report and will pick it up from
+          here.
+        </p>
+        <p class="tt-form__log-in">
+          You're not logged in.
+          <a
+            href="${safe(logInPath)}?next=${safe(
+              encodeURIComponent(raisePathFor(viewModel))
+            )}"
+            >Log in</a
+          >
+          to have the report tracked on your account, or just fill this in.
+        </p>`;
+
+// Who is reporting, for somebody not logged in. All optional: a report with
+// no name at all is still worth having.
+const aboutYou = (viewModel: ViewModel) =>
+  pipe(
+    viewModel.publicForm,
+    O.match(
+      () => html``,
+      ({formToken}) => html`
+        <fieldset class="stack tt-form__question tt-form__about-you">
+          <legend><strong>About you</strong></legend>
+          <small class="tt-form__hint"
+            >So the owners can follow up with you. Give your email address and
+            we'll send you a confirmation.</small
+          >
+          <label class="stack">
+            <span>Your name</span>
+            <input type="text" name="reporterName" autocomplete="name" />
+          </label>
+          <label class="stack">
+            <span>Email address</span>
+            <input type="email" name="reporterEmail" autocomplete="email" />
+          </label>
+          <label class="stack">
+            <span>Member number, if you know it</span>
+            <input
+              type="text"
+              name="reporterMemberNumber"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              autocomplete="off"
+            />
+          </label>
+        </fieldset>
+        <div class="tt-form__trap" aria-hidden="true">
+          <label
+            >Leave this empty
+            <input
+              type="text"
+              name="${safe(HONEYPOT_FIELD)}"
+              tabindex="-1"
+              autocomplete="off"
+          /></label>
+        </div>
+        <input
+          type="hidden"
+          name="${safe(FORM_TOKEN_FIELD)}"
+          value="${sanitizeString(formToken)}"
+        />
+      `
+    )
+  );
+
+export const renderRaiseForm = (viewModel: ViewModel) =>
   pipe(
     html`
       <div class="stack tt-form">
         <h1>Report a problem with a machine</h1>
-        <p>
-          Owners of the equipment get your report and will pick it up from
-          here. You'll get an email confirming it.
-        </p>
+        ${intro(viewModel)}
 
         <form action="/trouble-tickets/raise" method="post" class="stack">
           <div class="stack tt-form__question">
@@ -259,6 +353,8 @@ const renderForm = (viewModel: ViewModel) =>
             files or pictures, please email them to
             <a href="mailto:owners@makespace.org">owners@makespace.org</a>.
           </p>
+
+          ${aboutYou(viewModel)}
 
           <p class="tt-form__closing">
             Thanks for letting us know about the issue. One of the owners of
@@ -463,31 +559,39 @@ const renderForm = (viewModel: ViewModel) =>
     toLoggedInContent(safe('Report a problem'))
   );
 
+export const raiseFormViewModel = (
+  input: unknown,
+  readModel: SharedReadModel,
+  publicForm: ViewModel['publicForm']
+): ViewModel => {
+  const selected = pipe(
+    input,
+    t.partial({equipmentId: UUID}).decode,
+    E.map(({equipmentId}) => O.fromNullable(equipmentId)),
+    E.getOrElse<unknown, O.Option<string>>(() => O.none)
+  );
+  const selectedArea = pipe(
+    input,
+    t.partial({areaId: UUID}).decode,
+    E.map(({areaId}) => O.fromNullable(areaId)),
+    E.getOrElse<unknown, O.Option<string>>(() => O.none)
+  );
+  return {
+    // Retired equipment cannot be reported on, and is not offered.
+    ...equipmentPickerChoices(readModel),
+    selectedEquipmentId: selected,
+    selectedAreaId: selectedArea,
+    publicForm,
+  };
+};
+
 const constructForm: Form<ViewModel>['constructForm'] =
   input =>
-  ({readModel}) => {
-    const selected = pipe(
-      input,
-      t.partial({equipmentId: UUID}).decode,
-      E.map(({equipmentId}) => O.fromNullable(equipmentId)),
-      E.getOrElse<unknown, O.Option<string>>(() => O.none)
-    );
-    const selectedArea = pipe(
-      input,
-      t.partial({areaId: UUID}).decode,
-      E.map(({areaId}) => O.fromNullable(areaId)),
-      E.getOrElse<unknown, O.Option<string>>(() => O.none)
-    );
-    return TE.right({
-      // Retired equipment cannot be reported on, and is not offered.
-      ...equipmentPickerChoices(readModel),
-      selectedEquipmentId: selected,
-      selectedAreaId: selectedArea,
-    });
-  };
+  ({readModel}) =>
+    TE.right(raiseFormViewModel(input, readModel, O.none));
 
 export const raiseForm: Form<ViewModel> = {
-  renderForm,
+  renderForm: renderRaiseForm,
   constructForm,
   formIsAuthorized: null,
 };

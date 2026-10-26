@@ -102,6 +102,7 @@ export const planTroubleTicketBackfill =
           areaId: null,
           title: '',
           mailboxConversationId: '',
+          providedMemberNumber: null,
           actor: BACKFILL_ACTOR,
         }),
         // Place the event at its real historical time, not the run time, so

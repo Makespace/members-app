@@ -53,6 +53,7 @@ describe('introducing the notifications to somebody new', () => {
         areaId: null,
         title: issue,
         mailboxConversationId: '',
+        providedMemberNumber: null,
         source: 'sheet',
         otherEquipmentDetail: '',
         status: 'Broken',

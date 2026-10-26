@@ -46,6 +46,7 @@ const process: Command<RecordTroubleTicket>['process'] = input =>
             areaId: null,
             title: '',
             mailboxConversationId: '',
+            providedMemberNumber: null,
           })
         )
   );

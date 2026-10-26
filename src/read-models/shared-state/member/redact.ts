@@ -25,6 +25,8 @@ const isPrivileged = (actor: Actor) => (members: MultipleMembers) => {
       return true;
     case 'system':
       return true;
+    case 'public':
+      return false;
     case 'user': {
       const viewingMember = members.get(actor.user.memberNumber);
       return viewingMember !== undefined && viewingMember.isSuperUser;

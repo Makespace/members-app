@@ -31,6 +31,7 @@ const ticket = (
   equipmentId: null,
   areaId: null,
   mailboxConversationId: null,
+  providedMemberNumber: null,
   assignedMemberNumbers,
   response: {
     otherEquipmentDetail: '',

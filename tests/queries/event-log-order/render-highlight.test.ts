@@ -44,6 +44,7 @@ const ticket = (submittedAtMs: number): DomainEvent =>
         areaId: null,
         title: '',
         mailboxConversationId: '',
+        providedMemberNumber: null,
     id: faker.string.uuid() as UUID,
     rowHash: faker.string.alphanumeric(64),
     sheetId: 'sheet',
