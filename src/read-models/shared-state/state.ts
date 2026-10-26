@@ -557,6 +557,8 @@ export const purchaseRequestsTable = defineTable(
       boughtAt INTEGER,
       boughtByMemberNumber INTEGER,
       actualCostPence INTEGER,
+      invoiceSentAt INTEGER,
+      invoiceSentByMemberNumber INTEGER,
       outcome TEXT NOT NULL,
       approval TEXT NOT NULL,
       outcomeReason TEXT NOT NULL,
@@ -596,6 +598,9 @@ export const purchaseRequestsTable = defineTable(
     boughtAt: integer('boughtAt', {mode: 'timestamp_ms'}),
     boughtByMemberNumber: integer('boughtByMemberNumber'),
     actualCostPence: integer('actualCostPence'),
+    // Once bought, its invoice passed on to the accountants: when, by whom.
+    invoiceSentAt: integer('invoiceSentAt', {mode: 'timestamp_ms'}),
+    invoiceSentByMemberNumber: integer('invoiceSentByMemberNumber'),
     outcome: text('outcome').notNull().$type<PurchaseRequestOutcome>(),
     approval: text('approval').notNull().$type<PurchaseApproval>(),
     outcomeReason: text('outcomeReason').notNull(),

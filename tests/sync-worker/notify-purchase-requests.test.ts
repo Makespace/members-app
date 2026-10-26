@@ -10,6 +10,7 @@ import {
 } from '../../src/sync-worker/notify_purchase_requests';
 import {TestFramework, initTestFramework} from '../read-models/test-framework';
 import {markBought} from '../../src/commands/purchase-request/mark-bought';
+import {markInvoiceSent} from '../../src/commands/purchase-request/mark-invoice-sent';
 
 // Who hears about a purchase request, and what they're told, end to end:
 // requests go in through the commands, and the notifier sends the emails.
@@ -322,6 +323,40 @@ describe('purchase request notifications', () => {
         });
       expect(authorised(PURCHASER)).toBe(false);
       expect(authorised(SUPER_USER)).toBe(true);
+    });
+  });
+
+  describe("passing a purchase's invoice on to the accountants", () => {
+    const canMark = (memberNumber: number, id: UUID) =>
+      markInvoiceSent.isAuthorized({
+        actor: asMember(memberNumber),
+        rm: framework.sharedReadModel,
+        input: {id},
+      });
+    const getRequest = (id: UUID) =>
+      framework.sharedReadModel.purchasing.getRequest(id);
+
+    it('is needed once bought, and can be marked by the buyer, purchasers or super users', async () => {
+      const id = await request(
+        '0',
+        {purchases: undefined, buyingDirectly: true, amount: '50'},
+        PURCHASER
+      );
+      expect(canMark(PURCHASER, id)).toBe(true);
+      expect(canMark(SUPER_USER, id)).toBe(true);
+      expect(canMark(METAL_OWNER, id)).toBe(false);
+      await framework.commands.purchaseRequest.markInvoiceSent({
+        id,
+        actor: asMember(PURCHASER),
+      });
+      expect(getRequest(id)).toMatchObject({
+        value: {invoiceSentByMemberNumber: {value: PURCHASER}},
+      });
+    });
+
+    it("isn't needed before something is bought", async () => {
+      const id = await request('50');
+      expect(canMark(SUPER_USER, id)).toBe(false);
     });
   });
 

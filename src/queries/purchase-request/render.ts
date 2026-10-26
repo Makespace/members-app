@@ -32,6 +32,10 @@ type ViewModel = {
   canDecide: boolean;
   // Who marked it bought, once someone has.
   buyerName: O.Option<string>;
+  // Who passed its invoice on to the accountants, once someone has.
+  invoiceSenderName: O.Option<string>;
+  // Whoever bought it, the area's purchasers and super users.
+  canMarkInvoiceSent: boolean;
 };
 
 const money = (pence: number) => sanitizeString(formatPence(pence));
@@ -66,6 +70,43 @@ const renderBought = (request: PurchaseRequest, buyerName: O.Option<string>) =>
         <strong>Next:</strong> one of the area's purchasers (or a super user)
         buys it and marks it as bought.
       </p>`;
+
+// Once bought: whether its invoice has gone to the accountants.
+const renderInvoice = (
+  request: PurchaseRequest,
+  senderName: O.Option<string>,
+  canMark: boolean
+) =>
+  request.status !== 'bought' && request.status !== 'bought-directly'
+    ? html``
+    : pipe(
+        request.invoiceSentAt,
+        O.match(
+          () => html`<p>
+              <strong>Invoice:</strong> not yet sent to the accountants.
+            </p>
+            ${canMark
+              ? html`<div>
+                  <a
+                    class="button"
+                    href="/purchase-requests/mark-invoice-sent?request=${request.id}"
+                    >Mark invoice as sent</a
+                  >
+                </div>`
+              : html``}`,
+          at => html`<p>
+            <strong>Invoice:</strong> sent to the accountants
+            ${pipe(
+              senderName,
+              O.match(
+                () => html``,
+                name => html`by ${sanitizeString(name)}`
+              )
+            )}
+            on ${displayDate(DateTime.fromJSDate(at))}.
+          </p>`
+        )
+      );
 
 const renderDecision = (
   request: PurchaseRequest,
@@ -161,6 +202,8 @@ export const render = ({
   deciderName,
   canDecide,
   buyerName,
+  invoiceSenderName,
+  canMarkInvoiceSent,
 }: ViewModel) => {
   const areaName = pipe(
     purchasingArea,
@@ -250,6 +293,7 @@ export const render = ({
           O.match(() => html``, renderProposal)
         )}
         ${renderDecision(request, deciderName, submitterName, buyerName)}
+        ${renderInvoice(request, invoiceSenderName, canMarkInvoiceSent)}
         ${canDecide && request.status === 'awaiting-approval'
           ? renderDecide(request)
           : html``}
