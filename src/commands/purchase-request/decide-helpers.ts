@@ -8,7 +8,11 @@ import {formatValidationErrors} from 'io-ts-reporters';
 import {SharedReadModel} from '../../read-models/shared-state';
 import {Actor, User} from '../../types';
 import {liftActorOrUser} from '../../read-models/lift-actor-or-user';
-import {canDecide} from '../../purchasing/permissions';
+import {
+  canDecide,
+  canMarkInvoiceSent,
+  needsInvoiceSent,
+} from '../../purchasing/permissions';
 import {PositivePenceFromPoundsString} from '../../types/money';
 import {
   PurchaseRequest,
@@ -24,7 +28,7 @@ export const requestPath = (id: tt.UUID) => `/purchase-requests/view/${id}`;
 // Where an approve or decline form sends the browser once saved: back to
 // the request.
 export const decisionAction = (
-  verb: 'approve' | 'decline' | 'mark-bought',
+  verb: 'approve' | 'decline' | 'mark-bought' | 'mark-invoice-sent',
   id: tt.UUID
 ) =>
   `/purchase-requests/${verb}?next=${encodeURIComponent(requestPath(id))}`;
@@ -70,7 +74,12 @@ const fromParams =
     find: (
       rm: SharedReadModel,
       id: tt.UUID
-    ) => E.Either<FailureWithStatus, PurchaseRequest>
+    ) => E.Either<FailureWithStatus, PurchaseRequest>,
+    allowed: (
+      rm: SharedReadModel,
+      actor: Actor,
+      request: PurchaseRequest
+    ) => boolean = canDecide
   ) =>
   (
     rm: SharedReadModel,
@@ -88,7 +97,7 @@ const fromParams =
     ),
     E.chain(({request}) => find(rm, request)),
     E.filterOrElse(
-      request => canDecide(rm, liftActorOrUser(user), request),
+      request => allowed(rm, liftActorOrUser(user), request),
       () =>
         failureWithStatus(
           'You are not authorized to perform this action',
@@ -109,6 +118,26 @@ export const decisionFromParams = fromParams((rm, id) =>
 export const purchaseFromParams = fromParams((rm, id) =>
   requestAwaitingPurchase(rm, id)
 );
+export const invoiceFromParams = fromParams(
+  (rm, id) => requestAwaitingInvoice(rm, id),
+  canMarkInvoiceSent
+);
+
+// A bought purchase whose invoice hasn't been passed on yet.
+export const requestAwaitingInvoice = (
+  rm: SharedReadModel,
+  id: tt.UUID
+): E.Either<FailureWithStatus, PurchaseRequest> =>
+  pipe(
+    rm.purchasing.getRequest(id),
+    E.fromOption(notFound),
+    E.filterOrElse(needsInvoiceSent, () =>
+      failureWithStatus(
+        "Only a bought purchase whose invoice hasn't been sent yet can be marked as sent.",
+        StatusCodes.BAD_REQUEST
+      )()
+    )
+  );
 
 // What it really cost, if given and different from what was asked; null
 // means the requested amount stands.

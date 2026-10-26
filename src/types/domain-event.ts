@@ -311,6 +311,12 @@ const PurchaseRequestApproved = defineEvent('PurchaseRequestApproved', {
   actualCostPence: tt.withFallback(t.union([t.number, t.null]), null),
 });
 
+// A bought purchase's invoice passed on to the accountants, so they can
+// track the spending.
+const PurchaseRequestInvoiceSent = defineEvent('PurchaseRequestInvoiceSent', {
+  id: tt.UUID,
+});
+
 // An approved purchase request bought by a purchaser or super user.
 const PurchaseRequestBought = defineEvent('PurchaseRequestBought', {
   id: tt.UUID,
@@ -908,6 +914,7 @@ export const events = [
   PurchaseRequestApproved,
   PurchaseRequestDeclined,
   PurchaseRequestBought,
+  PurchaseRequestInvoiceSent,
   PurchaseRequestNotificationSent,
   SuperUserDeclared,
   SuperUserRevoked,
@@ -1000,6 +1007,7 @@ export const DomainEvent = t.union([
   PurchaseRequestApproved.codec,
   PurchaseRequestDeclined.codec,
   PurchaseRequestBought.codec,
+  PurchaseRequestInvoiceSent.codec,
   PurchaseRequestNotificationSent.codec,
   SuperUserDeclared.codec,
   SuperUserRevoked.codec,

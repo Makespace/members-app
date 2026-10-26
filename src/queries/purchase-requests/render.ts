@@ -111,8 +111,9 @@ export const render = (viewModel: ViewModel) => {
         ? html`<section class="stack">
             <h2>Waiting for you (${viewModel.waitingForViewer.length})</h2>
             <p>
-              You can approve or decline these, or mark them as bought once
-              approved.
+              Approve or decline these, mark them as bought once approved, or,
+              for what you've bought, pass the invoice on to the accountants
+              and mark it as sent.
             </p>
             ${renderTable(
               [...viewModel.waitingForViewer].reverse(),

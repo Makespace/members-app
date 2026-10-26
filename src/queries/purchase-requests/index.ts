@@ -5,9 +5,11 @@ import {Query} from '../query';
 import {safe, toLoggedInContent} from '../../types/html';
 import {render} from './render';
 import {
+  buyerOf,
   buyerRoleFor,
   canDecide,
   canRequestFor,
+  needsInvoiceSent,
 } from '../../purchasing/permissions';
 import {liftActorOrUser} from '../../read-models/lift-actor-or-user';
 
@@ -32,12 +34,18 @@ export const purchaseRequests: Query = deps => user => {
         viewer,
         O.exists(member => member.isSuperUser || member.ownerOf.length > 0)
       ),
-      // To approve or decline, and approved ones to buy.
+      // To approve or decline, approved ones to buy, and what they bought
+      // whose invoice still needs passing on to the accountants.
       waitingForViewer: requests.filter(
         ({request}) =>
-          (request.status === 'awaiting-approval' ||
+          ((request.status === 'awaiting-approval' ||
             request.status === 'approved') &&
-          canDecide(rm, liftActorOrUser(user), request)
+            canDecide(rm, liftActorOrUser(user), request)) ||
+          (needsInvoiceSent(request) &&
+            pipe(
+              buyerOf(request),
+              O.exists(buyer => buyer === user.memberNumber)
+            ))
       ),
       canRequest: rm.purchasing
         .getAll(new Date())

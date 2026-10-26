@@ -101,3 +101,43 @@ export const canDecide = (
 // approve it, so a purchaser can't record buying something that needed
 // director approval - a manager or director buys that.
 export const canMarkBought = canDecide;
+
+// Whoever bought it: who marked it bought, or who bought it directly.
+export const buyerOf = (request: PurchaseRequest): O.Option<number> => {
+  switch (request.status) {
+    case 'bought':
+      return request.boughtByMemberNumber;
+    case 'bought-directly':
+      return O.some(request.submittedByMemberNumber);
+    default:
+      return O.none;
+  }
+};
+
+// A bought purchase whose invoice still needs passing on to the accountants.
+export const needsInvoiceSent = (request: PurchaseRequest) =>
+  O.isSome(buyerOf(request)) && O.isNone(request.invoiceSentAt);
+
+// Who can mark its invoice as sent: whoever bought it, the area's
+// purchasers, and super users.
+export const canMarkInvoiceSent = (
+  rm: SharedReadModel,
+  actor: Actor,
+  request: PurchaseRequest
+) =>
+  O.isSome(buyerOf(request)) &&
+  (isAdminOrSuperUser({actor, rm}) ||
+    pipe(
+      memberNumberOf(actor),
+      O.exists(
+        memberNumber =>
+          pipe(
+            buyerOf(request),
+            O.exists(buyer => buyer === memberNumber)
+          ) ||
+          pipe(
+            rm.purchasing.get(request.purchasingAreaId, new Date()),
+            O.exists(area => isActivePurchaser(area, memberNumber))
+          )
+      )
+    ));

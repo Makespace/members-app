@@ -239,6 +239,9 @@ export type PurchaseRequest = {
   boughtByMemberNumber: O.Option<number>;
   // What it really cost, when different from totalPence.
   actualCostPence: O.Option<number>;
+  // Once bought, its invoice passed on to the accountants.
+  invoiceSentAt: O.Option<Date>;
+  invoiceSentByMemberNumber: O.Option<number>;
   outcome: PurchaseRequestOutcome;
   approval: PurchaseApproval;
   outcomeReason: string;

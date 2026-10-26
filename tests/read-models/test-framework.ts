@@ -302,6 +302,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         approve: frameworkify(commands.purchaseRequest.approve),
         decline: frameworkify(commands.purchaseRequest.decline),
         markBought: frameworkify(commands.purchaseRequest.markBought),
+        markInvoiceSent: frameworkify(commands.purchaseRequest.markInvoiceSent),
       },
       trainingSessions: {
         signUp: frameworkify(commands.trainingSessions.signUp),
