@@ -95,6 +95,22 @@ const getYearBudget =
       O.map(row => row.yearlyBudgetPence)
     );
 
+// Whether anything has ever been requested or recorded against it, in any
+// year; such a purchasing area can't be removed.
+export const purchasingAreaHasHistory =
+  (db: BetterSQLite3Database) =>
+  (purchasingAreaId: UUID): boolean =>
+    db
+      .select({id: purchaseRequestsTable.id})
+      .from(purchaseRequestsTable)
+      .where(eq(purchaseRequestsTable.purchasingAreaId, purchasingAreaId))
+      .get() !== undefined ||
+    db
+      .select({id: purchasingAreaSpendTable.id})
+      .from(purchasingAreaSpendTable)
+      .where(eq(purchasingAreaSpendTable.purchasingAreaId, purchasingAreaId))
+      .get() !== undefined;
+
 const getRecordedSpend =
   (db: BetterSQLite3Database) =>
   (purchasingAreaId: UUID, budgetYear: number): ReadonlyArray<RecordedSpend> =>
@@ -191,6 +207,7 @@ const expand =
     return {
       id: row.id,
       name: row.name,
+      active: row.active,
       yearlyBudgetPence,
       usualBudgetPence: row.yearlyBudgetPence,
       recordedSpend,

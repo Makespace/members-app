@@ -190,6 +190,26 @@ const PurchasingAreaCreated = defineEvent('PurchasingAreaCreated', {
   id: tt.UUID,
   name: t.string,
   yearlyBudgetPence: t.number,
+  // Whether it takes purchase requests and counts its budget as live. New
+  // ones start inactive so they can be set up first; ones created before
+  // activation existed were already in use, so they count as active.
+  active: tt.withFallback(t.boolean, true),
+});
+
+// A super user turns a purchasing area on or off. Only an active one takes
+// new purchase requests; requests already made carry on either way.
+const PurchasingAreaActivated = defineEvent('PurchasingAreaActivated', {
+  purchasingAreaId: tt.UUID,
+});
+
+const PurchasingAreaDeactivated = defineEvent('PurchasingAreaDeactivated', {
+  purchasingAreaId: tt.UUID,
+});
+
+// Only one with no purchase requests or recorded spending can be removed, so
+// nothing is left pointing at it. Its areas and purchasers go with it.
+const PurchasingAreaRemoved = defineEvent('PurchasingAreaRemoved', {
+  purchasingAreaId: tt.UUID,
 });
 
 const PurchasingAreaRenamed = defineEvent('PurchasingAreaRenamed', {
@@ -895,6 +915,9 @@ export const events = [
   OwnerAdded,
   OwnerRemoved,
   PurchasingAreaCreated,
+  PurchasingAreaActivated,
+  PurchasingAreaDeactivated,
+  PurchasingAreaRemoved,
   PurchasingAreaRenamed,
   PurchasingAreaBudgetSet,
   PurchasingAreaYearBudgetSet,
@@ -987,6 +1010,9 @@ export const DomainEvent = t.union([
   OwnerAdded.codec,
   OwnerRemoved.codec,
   PurchasingAreaCreated.codec,
+  PurchasingAreaActivated.codec,
+  PurchasingAreaDeactivated.codec,
+  PurchasingAreaRemoved.codec,
   PurchasingAreaRenamed.codec,
   PurchasingAreaBudgetSet.codec,
   PurchasingAreaYearBudgetSet.codec,

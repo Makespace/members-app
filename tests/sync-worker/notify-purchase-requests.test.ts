@@ -134,6 +134,9 @@ describe('purchase request notifications', () => {
       name: 'Wood Shop' as NonEmptyString,
       yearlyBudget: 500_000,
     } as never);
+    await framework.commands.purchasingArea.activate({
+      purchasingAreaId,
+    } as never);
     await framework.commands.purchasingArea.assignArea({
       purchasingAreaId,
       areaId: woodArea,

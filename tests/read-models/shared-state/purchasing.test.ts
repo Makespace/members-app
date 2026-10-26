@@ -80,6 +80,7 @@ describe('purchasing areas in the read model', () => {
         id: purchasingAreaId,
         name: 'Craft & Art',
         yearlyBudgetPence: 150_000,
+        active: true,
       })
     );
   });
@@ -93,6 +94,7 @@ describe('purchasing areas in the read model', () => {
       expect(get()).toStrictEqual({
         id: purchasingAreaId,
         name: 'Craft & Art',
+        active: true,
         yearlyBudgetPence: 150_000,
         usualBudgetPence: 150_000,
         areas: [],
@@ -110,6 +112,80 @@ describe('purchasing areas in the read model', () => {
       expect(
         framework.sharedReadModel.purchasing.getAll(now).map(pa => pa.id)
       ).toStrictEqual([purchasingAreaId]);
+    });
+  });
+
+  describe('when deactivated', () => {
+    beforeEach(() => {
+      insert(
+        constructEvent('PurchasingAreaDeactivated')({
+          actor: systemActor(),
+          purchasingAreaId,
+        })
+      );
+    });
+
+    it('is not active', () => {
+      expect(get().active).toBe(false);
+    });
+
+    describe('and activated again', () => {
+      beforeEach(() => {
+        insert(
+          constructEvent('PurchasingAreaActivated')({
+            actor: systemActor(),
+            purchasingAreaId,
+          })
+        );
+      });
+
+      it('is active', () => {
+        expect(get().active).toBe(true);
+      });
+    });
+  });
+
+  describe('when removed', () => {
+    beforeEach(() => {
+      insert(
+        constructEvent('AreaAssignedToPurchasingArea')({
+          actor: systemActor(),
+          purchasingAreaId,
+          areaId: craftRoomId,
+        }),
+        constructEvent('PurchasingAreaRemoved')({
+          actor: systemActor(),
+          purchasingAreaId,
+        })
+      );
+    });
+
+    it('is gone', () => {
+      expect(
+        framework.sharedReadModel.purchasing.get(purchasingAreaId, now)
+      ).toStrictEqual(O.none);
+      expect(framework.sharedReadModel.purchasing.getAll(now)).toStrictEqual([]);
+    });
+
+    it('leaves its areas in no purchasing area', () => {
+      expect(
+        framework.sharedReadModel.purchasing.getForArea(craftRoomId)
+      ).toStrictEqual(O.none);
+    });
+  });
+
+  describe('history', () => {
+    it('is empty for a new purchasing area', () => {
+      expect(
+        framework.sharedReadModel.purchasing.hasHistory(purchasingAreaId)
+      ).toBe(false);
+    });
+
+    it('includes purchase requests from any year', () => {
+      insert(submitted('budget', 1_000, 2025));
+      expect(
+        framework.sharedReadModel.purchasing.hasHistory(purchasingAreaId)
+      ).toBe(true);
     });
   });
 

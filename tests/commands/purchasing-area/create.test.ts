@@ -40,7 +40,7 @@ describe('create purchasing area', () => {
   });
 
   describe('when it does not exist yet', () => {
-    it('creates it, with the budget in pence', async () => {
+    it('creates it inactive, with the budget in pence', async () => {
       const result = await getTaskEitherRightOrFail(
         create.process({command, rm: framework.sharedReadModel})
       );
@@ -51,6 +51,7 @@ describe('create purchasing area', () => {
             id,
             name: 'Craft & Art',
             yearlyBudgetPence: 150_000,
+            active: false,
           })
         )
       );
@@ -65,6 +66,7 @@ describe('create purchasing area', () => {
           id,
           name: 'Craft & Art',
           yearlyBudgetPence: 150_000,
+          active: true,
         })
       );
       const result = await getTaskEitherRightOrFail(
