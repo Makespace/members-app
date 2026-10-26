@@ -57,7 +57,10 @@ const listOf = (names: ReadonlyArray<string>) =>
 const otherReasons = ({
   affectedAreaNames,
   healthAndSafetyRisk,
-}: ClassificationInput): ReadonlyArray<string> => [
+}: Pick<
+  ClassificationInput,
+  'affectedAreaNames' | 'healthAndSafetyRisk'
+>): ReadonlyArray<string> => [
   ...(affectedAreaNames.length > 0
     ? [
         `It affects ${listOf(affectedAreaNames)} too, so it needs a proposal giving their owners a chance to give their input.`,
@@ -131,3 +134,20 @@ export const classifyPurchase = (
     ),
   };
 };
+
+// Why it will need a proposal whatever it costs, known from the answers
+// about the request before any costs are given: it affects other areas, it
+// presents a health and safety risk, or - unless members pay for it - the
+// yearly budget is already used up, so any cost takes spending over it.
+// Empty when it depends on the cost. classifyPurchase still decides.
+export const earlyProposalReasons = (
+  input: Omit<ClassificationInput, 'amountPence' | 'approvedOutsideBudget'>
+): ReadonlyArray<string> => [
+  ...(!input.isMemberPaidConsumable &&
+  input.spentThisYearPence >= input.yearlyBudgetPence
+    ? [
+        `This year's spending is already ${formatPence(input.spentThisYearPence)}, using up the yearly budget of ${formatPence(input.yearlyBudgetPence)}, so anything more from it needs a proposal.`,
+      ]
+    : []),
+  ...otherReasons(input),
+];

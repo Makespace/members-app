@@ -1,5 +1,6 @@
 import {
   classifyPurchase,
+  earlyProposalReasons,
   PROPOSAL_THRESHOLD_PENCE,
 } from '../../src/purchasing/classify-purchase';
 
@@ -235,6 +236,80 @@ describe('classifyPurchase', () => {
       expect(
         classifyPurchase({...within, affectedAreaNames: ['A', 'B']}).reason
       ).toContain('It affects A and B too');
+    });
+  });
+});
+
+describe('earlyProposalReasons', () => {
+  const nothingYet = {
+    isMemberPaidConsumable: false,
+    affectedAreaNames: [],
+    healthAndSafetyRisk: false,
+    yearlyBudgetPence: 100_000,
+    spentThisYearPence: 40_000,
+  };
+
+  it('has none when it depends on the cost', () => {
+    expect(earlyProposalReasons(nothingYet)).toStrictEqual([]);
+  });
+
+  it('gives the same reason as the result for affecting other areas', () => {
+    const reasons = earlyProposalReasons({
+      ...nothingYet,
+      affectedAreaNames: ['Textiles'],
+    });
+    expect(reasons).toHaveLength(1);
+    expect(
+      classifyPurchase({
+        ...nothingYet,
+        affectedAreaNames: ['Textiles'],
+        amountPence: 1_000,
+      }).reason
+    ).toContain(reasons[0]);
+  });
+
+  it('gives the same reason as the result for a health and safety risk', () => {
+    const reasons = earlyProposalReasons({
+      ...nothingYet,
+      healthAndSafetyRisk: true,
+    });
+    expect(reasons).toHaveLength(1);
+    expect(
+      classifyPurchase({
+        ...nothingYet,
+        healthAndSafetyRisk: true,
+        amountPence: 1_000,
+      }).reason
+    ).toContain(reasons[0]);
+  });
+
+  describe('when the yearly budget is used up', () => {
+    const usedUp = {...nothingYet, spentThisYearPence: 100_000};
+
+    it('says a purchase from it needs a proposal', () => {
+      expect(earlyProposalReasons(usedUp)).toStrictEqual([
+        "This year's spending is already £1,000.00, using up the yearly budget of £1,000.00, so anything more from it needs a proposal.",
+      ]);
+    });
+
+    it('agrees with the result for even the smallest purchase', () => {
+      expect(classifyPurchase({...usedUp, amountPence: 1}).approval).toStrictEqual(
+        'proposal'
+      );
+    });
+
+    it('has no reason for a consumable members pay for', () => {
+      expect(
+        earlyProposalReasons({...usedUp, isMemberPaidConsumable: true})
+      ).toStrictEqual([]);
+    });
+  });
+
+  describe('when the budget has been overspent', () => {
+    it('says a purchase from it needs a proposal', () => {
+      expect(
+        earlyProposalReasons({...nothingYet, spentThisYearPence: 120_000})
+      ).toHaveLength(1);
     });
   });
 });
