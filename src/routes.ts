@@ -382,6 +382,17 @@ export const initRoutes = (
       'arrange-training',
       commands.trainers.arrangeTraining
     ),
+    ...command(
+      'training-sessions',
+      'sign-up',
+      commands.trainingSessions.signUp
+    ),
+    ...command(
+      'training-sessions',
+      'cancel-place',
+      commands.trainingSessions.cancelPlace
+    ),
+    ...command('training-sessions', 'cancel', commands.trainingSessions.cancel),
     post(
       '/api/training-quiz/backfill-timeline',
       expressAsyncHandler(async (req, res) => {

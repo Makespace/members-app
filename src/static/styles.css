@@ -3941,6 +3941,40 @@ ul.sign__points li + li {
   vertical-align: top;
 }
 
+.training-session__attendees {
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.training-session__row-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: flex-start;
+}
+
+.training-session__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: baseline;
+  margin-top: 0.4rem;
+}
+
+.training-session__yours {
+  font-weight: 600;
+}
+
+.training-session__closed,
+.training-session__reason {
+  color: var(--grey-color);
+}
+
+.tag--cancelled {
+  background-color: #f6d7d2;
+  color: #942514;
+}
+
 .eq-cards__actions {
   display: flex;
   flex-wrap: wrap;

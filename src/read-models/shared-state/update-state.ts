@@ -39,7 +39,9 @@ import {
   einkDisplaysTable,
   trainingSessionsTable,
   trainingSessionAttendeesTable,
+  trainingSessionNotificationsTable,
 } from './state';
+import {signUpsCloseAt} from '../../training-sessions/sign-ups';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, eq, inArray, isNull, sql} from 'drizzle-orm';
 import {isOwnerOfAreaContainingEquipment} from './area/helpers';
@@ -1546,15 +1548,60 @@ const _updateState =
             endsAt: event.endsAt,
             spaces: event.spaces,
             description: event.description,
+            signUpsCloseAt: signUpsCloseAt(
+              event.startsAt,
+              event.signUpsCloseHoursBefore
+            ),
           })
           .onConflictDoNothing()
           .run();
         for (const memberNumber of event.attendees) {
           tx.insert(trainingSessionAttendeesTable)
-            .values({sessionId: event.sessionId, memberNumber})
+            .values({
+              sessionId: event.sessionId,
+              memberNumber,
+              bookedAt: event.recordedAt,
+            })
             .onConflictDoNothing()
             .run();
         }
+        break;
+      }
+      case 'TrainingSessionSignedUp': {
+        tx.insert(trainingSessionAttendeesTable)
+          .values({
+            sessionId: event.sessionId,
+            memberNumber: event.memberNumber,
+            bookedAt: event.recordedAt,
+          })
+          .onConflictDoNothing()
+          .run();
+        break;
+      }
+      case 'TrainingSessionSignUpCancelled': {
+        tx.delete(trainingSessionAttendeesTable)
+          .where(
+            and(
+              eq(trainingSessionAttendeesTable.sessionId, event.sessionId),
+              eq(trainingSessionAttendeesTable.memberNumber, event.memberNumber)
+            )
+          )
+          .run();
+        break;
+      }
+      case 'TrainingSessionCancelled': {
+        // Who was booked stays, so they can be told.
+        tx.update(trainingSessionsTable)
+          .set({cancelledAt: event.recordedAt, cancelReason: event.reason})
+          .where(eq(trainingSessionsTable.id, event.sessionId))
+          .run();
+        break;
+      }
+      case 'TrainingSessionNotificationSent': {
+        tx.insert(trainingSessionNotificationsTable)
+          .values({notifiedEventIndex: event.notifiedEventIndex})
+          .onConflictDoNothing()
+          .run();
         break;
       }
       default: {

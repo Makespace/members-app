@@ -1020,7 +1020,10 @@ export const trainingSessionsTable = defineTable(
       startsAt INTEGER NOT NULL,
       endsAt INTEGER NOT NULL,
       spaces INTEGER NOT NULL,
-      description TEXT NOT NULL
+      description TEXT NOT NULL,
+      signUpsCloseAt INTEGER NOT NULL,
+      cancelledAt INTEGER,
+      cancelReason TEXT
     )
   `,
   'trainingSessions' as const,
@@ -1032,15 +1035,20 @@ export const trainingSessionsTable = defineTable(
     endsAt: integer('endsAt', {mode: 'timestamp_ms'}).notNull(),
     spaces: integer('spaces').notNull(),
     description: text('description').notNull(),
+    signUpsCloseAt: integer('signUpsCloseAt', {mode: 'timestamp_ms'}).notNull(),
+    cancelledAt: integer('cancelledAt', {mode: 'timestamp_ms'}),
+    cancelReason: text('cancelReason'),
   }
 );
 
-// Who is booked on each training session.
+// Who is booked on each training session: members the trainer booked in when
+// arranging it, and members who signed up since.
 export const trainingSessionAttendeesTable = defineTable(
   sql`
     CREATE TABLE IF NOT EXISTS trainingSessionAttendees (
       sessionId TEXT NOT NULL,
       memberNumber INTEGER NOT NULL,
+      bookedAt INTEGER NOT NULL,
       PRIMARY KEY (sessionId, memberNumber)
     )
   `,
@@ -1048,5 +1056,20 @@ export const trainingSessionAttendeesTable = defineTable(
   {
     sessionId: text('sessionId').notNull().$type<UUID>(),
     memberNumber: integer('memberNumber').notNull(),
+    bookedAt: integer('bookedAt', {mode: 'timestamp_ms'}).notNull(),
+  }
+);
+
+// Which training session events have had their emails sent, so none is sent
+// twice (see TrainingSessionNotificationSent).
+export const trainingSessionNotificationsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS trainingSessionNotifications (
+      notifiedEventIndex INTEGER PRIMARY KEY
+    )
+  `,
+  'trainingSessionNotifications' as const,
+  {
+    notifiedEventIndex: integer('notifiedEventIndex').notNull().primaryKey(),
   }
 );

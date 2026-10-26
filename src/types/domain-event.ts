@@ -572,7 +572,44 @@ const TrainingSessionScheduled = defineEvent('TrainingSessionScheduled', {
   spaces: t.number,
   description: t.string,
   attendees: t.array(t.number),
+  // How long before the start members stop being able to sign up. Sessions
+  // arranged before this was asked closed when they started.
+  signUpsCloseHoursBefore: tt.withFallback(t.number, 0),
 });
+
+// A member taking a place on a training session themselves.
+const TrainingSessionSignedUp = defineEvent('TrainingSessionSignedUp', {
+  sessionId: tt.UUID,
+  memberNumber: t.number,
+});
+
+// A member giving up their place, which opens it to somebody else.
+const TrainingSessionSignUpCancelled = defineEvent(
+  'TrainingSessionSignUpCancelled',
+  {
+    sessionId: tt.UUID,
+    memberNumber: t.number,
+  }
+);
+
+// The training is not happening. Whoever was booked on it is told, with the
+// reason when the trainer gave one.
+const TrainingSessionCancelled = defineEvent('TrainingSessionCancelled', {
+  sessionId: tt.UUID,
+  reason: t.string,
+});
+
+// Training session emails sent for one event (a sign-up, a cancelled place, a
+// cancelled session), so they aren't sent twice. See
+// src/sync-worker/notify_training_sessions.ts.
+const TrainingSessionNotificationSent = defineEvent(
+  'TrainingSessionNotificationSent',
+  {
+    sessionId: tt.UUID,
+    notifiedEventIndex: t.number,
+    recipientMemberNumbers: t.readonlyArray(t.number),
+  }
+);
 
 const MemberDetailsUpdated = defineEvent('MemberDetailsUpdated', {
   memberNumber: t.number,
@@ -910,6 +947,10 @@ export const events = [
   EinkDisplayAssigned,
   EinkDisplayUnassigned,
   TrainingSessionScheduled,
+  TrainingSessionSignedUp,
+  TrainingSessionSignUpCancelled,
+  TrainingSessionCancelled,
+  TrainingSessionNotificationSent,
 ];
 
 export const DomainEvent = t.union([
@@ -997,6 +1038,10 @@ export const DomainEvent = t.union([
   EinkDisplayAssigned.codec,
   EinkDisplayUnassigned.codec,
   TrainingSessionScheduled.codec,
+  TrainingSessionSignedUp.codec,
+  TrainingSessionSignUpCancelled.codec,
+  TrainingSessionCancelled.codec,
+  TrainingSessionNotificationSent.codec,
 ]);
 
 export const StoredDomainEvent = t.intersection([

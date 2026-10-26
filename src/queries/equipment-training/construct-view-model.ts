@@ -166,7 +166,8 @@ export const constructViewModel =
         upcomingTrainings: upcomingTrainingSessions(
           deps.sharedReadModel,
           equipment,
-          new Date()
+          new Date(),
+          O.some({memberNumber: user.memberNumber})
         ),
         trainersUsingApp: pipe(
           deps.sharedReadModel.trainingSessions.memberNumbersWhoHaveArranged(

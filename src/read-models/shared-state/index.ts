@@ -118,6 +118,7 @@ import {
   getMemberNumbersWhoHaveArrangedTraining,
   getTrainingSession,
   getUpcomingTrainingSessionsForEquipment,
+  hasNotifiedForTrainingSessionEvent,
   TrainingSession,
 } from './training-sessions/get';
 
@@ -264,6 +265,7 @@ export type SharedReadModel = {
     ) => ReadonlyArray<TrainingSession>;
     memberNumbersWhoHaveArranged: (equipmentId: UUID) => ReadonlyArray<number>;
     allForEquipment: (equipmentId: UUID) => ReadonlyArray<TrainingSession>;
+    hasNotifiedForEvent: (eventIndex: number) => boolean;
   };
 };
 
@@ -400,6 +402,7 @@ export const initSharedReadModel = (
       memberNumbersWhoHaveArranged:
         getMemberNumbersWhoHaveArrangedTraining(readModelDb),
       allForEquipment: getAllTrainingSessionsForEquipment(readModelDb),
+      hasNotifiedForEvent: hasNotifiedForTrainingSessionEvent(readModelDb),
     },
   };
 };
