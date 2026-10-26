@@ -1191,6 +1191,8 @@ label img {
 
 .purchase-money input {
   font-variant-numeric: tabular-nums;
+  /* Plain forms space their inputs out; here the £ sits flush. */
+  margin: 0;
 }
 
 .purchase-request__link-button {

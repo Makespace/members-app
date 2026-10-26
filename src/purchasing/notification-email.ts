@@ -11,7 +11,14 @@ import {NotificationReason, Recipient} from './notification-recipients';
 // the same tags, the details as label/value rows, and a bordered box saying
 // why it came to you and what, if anything, to do.
 
-export type NotificationKind = 'new' | 'outcome' | 'skipped-proposal';
+export type NotificationKind =
+  | 'new'
+  | 'outcome'
+  // Approved by someone who had already bought it.
+  | 'approved-and-bought'
+  // Bought after being approved.
+  | 'bought'
+  | 'skipped-proposal';
 
 type EmailContext = {
   publicUrl: string;
@@ -19,6 +26,8 @@ type EmailContext = {
   requesterName: string;
   // Who approved or declined it, for an outcome.
   deciderName: string;
+  // Who marked it bought, once bought.
+  buyerName: string;
 };
 
 // The app's tag colours (src/static/styles.css), mixed out for email.
@@ -99,6 +108,7 @@ const outcomeTag = (request: PurchaseRequest): Tag => {
     case 'awaiting-approval':
       return {label: `${base.label} · Proposal needed`, colour: 'red'};
     case 'approved':
+    case 'bought':
       return {...base, label: `${base.label} · Proposal approved`};
     default:
       return base;
@@ -120,6 +130,10 @@ const notificationSubject = (
         : `Purchase request needing director approval: ${request.summary}`;
     case 'outcome':
       return `Purchase request ${request.status === 'declined' ? 'declined' : 'approved'}: ${request.summary}`;
+    case 'approved-and-bought':
+      return `Purchase request approved and bought: ${request.summary}`;
+    case 'bought':
+      return `Purchase request bought: ${request.summary}`;
     case 'skipped-proposal':
       return request.outcome === 'outside-budget'
         ? `Purchase recorded as approved outside the budget: ${request.summary}`
@@ -211,6 +225,34 @@ const contentFor = (
               ? 'Declined.'
               : 'Approved.',
           lines: reasons,
+        },
+      };
+    }
+    case 'approved-and-bought':
+    case 'bought': {
+      const cost = formatPence(
+        O.getOrElse(() => request.totalPence)(request.actualCostPence)
+      );
+      return {
+        heading:
+          kind === 'bought'
+            ? 'Purchase request bought'
+            : 'Purchase request approved and bought',
+        tags: [outcomeTag(request), {label: 'Bought', colour: 'blue'}],
+        intro:
+          kind === 'bought'
+            ? `${context.buyerName} bought ${context.requesterName}'s request.`
+            : `${context.deciderName} approved ${context.requesterName}'s request, and has bought it.`,
+        details,
+        box: {
+          tone: 'approved',
+          title: `Bought for ${cost}.`,
+          lines: [
+            ...(kind === 'approved-and-bought' && O.isSome(request.approvalNote)
+              ? [`Note: ${request.approvalNote.value}`]
+              : []),
+            ...reasons,
+          ],
         },
       };
     }
