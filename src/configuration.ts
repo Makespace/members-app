@@ -38,6 +38,11 @@ const Config = t.strict({
   // list of the only addresses that may be written to. See
   // trouble-tickets/notification-gate.
   TROUBLE_TICKET_NOTIFY_TO: withDefaultIfEmpty(t.string, ''),
+  // Makespace's own internet connection: comma-separated addresses or ranges
+  // (e.g. 62.30.18.106 or 2a02:8010::/32). Reports from the space are not
+  // rate limited - everybody on its wifi shares one address. See
+  // trouble-tickets/public-report-guard.
+  MAKESPACE_NETWORK_ADDRESSES: withDefaultIfEmpty(t.string, ''),
   GOOGLE_DB_URL: withDefaultIfEmpty(
     t.string,
     'file:/google_db_data/makespace-member-app-google.db'

@@ -75,6 +75,53 @@ describe('the checks on a report from somebody not logged in', () => {
     );
   });
 
+  describe('from Makespace itself', () => {
+    const atTheSpace = {
+      ...conf,
+      MAKESPACE_NETWORK_ADDRESSES: '62.30.18.106, 2a02:8010:abcd::/48',
+    } as unknown as Config;
+    const strict = {perClientPerHour: 1, overallPerHour: 1};
+
+    // Everybody on the space's wifi shares its address.
+    it('is never rate limited', () => {
+      const guard = publicReportGuard(atTheSpace, strict);
+      const verdicts = [30, 40, 50].map(
+        seconds => guard(body(), '62.30.18.106', later(seconds)).tag
+      );
+      expect(verdicts).toStrictEqual(['accept', 'accept', 'accept']);
+    });
+
+    it('takes a range of addresses', () => {
+      const guard = publicReportGuard(atTheSpace, strict);
+      const verdicts = [30, 40].map(
+        seconds => guard(body(), '2a02:8010:abcd::17', later(seconds)).tag
+      );
+      expect(verdicts).toStrictEqual(['accept', 'accept']);
+    });
+
+    it('does not use up the limit for everybody else', () => {
+      const guard = publicReportGuard(atTheSpace, strict);
+      guard(body(), '62.30.18.106', later(30));
+      expect(guard(body(), '1.2.3.4', later(40)).tag).toStrictEqual('accept');
+    });
+
+    // These cost a person nothing, and still catch a misbehaving device on
+    // the space's network.
+    it('still drops a report with the hidden field filled in', () => {
+      const guard = publicReportGuard(atTheSpace, strict);
+      expect(
+        guard(body({[HONEYPOT_FIELD]: 'x'}), '62.30.18.106', later(30)).tag
+      ).toStrictEqual('drop');
+    });
+
+    it('still refuses a post that did not come from the form', () => {
+      const guard = publicReportGuard(atTheSpace, strict);
+      expect(
+        guard(body({[FORM_TOKEN_FIELD]: ''}), '62.30.18.106', later(30)).tag
+      ).toStrictEqual('refuse');
+    });
+  });
+
   it('limits how many reports come in altogether', () => {
     const guard = publicReportGuard(conf, {
       perClientPerHour: 100,

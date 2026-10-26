@@ -32,6 +32,9 @@ MANAGEMENT_TEAM_AREA_ID = '838b00ec-d610-4bb3-a01b-5bc40613c197'
 # Owners of this area (the directors) hear about purchase requests needing
 # director approval.
 DIRECTORS_AREA_ID = '8601062e-5210-4bf5-bd25-e488f1378a9d'
+# Makespace's own connection (where the e-ink displays fetch from). Reports
+# from here are not rate limited: everybody on the wifi shares the address.
+MAKESPACE_NETWORK_ADDRESSES = '62.30.18.106'
 
 [http_service]
 internal_port = 8080

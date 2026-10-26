@@ -1,3 +1,4 @@
+import {BlockList, isIP} from 'net';
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
 import {pipe} from 'fp-ts/lib/function';
@@ -104,6 +105,35 @@ class RateLimiter {
 
 const HOUR = 60 * 60 * 1000;
 
+// The addresses Makespace's own connection comes from. Everybody at the space
+// shares one, so a busy open evening could look like one sender; and outside
+// spam filling the overall limit should not stop somebody at a broken
+// machine from reporting it.
+const spaceNetwork = (addresses: string): BlockList => {
+  const list = new BlockList();
+  for (const entry of addresses.split(',').map(part => part.trim())) {
+    const [address, prefix] = entry.split('/');
+    const family = isIP(address);
+    if (family === 0) {
+      continue;
+    }
+    const type = family === 6 ? 'ipv6' : 'ipv4';
+    if (prefix === undefined) {
+      list.addAddress(address, type);
+    } else if (/^\d+$/.test(prefix)) {
+      list.addSubnet(address, Number(prefix), type);
+    }
+  }
+  return list;
+};
+
+const isFrom = (network: BlockList, clientIp: string): boolean => {
+  const family = isIP(clientIp);
+  return (
+    family !== 0 && network.check(clientIp, family === 6 ? 'ipv6' : 'ipv4')
+  );
+};
+
 export type PublicReportGuard = (
   body: unknown,
   clientIp: string,
@@ -121,6 +151,7 @@ export const publicReportGuard = (
     overallPerHour: 30,
   }
 ): PublicReportGuard => {
+  const space = spaceNetwork(conf.MAKESPACE_NETWORK_ADDRESSES ?? '');
   const perClient = new RateLimiter(limits.perClientPerHour, HOUR);
   const overall = new RateLimiter(limits.overallPerHour, HOUR);
   return (body, clientIp, now = new Date()) => {
@@ -130,6 +161,10 @@ export const publicReportGuard = (
     const token = checkFormToken(conf, body, now);
     if (token.tag !== 'accept') {
       return token;
+    }
+    // Not counted either, so the space never uses up the overall limit.
+    if (isFrom(space, clientIp)) {
+      return {tag: 'accept'};
     }
     if (!perClient.allow(clientIp, now) || !overall.allow('all', now)) {
       return {
