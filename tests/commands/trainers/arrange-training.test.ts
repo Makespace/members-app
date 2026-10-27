@@ -50,6 +50,18 @@ describe('arranging a training session', () => {
       expect(decoded.spaces).toStrictEqual(4);
       expect(decoded.attendees).toStrictEqual([]);
       expect(decoded.description).toStrictEqual('');
+      expect(decoded.signUpsCloseHoursBefore).toStrictEqual(1);
+    });
+
+    it('takes when sign-ups close from the choices offered', () => {
+      expect(
+        getRightOrFail(
+          arrangeTraining.decode(form({signUpsCloseHoursBefore: '24'}))
+        ).signUpsCloseHoursBefore
+      ).toStrictEqual(24);
+      expect(
+        E.isLeft(arrangeTraining.decode(form({signUpsCloseHoursBefore: '3'})))
+      ).toBe(true);
     });
 
     it('keeps the description, trimmed', () => {
@@ -118,6 +130,7 @@ describe('arranging a training session', () => {
         spaces: 4,
         description: 'Bring closed-toe shoes.',
         attendees: [],
+        signUpsCloseHoursBefore: 0,
       };
     };
 
@@ -295,6 +308,7 @@ describe('arranging a training session', () => {
           spaces: 4,
           description: '',
           attendees: [],
+          signUpsCloseHoursBefore: 0,
           actor: trainerActor,
           recordedAt: new Date(),
         })();
@@ -346,6 +360,7 @@ describe('arranging a training session', () => {
           spaces: 6,
           description: 'Bring closed-toe shoes.',
           attendees: [otherMember.memberNumber],
+          signUpsCloseHoursBefore: 4,
         };
         await framework.commands.trainers.arrangeTraining({
           ...original,
@@ -362,6 +377,7 @@ describe('arranging a training session', () => {
           endTime: '21:00',
           spaces: '6',
           description: 'Bring closed-toe shoes.',
+          signUpsCloseHoursBefore: 4,
         });
         // There is nowhere for a day or members to come through: both are
         // asked for afresh.

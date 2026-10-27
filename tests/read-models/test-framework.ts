@@ -122,6 +122,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
   const depsForCommands: Dependencies = {
     conf: {
       PUBLIC_URL: 'http://localhost:8080',
+      TOKEN_SECRET: 'test-token-secret',
       GMAIL_IMPORT_MAILBOX: '',
       MANAGEMENT_TEAM_AREA_ID: '',
       EINK_DISPLAY_TOKEN: TEST_DISPLAY_TOKEN,
@@ -272,6 +273,8 @@ export const initTestFramework = async (): Promise<TestFramework> => {
       troubleTickets: {
         record: frameworkify(commands.troubleTickets.record),
         raise: frameworkify(commands.troubleTickets.raise),
+        raisePublic: frameworkify(commands.troubleTickets.raisePublic),
+        claim: frameworkify(commands.troubleTickets.claim),
         create: frameworkify(commands.troubleTickets.create),
         assign: frameworkify(commands.troubleTickets.assign),
         assignTo: frameworkify(commands.troubleTickets.assignTo),
@@ -296,11 +299,20 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         removePurchaser: frameworkify(commands.purchasingArea.removePurchaser),
         setYearBudget: frameworkify(commands.purchasingArea.setYearBudget),
         removeSpend: frameworkify(commands.purchasingArea.removeSpend),
+        activate: frameworkify(commands.purchasingArea.activate),
+        deactivate: frameworkify(commands.purchasingArea.deactivate),
+        remove: frameworkify(commands.purchasingArea.remove),
       },
       purchaseRequest: {
         submit: frameworkify(commands.purchaseRequest.submit),
         approve: frameworkify(commands.purchaseRequest.approve),
         decline: frameworkify(commands.purchaseRequest.decline),
+        markBought: frameworkify(commands.purchaseRequest.markBought),
+      },
+      trainingSessions: {
+        signUp: frameworkify(commands.trainingSessions.signUp),
+        cancelPlace: frameworkify(commands.trainingSessions.cancelPlace),
+        cancel: frameworkify(commands.trainingSessions.cancel),
       },
       einkDisplays: {
         assign: frameworkify(commands.einkDisplays.assign),

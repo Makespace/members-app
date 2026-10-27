@@ -110,7 +110,10 @@ export const render = (viewModel: ViewModel) => {
       ${viewModel.waitingForViewer.length > 0
         ? html`<section class="stack">
             <h2>Waiting for you (${viewModel.waitingForViewer.length})</h2>
-            <p>You can approve or decline these.</p>
+            <p>
+              You can approve or decline these, or mark them as bought once
+              approved.
+            </p>
             ${renderTable(
               [...viewModel.waitingForViewer].reverse(),
               viewModel.canSeePrivateDetails

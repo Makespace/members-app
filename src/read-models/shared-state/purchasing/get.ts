@@ -41,7 +41,8 @@ const budgetRequestsInYear =
   (purchasingAreaId: UUID, budgetYear: number) => {
     const rows = db
       .select({
-        amountPence: purchaseRequestsTable.totalPence,
+        totalPence: purchaseRequestsTable.totalPence,
+        actualCostPence: purchaseRequestsTable.actualCostPence,
         outcome: purchaseRequestsTable.outcome,
         status: purchaseRequestsTable.status,
       })
@@ -53,13 +54,19 @@ const budgetRequestsInYear =
         )
       )
       .all();
+    // What it really cost once bought, if that was given; otherwise what
+    // was asked for.
     const sum = (selected: typeof rows) =>
-      selected.reduce((total, row) => total + row.amountPence, 0);
+      selected.reduce(
+        (total, row) => total + (row.actualCostPence ?? row.totalPence),
+        0
+      );
     const budgetRows = rows.filter(row => countsAgainstBudget(row.outcome));
     const totalWith = (status: string) =>
       sum(budgetRows.filter(row => row.status === status));
     return {
-      approvedPence: totalWith('approved') + totalWith('bought-directly'),
+      approvedPence:
+        totalWith('approved') + totalWith('bought') + totalWith('bought-directly'),
       awaitingApprovalPence: totalWith('awaiting-approval'),
       outsideBudgetPence: sum(
         rows.filter(
@@ -87,6 +94,22 @@ const getYearBudget =
       O.fromNullable,
       O.map(row => row.yearlyBudgetPence)
     );
+
+// Whether anything has ever been requested or recorded against it, in any
+// year; such a purchasing area can't be removed.
+export const purchasingAreaHasHistory =
+  (db: BetterSQLite3Database) =>
+  (purchasingAreaId: UUID): boolean =>
+    db
+      .select({id: purchaseRequestsTable.id})
+      .from(purchaseRequestsTable)
+      .where(eq(purchaseRequestsTable.purchasingAreaId, purchasingAreaId))
+      .get() !== undefined ||
+    db
+      .select({id: purchasingAreaSpendTable.id})
+      .from(purchasingAreaSpendTable)
+      .where(eq(purchasingAreaSpendTable.purchasingAreaId, purchasingAreaId))
+      .get() !== undefined;
 
 const getRecordedSpend =
   (db: BetterSQLite3Database) =>
@@ -184,6 +207,7 @@ const expand =
     return {
       id: row.id,
       name: row.name,
+      active: row.active,
       yearlyBudgetPence,
       usualBudgetPence: row.yearlyBudgetPence,
       recordedSpend,
@@ -288,9 +312,15 @@ const toPurchaseRequest = ({
   decidedByMemberNumber,
   declineReason,
   approvalNote,
+  boughtAt,
+  boughtByMemberNumber,
+  actualCostPence,
   ...row
 }: typeof purchaseRequestsTable.$inferSelect): PurchaseRequest => ({
   ...row,
+  boughtAt: O.fromNullable(boughtAt),
+  boughtByMemberNumber: O.fromNullable(boughtByMemberNumber),
+  actualCostPence: O.fromNullable(actualCostPence),
   approvalNote: O.fromNullable(approvalNote),
   decidedAt: O.fromNullable(decidedAt),
   decidedByMemberNumber: O.fromNullable(decidedByMemberNumber),

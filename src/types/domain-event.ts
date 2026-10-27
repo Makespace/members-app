@@ -190,6 +190,26 @@ const PurchasingAreaCreated = defineEvent('PurchasingAreaCreated', {
   id: tt.UUID,
   name: t.string,
   yearlyBudgetPence: t.number,
+  // Whether it takes purchase requests and counts its budget as live. New
+  // ones start inactive so they can be set up first; ones created before
+  // activation existed were already in use, so they count as active.
+  active: tt.withFallback(t.boolean, true),
+});
+
+// A super user turns a purchasing area on or off. Only an active one takes
+// new purchase requests; requests already made carry on either way.
+const PurchasingAreaActivated = defineEvent('PurchasingAreaActivated', {
+  purchasingAreaId: tt.UUID,
+});
+
+const PurchasingAreaDeactivated = defineEvent('PurchasingAreaDeactivated', {
+  purchasingAreaId: tt.UUID,
+});
+
+// Only one with no purchase requests or recorded spending can be removed, so
+// nothing is left pointing at it. Its areas and purchasers go with it.
+const PurchasingAreaRemoved = defineEvent('PurchasingAreaRemoved', {
+  purchasingAreaId: tt.UUID,
 });
 
 const PurchasingAreaRenamed = defineEvent('PurchasingAreaRenamed', {
@@ -304,6 +324,18 @@ const PurchaseRequestApproved = defineEvent('PurchaseRequestApproved', {
   // What was agreed, e.g. at an owners' forum. Required for director
   // approval; see src/commands/purchase-request/approve.ts.
   note: tt.withFallback(t.union([t.string, t.null]), null),
+  // Approved by someone who has already bought it, e.g. with Capital on
+  // Tap: it goes straight to bought.
+  alsoBought: tt.withFallback(t.boolean, false),
+  // What it really cost, when bought and different from what was asked.
+  actualCostPence: tt.withFallback(t.union([t.number, t.null]), null),
+});
+
+// An approved purchase request bought by a purchaser or super user.
+const PurchaseRequestBought = defineEvent('PurchaseRequestBought', {
+  id: tt.UUID,
+  // What it really cost, when different from what was asked.
+  actualCostPence: t.union([t.number, t.null]),
 });
 
 // Purchase request emails sent for one event (a request sent, approved or
@@ -572,7 +604,44 @@ const TrainingSessionScheduled = defineEvent('TrainingSessionScheduled', {
   spaces: t.number,
   description: t.string,
   attendees: t.array(t.number),
+  // How long before the start members stop being able to sign up. Sessions
+  // arranged before this was asked closed when they started.
+  signUpsCloseHoursBefore: tt.withFallback(t.number, 0),
 });
+
+// A member taking a place on a training session themselves.
+const TrainingSessionSignedUp = defineEvent('TrainingSessionSignedUp', {
+  sessionId: tt.UUID,
+  memberNumber: t.number,
+});
+
+// A member giving up their place, which opens it to somebody else.
+const TrainingSessionSignUpCancelled = defineEvent(
+  'TrainingSessionSignUpCancelled',
+  {
+    sessionId: tt.UUID,
+    memberNumber: t.number,
+  }
+);
+
+// The training is not happening. Whoever was booked on it is told, with the
+// reason when the trainer gave one.
+const TrainingSessionCancelled = defineEvent('TrainingSessionCancelled', {
+  sessionId: tt.UUID,
+  reason: t.string,
+});
+
+// Training session emails sent for one event (a sign-up, a cancelled place, a
+// cancelled session), so they aren't sent twice. See
+// src/sync-worker/notify_training_sessions.ts.
+const TrainingSessionNotificationSent = defineEvent(
+  'TrainingSessionNotificationSent',
+  {
+    sessionId: tt.UUID,
+    notifiedEventIndex: t.number,
+    recipientMemberNumbers: t.readonlyArray(t.number),
+  }
+);
 
 const MemberDetailsUpdated = defineEvent('MemberDetailsUpdated', {
   memberNumber: t.number,
@@ -722,8 +791,10 @@ const TroubleTicketCreated = defineEvent('TroubleTicketCreated', {
   // the 'sheet' fallback on every stored event).
   // 'email': raised by a manager from the imported mailbox. The sender is
   // not a member reporting through the app, so no confirmation is sent.
+  // 'public': raised in the app by somebody who was not logged in. The
+  // confirmation goes to the address they gave, whoever it belongs to.
   source: tt.withFallback(
-    t.keyof({sheet: null, app: null, email: null}),
+    t.keyof({sheet: null, app: null, email: null, public: null}),
     'sheet'
   ),
   equipmentId: tt.withFallback(t.union([tt.UUID, t.null]), null),
@@ -737,6 +808,10 @@ const TroubleTicketCreated = defineEvent('TroubleTicketCreated', {
   // The mailbox conversation it was raised from, by that conversation's id;
   // '' when it was not.
   mailboxConversationId: tt.withFallback(t.string, ''),
+  // The member number typed on the public form. Kept apart from
+  // submittedMemberNumber, which is only set when the ticket is known to be
+  // that member's: a number is easy to type and proves nothing.
+  providedMemberNumber: tt.withFallback(t.union([t.number, t.null]), null),
 });
 
 // --- Trouble ticket status workflow ---
@@ -793,6 +868,13 @@ const TroubleTicketTitleEdited = defineEvent('TroubleTicketTitleEdited', {
   title: t.string,
 });
 
+// A member took a ticket raised without logging in onto their account, by
+// following the link that was emailed to the address on the ticket.
+const TroubleTicketClaimed = defineEvent('TroubleTicketClaimed', {
+  ticketId: tt.UUID,
+  memberNumber: t.number,
+});
+
 // Records that change-notification emails have been sent for a specific
 // status-change event (identified by its event index), so the notifier doesn't
 // send them again.
@@ -833,6 +915,9 @@ export const events = [
   OwnerAdded,
   OwnerRemoved,
   PurchasingAreaCreated,
+  PurchasingAreaActivated,
+  PurchasingAreaDeactivated,
+  PurchasingAreaRemoved,
   PurchasingAreaRenamed,
   PurchasingAreaBudgetSet,
   PurchasingAreaYearBudgetSet,
@@ -845,6 +930,7 @@ export const events = [
   PurchaseRequestSubmitted,
   PurchaseRequestApproved,
   PurchaseRequestDeclined,
+  PurchaseRequestBought,
   PurchaseRequestNotificationSent,
   SuperUserDeclared,
   SuperUserRevoked,
@@ -884,6 +970,7 @@ export const events = [
   TroubleTicketNeedsHelp,
   TroubleTicketEquipmentSet,
   TroubleTicketTitleEdited,
+  TroubleTicketClaimed,
   TroubleTicketNotificationSent,
   MemberNotificationPreferenceSet,
   MemberTicketDigestSent,
@@ -896,6 +983,10 @@ export const events = [
   EinkDisplayAssigned,
   EinkDisplayUnassigned,
   TrainingSessionScheduled,
+  TrainingSessionSignedUp,
+  TrainingSessionSignUpCancelled,
+  TrainingSessionCancelled,
+  TrainingSessionNotificationSent,
 ];
 
 export const DomainEvent = t.union([
@@ -919,6 +1010,9 @@ export const DomainEvent = t.union([
   OwnerAdded.codec,
   OwnerRemoved.codec,
   PurchasingAreaCreated.codec,
+  PurchasingAreaActivated.codec,
+  PurchasingAreaDeactivated.codec,
+  PurchasingAreaRemoved.codec,
   PurchasingAreaRenamed.codec,
   PurchasingAreaBudgetSet.codec,
   PurchasingAreaYearBudgetSet.codec,
@@ -931,6 +1025,7 @@ export const DomainEvent = t.union([
   PurchaseRequestSubmitted.codec,
   PurchaseRequestApproved.codec,
   PurchaseRequestDeclined.codec,
+  PurchaseRequestBought.codec,
   PurchaseRequestNotificationSent.codec,
   SuperUserDeclared.codec,
   SuperUserRevoked.codec,
@@ -970,6 +1065,7 @@ export const DomainEvent = t.union([
   TroubleTicketNeedsHelp.codec,
   TroubleTicketEquipmentSet.codec,
   TroubleTicketTitleEdited.codec,
+  TroubleTicketClaimed.codec,
   TroubleTicketNotificationSent.codec,
   MemberNotificationPreferenceSet.codec,
   MemberTicketDigestSent.codec,
@@ -982,6 +1078,10 @@ export const DomainEvent = t.union([
   EinkDisplayAssigned.codec,
   EinkDisplayUnassigned.codec,
   TrainingSessionScheduled.codec,
+  TrainingSessionSignedUp.codec,
+  TrainingSessionSignUpCancelled.codec,
+  TrainingSessionCancelled.codec,
+  TrainingSessionNotificationSent.codec,
 ]);
 
 export const StoredDomainEvent = t.intersection([

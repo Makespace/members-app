@@ -16,6 +16,10 @@ import {setYearBudget} from './set-year-budget';
 import {setYearBudgetForm} from './set-year-budget-form';
 import {removeSpend} from './remove-spend';
 import {removeSpendForm} from './remove-spend-form';
+import {activate, deactivate} from './activation';
+import {activateForm, deactivateForm} from './activation-form';
+import {remove} from './remove';
+import {removeForm} from './remove-form';
 
 export const purchasingArea = {
   create: {
@@ -53,5 +57,17 @@ export const purchasingArea = {
   removeSpend: {
     ...removeSpend,
     ...removeSpendForm,
+  },
+  activate: {
+    ...activate,
+    ...activateForm,
+  },
+  deactivate: {
+    ...deactivate,
+    ...deactivateForm,
+  },
+  remove: {
+    ...remove,
+    ...removeForm,
   },
 };

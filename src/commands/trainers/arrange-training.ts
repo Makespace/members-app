@@ -10,6 +10,10 @@ import {constructEvent} from '../../types';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {Command} from '../command';
 import {isEquipmentTrainer} from '../authentication-helpers/is-equipment-trainer';
+import {
+  DEFAULT_SIGN_UPS_CLOSE_HOURS_BEFORE,
+  SIGN_UPS_CLOSE_CHOICES,
+} from '../../training-sessions/sign-ups';
 
 // Enough for any session the space could hold; a typo of 200 is not.
 export const MAX_SPACES = 50;
@@ -32,6 +36,7 @@ const formCodec = t.intersection([
   t.partial({
     description: t.string,
     attendees: t.union([t.string, t.array(t.string)]),
+    signUpsCloseHoursBefore: t.union([t.Int, tt.IntFromString]),
   }),
 ]);
 
@@ -43,6 +48,7 @@ const ArrangeTrainingCodec = t.strict({
   spaces: t.number,
   description: t.string,
   attendees: t.array(t.number),
+  signUpsCloseHoursBefore: t.number,
 });
 
 export const MAX_DESCRIPTION_LENGTH = 2000;
@@ -123,6 +129,19 @@ const codec = new t.Type<ArrangeTraining, ArrangeTraining, unknown>(
             'More members are booked in than there are spaces'
           );
         }
+        const signUpsCloseHoursBefore =
+          form.signUpsCloseHoursBefore ?? DEFAULT_SIGN_UPS_CLOSE_HOURS_BEFORE;
+        if (
+          !(SIGN_UPS_CLOSE_CHOICES as ReadonlyArray<number>).includes(
+            signUpsCloseHoursBefore
+          )
+        ) {
+          return t.failure(
+            input,
+            context,
+            'Please choose when sign-ups close from the list'
+          );
+        }
         return t.success({
           sessionId: form.sessionId,
           equipmentId: form.equipmentId,
@@ -131,6 +150,7 @@ const codec = new t.Type<ArrangeTraining, ArrangeTraining, unknown>(
           spaces: form.spaces,
           description,
           attendees: attendees.value,
+          signUpsCloseHoursBefore,
         });
       })
     ),
@@ -181,6 +201,7 @@ const process: Command<ArrangeTraining>['process'] = input =>
               spaces: input.command.spaces,
               description: input.command.description,
               attendees: input.command.attendees,
+              signUpsCloseHoursBefore: input.command.signUpsCloseHoursBefore,
               actor: input.command.actor,
             })
           )

@@ -101,6 +101,7 @@ import {
   getAllPurchasingAreas,
   getPurchaseRequest,
   getAllPurchaseRequests,
+  purchasingAreaHasHistory,
   hasNotifiedForPurchaseEvent,
   notifiedAboutRequest,
   getPurchaseRequests,
@@ -118,6 +119,7 @@ import {
   getMemberNumbersWhoHaveArrangedTraining,
   getTrainingSession,
   getUpcomingTrainingSessionsForEquipment,
+  hasNotifiedForTrainingSessionEvent,
   TrainingSession,
 } from './training-sessions/get';
 
@@ -249,6 +251,7 @@ export type SharedReadModel = {
     ) => ReadonlyArray<PurchaseRequest>;
     getRequest: (id: UUID) => O.Option<PurchaseRequest>;
     getAllRequests: () => ReadonlyArray<PurchaseRequest>;
+    hasHistory: (purchasingAreaId: UUID) => boolean;
     hasNotifiedForEvent: (eventIndex: number) => boolean;
     notifiedAbout: (requestId: UUID) => ReadonlyArray<number>;
   };
@@ -264,6 +267,7 @@ export type SharedReadModel = {
     ) => ReadonlyArray<TrainingSession>;
     memberNumbersWhoHaveArranged: (equipmentId: UUID) => ReadonlyArray<number>;
     allForEquipment: (equipmentId: UUID) => ReadonlyArray<TrainingSession>;
+    hasNotifiedForEvent: (eventIndex: number) => boolean;
   };
 };
 
@@ -386,6 +390,7 @@ export const initSharedReadModel = (
       getRequests: getPurchaseRequests(readModelDb),
       getRequest: getPurchaseRequest(readModelDb),
       getAllRequests: getAllPurchaseRequests(readModelDb),
+      hasHistory: purchasingAreaHasHistory(readModelDb),
       hasNotifiedForEvent: hasNotifiedForPurchaseEvent(readModelDb),
       notifiedAbout: notifiedAboutRequest(readModelDb),
     },
@@ -400,6 +405,7 @@ export const initSharedReadModel = (
       memberNumbersWhoHaveArranged:
         getMemberNumbersWhoHaveArrangedTraining(readModelDb),
       allForEquipment: getAllTrainingSessionsForEquipment(readModelDb),
+      hasNotifiedForEvent: hasNotifiedForTrainingSessionEvent(readModelDb),
     },
   };
 };

@@ -8,6 +8,7 @@ import {StatusCodes} from 'http-status-codes';
 import {oopsPage, pageTemplate} from '../templates';
 import {Query, Params} from '../queries/query';
 import {logInPath} from '../authentication/login/routes';
+import {rememberReturnTo} from '../authentication/login/return-to';
 import {CompleteHtmlDocument, HttpResponse, sanitizeString} from '../types/html';
 import {User} from '../types';
 import {Member} from '../read-models/shared-state/return-types';
@@ -96,6 +97,7 @@ export const queryGet =
     const user = getUserFromSession(deps)(req.session);
     if (O.isNone(user)) {
       deps.logger.info('Did not respond to query as user was not logged in.');
+      rememberReturnTo(req, req.originalUrl);
       res.redirect(logInPath);
       return;
     }

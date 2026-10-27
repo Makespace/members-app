@@ -18,6 +18,7 @@ const ticket = (overrides: Partial<BoardTicketView> = {}): BoardTicketView => ({
   submittedAt: new Date('2026-09-01T10:00:00.000Z'),
   submittedName: 'Sam Submitter',
   submittedMemberNumber: 42,
+  providedMemberNumber: null,
   submittedEmail: 'sam@example.com',
   mailboxConversationId: null,
   equipmentName: O.some('Bandsaw'),

@@ -39,7 +39,9 @@ import {
   einkDisplaysTable,
   trainingSessionsTable,
   trainingSessionAttendeesTable,
+  trainingSessionNotificationsTable,
 } from './state';
+import {signUpsCloseAt} from '../../training-sessions/sign-ups';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
 import {and, eq, inArray, isNull, sql} from 'drizzle-orm';
 import {isOwnerOfAreaContainingEquipment} from './area/helpers';
@@ -1045,6 +1047,7 @@ const _updateState =
             submittedAt: event.submittedAt,
             submittedName: event.submittedName,
             submittedMemberNumber: event.submittedMemberNumber,
+            providedMemberNumber: event.providedMemberNumber,
             submittedEmail: event.submittedEmail,
             submittedEquipment: event.submittedEquipment,
             equipmentId,
@@ -1208,6 +1211,25 @@ const _updateState =
         });
         break;
       }
+      case 'TroubleTicketClaimed': {
+        const rows = tx
+          .update(troubleTicketsTable)
+          .set({
+            submittedMemberNumber: event.memberNumber,
+            providedMemberNumber: null,
+          })
+          .where(eq(troubleTicketsTable.id, event.ticketId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(
+            `Unable to claim unknown trouble ticket '${event.ticketId}'`
+          );
+        }
+        recordTicketChange(tx, event, {
+          memberNumber: event.memberNumber.toString(),
+        });
+        break;
+      }
       case 'TroubleTicketNotificationSent': {
         tx.insert(troubleTicketNotificationsTable)
           .values({
@@ -1290,9 +1312,32 @@ const _updateState =
             id: event.id,
             name: event.name,
             yearlyBudgetPence: event.yearlyBudgetPence,
+            active: event.active,
             createdAt: event.recordedAt,
           })
           .run();
+        break;
+      }
+      case 'PurchasingAreaActivated':
+      case 'PurchasingAreaDeactivated': {
+        const rows = tx.update(purchasingAreasTable)
+          .set({active: event.type === 'PurchasingAreaActivated'})
+          .where(eq(purchasingAreasTable.id, event.purchasingAreaId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to change whether purchasing area ${event.purchasingAreaId} is active - unknown purchasing area`);
+        }
+        break;
+      }
+      case 'PurchasingAreaRemoved': {
+        const id = event.purchasingAreaId;
+        tx.delete(purchasingAreaAreasTable).where(eq(purchasingAreaAreasTable.purchasingAreaId, id)).run();
+        tx.delete(purchasersTable).where(eq(purchasersTable.purchasingAreaId, id)).run();
+        tx.delete(purchasingAreaYearBudgetsTable).where(eq(purchasingAreaYearBudgetsTable.purchasingAreaId, id)).run();
+        const rows = tx.delete(purchasingAreasTable).where(eq(purchasingAreasTable.id, id)).run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to remove purchasing area ${id} - unknown purchasing area`);
+        }
         break;
       }
       case 'PurchasingAreaRenamed': {
@@ -1436,17 +1481,46 @@ const _updateState =
       case 'PurchaseRequestDeclined': {
         const rows = tx.update(purchaseRequestsTable)
           .set({
-            status: event.type === 'PurchaseRequestApproved' ? 'approved' : 'declined',
+            status:
+              event.type === 'PurchaseRequestDeclined'
+                ? 'declined'
+                : event.alsoBought
+                  ? 'bought'
+                  : 'approved',
             decidedAt: event.recordedAt,
             decidedByMemberNumber:
               event.actor.tag === 'user' ? event.actor.user.memberNumber : null,
             declineReason: event.type === 'PurchaseRequestDeclined' ? event.reason : null,
             approvalNote: event.type === 'PurchaseRequestApproved' ? event.note : null,
+            ...(event.type === 'PurchaseRequestApproved' && event.alsoBought
+              ? {
+                  boughtAt: event.recordedAt,
+                  boughtByMemberNumber:
+                    event.actor.tag === 'user' ? event.actor.user.memberNumber : null,
+                  actualCostPence: event.actualCostPence,
+                }
+              : {}),
           })
           .where(eq(purchaseRequestsTable.id, event.id))
           .run();
         if (rows.changes === 0) {
           throw new InconsistentEventError(`Unable to decide purchase request ${event.id} - unknown purchase request`);
+        }
+        break;
+      }
+      case 'PurchaseRequestBought': {
+        const rows = tx.update(purchaseRequestsTable)
+          .set({
+            status: 'bought',
+            boughtAt: event.recordedAt,
+            boughtByMemberNumber:
+              event.actor.tag === 'user' ? event.actor.user.memberNumber : null,
+            actualCostPence: event.actualCostPence,
+          })
+          .where(eq(purchaseRequestsTable.id, event.id))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to mark purchase request ${event.id} bought - unknown purchase request`);
         }
         break;
       }
@@ -1526,15 +1600,60 @@ const _updateState =
             endsAt: event.endsAt,
             spaces: event.spaces,
             description: event.description,
+            signUpsCloseAt: signUpsCloseAt(
+              event.startsAt,
+              event.signUpsCloseHoursBefore
+            ),
           })
           .onConflictDoNothing()
           .run();
         for (const memberNumber of event.attendees) {
           tx.insert(trainingSessionAttendeesTable)
-            .values({sessionId: event.sessionId, memberNumber})
+            .values({
+              sessionId: event.sessionId,
+              memberNumber,
+              bookedAt: event.recordedAt,
+            })
             .onConflictDoNothing()
             .run();
         }
+        break;
+      }
+      case 'TrainingSessionSignedUp': {
+        tx.insert(trainingSessionAttendeesTable)
+          .values({
+            sessionId: event.sessionId,
+            memberNumber: event.memberNumber,
+            bookedAt: event.recordedAt,
+          })
+          .onConflictDoNothing()
+          .run();
+        break;
+      }
+      case 'TrainingSessionSignUpCancelled': {
+        tx.delete(trainingSessionAttendeesTable)
+          .where(
+            and(
+              eq(trainingSessionAttendeesTable.sessionId, event.sessionId),
+              eq(trainingSessionAttendeesTable.memberNumber, event.memberNumber)
+            )
+          )
+          .run();
+        break;
+      }
+      case 'TrainingSessionCancelled': {
+        // Who was booked stays, so they can be told.
+        tx.update(trainingSessionsTable)
+          .set({cancelledAt: event.recordedAt, cancelReason: event.reason})
+          .where(eq(trainingSessionsTable.id, event.sessionId))
+          .run();
+        break;
+      }
+      case 'TrainingSessionNotificationSent': {
+        tx.insert(trainingSessionNotificationsTable)
+          .values({notifiedEventIndex: event.notifiedEventIndex})
+          .onConflictDoNothing()
+          .run();
         break;
       }
       default: {

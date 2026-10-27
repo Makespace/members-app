@@ -104,6 +104,7 @@ const transformRow =
     submittedAt: row.submittedAt,
     submittedName: row.submittedName,
     submittedMemberNumber: row.submittedMemberNumber,
+    providedMemberNumber: row.providedMemberNumber ?? null,
     submittedEmail: row.submittedEmail,
     submittedEquipment: row.submittedEquipment,
     equipmentId: row.equipmentId ?? null,

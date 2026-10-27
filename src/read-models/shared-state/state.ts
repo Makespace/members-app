@@ -422,6 +422,7 @@ export const purchasingAreasTable = defineTable(
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       yearlyBudgetPence INTEGER NOT NULL,
+      active INTEGER NOT NULL,
       createdAt INTEGER NOT NULL
     )
   `,
@@ -430,6 +431,7 @@ export const purchasingAreasTable = defineTable(
     id: text('id').notNull().primaryKey().$type<UUID>(),
     name: text('name').notNull(),
     yearlyBudgetPence: integer('yearlyBudgetPence').notNull(),
+    active: integer('active', {mode: 'boolean'}).notNull(),
     createdAt: integer('createdAt', {mode: 'timestamp_ms'}).notNull(),
   }
 );
@@ -554,6 +556,9 @@ export const purchaseRequestsTable = defineTable(
       decidedByMemberNumber INTEGER,
       declineReason TEXT,
       approvalNote TEXT,
+      boughtAt INTEGER,
+      boughtByMemberNumber INTEGER,
+      actualCostPence INTEGER,
       outcome TEXT NOT NULL,
       approval TEXT NOT NULL,
       outcomeReason TEXT NOT NULL,
@@ -588,6 +593,11 @@ export const purchaseRequestsTable = defineTable(
     decidedByMemberNumber: integer('decidedByMemberNumber'),
     declineReason: text('declineReason'),
     approvalNote: text('approvalNote'),
+    // Once bought after being approved: when, by whom and, if different,
+    // what it really cost.
+    boughtAt: integer('boughtAt', {mode: 'timestamp_ms'}),
+    boughtByMemberNumber: integer('boughtByMemberNumber'),
+    actualCostPence: integer('actualCostPence'),
     outcome: text('outcome').notNull().$type<PurchaseRequestOutcome>(),
     approval: text('approval').notNull().$type<PurchaseApproval>(),
     outcomeReason: text('outcomeReason').notNull(),
@@ -659,6 +669,7 @@ export const troubleTicketsTable = defineTable(
       submittedAt INTEGER NOT NULL,
       submittedName TEXT,
       submittedMemberNumber INTEGER,
+      providedMemberNumber INTEGER,
       submittedEmail TEXT,
       submittedEquipment TEXT,
       equipmentId TEXT,
@@ -677,6 +688,9 @@ export const troubleTicketsTable = defineTable(
     submittedAt: integer('submittedAt', {mode: 'timestamp_ms'}).notNull(),
     submittedName: text('submittedName'),
     submittedMemberNumber: integer('submittedMemberNumber'),
+    // Typed on the public form and not matched to the reporter; see the
+    // TroubleTicketCreated event.
+    providedMemberNumber: integer('providedMemberNumber'),
     submittedEmail: text('submittedEmail'),
     // The raw equipment string from the form; kept so the equipment link can be
     // re-resolved or overridden later.
@@ -1016,7 +1030,10 @@ export const trainingSessionsTable = defineTable(
       startsAt INTEGER NOT NULL,
       endsAt INTEGER NOT NULL,
       spaces INTEGER NOT NULL,
-      description TEXT NOT NULL
+      description TEXT NOT NULL,
+      signUpsCloseAt INTEGER NOT NULL,
+      cancelledAt INTEGER,
+      cancelReason TEXT
     )
   `,
   'trainingSessions' as const,
@@ -1028,15 +1045,20 @@ export const trainingSessionsTable = defineTable(
     endsAt: integer('endsAt', {mode: 'timestamp_ms'}).notNull(),
     spaces: integer('spaces').notNull(),
     description: text('description').notNull(),
+    signUpsCloseAt: integer('signUpsCloseAt', {mode: 'timestamp_ms'}).notNull(),
+    cancelledAt: integer('cancelledAt', {mode: 'timestamp_ms'}),
+    cancelReason: text('cancelReason'),
   }
 );
 
-// Who is booked on each training session.
+// Who is booked on each training session: members the trainer booked in when
+// arranging it, and members who signed up since.
 export const trainingSessionAttendeesTable = defineTable(
   sql`
     CREATE TABLE IF NOT EXISTS trainingSessionAttendees (
       sessionId TEXT NOT NULL,
       memberNumber INTEGER NOT NULL,
+      bookedAt INTEGER NOT NULL,
       PRIMARY KEY (sessionId, memberNumber)
     )
   `,
@@ -1044,5 +1066,20 @@ export const trainingSessionAttendeesTable = defineTable(
   {
     sessionId: text('sessionId').notNull().$type<UUID>(),
     memberNumber: integer('memberNumber').notNull(),
+    bookedAt: integer('bookedAt', {mode: 'timestamp_ms'}).notNull(),
+  }
+);
+
+// Which training session events have had their emails sent, so none is sent
+// twice (see TrainingSessionNotificationSent).
+export const trainingSessionNotificationsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS trainingSessionNotifications (
+      notifiedEventIndex INTEGER PRIMARY KEY
+    )
+  `,
+  'trainingSessionNotifications' as const,
+  {
+    notifiedEventIndex: integer('notifiedEventIndex').notNull().primaryKey(),
   }
 );

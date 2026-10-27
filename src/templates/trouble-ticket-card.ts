@@ -26,16 +26,28 @@ const renderSubmitter = (ticket: TroubleTicketView): Html => {
     : ticket.submittedEmail
       ? sanitizeString(ticket.submittedEmail)
       : null;
+  // A number typed on the public form that the ticket was not matched to.
+  // Shown, because it is often right, but not linked, because it proves
+  // nothing.
+  const typedNumber =
+    ticket.providedMemberNumber === null
+      ? html``
+      : html` <small
+          >(form said member ${safe(String(ticket.providedMemberNumber))}, not
+          confirmed)</small
+        >`;
   if (ticket.submittedMemberNumber !== null) {
     return name === null
-      ? html`Member ${renderMemberNumber(ticket.submittedMemberNumber)}`
+      ? html`Member ${renderMemberNumber(ticket.submittedMemberNumber)}${typedNumber}`
       : html`<a href="/member/${safe(String(ticket.submittedMemberNumber))}"
-          >${name}</a
-        >
-        (${renderMemberNumber(ticket.submittedMemberNumber)})`;
+            >${name}</a
+          >
+          (${renderMemberNumber(ticket.submittedMemberNumber)})${typedNumber}`;
   }
   // Nobody matched: what they typed is all there is.
-  return name === null ? html`Not provided` : html`${name}`;
+  return name === null
+    ? html`Not provided${typedNumber}`
+    : html`${name}${typedNumber}`;
 };
 
 const renderEquipment = (ticket: TroubleTicketView) =>

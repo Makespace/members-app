@@ -38,7 +38,7 @@ export const renderOutcome = (
       ? outcome === 'consumable' && approval === 'proposal'
         ? {label: 'Paid for by members · Proposal needed', colour: 'red'}
         : tags[outcome]
-      : status === 'approved'
+      : status === 'approved' || status === 'bought'
         ? {label: `${base.label} · Proposal approved`, colour: base.colour}
         : base;
   return html`<span

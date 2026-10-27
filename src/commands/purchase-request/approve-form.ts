@@ -78,8 +78,36 @@ const renderForm = (viewModel: DecisionViewModel) =>
               ? html`required`
               : html``}
           ></textarea>
+          <label for="actualCost">If you've bought it, what did it cost?</label>
+          <p class="text-sm">
+            Only used with "Approve and mark as bought". Change it if the real
+            cost was different, e.g. with delivery.
+          </p>
+          <div class="purchase-money purchase-money--narrow">
+            <span>£</span
+            ><input
+              type="text"
+              inputmode="decimal"
+              name="actualCost"
+              id="actualCost"
+              pattern="[0-9]+([.][0-9]{1,2})?"
+              title="An amount in pounds, e.g. 42.50"
+              value="${sanitizeString((viewModel.request.totalPence / 100).toFixed(2))}"
+            />
+          </div>
           <input type="hidden" name="id" value="${viewModel.request.id}" />
-          <button type="submit">Approve</button>
+          <div class="wrap">
+            <button type="submit" name="markBought" value="false">
+              Approve
+            </button>
+            <button type="submit" name="markBought" value="true">
+              Approve and mark as bought
+            </button>
+          </div>
+          <p class="text-sm">
+            Approve it for someone to buy, or, if you've already bought it,
+            approve it and mark it as bought.
+          </p>
         </form>
       </div>
     `,

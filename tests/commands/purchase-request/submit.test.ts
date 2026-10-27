@@ -145,6 +145,7 @@ describe('submit purchase request', () => {
         id: purchasingAreaId,
         name: 'Textiles',
         yearlyBudgetPence: 150_000,
+        active: true,
       }),
       constructEvent('AreaAssignedToPurchasingArea')({
         actor: arbitraryActor(),
@@ -221,6 +222,8 @@ describe('submit purchase request', () => {
         earlier,
         constructEvent('PurchaseRequestApproved')({
           note: null,
+        alsoBought: false,
+        actualCostPence: null,
           actor: arbitraryActor(),
           id: earlier.id,
         })
@@ -553,6 +556,43 @@ describe('submit purchase request', () => {
           input: input(),
         })
       ).toBe(true);
+    });
+
+    describe('when the purchasing area is not active', () => {
+      beforeEach(() => {
+        insert(
+          constructEvent('PurchasingAreaDeactivated')({
+            actor: arbitraryActor(),
+            purchasingAreaId,
+          })
+        );
+      });
+
+      it('is not its purchaser', () => {
+        expect(
+          submit.isAuthorized({
+            actor: purchaser,
+            rm: framework.sharedReadModel,
+            input: input(),
+          })
+        ).toBe(false);
+      });
+
+      it('is not even a super user', () => {
+        insert(
+          constructEvent('SuperUserDeclared')({
+            actor: arbitraryActor(),
+            memberNumber: otherMemberNumber,
+          })
+        );
+        expect(
+          submit.isAuthorized({
+            actor: userActor(otherMemberNumber),
+            rm: framework.sharedReadModel,
+            input: input(),
+          })
+        ).toBe(false);
+      });
     });
   });
 

@@ -77,6 +77,7 @@ describe('purchasing area page', () => {
         id: purchasingAreaId,
         name: 'Woodwork',
         yearlyBudgetPence: 200_000,
+        active: true,
       }),
       constructEvent('AreaAssignedToPurchasingArea')({
         actor: arbitraryActor(),
@@ -120,6 +121,8 @@ describe('purchasing area page', () => {
     await framework.commands.purchaseRequest.approve({
       id: bandsawBlades,
       note: undefined,
+      markBought: undefined,
+      actualCost: undefined,
       actor: arbitraryActor(),
     });
   });

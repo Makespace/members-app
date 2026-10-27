@@ -1191,6 +1191,8 @@ label img {
 
 .purchase-money input {
   font-variant-numeric: tabular-nums;
+  /* Plain forms space their inputs out; here the £ sits flush. */
+  margin: 0;
 }
 
 .purchase-request__link-button {
@@ -2865,6 +2867,55 @@ body:has(.tt-wrapper) {
   color: var(--grey-color);
 }
 
+/* For somebody not logged in. */
+.tt-form__log-in {
+  border-left: 5px solid #1d70b8;
+  padding: 0.5rem 0 0.5rem 1rem;
+}
+
+.tt-form__about-you {
+  border: 2px solid var(--border-color);
+  padding: 1rem;
+}
+
+.tt-form__about-you input[type='email'] {
+  margin-bottom: 0;
+}
+
+/* The spam trap: off the page rather than display:none, which some bots
+   know to skip. */
+.tt-form__trap {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.public-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #fa990e;
+}
+
+.public-page {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.tt-claim__summary {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 1rem;
+}
+
+.tt-claim__summary dd {
+  margin: 0;
+}
+
 /* Trouble tickets landing: two cards side by side, stacking on narrow
    screens. */
 .tt-home {
@@ -3890,6 +3941,40 @@ ul.sign__points li + li {
 
 .training-sessions-table td {
   vertical-align: top;
+}
+
+.training-session__attendees {
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.training-session__row-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: flex-start;
+}
+
+.training-session__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: baseline;
+  margin-top: 0.4rem;
+}
+
+.training-session__yours {
+  font-weight: 600;
+}
+
+.training-session__closed,
+.training-session__reason {
+  color: var(--grey-color);
+}
+
+.tag--cancelled {
+  background-color: #f6d7d2;
+  color: #942514;
 }
 
 .eq-cards__actions {

@@ -57,6 +57,7 @@ describe('the trouble ticket summaries', () => {
         areaId: null,
         title: issue,
         mailboxConversationId: '',
+        providedMemberNumber: null,
         source: 'sheet',
         otherEquipmentDetail: '',
         status: 'Broken',

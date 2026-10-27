@@ -119,7 +119,8 @@ export const render = () => html`
       answering before a sign is printed with them`),
       done(html`Link each machine to its risk assessment, and show in one place
       which machines are still missing one`),
-      todo(html`Training scheduling in the app`),
+      done(html`Training scheduling in the app: trainers arrange sessions,
+      members sign up, and trainers are emailed as people join or leave`),
 
       heading(html`Membership payments`),
       done(html`Show a member's invoices to super-users, and say why an unpaid

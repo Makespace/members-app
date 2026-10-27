@@ -32,6 +32,7 @@ describe('bulkQuietResolve', () => {
         areaId: null,
         title: '',
         mailboxConversationId: '',
+        providedMemberNumber: null,
         actor: systemActor(),
         id,
         rowHash: faker.string.hexadecimal({length: 64}),

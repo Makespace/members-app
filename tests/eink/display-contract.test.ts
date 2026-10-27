@@ -47,6 +47,7 @@ describe('the e-ink display contract', () => {
         areaId: null,
         title: 'Blade guide is loose',
         mailboxConversationId: '',
+        providedMemberNumber: null,
         actor: arbitraryActor(),
         id: faker.string.uuid() as UUID,
         rowHash: faker.string.hexadecimal({length: 64}),

@@ -103,6 +103,7 @@ describe('trouble ticket commands', () => {
         areaId: null,
         title: '',
         mailboxConversationId: '',
+        providedMemberNumber: null,
         actor: systemActor(),
         id: ticketId,
         rowHash: faker.string.hexadecimal({length: 64}),

@@ -1,4 +1,4 @@
-import {constructEvent} from '../../types';
+import {constructEvent, DomainEvent} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
@@ -7,7 +7,12 @@ import {pipe} from 'fp-ts/lib/function';
 import {v4} from 'uuid';
 import {StatusCodes} from 'http-status-codes';
 import {Command} from '../command';
-import {failureWithStatus} from '../../types/failure-with-status';
+import {
+  FailureWithStatus,
+  failureWithStatus,
+} from '../../types/failure-with-status';
+import {Actor} from '../../types/actor';
+import {SharedReadModel} from '../../read-models/shared-state';
 import {UUID} from 'io-ts-types';
 
 // The machine-status answers, in the order they appear on the form. Stored as
@@ -40,7 +45,7 @@ const checkboxList = new t.Type<ReadonlyArray<string>, unknown, unknown>(
   t.identity
 );
 
-const trimmed = new t.Type<string, unknown, unknown>(
+export const trimmed = new t.Type<string, unknown, unknown>(
   'trimmed',
   (u): u is string => typeof u === 'string',
   u => (typeof u === 'string' ? t.success(u.trim()) : t.success('')),
@@ -58,7 +63,9 @@ export const NOT_LISTED = 'other';
 const isPicked = (equipmentId: string): boolean =>
   equipmentId !== '' && equipmentId !== NOT_LISTED;
 
-const baseCodec = t.strict({
+// The questions about the problem itself, which every way of raising a
+// ticket asks.
+export const problemFields = {
   equipmentId: t.union([tt.UUID, t.literal(''), t.literal(NOT_LISTED)]),
   // Which unit, when the equipment stands for several machines.
   machine: tt.withFallback(trimmed, ''),
@@ -67,35 +74,40 @@ const baseCodec = t.strict({
   attempting: trimmed,
   issue: trimmed,
   steps: tt.withFallback(trimmed, ''),
-});
+};
+
+const baseCodec = t.strict(problemFields);
+
+type Problem = t.TypeOf<typeof baseCodec>;
 
 // What went wrong is the one answer an owner cannot work without, and an
 // unnamed machine needs describing.
-const codec = t.refinement(
-  baseCodec,
-  input =>
-    input.issue !== '' &&
-    (isPicked(input.equipmentId) || input.otherEquipmentDetail !== ''),
-  'RaiseTroubleTicket'
-);
+export const isCompleteReport = (input: Problem): boolean =>
+  input.issue !== '' &&
+  (isPicked(input.equipmentId) || input.otherEquipmentDetail !== '');
+
+const codec = t.refinement(baseCodec, isCompleteReport, 'RaiseTroubleTicket');
 
 type RaiseTroubleTicket = t.TypeOf<typeof codec>;
 
-const process: Command<RaiseTroubleTicket>['process'] = input => {
-  if (input.command.actor.tag !== 'user') {
-    return TE.left(
-      failureWithStatus(
-        'Only a logged-in member can raise a trouble ticket',
-        StatusCodes.UNAUTHORIZED
-      )()
-    );
-  }
-  const member = input.rm.members.getByMemberNumber(
-    input.command.actor.user.memberNumber
-  );
-  const picked = isPicked(input.command.equipmentId);
+// Who reported it, as far as the ticket is concerned.
+export type Reporter = {
+  memberNumber: number | null;
+  providedMemberNumber: number | null;
+  email: string | null;
+  name: string;
+};
+
+export const ticketCreated = (
+  rm: SharedReadModel,
+  problem: Problem,
+  reporter: Reporter,
+  source: 'app' | 'public',
+  actor: Actor
+): TE.TaskEither<FailureWithStatus, O.Option<DomainEvent>> => {
+  const picked = isPicked(problem.equipmentId);
   const equipment = picked
-    ? input.rm.equipment.get(input.command.equipmentId as UUID)
+    ? rm.equipment.get(problem.equipmentId as UUID)
     : O.none;
   if (picked && O.isNone(equipment)) {
     return TE.left(
@@ -112,13 +124,10 @@ const process: Command<RaiseTroubleTicket>['process'] = input => {
         rowHash: `app:${v4()}`,
         sheetId: 'app',
         submittedAt,
-        submittedMemberNumber: input.command.actor.user.memberNumber,
-        submittedEmail: input.command.actor.user.emailAddress,
-        submittedName: pipe(
-          member,
-          O.chain(found => found.name),
-          O.getOrElse(() => '')
-        ),
+        submittedMemberNumber: reporter.memberNumber,
+        providedMemberNumber: reporter.providedMemberNumber,
+        submittedEmail: reporter.email,
+        submittedName: reporter.name,
         // The name is kept for display alongside imported tickets; the picked
         // equipmentId is what actually places the ticket.
         submittedEquipment: pipe(
@@ -132,19 +141,47 @@ const process: Command<RaiseTroubleTicket>['process'] = input => {
             O.map(found => found.id)
           )
         ),
-        machine: input.command.machine,
+        machine: problem.machine,
         areaId: null,
         title: '',
         mailboxConversationId: '',
-        otherEquipmentDetail: input.command.otherEquipmentDetail,
-        status: input.command.machineStatuses.join(', '),
-        attempting: input.command.attempting,
-        issue: input.command.issue,
-        steps: input.command.steps,
-        source: 'app',
-        actor: input.command.actor,
+        otherEquipmentDetail: problem.otherEquipmentDetail,
+        status: problem.machineStatuses.join(', '),
+        attempting: problem.attempting,
+        issue: problem.issue,
+        steps: problem.steps,
+        source,
+        actor,
       })
     )
+  );
+};
+
+const process: Command<RaiseTroubleTicket>['process'] = input => {
+  if (input.command.actor.tag !== 'user') {
+    return TE.left(
+      failureWithStatus(
+        'Only a logged-in member can raise a trouble ticket',
+        StatusCodes.UNAUTHORIZED
+      )()
+    );
+  }
+  const user = input.command.actor.user;
+  return ticketCreated(
+    input.rm,
+    input.command,
+    {
+      memberNumber: user.memberNumber,
+      providedMemberNumber: null,
+      email: user.emailAddress,
+      name: pipe(
+        input.rm.members.getByMemberNumber(user.memberNumber),
+        O.chain(found => found.name),
+        O.getOrElse(() => '')
+      ),
+    },
+    'app',
+    input.command.actor
   );
 };
 

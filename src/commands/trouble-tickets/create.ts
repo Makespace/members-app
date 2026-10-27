@@ -72,6 +72,7 @@ const process: Command<CreateTroubleTicket>['process'] = input => {
             areaId: null,
             title: '',
             mailboxConversationId: '',
+            providedMemberNumber: null,
             actor: input.command.actor,
           })
         )

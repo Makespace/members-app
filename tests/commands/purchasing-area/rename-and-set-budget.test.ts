@@ -64,6 +64,7 @@ describe('rename and set budget of a purchasing area', () => {
           id: purchasingAreaId,
           name: 'Wood Shop',
           yearlyBudgetPence: 100_000,
+          active: true,
         })
       );
     });

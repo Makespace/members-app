@@ -9,6 +9,7 @@ import {
   NotifyPurchaseRequestDependencies,
 } from '../../src/sync-worker/notify_purchase_requests';
 import {TestFramework, initTestFramework} from '../read-models/test-framework';
+import {markBought} from '../../src/commands/purchase-request/mark-bought';
 
 // Who hears about a purchase request, and what they're told, end to end:
 // requests go in through the commands, and the notifier sends the emails.
@@ -133,6 +134,9 @@ describe('purchase request notifications', () => {
       name: 'Wood Shop' as NonEmptyString,
       yearlyBudget: 500_000,
     } as never);
+    await framework.commands.purchasingArea.activate({
+      purchasingAreaId,
+    } as never);
     await framework.commands.purchasingArea.assignArea({
       purchasingAreaId,
       areaId: woodArea,
@@ -181,6 +185,8 @@ describe('purchase request notifications', () => {
       await framework.commands.purchaseRequest.approve({
         id,
         note: 'Go ahead',
+        markBought: undefined,
+        actualCost: undefined,
         actor: asMember(PURCHASER),
       });
       const emails = await notify();
@@ -231,12 +237,16 @@ describe('purchase request notifications', () => {
         framework.commands.purchaseRequest.approve({
           id,
           note: '',
+          markBought: undefined,
+          actualCost: undefined,
           actor: asMember(DIRECTOR),
         })
       ).rejects.toThrow();
       await framework.commands.purchaseRequest.approve({
         id,
         note: 'Agreed at the October owners forum',
+        markBought: undefined,
+        actualCost: undefined,
         actor: asMember(DIRECTOR),
       });
       const emails = await notify();
@@ -244,6 +254,77 @@ describe('purchase request notifications', () => {
         [emailOf(REQUESTER), emailOf(PURCHASER), emailOf(MANAGER)].sort()
       );
       expect(emails[0].text).toContain('Note: Agreed at the October owners forum');
+    });
+  });
+
+  describe('buying it', () => {
+    it('can be approved and marked as bought at once, at what it really cost', async () => {
+      const id = await request('50');
+      await notify();
+      await framework.commands.purchaseRequest.approve({
+        id,
+        note: undefined,
+        markBought: true,
+        actualCost: '54.00',
+        actor: asMember(PURCHASER),
+      });
+      expect(
+        framework.sharedReadModel.purchasing.getRequest(id)
+      ).toMatchObject({value: {status: 'bought', actualCostPence: {value: 5_400}}});
+      expect(
+        framework.sharedReadModel.purchasing
+          .getAll(new Date())
+          .find(area => area.id === purchasingAreaId)?.spentThisYearPence
+      ).toBe(5_400);
+      const emails = await notify();
+      expect(recipients(emails)).toStrictEqual([emailOf(REQUESTER)]);
+      expect(emails[0].subject).toBe(
+        'Purchase request approved and bought: Bandsaw <b>blades</b>'
+      );
+      expect(emails[0].text).toContain('Bought for £54.00.');
+    });
+
+    it('tells everyone told about it once bought after being approved', async () => {
+      const id = await request('1200');
+      await notify();
+      await framework.commands.purchaseRequest.approve({
+        id,
+        note: 'Agreed by the directors',
+        markBought: undefined,
+        actualCost: undefined,
+        actor: asMember(DIRECTOR),
+      });
+      await notify();
+      await framework.commands.purchaseRequest.markBought({
+        id,
+        actualCost: '',
+        actor: asMember(SUPER_USER),
+      });
+      const emails = await notify();
+      expect(recipients(emails)).toStrictEqual(
+        [emailOf(REQUESTER), emailOf(PURCHASER), emailOf(MANAGER), emailOf(DIRECTOR)].sort()
+      );
+      expect(emails[0].subject).toBe('Purchase request bought: Bandsaw <b>blades</b>');
+      expect(emails[0].text).toContain('Bought for £1,200.00.');
+    });
+
+    it("can't be marked bought by a purchaser when it needed director approval", async () => {
+      const id = await request('1200');
+      await framework.commands.purchaseRequest.approve({
+        id,
+        note: 'Agreed',
+        markBought: undefined,
+        actualCost: undefined,
+        actor: asMember(DIRECTOR),
+      });
+      const authorised = (memberNumber: number) =>
+        markBought.isAuthorized({
+          actor: asMember(memberNumber),
+          rm: framework.sharedReadModel,
+          input: {id, actualCost: undefined},
+        });
+      expect(authorised(PURCHASER)).toBe(false);
+      expect(authorised(SUPER_USER)).toBe(true);
     });
   });
 

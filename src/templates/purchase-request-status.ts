@@ -4,8 +4,9 @@ import {PurchaseRequest} from '../read-models/shared-state/return-types';
 
 const tags: Record<PurchaseRequestStatus, {label: string; colour: string}> = {
   'awaiting-approval': {label: 'Awaiting approval', colour: 'grey'},
-  approved: {label: 'Approved', colour: 'green'},
+  approved: {label: 'Approved, not bought yet', colour: 'green'},
   declined: {label: 'Declined', colour: 'red'},
+  bought: {label: 'Bought', colour: 'blue'},
   'bought-directly': {label: 'Bought directly', colour: 'blue'},
 };
 
