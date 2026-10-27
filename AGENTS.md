@@ -74,11 +74,57 @@ Important domain notes:
 
 External integrations:
 
-- Recurly provides subscription-related data.
+- Recurly provides subscription-related data. Reading it is routine; writing to
+  it is guarded - see "Recurly writes" below before changing anything that
+  could touch a subscription, invoice, card or account in Recurly.
 - Google Sheets provides training and trouble-ticket data.
 - Paxton/Net2 fob data is NOT read by this app. Access control stays in the door
   system; there is no integration, and no credential for one.
 - Sync-related tests commonly use fixtures under `tests/data/`.
+
+## Recurly writes
+
+Recurly holds members' subscriptions and cards. A write there can end a real
+membership or move real money, and a bad one is hard to undo. So:
+
+- **Every write to Recurly goes through `deps.recurlyWrite`**, the gateway in
+  `src/recurly-write/recurly-write-gateway.ts`. Nothing else may import the
+  `recurly` package, build a Recurly client, call a Recurly write method, or
+  call the Recurly HTTP API - not app code, not the sync worker, not scripts.
+- The read-only sync (`src/sync-worker/recurly/pull-recurly-data.ts`) uses the
+  read-only `RECURLY_TOKEN` and may only call `list*`/`get*` methods.
+- Writes are off unless `RECURLY_WRITE_TOKEN` is set. It is a separate key
+  from `RECURLY_TOKEN`; never point one at the other.
+- Every gateway call takes an actor and a reason, which are logged. The
+  gateway does not check permissions: the command calling it must already
+  have checked that the actor may change *that* subscription (for a member,
+  that it is their own).
+- If the gateway lacks the operation you need, add one narrow method for it
+  (one specific action, fixed options) with tests in `tests/recurly-write/`.
+  Never add a method that passes arbitrary calls through to the raw client.
+
+This is enforced, so a change that breaks it fails CI:
+
+- `tests/recurly-write/recurly-write-boundary.test.ts` fails on a `recurly`
+  import, a Recurly write method call, a use of `RECURLY_WRITE_TOKEN`, or a
+  Recurly API URL anywhere outside the allowed files.
+- `eslint.config.js` restricts importing `recurly` to the same two files.
+- `.github/workflows/recurly-write-flag.yml` labels any pull request that
+  changes the gateway, uses it, or touches these guards `recurly-write`, and
+  comments with a reviewer checklist.
+
+For agents in particular:
+
+- **Never weaken the guards to make a change pass** - do not edit the boundary
+  test's allow-lists, the lint rule's `ignores`, or the flag workflow. Route
+  the write through the gateway instead. If you believe a guard is wrong,
+  stop and ask the human.
+- **Ask the human before adding a gateway operation or a new caller.** These
+  are product and money decisions, not implementation details.
+- **Say so explicitly** whenever your change touches `src/recurly-write/`,
+  calls `deps.recurlyWrite`, or changes anything above: put "Touches Recurly
+  writes" at the top of the pull request description, and in your summary to
+  the human, with what it does and who can trigger it.
 
 ## Project patterns
 
