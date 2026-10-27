@@ -51,7 +51,7 @@ type NotificationAreas = {
 
 type Person = {memberNumber: number; primaryEmailAddress: EmailAddress};
 
-const ownersOf = (rm: SharedReadModel, areaId: string): ReadonlyArray<Person> =>
+export const ownersOf = (rm: SharedReadModel, areaId: string): ReadonlyArray<Person> =>
   areaId === ''
     ? []
     : pipe(
@@ -62,7 +62,7 @@ const ownersOf = (rm: SharedReadModel, areaId: string): ReadonlyArray<Person> =>
         )
       );
 
-const superUsers = (rm: SharedReadModel): ReadonlyArray<Person> =>
+export const superUsers = (rm: SharedReadModel): ReadonlyArray<Person> =>
   rm.members.getAll().filter(member => member.isSuperUser);
 
 // Collects people, merging the reasons of anyone added more than once.

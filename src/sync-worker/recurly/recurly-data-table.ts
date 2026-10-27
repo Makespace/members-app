@@ -97,6 +97,17 @@ export const recurlyTransactionTable = sqliteTable(
     customerMessage: text('customerMessage'),
     gatewayMessage: text('gatewayMessage'),
     merchantReasonCode: text('merchantReasonCode'),
+    // Recurly's machine-readable reason, e.g. 'insufficient_funds'. The
+    // fraud_* family ('fraud_gateway' is Stripe blocking it) is what the
+    // suspicious-activity monitor counts.
+    statusCode: text('statusCode'),
+    // Where the attempt came from: 'hpp' for the hosted signup page,
+    // 'recurring' for a renewal, 'recurly_admin' for someone in the console.
+    origin: text('origin'),
+    // Two-letter countries: where the attempt was made from, and the billing
+    // address given. A card-testing attack shows up as signups from abroad.
+    ipAddressCountry: text('ipAddressCountry'),
+    billingCountry: text('billingCountry'),
     updatedAt: integer('updatedAt', {mode: 'timestamp_ms'}),
     cachedAt: integer('cachedAt', {mode: 'timestamp_ms'}).notNull(),
   }
@@ -145,6 +156,9 @@ export const recurlyAccountCodeTable = sqliteTable(
     // The account holder's name as Recurly has it, for an admin deciding
     // which member an unlinked account belongs to. Null until the next sync.
     name: text('name'),
+    // When the account was opened in Recurly, for counting new accounts.
+    // Null until the next sync.
+    createdAt: integer('createdAt', {mode: 'timestamp_ms'}),
     cacheLastUpdated: integer('cacheLastUpdated', {mode: 'timestamp_ms'}).notNull(),
   }
 );
@@ -226,6 +240,10 @@ const createRecurlyTransactionTable = sql`
     customerMessage TEXT,
     gatewayMessage TEXT,
     merchantReasonCode TEXT,
+    statusCode TEXT,
+    origin TEXT,
+    ipAddressCountry TEXT,
+    billingCountry TEXT,
     updatedAt INTEGER,
     cachedAt INTEGER NOT NULL
   );
@@ -267,6 +285,8 @@ export const createRecurlyIndexes = [
   sql`CREATE INDEX IF NOT EXISTS recurly_subscriptions_account ON recurly_subscriptions (accountId);`,
   sql`CREATE INDEX IF NOT EXISTS recurly_invoices_account ON recurly_invoices (accountId);`,
   sql`CREATE INDEX IF NOT EXISTS recurly_transactions_account ON recurly_transactions (accountId);`,
+  // The suspicious-activity monitor counts attempts in a time window.
+  sql`CREATE INDEX IF NOT EXISTS recurly_transactions_created ON recurly_transactions (createdAt);`,
   sql`CREATE INDEX IF NOT EXISTS recurly_subscription_history_email ON recurly_subscription_history (email);`,
   sql`CREATE INDEX IF NOT EXISTS recurly_subscription_history_account ON recurly_subscription_history (accountId);`,
   // The member page matches cached rows case-insensitively (lower(email)),
@@ -303,7 +323,10 @@ export const createTables = [
 // migration is to throw them away and fetch them again. The cursor is cleared
 // alongside them, so the next pull starts from the beginning rather than from
 // today and leaves a hole where the old rows were.
-export const RECURLY_CACHE_SCHEMA_VERSION = 2;
+//
+// 3: transactions gained statusCode, origin and the two countries, which the
+// suspicious-activity monitor needs on every row, not just new ones.
+export const RECURLY_CACHE_SCHEMA_VERSION = 3;
 
 export const rebuildBillingCaches = [
   sql`DROP TABLE IF EXISTS recurly_invoices;`,
@@ -320,4 +343,5 @@ export const rebuildBillingCaches = [
 export const addRecurlyColumns = [
   sql`ALTER TABLE recurly_subscriptions ADD COLUMN accountId TEXT;`,
   sql`ALTER TABLE recurly_account_codes ADD COLUMN name TEXT;`,
+  sql`ALTER TABLE recurly_account_codes ADD COLUMN createdAt INTEGER;`,
 ];

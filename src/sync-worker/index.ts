@@ -17,6 +17,7 @@ import {checkGuideLinks} from './guide-links/check_guide_links';
 import { Duration } from 'luxon';
 import {notifyPurchaseRequests} from './notify_purchase_requests';
 import {notifyTrainingSessions} from './notify_training_sessions';
+import {notifyRecurlyActivity} from './notify_recurly_activity';
 
 const HEARTBEAT_INTERVAL_MS = 20 * 1000;
 const EQUIPMENT_SYNC_CHECK_INTERVAL_MS = 60 * 1000;
@@ -39,6 +40,9 @@ const RECURLY_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 // likely to have just been recorded.
 const GUIDE_LINK_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const OWNER_AGREEMENT_REMINDER_INTERVAL_MS = 60 * 60 * 1000;
+// Matches the Recurly sync: checking more often would only re-read the same
+// cached payments.
+const RECURLY_ACTIVITY_CHECK_INTERVAL_MS = 20 * 60 * 1000;
 
 async function syncExternDataPeriodically(
   deps: SyncWorkerDependencies,
@@ -57,6 +61,7 @@ async function syncExternDataPeriodically(
   let lastTrainingSummaryEmailCheck = Date.now();
   let lastGuideLinkCheck = 0;
   let lastOwnerAgreementReminder = 0;
+  let lastRecurlyActivityCheck = 0;
   while (true) {
     try {
       const now = Date.now();
@@ -195,6 +200,18 @@ async function syncExternDataPeriodically(
       }
 
       await deps.pullRecurlyData(Duration.fromMillis(RECURLY_SYNC_INTERVAL_MS));
+
+      if (Date.now() - lastRecurlyActivityCheck > RECURLY_ACTIVITY_CHECK_INTERVAL_MS) {
+        // Contained, like the guide link check: a failing check must not skip
+        // the loop's pause and starve everything after it.
+        try {
+          await notifyRecurlyActivity(deps);
+        } catch (err) {
+          deps.logger.error(err, 'Recurly activity check failed');
+        } finally {
+          lastRecurlyActivityCheck = Date.now();
+        }
+      }
 
       await setTimeout(1000);
     } catch (err) {

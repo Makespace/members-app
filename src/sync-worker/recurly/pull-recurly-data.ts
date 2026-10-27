@@ -26,6 +26,7 @@ type RecurlyAccount = {
     hasCanceledSubscription?: boolean | null;
     hasPausedSubscription?: boolean | null;
     hasPastDueInvoice?: boolean | null;
+    createdAt?: Date | null;
 };
 
 type RecurlyAccountMini = {
@@ -77,6 +78,10 @@ type RecurlyTransaction = {
     customerMessage?: string | null;
     gatewayMessage?: string | null;
     merchantReasonCode?: string | null;
+    statusCode?: string | null;
+    origin?: string | null;
+    ipAddressCountry?: string | null;
+    billingAddress?: {country?: string | null} | null;
 };
 
 type RecurlySubscription = {
@@ -279,6 +284,10 @@ const storeTransaction = (extDB: ExternalStateDB) => async (
         customerMessage: transaction.customerMessage ?? null,
         gatewayMessage: transaction.gatewayMessage ?? null,
         merchantReasonCode: transaction.merchantReasonCode ?? null,
+        statusCode: transaction.statusCode ?? null,
+        origin: transaction.origin ?? null,
+        ipAddressCountry: transaction.ipAddressCountry ?? null,
+        billingCountry: transaction.billingAddress?.country ?? null,
         updatedAt: transaction.updatedAt ?? null,
         cachedAt: new Date(),
     };
@@ -442,6 +451,7 @@ export const pullRecurlyData = (
                 hasCanceledSubscription,
                 hasPausedSubscription,
                 hasPastDueInvoice,
+                createdAt,
             } = account;
 
             const maybeEmail = emailOf(email);
@@ -481,6 +491,7 @@ export const pullRecurlyData = (
                     email: maybeEmail,
                     accountId: id ?? null,
                     name: name === '' ? null : name,
+                    createdAt: createdAt ?? null,
                     cacheLastUpdated: values.cacheLastUpdated,
                 };
                 await extDB.insert(recurlyAccountCodeTable)

@@ -74,6 +74,10 @@ type RecurlyTestTransaction = {
   customerMessage?: string | null;
   gatewayMessage?: string | null;
   merchantReasonCode?: string | null;
+  statusCode?: string | null;
+  origin?: string | null;
+  ipAddressCountry?: string | null;
+  billingAddress?: {country?: string | null} | null;
 };
 
 async function* iterate<T>(rows: ReadonlyArray<T>) {
@@ -596,6 +600,46 @@ describe('pull recurly data', () => {
       gatewayMessage: 'expired_card',
     });
     expect(rows[0]?.collectedAt).toBeNull();
+  });
+
+  it('caches what the suspicious-activity monitor needs about an attempt, account or not', async () => {
+    const [createRecurlyClient] = recurlyClientFactory({
+      transactions: [
+        {
+          id: 'tx_blocked',
+          // A signup attempt that never got as far as an account.
+          account: null,
+          type: 'purchase',
+          status: 'declined',
+          amount: 33.33,
+          createdAt: new Date('2026-10-07T04:00:00.000Z'),
+          statusCode: 'fraud_gateway',
+          origin: 'hpp',
+          ipAddressCountry: 'NL',
+          billingAddress: {country: 'US'},
+          updatedAt: new Date('2026-10-07T04:00:00.000Z'),
+        },
+      ],
+    });
+
+    await pullRecurlyData(
+      createLogger({level: 'silent'}),
+      extDB,
+      'token',
+      createRecurlyClient
+    )(Duration.fromMillis(0));
+
+    const row = await extDB
+      .select()
+      .from(recurlyTransactionTable)
+      .where(eq(recurlyTransactionTable.id, 'tx_blocked'))
+      .get();
+    expect(row).toMatchObject({
+      statusCode: 'fraud_gateway',
+      origin: 'hpp',
+      ipAddressCountry: 'NL',
+      billingCountry: 'US',
+    });
   });
 
   it('asks Recurly only for what changed since the last pull', async () => {

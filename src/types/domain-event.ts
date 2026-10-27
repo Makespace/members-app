@@ -693,6 +693,22 @@ const OwnerAgreementReminderSent = defineEvent('OwnerAgreementReminderSent', {
   stage: ReminderStage,
 });
 
+// The management team has been warned that Recurly is seeing an unusual number
+// of blocked payments (dedup marker, committed before sending). While the
+// count stays high, the next warning waits a full window after this one.
+const RecurlyActivityAlertSent = defineEvent('RecurlyActivityAlertSent', {
+  blockedCount: t.number,
+  threshold: t.number,
+  windowHours: t.number,
+});
+
+// The weekly summary of Recurly activity covering [periodStart, periodEnd) has
+// been emailed (dedup marker, committed before sending).
+const RecurlyActivitySummarySent = defineEvent('RecurlyActivitySummarySent', {
+  periodStart: tt.DateFromISOString,
+  periodEnd: tt.DateFromISOString,
+});
+
 const MemberTrainedOnEquipment = defineEvent('MemberTrainedOnEquipment', {
   equipmentId: tt.UUID,
   memberNumber: t.number,
@@ -953,6 +969,8 @@ export const events = [
   MemberFobRemoved,
   OwnerAgreementSigned,
   OwnerAgreementReminderSent,
+  RecurlyActivityAlertSent,
+  RecurlyActivitySummarySent,
   MemberTrainedOnEquipment,
   MemberTrainedOnEquipmentBy,
   RevokeTrainedOnEquipment,
@@ -1048,6 +1066,8 @@ export const DomainEvent = t.union([
   MemberFobRemoved.codec,
   OwnerAgreementSigned.codec,
   OwnerAgreementReminderSent.codec,
+  RecurlyActivityAlertSent.codec,
+  RecurlyActivitySummarySent.codec,
   MemberTrainedOnEquipment.codec,
   MemberTrainedOnEquipmentBy.codec,
   RevokeTrainedOnEquipment.codec,
