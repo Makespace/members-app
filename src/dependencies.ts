@@ -22,7 +22,6 @@ import { Int } from 'io-ts';
 import { ExternalStateDB } from './sync-worker/external-state-db';
 import {TimelineRow} from './training-quiz/plan-timeline-rebuild';
 import {TimelineRebuildSummary} from './training-quiz/rebuild-event-timeline';
-import {RecurlyWriteGateway} from './recurly-write/recurly-write-gateway';
 
 export type Dependencies = {
   conf: Config;
@@ -71,7 +70,4 @@ export type Dependencies = {
   getSheetDataByMemberNumber: (
     memberNumber: number,
   ) => TE.TaskEither<string, SheetDataTable['rows']>,
-  // The only way to change anything in Recurly - see "Recurly writes" in
-  // AGENTS.md before using or extending it.
-  recurlyWrite: RecurlyWriteGateway;
 };

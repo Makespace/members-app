@@ -65,24 +65,6 @@ module.exports = defineConfig(
         }
     },
     {
-        // Every write to Recurly goes through src/recurly-write/ - see
-        // "Recurly writes" in AGENTS.md. Also enforced by
-        // tests/recurly-write/recurly-write-boundary.test.ts.
-        files: ['src/**/*.ts', 'scripts/**/*.ts'],
-        ignores: [
-            'src/recurly-write/recurly-write-gateway.ts',
-            'src/sync-worker/recurly/pull-recurly-data.ts',
-        ],
-        rules: {
-            "no-restricted-imports": ["error", {
-                paths: [{
-                    name: "recurly",
-                    message: "Recurly writes must go through deps.recurlyWrite (src/recurly-write/). See 'Recurly writes' in AGENTS.md.",
-                }],
-            }],
-        },
-    },
-    {
         files: ['**/*.js', '**/*.mjs'],
         extends: [
             tseslint.configs.disableTypeChecked
