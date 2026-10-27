@@ -72,6 +72,8 @@ const describeActor = (actor: Actor): string => {
       return 'admin token';
     case 'user':
       return `member ${actor.user.memberNumber}`;
+    case 'public':
+      return 'somebody not logged in';
   }
 };
 
