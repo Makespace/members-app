@@ -56,6 +56,15 @@ const Config = t.strict({
     14 as t.Int
   ),
   BILLING_CANCEL_AFTER_DAYS: withDefaultIfEmpty(tt.IntFromString, 60 as t.Int),
+  // The management team is emailed when Recurly records at least this many
+  // blocked payments (fraud_* decline codes) within this many hours. Normal
+  // traffic in 2026 never exceeded 2 in a day; the June-October card-testing
+  // attack reached 246.
+  RECURLY_ALERT_BLOCKED_THRESHOLD: withDefaultIfEmpty(
+    tt.IntFromString,
+    10 as t.Int
+  ),
+  RECURLY_ALERT_WINDOW_HOURS: withDefaultIfEmpty(tt.IntFromString, 24 as t.Int),
   TURSO_EVENTDB_SYNC_URL: t.string,
   TURSO_GOOGLEDB_SYNC_URL: t.union([t.undefined, t.string]),
   LOG_LEVEL: withDefaultIfEmpty(LogLevel, 'debug'),

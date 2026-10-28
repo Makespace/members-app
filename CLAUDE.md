@@ -41,6 +41,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   addresses, `all` means everybody. Everything else still runs and held-back
   mail is logged, so the stack can be deployed and watched before anybody's
   inbox is involved - see `docs/trouble-ticket-notifications.md`
+- The sync worker emails the management team when Recurly records an unusual
+  number of blocked payments (`RECURLY_ALERT_BLOCKED_THRESHOLD` within
+  `RECURLY_ALERT_WINDOW_HOURS`, default 10 in 24), and a weekly Recurly
+  summary every Monday - see `docs/recurly-monitoring.md`
 - Local app: http://localhost:8080
 - Mailcatcher (dev emails): http://localhost:1080
 
