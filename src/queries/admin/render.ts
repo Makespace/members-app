@@ -1,7 +1,7 @@
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import {html, Html, joinHtml, safe, sanitizeString} from '../../types/html';
-import {OwnedArea, ViewModel} from './construct-view-model';
+import {OwnedArea, TrainedMachine, ViewModel} from './construct-view-model';
 
 // Grouped by what somebody came here to do, rather than by when the link
 // happened to be added. The list had grown past the point where a flat column
@@ -17,49 +17,91 @@ const section = (heading: Html, links: ReadonlyArray<Html>) => html`
   </section>
 `;
 
-const linkList = (links: ReadonlyArray<Html>) => html`
-  <ul class="owner-links">
-    ${joinHtml(links.map(link => html`<li>${link}</li>`))}
+// A number worth knowing before deciding what to do first, as the machine
+// page's cards show them.
+const stat = (count: number, one: string, many: string) => html`
+  <li class="owner-stat${count === 0 ? safe(' owner-stat--none') : safe('')}">
+    <span class="owner-stat__count">${safe(String(count))}</span>
+    <span>${safe(count === 1 ? one : many)}</span>
+  </li>
+`;
+
+const actions = (
+  links: ReadonlyArray<{href: string; label: string}>,
+  kind: 'area' | 'machine'
+) => html`
+  <ul class="owner-actions owner-actions--${safe(kind)}">
+    ${joinHtml(
+      links.map(
+        link =>
+          html`<li>
+            <a href="${safe(link.href)}">${sanitizeString(link.label)}</a>
+          </li>`
+      )
+    )}
   </ul>
 `;
 
-const trainerOnEquipment = (equipment: OwnedArea['trainerOn'][number]) => html`
-  <div class="owner-equipment stack">
-    <h3>${sanitizeString(equipment.name)}</h3>
-    <p>You're a trainer on this equipment.</p>
-    ${linkList([
-      html`<a
-        href="/trouble-tickets/board?equipmentId=${safe(equipment.id)}"
-        >View trouble tickets</a
-      >`,
-      html`<a href="/equipment/${safe(equipment.id)}/trainings"
-        >Arrange training</a
-      >`,
-      html`<a href="/equipment/${safe(equipment.id)}">Manage equipment</a>`,
-    ])}
-  </div>
+const trainedMachine = (machine: TrainedMachine) => html`
+  <article class="owner-machine">
+    <span class="owner-role owner-role--trainer">Trainer</span>
+    <h3 class="owner-machine__name">${sanitizeString(machine.name)}</h3>
+    <p class="owner-caption">You're a trainer on this equipment.</p>
+    <ul class="owner-stats">
+      ${stat(machine.openTickets, 'open ticket', 'open tickets')}
+      ${stat(machine.upcomingTrainings, 'upcoming training', 'upcoming trainings')}
+    </ul>
+    ${actions(
+      [
+        {
+          href: `/trouble-tickets/board?equipmentId=${machine.id}`,
+          label: 'View trouble tickets',
+        },
+        {href: `/equipment/${machine.id}/trainings`, label: 'Arrange training'},
+        {href: `/equipment/${machine.id}`, label: 'Manage equipment'},
+      ],
+      'machine'
+    )}
+  </article>
 `;
 
 const ownedArea = (area: OwnedArea) => html`
-  <section class="owner-area stack">
-    <h2>${sanitizeString(area.name)}</h2>
-    <p>You're an owner in this area.</p>
-    ${linkList([
-      html`<a href="/trouble-tickets/board?areaId=${safe(area.id)}"
-        >View trouble tickets</a
-      >`,
-      ...pipe(
-        area.purchasingAreaId,
-        O.match(
-          () => [],
-          id => [
-            html`<a href="/purchasing-areas/${safe(id)}">View purchasing</a>`,
-          ]
-        )
-      ),
-      html`<a href="/areas/manage?area=${safe(area.id)}">Manage area</a>`,
-    ])}
-    ${joinHtml(area.trainerOn.map(trainerOnEquipment))}
+  <section class="owner-area">
+    <header class="owner-area__header">
+      <div>
+        <span class="owner-role owner-role--owner">Owner</span>
+        <h2 class="owner-area__name">${sanitizeString(area.name)}</h2>
+        <p class="owner-caption">You're an owner in this area.</p>
+      </div>
+      <ul class="owner-stats">
+        ${stat(area.openTickets, 'open ticket', 'open tickets')}
+      </ul>
+    </header>
+    ${actions(
+      [
+        {
+          href: `/trouble-tickets/board?areaId=${area.id}`,
+          label: 'View trouble tickets',
+        },
+        ...pipe(
+          area.purchasingAreaId,
+          O.match(
+            () => [],
+            id => [{href: `/purchasing-areas/${id}`, label: 'View purchasing'}]
+          )
+        ),
+        {href: `/areas/manage?area=${area.id}`, label: 'Manage area'},
+      ],
+      'area'
+    )}
+    ${area.trainerOn.length === 0
+      ? html``
+      : html`
+          <p class="owner-area__subheading">Machines you train on</p>
+          <div class="owner-machines">
+            ${joinHtml(area.trainerOn.map(trainedMachine))}
+          </div>
+        `}
   </section>
 `;
 
@@ -134,6 +176,8 @@ const adminPart = () => html`
 // Owners see what they look after; super-users see the admin links, below
 // their own areas when they are owners too.
 export const render = (viewModel: ViewModel) => html`
-  ${viewModel.ownedAreas.length > 0 ? ownerPart(viewModel) : html``}
-  ${viewModel.isSuperUser ? adminPart() : html``}
+  <div class="stack-large">
+    ${viewModel.ownedAreas.length > 0 ? ownerPart(viewModel) : html``}
+    ${viewModel.isSuperUser ? adminPart() : html``}
+  </div>
 `;
