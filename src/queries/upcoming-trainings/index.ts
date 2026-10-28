@@ -7,9 +7,16 @@ import {render} from './render';
 
 // Where the navbar's "Get trained" goes: every training coming up, on every
 // machine, so a member can find one without knowing which machine to look on.
-export const upcomingTrainings: Query = deps => user =>
+export const upcomingTrainings: Query = deps => (user, _params, queryParams) =>
   pipe(
-    TE.right(constructViewModel(deps, user, new Date())),
+    TE.right(
+      constructViewModel(
+        deps,
+        user,
+        new Date(),
+        queryParams.show === 'trained'
+      )
+    ),
     TE.map(render),
     TE.map(toLoggedInContent(safe('Get trained')))
   );

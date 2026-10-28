@@ -2,6 +2,7 @@ import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {DateTime} from 'luxon';
+import {Int} from 'io-ts';
 import {Actor} from '../../../src/types/actor';
 import {constructViewModel} from '../../../src/queries/upcoming-trainings/construct-view-model';
 import {arbitraryUser} from '../../types/user.helper';
@@ -68,9 +69,100 @@ describe('upcoming trainings across the space', () => {
     return sessionId;
   };
 
-  const trainings = () =>
-    constructViewModel(framework.depsForCommands, member, new Date())
-      .trainings;
+  const page = (showTrained = false) =>
+    constructViewModel(
+      framework.depsForCommands,
+      member,
+      new Date(),
+      showTrained
+    );
+
+  const trainings = () => page().trainings;
+
+  const markTrained = (equipmentId: UUID) =>
+    framework.commands.trainers.markTrained({
+      equipmentId,
+      memberNumber: member.memberNumber as Int,
+    });
+
+  describe('equipment the reader is already trained on', () => {
+    beforeEach(async () => {
+      await linkMember();
+      await markTrained(bandSaw);
+    });
+
+    it('is left out by default, counted once per machine', async () => {
+      await session(bandSaw, 10);
+      await session(bandSaw, 30);
+      const latheSession = await session(lathe, 20);
+
+      expect(page().trainings.map(t => t.session.id)).toStrictEqual([
+        latheSession,
+      ]);
+      expect(page().hiddenEquipment).toStrictEqual(1);
+    });
+
+    it('is shown when asked for, marked as trained, and still open to sign up', async () => {
+      await session(bandSaw, 10);
+
+      const [training] = page(true).trainings;
+
+      expect(training.trained).toBe(true);
+      expect(training.needsQuiz).toBe(false);
+      expect(training.session.yourStatus).toStrictEqual(O.some('open'));
+      expect(page(true).hiddenEquipment).toStrictEqual(0);
+    });
+  });
+
+  describe('sending people to the quiz first', () => {
+    const sheetId = 'band-saw-quiz' as NonEmptyString;
+
+    const needsQuiz = async () => {
+      await session(bandSaw, 10);
+      return page(true).trainings[0].needsQuiz;
+    };
+
+    beforeEach(async () => {
+      await linkMember();
+    });
+
+    it('does for a machine whose quiz they have not passed', async () => {
+      await framework.commands.equipment.trainingSheet({
+        equipmentId: bandSaw,
+        trainingSheetId: sheetId,
+      });
+      expect(await needsQuiz()).toBe(true);
+    });
+
+    it('does not once they have passed it', async () => {
+      await framework.commands.equipment.trainingSheet({
+        equipmentId: bandSaw,
+        trainingSheetId: sheetId,
+      });
+      await framework.commands.trainingQuiz.record({
+        trainingSheetId: sheetId,
+        completedAt: new Date(),
+        memberNumberProvided: member.memberNumber,
+        emailProvided: null,
+        score: 5 as Int,
+        maxScore: 5 as Int,
+        rowHash: faker.string.alphanumeric(64) as NonEmptyString,
+      });
+      expect(await needsQuiz()).toBe(false);
+    });
+
+    it('does not for a machine with no quiz to take', async () => {
+      expect(await needsQuiz()).toBe(false);
+    });
+  });
+
+  const linkMember = () =>
+    framework.commands.memberNumbers.linkNumberToEmail({
+      memberNumber: member.memberNumber,
+      email: member.emailAddress,
+      name: undefined,
+      formOfAddress: undefined,
+    });
 
   it('lists every machine, soonest first', async () => {
     const later = await session(bandSaw, 50);
