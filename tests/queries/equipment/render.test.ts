@@ -521,11 +521,12 @@ describe('the actions, in groups', () => {
 
         // Some items carry a tooltip, so compare how each one opens.
         const opensWith = (items: ReadonlyArray<string>) =>
-            items.map(item => item.split(' Only ')[0].trim());
+            items.map(item => item.split(/ (?:Only|Whether) /)[0].trim());
 
-        expect(opensWith(group('Training')).slice(0, 3)).toStrictEqual([
+        expect(opensWith(group('Training')).slice(0, 4)).toStrictEqual([
             'Mark member as trained',
             '[Admin] Mark member as trained by',
+            'Set training requirements',
             'Add a trainer',
         ]);
         expect(group('Training').join(' ')).toContain(

@@ -7,7 +7,8 @@ import {
   TrainingSessionView,
 } from '../shared-render/upcoming-training-sessions';
 import {
-  quizProgressFor,
+  readinessFor,
+  Readiness,
   trainedSinceFor,
 } from '../equipment-training/construct-view-model';
 
@@ -16,10 +17,10 @@ export type UpcomingTraining = {
   session: TrainingSessionView;
   // Already trained on the machine: they may still come for a refresher.
   trained: boolean;
-  // Not trained, and the machine has a quiz they have not passed: the quiz
-  // comes first, so they are sent to the machine's training page rather than
-  // straight to a session.
-  needsQuiz: boolean;
+  // Whether anything comes first - other machines, or the quiz. When it
+  // does, they are sent to the machine's training page rather than straight
+  // to a session.
+  readiness: Readiness;
 };
 
 export type ViewModel = {
@@ -53,7 +54,6 @@ export const constructViewModel = (
             const trained = O.isSome(
               trainedSinceFor(deps, user, equipment.id)
             );
-            const quiz = quizProgressFor(deps, user, equipment).tag;
             return [
               {
                 equipment: {
@@ -67,8 +67,7 @@ export const constructViewModel = (
                   O.some({memberNumber: user.memberNumber, now})
                 )(session),
                 trained,
-                needsQuiz:
-                  !trained && (quiz === 'not-attempted' || quiz === 'failed'),
+                readiness: readinessFor(deps, user, equipment),
               },
             ];
           }
