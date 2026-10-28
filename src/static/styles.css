@@ -3939,6 +3939,18 @@ ol.training-steps {
   gap: 0.35rem;
 }
 
+/* On a machine's get-trained page each session is its own card, faintly
+   edged, so a list of several reads as separate choices. */
+.training-step .upcoming-trainings {
+  gap: 0.75rem;
+}
+
+.training-step .upcoming-trainings > li {
+  border: 1px solid color-mix(in oklch, white 45%, var(--border-color));
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+}
+
 .upcoming-trainings__empty {
   color: var(--grey-color);
 }
@@ -4014,6 +4026,17 @@ ol.training-steps {
 .tag--cancelled {
   background-color: #f6d7d2;
   color: #942514;
+}
+
+.tag--trained {
+  background-color: #cce2d8;
+  color: #005a30;
+  max-width: none;
+  margin-left: 0.4rem;
+}
+
+.training-filter {
+  color: var(--grey-color);
 }
 
 .eq-cards__actions {

@@ -64,7 +64,7 @@ export type ViewModel = {
 const isPass = (row: {score: number; maxScore: number}) =>
   row.maxScore > 0 && row.score >= row.maxScore;
 
-const trainedSinceFor = (
+export const trainedSinceFor = (
   deps: Dependencies,
   user: User,
   equipmentId: UUID
@@ -80,7 +80,7 @@ const trainedSinceFor = (
     O.map(item => item.trainedAt)
   );
 
-const quizProgressFor = (
+export const quizProgressFor = (
   deps: Dependencies,
   user: User,
   equipment: {id: UUID; trainingSheetId: O.Option<string>}
