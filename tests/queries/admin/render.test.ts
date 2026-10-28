@@ -2,13 +2,30 @@
  * @jest-environment jsdom
  */
 
+import * as O from 'fp-ts/Option';
+import {UUID} from 'io-ts-types';
 import {render} from '../../../src/queries/admin/render';
+import {ViewModel} from '../../../src/queries/admin/construct-view-model';
 
-const page = () => {
+const superUser: ViewModel = {isSuperUser: true, ownedAreas: []};
+
+const woodShop: ViewModel['ownedAreas'][number] = {
+  id: 'area-1',
+  name: 'Wood Shop',
+  purchasingAreaId: O.some('purchasing-1' as UUID),
+  trainerOn: [{id: 'saw-1', name: 'Band Saw'}],
+};
+
+const pageFor = (viewModel: ViewModel) => {
   const body = document.createElement('body');
-  body.innerHTML = render();
+  body.innerHTML = render(viewModel);
   return body;
 };
+
+const page = () => pageFor(superUser);
+
+const hrefs = (body: HTMLElement) =>
+  [...body.querySelectorAll('a')].map(a => a.getAttribute('href'));
 
 describe('the admin page', () => {
   it('groups its links under headings rather than one long column', () => {
@@ -33,7 +50,7 @@ describe('the admin page', () => {
   // Easy to break by hand-writing anchors: the old page had two links whose
   // closing tag was missing, which swallowed everything after them.
   it('closes every link it opens', () => {
-    const html = render();
+    const html = render({...superUser, ownedAreas: [woodShop]});
     expect((html.match(/<a[\s>]/g) ?? []).length).toBe(
       (html.match(/<\/a\s*>/g) ?? []).length
     );
@@ -47,5 +64,49 @@ describe('the admin page', () => {
     ['/event-log'],
   ])('links to %s', href => {
     expect(page().querySelector(`a[href="${href}"]`)).not.toBeNull();
+  });
+});
+
+describe('the owner page', () => {
+  it('shows an owner their area, and none of the admin links', () => {
+    const body = pageFor({isSuperUser: false, ownedAreas: [woodShop]});
+
+    expect(body.querySelector('h1')?.textContent?.trim()).toBe('Owner');
+    expect(body.textContent).toContain("You're an owner in this area.");
+    expect(hrefs(body)).toStrictEqual([
+      '/trouble-tickets/board?areaId=area-1',
+      '/purchasing-areas/purchasing-1',
+      '/areas/manage?area=area-1',
+      '/trouble-tickets/board?equipmentId=saw-1',
+      '/equipment/saw-1/trainings',
+      '/equipment/saw-1',
+    ]);
+    expect(body.textContent).not.toContain('super-user privileges');
+  });
+
+  it('names the machines they train on under the area', () => {
+    const body = pageFor({isSuperUser: false, ownedAreas: [woodShop]});
+
+    expect(body.querySelector('h3')?.textContent?.trim()).toBe('Band Saw');
+    expect(body.textContent).toContain("You're a trainer on this equipment.");
+  });
+
+  it('leaves out purchasing for an area outside any purchasing area', () => {
+    const body = pageFor({
+      isSuperUser: false,
+      ownedAreas: [{...woodShop, purchasingAreaId: O.none}],
+    });
+
+    expect(body.textContent).not.toContain('View purchasing');
+  });
+
+  it("puts a super-user's admin links below their own areas", () => {
+    const headings = [
+      ...pageFor({isSuperUser: true, ownedAreas: [woodShop]}).querySelectorAll(
+        'h1'
+      ),
+    ].map(h => h.textContent?.trim());
+
+    expect(headings).toStrictEqual(['Owner', 'Admin']);
   });
 });
