@@ -1083,3 +1083,37 @@ export const trainingSessionNotificationsTable = defineTable(
     notifiedEventIndex: integer('notifiedEventIndex').notNull().primaryKey(),
   }
 );
+
+// What a member needs before a machine's in-person training. A machine with
+// no row needs its quiz and nothing else.
+export const equipmentTrainingRequirementsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS equipmentTrainingRequirements (
+      equipmentId TEXT PRIMARY KEY,
+      quizRequired INTEGER NOT NULL
+    )
+  `,
+  'equipmentTrainingRequirements' as const,
+  {
+    equipmentId: text('equipmentId').notNull().primaryKey().$type<UUID>(),
+    quizRequired: integer('quizRequired', {mode: 'boolean'}).notNull(),
+  }
+);
+
+// The machines a member must already be trained on first, one row each.
+export const equipmentTrainingPrerequisitesTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS equipmentTrainingPrerequisites (
+      equipmentId TEXT NOT NULL,
+      prerequisiteEquipmentId TEXT NOT NULL,
+      PRIMARY KEY (equipmentId, prerequisiteEquipmentId)
+    )
+  `,
+  'equipmentTrainingPrerequisites' as const,
+  {
+    equipmentId: text('equipmentId').notNull().$type<UUID>(),
+    prerequisiteEquipmentId: text('prerequisiteEquipmentId')
+      .notNull()
+      .$type<UUID>(),
+  }
+);

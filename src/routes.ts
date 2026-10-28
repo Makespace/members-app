@@ -175,6 +175,11 @@ export const initRoutes = (
     ...command('equipment', 'set-guide-url', commands.equipment.setGuideUrl),
     ...command(
       'equipment',
+      'set-training-requirements',
+      commands.equipment.setTrainingRequirements
+    ),
+    ...command(
+      'equipment',
       'set-risk-assessment-url',
       commands.equipment.setRiskAssessmentUrl
     ),

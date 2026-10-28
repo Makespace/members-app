@@ -609,6 +609,19 @@ const TrainingSessionScheduled = defineEvent('TrainingSessionScheduled', {
   signUpsCloseHoursBefore: tt.withFallback(t.number, 0),
 });
 
+// What a member needs before a machine's in-person training: whether its
+// online quiz must be passed first, and which other machines they must
+// already be trained on (the Trotec after the HPC). Replaces whatever was set
+// before; a machine with nothing set needs its quiz and nothing else.
+const EquipmentTrainingRequirementsSet = defineEvent(
+  'EquipmentTrainingRequirementsSet',
+  {
+    equipmentId: tt.UUID,
+    quizRequired: t.boolean,
+    prerequisiteEquipmentIds: t.readonlyArray(tt.UUID),
+  }
+);
+
 // A member taking a place on a training session themselves.
 const TrainingSessionSignedUp = defineEvent('TrainingSessionSignedUp', {
   sessionId: tt.UUID,
@@ -987,6 +1000,7 @@ export const events = [
   TrainingSessionSignUpCancelled,
   TrainingSessionCancelled,
   TrainingSessionNotificationSent,
+  EquipmentTrainingRequirementsSet,
 ];
 
 export const DomainEvent = t.union([
@@ -1082,6 +1096,7 @@ export const DomainEvent = t.union([
   TrainingSessionSignUpCancelled.codec,
   TrainingSessionCancelled.codec,
   TrainingSessionNotificationSent.codec,
+  EquipmentTrainingRequirementsSet.codec,
 ]);
 
 export const StoredDomainEvent = t.intersection([

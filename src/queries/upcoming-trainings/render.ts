@@ -1,4 +1,5 @@
 import * as O from 'fp-ts/Option';
+import {pipe} from 'fp-ts/lib/function';
 import {DateTime} from 'luxon';
 import {html, Html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {
@@ -35,21 +36,48 @@ const byDay = (trainings: ReadonlyArray<UpcomingTraining>) =>
     []
   );
 
-// The quiz comes before the practical, so somebody who still needs it is
-// sent to the machine's training page, which walks them through both,
-// instead of straight into a session. Everything else is as on that page.
+const firstThing = (training: UpcomingTraining): O.Option<Html> => {
+  switch (training.readiness.tag) {
+    case 'ready':
+      return O.none;
+    case 'needs-quiz':
+      return O.some(html`Pass the online quiz first.`);
+    case 'needs-prerequisites':
+      return O.some(
+        html`Get trained on
+        ${joinHtml(
+          training.readiness.missing.map(
+            (machine, index) =>
+              html`${index === 0 ? safe('') : safe(', ')}${sanitizeString(
+                machine.name
+              )}`
+          )
+        )}
+        first.`
+      );
+  }
+};
+
+// Whatever comes before the practical - other machines, or the quiz - comes
+// first, so somebody who still needs it is sent to the machine's training
+// page, which walks them through it, instead of straight into a session.
+// Everything else is as on that page.
 const action = (training: UpcomingTraining): Html =>
-  training.needsQuiz &&
-  O.exists(status => status === 'open')(training.session.yourStatus)
-    ? html`<a
+  pipe(
+    firstThing(training),
+    O.filter(() =>
+      O.exists(status => status === 'open')(training.session.yourStatus)
+    ),
+    O.match(
+      () => yourPlace(training.session),
+      reason => html`<a
           class="button"
           href="/equipment/${safe(training.equipment.id)}/training"
           >Get trained</a
         >
-        <span class="training-session__closed"
-          >Pass the online quiz first.</span
-        >`
-    : yourPlace(training.session);
+        <span class="training-session__closed">${reason}</span>`
+    )
+  );
 
 const renderTraining = (training: UpcomingTraining): Html => {
   const {equipment, session} = training;

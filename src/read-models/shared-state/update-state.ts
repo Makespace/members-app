@@ -40,6 +40,8 @@ import {
   trainingSessionsTable,
   trainingSessionAttendeesTable,
   trainingSessionNotificationsTable,
+  equipmentTrainingRequirementsTable,
+  equipmentTrainingPrerequisitesTable,
 } from './state';
 import {signUpsCloseAt} from '../../training-sessions/sign-ups';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
@@ -1654,6 +1656,33 @@ const _updateState =
           .values({notifiedEventIndex: event.notifiedEventIndex})
           .onConflictDoNothing()
           .run();
+        break;
+      }
+      case 'EquipmentTrainingRequirementsSet': {
+        tx.insert(equipmentTrainingRequirementsTable)
+          .values({
+            equipmentId: event.equipmentId,
+            quizRequired: event.quizRequired,
+          })
+          .onConflictDoUpdate({
+            target: equipmentTrainingRequirementsTable.equipmentId,
+            set: {quizRequired: event.quizRequired},
+          })
+          .run();
+        tx.delete(equipmentTrainingPrerequisitesTable)
+          .where(
+            eq(
+              equipmentTrainingPrerequisitesTable.equipmentId,
+              event.equipmentId
+            )
+          )
+          .run();
+        for (const prerequisiteEquipmentId of event.prerequisiteEquipmentIds) {
+          tx.insert(equipmentTrainingPrerequisitesTable)
+            .values({equipmentId: event.equipmentId, prerequisiteEquipmentId})
+            .onConflictDoNothing()
+            .run();
+        }
         break;
       }
       default: {

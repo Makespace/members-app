@@ -77,6 +77,24 @@ const adminMarkTrainedBy = (viewModel: ViewModel) =>
     O.getOrElse(() => html``)
   );
 
+// Owners who train on the machine (and super-users): they know what its
+// training involves.
+const setTrainingRequirements = (viewModel: ViewModel) =>
+  viewModel.isSuperUser ||
+  (viewModel.isTrainer && viewModel.isSuperUserOrOwnerOfArea)
+    ? html`<li>
+        <a
+          href="/equipment/set-training-requirements?equipmentId=${viewModel
+            .equipment.id}"
+          >Set training requirements</a
+        >
+        ${tooltip(
+          html`Whether members must pass the quiz before a practical, and which
+          machines they must already be trained on`
+        )}
+      </li>`
+    : html``;
+
 const addTrainer = (viewModel: ViewModel) =>
   pipe(
     viewModel,
@@ -565,6 +583,7 @@ const equipmentActions = (viewModel: ViewModel) => html`
       ? [
           trainMember(viewModel),
           adminMarkTrainedBy(viewModel),
+          setTrainingRequirements(viewModel),
           addTrainer(viewModel),
           removeTrainer(viewModel),
           ...peopleLinks(viewModel),

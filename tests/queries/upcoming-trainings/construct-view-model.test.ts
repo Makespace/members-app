@@ -108,7 +108,7 @@ describe('upcoming trainings across the space', () => {
       const [training] = page(true).trainings;
 
       expect(training.trained).toBe(true);
-      expect(training.needsQuiz).toBe(false);
+      expect(training.readiness).toStrictEqual({tag: 'ready'});
       expect(training.session.yourStatus).toStrictEqual(O.some('open'));
       expect(page(true).hiddenEquipment).toStrictEqual(0);
     });
@@ -117,10 +117,45 @@ describe('upcoming trainings across the space', () => {
   describe('sending people to the quiz first', () => {
     const sheetId = 'band-saw-quiz' as NonEmptyString;
 
-    const needsQuiz = async () => {
+    const readiness = async () => {
       await session(bandSaw, 10);
-      return page(true).trainings[0].needsQuiz;
+      return page(true).trainings[0].readiness;
     };
+    const needsQuiz = async () => (await readiness()).tag === 'needs-quiz';
+
+    const registerQuiz = () =>
+      framework.commands.equipment.trainingSheet({
+        equipmentId: bandSaw,
+        trainingSheetId: sheetId,
+      });
+
+    it("does not when the machine's owners have waived the quiz", async () => {
+      await registerQuiz();
+      await framework.commands.equipment.setTrainingRequirements({
+        equipmentId: bandSaw,
+        quizRequired: false,
+        prerequisiteEquipmentIds: [],
+      });
+      expect(await readiness()).toStrictEqual({tag: 'ready'});
+    });
+
+    it('sends them to the machines it builds on before the quiz', async () => {
+      await registerQuiz();
+      await framework.commands.equipment.setTrainingRequirements({
+        equipmentId: bandSaw,
+        quizRequired: true,
+        prerequisiteEquipmentIds: [lathe],
+      });
+      expect(await readiness()).toStrictEqual({
+        tag: 'needs-prerequisites',
+        missing: [{id: lathe, name: 'Lathe', trained: false}],
+      });
+
+      await markTrained(lathe);
+      expect(page(true).trainings[0].readiness).toStrictEqual({
+        tag: 'needs-quiz',
+      });
+    });
 
     beforeEach(async () => {
       await linkMember();

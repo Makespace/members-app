@@ -123,6 +123,10 @@ import {
   getAllUpcomingTrainingSessions,
   TrainingSession,
 } from './training-sessions/get';
+import {
+  getTrainingRequirements,
+  TrainingRequirements,
+} from './training-requirements/get';
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
@@ -271,6 +275,9 @@ export type SharedReadModel = {
     hasNotifiedForEvent: (eventIndex: number) => boolean;
     allUpcoming: (now: Date) => ReadonlyArray<TrainingSession>;
   };
+  trainingRequirements: {
+    get: (equipmentId: UUID) => TrainingRequirements;
+  };
 };
 
 export const initSharedReadModel = (
@@ -409,6 +416,9 @@ export const initSharedReadModel = (
       allForEquipment: getAllTrainingSessionsForEquipment(readModelDb),
       hasNotifiedForEvent: hasNotifiedForTrainingSessionEvent(readModelDb),
       allUpcoming: getAllUpcomingTrainingSessions(readModelDb),
+    },
+    trainingRequirements: {
+      get: getTrainingRequirements(readModelDb),
     },
   };
 };
