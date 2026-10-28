@@ -2,9 +2,7 @@
 // for members (what they can now do, not how it was built), dated when it
 // first arrived. A later improvement to a feature belongs in its existing
 // line, reworded if need be, rather than as a line of its own: nobody needs
-// to know a QR code got bigger, but they may care that signs exist. The
-// newest entry also appears under the navbar's "About this app" button as
-// "Updated N days ago - <headline>", so keep headlines short.
+// to know a QR code got bigger, but they may care that signs exist.
 //
 // On /about the entries are grouped by subject, so give each the one it
 // belongs to; add a subject to `subjects` (and its heading, in the order the
@@ -33,6 +31,12 @@ type ChangeLogEntry = {
 };
 
 export const changeLog: ReadonlyArray<ChangeLogEntry> = [
+  {
+    subject: 'training',
+    date: '2026-10-25',
+    headline:
+      'Trainers arrange in-person trainings in the app; members find them all under Get trained and sign up, and trainers are emailed as people join or leave',
+  },
   {
     subject: 'tickets',
     date: '2026-10-21',
@@ -142,8 +146,6 @@ export const changeLog: ReadonlyArray<ChangeLogEntry> = [
       "Training records, including quiz results, are kept in the app's own history; owners manage who trains on their machines",
   },
 ];
-
-export const latestChange = (): ChangeLogEntry => changeLog[0];
 
 // The entries under each subject, newest first, subjects in page order and
 // only those with something in them.

@@ -163,7 +163,7 @@ export const renderDescription = (session: TrainingSessionView): Html =>
       </div>`;
 
 // What the member reading the page can do about a session.
-const yourPlace = (session: TrainingSessionView): Html =>
+export const yourPlace = (session: TrainingSessionView): Html =>
   pipe(
     session.yourStatus,
     O.match(

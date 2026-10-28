@@ -14,6 +14,7 @@ export {superUsers} from './super-users';
 export {equipment} from './equipment';
 export {equipmentTraining} from './equipment-training';
 export {equipmentTrainings} from './equipment-trainings';
+export {upcomingTrainings} from './upcoming-trainings';
 export {
   equipmentTrainedUsers,
   equipmentQuizResults,

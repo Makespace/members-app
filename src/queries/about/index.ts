@@ -56,10 +56,6 @@ const shortDate = (iso: string) =>
   DateTime.fromISO(iso).setLocale('en-GB').toFormat('d LLL');
 
 const renderChangeLog = () => html`
-  <p>
-    The newest change is also under the "About this app" button at the top
-    of every page.
-  </p>
   ${joinHtml(
     changeLogBySubject().map(
       group => html`
