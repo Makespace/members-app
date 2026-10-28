@@ -13,7 +13,10 @@ const woodShop: ViewModel['ownedAreas'][number] = {
   id: 'area-1',
   name: 'Wood Shop',
   purchasingAreaId: O.some('purchasing-1' as UUID),
-  trainerOn: [{id: 'saw-1', name: 'Band Saw'}],
+  openTickets: 3,
+  trainerOn: [
+    {id: 'saw-1', name: 'Band Saw', openTickets: 1, upcomingTrainings: 2},
+  ],
 };
 
 const pageFor = (viewModel: ViewModel) => {
@@ -89,6 +92,16 @@ describe('the owner page', () => {
 
     expect(body.querySelector('h3')?.textContent?.trim()).toBe('Band Saw');
     expect(body.textContent).toContain("You're a trainer on this equipment.");
+  });
+
+  it('shows the numbers worth knowing before choosing what to do', () => {
+    const text = (
+      pageFor({isSuperUser: false, ownedAreas: [woodShop]}).textContent ?? ''
+    ).replace(/\s+/g, ' ');
+
+    expect(text).toContain('3 open tickets');
+    expect(text).toContain('1 open ticket ');
+    expect(text).toContain('2 upcoming trainings');
   });
 
   it('leaves out purchasing for an area outside any purchasing area', () => {

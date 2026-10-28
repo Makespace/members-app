@@ -3,6 +3,7 @@ import * as E from 'fp-ts/Either';
 import {faker} from '@faker-js/faker';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {StatusCodes} from 'http-status-codes';
+import {DateTime} from 'luxon';
 import {constructViewModel} from '../../../src/queries/admin/construct-view-model';
 import {admin} from '../../../src/queries/admin';
 import {arbitraryUser} from '../../types/user.helper';
@@ -80,9 +81,53 @@ describe('the owner page', () => {
         id: woodShop,
         name: 'Wood Shop',
         purchasingAreaId: O.none,
-        trainerOn: [{id: bandSaw, name: 'Band Saw'}],
+        openTickets: 0,
+        trainerOn: [
+          {id: bandSaw, name: 'Band Saw', openTickets: 0, upcomingTrainings: 0},
+        ],
       },
     ]);
+  });
+
+  it('counts open tickets in the area and on the machine, and upcoming trainings', async () => {
+    await framework.commands.troubleTickets.create({
+      id: faker.string.uuid() as UUID,
+      submittedEquipment: 'Band Saw',
+      submittedMemberNumber: null,
+      submittedEmail: null,
+      submittedName: null,
+      otherEquipmentDetail: '',
+      status: 'Down',
+      attempting: '',
+      issue: 'Blade snapped',
+      steps: '',
+    });
+    const startsAt = DateTime.now().plus({days: 3});
+    await framework.depsForCommands.commitEvent(
+      framework.sharedReadModel.getCurrentEventIndex()
+    )({
+      type: 'TrainingSessionScheduled',
+      sessionId: faker.string.uuid() as UUID,
+      equipmentId: bandSaw,
+      trainerMemberNumber: owner.memberNumber,
+      startsAt: startsAt.toJSDate(),
+      endsAt: startsAt.plus({hours: 2}).toJSDate(),
+      spaces: 3,
+      description: '',
+      attendees: [],
+      signUpsCloseHoursBefore: 0,
+      actor: {tag: 'user', user: owner},
+      recordedAt: new Date(),
+    })();
+
+    const [area] = constructViewModel(framework.depsForCommands, owner)
+      .ownedAreas;
+
+    expect(area.openTickets).toStrictEqual(1);
+    expect(area.trainerOn[0]).toMatchObject({
+      openTickets: 1,
+      upcomingTrainings: 1,
+    });
   });
 
   it('lets an owner in', async () => {
