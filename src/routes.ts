@@ -69,6 +69,7 @@ export const initRoutes = (
     query('/access-audit', queries.accessAudit),
     query('/areas', queries.areas),
     query('/community', queries.community),
+    query('/training', queries.upcomingTrainings),
     query('/equipment-catalogue', queries.equipmentCatalogue),
     query('/equipment-links', queries.equipmentLinks),
     query('/e-ink', queries.einkDisplays),

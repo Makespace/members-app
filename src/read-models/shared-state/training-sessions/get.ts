@@ -109,6 +109,23 @@ export const getUpcomingTrainingSessionsForEquipment =
       .all()
       .map(toSession(db));
 
+// The same, on every machine at once.
+export const getAllUpcomingTrainingSessions =
+  (db: BetterSQLite3Database) =>
+  (now: Date): ReadonlyArray<TrainingSession> =>
+    db
+      .select()
+      .from(trainingSessionsTable)
+      .where(
+        and(
+          gt(trainingSessionsTable.endsAt, now),
+          isNull(trainingSessionsTable.cancelledAt)
+        )
+      )
+      .orderBy(asc(trainingSessionsTable.startsAt))
+      .all()
+      .map(toSession(db));
+
 export const hasNotifiedForTrainingSessionEvent =
   (db: BetterSQLite3Database) =>
   (eventIndex: number): boolean =>
