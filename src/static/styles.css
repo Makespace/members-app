@@ -3747,23 +3747,46 @@ ul.sign__points li + li {
 
 /* The two steps to being trained on a machine: numbered, because the order
    matters - the quiz comes before anyone will book you a practical. */
-.training-steps {
+/* ol.: the reset's ol[class] would otherwise win and close the gap above. */
+ol.training-steps {
   list-style: none;
-  margin: 0;
+  margin: 2rem 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2.5rem;
 }
 
-.training-step {
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1rem 1.25rem;
+/* No box around a step: its numbered heading says it is one, and a single
+   hairline with room either side is all that is needed to part it from the
+   last. */
+.training-step + .training-step {
+  border-top: 1px solid var(--border-color);
+  padding-top: 2.5rem;
 }
 
 .training-step h2 {
   margin-top: 0;
+}
+
+/* The reset takes every margin away, so the parts of a step are spaced here:
+   an even beat between them, a wider one before a subheading so it starts a
+   new part, and a short one under it so it stays with what it heads. */
+.training-step > * + * {
+  margin-block-start: 1rem;
+}
+
+.training-step > h3 {
+  margin-block-start: 1.75rem;
+}
+
+.training-step > h3 + * {
+  margin-block-start: 0.5rem;
+}
+
+.training-trainers__note {
+  margin-block-start: 0.75rem;
+  color: var(--grey-color);
 }
 
 /* Where the member stands on this step, said in one sentence. */
