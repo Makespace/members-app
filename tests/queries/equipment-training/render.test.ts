@@ -142,11 +142,12 @@ describe('the get-trained page', () => {
   });
 
   describe('what it says about the people who run practicals', () => {
-    it('counts the active trainers and says what they are', () => {
-      const text = textOf(viewModel());
+    it('reminds people, under the trainers, that they are volunteers', () => {
+      const note = page(viewModel()).querySelector(
+        '.training-summary dd .training-trainers__note'
+      );
 
-      expect(text).toContain('has 1 active trainer.');
-      expect(text).toContain('trainers are volunteers');
+      expect(note?.textContent).toContain('trainers are volunteers');
     });
 
     it('says when a training last happened here', () => {

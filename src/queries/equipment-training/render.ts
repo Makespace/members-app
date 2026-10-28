@@ -190,12 +190,7 @@ const practicalStep = (viewModel: ViewModel) => html`
           )}
           to arrange a training.
         </p>`
-      : html`<p>
-          This piece of equipment has
-          ${safe(String(viewModel.trainers.length))} active
-          trainer${viewModel.trainers.length === 1 ? safe('') : safe('s')}.
-          Please keep in mind that trainers are volunteers!
-        </p>`}
+      : html``}
     <dl class="training-summary">
       <dt>Last training occurred</dt>
       <dd>
@@ -210,7 +205,12 @@ const practicalStep = (viewModel: ViewModel) => html`
       ${viewModel.trainers.length === 0
         ? html``
         : html`<dt>Active trainers</dt>
-            <dd>${trainerList(viewModel)}</dd>`}
+            <dd>
+              ${trainerList(viewModel)}
+              <p class="training-trainers__note">
+                Please keep in mind that trainers are volunteers!
+              </p>
+            </dd>`}
     </dl>
   </li>
 `;
