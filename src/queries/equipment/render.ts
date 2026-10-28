@@ -525,7 +525,8 @@ const equipmentCards = (viewModel: ViewModel) => {
                 ${viewModel.isTrainer
                   ? cardButton(
                       `/equipment/${id}/trainings`,
-                      'Arrange training'
+                      'Arrange training',
+                      true
                     )
                   : html``}
                 ${isTrainerOrOwner(viewModel)
