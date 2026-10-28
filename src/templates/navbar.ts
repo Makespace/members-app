@@ -362,9 +362,11 @@ export const navBar = (
           </a>
           ${renderSitesPanel()}
         </div>
-        ${viewer.isSuperUser
-          ? html`<a class="page-nav__admin" href="/admin">Admin</a>`
-          : html``}
+        ${viewer.isOwner
+          ? html`<a class="page-nav__admin" href="/admin">Owner</a>`
+          : viewer.isSuperUser
+            ? html`<a class="page-nav__admin" href="/admin">Admin</a>`
+            : html``}
       </div>
       <button
         type="button"

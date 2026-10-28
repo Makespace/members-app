@@ -145,6 +145,19 @@ describe('navBar', () => {
     expect(adminLink?.textContent).toContain('Admin');
   });
 
+  // Same page either way: an owner who is also a super-user finds the admin
+  // links below their own areas there.
+  it.each([
+    [false, 'Owner'],
+    [true, 'Owner'],
+  ])('labels it Owner for an owner (super-user: %s)', (isSuperUser, label) => {
+    const link = renderNav(isSuperUser, areas, true).querySelector(
+      '.page-nav__admin'
+    );
+    expect(link?.textContent?.trim()).toStrictEqual(label);
+    expect(link?.getAttribute('href')).toStrictEqual('/admin');
+  });
+
   // Everyone can report a problem, so everyone gets the link; the landing
   // page decides what each member can go on to see.
   it('renders the trouble-tickets link for every member', () => {
