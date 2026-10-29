@@ -136,6 +136,18 @@ const waitingList = (
     .sort((a, b) => a.waitingSince.getTime() - b.waitingSince.getTime());
 };
 
+// Who is waiting for training on a machine, longest first - for any page
+// that wants to say so, not only this one.
+export const waitingForTraining = (
+  deps: Dependencies,
+  equipment: Equipment,
+  now: Date
+): TE.TaskEither<FailureWithStatus, ReadonlyArray<WaitingMember>> =>
+  pipe(
+    quizPasses(deps, equipment),
+    TE.map(passes => waitingList(deps, equipment, passes, now))
+  );
+
 export const constructViewModel =
   (deps: Dependencies, user: User, now: Date) =>
   (equipmentId: UUID): TE.TaskEither<FailureWithStatus, ViewModel> => {
@@ -161,9 +173,11 @@ export const constructViewModel =
             StatusCodes.FORBIDDEN
           )()
       ),
-      TE.bind('passes', ({equipment}) => quizPasses(deps, equipment)),
+      TE.bind('waiting', ({equipment}) =>
+        waitingForTraining(deps, equipment, now)
+      ),
       TE.bind('meetup', () => upcomingMeetupTrainings(deps, now)),
-      TE.map(({equipment, canArrange, passes, meetup}) => {
+      TE.map(({equipment, canArrange, waiting, meetup}) => {
         // Latest first.
         const sessions = rm.trainingSessions.allForEquipment(equipment.id);
         const view = toTrainingSessionView(rm, equipment);
@@ -184,7 +198,7 @@ export const constructViewModel =
             O.fromNullable,
             O.map(session => session.id)
           ),
-          waiting: waitingList(deps, equipment, passes, now),
+          waiting,
           meetupTrainings: forEquipment(meetup, equipment.id),
           now,
         };

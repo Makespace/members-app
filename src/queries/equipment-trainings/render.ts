@@ -15,6 +15,7 @@ import {
 } from '../shared-render/upcoming-training-sessions';
 import {meetupNumbers} from '../shared-render/meetup-trainings';
 import {ViewModel, WaitingMember} from './construct-view-model';
+import {howLong} from '../shared-render/how-long';
 
 const arrangeHref = (equipmentId: UUID, from: O.Option<UUID>) =>
   safe(
@@ -112,21 +113,6 @@ const day = (date: Date) =>
       .setLocale('en-GB')
       .toFormat('d LLL yyyy')
   );
-
-// "3 days", "5 weeks", "4 months": how long, said the way people say it.
-const howLong = (since: Date, now: Date): string => {
-  const days = Math.max(
-    0,
-    Math.floor((now.getTime() - since.getTime()) / (24 * 60 * 60 * 1000))
-  );
-  const say = (count: number, unit: string) =>
-    `${count} ${unit}${count === 1 ? '' : 's'}`;
-  return days < 14
-    ? say(days, 'day')
-    : days < 9 * 7
-      ? say(Math.floor(days / 7), 'week')
-      : say(Math.floor(days / 30), 'month');
-};
 
 const waitingRow = (now: Date) => (member: WaitingMember) => html`
   <tr>

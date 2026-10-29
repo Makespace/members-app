@@ -2,6 +2,8 @@ import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import {html, Html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {OwnedArea, TrainedMachine, ViewModel} from './construct-view-model';
+import {renderTrainingSparkline} from '../../templates/training-sparkline';
+import {howLong} from '../shared-render/how-long';
 
 // Grouped by what somebody came here to do, rather than by when the link
 // happened to be added. The list had grown past the point where a flat column
@@ -17,100 +19,141 @@ const section = (heading: Html, links: ReadonlyArray<Html>) => html`
   </section>
 `;
 
-// A number worth knowing before deciding what to do first, as the machine
-// page's cards show them.
-const stat = (count: number, one: string, many: string) => html`
-  <li class="owner-stat${count === 0 ? safe(' owner-stat--none') : safe('')}">
-    <span class="owner-stat__count">${safe(String(count))}</span>
-    <span>${safe(count === 1 ? one : many)}</span>
-  </li>
+// The owner section is a ledger, after Tufte's Envisioning Information: one
+// row per area and per machine, each the same shape, so a machine can be
+// compared with the next at a glance; the numbers are the loudest thing on
+// it, links are quiet text, and hairlines separate areas rather than boxes
+// imprisoning them. Column headings are said once, at the top.
+
+// A count, greyed when there is nothing to it so the ones that need looking
+// at stand out. The label is shown only where the row stacks, on a phone.
+const count = (
+  value: number,
+  [one, many]: readonly [string, string],
+  extra: Html = html``
+) => html`
+  <div
+    class="owner-ledger__number${value === 0
+      ? safe(' owner-ledger__number--none')
+      : safe('')}"
+  >
+    <span class="owner-ledger__count">${safe(String(value))}</span>
+    <span class="owner-ledger__label">${safe(value === 1 ? one : many)}</span>
+    ${extra}
+  </div>
 `;
 
-const actions = (
-  links: ReadonlyArray<{href: string; label: string}>,
-  kind: 'area' | 'machine'
-) => html`
-  <ul class="owner-actions owner-actions--${safe(kind)}">
+const OPEN_TICKETS = ['open ticket', 'open tickets'] as const;
+
+const blank = html`<div class="owner-ledger__number"></div>`;
+
+const links = (items: ReadonlyArray<{href: string; label: string}>) => html`
+  <div class="owner-ledger__links">
     ${joinHtml(
-      links.map(
-        link =>
-          html`<li>
-            <a href="${safe(link.href)}">${sanitizeString(link.label)}</a>
-          </li>`
+      items.map(
+        (item, index) =>
+          html`${index === 0 ? safe('') : safe(' · ')}<a
+              href="${safe(item.href)}"
+              >${sanitizeString(item.label)}</a
+            >`
       )
     )}
-  </ul>
+  </div>
 `;
 
-const trainedMachine = (machine: TrainedMachine) => html`
-  <article class="owner-machine">
-    <span class="owner-role owner-role--trainer">Trainer</span>
-    <h3 class="owner-machine__name">${sanitizeString(machine.name)}</h3>
-    <p class="owner-caption">You're a trainer on this equipment.</p>
-    <ul class="owner-stats">
-      ${stat(machine.openTickets, 'open ticket', 'open tickets')}
-      ${stat(machine.upcomingTrainings, 'upcoming training', 'upcoming trainings')}
-    </ul>
-    ${actions(
-      [
-        {
-          href: `/trouble-tickets/board?equipmentId=${machine.id}`,
-          label: 'View trouble tickets',
-        },
-        {href: `/equipment/${machine.id}/trainings`, label: 'Arrange training'},
-        {href: `/equipment/${machine.id}`, label: 'Manage equipment'},
-      ],
-      'machine'
-    )}
-  </article>
-`;
-
-const ownedArea = (area: OwnedArea) => html`
-  <section class="owner-area">
-    <header class="owner-area__header">
-      <div>
-        <span class="owner-role owner-role--owner">Owner</span>
-        <h2 class="owner-area__name">${sanitizeString(area.name)}</h2>
-        <p class="owner-caption">You're an owner in this area.</p>
+const machineRow =
+  (now: Date) =>
+  (machine: TrainedMachine): Html => html`
+    <div class="owner-ledger__row owner-ledger__row--machine">
+      <div class="owner-ledger__name">
+        <strong>${sanitizeString(machine.name)}</strong>
+        <div class="owner-ledger__caption">
+          You're a trainer on this equipment.
+        </div>
+        ${links([
+          {
+            href: `/trouble-tickets/board?equipmentId=${machine.id}`,
+            label: 'View trouble tickets',
+          },
+          {
+            href: `/equipment/${machine.id}/trainings`,
+            label: 'Arrange training',
+          },
+          {href: `/equipment/${machine.id}`, label: 'Manage equipment'},
+        ])}
       </div>
-      <ul class="owner-stats">
-        ${stat(area.openTickets, 'open ticket', 'open tickets')}
-      </ul>
-    </header>
-    ${actions(
-      [
-        {
-          href: `/trouble-tickets/board?areaId=${area.id}`,
-          label: 'View trouble tickets',
-        },
-        ...pipe(
-          area.purchasingAreaId,
+      ${count(machine.openTickets, OPEN_TICKETS)}
+      ${count(
+        machine.waiting,
+        ['waiting', 'waiting'],
+        pipe(
+          machine.longestWaitingSince,
           O.match(
-            () => [],
-            id => [{href: `/purchasing-areas/${id}`, label: 'View purchasing'}]
+            () => html``,
+            since =>
+              html`<span class="owner-ledger__aside"
+                >longest ${safe(howLong(since, now))}</span
+              >`
           )
-        ),
-        {href: `/areas/manage?area=${area.id}`, label: 'Manage area'},
-      ],
-      'area'
-    )}
-    ${area.trainerOn.length === 0
-      ? html``
-      : html`
-          <p class="owner-area__subheading">Machines you train on</p>
-          <div class="owner-machines">
-            ${joinHtml(area.trainerOn.map(trainedMachine))}
-          </div>
-        `}
+        )
+      )}
+      ${count(machine.upcomingTrainings, [
+        'upcoming training',
+        'upcoming trainings',
+      ])}
+      <div class="owner-ledger__spark">
+        ${renderTrainingSparkline(machine.trainingsByQuarter)}
+      </div>
+    </div>
+  `;
+
+const areaRows = (now: Date) => (area: OwnedArea) => html`
+  <section class="owner-ledger__area">
+    <div class="owner-ledger__row owner-ledger__row--area">
+      <div class="owner-ledger__name">
+        <h2 class="owner-ledger__area-name">${sanitizeString(area.name)}</h2>
+        <div class="owner-ledger__caption">You're an owner in this area.</div>
+        ${links([
+          {
+            href: `/trouble-tickets/board?areaId=${area.id}`,
+            label: 'View trouble tickets',
+          },
+          ...pipe(
+            area.purchasingAreaId,
+            O.match(
+              () => [],
+              id => [
+                {href: `/purchasing-areas/${id}`, label: 'View purchasing'},
+              ]
+            )
+          ),
+          {href: `/areas/manage?area=${area.id}`, label: 'Manage area'},
+        ])}
+      </div>
+      ${count(area.openTickets, OPEN_TICKETS)} ${blank} ${blank} ${blank}
+    </div>
+    ${joinHtml(area.trainerOn.map(machineRow(now)))}
   </section>
 `;
 
 // What an owner looks after, area by area, with the machines in each that
 // they also train on: the things they come here to do, one click away.
 const ownerPart = (viewModel: ViewModel) => html`
-  <div class="stack-large">
+  <div class="stack">
     <h1>Owner</h1>
-    ${joinHtml(viewModel.ownedAreas.map(ownedArea))}
+    <p class="owner-ledger__intro">
+      Your areas, and the machines in them you train on.
+    </p>
+    <div class="owner-ledger">
+      <div class="owner-ledger__row owner-ledger__head" aria-hidden="true">
+        <div></div>
+        <div>Open tickets</div>
+        <div>Waiting</div>
+        <div>Upcoming</div>
+        <div>Trained per quarter</div>
+      </div>
+      ${joinHtml(viewModel.ownedAreas.map(areaRows(viewModel.now)))}
+    </div>
   </div>
 `;
 

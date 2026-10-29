@@ -7,7 +7,7 @@ import {DateTime} from 'luxon';
 import {constructViewModel} from '../../../src/queries/admin/construct-view-model';
 import {admin} from '../../../src/queries/admin';
 import {arbitraryUser} from '../../types/user.helper';
-import {getLeftOrFail} from '../../helpers';
+import {getLeftOrFail, getRightOrFail} from '../../helpers';
 import {
   initTestFramework,
   TestFramework,
@@ -72,21 +72,52 @@ describe('the owner page', () => {
     framework.close();
   });
 
-  it('lists the areas they own, with the machines in each they train on', () => {
-    const viewModel = constructViewModel(framework.depsForCommands, owner);
+  const viewModelFor = async (user = owner) =>
+    getRightOrFail(
+      await constructViewModel(framework.depsForCommands, user)()
+    );
+
+  it('lists the areas they own, with the machines in each they train on', async () => {
+    const viewModel = await viewModelFor();
 
     expect(viewModel.isSuperUser).toBe(false);
-    expect(viewModel.ownedAreas).toStrictEqual([
+    expect(viewModel.ownedAreas).toMatchObject([
       {
         id: woodShop,
         name: 'Wood Shop',
         purchasingAreaId: O.none,
         openTickets: 0,
         trainerOn: [
-          {id: bandSaw, name: 'Band Saw', openTickets: 0, upcomingTrainings: 0},
+          {
+            id: bandSaw,
+            name: 'Band Saw',
+            openTickets: 0,
+            upcomingTrainings: 0,
+            waiting: 0,
+            longestWaitingSince: O.none,
+          },
         ],
       },
     ]);
+    expect(viewModel.ownedAreas[0].trainerOn).toHaveLength(1);
+  });
+
+  it('says how many are waiting on each machine, and for how long', async () => {
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    await framework.depsForCommands.commitEvent(
+      framework.sharedReadModel.getCurrentEventIndex()
+    )({
+      type: 'TrainingInterestExpressed',
+      equipmentId: bandSaw,
+      memberNumber: member.memberNumber,
+      actor: {tag: 'system'},
+      recordedAt: since,
+    })();
+
+    const [machine] = (await viewModelFor()).ownedAreas[0].trainerOn;
+
+    expect(machine.waiting).toStrictEqual(1);
+    expect(machine.longestWaitingSince).toStrictEqual(O.some(since));
   });
 
   it('counts open tickets in the area and on the machine, and upcoming trainings', async () => {
@@ -120,8 +151,7 @@ describe('the owner page', () => {
       recordedAt: new Date(),
     })();
 
-    const [area] = constructViewModel(framework.depsForCommands, owner)
-      .ownedAreas;
+    const [area] = (await viewModelFor()).ownedAreas;
 
     expect(area.openTickets).toStrictEqual(1);
     expect(area.trainerOn[0]).toMatchObject({
