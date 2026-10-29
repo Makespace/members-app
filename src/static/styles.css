@@ -2623,152 +2623,119 @@ body:has(.tt-wrapper) {
 
 /* Breathing room between the last category radio and whatever follows it
    (typically the submit button). */
-/* The Owner page: a card per area, its numbers and buttons, then a grid of
-   lighter cards for the machines in it the owner trains on. The role labels
-   use the app's own colours for them: owner orange, trainer green. */
-.owner-area {
-  border: 2px solid var(--border-color);
-  border-top: 6px solid #b35f00;
-  border-radius: 6px;
-  padding: 1.25rem 1.5rem 1.5rem;
-}
-
-.owner-area__header {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-}
-
-.owner-area__name,
-.owner-machine__name {
-  margin: 0.35rem 0 0;
-}
-
-.owner-machine__name {
-  font-size: 1.15rem;
-}
-
-.owner-caption {
-  margin: 0.15rem 0 0;
+/* The Owner page (queries/admin): a ledger, one row per area and per machine
+   it holds that the owner trains on. Rows share one grid so the numbers line
+   up down the page; hairlines part the areas; links are quiet text; zeros are
+   grey so the counts that need looking at stand out. */
+.owner-ledger__intro {
   color: var(--grey-color);
 }
 
-.owner-role {
-  display: inline-block;
-  padding: 1px 8px;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.owner-role--owner {
-  background: color-mix(in oklch, white 85%, #b35f00);
-  color: #8a4900;
-}
-
-.owner-role--trainer {
-  background: color-mix(in oklch, white 85%, var(--green-color));
-  color: var(--green-darkened-color);
-}
-
-ul.owner-stats {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  gap: 1.25rem;
-}
-
-.owner-stat {
-  display: flex;
+.owner-ledger__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 4.5rem 7rem 4.5rem 5rem;
+  gap: 0.25rem 0.75rem;
   align-items: baseline;
-  gap: 0.4rem;
-  white-space: nowrap;
 }
 
-.owner-stat__count {
-  font-size: 1.6rem;
-  line-height: 1.1;
+.owner-ledger__head {
+  font-size: 0.85rem;
+  color: var(--grey-color);
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.owner-ledger__area {
+  padding: 0.9rem 0 0.6rem;
+  border-bottom: 1px solid color-mix(in oklch, white 55%, var(--border-color));
+}
+
+.owner-ledger__area-name {
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.owner-ledger__row--machine {
+  margin-top: 0.75rem;
+  padding-left: 1.25rem;
+}
+
+.owner-ledger__caption {
+  color: var(--grey-color);
+  font-size: 0.85rem;
+}
+
+.owner-ledger__links {
+  font-size: 0.9rem;
+  margin-top: 0.15rem;
+}
+
+.owner-ledger__number {
   font-variant-numeric: tabular-nums;
 }
 
-.owner-stat--none {
+.owner-ledger__count {
+  font-size: 1.3rem;
+  line-height: 1.2;
+}
+
+.owner-ledger__number--none {
+  color: color-mix(in oklch, white 45%, var(--grey-color));
+}
+
+.owner-ledger__aside {
+  display: block;
+  font-size: 0.8rem;
   color: var(--grey-color);
 }
 
-ul.owner-actions {
-  list-style: none;
-  margin: 1rem 0 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+/* Said once in the heading on a wide screen; beside each number where the
+   row stacks. */
+.owner-ledger__label {
+  display: none;
 }
 
-/* The area's own actions are buttons; a machine's are quieter, outlined, so
-   the area card reads first. */
-.owner-actions--area a,
-.owner-actions--area a:visited {
-  display: inline-block;
-  padding: 8px 16px;
-  background: var(--green-color);
-  border-bottom: 3px solid black;
-  color: white;
-  text-decoration: none;
-}
+@media screen and (max-width: 48rem) {
+  .owner-ledger__head {
+    display: none;
+  }
 
-.owner-actions--area a:hover {
-  background: var(--green-darkened-color);
-}
+  /* The name across the top, then the numbers side by side beneath it. */
+  .owner-ledger__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 1rem;
+  }
 
-.owner-actions--machine a {
-  display: inline-block;
-  padding: 4px 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  text-decoration: none;
-  font-size: 0.95rem;
-}
+  .owner-ledger__name {
+    flex-basis: 100%;
+  }
 
-.owner-actions--machine a:hover {
-  border-color: var(--link-color);
-  background: color-mix(in oklch, white 92%, var(--link-color));
-}
+  /* Each number carries its own label here. */
+  .owner-ledger__row.owner-ledger__head {
+    display: none;
+  }
 
-.owner-area__subheading {
-  margin: 1.75rem 0 0.75rem;
-  font-weight: 700;
-  color: var(--grey-color);
-  text-transform: uppercase;
-  font-size: 0.85rem;
-  letter-spacing: 0.04em;
-}
+  .owner-ledger__number:empty {
+    display: none;
+  }
 
-.owner-machines {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
-}
+  .owner-ledger__count {
+    font-size: 1.1rem;
+  }
 
-.owner-machine {
-  border: 1px solid color-mix(in oklch, white 45%, var(--border-color));
-  border-left: 4px solid var(--green-color);
-  border-radius: 6px;
-  padding: 0.9rem 1rem;
-}
+  .owner-ledger__label {
+    display: inline;
+    margin-left: 0.25rem;
+    color: var(--grey-color);
+    font-size: 0.85rem;
+  }
 
-.owner-machine ul.owner-stats {
-  margin-top: 0.6rem;
-  flex-wrap: wrap;
-  gap: 0.25rem 1rem;
-}
-
-.owner-machine .owner-stat__count {
-  font-size: 1.25rem;
+  .owner-ledger__aside {
+    display: inline;
+    margin-left: 0.35rem;
+  }
 }
 
 .eq-cat-choices {

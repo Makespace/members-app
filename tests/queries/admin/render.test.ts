@@ -7,7 +7,9 @@ import {UUID} from 'io-ts-types';
 import {render} from '../../../src/queries/admin/render';
 import {ViewModel} from '../../../src/queries/admin/construct-view-model';
 
-const superUser: ViewModel = {isSuperUser: true, ownedAreas: []};
+const now = new Date('2026-10-29T12:00:00Z');
+
+const superUser: ViewModel = {isSuperUser: true, ownedAreas: [], now};
 
 const woodShop: ViewModel['ownedAreas'][number] = {
   id: 'area-1',
@@ -15,13 +17,21 @@ const woodShop: ViewModel['ownedAreas'][number] = {
   purchasingAreaId: O.some('purchasing-1' as UUID),
   openTickets: 3,
   trainerOn: [
-    {id: 'saw-1', name: 'Band Saw', openTickets: 1, upcomingTrainings: 2},
+    {
+      id: 'saw-1',
+      name: 'Band Saw',
+      openTickets: 1,
+      upcomingTrainings: 2,
+      waiting: 4,
+      longestWaitingSince: O.some(new Date('2026-08-01T12:00:00Z')),
+      trainingsByQuarter: [],
+    },
   ],
 };
 
-const pageFor = (viewModel: ViewModel) => {
+const pageFor = (viewModel: Omit<ViewModel, 'now'>) => {
   const body = document.createElement('body');
-  body.innerHTML = render(viewModel);
+  body.innerHTML = render({...viewModel, now});
   return body;
 };
 
@@ -90,18 +100,38 @@ describe('the owner page', () => {
   it('names the machines they train on under the area', () => {
     const body = pageFor({isSuperUser: false, ownedAreas: [woodShop]});
 
-    expect(body.querySelector('h3')?.textContent?.trim()).toBe('Band Saw');
-    expect(body.textContent).toContain("You're a trainer on this equipment.");
+    const machine = body.querySelector('.owner-ledger__row--machine');
+    expect(machine?.querySelector('strong')?.textContent?.trim()).toBe(
+      'Band Saw'
+    );
+    expect(machine?.textContent).toContain(
+      "You're a trainer on this equipment."
+    );
   });
 
-  it('shows the numbers worth knowing before choosing what to do', () => {
-    const text = (
-      pageFor({isSuperUser: false, ownedAreas: [woodShop]}).textContent ?? ''
-    ).replace(/\s+/g, ' ');
+  // One row per machine, each the same shape, so they compare down the page.
+  it('lines up the numbers worth knowing in the same columns', () => {
+    const body = pageFor({isSuperUser: false, ownedAreas: [woodShop]});
+    const numbers = (row: Element | null) =>
+      [...(row?.querySelectorAll('.owner-ledger__number') ?? [])].map(cell =>
+        (cell.textContent ?? '').replace(/\s+/g, ' ').trim()
+      );
 
-    expect(text).toContain('3 open tickets');
-    expect(text).toContain('1 open ticket ');
-    expect(text).toContain('2 upcoming trainings');
+    expect(numbers(body.querySelector('.owner-ledger__row--area'))).toStrictEqual(
+      ['3 open tickets', '', '', '']
+    );
+    expect(
+      numbers(body.querySelector('.owner-ledger__row--machine'))
+    ).toStrictEqual([
+      '1 open ticket',
+      '4 waiting longest 2 months',
+      '2 upcoming trainings',
+    ]);
+  });
+
+  it('keeps links as text, not buttons', () => {
+    const body = pageFor({isSuperUser: false, ownedAreas: [woodShop]});
+    expect(body.querySelectorAll('.owner-ledger .button')).toHaveLength(0);
   });
 
   it('leaves out purchasing for an area outside any purchasing area', () => {

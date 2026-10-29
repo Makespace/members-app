@@ -9,21 +9,23 @@ import {constructViewModel} from './construct-view-model';
 
 // The navbar's Owner (or Admin) page: owners see their areas, super-users
 // the admin links, and anybody who is neither has nothing here.
-export const admin: Query = deps => user => {
-  const viewModel = constructViewModel(deps, user);
-  if (!viewModel.isSuperUser && viewModel.ownedAreas.length === 0) {
-    return TE.left(
-      failureWithStatus(
-        'You are not authorised to see this page',
-        StatusCodes.FORBIDDEN
-      )()
-    );
-  }
-  return pipe(
-    render(viewModel),
-    toLoggedInContent(
-      safe(viewModel.ownedAreas.length > 0 ? 'Owner' : 'Admin')
+export const admin: Query = deps => user =>
+  pipe(
+    constructViewModel(deps, user),
+    TE.filterOrElse(
+      viewModel => viewModel.isSuperUser || viewModel.ownedAreas.length > 0,
+      () =>
+        failureWithStatus(
+          'You are not authorised to see this page',
+          StatusCodes.FORBIDDEN
+        )()
     ),
-    TE.right
+    TE.map(viewModel =>
+      pipe(
+        render(viewModel),
+        toLoggedInContent(
+          safe(viewModel.ownedAreas.length > 0 ? 'Owner' : 'Admin')
+        )
+      )
+    )
   );
-};
