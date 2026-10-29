@@ -16,7 +16,10 @@ import {
 import {meetupNumbers} from '../shared-render/meetup-trainings';
 import {ViewModel} from './construct-view-model';
 import {
+  askedToBeTrainedLabel,
   counted,
+  doneOnlineTrainingLabel,
+  splitByHow,
   WaitingMember,
 } from '../shared-render/waiting-for-training';
 import {howLong} from '../shared-render/how-long';
@@ -178,7 +181,7 @@ const waitingTable = (
     <thead>
       <tr>
         <th>Member</th>
-        <th>Waiting</th>
+        <th>Since</th>
         <th>Last said they would like training</th>
         <th>Booked</th>
       </tr>
@@ -214,25 +217,41 @@ const hiddenAsInactive = (viewModel: ViewModel): Html => {
       </details>`;
 };
 
+// Says what is known - who has done the online training, who has asked -
+// rather than calling them all "waiting": passing the quiz does not mean
+// somebody still wants the practical.
+const summary = (viewModel: ViewModel): Html => {
+  const waiting = counted(viewModel.waiting);
+  const {doneOnlineTraining, askedOnly} = splitByHow(viewModel.waiting);
+  const booked = waiting.filter(member => O.isSome(member.bookedOn)).length;
+  return html`<p class="waiting__summary">
+    ${doneOnlineTraining.length === 0
+      ? html`Nobody untrained has done the online training`
+      : html`${safe(String(doneOnlineTraining.length))}
+        ${safe(doneOnlineTrainingLabel(doneOnlineTraining.length))}`}${askedOnly.length ===
+    0
+      ? html``
+      : html`, and ${safe(String(askedOnly.length))}
+        ${safe(askedToBeTrainedLabel(askedOnly.length))}`}.
+    The first did so ${safe(howLong(waiting[0].waitingSince, viewModel.now))}
+    ago. ${safe(String(booked))}
+    ${booked === 1 ? safe('is') : safe('are')} booked on an upcoming
+    training.
+  </p>`;
+};
+
 const waitingSection = (viewModel: ViewModel): Html => {
   const waiting = counted(viewModel.waiting);
   return html`
     <section class="stack">
-      <h2>Waiting for training</h2>
+      <h2>Not yet trained</h2>
       ${waiting.length === 0
         ? html`<p class="upcoming-trainings__empty">
-            Nobody is waiting: nobody untrained has passed the quiz or told the
-            trainers they would like training.
+            Nobody untrained has done the online training or asked to be
+            trained.
           </p>`
         : html`
-            <p class="waiting__summary">
-              ${safe(String(waiting.length))}
-              ${waiting.length === 1 ? safe('member is') : safe('members are')}
-              waiting, the longest for
-              ${safe(howLong(waiting[0].waitingSince, viewModel.now))}.
-              ${safe(String(waiting.filter(m => O.isSome(m.bookedOn)).length))}
-              booked on an upcoming training.
-            </p>
+            ${summary(viewModel)}
             ${waitingTable(waiting, viewModel.now)}
           `}
       ${hiddenAsInactive(viewModel)}

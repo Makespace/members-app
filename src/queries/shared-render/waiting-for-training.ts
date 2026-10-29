@@ -41,6 +41,25 @@ export type WaitingMember = {
 export const counted = (waiting: ReadonlyArray<WaitingMember>) =>
   waiting.filter(member => !member.inactiveInRecurly);
 
+// What the counts say, rather than calling everybody "waiting": having done
+// the online training (passed the quiz) is a fact, whether or not somebody
+// still wants the practical; asking to be trained is a separate one.
+export const splitByHow = (waiting: ReadonlyArray<WaitingMember>) => {
+  const members = counted(waiting);
+  return {
+    doneOnlineTraining: members.filter(member => member.passedQuiz),
+    askedOnly: members.filter(member => !member.passedQuiz),
+  };
+};
+
+export const doneOnlineTrainingLabel = (count: number) =>
+  count === 1
+    ? 'person has done the online training'
+    : 'people have done the online training';
+
+export const askedToBeTrainedLabel = (count: number) =>
+  count === 1 ? 'more has asked to be trained' : 'more have asked to be trained';
+
 const quizResultsFor = (
   deps: Dependencies,
   equipment: Equipment

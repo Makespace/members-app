@@ -93,8 +93,9 @@ describe('the owner page', () => {
             name: 'Band Saw',
             openTickets: 0,
             upcomingTrainings: 0,
-            waiting: 0,
-            longestWaitingSince: O.none,
+            doneOnlineTraining: 0,
+            askedToBeTrained: 0,
+            earliestSince: O.none,
           },
         ],
       },
@@ -116,8 +117,9 @@ describe('the owner page', () => {
 
     const [machine] = (await viewModelFor()).ownedAreas[0].trainerOn;
 
-    expect(machine.waiting).toStrictEqual(1);
-    expect(machine.longestWaitingSince).toStrictEqual(O.some(since));
+    // They asked, rather than doing the online training.
+    expect(machine).toMatchObject({doneOnlineTraining: 0, askedToBeTrained: 1});
+    expect(machine.earliestSince).toStrictEqual(O.some(since));
   });
 
   it('counts open tickets in the area and on the machine, and upcoming trainings', async () => {

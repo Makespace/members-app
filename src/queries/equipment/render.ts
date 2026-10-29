@@ -16,6 +16,10 @@ import {DateTime} from 'luxon';
 import {renderMembersAsList} from '../../templates/member-link-list';
 import {currentTrainingSheetButton} from '../shared-render/current-training-sheet-button';
 import {renderUpcomingTrainingSessions} from '../shared-render/upcoming-training-sessions';
+import {
+  askedToBeTrainedLabel,
+  doneOnlineTrainingLabel,
+} from '../shared-render/waiting-for-training';
 
 
 import {tooltip, tooltipWith} from '../shared-render/tool-tip';
@@ -560,15 +564,27 @@ const equipmentCards = (viewModel: ViewModel) => {
                 )}
                 ${isTrainerOrOwner(viewModel)
                   ? statLink(
-                      viewModel.training.waitingForTraining,
-                      'members waiting for training',
+                      viewModel.training.doneOnlineTraining,
+                      doneOnlineTrainingLabel(
+                        viewModel.training.doneOnlineTraining
+                      ),
                       // Where the whole list is, quiz passes and those who
                       // told the trainers alike.
                       `/equipment/${id}/trainings`
                     )
                   : stat(
-                      viewModel.training.waitingForTraining,
-                      'members waiting for training'
+                      viewModel.training.doneOnlineTraining,
+                      doneOnlineTrainingLabel(
+                        viewModel.training.doneOnlineTraining
+                      )
+                    )}
+                ${viewModel.training.askedToBeTrained === 0
+                  ? html``
+                  : stat(
+                      viewModel.training.askedToBeTrained,
+                      askedToBeTrainedLabel(
+                        viewModel.training.askedToBeTrained
+                      )
                     )}
               </ul>
               <h3>Upcoming trainings</h3>

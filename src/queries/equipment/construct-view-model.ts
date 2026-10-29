@@ -21,7 +21,7 @@ import {
 } from '../../read-models/external-state/equipment-quiz';
 import {upcomingTrainingSessions} from '../shared-render/upcoming-training-sessions';
 import {
-  counted,
+  splitByHow,
   waitingFromQuizResults,
 } from '../shared-render/waiting-for-training';
 
@@ -140,7 +140,8 @@ export const constructViewModel =
           // The same list as the machine's trainings page and the Owner
           // page: quiz passes (including unlinked ones) and members who told
           // the trainers, less those Recurly says have lapsed.
-          waitingForTraining: counted(waiting).length,
+          doneOnlineTraining: splitByHow(waiting).doneOnlineTraining.length,
+          askedToBeTrained: splitByHow(waiting).askedOnly.length,
         };
       })
     );

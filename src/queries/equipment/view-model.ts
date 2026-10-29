@@ -24,10 +24,11 @@ export type ViewModel = {
   training: {
     activeTrainers: number;
     trainingsRecently: number;
-    // Passed the quiz but not yet marked as practically trained, excluding
-    // known-inactive members. Sourced from the same quiz results the
-    // quiz-results page lists, so the number matches that page.
-    waitingForTraining: number;
+    // Not yet trained, and not known-lapsed in Recurly: those who passed the
+    // quiz (the online training), and those who only asked the trainers.
+    // From the same list as the machine's trainings page, so they agree.
+    doneOnlineTraining: number;
+    askedToBeTrained: number;
   };
   // Only the machine's own trainers can arrange a training on it; being a
   // super-user is not enough, because the trainer is whoever arranges it.

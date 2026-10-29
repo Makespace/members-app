@@ -12,7 +12,7 @@ import {
   trainingsByQuarter,
 } from '../../read-models/shared-state/member/training-delivered';
 import {
-  counted,
+  splitByHow,
   waitingForTraining,
 } from '../shared-render/waiting-for-training';
 
@@ -21,10 +21,13 @@ export type TrainedMachine = {
   name: string;
   openTickets: number;
   upcomingTrainings: number;
-  // Not trained, and passed the quiz or said they would like training.
-  waiting: number;
-  // How long the longest of them has waited, from when.
-  longestWaitingSince: O.Option<Date>;
+  // Not trained: who has done the online training (passed the quiz), and
+  // who has only asked the trainers - said apart, as passing the quiz does
+  // not mean somebody still wants the practical.
+  doneOnlineTraining: number;
+  askedToBeTrained: number;
+  // When the first of either did so.
+  earliestSince: O.Option<Date>;
   // Trainings on the machine in each of the last four quarters, oldest
   // first: whether training here is keeping up.
   trainingsByQuarter: ReadonlyArray<QuarterCount>;
@@ -51,9 +54,13 @@ export type ViewModel = {
 const byName = <T extends {name: string}>(a: T, b: T) =>
   a.name.localeCompare(b.name);
 
-type Waiting = {count: number; longestSince: O.Option<Date>};
+type Waiting = {
+  doneOnline: number;
+  asked: number;
+  earliestSince: O.Option<Date>;
+};
 
-const noneWaiting: Waiting = {count: 0, longestSince: O.none};
+const noneWaiting: Waiting = {doneOnline: 0, asked: 0, earliestSince: O.none};
 
 // Who is waiting on each machine, by machine id.
 const waitingOn = (
@@ -67,18 +74,20 @@ const waitingOn = (
     TE.traverseArray(equipment =>
       pipe(
         waitingForTraining(deps, equipment, now),
-        TE.map(counted),
-        TE.map(
-          waiting =>
-            [
-              equipment.id as string,
-              {
-                count: waiting.length,
-                // Longest first.
-                longestSince: O.fromNullable(waiting[0]?.waitingSince),
-              },
-            ] as const
-        )
+        TE.map(waiting => {
+          const {doneOnlineTraining, askedOnly} = splitByHow(waiting);
+          const earliest = [...doneOnlineTraining, ...askedOnly]
+            .map(member => member.waitingSince)
+            .sort((a, b) => a.getTime() - b.getTime())[0];
+          return [
+            equipment.id as string,
+            {
+              doneOnline: doneOnlineTraining.length,
+              asked: askedOnly.length,
+              earliestSince: O.fromNullable(earliest),
+            },
+          ] as const;
+        })
       )
     ),
     TE.map(entries => new Map(entries))
@@ -162,8 +171,9 @@ export const constructViewModel = (
               machine.id,
               now
             ).length,
-            waiting: onMachine.count,
-            longestWaitingSince: onMachine.longestSince,
+            doneOnlineTraining: onMachine.doneOnline,
+            askedToBeTrained: onMachine.asked,
+            earliestSince: onMachine.earliestSince,
             trainingsByQuarter: trainingsByQuarter(
               trainedAt.get(machine.id) ?? [],
               DateTime.fromJSDate(now)

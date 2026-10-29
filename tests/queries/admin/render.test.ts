@@ -22,8 +22,9 @@ const woodShop: ViewModel['ownedAreas'][number] = {
       name: 'Band Saw',
       openTickets: 1,
       upcomingTrainings: 2,
-      waiting: 4,
-      longestWaitingSince: O.some(new Date('2026-08-01T12:00:00Z')),
+      doneOnlineTraining: 4,
+      askedToBeTrained: 2,
+      earliestSince: O.some(new Date('2026-08-01T12:00:00Z')),
       trainingsByQuarter: [],
     },
   ],
@@ -124,7 +125,7 @@ describe('the owner page', () => {
       numbers(body.querySelector('.owner-ledger__row--machine'))
     ).toStrictEqual([
       '1 open ticket',
-      '4 waiting longest 2 months',
+      '4 done the online training +2 asked to be trained first 2 months ago',
       '2 upcoming trainings',
     ]);
   });

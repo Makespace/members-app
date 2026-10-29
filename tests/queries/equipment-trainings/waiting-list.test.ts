@@ -252,9 +252,14 @@ describe('waiting for training', () => {
       await equipmentViewModel(framework.depsForCommands, owner)(bandSaw)()
     );
 
-    expect(equipmentPage.training.waitingForTraining).toStrictEqual(
-      counted((await page()).waiting).length
-    );
-    expect(equipmentPage.training.waitingForTraining).toStrictEqual(2);
+    // Said apart: one has done the online training, one only asked.
+    expect(equipmentPage.training).toMatchObject({
+      doneOnlineTraining: 1,
+      askedToBeTrained: 1,
+    });
+    expect(
+      equipmentPage.training.doneOnlineTraining +
+        equipmentPage.training.askedToBeTrained
+    ).toStrictEqual(counted((await page()).waiting).length);
   });
 });

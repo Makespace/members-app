@@ -140,7 +140,7 @@ describe('the count of members waiting for training', () => {
   const waitingForTraining = async () =>
     getRightOrFail(
       await constructViewModel(framework.depsForCommands, owner)(equipmentId)()
-    ).training.waitingForTraining;
+    ).training.doneOnlineTraining;
 
   const passQuiz = (memberNumber: number, email: string, completedAt = new Date()) =>
     framework.commands.trainingQuiz.record({

@@ -122,7 +122,8 @@ describe('Render equipment page', () => {
             training: {
               activeTrainers: 0,
               trainingsRecently: 0,
-              waitingForTraining: 0,
+              doneOnlineTraining: 0,
+              askedToBeTrained: 0,
             },
             isTrainer: false,
             upcomingTrainings: [],
@@ -142,7 +143,7 @@ describe('Render equipment page', () => {
         // trainers and owners can open the list behind it.
         it('sees the waiting-for-training count, but not as a link', () => {
             expect(renderedDom.textContent).toContain(
-                'members waiting for training'
+                'done the online training'
             );
             expect(renderedDom.textContent).toContain('0');
             expect(
@@ -187,7 +188,8 @@ describe('Render equipment page', () => {
             training: {
               activeTrainers: 0,
               trainingsRecently: 0,
-              waitingForTraining: 0,
+              doneOnlineTraining: 0,
+              askedToBeTrained: 0,
             },
             isTrainer: false,
             upcomingTrainings: [],
@@ -234,7 +236,8 @@ describe('Render equipment page', () => {
             training: {
               activeTrainers: 0,
               trainingsRecently: 0,
-              waitingForTraining: 1,
+              doneOnlineTraining: 1,
+              askedToBeTrained: 0,
             },
             isTrainer: false,
             upcomingTrainings: [],
@@ -267,7 +270,7 @@ describe('Render equipment page', () => {
             expect(link).not.toBeNull();
             expect(link?.textContent).toContain('1');
             expect(renderedDom.textContent).toContain(
-                'members waiting for training'
+                'done the online training'
             );
         });
     });
@@ -289,7 +292,8 @@ describe('Render equipment page', () => {
             training: {
               activeTrainers: 0,
               trainingsRecently: 0,
-              waitingForTraining: 1,
+              doneOnlineTraining: 1,
+              askedToBeTrained: 0,
             },
             isTrainer: false,
             upcomingTrainings: [],
@@ -326,7 +330,7 @@ describe('Render equipment page', () => {
             expect(link).not.toBeNull();
             expect(link?.textContent).toContain('1');
             expect(renderedDom.textContent).toContain(
-                'members waiting for training'
+                'done the online training'
             );
         });
     });
@@ -349,7 +353,8 @@ describe('Render equipment page', () => {
             training: {
               activeTrainers: 0,
               trainingsRecently: 0,
-              waitingForTraining: 0,
+              doneOnlineTraining: 0,
+              askedToBeTrained: 0,
             },
             isTrainer: false,
             upcomingTrainings: [],
@@ -433,7 +438,8 @@ describe('the equipment guide, when it stopped answering', () => {
         training: {
               activeTrainers: 0,
               trainingsRecently: 0,
-              waitingForTraining: 0,
+              doneOnlineTraining: 0,
+              askedToBeTrained: 0,
             },
         isTrainer: false,
         upcomingTrainings: [],
@@ -535,7 +541,8 @@ describe('the actions, in groups', () => {
         training: {
               activeTrainers: 0,
               trainingsRecently: 0,
-              waitingForTraining: 0,
+              doneOnlineTraining: 0,
+              askedToBeTrained: 0,
             },
         isTrainer: false,
         upcomingTrainings: [],
