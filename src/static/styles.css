@@ -3026,7 +3026,8 @@ ul.owner-actions {
    are the way round, not the thing the page is for. Orange outline, the
    colour the app uses for "this asks something of you", and not filled. */
 a.button-outline,
-a.button-outline:visited {
+a.button-outline:visited,
+button.button-outline {
   display: inline-block;
   padding: 8px 18px;
   border: 2px solid #b35f00;
@@ -3035,9 +3036,11 @@ a.button-outline:visited {
   color: #8a4900;
   text-decoration: none;
   font-size: 110%;
+  cursor: pointer;
 }
 
-a.button-outline:hover {
+a.button-outline:hover,
+button.button-outline:hover {
   background: color-mix(in oklch, white 90%, #b35f00);
   color: #6e3a00;
 }
@@ -4125,6 +4128,67 @@ ol.training-steps {
   margin: 0.25rem 0;
 }
 
+/* Who is waiting for training on a machine (equipment-trainings). */
+.waiting__summary {
+  color: var(--grey-color);
+}
+
+table.waiting-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.waiting-table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--grey-color);
+  font-size: 0.9rem;
+  padding: 0 1rem 0.3rem 0;
+}
+
+.waiting-table td {
+  vertical-align: top;
+  padding: 0.45rem 1rem 0.45rem 0;
+  border-top: 1px solid color-mix(in oklch, white 75%, var(--border-color));
+}
+
+.waiting__number,
+.waiting__since,
+.waiting__none {
+  color: var(--grey-color);
+}
+
+.waiting__number {
+  margin-left: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.waiting__since {
+  font-size: 0.85rem;
+}
+
+.trainings__subheading {
+  margin-top: 1rem;
+}
+
+ul.trainings__meetup {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+/* On a machine's training page: tell the trainers you would like training. */
+.training-interest {
+  border-left: 3px solid color-mix(in oklch, white 40%, var(--border-color));
+  padding: 0.25rem 0 0.25rem 1rem;
+}
+
+.training-interest__form {
+  margin-top: 0.5rem;
+}
+
 .training-sessions-table td {
   vertical-align: top;
 }
@@ -4152,26 +4216,13 @@ ol.training-steps {
 /* The Get trained calendar (queries/upcoming-trainings): one row of the same
    shape per training, columns aligned without rules, colour only in small
    spots. --app-spot and --meetup-spot are the two sources. */
-.training-calendar {
-  --app-spot: var(--green-color);
-  --meetup-spot: #e0393e;
-}
-
-.source-spot {
+/* Where a training is arranged: the Makespace logo, or Meetup's. */
+img.source-icon {
   display: inline-block;
-  width: 0.55rem;
-  height: 0.55rem;
-  border-radius: 50%;
+  width: 0.95rem;
+  height: 0.95rem;
   margin-right: 0.35rem;
-  vertical-align: 0.05rem;
-}
-
-.source-spot--app {
-  background: var(--app-spot, var(--green-color));
-}
-
-.source-spot--meetup {
-  background: var(--meetup-spot, #e0393e);
+  vertical-align: -0.12rem;
 }
 
 .training-legend {
@@ -4179,8 +4230,7 @@ ol.training-steps {
   font-size: 0.95rem;
 }
 
-.training-legend .source-spot + .source-spot,
-.training-legend .source-spot:not(:first-child) {
+.training-legend .source-icon:not(:first-child) {
   margin-left: 1rem;
 }
 
@@ -4214,10 +4264,10 @@ table.training-overview {
   color: inherit;
 }
 
-.training-overview td .source-spot {
-  width: 0.45rem;
-  height: 0.45rem;
-  margin-right: 0.15rem;
+.training-overview td .source-icon {
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-right: 0.1rem;
 }
 
 .training-overview__date {

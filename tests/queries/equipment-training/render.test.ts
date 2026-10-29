@@ -35,6 +35,7 @@ const viewModel = (overrides: Partial<ViewModel> = {}): ViewModel => ({
   quizRequired: true,
   prerequisites: [],
   meetupTrainings: [],
+  interestLastExpressed: O.none,
   ...overrides,
 });
 
@@ -57,6 +58,35 @@ describe('the get-trained page', () => {
       '1. Pass the online quiz',
       '2. Attend an in-person training session',
     ]);
+  });
+
+  describe('telling the trainers you would like training', () => {
+    const interest = (vm: ViewModel) =>
+      page(vm).querySelector('.training-interest');
+
+    it('offers it to somebody not yet trained', () => {
+      const block = interest(viewModel());
+      expect(textOf(viewModel())).toContain(
+        'Let the trainers know you would like training'
+      );
+      expect(
+        block?.querySelector('form')?.getAttribute('action')
+      ).toContain('/training-sessions/express-interest');
+    });
+
+    it('says when they last did, and lets them say it again', () => {
+      const text = textOf(
+        viewModel({interestLastExpressed: O.some(new Date('2026-10-12'))})
+      );
+      expect(text).toContain('on 12 October 2026');
+      expect(text).toContain('Tell them again');
+    });
+
+    it('does not ask somebody already trained', () => {
+      expect(
+        interest(viewModel({trainedSince: O.some(new Date('2026-06-15'))}))
+      ).toBeNull();
+    });
   });
 
   describe("what the machine's owners say comes first", () => {

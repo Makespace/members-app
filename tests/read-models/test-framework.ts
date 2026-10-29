@@ -316,6 +316,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         signUp: frameworkify(commands.trainingSessions.signUp),
         cancelPlace: frameworkify(commands.trainingSessions.cancelPlace),
         cancel: frameworkify(commands.trainingSessions.cancel),
+        expressInterest: frameworkify(
+          commands.trainingSessions.expressInterest
+        ),
       },
       einkDisplays: {
         assign: frameworkify(commands.einkDisplays.assign),

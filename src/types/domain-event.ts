@@ -622,6 +622,14 @@ const EquipmentTrainingRequirementsSet = defineEvent(
   }
 );
 
+// A member telling a machine's trainers they would like to be trained on it.
+// Said again whenever they like, so the latest time shows whether the wish is
+// still current.
+const TrainingInterestExpressed = defineEvent('TrainingInterestExpressed', {
+  equipmentId: tt.UUID,
+  memberNumber: t.number,
+});
+
 // A member taking a place on a training session themselves.
 const TrainingSessionSignedUp = defineEvent('TrainingSessionSignedUp', {
   sessionId: tt.UUID,
@@ -1001,6 +1009,7 @@ export const events = [
   TrainingSessionCancelled,
   TrainingSessionNotificationSent,
   EquipmentTrainingRequirementsSet,
+  TrainingInterestExpressed,
 ];
 
 export const DomainEvent = t.union([
@@ -1097,6 +1106,7 @@ export const DomainEvent = t.union([
   TrainingSessionCancelled.codec,
   TrainingSessionNotificationSent.codec,
   EquipmentTrainingRequirementsSet.codec,
+  TrainingInterestExpressed.codec,
 ]);
 
 export const StoredDomainEvent = t.intersection([

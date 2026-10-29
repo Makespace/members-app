@@ -127,6 +127,11 @@ import {
   getTrainingRequirements,
   TrainingRequirements,
 } from './training-requirements/get';
+import {
+  getTrainingInterestForEquipment,
+  getTrainingInterestOf,
+  TrainingInterest,
+} from './training-interest/get';
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
@@ -278,6 +283,10 @@ export type SharedReadModel = {
   trainingRequirements: {
     get: (equipmentId: UUID) => TrainingRequirements;
   };
+  trainingInterest: {
+    forEquipment: (equipmentId: UUID) => ReadonlyArray<TrainingInterest>;
+    of: (equipmentId: UUID, memberNumber: number) => O.Option<TrainingInterest>;
+  };
 };
 
 export const initSharedReadModel = (
@@ -419,6 +428,10 @@ export const initSharedReadModel = (
     },
     trainingRequirements: {
       get: getTrainingRequirements(readModelDb),
+    },
+    trainingInterest: {
+      forEquipment: getTrainingInterestForEquipment(readModelDb),
+      of: getTrainingInterestOf(readModelDb),
     },
   };
 };

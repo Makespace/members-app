@@ -4,6 +4,8 @@ import {cancelPlace} from './cancel-place';
 import {cancelPlaceForm} from './cancel-place-form';
 import {cancelSession} from './cancel';
 import {cancelForm} from './cancel-form';
+import {expressInterest} from './express-interest';
+import {expressInterestForm} from './express-interest-form';
 
 export const trainingSessions = {
   signUp: {
@@ -17,5 +19,9 @@ export const trainingSessions = {
   cancel: {
     ...cancelSession,
     ...cancelForm,
+  },
+  expressInterest: {
+    ...expressInterest,
+    ...expressInterestForm,
   },
 };

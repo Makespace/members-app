@@ -195,11 +195,23 @@ const meetupRow = (training: UpcomingMeetupTraining): Row => {
   };
 };
 
+// Where a training is arranged, as a small mark: the Makespace logo for the
+// app, Meetup's for Meetup. Marks rather than colours, as red and green read
+// as full and not full.
 const sourceSpot = (source: Row['source']) =>
-  html`<span
-    class="source-spot source-spot--${safe(source)}"
-    title="${source === 'app' ? safe('Arranged in the app') : safe('On Meetup')}"
-  ></span>`;
+  source === 'app'
+    ? html`<img
+        class="source-icon"
+        src="/static/MS-LOGO-txpt-512.png"
+        alt="Arranged in this app"
+        title="Arranged in this app"
+      />`
+    : html`<img
+        class="source-icon"
+        src="/static/icons/meetup.svg"
+        alt="On Meetup"
+        title="On Meetup"
+      />`;
 
 const renderRow = (row: Row): Html => html`
   <li class="training-row">
