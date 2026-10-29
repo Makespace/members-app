@@ -8,7 +8,13 @@ import {Actor} from '../../../src/types/actor';
 import {constructViewModel} from '../../../src/queries/equipment-trainings/construct-view-model';
 import {constructViewModel as getTrainedViewModel} from '../../../src/queries/equipment-training/construct-view-model';
 import {arbitraryUser} from '../../types/user.helper';
-import {getLeftOrFail, getRightOrFail} from '../../helpers';
+import {
+  getLeftOrFail,
+  getRightOrFail,
+  insertRecurlySubscription,
+} from '../../helpers';
+import {counted} from '../../../src/queries/shared-render/waiting-for-training';
+import {constructViewModel as equipmentViewModel} from '../../../src/queries/equipment/construct-view-model';
 import {
   initTestFramework,
   TestFramework,
@@ -188,5 +194,72 @@ describe('waiting for training', () => {
     });
 
     expect(O.isSome(await lastSaid())).toBe(true);
+  });
+
+  describe('members Recurly says have lapsed', () => {
+    const lapse = (user: typeof keen) =>
+      insertRecurlySubscription(framework.extDB, {
+        email: user.emailAddress,
+        hasActiveSubscription: false,
+      });
+
+    const flagged = async () =>
+      (await page()).waiting.map(member => [
+        member.memberNumber,
+        member.inactiveInRecurly,
+      ]);
+
+    it('are kept, flagged, whether they passed the quiz or only asked', async () => {
+      await passQuiz(quizPasser.memberNumber, daysAgo(40));
+      await sayInterested(keen.memberNumber, daysAgo(20));
+      await lapse(quizPasser);
+      await lapse(keen);
+
+      expect(await flagged()).toStrictEqual([
+        [quizPasser.memberNumber, true],
+        [keen.memberNumber, true],
+      ]);
+    });
+
+    it('are not counted', async () => {
+      await sayInterested(keen.memberNumber, daysAgo(20));
+      await sayInterested(quizPasser.memberNumber, daysAgo(10));
+      await lapse(keen);
+
+      expect(
+        counted((await page()).waiting).map(member => member.memberNumber)
+      ).toStrictEqual([quizPasser.memberNumber]);
+    });
+  });
+
+  it('counts a quiz pass under a member number nobody has', async () => {
+    await passQuiz(987654321, daysAgo(7));
+
+    const [member] = (await page()).waiting;
+
+    expect(member).toMatchObject({
+      memberNumber: 987654321,
+      noAccount: true,
+      inactiveInRecurly: false,
+    });
+  });
+
+  it("gives the equipment page the same number as the machine's trainings page", async () => {
+    await passQuiz(quizPasser.memberNumber, daysAgo(40));
+    await sayInterested(keen.memberNumber, daysAgo(20));
+
+    const equipmentPage = getRightOrFail(
+      await equipmentViewModel(framework.depsForCommands, owner)(bandSaw)()
+    );
+
+    // Said apart: one has done the online training, one only asked.
+    expect(equipmentPage.training).toMatchObject({
+      doneOnlineTraining: 1,
+      askedToBeTrained: 1,
+    });
+    expect(
+      equipmentPage.training.doneOnlineTraining +
+        equipmentPage.training.askedToBeTrained
+    ).toStrictEqual(counted((await page()).waiting).length);
   });
 });

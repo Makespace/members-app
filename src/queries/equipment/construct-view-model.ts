@@ -20,6 +20,10 @@ import {
   getFullQuizResultsForEquipment,
 } from '../../read-models/external-state/equipment-quiz';
 import {upcomingTrainingSessions} from '../shared-render/upcoming-training-sessions';
+import {
+  splitByHow,
+  waitingFromQuizResults,
+} from '../shared-render/waiting-for-training';
 
 export const constructViewModel =
   (deps: Dependencies, user: User) =>
@@ -96,15 +100,6 @@ export const constructViewModel =
           resolvedRecently,
         };
       }),
-      TE.let('training', ({equipment}) => {
-        const since = DateTime.now().minus({days: 30});
-        return {
-          activeTrainers: equipment.trainers.length,
-          trainingsRecently: equipment.trainedMembers.filter(
-            member => DateTime.fromJSDate(member.trainedSince) >= since
-          ).length,
-        };
-      }),
       TE.bind('guideLink', ({equipment}) =>
         pipe(
           TE.fromTask<ReadonlyMap<string, GuideLinkCheck>, FailureWithStatus>(
@@ -131,5 +126,22 @@ export const constructViewModel =
             )();
           })
         );
+      }),
+      TE.bind('waiting', ({equipment, quizResults}) =>
+        waitingFromQuizResults(deps, equipment, quizResults, new Date())
+      ),
+      TE.let('training', ({equipment, waiting}) => {
+        const since = DateTime.now().minus({days: 30});
+        return {
+          activeTrainers: equipment.trainers.length,
+          trainingsRecently: equipment.trainedMembers.filter(
+            member => DateTime.fromJSDate(member.trainedSince) >= since
+          ).length,
+          // The same list as the machine's trainings page and the Owner
+          // page: quiz passes (including unlinked ones) and members who told
+          // the trainers, less those Recurly says have lapsed.
+          doneOnlineTraining: splitByHow(waiting).doneOnlineTraining.length,
+          askedToBeTrained: splitByHow(waiting).askedOnly.length,
+        };
       })
     );

@@ -16,6 +16,10 @@ import {DateTime} from 'luxon';
 import {renderMembersAsList} from '../../templates/member-link-list';
 import {currentTrainingSheetButton} from '../shared-render/current-training-sheet-button';
 import {renderUpcomingTrainingSessions} from '../shared-render/upcoming-training-sessions';
+import {
+  askedToBeTrainedLabel,
+  doneOnlineTrainingLabel,
+} from '../shared-render/waiting-for-training';
 
 
 import {tooltip, tooltipWith} from '../shared-render/tool-tip';
@@ -497,6 +501,18 @@ const stat = (count: number, label: string) => html`
   </li>
 `;
 
+// As `stat`, but the count links somewhere - used where the number answers
+// "how many?" and the link answers "who?". Only offered where the viewer is
+// allowed to open the target.
+const statLink = (count: number, label: string, href: string) => html`
+  <li class="tt-home__stat">
+    <a href="${safe(href)}"
+      ><span class="tt-home__stat-count">${safe(String(count))}</span></a
+    >
+    <span>${safe(label)}</span>
+  </li>
+`;
+
 // Admin actions get the orange: the same colour the app uses to mean "this
 // one is yours to do carefully", so a trainer's button and a member's button
 // are not the same green.
@@ -546,6 +562,30 @@ const equipmentCards = (viewModel: ViewModel) => {
                   viewModel.training.trainingsRecently,
                   'trainings in the last 30 days'
                 )}
+                ${isTrainerOrOwner(viewModel)
+                  ? statLink(
+                      viewModel.training.doneOnlineTraining,
+                      doneOnlineTrainingLabel(
+                        viewModel.training.doneOnlineTraining
+                      ),
+                      // Where the whole list is, quiz passes and those who
+                      // told the trainers alike.
+                      `/equipment/${id}/trainings`
+                    )
+                  : stat(
+                      viewModel.training.doneOnlineTraining,
+                      doneOnlineTrainingLabel(
+                        viewModel.training.doneOnlineTraining
+                      )
+                    )}
+                ${viewModel.training.askedToBeTrained === 0
+                  ? html``
+                  : stat(
+                      viewModel.training.askedToBeTrained,
+                      askedToBeTrainedLabel(
+                        viewModel.training.askedToBeTrained
+                      )
+                    )}
               </ul>
               <h3>Upcoming trainings</h3>
               ${renderUpcomingTrainingSessions(viewModel.upcomingTrainings)}

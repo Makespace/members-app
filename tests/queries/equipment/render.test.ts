@@ -86,6 +86,7 @@ describe('Render equipment page', () => {
     const quizResults: Readonly<FullQuizResultsForEquipment> = {
         lastQuizSync: O.none,
         membersAwaitingTraining: [],
+        inactiveMembersAwaitingTraining: [],
         unknownMembersAwaitingTraining: [],
         failedQuizes: []
     };
@@ -118,7 +119,12 @@ describe('Render equipment page', () => {
             equipment,
             guideLink: O.none,
             tickets: {active: 0, resolvedRecently: 0},
-            training: {activeTrainers: 0, trainingsRecently: 0},
+            training: {
+              activeTrainers: 0,
+              trainingsRecently: 0,
+              doneOnlineTraining: 0,
+              askedToBeTrained: 0,
+            },
             isTrainer: false,
             upcomingTrainings: [],
             quizResults: O.some(quizResults)
@@ -131,6 +137,20 @@ describe('Render equipment page', () => {
 
         it('cannot see revoke training button', () => {
             expect(findRevokeTrainingButton(renderedDom)).toStrictEqual(O.none);
+        });
+
+        // The size of the training queue matters to everybody, but only
+        // trainers and owners can open the list behind it.
+        it('sees the waiting-for-training count, but not as a link', () => {
+            expect(renderedDom.textContent).toContain(
+                'done the online training'
+            );
+            expect(renderedDom.textContent).toContain('0');
+            expect(
+                renderedDom.querySelector(
+                    `a[href="/equipment/${equipment.id}/trainings"]`
+                )
+            ).toBeNull();
         });
 
         // The breadcrumb is where the area lives now, and it is the only
@@ -165,7 +185,12 @@ describe('Render equipment page', () => {
             equipment,
             guideLink: O.none,
             tickets: {active: 0, resolvedRecently: 0},
-            training: {activeTrainers: 0, trainingsRecently: 0},
+            training: {
+              activeTrainers: 0,
+              trainingsRecently: 0,
+              doneOnlineTraining: 0,
+              askedToBeTrained: 0,
+            },
             isTrainer: false,
             upcomingTrainings: [],
             quizResults: O.some(quizResults)
@@ -208,7 +233,12 @@ describe('Render equipment page', () => {
             equipment,
             guideLink: O.none,
             tickets: {active: 0, resolvedRecently: 0},
-            training: {activeTrainers: 0, trainingsRecently: 0},
+            training: {
+              activeTrainers: 0,
+              trainingsRecently: 0,
+              doneOnlineTraining: 1,
+              askedToBeTrained: 0,
+            },
             isTrainer: false,
             upcomingTrainings: [],
             quizResults: O.some(quizResultsWithMemberAwaitingTraining)
@@ -229,6 +259,20 @@ describe('Render equipment page', () => {
             expect(links).toContain(`/equipment/${equipment.id}/quiz-results`);
             expect(links).toContain(`/equipment/${equipment.id}/trained-users`);
         });
+
+        // The waiting count is one of the things the page exists to say, so
+        // it links straight to the page that lets an owner act on it.
+        it('shows the waiting-for-training count as a link to the waiting list', () => {
+            const link = renderedDom.querySelector(
+                `a[href="/equipment/${equipment.id}/trainings"]`
+            );
+
+            expect(link).not.toBeNull();
+            expect(link?.textContent).toContain('1');
+            expect(renderedDom.textContent).toContain(
+                'done the online training'
+            );
+        });
     });
 
     describe('trainer view', () => {
@@ -245,7 +289,12 @@ describe('Render equipment page', () => {
             equipment,
             guideLink: O.none,
             tickets: {active: 0, resolvedRecently: 0},
-            training: {activeTrainers: 0, trainingsRecently: 0},
+            training: {
+              activeTrainers: 0,
+              trainingsRecently: 0,
+              doneOnlineTraining: 1,
+              askedToBeTrained: 0,
+            },
             isTrainer: false,
             upcomingTrainings: [],
             quizResults: O.some(quizResultsWithMemberAwaitingTraining)
@@ -270,6 +319,20 @@ describe('Render equipment page', () => {
                 'View training quiz results, and mark people as trained (1)'
             );
         });
+
+        // Trainers are the people who clear the queue, so the count takes
+        // them straight to it.
+        it('shows the waiting-for-training count as a link to the waiting list', () => {
+            const link = renderedDom.querySelector(
+                `a[href="/equipment/${equipment.id}/trainings"]`
+            );
+
+            expect(link).not.toBeNull();
+            expect(link?.textContent).toContain('1');
+            expect(renderedDom.textContent).toContain(
+                'done the online training'
+            );
+        });
     });
 
     describe('orange and green equipment', () => {
@@ -287,7 +350,12 @@ describe('Render equipment page', () => {
                 equipment: {...equipment, category},
                 guideLink: O.none,
             tickets: {active: 0, resolvedRecently: 0},
-            training: {activeTrainers: 0, trainingsRecently: 0},
+            training: {
+              activeTrainers: 0,
+              trainingsRecently: 0,
+              doneOnlineTraining: 0,
+              askedToBeTrained: 0,
+            },
             isTrainer: false,
             upcomingTrainings: [],
             quizResults: O.some(quizResultsWithMemberAwaitingTraining),
@@ -367,7 +435,12 @@ describe('the equipment guide, when it stopped answering', () => {
         }),
         quizResults: O.none,
         tickets: {active: 0, resolvedRecently: 0},
-        training: {activeTrainers: 0, trainingsRecently: 0},
+        training: {
+              activeTrainers: 0,
+              trainingsRecently: 0,
+              doneOnlineTraining: 0,
+              askedToBeTrained: 0,
+            },
         isTrainer: false,
         upcomingTrainings: [],
     });
@@ -465,7 +538,12 @@ describe('the actions, in groups', () => {
         equipment,
         guideLink: O.none,
         tickets: {active: 0, resolvedRecently: 0},
-        training: {activeTrainers: 0, trainingsRecently: 0},
+        training: {
+              activeTrainers: 0,
+              trainingsRecently: 0,
+              doneOnlineTraining: 0,
+              askedToBeTrained: 0,
+            },
         isTrainer: false,
         upcomingTrainings: [],
         quizResults: O.none,

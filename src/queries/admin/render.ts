@@ -84,18 +84,24 @@ const machineRow =
       </div>
       ${count(machine.openTickets, OPEN_TICKETS)}
       ${count(
-        machine.waiting,
-        ['waiting', 'waiting'],
-        pipe(
-          machine.longestWaitingSince,
+        machine.doneOnlineTraining,
+        ['done the online training', 'done the online training'],
+        html`${machine.askedToBeTrained === 0
+          ? html``
+          : html`<span class="owner-ledger__aside"
+              >+${safe(String(machine.askedToBeTrained))} asked to be
+              trained</span
+            >`}
+        ${pipe(
+          machine.earliestSince,
           O.match(
             () => html``,
             since =>
               html`<span class="owner-ledger__aside"
-                >longest ${safe(howLong(since, now))}</span
+                >first ${safe(howLong(since, now))} ago</span
               >`
           )
-        )
+        )}`
       )}
       ${count(machine.upcomingTrainings, [
         'upcoming training',
@@ -148,7 +154,7 @@ const ownerPart = (viewModel: ViewModel) => html`
       <div class="owner-ledger__row owner-ledger__head" aria-hidden="true">
         <div></div>
         <div>Open tickets</div>
-        <div>Waiting</div>
+        <div>Online training done</div>
         <div>Upcoming</div>
         <div>Trained per quarter</div>
       </div>
