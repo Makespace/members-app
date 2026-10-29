@@ -11,6 +11,12 @@ import {TrainingSession} from '../../read-models/shared-state/training-sessions/
 import {html, Html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {markdownToHtml} from '../../templates/markdown';
 import {
+  bookOnMeetup,
+  meetupNumbers,
+  MeetupTrainingView,
+  onMeetupTag,
+} from './meetup-trainings';
+import {
   SignUpStatus,
   signUpStatus,
 } from '../../training-sessions/sign-ups';
@@ -217,14 +223,37 @@ const renderSession =
     </li>
   `;
 
+// A training on Meetup for the same machine, said the same way, and booked
+// there.
+const renderMeetupTraining = (training: MeetupTrainingView): Html => html`
+  <li>
+    <strong>${sessionWhen(training)}</strong> ${onMeetupTag}
+    <div>${sanitizeString(training.title)} · ${meetupNumbers(training)}</div>
+    <div class="training-session__actions">${bookOnMeetup(training)}</div>
+  </li>
+`;
+
+// The machine's trainings, the app's and Meetup's together, soonest first.
 export const renderUpcomingTrainingSessions = (
   sessions: ReadonlyArray<TrainingSessionView>,
-  options: {withDescriptions: boolean} = {withDescriptions: false}
-): Html =>
-  sessions.length === 0
+  options: {withDescriptions: boolean} = {withDescriptions: false},
+  meetup: ReadonlyArray<MeetupTrainingView> = []
+): Html => {
+  const items = [
+    ...sessions.map(session => ({
+      at: session.startsAt,
+      html: renderSession(options.withDescriptions)(session),
+    })),
+    ...meetup.map(training => ({
+      at: training.startsAt,
+      html: renderMeetupTraining(training),
+    })),
+  ].sort((a, b) => a.at.getTime() - b.at.getTime());
+  return items.length === 0
     ? html`<p class="upcoming-trainings__empty">
         No trainings are arranged yet.
       </p>`
     : html`<ul class="upcoming-trainings">
-        ${joinHtml(sessions.map(renderSession(options.withDescriptions)))}
+        ${joinHtml(items.map(item => item.html))}
       </ul>`;
+};

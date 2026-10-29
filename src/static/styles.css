@@ -3022,6 +3022,41 @@ ul.owner-actions {
   padding: 1rem;
 }
 
+/* A step down from a button: "log in to ..." and "... without logging in"
+   are the way round, not the thing the page is for. Orange outline, the
+   colour the app uses for "this asks something of you", and not filled. */
+a.button-outline,
+a.button-outline:visited {
+  display: inline-block;
+  padding: 8px 18px;
+  border: 2px solid #b35f00;
+  border-radius: 2px;
+  background: transparent;
+  color: #8a4900;
+  text-decoration: none;
+  font-size: 110%;
+}
+
+a.button-outline:hover {
+  background: color-mix(in oklch, white 90%, #b35f00);
+  color: #6e3a00;
+}
+
+.log-in__without {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.tag--meetup {
+  background-color: #f6dbe0;
+  color: #9b1d36;
+  max-width: none;
+  margin-left: 0.4rem;
+}
+
 .tt-claim__summary {
   display: grid;
   grid-template-columns: max-content 1fr;

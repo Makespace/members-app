@@ -34,6 +34,7 @@ const viewModel = (overrides: Partial<ViewModel> = {}): ViewModel => ({
   trainersUsingApp: 0,
   quizRequired: true,
   prerequisites: [],
+  meetupTrainings: [],
   ...overrides,
 });
 

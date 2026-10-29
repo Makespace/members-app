@@ -14,6 +14,8 @@ import {setTimeout} from 'node:timers/promises';
 import {SyncWorkerDependencies} from './dependencies';
 import {trainingSummaryEmail} from './training-summary/training_summary_email';
 import {checkGuideLinks} from './guide-links/check_guide_links';
+import {syncMeetupTrainings} from './meetup/sync_meetup_trainings';
+import {fetchUpcomingMeetupEvents} from './meetup/fetch-meetup-events';
 import { Duration } from 'luxon';
 import {notifyPurchaseRequests} from './notify_purchase_requests';
 import {notifyTrainingSessions} from './notify_training_sessions';
@@ -39,6 +41,9 @@ const RECURLY_SYNC_INTERVAL_MS = 20 * 60 * 1000;
 // likely to have just been recorded.
 const GUIDE_LINK_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const OWNER_AGREEMENT_REMINDER_INTERVAL_MS = 60 * 60 * 1000;
+// Often enough that a training posted on Meetup shows up within the quarter
+// hour, and gently enough for an endpoint we borrow rather than pay for.
+const MEETUP_TRAINING_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 
 async function syncExternDataPeriodically(
   deps: SyncWorkerDependencies,
@@ -57,9 +62,21 @@ async function syncExternDataPeriodically(
   let lastTrainingSummaryEmailCheck = Date.now();
   let lastGuideLinkCheck = 0;
   let lastOwnerAgreementReminder = 0;
+  let lastMeetupTrainingSync = 0;
   while (true) {
     try {
       const now = Date.now();
+      if (now - lastMeetupTrainingSync > MEETUP_TRAINING_SYNC_INTERVAL_MS) {
+        // Contained, like the guide link check: Meetup being down must not
+        // skip the loop's pause and starve everything after it.
+        try {
+          await syncMeetupTrainings(deps, fetchUpcomingMeetupEvents);
+        } catch (err) {
+          deps.logger.error(err, 'Meetup training sync failed');
+        } finally {
+          lastMeetupTrainingSync = Date.now();
+        }
+      }
       const lastHeartbeatAgoMs = now - lastHeartbeat;
       const lastEquipmentSyncCheckAgoMs = now - lastEquipmentSyncCheck;
       const lastTroubleTicketCheckAgoMs = now - lastTroubleTicketCheck;
