@@ -523,9 +523,10 @@ describe('the actions, in groups', () => {
         const opensWith = (items: ReadonlyArray<string>) =>
             items.map(item => item.split(/ (?:Only|Whether) /)[0].trim());
 
-        expect(opensWith(group('Training')).slice(0, 4)).toStrictEqual([
+        expect(opensWith(group('Training')).slice(0, 5)).toStrictEqual([
             'Mark member as trained',
             '[Admin] Mark member as trained by',
+            'Trainings and who is waiting',
             'Set training requirements',
             'Add a trainer',
         ]);

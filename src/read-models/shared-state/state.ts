@@ -1117,3 +1117,28 @@ export const equipmentTrainingPrerequisitesTable = defineTable(
       .$type<UUID>(),
   }
 );
+
+// Members who have told a machine's trainers they would like to be trained on
+// it: when they first said so, and when they last did.
+export const trainingInterestTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS trainingInterest (
+      equipmentId TEXT NOT NULL,
+      memberNumber INTEGER NOT NULL,
+      firstExpressedAt INTEGER NOT NULL,
+      lastExpressedAt INTEGER NOT NULL,
+      PRIMARY KEY (equipmentId, memberNumber)
+    )
+  `,
+  'trainingInterest' as const,
+  {
+    equipmentId: text('equipmentId').notNull().$type<UUID>(),
+    memberNumber: integer('memberNumber').notNull(),
+    firstExpressedAt: integer('firstExpressedAt', {
+      mode: 'timestamp_ms',
+    }).notNull(),
+    lastExpressedAt: integer('lastExpressedAt', {
+      mode: 'timestamp_ms',
+    }).notNull(),
+  }
+);

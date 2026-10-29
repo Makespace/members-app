@@ -9,6 +9,7 @@ import {
   categoryDescription,
 } from '../../templates/equipment-category';
 import {ViewModel} from './construct-view-model';
+import {renderInterest} from '../shared-render/training-interest';
 import {renderUpcomingTrainingSessions} from '../shared-render/upcoming-training-sessions';
 
 const MEETUP = 'https://www.meetup.com/makespace/';
@@ -198,6 +199,9 @@ const practicalStep = (viewModel: ViewModel, number: number) => html`
       {withDescriptions: true},
       viewModel.meetupTrainings
     )}
+    ${O.isNone(viewModel.trainedSince)
+      ? renderInterest(viewModel.equipment.id, viewModel.interestLastExpressed)
+      : html``}
     <p>
       If there is no practical scheduled on Meetup or here, please email
       ${pipe(

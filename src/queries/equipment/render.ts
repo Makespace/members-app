@@ -79,6 +79,17 @@ const adminMarkTrainedBy = (viewModel: ViewModel) =>
 
 // Owners who train on the machine (and super-users): they know what its
 // training involves.
+// Owners keep an eye on how training is going on their machines; trainers
+// already reach the page through Arrange training, but it does no harm here.
+const trainingsAndWaiting = (viewModel: ViewModel) =>
+  viewModel.isSuperUserOrOwnerOfArea || viewModel.isTrainer
+    ? html`<li>
+        <a href="/equipment/${viewModel.equipment.id}/trainings"
+          >Trainings and who is waiting</a
+        >
+      </li>`
+    : html``;
+
 const setTrainingRequirements = (viewModel: ViewModel) =>
   viewModel.isSuperUser ||
   (viewModel.isTrainer && viewModel.isSuperUserOrOwnerOfArea)
@@ -583,6 +594,7 @@ const equipmentActions = (viewModel: ViewModel) => html`
       ? [
           trainMember(viewModel),
           adminMarkTrainedBy(viewModel),
+          trainingsAndWaiting(viewModel),
           setTrainingRequirements(viewModel),
           addTrainer(viewModel),
           removeTrainer(viewModel),

@@ -71,6 +71,8 @@ export type ViewModel = {
   prerequisites: ReadonlyArray<Prerequisite>;
   // This machine's trainings on Meetup, which are booked there.
   meetupTrainings: ReadonlyArray<MeetupTrainingView>;
+  // When this member last told the trainers they would like training here.
+  interestLastExpressed: O.Option<Date>;
 };
 
 type Prerequisite = {id: string; name: string; trained: boolean};
@@ -253,5 +255,12 @@ export const constructViewModel =
         ).quizRequired,
         prerequisites: prerequisitesFor(deps, user, equipment.id),
         meetupTrainings: forEquipment(meetup, equipment.id),
+        interestLastExpressed: pipe(
+          deps.sharedReadModel.trainingInterest.of(
+            equipment.id,
+            user.memberNumber
+          ),
+          O.map(interest => interest.lastExpressedAt)
+        ),
       }))
     );

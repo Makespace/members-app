@@ -42,6 +42,7 @@ import {
   trainingSessionNotificationsTable,
   equipmentTrainingRequirementsTable,
   equipmentTrainingPrerequisitesTable,
+  trainingInterestTable,
 } from './state';
 import {signUpsCloseAt} from '../../training-sessions/sign-ups';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
@@ -1655,6 +1656,24 @@ const _updateState =
         tx.insert(trainingSessionNotificationsTable)
           .values({notifiedEventIndex: event.notifiedEventIndex})
           .onConflictDoNothing()
+          .run();
+        break;
+      }
+      case 'TrainingInterestExpressed': {
+        tx.insert(trainingInterestTable)
+          .values({
+            equipmentId: event.equipmentId,
+            memberNumber: event.memberNumber,
+            firstExpressedAt: event.recordedAt,
+            lastExpressedAt: event.recordedAt,
+          })
+          .onConflictDoUpdate({
+            target: [
+              trainingInterestTable.equipmentId,
+              trainingInterestTable.memberNumber,
+            ],
+            set: {lastExpressedAt: event.recordedAt},
+          })
           .run();
         break;
       }
