@@ -5,62 +5,84 @@ import {html, Html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {logInPath} from '../../authentication/login/routes';
 import {
   renderDescription,
-  sessionTimes,
-  spacesLeft,
   trainerLabel,
   yourPlace,
 } from '../shared-render/upcoming-training-sessions';
-import {
-  bookOnMeetup,
-  meetupNumbers,
-  onMeetupTag,
-} from '../shared-render/meetup-trainings';
+import {bookOnMeetup} from '../shared-render/meetup-trainings';
 import {
   UpcomingMeetupTraining,
   UpcomingTraining,
   ViewModel,
 } from './construct-view-model';
 
+// The page is laid out after Tufte's Envisioning Information: every training
+// is one row of the same shape, whichever calendar it came from, so the eye
+// compares trainings rather than layouts; the only filled button is the one
+// real decision (Sign up); colour is kept to small spots on a quiet page; and
+// a six-week strip at the top gives the overall picture before the detail.
+
 const MEETUP = 'https://www.meetup.com/makespace/';
+const ZONE = 'Europe/London';
 
-type Entry =
-  | {kind: 'app'; training: UpcomingTraining}
-  | {kind: 'meetup'; training: UpcomingMeetupTraining};
+type Machine = {id: string; name: string; areaName: string};
 
-const startOf = (entry: Entry) =>
-  entry.kind === 'app'
-    ? entry.training.session.startsAt
-    : entry.training.meetup.startsAt;
-
-// "Saturday 7 November", in UK time: the heading a member scans for.
-const dayOf = (entry: Entry) =>
-  DateTime.fromJSDate(startOf(entry))
-    .setZone('Europe/London')
-    .setLocale('en-GB')
-    .toFormat('cccc d LLLL');
+// Both kinds of training, said the same way.
+type Row = {
+  source: 'app' | 'meetup';
+  startsAt: Date;
+  endsAt: Date;
+  machine: O.Option<Machine>;
+  // Meetup's title for a Meetup training, which is what people will see when
+  // they get there; nothing for the app's, which are named by the machine.
+  title: O.Option<string>;
+  who: Html;
+  trained: boolean;
+  capacity: {filled: number; total: number; text: Html};
+  description: Html;
+  action: Html;
+};
 
 const london = (date: Date) =>
-  DateTime.fromJSDate(date).setZone('Europe/London').toFormat('HH:mm');
+  DateTime.fromJSDate(date).setZone(ZONE).setLocale('en-GB');
 
-// Both kinds together, soonest first, then gathered under their day.
-const byDay = (viewModel: ViewModel) =>
-  [
-    ...viewModel.trainings.map(training => ({kind: 'app', training}) as const),
-    ...viewModel.meetupTrainings.map(
-      training => ({kind: 'meetup', training}) as const
-    ),
-  ]
-    .sort((a, b) => startOf(a).getTime() - startOf(b).getTime())
-    .reduce<Array<{day: string; entries: Entry[]}>>((days, entry) => {
-      const day = dayOf(entry);
-      const last = days.at(-1);
-      if (last !== undefined && last.day === day) {
-        last.entries.push(entry);
-      } else {
-        days.push({day, entries: [entry]});
-      }
-      return days;
-    }, []);
+// "18.00–21.00": a dot is quieter between hours and minutes than a colon, and
+// is how British timetables have long written it.
+const times = (row: Pick<Row, 'startsAt' | 'endsAt'>) =>
+  safe(
+    `${london(row.startsAt).toFormat('HH.mm')}–${london(row.endsAt).toFormat(
+      'HH.mm'
+    )}`
+  );
+
+const dayKey = (date: Date) => london(date).toFormat('yyyy-LL-dd');
+
+// "Today", "Tomorrow", "in 5 days": how far off it is matters more than the
+// date when deciding whether you can make it.
+const fromNow = (day: DateTime, now: Date): string => {
+  const days = Math.round(
+    day.startOf('day').diff(london(now).startOf('day'), 'days').days
+  );
+  return days === 0
+    ? 'Today'
+    : days === 1
+      ? 'Tomorrow'
+      : days < 14
+        ? `in ${days} days`
+        : '';
+};
+
+// One mark per place, filled for each taken: the marks both count and, down
+// the page, form a picture of which trainings still have room.
+const MAX_DOTS = 12;
+const dots = (filled: number, total: number): Html =>
+  total === 0 || total > MAX_DOTS
+    ? html``
+    : html`<span class="capacity__dots" aria-hidden="true"
+        >${safe(
+          '●'.repeat(Math.min(filled, total)) +
+            '○'.repeat(Math.max(total - filled, 0))
+        )}</span
+      >`;
 
 const firstThing = (
   training: UpcomingTraining | UpcomingMeetupTraining
@@ -87,112 +109,241 @@ const firstThing = (
 };
 
 const getTrainedFirst = (equipmentId: string, reason: Html) => html`<a
-    class="button"
     href="/equipment/${safe(equipmentId)}/training"
     >Get trained</a
   >
-  <span class="training-session__closed">${reason}</span>`;
+  <span class="training-row__note">${reason}</span>`;
 
-// Somebody not logged in can see everything but sign up to nothing in the
-// app; logging in brings them back here.
 const logInToSignUp = html`<a
-  class="button-outline"
+  class="button-outline button-outline--small"
   href="${safe(logInPath)}?next=${safe(encodeURIComponent('/training'))}"
   >Log in to sign up</a
 >`;
 
-// Whatever comes before the practical - other machines, or the quiz - comes
-// first, so somebody who still needs it is sent to the machine's training
-// page, which walks them through it, instead of straight into a session.
-// Everything else is as on that page.
-const appAction = (viewModel: ViewModel, training: UpcomingTraining): Html =>
-  !viewModel.loggedIn
-    ? logInToSignUp
-    : pipe(
-        firstThing(training),
-        O.filter(() =>
-          O.exists(status => status === 'open')(training.session.yourStatus)
+const appRow = (viewModel: ViewModel, training: UpcomingTraining): Row => {
+  const session = training.session;
+  const left = Math.max(session.spaces - session.booked, 0);
+  return {
+    source: 'app',
+    startsAt: session.startsAt,
+    endsAt: session.endsAt,
+    machine: O.some(training.equipment),
+    title: O.none,
+    who: html`with ${trainerLabel(session)}`,
+    trained: training.trained,
+    capacity: {
+      filled: session.booked,
+      total: session.spaces,
+      text:
+        left === 0
+          ? html`full`
+          : html`${safe(String(left))} of ${safe(String(session.spaces))}
+            left`,
+    },
+    description: renderDescription(session),
+    // Whatever comes before the practical - other machines, or the quiz -
+    // comes first, so somebody who still needs it is sent to the machine's
+    // training page instead of straight into a session.
+    action: !viewModel.loggedIn
+      ? logInToSignUp
+      : pipe(
+          firstThing(training),
+          O.filter(() =>
+            O.exists(status => status === 'open')(session.yourStatus)
+          ),
+          O.match(
+            () => yourPlace(session),
+            reason => getTrainedFirst(training.equipment.id, reason)
+          )
         ),
-        O.match(
-          () => yourPlace(training.session),
-          reason => getTrainedFirst(training.equipment.id, reason)
-        )
-      );
+  };
+};
 
-// Meetup trainings are booked on Meetup; the same "first things first"
-// applies when the app knows which machine it is for.
-const meetupAction = (training: UpcomingMeetupTraining): Html =>
-  pipe(
-    O.Do,
-    O.bind('equipment', () => training.equipment),
-    O.bind('reason', () => firstThing(training)),
-    O.match(
-      () => bookOnMeetup(training.meetup),
-      ({equipment, reason}) => getTrainedFirst(equipment.id, reason)
+// Meetup counts the host among those going, so its numbers are given as
+// Meetup gives them.
+const meetupRow = (training: UpcomingMeetupTraining): Row => {
+  const meetup = training.meetup;
+  return {
+    source: 'meetup',
+    startsAt: meetup.startsAt,
+    endsAt: meetup.endsAt,
+    machine: training.equipment,
+    title: O.some(meetup.title),
+    // The red spot already says it is on Meetup.
+    who: html``,
+    trained: training.trained,
+    capacity: {
+      filled: meetup.going,
+      total: meetup.maxTickets,
+      text: meetup.rsvpsClosed
+        ? html`RSVPs closed`
+        : meetup.maxTickets > 0
+          ? html`${safe(String(meetup.going))} going · limit
+            ${safe(String(meetup.maxTickets))}`
+          : html`${safe(String(meetup.going))} going`,
+    },
+    description: html``,
+    action: pipe(
+      O.Do,
+      O.bind('equipment', () => training.equipment),
+      O.bind('reason', () => firstThing(training)),
+      O.match(
+        () => bookOnMeetup(meetup),
+        ({equipment, reason}) => getTrainedFirst(equipment.id, reason)
+      )
+    ),
+  };
+};
+
+const sourceSpot = (source: Row['source']) =>
+  html`<span
+    class="source-spot source-spot--${safe(source)}"
+    title="${source === 'app' ? safe('Arranged in the app') : safe('On Meetup')}"
+  ></span>`;
+
+const renderRow = (row: Row): Html => html`
+  <li class="training-row">
+    <div class="training-row__time">${times(row)}</div>
+    <div class="training-row__what">
+      <div>
+        ${sourceSpot(row.source)}
+        ${pipe(
+          row.machine,
+          O.match(
+            () =>
+              html`<strong
+                >${sanitizeString(O.getOrElse(() => '')(row.title))}</strong
+              >`,
+            machine =>
+              html`<a href="/equipment/${safe(machine.id)}"
+                  ><strong>${sanitizeString(machine.name)}</strong></a
+                >
+                <span class="training-row__area"
+                  >${sanitizeString(machine.areaName)}</span
+                >`
+          )
+        )}
+        ${row.trained
+          ? html`<span class="training-row__trained"
+              >✓ you're trained on this</span
+            >`
+          : html``}
+      </div>
+      <div class="training-row__detail">
+        ${row.who}${O.isSome(row.machine) && O.isSome(row.title)
+          ? html`${sanitizeString(row.title.value)}`
+          : html``}
+      </div>
+      <div class="training-row__description">${row.description}</div>
+    </div>
+    <div class="training-row__capacity">
+      ${dots(row.capacity.filled, row.capacity.total)}
+      <span>${row.capacity.text}</span>
+    </div>
+    <div class="training-row__action">${row.action}</div>
+  </li>
+`;
+
+const byDay = (rows: ReadonlyArray<Row>) =>
+  [...rows]
+    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+    .reduce<Array<{key: string; day: DateTime; rows: Row[]}>>((days, row) => {
+      const key = dayKey(row.startsAt);
+      const last = days.at(-1);
+      if (last !== undefined && last.key === key) {
+        last.rows.push(row);
+      } else {
+        days.push({key, day: london(row.startsAt), rows: [row]});
+      }
+      return days;
+    }, []);
+
+const renderDays = (rows: ReadonlyArray<Row>, now: Date): Html =>
+  joinHtml(
+    byDay(rows).map(
+      ({key, day, rows}) => html`
+        <section class="training-day" id="day-${safe(key)}">
+          <h2 class="training-day__heading">
+            ${safe(day.toFormat('cccc d LLLL'))}
+            <span class="training-day__when">${safe(fromNow(day, now))}</span>
+          </h2>
+          <ul class="training-rows">
+            ${joinHtml(rows.map(renderRow))}
+          </ul>
+        </section>
+      `
     )
   );
 
-const trainedTag = (trained: boolean) =>
-  trained
-    ? html`<span class="tag tag--trained">You're already trained on this</span>`
-    : html``;
-
-const machineLink = (equipment: {id: string; name: string; areaName: string}) =>
-  html`<a href="/equipment/${safe(equipment.id)}"
-      ><strong>${sanitizeString(equipment.name)}</strong></a
-    >
-    <span class="upcoming-training__area"
-      >${sanitizeString(equipment.areaName)}</span
-    >`;
-
-const renderAppTraining = (
-  viewModel: ViewModel,
-  training: UpcomingTraining
-): Html => html`
-  <li class="upcoming-training">
-    <div class="upcoming-training__time">
-      ${sessionTimes(training.session)}
-    </div>
-    <div class="upcoming-training__details">
-      ${machineLink(training.equipment)} ${trainedTag(training.trained)}
-      <div>
-        with ${trainerLabel(training.session)} ·
-        ${spacesLeft(training.session)}
-      </div>
-      ${renderDescription(training.session)}
-      <div class="training-session__actions">
-        ${appAction(viewModel, training)}
-      </div>
-    </div>
-  </li>
-`;
-
-// The machine when the app could tell which it is, and Meetup's own title
-// either way, since that is what people will see when they get there.
-const renderMeetupTraining = (training: UpcomingMeetupTraining): Html => html`
-  <li class="upcoming-training">
-    <div class="upcoming-training__time">
-      ${safe(
-        `${london(training.meetup.startsAt)}–${london(training.meetup.endsAt)}`
-      )}
-    </div>
-    <div class="upcoming-training__details">
-      ${pipe(
-        training.equipment,
-        O.match(
-          () => html`<strong>${sanitizeString(training.meetup.title)}</strong>`,
-          equipment => html`${machineLink(equipment)}`
-        )
-      )}
-      ${onMeetupTag} ${trainedTag(training.trained)}
-      ${O.isSome(training.equipment)
-        ? html`<div>${sanitizeString(training.meetup.title)}</div>`
-        : html``}
-      <div>${meetupNumbers(training.meetup)}</div>
-      <div class="training-session__actions">${meetupAction(training)}</div>
-    </div>
-  </li>
-`;
+// The next six weeks, a week to a line, with a mark for each training: how
+// much is on, and which weeks are thin, before reading any one of them.
+const WEEKS = 6;
+// Days with machine trainings link to that day; a day with only other Meetup
+// trainings links to where those are listed.
+const overview = (
+  machineRows: ReadonlyArray<Row>,
+  otherRows: ReadonlyArray<Row>,
+  now: Date
+): Html => {
+  const start = london(now).startOf('week');
+  const onDay = new Map<string, Row[]>();
+  for (const row of [...machineRows, ...otherRows]) {
+    const key = dayKey(row.startsAt);
+    onDay.set(key, [...(onDay.get(key) ?? []), row]);
+  }
+  const listedDays = new Set(machineRows.map(row => dayKey(row.startsAt)));
+  const target = (key: string) =>
+    listedDays.has(key) ? `#day-${key}` : '#other-trainings';
+  const today = dayKey(now);
+  const weeks = Array.from({length: WEEKS}, (_, week) =>
+    Array.from({length: 7}, (_, day) => start.plus({weeks: week, days: day}))
+  );
+  return html`
+    <table class="training-overview">
+      <caption class="visually-hidden">
+        Trainings in the next six weeks
+      </caption>
+      <thead>
+        <tr>
+          ${joinHtml(
+            ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(
+              letter => html`<th scope="col">${safe(letter)}</th>`
+            )
+          )}
+        </tr>
+      </thead>
+      <tbody>
+        ${joinHtml(
+          weeks.map(
+            days => html`<tr>
+              ${joinHtml(
+                days.map(day => {
+                  const key = day.toFormat('yyyy-LL-dd');
+                  const these = onDay.get(key) ?? [];
+                  const past = key < today;
+                  const label = html`<span class="training-overview__date"
+                      >${safe(day.toFormat(day.day === 1 ? 'd LLL' : 'd'))}</span
+                    >${joinHtml(these.map(row => sourceSpot(row.source)))}`;
+                  return html`<td
+                    class="${past
+                      ? safe('training-overview__past')
+                      : key === today
+                        ? safe('training-overview__today')
+                        : safe('')}"
+                  >
+                    ${these.length === 0
+                      ? label
+                      : html`<a href="${safe(target(key))}">${label}</a>`}
+                  </td>`;
+                })
+              )}
+            </tr>`
+          )
+        )}
+      </tbody>
+    </table>
+  `;
+};
 
 const plural = (count: number, one: string, many: string) =>
   count === 1 ? one : many;
@@ -227,37 +378,54 @@ const empty = (viewModel: ViewModel): Html =>
         yet.`
     : html`No trainings are coming up right now.`;
 
-export const render = (viewModel: ViewModel): Html => {
-  const days = byDay(viewModel);
+export const render = (viewModel: ViewModel, now: Date = new Date()): Html => {
+  const machineRows = [
+    ...viewModel.trainings.map(training => appRow(viewModel, training)),
+    ...viewModel.meetupTrainings
+      .filter(training => O.isSome(training.equipment))
+      .map(meetupRow),
+  ];
+  // Meetup trainings that are not for a machine (first aid, say) are kept
+  // apart, so they do not interrupt the machine trainings.
+  const otherRows = viewModel.meetupTrainings
+    .filter(training => O.isNone(training.equipment))
+    .map(meetupRow);
   return html`
-    <div class="stack">
+    <div class="stack training-calendar">
       <h1>Get trained</h1>
-      <p>
-        Trainings arranged in this app and on the
-        <a href="${safe(MEETUP)}">Makespace Meetup group</a>, soonest first.
-        Meetup trainings are booked on Meetup.
+      <p class="training-legend">
+        ${sourceSpot('app')} arranged in this app
+        ${sourceSpot('meetup')} on the
+        <a href="${safe(MEETUP)}">Makespace Meetup group</a>, booked there
       </p>
       ${filter(viewModel)}
-      ${days.length === 0
+      ${machineRows.length + otherRows.length === 0
         ? html`<p class="upcoming-trainings__empty">${empty(viewModel)}</p>`
-        : joinHtml(
-            days.map(
-              ({day, entries}) => html`
-                <section class="upcoming-training-day">
-                  <h2>${sanitizeString(day)}</h2>
-                  <ul class="upcoming-training-list">
+        : html`
+            ${overview(machineRows, otherRows, now)}
+            ${renderDays(machineRows, now)}
+            ${otherRows.length === 0
+              ? html``
+              : html`<section class="training-other" id="other-trainings">
+                  <h2>Other trainings on Meetup</h2>
+                  <ul class="training-rows">
                     ${joinHtml(
-                      entries.map(entry =>
-                        entry.kind === 'app'
-                          ? renderAppTraining(viewModel, entry.training)
-                          : renderMeetupTraining(entry.training)
-                      )
+                      [...otherRows]
+                        .sort(
+                          (a, b) => a.startsAt.getTime() - b.startsAt.getTime()
+                        )
+                        .map(
+                          row => html`${renderRow({
+                            ...row,
+                            who: html`${safe(
+                              london(row.startsAt).toFormat('ccc d LLL')
+                            )}`,
+                          })}`
+                        )
                     )}
                   </ul>
-                </section>
-              `
-            )
-          )}
+                </section>`}
+          `}
     </div>
   `;
 };

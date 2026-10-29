@@ -67,12 +67,14 @@ export const meetupNumbers = (training: MeetupTrainingView): Html =>
         ? html` · limit ${safe(String(training.maxTickets))}`
         : html``}`;
 
+// A link rather than a button: booking happens on Meetup, and a page of
+// identical buttons would shout louder than the trainings themselves.
 export const bookOnMeetup = (training: MeetupTrainingView): Html => html`<a
-  class="button"
+  class="book-on-meetup"
   href="${sanitizeString(training.url)}"
   target="_blank"
   rel="noreferrer"
-  >Book on Meetup</a
+  >Book on Meetup ↗</a
 >`;
 
 export const onMeetupTag = html`<span class="tag tag--meetup">On Meetup</span>`;
