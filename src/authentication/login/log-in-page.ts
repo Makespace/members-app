@@ -28,6 +28,12 @@ export const logInPage = pipe(
             Email me a login link
           </button>
         </form>
+        <!-- Reporting a broken machine is open to anybody; the person
+             standing at it should not have to wait for a login email. -->
+        <p class="log-in__report">
+          Something broken or unsafe?
+          <a href="/trouble-tickets">Report a problem without logging in</a>
+        </p>
       </div>
     </div>
   `,

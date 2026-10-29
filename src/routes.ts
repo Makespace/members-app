@@ -594,7 +594,7 @@ export const initRoutes = (
 
     // Temporary location for POC - may move under individual equipments eventually.
     query('/equipment-signs', queries.equipmentSigns),
-    query('/trouble-tickets', queries.troubleTicketsHome),
+    // /trouble-tickets itself is public: see public-raise-routes.
     query('/trouble-tickets/board', queries.troubleTickets),
     // Under /view/ because every ticket action registers its confirmation
     // page at /trouble-tickets/<verb>, and a bare :id here swallows all of

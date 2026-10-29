@@ -1,7 +1,8 @@
 import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
 import {html, Html, joinHtml, safe, sanitizeString} from '../../types/html';
-import {ViewModel} from './construct-view-model';
+import {Focus, ViewModel} from './construct-view-model';
+import {logInPath} from '../../authentication/login/routes';
 
 const stat = (label: Html, count: number) => html`
   <li class="tt-home__stat">
@@ -44,9 +45,9 @@ const summary = (viewModel: ViewModel) =>
 
 // With a focus, every heading and count on the page is about that machine or
 // area - the page a QR code on the machine leads to.
-const heading = (viewModel: ViewModel) =>
+const heading = (focus: O.Option<Focus>) =>
   pipe(
-    viewModel.focus,
+    focus,
     O.match(
       () => html`<h1>Trouble tickets</h1>`,
       focus => html`
@@ -68,9 +69,9 @@ const heading = (viewModel: ViewModel) =>
     )
   );
 
-const reportLink = (viewModel: ViewModel) =>
+const reportLink = (focus: O.Option<Focus>) =>
   pipe(
-    viewModel.focus,
+    focus,
     O.match(
       () => safe('/trouble-tickets/raise'),
       focus =>
@@ -82,9 +83,9 @@ const reportLink = (viewModel: ViewModel) =>
     )
   );
 
-const reportHeading = (viewModel: ViewModel) =>
+const reportHeading = (focus: O.Option<Focus>) =>
   pipe(
-    viewModel.focus,
+    focus,
     O.match(
       () => html`Report a problem`,
       focus =>
@@ -96,7 +97,7 @@ const reportHeading = (viewModel: ViewModel) =>
 
 export const render = (viewModel: ViewModel) => html`
   <div class="stack">
-    ${heading(viewModel)}
+    ${heading(viewModel.focus)}
     <p>
       Trouble tickets tell the owners of a machine that something is wrong with
       it, so they can put it right.
@@ -104,14 +105,14 @@ export const render = (viewModel: ViewModel) => html`
 
     <div class="tt-home">
       <section class="tt-home__card stack">
-        <h2>${reportHeading(viewModel)}</h2>
+        <h2>${reportHeading(viewModel.focus)}</h2>
         <p>
           Something broken, unsafe, misconfigured, or out of consumables? Tell
           the people who look after it. You'll get an email confirming your
           report, and another when an owner picks it up.
         </p>
         <p>
-          <a class="button" href="${reportLink(viewModel)}"
+          <a class="button" href="${reportLink(viewModel.focus)}"
             >Submit a trouble ticket</a
           >
         </p>
@@ -165,6 +166,77 @@ export const render = (viewModel: ViewModel) => html`
         <p>
           <a class="button" href="/notification-settings"
             >Notification settings</a
+          >
+        </p>
+      </section>
+    </div>
+  </div>
+`;
+
+// Logging in comes back here, to the same machine or area.
+const homePath = (focus: O.Option<Focus>) =>
+  pipe(
+    focus,
+    O.match(
+      () => '/trouble-tickets',
+      current =>
+        `/trouble-tickets?${
+          current.kind === 'equipment' ? 'equipmentId' : 'areaId'
+        }=${encodeURIComponent(current.slug)}`
+    )
+  );
+
+const logInTo = (path: string) =>
+  safe(`${logInPath}?next=${encodeURIComponent(path)}`);
+
+// For somebody not logged in - a QR code scanned on a phone that has never
+// used the app. Reporting is open to anybody; seeing the tickets and choosing
+// what you hear about are for members, so those ask them to log in.
+export const renderPublic = (focus: O.Option<Focus>) => html`
+  <div class="stack">
+    ${heading(focus)}
+    <p>
+      Trouble tickets tell the owners of a machine that something is wrong with
+      it, so they can put it right.
+    </p>
+
+    <div class="tt-home">
+      <section class="tt-home__card stack">
+        <h2>${reportHeading(focus)}</h2>
+        <p>
+          Something broken, unsafe, misconfigured, or out of consumables? Tell
+          the people who look after it. You don't need to log in: give your
+          email address and you'll get a confirmation.
+        </p>
+        <p>
+          <a class="button" href="${reportLink(focus)}"
+            >Submit a trouble ticket</a
+          >
+        </p>
+      </section>
+
+      <section class="tt-home__card stack">
+        <h2>Active trouble tickets</h2>
+        <p>
+          Members can see what's open, and follow the problems they've
+          reported.
+        </p>
+        <p>
+          <a class="button" href="${logInTo(homePath(focus))}"
+            >Log in to view active tickets</a
+          >
+        </p>
+      </section>
+
+      <section class="tt-home__card stack">
+        <h2>What you hear about</h2>
+        <p>
+          Which areas and machines you are told about, and whether that reaches
+          you as it happens or in a summary.
+        </p>
+        <p>
+          <a class="button" href="${logInTo('/notification-settings')}"
+            >Log in to change notification settings</a
           >
         </p>
       </section>
