@@ -51,6 +51,7 @@ const viewModel = (overrides: Partial<ViewModel> = {}): ViewModel => ({
     primaryEmailAddress: O.some(member.primaryEmailAddress),
   })),
   waiting: [unknownPass, waitingMember],
+  hiddenAsInactive: [],
   search: O.none,
   failed: [
     {
@@ -130,6 +131,23 @@ describe('the people pages for a machine', () => {
   describe('training quiz results', () => {
     const results = (overrides: Partial<ViewModel> = {}) =>
       page(renderQuizResults(viewModel(overrides)));
+
+    // Recurly can be wrong about who has lapsed, so they stay one click away
+    // and can still be marked trained.
+    it('folds away members Recurly calls lapsed, still markable', () => {
+      const hidden = results({
+        waiting: [],
+        hiddenAsInactive: [waitingMember],
+      }).querySelector('details.waiting__hidden');
+
+      expect(
+        (hidden?.querySelector('summary')?.textContent ?? '').replace(
+          /\s+/g,
+          ' '
+        )
+      ).toContain('1 more member hidden as inactive in Recurly');
+      expect(hidden?.querySelectorAll('form.training-mark')).toHaveLength(1);
+    });
 
     it('offers a trainer the way to mark somebody trained', () => {
       expect(

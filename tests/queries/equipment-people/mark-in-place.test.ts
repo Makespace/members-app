@@ -25,6 +25,7 @@ const viewModel: ViewModel = {
       standing: {kind: 'passed', at: new Date('2026-09-01')},
     },
   ],
+  hiddenAsInactive: [],
   search: O.none,
   failed: [],
   lastQuizSync: O.none,

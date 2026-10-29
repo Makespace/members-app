@@ -86,6 +86,7 @@ describe('Render equipment page', () => {
     const quizResults: Readonly<FullQuizResultsForEquipment> = {
         lastQuizSync: O.none,
         membersAwaitingTraining: [],
+        inactiveMembersAwaitingTraining: [],
         unknownMembersAwaitingTraining: [],
         failedQuizes: []
     };
@@ -146,7 +147,7 @@ describe('Render equipment page', () => {
             expect(renderedDom.textContent).toContain('0');
             expect(
                 renderedDom.querySelector(
-                    `a[href="/equipment/${equipment.id}/quiz-results"]`
+                    `a[href="/equipment/${equipment.id}/trainings"]`
                 )
             ).toBeNull();
         });
@@ -258,9 +259,9 @@ describe('Render equipment page', () => {
 
         // The waiting count is one of the things the page exists to say, so
         // it links straight to the page that lets an owner act on it.
-        it('shows the waiting-for-training count as a link to quiz results', () => {
+        it('shows the waiting-for-training count as a link to the waiting list', () => {
             const link = renderedDom.querySelector(
-                `a[href="/equipment/${equipment.id}/quiz-results"]`
+                `a[href="/equipment/${equipment.id}/trainings"]`
             );
 
             expect(link).not.toBeNull();
@@ -317,9 +318,9 @@ describe('Render equipment page', () => {
 
         // Trainers are the people who clear the queue, so the count takes
         // them straight to it.
-        it('shows the waiting-for-training count as a link to quiz results', () => {
+        it('shows the waiting-for-training count as a link to the waiting list', () => {
             const link = renderedDom.querySelector(
-                `a[href="/equipment/${equipment.id}/quiz-results"]`
+                `a[href="/equipment/${equipment.id}/trainings"]`
             );
 
             expect(link).not.toBeNull();

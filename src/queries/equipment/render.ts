@@ -562,7 +562,9 @@ const equipmentCards = (viewModel: ViewModel) => {
                   ? statLink(
                       viewModel.training.waitingForTraining,
                       'members waiting for training',
-                      `/equipment/${id}/quiz-results`
+                      // Where the whole list is, quiz passes and those who
+                      // told the trainers alike.
+                      `/equipment/${id}/trainings`
                     )
                   : stat(
                       viewModel.training.waitingForTraining,

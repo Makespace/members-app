@@ -20,6 +20,10 @@ import {
   getFullQuizResultsForEquipment,
 } from '../../read-models/external-state/equipment-quiz';
 import {upcomingTrainingSessions} from '../shared-render/upcoming-training-sessions';
+import {
+  counted,
+  waitingFromQuizResults,
+} from '../shared-render/waiting-for-training';
 
 export const constructViewModel =
   (deps: Dependencies, user: User) =>
@@ -123,24 +127,20 @@ export const constructViewModel =
           })
         );
       }),
-      TE.let('training', ({equipment, quizResults}) => {
+      TE.bind('waiting', ({equipment, quizResults}) =>
+        waitingFromQuizResults(deps, equipment, quizResults, new Date())
+      ),
+      TE.let('training', ({equipment, waiting}) => {
         const since = DateTime.now().minus({days: 30});
         return {
           activeTrainers: equipment.trainers.length,
           trainingsRecently: equipment.trainedMembers.filter(
             member => DateTime.fromJSDate(member.trainedSince) >= since
           ).length,
-          // Same source as the quiz-results page's "Waiting for training"
-          // list: known active members plus unlinked passes.
-          waitingForTraining: pipe(
-            quizResults,
-            O.match(
-              () => 0,
-              results =>
-                results.membersAwaitingTraining.length +
-                results.unknownMembersAwaitingTraining.length
-            )
-          ),
+          // The same list as the machine's trainings page and the Owner
+          // page: quiz passes (including unlinked ones) and members who told
+          // the trainers, less those Recurly says have lapsed.
+          waitingForTraining: counted(waiting).length,
         };
       })
     );

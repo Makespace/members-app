@@ -4119,6 +4119,20 @@ table.waiting-table {
   border-top: 1px solid color-mix(in oklch, white 75%, var(--border-color));
 }
 
+/* Members Recurly calls lapsed, folded away under a waiting list. */
+details.waiting__hidden {
+  margin-top: 1rem;
+}
+
+details.waiting__hidden > summary {
+  cursor: pointer;
+  color: var(--grey-color);
+}
+
+details.waiting__hidden[open] > summary {
+  margin-bottom: 0.5rem;
+}
+
 .waiting__number,
 .waiting__since,
 .waiting__none {

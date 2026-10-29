@@ -62,9 +62,47 @@ const toQuizRow = (row: TrainingQuizCompletionRow): QuizRow => ({
 export type FullQuizResultsForEquipment = {
   lastQuizSync: O.Option<Date>;
   membersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>;
+  // Left out of membersAwaitingTraining because Recurly shows no active
+  // subscription for them - kept, as that match is not always right (an
+  // account under an address the app does not know), so pages can still
+  // show them on request.
+  inactiveMembersAwaitingTraining: ReadonlyArray<MemberAwaitingTraining>;
   unknownMembersAwaitingTraining: ReadonlyArray<OrphanedPassedQuiz>;
   failedQuizes: ReadonlyArray<QuizRow>;
 };
+
+// Which of these members Recurly says are no longer subscribed: those with
+// fresh rows for their billing emails, none of them active. No fresh row at
+// all is not inactive - the safer failure mode is to keep showing demand when
+// the cache has gone stale. Two queries however many members there are.
+export const knownInactiveInRecurly =
+  (extDB: Dependencies['extDB']) =>
+  async (
+    recurlyEmailsByMemberNumber: ReadonlyMap<number, ReadonlyArray<string>>
+  ): Promise<ReadonlySet<number>> => {
+    const allAddresses = [
+      ...new Set([...recurlyEmailsByMemberNumber.values()].flat()),
+    ];
+    // One query to resolve account codes to billing emails, one for the
+    // subscription rows those emails name.
+    const resolveBillingEmails = resolveAccountEmailsFrom(
+      await loadAccountCodesAmong(extDB)(allAddresses)
+    );
+    const activeByEmail = await getActiveStatusByEmail(extDB)(allAddresses);
+    const inactive = new Set<number>();
+    for (const [memberNumber, addresses] of recurlyEmailsByMemberNumber) {
+      const matched = resolveBillingEmails([...addresses]).filter(email =>
+        activeByEmail.has(email)
+      );
+      if (
+        matched.length > 0 &&
+        !matched.some(email => activeByEmail.get(email) === true)
+      ) {
+        inactive.add(memberNumber);
+      }
+    }
+    return inactive;
+  };
 
 // Everything the two passes between lastQuizSync and the Recurly filter hand
 // to each other: the published results plus the matchable member addresses
@@ -174,6 +212,8 @@ export const getFullQuizResultsForEquipment = (
         lastQuizSync,
         failedQuizes: completions.filter(row => !isPassed(row)).map(toQuizRow),
         membersAwaitingTraining,
+        // Filled by the Recurly check below; empty if it cannot be read.
+        inactiveMembersAwaitingTraining: [],
         unknownMembersAwaitingTraining,
         recurlyEmailsByMemberNumber,
       };
@@ -191,35 +231,18 @@ export const getFullQuizResultsForEquipment = (
     TE.chain((results: QuizResultsWithRecurlyEmails) => {
       const dropInactive = async (): Promise<FullQuizResultsForEquipment> => {
         const {recurlyEmailsByMemberNumber, ...published} = results;
-        const allAddresses = [
-          ...new Set([...recurlyEmailsByMemberNumber.values()].flat()),
-        ];
-        // Two queries total: one to resolve account codes to billing emails,
-        // one for the subscription rows those emails name.
-        const resolveBillingEmails = resolveAccountEmailsFrom(
-          await loadAccountCodesAmong(deps.extDB)(allAddresses)
-        );
-        const activeByEmail = await getActiveStatusByEmail(deps.extDB)(
-          allAddresses
+        const inactive = await knownInactiveInRecurly(deps.extDB)(
+          recurlyEmailsByMemberNumber
         );
         return {
           ...published,
           membersAwaitingTraining: published.membersAwaitingTraining.filter(
-            member => {
-              const addresses =
-                recurlyEmailsByMemberNumber.get(member.memberNumber) ?? [];
-              const billingEmails = resolveBillingEmails(addresses);
-              // No fresh row for any of their billing emails = no data =
-              // keep them (a stale cache must not empty the list).
-              const matched = billingEmails.filter(email =>
-                activeByEmail.has(email)
-              );
-              if (matched.length === 0) {
-                return true;
-              }
-              return matched.some(email => activeByEmail.get(email) === true);
-            }
+            member => !inactive.has(member.memberNumber)
           ),
+          inactiveMembersAwaitingTraining:
+            published.membersAwaitingTraining.filter(member =>
+              inactive.has(member.memberNumber)
+            ),
         };
       };
 

@@ -14,7 +14,11 @@ import {
   trainerLabel,
 } from '../shared-render/upcoming-training-sessions';
 import {meetupNumbers} from '../shared-render/meetup-trainings';
-import {ViewModel, WaitingMember} from './construct-view-model';
+import {ViewModel} from './construct-view-model';
+import {
+  counted,
+  WaitingMember,
+} from '../shared-render/waiting-for-training';
 import {howLong} from '../shared-render/how-long';
 
 const arrangeHref = (equipmentId: UUID, from: O.Option<UUID>) =>
@@ -128,6 +132,11 @@ const waitingRow = (now: Date) => (member: WaitingMember) => html`
               >`
         )
       )}
+      ${member.noAccount
+        ? html`<div class="waiting__since">
+            no account has this member number - perhaps a typo
+          </div>`
+        : html``}
     </td>
     <td>
       <strong>${safe(howLong(member.waitingSince, now))}</strong>
@@ -161,45 +170,75 @@ const waitingRow = (now: Date) => (member: WaitingMember) => html`
 
 // Who is waiting, longest first: what an owner or trainer needs to decide
 // whether another session is due, and how big it should be.
-const waitingSection = (viewModel: ViewModel): Html => html`
-  <section class="stack">
-    <h2>Waiting for training</h2>
-    ${viewModel.waiting.length === 0
-      ? html`<p class="upcoming-trainings__empty">
-          Nobody is waiting: nobody untrained has passed the quiz or told the
-          trainers they would like training.
-        </p>`
-      : html`
-          <p class="waiting__summary">
-            ${safe(String(viewModel.waiting.length))}
-            ${viewModel.waiting.length === 1
-              ? safe('member is')
-              : safe('members are')}
-            waiting, the longest for
-            ${safe(howLong(viewModel.waiting[0].waitingSince, viewModel.now))}.
-            ${safe(
-              String(
-                viewModel.waiting.filter(m => O.isSome(m.bookedOn)).length
-              )
-            )}
-            booked on an upcoming training.
-          </p>
-          <table class="waiting-table">
-            <thead>
-              <tr>
-                <th>Member</th>
-                <th>Waiting</th>
-                <th>Last said they would like training</th>
-                <th>Booked</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${joinHtml(viewModel.waiting.map(waitingRow(viewModel.now)))}
-            </tbody>
-          </table>
-        `}
-  </section>
+const waitingTable = (
+  members: ReadonlyArray<WaitingMember>,
+  now: Date
+): Html => html`
+  <table class="waiting-table">
+    <thead>
+      <tr>
+        <th>Member</th>
+        <th>Waiting</th>
+        <th>Last said they would like training</th>
+        <th>Booked</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${joinHtml(members.map(waitingRow(now)))}
+    </tbody>
+  </table>
 `;
+
+// Recurly sometimes fails to match a member who is in fact subscribed (an
+// account under an address the app does not know), so those it calls lapsed
+// are kept, folded away, rather than dropped.
+const hiddenAsInactive = (viewModel: ViewModel): Html => {
+  const hidden = viewModel.waiting.filter(member => member.inactiveInRecurly);
+  return hidden.length === 0
+    ? html``
+    : html`<details class="waiting__hidden">
+        <summary>
+          ${safe(String(hidden.length))} more
+          ${hidden.length === 1 ? safe('member') : safe('members')} hidden as
+          inactive in Recurly
+        </summary>
+        <p class="waiting__summary">
+          Recurly shows no active subscription for
+          ${hidden.length === 1 ? safe('this member') : safe('these members')},
+          so they are left
+          out of the count. That match is not always right - a subscription
+          under an email address the app does not know looks the same - so
+          check before passing anybody over.
+        </p>
+        ${waitingTable(hidden, viewModel.now)}
+      </details>`;
+};
+
+const waitingSection = (viewModel: ViewModel): Html => {
+  const waiting = counted(viewModel.waiting);
+  return html`
+    <section class="stack">
+      <h2>Waiting for training</h2>
+      ${waiting.length === 0
+        ? html`<p class="upcoming-trainings__empty">
+            Nobody is waiting: nobody untrained has passed the quiz or told the
+            trainers they would like training.
+          </p>`
+        : html`
+            <p class="waiting__summary">
+              ${safe(String(waiting.length))}
+              ${waiting.length === 1 ? safe('member is') : safe('members are')}
+              waiting, the longest for
+              ${safe(howLong(waiting[0].waitingSince, viewModel.now))}.
+              ${safe(String(waiting.filter(m => O.isSome(m.bookedOn)).length))}
+              booked on an upcoming training.
+            </p>
+            ${waitingTable(waiting, viewModel.now)}
+          `}
+      ${hiddenAsInactive(viewModel)}
+    </section>
+  `;
+};
 
 const meetupList = (viewModel: ViewModel): Html =>
   viewModel.meetupTrainings.length === 0

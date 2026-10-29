@@ -307,6 +307,11 @@ describe('Get equipment quiz', () => {
       expect(after.membersAwaitingTraining.map(m => m.memberNumber)).toStrictEqual(
         [addAwaitingTrainingMember.memberNumber]
       );
+      // Kept to one side rather than dropped: the Recurly match can be wrong,
+      // so pages show them on request.
+      expect(
+        after.inactiveMembersAwaitingTraining.map(m => m.memberNumber)
+      ).toStrictEqual([inactiveMember.memberNumber]);
       // The unknown pass stays: there is no account to attach a status to.
       expect(after.unknownMembersAwaitingTraining).toHaveLength(1);
     });

@@ -9,8 +9,6 @@ import {
 } from '../../types/failure-with-status';
 import {Actor, User} from '../../types';
 import {Dependencies} from '../../dependencies';
-import {Equipment} from '../../read-models/shared-state/return-types';
-import {getFullQuizResultsForEquipment} from '../../read-models/external-state/equipment-quiz';
 import {isEquipmentTrainer} from '../../commands/authentication-helpers/is-equipment-trainer';
 import {isEquipmentOwner} from '../../commands/authentication-helpers/is-equipment-owner';
 import {isAdminOrSuperUser} from '../../commands/authentication-helpers/is-admin-or-super-user';
@@ -23,20 +21,10 @@ import {
   MeetupTrainingView,
   upcomingMeetupTrainings,
 } from '../shared-render/meetup-trainings';
-
-// Somebody not trained on the machine who has said they want to be: by
-// passing its quiz, by telling the trainers, or both.
-export type WaitingMember = {
-  memberNumber: number;
-  name: O.Option<string>;
-  // From passing the quiz, when they have; otherwise from first telling the
-  // trainers.
-  waitingSince: Date;
-  passedQuiz: boolean;
-  lastExpressedInterest: O.Option<Date>;
-  // The soonest upcoming session they are booked on.
-  bookedOn: O.Option<Date>;
-};
+import {
+  WaitingMember,
+  waitingForTraining,
+} from '../shared-render/waiting-for-training';
 
 export type ViewModel = {
   equipment: {id: UUID; name: string};
@@ -56,97 +44,6 @@ export type ViewModel = {
   meetupTrainings: ReadonlyArray<MeetupTrainingView>;
   now: Date;
 };
-
-const internalError = (deps: Dependencies) => (error: string) => {
-  deps.logger.error('Failed to read quiz results for waiting list: %s', error);
-  return failureWithStatus(
-    'Internal Error',
-    StatusCodes.INTERNAL_SERVER_ERROR
-  )();
-};
-
-// Members who passed the quiz in the last year and are not trained, the
-// earliest pass for each.
-const quizPasses = (
-  deps: Dependencies,
-  equipment: Equipment
-): TE.TaskEither<FailureWithStatus, ReadonlyMap<number, Date>> =>
-  O.isNone(equipment.trainingSheetId)
-    ? TE.right(new Map())
-    : pipe(
-        getFullQuizResultsForEquipment(
-          deps,
-          equipment.trainingSheetId.value,
-          equipment
-        ),
-        TE.mapLeft(internalError(deps)),
-        TE.map(results => {
-          const earliest = new Map<number, Date>();
-          for (const member of results.membersAwaitingTraining) {
-            const known = earliest.get(member.memberNumber);
-            if (known === undefined || member.waitingSince < known) {
-              earliest.set(member.memberNumber, member.waitingSince);
-            }
-          }
-          return earliest;
-        })
-      );
-
-const waitingList = (
-  deps: Dependencies,
-  equipment: Equipment,
-  passes: ReadonlyMap<number, Date>,
-  now: Date
-): ReadonlyArray<WaitingMember> => {
-  const trained = new Set(
-    equipment.trainedMembers.map(member => member.memberNumber)
-  );
-  const interest = new Map(
-    deps.sharedReadModel.trainingInterest
-      .forEquipment(equipment.id)
-      .filter(row => !trained.has(row.memberNumber))
-      .map(row => [row.memberNumber, row])
-  );
-  const upcoming = deps.sharedReadModel.trainingSessions.upcomingForEquipment(
-    equipment.id,
-    now
-  );
-  const memberNumbers = new Set([...passes.keys(), ...interest.keys()]);
-  return [...memberNumbers]
-    .map(memberNumber => {
-      const passedAt = passes.get(memberNumber);
-      const said = interest.get(memberNumber);
-      return {
-        memberNumber,
-        name: pipe(
-          deps.sharedReadModel.members.getByMemberNumber(memberNumber),
-          O.chain(member => member.name)
-        ),
-        // Every member here passed the quiz or said so, so one of the two is
-        // always there.
-        waitingSince: passedAt ?? said?.firstExpressedAt ?? now,
-        passedQuiz: passedAt !== undefined,
-        lastExpressedInterest: O.fromNullable(said?.lastExpressedAt),
-        bookedOn: O.fromNullable(
-          upcoming.find(session => session.attendees.includes(memberNumber))
-            ?.startsAt
-        ),
-      };
-    })
-    .sort((a, b) => a.waitingSince.getTime() - b.waitingSince.getTime());
-};
-
-// Who is waiting for training on a machine, longest first - for any page
-// that wants to say so, not only this one.
-export const waitingForTraining = (
-  deps: Dependencies,
-  equipment: Equipment,
-  now: Date
-): TE.TaskEither<FailureWithStatus, ReadonlyArray<WaitingMember>> =>
-  pipe(
-    quizPasses(deps, equipment),
-    TE.map(passes => waitingList(deps, equipment, passes, now))
-  );
 
 export const constructViewModel =
   (deps: Dependencies, user: User, now: Date) =>

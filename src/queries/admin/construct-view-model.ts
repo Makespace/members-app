@@ -11,7 +11,10 @@ import {
   QuarterCount,
   trainingsByQuarter,
 } from '../../read-models/shared-state/member/training-delivered';
-import {waitingForTraining} from '../equipment-trainings/construct-view-model';
+import {
+  counted,
+  waitingForTraining,
+} from '../shared-render/waiting-for-training';
 
 export type TrainedMachine = {
   id: string;
@@ -64,6 +67,7 @@ const waitingOn = (
     TE.traverseArray(equipment =>
       pipe(
         waitingForTraining(deps, equipment, now),
+        TE.map(counted),
         TE.map(
           waiting =>
             [
