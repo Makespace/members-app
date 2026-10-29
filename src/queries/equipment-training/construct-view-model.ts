@@ -20,6 +20,11 @@ import {
   TrainingSessionView,
   upcomingTrainingSessions,
 } from '../shared-render/upcoming-training-sessions';
+import {
+  forEquipment,
+  MeetupTrainingView,
+  upcomingMeetupTrainings,
+} from '../shared-render/meetup-trainings';
 
 // Where the member has got to with the quiz, told from their own results
 // rather than from a list of everybody: a member on this page is asking about
@@ -64,6 +69,8 @@ export type ViewModel = {
   quizRequired: boolean;
   // Machines to be trained on first, by name, and whether this member is.
   prerequisites: ReadonlyArray<Prerequisite>;
+  // This machine's trainings on Meetup, which are booked there.
+  meetupTrainings: ReadonlyArray<MeetupTrainingView>;
 };
 
 type Prerequisite = {id: string; name: string; trained: boolean};
@@ -190,7 +197,9 @@ export const constructViewModel =
       TE.fromOption(
         failureWithStatus('Unknown equipment', StatusCodes.NOT_FOUND)
       ),
-      TE.map(equipment => ({
+      TE.bindTo('equipment'),
+      TE.bind('meetup', () => upcomingMeetupTrainings(deps, new Date())),
+      TE.map(({equipment, meetup}) => ({
         equipment: {
           id: equipment.id,
           name: equipment.name,
@@ -243,5 +252,6 @@ export const constructViewModel =
           equipment.id
         ).quizRequired,
         prerequisites: prerequisitesFor(deps, user, equipment.id),
+        meetupTrainings: forEquipment(meetup, equipment.id),
       }))
     );

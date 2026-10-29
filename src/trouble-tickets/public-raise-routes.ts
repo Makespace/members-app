@@ -8,7 +8,6 @@ import {formatValidationErrors} from 'io-ts-reporters';
 import {StatusCodes} from 'http-status-codes';
 import {Dependencies} from '../dependencies';
 import {getUserFromSession} from '../authentication';
-import {logInPath} from '../authentication/login/routes';
 import {formGet} from '../http/form-get';
 import {formPost} from '../http/form-post';
 import {queryGet} from '../http/query-get';
@@ -22,12 +21,10 @@ import {
   renderRaiseForm,
 } from '../commands/trouble-tickets/raise-form';
 import {oopsPage} from '../templates';
-import {isolatedPageTemplate} from '../templates/page-template';
+import {publicPage} from '../templates/public-page';
 import {
   CompleteHtmlDocument,
   html,
-  Html,
-  HtmlSubstitution,
   safe,
   sanitizeString,
 } from '../types/html';
@@ -51,22 +48,6 @@ const clientIpOf = (req: Request): string =>
 
 const isLoggedIn = (deps: Dependencies, req: Request) =>
   O.isSome(getUserFromSession(deps)(req.session));
-
-// returnTo is where logging in from the header comes back to.
-const publicPage =
-  (title: HtmlSubstitution, returnTo?: string) => (body: Html) =>
-    isolatedPageTemplate(title)(html`
-    <header class="public-header">
-      <strong>Makespace</strong>
-      <a
-        href="${safe(logInPath)}${returnTo === undefined
-          ? safe('')
-          : safe(`?next=${encodeURIComponent(returnTo)}`)}"
-        >Log in</a
-      >
-    </header>
-    <main class="public-page">${body}</main>
-  `);
 
 const homeGet =
   (deps: Dependencies): RequestHandler =>

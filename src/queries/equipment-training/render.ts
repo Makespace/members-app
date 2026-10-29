@@ -192,10 +192,12 @@ const practicalStep = (viewModel: ViewModel, number: number) => html`
       ${viewModel.trainersUsingApp === 1 ? safe('has') : safe('have')} used the
       app to arrange a training session so far.
     </p>
-    <h3>Upcoming trainings in the app</h3>
-    ${renderUpcomingTrainingSessions(viewModel.upcomingTrainings, {
-      withDescriptions: true,
-    })}
+    <h3>Upcoming trainings</h3>
+    ${renderUpcomingTrainingSessions(
+      viewModel.upcomingTrainings,
+      {withDescriptions: true},
+      viewModel.meetupTrainings
+    )}
     <p>
       If there is no practical scheduled on Meetup or here, please email
       ${pipe(

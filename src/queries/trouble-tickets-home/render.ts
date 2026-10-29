@@ -222,7 +222,7 @@ export const renderPublic = (focus: O.Option<Focus>) => html`
           reported.
         </p>
         <p>
-          <a class="button" href="${logInTo(homePath(focus))}"
+          <a class="button-outline" href="${logInTo(homePath(focus))}"
             >Log in to view active tickets</a
           >
         </p>
@@ -235,7 +235,7 @@ export const renderPublic = (focus: O.Option<Focus>) => html`
           you as it happens or in a summary.
         </p>
         <p>
-          <a class="button" href="${logInTo('/notification-settings')}"
+          <a class="button-outline" href="${logInTo('/notification-settings')}"
             >Log in to change notification settings</a
           >
         </p>
