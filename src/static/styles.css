@@ -4149,34 +4149,221 @@ ol.training-steps {
   margin-top: 0.4rem;
 }
 
-.upcoming-training-list {
+/* The Get trained calendar (queries/upcoming-trainings): one row of the same
+   shape per training, columns aligned without rules, colour only in small
+   spots. --app-spot and --meetup-spot are the two sources. */
+.training-calendar {
+  --app-spot: var(--green-color);
+  --meetup-spot: #e0393e;
+}
+
+.source-spot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  margin-right: 0.35rem;
+  vertical-align: 0.05rem;
+}
+
+.source-spot--app {
+  background: var(--app-spot, var(--green-color));
+}
+
+.source-spot--meetup {
+  background: var(--meetup-spot, #e0393e);
+}
+
+.training-legend {
+  color: var(--grey-color);
+  font-size: 0.95rem;
+}
+
+.training-legend .source-spot + .source-spot,
+.training-legend .source-spot:not(:first-child) {
+  margin-left: 1rem;
+}
+
+/* The six weeks ahead, a week to a line. */
+table.training-overview {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 30rem;
+  table-layout: fixed;
+  font-size: 0.85rem;
+}
+
+.training-overview th {
+  color: var(--grey-color);
+  font-weight: 400;
+  text-align: left;
+  padding: 0 0.3rem 0.2rem;
+}
+
+.training-overview td {
+  vertical-align: top;
+  height: 2.4rem;
+  padding: 0.2rem 0.3rem;
+  border-top: 1px solid color-mix(in oklch, white 70%, var(--border-color));
+}
+
+.training-overview td a {
+  display: block;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+}
+
+.training-overview td .source-spot {
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-right: 0.15rem;
+}
+
+.training-overview__date {
+  display: block;
+  color: var(--grey-color);
+  font-variant-numeric: tabular-nums;
+}
+
+.training-overview__past .training-overview__date {
+  color: color-mix(in oklch, white 55%, var(--grey-color));
+}
+
+.training-overview__today .training-overview__date {
+  color: var(--text-color);
+  font-weight: 700;
+}
+
+.training-day__heading {
+  font-size: 1.15rem;
+  margin: 1.75rem 0 0.25rem;
+}
+
+.training-day__when {
+  font-weight: 400;
+  color: var(--grey-color);
+  margin-left: 0.5rem;
+}
+
+ul.training-rows {
   list-style: none;
-  padding: 0;
   margin: 0;
-  display: grid;
-  gap: 1rem;
+  padding: 0;
 }
 
-.upcoming-training {
+/* Time | what | how full | what you can do. */
+.training-row {
   display: grid;
-  grid-template-columns: 7rem 1fr;
-  gap: 0.75rem;
+  grid-template-columns: 6rem minmax(0, 1fr) 7.5rem 8.5rem;
+  gap: 0.25rem 1rem;
+  align-items: baseline;
+  padding: 0.55rem 0;
 }
 
-.upcoming-training__time {
+.training-row + .training-row {
+  border-top: 1px solid color-mix(in oklch, white 75%, var(--border-color));
+}
+
+.training-row__time {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
 
-.upcoming-training__area {
+.training-row__area,
+.training-row__detail,
+.training-row__note {
   color: var(--grey-color);
-  margin-left: 0.4rem;
+}
+
+.training-row__area {
+  margin-left: 0.35rem;
+}
+
+.training-row__detail {
+  font-size: 0.95rem;
+}
+
+.training-row__description {
+  font-size: 0.9rem;
+  color: var(--grey-color);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.training-row__description .training-description p {
+  margin: 0;
+}
+
+.training-row__trained {
+  margin-left: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--green-darkened-color);
+  white-space: nowrap;
+}
+
+.training-row__capacity {
+  font-size: 0.9rem;
+  color: var(--grey-color);
+  font-variant-numeric: tabular-nums;
+}
+
+.capacity__dots {
+  display: block;
+  color: var(--text-color);
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.training-row__action {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.6rem;
+  align-items: baseline;
+}
+
+.training-row__action .button {
+  padding: 6px 14px;
+  font-size: 100%;
+}
+
+.training-row__note {
+  font-size: 0.85rem;
+}
+
+a.book-on-meetup {
+  white-space: nowrap;
+}
+
+a.button-outline--small {
+  padding: 4px 10px;
+  font-size: 95%;
+}
+
+.training-other {
+  margin-top: 2.5rem;
+}
+
+.training-other h2 {
+  font-size: 1.15rem;
 }
 
 @media screen and (max-width: 48rem) {
-  .upcoming-training {
-    grid-template-columns: 1fr;
-    gap: 0.25rem;
+  .training-row {
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+  }
+
+  .training-row__capacity,
+  .training-row__action {
+    grid-column: 2;
+  }
+
+  .capacity__dots {
+    display: inline;
+    margin-right: 0.4rem;
   }
 }
 
@@ -4205,12 +4392,6 @@ ol.training-steps {
   margin: 0.75rem 0 0.25rem;
 }
 
-.tag--trained {
-  background-color: #cce2d8;
-  color: #005a30;
-  max-width: none;
-  margin-left: 0.4rem;
-}
 
 .training-filter {
   color: var(--grey-color);
