@@ -96,15 +96,6 @@ export const constructViewModel =
           resolvedRecently,
         };
       }),
-      TE.let('training', ({equipment}) => {
-        const since = DateTime.now().minus({days: 30});
-        return {
-          activeTrainers: equipment.trainers.length,
-          trainingsRecently: equipment.trainedMembers.filter(
-            member => DateTime.fromJSDate(member.trainedSince) >= since
-          ).length,
-        };
-      }),
       TE.bind('guideLink', ({equipment}) =>
         pipe(
           TE.fromTask<ReadonlyMap<string, GuideLinkCheck>, FailureWithStatus>(
@@ -131,5 +122,25 @@ export const constructViewModel =
             )();
           })
         );
+      }),
+      TE.let('training', ({equipment, quizResults}) => {
+        const since = DateTime.now().minus({days: 30});
+        return {
+          activeTrainers: equipment.trainers.length,
+          trainingsRecently: equipment.trainedMembers.filter(
+            member => DateTime.fromJSDate(member.trainedSince) >= since
+          ).length,
+          // Same source as the quiz-results page's "Waiting for training"
+          // list: known active members plus unlinked passes.
+          waitingForTraining: pipe(
+            quizResults,
+            O.match(
+              () => 0,
+              results =>
+                results.membersAwaitingTraining.length +
+                results.unknownMembersAwaitingTraining.length
+            )
+          ),
+        };
       })
     );

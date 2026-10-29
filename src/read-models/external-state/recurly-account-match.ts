@@ -58,16 +58,16 @@ export const resolveAccountEmailsFrom = (
   };
 };
 
-// As above, for one member at a time: one query for the accounts their
-// addresses name by code.
-export const resolveAccountEmails =
+// One query for the account-code rows naming any of these addresses, for
+// callers that then resolve several members' addresses in memory.
+export const loadAccountCodesAmong =
   (extDB: ExternalStateDB) =>
-  async (emails: ReadonlyArray<string>): Promise<ReadonlyArray<string>> => {
+  async (emails: ReadonlyArray<string>): Promise<ReadonlyArray<AccountCodeRow>> => {
     const lowered = [...new Set(emails.map(email => email.toLowerCase()))];
     if (lowered.length === 0) {
       return [];
     }
-    const codes = await extDB
+    return extDB
       .select({
         code: recurlyAccountCodeTable.code,
         email: recurlyAccountCodeTable.email,
@@ -75,8 +75,16 @@ export const resolveAccountEmails =
       .from(recurlyAccountCodeTable)
       .where(inArray(recurlyAccountCodeTable.code, lowered))
       .all();
-    return resolveAccountEmailsFrom(codes)(lowered);
   };
+
+// As above, for one member at a time: one query for the accounts their
+// addresses name by code.
+export const resolveAccountEmails =
+  (extDB: ExternalStateDB) =>
+  async (emails: ReadonlyArray<string>): Promise<ReadonlyArray<string>> =>
+    resolveAccountEmailsFrom(await loadAccountCodesAmong(extDB)(emails))(
+      [...new Set(emails.map(email => email.toLowerCase()))]
+    );
 
 // A where-clause for the subscription cache itself: rows whose billing email
 // is one of these addresses, or is what one of them resolves to by code.
