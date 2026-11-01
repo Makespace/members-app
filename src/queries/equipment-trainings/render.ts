@@ -66,20 +66,24 @@ const sessionRow =
       <td>${trainerLabel(session)}</td>
       <td>${bookings(session)}</td>
       <td>${renderDescription(session)}</td>
-      <td class="training-session__row-actions">
-        ${canArrange
-          ? html`<a
-              class="button"
-              href="${arrangeHref(equipmentId, O.some(session.id))}"
-              >Duplicate</a
-            >`
-          : html``}
-        ${canArrange && canCancel && O.isNone(session.cancelled)
-          ? html`<a
-              href="/training-sessions/cancel?sessionId=${safe(session.id)}"
-              >Cancel</a
-            >`
-          : html``}
+      <td>
+        <!-- The stacking is on a wrapper: a flex td stops being a table
+             cell, and the row's borders no longer line up. -->
+        <div class="training-session__row-actions">
+          ${canArrange
+            ? html`<a
+                class="button"
+                href="${arrangeHref(equipmentId, O.some(session.id))}"
+                >Duplicate</a
+              >`
+            : html``}
+          ${canArrange && canCancel && O.isNone(session.cancelled)
+            ? html`<a
+                href="/training-sessions/cancel?sessionId=${safe(session.id)}"
+                >Cancel</a
+              >`
+            : html``}
+        </div>
       </td>
     </tr>
   `;
