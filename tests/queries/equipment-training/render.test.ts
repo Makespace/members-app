@@ -32,6 +32,10 @@ const viewModel = (overrides: Partial<ViewModel> = {}): ViewModel => ({
   lastTraining: O.some(new Date('2026-08-11')),
   upcomingTrainings: [],
   trainersUsingApp: 0,
+  quizRequired: true,
+  prerequisites: [],
+  meetupTrainings: [],
+  interestLastExpressed: O.none,
   ...overrides,
 });
 
@@ -54,6 +58,88 @@ describe('the get-trained page', () => {
       '1. Pass the online quiz',
       '2. Attend an in-person training session',
     ]);
+  });
+
+  describe('telling the trainers you would like training', () => {
+    const interest = (vm: ViewModel) =>
+      page(vm).querySelector('.training-interest');
+
+    it('offers it to somebody not yet trained', () => {
+      const block = interest(viewModel());
+      expect(textOf(viewModel())).toContain(
+        'Let the trainers know you would like training'
+      );
+      expect(
+        block?.querySelector('form')?.getAttribute('action')
+      ).toContain('/training-sessions/express-interest');
+    });
+
+    it('says when they last did, and lets them say it again', () => {
+      const text = textOf(
+        viewModel({interestLastExpressed: O.some(new Date('2026-10-12'))})
+      );
+      expect(text).toContain('on 12 October 2026');
+      expect(text).toContain('Tell them again');
+    });
+
+    it('does not ask somebody already trained', () => {
+      expect(
+        interest(viewModel({trainedSince: O.some(new Date('2026-06-15'))}))
+      ).toBeNull();
+    });
+  });
+
+  describe("what the machine's owners say comes first", () => {
+    const headingsOf = (vm: ViewModel) =>
+      [...page(vm).querySelectorAll('h2')].map(node =>
+        (node.textContent ?? '').replace(/\s+/g, ' ').trim()
+      );
+
+    it('leaves the quiz out when it is not needed', () => {
+      expect(headingsOf(viewModel({quizRequired: false}))).toStrictEqual([
+        '1. Attend an in-person training session',
+      ]);
+    });
+
+    it('starts with the machines it builds on, and waits on them', () => {
+      const vm = viewModel({
+        quiz: {tag: 'passed', completedAt: new Date('2026-08-01')},
+        prerequisites: [
+          {
+            id: 'eeeeeeee-0000-0000-0000-000000000002',
+            name: 'HPC Laser',
+            trained: false,
+          },
+        ],
+      });
+
+      expect(headingsOf(vm)).toStrictEqual([
+        '1. Be trained on HPC Laser',
+        '2. Pass the online quiz',
+        '3. Attend an in-person training session',
+      ]);
+      expect(textOf(vm)).toContain('You need to be trained on HPC Laser first.');
+      expect(
+        page(vm).querySelector(
+          'a[href="/equipment/eeeeeeee-0000-0000-0000-000000000002/training"]'
+        )
+      ).not.toBeNull();
+    });
+
+    it('stops waiting once they are trained on it', () => {
+      const vm = viewModel({
+        quiz: {tag: 'passed', completedAt: new Date('2026-08-01')},
+        prerequisites: [
+          {
+            id: 'eeeeeeee-0000-0000-0000-000000000002',
+            name: 'HPC Laser',
+            trained: true,
+          },
+        ],
+      });
+
+      expect(textOf(vm)).toContain('You need to attend an in-person training.');
+    });
   });
 
   it('sends people to the guide for the quiz', () => {
@@ -142,11 +228,12 @@ describe('the get-trained page', () => {
   });
 
   describe('what it says about the people who run practicals', () => {
-    it('counts the active trainers and says what they are', () => {
-      const text = textOf(viewModel());
+    it('reminds people, under the trainers, that they are volunteers', () => {
+      const note = page(viewModel()).querySelector(
+        '.training-summary dd .training-trainers__note'
+      );
 
-      expect(text).toContain('has 1 active trainer.');
-      expect(text).toContain('trainers are volunteers');
+      expect(note?.textContent).toContain('trainers are volunteers');
     });
 
     it('says when a training last happened here', () => {

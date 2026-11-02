@@ -63,6 +63,10 @@ export type ViewModel = {
   // Everybody who has passed the quiz and not been trained, known or not,
   // most recent pass first.
   waiting: ReadonlyArray<TrainingRow>;
+  // Passed and not trained, but left out of the queue because Recurly shows
+  // no active subscription - a match that is not always right, so they are
+  // kept to show on request.
+  hiddenAsInactive: ReadonlyArray<TrainingRow>;
   // What was typed into the search box and who matched it. A match is shown
   // whether or not they have passed the quiz: an empty table would leave a
   // trainer wondering whether the search failed or the person did.
@@ -90,9 +94,6 @@ const rowDate = (row: TrainingRow): Date =>
         ? row.standing.at
         : row.standing.since;
 
-const mostRecentFirst = (a: TrainingRow, b: TrainingRow) =>
-  rowDate(b).getTime() - rowDate(a).getTime();
-
 // A pass the app could not match still names an address, and that address
 // may well belong to a member whose number was typed wrong. Saying so is
 // not the same as linking them - only adding the address to their record
@@ -112,27 +113,45 @@ const toUnknownRow =
     ),
   });
 
+// The waiting list is a queue: longest-waiting first, so the people at the
+// top are the ones a trainer should get to next. waitingSince is the
+// member's earliest un-trained pass, so oldest-first is the fair order.
+const longestWaitingFirst = (a: TrainingRow, b: TrainingRow) =>
+  rowDate(a).getTime() - rowDate(b).getTime();
+
+const memberRow =
+  (rm: SharedReadModel) =>
+  (member: FullQuizResultsForEquipment['membersAwaitingTraining'][number]): TrainingRow => ({
+    kind: 'member',
+    person: {
+      name: member.name,
+      memberNumber: member.memberNumber,
+      primaryEmailAddress: pipe(
+        rm.members.getByMemberNumber(member.memberNumber),
+        O.map(found => found.primaryEmailAddress)
+      ),
+    },
+    standing: {kind: 'passed', at: member.waitingSince},
+  });
+
+// Passed, not trained, and left out of the queue because Recurly shows no
+// active subscription for them - longest waiting first, like the queue.
+const toHiddenRows = (
+  rm: SharedReadModel,
+  results: FullQuizResultsForEquipment
+): ReadonlyArray<TrainingRow> =>
+  results.inactiveMembersAwaitingTraining
+    .map(memberRow(rm))
+    .sort(longestWaitingFirst);
+
 const toWaitingRows = (
   rm: SharedReadModel,
   results: FullQuizResultsForEquipment
 ): ReadonlyArray<TrainingRow> =>
   [
-    ...results.membersAwaitingTraining.map(
-      (member): TrainingRow => ({
-        kind: 'member',
-        person: {
-          name: member.name,
-          memberNumber: member.memberNumber,
-          primaryEmailAddress: pipe(
-            rm.members.getByMemberNumber(member.memberNumber),
-            O.map(found => found.primaryEmailAddress)
-          ),
-        },
-        standing: {kind: 'passed', at: member.waitingSince},
-      })
-    ),
+    ...results.membersAwaitingTraining.map(memberRow(rm)),
     ...results.unknownMembersAwaitingTraining.map(toUnknownRow(rm)),
-  ].sort(mostRecentFirst);
+  ].sort(longestWaitingFirst);
 
 // A number finds exactly that member - including somebody who used to have
 // it - so typing 872 shows one account, not everybody with 872 somewhere in
@@ -181,9 +200,11 @@ const standingOf = (
   }
   return pipe(
     results,
+    // Somebody Recurly calls lapsed has still passed: a search is how a
+    // trainer finds them, so it must say so.
     O.chain(r =>
       O.fromNullable(
-        r.membersAwaitingTraining.find(
+        [...r.membersAwaitingTraining, ...r.inactiveMembersAwaitingTraining].find(
           waiting => waiting.memberNumber === member.memberNumber
         )
       )
@@ -259,6 +280,13 @@ export const constructViewModel =
           O.match(
             () => [],
             results => toWaitingRows(deps.sharedReadModel, results)
+          )
+        ),
+        hiddenAsInactive: pipe(
+          equipmentView.quizResults,
+          O.match(
+            () => [],
+            results => toHiddenRows(deps.sharedReadModel, results)
           )
         ),
         search: pipe(

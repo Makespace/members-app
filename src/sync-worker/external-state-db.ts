@@ -25,6 +25,10 @@ import {
   createTables as createGuideLinkTables,
   guideLinkCheckTable,
 } from './guide-links/guide-link-table';
+import {
+  createTables as createMeetupTables,
+  meetupTrainingTable,
+} from './meetup/meetup-training-table';
 import { SyncWorkerDependencies } from './dependencies';
 
 
@@ -108,6 +112,7 @@ export const initExternalStateDB = (client: Client) =>
     recurlyTransactionTable,
     recurlySyncMetadataTable,
     guideLinkCheckTable,
+    meetupTrainingTable,
   }});
 
 export type ExternalStateDB = ReturnType<typeof initExternalStateDB>;
@@ -117,6 +122,9 @@ export const ensureExtDBTablesExist = (extDB: ExternalStateDB): SyncWorkerDepend
     await ensureRecurlyDBTablesExist(extDB);
     await ensureGmailTablesExist(extDB);
     await ensureGuideLinkTablesExist(extDB);
+    for (const statement of createMeetupTables) {
+        await extDB.run(statement);
+    }
 }
 
 const ensureGuideLinkTablesExist = async (extDB: ExternalStateDB) => {

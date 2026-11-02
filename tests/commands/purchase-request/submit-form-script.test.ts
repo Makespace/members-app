@@ -5,7 +5,10 @@ import * as O from 'fp-ts/Option';
 import {UUID} from 'io-ts-types';
 import {renderSubmitForm} from '../../../src/commands/purchase-request/render-submit-form';
 import {TypedPurchase} from '../../../src/purchasing/purchases';
-import {classifyPurchase} from '../../../src/purchasing/classify-purchase';
+import {
+  classifyPurchase,
+  earlyProposalReasons,
+} from '../../../src/purchasing/classify-purchase';
 
 // The cost breakdown page's inline script is a progressive enhancement; these
 // run it in jsdom to check it manages the shops and items and keeps running
@@ -22,22 +25,30 @@ const woodShop = {
   remainingPence: 58_000,
 };
 
+// Its whole budget already spent this year.
+const spentUp = {
+  ...woodShop,
+  spentThisYearPence: 100_000,
+  remainingPence: 0,
+};
+
 // The page 1 answers page 2's result goes on.
 type Answers = {consumable: boolean; areas: ReadonlyArray<string>; risky: boolean};
 
 const renderPage = (
   step: number,
   purchases: ReadonlyArray<TypedPurchase> = [],
-  {consumable, areas, risky}: Answers = {consumable: false, areas: [], risky: false}
+  {consumable, areas, risky}: Answers = {consumable: false, areas: [], risky: false},
+  purchasingArea = woodShop
 ) => {
   document.body.innerHTML = renderSubmitForm({
     requestId: '33333333-3333-4333-8333-333333333333' as UUID,
     budgetYear: 2026,
-    purchasingAreas: [woodShop],
+    purchasingAreas: [purchasingArea],
     proposalThresholdPence: 100_000,
     step,
     answers: {
-      purchasingAreaId: woodShop.id,
+      purchasingAreaId: purchasingArea.id,
       summary: 'Saw blades',
       justification: 'Blunt',
       purchases,
@@ -51,7 +62,7 @@ const renderPage = (
       proposal: {need: '', options: [], preferred: '', risks: [], location: '', owner: '', training: ''},
     },
     problems: [],
-    chosen: O.some(woodShop),
+    chosen: O.some(purchasingArea),
     buyerRole: 'neither',
     affectedAreaNames: areas,
     areas: [
@@ -465,9 +476,26 @@ describe('purchase request cost breakdown script', () => {
   });
 });
 
+describe('the proposal notice under the budget on page 2', () => {
+  const noticeUnderBudget = () =>
+    document.querySelector('.purchase-budget + .purchase-verdict--proposal');
+
+  it('is shown when the page 1 answers already mean a proposal', () => {
+    renderPage(2, [], {consumable: false, areas: [], risky: true});
+    expect(noticeUnderBudget()!.textContent).toContain(
+      "You'll need to write a proposal"
+    );
+  });
+
+  it('is not shown when it depends on the cost', () => {
+    renderPage(2);
+    expect(noticeUnderBudget()).toBeNull();
+  });
+});
+
 describe('purchase request page 1 script', () => {
-  const setUpPage1 = () => {
-    renderPage(1);
+  const setUpPage1 = (purchasingArea = woodShop) => {
+    renderPage(1, [], undefined, purchasingArea);
     return document.getElementById('purchase-about-form') as HTMLFormElement;
   };
   const pick = (form: HTMLFormElement, id: string) => {
@@ -484,5 +512,76 @@ describe('purchase request page 1 script', () => {
     expect(otherAreas(form).hidden).toBe(false);
     pick(form, 'affects-no');
     expect(otherAreas(form).hidden).toBe(true);
+  });
+
+  describe('the proposal notice', () => {
+    const reasons = (form: HTMLFormElement) =>
+      [
+        ...form.querySelectorAll('[data-early-proposal] [data-early-proposal-reasons] p'),
+      ].map(paragraph => paragraph.textContent);
+    const tick = (form: HTMLFormElement, areaId: string) => {
+      form.querySelector<HTMLInputElement>(
+        `input[name="affectedAreaIds"][value="${areaId}"]`
+      )!.checked = true;
+      form.dispatchEvent(new Event('change'));
+    };
+
+    it('is not shown while nothing yet means a proposal', () => {
+      expect(reasons(setUpPage1())).toStrictEqual([]);
+    });
+
+    it('appears as soon as it says it presents a safety risk, and goes when it says not', () => {
+      const form = setUpPage1();
+      pick(form, 'risk-yes');
+      expect(reasons(form)).toStrictEqual(
+        earlyProposalReasons({
+          isMemberPaidConsumable: false,
+          affectedAreaNames: [],
+          healthAndSafetyRisk: true,
+          yearlyBudgetPence: woodShop.yearlyBudgetPence,
+          spentThisYearPence: woodShop.spentThisYearPence,
+        })
+      );
+      pick(form, 'risk-no');
+      expect(reasons(form)).toStrictEqual([]);
+    });
+
+    it('names the other areas it affects exactly as the server does', () => {
+      const form = setUpPage1();
+      pick(form, 'affects-yes');
+      tick(form, '66666666-6666-4666-8666-666666666666');
+      tick(form, '77777777-7777-4777-8777-777777777777');
+      expect(reasons(form)).toStrictEqual(
+        earlyProposalReasons({
+          isMemberPaidConsumable: false,
+          affectedAreaNames: ['Metal Shop', 'Textiles'],
+          healthAndSafetyRisk: false,
+          yearlyBudgetPence: woodShop.yearlyBudgetPence,
+          spentThisYearPence: woodShop.spentThisYearPence,
+        })
+      );
+    });
+
+    describe('when the yearly budget is already used up', () => {
+      it('says so exactly as the server does', () => {
+        const form = setUpPage1(spentUp);
+        expect(reasons(form)).toStrictEqual(
+          earlyProposalReasons({
+            isMemberPaidConsumable: false,
+            affectedAreaNames: [],
+            healthAndSafetyRisk: false,
+            yearlyBudgetPence: spentUp.yearlyBudgetPence,
+            spentThisYearPence: spentUp.spentThisYearPence,
+          })
+        );
+        expect(reasons(form)).toHaveLength(1);
+      });
+
+      it('is not shown for a consumable members pay for', () => {
+        const form = setUpPage1(spentUp);
+        pick(form, 'consumable-yes');
+        expect(reasons(form)).toStrictEqual([]);
+      });
+    });
   });
 });

@@ -8,7 +8,7 @@ import {
   TrainingRow,
 } from '../../../src/queries/equipment-people/construct-view-model';
 import {arbitraryUser} from '../../types/user.helper';
-import {getRightOrFail} from '../../helpers';
+import {getRightOrFail, insertRecurlySubscription} from '../../helpers';
 import {
   TestFramework,
   initTestFramework,
@@ -167,14 +167,43 @@ describe('searching for a member on the quiz-results page', () => {
     expect(rows[0].kind).toBe('unknown');
   });
 
+  // Recurly can fail to match a genuine member, so somebody it calls lapsed
+  // is folded away rather than lost - and can still be found and trained.
+  describe('a member Recurly says has lapsed', () => {
+    beforeEach(async () => {
+      await insertRecurlySubscription(framework.extDB, {
+        email: passed.email,
+        hasActiveSubscription: false,
+      });
+    });
+
+    it('leaves the queue for the hidden list', async () => {
+      const model = await view(O.none);
+
+      expect(memberNumbersOf(model.waiting)).not.toContain(passed.memberNumber);
+      expect(memberNumbersOf(model.hiddenAsInactive)).toStrictEqual([
+        passed.memberNumber,
+      ]);
+    });
+
+    it('still shows as having passed when searched for', async () => {
+      const [row] = await resultsFor(String(passed.memberNumber));
+
+      expect(row.kind === 'member' && row.standing.kind).toBe('passed');
+    });
+  });
+
   describe('the waiting list', () => {
-    it('holds the known passes and the unmatched ones together, newest first', async () => {
+    // The list is a queue: whoever passed first has waited longest and goes
+    // first. The known pass (2026-09-10) predates the unmatched one
+    // (2026-09-12).
+    it('holds the known passes and the unmatched ones together, longest-waiting first', async () => {
       const waiting = (await view(O.none)).waiting;
 
-      expect(waiting.map(row => row.kind)).toStrictEqual(['unknown', 'member']);
+      expect(waiting.map(row => row.kind)).toStrictEqual(['member', 'unknown']);
       expect(memberNumbersOf(waiting)).toStrictEqual([
-        'unknown',
         passed.memberNumber,
+        'unknown',
       ]);
     });
 

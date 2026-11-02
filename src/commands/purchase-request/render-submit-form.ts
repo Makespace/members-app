@@ -23,7 +23,10 @@ import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import {UUID} from 'io-ts-types';
 import {html, Html, joinHtml, safe, sanitizeString} from '../../types/html';
-import {Classification} from '../../purchasing/classify-purchase';
+import {
+  Classification,
+  earlyProposalReasons,
+} from '../../purchasing/classify-purchase';
 import {
   Purchase,
   TypedItem,
@@ -525,6 +528,8 @@ const renderAreaRadio =
         id="area-${purchasingArea.id}"
         value="${purchasingArea.id}"
         data-area-ids="${safe(purchasingArea.areaIds.join(' '))}"
+        data-budget-pence="${purchasingArea.yearlyBudgetPence}"
+        data-spent-pence="${purchasingArea.spentThisYearPence}"
         required
         ${checkedIf(answers.purchasingAreaId === purchasingArea.id)}
       />
@@ -660,6 +665,40 @@ const renderQuestions = (viewModel: PurchaseRequestFormViewModel) => html`
     </fieldset>
 `;
 
+// Sometimes it's clear a proposal is needed before any costs are given; see
+// earlyProposalReasons. Until the consumable question is answered, the
+// budget being used up isn't a reason yet.
+const earlyReasonsFor = (viewModel: PurchaseRequestFormViewModel) =>
+  pipe(
+    viewModel.chosen,
+    O.match(
+      () => [],
+      purchasingArea =>
+        earlyProposalReasons({
+          isMemberPaidConsumable:
+            viewModel.answers.isMemberPaidConsumable !== 'false',
+          affectedAreaNames: viewModel.affectedAreaNames,
+          healthAndSafetyRisk: viewModel.answers.healthAndSafetyRisk === 'true',
+          yearlyBudgetPence: purchasingArea.yearlyBudgetPence,
+          spentThisYearPence: purchasingArea.spentThisYearPence,
+        })
+    )
+  );
+
+const renderEarlyProposal = (reasons: ReadonlyArray<string>) => html`
+  <div class="purchase-verdict purchase-verdict--proposal">
+    <span class="purchase-request__hint text-sm">Whatever it costs</span>
+    <span><span class="tag tag--red">Proposal needed</span></span>
+    <h2>You'll need to write a proposal</h2>
+    <div data-early-proposal-reasons>
+      ${joinHtml(reasons.map(reason => html`<p>${sanitizeString(reason)}</p>`))}
+    </div>
+  </div>
+`;
+
+const renderEarlyProposalIfNeeded = (reasons: ReadonlyArray<string>) =>
+  reasons.length > 0 ? renderEarlyProposal(reasons) : html``;
+
 const renderAboutPage = (viewModel: PurchaseRequestFormViewModel) => html`
   <form
     method="get"
@@ -712,6 +751,12 @@ ${sanitizeString(viewModel.answers.justification)}</textarea
       >
     </div>
     ${renderQuestions(viewModel)}
+    <div data-early-proposal aria-live="polite">
+      ${renderEarlyProposalIfNeeded(earlyReasonsFor(viewModel))}
+    </div>
+    <template data-early-proposal-template
+      >${renderEarlyProposal([])}</template
+    >
     ${renderNext(viewModel)}
   </form>
   ${aboutScript}
@@ -926,6 +971,7 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
       viewModel.chosen,
       O.match(() => html``, renderBudget(viewModel.budgetYear))
     )}
+    ${renderEarlyProposalIfNeeded(earlyReasonsFor(viewModel))}
     ${renderBuyDirectly(viewModel)}
     <div class="purchase-request__stack" data-itemised>
       <h2>What are you buying, and where from?</h2>
@@ -1678,6 +1724,66 @@ const aboutScript = html`
       var form = document.getElementById('purchase-about-form');
       if (!form) return;
       var otherAreas = form.querySelector('[data-other-areas]');
+      var notice = form.querySelector('[data-early-proposal]');
+      var noticeTemplate = form.querySelector('[data-early-proposal-template]');
+
+      function money(amount) {
+        return new Intl.NumberFormat('en-GB', {style: 'currency', currency: 'GBP'}).format(amount / 100);
+      }
+      function listOf(names) {
+        return names.length < 2
+          ? names.join('')
+          : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
+      }
+      function answer(name) {
+        var checked = form.querySelector('input[name="' + name + '"]:checked');
+        return checked ? checked.value : '';
+      }
+
+      // Mirrors earlyProposalReasons (src/purchasing/classify-purchase.ts),
+      // explanations included - the tests check they say the same.
+      function earlyReasons(chosen) {
+        var reasons = [];
+        if (!chosen) return reasons;
+        var budget = Number(chosen.dataset.budgetPence);
+        var spent = Number(chosen.dataset.spentPence);
+        if (answer('isMemberPaidConsumable') === 'false' && spent >= budget) {
+          reasons.push("This year's spending is already " + money(spent) +
+            ', using up the yearly budget of ' + money(budget) +
+            ', so anything more from it needs a proposal.');
+        }
+        var names = answer('affectsOtherAreas') === 'true'
+          ? Array.prototype.map.call(
+              otherAreas.querySelectorAll('input[name="affectedAreaIds"]:checked'),
+              function (box) { return box.parentNode.querySelector('[data-area-name]').textContent; }
+            )
+          : [];
+        if (names.length) {
+          reasons.push('It affects ' + listOf(names) +
+            ' too, so it needs a proposal giving their owners a chance to give their input.');
+        }
+        if (answer('healthAndSafetyRisk') === 'true') {
+          reasons.push('It presents a moderate to high health and safety risk, so it needs a proposal with a risk assessment.');
+        }
+        return reasons;
+      }
+
+      function showNotice(chosen) {
+        var reasons = earlyReasons(chosen);
+        if (!reasons.length) {
+          notice.innerHTML = '';
+          return;
+        }
+        notice.innerHTML = noticeTemplate.innerHTML;
+        var list = notice.querySelector('[data-early-proposal-reasons]');
+        list.innerHTML = '';
+        reasons.forEach(function (reason) {
+          var paragraph = document.createElement('p');
+          paragraph.textContent = reason;
+          list.appendChild(paragraph);
+        });
+      }
+
       function update() {
         var affects = form.querySelector('input[name="affectsOtherAreas"]:checked');
         otherAreas.hidden = !(affects && affects.value === 'true');
@@ -1688,6 +1794,7 @@ const aboutScript = html`
           item.hidden = isOwn;
           if (isOwn) item.querySelector('input').checked = false;
         });
+        showNotice(chosen);
       }
       form.addEventListener('change', update);
       update();

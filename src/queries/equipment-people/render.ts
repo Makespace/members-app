@@ -277,16 +277,40 @@ const searchBox = (viewModel: ViewModel) => html`
 
 // The search filters the one table: with something typed, the table holds
 // the matches and a line above it says so and offers everybody back.
+// Recurly sometimes fails to match a member who is in fact subscribed, so
+// those it calls lapsed are folded away below the queue rather than dropped,
+// and can still be marked as trained.
+const hiddenAsInactive = (viewModel: ViewModel): Html =>
+  viewModel.hiddenAsInactive.length === 0
+    ? html``
+    : html`<details class="waiting__hidden">
+        <summary>
+          ${safe(String(viewModel.hiddenAsInactive.length))} more
+          ${viewModel.hiddenAsInactive.length === 1
+            ? safe('member')
+            : safe('members')}
+          hidden as inactive in Recurly
+        </summary>
+        <p>
+          Recurly shows no active subscription for them, so they are left out
+          of the queue. That match is not always right - a subscription under
+          an email address the app does not know looks the same - so check
+          before passing anybody over.
+        </p>
+        ${trainingTable(viewModel, viewModel.hiddenAsInactive, html``)}
+      </details>`;
+
 const waitingOrMatches = (viewModel: ViewModel) =>
   pipe(
     viewModel.search,
     O.match(
       () =>
-        trainingTable(
+        html`${trainingTable(
           viewModel,
           viewModel.waiting,
           html`<p>No one is waiting for training</p>`
-        ),
+        )}
+        ${hiddenAsInactive(viewModel)}`,
       ({query, results}) => html`
         <p class="training-search__summary">
           ${results.length === SEARCH_RESULT_LIMIT

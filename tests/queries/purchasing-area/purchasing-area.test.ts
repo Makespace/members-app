@@ -77,6 +77,7 @@ describe('purchasing area page', () => {
         id: purchasingAreaId,
         name: 'Woodwork',
         yearlyBudgetPence: 200_000,
+        active: true,
       }),
       constructEvent('AreaAssignedToPurchasingArea')({
         actor: arbitraryActor(),

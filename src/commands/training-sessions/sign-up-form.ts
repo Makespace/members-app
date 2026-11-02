@@ -1,13 +1,22 @@
-import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
-import {html, Html, safe, toLoggedInContent} from '../../types/html';
+import {
+  html,
+  Html,
+  joinHtml,
+  safe,
+  sanitizeString,
+  toLoggedInContent,
+} from '../../types/html';
 import {Form} from '../../types/form';
 import {
   toTrainingSessionView,
   TrainingSessionView,
 } from '../../queries/shared-render/upcoming-training-sessions';
-import {constructViewModel as getTrainedViewModel} from '../../queries/equipment-training/construct-view-model';
+import {
+  Readiness,
+  readinessFor,
+} from '../../queries/equipment-training/construct-view-model';
 import {isCancelled, sessionContextFromQuery} from './session-context';
 import {SignUpStatus, signUpStatus} from '../../training-sessions/sign-ups';
 import {backToTraining, renderSessionSummary} from './render-session-summary';
@@ -16,9 +25,42 @@ type ViewModel = {
   equipment: {id: string; name: string};
   session: TrainingSessionView;
   status: SignUpStatus;
-  // Not passed the quiz and not trained already: worth saying before they
-  // take a place, without stopping them.
-  quizWarning: boolean;
+  // Anything that should come first - other machines, or the quiz - is worth
+  // saying before they take a place, without stopping them.
+  readiness: Readiness;
+};
+
+const notReadyWarning = (readiness: Readiness): Html => {
+  switch (readiness.tag) {
+    case 'ready':
+      return html``;
+    case 'needs-quiz':
+      return html`<div class="training-step__state training-step__state--todo">
+        <p>
+          <strong>You have not passed the online quiz yet.</strong> Please pass
+          it before the training: the trainer will expect you to know the
+          material.
+        </p>
+      </div>`;
+    case 'needs-prerequisites':
+      return html`<div class="training-step__state training-step__state--todo">
+        <p>
+          <strong
+            >You are not trained on
+            ${joinHtml(
+              readiness.missing.map(
+                (machine, index) =>
+                  html`${index === 0 ? safe('') : safe(', ')}${sanitizeString(
+                    machine.name
+                  )}`
+              )
+            )}
+            yet.</strong
+          >
+          This training builds on it, so please be trained on it first.
+        </p>
+      </div>`;
+  }
 };
 
 const signUpHere = (viewModel: ViewModel): Html => {
@@ -26,15 +68,7 @@ const signUpHere = (viewModel: ViewModel): Html => {
   switch (viewModel.status) {
     case 'open':
       return html`
-        ${viewModel.quizWarning
-          ? html`<div class="training-step__state training-step__state--todo">
-              <p>
-                <strong>You have not passed the online quiz yet.</strong> Please
-                pass it before the training: the trainer will expect you to know
-                the material.
-              </p>
-            </div>`
-          : html``}
+        ${notReadyWarning(viewModel.readiness)}
         <form
           action="/training-sessions/sign-up?next=${safe(
             encodeURIComponent(`/equipment/${viewModel.equipment.id}/training`)
@@ -82,11 +116,7 @@ const constructForm: Form<ViewModel>['constructForm'] =
     pipe(
       sessionContextFromQuery(readModel, input),
       TE.fromEither,
-      TE.bindTo('context'),
-      TE.bind('progress', ({context}) =>
-        getTrainedViewModel(deps, user)(context.equipment.id)
-      ),
-      TE.map(({context, progress}) => ({
+      TE.map(context => ({
         equipment: {id: context.equipment.id, name: context.equipment.name},
         session: toTrainingSessionView(
           readModel,
@@ -97,8 +127,7 @@ const constructForm: Form<ViewModel>['constructForm'] =
           user.memberNumber,
           new Date()
         ),
-        quizWarning:
-          progress.quiz.tag !== 'passed' && O.isNone(progress.trainedSince),
+        readiness: readinessFor(deps, user, context.equipment),
       }))
     );
 

@@ -422,6 +422,7 @@ export const purchasingAreasTable = defineTable(
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       yearlyBudgetPence INTEGER NOT NULL,
+      active INTEGER NOT NULL,
       createdAt INTEGER NOT NULL
     )
   `,
@@ -430,6 +431,7 @@ export const purchasingAreasTable = defineTable(
     id: text('id').notNull().primaryKey().$type<UUID>(),
     name: text('name').notNull(),
     yearlyBudgetPence: integer('yearlyBudgetPence').notNull(),
+    active: integer('active', {mode: 'boolean'}).notNull(),
     createdAt: integer('createdAt', {mode: 'timestamp_ms'}).notNull(),
   }
 );
@@ -1084,5 +1086,64 @@ export const trainingSessionNotificationsTable = defineTable(
   'trainingSessionNotifications' as const,
   {
     notifiedEventIndex: integer('notifiedEventIndex').notNull().primaryKey(),
+  }
+);
+
+// What a member needs before a machine's in-person training. A machine with
+// no row needs its quiz and nothing else.
+export const equipmentTrainingRequirementsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS equipmentTrainingRequirements (
+      equipmentId TEXT PRIMARY KEY,
+      quizRequired INTEGER NOT NULL
+    )
+  `,
+  'equipmentTrainingRequirements' as const,
+  {
+    equipmentId: text('equipmentId').notNull().primaryKey().$type<UUID>(),
+    quizRequired: integer('quizRequired', {mode: 'boolean'}).notNull(),
+  }
+);
+
+// The machines a member must already be trained on first, one row each.
+export const equipmentTrainingPrerequisitesTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS equipmentTrainingPrerequisites (
+      equipmentId TEXT NOT NULL,
+      prerequisiteEquipmentId TEXT NOT NULL,
+      PRIMARY KEY (equipmentId, prerequisiteEquipmentId)
+    )
+  `,
+  'equipmentTrainingPrerequisites' as const,
+  {
+    equipmentId: text('equipmentId').notNull().$type<UUID>(),
+    prerequisiteEquipmentId: text('prerequisiteEquipmentId')
+      .notNull()
+      .$type<UUID>(),
+  }
+);
+
+// Members who have told a machine's trainers they would like to be trained on
+// it: when they first said so, and when they last did.
+export const trainingInterestTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS trainingInterest (
+      equipmentId TEXT NOT NULL,
+      memberNumber INTEGER NOT NULL,
+      firstExpressedAt INTEGER NOT NULL,
+      lastExpressedAt INTEGER NOT NULL,
+      PRIMARY KEY (equipmentId, memberNumber)
+    )
+  `,
+  'trainingInterest' as const,
+  {
+    equipmentId: text('equipmentId').notNull().$type<UUID>(),
+    memberNumber: integer('memberNumber').notNull(),
+    firstExpressedAt: integer('firstExpressedAt', {
+      mode: 'timestamp_ms',
+    }).notNull(),
+    lastExpressedAt: integer('lastExpressedAt', {
+      mode: 'timestamp_ms',
+    }).notNull(),
   }
 );

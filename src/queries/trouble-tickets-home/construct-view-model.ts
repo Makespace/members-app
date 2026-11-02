@@ -8,6 +8,7 @@ import {
 } from '../../types/failure-with-status';
 import {User} from '../../types';
 import {Dependencies} from '../../dependencies';
+import {SharedReadModel} from '../../read-models/shared-state';
 import {allMemberNumbers} from '../../read-models/shared-state/return-types';
 import {equipmentSlug, toSlug} from '../../templates/slug';
 import {ticketsVisibleTo} from '../trouble-tickets/management-tickets';
@@ -15,7 +16,7 @@ import {ticketsVisibleTo} from '../trouble-tickets/management-tickets';
 // The page can be pointed at one machine or one area - a QR code on the
 // machine itself, or on an area's noticeboard - so that reporting a problem
 // takes one tap and arrives already attached to the right thing.
-type Focus = {
+export type Focus = {
   kind: 'equipment' | 'area';
   // The real id, which is what tickets are matched against.
   id: string;
@@ -39,10 +40,14 @@ export type ViewModel = {
   canSeeBoard: boolean;
 };
 
-export const constructViewModel =
-  (deps: Dependencies, params: {equipmentId?: string; areaId?: string}) =>
-  (user: User): TE.TaskEither<FailureWithStatus, ViewModel> => {
-    const rm = deps.sharedReadModel;
+type FocusParams = {equipmentId?: string; areaId?: string};
+
+// What a QR code's link names, if anything. Needs nobody to be logged in: the
+// page shows the same machine to everybody, logged in or not.
+export const focusFor = (
+  rm: SharedReadModel,
+  params: FocusParams
+): O.Option<Focus> => {
     const areaNames = new Map(
       rm.area.getAllMinimal().map(area => [area.id as string, area.name])
     );
@@ -99,10 +104,17 @@ export const constructViewModel =
         )
       )
     );
-    const focus: O.Option<Focus> = pipe(
+    return pipe(
       equipmentFocus,
       O.alt(() => areaFocus)
     );
+};
+
+export const constructViewModel =
+  (deps: Dependencies, params: FocusParams) =>
+  (user: User): TE.TaskEither<FailureWithStatus, ViewModel> => {
+    const rm = deps.sharedReadModel;
+    const focus = focusFor(rm, params);
     return pipe(
       rm.members.getByMemberNumber(user.memberNumber),
       TE.fromOption(

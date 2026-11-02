@@ -23,6 +23,9 @@ const renderRow = (purchasingArea: PurchasingArea) => html`
       <a href="/purchasing-areas/${purchasingArea.id}"
         >${sanitizeString(purchasingArea.name)}</a
       >
+      ${purchasingArea.active
+        ? html``
+        : html`<span class="tag tag--grey">Not active</span>`}
     </td>
     <td>
       ${purchasingArea.areas.length === 0

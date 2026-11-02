@@ -70,6 +70,7 @@ describe('purchasers', () => {
             id: purchasingAreaId,
             name: 'Craft & Art',
             yearlyBudgetPence: 0,
+            active: true,
           }),
           constructEvent('AreaAssignedToPurchasingArea')({
             actor: arbitraryActor(),
@@ -175,6 +176,7 @@ describe('purchasers', () => {
           id: purchasingAreaId,
           name: 'Craft & Art',
           yearlyBudgetPence: 0,
+          active: true,
         })
       );
     });

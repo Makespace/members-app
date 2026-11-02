@@ -25,6 +25,7 @@ const process: Command<CreatePurchasingArea>['process'] = input =>
             id: input.command.id,
             name: input.command.name,
             yearlyBudgetPence: input.command.yearlyBudget,
+            active: false,
             actor: input.command.actor,
           })
         )

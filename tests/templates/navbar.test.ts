@@ -90,9 +90,13 @@ describe('navBar', () => {
     const page = renderNav(false, areas);
 
     expect(page.textContent).toContain('Areas & tools');
-    expect(page.textContent).toContain('About this app');
-    expect(page.textContent).toContain('Updated');
+    expect(page.textContent).toContain('Get trained');
     expect(page.textContent).toContain('Community');
+    expect(
+      page
+        .querySelector('[data-page-nav-panel="sites"] a[href="/about"]')
+        ?.textContent?.trim()
+    ).toStrictEqual('About this app');
     expect(page.textContent).toContain('All areas');
     expect(page.textContent).toContain('Log out');
   });
@@ -133,8 +137,6 @@ describe('navBar', () => {
     expect(toggle?.querySelector('.page-nav__mobile-menu-close')).not.toBeNull();
   });
 
-  // Asserts on the link itself rather than the word: the navbar also carries
-  // the newest change-log headline, which may legitimately mention admins.
   it('renders admin only for super users', () => {
     expect(renderNav(false, areas).querySelector('.page-nav__admin')).toBeNull();
     const adminLink = renderNav(true, areas).querySelector<HTMLAnchorElement>(
@@ -143,6 +145,19 @@ describe('navBar', () => {
     expect(adminLink).not.toBeNull();
     expect(adminLink?.getAttribute('href')).toStrictEqual('/admin');
     expect(adminLink?.textContent).toContain('Admin');
+  });
+
+  // Same page either way: an owner who is also a super-user finds the admin
+  // links below their own areas there.
+  it.each([
+    [false, 'Owner'],
+    [true, 'Owner'],
+  ])('labels it Owner for an owner (super-user: %s)', (isSuperUser, label) => {
+    const link = renderNav(isSuperUser, areas, true).querySelector(
+      '.page-nav__admin'
+    );
+    expect(link?.textContent?.trim()).toStrictEqual(label);
+    expect(link?.getAttribute('href')).toStrictEqual('/admin');
   });
 
   // Everyone can report a problem, so everyone gets the link; the landing
@@ -250,6 +265,7 @@ describe('navBar', () => {
     }));
 
     expect(links).toStrictEqual([
+      {label: 'About this app', href: '/about'},
       {
         label: 'Equipment website',
         href: 'https://equipment.makespace.org',

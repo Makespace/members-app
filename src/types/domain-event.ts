@@ -190,6 +190,26 @@ const PurchasingAreaCreated = defineEvent('PurchasingAreaCreated', {
   id: tt.UUID,
   name: t.string,
   yearlyBudgetPence: t.number,
+  // Whether it takes purchase requests and counts its budget as live. New
+  // ones start inactive so they can be set up first; ones created before
+  // activation existed were already in use, so they count as active.
+  active: tt.withFallback(t.boolean, true),
+});
+
+// A super user turns a purchasing area on or off. Only an active one takes
+// new purchase requests; requests already made carry on either way.
+const PurchasingAreaActivated = defineEvent('PurchasingAreaActivated', {
+  purchasingAreaId: tt.UUID,
+});
+
+const PurchasingAreaDeactivated = defineEvent('PurchasingAreaDeactivated', {
+  purchasingAreaId: tt.UUID,
+});
+
+// Only one with no purchase requests or recorded spending can be removed, so
+// nothing is left pointing at it. Its areas and purchasers go with it.
+const PurchasingAreaRemoved = defineEvent('PurchasingAreaRemoved', {
+  purchasingAreaId: tt.UUID,
 });
 
 const PurchasingAreaRenamed = defineEvent('PurchasingAreaRenamed', {
@@ -595,6 +615,27 @@ const TrainingSessionScheduled = defineEvent('TrainingSessionScheduled', {
   signUpsCloseHoursBefore: tt.withFallback(t.number, 0),
 });
 
+// What a member needs before a machine's in-person training: whether its
+// online quiz must be passed first, and which other machines they must
+// already be trained on (the Trotec after the HPC). Replaces whatever was set
+// before; a machine with nothing set needs its quiz and nothing else.
+const EquipmentTrainingRequirementsSet = defineEvent(
+  'EquipmentTrainingRequirementsSet',
+  {
+    equipmentId: tt.UUID,
+    quizRequired: t.boolean,
+    prerequisiteEquipmentIds: t.readonlyArray(tt.UUID),
+  }
+);
+
+// A member telling a machine's trainers they would like to be trained on it.
+// Said again whenever they like, so the latest time shows whether the wish is
+// still current.
+const TrainingInterestExpressed = defineEvent('TrainingInterestExpressed', {
+  equipmentId: tt.UUID,
+  memberNumber: t.number,
+});
+
 // A member taking a place on a training session themselves.
 const TrainingSessionSignedUp = defineEvent('TrainingSessionSignedUp', {
   sessionId: tt.UUID,
@@ -901,6 +942,9 @@ export const events = [
   OwnerAdded,
   OwnerRemoved,
   PurchasingAreaCreated,
+  PurchasingAreaActivated,
+  PurchasingAreaDeactivated,
+  PurchasingAreaRemoved,
   PurchasingAreaRenamed,
   PurchasingAreaBudgetSet,
   PurchasingAreaYearBudgetSet,
@@ -971,6 +1015,8 @@ export const events = [
   TrainingSessionSignUpCancelled,
   TrainingSessionCancelled,
   TrainingSessionNotificationSent,
+  EquipmentTrainingRequirementsSet,
+  TrainingInterestExpressed,
 ];
 
 export const DomainEvent = t.union([
@@ -994,6 +1040,9 @@ export const DomainEvent = t.union([
   OwnerAdded.codec,
   OwnerRemoved.codec,
   PurchasingAreaCreated.codec,
+  PurchasingAreaActivated.codec,
+  PurchasingAreaDeactivated.codec,
+  PurchasingAreaRemoved.codec,
   PurchasingAreaRenamed.codec,
   PurchasingAreaBudgetSet.codec,
   PurchasingAreaYearBudgetSet.codec,
@@ -1064,6 +1113,8 @@ export const DomainEvent = t.union([
   TrainingSessionSignUpCancelled.codec,
   TrainingSessionCancelled.codec,
   TrainingSessionNotificationSent.codec,
+  EquipmentTrainingRequirementsSet.codec,
+  TrainingInterestExpressed.codec,
 ]);
 
 export const StoredDomainEvent = t.intersection([

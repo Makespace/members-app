@@ -2621,40 +2621,123 @@ body:has(.tt-wrapper) {
 
 
 
-/* The About button carries a one-line freshness note under its label. */
-.page-nav__action--about {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.1rem;
-}
-
-.page-nav__about-freshness {
-  font-size: 0.7rem;
-  color: var(--grey-color);
-  /* Contribute no intrinsic width, then stretch to the label's width, so
-     the button is sized by "About this app" and the note ellipsizes. */
-  width: 0;
-  min-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* In the mobile menu every control is full-width and centred; the About
-   button's stacked lines follow suit. */
-@media screen and (max-width: 48rem) {
-  .page-nav__action--about {
-    align-items: center;
-  }
-
-  .page-nav__about-freshness {
-    text-align: center;
-  }
-}
-
 /* Breathing room between the last category radio and whatever follows it
    (typically the submit button). */
+/* The Owner page (queries/admin): a ledger, one row per area and per machine
+   it holds that the owner trains on. Rows share one grid so the numbers line
+   up down the page; hairlines part the areas; links are quiet text; zeros are
+   grey so the counts that need looking at stand out. */
+.owner-ledger__intro {
+  color: var(--grey-color);
+}
+
+.owner-ledger__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 4.5rem 7rem 4.5rem 5rem;
+  gap: 0.25rem 0.75rem;
+  align-items: baseline;
+}
+
+.owner-ledger__head {
+  font-size: 0.85rem;
+  color: var(--grey-color);
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.owner-ledger__area {
+  padding: 0.9rem 0 0.6rem;
+  border-bottom: 1px solid color-mix(in oklch, white 55%, var(--border-color));
+}
+
+.owner-ledger__area-name {
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.owner-ledger__row--machine {
+  margin-top: 0.75rem;
+  padding-left: 1.25rem;
+}
+
+.owner-ledger__caption {
+  color: var(--grey-color);
+  font-size: 0.85rem;
+}
+
+.owner-ledger__links {
+  font-size: 0.9rem;
+  margin-top: 0.15rem;
+}
+
+.owner-ledger__number {
+  font-variant-numeric: tabular-nums;
+}
+
+.owner-ledger__count {
+  font-size: 1.3rem;
+  line-height: 1.2;
+}
+
+.owner-ledger__number--none {
+  color: color-mix(in oklch, white 45%, var(--grey-color));
+}
+
+.owner-ledger__aside {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--grey-color);
+}
+
+/* Said once in the heading on a wide screen; beside each number where the
+   row stacks. */
+.owner-ledger__label {
+  display: none;
+}
+
+@media screen and (max-width: 48rem) {
+  .owner-ledger__head {
+    display: none;
+  }
+
+  /* The name across the top, then the numbers side by side beneath it. */
+  .owner-ledger__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 1rem;
+  }
+
+  .owner-ledger__name {
+    flex-basis: 100%;
+  }
+
+  /* Each number carries its own label here. */
+  .owner-ledger__row.owner-ledger__head {
+    display: none;
+  }
+
+  .owner-ledger__number:empty {
+    display: none;
+  }
+
+  .owner-ledger__count {
+    font-size: 1.1rem;
+  }
+
+  .owner-ledger__label {
+    display: inline;
+    margin-left: 0.25rem;
+    color: var(--grey-color);
+    font-size: 0.85rem;
+  }
+
+  .owner-ledger__aside {
+    display: inline;
+    margin-left: 0.35rem;
+  }
+}
+
 .eq-cat-choices {
   margin-bottom: 1.5rem;
 }
@@ -2904,6 +2987,44 @@ body:has(.tt-wrapper) {
   max-width: 48rem;
   margin: 0 auto;
   padding: 1rem;
+}
+
+/* A step down from a button: "log in to ..." and "... without logging in"
+   are the way round, not the thing the page is for. Orange outline, the
+   colour the app uses for "this asks something of you", and not filled. */
+a.button-outline,
+a.button-outline:visited,
+button.button-outline {
+  display: inline-block;
+  padding: 8px 18px;
+  border: 2px solid #b35f00;
+  border-radius: 2px;
+  background: transparent;
+  color: #8a4900;
+  text-decoration: none;
+  font-size: 110%;
+  cursor: pointer;
+}
+
+a.button-outline:hover,
+button.button-outline:hover {
+  background: color-mix(in oklch, white 90%, #b35f00);
+  color: #6e3a00;
+}
+
+.log-in__without {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.tag--meetup {
+  background-color: #f6dbe0;
+  color: #9b1d36;
+  max-width: none;
+  margin-left: 0.4rem;
 }
 
 .tt-claim__summary {
@@ -3762,23 +3883,46 @@ ul.sign__points li + li {
 
 /* The two steps to being trained on a machine: numbered, because the order
    matters - the quiz comes before anyone will book you a practical. */
-.training-steps {
+/* ol.: the reset's ol[class] would otherwise win and close the gap above. */
+ol.training-steps {
   list-style: none;
-  margin: 0;
+  margin: 2rem 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2.5rem;
 }
 
-.training-step {
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1rem 1.25rem;
+/* No box around a step: its numbered heading says it is one, and a single
+   hairline with room either side is all that is needed to part it from the
+   last. */
+.training-step + .training-step {
+  border-top: 1px solid var(--border-color);
+  padding-top: 2.5rem;
 }
 
 .training-step h2 {
   margin-top: 0;
+}
+
+/* The reset takes every margin away, so the parts of a step are spaced here:
+   an even beat between them, a wider one before a subheading so it starts a
+   new part, and a short one under it so it stays with what it heads. */
+.training-step > * + * {
+  margin-block-start: 1rem;
+}
+
+.training-step > h3 {
+  margin-block-start: 1.75rem;
+}
+
+.training-step > h3 + * {
+  margin-block-start: 0.5rem;
+}
+
+.training-trainers__note {
+  margin-block-start: 0.75rem;
+  color: var(--grey-color);
 }
 
 /* Where the member stands on this step, said in one sentence. */
@@ -3931,12 +4075,99 @@ ul.sign__points li + li {
   gap: 0.35rem;
 }
 
+/* On a machine's get-trained page each session is its own card, faintly
+   edged, so a list of several reads as separate choices. */
+.training-step .upcoming-trainings {
+  gap: 0.75rem;
+}
+
+.training-step .upcoming-trainings > li {
+  border: 1px solid color-mix(in oklch, white 45%, var(--border-color));
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+}
+
 .upcoming-trainings__empty {
   color: var(--grey-color);
 }
 
 .training-description p {
   margin: 0.25rem 0;
+}
+
+/* Who is waiting for training on a machine (equipment-trainings). */
+.waiting__summary {
+  color: var(--grey-color);
+}
+
+table.waiting-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.waiting-table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--grey-color);
+  font-size: 0.9rem;
+  padding: 0 1rem 0.3rem 0;
+}
+
+.waiting-table td {
+  vertical-align: top;
+  padding: 0.45rem 1rem 0.45rem 0;
+  border-top: 1px solid color-mix(in oklch, white 75%, var(--border-color));
+}
+
+/* Members Recurly calls lapsed, folded away under a waiting list. */
+details.waiting__hidden {
+  margin-top: 1rem;
+}
+
+details.waiting__hidden > summary {
+  cursor: pointer;
+  color: var(--grey-color);
+}
+
+details.waiting__hidden[open] > summary {
+  margin-bottom: 0.5rem;
+}
+
+.waiting__number,
+.waiting__since,
+.waiting__none {
+  color: var(--grey-color);
+}
+
+.waiting__number {
+  margin-left: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.waiting__since {
+  font-size: 0.85rem;
+}
+
+.trainings__subheading {
+  margin-top: 1rem;
+}
+
+ul.trainings__meetup {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+/* On a machine's training page: tell the trainers you would like training. */
+.training-interest {
+  border-left: 3px solid color-mix(in oklch, white 40%, var(--border-color));
+  padding: 0.25rem 0 0.25rem 1rem;
+}
+
+.training-interest__form {
+  margin-top: 0.5rem;
 }
 
 .training-sessions-table td {
@@ -3963,6 +4194,210 @@ ul.sign__points li + li {
   margin-top: 0.4rem;
 }
 
+/* The Get trained calendar (queries/upcoming-trainings): one row of the same
+   shape per training, columns aligned without rules, colour only in small
+   spots. --app-spot and --meetup-spot are the two sources. */
+/* Where a training is arranged: the Makespace logo, or Meetup's. */
+img.source-icon {
+  display: inline-block;
+  width: 0.95rem;
+  height: 0.95rem;
+  margin-right: 0.35rem;
+  vertical-align: -0.12rem;
+}
+
+.training-legend {
+  color: var(--grey-color);
+  font-size: 0.95rem;
+}
+
+.training-legend .source-icon:not(:first-child) {
+  margin-left: 1rem;
+}
+
+/* The six weeks ahead, a week to a line. */
+table.training-overview {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 30rem;
+  table-layout: fixed;
+  font-size: 0.85rem;
+}
+
+.training-overview th {
+  color: var(--grey-color);
+  font-weight: 400;
+  text-align: left;
+  padding: 0 0.3rem 0.2rem;
+}
+
+.training-overview td {
+  vertical-align: top;
+  height: 2.4rem;
+  padding: 0.2rem 0.3rem;
+  border-top: 1px solid color-mix(in oklch, white 70%, var(--border-color));
+}
+
+.training-overview td a {
+  display: block;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+}
+
+.training-overview td .source-icon {
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-right: 0.1rem;
+}
+
+.training-overview__date {
+  display: block;
+  color: var(--grey-color);
+  font-variant-numeric: tabular-nums;
+}
+
+.training-overview__past .training-overview__date {
+  color: color-mix(in oklch, white 55%, var(--grey-color));
+}
+
+.training-overview__today .training-overview__date {
+  color: var(--text-color);
+  font-weight: 700;
+}
+
+.training-day__heading {
+  font-size: 1.15rem;
+  margin: 1.75rem 0 0.25rem;
+}
+
+.training-day__when {
+  font-weight: 400;
+  color: var(--grey-color);
+  margin-left: 0.5rem;
+}
+
+ul.training-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Time | what | how full | what you can do. */
+.training-row {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr) 7.5rem 8.5rem;
+  gap: 0.25rem 1rem;
+  align-items: baseline;
+  padding: 0.55rem 0;
+}
+
+.training-row + .training-row {
+  border-top: 1px solid color-mix(in oklch, white 75%, var(--border-color));
+}
+
+.training-row__time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.training-row__area,
+.training-row__detail,
+.training-row__note {
+  color: var(--grey-color);
+}
+
+.training-row__area {
+  margin-left: 0.35rem;
+}
+
+.training-row__detail {
+  font-size: 0.95rem;
+}
+
+.training-row__description {
+  font-size: 0.9rem;
+  color: var(--grey-color);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.training-row__description .training-description p {
+  margin: 0;
+}
+
+.training-row__trained {
+  margin-left: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--green-darkened-color);
+  white-space: nowrap;
+}
+
+.training-row__capacity {
+  font-size: 0.9rem;
+  color: var(--grey-color);
+  font-variant-numeric: tabular-nums;
+}
+
+.capacity__dots {
+  display: block;
+  color: var(--text-color);
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.training-row__action {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.6rem;
+  align-items: baseline;
+}
+
+.training-row__action .button {
+  padding: 6px 14px;
+  font-size: 100%;
+}
+
+.training-row__note {
+  font-size: 0.85rem;
+}
+
+a.book-on-meetup {
+  white-space: nowrap;
+}
+
+a.button-outline--small {
+  padding: 4px 10px;
+  font-size: 95%;
+}
+
+.training-other {
+  margin-top: 2.5rem;
+}
+
+.training-other h2 {
+  font-size: 1.15rem;
+}
+
+@media screen and (max-width: 48rem) {
+  .training-row {
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+  }
+
+  .training-row__capacity,
+  .training-row__action {
+    grid-column: 2;
+  }
+
+  .capacity__dots {
+    display: inline;
+    margin-right: 0.4rem;
+  }
+}
+
 .training-session__yours {
   font-weight: 600;
 }
@@ -3975,6 +4410,22 @@ ul.sign__points li + li {
 .tag--cancelled {
   background-color: #f6d7d2;
   color: #942514;
+}
+
+.training-requirement-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.training-requirement-area {
+  font-size: 1rem;
+  margin: 0.75rem 0 0.25rem;
+}
+
+
+.training-filter {
+  color: var(--grey-color);
 }
 
 .eq-cards__actions {

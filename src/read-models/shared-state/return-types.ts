@@ -185,6 +185,9 @@ export type RecordedSpend = {
 };
 
 export type PurchasingArea = PurchasingAreaSummary & {
+  // Only an active purchasing area takes purchase requests; until a super
+  // user activates it, it is still being set up.
+  active: boolean;
   // This budget year's budget: the usual one, unless it has been set
   // differently for this year (e.g. extended).
   yearlyBudgetPence: number;

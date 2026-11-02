@@ -40,6 +40,9 @@ import {
   trainingSessionsTable,
   trainingSessionAttendeesTable,
   trainingSessionNotificationsTable,
+  equipmentTrainingRequirementsTable,
+  equipmentTrainingPrerequisitesTable,
+  trainingInterestTable,
 } from './state';
 import {signUpsCloseAt} from '../../training-sessions/sign-ups';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
@@ -1312,9 +1315,32 @@ const _updateState =
             id: event.id,
             name: event.name,
             yearlyBudgetPence: event.yearlyBudgetPence,
+            active: event.active,
             createdAt: event.recordedAt,
           })
           .run();
+        break;
+      }
+      case 'PurchasingAreaActivated':
+      case 'PurchasingAreaDeactivated': {
+        const rows = tx.update(purchasingAreasTable)
+          .set({active: event.type === 'PurchasingAreaActivated'})
+          .where(eq(purchasingAreasTable.id, event.purchasingAreaId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to change whether purchasing area ${event.purchasingAreaId} is active - unknown purchasing area`);
+        }
+        break;
+      }
+      case 'PurchasingAreaRemoved': {
+        const id = event.purchasingAreaId;
+        tx.delete(purchasingAreaAreasTable).where(eq(purchasingAreaAreasTable.purchasingAreaId, id)).run();
+        tx.delete(purchasersTable).where(eq(purchasersTable.purchasingAreaId, id)).run();
+        tx.delete(purchasingAreaYearBudgetsTable).where(eq(purchasingAreaYearBudgetsTable.purchasingAreaId, id)).run();
+        const rows = tx.delete(purchasingAreasTable).where(eq(purchasingAreasTable.id, id)).run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to remove purchasing area ${id} - unknown purchasing area`);
+        }
         break;
       }
       case 'PurchasingAreaRenamed': {
@@ -1645,6 +1671,51 @@ const _updateState =
           .values({notifiedEventIndex: event.notifiedEventIndex})
           .onConflictDoNothing()
           .run();
+        break;
+      }
+      case 'TrainingInterestExpressed': {
+        tx.insert(trainingInterestTable)
+          .values({
+            equipmentId: event.equipmentId,
+            memberNumber: event.memberNumber,
+            firstExpressedAt: event.recordedAt,
+            lastExpressedAt: event.recordedAt,
+          })
+          .onConflictDoUpdate({
+            target: [
+              trainingInterestTable.equipmentId,
+              trainingInterestTable.memberNumber,
+            ],
+            set: {lastExpressedAt: event.recordedAt},
+          })
+          .run();
+        break;
+      }
+      case 'EquipmentTrainingRequirementsSet': {
+        tx.insert(equipmentTrainingRequirementsTable)
+          .values({
+            equipmentId: event.equipmentId,
+            quizRequired: event.quizRequired,
+          })
+          .onConflictDoUpdate({
+            target: equipmentTrainingRequirementsTable.equipmentId,
+            set: {quizRequired: event.quizRequired},
+          })
+          .run();
+        tx.delete(equipmentTrainingPrerequisitesTable)
+          .where(
+            eq(
+              equipmentTrainingPrerequisitesTable.equipmentId,
+              event.equipmentId
+            )
+          )
+          .run();
+        for (const prerequisiteEquipmentId of event.prerequisiteEquipmentIds) {
+          tx.insert(equipmentTrainingPrerequisitesTable)
+            .values({equipmentId: event.equipmentId, prerequisiteEquipmentId})
+            .onConflictDoNothing()
+            .run();
+        }
         break;
       }
       default: {

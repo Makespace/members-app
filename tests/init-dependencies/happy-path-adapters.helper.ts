@@ -8,6 +8,11 @@ import {initSharedReadModel} from '../../src/read-models/shared-state';
 import * as libsqlClient from '@libsql/client';
 import { initExternalStateDB } from '../../src/sync-worker/external-state-db';
 import { Int } from 'io-ts';
+import {RecurlyWriteGateway} from '../../src/recurly-write/recurly-write-gateway';
+
+const recurlyWriteNotExpected = (): never => {
+  throw new Error('Unexpected Recurly write in a test using happyPathAdapters');
+};
 
 export const happyPathAdapters: Dependencies = {
   conf: {
@@ -45,4 +50,9 @@ export const happyPathAdapters: Dependencies = {
   getSheetDataByMemberNumber: (_memberNumber: number) => TE.right([]),
   getEventByIndex: (_eventIndex: Int) => TE.right(O.none),
   getDeletedEventByIndex: (_eventIndex: Int) => TE.right(O.none),
+  recurlyWrite: {
+    pauseSubscription: recurlyWriteNotExpected,
+    resumeSubscription: recurlyWriteNotExpected,
+    cancelSubscriptionAtTermEnd: recurlyWriteNotExpected,
+  } satisfies RecurlyWriteGateway,
 };

@@ -21,7 +21,15 @@ export type ViewModel = {
   // Counted over a rolling thirty days, so the numbers do not fall off a
   // cliff on the first of the month.
   tickets: {active: number; resolvedRecently: number};
-  training: {activeTrainers: number; trainingsRecently: number};
+  training: {
+    activeTrainers: number;
+    trainingsRecently: number;
+    // Not yet trained, and not known-lapsed in Recurly: those who passed the
+    // quiz (the online training), and those who only asked the trainers.
+    // From the same list as the machine's trainings page, so they agree.
+    doneOnlineTraining: number;
+    askedToBeTrained: number;
+  };
   // Only the machine's own trainers can arrange a training on it; being a
   // super-user is not enough, because the trainer is whoever arranges it.
   isTrainer: boolean;
