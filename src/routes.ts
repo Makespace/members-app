@@ -604,7 +604,7 @@ export const initRoutes = (
     query('/trouble-tickets/board', queries.troubleTickets),
     // Under /view/ because every ticket action registers its confirmation
     // page at /trouble-tickets/<verb>, and a bare :id here swallows all of
-    // them - raise, assign, resolve, park, needs-help.
+    // them - raise, assign, resolve, park, needs-help, post-update.
     query('/trouble-tickets/view/:id', queries.troubleTicket),
     // Site notification banners: admin management + member dismissal.
     query('/notifications', queries.notifications),
@@ -639,6 +639,11 @@ export const initRoutes = (
       'trouble-tickets',
       'needs-help',
       commands.troubleTickets.needsHelp
+    ),
+    ...command(
+      'trouble-tickets',
+      'post-update',
+      commands.troubleTickets.postUpdate
     ),
     ...api(
       'trouble-tickets',

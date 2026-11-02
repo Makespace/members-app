@@ -11,7 +11,13 @@ import {
 export type DigestLine = {
   title: string;
   place: string;
-  happening: 'reported' | 'picked-up' | 'needs-help' | 'parked' | 'resolved';
+  happening:
+    | 'reported'
+    | 'picked-up'
+    | 'needs-help'
+    | 'parked'
+    | 'updated'
+    | 'resolved';
   at: Date;
   // Enough of the ticket to draw it the way the app does, and an address to
   // send somebody to. A summary is for scanning, so this is the short form of
@@ -33,6 +39,8 @@ const happeningWords = (happening: DigestLine['happening']): string => {
       return 'needs help';
     case 'parked':
       return 'parked';
+    case 'updated':
+      return 'updated';
     case 'resolved':
       return 'resolved';
   }
