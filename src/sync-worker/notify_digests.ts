@@ -29,6 +29,7 @@ const NOTIFY_TYPES = [
   'TroubleTicketResolved',
   'TroubleTicketParked',
   'TroubleTicketNeedsHelp',
+  'TroubleTicketUpdatePosted',
 ] as const;
 
 type DigestEvent = StoredEventOfType<(typeof NOTIFY_TYPES)[number]>;

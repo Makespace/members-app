@@ -155,6 +155,17 @@ export const buildChangeLog = (
           ],
         });
         break;
+      case 'TroubleTicketUpdatePosted':
+        entries.push({
+          status,
+          at,
+          actor,
+          emailedTo: row.emailedTo,
+          quiet: row.details.quiet === 'true',
+          summary: 'posted an update',
+          details: [{label: 'Update', value: row.details.update ?? ''}],
+        });
+        break;
       case 'TroubleTicketEquipmentSet':
         entries.push({
           status,

@@ -233,6 +233,7 @@ describe('what somebody hears by default', () => {
       'picked-up',
       'needs-help',
       'parked',
+      'updated',
       'resolved',
     ]);
   });
@@ -247,6 +248,7 @@ describe('what somebody hears by default', () => {
         'picked-up',
         'needs-help',
         'parked',
+        'updated',
         'resolved',
       ]);
     }

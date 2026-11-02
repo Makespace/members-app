@@ -17,12 +17,13 @@ import {
 // somebody wants; this works out what that means for one ticket in front of
 // us.
 
-// The five events the notifier handles, as the happenings a rule talks about.
+// The six events the notifier handles, as the happenings a rule talks about.
 type TicketHappeningName =
   | 'reported'
   | 'picked-up'
   | 'needs-help'
   | 'parked'
+  | 'updated'
   | 'resolved';
 
 export const happeningOfEvent = (
@@ -37,6 +38,8 @@ export const happeningOfEvent = (
       return O.some('needs-help');
     case 'TroubleTicketParked':
       return O.some('parked');
+    case 'TroubleTicketUpdatePosted':
+      return O.some('updated');
     case 'TroubleTicketResolved':
       return O.some('resolved');
     default:

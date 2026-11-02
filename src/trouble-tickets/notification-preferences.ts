@@ -6,13 +6,14 @@ import {Member} from '../read-models/shared-state/return-types';
 // storage yet, so that the shape can be looked at on a page and argued with
 // before it is written into the timeline, where changing it is expensive.
 
-// The five things that happen to a ticket, in the words a member would use
+// The six things that happen to a ticket, in the words a member would use
 // rather than the event names.
 const TICKET_HAPPENINGS = [
   'reported',
   'picked-up',
   'needs-help',
   'parked',
+  'updated',
   'resolved',
 ] as const;
 
