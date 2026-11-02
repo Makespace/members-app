@@ -4,6 +4,7 @@ import {canBuyDirectly, NEEDS_APPROVAL} from '../../src/purchasing/buy-directly'
 describe('canBuyDirectly', () => {
   const plain = {
     amountPence: 5_000,
+    smallPurchaseAmountPence: 100_000,
     affectedAreaNames: [],
     healthAndSafetyRisk: false,
     classification: {approval: 'none' as const},
@@ -13,6 +14,14 @@ describe('canBuyDirectly', () => {
   it('lets a purchaser or super user buy what needs no proposal', () => {
     expect(canBuyDirectly('purchaser', plain)).toStrictEqual(E.right(true));
     expect(canBuyDirectly('super-user', plain)).toStrictEqual(E.right(true));
+  });
+
+  it("stops a purchaser buying at or over the purchasing area's small purchase amount", () => {
+    const atAmount = {...plain, amountPence: 50_000, smallPurchaseAmountPence: 50_000};
+    expect(E.isLeft(canBuyDirectly('purchaser', atAmount))).toBe(true);
+    expect(
+      canBuyDirectly('purchaser', {...atAmount, amountPence: 49_999})
+    ).toStrictEqual(E.right(true));
   });
 
   it('leaves anyone else to send a request for approval', () => {

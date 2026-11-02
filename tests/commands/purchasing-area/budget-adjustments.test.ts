@@ -41,6 +41,7 @@ describe('purchasing area budget adjustments', () => {
         name: 'Wood Shop',
         yearlyBudgetPence: 200_000,
         active: true,
+        smallPurchaseAmountPence: 100_000,
       })
     );
   });

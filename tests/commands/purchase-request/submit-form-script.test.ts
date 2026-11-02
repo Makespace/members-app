@@ -21,6 +21,7 @@ const woodShop = {
   areaNames: ['Wood Shop'],
   purchaserMemberNumbers: [],
   yearlyBudgetPence: 100_000,
+  smallPurchaseAmountPence: 100_000,
   spentThisYearPence: 42_000,
   remainingPence: 58_000,
 };
@@ -45,7 +46,6 @@ const renderPage = (
     requestId: '33333333-3333-4333-8333-333333333333' as UUID,
     budgetYear: 2026,
     purchasingAreas: [purchasingArea],
-    proposalThresholdPence: 100_000,
     step,
     answers: {
       purchasingAreaId: purchasingArea.id,
@@ -365,6 +365,7 @@ describe('purchase request cost breakdown script', () => {
           isMemberPaidConsumable: consumable,
           amountPence: Math.round(Number(cost) * 100),
           yearlyBudgetPence: woodShop.yearlyBudgetPence,
+          smallPurchaseAmountPence: 100_000,
           spentThisYearPence: woodShop.spentThisYearPence,
         }).reason
       );
@@ -469,6 +470,7 @@ describe('purchase request cost breakdown script', () => {
           isMemberPaidConsumable: consumable,
           amountPence: Math.round(Number(cost) * 100),
           yearlyBudgetPence: woodShop.yearlyBudgetPence,
+          smallPurchaseAmountPence: 100_000,
           spentThisYearPence: woodShop.spentThisYearPence,
         }).reason
       );
@@ -539,6 +541,7 @@ describe('purchase request page 1 script', () => {
           affectedAreaNames: [],
           healthAndSafetyRisk: true,
           yearlyBudgetPence: woodShop.yearlyBudgetPence,
+          smallPurchaseAmountPence: 100_000,
           spentThisYearPence: woodShop.spentThisYearPence,
         })
       );
@@ -557,6 +560,7 @@ describe('purchase request page 1 script', () => {
           affectedAreaNames: ['Metal Shop', 'Textiles'],
           healthAndSafetyRisk: false,
           yearlyBudgetPence: woodShop.yearlyBudgetPence,
+          smallPurchaseAmountPence: 100_000,
           spentThisYearPence: woodShop.spentThisYearPence,
         })
       );
@@ -571,6 +575,7 @@ describe('purchase request page 1 script', () => {
             affectedAreaNames: [],
             healthAndSafetyRisk: false,
             yearlyBudgetPence: spentUp.yearlyBudgetPence,
+            smallPurchaseAmountPence: 100_000,
             spentThisYearPence: spentUp.spentThisYearPence,
           })
         );

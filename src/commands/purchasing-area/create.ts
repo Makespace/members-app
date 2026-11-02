@@ -5,6 +5,7 @@ import * as TE from 'fp-ts/TaskEither';
 import {constructEvent} from '../../types';
 import {PenceFromPoundsString} from '../../types/money';
 import {Command} from '../command';
+import {DEFAULT_SMALL_PURCHASE_AMOUNT_PENCE} from '../../purchasing/classify-purchase';
 import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
 
 const codec = t.strict({
@@ -25,6 +26,7 @@ const process: Command<CreatePurchasingArea>['process'] = input =>
             id: input.command.id,
             name: input.command.name,
             yearlyBudgetPence: input.command.yearlyBudget,
+            smallPurchaseAmountPence: DEFAULT_SMALL_PURCHASE_AMOUNT_PENCE,
             active: false,
             actor: input.command.actor,
           })
