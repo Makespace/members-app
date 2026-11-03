@@ -25,6 +25,7 @@ import {constantTimeEqual} from './http/constant-time-equal';
 import {bulkQuietResolve} from './trouble-tickets/bulk-quiet-resolve';
 import {publicRaiseRoutes} from './trouble-tickets/public-raise-routes';
 import {publicTrainingRoutes} from './training-sessions/public-training-routes';
+import {publicOwnersGuideRoutes} from './queries/owners-guide/public-route';
 import {publicReportGuard} from './trouble-tickets/public-report-guard';
 import {displayImage, displayImageRoute} from './eink/display-image-handler';
 import * as t from 'io-ts';
@@ -54,6 +55,7 @@ export const initRoutes = (
     query('/humans', queries.humans),
     query('/roadmap', queries.roadmap),
     query('/owner-agreement', queries.ownerAgreement),
+    // /owners-guide itself is public: see owners-guide/public-route.
     query('/event-log', queries.log),
     query('/event-log-order', queries.eventLogOrder),
     query('/event-log-order/:index', queries.eventLogOrder),
@@ -629,6 +631,7 @@ export const initRoutes = (
     // The form is public: see public-raise-routes. The API stays as it was.
     ...publicRaiseRoutes(deps, publicReportGuard(conf)),
     ...publicTrainingRoutes(deps),
+    ...publicOwnersGuideRoutes(deps),
     ...api('trouble-tickets', 'raise', commands.troubleTickets.raise),
     // The link in the confirmation of a report made without logging in.
     ...command('trouble-tickets', 'claim', commands.troubleTickets.claim),
