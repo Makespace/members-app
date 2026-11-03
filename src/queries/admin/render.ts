@@ -4,6 +4,7 @@ import {html, Html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {OwnedArea, TrainedMachine, ViewModel} from './construct-view-model';
 import {renderTrainingSparkline} from '../../templates/training-sparkline';
 import {howLong} from '../shared-render/how-long';
+import {guidePath, guideSections} from '../owners-guide/sections';
 
 // Grouped by what somebody came here to do, rather than by when the link
 // happened to be added. The list had grown past the point where a flat column
@@ -142,14 +143,41 @@ const areaRows = (now: Date) => (area: OwnedArea) => html`
   </section>
 `;
 
+// The jobs owners most often ask how to do, each a card linking to its part
+// of the owner's guide.
+const guideCards = () => html`
+  <nav aria-label="Owner's guide">
+    <ul class="guide-cards">
+      ${joinHtml(
+        guideSections.map(
+          section => html`
+            <li>
+              <a href="${safe(guidePath(section))}">
+                <strong class="guide-cards__title"
+                  ><i
+                    class="fa-regular ${safe(section.icon)}"
+                    aria-hidden="true"
+                  ></i>
+                  ${safe(section.title)}</strong
+                >
+                <span class="guide-cards__summary"
+                  >${safe(section.summary)}</span
+                >
+              </a>
+            </li>
+          `
+        )
+      )}
+    </ul>
+  </nav>
+`;
+
 // What an owner looks after, area by area, with the machines in each that
 // they also train on: the things they come here to do, one click away.
 const ownerPart = (viewModel: ViewModel) => html`
   <div class="stack">
-    <h1>Owner</h1>
-    <p class="owner-ledger__intro">
-      Your areas, and the machines in them you train on.
-    </p>
+    ${guideCards()}
+    <h1>Your areas</h1>
     <div class="owner-ledger">
       <div class="owner-ledger__row owner-ledger__head" aria-hidden="true">
         <div></div>
