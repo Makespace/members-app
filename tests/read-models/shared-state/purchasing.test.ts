@@ -81,6 +81,7 @@ describe('purchasing areas in the read model', () => {
         name: 'Craft & Art',
         yearlyBudgetPence: 150_000,
         active: true,
+        smallPurchaseAmountPence: 100_000,
       })
     );
   });
@@ -97,6 +98,7 @@ describe('purchasing areas in the read model', () => {
         active: true,
         yearlyBudgetPence: 150_000,
         usualBudgetPence: 150_000,
+        smallPurchaseAmountPence: 100_000,
         areas: [],
         purchasers: [],
         budgetYear: 2026,

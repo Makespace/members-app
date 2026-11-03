@@ -10,7 +10,6 @@ import {safe, toLoggedInContentWithBackLink} from '../../types/html';
 import {budgetYearOf} from '../../purchasing/budget-year';
 import {
   classifyPurchase,
-  PROPOSAL_THRESHOLD_PENCE,
 } from '../../purchasing/classify-purchase';
 import {
   normalisePurchases,
@@ -75,6 +74,7 @@ const purchasingAreasFor = (
     areaNames: purchasingArea.areas.map(area => area.name),
     yearlyBudgetPence: purchasingArea.yearlyBudgetPence,
     spentThisYearPence: purchasingArea.spentThisYearPence,
+    smallPurchaseAmountPence: purchasingArea.smallPurchaseAmountPence,
     remainingPence: purchasingArea.remainingPence,
   }));
 
@@ -209,6 +209,7 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
       O.apS('healthAndSafetyRisk', risky),
       O.map(({area, totalPence, isMemberPaidConsumable, healthAndSafetyRisk}) => ({
         totalPence,
+        smallPurchaseAmountPence: area.smallPurchaseAmountPence,
         classification: classifyPurchase({
           approvedOutsideBudget:
             buyingDirectly &&
@@ -218,6 +219,7 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
           healthAndSafetyRisk,
           isMemberPaidConsumable,
           amountPence: totalPence,
+          smallPurchaseAmountPence: area.smallPurchaseAmountPence,
           yearlyBudgetPence: area.yearlyBudgetPence,
           spentThisYearPence: area.spentThisYearPence,
         }),
@@ -235,6 +237,7 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
         pipe(
           canBuyDirectly(buyerRole, {
             amountPence: found.totalPence,
+            smallPurchaseAmountPence: found.smallPurchaseAmountPence,
             affectedAreaNames,
             healthAndSafetyRisk: pipe(risky, O.exists(Boolean)),
             classification: found.classification,
@@ -296,7 +299,6 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
       ),
       budgetYear: budgetYearOf(now),
       purchasingAreas,
-      proposalThresholdPence: PROPOSAL_THRESHOLD_PENCE,
       step,
       answers,
       problems: requested > step ? problemsOn[step - 1] : [],

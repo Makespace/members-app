@@ -194,6 +194,10 @@ const PurchasingAreaCreated = defineEvent('PurchasingAreaCreated', {
   // ones start inactive so they can be set up first; ones created before
   // activation existed were already in use, so they count as active.
   active: tt.withFallback(t.boolean, true),
+  // A single budget purchase of this much or more needs a proposal. New ones
+  // start at £500; ones created before it could be set per purchasing area
+  // keep the £1,000 that applied to every purchasing area until then.
+  smallPurchaseAmountPence: tt.withFallback(t.number, 100_000),
 });
 
 // A super user turns a purchasing area on or off. Only an active one takes
@@ -221,6 +225,16 @@ const PurchasingAreaBudgetSet = defineEvent('PurchasingAreaBudgetSet', {
   purchasingAreaId: tt.UUID,
   yearlyBudgetPence: t.number,
 });
+
+// A super user changes how much a single budget purchase can cost before it
+// needs a proposal; see PurchasingAreaCreated.
+const PurchasingAreaSmallPurchaseAmountSet = defineEvent(
+  'PurchasingAreaSmallPurchaseAmountSet',
+  {
+    purchasingAreaId: tt.UUID,
+    smallPurchaseAmountPence: t.number,
+  }
+);
 
 // A different budget for one calendar year only, e.g. an extension: the
 // usual budget (PurchasingAreaBudgetSet) applies again the year after.
@@ -941,6 +955,7 @@ export const events = [
   PurchasingAreaRemoved,
   PurchasingAreaRenamed,
   PurchasingAreaBudgetSet,
+  PurchasingAreaSmallPurchaseAmountSet,
   PurchasingAreaYearBudgetSet,
   PurchasingAreaSpendRecorded,
   PurchasingAreaSpendRemoved,
@@ -1038,6 +1053,7 @@ export const DomainEvent = t.union([
   PurchasingAreaRemoved.codec,
   PurchasingAreaRenamed.codec,
   PurchasingAreaBudgetSet.codec,
+  PurchasingAreaSmallPurchaseAmountSet.codec,
   PurchasingAreaYearBudgetSet.codec,
   PurchasingAreaSpendRecorded.codec,
   PurchasingAreaSpendRemoved.codec,

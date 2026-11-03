@@ -65,6 +65,7 @@ describe('rename and set budget of a purchasing area', () => {
           name: 'Wood Shop',
           yearlyBudgetPence: 100_000,
           active: true,
+          smallPurchaseAmountPence: 100_000,
         })
       );
     });

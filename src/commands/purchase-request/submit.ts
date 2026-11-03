@@ -204,15 +204,25 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
         healthAndSafetyRisk: command.healthAndSafetyRisk,
         isMemberPaidConsumable: command.isMemberPaidConsumable,
         amountPence: totalPence,
+        smallPurchaseAmountPence: purchasingArea.smallPurchaseAmountPence,
         yearlyBudgetPence: purchasingArea.yearlyBudgetPence,
         spentThisYearPence: purchasingArea.spentThisYearPence,
       })
     ),
-    E.tap(({boughtDirectly, role, affected, classification, totalPence}) =>
+    E.tap(
+      ({
+        boughtDirectly,
+        role,
+        affected,
+        classification,
+        totalPence,
+        purchasingArea,
+      }) =>
       boughtDirectly
         ? pipe(
             canBuyDirectly(role, {
               amountPence: totalPence,
+              smallPurchaseAmountPence: purchasingArea.smallPurchaseAmountPence,
               affectedAreaNames: affected.map(area => area.name),
               healthAndSafetyRisk: command.healthAndSafetyRisk,
               classification,

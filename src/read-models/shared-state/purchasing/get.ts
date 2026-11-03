@@ -210,6 +210,7 @@ const expand =
       active: row.active,
       yearlyBudgetPence,
       usualBudgetPence: row.yearlyBudgetPence,
+      smallPurchaseAmountPence: row.smallPurchaseAmountPence,
       recordedSpend,
       approvedSpendThisYearPence:
         recordedOfKind('approved') + requests.outsideBudgetPence,

@@ -115,6 +115,11 @@ export const initRoutes = (
     ),
     ...command(
       'purchasing-areas',
+      'set-small-purchase-amount',
+      commands.purchasingArea.setSmallPurchaseAmount
+    ),
+    ...command(
+      'purchasing-areas',
       'assign-area',
       commands.purchasingArea.assignArea
     ),
