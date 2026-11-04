@@ -297,75 +297,58 @@ const bodies = (
       )}
       <h3>How are purchasing decisions made and actioned?</h3>
       <p>
-        Owners have full autonomy to decide on purchases that:
+        To suggest a purchase within your
+        ${term('purchase-area', 'Purchase Area')}, you can use the
+        ${term('purchase-request', 'Purchase Request')} system.
       </p>
-      <ul class="owners-guide__conditions">
+      ${yourData(
+        viewModel,
+        'purchasing',
+        'links to request purchases for your Purchase Areas',
+        requestAPurchase
+      )}
+      <p>
+        Owners have full autonomy to decide on
+        ${term('purchase-request', 'Purchase Requests')} that:
+      </p>
+      <ul class="owners-guide__bullets">
         <li>
-          cost less than the
+          Aren't over the
           ${term('small-purchase-amount', 'Small Purchase Amount')} (normally
           £1000)
         </li>
         <li>
-          don't take the ${term('purchase-area', 'Purchase Area')} over its
+          Don't take the ${term('purchase-area', 'Purchase Area')} over its
           ${term('yearly-budget', 'Yearly Budget')}
         </li>
-        <li>don't have the potential to negatively impact other Areas</li>
-        <li>don't introduce a moderate to high health &amp; safety risk</li>
+        <li>Won't potentially negatively impact other Areas</li>
+        <li>
+          Won't potentially introduce a moderate to high health &amp; safety
+          risk
+        </li>
       </ul>
-      <p>Anything else needs a Proposal first: see below.</p>
       <p>
-        To suggest a purchase within your
-        ${term('purchase-area', 'Purchase Area')}:
+        All other ${term('purchase-request', 'Purchase Requests')} need an
+        accompanying Proposal.
       </p>
-      <ol class="owners-guide__steps">
-        <li>
-          <p>
-            Send a ${term('purchase-request', 'Purchase Request')}. You'll
-            submit information on what you're buying and why, with an itemised
-            list for online stores.
-          </p>
-          ${yourData(
-            viewModel,
-            'purchasing',
-            'links to request purchases for your Purchase Areas',
-            requestAPurchase
-          )}
-        </li>
-        <li>
-          A ${term('purchaser', 'Purchaser')}, ${term('manager', 'Manager')} or
-          ${term('director', 'Director')} approves it and pays for it.
-        </li>
-        <li>
-          Whoever paid passes the invoice on to the accountant, and marks it as
-          sent.
-        </li>
-      </ol>
-      <p>
-        ${term('manager', 'Managers')} and ${term('director', 'Directors')} can
-        approve and pay for any
-        ${term('purchase-request', 'Purchase Request')}. A
-        ${term('purchase-area', 'Purchase Area')} can also nominate a
-        ${term('purchaser', 'Purchaser')} to do this for its own requests.
-      </p>
-      <h3>Purchases that need a Proposal before they can be approved</h3>
-      <p>
-        If a ${term('purchase-request', 'Purchase Request')} costs the
-        ${term('small-purchase-amount', 'Small Purchase Amount')} or more, would
-        take the ${term('purchase-area', 'Purchase Area')} over its
-        ${term('yearly-budget', 'Yearly Budget')}, has the potential to
-        negatively impact other Areas, or introduces a moderate to high health
-        &amp; safety risk, a Proposal will need to be made before it can be
-        approved.
-      </p>
+      <h3>Purchase Requests that need a Proposal</h3>
       <p>
         You can submit a Proposal as part of your
-        ${term('purchase-request', 'Purchase Request')}, including a risk
-        assessment if necessary. Proposals that impact multiple areas can be
-        discussed at Owners Meetings, or ${term('manager', 'Managers')} can
-        facilitate discussions between Owners' teams. Proposals that need the
-        approval of the board of ${term('director', 'Directors')} can be
-        discussed at Board Meetings.
+        ${term('purchase-request', 'Purchase Request')}, including pros/cons,
+        options considered and a risk assessment if necessary.
       </p>
+      <ul class="owners-guide__bullets">
+        <li>
+          Proposals that impact multiple areas can be discussed at Owners
+          Meetings, or conversations can be facilitated by
+          ${term('manager', 'managers')}.
+        </li>
+        <li>
+          Proposals that potentially introduce health &amp; safety risks need
+          to be signed off by ${term('director', 'Directors')} at a Board
+          Meeting.
+        </li>
+      </ul>
     `,
   };
 };
