@@ -25,7 +25,11 @@ export type TrainedMember = Pick<
 
 export type TrainerInfo = Pick<
   MemberCoreInfo,
-  'name' | 'memberNumber' | 'primaryEmailAddress' | 'pastMemberNumbers'
+  | 'userId'
+  | 'name'
+  | 'memberNumber'
+  | 'primaryEmailAddress'
+  | 'pastMemberNumbers'
 > & {
   markedTrainerByActor: O.Option<Actor>;
   trainerSince: Date;

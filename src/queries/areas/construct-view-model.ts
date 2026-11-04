@@ -19,6 +19,7 @@ import {
 import {ExternalStateDB} from '../../sync-worker/external-state-db';
 import {
   getRecurlyFlagsForVerifiedEmails,
+  isActiveForOwnership,
   recurlyReasons,
   RecurlyFlags,
 } from '../../read-models/external-state/recurly-status';
@@ -34,16 +35,11 @@ import {MinimalEquipment} from '../../read-models/shared-state/return-types';
 type OwnerFlags = O.Option<RecurlyFlags>;
 
 // Owner enrichment for super-users, the only viewers of the active/inactive
-// verdict. Active-for-ownership is a rule local to this page: a past-due
-// invoice counts as inactive, since cancelling payment is a common way
-// members self-deactivate. The shared 'active'/'inactive' status calc is
-// unchanged.
+// verdict. The verdict itself (a past-due invoice counts as inactive) is
+// shared with the training stats email; see isActiveForOwnership.
 const evaluateOwner = (flags: OwnerFlags): OwnerVerdict => {
-  const isActiveOwner =
-    O.isSome(flags) &&
-    flags.value.hasActiveSubscription &&
-    !flags.value.hasPastDueInvoice;
-  return {isActiveOwner, reasons: recurlyReasons(flags)};
+  const isActive = isActiveForOwnership(flags);
+  return {isActiveOwner: isActive, reasons: recurlyReasons(flags)};
 };
 
 export const constructViewModel =
