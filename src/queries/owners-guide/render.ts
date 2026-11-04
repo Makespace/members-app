@@ -311,7 +311,7 @@ const bodies = (
         Owners have full autonomy to decide on
         ${term('purchase-request', 'Purchase Requests')} that:
       </p>
-      <ul class="owners-guide__bullets">
+      <ul class="owners-guide__conditions">
         <li>
           Aren't over the
           ${term('small-purchase-amount', 'Small Purchase Amount')} (normally

@@ -2900,6 +2900,32 @@ ul.guide-cards {
   margin-top: 0.25rem;
 }
 
+/* The four conditions owners decide for themselves, as small cards two to
+   a row: the money ones first, then safety and other Areas. One column on a
+   phone, in the same order. */
+.owners-guide__conditions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  margin-inline: 0;
+  padding: 0;
+}
+
+@media (min-width: 36rem) {
+  .owners-guide__conditions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.owners-guide__conditions > li {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--owners-guide-data-edge);
+  border-radius: 6px;
+  background: #fff;
+  line-height: 1.4;
+}
+
 /* A plain bulleted list in the guide's text. The site's reset takes list
    markers away from lists with a class (see ul[class]), so name the element
    to give them back. */
