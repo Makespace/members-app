@@ -345,8 +345,8 @@ const PurchaseRequestApproved = defineEvent('PurchaseRequestApproved', {
   actualCostPence: tt.withFallback(t.union([t.number, t.null]), null),
 });
 
-// A bought purchase's invoice passed on to the accountants, so they can
-// track the spending.
+// A bought purchase's invoice passed on to the accountant, who tracks the
+// spending.
 const PurchaseRequestInvoiceSent = defineEvent('PurchaseRequestInvoiceSent', {
   id: tt.UUID,
 });

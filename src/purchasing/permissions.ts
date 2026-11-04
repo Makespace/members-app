@@ -119,7 +119,7 @@ export const buyerOf = (request: PurchaseRequest): O.Option<number> => {
   }
 };
 
-// A bought purchase whose invoice still needs passing on to the accountants.
+// A bought purchase whose invoice still needs passing on to the accountant.
 export const needsInvoiceSent = (request: PurchaseRequest) =>
   O.isSome(buyerOf(request)) && O.isNone(request.invoiceSentAt);
 

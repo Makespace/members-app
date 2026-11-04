@@ -35,7 +35,7 @@ export const purchaseRequests: Query = deps => user => {
         O.exists(member => member.isSuperUser || member.ownerOf.length > 0)
       ),
       // To approve or decline, approved ones to buy, and what they bought
-      // whose invoice still needs passing on to the accountants.
+      // whose invoice still needs passing on to the accountant.
       waitingForViewer: requests.filter(
         ({request}) =>
           ((request.status === 'awaiting-approval' ||

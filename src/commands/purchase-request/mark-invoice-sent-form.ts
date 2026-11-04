@@ -20,7 +20,7 @@ const renderForm = (viewModel: DecisionViewModel) =>
   pipe(
     html`
       <div class="stack-large">
-        <h1>Invoice sent to the accountants?</h1>
+        <h1>Invoice sent to the accountant?</h1>
         <p>
           <b>${sanitizeString(viewModel.request.summary)}</b>, bought for
           ${sanitizeString(
@@ -32,7 +32,7 @@ const renderForm = (viewModel: DecisionViewModel) =>
           )}.
         </p>
         <p>
-          Once you've passed its invoice on to the accountants, mark it here
+          Once you've passed its invoice on to the accountant, mark it here
           so it's off your list and everyone can see it's done.
         </p>
         <form

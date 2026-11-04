@@ -32,7 +32,7 @@ type ViewModel = {
   canDecide: boolean;
   // Who marked it bought, once someone has.
   buyerName: O.Option<string>;
-  // Who passed its invoice on to the accountants, once someone has.
+  // Who passed its invoice on to the accountant, once someone has.
   invoiceSenderName: O.Option<string>;
   // Whoever bought it, the area's purchasers and super users.
   canMarkInvoiceSent: boolean;
@@ -71,7 +71,7 @@ const renderBought = (request: PurchaseRequest, buyerName: O.Option<string>) =>
         pays for it and marks it as paid.
       </p>`;
 
-// Once bought: whether its invoice has gone to the accountants.
+// Once bought: whether its invoice has gone to the accountant.
 const renderInvoice = (
   request: PurchaseRequest,
   senderName: O.Option<string>,
@@ -83,7 +83,7 @@ const renderInvoice = (
         request.invoiceSentAt,
         O.match(
           () => html`<p>
-              <strong>Invoice:</strong> not yet sent to the accountants.
+              <strong>Invoice:</strong> not yet sent to the accountant.
             </p>
             ${canMark
               ? html`<div>
@@ -95,7 +95,7 @@ const renderInvoice = (
                 </div>`
               : html``}`,
           at => html`<p>
-            <strong>Invoice:</strong> sent to the accountants
+            <strong>Invoice:</strong> sent to the accountant
             ${pipe(
               senderName,
               O.match(

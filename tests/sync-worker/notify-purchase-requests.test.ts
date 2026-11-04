@@ -329,7 +329,7 @@ describe('purchase request notifications', () => {
     });
   });
 
-  describe("passing a purchase's invoice on to the accountants", () => {
+  describe("passing a purchase's invoice on to the accountant", () => {
     const canMark = (memberNumber: number, id: UUID) =>
       markInvoiceSent.isAuthorized({
         actor: asMember(memberNumber),
