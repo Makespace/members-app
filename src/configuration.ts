@@ -45,9 +45,6 @@ const Config = t.strict({
   TURSO_TOKEN: t.union([t.undefined, t.string]),
   TURSO_GOOGLE_DB_TOKEN: t.union([t.undefined, t.string]),
   RECURLY_TOKEN: t.union([t.undefined, t.string]),
-  // A separate Recurly key that can write, used only by the gateway in
-  // src/recurly-write/. Unset means the app cannot change anything in Recurly.
-  RECURLY_WRITE_TOKEN: t.union([t.undefined, t.string]),
   // How long a member can be behind before the outstanding-invoices page files
   // them under "remove fob access" and then "cancel membership". Trustees set
   // these, so they are tunable without a code change.

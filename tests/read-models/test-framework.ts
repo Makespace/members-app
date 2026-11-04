@@ -34,7 +34,6 @@ import { ensureExtDBTablesExist, ExternalStateDB, initExternalStateDB } from '..
 import {Int} from 'io-ts';
 import { deleteEvent, unDeleteEvent } from '../../src/init-dependencies/event-store/set-event-deleted-state';
 import { rebuildEventTimeline } from '../../src/training-quiz/rebuild-event-timeline';
-import { initRecurlyWriteGateway } from '../../src/recurly-write/recurly-write-gateway';
 
 const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
 
@@ -144,8 +143,6 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     getSheetDataByMemberNumber: getSheetDataByMemberNumber(extDBDrizzle),
     getEventByIndex: getEventByIndex(eventDB),
     getDeletedEventByIndex: getDeletedEventByIndex(eventDB),
-    // No write token, so any Recurly write is refused rather than sent.
-    recurlyWrite: initRecurlyWriteGateway(logger, undefined),
   };
 
   const frameworkify =
