@@ -242,13 +242,26 @@ export type PurchaseRequest = {
   boughtByMemberNumber: O.Option<number>;
   // What it really cost, when different from totalPence.
   actualCostPence: O.Option<number>;
-  // Once bought, its invoice passed on to the accountants.
+  // Once bought, its receipt or invoice first passed on to the accountant
+  // (by uploading it, or by hand or email).
   invoiceSentAt: O.Option<Date>;
   invoiceSentByMemberNumber: O.Option<number>;
+  // Receipts and invoices uploaded for it, oldest first.
+  receipts: ReadonlyArray<PurchaseReceipt>;
   outcome: PurchaseRequestOutcome;
   approval: PurchaseApproval;
   outcomeReason: string;
   // The budget figures the outcome was computed from, at submission.
   yearlyBudgetPence: number;
   spentThisYearPence: number;
+};
+
+// A receipt or invoice uploaded for a bought purchase.
+export type PurchaseReceipt = {
+  fileId: UUID;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  uploadedAt: Date;
+  uploadedByMemberNumber: O.Option<number>;
 };

@@ -41,6 +41,7 @@ const request: PurchaseRequest = {
   actualCostPence: O.none,
   invoiceSentAt: O.none,
   invoiceSentByMemberNumber: O.none,
+  receipts: [],
   outcome: 'budget',
   approval: 'none',
   outcomeReason: 'This comes out of the yearly budget.',
@@ -62,6 +63,7 @@ const page = (
     buyerName: O.some('Pat Purchaser'),
     invoiceSenderName: O.some('Pat Purchaser'),
     canMarkInvoiceSent: false,
+    canViewReceipts: false,
     canDecide,
   });
 

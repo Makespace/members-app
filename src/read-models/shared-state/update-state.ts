@@ -1,4 +1,5 @@
 import {DomainEvent, StoredDomainEvent} from '../../types/domain-event';
+import {StoredPurchaseReceipt} from './purchasing/receipts';
 import {UUID} from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import {
@@ -1539,6 +1540,45 @@ const _updateState =
         if (rows.changes === 0) {
           throw new InconsistentEventError(`Unable to mark invoice sent for purchase request ${event.id} - unknown purchase request`);
         }
+        break;
+      }
+      case 'PurchaseRequestReceiptUploaded': {
+        const existing = tx
+          .select({
+            receiptsJson: purchaseRequestsTable.receiptsJson,
+            invoiceSentAt: purchaseRequestsTable.invoiceSentAt,
+            invoiceSentByMemberNumber:
+              purchaseRequestsTable.invoiceSentByMemberNumber,
+          })
+          .from(purchaseRequestsTable)
+          .where(eq(purchaseRequestsTable.id, event.id))
+          .get();
+        if (!existing) {
+          throw new InconsistentEventError(`Unable to add receipts to purchase request ${event.id} - unknown purchase request`);
+        }
+        const uploadedByMemberNumber =
+          event.actor.tag === 'user' ? event.actor.user.memberNumber : null;
+        const receipts: ReadonlyArray<StoredPurchaseReceipt> = [
+          ...(JSON.parse(existing.receiptsJson) as ReadonlyArray<StoredPurchaseReceipt>),
+          ...event.files.map(file => ({
+            ...file,
+            uploadedAtMs: event.recordedAt.getTime(),
+            uploadedByMemberNumber,
+          })),
+        ];
+        // Uploading sends it on to the accountant, so it counts as sent if
+        // nobody had already marked it.
+        const firstSent = existing.invoiceSentAt === null;
+        tx.update(purchaseRequestsTable)
+          .set({
+            receiptsJson: JSON.stringify(receipts),
+            invoiceSentAt: firstSent ? event.recordedAt : existing.invoiceSentAt,
+            invoiceSentByMemberNumber: firstSent
+              ? uploadedByMemberNumber
+              : existing.invoiceSentByMemberNumber,
+          })
+          .where(eq(purchaseRequestsTable.id, event.id))
+          .run();
         break;
       }
       case 'PurchaseRequestNotificationSent': {

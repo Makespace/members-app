@@ -21,6 +21,7 @@ import {getSheetData} from './db/get_sheet_data';
 import {ensureExtDBTablesExist, ExternalStateDB, initExternalStateDB} from './external-state-db';
 import { pullRecurlyData } from './recurly/pull-recurly-data';
 import { Duration } from 'luxon';
+import {receiptFileStore} from '../purchasing/receipt-files';
 
 const initDBCommands = (extDB: ExternalStateDB, eventDB: Client) => {
   return {
@@ -94,6 +95,7 @@ export const initDependencies = (): SyncWorkerDependencies => {
     getSheetData: getSheetData(extDB),
     commitEvent: commitEvent(eventDB, logger, sharedReadModel.asyncRefresh),
     getAllEventsByType: getAllEventsByType(eventDB),
+    receiptFiles: receiptFileStore(eventDB),
     pullRecurlyData: conf.RECURLY_TOKEN ?  pullRecurlyData(logger, extDB, conf.RECURLY_TOKEN) : async (_interval: Duration) => {},
     ...initDBCommands(extDB, eventDB),
   };

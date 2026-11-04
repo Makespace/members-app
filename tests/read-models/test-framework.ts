@@ -13,6 +13,7 @@ import {ensureEventTableExists} from '../../src/init-dependencies/event-store/en
 import {Actor, DomainEvent} from '../../src/types';
 import {pipe} from 'fp-ts/lib/function';
 import {commands, Command} from '../../src/commands';
+import {receiptFileStore} from '../../src/purchasing/receipt-files';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
 import {arbitraryActor, getRightOrFail, getTaskEitherRightOrFail} from '../helpers';
 import * as libsqlClient from '@libsql/client';
@@ -146,6 +147,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     getDeletedEventByIndex: getDeletedEventByIndex(eventDB),
     // No write token, so any Recurly write is refused rather than sent.
     recurlyWrite: initRecurlyWriteGateway(logger, undefined),
+    receiptFiles: receiptFileStore(eventDB),
   };
 
   const frameworkify =
@@ -312,6 +314,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         decline: frameworkify(commands.purchaseRequest.decline),
         markBought: frameworkify(commands.purchaseRequest.markBought),
         markInvoiceSent: frameworkify(commands.purchaseRequest.markInvoiceSent),
+        uploadReceipt: frameworkify(commands.purchaseRequest.uploadReceipt),
       },
       trainingSessions: {
         signUp: frameworkify(commands.trainingSessions.signUp),
