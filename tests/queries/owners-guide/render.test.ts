@@ -142,7 +142,7 @@ describe("the owner's guide's defined terms", () => {
 
   it('underlines the terms in when owners can decide for themselves', () => {
     const conditions = sectionFor(loggedOut).querySelector(
-      '.owners-guide__bullets'
+      '.owners-guide__conditions'
     );
 
     expect(

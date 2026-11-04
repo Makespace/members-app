@@ -311,20 +311,26 @@ const bodies = (
         Owners have full autonomy to decide on
         ${term('purchase-request', 'Purchase Requests')} that:
       </p>
-      <ul class="owners-guide__bullets">
-        <li>
-          Aren't over the
+      <ul class="owners-guide__conditions">
+        <li class="owners-guide__condition owners-guide__condition--money">
+          <i class="fa-regular fa-money-bill-1" aria-hidden="true"></i>
+          <span>Aren't over the
           ${term('small-purchase-amount', 'Small Purchase Amount')} (normally
-          £1000)
+          £1000)</span>
         </li>
-        <li>
-          Don't take the ${term('purchase-area', 'Purchase Area')} over its
-          ${term('yearly-budget', 'Yearly Budget')}
+        <li class="owners-guide__condition owners-guide__condition--money">
+          <i class="fa-regular fa-money-bill-1" aria-hidden="true"></i>
+          <span>Don't take the ${term('purchase-area', 'Purchase Area')} over its
+          ${term('yearly-budget', 'Yearly Budget')}</span>
         </li>
-        <li>Won't potentially negatively impact other Areas</li>
-        <li>
-          Won't potentially introduce a moderate to high health &amp; safety
-          risk
+        <li class="owners-guide__condition owners-guide__condition--care">
+          <i class="fa-regular fa-hand" aria-hidden="true"></i>
+          <span>Won't potentially negatively impact other Areas</span>
+        </li>
+        <li class="owners-guide__condition owners-guide__condition--care">
+          <i class="fa-regular fa-hand" aria-hidden="true"></i>
+          <span>Won't potentially introduce a moderate to high health &amp; safety
+          risk</span>
         </li>
       </ul>
       <p>
