@@ -330,6 +330,15 @@ const bodies = (
         health &amp; safety risk, a Proposal will need to be made before it can
         be approved.
       </p>
+      <p>
+        You can submit a Proposal as part of your
+        ${term('purchase-request', 'Purchase Request')}, including a risk
+        assessment if necessary. Proposals that impact multiple areas can be
+        discussed at Owners Meetings, or ${term('manager', 'managers')} can
+        facilitate discussions between Owners teams. Proposals that need the
+        approval of the board of ${term('director', 'Directors')} can be
+        discussed at Board Meetings.
+      </p>
     `,
   };
 };
