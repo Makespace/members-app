@@ -140,13 +140,13 @@ describe("the owner's guide's defined terms", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('underlines the terms in when owners can decide for themselves', () => {
-    const conditions = sectionFor(loggedOut).querySelector(
-      '.owners-guide__conditions'
+  it('underlines the terms in how purchasing decisions are made', () => {
+    const paragraph = [...sectionFor(loggedOut).querySelectorAll('p')].find(p =>
+      p.textContent?.includes('full autonomy')
     );
 
     expect(
-      [...(conditions?.querySelectorAll('dfn') ?? [])].map(
+      [...(paragraph?.querySelectorAll('dfn') ?? [])].map(
         term => term.firstChild?.textContent
       )
     ).toStrictEqual(['Small Purchase Amount', 'Purchase Area', 'Yearly Budget']);

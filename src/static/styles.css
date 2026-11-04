@@ -2900,32 +2900,6 @@ ul.guide-cards {
   margin-top: 0.25rem;
 }
 
-/* The four conditions, and the steps of a purchase: indented like the rest
-   of the guide's lists, with room between the steps, each of which can hold
-   a box of the reader's own links. */
-ul.owners-guide__conditions,
-ol.owners-guide__steps {
-  padding-left: 1.5rem;
-}
-
-/* The site's reset takes list markers away from lists with a class (see
-   ul[class]); these need theirs, so name the element to match it. */
-ul.owners-guide__conditions {
-  list-style: disc;
-}
-
-ol.owners-guide__steps {
-  list-style: decimal;
-}
-
-.owners-guide__steps > li + li {
-  margin-top: 0.5rem;
-}
-
-.owners-guide__steps > li > * + * {
-  margin-top: 0.5rem;
-}
-
 .owners-guide__muted {
   color: var(--grey-color);
 }

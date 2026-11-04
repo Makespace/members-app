@@ -4,7 +4,7 @@ export const guideSections = [
   {
     id: 'purchasing',
     icon: 'fa-money-bill-1',
-    title: 'Purchase Areas',
+    title: 'Purchase areas',
     summary: 'How to buy things for your area and track your budget.',
   },
   {
