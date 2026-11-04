@@ -13,6 +13,7 @@ import {Int} from 'io-ts';
 import {NonEmptyString} from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import {insertRecurlySubscription} from '../../helpers';
+import {UserActor} from '../../../src/types/actor';
 
 describe('Training summary', () => {
   let framework: TestFramework;
@@ -154,6 +155,149 @@ describe('Training summary', () => {
         ).toStrictEqual(
           `${framework.trainingSummaryDeps.conf.PUBLIC_URL}/equipment/${equipmentId}`
         );
+      });
+
+      it('the equipment has no open trouble tickets', () => {
+        expect(
+          content.trainingStatsPerEquipment[0].openTroubleTickets
+        ).toStrictEqual(0);
+      });
+      it('the total open trouble tickets to be 0', () => {
+        expect(content.totalOpenTroubleTickets).toStrictEqual(0);
+      });
+
+      describe('and the equipment has trouble tickets', () => {
+        const ownerActor: UserActor = {
+          tag: 'user',
+          user: {
+            emailAddress: addTrainerMember.email,
+            memberNumber: addTrainerMember.memberNumber,
+          },
+        };
+
+        // Each ticket needs a distinct issue: create derives its rowHash from
+        // submittedAt plus the answers, so same-millisecond tickets with
+        // identical answers collide and silently no-op.
+        const createTicket = async (issue: string): Promise<UUID> => {
+          const ticketId = faker.string.uuid() as UUID;
+          await framework.commands.troubleTickets.create({
+            id: ticketId,
+            submittedEquipment: addEquipment.name,
+            submittedMemberNumber: null,
+            submittedEmail: null,
+            submittedName: null,
+            otherEquipmentDetail: '',
+            status: 'Broken',
+            attempting: 'using the equipment',
+            issue,
+            steps: '',
+          });
+          return ticketId;
+        };
+
+        describe('with a ticket in each status and one resolved', () => {
+          beforeEach(async () => {
+            await createTicket('a todo ticket');
+            const inProgressTicketId = await createTicket(
+              'an in progress ticket'
+            );
+            await framework.commands.troubleTickets.assign({
+              ticketId: inProgressTicketId,
+              comment: '',
+              actor: ownerActor,
+            });
+            const parkedTicketId = await createTicket('a parked ticket');
+            await framework.commands.troubleTickets.park({
+              ticketId: parkedTicketId,
+              whyParked: 'Waiting on parts' as NonEmptyString,
+              pathToResolution: 'Replace the bracket' as NonEmptyString,
+              intermediateActions: 'Taped over the sharp edge' as NonEmptyString,
+            });
+            const needsHelpTicketId = await createTicket('a needs help ticket');
+            await framework.commands.troubleTickets.needsHelp({
+              ticketId: needsHelpTicketId,
+              whatTried: 'Tightened the chuck' as NonEmptyString,
+              whyDidntWork: 'Still grinding' as NonEmptyString,
+            });
+            const resolvedTicketId = await createTicket('a resolved ticket');
+            await framework.commands.troubleTickets.resolve({
+              ticketId: resolvedTicketId,
+              summary: 'Replaced the part',
+              quiet: true,
+            });
+
+            content = await gatherEmailContent(framework.trainingSummaryDeps);
+          });
+
+          it('the status transitions took effect', () => {
+            // The read model logs (rather than raises) projection failures, so
+            // a swallowed error would otherwise leave the counts passing for
+            // the wrong reason.
+            const ticketStatuses = new Map(
+              framework.sharedReadModel.troubleTickets
+                .getAll()
+                .map(ticket => [ticket.response.issue, ticket.status])
+            );
+            expect(ticketStatuses.get('a todo ticket')).toStrictEqual('Todo');
+            expect(ticketStatuses.get('an in progress ticket')).toStrictEqual(
+              'In Progress'
+            );
+            expect(ticketStatuses.get('a parked ticket')).toStrictEqual(
+              'Parked'
+            );
+            expect(ticketStatuses.get('a needs help ticket')).toStrictEqual(
+              'Needs Help'
+            );
+            expect(ticketStatuses.get('a resolved ticket')).toStrictEqual(
+              'Resolved'
+            );
+          });
+
+          it('every open status is counted and the resolved ticket is excluded', () => {
+            expect(
+              content.trainingStatsPerEquipment[0].openTroubleTickets
+            ).toStrictEqual(4);
+          });
+
+          it('the total open trouble tickets excludes the resolved ticket', () => {
+            expect(content.totalOpenTroubleTickets).toStrictEqual(4);
+          });
+        });
+
+        describe('and another piece of red equipment has an open ticket', () => {
+          beforeEach(async () => {
+            await framework.commands.equipment.add({
+              id: faker.string.uuid() as UUID,
+              name: 'Other red thing' as NonEmptyString,
+              areaId: createArea.id,
+            });
+            await framework.commands.troubleTickets.create({
+              id: faker.string.uuid() as UUID,
+              submittedEquipment: 'Other red thing',
+              submittedMemberNumber: null,
+              submittedEmail: null,
+              submittedName: null,
+              otherEquipmentDetail: '',
+              status: 'Broken',
+              attempting: 'using the equipment',
+              issue: 'a ticket on other equipment',
+              steps: '',
+            });
+            content = await gatherEmailContent(framework.trainingSummaryDeps);
+          });
+
+          it('the ticket is counted against its own equipment only', () => {
+            const thisEquipment = content.trainingStatsPerEquipment.find(
+              stats => stats.name === (addEquipment.name as string)
+            );
+            const otherEquipment = content.trainingStatsPerEquipment.find(
+              stats => stats.name === 'Other red thing'
+            );
+            expect(thisEquipment?.openTroubleTickets).toStrictEqual(0);
+            expect(otherEquipment?.openTroubleTickets).toStrictEqual(1);
+            expect(content.totalOpenTroubleTickets).toStrictEqual(1);
+          });
+        });
       });
     });
   });

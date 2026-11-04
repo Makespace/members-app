@@ -16,6 +16,7 @@ type EquipmentTrainingStats = {
   awaitingTraining: O.Option<number>;
   trainedTotal: number;
   trainedLast30Days: number;
+  openTroubleTickets: number;
   equipmentLink: URL;
   trainerCount: number;
   percentageOfActiveMembershipTrained: number;
@@ -26,6 +27,7 @@ export type EmailContent = {
   totalActiveMembers: number;
   totalTrainingsLast30Days: number;
   totalTrainings: number;
+  totalOpenTroubleTickets: number;
   membersJoinedWithin30Days: number;
 };
 
@@ -72,6 +74,9 @@ const gatherEmailContentForEquipment =
           DateTime.fromJSDate(member.trainedSince).diffNow().negate() <
           Duration.fromObject({days: 30})
       ).length,
+      openTroubleTickets: deps.sharedReadModel.troubleTickets
+        .getByEquipment(equipment.id)
+        .filter(ticket => ticket.status !== 'Resolved').length,
       equipmentLink,
       trainerCount: equipment.trainers.length,
       percentageOfActiveMembershipTrained:
@@ -119,6 +124,10 @@ export const gatherEmailContent = async (
     ),
     totalTrainingsLast30Days: result.reduce(
       (prev, current) => prev + current.trainedLast30Days,
+      0
+    ),
+    totalOpenTroubleTickets: result.reduce(
+      (prev, current) => prev + current.openTroubleTickets,
       0
     ),
     membersJoinedWithin30Days,
