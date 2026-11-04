@@ -2901,29 +2901,56 @@ ul.guide-cards {
 }
 
 /* The four conditions owners decide for themselves, as small cards two to
-   a row: the money ones first, then safety and other Areas. One column on a
-   phone, in the same order. */
-.owners-guide__conditions {
+   a row: the money ones first, tinted green, then safety and other Areas,
+   tinted amber, each with its icon. One column on a phone, in the same
+   order. The element is named to outrank the reset's ul[class]. */
+ul.owners-guide__conditions {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 0.5rem;
-  margin-inline: 0;
+  gap: 0.6rem;
+  margin: 0.75rem 0;
   padding: 0;
 }
 
 @media (min-width: 36rem) {
-  .owners-guide__conditions {
+  ul.owners-guide__conditions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-.owners-guide__conditions > li {
+.owners-guide__condition {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
   margin: 0;
-  padding: 0.6rem 0.8rem;
-  border: 1px solid var(--owners-guide-data-edge);
+  padding: 0.75rem 1rem;
+  border: 1px solid;
   border-radius: 6px;
-  background: #fff;
   line-height: 1.4;
+}
+
+.owners-guide__condition > i {
+  flex: none;
+  width: 1.1em;
+  text-align: center;
+}
+
+.owners-guide__condition--money {
+  background: #f0f7f2;
+  border-color: #c8e0cf;
+}
+
+.owners-guide__condition--money > i {
+  color: var(--green-color);
+}
+
+.owners-guide__condition--care {
+  background: #fdf7e6;
+  border-color: #ebdba6;
+}
+
+.owners-guide__condition--care > i {
+  color: #8a6a1c;
 }
 
 /* A plain bulleted list in the guide's text. The site's reset takes list
