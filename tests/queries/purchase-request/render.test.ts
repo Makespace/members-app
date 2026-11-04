@@ -39,6 +39,8 @@ const request: PurchaseRequest = {
   boughtAt: O.none,
   boughtByMemberNumber: O.none,
   actualCostPence: O.none,
+  invoiceSentAt: O.none,
+  invoiceSentByMemberNumber: O.none,
   outcome: 'budget',
   approval: 'none',
   outcomeReason: 'This comes out of the yearly budget.',
@@ -58,6 +60,8 @@ const page = (
     submitterName: O.some('Ada Admin'),
     deciderName: O.some('Dee Director'),
     buyerName: O.some('Pat Purchaser'),
+    invoiceSenderName: O.some('Pat Purchaser'),
+    canMarkInvoiceSent: false,
     canDecide,
   });
 

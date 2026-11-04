@@ -9,7 +9,7 @@ import {Query} from '../query';
 import {safe, toLoggedInContentWithBackLink} from '../../types/html';
 import {failureWithStatus} from '../../types/failure-with-status';
 import {render} from './render';
-import {canDecide} from '../../purchasing/permissions';
+import {canDecide, canMarkInvoiceSent} from '../../purchasing/permissions';
 import {liftActorOrUser} from '../../read-models/lift-actor-or-user';
 
 // One purchase request as submitted, with the outcome the server worked out.
@@ -69,6 +69,16 @@ export const purchaseRequest: Query = deps => (user, params, queryParams) =>
             request.boughtByMemberNumber,
             O.chain(deps.sharedReadModel.members.getByMemberNumber),
             O.chain(member => member.name)
+          ),
+          invoiceSenderName: pipe(
+            request.invoiceSentByMemberNumber,
+            O.chain(deps.sharedReadModel.members.getByMemberNumber),
+            O.chain(member => member.name)
+          ),
+          canMarkInvoiceSent: canMarkInvoiceSent(
+            deps.sharedReadModel,
+            liftActorOrUser(user),
+            request
           ),
           canDecide: canDecide(
             deps.sharedReadModel,

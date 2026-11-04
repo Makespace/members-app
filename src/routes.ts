@@ -170,6 +170,11 @@ export const initRoutes = (
       'mark-bought',
       commands.purchaseRequest.markBought
     ),
+    ...command(
+      'purchase-requests',
+      'mark-invoice-sent',
+      commands.purchaseRequest.markInvoiceSent
+    ),
     get('/purchase-request', (_req, res) =>
       res.redirect('/purchase-requests/submit')
     ),
