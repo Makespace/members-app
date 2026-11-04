@@ -34,6 +34,7 @@ import { ensureExtDBTablesExist, ExternalStateDB, initExternalStateDB } from '..
 import {Int} from 'io-ts';
 import { deleteEvent, unDeleteEvent } from '../../src/init-dependencies/event-store/set-event-deleted-state';
 import { rebuildEventTimeline } from '../../src/training-quiz/rebuild-event-timeline';
+import { initRecurlyWriteGateway } from '../../src/recurly-write/recurly-write-gateway';
 
 const TROUBLE_TICKET_SHEET_ID = 'trouble_ticket_sheet_id';
 
@@ -143,6 +144,8 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     getSheetDataByMemberNumber: getSheetDataByMemberNumber(extDBDrizzle),
     getEventByIndex: getEventByIndex(eventDB),
     getDeletedEventByIndex: getDeletedEventByIndex(eventDB),
+    // No write token, so any Recurly write is refused rather than sent.
+    recurlyWrite: initRecurlyWriteGateway(logger, undefined),
   };
 
   const frameworkify =
@@ -203,6 +206,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         rename: frameworkify(commands.equipment.rename),
         setCategory: frameworkify(commands.equipment.setCategory),
         setMachines: frameworkify(commands.equipment.setMachines),
+        setTrainingRequirements: frameworkify(
+          commands.equipment.setTrainingRequirements
+        ),
         trainingSheet: frameworkify(commands.equipment.trainingSheet),
         setGuideUrl: frameworkify(commands.equipment.setGuideUrl),
         setRiskAssessmentUrl: frameworkify(
@@ -290,12 +296,18 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         create: frameworkify(commands.purchasingArea.create),
         rename: frameworkify(commands.purchasingArea.rename),
         setBudget: frameworkify(commands.purchasingArea.setBudget),
+        setSmallPurchaseAmount: frameworkify(
+          commands.purchasingArea.setSmallPurchaseAmount
+        ),
         assignArea: frameworkify(commands.purchasingArea.assignArea),
         unassignArea: frameworkify(commands.purchasingArea.unassignArea),
         addPurchaser: frameworkify(commands.purchasingArea.addPurchaser),
         removePurchaser: frameworkify(commands.purchasingArea.removePurchaser),
         setYearBudget: frameworkify(commands.purchasingArea.setYearBudget),
         removeSpend: frameworkify(commands.purchasingArea.removeSpend),
+        activate: frameworkify(commands.purchasingArea.activate),
+        deactivate: frameworkify(commands.purchasingArea.deactivate),
+        remove: frameworkify(commands.purchasingArea.remove),
       },
       purchaseRequest: {
         submit: frameworkify(commands.purchaseRequest.submit),
@@ -308,6 +320,9 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         signUp: frameworkify(commands.trainingSessions.signUp),
         cancelPlace: frameworkify(commands.trainingSessions.cancelPlace),
         cancel: frameworkify(commands.trainingSessions.cancel),
+        expressInterest: frameworkify(
+          commands.trainingSessions.expressInterest
+        ),
       },
       einkDisplays: {
         assign: frameworkify(commands.einkDisplays.assign),

@@ -40,6 +40,8 @@ describe('purchasing area budget adjustments', () => {
         id: purchasingAreaId,
         name: 'Wood Shop',
         yearlyBudgetPence: 200_000,
+        active: true,
+        smallPurchaseAmountPence: 100_000,
       })
     );
   });

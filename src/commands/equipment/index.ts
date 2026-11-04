@@ -21,6 +21,8 @@ import {setGuideUrl} from './set-guide-url';
 import {setGuideUrlForm} from './set-guide-url-form';
 import {setMachines} from './set-machines';
 import {setMachinesForm} from './set-machines-form';
+import {setTrainingRequirements} from './set-training-requirements';
+import {setTrainingRequirementsForm} from './set-training-requirements-form';
 
 export const equipment = {
   add: {
@@ -45,6 +47,10 @@ export const equipment = {
   setLearnPoints: {...setLearnPoints, ...setLearnPointsForm},
   setGuideUrl: {...setGuideUrl, ...setGuideUrlForm},
   setMachines: {...setMachines, ...setMachinesForm},
+  setTrainingRequirements: {
+    ...setTrainingRequirements,
+    ...setTrainingRequirementsForm,
+  },
   addNameAlias: {
     ...addNameAlias,
     ...addNameAliasForm,

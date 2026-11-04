@@ -2,13 +2,46 @@
  * @jest-environment jsdom
  */
 
+import * as O from 'fp-ts/Option';
+import {UUID} from 'io-ts-types';
 import {render} from '../../../src/queries/admin/render';
+import {render as renderGuide} from '../../../src/queries/owners-guide/render';
+import {loggedOut} from '../../../src/queries/owners-guide/construct-view-model';
+import {ViewModel} from '../../../src/queries/admin/construct-view-model';
 
-const page = () => {
+const now = new Date('2026-10-29T12:00:00Z');
+
+const superUser: ViewModel = {isSuperUser: true, ownedAreas: [], now};
+
+const woodShop: ViewModel['ownedAreas'][number] = {
+  id: 'area-1',
+  name: 'Wood Shop',
+  purchasingAreaId: O.some('purchasing-1' as UUID),
+  openTickets: 3,
+  trainerOn: [
+    {
+      id: 'saw-1',
+      name: 'Band Saw',
+      openTickets: 1,
+      upcomingTrainings: 2,
+      doneOnlineTraining: 4,
+      askedToBeTrained: 2,
+      earliestSince: O.some(new Date('2026-08-01T12:00:00Z')),
+      trainingsByQuarter: [],
+    },
+  ],
+};
+
+const pageFor = (viewModel: Omit<ViewModel, 'now'>) => {
   const body = document.createElement('body');
-  body.innerHTML = render();
+  body.innerHTML = render({...viewModel, now});
   return body;
 };
+
+const page = () => pageFor(superUser);
+
+const hrefs = (body: Element | null) =>
+  [...(body?.querySelectorAll('a') ?? [])].map(a => a.getAttribute('href'));
 
 describe('the admin page', () => {
   it('groups its links under headings rather than one long column', () => {
@@ -33,7 +66,7 @@ describe('the admin page', () => {
   // Easy to break by hand-writing anchors: the old page had two links whose
   // closing tag was missing, which swallowed everything after them.
   it('closes every link it opens', () => {
-    const html = render();
+    const html = render({...superUser, ownedAreas: [woodShop]});
     expect((html.match(/<a[\s>]/g) ?? []).length).toBe(
       (html.match(/<\/a\s*>/g) ?? []).length
     );
@@ -47,5 +80,96 @@ describe('the admin page', () => {
     ['/event-log'],
   ])('links to %s', href => {
     expect(page().querySelector(`a[href="${href}"]`)).not.toBeNull();
+  });
+});
+
+describe('the owner page', () => {
+  it('shows an owner their area, and none of the admin links', () => {
+    const body = pageFor({isSuperUser: false, ownedAreas: [woodShop]});
+
+    expect(body.textContent).toContain("You're an owner in this area.");
+    expect(hrefs(body.querySelector('.owner-ledger'))).toStrictEqual([
+      '/trouble-tickets/board?areaId=area-1',
+      '/purchasing-areas/purchasing-1',
+      '/areas/manage?area=area-1',
+      '/trouble-tickets/board?equipmentId=saw-1',
+      '/equipment/saw-1/trainings',
+      '/equipment/saw-1',
+    ]);
+    expect(body.textContent).not.toContain('super-user privileges');
+  });
+
+  it('names the machines they train on under the area', () => {
+    const body = pageFor({isSuperUser: false, ownedAreas: [woodShop]});
+
+    const machine = body.querySelector('.owner-ledger__row--machine');
+    expect(machine?.querySelector('strong')?.textContent?.trim()).toBe(
+      'Band Saw'
+    );
+    expect(machine?.textContent).toContain(
+      "You're a trainer on this equipment."
+    );
+  });
+
+  // One row per machine, each the same shape, so they compare down the page.
+  it('lines up the numbers worth knowing in the same columns', () => {
+    const body = pageFor({isSuperUser: false, ownedAreas: [woodShop]});
+    const numbers = (row: Element | null) =>
+      [...(row?.querySelectorAll('.owner-ledger__number') ?? [])].map(cell =>
+        (cell.textContent ?? '').replace(/\s+/g, ' ').trim()
+      );
+
+    expect(numbers(body.querySelector('.owner-ledger__row--area'))).toStrictEqual(
+      ['3 open tickets', '', '', '']
+    );
+    expect(
+      numbers(body.querySelector('.owner-ledger__row--machine'))
+    ).toStrictEqual([
+      '1 open ticket',
+      '4 done the online training +2 asked to be trained first 2 months ago',
+      '2 upcoming trainings',
+    ]);
+  });
+
+  it('keeps links as text, not buttons', () => {
+    const body = pageFor({isSuperUser: false, ownedAreas: [woodShop]});
+    expect(body.querySelectorAll('.owner-ledger .button')).toHaveLength(0);
+  });
+
+  it('leaves out purchasing for an area outside any purchasing area', () => {
+    const body = pageFor({
+      isSuperUser: false,
+      ownedAreas: [{...woodShop, purchasingAreaId: O.none}],
+    });
+
+    expect(body.textContent).not.toContain('View purchasing');
+  });
+
+  it("puts a super-user's admin links below their own areas", () => {
+    const headings = [
+      ...pageFor({isSuperUser: true, ownedAreas: [woodShop]}).querySelectorAll(
+        'h1'
+      ),
+    ].map(h => h.textContent?.trim());
+
+    expect(headings).toStrictEqual(['Your areas', 'Admin']);
+  });
+
+  // The cards are only useful if each lands on a section that's there.
+  it("links to sections that exist in the owner's guide", () => {
+    const guide = document.createElement('body');
+    guide.innerHTML = renderGuide(loggedOut);
+    const cardLinks = hrefs(
+      pageFor({isSuperUser: false, ownedAreas: [woodShop]}).querySelector(
+        '.guide-cards'
+      )
+    );
+
+    expect(cardLinks).toHaveLength(3);
+    cardLinks.forEach(href => {
+      const [path, id] = (href ?? '').split('#');
+      expect(path).toBe('/owners-guide');
+      expect(guide.querySelector(`[id="${id}"]`)).not.toBeNull();
+    });
   });
 });

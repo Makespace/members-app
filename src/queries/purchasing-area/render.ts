@@ -91,6 +91,16 @@ const renderBudget = (viewModel: ViewModel) => {
             </td>
           </tr>
           <tr>
+            <th>Small purchase amount</th>
+            <td>
+              ${money(purchasingArea.smallPurchaseAmountPence)}
+              <span class="text-gray"
+                >- a single purchase of this much or more needs a
+                proposal</span
+              >
+            </td>
+          </tr>
+          <tr>
             <th>Spent so far this year</th>
             <td>${money(purchasingArea.spentThisYearPence)}</td>
           </tr>
@@ -125,6 +135,12 @@ const renderBudget = (viewModel: ViewModel) => {
                 purchasingArea: purchasingArea.id,
               })}`,
               html`Set usual budget`
+            )}
+            ${superUserButton(
+              `/purchasing-areas/set-small-purchase-amount?${query({
+                purchasingArea: purchasingArea.id,
+              })}`,
+              html`Set small purchase amount`
             )}
             ${superUserButton(
               `/purchasing-areas/rename?${query({
@@ -341,10 +357,40 @@ const renderSpending = (viewModel: ViewModel) => {
   `;
 };
 
+// Whether it takes purchase requests yet, and the super user controls for
+// turning it on or off and removing it.
+const renderActivation = (viewModel: ViewModel) => {
+  const {purchasingArea, canManage} = viewModel;
+  const params = query({purchasingArea: purchasingArea.id});
+  return html`
+    ${purchasingArea.active
+      ? html``
+      : html`<p>
+          <span class="tag tag--grey">Not active</span> This purchasing area is
+          still being set up. It isn't taking purchase requests and its budget
+          isn't live yet.
+        </p>`}
+    ${canManage
+      ? superUserActions(html`
+          ${purchasingArea.active
+            ? superUserButton(
+                `/purchasing-areas/deactivate?${params}`,
+                html`Deactivate`
+              )
+            : superUserButton(
+                `/purchasing-areas/activate?${params}`,
+                html`Activate`
+              )}
+          ${superUserButton(`/purchasing-areas/remove?${params}`, html`Remove`)}
+        `)
+      : html``}
+  `;
+};
+
 export const render = (viewModel: ViewModel) => html`
   <div class="stack-large">
     <h1>${sanitizeString(viewModel.purchasingArea.name)}</h1>
-    ${renderBudget(viewModel)} ${renderSpending(viewModel)}
+    ${renderActivation(viewModel)} ${renderBudget(viewModel)} ${renderSpending(viewModel)}
     ${renderAreas(viewModel)} ${renderPurchasers(viewModel)}
   </div>
 `;

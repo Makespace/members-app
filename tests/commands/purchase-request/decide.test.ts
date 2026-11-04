@@ -93,6 +93,8 @@ describe('approving or declining a purchase request', () => {
         id: purchasingAreaId,
         name: 'Wood Shop',
         yearlyBudgetPence: 500_000,
+        active: true,
+        smallPurchaseAmountPence: 100_000,
       }),
       constructEvent('AreaAssignedToPurchasingArea')({
         actor: arbitraryActor(),

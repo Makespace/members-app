@@ -9,6 +9,7 @@ import {
   categoryDescription,
 } from '../../templates/equipment-category';
 import {ViewModel} from './construct-view-model';
+import {renderInterest} from '../shared-render/training-interest';
 import {renderUpcomingTrainingSessions} from '../shared-render/upcoming-training-sessions';
 
 const MEETUP = 'https://www.meetup.com/makespace/';
@@ -80,24 +81,57 @@ const quizState = (viewModel: ViewModel): Html => {
   }
 };
 
+const missingPrerequisites = (viewModel: ViewModel) =>
+  viewModel.prerequisites.filter(prerequisite => !prerequisite.trained);
+
+const namesOf = (machines: ReadonlyArray<{name: string}>): Html =>
+  joinHtml(
+    machines.map(
+      (machine, index) =>
+        html`${index === 0
+          ? safe('')
+          : index === machines.length - 1
+            ? safe(' and ')
+            : safe(', ')}${sanitizeString(machine.name)}`
+    )
+  );
+
+// What stops the practical, first thing first: nobody will book one before
+// the machines it builds on, or before the quiz when the quiz is asked for.
+const practicalBlocker = (viewModel: ViewModel): O.Option<Html> => {
+  if (O.isSome(viewModel.trainedSince)) {
+    return O.none;
+  }
+  const missing = missingPrerequisites(viewModel);
+  if (missing.length > 0) {
+    return O.some(html`You need to be trained on ${namesOf(missing)} first.`);
+  }
+  if (viewModel.quizRequired && viewModel.quiz.tag !== 'passed') {
+    return O.some(html`You need to take the online quiz.`);
+  }
+  return O.none;
+};
+
 const practicalState = (viewModel: ViewModel): Html =>
   pipe(
     viewModel.trainedSince,
     O.match(
       () =>
-        viewModel.quiz.tag === 'passed'
-          ? state(
-              false,
-              html`<p>
-                <strong>You need to attend an in-person training.</strong>
-              </p>`
-            )
-          : // Nobody will book a practical before the quiz is passed, so the
-            // step says what is actually blocking it rather than going quiet.
-            state(
-              false,
-              html`<p><strong>You need to take the online quiz.</strong></p>`
-            ),
+        pipe(
+          practicalBlocker(viewModel),
+          O.match(
+            () =>
+              state(
+                false,
+                html`<p>
+                  <strong>You need to attend an in-person training.</strong>
+                </p>`
+              ),
+            // The step says what is actually blocking it rather than going
+            // quiet.
+            blocker => state(false, html`<p><strong>${blocker}</strong></p>`)
+          )
+        ),
       trainedSince =>
         state(
           true,
@@ -139,14 +173,15 @@ const trainerList = (viewModel: ViewModel) =>
         </ul>
       `;
 
-const practicalStep = (viewModel: ViewModel) => html`
+const practicalStep = (viewModel: ViewModel, number: number) => html`
   <li
-    class="training-step${viewModel.quiz.tag === 'passed' ||
-    O.isSome(viewModel.trainedSince)
+    class="training-step${O.isNone(practicalBlocker(viewModel))
       ? safe('')
       : safe(' training-step--waiting')}"
   >
-    <h2>2. Attend an in-person training session</h2>
+    <h2>
+      ${safe(String(number))}. Attend an in-person training session
+    </h2>
     ${practicalState(viewModel)}
     <p>
       Training sessions can be organised on the
@@ -158,10 +193,15 @@ const practicalStep = (viewModel: ViewModel) => html`
       ${viewModel.trainersUsingApp === 1 ? safe('has') : safe('have')} used the
       app to arrange a training session so far.
     </p>
-    <h3>Upcoming trainings in the app</h3>
-    ${renderUpcomingTrainingSessions(viewModel.upcomingTrainings, {
-      withDescriptions: true,
-    })}
+    <h3>Upcoming trainings</h3>
+    ${renderUpcomingTrainingSessions(
+      viewModel.upcomingTrainings,
+      {withDescriptions: true},
+      viewModel.meetupTrainings
+    )}
+    ${O.isNone(viewModel.trainedSince)
+      ? renderInterest(viewModel.equipment.id, viewModel.interestLastExpressed)
+      : html``}
     <p>
       If there is no practical scheduled on Meetup or here, please email
       ${pipe(
@@ -190,12 +230,7 @@ const practicalStep = (viewModel: ViewModel) => html`
           )}
           to arrange a training.
         </p>`
-      : html`<p>
-          This piece of equipment has
-          ${safe(String(viewModel.trainers.length))} active
-          trainer${viewModel.trainers.length === 1 ? safe('') : safe('s')}.
-          Please keep in mind that trainers are volunteers!
-        </p>`}
+      : html``}
     <dl class="training-summary">
       <dt>Last training occurred</dt>
       <dd>
@@ -210,7 +245,12 @@ const practicalStep = (viewModel: ViewModel) => html`
       ${viewModel.trainers.length === 0
         ? html``
         : html`<dt>Active trainers</dt>
-            <dd>${trainerList(viewModel)}</dd>`}
+            <dd>
+              ${trainerList(viewModel)}
+              <p class="training-trainers__note">
+                Please keep in mind that trainers are volunteers!
+              </p>
+            </dd>`}
     </dl>
   </li>
 `;
@@ -260,8 +300,73 @@ export const render = (viewModel: ViewModel): Html => {
         ${categoryDescription(viewModel.equipment.category)}
       </p>
       <ol class="training-steps">
+        ${joinHtml(
+          steps(viewModel).map((step, index) => step(viewModel, index + 1))
+        )}
+        <!-- A further step belongs here once members countersign their
+             training to say they are happy with what they were shown and
+             confident to use the machine. -->
+      </ol>
+      <p>
+        <a href="/equipment/${safe(viewModel.equipment.id)}"
+          >Back to ${sanitizeString(viewModel.equipment.name)}</a
+        >
+      </p>
+    </div>
+  `;
+};
+
+// The machines this one builds on, each with whether the member is trained
+// on it and where to start if not.
+const prerequisitesStep = (viewModel: ViewModel, number: number) => html`
+  <li class="training-step">
+    <h2>
+      ${safe(String(number))}. Be trained on
+      ${namesOf(viewModel.prerequisites)}
+    </h2>
+    ${O.isSome(viewModel.trainedSince) ||
+    missingPrerequisites(viewModel).length === 0
+      ? state(
+          true,
+          html`<p>
+            <strong>You have done this.</strong>
+          </p>`
+        )
+      : state(
+          false,
+          html`<p>
+            <strong
+              >This machine builds on
+              ${viewModel.prerequisites.length === 1
+                ? safe('that one')
+                : safe('those')}, so you need to be trained on
+              ${namesOf(missingPrerequisites(viewModel))} first.</strong
+            >
+          </p>`
+        )}
+    <ul class="training-prerequisites">
+      ${joinHtml(
+        viewModel.prerequisites.map(
+          prerequisite => html`
+            <li>
+              <a href="/equipment/${safe(prerequisite.id)}/training"
+                >${sanitizeString(prerequisite.name)}</a
+              >
+              —
+              ${prerequisite.trained
+                ? html`you are trained on it`
+                : html`not yet`}
+            </li>
+          `
+        )
+      )}
+    </ul>
+  </li>
+`;
+
+const quizStep = (viewModel: ViewModel, number: number) => html`
         <li class="training-step">
-          <h2>1. Pass the online quiz</h2>
+          <h2>${safe(String(number))}. Pass the online quiz</h2>
           ${quizState(viewModel)}
           ${pipe(
             viewModel.guideUrl,
@@ -291,16 +396,15 @@ export const render = (viewModel: ViewModel): Html => {
             )
           )}
         </li>
-        ${practicalStep(viewModel)}
-        <!-- A third step belongs here once members countersign their
-             training to say they are happy with what they were shown and
-             confident to use the machine. -->
-      </ol>
-      <p>
-        <a href="/equipment/${safe(viewModel.equipment.id)}"
-          >Back to ${sanitizeString(viewModel.equipment.name)}</a
-        >
-      </p>
-    </div>
-  `;
-};
+`;
+
+// The steps this machine asks for, in order. The machines it builds on come
+// first, the quiz only when an owner who trains on it has not waived it, and
+// the practical always.
+const steps = (
+  viewModel: ViewModel
+): ReadonlyArray<(viewModel: ViewModel, number: number) => Html> => [
+  ...(viewModel.prerequisites.length > 0 ? [prerequisitesStep] : []),
+  ...(viewModel.quizRequired ? [quizStep] : []),
+  practicalStep,
+];

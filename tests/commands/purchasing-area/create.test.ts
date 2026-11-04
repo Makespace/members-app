@@ -40,7 +40,16 @@ describe('create purchasing area', () => {
   });
 
   describe('when it does not exist yet', () => {
-    it('creates it, with the budget in pence', async () => {
+    it('starts its small purchase amount at £500', async () => {
+      const result = await getTaskEitherRightOrFail(
+        create.process({command, rm: framework.sharedReadModel})
+      );
+      expect(result).toStrictEqual(
+        O.some(expect.objectContaining({smallPurchaseAmountPence: 50_000}))
+      );
+    });
+
+    it('creates it inactive, with the budget in pence', async () => {
       const result = await getTaskEitherRightOrFail(
         create.process({command, rm: framework.sharedReadModel})
       );
@@ -51,6 +60,7 @@ describe('create purchasing area', () => {
             id,
             name: 'Craft & Art',
             yearlyBudgetPence: 150_000,
+            active: false,
           })
         )
       );
@@ -65,6 +75,8 @@ describe('create purchasing area', () => {
           id,
           name: 'Craft & Art',
           yearlyBudgetPence: 150_000,
+          active: true,
+          smallPurchaseAmountPence: 100_000,
         })
       );
       const result = await getTaskEitherRightOrFail(

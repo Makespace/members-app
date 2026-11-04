@@ -20,6 +20,11 @@ import {
   TrainingSessionView,
   upcomingTrainingSessions,
 } from '../shared-render/upcoming-training-sessions';
+import {
+  forEquipment,
+  MeetupTrainingView,
+  upcomingMeetupTrainings,
+} from '../shared-render/meetup-trainings';
 
 // Where the member has got to with the quiz, told from their own results
 // rather than from a list of everybody: a member on this page is asking about
@@ -59,12 +64,77 @@ export type ViewModel = {
   // the page says how many here do, rather than implying an empty list means
   // nothing is planned.
   trainersUsingApp: number;
+  // Whether the quiz must be passed before the practical. When it need not,
+  // the page does not ask for it.
+  quizRequired: boolean;
+  // Machines to be trained on first, by name, and whether this member is.
+  prerequisites: ReadonlyArray<Prerequisite>;
+  // This machine's trainings on Meetup, which are booked there.
+  meetupTrainings: ReadonlyArray<MeetupTrainingView>;
+  // When this member last told the trainers they would like training here.
+  interestLastExpressed: O.Option<Date>;
+};
+
+type Prerequisite = {id: string; name: string; trained: boolean};
+
+// What stands between a member and a machine's practical, first thing first:
+// the machines to be trained on before it, then its quiz. Nothing, once they
+// are trained on it - a refresher asks for neither.
+export type Readiness =
+  | {tag: 'ready'}
+  | {tag: 'needs-prerequisites'; missing: ReadonlyArray<Prerequisite>}
+  | {tag: 'needs-quiz'};
+
+const prerequisitesFor = (
+  deps: Dependencies,
+  user: User,
+  equipmentId: UUID
+): ReadonlyArray<Prerequisite> =>
+  deps.sharedReadModel.trainingRequirements
+    .get(equipmentId)
+    .prerequisiteEquipmentIds.flatMap(id =>
+      pipe(
+        deps.sharedReadModel.equipment.get(id),
+        O.match(
+          () => [],
+          prerequisite => [
+            {
+              id: prerequisite.id,
+              name: prerequisite.name,
+              trained: O.isSome(trainedSinceFor(deps, user, prerequisite.id)),
+            },
+          ]
+        )
+      )
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+export const readinessFor = (
+  deps: Dependencies,
+  user: User,
+  equipment: {id: UUID; trainingSheetId: O.Option<string>}
+): Readiness => {
+  if (O.isSome(trainedSinceFor(deps, user, equipment.id))) {
+    return {tag: 'ready'};
+  }
+  const missing = prerequisitesFor(deps, user, equipment.id).filter(
+    prerequisite => !prerequisite.trained
+  );
+  if (missing.length > 0) {
+    return {tag: 'needs-prerequisites', missing};
+  }
+  const quiz = quizProgressFor(deps, user, equipment).tag;
+  return deps.sharedReadModel.trainingRequirements.get(equipment.id)
+    .quizRequired &&
+    (quiz === 'not-attempted' || quiz === 'failed')
+    ? {tag: 'needs-quiz'}
+    : {tag: 'ready'};
 };
 
 const isPass = (row: {score: number; maxScore: number}) =>
   row.maxScore > 0 && row.score >= row.maxScore;
 
-const trainedSinceFor = (
+export const trainedSinceFor = (
   deps: Dependencies,
   user: User,
   equipmentId: UUID
@@ -129,7 +199,9 @@ export const constructViewModel =
       TE.fromOption(
         failureWithStatus('Unknown equipment', StatusCodes.NOT_FOUND)
       ),
-      TE.map(equipment => ({
+      TE.bindTo('equipment'),
+      TE.bind('meetup', () => upcomingMeetupTrainings(deps, new Date())),
+      TE.map(({equipment, meetup}) => ({
         equipment: {
           id: equipment.id,
           name: equipment.name,
@@ -177,6 +249,18 @@ export const constructViewModel =
             equipment.trainers.filter(trainer =>
               allMemberNumbers(trainer).some(n => arranged.includes(n))
             ).length
+        ),
+        quizRequired: deps.sharedReadModel.trainingRequirements.get(
+          equipment.id
+        ).quizRequired,
+        prerequisites: prerequisitesFor(deps, user, equipment.id),
+        meetupTrainings: forEquipment(meetup, equipment.id),
+        interestLastExpressed: pipe(
+          deps.sharedReadModel.trainingInterest.of(
+            equipment.id,
+            user.memberNumber
+          ),
+          O.map(interest => interest.lastExpressedAt)
         ),
       }))
     );

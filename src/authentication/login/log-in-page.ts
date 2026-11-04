@@ -28,6 +28,17 @@ export const logInPage = pipe(
             Email me a login link
           </button>
         </form>
+        <!-- Reporting a broken machine is open to anybody, as is seeing
+             what trainings are coming up; neither should have to wait for a
+             login email. Outlined, so the login button above reads first. -->
+        <div class="log-in__without">
+          <a class="button-outline" href="/trouble-tickets"
+            >Report a trouble ticket without logging in</a
+          >
+          <a class="button-outline" href="/training"
+            >View upcoming trainings without logging in</a
+          >
+        </div>
       </div>
     </div>
   `,

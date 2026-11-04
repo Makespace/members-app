@@ -24,6 +24,8 @@ import {
 import {constantTimeEqual} from './http/constant-time-equal';
 import {bulkQuietResolve} from './trouble-tickets/bulk-quiet-resolve';
 import {publicRaiseRoutes} from './trouble-tickets/public-raise-routes';
+import {publicTrainingRoutes} from './training-sessions/public-training-routes';
+import {publicOwnersGuideRoutes} from './queries/owners-guide/public-route';
 import {publicReportGuard} from './trouble-tickets/public-report-guard';
 import {displayImage, displayImageRoute} from './eink/display-image-handler';
 import * as t from 'io-ts';
@@ -53,6 +55,7 @@ export const initRoutes = (
     query('/humans', queries.humans),
     query('/roadmap', queries.roadmap),
     query('/owner-agreement', queries.ownerAgreement),
+    // /owners-guide itself is public: see owners-guide/public-route.
     query('/event-log', queries.log),
     query('/event-log-order', queries.eventLogOrder),
     query('/event-log-order/:index', queries.eventLogOrder),
@@ -69,6 +72,7 @@ export const initRoutes = (
     query('/access-audit', queries.accessAudit),
     query('/areas', queries.areas),
     query('/community', queries.community),
+    // /training itself is public: see public-training-routes.
     query('/equipment-catalogue', queries.equipmentCatalogue),
     query('/equipment-links', queries.equipmentLinks),
     query('/e-ink', queries.einkDisplays),
@@ -113,6 +117,11 @@ export const initRoutes = (
     ),
     ...command(
       'purchasing-areas',
+      'set-small-purchase-amount',
+      commands.purchasingArea.setSmallPurchaseAmount
+    ),
+    ...command(
+      'purchasing-areas',
       'assign-area',
       commands.purchasingArea.assignArea
     ),
@@ -141,6 +150,17 @@ export const initRoutes = (
       'remove-spend',
       commands.purchasingArea.removeSpend
     ),
+    ...command(
+      'purchasing-areas',
+      'activate',
+      commands.purchasingArea.activate
+    ),
+    ...command(
+      'purchasing-areas',
+      'deactivate',
+      commands.purchasingArea.deactivate
+    ),
+    ...command('purchasing-areas', 'remove', commands.purchasingArea.remove),
     query('/purchasing-areas/:id', queries.purchasingArea),
     ...command('purchase-requests', 'submit', commands.purchaseRequest.submit),
     ...command('purchase-requests', 'approve', commands.purchaseRequest.approve),
@@ -166,6 +186,11 @@ export const initRoutes = (
     ...command('equipment', 'rename', commands.equipment.rename),
     ...command('equipment', 'set-category', commands.equipment.setCategory),
     ...command('equipment', 'set-guide-url', commands.equipment.setGuideUrl),
+    ...command(
+      'equipment',
+      'set-training-requirements',
+      commands.equipment.setTrainingRequirements
+    ),
     ...command(
       'equipment',
       'set-risk-assessment-url',
@@ -403,6 +428,11 @@ export const initRoutes = (
       commands.trainingSessions.cancelPlace
     ),
     ...command('training-sessions', 'cancel', commands.trainingSessions.cancel),
+    ...command(
+      'training-sessions',
+      'express-interest',
+      commands.trainingSessions.expressInterest
+    ),
     post(
       '/api/training-quiz/backfill-timeline',
       expressAsyncHandler(async (req, res) => {
@@ -582,7 +612,7 @@ export const initRoutes = (
 
     // Temporary location for POC - may move under individual equipments eventually.
     query('/equipment-signs', queries.equipmentSigns),
-    query('/trouble-tickets', queries.troubleTicketsHome),
+    // /trouble-tickets itself is public: see public-raise-routes.
     query('/trouble-tickets/board', queries.troubleTickets),
     // Under /view/ because every ticket action registers its confirmation
     // page at /trouble-tickets/<verb>, and a bare :id here swallows all of
@@ -605,6 +635,8 @@ export const initRoutes = (
     ...api('trouble-tickets', 'create', commands.troubleTickets.create),
     // The form is public: see public-raise-routes. The API stays as it was.
     ...publicRaiseRoutes(deps, publicReportGuard(conf)),
+    ...publicTrainingRoutes(deps),
+    ...publicOwnersGuideRoutes(deps),
     ...api('trouble-tickets', 'raise', commands.troubleTickets.raise),
     // The link in the confirmation of a report made without logging in.
     ...command('trouble-tickets', 'claim', commands.troubleTickets.claim),

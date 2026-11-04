@@ -145,6 +145,8 @@ describe('submit purchase request', () => {
         id: purchasingAreaId,
         name: 'Textiles',
         yearlyBudgetPence: 150_000,
+        active: true,
+        smallPurchaseAmountPence: 100_000,
       }),
       constructEvent('AreaAssignedToPurchasingArea')({
         actor: arbitraryActor(),
@@ -211,6 +213,34 @@ describe('submit purchase request', () => {
         formBody({outcome: 'consumable'})
       );
       expect(event.outcome).toStrictEqual('budget');
+    });
+  });
+
+  describe("the purchasing area's small purchase amount", () => {
+    it('lets a purchase under it come from the budget', async () => {
+      expect((await submitted(formBody(costing('600')))).outcome).toStrictEqual(
+        'budget'
+      );
+    });
+
+    describe('once lowered to £500', () => {
+      beforeEach(() => {
+        insert(
+          constructEvent('PurchasingAreaSmallPurchaseAmountSet')({
+            actor: arbitraryActor(),
+            purchasingAreaId,
+            smallPurchaseAmountPence: 50_000,
+          })
+        );
+      });
+
+      it('needs a proposal for a purchase of that much or more', async () => {
+        const event = await submitted(formBody(costing('600')));
+        expect(event.outcome).toStrictEqual('budget-proposal-needed');
+        expect(event.outcomeReason).toContain(
+          'A single purchase of £500.00 or more needs a proposal.'
+        );
+      });
     });
   });
 
@@ -555,6 +585,43 @@ describe('submit purchase request', () => {
           input: input(),
         })
       ).toBe(true);
+    });
+
+    describe('when the purchasing area is not active', () => {
+      beforeEach(() => {
+        insert(
+          constructEvent('PurchasingAreaDeactivated')({
+            actor: arbitraryActor(),
+            purchasingAreaId,
+          })
+        );
+      });
+
+      it('is not its purchaser', () => {
+        expect(
+          submit.isAuthorized({
+            actor: purchaser,
+            rm: framework.sharedReadModel,
+            input: input(),
+          })
+        ).toBe(false);
+      });
+
+      it('is not even a super user', () => {
+        insert(
+          constructEvent('SuperUserDeclared')({
+            actor: arbitraryActor(),
+            memberNumber: otherMemberNumber,
+          })
+        );
+        expect(
+          submit.isAuthorized({
+            actor: userActor(otherMemberNumber),
+            rm: framework.sharedReadModel,
+            input: input(),
+          })
+        ).toBe(false);
+      });
     });
   });
 

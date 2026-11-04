@@ -111,8 +111,8 @@ export const render = (viewModel: ViewModel) => {
         ? html`<section class="stack">
             <h2>Waiting for you (${viewModel.waitingForViewer.length})</h2>
             <p>
-              Approve or decline these, mark them as bought once approved, or,
-              for what you've bought, pass the invoice on to the accountants
+Approve or decline these, mark them as paid once approved, or,
+              for what you've paid for, pass the invoice on to the accountant
               and mark it as sent.
             </p>
             ${renderTable(

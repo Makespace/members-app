@@ -31,6 +31,27 @@ describe('DomainEvent', () => {
     });
   });
 
+  describe('PurchasingAreaCreated', () => {
+    const recorded = {
+      type: 'PurchasingAreaCreated',
+      actor: {tag: 'system'},
+      recordedAt: '2026-02-20T00:00:00.000Z',
+      id: 'd1428735-0482-49c4-b16b-82503ccea74b',
+      name: 'Craft & Art',
+      yearlyBudgetPence: 150_000,
+    };
+
+    it('counts one recorded before activation existed as active', () => {
+      const decoded = unwrap(DomainEvent.decode(recorded));
+      expect(decoded).toMatchObject({active: true});
+    });
+
+    it('keeps an inactive one inactive', () => {
+      const decoded = unwrap(DomainEvent.decode({...recorded, active: false}));
+      expect(decoded).toMatchObject({active: false});
+    });
+  });
+
   it('validates MemberDetailsUpdated', () => {
     const event: unknown = {
       type: 'MemberDetailsUpdated',

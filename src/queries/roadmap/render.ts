@@ -87,8 +87,6 @@ export const render = () => html`
       todo(html`Dual confirmation for marking someone as trained: the trainer
       marks them as trained, then the trainee confirms by email that they were
       trained satisfactorily`),
-      todo(html`Filter inactive members out of the 'awaiting training'
-      lists`),
       inProgress(html`Remove 'trained' status for people who haven't been
       members for a while, or who have been banned - an admin linking a
       returning member's new number now chooses whether their old training
@@ -139,8 +137,11 @@ export const render = () => html`
       area`),
       done(html`A purchase request form that says where the money comes from -
       members paying for it, or the yearly budget - and whether a proposal is
-      needed (£1,000 or more in one go, going over the budget, affecting other
-      areas, or a health and safety risk)`),
+      needed (the purchasing area's small purchase amount or more in one go,
+      going over the budget, affecting other areas, or a health and safety
+      risk)`),
+      done(html`Set each purchasing area's small purchase amount: £500 for new
+      ones, while those set up before keep £1,000`),
       done(html`Send a proposal with a request that needs one, with a risk
       assessment for a health and safety risk`),
       todo(html`Approve purchase requests and their proposals in the app, and

@@ -101,6 +101,7 @@ import {
   getAllPurchasingAreas,
   getPurchaseRequest,
   getAllPurchaseRequests,
+  purchasingAreaHasHistory,
   hasNotifiedForPurchaseEvent,
   notifiedAboutRequest,
   getPurchaseRequests,
@@ -119,8 +120,18 @@ import {
   getTrainingSession,
   getUpcomingTrainingSessionsForEquipment,
   hasNotifiedForTrainingSessionEvent,
+  getAllUpcomingTrainingSessions,
   TrainingSession,
 } from './training-sessions/get';
+import {
+  getTrainingRequirements,
+  TrainingRequirements,
+} from './training-requirements/get';
+import {
+  getTrainingInterestForEquipment,
+  getTrainingInterestOf,
+  TrainingInterest,
+} from './training-interest/get';
 
 export type SharedReadModel = {
   db: BetterSQLite3Database;
@@ -250,6 +261,7 @@ export type SharedReadModel = {
     ) => ReadonlyArray<PurchaseRequest>;
     getRequest: (id: UUID) => O.Option<PurchaseRequest>;
     getAllRequests: () => ReadonlyArray<PurchaseRequest>;
+    hasHistory: (purchasingAreaId: UUID) => boolean;
     hasNotifiedForEvent: (eventIndex: number) => boolean;
     notifiedAbout: (requestId: UUID) => ReadonlyArray<number>;
   };
@@ -266,6 +278,14 @@ export type SharedReadModel = {
     memberNumbersWhoHaveArranged: (equipmentId: UUID) => ReadonlyArray<number>;
     allForEquipment: (equipmentId: UUID) => ReadonlyArray<TrainingSession>;
     hasNotifiedForEvent: (eventIndex: number) => boolean;
+    allUpcoming: (now: Date) => ReadonlyArray<TrainingSession>;
+  };
+  trainingRequirements: {
+    get: (equipmentId: UUID) => TrainingRequirements;
+  };
+  trainingInterest: {
+    forEquipment: (equipmentId: UUID) => ReadonlyArray<TrainingInterest>;
+    of: (equipmentId: UUID, memberNumber: number) => O.Option<TrainingInterest>;
   };
 };
 
@@ -388,6 +408,7 @@ export const initSharedReadModel = (
       getRequests: getPurchaseRequests(readModelDb),
       getRequest: getPurchaseRequest(readModelDb),
       getAllRequests: getAllPurchaseRequests(readModelDb),
+      hasHistory: purchasingAreaHasHistory(readModelDb),
       hasNotifiedForEvent: hasNotifiedForPurchaseEvent(readModelDb),
       notifiedAbout: notifiedAboutRequest(readModelDb),
     },
@@ -403,6 +424,14 @@ export const initSharedReadModel = (
         getMemberNumbersWhoHaveArrangedTraining(readModelDb),
       allForEquipment: getAllTrainingSessionsForEquipment(readModelDb),
       hasNotifiedForEvent: hasNotifiedForTrainingSessionEvent(readModelDb),
+      allUpcoming: getAllUpcomingTrainingSessions(readModelDb),
+    },
+    trainingRequirements: {
+      get: getTrainingRequirements(readModelDb),
+    },
+    trainingInterest: {
+      forEquipment: getTrainingInterestForEquipment(readModelDb),
+      of: getTrainingInterestOf(readModelDb),
     },
   };
 };

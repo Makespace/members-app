@@ -12,22 +12,26 @@ import {
 // SumUp) doesn't come out of the yearly budget. Everything else does - the
 // budget pays for keeping equipment running safely (repairs, servicing,
 // running costs, replacements) as well as improvements. A budget purchase
-// needs a proposal when the total is £1,000 or more, or when it would take
-// this year's spending past the yearly budget; landing exactly on the budget
-// is fine.
+// needs a proposal when the total is the purchasing area's small purchase
+// amount or more, or when it would take this year's spending past the yearly
+// budget; landing exactly on the budget is fine.
 //
 // Any purchase, consumable or not, also needs a proposal when it affects
 // other areas (so their owners can give their input) or presents a moderate
 // to high health and safety risk (so it gets a risk assessment). The reason
 // says everything that applies, one sentence each.
 
-// A single budget purchase of this much or more always needs a proposal.
-export const PROPOSAL_THRESHOLD_PENCE = 100_000;
+// How much a single budget purchase can cost before it needs a proposal, for
+// a purchasing area created now. Each purchasing area has its own, which a
+// super user can change; ones created before it could be set kept £1,000.
+export const DEFAULT_SMALL_PURCHASE_AMOUNT_PENCE = 50_000;
 
 type ClassificationInput = {
   isMemberPaidConsumable: boolean;
   // The estimated total.
   amountPence: number;
+  // A single budget purchase of this much or more needs a proposal.
+  smallPurchaseAmountPence: number;
   yearlyBudgetPence: number;
   // Already spent from the budget this budget year, not counting the request
   // being classified.
@@ -57,7 +61,10 @@ const listOf = (names: ReadonlyArray<string>) =>
 const otherReasons = ({
   affectedAreaNames,
   healthAndSafetyRisk,
-}: ClassificationInput): ReadonlyArray<string> => [
+}: Pick<
+  ClassificationInput,
+  'affectedAreaNames' | 'healthAndSafetyRisk'
+>): ReadonlyArray<string> => [
   ...(affectedAreaNames.length > 0
     ? [
         `It affects ${listOf(affectedAreaNames)} too, so it needs a proposal giving their owners a chance to give their input.`,
@@ -102,12 +109,12 @@ export const classifyPurchase = (
     };
   }
 
-  if (amountPence >= PROPOSAL_THRESHOLD_PENCE) {
+  if (amountPence >= input.smallPurchaseAmountPence) {
     return {
       outcome: 'budget-proposal-needed',
       approval: 'proposal',
       reason: withOthers(
-        `A single purchase of ${formatPence(PROPOSAL_THRESHOLD_PENCE)} or more needs a proposal.`
+        `A single purchase of ${formatPence(input.smallPurchaseAmountPence)} or more needs a proposal.`
       ),
     };
   }
@@ -131,3 +138,20 @@ export const classifyPurchase = (
     ),
   };
 };
+
+// Why it will need a proposal whatever it costs, known from the answers
+// about the request before any costs are given: it affects other areas, it
+// presents a health and safety risk, or - unless members pay for it - the
+// yearly budget is already used up, so any cost takes spending over it.
+// Empty when it depends on the cost. classifyPurchase still decides.
+export const earlyProposalReasons = (
+  input: Omit<ClassificationInput, 'amountPence' | 'approvedOutsideBudget'>
+): ReadonlyArray<string> => [
+  ...(!input.isMemberPaidConsumable &&
+  input.spentThisYearPence >= input.yearlyBudgetPence
+    ? [
+        `This year's spending is already ${formatPence(input.spentThisYearPence)}, using up the yearly budget of ${formatPence(input.yearlyBudgetPence)}, so anything more from it needs a proposal.`,
+      ]
+    : []),
+  ...otherReasons(input),
+];
