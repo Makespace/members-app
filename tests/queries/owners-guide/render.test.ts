@@ -270,7 +270,12 @@ describe("the owner's guide's contents", () => {
       [...(purchasing?.querySelectorAll('.owners-guide__toc-sub a') ?? [])].map(
         link => text(link)
       )
-    ).toStrictEqual(['Purchase Requests', 'Simple Purchases', 'Proposals']);
+    ).toStrictEqual([
+      'Purchase Requests',
+      'Simple Purchases',
+      'Proposals',
+      'Budgets',
+    ]);
   });
 
   it('only links to headings that are there', () => {
@@ -282,6 +287,6 @@ describe("the owner's guide's contents", () => {
     targets.forEach(id =>
       expect(body.querySelector(`[id="${id}"]`)).not.toBeNull()
     );
-    expect(targets).toHaveLength(6);
+    expect(targets).toHaveLength(7);
   });
 });

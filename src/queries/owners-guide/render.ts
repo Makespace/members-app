@@ -406,6 +406,21 @@ const bodies = (
           >
         </li>
       </ul>
+      ${subheading('budgets')}
+      <ul class="owners-guide__kinds">
+        <li>
+          <strong>Consumables</strong>
+          <span>Members pay for these when they use them</span>
+        </li>
+        <li>
+          <strong>Repairs &amp; Running Costs</strong>
+          <span>Operational costs of running your Area</span>
+        </li>
+        <li>
+          <strong>Improvements</strong>
+          <span>Expanding the functionality of your Area</span>
+        </li>
+      </ul>
     `,
   };
 };

@@ -2922,6 +2922,40 @@ ul.guide-cards {
   margin-top: 0.25rem;
 }
 
+/* The kinds of purchase, three cards across, each a name and a line on
+   what it covers; one column on a phone. The element is named to outrank
+   the reset's ul[class]. */
+ul.owners-guide__kinds {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  margin: 0.75rem 0;
+  padding: 0;
+}
+
+@media (min-width: 36rem) {
+  ul.owners-guide__kinds {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.owners-guide__kinds > li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--owners-guide-data-edge);
+  border-radius: 6px;
+  background: #fff;
+  line-height: 1.4;
+}
+
+.owners-guide__kinds > li > span {
+  color: var(--grey-color);
+  font-size: 0.875rem;
+}
+
 /* The four conditions owners decide for themselves, as small cards two to
    a row: the money ones first, tinted green, then safety and other Areas,
    tinted amber, each with its icon. One column on a phone, in the same
