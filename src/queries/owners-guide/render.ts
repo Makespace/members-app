@@ -309,10 +309,21 @@ const bodies = (
   const term = termsFor();
   return {
     purchasing: html`
-      <p>
-        Money is available for Owners' teams to pay for improvements and
-        repairs in their areas.
-      </p>
+      <p>Money is available for Owners' teams to pay for:</p>
+      <ul class="owners-guide__kinds">
+        <li>
+          <strong>Consumables</strong>
+          <span>Members pay for these when they use them</span>
+        </li>
+        <li>
+          <strong>Repairs &amp; Running Costs</strong>
+          <span>Operational costs of running your Area</span>
+        </li>
+        <li>
+          <strong>Improvements</strong>
+          <span>Expanding the functionality of your Area</span>
+        </li>
+      </ul>
       <p>
         In order to manage this, Areas are grouped into
         ${term('purchase-area', 'Purchase Areas')} when they share financial
@@ -404,21 +415,6 @@ const bodies = (
             need to be signed off by ${term('director', 'Directors')} at a
             Board Meeting.</span
           >
-        </li>
-      </ul>
-      ${subheading('budgets')}
-      <ul class="owners-guide__kinds">
-        <li>
-          <strong>Consumables</strong>
-          <span>Members pay for these when they use them</span>
-        </li>
-        <li>
-          <strong>Repairs &amp; Running Costs</strong>
-          <span>Operational costs of running your Area</span>
-        </li>
-        <li>
-          <strong>Improvements</strong>
-          <span>Expanding the functionality of your Area</span>
         </li>
       </ul>
     `,
