@@ -2781,14 +2781,30 @@ ul.guide-cards {
   margin-top: 0.5rem;
 }
 
-.owners-guide__section {
+/* The headings within a section, under it in the contents: smaller and
+   quieter, so the sections still stand out. */
+.owners-guide__toc ol.owners-guide__toc-sub {
+  margin-top: 0.35rem;
+  padding-left: 1rem;
+  list-style: none;
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.owners-guide__toc .owners-guide__toc-sub li + li {
+  margin-top: 0.35rem;
+}
+
+.owners-guide__section,
+.owners-guide__subheading {
   scroll-margin-top: 1rem;
 }
 
 /* Arriving from a card or the contents, the box flashes up to show where
    you've landed, then fades so it doesn't sit round the section for the rest
    of the read. */
-.owners-guide__section:target {
+.owners-guide__section:target,
+.owners-guide__subheading:target {
   animation: owners-guide-target-flash 1.8s ease-out forwards;
 }
 
@@ -2814,7 +2830,8 @@ ul.guide-cards {
 
 /* Without motion, a box that vanished at once would be no help: keep it. */
 @media (prefers-reduced-motion: reduce) {
-  .owners-guide__section:target {
+  .owners-guide__section:target,
+  .owners-guide__subheading:target {
     animation: none !important;
   }
 }

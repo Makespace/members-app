@@ -10,7 +10,7 @@ import {
 } from '../../types/html';
 import {formatPence} from '../../types/money';
 import {definedTerm} from '../shared-render/defined-term';
-import {GuideSection, guideSections} from './sections';
+import {GuideSection, guideSections, SubsectionId} from './sections';
 import {
   PurchasingAreaOfYours,
   ViewModel,
@@ -267,6 +267,17 @@ const termsFor = () => {
     );
 };
 
+// A heading within a section, with the id the contents link to; its title
+// comes from the same list as the contents', so the two always agree.
+const subheading = (id: SubsectionId) => {
+  const found = guideSections
+    .flatMap(section => [...section.subsections])
+    .find(subsection => subsection.id === id);
+  return html`<h3 id="${safe(id)}" class="owners-guide__subheading">
+    ${safe(found?.title ?? id)}
+  </h3>`;
+};
+
 // The written part of each topic, by section id. A topic with nothing here yet
 // says so, so the cards on the owner page still land somewhere.
 const bodies = (
@@ -295,7 +306,7 @@ const bodies = (
         'the Purchase Areas that you are an Owner in',
         yourPurchaseAreas
       )}
-      <h3>How are purchasing decisions made and actioned?</h3>
+      ${subheading('purchasing-decisions')}
       <p>
         To suggest a purchase within your
         ${term('purchase-area', 'Purchase Area')}, you can use the
@@ -307,7 +318,7 @@ const bodies = (
         'links to request purchases for your Purchase Areas',
         requestAPurchase
       )}
-      <h3>Simple Purchases</h3>
+      ${subheading('simple-purchases')}
       <p>
         The Owners in a ${term('purchase-area', 'Purchase Area')} have full
         autonomy to decide on ${term('purchase-request', 'Purchase Requests')}
@@ -326,11 +337,11 @@ const bodies = (
           ${term('yearly-budget', 'Yearly Budget')}</span>
         </li>
         <li class="owners-guide__condition owners-guide__condition--care">
-          <i class="fa-regular fa-hand" aria-hidden="true"></i>
+          <i class="fa-regular fa-comment" aria-hidden="true"></i>
           <span>Won't potentially negatively impact other Areas</span>
         </li>
         <li class="owners-guide__condition owners-guide__condition--care">
-          <i class="fa-regular fa-hand" aria-hidden="true"></i>
+          <i class="fa-regular fa-comment" aria-hidden="true"></i>
           <span>Won't potentially introduce a moderate to high health &amp; safety
           risk</span>
         </li>
@@ -339,7 +350,7 @@ const bodies = (
         All other ${term('purchase-request', 'Purchase Requests')} need an
         accompanying Proposal.
       </p>
-      <h3>Purchase Requests that need a Proposal</h3>
+      ${subheading('proposals')}
       <p>
         You can submit a Proposal as part of your
         ${term('purchase-request', 'Purchase Request')}, including pros/cons,
@@ -347,7 +358,7 @@ const bodies = (
       </p>
       <ul class="owners-guide__conditions">
         <li class="owners-guide__condition owners-guide__condition--care">
-          <i class="fa-regular fa-hand" aria-hidden="true"></i>
+          <i class="fa-regular fa-comment" aria-hidden="true"></i>
           <span
             >Proposals that impact multiple areas can be discussed at Owners
             Meetings, or conversations can be facilitated by
@@ -355,7 +366,7 @@ const bodies = (
           >
         </li>
         <li class="owners-guide__condition owners-guide__condition--care">
-          <i class="fa-regular fa-hand" aria-hidden="true"></i>
+          <i class="fa-regular fa-comment" aria-hidden="true"></i>
           <span
             >Proposals that potentially introduce health &amp; safety risks
             need to be signed off by ${term('director', 'Directors')} at a
@@ -388,6 +399,20 @@ export const render = (viewModel: ViewModel) => html`
             section =>
               html`<li>
                 <a href="#${safe(section.id)}">${safe(section.title)}</a>
+                ${section.subsections.length === 0
+                  ? html``
+                  : html`<ol class="owners-guide__toc-sub">
+                      ${joinHtml(
+                        section.subsections.map(
+                          subsection =>
+                            html`<li>
+                              <a href="#${safe(subsection.id)}"
+                                >${safe(subsection.title)}</a
+                              >
+                            </li>`
+                        )
+                      )}
+                    </ol>`}
               </li>`
           )
         )}

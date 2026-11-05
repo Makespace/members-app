@@ -230,3 +230,37 @@ describe("the owner's guide's purchase request links", () => {
     ).toBeNull();
   });
 });
+
+describe("the owner's guide's contents", () => {
+  const page = () => {
+    const body = document.createElement('body');
+    body.innerHTML = render(loggedOut);
+    return body;
+  };
+
+  it('lists the headings within a section under it', () => {
+    const purchasing = page().querySelector('.owners-guide__toc > ol > li');
+
+    expect(
+      [...(purchasing?.querySelectorAll('.owners-guide__toc-sub a') ?? [])].map(
+        link => text(link)
+      )
+    ).toStrictEqual([
+      'How are purchasing decisions made and actioned?',
+      'Simple Purchases',
+      'Purchase Requests that need a Proposal',
+    ]);
+  });
+
+  it('only links to headings that are there', () => {
+    const body = page();
+    const targets = [...body.querySelectorAll('.owners-guide__toc a')].map(
+      link => link.getAttribute('href')?.slice(1)
+    );
+
+    targets.forEach(id =>
+      expect(body.querySelector(`[id="${id}"]`)).not.toBeNull()
+    );
+    expect(targets).toHaveLength(6);
+  });
+});
