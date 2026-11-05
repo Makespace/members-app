@@ -318,6 +318,15 @@ const bodies = (
         'links to request purchases for your Purchase Areas',
         requestAPurchase
       )}
+      <p>
+        ${term('purchase-area', 'Purchase Areas')} can nominate a
+        ${term('purchaser', 'Purchaser')} to approve
+        ${term('purchase-request', 'Purchase Requests')}, and this person will
+        be given the ability to make the purchase with a Capital on Tap card.
+        ${term('manager', 'Managers')} are also able to make purchases if no
+        ${term('purchaser', 'Purchaser')} is nominated or if a purchase exceeds
+        a card limit.
+      </p>
       ${subheading('simple-purchases')}
       <p>
         The Owners in a ${term('purchase-area', 'Purchase Area')} have full
