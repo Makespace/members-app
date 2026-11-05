@@ -439,7 +439,7 @@ export const render = (viewModel: ViewModel) => html`
                           subsection =>
                             html`<li>
                               <a href="#${safe(subsection.id)}"
-                                >${safe(subsection.title)}</a
+                                >${safe(subsection.contents)}</a
                               >
                             </li>`
                         )

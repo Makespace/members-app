@@ -1,5 +1,6 @@
 // The topics in the owner's guide, in the order the guide gives them, each
-// with the headings within it. The cards on the owner page and the guide's
+// with the headings within it: its title in the text, and a shorter one for
+// the contents. The cards on the owner page and the guide's
 // contents link to these, so the anchors live in one place.
 export const guideSections = [
   {
@@ -11,9 +12,18 @@ export const guideSections = [
       {
         id: 'purchasing-decisions',
         title: 'How are purchasing decisions made and actioned?',
+        contents: 'Purchase Requests',
       },
-      {id: 'simple-purchases', title: 'Simple Purchases'},
-      {id: 'proposals', title: 'Purchase Requests that need a Proposal'},
+      {
+        id: 'simple-purchases',
+        title: 'Simple Purchases',
+        contents: 'Simple Purchases',
+      },
+      {
+        id: 'proposals',
+        title: 'Purchase Requests that need a Proposal',
+        contents: 'Proposals',
+      },
     ],
   },
   {

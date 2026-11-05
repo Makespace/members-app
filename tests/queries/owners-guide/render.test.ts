@@ -263,18 +263,14 @@ describe("the owner's guide's contents", () => {
     return body;
   };
 
-  it('lists the headings within a section under it', () => {
+  it('lists the headings within a section under it, by their short names', () => {
     const purchasing = page().querySelector('.owners-guide__toc > ol > li');
 
     expect(
       [...(purchasing?.querySelectorAll('.owners-guide__toc-sub a') ?? [])].map(
         link => text(link)
       )
-    ).toStrictEqual([
-      'How are purchasing decisions made and actioned?',
-      'Simple Purchases',
-      'Purchase Requests that need a Proposal',
-    ]);
+    ).toStrictEqual(['Purchase Requests', 'Simple Purchases', 'Proposals']);
   });
 
   it('only links to headings that are there', () => {
