@@ -308,8 +308,9 @@ const bodies = (
         requestAPurchase
       )}
       <p>
-        Owners have full autonomy to decide on
-        ${term('purchase-request', 'Purchase Requests')} that:
+        The Owners in a ${term('purchase-area', 'Purchase Area')} have full
+        autonomy to decide on ${term('purchase-request', 'Purchase Requests')}
+        that:
       </p>
       <ul class="owners-guide__conditions">
         <li class="owners-guide__condition owners-guide__condition--money">
