@@ -197,6 +197,28 @@ const stillBeingWritten = html`
   </p>
 `;
 
+// Who approves and pays for an area's requests, when it has nominated
+// anybody: by name, as elsewhere in the guide, or member number without one.
+const purchasersOf = (purchasingArea: PurchasingAreaOfYours) =>
+  purchasingArea.purchasers.length === 0
+    ? html``
+    : html`<span class="owners-guide__purchasers owners-guide__muted"
+        >${safe(
+          purchasingArea.purchasers.length === 1 ? 'Purchaser' : 'Purchasers'
+        )}:
+        ${commaHtml(
+          purchasingArea.purchasers.map(purchaser =>
+            pipe(
+              purchaser.name,
+              O.match(
+                () => html`member ${safe(String(purchaser.memberNumber))}`,
+                name => html`${sanitizeString(name)}`
+              )
+            )
+          )
+        )}</span
+      >`;
+
 // Where to request a purchase for each of the reader's Purchase Areas: only
 // an active one takes requests. Says nothing to somebody in no Purchase Area.
 const requestAPurchase = (yours: YourAreas) =>
@@ -221,7 +243,8 @@ const requestAPurchase = (yours: YourAreas) =>
                             encodeURIComponent(purchasingArea.id)
                           )}"
                           >request a purchase</a
-                        >`
+                        >
+                        ${purchasersOf(purchasingArea)}`
                     : html`${sanitizeString(purchasingArea.name)}
                         <span class="owners-guide__muted"
                           >isn't taking requests yet. If you want your Area to

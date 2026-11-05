@@ -203,11 +203,36 @@ describe("the owner's guide's purchase request links", () => {
     const list = links(withWorkshops);
     const link = list?.querySelector('a');
 
-    expect(text(list)).toBe('Workshops - request a purchase');
+    expect(text(list)).toBe(
+      'Workshops - request a purchase Purchaser: Pat Purchaser'
+    );
     expect(text(link)).toBe('request a purchase');
     expect(link?.getAttribute('href')).toBe(
       '/purchase-requests/submit?purchasingArea=pa-1'
     );
+  });
+
+  it('names several Purchasers, or none when there are none', () => {
+    const purchasers = (yours: YourAreas) =>
+      text(links(yours)?.querySelector('.owners-guide__purchasers'));
+
+    expect(
+      purchasers({
+        ...withWorkshops,
+        purchasingAreas: [
+          {
+            ...workshops,
+            purchasers: [pat, {...pat, name: O.none, memberNumber: 42}],
+          },
+        ],
+      })
+    ).toBe('Purchasers: Pat Purchaser, member 42');
+    expect(
+      purchasers({
+        ...withWorkshops,
+        purchasingAreas: [{...workshops, purchasers: []}],
+      })
+    ).toBeUndefined();
   });
 
   it("says one that isn't active yet isn't taking requests, and who to ask", () => {
