@@ -198,7 +198,7 @@ export const requestAwaitingPurchase = (
       request => request.status === 'approved',
       () =>
         failureWithStatus(
-          'Only an approved purchase request that has not been bought yet can be marked as bought.',
+          'Only an approved purchase request that has not been paid for yet can be marked as paid.',
           StatusCodes.BAD_REQUEST
         )()
     )

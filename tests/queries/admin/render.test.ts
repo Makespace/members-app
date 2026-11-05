@@ -5,6 +5,8 @@
 import * as O from 'fp-ts/Option';
 import {UUID} from 'io-ts-types';
 import {render} from '../../../src/queries/admin/render';
+import {render as renderGuide} from '../../../src/queries/owners-guide/render';
+import {loggedOut} from '../../../src/queries/owners-guide/construct-view-model';
 import {ViewModel} from '../../../src/queries/admin/construct-view-model';
 
 const now = new Date('2026-10-29T12:00:00Z');
@@ -38,8 +40,8 @@ const pageFor = (viewModel: Omit<ViewModel, 'now'>) => {
 
 const page = () => pageFor(superUser);
 
-const hrefs = (body: HTMLElement) =>
-  [...body.querySelectorAll('a')].map(a => a.getAttribute('href'));
+const hrefs = (body: Element | null) =>
+  [...(body?.querySelectorAll('a') ?? [])].map(a => a.getAttribute('href'));
 
 describe('the admin page', () => {
   it('groups its links under headings rather than one long column', () => {
@@ -85,9 +87,8 @@ describe('the owner page', () => {
   it('shows an owner their area, and none of the admin links', () => {
     const body = pageFor({isSuperUser: false, ownedAreas: [woodShop]});
 
-    expect(body.querySelector('h1')?.textContent?.trim()).toBe('Owner');
     expect(body.textContent).toContain("You're an owner in this area.");
-    expect(hrefs(body)).toStrictEqual([
+    expect(hrefs(body.querySelector('.owner-ledger'))).toStrictEqual([
       '/trouble-tickets/board?areaId=area-1',
       '/purchasing-areas/purchasing-1',
       '/areas/manage?area=area-1',
@@ -151,6 +152,24 @@ describe('the owner page', () => {
       ),
     ].map(h => h.textContent?.trim());
 
-    expect(headings).toStrictEqual(['Owner', 'Admin']);
+    expect(headings).toStrictEqual(['Your areas', 'Admin']);
+  });
+
+  // The cards are only useful if each lands on a section that's there.
+  it("links to sections that exist in the owner's guide", () => {
+    const guide = document.createElement('body');
+    guide.innerHTML = renderGuide(loggedOut);
+    const cardLinks = hrefs(
+      pageFor({isSuperUser: false, ownedAreas: [woodShop]}).querySelector(
+        '.guide-cards'
+      )
+    );
+
+    expect(cardLinks).toHaveLength(3);
+    cardLinks.forEach(href => {
+      const [path, id] = (href ?? '').split('#');
+      expect(path).toBe('/owners-guide');
+      expect(guide.querySelector(`[id="${id}"]`)).not.toBeNull();
+    });
   });
 });

@@ -72,7 +72,7 @@ const renderBought = (request: PurchaseRequest, buyerName: O.Option<string>) =>
       </p>`
     : html`<p>
         <strong>Next:</strong> one of the area's purchasers (or a super user)
-        buys it and marks it as bought.
+        pays for it and marks it as paid.
       </p>`;
 
 const renderReceipts = (request: PurchaseRequest, canView: boolean) =>
@@ -219,7 +219,7 @@ const renderDecide = (request: PurchaseRequest) =>
     html`
     ${superUserButton(
       `/purchase-requests/approve?request=${request.id}`,
-      html`Approve`
+      html`Approve or mark as paid…`
     )}
     ${superUserButton(
       `/purchase-requests/decline?request=${request.id}`,
@@ -344,7 +344,7 @@ export const render = ({
           ? superUserActions(
               superUserButton(
                 `/purchase-requests/mark-bought?request=${request.id}`,
-                html`Mark as bought`
+                html`Mark as paid`
               ),
               awaitedApproval(request) === 'director'
                 ? 'Super users only'

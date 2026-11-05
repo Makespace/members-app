@@ -1,19 +1,15 @@
 import {
   classifyPurchase,
   earlyProposalReasons,
-  PROPOSAL_THRESHOLD_PENCE,
 } from '../../src/purchasing/classify-purchase';
 
 const roomyBudget = {
   yearlyBudgetPence: 500_000,
+  smallPurchaseAmountPence: 100_000,
   spentThisYearPence: 0,
 };
 
 describe('classifyPurchase', () => {
-  it('treats £1,000 as the proposal threshold', () => {
-    expect(PROPOSAL_THRESHOLD_PENCE).toStrictEqual(100_000);
-  });
-
   describe('when it is a consumable members pay for at point of use', () => {
     const result = classifyPurchase({
         affectedAreaNames: [],
@@ -21,6 +17,7 @@ describe('classifyPurchase', () => {
       isMemberPaidConsumable: true,
       amountPence: 250_000,
       yearlyBudgetPence: 0,
+      smallPurchaseAmountPence: 100_000,
       spentThisYearPence: 0,
     });
 
@@ -45,6 +42,7 @@ describe('classifyPurchase', () => {
         isMemberPaidConsumable: false,
         amountPence: 25_000,
         yearlyBudgetPence: 150_000,
+        smallPurchaseAmountPence: 100_000,
         spentThisYearPence: 50_000,
       });
 
@@ -111,6 +109,7 @@ describe('classifyPurchase', () => {
           isMemberPaidConsumable: false,
           amountPence: 250_000,
           yearlyBudgetPence: 1_000_000,
+          smallPurchaseAmountPence: 100_000,
           spentThisYearPence: 0,
         });
         expect(result.outcome).toStrictEqual('budget-proposal-needed');
@@ -125,6 +124,7 @@ describe('classifyPurchase', () => {
           isMemberPaidConsumable: false,
           amountPence: 30_000,
           yearlyBudgetPence: 100_000,
+          smallPurchaseAmountPence: 100_000,
           spentThisYearPence: 70_000,
         });
         expect(result.outcome).toStrictEqual('budget');
@@ -141,6 +141,7 @@ describe('classifyPurchase', () => {
           isMemberPaidConsumable: false,
           amountPence: 30_001,
           yearlyBudgetPence: 100_000,
+          smallPurchaseAmountPence: 100_000,
           spentThisYearPence: 70_000,
         });
         expect(result.outcome).toStrictEqual('budget-proposal-needed');
@@ -158,6 +159,7 @@ describe('classifyPurchase', () => {
           isMemberPaidConsumable: false,
           amountPence: 1,
           yearlyBudgetPence: 0,
+          smallPurchaseAmountPence: 100_000,
           spentThisYearPence: 0,
         });
         expect(result.outcome).toStrictEqual('budget-proposal-needed');
@@ -172,6 +174,7 @@ describe('classifyPurchase', () => {
           isMemberPaidConsumable: false,
           amountPence: 500,
           yearlyBudgetPence: 100_000,
+          smallPurchaseAmountPence: 100_000,
           spentThisYearPence: 120_000,
         });
         expect(result.outcome).toStrictEqual('budget-proposal-needed');
@@ -184,6 +187,7 @@ describe('classifyPurchase', () => {
       isMemberPaidConsumable: false,
       amountPence: 10_000,
       yearlyBudgetPence: 100_000,
+      smallPurchaseAmountPence: 100_000,
       spentThisYearPence: 0,
       affectedAreaNames: [],
       healthAndSafetyRisk: false,
@@ -246,6 +250,7 @@ describe('earlyProposalReasons', () => {
     affectedAreaNames: [],
     healthAndSafetyRisk: false,
     yearlyBudgetPence: 100_000,
+    smallPurchaseAmountPence: 100_000,
     spentThisYearPence: 40_000,
   };
 

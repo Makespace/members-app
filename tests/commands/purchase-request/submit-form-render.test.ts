@@ -33,6 +33,7 @@ const woodShop = {
   areaNames: ['Wood Shop'],
   purchaserMemberNumbers: [],
   yearlyBudgetPence: 100_000,
+  smallPurchaseAmountPence: 100_000,
   spentThisYearPence: 42_000,
   remainingPence: 58_000,
 };
@@ -67,7 +68,6 @@ const onPage = (
   requestId,
   budgetYear: 2026,
   purchasingAreas: [woodShop],
-  proposalThresholdPence: 100_000,
   step,
   answers: {
     purchasingAreaId: woodShop.id,
@@ -118,6 +118,7 @@ const onPage = (
             isMemberPaidConsumable: false,
             amountPence: 25_000,
             yearlyBudgetPence: woodShop.yearlyBudgetPence,
+            smallPurchaseAmountPence: 100_000,
             spentThisYearPence: woodShop.spentThisYearPence,
           }),
         })
@@ -330,6 +331,7 @@ describe('purchase request form', () => {
               isMemberPaidConsumable: false,
               amountPence: 25_000,
               yearlyBudgetPence: woodShop.yearlyBudgetPence,
+              smallPurchaseAmountPence: 100_000,
               spentThisYearPence: woodShop.spentThisYearPence,
             }),
           }),
@@ -402,6 +404,7 @@ describe('purchase request form', () => {
               isMemberPaidConsumable: false,
               amountPence: 60_000,
               yearlyBudgetPence: woodShop.yearlyBudgetPence,
+              smallPurchaseAmountPence: 100_000,
               spentThisYearPence: woodShop.spentThisYearPence,
             }),
           }),
@@ -430,6 +433,7 @@ describe('purchase request form', () => {
               isMemberPaidConsumable: false,
               amountPence: risky ? 25_000 : 120_000,
               yearlyBudgetPence: woodShop.yearlyBudgetPence,
+              smallPurchaseAmountPence: 100_000,
               spentThisYearPence: woodShop.spentThisYearPence,
             }),
           }),

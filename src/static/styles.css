@@ -1748,6 +1748,63 @@ ul.purchase-checkboxes {
   opacity: 1;
 }
 
+/* A defined term, like "Purchase Area": a faint dotted underline, and its
+   meaning in a small box below on hover or focus. Upright, not italic, so it
+   reads as part of the sentence. */
+.defined-term {
+  position: relative;
+  font-style: normal;
+  text-decoration: underline dotted var(--grey-color) 1px;
+  text-underline-offset: 0.2em;
+  cursor: help;
+}
+
+.defined-term:focus-visible {
+  outline: 2px solid var(--focus-color);
+  outline-offset: 1px;
+}
+
+.defined-term__meaning {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  width: max-content;
+  max-width: 18rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: normal;
+  line-height: 1.45;
+  color: var(--text-color);
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.defined-term:hover .defined-term__meaning,
+.defined-term:focus .defined-term__meaning {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* On a phone, where a box beside the word could run off the screen: tapping
+   the term shows its meaning in a bar along the bottom instead. */
+@media (max-width: 36rem) {
+  .defined-term__meaning {
+    position: fixed;
+    top: auto;
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    width: auto;
+    max-width: none;
+  }
+}
+
 /* Utility Classes - Tailwind-inspired spacing */
 
 /* Padding utilities */
@@ -2425,7 +2482,6 @@ body:has(.tt-wrapper) {
   }
 }
 
-
 /* Site notification banners (see templates/banners.ts). Types: orange for
    action needed, green for upcoming events, blue for information. Adjacent
    banners of the same type alternate the --alt shade for separation. */
@@ -2507,7 +2563,6 @@ body:has(.tt-wrapper) {
 .site-banner--info.site-banner--alt {
   background: #4d94d1;
 }
-
 
 /* A label wrapping a native checkbox + text. The global input reset
    (appearance:none, width:100%, display:block) turns bare checkboxes into
@@ -2620,15 +2675,446 @@ body:has(.tt-wrapper) {
 }
 
 
-
 /* Breathing room between the last category radio and whatever follows it
    (typically the submit button). */
 /* The Owner page (queries/admin): a ledger, one row per area and per machine
    it holds that the owner trains on. Rows share one grid so the numbers line
    up down the page; hairlines part the areas; links are quiet text; zeros are
    grey so the counts that need looking at stand out. */
-.owner-ledger__intro {
+
+/* Above the ledger: cards linking into the owner's guide. Three across where
+   there's room, stacked on a phone; the whole card is the link. Element in
+   the selector to outrank the ul[class] reset. */
+ul.guide-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.guide-cards > li {
+  margin: 0;
+}
+
+.guide-cards a,
+.guide-cards a:visited {
+  display: block;
+  height: 100%;
+  padding: 0.75rem 1rem;
+  color: var(--text-color);
+  text-decoration: none;
+  background-color: color-mix(in oklch, white 94%, var(--green-color));
+  border: 1px solid color-mix(in oklch, white 55%, var(--green-color));
+}
+
+.guide-cards a:hover {
+  border-color: var(--green-color);
+  background-color: color-mix(in oklch, white 88%, var(--green-color));
+}
+
+.guide-cards__title {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--link-color);
+  text-decoration: underline;
+}
+
+.guide-cards__title i {
+  color: var(--green-color);
+  margin-right: 0.35rem;
+}
+
+.guide-cards__summary {
   color: var(--grey-color);
+}
+
+/* The owner's guide: contents in a sticky sidebar beside the text, or above
+   it on a narrow screen. */
+.owners-guide {
+  /* One column, never wider than the screen, until there's room for the
+     contents beside the text. */
+  grid-template-columns: minmax(0, 1fr);
+  /* Pale tints, after the training checklists: blue for what the guide
+     knows about your areas, yellow for notes in the margin. */
+  --owners-guide-data: #eef4fb;
+  --owners-guide-data-edge: #c9d9ec;
+  --owners-guide-note: #fbf5e1;
+  --owners-guide-note-edge: #e8d8a4;
+  --owners-guide-note-mark: #8a6a1c;
+  display: grid;
+  gap: 2rem;
+}
+
+@media (min-width: 48rem) {
+  .owners-guide {
+    grid-template-columns: 13rem minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .owners-guide__toc {
+    position: sticky;
+    top: 1rem;
+  }
+}
+
+.owners-guide__toc {
+  border-left: 3px solid var(--green-color);
+  padding-left: 1rem;
+}
+
+.owners-guide__toc-heading {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--grey-color);
+  margin-bottom: 0.5rem;
+}
+
+.owners-guide__toc ol {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.owners-guide__toc li + li {
+  margin-top: 0.5rem;
+}
+
+.owners-guide__section {
+  scroll-margin-top: 1rem;
+}
+
+/* Arriving from a card or the contents, the box flashes up to show where
+   you've landed, then fades so it doesn't sit round the section for the rest
+   of the read. */
+.owners-guide__section:target {
+  animation: owners-guide-target-flash 1.8s ease-out forwards;
+}
+
+@keyframes owners-guide-target-flash {
+  0% {
+    outline-color: transparent;
+    outline-width: 3px;
+  }
+  8% {
+    outline-color: var(--border-color);
+    outline-width: 6px;
+  }
+  25%,
+  45% {
+    outline-color: var(--border-color);
+    outline-width: 3px;
+  }
+  100% {
+    outline-color: transparent;
+    outline-width: 3px;
+  }
+}
+
+/* Without motion, a box that vanished at once would be no help: keep it. */
+@media (prefers-reduced-motion: reduce) {
+  .owners-guide__section:target {
+    animation: none !important;
+  }
+}
+
+.owners-guide__section h2 i {
+  color: var(--green-color);
+  margin-right: 0.35rem;
+}
+
+/* The one-line summary under each heading: there to orient, so quieter than
+   the explanation that follows it. */
+.owners-guide__summary {
+  font-size: 1rem;
+  color: var(--grey-color);
+}
+
+/* What the guide knows about the reader's own areas, set apart from the
+   explanation by a pale tint and a hairline edge, after the callouts in the
+   training checklists, rather than by a heavy rule: a distinction, not a
+   barricade. */
+.owners-guide__yours {
+  background: var(--owners-guide-data);
+  border: 1px solid var(--owners-guide-data-edge);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+}
+
+.owners-guide__yours > * + * {
+  margin-top: 0.5rem;
+}
+
+.owners-guide__yours-heading {
+  margin: 0;
+}
+
+/* Where the guide would show a logged-out reader their own areas: the shape
+   of what's there, outlined in dots, and what logging in would show. */
+.owners-guide__log-in-to-see {
+  border: 2px dotted var(--border-color);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  color: var(--grey-color);
+}
+
+/* Rules only where they help the eye along a row, and faint at that. */
+.owners-guide__yours table {
+  width: 100%;
+  background: none;
+}
+
+.owners-guide__yours th,
+.owners-guide__yours td {
+  border: 0;
+  padding: 0.4rem 1rem 0.4rem 0;
+  vertical-align: top;
+}
+
+.owners-guide__yours th:last-child,
+.owners-guide__yours td:last-child {
+  padding-right: 0;
+}
+
+.owners-guide__yours th {
+  font-size: 0.875rem;
+  font-weight: normal;
+  color: var(--grey-color);
+}
+
+.owners-guide__yours tbody tr + tr td {
+  border-top: 1px solid var(--owners-guide-data-edge);
+}
+
+.owners-guide__yours p {
+  margin: 0;
+}
+
+.owners-guide__requests {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.owners-guide__requests li + li {
+  margin-top: 0.25rem;
+}
+
+/* The four conditions owners decide for themselves, as small cards two to
+   a row: the money ones first, tinted green, then safety and other Areas,
+   tinted amber, each with its icon. One column on a phone, in the same
+   order. The element is named to outrank the reset's ul[class]. */
+ul.owners-guide__conditions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  margin: 0.75rem 0;
+  padding: 0;
+}
+
+@media (min-width: 36rem) {
+  ul.owners-guide__conditions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.owners-guide__condition {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid;
+  border-radius: 6px;
+  line-height: 1.4;
+}
+
+.owners-guide__condition > i {
+  flex: none;
+  width: 1.1em;
+  text-align: center;
+}
+
+.owners-guide__condition--money {
+  background: #f0f7f2;
+  border-color: #c8e0cf;
+}
+
+.owners-guide__condition--money > i {
+  color: var(--green-color);
+}
+
+.owners-guide__condition--care {
+  background: #fdf7e6;
+  border-color: #ebdba6;
+}
+
+.owners-guide__condition--care > i {
+  color: #8a6a1c;
+}
+
+/* A plain bulleted list in the guide's text. The site's reset takes list
+   markers away from lists with a class (see ul[class]), so name the element
+   to give them back. */
+ul.owners-guide__bullets {
+  list-style: disc;
+  padding-left: 1.5rem;
+}
+
+ul.owners-guide__bullets > li + li {
+  margin-top: 0.25rem;
+}
+
+.owners-guide__muted {
+  color: var(--grey-color);
+}
+
+.owners-guide__your-areas {
+  display: block;
+  font-size: 0.875rem;
+}
+
+
+.owners-guide__money {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* How much of the year's budget is spent: thin, so it reads as a hint
+   under the figure rather than a chart of its own. */
+.owners-guide__bar {
+  display: block;
+  height: 4px;
+  margin-top: 0.3rem;
+  margin-left: auto;
+  width: 8rem;
+  background: var(--owners-guide-data-edge);
+}
+
+.owners-guide__bar-spent {
+  display: block;
+  height: 100%;
+  background: var(--grey-color);
+}
+
+.owners-guide__bar-spent--over {
+  background: #b35a00;
+}
+
+/* This year's spending a month at a time, beside the count of purchases. */
+.owners-guide__sparkline {
+  display: block;
+  margin-top: 0.3rem;
+}
+
+.owners-guide__spark {
+  fill: var(--grey-color);
+}
+
+.owners-guide__spark--none {
+  fill: var(--owners-guide-data-edge);
+}
+
+/* Margin notes, as in the training checklists: a small numbered mark in the
+   text, and the note in a tinted box beside it on a wide screen, or just
+   after it on a narrow one. */
+.owners-guide__note-mark,
+.owners-guide__note > sup {
+  color: var(--owners-guide-note-mark);
+  font-weight: bold;
+  /* So the mark doesn't push its line further from the one above. */
+  line-height: 0;
+}
+
+.owners-guide__note {
+  display: block;
+  margin: 0.5rem 0 0 1rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  background: var(--owners-guide-note);
+  border: 1px solid var(--owners-guide-note-edge);
+  border-radius: 6px;
+}
+
+/* The margin beside the text, for notes, is optional: a section keeps its
+   full width unless it has a margin note in it, in which case its text
+   narrows to make room for the notes. A note is written as
+     <sup class="owners-guide__note-mark">1</sup><span class="owners-guide__note"
+       role="note"><sup>1</sup> ...</span>
+   straight after the words it's about. The page is never wider than 60rem,
+   so this is "wide enough for a margin beside the text". */
+@media (min-width: 60rem) {
+  .owners-guide__section:has(.owners-guide__note) {
+    padding-right: 14rem;
+  }
+
+  /* Pulled up by its own padding and border, so its first line of text
+     sits level with the line that refers to it. */
+  .owners-guide__note {
+    float: right;
+    clear: right;
+    width: 12.5rem;
+    margin: calc(-0.5rem - 1px) -14rem 0 0;
+  }
+}
+
+/* On a phone, each Purchase Area is a small block rather than a row: name,
+   then each figure on its own line under a label. */
+@media (max-width: 36rem) {
+  .owners-guide__yours thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .owners-guide__yours table,
+  .owners-guide__yours tbody,
+  .owners-guide__yours tr,
+  .owners-guide__yours td {
+    display: block;
+  }
+
+  .owners-guide__yours tbody tr {
+    padding: 0.5rem 0;
+  }
+
+  .owners-guide__yours tbody tr + tr td {
+    border-top: 0;
+  }
+
+  .owners-guide__yours tbody tr + tr {
+    border-top: 1px solid var(--owners-guide-data-edge);
+  }
+
+  .owners-guide__yours td {
+    padding: 0.15rem 0;
+  }
+
+  .owners-guide__yours td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.875rem;
+    color: var(--grey-color);
+  }
+
+  .owners-guide__yours .owners-guide__money {
+    text-align: left;
+    white-space: normal;
+  }
+
+  .owners-guide__bar {
+    margin-left: 0;
+  }
+}
+
+/* A section not written yet: said quietly, not boxed. */
+.owners-guide__placeholder {
+  color: var(--grey-color);
+  font-style: italic;
 }
 
 .owner-ledger__row {
@@ -3880,7 +4366,6 @@ ul.sign__points li + li {
 }
 
 
-
 /* The two steps to being trained on a machine: numbered, because the order
    matters - the quiz comes before anyone will book you a practical. */
 /* ol.: the reset's ol[class] would otherwise win and close the gap above. */
@@ -4423,7 +4908,6 @@ a.button-outline--small {
   margin: 0.75rem 0 0.25rem;
 }
 
-
 .training-filter {
   color: var(--grey-color);
 }
@@ -4837,7 +5321,6 @@ a.eq-capsule--dead:visited {
   margin: 0;
 }
 
-
 /* A row that follows the one above it puts its controls away. Greying them
    kept five rows of boxes on screen that only repeated the row above, which
    buried the handful of rules somebody had actually set. What the row comes to
@@ -5111,7 +5594,6 @@ ul.checklist {
   color: color-mix(in oklch, white 45%, var(--green-color));
   transform: translate(0.12em, -0.12em) rotate(-6deg);
 }
-
 
 /* Progress through a form filled in a page at a time (the owner agreement,
    purchase requests - see src/templates/multi-page-form.ts): numbered

@@ -16,6 +16,7 @@ const woodShop = {
   areaNames: ['Wood Shop'],
   purchaserMemberNumbers: [],
   yearlyBudgetPence: 100_000,
+  smallPurchaseAmountPence: 100_000,
   spentThisYearPence: 42_000,
   remainingPence: 58_000,
 };
@@ -38,7 +39,6 @@ const setUp = (prefill: Prefill = {}) => {
     requestId: '33333333-3333-4333-8333-333333333333' as UUID,
     budgetYear: 2026,
     purchasingAreas: [woodShop],
-    proposalThresholdPence: 100_000,
     step: 3,
     answers: {
       purchasingAreaId: woodShop.id,
@@ -77,6 +77,7 @@ const setUp = (prefill: Prefill = {}) => {
         isMemberPaidConsumable: false,
         amountPence: 50_000,
         yearlyBudgetPence: woodShop.yearlyBudgetPence,
+        smallPurchaseAmountPence: 100_000,
         spentThisYearPence: woodShop.spentThisYearPence,
       }),
     }),

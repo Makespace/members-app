@@ -137,8 +137,11 @@ export const render = () => html`
       area`),
       done(html`A purchase request form that says where the money comes from -
       members paying for it, or the yearly budget - and whether a proposal is
-      needed (£1,000 or more in one go, going over the budget, affecting other
-      areas, or a health and safety risk)`),
+      needed (the purchasing area's small purchase amount or more in one go,
+      going over the budget, affecting other areas, or a health and safety
+      risk)`),
+      done(html`Set each purchasing area's small purchase amount: £500 for new
+      ones, while those set up before keep £1,000`),
       done(html`Send a proposal with a request that needs one, with a risk
       assessment for a health and safety risk`),
       todo(html`Approve purchase requests and their proposals in the app, and

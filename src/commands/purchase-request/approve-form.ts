@@ -79,9 +79,9 @@ const renderForm = (viewModel: DecisionViewModel) =>
               ? html`required`
               : html``}
           ></textarea>
-          <label for="actualCost">If you've bought it, what did it cost?</label>
+          <label for="actualCost">If you've paid for it, what did it cost?</label>
           <p class="text-sm">
-            Only used with "Approve and mark as bought". Change it if the real
+            Only used with "Approve and mark as paid". Change it if the real
             cost was different, e.g. with delivery.
           </p>
           <div class="purchase-money purchase-money--narrow">
@@ -109,12 +109,12 @@ const renderForm = (viewModel: DecisionViewModel) =>
                 decisionAction('approve', viewModel.request.id, receiptPagePath)
               )}"
             >
-              Approve and mark as bought
+              Approve and mark as paid
             </button>
           </div>
           <p class="text-sm">
-            Approve it for someone to buy, or, if you've already bought it,
-            approve it and mark it as bought. You'll then be asked for the
+            Approve it for someone to pay for, or, if you've already paid for
+            it, approve it and mark it as paid. You'll then be asked for the
             receipt or invoice, to send to the accountant.
           </p>
         </form>

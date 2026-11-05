@@ -1316,6 +1316,7 @@ const _updateState =
             id: event.id,
             name: event.name,
             yearlyBudgetPence: event.yearlyBudgetPence,
+            smallPurchaseAmountPence: event.smallPurchaseAmountPence,
             active: event.active,
             createdAt: event.recordedAt,
           })
@@ -1361,6 +1362,16 @@ const _updateState =
           .run();
         if (rows.changes === 0) {
           throw new InconsistentEventError(`Unable to set budget of purchasing area ${event.purchasingAreaId} - unknown purchasing area`);
+        }
+        break;
+      }
+      case 'PurchasingAreaSmallPurchaseAmountSet': {
+        const rows = tx.update(purchasingAreasTable)
+          .set({smallPurchaseAmountPence: event.smallPurchaseAmountPence})
+          .where(eq(purchasingAreasTable.id, event.purchasingAreaId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to set small purchase amount of purchasing area ${event.purchasingAreaId} - unknown purchasing area`);
         }
         break;
       }

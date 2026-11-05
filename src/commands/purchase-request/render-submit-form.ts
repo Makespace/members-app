@@ -71,6 +71,8 @@ export type PurchasingAreaOption = {
   yearlyBudgetPence: number;
   spentThisYearPence: number;
   remainingPence: number;
+  // A single budget purchase of this much or more needs a proposal.
+  smallPurchaseAmountPence: number;
 };
 
 // As typed so far, carried from page to page.
@@ -102,7 +104,6 @@ export type PurchaseRequestFormViewModel = {
   // Only the purchasing areas this member may submit for.
   purchasingAreas: ReadonlyArray<PurchasingAreaOption>;
   // A single budget purchase of this much or more needs a proposal.
-  proposalThresholdPence: number;
   step: number;
   answers: PurchaseRequestAnswers;
   // What still needs sorting out, when they asked for a later page.
@@ -679,6 +680,7 @@ const earlyReasonsFor = (viewModel: PurchaseRequestFormViewModel) =>
             viewModel.answers.isMemberPaidConsumable !== 'false',
           affectedAreaNames: viewModel.affectedAreaNames,
           healthAndSafetyRisk: viewModel.answers.healthAndSafetyRisk === 'true',
+          smallPurchaseAmountPence: purchasingArea.smallPurchaseAmountPence,
           yearlyBudgetPence: purchasingArea.yearlyBudgetPence,
           spentThisYearPence: purchasingArea.spentThisYearPence,
         })
@@ -945,7 +947,6 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
     method="get"
     class="purchase-request__sections"
     id="purchase-costs-form"
-    data-proposal-threshold-pence="${viewModel.proposalThresholdPence}"
     data-consumable="${safe(String(viewModel.answers.isMemberPaidConsumable === 'true'))}"
     data-risky="${safe(String(viewModel.answers.healthAndSafetyRisk === 'true'))}"
     ${pipe(
@@ -954,7 +955,8 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
         () => html``,
         area =>
           html`data-budget-pence="${area.yearlyBudgetPence}"
-          data-spent-pence="${area.spentThisYearPence}"`
+          data-spent-pence="${area.spentThisYearPence}"
+          data-proposal-threshold-pence="${area.smallPurchaseAmountPence}"`
       )
     )}
   >

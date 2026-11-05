@@ -91,6 +91,16 @@ const renderBudget = (viewModel: ViewModel) => {
             </td>
           </tr>
           <tr>
+            <th>Small purchase amount</th>
+            <td>
+              ${money(purchasingArea.smallPurchaseAmountPence)}
+              <span class="text-gray"
+                >- a single purchase of this much or more needs a
+                proposal</span
+              >
+            </td>
+          </tr>
+          <tr>
             <th>Spent so far this year</th>
             <td>${money(purchasingArea.spentThisYearPence)}</td>
           </tr>
@@ -125,6 +135,12 @@ const renderBudget = (viewModel: ViewModel) => {
                 purchasingArea: purchasingArea.id,
               })}`,
               html`Set usual budget`
+            )}
+            ${superUserButton(
+              `/purchasing-areas/set-small-purchase-amount?${query({
+                purchasingArea: purchasingArea.id,
+              })}`,
+              html`Set small purchase amount`
             )}
             ${superUserButton(
               `/purchasing-areas/rename?${query({

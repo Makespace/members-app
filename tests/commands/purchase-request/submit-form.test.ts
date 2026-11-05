@@ -40,6 +40,7 @@ describe('purchase request form pages', () => {
       name,
       yearlyBudgetPence: 100_000,
       active: true,
+      smallPurchaseAmountPence: 100_000,
     }),
     constructEvent('AreaAssignedToPurchasingArea')({
       actor: arbitraryActor(),

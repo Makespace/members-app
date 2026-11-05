@@ -193,6 +193,8 @@ export type PurchasingArea = PurchasingAreaSummary & {
   yearlyBudgetPence: number;
   // The budget every year has unless set differently for that year.
   usualBudgetPence: number;
+  // A single budget purchase of this much or more needs a proposal.
+  smallPurchaseAmountPence: number;
   areas: ReadonlyArray<{id: UUID; name: string}>;
   purchasers: ReadonlyArray<PurchasingAreaPurchaser>;
   budgetYear: number;
