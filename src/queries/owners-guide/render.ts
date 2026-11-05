@@ -307,6 +307,7 @@ const bodies = (
         'links to request purchases for your Purchase Areas',
         requestAPurchase
       )}
+      <h3>Simple Purchases</h3>
       <p>
         The Owners in a ${term('purchase-area', 'Purchase Area')} have full
         autonomy to decide on ${term('purchase-request', 'Purchase Requests')}
@@ -344,16 +345,22 @@ const bodies = (
         ${term('purchase-request', 'Purchase Request')}, including pros/cons,
         options considered and a risk assessment if necessary.
       </p>
-      <ul class="owners-guide__bullets">
-        <li>
-          Proposals that impact multiple areas can be discussed at Owners
-          Meetings, or conversations can be facilitated by
-          ${term('manager', 'managers')}.
+      <ul class="owners-guide__conditions">
+        <li class="owners-guide__condition owners-guide__condition--care">
+          <i class="fa-regular fa-hand" aria-hidden="true"></i>
+          <span
+            >Proposals that impact multiple areas can be discussed at Owners
+            Meetings, or conversations can be facilitated by
+            ${term('manager', 'managers')}.</span
+          >
         </li>
-        <li>
-          Proposals that potentially introduce health &amp; safety risks need
-          to be signed off by ${term('director', 'Directors')} at a Board
-          Meeting.
+        <li class="owners-guide__condition owners-guide__condition--care">
+          <i class="fa-regular fa-hand" aria-hidden="true"></i>
+          <span
+            >Proposals that potentially introduce health &amp; safety risks
+            need to be signed off by ${term('director', 'Directors')} at a
+            Board Meeting.</span
+          >
         </li>
       </ul>
     `,
