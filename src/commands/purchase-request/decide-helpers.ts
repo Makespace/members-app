@@ -11,6 +11,7 @@ import {liftActorOrUser} from '../../read-models/lift-actor-or-user';
 import {
   canDecide,
   canMarkInvoiceSent,
+  isBought,
   needsInvoiceSent,
 } from '../../purchasing/permissions';
 import {PositivePenceFromPoundsString} from '../../types/money';
@@ -25,13 +26,19 @@ import {
 
 export const requestPath = (id: tt.UUID) => `/purchase-requests/view/${id}`;
 
+// Where a bought purchase's receipt or invoice is sent on: uploaded, or
+// marked as sent by hand or email.
+export const receiptPagePath = (id: tt.UUID) =>
+  `/purchase-requests/send-receipt?request=${id}`;
+
 // Where an approve or decline form sends the browser once saved: back to
 // the request.
 export const decisionAction = (
-  verb: 'approve' | 'decline' | 'mark-bought' | 'mark-invoice-sent',
-  id: tt.UUID
-) =>
-  `/purchase-requests/${verb}?next=${encodeURIComponent(requestPath(id))}`;
+  verb: 'approve' | 'decline' | 'mark-bought' | 'mark-invoice-sent' | 'upload-receipt',
+  id: tt.UUID,
+  // Somewhere else to go once saved, e.g. on to the receipt step.
+  then: (id: tt.UUID) => string = requestPath
+) => `/purchase-requests/${verb}?next=${encodeURIComponent(then(id))}`;
 
 const notFound = () =>
   failureWithStatus('No such purchase request', StatusCodes.NOT_FOUND)();
@@ -118,10 +125,28 @@ export const decisionFromParams = fromParams((rm, id) =>
 export const purchaseFromParams = fromParams((rm, id) =>
   requestAwaitingPurchase(rm, id)
 );
-export const invoiceFromParams = fromParams(
-  (rm, id) => requestAwaitingInvoice(rm, id),
+// For the receipt page: any bought purchase, as more receipts can be
+// uploaded after it's been sent.
+export const receiptFromParams = fromParams(
+  (rm, id) => requestBought(rm, id),
   canMarkInvoiceSent
 );
+
+// A purchase that has been bought, after approval or directly.
+export const requestBought = (
+  rm: SharedReadModel,
+  id: tt.UUID
+): E.Either<FailureWithStatus, PurchaseRequest> =>
+  pipe(
+    rm.purchasing.getRequest(id),
+    E.fromOption(notFound),
+    E.filterOrElse(isBought, () =>
+      failureWithStatus(
+        'A receipt or invoice can only be sent once the purchase has been bought.',
+        StatusCodes.BAD_REQUEST
+      )()
+    )
+  );
 
 // A bought purchase whose invoice hasn't been passed on yet.
 export const requestAwaitingInvoice = (
@@ -133,7 +158,7 @@ export const requestAwaitingInvoice = (
     E.fromOption(notFound),
     E.filterOrElse(needsInvoiceSent, () =>
       failureWithStatus(
-        "Only a bought purchase whose invoice hasn't been sent yet can be marked as sent.",
+        "Only a bought purchase whose receipt or invoice hasn't been sent yet can be marked as sent.",
         StatusCodes.BAD_REQUEST
       )()
     )

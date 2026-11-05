@@ -1,7 +1,9 @@
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import {DateTime} from 'luxon';
-import {html, safe, sanitizeString} from '../../types/html';
+import {html, joinHtml, safe, sanitizeString} from '../../types/html';
+import {receiptFilePath} from '../../purchasing/receipt-files';
+import {receiptPagePath} from '../../commands/purchase-request/decide-helpers';
 import {formatPence} from '../../types/money';
 import {
   PurchaseRequest,
@@ -32,10 +34,12 @@ type ViewModel = {
   canDecide: boolean;
   // Who marked it bought, once someone has.
   buyerName: O.Option<string>;
-  // Who passed its invoice on to the accountant, once someone has.
+  // Who first passed its receipt or invoice on to the accountant.
   invoiceSenderName: O.Option<string>;
   // Whoever bought it, the area's purchasers and super users.
   canMarkInvoiceSent: boolean;
+  // Those, whoever requested it, the Management Team and the Directors.
+  canViewReceipts: boolean;
 };
 
 const money = (pence: number) => sanitizeString(formatPence(pence));
@@ -71,42 +75,75 @@ const renderBought = (request: PurchaseRequest, buyerName: O.Option<string>) =>
         pays for it and marks it as paid.
       </p>`;
 
-// Once bought: whether its invoice has gone to the accountant.
+const renderReceipts = (request: PurchaseRequest, canView: boolean) =>
+  request.receipts.length === 0
+    ? html``
+    : html`<ul>
+        ${joinHtml(
+          request.receipts.map(
+            receipt =>
+              html`<li>
+                ${canView
+                  ? html`<a
+                      href="${safe(receiptFilePath(request.id, receipt.fileId))}"
+                      >${sanitizeString(receipt.filename)}</a
+                    >`
+                  : sanitizeString(receipt.filename)}
+                <span class="text-sm"
+                  >(uploaded
+                  ${displayDate(DateTime.fromJSDate(receipt.uploadedAt))})</span
+                >
+              </li>`
+          )
+        )}
+      </ul>`;
+
+// Once bought: whether its receipt or invoice has gone to the accountant,
+// and any that were uploaded.
 const renderInvoice = (
   request: PurchaseRequest,
   senderName: O.Option<string>,
-  canMark: boolean
+  canMark: boolean,
+  canView: boolean
 ) =>
   request.status !== 'bought' && request.status !== 'bought-directly'
     ? html``
-    : pipe(
-        request.invoiceSentAt,
-        O.match(
-          () => html`<p>
-              <strong>Invoice:</strong> not yet sent to the accountant.
-            </p>
-            ${canMark
-              ? html`<div>
-                  <a
-                    class="button"
-                    href="/purchase-requests/mark-invoice-sent?request=${request.id}"
-                    >Mark invoice as sent</a
-                  >
-                </div>`
-              : html``}`,
-          at => html`<p>
-            <strong>Invoice:</strong> sent to the accountant
-            ${pipe(
-              senderName,
-              O.match(
-                () => html``,
-                name => html`by ${sanitizeString(name)}`
-              )
-            )}
-            on ${displayDate(DateTime.fromJSDate(at))}.
-          </p>`
-        )
-      );
+    : html`<div class="stack">
+        ${pipe(
+          request.invoiceSentAt,
+          O.match(
+            () => html`<p>
+              <strong>Receipt or invoice:</strong> not yet sent to the
+              accountant.
+            </p>`,
+            at => html`<p>
+              <strong>Receipt or invoice:</strong> sent to the accountant
+              ${pipe(
+                senderName,
+                O.match(
+                  () => html``,
+                  name => html`by ${sanitizeString(name)}`
+                )
+              )}
+              on
+              ${displayDate(DateTime.fromJSDate(at))}${request.receipts
+                .length === 0
+                ? html` (handed over or emailed).`
+                : html`.`}
+            </p>`
+          )
+        )}
+        ${renderReceipts(request, canView)}
+        ${canMark
+          ? html`<div>
+              <a class="button" href="${safe(receiptPagePath(request.id))}"
+                >${O.isNone(request.invoiceSentAt)
+                  ? html`Send receipt or invoice`
+                  : html`Upload another receipt or invoice`}</a
+              >
+            </div>`
+          : html``}
+      </div>`;
 
 const renderDecision = (
   request: PurchaseRequest,
@@ -204,6 +241,7 @@ export const render = ({
   buyerName,
   invoiceSenderName,
   canMarkInvoiceSent,
+  canViewReceipts,
 }: ViewModel) => {
   const areaName = pipe(
     purchasingArea,
@@ -293,7 +331,12 @@ export const render = ({
           O.match(() => html``, renderProposal)
         )}
         ${renderDecision(request, deciderName, submitterName, buyerName)}
-        ${renderInvoice(request, invoiceSenderName, canMarkInvoiceSent)}
+        ${renderInvoice(
+          request,
+          invoiceSenderName,
+          canMarkInvoiceSent,
+          canViewReceipts
+        )}
         ${canDecide && request.status === 'awaiting-approval'
           ? renderDecide(request)
           : html``}

@@ -563,6 +563,7 @@ export const purchaseRequestsTable = defineTable(
       actualCostPence INTEGER,
       invoiceSentAt INTEGER,
       invoiceSentByMemberNumber INTEGER,
+      receiptsJson TEXT NOT NULL DEFAULT '[]',
       outcome TEXT NOT NULL,
       approval TEXT NOT NULL,
       outcomeReason TEXT NOT NULL,
@@ -602,9 +603,13 @@ export const purchaseRequestsTable = defineTable(
     boughtAt: integer('boughtAt', {mode: 'timestamp_ms'}),
     boughtByMemberNumber: integer('boughtByMemberNumber'),
     actualCostPence: integer('actualCostPence'),
-    // Once bought, its invoice passed on to the accountant: when, by whom.
+    // Once bought, its receipt or invoice passed on to the accountant (by
+    // uploading it, or by hand or email): first when, by whom.
     invoiceSentAt: integer('invoiceSentAt', {mode: 'timestamp_ms'}),
     invoiceSentByMemberNumber: integer('invoiceSentByMemberNumber'),
+    // Receipts and invoices uploaded for it, as JSON; the files themselves
+    // are in purchasing/receipt-files.
+    receiptsJson: text('receiptsJson').notNull().default('[]'),
     outcome: text('outcome').notNull().$type<PurchaseRequestOutcome>(),
     approval: text('approval').notNull().$type<PurchaseApproval>(),
     outcomeReason: text('outcomeReason').notNull(),

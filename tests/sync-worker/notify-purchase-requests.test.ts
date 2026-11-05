@@ -1,3 +1,5 @@
+import {pipe} from 'fp-ts/lib/function';
+import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {faker} from '@faker-js/faker';
 import {NonEmptyString, UUID} from 'io-ts-types';
@@ -11,6 +13,9 @@ import {
 import {TestFramework, initTestFramework} from '../read-models/test-framework';
 import {markBought} from '../../src/commands/purchase-request/mark-bought';
 import {markInvoiceSent} from '../../src/commands/purchase-request/mark-invoice-sent';
+import {uploadReceipt} from '../../src/commands/purchase-request/upload-receipt';
+import {notifyPurchaseReceipts} from '../../src/sync-worker/notify_purchase_receipts';
+import {canViewReceipts} from '../../src/purchasing/permissions';
 
 // Who hears about a purchase request, and what they're told, end to end:
 // requests go in through the commands, and the notifier sends the emails.
@@ -360,6 +365,142 @@ describe('purchase request notifications', () => {
     it("isn't needed before something is bought", async () => {
       const id = await request('50');
       expect(canMark(SUPER_USER, id)).toBe(false);
+    });
+  });
+
+  describe('uploading receipts and invoices for the accountant', () => {
+    const PDF = Buffer.from('%PDF-1.4 a receipt');
+    const getRequest = (id: UUID) =>
+      framework.sharedReadModel.purchasing.getRequest(id);
+    const boughtDirectly = () =>
+      request(
+        '0',
+        {purchases: undefined, buyingDirectly: true, amount: '50'},
+        PURCHASER
+      );
+    const upload = async (id: UUID, by = PURCHASER) => {
+      const fileId = faker.string.uuid() as UUID;
+      await framework.depsForCommands.receiptFiles.store({
+        fileId,
+        purchaseRequestId: id,
+        filename: 'receipt.pdf',
+        mimeType: 'application/pdf',
+        content: PDF,
+      });
+      await framework.commands.purchaseRequest.uploadReceipt({
+        id,
+        files: [
+          {
+            fileId,
+            filename: 'receipt.pdf',
+            mimeType: 'application/pdf',
+            sizeBytes: PDF.length,
+          },
+        ],
+        actor: asMember(by),
+      });
+      return fileId;
+    };
+    const notifyReceipts = async () => {
+      sentEmails = [];
+      await notifyPurchaseReceipts({
+        ...deps,
+        receiptFiles: framework.depsForCommands.receiptFiles,
+        conf: {
+          ...deps.conf,
+          PURCHASE_RECEIPTS_EMAIL: 'management@makespace.org',
+        } as Config,
+      });
+      return sentEmails;
+    };
+    const canUpload = (memberNumber: number, id: UUID) =>
+      uploadReceipt.isAuthorized({
+        actor: asMember(memberNumber),
+        rm: framework.sharedReadModel,
+        input: {id, files: []},
+      });
+    const canView = (memberNumber: number, id: UUID) =>
+      pipe(
+        getRequest(id),
+        O.exists(found =>
+          canViewReceipts(
+            framework.sharedReadModel,
+            deps.conf,
+            asMember(memberNumber),
+            found
+          )
+        )
+      );
+
+    it('records the file and marks it sent', async () => {
+      const id = await boughtDirectly();
+      const fileId = await upload(id);
+      expect(getRequest(id)).toMatchObject({
+        value: {
+          invoiceSentByMemberNumber: {value: PURCHASER},
+          receipts: [{fileId, filename: 'receipt.pdf', sizeBytes: PDF.length}],
+        },
+      });
+    });
+
+    it('emails management@ once, with the file attached and linked', async () => {
+      const id = await boughtDirectly();
+      const fileId = await upload(id);
+      const emails = await notifyReceipts();
+      expect(recipients(emails)).toStrictEqual(['management@makespace.org']);
+      expect(emails[0].subject).toBe(
+        'Receipt for purchase: Bandsaw <b>blades</b> (£50.00)'
+      );
+      expect(emails[0].text).toContain(
+        `https://members.makespace.org/purchase-requests/view/${id}/receipts/${fileId}`
+      );
+      expect(emails[0].text).toContain(
+        `https://members.makespace.org/purchase-requests/view/${id}`
+      );
+      expect(emails[0].attachments).toStrictEqual([
+        {filename: 'receipt.pdf', content: PDF, contentType: 'application/pdf'},
+      ]);
+      expect(await notifyReceipts()).toStrictEqual([]);
+    });
+
+    it('can add an invoice that came later, without changing who first sent it', async () => {
+      const id = await boughtDirectly();
+      await framework.commands.purchaseRequest.markInvoiceSent({
+        id,
+        actor: asMember(PURCHASER),
+      });
+      await upload(id, SUPER_USER);
+      expect(getRequest(id)).toMatchObject({
+        value: {
+          invoiceSentByMemberNumber: {value: PURCHASER},
+          receipts: [{uploadedByMemberNumber: {value: SUPER_USER}}],
+        },
+      });
+      expect(await notifyReceipts()).toHaveLength(1);
+    });
+
+    it('is for whoever bought it, purchasers and super users, once bought', async () => {
+      const notBought = await request('50');
+      expect(canUpload(SUPER_USER, notBought)).toBe(false);
+      const id = await boughtDirectly();
+      expect(canUpload(PURCHASER, id)).toBe(true);
+      expect(canUpload(SUPER_USER, id)).toBe(true);
+      expect(canUpload(METAL_OWNER, id)).toBe(false);
+    });
+
+    it('can be seen by the requester, the Management Team and Directors, but not every member', async () => {
+      const id = await request('50');
+      await framework.commands.purchaseRequest.approve({
+        id,
+        note: undefined,
+        markBought: true,
+        actualCost: undefined,
+        actor: asMember(PURCHASER),
+      });
+      expect(canView(REQUESTER, id)).toBe(true);
+      expect(canView(PURCHASER, id)).toBe(true);
+      expect(canView(MANAGER, id)).toBe(true);
+      expect(canView(METAL_OWNER, id)).toBe(false);
     });
   });
 

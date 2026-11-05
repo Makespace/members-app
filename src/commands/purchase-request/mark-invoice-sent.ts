@@ -14,8 +14,9 @@ const codec = t.strict({
 
 type MarkInvoiceSent = t.TypeOf<typeof codec>;
 
-// Recording that a bought purchase's invoice has been passed on to the
-// accountant (however it was sent).
+// Recording that a bought purchase's receipt or invoice has been passed on
+// to the accountant some other way: handed over, or emailed. Uploading it
+// (upload-receipt) records the same thing.
 const process: Command<MarkInvoiceSent>['process'] = input =>
   pipe(
     requestAwaitingInvoice(input.rm, input.command.id),

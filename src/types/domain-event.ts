@@ -345,11 +345,30 @@ const PurchaseRequestApproved = defineEvent('PurchaseRequestApproved', {
   actualCostPence: tt.withFallback(t.union([t.number, t.null]), null),
 });
 
-// A bought purchase's invoice passed on to the accountant, who tracks the
-// spending.
+// A bought purchase's receipt or invoice passed on to the accountant, by
+// hand or by email, so they can track the spending.
 const PurchaseRequestInvoiceSent = defineEvent('PurchaseRequestInvoiceSent', {
   id: tt.UUID,
 });
+
+// Receipts or invoices (images or PDFs) uploaded for a bought purchase. The
+// files themselves are kept outside the event log (see
+// src/purchasing/receipt-files.ts); the sync worker emails them on to the
+// accountant, so uploading also counts as sending.
+const PurchaseRequestReceiptUploaded = defineEvent(
+  'PurchaseRequestReceiptUploaded',
+  {
+    id: tt.UUID,
+    files: t.readonlyArray(
+      t.strict({
+        fileId: tt.UUID,
+        filename: t.string,
+        mimeType: t.string,
+        sizeBytes: t.number,
+      })
+    ),
+  }
+);
 
 // An approved purchase request bought by a purchaser or super user.
 const PurchaseRequestBought = defineEvent('PurchaseRequestBought', {
@@ -974,6 +993,7 @@ export const events = [
   PurchaseRequestDeclined,
   PurchaseRequestBought,
   PurchaseRequestInvoiceSent,
+  PurchaseRequestReceiptUploaded,
   PurchaseRequestNotificationSent,
   SuperUserDeclared,
   SuperUserRevoked,
@@ -1073,6 +1093,7 @@ export const DomainEvent = t.union([
   PurchaseRequestDeclined.codec,
   PurchaseRequestBought.codec,
   PurchaseRequestInvoiceSent.codec,
+  PurchaseRequestReceiptUploaded.codec,
   PurchaseRequestNotificationSent.codec,
   SuperUserDeclared.codec,
   SuperUserRevoked.codec,

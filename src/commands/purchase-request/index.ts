@@ -8,6 +8,7 @@ import {markBought} from './mark-bought';
 import {markBoughtForm} from './mark-bought-form';
 import {markInvoiceSent} from './mark-invoice-sent';
 import {markInvoiceSentForm} from './mark-invoice-sent-form';
+import {uploadReceipt} from './upload-receipt';
 
 export const purchaseRequest = {
   submit: {
@@ -30,4 +31,5 @@ export const purchaseRequest = {
     ...markInvoiceSent,
     ...markInvoiceSentForm,
   },
+  uploadReceipt,
 };

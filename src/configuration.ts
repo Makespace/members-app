@@ -86,6 +86,12 @@ const Config = t.strict({
   // Area whose owners are the directors, who hear about purchase requests
   // needing director approval. '' falls back to the super users.
   DIRECTORS_AREA_ID: tt.withFallback(t.string, ''),
+  // Where receipts and invoices uploaded for bought purchases are emailed,
+  // for the accountant.
+  PURCHASE_RECEIPTS_EMAIL: withDefaultIfEmpty(
+    t.string,
+    'management@makespace.org'
+  ),
 });
 
 export type Config = t.TypeOf<typeof Config>;

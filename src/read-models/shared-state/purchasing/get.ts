@@ -1,4 +1,5 @@
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
+import {receiptsFromJson} from './receipts';
 import {and, asc, desc, eq, inArray, sql} from 'drizzle-orm';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
@@ -318,9 +319,11 @@ const toPurchaseRequest = ({
   actualCostPence,
   invoiceSentAt,
   invoiceSentByMemberNumber,
+  receiptsJson,
   ...row
 }: typeof purchaseRequestsTable.$inferSelect): PurchaseRequest => ({
   ...row,
+  receipts: receiptsFromJson(receiptsJson),
   invoiceSentAt: O.fromNullable(invoiceSentAt),
   invoiceSentByMemberNumber: O.fromNullable(invoiceSentByMemberNumber),
   boughtAt: O.fromNullable(boughtAt),

@@ -12,6 +12,7 @@ import {queryToHandler, commandToHandlers, ping} from './http';
 import {formGet} from './http/form-get';
 import {bulkAddForm} from './commands/equipment/bulk-add-form';
 import {importFobsRoutes} from './paxton/import-fobs-routes';
+import {receiptRoutes} from './purchasing/receipt-routes';
 import {canSetNotificationPreferences} from './commands/notification-preferences/set';
 import {apiToHandlers} from './http/api-to-handlers';
 import {emailHandler} from './http/email-handler';
@@ -175,6 +176,14 @@ export const initRoutes = (
       'mark-invoice-sent',
       commands.purchaseRequest.markInvoiceSent
     ),
+    // The receipt step: upload the receipt or invoice, or mark it sent.
+    get(
+      '/purchase-requests/send-receipt',
+      expressAsyncHandler(
+        formGet(deps, commands.purchaseRequest.markInvoiceSent)
+      )
+    ),
+    ...receiptRoutes(deps),
     get('/purchase-request', (_req, res) =>
       res.redirect('/purchase-requests/submit')
     ),
