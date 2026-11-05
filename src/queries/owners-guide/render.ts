@@ -268,6 +268,10 @@ const definitions = {
     'Yearly Budget: a discretionary budget designed to give Owners flexibility over how they spend money. The per-year nominal budget (normally around £1000) is not a hard limit, or a target. Purchases can be approved outside of this budget, but they need to be written up as proposals and approved by the directors.',
   'small-purchase-amount':
     "Small Purchase Amount: a single purchase costing this much or more needs a proposal, even when it's within the Yearly Budget. It's normally £1000.",
+  consumables:
+    'Consumables: members pay for these when they use them.',
+  'repairs-and-running-costs':
+    'Repairs & Running Costs: operational costs of running your Area.',
   manager:
     'Manager: paid contractors who act as a coordinating function across Makespace, ensuring the smooth operation of the day-to-day running of the space, coordinating among the owners teams, guiding members to whatever/whoever they need, and coordinating between the directors and owners/members.',
   director:
@@ -417,6 +421,34 @@ const bodies = (
           >
         </li>
       </ul>
+      ${subheading('budgets')}
+      <p>
+        ${term('consumables', 'Consumables')} are paid for by members when they
+        are used, so they do not come out of the
+        ${term('yearly-budget', 'yearly budget')}.
+      </p>
+      <p>
+        ${term('repairs-and-running-costs', 'Repairs & Running Costs')} are
+        expected operational costs, so they also do not come out of the
+        ${term('yearly-budget', 'yearly budget')}.
+      </p>
+      <p>
+        All other purchases come out of the
+        ${term('yearly-budget', 'yearly budget')}.
+      </p>
+      ${subheading('over-budget')}
+      <p>
+        Budgets are indicative only, meant to reduce friction. They aren't
+        designed to be a hard limit on an Area's spending and they're not
+        designed to be a target either!
+      </p>
+      <p>
+        If a ${term('purchase-area', 'Purchase Area')} exceeds its budget, new
+        ${term('purchase-request', 'purchase requests')} will have to be
+        approved by the board of ${term('director', 'directors')}. It's possible
+        to put in a request for a one-off extension to the
+        ${term('yearly-budget', 'Yearly Budget')}.
+      </p>
     `,
   };
 };
