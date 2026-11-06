@@ -97,7 +97,7 @@ describe('purchase receipt upload and download', () => {
     await framework.commands.purchaseRequest.submit({
       id: requestId,
       purchasingAreaId,
-      isMemberPaidConsumable: false,
+      purchaseType: 'improvements',
       affectsOtherAreas: false,
       affectedAreaIds: undefined,
       healthAndSafetyRisk: false,

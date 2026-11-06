@@ -1,4 +1,5 @@
 import {BuildColumns, SQL, sql} from 'drizzle-orm';
+import {PurchaseType} from '../../types/purchase-type';
 import {UUID} from 'io-ts-types';
 import {EmailAddress, GravatarHash, UserId} from '../../types';
 import {
@@ -550,6 +551,7 @@ export const purchaseRequestsTable = defineTable(
       purchasesJson TEXT NOT NULL,
       justification TEXT NOT NULL,
       isMemberPaidConsumable INTEGER NOT NULL,
+      purchaseType TEXT,
       affectedAreaIdsJson TEXT NOT NULL,
       healthAndSafetyRisk INTEGER NOT NULL,
       proposalJson TEXT,
@@ -586,6 +588,8 @@ export const purchaseRequestsTable = defineTable(
     isMemberPaidConsumable: integer('isMemberPaidConsumable', {
       mode: 'boolean',
     }).notNull(),
+    // Unknown for a request sent before it was asked, unless member-paid.
+    purchaseType: text('purchaseType').$type<PurchaseType>(),
     affectedAreaIdsJson: text('affectedAreaIdsJson').notNull(),
     healthAndSafetyRisk: integer('healthAndSafetyRisk', {
       mode: 'boolean',

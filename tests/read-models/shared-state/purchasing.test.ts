@@ -1,3 +1,4 @@
+import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
 import {UUID} from 'io-ts-types';
@@ -50,6 +51,7 @@ describe('purchasing areas in the read model', () => {
       ],
       justification: 'Needed',
       isMemberPaidConsumable: outcome === 'consumable',
+      purchaseType: null,
       affectedAreaIds: [],
       healthAndSafetyRisk: false,
       proposal: null,
@@ -408,6 +410,35 @@ describe('purchasing areas in the read model', () => {
       );
       expect(requests).toHaveLength(6);
       expect(requests[0].id).toStrictEqual(latestId);
+    });
+
+    describe('the type of purchase', () => {
+      const typeOf = (id: UUID) =>
+        pipe(
+          framework.sharedReadModel.purchasing.getRequest(id),
+          O.chain(request => request.purchaseType)
+        );
+
+      it('is as chosen', () => {
+        const id = faker.string.uuid() as UUID;
+        insert({
+          ...submitted('budget', 1_000, 2026, id),
+          purchaseType: 'repairs',
+        });
+        expect(typeOf(id)).toStrictEqual(O.some('repairs'));
+      });
+
+      it('is member-paid for a consumable sent before it was asked', () => {
+        const id = faker.string.uuid() as UUID;
+        insert(submitted('consumable', 1_000, 2026, id));
+        expect(typeOf(id)).toStrictEqual(O.some('member-paid'));
+      });
+
+      it('is unknown for anything else sent before it was asked', () => {
+        const id = faker.string.uuid() as UUID;
+        insert(submitted('budget', 1_000, 2026, id));
+        expect(typeOf(id)).toStrictEqual(O.none);
+      });
     });
 
     it('counts the shop total as spent once approved', () => {

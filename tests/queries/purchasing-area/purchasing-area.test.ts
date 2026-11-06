@@ -100,7 +100,7 @@ describe('purchasing area page', () => {
     await framework.commands.purchaseRequest.submit({
       id: bandsawBlades,
       purchasingAreaId,
-      isMemberPaidConsumable: false,
+      purchaseType: 'improvements',
       affectsOtherAreas: false,
       affectedAreaIds: undefined,
       healthAndSafetyRisk: false,
@@ -170,7 +170,7 @@ describe('purchasing area page', () => {
     await framework.commands.purchaseRequest.submit({
       id: faker.string.uuid() as UUID,
       purchasingAreaId,
-      isMemberPaidConsumable: true,
+      purchaseType: 'member-paid',
       affectsOtherAreas: false,
       affectedAreaIds: undefined,
       healthAndSafetyRisk: false,
@@ -190,7 +190,7 @@ describe('purchasing area page', () => {
       actor: {tag: 'user', user: purchaser},
     });
     const text = pageFor(member).textContent;
-    expect(text).toContain('Paid for by members (not from the yearly budget)');
+    expect(text).toContain('Member-paid (not from the yearly budget)');
     expect(text).toContain('£1,500.00');
   });
 
@@ -205,7 +205,7 @@ describe('purchasing area page', () => {
     await framework.commands.purchaseRequest.submit({
       id: faker.string.uuid() as UUID,
       purchasingAreaId,
-      isMemberPaidConsumable: false,
+      purchaseType: 'improvements',
       affectsOtherAreas: false,
       affectedAreaIds: undefined,
       healthAndSafetyRisk: false,

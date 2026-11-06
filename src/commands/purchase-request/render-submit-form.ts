@@ -53,8 +53,10 @@ import {
   stepHref,
   StepValues,
 } from '../../templates/multi-page-form';
+import {purchaseTypes} from '../../types/purchase-type';
 
 export const PAGE_LABELS = [
+  'Type of purchase',
   'About the request',
   'Costs and budget',
   'Check and send',
@@ -77,11 +79,14 @@ export type PurchasingAreaOption = {
 
 // As typed so far, carried from page to page.
 export type PurchaseRequestAnswers = {
+  // Repairs, improvements or member-paid, as chosen on the first page.
+  purchaseType: string;
   purchasingAreaId: string;
   summary: string;
   justification: string;
   // The shops and their items as typed, blank ones already left out.
   purchases: ReadonlyArray<TypedPurchase>;
+  // 'true' when the type chosen is member-paid; worked out, never asked.
   isMemberPaidConsumable: string;
   affectsOtherAreas: string;
   // The other areas ticked, by id.
@@ -467,11 +472,11 @@ const carried = ({
 }: PurchaseRequestFormViewModel): StepValues =>
   [
     ['id', requestId] as const,
+    ['purchaseType', answers.purchaseType] as const,
     ['purchasingAreaId', answers.purchasingAreaId] as const,
     ['summary', answers.summary] as const,
     ['justification', answers.justification] as const,
     ...purchaseValues(answers.purchases),
-    ['isMemberPaidConsumable', answers.isMemberPaidConsumable] as const,
     ['affectsOtherAreas', answers.affectsOtherAreas] as const,
     ...answers.affectedAreaIds.map(id => ['affectedAreaIds', id] as const),
     ['healthAndSafetyRisk', answers.healthAndSafetyRisk] as const,
@@ -481,12 +486,13 @@ const carried = ({
   ].filter(([, value]) => value !== '');
 
 // Which page's questions a name belongs to.
+const askedOnTypePage = (name: string) => name === 'purchaseType';
+
 const askedOnAboutPage = (name: string) =>
   [
     'purchasingAreaId',
     'summary',
     'justification',
-    'isMemberPaidConsumable',
     'affectsOtherAreas',
     'affectedAreaIds',
     'healthAndSafetyRisk',
@@ -549,36 +555,6 @@ const renderAreaRadio =
 // Asked on page 1, as they decide whether a proposal is needed whatever it
 // costs.
 const renderQuestions = (viewModel: PurchaseRequestFormViewModel) => html`
-    <fieldset class="purchase-request__fieldset purchase-question">
-      <legend>Do members pay for this on SumUp?</legend>
-      <p class="purchase-request__hint text-sm">
-        For example, 3D printer filament, paid for on SumUp when it's used.
-      </p>
-      <div class="purchase-request__radios purchase-request__radios--inline">
-        <div class="fieldset-item">
-          <input
-            type="radio"
-            name="isMemberPaidConsumable"
-            id="consumable-yes"
-            value="true"
-            required
-            ${checkedIf(viewModel.answers.isMemberPaidConsumable === 'true')}
-          />
-          <label for="consumable-yes">Yes</label>
-        </div>
-        <div class="fieldset-item">
-          <input
-            type="radio"
-            name="isMemberPaidConsumable"
-            id="consumable-no"
-            value="false"
-            required
-            ${checkedIf(viewModel.answers.isMemberPaidConsumable === 'false')}
-          />
-          <label for="consumable-no">No</label>
-        </div>
-      </div>
-    </fieldset>
     <fieldset class="purchase-request__fieldset purchase-question">
       <legend>Does this have the potential to negatively impact other areas?</legend>
       <p class="purchase-request__hint text-sm">
@@ -701,13 +677,54 @@ const renderEarlyProposal = (reasons: ReadonlyArray<string>) => html`
 const renderEarlyProposalIfNeeded = (reasons: ReadonlyArray<string>) =>
   reasons.length > 0 ? renderEarlyProposal(reasons) : html``;
 
+// The first page: what kind of purchase it is, as three cards to pick from.
+// Repairs and improvements come out of the yearly budget; member-paid ones
+// don't, which is what decides the budget it comes out of later on.
+const renderTypePage = (viewModel: PurchaseRequestFormViewModel) => html`
+  <form method="get" class="purchase-request__sections" id="purchase-type-form">
+    <input type="hidden" name="step" value="2" />
+    ${hiddenInputs(carriedExcept(viewModel, askedOnTypePage))}
+    <fieldset class="purchase-request__fieldset">
+      <legend>What kind of purchase is this?</legend>
+      <div class="purchase-type-cards">
+        ${joinHtml(
+          purchaseTypes.map(
+            ({type, label, description}) => html`
+              <label class="purchase-type-card">
+                <input
+                  type="radio"
+                  name="purchaseType"
+                  value="${safe(type)}"
+                  required
+                  ${checkedIf(viewModel.answers.purchaseType === type)}
+                />
+                <strong>${sanitizeString(label)}</strong>
+                <span>${sanitizeString(description)}</span>
+                <span class="purchase-type-card__budget text-sm"
+                  >${type === 'member-paid'
+                    ? html`Doesn't come out of the yearly budget`
+                    : html`Comes out of the yearly budget`}</span
+                >
+              </label>
+            `
+          )
+        )}
+      </div>
+    </fieldset>
+    ${renderNext(viewModel)}
+  </form>
+`;
+
 const renderAboutPage = (viewModel: PurchaseRequestFormViewModel) => html`
   <form
     method="get"
     class="purchase-request__sections"
     id="purchase-about-form"
+    data-consumable="${safe(
+      String(viewModel.answers.isMemberPaidConsumable === 'true')
+    )}"
   >
-    <input type="hidden" name="step" value="2" />
+    <input type="hidden" name="step" value="3" />
     ${hiddenInputs(carriedExcept(viewModel, askedOnAboutPage))}
     <fieldset class="purchase-request__fieldset">
       <legend>Which area is this for?</legend>
@@ -774,7 +791,7 @@ const verdictStyle: Record<
 > = {
   consumable: {
     modifier: 'consumable',
-    tag: html`<span class="tag tag--green">Paid for by members</span>`,
+    tag: html`<span class="tag tag--green">Member-paid</span>`,
     heading: "This doesn't come out of your yearly budget",
   },
   budget: {
@@ -789,9 +806,7 @@ const verdictStyle: Record<
   },
   'consumable-proposal-needed': {
     modifier: 'proposal',
-    tag: html`<span class="tag tag--red"
-      >Paid for by members · Proposal needed</span
-    >`,
+    tag: html`<span class="tag tag--red">Member-paid · Proposal needed</span>`,
     heading:
       "This doesn't come out of your yearly budget, but you'll need to write a proposal",
   },
@@ -960,7 +975,7 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
       )
     )}
   >
-    <input type="hidden" name="step" value="3" />
+    <input type="hidden" name="step" value="4" />
     ${hiddenInputs(
       carriedExcept(viewModel, askedOnCostsPage)
     )}
@@ -1749,7 +1764,7 @@ const aboutScript = html`
         if (!chosen) return reasons;
         var budget = Number(chosen.dataset.budgetPence);
         var spent = Number(chosen.dataset.spentPence);
-        if (answer('isMemberPaidConsumable') === 'false' && spent >= budget) {
+        if (form.dataset.consumable === 'false' && spent >= budget) {
           reasons.push("This year's spending is already " + money(spent) +
             ', using up the yearly budget of ' + money(budget) +
             ', so anything more from it needs a proposal.');
@@ -2224,7 +2239,12 @@ const costsScript = html`
   </script>
 `;
 
-const pages = [renderAboutPage, renderCostsPage, renderCheckPage];
+const pages = [
+  renderTypePage,
+  renderAboutPage,
+  renderCostsPage,
+  renderCheckPage,
+];
 
 const renderNoPurchasingAreas = () => html`
   <p>

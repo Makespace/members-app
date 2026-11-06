@@ -1,4 +1,5 @@
 import * as O from 'fp-ts/Option';
+import {purchaseTypeLabel} from '../../types/purchase-type';
 import {pipe} from 'fp-ts/lib/function';
 import {DateTime} from 'luxon';
 import {html, joinHtml, safe, sanitizeString} from '../../types/html';
@@ -278,6 +279,15 @@ export const render = ({
         <dl class="purchase-summary">
           <dt>Status</dt>
           <dd>${renderStatus(request)}</dd>
+          ${pipe(
+            request.purchaseType,
+            O.match(
+              () => html``,
+              type =>
+                html`<dt>Type</dt>
+                  <dd>${sanitizeString(purchaseTypeLabel(type))}</dd>`
+            )
+          )}
           <dt>Budget</dt>
           <dd>
             ${renderOutcome(request.outcome, request.approval, request.status)}

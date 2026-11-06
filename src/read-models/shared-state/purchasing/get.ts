@@ -320,9 +320,11 @@ const toPurchaseRequest = ({
   invoiceSentAt,
   invoiceSentByMemberNumber,
   receiptsJson,
+  purchaseType,
   ...row
 }: typeof purchaseRequestsTable.$inferSelect): PurchaseRequest => ({
   ...row,
+  purchaseType: O.fromNullable(purchaseType),
   receipts: receiptsFromJson(receiptsJson),
   invoiceSentAt: O.fromNullable(invoiceSentAt),
   invoiceSentByMemberNumber: O.fromNullable(invoiceSentByMemberNumber),
