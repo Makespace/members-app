@@ -15,6 +15,7 @@ import {renderMember} from '../../templates/member';
 import {displayDateOnly} from '../../templates/display-date';
 import {renderOutcome} from '../../templates/purchase-request-outcome';
 import {renderStatus} from '../../templates/purchase-request-status';
+import {renderInvoiceSent} from '../../templates/purchase-request-invoice';
 import {renderRecordPurchaseButton} from '../../templates/record-purchase-button';
 import {
   superUserActions,
@@ -276,6 +277,7 @@ const renderSpendingRow = (viewModel: ViewModel) => (row: SpendingRow) => {
         <td>${money(request.totalPence)}</td>
         <td>${renderOutcome(request.outcome, request.approval, request.status)}</td>
         <td>${renderStatus(request)}</td>
+        <td>${renderInvoiceSent(request)}</td>
         ${canManage ? html`<td></td>` : html``}
       </tr>
     `;
@@ -297,6 +299,7 @@ const renderSpendingRow = (viewModel: ViewModel) => (row: SpendingRow) => {
           >Recorded by a super user</span
         >
       </td>
+      <td>-</td>
       ${canManage
         ? html`<td>
             ${superUserLink(
@@ -346,6 +349,7 @@ const renderSpending = (viewModel: ViewModel) => {
                 <th>Cost</th>
                 <th>Budget</th>
                 <th>Status</th>
+                <th>Invoice to accountant</th>
                 ${viewModel.canManage ? html`<th></th>` : html``}
               </tr>
             </thead>

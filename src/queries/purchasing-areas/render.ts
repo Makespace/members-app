@@ -17,6 +17,22 @@ type ViewModel = {
 
 const money = (pence: number) => sanitizeString(formatPence(pence));
 
+// This year's budget, and how far a one-off change for this year (e.g. an
+// extension) moves it from the usual one.
+const renderYearBudget = ({
+  yearlyBudgetPence,
+  usualBudgetPence,
+}: PurchasingArea) => {
+  const difference = yearlyBudgetPence - usualBudgetPence;
+  return difference === 0
+    ? money(yearlyBudgetPence)
+    : html`${money(yearlyBudgetPence)}
+        <span class="tag tag--yellow"
+          >${difference > 0 ? html`+` : html`-`}${money(Math.abs(difference))}
+          this year only</span
+        >`;
+};
+
 const renderRow = (purchasingArea: PurchasingArea) => html`
   <tr>
     <td>
@@ -32,7 +48,8 @@ const renderRow = (purchasingArea: PurchasingArea) => html`
         ? html`<small>No areas yet</small>`
         : sanitizeString(purchasingArea.areas.map(area => area.name).join(', '))}
     </td>
-    <td>${money(purchasingArea.yearlyBudgetPence)}</td>
+    <td>${money(purchasingArea.usualBudgetPence)}</td>
+    <td>${renderYearBudget(purchasingArea)}</td>
     <td>${money(purchasingArea.spentThisYearPence)}</td>
     <td>${renderRemaining(purchasingArea.remainingPence)}</td>
   </tr>
@@ -47,7 +64,8 @@ const renderTable = (viewModel: ViewModel) =>
             <tr>
               <th>Purchasing area</th>
               <th>Areas</th>
-              <th>Yearly budget</th>
+              <th>Usual budget</th>
+              <th>${viewModel.budgetYear} budget</th>
               <th>Spent in ${viewModel.budgetYear}</th>
               <th>Remaining</th>
             </tr>
