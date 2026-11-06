@@ -700,11 +700,11 @@ const renderTypePage = (viewModel: PurchaseRequestFormViewModel) => html`
                 />
                 <strong>${sanitizeString(label)}</strong>
                 <span>${sanitizeString(description)}</span>
-                <span class="purchase-type-card__budget text-sm"
-                  >${type === 'member-paid'
-                    ? html`Doesn't come out of the yearly budget`
-                    : html`Comes out of the yearly budget`}</span
-                >
+                ${type === 'member-paid'
+                  ? html`<span class="purchase-type-card__budget text-sm"
+                      >Doesn't come out of the yearly budget</span
+                    >`
+                  : html``}
               </label>
             `
           )

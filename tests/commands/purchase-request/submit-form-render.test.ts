@@ -191,14 +191,14 @@ describe('purchase request form', () => {
       ]);
     });
 
-    it('says which come out of the yearly budget', () => {
+    it('says only member-paid ones stay out of the yearly budget', () => {
       expect(
         cards().map(card =>
           card.querySelector('.purchase-type-card__budget')?.textContent?.trim()
         )
       ).toStrictEqual([
-        'Comes out of the yearly budget',
-        'Comes out of the yearly budget',
+        undefined,
+        undefined,
         "Doesn't come out of the yearly budget",
       ]);
     });
