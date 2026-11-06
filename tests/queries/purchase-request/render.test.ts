@@ -28,6 +28,7 @@ const request: PurchaseRequest = {
   ],
   justification: 'The old blades are blunt',
   isMemberPaidConsumable: false,
+  purchaseType: O.none,
   affectedAreaIds: [],
   healthAndSafetyRisk: false,
   proposal: O.none,
@@ -72,6 +73,13 @@ describe('purchase request page', () => {
     const html = page(true);
     expect(html).toContain('Request sent');
     expect(html).toContain('Table saw blades · £150.00 · Wood Shop');
+  });
+
+  it('says what type of purchase it is, when known', () => {
+    expect(page(false, {purchaseType: O.some('repairs')})).toContain(
+      'Repairs &amp; Running Costs'
+    );
+    expect(page(false)).not.toContain('<dt>Type</dt>');
   });
 
   it('heads a request looked at later with its summary', () => {

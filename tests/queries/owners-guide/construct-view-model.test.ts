@@ -112,7 +112,7 @@ describe("the owner's guide's purchasers", () => {
       await framework.commands.purchaseRequest.submit({
         id,
         purchasingAreaId: workshops,
-        isMemberPaidConsumable: false,
+        purchaseType: 'improvements',
         affectsOtherAreas: false,
         affectedAreaIds: undefined,
         healthAndSafetyRisk: false,

@@ -1,4 +1,5 @@
 import * as t from 'io-ts';
+import {PurchaseTypeCodec} from './purchase-type';
 import * as tt from 'io-ts-types';
 import {EmailAddressCodec} from './email-address';
 import {Actor} from './actor';
@@ -312,6 +313,9 @@ const PurchaseRequestSubmitted = defineEvent('PurchaseRequestSubmitted', {
   purchases: t.readonlyArray(PurchaseCodec),
   justification: t.string,
   isMemberPaidConsumable: t.boolean,
+  // Repairs and running costs, improvements or member-paid; see
+  // src/types/purchase-type.ts. Requests sent before it was asked have none.
+  purchaseType: tt.withFallback(t.union([PurchaseTypeCodec, t.null]), null),
   // Other areas it affects, whose owners need a chance to give their input.
   affectedAreaIds: t.readonlyArray(tt.UUID),
   // A moderate to high health and safety risk that will need mitigating.

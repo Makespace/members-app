@@ -1478,6 +1478,11 @@ const _updateState =
             purchasesJson: JSON.stringify(event.purchases),
             justification: event.justification,
             isMemberPaidConsumable: event.isMemberPaidConsumable,
+            // A request from before the type was asked is known to be
+            // member-paid when it was a consumable; otherwise unknown.
+            purchaseType:
+              event.purchaseType ??
+              (event.isMemberPaidConsumable ? 'member-paid' : null),
             affectedAreaIdsJson: JSON.stringify(event.affectedAreaIds),
             healthAndSafetyRisk: event.healthAndSafetyRisk,
             proposalJson:

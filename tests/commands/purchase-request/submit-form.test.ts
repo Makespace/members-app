@@ -75,7 +75,7 @@ describe('purchase request form pages', () => {
     purchasingAreaId: woodShopId,
     summary: 'Saw blades',
     justification: 'The old ones are blunt',
-    isMemberPaidConsumable: 'false',
+    purchaseType: 'improvements',
     affectsOtherAreas: 'false',
     healthAndSafetyRisk: 'false',
   };
@@ -125,50 +125,66 @@ describe('purchase request form pages', () => {
   });
 
   it('goes to the page asked for once the earlier ones are answered', async () => {
-    expect((await page({...aboutAnswers, step: '2'})).step).toBe(2);
-    expect((await page({...allAnswers, step: '3'})).step).toBe(3);
-    expect((await page({...allAnswers, step: '1'})).step).toBe(1);
+    expect((await page({...aboutAnswers, step: '3'})).step).toBe(3);
+    expect((await page({...allAnswers, step: '4'})).step).toBe(4);
+    expect((await page({...allAnswers, step: '2'})).step).toBe(2);
   });
 
   it('knows the chosen area from page 2', async () => {
-    const viewModel = await page({...aboutAnswers, step: '2'});
+    const viewModel = await page({...aboutAnswers, step: '3'});
     expect(viewModel.chosen).toStrictEqual(
       O.some(expect.objectContaining({id: woodShopId, name: 'Wood Shop'}))
     );
   });
 
-  it('sends them back to page 1 with what is missing', async () => {
+  it('sends them back to the first page until the type is chosen', async () => {
+    expect(
+      await page({id: requestId, purchasingAreaId: woodShopId, step: '4'})
+    ).toMatchObject({
+      step: 1,
+      problems: ['Please choose what kind of purchase this is.'],
+    });
+  });
+
+  it('sends them back to page 2 with what is missing', async () => {
     const viewModel = await page({
       id: requestId,
+      purchaseType: 'repairs',
       purchasingAreaId: woodShopId,
-      step: '3',
+      step: '4',
     });
     expect(viewModel).toMatchObject({
-      step: 1,
+      step: 2,
       problems: [
         'Please give a summary, why it is needed before moving on.',
-        'Please say whether members pay for it.',
         'Please say whether it could negatively impact other areas.',
         'Please say whether it presents a moderate to high health and safety risk.',
       ],
     });
   });
 
+  it('knows a member-paid purchase is paid for by members', async () => {
+    expect(
+      (await page({...aboutAnswers, purchaseType: 'member-paid', step: '3'}))
+        .answers.isMemberPaidConsumable
+    ).toBe('true');
+  });
+
   it("won't take an area they can't purchase for", async () => {
     const viewModel = await page({
       ...aboutAnswers,
       purchasingAreaId: faker.string.uuid(),
-      step: '2',
+      step: '3',
     });
     expect(viewModel).toMatchObject({
-      step: 1,
+      step: 2,
       problems: ['Please give the area it is for before moving on.'],
     });
   });
 
   it('sends them back to page 2 until the shops are sorted', async () => {
-    expect(await page({...aboutAnswers, step: '3'})).toMatchObject({
-      step: 2,
+    expect(await page({...aboutAnswers, step: '4'})).toMatchObject({
+      step: 3,
       problems: ['Please add at least one shop or website to buy from.'],
     });
     const noPrice = jewson();
@@ -178,10 +194,10 @@ describe('purchase request form pages', () => {
         purchases: [
           {...noPrice, items: [noPrice.items[0], {...noPrice.items[1], cost: ''}]},
         ],
-        step: '3',
+        step: '4',
       })
     ).toMatchObject({
-      step: 2,
+      step: 3,
       problems: ['jewson.co.uk, item 2: please say how much they cost in total.'],
     });
   });
@@ -193,7 +209,7 @@ describe('purchase request form pages', () => {
         {shop: '', items: [{sku: ''}]},
         {shop: 'jewson.co.uk', items: [{sku: ''}, {sku: 'PEGF8418'}]},
       ],
-      step: '2',
+      step: '3',
     });
     expect(viewModel.answers.purchases).toStrictEqual([
       {
@@ -205,7 +221,7 @@ describe('purchase request form pages', () => {
   });
 
   it('works out the actual budget from the shop total on page 3', async () => {
-    const result = getSomeOrFail((await page({...allAnswers, step: '3'})).result);
+    const result = getSomeOrFail((await page({...allAnswers, step: '4'})).result);
     expect(result.totalPence).toBe(15_000);
     expect(result.purchases[0].items.map(item => item.sku)).toStrictEqual([
       'PEGF8418',
@@ -213,7 +229,7 @@ describe('purchase request form pages', () => {
     ]);
     expect(result.classification.outcome).toBe('budget');
     const proposal = getSomeOrFail(
-      (await page({...allAnswers, purchases: [jewson('900')], step: '3'}))
+      (await page({...allAnswers, purchases: [jewson('900')], step: '4'}))
         .result
     );
     expect(proposal.totalPence).toBe(100_000);
@@ -222,7 +238,7 @@ describe('purchase request form pages', () => {
 
   // The page leaves out the chosen purchasing area's own as it is chosen.
   it('offers every area as one it might affect', async () => {
-    const viewModel = await page({...aboutAnswers, step: '1'});
+    const viewModel = await page({...aboutAnswers, step: '2'});
     expect(viewModel.areas.map(area => area.id).sort()).toStrictEqual(
       [craftRoomId, woodShopAreaId].sort()
     );
@@ -233,16 +249,16 @@ describe('purchase request form pages', () => {
       ...allAnswers,
       affectsOtherAreas: 'true',
       affectedAreaIds: [woodShopAreaId, craftRoomId],
-      step: '3',
+      step: '4',
     });
     expect(viewModel.affectedAreaNames).toStrictEqual(['Craft & Art']);
   });
 
   it('needs the other areas chosen when it affects some', async () => {
     expect(
-      await page({...allAnswers, affectsOtherAreas: 'true', step: '3'})
+      await page({...allAnswers, affectsOtherAreas: 'true', step: '4'})
     ).toMatchObject({
-      step: 1,
+      step: 2,
       problems: ['Please choose which other areas it affects.'],
     });
   });
@@ -255,7 +271,7 @@ describe('purchase request form pages', () => {
           affectsOtherAreas: 'true',
           affectedAreaIds: [craftRoomId],
           healthAndSafetyRisk: 'true',
-          step: '3',
+          step: '4',
         } as never)
       ).result
     );
@@ -276,7 +292,7 @@ describe('purchase request form pages', () => {
         await page({
           ...allAnswers,
           affectedAreaIds: craftRoomId,
-          step: '3',
+          step: '4',
         })
       ).result
     );
@@ -285,6 +301,6 @@ describe('purchase request form pages', () => {
 
   it('starts a new request id, then keeps it', async () => {
     expect((await page({})).requestId).toMatch(/^[0-9a-f-]{36}$/);
-    expect((await page({...aboutAnswers, step: '2'})).requestId).toBe(requestId);
+    expect((await page({...aboutAnswers, step: '3'})).requestId).toBe(requestId);
   });
 });

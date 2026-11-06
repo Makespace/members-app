@@ -1,4 +1,5 @@
 import {SignedOwnerAgreement} from '../../owner-agreement/agreement';
+import {PurchaseType} from '../../types/purchase-type';
 import {Purchase} from '../../purchasing/purchases';
 import {Proposal} from '../../purchasing/proposal';
 import {EquipmentCategory} from '../../types/equipment-category';
@@ -225,6 +226,8 @@ export type PurchaseRequest = {
   purchases: ReadonlyArray<Purchase>;
   justification: string;
   isMemberPaidConsumable: boolean;
+  // Unknown for a request sent before it was asked, unless member-paid.
+  purchaseType: O.Option<PurchaseType>;
   // Other areas it affects, whose owners need a chance to give their input.
   affectedAreaIds: ReadonlyArray<UUID>;
   // A moderate to high health and safety risk that will need mitigating.
