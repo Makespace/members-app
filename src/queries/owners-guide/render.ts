@@ -268,10 +268,10 @@ const definitions = {
     'Yearly Budget: a discretionary budget designed to give Owners flexibility over how they spend money. The per-year nominal budget (normally around £1000) is not a hard limit, or a target. Purchases can be approved outside of this budget, but they need to be written up as proposals and approved by the directors.',
   'small-purchase-amount':
     "Small Purchase Amount: a single purchase costing this much or more needs a proposal, even when it's within the Yearly Budget. It's normally £1000.",
-  consumables:
-    'Consumables: members pay for these when they use them.',
   'repairs-and-running-costs':
     'Repairs & Running Costs: operational costs of running your Area.',
+  improvements: 'Improvements: expanding the functionality of your Area.',
+  'member-paid': 'Member-paid: members pay for these when they use them.',
   manager:
     'Manager: paid contractors who act as a coordinating function across Makespace, ensuring the smooth operation of the day-to-day running of the space, coordinating among the owners teams, guiding members to whatever/whoever they need, and coordinating between the directors and owners/members.',
   director:
@@ -316,16 +316,16 @@ const bodies = (
       <p>Money is available for Owners' teams to pay for:</p>
       <ul class="owners-guide__kinds">
         <li>
-          <strong>Consumables</strong>
-          <span>Members pay for these when they use them</span>
-        </li>
-        <li>
           <strong>Repairs &amp; Running Costs</strong>
           <span>Operational costs of running your Area</span>
         </li>
         <li>
           <strong>Improvements</strong>
           <span>Expanding the functionality of your Area</span>
+        </li>
+        <li>
+          <strong>Member-paid</strong>
+          <span>Members pay for these when they use them</span>
         </li>
       </ul>
       <p>
@@ -423,17 +423,13 @@ const bodies = (
       </ul>
       ${subheading('budgets')}
       <p>
-        ${term('consumables', 'Consumables')} are paid for by members when they
-        are used, so they do not come out of the
+        ${term('repairs-and-running-costs', 'Repairs & Running Costs')} and
+        ${term('improvements', 'Improvements')} both come out of the
         ${term('yearly-budget', 'yearly budget')}.
       </p>
       <p>
-        ${term('repairs-and-running-costs', 'Repairs & Running Costs')} are
-        expected operational costs, so they also do not come out of the
-        ${term('yearly-budget', 'yearly budget')}.
-      </p>
-      <p>
-        All other purchases come out of the
+        ${term('member-paid', 'Member-paid')} purchases are paid for by members
+        when they are used, so they do not come out of the
         ${term('yearly-budget', 'yearly budget')}.
       </p>
       ${subheading('over-budget')}
