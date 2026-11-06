@@ -40,7 +40,9 @@ const renderBudgetEffect = ({request, purchasingArea}: DecisionViewModel) =>
           </p>`
         )
       )
-    : html`<p>Members pay for this, so it doesn't use up the budget.</p>`;
+    : request.outcome === 'repair'
+      ? html`<p>Repairs don't come out of the yearly budget.</p>`
+      : html`<p>Members pay for this, so it doesn't use up the budget.</p>`;
 
 const renderForm = (viewModel: DecisionViewModel) =>
   pipe(

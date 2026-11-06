@@ -76,6 +76,7 @@ const purchasingAreasFor = (
     yearlyBudgetPence: purchasingArea.yearlyBudgetPence,
     spentThisYearPence: purchasingArea.spentThisYearPence,
     smallPurchaseAmountPence: purchasingArea.smallPurchaseAmountPence,
+    smallRepairsAmountPence: purchasingArea.smallRepairsAmountPence,
     remainingPence: purchasingArea.remainingPence,
   }));
 
@@ -234,8 +235,10 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
           affectedAreaNames,
           healthAndSafetyRisk,
           isMemberPaidConsumable,
+          isRepair: answers.purchaseType === 'repairs',
           amountPence: totalPence,
           smallPurchaseAmountPence: area.smallPurchaseAmountPence,
+          smallRepairsAmountPence: area.smallRepairsAmountPence,
           yearlyBudgetPence: area.yearlyBudgetPence,
           spentThisYearPence: area.spentThisYearPence,
         }),

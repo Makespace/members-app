@@ -237,6 +237,17 @@ const PurchasingAreaSmallPurchaseAmountSet = defineEvent(
   }
 );
 
+// A super user changes how much a single repair can cost before it needs a
+// super user's approval. Purchasing areas start at
+// DEFAULT_SMALL_REPAIRS_AMOUNT_PENCE until one is set.
+const PurchasingAreaSmallRepairsAmountSet = defineEvent(
+  'PurchasingAreaSmallRepairsAmountSet',
+  {
+    purchasingAreaId: tt.UUID,
+    smallRepairsAmountPence: t.number,
+  }
+);
+
 // A different budget for one calendar year only, e.g. an extension: the
 // usual budget (PurchasingAreaBudgetSet) applies again the year after.
 const PurchasingAreaYearBudgetSet = defineEvent(
@@ -985,6 +996,7 @@ export const events = [
   PurchasingAreaRenamed,
   PurchasingAreaBudgetSet,
   PurchasingAreaSmallPurchaseAmountSet,
+  PurchasingAreaSmallRepairsAmountSet,
   PurchasingAreaYearBudgetSet,
   PurchasingAreaSpendRecorded,
   PurchasingAreaSpendRemoved,
@@ -1085,6 +1097,7 @@ export const DomainEvent = t.union([
   PurchasingAreaRenamed.codec,
   PurchasingAreaBudgetSet.codec,
   PurchasingAreaSmallPurchaseAmountSet.codec,
+  PurchasingAreaSmallRepairsAmountSet.codec,
   PurchasingAreaYearBudgetSet.codec,
   PurchasingAreaSpendRecorded.codec,
   PurchasingAreaSpendRemoved.codec,

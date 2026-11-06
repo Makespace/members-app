@@ -269,7 +269,9 @@ const definitions = {
   'small-purchase-amount':
     "Small Purchase Amount: a single purchase costing this much or more needs a proposal, even when it's within the Yearly Budget. It's normally £1000.",
   'repairs-and-running-costs':
-    'Repairs & Running Costs: operational costs of running your Area.',
+    "Repairs & Running Costs: operational costs of running your Area. They don't come out of the Yearly Budget.",
+  'small-repairs-amount':
+    "Small Repairs Amount: a single repair costing this much or more needs a super user's approval. It's normally £150.",
   improvements: 'Improvements: expanding the functionality of your Area.',
   'member-paid': 'Member-paid: members pay for these when they use them.',
   manager:
@@ -396,6 +398,15 @@ const bodies = (
       <p>
         All other ${term('purchase-request', 'Purchase Requests')} need an
         accompanying Proposal.
+      </p>
+      <p>
+        ${term('repairs-and-running-costs', 'Repairs & Running Costs')} don't
+        come out of the ${term('yearly-budget', 'Yearly Budget')}. A
+        ${term('purchaser', 'Purchaser')} can approve a repair under the
+        ${term('small-repairs-amount', 'Small Repairs Amount')} (normally
+        £150); a larger one needs a super user's approval, but no Proposal
+        unless it could affect other Areas or introduce a health &amp; safety
+        risk.
       </p>
       ${subheading('proposals')}
       <p>

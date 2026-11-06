@@ -1,9 +1,10 @@
 import * as t from 'io-ts';
 
 // What kind of purchase a request is, chosen first on the request form.
-// Repairs and running costs and improvements both come out of the purchasing
-// area's yearly budget; member-paid purchases (e.g. 3D printer filament,
-// paid for on SumUp when it's used) don't.
+// Improvements come out of the purchasing area's yearly budget. Repairs and
+// running costs don't (though a large one needs a super user's approval),
+// and neither do member-paid purchases (e.g. 3D printer filament, paid for on
+// SumUp when it's used).
 export const PurchaseTypeCodec = t.keyof({
   repairs: null,
   improvements: null,

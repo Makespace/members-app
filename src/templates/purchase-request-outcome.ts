@@ -16,6 +16,7 @@ const tags: Record<PurchaseRequestOutcome, {label: string; colour: string}> = {
     colour: 'red',
   },
   'outside-budget': {label: 'Approved outside the yearly budget', colour: 'blue'},
+  repair: {label: 'Repair (not from the yearly budget)', colour: 'green'},
 };
 
 // The budget it came from, without saying whether a proposal was needed.
@@ -37,7 +38,9 @@ export const renderOutcome = (
     approval !== 'proposal' || status === undefined || status === 'awaiting-approval'
       ? outcome === 'consumable' && approval === 'proposal'
         ? {label: 'Member-paid · Proposal needed', colour: 'red'}
-        : tags[outcome]
+        : outcome === 'repair' && approval === 'proposal'
+          ? {label: 'Repair · Proposal needed', colour: 'red'}
+          : tags[outcome]
       : status === 'approved' || status === 'bought'
         ? {label: `${base.label} · Proposal approved`, colour: base.colour}
         : base;

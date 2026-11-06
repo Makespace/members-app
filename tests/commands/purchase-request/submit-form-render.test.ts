@@ -34,6 +34,7 @@ const woodShop = {
   purchaserMemberNumbers: [],
   yearlyBudgetPence: 100_000,
   smallPurchaseAmountPence: 100_000,
+  smallRepairsAmountPence: 15_000,
   spentThisYearPence: 42_000,
   remainingPence: 58_000,
 };
@@ -117,9 +118,11 @@ const onPage = (
         affectedAreaNames: [],
         healthAndSafetyRisk: false,
             isMemberPaidConsumable: false,
+            isRepair: false,
             amountPence: 25_000,
             yearlyBudgetPence: woodShop.yearlyBudgetPence,
             smallPurchaseAmountPence: 100_000,
+            smallRepairsAmountPence: 15_000,
             spentThisYearPence: woodShop.spentThisYearPence,
           }),
         })
@@ -249,7 +252,7 @@ describe('purchase request form', () => {
       expect(
         page.querySelector<HTMLElement>('[data-budget-verdict]')!.hidden
       ).toBe(true);
-      expect(page.querySelectorAll('template[data-verdict-template]')).toHaveLength(5);
+      expect(page.querySelectorAll('template[data-verdict-template]')).toHaveLength(8);
     });
 
     it('asks for detailed notes on each item', () => {
@@ -368,9 +371,11 @@ describe('purchase request form', () => {
               affectedAreaNames: ['Metal Shop'],
               healthAndSafetyRisk: true,
               isMemberPaidConsumable: false,
+              isRepair: false,
               amountPence: 25_000,
               yearlyBudgetPence: woodShop.yearlyBudgetPence,
               smallPurchaseAmountPence: 100_000,
+              smallRepairsAmountPence: 15_000,
               spentThisYearPence: woodShop.spentThisYearPence,
             }),
           }),
@@ -441,9 +446,11 @@ describe('purchase request form', () => {
         affectedAreaNames: [],
         healthAndSafetyRisk: false,
               isMemberPaidConsumable: false,
+              isRepair: false,
               amountPence: 60_000,
               yearlyBudgetPence: woodShop.yearlyBudgetPence,
               smallPurchaseAmountPence: 100_000,
+              smallRepairsAmountPence: 15_000,
               spentThisYearPence: woodShop.spentThisYearPence,
             }),
           }),
@@ -470,9 +477,11 @@ describe('purchase request form', () => {
               affectedAreaNames: [],
               healthAndSafetyRisk: risky,
               isMemberPaidConsumable: false,
+              isRepair: false,
               amountPence: risky ? 25_000 : 120_000,
               yearlyBudgetPence: woodShop.yearlyBudgetPence,
               smallPurchaseAmountPence: 100_000,
+              smallRepairsAmountPence: 15_000,
               spentThisYearPence: woodShop.spentThisYearPence,
             }),
           }),

@@ -207,10 +207,13 @@ const renderDecision = (
         <strong>Next:</strong>
         ${request.approval === 'proposal'
           ? html`a director needs to approve this request and its proposal.`
-          : html`one of the area's purchasers (or a director) needs to approve
-            this request.`}
-        Nothing will be bought until they do, and it doesn't count against
-        the budget until then.
+          : request.approval === 'super-user'
+            ? html`a super user needs to approve this repair.`
+            : html`one of the area's purchasers (or a director) needs to
+              approve this request.`}
+        Nothing will be bought until they do${request.outcome === 'repair'
+          ? html`. Repairs don't count against the budget.`
+          : html`, and it doesn't count against the budget until then.`}
       </p>`;
   }
 };

@@ -102,6 +102,16 @@ const renderBudget = (viewModel: ViewModel) => {
             </td>
           </tr>
           <tr>
+            <th>Small repairs amount</th>
+            <td>
+              ${money(purchasingArea.smallRepairsAmountPence)}
+              <span class="text-gray"
+                >- repairs don't come out of the budget, but one costing this
+                much or more needs a super user's approval</span
+              >
+            </td>
+          </tr>
+          <tr>
             <th>Spent so far this year</th>
             <td>${money(purchasingArea.spentThisYearPence)}</td>
           </tr>
@@ -113,6 +123,12 @@ const renderBudget = (viewModel: ViewModel) => {
             ? html`<tr>
                 <th>Requests awaiting approval</th>
                 <td>${money(purchasingArea.awaitingApprovalPence)}</td>
+              </tr>`
+            : html``}
+          ${purchasingArea.repairsThisYearPence > 0
+            ? html`<tr>
+                <th>Repairs (outside the budget)</th>
+                <td>${money(purchasingArea.repairsThisYearPence)}</td>
               </tr>`
             : html``}
           ${purchasingArea.approvedSpendThisYearPence > 0
@@ -142,6 +158,12 @@ const renderBudget = (viewModel: ViewModel) => {
                 purchasingArea: purchasingArea.id,
               })}`,
               html`Set small purchase amount`
+            )}
+            ${superUserButton(
+              `/purchasing-areas/set-small-repairs-amount?${query({
+                purchasingArea: purchasingArea.id,
+              })}`,
+              html`Set small repairs amount`
             )}
             ${superUserButton(
               `/purchasing-areas/rename?${query({
