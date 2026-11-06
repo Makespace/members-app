@@ -10,7 +10,7 @@ import {
 } from '../../types/html';
 import {formatPence} from '../../types/money';
 import {definedTerm} from '../shared-render/defined-term';
-import {GuideSection, guideSections} from './sections';
+import {GuideSection, guideSections, SubsectionId} from './sections';
 import {
   PurchasingAreaOfYours,
   ViewModel,
@@ -197,6 +197,28 @@ const stillBeingWritten = html`
   </p>
 `;
 
+// Who approves and pays for an area's requests, when it has nominated
+// anybody: by name, as elsewhere in the guide, or member number without one.
+const purchasersOf = (purchasingArea: PurchasingAreaOfYours) =>
+  purchasingArea.purchasers.length === 0
+    ? html``
+    : html`<span class="owners-guide__purchasers owners-guide__muted"
+        >${safe(
+          purchasingArea.purchasers.length === 1 ? 'Purchaser' : 'Purchasers'
+        )}:
+        ${commaHtml(
+          purchasingArea.purchasers.map(purchaser =>
+            pipe(
+              purchaser.name,
+              O.match(
+                () => html`member ${safe(String(purchaser.memberNumber))}`,
+                name => html`${sanitizeString(name)}`
+              )
+            )
+          )
+        )}</span
+      >`;
+
 // Where to request a purchase for each of the reader's Purchase Areas: only
 // an active one takes requests. Says nothing to somebody in no Purchase Area.
 const requestAPurchase = (yours: YourAreas) =>
@@ -221,7 +243,8 @@ const requestAPurchase = (yours: YourAreas) =>
                             encodeURIComponent(purchasingArea.id)
                           )}"
                           >request a purchase</a
-                        >`
+                        >
+                        ${purchasersOf(purchasingArea)}`
                     : html`${sanitizeString(purchasingArea.name)}
                         <span class="owners-guide__muted"
                           >isn't taking requests yet. If you want your Area to
@@ -245,6 +268,10 @@ const definitions = {
     'Yearly Budget: a discretionary budget designed to give Owners flexibility over how they spend money. The per-year nominal budget (normally around £1000) is not a hard limit, or a target. Purchases can be approved outside of this budget, but they need to be written up as proposals and approved by the directors.',
   'small-purchase-amount':
     "Small Purchase Amount: a single purchase costing this much or more needs a proposal, even when it's within the Yearly Budget. It's normally £1000.",
+  'repairs-and-running-costs':
+    'Repairs & Running Costs: operational costs of running your Area.',
+  improvements: 'Improvements: expanding the functionality of your Area.',
+  'member-paid': 'Member-paid: members pay for these when they use them.',
   manager:
     'Manager: paid contractors who act as a coordinating function across Makespace, ensuring the smooth operation of the day-to-day running of the space, coordinating among the owners teams, guiding members to whatever/whoever they need, and coordinating between the directors and owners/members.',
   director:
@@ -267,6 +294,17 @@ const termsFor = () => {
     );
 };
 
+// A heading within a section, with the id the contents link to; its title
+// comes from the same list as the contents', so the two always agree.
+const subheading = (id: SubsectionId) => {
+  const found = guideSections
+    .flatMap(section => [...section.subsections])
+    .find(subsection => subsection.id === id);
+  return html`<h3 id="${safe(id)}" class="owners-guide__subheading">
+    ${safe(found?.title ?? id)}
+  </h3>`;
+};
+
 // The written part of each topic, by section id. A topic with nothing here yet
 // says so, so the cards on the owner page still land somewhere.
 const bodies = (
@@ -275,10 +313,21 @@ const bodies = (
   const term = termsFor();
   return {
     purchasing: html`
-      <p>
-        Money is available for Owners' teams to pay for improvements and
-        repairs in their areas.
-      </p>
+      <p>Money is available for Owners' teams to pay for:</p>
+      <ul class="owners-guide__kinds">
+        <li>
+          <strong>Repairs &amp; Running Costs</strong>
+          <span>Operational costs of running your Area</span>
+        </li>
+        <li>
+          <strong>Improvements</strong>
+          <span>Expanding the functionality of your Area</span>
+        </li>
+        <li>
+          <strong>Member-paid</strong>
+          <span>Members pay for these when they use them</span>
+        </li>
+      </ul>
       <p>
         In order to manage this, Areas are grouped into
         ${term('purchase-area', 'Purchase Areas')} when they share financial
@@ -295,7 +344,7 @@ const bodies = (
         'the Purchase Areas that you are an Owner in',
         yourPurchaseAreas
       )}
-      <h3>How are purchasing decisions made and actioned?</h3>
+      ${subheading('purchasing-decisions')}
       <p>
         To suggest a purchase within your
         ${term('purchase-area', 'Purchase Area')}, you can use the
@@ -308,8 +357,19 @@ const bodies = (
         requestAPurchase
       )}
       <p>
-        Owners have full autonomy to decide on
-        ${term('purchase-request', 'Purchase Requests')} that:
+        ${term('purchase-area', 'Purchase Areas')} can nominate a
+        ${term('purchaser', 'Purchaser')} to approve
+        ${term('purchase-request', 'Purchase Requests')}, and this person will
+        be given the ability to make the purchase with a Capital on Tap card.
+        ${term('manager', 'Managers')} are also able to make purchases if no
+        ${term('purchaser', 'Purchaser')} is nominated or if a purchase exceeds
+        a card limit.
+      </p>
+      ${subheading('simple-purchases')}
+      <p>
+        The Owners in a ${term('purchase-area', 'Purchase Area')} have full
+        autonomy to decide on ${term('purchase-request', 'Purchase Requests')}
+        that:
       </p>
       <ul class="owners-guide__conditions">
         <li class="owners-guide__condition owners-guide__condition--money">
@@ -324,11 +384,11 @@ const bodies = (
           ${term('yearly-budget', 'Yearly Budget')}</span>
         </li>
         <li class="owners-guide__condition owners-guide__condition--care">
-          <i class="fa-regular fa-hand" aria-hidden="true"></i>
+          <i class="fa-regular fa-comment" aria-hidden="true"></i>
           <span>Won't potentially negatively impact other Areas</span>
         </li>
         <li class="owners-guide__condition owners-guide__condition--care">
-          <i class="fa-regular fa-hand" aria-hidden="true"></i>
+          <i class="fa-regular fa-comment" aria-hidden="true"></i>
           <span>Won't potentially introduce a moderate to high health &amp; safety
           risk</span>
         </li>
@@ -337,24 +397,54 @@ const bodies = (
         All other ${term('purchase-request', 'Purchase Requests')} need an
         accompanying Proposal.
       </p>
-      <h3>Purchase Requests that need a Proposal</h3>
+      ${subheading('proposals')}
       <p>
         You can submit a Proposal as part of your
         ${term('purchase-request', 'Purchase Request')}, including pros/cons,
         options considered and a risk assessment if necessary.
       </p>
-      <ul class="owners-guide__bullets">
-        <li>
-          Proposals that impact multiple areas can be discussed at Owners
-          Meetings, or conversations can be facilitated by
-          ${term('manager', 'managers')}.
+      <ul class="owners-guide__conditions">
+        <li class="owners-guide__condition owners-guide__condition--care">
+          <i class="fa-regular fa-comment" aria-hidden="true"></i>
+          <span
+            >Proposals that impact multiple areas can be discussed at Owners
+            Meetings, or conversations can be facilitated by
+            ${term('manager', 'managers')}.</span
+          >
         </li>
-        <li>
-          Proposals that potentially introduce health &amp; safety risks need
-          to be signed off by ${term('director', 'Directors')} at a Board
-          Meeting.
+        <li class="owners-guide__condition owners-guide__condition--care">
+          <i class="fa-regular fa-comment" aria-hidden="true"></i>
+          <span
+            >Proposals that potentially introduce health &amp; safety risks
+            need to be signed off by ${term('director', 'Directors')} at a
+            Board Meeting.</span
+          >
         </li>
       </ul>
+      ${subheading('budgets')}
+      <p>
+        ${term('repairs-and-running-costs', 'Repairs & Running Costs')} and
+        ${term('improvements', 'Improvements')} both come out of the
+        ${term('yearly-budget', 'yearly budget')}.
+      </p>
+      <p>
+        ${term('member-paid', 'Member-paid')} purchases are paid for by members
+        when they are used, so they do not come out of the
+        ${term('yearly-budget', 'yearly budget')}.
+      </p>
+      ${subheading('over-budget')}
+      <p>
+        Budgets are indicative only, meant to reduce friction. They aren't
+        designed to be a hard limit on an Area's spending and they're not
+        designed to be a target either!
+      </p>
+      <p>
+        If a ${term('purchase-area', 'Purchase Area')} exceeds its budget, new
+        ${term('purchase-request', 'purchase requests')} will have to be
+        approved by the board of ${term('director', 'directors')}. It's possible
+        to put in a request for a one-off extension to the
+        ${term('yearly-budget', 'Yearly Budget')}.
+      </p>
     `,
   };
 };
@@ -380,6 +470,20 @@ export const render = (viewModel: ViewModel) => html`
             section =>
               html`<li>
                 <a href="#${safe(section.id)}">${safe(section.title)}</a>
+                ${section.subsections.length === 0
+                  ? html``
+                  : html`<ol class="owners-guide__toc-sub">
+                      ${joinHtml(
+                        section.subsections.map(
+                          subsection =>
+                            html`<li>
+                              <a href="#${safe(subsection.id)}"
+                                >${safe(subsection.contents)}</a
+                              >
+                            </li>`
+                        )
+                      )}
+                    </ol>`}
               </li>`
           )
         )}

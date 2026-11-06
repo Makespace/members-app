@@ -203,11 +203,36 @@ describe("the owner's guide's purchase request links", () => {
     const list = links(withWorkshops);
     const link = list?.querySelector('a');
 
-    expect(text(list)).toBe('Workshops - request a purchase');
+    expect(text(list)).toBe(
+      'Workshops - request a purchase Purchaser: Pat Purchaser'
+    );
     expect(text(link)).toBe('request a purchase');
     expect(link?.getAttribute('href')).toBe(
       '/purchase-requests/submit?purchasingArea=pa-1'
     );
+  });
+
+  it('names several Purchasers, or none when there are none', () => {
+    const purchasers = (yours: YourAreas) =>
+      text(links(yours)?.querySelector('.owners-guide__purchasers'));
+
+    expect(
+      purchasers({
+        ...withWorkshops,
+        purchasingAreas: [
+          {
+            ...workshops,
+            purchasers: [pat, {...pat, name: O.none, memberNumber: 42}],
+          },
+        ],
+      })
+    ).toBe('Purchasers: Pat Purchaser, member 42');
+    expect(
+      purchasers({
+        ...withWorkshops,
+        purchasingAreas: [{...workshops, purchasers: []}],
+      })
+    ).toBeUndefined();
   });
 
   it("says one that isn't active yet isn't taking requests, and who to ask", () => {
@@ -228,5 +253,41 @@ describe("the owner's guide's purchase request links", () => {
     expect(
       links({...withWorkshops, purchasingAreas: []})
     ).toBeNull();
+  });
+});
+
+describe("the owner's guide's contents", () => {
+  const page = () => {
+    const body = document.createElement('body');
+    body.innerHTML = render(loggedOut);
+    return body;
+  };
+
+  it('lists the headings within a section under it, by their short names', () => {
+    const purchasing = page().querySelector('.owners-guide__toc > ol > li');
+
+    expect(
+      [...(purchasing?.querySelectorAll('.owners-guide__toc-sub a') ?? [])].map(
+        link => text(link)
+      )
+    ).toStrictEqual([
+      'Purchase Requests',
+      'Simple Purchases',
+      'Proposals',
+      'Budgets',
+      'Going over budget',
+    ]);
+  });
+
+  it('only links to headings that are there', () => {
+    const body = page();
+    const targets = [...body.querySelectorAll('.owners-guide__toc a')].map(
+      link => link.getAttribute('href')?.slice(1)
+    );
+
+    targets.forEach(id =>
+      expect(body.querySelector(`[id="${id}"]`)).not.toBeNull()
+    );
+    expect(targets).toHaveLength(8);
   });
 });

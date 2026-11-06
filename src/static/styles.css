@@ -2781,14 +2781,30 @@ ul.guide-cards {
   margin-top: 0.5rem;
 }
 
-.owners-guide__section {
+/* The headings within a section, under it in the contents: smaller and
+   quieter, so the sections still stand out. */
+.owners-guide__toc ol.owners-guide__toc-sub {
+  margin-top: 0.35rem;
+  padding-left: 1rem;
+  list-style: none;
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.owners-guide__toc .owners-guide__toc-sub li + li {
+  margin-top: 0.35rem;
+}
+
+.owners-guide__section,
+.owners-guide__subheading {
   scroll-margin-top: 1rem;
 }
 
 /* Arriving from a card or the contents, the box flashes up to show where
    you've landed, then fades so it doesn't sit round the section for the rest
    of the read. */
-.owners-guide__section:target {
+.owners-guide__section:target,
+.owners-guide__subheading:target {
   animation: owners-guide-target-flash 1.8s ease-out forwards;
 }
 
@@ -2814,7 +2830,8 @@ ul.guide-cards {
 
 /* Without motion, a box that vanished at once would be no help: keep it. */
 @media (prefers-reduced-motion: reduce) {
-  .owners-guide__section:target {
+  .owners-guide__section:target,
+  .owners-guide__subheading:target {
     animation: none !important;
   }
 }
@@ -2896,8 +2913,47 @@ ul.guide-cards {
   padding-left: 1.25rem;
 }
 
+.owners-guide__purchasers {
+  display: block;
+  font-size: 0.875rem;
+}
+
 .owners-guide__requests li + li {
   margin-top: 0.25rem;
+}
+
+/* The kinds of purchase, three cards across, each a name and a line on
+   what it covers; one column on a phone. The element is named to outrank
+   the reset's ul[class]. */
+ul.owners-guide__kinds {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  margin: 0.75rem 0;
+  padding: 0;
+}
+
+@media (min-width: 36rem) {
+  ul.owners-guide__kinds {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.owners-guide__kinds > li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--owners-guide-data-edge);
+  border-radius: 6px;
+  background: #fff;
+  line-height: 1.4;
+}
+
+.owners-guide__kinds > li > span {
+  color: var(--grey-color);
+  font-size: 0.875rem;
 }
 
 /* The four conditions owners decide for themselves, as small cards two to
@@ -2951,18 +3007,6 @@ ul.owners-guide__conditions {
 
 .owners-guide__condition--care > i {
   color: #8a6a1c;
-}
-
-/* A plain bulleted list in the guide's text. The site's reset takes list
-   markers away from lists with a class (see ul[class]), so name the element
-   to give them back. */
-ul.owners-guide__bullets {
-  list-style: disc;
-  padding-left: 1.5rem;
-}
-
-ul.owners-guide__bullets > li + li {
-  margin-top: 0.25rem;
 }
 
 .owners-guide__muted {
