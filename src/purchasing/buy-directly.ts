@@ -26,7 +26,7 @@ export const canBuyDirectly = (
     smallPurchaseAmountPence: number;
     affectedAreaNames: ReadonlyArray<string>;
     healthAndSafetyRisk: boolean;
-    classification: Pick<Classification, 'approval'>;
+    classification: Pick<Classification, 'approval' | 'outcome'>;
   }
 ): E.Either<string, true> => {
   if (role === 'neither') {
@@ -38,6 +38,16 @@ export const canBuyDirectly = (
     return E.left(
       "Purchases that affect other areas or carry a health and safety risk need a proposal, so they can't be bought directly."
     );
+  }
+  // A repair needing a super user's approval needs one to buy it too. A
+  // repair a purchaser could approve, they can buy, whatever the small
+  // purchase amount.
+  if (classification.outcome === 'repair') {
+    return role === 'purchaser' && classification.approval !== 'none'
+      ? E.left(
+          "This repair needs a super user's approval, so a purchaser can't buy it directly. Send it as a request for a super user to approve."
+        )
+      : E.right(true);
   }
   // Only a super user can go ahead with one that would otherwise need a
   // proposal for its cost (the small purchase amount or more, or over the

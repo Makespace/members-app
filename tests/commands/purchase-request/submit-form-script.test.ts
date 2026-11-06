@@ -22,6 +22,7 @@ const woodShop = {
   purchaserMemberNumbers: [],
   yearlyBudgetPence: 100_000,
   smallPurchaseAmountPence: 100_000,
+  smallRepairsAmountPence: 15_000,
   spentThisYearPence: 42_000,
   remainingPence: 58_000,
 };
@@ -34,12 +35,17 @@ const spentUp = {
 };
 
 // The page 1 answers page 2's result goes on.
-type Answers = {consumable: boolean; areas: ReadonlyArray<string>; risky: boolean};
+type Answers = {
+  consumable: boolean;
+  areas: ReadonlyArray<string>;
+  risky: boolean;
+  repair?: boolean;
+};
 
 const renderPage = (
   step: number,
   purchases: ReadonlyArray<TypedPurchase> = [],
-  {consumable, areas, risky}: Answers = {consumable: false, areas: [], risky: false},
+  {consumable, areas, risky, repair}: Answers = {consumable: false, areas: [], risky: false},
   purchasingArea = woodShop
 ) => {
   document.body.innerHTML = renderSubmitForm({
@@ -52,7 +58,7 @@ const renderPage = (
       summary: 'Saw blades',
       justification: 'Blunt',
       purchases,
-      purchaseType: consumable ? 'member-paid' : 'improvements',
+      purchaseType: repair ? 'repairs' : consumable ? 'member-paid' : 'improvements',
       isMemberPaidConsumable: String(consumable),
       affectsOtherAreas: String(areas.length > 0),
       affectedAreaIds: [],
@@ -364,9 +370,36 @@ describe('purchase request cost breakdown script', () => {
           affectedAreaNames: [],
           healthAndSafetyRisk: false,
           isMemberPaidConsumable: consumable,
+          isRepair: false,
           amountPence: Math.round(Number(cost) * 100),
           yearlyBudgetPence: woodShop.yearlyBudgetPence,
           smallPurchaseAmountPence: 100_000,
+          smallRepairsAmountPence: 15_000,
+          spentThisYearPence: woodShop.spentThisYearPence,
+        }).reason
+      );
+    });
+
+    it.each([
+      ['a repair a purchaser can approve', '149.99', 'purchase-verdict--consumable'],
+      ['a repair needing a super user', '150', 'purchase-verdict--budget'],
+      ['a repair over the small purchase amount', '1200', 'purchase-verdict--budget'],
+    ])('explains %s exactly as the server does', (_, cost, box) => {
+      const form = setUp([], {consumable: false, areas: [], risky: false, repair: true});
+      costing(form, cost);
+      expect(verdict(form).querySelector(`.${box}`)).not.toBeNull();
+      expect(
+        verdict(form).querySelector('[data-verdict-reason]')!.textContent
+      ).toBe(
+        classifyPurchase({
+          affectedAreaNames: [],
+          healthAndSafetyRisk: false,
+          isMemberPaidConsumable: false,
+          isRepair: true,
+          amountPence: Math.round(Number(cost) * 100),
+          yearlyBudgetPence: woodShop.yearlyBudgetPence,
+          smallPurchaseAmountPence: 100_000,
+          smallRepairsAmountPence: 15_000,
           spentThisYearPence: woodShop.spentThisYearPence,
         }).reason
       );
@@ -469,9 +502,11 @@ describe('purchase request cost breakdown script', () => {
           affectedAreaNames: areas,
           healthAndSafetyRisk: risky,
           isMemberPaidConsumable: consumable,
+          isRepair: false,
           amountPence: Math.round(Number(cost) * 100),
           yearlyBudgetPence: woodShop.yearlyBudgetPence,
           smallPurchaseAmountPence: 100_000,
+          smallRepairsAmountPence: 15_000,
           spentThisYearPence: woodShop.spentThisYearPence,
         }).reason
       );
@@ -539,10 +574,12 @@ describe('purchase request page 1 script', () => {
       expect(reasons(form)).toStrictEqual(
         earlyProposalReasons({
           isMemberPaidConsumable: false,
+          isRepair: false,
           affectedAreaNames: [],
           healthAndSafetyRisk: true,
           yearlyBudgetPence: woodShop.yearlyBudgetPence,
           smallPurchaseAmountPence: 100_000,
+          smallRepairsAmountPence: 15_000,
           spentThisYearPence: woodShop.spentThisYearPence,
         })
       );
@@ -558,10 +595,12 @@ describe('purchase request page 1 script', () => {
       expect(reasons(form)).toStrictEqual(
         earlyProposalReasons({
           isMemberPaidConsumable: false,
+          isRepair: false,
           affectedAreaNames: ['Metal Shop', 'Textiles'],
           healthAndSafetyRisk: false,
           yearlyBudgetPence: woodShop.yearlyBudgetPence,
           smallPurchaseAmountPence: 100_000,
+          smallRepairsAmountPence: 15_000,
           spentThisYearPence: woodShop.spentThisYearPence,
         })
       );
@@ -573,10 +612,12 @@ describe('purchase request page 1 script', () => {
         expect(reasons(form)).toStrictEqual(
           earlyProposalReasons({
             isMemberPaidConsumable: false,
+            isRepair: false,
             affectedAreaNames: [],
             healthAndSafetyRisk: false,
             yearlyBudgetPence: spentUp.yearlyBudgetPence,
             smallPurchaseAmountPence: 100_000,
+            smallRepairsAmountPence: 15_000,
             spentThisYearPence: spentUp.spentThisYearPence,
           })
         );

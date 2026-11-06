@@ -81,10 +81,10 @@ export const render = (viewModel: ViewModel) => html`
     <h1>Purchasing areas</h1>
     <p>
       Each purchasing area holds a yearly budget (1 January to 31 December) for
-      one or more areas. It pays for keeping equipment running safely (repairs,
-      servicing, running costs, replacements) as well as improvements.
-      Things members pay for themselves (e.g. filament paid for on SumUp) are
-      recorded without counting against it.
+      one or more areas, which pays for improvements. Repairs and running
+      costs are recorded without counting against it (a repair costing the
+      area's small repairs amount or more needs a super user's approval), as
+      are things members pay for themselves (e.g. filament paid for on SumUp).
     </p>
     ${viewModel.canRequest
       ? html``

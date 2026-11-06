@@ -101,10 +101,12 @@ describe('purchasing areas in the read model', () => {
         yearlyBudgetPence: 150_000,
         usualBudgetPence: 150_000,
         smallPurchaseAmountPence: 100_000,
+        smallRepairsAmountPence: 15_000,
         areas: [],
         purchasers: [],
         budgetYear: 2026,
         spentThisYearPence: 0,
+        repairsThisYearPence: 0,
         recordedSpend: [],
         approvedSpendThisYearPence: 0,
         awaitingApprovalPence: 0,
@@ -438,6 +440,25 @@ describe('purchasing areas in the read model', () => {
         const id = faker.string.uuid() as UUID;
         insert(submitted('budget', 1_000, 2026, id));
         expect(typeOf(id)).toStrictEqual(O.none);
+      });
+    });
+
+    it("counts an approved repair as repairs, not as spent from the budget", () => {
+      const before = get();
+      insert(...approvedRequest('repair', 30_000));
+      expect(get()).toMatchObject({
+        spentThisYearPence: before.spentThisYearPence,
+        remainingPence: before.remainingPence,
+        repairsThisYearPence: before.repairsThisYearPence + 30_000,
+      });
+    });
+
+    it("doesn't count a repair awaiting approval", () => {
+      const before = get();
+      insert(submitted('repair', 30_000));
+      expect(get()).toMatchObject({
+        awaitingApprovalPence: before.awaitingApprovalPence,
+        repairsThisYearPence: before.repairsThisYearPence,
       });
     });
 

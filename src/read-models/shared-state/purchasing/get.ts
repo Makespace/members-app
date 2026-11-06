@@ -65,7 +65,15 @@ const budgetRequestsInYear =
     const budgetRows = rows.filter(row => countsAgainstBudget(row.outcome));
     const totalWith = (status: string) =>
       sum(budgetRows.filter(row => row.status === status));
+    const approvedStatuses = ['approved', 'bought', 'bought-directly'];
     return {
+      // Repairs don't come out of the budget, but are still spending.
+      repairsPence: sum(
+        rows.filter(
+          row =>
+            row.outcome === 'repair' && approvedStatuses.includes(row.status)
+        )
+      ),
       approvedPence:
         totalWith('approved') + totalWith('bought') + totalWith('bought-directly'),
       awaitingApprovalPence: totalWith('awaiting-approval'),
@@ -212,6 +220,8 @@ const expand =
       yearlyBudgetPence,
       usualBudgetPence: row.yearlyBudgetPence,
       smallPurchaseAmountPence: row.smallPurchaseAmountPence,
+      smallRepairsAmountPence: row.smallRepairsAmountPence,
+      repairsThisYearPence: requests.repairsPence,
       recordedSpend,
       approvedSpendThisYearPence:
         recordedOfKind('approved') + requests.outsideBudgetPence,

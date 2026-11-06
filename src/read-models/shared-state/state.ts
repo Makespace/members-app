@@ -424,6 +424,7 @@ export const purchasingAreasTable = defineTable(
       name TEXT NOT NULL,
       yearlyBudgetPence INTEGER NOT NULL,
       smallPurchaseAmountPence INTEGER NOT NULL,
+      smallRepairsAmountPence INTEGER NOT NULL,
       active INTEGER NOT NULL,
       createdAt INTEGER NOT NULL
     )
@@ -434,6 +435,7 @@ export const purchasingAreasTable = defineTable(
     name: text('name').notNull(),
     yearlyBudgetPence: integer('yearlyBudgetPence').notNull(),
     smallPurchaseAmountPence: integer('smallPurchaseAmountPence').notNull(),
+    smallRepairsAmountPence: integer('smallRepairsAmountPence').notNull(),
     active: integer('active', {mode: 'boolean'}).notNull(),
     createdAt: integer('createdAt', {mode: 'timestamp_ms'}).notNull(),
   }

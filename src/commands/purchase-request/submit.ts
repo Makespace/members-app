@@ -206,8 +206,10 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
         affectedAreaNames: affected.map(area => area.name),
         healthAndSafetyRisk: command.healthAndSafetyRisk,
         isMemberPaidConsumable: command.purchaseType === 'member-paid',
+        isRepair: command.purchaseType === 'repairs',
         amountPence: totalPence,
         smallPurchaseAmountPence: purchasingArea.smallPurchaseAmountPence,
+        smallRepairsAmountPence: purchasingArea.smallRepairsAmountPence,
         yearlyBudgetPence: purchasingArea.yearlyBudgetPence,
         spentThisYearPence: purchasingArea.spentThisYearPence,
       })
