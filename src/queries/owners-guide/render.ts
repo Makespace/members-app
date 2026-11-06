@@ -378,7 +378,9 @@ const bodies = (
           <i class="fa-regular fa-money-bill-1" aria-hidden="true"></i>
           <span>Aren't over the
           ${term('small-purchase-amount', 'Small Purchase Amount')} (normally
-          £1000)</span>
+          £1000) or the
+          ${term('small-repairs-amount', 'Small Repairs Amount')} (normally
+          £150)</span>
         </li>
         <li class="owners-guide__condition owners-guide__condition--money">
           <i class="fa-regular fa-money-bill-1" aria-hidden="true"></i>
@@ -434,9 +436,11 @@ const bodies = (
       </ul>
       ${subheading('budgets')}
       <p>
-        ${term('repairs-and-running-costs', 'Repairs & Running Costs')} and
-        ${term('improvements', 'Improvements')} both come out of the
+        ${term('improvements', 'Improvements')} come out of the
         ${term('yearly-budget', 'yearly budget')}.
+        ${term('repairs-and-running-costs', 'Repairs and maintenance')} do not -
+        they're considered non-negotiable purchases, necessary to keep the
+        space functional and safe.
       </p>
       <p>
         ${term('member-paid', 'Member-paid')} purchases are paid for by members
