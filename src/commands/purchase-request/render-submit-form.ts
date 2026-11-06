@@ -715,6 +715,33 @@ const renderTypePage = (viewModel: PurchaseRequestFormViewModel) => html`
   </form>
 `;
 
+// Which area it's for. Once one is chosen - e.g. coming from that area's
+// page - just that one shows, with the others folded away behind "Choose a
+// different area": super users can request for nearly every area, which
+// would otherwise be a long list to scroll past.
+const renderAreaChoice = (viewModel: PurchaseRequestFormViewModel) => {
+  const radio = renderAreaRadio(viewModel.answers);
+  const chosen = viewModel.purchasingAreas.find(
+    area => area.id === viewModel.answers.purchasingAreaId
+  );
+  const others = viewModel.purchasingAreas.filter(area => area !== chosen);
+  return chosen === undefined || others.length === 0
+    ? html`<div class="purchase-request__radios purchase-request__radios--areas">
+        ${joinHtml(viewModel.purchasingAreas.map(radio))}
+      </div>`
+    : html`<div class="purchase-request__radios purchase-request__radios--areas">
+          ${radio(chosen)}
+        </div>
+        <details class="purchase-request__other-areas">
+          <summary>Choose a different area</summary>
+          <div
+            class="purchase-request__radios purchase-request__radios--areas"
+          >
+            ${joinHtml(others.map(radio))}
+          </div>
+        </details>`;
+};
+
 const renderAboutPage = (viewModel: PurchaseRequestFormViewModel) => html`
   <form
     method="get"
@@ -732,11 +759,7 @@ const renderAboutPage = (viewModel: PurchaseRequestFormViewModel) => html`
         The area whose budget it would come out of. One of its purchasers will
         approve your request - or a director, if it needs a proposal.
       </p>
-      <div class="purchase-request__radios purchase-request__radios--areas">
-        ${joinHtml(
-          viewModel.purchasingAreas.map(renderAreaRadio(viewModel.answers))
-        )}
-      </div>
+      ${renderAreaChoice(viewModel)}
     </fieldset>
     <div class="purchase-field">
       <label class="purchase-field__label" for="summary">Summary</label>

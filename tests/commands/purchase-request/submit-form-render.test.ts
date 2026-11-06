@@ -179,6 +179,39 @@ describe('purchase request form', () => {
     });
   });
 
+  describe('the area, once one is chosen', () => {
+    const craft = {...woodShop, id: '22222222-2222-4222-8222-222222222222' as UUID, name: 'Craft & Art'};
+    const areaNames = (root: Element | null) =>
+      [...(root?.querySelectorAll('input[name="purchasingAreaId"]') ?? [])].map(
+        input => input.closest('.fieldset-item')!.querySelector('span')?.textContent
+      );
+
+    it('shows just that one, the others folded away', () => {
+      const page = render(onPage(2, {purchasingAreas: [woodShop, craft]}));
+      const folded = page.querySelector('details.purchase-request__other-areas');
+
+      expect(folded).not.toBeNull();
+      expect(folded!.hasAttribute('open')).toBe(false);
+      expect(areaNames(folded)).toStrictEqual(['Craft & Art']);
+      expect(
+        page.querySelector<HTMLInputElement>(
+          'input[name="purchasingAreaId"]:checked'
+        )?.value
+      ).toBe(woodShop.id);
+    });
+
+    it('shows them all while none is chosen', () => {
+      const page = render(
+        onPage(2, {
+          purchasingAreas: [woodShop, craft],
+          answers: {...onPage(2).answers, purchasingAreaId: ''},
+        })
+      );
+      expect(page.querySelector('details.purchase-request__other-areas')).toBeNull();
+      expect(areaNames(page)).toHaveLength(2);
+    });
+  });
+
   describe('the type of purchase, first', () => {
     const page = render(onPage(1));
     const cards = () => [...page.querySelectorAll('.purchase-type-card')];

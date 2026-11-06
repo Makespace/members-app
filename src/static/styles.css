@@ -1213,6 +1213,22 @@ label img {
 }
 
 /* The area names sit a little further from their radios. */
+/* The other areas, folded away once one is chosen. */
+.purchase-request__other-areas {
+  margin-top: 0.75rem;
+}
+
+.purchase-request__other-areas summary {
+  cursor: pointer;
+  color: var(--link-color);
+  text-decoration: underline;
+  width: fit-content;
+}
+
+.purchase-request__other-areas[open] summary {
+  margin-bottom: 0.5rem;
+}
+
 .purchase-request__radios--areas .fieldset-item input {
   margin-right: 1.5rem;
 }
