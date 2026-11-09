@@ -164,8 +164,11 @@ export const changes: AgreementChanges = {
             >`,
         },
         {
-          summary: html`The six activity categories are replaced by a short
-          self-check against the responsibilities.`,
+          summary: html`Instead of six activity categories, we ask owners to
+          check that they're a Makespace member, that they've agreed to be an
+          owner, and that they've fulfilled one or more of the responsibilities
+          during their post. And we ask owners to pick the responsibilities
+          they'd like to get involved with.`,
           before: html`<del
             >…mainly falls in the following six categories: training members,
             responding to trouble tickets, updating documents, making purchases
@@ -178,29 +181,6 @@ export const changes: AgreementChanges = {
             identified earlier in this agreement during your six-month post as
             an owner?</mark
           >`,
-        },
-      ],
-    },
-    {
-      heading: 'Resources',
-      changes: [
-        {
-          summary: html`The promise that Makespace will help make proposals
-          happen was dropped.`,
-          before: html`Owners can submit proposals for improvements to your
-            equipment or the space as a whole<del
-              >, where needed, and Makespace will help make it happen</del
-            >.`,
-        },
-      ],
-    },
-    {
-      heading: 'Signing',
-      changes: [
-        {
-          summary: html`When signing in the app, owners pick at least one
-          responsibility they're interested in taking on, for their equipment
-          and for their area.`,
         },
       ],
     },
