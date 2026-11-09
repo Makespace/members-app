@@ -5,6 +5,7 @@ import {OwnedArea, TrainedMachine, ViewModel} from './construct-view-model';
 import {renderTrainingSparkline} from '../../templates/training-sparkline';
 import {howLong} from '../shared-render/how-long';
 import {guidePath, guideSections} from '../owners-guide/sections';
+import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
 
 // Grouped by what somebody came here to do, rather than by when the link
 // happened to be added. The list had grown past the point where a flat column
@@ -188,6 +189,15 @@ const ownerPart = (viewModel: ViewModel) => html`
       </div>
       ${joinHtml(viewModel.ownedAreas.map(areaRows(viewModel.now)))}
     </div>
+    <section>
+      <h2>Your Owners' Agreement</h2>
+      ${viewModel.agreement.state === 'unsigned'
+        ? html`<p>
+            You haven't signed the Owners' Agreement yet.
+            <a href="/members/sign-owner-agreement">Read and sign it</a>
+          </p>`
+        : renderOwnerAgreementStatus(viewModel.agreement, false)}
+    </section>
   </div>
 `;
 
