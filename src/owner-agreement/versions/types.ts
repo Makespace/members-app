@@ -19,3 +19,21 @@ export type AgreementPage = {
   body: Html;
   choices?: Choices;
 };
+
+// One change from the previous version, said in a sentence, with snippets of
+// the wording before and after where that helps.
+type AgreementChange = {
+  summary: Html;
+  before?: Html;
+  after?: Html;
+};
+
+// A summary of what changed from the previous version, grouped by subject.
+export type AgreementChanges = {
+  // What these changes are measured against, finishing "Changes since …".
+  comparedWith: string;
+  groups: ReadonlyArray<{
+    heading: string;
+    changes: ReadonlyArray<AgreementChange>;
+  }>;
+};

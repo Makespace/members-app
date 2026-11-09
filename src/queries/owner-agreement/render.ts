@@ -1,10 +1,11 @@
 import * as O from 'fp-ts/Option';
-import {html, joinHtml, safe} from '../../types/html';
+import {html, Html, joinHtml, safe} from '../../types/html';
 import {
   ownerAgreementStatus,
   SignedOwnerAgreement,
 } from '../../owner-agreement/agreement';
 import {
+  AgreementChanges,
   AgreementPage,
   agreementVersions,
   AgreementVersion,
@@ -89,6 +90,47 @@ const renderAbout = ({version, signed, now}: ViewModel) => {
   </div>`;
 };
 
+const renderSnippet = (label: string, snippet: Html | undefined) =>
+  snippet === undefined
+    ? html``
+    : html`<div class="agreement-change__snippet">
+        <span class="agreement-change__label">${safe(label)}</span>
+        <blockquote>${snippet}</blockquote>
+      </div>`;
+
+// What changed from what came before, as a summary with quoted snippets:
+// struck-through wording is gone, highlighted wording is new.
+const renderChanges = (changes: AgreementChanges) => html`
+  <section id="changes" class="stack">
+    <h2>What changed</h2>
+    <p>
+      Changes since ${safe(changes.comparedWith)}.
+      <span class="agreement-change__key"
+        ><del>Struck through</del> is gone; <mark>highlighted</mark> is
+        new.</span
+      >
+    </p>
+    ${joinHtml(
+      changes.groups.map(
+        group => html`
+          <h3>${safe(group.heading)}</h3>
+          <ul class="agreement-changes">
+            ${joinHtml(
+              group.changes.map(
+                change => html`<li class="stack">
+                  <p>${change.summary}</p>
+                  ${renderSnippet('Before', change.before)}
+                  ${renderSnippet('Now', change.after)}
+                </li>`
+              )
+            )}
+          </ul>
+        `
+      )
+    )}
+  </section>
+`;
+
 const renderVersions = ({version, signed}: ViewModel) => html`
   <h2>All versions</h2>
   <ul>
@@ -124,6 +166,9 @@ export const render = (viewModel: ViewModel) => {
     <div class="stack prose">
       <h1>${safe(viewModel.version.title)}</h1>
       ${renderAbout(viewModel)}
+      ${O.isSome(viewModel.version.changes)
+        ? html`<p><a href="#changes">See what changed</a></p>`
+        : html``}
       ${joinHtml(
         viewModel.version.pages.map(
           page => html`
@@ -137,6 +182,9 @@ export const render = (viewModel: ViewModel) => {
           `
         )
       )}
+      ${O.isSome(viewModel.version.changes)
+        ? renderChanges(viewModel.version.changes.value)
+        : html``}
       ${renderVersions(viewModel)}
     </div>
   `;

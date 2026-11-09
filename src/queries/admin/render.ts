@@ -178,6 +178,14 @@ const guideCards = () => html`
 const ownerPart = (viewModel: ViewModel) => html`
   <div class="stack">
     ${guideCards()}
+    <div>
+      ${viewModel.agreement.state === 'unsigned'
+        ? html`<p>
+            You haven't signed the Owners' Agreement yet.
+            <a href="/members/sign-owner-agreement">Read and sign it</a>
+          </p>`
+        : renderOwnerAgreementStatus(viewModel.agreement, false)}
+    </div>
     <h1>Your areas</h1>
     <div class="owner-ledger">
       <div class="owner-ledger__row owner-ledger__head" aria-hidden="true">
@@ -189,15 +197,6 @@ const ownerPart = (viewModel: ViewModel) => html`
       </div>
       ${joinHtml(viewModel.ownedAreas.map(areaRows(viewModel.now)))}
     </div>
-    <section>
-      <h2>Your Owners' Agreement</h2>
-      ${viewModel.agreement.state === 'unsigned'
-        ? html`<p>
-            You haven't signed the Owners' Agreement yet.
-            <a href="/members/sign-owner-agreement">Read and sign it</a>
-          </p>`
-        : renderOwnerAgreementStatus(viewModel.agreement, false)}
-    </section>
   </div>
 `;
 

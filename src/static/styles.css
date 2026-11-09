@@ -6232,3 +6232,48 @@ a.super-user-link:visited {
 a.super-user-link:hover {
   color: color-mix(in oklch, black 25%, var(--super-user-color));
 }
+
+/* What changed between versions of the Owners' Agreement: each change in a
+   sentence, with the wording before and after quoted beneath it. */
+ul.agreement-changes {
+  list-style: none;
+  padding: 0;
+}
+
+.agreement-changes > li {
+  margin: 0 0 1.25rem;
+  padding-left: 1rem;
+  border-left: 3px solid var(--border-color);
+}
+
+.agreement-change__snippet {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.agreement-change__label {
+  color: var(--grey-color);
+  font-size: 0.9em;
+}
+
+.agreement-change__snippet blockquote {
+  margin: 0;
+  font-style: italic;
+}
+
+.agreement-change__key {
+  color: var(--grey-color);
+}
+
+#changes mark {
+  background-color: color-mix(in oklch, white 75%, var(--green-color));
+  color: inherit;
+  padding: 0 0.1em;
+}
+
+#changes del {
+  background-color: color-mix(in oklch, white 88%, var(--red-color));
+  text-decoration-color: var(--red-color);
+}
