@@ -103,7 +103,7 @@ const renderWording = (change: AgreementChanges['groups'][number]['changes'][num
   change.before === undefined && change.after === undefined
     ? html``
     : html`<details class="agreement-change__wording">
-        <summary>See the wording</summary>
+        <summary>show wording</summary>
         <div class="stack">
           ${renderSnippet('Before', change.before)}
           ${renderSnippet('Now', change.after)}

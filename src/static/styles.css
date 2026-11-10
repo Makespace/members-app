@@ -6234,7 +6234,8 @@ a.super-user-link:hover {
 }
 
 /* What changed between versions of the Owners' Agreement: a bullet per
-   change, with the wording before and after folded away beneath it. */
+   change, with a small toggle at the end of its line for the wording before
+   and after, which opens beneath it. Kept tight so the list stays short. */
 /* The reset's ul[class] would otherwise take the bullets away. */
 ul.agreement-changes {
   list-style: disc;
@@ -6242,20 +6243,35 @@ ul.agreement-changes {
 }
 
 .agreement-changes > li {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.2rem;
+}
+
+#changes h3 {
+  margin-block-start: 0.75rem;
+}
+
+#changes h3 + ul {
+  margin-block-start: 0.25rem;
 }
 
 .agreement-change__wording {
-  margin-top: 0.25rem;
+  display: inline;
 }
 
 .agreement-change__wording > summary {
+  display: inline;
+  list-style: none;
   cursor: pointer;
-  font-size: 0.9em;
+  font-size: 0.85em;
+  white-space: nowrap;
 }
 
-.agreement-change__wording[open] > summary {
-  margin-bottom: 0.5rem;
+.agreement-change__wording > summary::-webkit-details-marker {
+  display: none;
+}
+
+.agreement-change__wording[open] > div {
+  margin: 0.4rem 0 0.6rem;
 }
 
 .agreement-change__snippet {
