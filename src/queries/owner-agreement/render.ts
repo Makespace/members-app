@@ -98,18 +98,25 @@ const renderSnippet = (label: string, snippet: Html | undefined) =>
         <blockquote>${snippet}</blockquote>
       </div>`;
 
-// What changed from what came before, as a summary with quoted snippets:
-// struck-through wording is gone, highlighted wording is new.
+// The wording before and after, folded away until asked for.
+const renderWording = (change: AgreementChanges['groups'][number]['changes'][number]) =>
+  change.before === undefined && change.after === undefined
+    ? html``
+    : html`<details class="agreement-change__wording">
+        <summary>See the wording</summary>
+        <div class="stack">
+          ${renderSnippet('Before', change.before)}
+          ${renderSnippet('Now', change.after)}
+        </div>
+      </details>`;
+
+// What changed from what came before: a bullet per change, each with the
+// wording before and after to open if wanted (struck-through wording is
+// gone, highlighted wording is new).
 const renderChanges = (changes: AgreementChanges) => html`
   <section id="changes" class="stack">
     <h2>What changed</h2>
-    <p>
-      Changes since ${safe(changes.comparedWith)}.
-      <span class="agreement-change__key"
-        ><del>Struck through</del> is gone; <mark>highlighted</mark> is
-        new.</span
-      >
-    </p>
+    <p>Changes since ${safe(changes.comparedWith)}.</p>
     ${joinHtml(
       changes.groups.map(
         group => html`
@@ -117,10 +124,8 @@ const renderChanges = (changes: AgreementChanges) => html`
           <ul class="agreement-changes">
             ${joinHtml(
               group.changes.map(
-                change => html`<li class="stack">
-                  <p>${change.summary}</p>
-                  ${renderSnippet('Before', change.before)}
-                  ${renderSnippet('Now', change.after)}
+                change => html`<li>
+                  ${change.summary} ${renderWording(change)}
                 </li>`
               )
             )}
