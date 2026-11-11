@@ -10,6 +10,16 @@ export const guideSections = [
     summary: 'How to buy things for your area and track your budget.',
     subsections: [
       {
+        id: 'yearly-allowances',
+        title: 'Yearly allowances',
+        contents: 'Yearly allowances',
+      },
+      {
+        id: 'allowance-extensions',
+        title: 'Requesting an extension to the yearly allowance',
+        contents: 'Extensions',
+      },
+      {
         id: 'purchasing-decisions',
         title: 'How are purchasing decisions made and actioned?',
         contents: 'Purchase Requests',

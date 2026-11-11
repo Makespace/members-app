@@ -322,6 +322,7 @@ const bodies = (
   const term = termsFor();
   return {
     purchasing: html`
+      ${subheading('yearly-allowances')}
       <p>
         A yearly allowance is available to give owners autonomy over how they
         purchase:
@@ -385,6 +386,29 @@ const bodies = (
         'the Purchase Areas that you are an Owner in',
         yourPurchaseAreas
       )}
+      ${subheading('allowance-extensions')}
+      <p>
+        The default yearly allowance per Area is designed to reduce purchasing
+        friction, but it's not intended to be restrictive. For this reason,
+        it's possible to request an extension to the yearly allowance if
+        reasonable justification is supplied.
+      </p>
+      <p>
+        If your Area's yearly allowance won't be enough for the maintenance,
+        improvements and non-recoverable consumables you can already foresee,
+        you can ask for an
+        ${term('expanded-allowance', 'Expanded Allowance')}. Email the
+        ${term('manager', 'managers')} and ${term('director', 'directors')}
+        saying what the expected spends are and why they're needed, for the
+        ${term('director', 'directors')} to approve. Ideally ask before the
+        financial year starts (1 January), but you can ask at any time.
+      </p>
+      <p>
+        An ${term('expanded-allowance', 'Expanded Allowance')} keeps your
+        yearly allowance free for discretionary spending that doesn't need
+        approval. Individual purchases still go through
+        ${term('purchase-request', 'Purchase Requests')} as usual.
+      </p>
       ${subheading('purchasing-decisions')}
       <p>
         To suggest a purchase within your
@@ -486,22 +510,6 @@ const bodies = (
         If a ${term('purchase-area', 'Purchase Area')} exceeds its budget, new
         ${term('purchase-request', 'purchase requests')} will have to be
         approved by the board of ${term('director', 'directors')}.
-      </p>
-      <p>
-        If your Area's yearly allowance won't be enough for the maintenance,
-        improvements and non-recoverable consumables you can already foresee,
-        you can ask for an
-        ${term('expanded-allowance', 'Expanded Allowance')}. Email the
-        ${term('manager', 'managers')} and ${term('director', 'directors')}
-        saying what the expected spends are and why they're needed, for the
-        ${term('director', 'directors')} to approve. Ideally ask before the
-        financial year starts (1 January), but you can ask at any time.
-      </p>
-      <p>
-        An ${term('expanded-allowance', 'Expanded Allowance')} keeps your
-        yearly allowance free for discretionary spending that doesn't need
-        approval. Individual purchases still go through
-        ${term('purchase-request', 'Purchase Requests')} as usual.
       </p>
     `,
   };

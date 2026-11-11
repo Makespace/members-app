@@ -283,6 +283,8 @@ describe("the owner's guide's contents", () => {
         link => text(link)
       )
     ).toStrictEqual([
+      'Yearly allowances',
+      'Extensions',
       'Purchase Requests',
       'Simple Purchases',
       'Proposals',
@@ -300,6 +302,6 @@ describe("the owner's guide's contents", () => {
     targets.forEach(id =>
       expect(body.querySelector(`[id="${id}"]`)).not.toBeNull()
     );
-    expect(targets).toHaveLength(8);
+    expect(targets).toHaveLength(10);
   });
 });
