@@ -272,15 +272,7 @@ const definitions = {
   'small-purchase-amount':
     "Small Purchase Amount: a single purchase costing this much or more needs a proposal, even when it's within the Yearly Budget. It's normally £1000.",
   'allowance-extension':
-    "Allowance Extension: extra budget for one year for a Purchase Area, approved by the directors, for spending it can foresee that its yearly allowance won't cover. Ask for one by emailing the managers and directors with what you expect to spend and why it's needed - ideally before the financial year starts, but you can ask at any time.",
-  maintenance:
-    'Maintenance: keeping your Area running - routine services (e.g. replace laser filters), unplanned repairs (e.g. a band saw blade broke) and like-for-like replacements (e.g. a new jigsaw).',
-  improvements:
-    'Improvements: expanding the functionality of your Area, including entirely new equipment and upgrading existing equipment with a replacement.',
-  'non-recoverable-consumables':
-    "Non-recoverable consumables: consumables members don't pay for when they use them, e.g. embroidery machine thread or solder.",
-  'recoverable-consumables':
-    'Recoverable consumables: consumables members pay for when they use them, e.g. laser materials or 3D printer filament.',
+    "Allowance Extension: extra budget for one year for a Purchase Area, approved by the directors, for spending it can foresee that its yearly allowance won't cover. Ask for one by emailing the managers (management@makespace.org) and directors (directors@makespace.org) with what you expect to spend and why it's needed - ideally before the financial year starts, but you can ask at any time.",
   manager:
     'Manager: paid contractors who act as a coordinating function across Makespace, ensuring the smooth operation of the day-to-day running of the space, coordinating among the owners teams, guiding members to whatever/whoever they need, and coordinating between the directors and owners/members.',
   director:
@@ -397,8 +389,11 @@ const bodies = (
         If you can foresee spending on maintenance, improvements or
         non-recoverable consumables that your
         ${term('purchase-area', 'Purchase Area')}'s yearly allowance won't
-        cover, email the ${term('manager', 'managers')} and
-        ${term('director', 'directors')} with:
+        cover, email the ${term('manager', 'managers')}
+        (<a href="mailto:management@makespace.org">management@makespace.org</a>)
+        and ${term('director', 'directors')}
+        (<a href="mailto:directors@makespace.org">directors@makespace.org</a>)
+        with:
       </p>
       <ul>
         <li>what you expect to spend</li>
@@ -493,28 +488,6 @@ const bodies = (
           >
         </li>
       </ul>
-      ${subheading('budgets')}
-      <p>
-        A ${term('purchase-area', 'Purchase Area')} has a single
-        ${term('yearly-budget', 'Yearly Budget')} for all types of spending:
-        ${term('maintenance', 'Maintenance')},
-        ${term('improvements', 'Improvements')} and
-        ${term('non-recoverable-consumables', 'Non-recoverable consumables')}
-        all come out of it.
-      </p>
-      <p>
-        ${term('recoverable-consumables', 'Recoverable consumables')} are paid
-        for by members when they are used, so they do not come out of the
-        ${term('yearly-budget', 'Yearly Budget')}.
-      </p>
-      ${subheading('over-budget')}
-      <p>
-        If a ${term('purchase-area', 'Purchase Area')} exceeds its budget, new
-        ${term('purchase-request', 'purchase requests')} will have to be
-        approved by the board of ${term('director', 'directors')}. To avoid
-        this, you can
-        <a href="#allowance-extensions">request an extension</a>.
-      </p>
     `,
   };
 };

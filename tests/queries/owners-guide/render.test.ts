@@ -288,8 +288,6 @@ describe("the owner's guide's contents", () => {
       'Purchase Requests',
       'Simple Purchases',
       'Proposals',
-      'Budgets',
-      'Going over budget',
     ]);
   });
 
@@ -302,6 +300,6 @@ describe("the owner's guide's contents", () => {
     targets.forEach(id =>
       expect(body.querySelector(`[id="${id}"]`)).not.toBeNull()
     );
-    expect(targets).toHaveLength(10);
+    expect(targets).toHaveLength(8);
   });
 });

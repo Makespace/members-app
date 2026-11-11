@@ -34,16 +34,6 @@ export const guideSections = [
         title: 'Purchase Requests that need a Proposal',
         contents: 'Proposals',
       },
-      {
-        id: 'budgets',
-        title: 'What budget does my purchase come out of?',
-        contents: 'Budgets',
-      },
-      {
-        id: 'over-budget',
-        title: 'What happens if budgets are exceeded?',
-        contents: 'Going over budget',
-      },
     ],
   },
   {
