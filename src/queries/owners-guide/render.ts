@@ -357,16 +357,15 @@ const bodies = (
       <div class="owners-guide__beside">
         <p>
           Every Area is allocated the same yearly allowance, which can change
-          year to year.
+          year to year. Areas are grouped into
+          ${term('purchase-area', 'Purchase Areas')} when they often make
+          financial decisions together.
         </p>
         <aside class="owners-guide__box">
-          <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-          Areas are grouped into ${term('purchase-area', 'Purchase Areas')}
-          when they often make financial decisions together, and a
-          ${term('purchase-area', 'Purchase Area')}'s
+          <i class="fa-regular fa-lightbulb" aria-hidden="true"></i>
+          A ${term('purchase-area', 'Purchase Area')}'s
           ${term('yearly-budget', 'Yearly Budget')} is its Areas' allowances
-          combined. This gives owners a low friction way to make simple
-          purchases.
+          combined.
         </aside>
       </div>
       ${yourData(
