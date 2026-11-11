@@ -324,29 +324,32 @@ const bodies = (
         <li>
           <strong>Maintenance</strong>
           <span
-            >Routine services (e.g. the Laser Cutters need filters replacing),
-            unplanned repairs (e.g. someone broke the band saw blade) and
-            like-for-like replacements (e.g. a new jigsaw)</span
+            ><strong>Routine services</strong> (e.g. the Laser Cutters need
+            filters replacing), <strong>unplanned repairs</strong> (e.g.
+            someone broke the band saw blade) and
+            <strong>like-for-like replacements</strong> (e.g. a new
+            jigsaw)</span
           >
         </li>
         <li>
           <strong>Improvements</strong>
           <span
-            >Expanding the functionality of your Area, including entirely new
-            equipment and upgrading existing equipment with a replacement</span
+            >Expanding the functionality of your Area, including entirely
+            <strong>new equipment</strong> and <strong>upgrading</strong>
+            existing equipment with a replacement</span
           >
         </li>
         <li>
           <strong>Consumables</strong>
           <ul class="owners-guide__kind-parts">
             <li>
-              Recoverable consumables - members pay for these when they use
-              them, e.g. 3D printer filament
+              <strong>Recoverable consumables</strong> - members pay for these
+              when they use them, e.g. 3D printer filament
             </li>
             <li>
-              Non-recoverable consumables - things that are consumed, but not
-              practical to be paid for by members, e.g. embroidery machine
-              thread
+              <strong>Non-recoverable consumables</strong> - things that are
+              consumed, but not practical to be paid for by members, e.g.
+              embroidery machine thread
             </li>
           </ul>
         </li>
