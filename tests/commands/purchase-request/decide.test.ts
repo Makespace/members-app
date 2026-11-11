@@ -33,7 +33,7 @@ describe('approving or declining a purchase request', () => {
     await framework.commands.purchaseRequest.submit({
       id,
       purchasingAreaId,
-      isMemberPaidConsumable: false,
+      purchaseType: 'improvements',
       affectsOtherAreas: false,
       affectedAreaIds: undefined,
       healthAndSafetyRisk: false,

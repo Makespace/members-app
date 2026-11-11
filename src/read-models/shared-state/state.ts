@@ -1,4 +1,5 @@
 import {BuildColumns, SQL, sql} from 'drizzle-orm';
+import {PurchaseType} from '../../types/purchase-type';
 import {UUID} from 'io-ts-types';
 import {EmailAddress, GravatarHash, UserId} from '../../types';
 import {
@@ -457,6 +458,40 @@ export const purchasingAreaYearBudgetsTable = defineTable(
   }
 );
 
+// Extensions to a purchasing area's yearly allowance, by budget year; see
+// PurchasingAreaExtensionSet. A row is deleted when set to nothing.
+export const purchasingAreaExtensionsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS purchasingAreaExtensions (
+      purchasingAreaId TEXT NOT NULL,
+      budgetYear INTEGER NOT NULL,
+      extensionPence INTEGER NOT NULL,
+      PRIMARY KEY (purchasingAreaId, budgetYear)
+    )
+  `,
+  'purchasingAreaExtensions' as const,
+  {
+    purchasingAreaId: text('purchasingAreaId').notNull().$type<UUID>(),
+    budgetYear: integer('budgetYear').notNull(),
+    extensionPence: integer('extensionPence').notNull(),
+  }
+);
+
+// The yearly allowance per Area, each from a budget year until the next.
+export const purchasingAllowancesTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS purchasingAllowances (
+      fromBudgetYear INTEGER PRIMARY KEY,
+      allowancePerAreaPence INTEGER NOT NULL
+    )
+  `,
+  'purchasingAllowances' as const,
+  {
+    fromBudgetYear: integer('fromBudgetYear').notNull().primaryKey(),
+    allowancePerAreaPence: integer('allowancePerAreaPence').notNull(),
+  }
+);
+
 // Spending recorded directly against a purchasing area for a year; see
 // PurchasingAreaSpendRecorded. Removed rows are deleted.
 export const purchasingAreaSpendTable = defineTable(
@@ -550,6 +585,7 @@ export const purchaseRequestsTable = defineTable(
       purchasesJson TEXT NOT NULL,
       justification TEXT NOT NULL,
       isMemberPaidConsumable INTEGER NOT NULL,
+      purchaseType TEXT,
       affectedAreaIdsJson TEXT NOT NULL,
       healthAndSafetyRisk INTEGER NOT NULL,
       proposalJson TEXT,
@@ -561,6 +597,9 @@ export const purchaseRequestsTable = defineTable(
       boughtAt INTEGER,
       boughtByMemberNumber INTEGER,
       actualCostPence INTEGER,
+      invoiceSentAt INTEGER,
+      invoiceSentByMemberNumber INTEGER,
+      receiptsJson TEXT NOT NULL DEFAULT '[]',
       outcome TEXT NOT NULL,
       approval TEXT NOT NULL,
       outcomeReason TEXT NOT NULL,
@@ -583,6 +622,8 @@ export const purchaseRequestsTable = defineTable(
     isMemberPaidConsumable: integer('isMemberPaidConsumable', {
       mode: 'boolean',
     }).notNull(),
+    // Unknown for a request sent before it was asked, unless member-paid.
+    purchaseType: text('purchaseType').$type<PurchaseType>(),
     affectedAreaIdsJson: text('affectedAreaIdsJson').notNull(),
     healthAndSafetyRisk: integer('healthAndSafetyRisk', {
       mode: 'boolean',
@@ -600,6 +641,13 @@ export const purchaseRequestsTable = defineTable(
     boughtAt: integer('boughtAt', {mode: 'timestamp_ms'}),
     boughtByMemberNumber: integer('boughtByMemberNumber'),
     actualCostPence: integer('actualCostPence'),
+    // Once bought, its receipt or invoice passed on to the accountant (by
+    // uploading it, or by hand or email): first when, by whom.
+    invoiceSentAt: integer('invoiceSentAt', {mode: 'timestamp_ms'}),
+    invoiceSentByMemberNumber: integer('invoiceSentByMemberNumber'),
+    // Receipts and invoices uploaded for it, as JSON; the files themselves
+    // are in purchasing/receipt-files.
+    receiptsJson: text('receiptsJson').notNull().default('[]'),
     outcome: text('outcome').notNull().$type<PurchaseRequestOutcome>(),
     approval: text('approval').notNull().$type<PurchaseApproval>(),
     outcomeReason: text('outcomeReason').notNull(),

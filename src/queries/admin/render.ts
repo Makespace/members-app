@@ -5,6 +5,7 @@ import {OwnedArea, TrainedMachine, ViewModel} from './construct-view-model';
 import {renderTrainingSparkline} from '../../templates/training-sparkline';
 import {howLong} from '../shared-render/how-long';
 import {guidePath, guideSections} from '../owners-guide/sections';
+import {renderOwnerAgreementStatus} from '../shared-render/owner-agreement';
 
 // Grouped by what somebody came here to do, rather than by when the link
 // happened to be added. The list had grown past the point where a flat column
@@ -177,6 +178,14 @@ const guideCards = () => html`
 const ownerPart = (viewModel: ViewModel) => html`
   <div class="stack">
     ${guideCards()}
+    <div>
+      ${viewModel.agreement.state === 'unsigned'
+        ? html`<p>
+            You haven't signed the Owners' Agreement yet.
+            <a href="/members/sign-owner-agreement">Read and sign it</a>
+          </p>`
+        : renderOwnerAgreementStatus(viewModel.agreement, false)}
+    </div>
     <h1>Your areas</h1>
     <div class="owner-ledger">
       <div class="owner-ledger__row owner-ledger__head" aria-hidden="true">

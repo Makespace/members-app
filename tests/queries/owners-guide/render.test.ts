@@ -25,7 +25,10 @@ const pat: PurchasingAreaPurchaser = {
 const workshops = {
   id: 'pa-1' as UUID,
   name: 'Workshops',
-  yourAreas: ['Metal Shop', 'Wood Shop'],
+  areas: [
+    {name: 'Metal Shop', yours: false},
+    {name: 'Wood Shop', yours: true},
+  ],
   active: true,
   yearlyBudgetPence: 100_000,
   remainingPence: 65_000,
@@ -57,11 +60,20 @@ const withWorkshops: YourAreas = {
 };
 
 describe("the owner's guide's Purchase Areas", () => {
+  it('lists all its areas, with your own in bold', () => {
+    const areas = purchasingSection(withWorkshops).querySelector(
+      'tbody tr .owners-guide__your-areas'
+    );
+    expect([...(areas?.querySelectorAll('strong') ?? [])].map(text)).toStrictEqual([
+      'Wood Shop',
+    ]);
+  });
+
   it('gives each with your areas in it, its Purchasers and what is left', () => {
     const row = purchasingSection(withWorkshops).querySelector('tbody tr');
 
     expect(cells(row)).toStrictEqual([
-      'Workshops Your areas: Metal Shop, Wood Shop',
+      'Workshops Areas: Metal Shop, Wood Shop',
       '3 purchases January: £0 February: £200 March: £150 April: £0',
       '£650 left of £1,000',
     ]);
@@ -96,7 +108,7 @@ describe("the owner's guide's Purchase Areas", () => {
     }).querySelector('tbody tr');
 
     expect(cells(row)[0]).toBe(
-      'Workshops Not active yet. Your areas: Metal Shop, Wood Shop'
+      'Workshops Not active yet. Areas: Metal Shop, Wood Shop'
     );
   });
 
@@ -140,13 +152,13 @@ describe("the owner's guide's defined terms", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('underlines the terms in how purchasing decisions are made', () => {
-    const paragraph = [...sectionFor(loggedOut).querySelectorAll('p')].find(p =>
-      p.textContent?.includes('full autonomy')
+  it('underlines the terms in when owners can decide for themselves', () => {
+    const conditions = sectionFor(loggedOut).querySelector(
+      '.owners-guide__conditions'
     );
 
     expect(
-      [...(paragraph?.querySelectorAll('dfn') ?? [])].map(
+      [...(conditions?.querySelectorAll('dfn') ?? [])].map(
         term => term.firstChild?.textContent
       )
     ).toStrictEqual(['Small Purchase Amount', 'Purchase Area', 'Yearly Budget']);
@@ -203,11 +215,36 @@ describe("the owner's guide's purchase request links", () => {
     const list = links(withWorkshops);
     const link = list?.querySelector('a');
 
-    expect(text(list)).toBe('Workshops - request a purchase');
+    expect(text(list)).toBe(
+      'Workshops - request a purchase Purchaser: Pat Purchaser'
+    );
     expect(text(link)).toBe('request a purchase');
     expect(link?.getAttribute('href')).toBe(
       '/purchase-requests/submit?purchasingArea=pa-1'
     );
+  });
+
+  it('names several Purchasers, or none when there are none', () => {
+    const purchasers = (yours: YourAreas) =>
+      text(links(yours)?.querySelector('.owners-guide__purchasers'));
+
+    expect(
+      purchasers({
+        ...withWorkshops,
+        purchasingAreas: [
+          {
+            ...workshops,
+            purchasers: [pat, {...pat, name: O.none, memberNumber: 42}],
+          },
+        ],
+      })
+    ).toBe('Purchasers: Pat Purchaser, member 42');
+    expect(
+      purchasers({
+        ...withWorkshops,
+        purchasingAreas: [{...workshops, purchasers: []}],
+      })
+    ).toBeUndefined();
   });
 
   it("says one that isn't active yet isn't taking requests, and who to ask", () => {
@@ -228,5 +265,41 @@ describe("the owner's guide's purchase request links", () => {
     expect(
       links({...withWorkshops, purchasingAreas: []})
     ).toBeNull();
+  });
+});
+
+describe("the owner's guide's contents", () => {
+  const page = () => {
+    const body = document.createElement('body');
+    body.innerHTML = render(loggedOut);
+    return body;
+  };
+
+  it('lists the headings within a section under it, by their short names', () => {
+    const purchasing = page().querySelector('.owners-guide__toc > ol > li');
+
+    expect(
+      [...(purchasing?.querySelectorAll('.owners-guide__toc-sub a') ?? [])].map(
+        link => text(link)
+      )
+    ).toStrictEqual([
+      'Yearly allowances',
+      'Extensions',
+      'Purchase Requests',
+      'Simple Purchases',
+      'Proposals',
+    ]);
+  });
+
+  it('only links to headings that are there', () => {
+    const body = page();
+    const targets = [...body.querySelectorAll('.owners-guide__toc a')].map(
+      link => link.getAttribute('href')?.slice(1)
+    );
+
+    targets.forEach(id =>
+      expect(body.querySelector(`[id="${id}"]`)).not.toBeNull()
+    );
+    expect(targets).toHaveLength(8);
   });
 });

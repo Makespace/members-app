@@ -1,4 +1,5 @@
 import {DomainEvent, StoredDomainEvent} from '../../types/domain-event';
+import {StoredPurchaseReceipt} from './purchasing/receipts';
 import {UUID} from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import {
@@ -36,6 +37,8 @@ import {
   purchaseRequestNotificationsTable,
   purchasingAreaSpendTable,
   purchasingAreaYearBudgetsTable,
+  purchasingAllowancesTable,
+  purchasingAreaExtensionsTable,
   einkDisplaysTable,
   trainingSessionsTable,
   trainingSessionAttendeesTable,
@@ -1338,6 +1341,7 @@ const _updateState =
         tx.delete(purchasingAreaAreasTable).where(eq(purchasingAreaAreasTable.purchasingAreaId, id)).run();
         tx.delete(purchasersTable).where(eq(purchasersTable.purchasingAreaId, id)).run();
         tx.delete(purchasingAreaYearBudgetsTable).where(eq(purchasingAreaYearBudgetsTable.purchasingAreaId, id)).run();
+        tx.delete(purchasingAreaExtensionsTable).where(eq(purchasingAreaExtensionsTable.purchasingAreaId, id)).run();
         const rows = tx.delete(purchasingAreasTable).where(eq(purchasingAreasTable.id, id)).run();
         if (rows.changes === 0) {
           throw new InconsistentEventError(`Unable to remove purchasing area ${id} - unknown purchasing area`);
@@ -1364,6 +1368,10 @@ const _updateState =
         }
         break;
       }
+      case 'PurchasingAreaSmallRepairsAmountSet':
+        // The small repairs amount was dropped with the 2027 budget system;
+        // any set before then no longer means anything.
+        break;
       case 'PurchasingAreaSmallPurchaseAmountSet': {
         const rows = tx.update(purchasingAreasTable)
           .set({smallPurchaseAmountPence: event.smallPurchaseAmountPence})
@@ -1371,6 +1379,39 @@ const _updateState =
           .run();
         if (rows.changes === 0) {
           throw new InconsistentEventError(`Unable to set small purchase amount of purchasing area ${event.purchasingAreaId} - unknown purchasing area`);
+        }
+        break;
+      }
+      case 'PurchasingAllowanceSet': {
+        tx.insert(purchasingAllowancesTable)
+          .values({
+            fromBudgetYear: event.fromBudgetYear,
+            allowancePerAreaPence: event.allowancePerAreaPence,
+          })
+          .onConflictDoUpdate({
+            target: purchasingAllowancesTable.fromBudgetYear,
+            set: {allowancePerAreaPence: event.allowancePerAreaPence},
+          })
+          .run();
+        break;
+      }
+      case 'PurchasingAreaExtensionSet': {
+        const forYear = (table: typeof purchasingAreaExtensionsTable | typeof purchasingAreaYearBudgetsTable) =>
+          and(
+            eq(table.purchasingAreaId, event.purchasingAreaId),
+            eq(table.budgetYear, event.budgetYear)
+          );
+        // It takes over from a whole year's budget set the old way.
+        tx.delete(purchasingAreaYearBudgetsTable).where(forYear(purchasingAreaYearBudgetsTable)).run();
+        tx.delete(purchasingAreaExtensionsTable).where(forYear(purchasingAreaExtensionsTable)).run();
+        if (event.extensionPence > 0) {
+          tx.insert(purchasingAreaExtensionsTable)
+            .values({
+              purchasingAreaId: event.purchasingAreaId,
+              budgetYear: event.budgetYear,
+              extensionPence: event.extensionPence,
+            })
+            .run();
         }
         break;
       }
@@ -1477,6 +1518,11 @@ const _updateState =
             purchasesJson: JSON.stringify(event.purchases),
             justification: event.justification,
             isMemberPaidConsumable: event.isMemberPaidConsumable,
+            // A request from before the type was asked is known to be
+            // member-paid when it was a consumable; otherwise unknown.
+            purchaseType:
+              event.purchaseType ??
+              (event.isMemberPaidConsumable ? 'member-paid' : null),
             affectedAreaIdsJson: JSON.stringify(event.affectedAreaIds),
             healthAndSafetyRisk: event.healthAndSafetyRisk,
             proposalJson:
@@ -1536,6 +1582,59 @@ const _updateState =
         if (rows.changes === 0) {
           throw new InconsistentEventError(`Unable to mark purchase request ${event.id} bought - unknown purchase request`);
         }
+        break;
+      }
+      case 'PurchaseRequestInvoiceSent': {
+        const rows = tx.update(purchaseRequestsTable)
+          .set({
+            invoiceSentAt: event.recordedAt,
+            invoiceSentByMemberNumber:
+              event.actor.tag === 'user' ? event.actor.user.memberNumber : null,
+          })
+          .where(eq(purchaseRequestsTable.id, event.id))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(`Unable to mark invoice sent for purchase request ${event.id} - unknown purchase request`);
+        }
+        break;
+      }
+      case 'PurchaseRequestReceiptUploaded': {
+        const existing = tx
+          .select({
+            receiptsJson: purchaseRequestsTable.receiptsJson,
+            invoiceSentAt: purchaseRequestsTable.invoiceSentAt,
+            invoiceSentByMemberNumber:
+              purchaseRequestsTable.invoiceSentByMemberNumber,
+          })
+          .from(purchaseRequestsTable)
+          .where(eq(purchaseRequestsTable.id, event.id))
+          .get();
+        if (!existing) {
+          throw new InconsistentEventError(`Unable to add receipts to purchase request ${event.id} - unknown purchase request`);
+        }
+        const uploadedByMemberNumber =
+          event.actor.tag === 'user' ? event.actor.user.memberNumber : null;
+        const receipts: ReadonlyArray<StoredPurchaseReceipt> = [
+          ...(JSON.parse(existing.receiptsJson) as ReadonlyArray<StoredPurchaseReceipt>),
+          ...event.files.map(file => ({
+            ...file,
+            uploadedAtMs: event.recordedAt.getTime(),
+            uploadedByMemberNumber,
+          })),
+        ];
+        // Uploading sends it on to the accountant, so it counts as sent if
+        // nobody had already marked it.
+        const firstSent = existing.invoiceSentAt === null;
+        tx.update(purchaseRequestsTable)
+          .set({
+            receiptsJson: JSON.stringify(receipts),
+            invoiceSentAt: firstSent ? event.recordedAt : existing.invoiceSentAt,
+            invoiceSentByMemberNumber: firstSent
+              ? uploadedByMemberNumber
+              : existing.invoiceSentByMemberNumber,
+          })
+          .where(eq(purchaseRequestsTable.id, event.id))
+          .run();
         break;
       }
       case 'PurchaseRequestNotificationSent': {

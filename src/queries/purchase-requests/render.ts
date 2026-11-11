@@ -11,6 +11,7 @@ import {renderMember} from '../../templates/member';
 import {renderMemberNumber} from '../../templates/member-number';
 import {renderOutcome} from '../../templates/purchase-request-outcome';
 import {renderStatus} from '../../templates/purchase-request-status';
+import {renderInvoiceSent} from '../../templates/purchase-request-invoice';
 import {renderRecordPurchaseButton} from '../../templates/record-purchase-button';
 
 type Row = {
@@ -64,6 +65,7 @@ const renderRow =
       <td>${sanitizeString(formatPence(request.totalPence))}</td>
       <td>${renderOutcome(request.outcome, request.approval, request.status)}</td>
       <td>${renderStatus(request)}</td>
+      <td>${renderInvoiceSent(request)}</td>
     </tr>
   `;
 
@@ -78,6 +80,7 @@ const renderTable = (rows: ReadonlyArray<Row>, canSeePrivateDetails: boolean) =>
         <th>Cost</th>
         <th>Budget</th>
         <th>Status</th>
+        <th>Invoice to accountant</th>
       </tr>
     </thead>
     <tbody>
@@ -111,8 +114,9 @@ export const render = (viewModel: ViewModel) => {
         ? html`<section class="stack">
             <h2>Waiting for you (${viewModel.waitingForViewer.length})</h2>
             <p>
-              You can approve or decline these, or mark them as paid once
-              approved.
+              Approve or decline these, mark them as paid once approved, or,
+              for what you've paid for, send the receipt or invoice to the
+              accountant.
             </p>
             ${renderTable(
               [...viewModel.waitingForViewer].reverse(),

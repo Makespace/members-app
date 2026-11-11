@@ -23,6 +23,7 @@ import {
   MinimalArea,
   MinimalEquipment,
   PurchaseRequest,
+  PurchasingAllowance,
   PurchasingArea,
   PurchasingAreaSummary,
 } from './return-types';
@@ -102,6 +103,7 @@ import {
   getPurchaseRequest,
   getAllPurchaseRequests,
   purchasingAreaHasHistory,
+  getPurchasingAllowances,
   hasNotifiedForPurchaseEvent,
   notifiedAboutRequest,
   getPurchaseRequests,
@@ -262,6 +264,8 @@ export type SharedReadModel = {
     getRequest: (id: UUID) => O.Option<PurchaseRequest>;
     getAllRequests: () => ReadonlyArray<PurchaseRequest>;
     hasHistory: (purchasingAreaId: UUID) => boolean;
+    // The yearly allowance per Area, each from a budget year, oldest first.
+    allowances: () => ReadonlyArray<PurchasingAllowance>;
     hasNotifiedForEvent: (eventIndex: number) => boolean;
     notifiedAbout: (requestId: UUID) => ReadonlyArray<number>;
   };
@@ -409,6 +413,7 @@ export const initSharedReadModel = (
       getRequest: getPurchaseRequest(readModelDb),
       getAllRequests: getAllPurchaseRequests(readModelDb),
       hasHistory: purchasingAreaHasHistory(readModelDb),
+      allowances: getPurchasingAllowances(readModelDb),
       hasNotifiedForEvent: hasNotifiedForPurchaseEvent(readModelDb),
       notifiedAbout: notifiedAboutRequest(readModelDb),
     },

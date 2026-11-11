@@ -1,4 +1,5 @@
 import {SignedOwnerAgreement} from '../../owner-agreement/agreement';
+import {PurchaseType} from '../../types/purchase-type';
 import {Purchase} from '../../purchasing/purchases';
 import {Proposal} from '../../purchasing/proposal';
 import {EquipmentCategory} from '../../types/equipment-category';
@@ -191,8 +192,16 @@ export type PurchasingArea = PurchasingAreaSummary & {
   // This budget year's budget: the usual one, unless it has been set
   // differently for this year (e.g. extended).
   yearlyBudgetPence: number;
-  // The budget every year has unless set differently for that year.
+  // The budget every year has unless set differently for that year (e.g. an
+  // extension): its areas' allowances added together once a yearly
+  // allowance per Area applies, otherwise the one set for it by hand.
   usualBudgetPence: number;
+  // The yearly allowance per Area for this budget year, if one applies.
+  allowancePerAreaPence: O.Option<number>;
+  // Extensions the directors approved, added on top of the usual budget:
+  // this budget year's, and next year's when recorded ahead. 0 when none.
+  extensionPence: number;
+  nextYearExtensionPence: number;
   // A single budget purchase of this much or more needs a proposal.
   smallPurchaseAmountPence: number;
   areas: ReadonlyArray<{id: UUID; name: string}>;
@@ -203,6 +212,9 @@ export type PurchasingArea = PurchasingAreaSummary & {
   spentThisYearPence: number;
   // Recorded spending approved outside the budget, which doesn't count.
   approvedSpendThisYearPence: number;
+  // This year's approved repairs that were sent while repairs didn't count
+  // against the budget (November 2026); none since.
+  repairsThisYearPence: number;
   // This year's requests still waiting for approval, which don't count yet.
   awaitingApprovalPence: number;
   // This budget year's recorded spending, oldest first.
@@ -211,6 +223,11 @@ export type PurchasingArea = PurchasingAreaSummary & {
   remainingPence: number;
 };
 
+
+export type PurchasingAllowance = {
+  fromBudgetYear: number;
+  allowancePerAreaPence: number;
+};
 
 export type PurchaseRequest = {
   id: UUID;
@@ -225,6 +242,8 @@ export type PurchaseRequest = {
   purchases: ReadonlyArray<Purchase>;
   justification: string;
   isMemberPaidConsumable: boolean;
+  // Unknown for a request sent before it was asked, unless member-paid.
+  purchaseType: O.Option<PurchaseType>;
   // Other areas it affects, whose owners need a chance to give their input.
   affectedAreaIds: ReadonlyArray<UUID>;
   // A moderate to high health and safety risk that will need mitigating.
@@ -244,10 +263,26 @@ export type PurchaseRequest = {
   boughtByMemberNumber: O.Option<number>;
   // What it really cost, when different from totalPence.
   actualCostPence: O.Option<number>;
+  // Once bought, its receipt or invoice first passed on to the accountant
+  // (by uploading it, or by hand or email).
+  invoiceSentAt: O.Option<Date>;
+  invoiceSentByMemberNumber: O.Option<number>;
+  // Receipts and invoices uploaded for it, oldest first.
+  receipts: ReadonlyArray<PurchaseReceipt>;
   outcome: PurchaseRequestOutcome;
   approval: PurchaseApproval;
   outcomeReason: string;
   // The budget figures the outcome was computed from, at submission.
   yearlyBudgetPence: number;
   spentThisYearPence: number;
+};
+
+// A receipt or invoice uploaded for a bought purchase.
+export type PurchaseReceipt = {
+  fileId: UUID;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  uploadedAt: Date;
+  uploadedByMemberNumber: O.Option<number>;
 };

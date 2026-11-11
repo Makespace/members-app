@@ -12,6 +12,7 @@ import {
   decisionAction,
   DecisionViewModel,
   purchaseFromParams,
+  receiptPagePath,
   requestPath,
 } from './decide-helpers';
 
@@ -25,7 +26,9 @@ const renderForm = (viewModel: DecisionViewModel) =>
           ${sanitizeString(formatPence(viewModel.request.totalPence))}.
         </p>
         <form
-          action="${safe(decisionAction('mark-bought', viewModel.request.id))}"
+          action="${safe(
+            decisionAction('mark-bought', viewModel.request.id, receiptPagePath)
+          )}"
           method="post"
         >
           <label for="actualCost">What did it cost?</label>
@@ -47,6 +50,10 @@ const renderForm = (viewModel: DecisionViewModel) =>
           </div>
           <input type="hidden" name="id" value="${viewModel.request.id}" />
           <button type="submit">Mark as paid</button>
+          <p class="text-sm">
+            Next you'll be asked for the receipt or invoice, to send to the
+            accountant.
+          </p>
         </form>
       </div>
     `,

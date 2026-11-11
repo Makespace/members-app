@@ -45,7 +45,7 @@ describe('create purchasing area', () => {
         create.process({command, rm: framework.sharedReadModel})
       );
       expect(result).toStrictEqual(
-        O.some(expect.objectContaining({smallPurchaseAmountPence: 50_000}))
+        O.some(expect.objectContaining({smallPurchaseAmountPence: 30_000}))
       );
     });
 

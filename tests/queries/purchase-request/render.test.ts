@@ -28,6 +28,7 @@ const request: PurchaseRequest = {
   ],
   justification: 'The old blades are blunt',
   isMemberPaidConsumable: false,
+  purchaseType: O.none,
   affectedAreaIds: [],
   healthAndSafetyRisk: false,
   proposal: O.none,
@@ -39,6 +40,9 @@ const request: PurchaseRequest = {
   boughtAt: O.none,
   boughtByMemberNumber: O.none,
   actualCostPence: O.none,
+  invoiceSentAt: O.none,
+  invoiceSentByMemberNumber: O.none,
+  receipts: [],
   outcome: 'budget',
   approval: 'none',
   outcomeReason: 'This comes out of the yearly budget.',
@@ -58,6 +62,9 @@ const page = (
     submitterName: O.some('Ada Admin'),
     deciderName: O.some('Dee Director'),
     buyerName: O.some('Pat Purchaser'),
+    invoiceSenderName: O.some('Pat Purchaser'),
+    canMarkInvoiceSent: false,
+    canViewReceipts: false,
     canDecide,
   });
 
@@ -66,6 +73,13 @@ describe('purchase request page', () => {
     const html = page(true);
     expect(html).toContain('Request sent');
     expect(html).toContain('Table saw blades · £150.00 · Wood Shop');
+  });
+
+  it('says what type of purchase it is, when known', () => {
+    expect(page(false, {purchaseType: O.some('repairs')})).toContain(
+      'Maintenance'
+    );
+    expect(page(false)).not.toContain('<dt>Type</dt>');
   });
 
   it('heads a request looked at later with its summary', () => {

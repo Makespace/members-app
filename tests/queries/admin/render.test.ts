@@ -11,7 +11,12 @@ import {ViewModel} from '../../../src/queries/admin/construct-view-model';
 
 const now = new Date('2026-10-29T12:00:00Z');
 
-const superUser: ViewModel = {isSuperUser: true, ownedAreas: [], now};
+const superUser: ViewModel = {
+  isSuperUser: true,
+  ownedAreas: [],
+  agreement: {state: 'unsigned'},
+  now,
+};
 
 const woodShop: ViewModel['ownedAreas'][number] = {
   id: 'area-1',
@@ -32,9 +37,12 @@ const woodShop: ViewModel['ownedAreas'][number] = {
   ],
 };
 
-const pageFor = (viewModel: Omit<ViewModel, 'now'>) => {
+const pageFor = (
+  viewModel: Omit<ViewModel, 'now' | 'agreement'> &
+    Partial<Pick<ViewModel, 'agreement'>>
+) => {
   const body = document.createElement('body');
-  body.innerHTML = render({...viewModel, now});
+  body.innerHTML = render({agreement: {state: 'unsigned'}, ...viewModel, now});
   return body;
 };
 

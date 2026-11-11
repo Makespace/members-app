@@ -55,4 +55,8 @@ export const happyPathAdapters: Dependencies = {
     resumeSubscription: recurlyWriteNotExpected,
     cancelSubscriptionAtTermEnd: recurlyWriteNotExpected,
   } satisfies RecurlyWriteGateway,
+  receiptFiles: {
+    store: () => Promise.resolve(),
+    get: () => Promise.resolve(O.none),
+  },
 };

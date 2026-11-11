@@ -98,7 +98,7 @@ export const pages: ReadonlyArray<AgreementPage> = [
           title: 'Encourage community',
           description: html`Help grow a friendly community of members around
           your equipment, and encourage members to become owners. Enable and
-          encourage owners to keep equipment tidy and clean.`,
+          encourage members to keep equipment tidy and clean.`,
         },
         {
           value: 'documentation',

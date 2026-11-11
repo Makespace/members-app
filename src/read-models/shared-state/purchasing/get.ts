@@ -1,4 +1,5 @@
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
+import {receiptsFromJson} from './receipts';
 import {and, asc, desc, eq, inArray, sql} from 'drizzle-orm';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
@@ -16,10 +17,13 @@ import {
   purchasingAreaSpendTable,
   purchasingAreasTable,
   purchasingAreaYearBudgetsTable,
+  purchasingAllowancesTable,
+  purchasingAreaExtensionsTable,
 } from '../state';
 import {getMemberCoreByUserId} from '../member/get';
 import {
   PurchaseRequest,
+  PurchasingAllowance,
   PurchasingArea,
   PurchasingAreaPurchaser,
   PurchasingAreaSummary,
@@ -64,7 +68,16 @@ const budgetRequestsInYear =
     const budgetRows = rows.filter(row => countsAgainstBudget(row.outcome));
     const totalWith = (status: string) =>
       sum(budgetRows.filter(row => row.status === status));
+    const approvedStatuses = ['approved', 'bought', 'bought-directly'];
     return {
+      // Repairs sent while they didn't come out of the budget are still
+      // spending.
+      repairsPence: sum(
+        rows.filter(
+          row =>
+            row.outcome === 'repair' && approvedStatuses.includes(row.status)
+        )
+      ),
       approvedPence:
         totalWith('approved') + totalWith('bought') + totalWith('bought-directly'),
       awaitingApprovalPence: totalWith('awaiting-approval'),
@@ -76,6 +89,42 @@ const budgetRequestsInYear =
       ),
     };
   };
+
+// Every yearly allowance per Area set, oldest first.
+export const getPurchasingAllowances =
+  (db: BetterSQLite3Database) => (): ReadonlyArray<PurchasingAllowance> =>
+    db
+      .select()
+      .from(purchasingAllowancesTable)
+      .orderBy(asc(purchasingAllowancesTable.fromBudgetYear))
+      .all();
+
+// The allowance per Area for a budget year: the latest set from that year or
+// before.
+const allowanceFor =
+  (db: BetterSQLite3Database) =>
+  (budgetYear: number): O.Option<number> =>
+    pipe(
+      getPurchasingAllowances(db)()
+        .filter(allowance => allowance.fromBudgetYear <= budgetYear)
+        .at(-1),
+      O.fromNullable,
+      O.map(allowance => allowance.allowancePerAreaPence)
+    );
+
+const getExtension =
+  (db: BetterSQLite3Database) =>
+  (purchasingAreaId: UUID, budgetYear: number): number =>
+    db
+      .select({extensionPence: purchasingAreaExtensionsTable.extensionPence})
+      .from(purchasingAreaExtensionsTable)
+      .where(
+        and(
+          eq(purchasingAreaExtensionsTable.purchasingAreaId, purchasingAreaId),
+          eq(purchasingAreaExtensionsTable.budgetYear, budgetYear)
+        )
+      )
+      .get()?.extensionPence ?? 0;
 
 const getYearBudget =
   (db: BetterSQLite3Database) =>
@@ -200,17 +249,32 @@ const expand =
         .reduce((total, spend) => total + spend.amountPence, 0);
     const requests = budgetRequestsInYear(db)(row.id, budgetYear);
     const spentThisYearPence = requests.approvedPence + recordedOfKind('budget');
+    const allowancePerAreaPence = allowanceFor(db)(budgetYear);
+    const usualBudgetPence = pipe(
+      allowancePerAreaPence,
+      O.match(
+        () => row.yearlyBudgetPence,
+        allowance => allowance * areas.length
+      )
+    );
+    const extensionPence = getExtension(db)(row.id, budgetYear);
+    // A whole year's budget set the old way stands until an extension
+    // replaces it.
     const yearlyBudgetPence = pipe(
       getYearBudget(db)(row.id, budgetYear),
-      O.getOrElse(() => row.yearlyBudgetPence)
+      O.getOrElse(() => usualBudgetPence + extensionPence)
     );
     return {
       id: row.id,
       name: row.name,
       active: row.active,
       yearlyBudgetPence,
-      usualBudgetPence: row.yearlyBudgetPence,
+      usualBudgetPence,
+      allowancePerAreaPence,
+      extensionPence,
+      nextYearExtensionPence: getExtension(db)(row.id, budgetYear + 1),
       smallPurchaseAmountPence: row.smallPurchaseAmountPence,
+      repairsThisYearPence: requests.repairsPence,
       recordedSpend,
       approvedSpendThisYearPence:
         recordedOfKind('approved') + requests.outsideBudgetPence,
@@ -316,9 +380,17 @@ const toPurchaseRequest = ({
   boughtAt,
   boughtByMemberNumber,
   actualCostPence,
+  invoiceSentAt,
+  invoiceSentByMemberNumber,
+  receiptsJson,
+  purchaseType,
   ...row
 }: typeof purchaseRequestsTable.$inferSelect): PurchaseRequest => ({
   ...row,
+  purchaseType: O.fromNullable(purchaseType),
+  receipts: receiptsFromJson(receiptsJson),
+  invoiceSentAt: O.fromNullable(invoiceSentAt),
+  invoiceSentByMemberNumber: O.fromNullable(invoiceSentByMemberNumber),
   boughtAt: O.fromNullable(boughtAt),
   boughtByMemberNumber: O.fromNullable(boughtByMemberNumber),
   actualCostPence: O.fromNullable(actualCostPence),

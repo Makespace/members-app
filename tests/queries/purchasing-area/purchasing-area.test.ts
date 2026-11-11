@@ -100,7 +100,7 @@ describe('purchasing area page', () => {
     await framework.commands.purchaseRequest.submit({
       id: bandsawBlades,
       purchasingAreaId,
-      isMemberPaidConsumable: false,
+      purchaseType: 'improvements',
       affectsOtherAreas: false,
       affectedAreaIds: undefined,
       healthAndSafetyRisk: false,
@@ -170,7 +170,7 @@ describe('purchasing area page', () => {
     await framework.commands.purchaseRequest.submit({
       id: faker.string.uuid() as UUID,
       purchasingAreaId,
-      isMemberPaidConsumable: true,
+      purchaseType: 'member-paid',
       affectsOtherAreas: false,
       affectedAreaIds: undefined,
       healthAndSafetyRisk: false,
@@ -190,7 +190,7 @@ describe('purchasing area page', () => {
       actor: {tag: 'user', user: purchaser},
     });
     const text = pageFor(member).textContent;
-    expect(text).toContain('Paid for by members (not from the yearly budget)');
+    expect(text).toContain('Recoverable consumable (not from the yearly budget)');
     expect(text).toContain('£1,500.00');
   });
 
@@ -205,7 +205,7 @@ describe('purchasing area page', () => {
     await framework.commands.purchaseRequest.submit({
       id: faker.string.uuid() as UUID,
       purchasingAreaId,
-      isMemberPaidConsumable: false,
+      purchaseType: 'improvements',
       affectsOtherAreas: false,
       affectedAreaIds: undefined,
       healthAndSafetyRisk: false,
@@ -299,7 +299,7 @@ describe('purchasing area page', () => {
     it('lists recorded spending, letting only super users set the year budget or remove it', () => {
       const removeLink = `href="/purchasing-areas/remove-spend?purchasingArea=${purchasingAreaId}&amp;spend=${spendId}"`;
       const forSuperUser = pageFor(superUser);
-      expect(forSuperUser.textContent).toContain(`Set ${now.getFullYear()}'s budget`);
+      expect(forSuperUser.textContent).toContain('Set extension');
       expect(forSuperUser.textContent).toContain('Set usual budget');
       expect(forSuperUser.html).toContain(removeLink);
       const forMember = pageFor(member);

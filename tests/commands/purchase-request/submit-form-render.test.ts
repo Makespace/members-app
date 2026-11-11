@@ -89,6 +89,7 @@ const onPage = (
         ],
       },
     ],
+    purchaseType: 'improvements',
     isMemberPaidConsumable: 'false',
     affectsOtherAreas: 'false',
     affectedAreaIds: [],
@@ -107,7 +108,7 @@ const onPage = (
     {id: '77777777-7777-4777-8777-777777777777' as UUID, name: 'Textiles'},
   ],
   result:
-    step === 3
+    step === 4
       ? O.some({
           purchases,
           totalPence: 25_000,
@@ -131,29 +132,24 @@ const render = (viewModel: PurchaseRequestFormViewModel) =>
 
 describe('purchase request form', () => {
   describe('page 1', () => {
-    const page = render(onPage(1));
+    const page = render(onPage(2));
 
     it('asks for the area, summary and why, carrying the rest', () => {
-      expect(text(page)).toContain('Page 1 of 3');
+      expect(text(page)).toContain('Page 2 of 4');
       expect(page.querySelector('#summary')).not.toBeNull();
       expect(page.querySelector('#justification')).not.toBeNull();
       expect(hidden(page)).toMatchObject({
-        step: '2',
+        step: '3',
         id: requestId,
         'purchases[0][shop]': 'jewson.co.uk',
         'purchases[0][items][1][notes]': '4.8m',
+        purchaseType: 'improvements',
       });
       expect(hidden(page)).not.toHaveProperty('summary');
-      expect(hidden(page)).not.toHaveProperty('isMemberPaidConsumable');
-      expect(
-        page.querySelector<HTMLInputElement>('#consumable-no')!.checked
-      ).toBe(true);
     });
 
-    it('asks whether members pay for it', () => {
-      expect(
-        page.querySelector('.purchase-question legend')?.textContent?.trim()
-      ).toBe('Do members pay for this on SumUp?');
+    it("doesn't ask whether members pay for it: the type of purchase says", () => {
+      expect(page.textContent).not.toContain('SumUp');
     });
 
     it('asks whether it affects other areas, offering them, and about safety', () => {
@@ -171,9 +167,58 @@ describe('purchase request form', () => {
       expect(page.querySelector('#risk-no')).not.toBeNull();
     });
 
-    it('moves on to the costs and budget, with no Back', () => {
+    it('moves on to the costs and budget, or back to the type of purchase', () => {
       expect(page.querySelector('form button')?.textContent).toContain(
         'Next: Costs and budget'
+      );
+      expect(
+        new URLSearchParams(
+          page.querySelector('.step-nav a')!.getAttribute('href')!.slice(1)
+        ).get('step')
+      ).toBe('1');
+    });
+  });
+
+  describe('the type of purchase, first', () => {
+    const page = render(onPage(1));
+    const cards = () => [...page.querySelectorAll('.purchase-type-card')];
+
+    it('offers maintenance, improvements and both kinds of consumable as cards', () => {
+      expect(
+        cards().map(card =>
+          card.querySelector('strong')?.textContent?.replace(/\s+/g, ' ').trim()
+        )
+      ).toStrictEqual([
+        '⚙️ Maintenance',
+        '✨ Improvements',
+        '🧵 Non-recoverable consumables',
+        '🪙 Recoverable consumables',
+      ]);
+    });
+
+    it('says which come out of the yearly budget', () => {
+      expect(
+        cards().map(card =>
+          card.querySelector('.purchase-type-card__budget')?.textContent?.trim()
+        )
+      ).toStrictEqual([
+        'Comes out of the yearly budget',
+        'Comes out of the yearly budget',
+        'Comes out of the yearly budget',
+        "Doesn't come out of the yearly budget",
+      ]);
+    });
+
+    it('keeps the type already chosen', () => {
+      expect(
+        page.querySelector<HTMLInputElement>('input[name="purchaseType"]:checked')
+          ?.value
+      ).toBe('improvements');
+    });
+
+    it('moves on to the request itself, with no Back', () => {
+      expect(page.querySelector('form button')?.textContent).toContain(
+        'Next: About the request'
       );
       expect(page.querySelector('.step-nav a')).toBeNull();
     });
@@ -181,8 +226,8 @@ describe('purchase request form', () => {
 
   describe('page 2', () => {
     it('asks for the shop and each item from it', () => {
-      const page = render(onPage(2));
-      expect(text(page)).toContain('Page 2 of 3');
+      const page = render(onPage(3));
+      expect(text(page)).toContain('Page 3 of 4');
       const names = [...page.querySelectorAll('form [name]')].map(field =>
         field.getAttribute('name')
       );
@@ -205,7 +250,7 @@ describe('purchase request form', () => {
     });
 
     it("shows the area's budget, with room for the result", () => {
-      const page = render(onPage(2));
+      const page = render(onPage(3));
       expect(text(page)).toContain('Wood Shop yearly budget');
       expect(
         page.querySelector<HTMLElement>('[data-budget-verdict]')!.hidden
@@ -214,7 +259,7 @@ describe('purchase request form', () => {
     });
 
     it('asks for detailed notes on each item', () => {
-      const page = render(onPage(2));
+      const page = render(onPage(3));
       const notes = page.querySelector<HTMLTextAreaElement>(
         'textarea[name="purchases[0][items][1][notes]"]'
       )!;
@@ -232,7 +277,7 @@ describe('purchase request form', () => {
     });
 
     it("makes clear an item's cost is its total, including VAT", () => {
-      const page = render(onPage(2));
+      const page = render(onPage(3));
       const cost = page.querySelector<HTMLInputElement>(
         '[name="purchases[0][items][0][cost]"]'
       )!;
@@ -250,7 +295,7 @@ describe('purchase request form', () => {
     });
 
     it('needs the first shop, quantity and cost', () => {
-      const page = render(onPage(2));
+      const page = render(onPage(3));
       const required = (name: string) =>
         page.querySelector<HTMLInputElement>(`[name="${name}"]`)!.required;
       expect(required('purchases[0][shop]')).toBe(true);
@@ -261,7 +306,7 @@ describe('purchase request form', () => {
 
     it('offers blank shops and items without JavaScript', () => {
       const page = render(
-        onPage(2, {answers: {...onPage(2).answers, purchases: []}})
+        onPage(3, {answers: {...onPage(3).answers, purchases: []}})
       );
       const shops = page.querySelectorAll('[data-shop-entry]');
       expect(shops).toHaveLength(2);
@@ -269,29 +314,29 @@ describe('purchase request form', () => {
     });
 
     it('carries page 1, and goes back to it with everything', () => {
-      const page = render(onPage(2));
+      const page = render(onPage(3));
       expect(hidden(page)).toStrictEqual({
-        step: '3',
+        step: '4',
         id: requestId,
         purchasingAreaId: woodShop.id,
         summary: 'Saw blades',
         justification: 'Blunt',
-        isMemberPaidConsumable: 'false',
+        purchaseType: 'improvements',
         affectsOtherAreas: 'false',
         healthAndSafetyRisk: 'false',
       });
       const back = page.querySelector('.step-nav a')!.getAttribute('href')!;
       const query = new URLSearchParams(back.slice(1));
-      expect(query.get('step')).toBe('1');
+      expect(query.get('step')).toBe('2');
       expect(query.get('purchases[0][items][0][sku]')).toBe('PEGF8418');
     });
   });
 
   describe('page 3', () => {
-    const page = render(onPage(3));
+    const page = render(onPage(4));
 
     it('sums up the request, with the budget it comes out of', () => {
-      expect(text(page)).toContain('Page 3 of 3');
+      expect(text(page)).toContain('Page 4 of 4');
       const summary = Object.fromEntries(
         [...page.querySelectorAll('.purchase-summary dt')].map(dt => [
           dt.textContent.trim(),
@@ -314,9 +359,9 @@ describe('purchase request form', () => {
 
     it('names the other areas and the safety risk when there are some', () => {
       const page = render(
-        onPage(3, {
+        onPage(4, {
           answers: {
-            ...onPage(3).answers,
+            ...onPage(4).answers,
             affectsOtherAreas: 'true',
             affectedAreaIds: ['66666666-6666-4666-8666-666666666666'],
             healthAndSafetyRisk: 'true',
@@ -384,7 +429,7 @@ describe('purchase request form', () => {
         'purchases[0][delivery]': '100',
         'purchases[0][items][0][cost]': '50',
         'purchases[0][items][1][quantity]': '4',
-        isMemberPaidConsumable: 'false',
+        purchaseType: 'improvements',
         affectsOtherAreas: 'false',
         healthAndSafetyRisk: 'false',
       });
@@ -393,7 +438,7 @@ describe('purchase request form', () => {
 
     it('says when a proposal is needed', () => {
       const proposal = render(
-        onPage(3, {
+        onPage(4, {
           result: O.some({
             purchases,
             totalPence: 60_000,
@@ -418,9 +463,9 @@ describe('purchase request form', () => {
   describe('the proposal on page 3', () => {
     const needingProposal = (risky: boolean) =>
       render(
-        onPage(3, {
+        onPage(4, {
           answers: {
-            ...onPage(3).answers,
+            ...onPage(4).answers,
             healthAndSafetyRisk: risky ? 'true' : 'false',
           },
           result: O.some({
@@ -450,7 +495,7 @@ describe('purchase request form', () => {
     ];
 
     it('is not asked for when no proposal is needed', () => {
-      expect(render(onPage(3)).querySelector('[data-proposal-form]')).toBeNull();
+      expect(render(onPage(4)).querySelector('[data-proposal-form]')).toBeNull();
     });
 
     it('asks for the need, options, preferred option and what applies', () => {
@@ -577,7 +622,7 @@ describe('purchase request form', () => {
 
   it('says what still needs sorting out when sent back', () => {
     const page = render(
-      onPage(2, {
+      onPage(3, {
         problems: ['jewson.co.uk, item 2: please say how much they cost in total.'],
       })
     );
@@ -587,9 +632,9 @@ describe('purchase request form', () => {
   });
 
   it('ticks and links back to finished pages', () => {
-    const steps = render(onPage(3)).querySelectorAll('.step-progress__step');
+    const steps = render(onPage(4)).querySelectorAll('.step-progress__step');
     expect(steps[0].querySelector('a')).not.toBeNull();
-    expect(steps[2].getAttribute('aria-current')).toBe('step');
+    expect(steps[3].getAttribute('aria-current')).toBe('step');
   });
 
   describe('the budget panel', () => {
@@ -600,7 +645,7 @@ describe('purchase request form', () => {
         remainingPence: woodShop.yearlyBudgetPence - spentThisYearPence,
       };
       return render(
-        onPage(2, {purchasingAreas: [area], chosen: O.some(area)})
+        onPage(3, {purchasingAreas: [area], chosen: O.some(area)})
       ).querySelector<HTMLElement>(`[data-budget-for="${area.id}"]`)!;
     };
 
@@ -625,7 +670,7 @@ describe('purchase request form', () => {
   });
 
   it('points anyone with nothing to request for to trouble tickets', () => {
-    const page = render(onPage(1, {purchasingAreas: []}));
+    const page = render(onPage(2, {purchasingAreas: []}));
     expect(page.querySelector('form')).toBeNull();
     expect(page.textContent).toContain('raise a trouble ticket');
   });

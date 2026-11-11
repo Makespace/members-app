@@ -16,6 +16,7 @@ import {
   decisionAction,
   decisionFromParams,
   DecisionViewModel,
+  receiptPagePath,
   requestPath,
 } from './decide-helpers';
 
@@ -39,7 +40,9 @@ const renderBudgetEffect = ({request, purchasingArea}: DecisionViewModel) =>
           </p>`
         )
       )
-    : html`<p>Members pay for this, so it doesn't use up the budget.</p>`;
+    : request.outcome === 'repair'
+      ? html`<p>Repairs don't come out of the yearly budget.</p>`
+      : html`<p>Members pay for this, so it doesn't use up the budget.</p>`;
 
 const renderForm = (viewModel: DecisionViewModel) =>
   pipe(
@@ -100,13 +103,21 @@ const renderForm = (viewModel: DecisionViewModel) =>
             <button type="submit" name="markBought" value="false">
               Approve
             </button>
-            <button type="submit" name="markBought" value="true">
+            <button
+              type="submit"
+              name="markBought"
+              value="true"
+              formaction="${safe(
+                decisionAction('approve', viewModel.request.id, receiptPagePath)
+              )}"
+            >
               Approve and mark as paid
             </button>
           </div>
           <p class="text-sm">
             Approve it for someone to pay for, or, if you've already paid for
-            it, approve it and mark it as paid.
+            it, approve it and mark it as paid. You'll then be asked for the
+            receipt or invoice, to send to the accountant.
           </p>
         </form>
       </div>

@@ -15,6 +15,7 @@ import {renderMember} from '../../templates/member';
 import {displayDateOnly} from '../../templates/display-date';
 import {renderOutcome} from '../../templates/purchase-request-outcome';
 import {renderStatus} from '../../templates/purchase-request-status';
+import {renderInvoiceSent} from '../../templates/purchase-request-invoice';
 import {renderRecordPurchaseButton} from '../../templates/record-purchase-button';
 import {
   superUserActions,
@@ -82,14 +83,39 @@ const renderBudget = (viewModel: ViewModel) => {
             <th>Yearly budget</th>
             <td>
               ${money(purchasingArea.yearlyBudgetPence)}
-              ${purchasingArea.yearlyBudgetPence !==
-              purchasingArea.usualBudgetPence
+              ${purchasingArea.extensionPence > 0
                 ? html`<span class="text-gray"
-                    >(usually ${money(purchasingArea.usualBudgetPence)})</span
+                    >(usually ${money(purchasingArea.usualBudgetPence)}, plus a
+                    ${money(purchasingArea.extensionPence)} extension)</span
                   >`
-                : html``}
+                : purchasingArea.yearlyBudgetPence !==
+                    purchasingArea.usualBudgetPence
+                  ? html`<span class="text-gray"
+                      >(usually ${money(purchasingArea.usualBudgetPence)})</span
+                    >`
+                  : html``}
+              ${pipe(
+                purchasingArea.allowancePerAreaPence,
+                O.match(
+                  () => html``,
+                  allowance => html`<span class="text-gray"
+                    >- ${purchasingArea.areas.length}
+                    ${safe(purchasingArea.areas.length === 1 ? 'Area' : 'Areas')}
+                    × ${money(allowance)} allowance</span
+                  >`
+                )
+              )}
             </td>
           </tr>
+          ${purchasingArea.nextYearExtensionPence > 0
+            ? html`<tr>
+                <th>${purchasingArea.budgetYear + 1} extension</th>
+                <td>
+                  ${money(purchasingArea.nextYearExtensionPence)}
+                  <span class="text-gray">- approved for next year</span>
+                </td>
+              </tr>`
+            : html``}
           <tr>
             <th>Small purchase amount</th>
             <td>
@@ -114,6 +140,12 @@ const renderBudget = (viewModel: ViewModel) => {
                 <td>${money(purchasingArea.awaitingApprovalPence)}</td>
               </tr>`
             : html``}
+          ${purchasingArea.repairsThisYearPence > 0
+            ? html`<tr>
+                <th>Repairs (outside the budget)</th>
+                <td>${money(purchasingArea.repairsThisYearPence)}</td>
+              </tr>`
+            : html``}
           ${purchasingArea.approvedSpendThisYearPence > 0
             ? html`<tr>
                 <th>Approved spending (outside the budget)</th>
@@ -125,23 +157,26 @@ const renderBudget = (viewModel: ViewModel) => {
       ${canManage
         ? superUserActions(html`
             ${superUserButton(
-              `/purchasing-areas/set-year-budget?${query({
+              `/purchasing-areas/set-extension?${query({
                 purchasingArea: purchasingArea.id,
               })}`,
-              html`Set ${purchasingArea.budgetYear}'s budget`
+              html`Set extension`
             )}
-            ${superUserButton(
-              `/purchasing-areas/set-budget?${query({
-                purchasingArea: purchasingArea.id,
-              })}`,
-              html`Set usual budget`
-            )}
+            ${O.isNone(purchasingArea.allowancePerAreaPence)
+              ? superUserButton(
+                  `/purchasing-areas/set-budget?${query({
+                    purchasingArea: purchasingArea.id,
+                  })}`,
+                  html`Set usual budget`
+                )
+              : html``}
             ${superUserButton(
               `/purchasing-areas/set-small-purchase-amount?${query({
                 purchasingArea: purchasingArea.id,
               })}`,
               html`Set small purchase amount`
             )}
+
             ${superUserButton(
               `/purchasing-areas/rename?${query({
                 purchasingArea: purchasingArea.id,
@@ -276,6 +311,7 @@ const renderSpendingRow = (viewModel: ViewModel) => (row: SpendingRow) => {
         <td>${money(request.totalPence)}</td>
         <td>${renderOutcome(request.outcome, request.approval, request.status)}</td>
         <td>${renderStatus(request)}</td>
+        <td>${renderInvoiceSent(request)}</td>
         ${canManage ? html`<td></td>` : html``}
       </tr>
     `;
@@ -297,6 +333,7 @@ const renderSpendingRow = (viewModel: ViewModel) => (row: SpendingRow) => {
           >Recorded by a super user</span
         >
       </td>
+      <td>-</td>
       ${canManage
         ? html`<td>
             ${superUserLink(
@@ -346,6 +383,7 @@ const renderSpending = (viewModel: ViewModel) => {
                 <th>Cost</th>
                 <th>Budget</th>
                 <th>Status</th>
+                <th>Invoice to accountant</th>
                 ${viewModel.canManage ? html`<th></th>` : html``}
               </tr>
             </thead>

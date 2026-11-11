@@ -27,6 +27,7 @@ import {
 } from '../../purchasing/proposal';
 import {canBuyDirectly} from '../../purchasing/buy-directly';
 import {buyerRoleFor, canRequestFor} from '../../purchasing/permissions';
+import {PurchaseTypeCodec} from '../../types/purchase-type';
 import {PositivePenceFromPoundsString} from '../../types/money';
 import {
   limitedText,
@@ -40,7 +41,9 @@ const answer = t.union([t.boolean, tt.BooleanFromString]);
 const codec = t.strict({
   id: tt.UUID,
   purchasingAreaId: tt.UUID,
-  isMemberPaidConsumable: answer,
+  // Maintenance, improvements, non-recoverable or member-paid consumables;
+  // only a member-paid one stays out of the yearly budget.
+  purchaseType: PurchaseTypeCodec,
   affectsOtherAreas: answer,
   // The other areas ticked; one arrives as a string, several as a list.
   affectedAreaIds: t.union([tt.UUID, t.readonlyArray(tt.UUID), t.undefined]),
@@ -202,7 +205,7 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
         approvedOutsideBudget,
         affectedAreaNames: affected.map(area => area.name),
         healthAndSafetyRisk: command.healthAndSafetyRisk,
-        isMemberPaidConsumable: command.isMemberPaidConsumable,
+        isMemberPaidConsumable: command.purchaseType === 'member-paid',
         amountPence: totalPence,
         smallPurchaseAmountPence: purchasingArea.smallPurchaseAmountPence,
         yearlyBudgetPence: purchasingArea.yearlyBudgetPence,
@@ -268,7 +271,8 @@ const process: Command<SubmitPurchaseRequest>['process'] = input => {
             totalPence,
             purchases,
             justification: command.justification.trim(),
-            isMemberPaidConsumable: command.isMemberPaidConsumable,
+            isMemberPaidConsumable: command.purchaseType === 'member-paid',
+            purchaseType: command.purchaseType,
             affectedAreaIds: affected.map(area => area.id),
             healthAndSafetyRisk: command.healthAndSafetyRisk,
             proposal,

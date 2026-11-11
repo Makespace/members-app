@@ -1153,6 +1153,71 @@ label img {
   margin-bottom: 0;
 }
 
+/* The first page's choice of purchase type: three cards, the whole of
+   each one clickable, the chosen one ruled and tinted blue. One column on
+   a phone. */
+.purchase-type-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+@media (min-width: 40rem) {
+  .purchase-type-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .purchase-type-cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.purchase-type-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: #fff;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.purchase-type-card input {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  margin: 0;
+}
+
+.purchase-type-card strong {
+  padding-right: 1.75rem;
+}
+
+.purchase-type-card span {
+  color: var(--grey-color);
+}
+
+.purchase-type-card:hover {
+  border-color: var(--link-color);
+}
+
+.purchase-type-card:has(input:checked) {
+  border-color: var(--link-color);
+  box-shadow: inset 0 0 0 1px var(--link-color);
+  background: #eef4fb;
+}
+
+.purchase-type-card:has(input:focus-visible) {
+  outline: 3px solid var(--focus-color);
+  outline-offset: 2px;
+}
+
 /* The area names sit a little further from their radios. */
 .purchase-request__radios--areas .fieldset-item input {
   margin-right: 1.5rem;
@@ -2781,14 +2846,30 @@ ul.guide-cards {
   margin-top: 0.5rem;
 }
 
-.owners-guide__section {
+/* The headings within a section, under it in the contents: smaller and
+   quieter, so the sections still stand out. */
+.owners-guide__toc ol.owners-guide__toc-sub {
+  margin-top: 0.35rem;
+  padding-left: 1rem;
+  list-style: none;
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.owners-guide__toc .owners-guide__toc-sub li + li {
+  margin-top: 0.35rem;
+}
+
+.owners-guide__section,
+.owners-guide__subheading {
   scroll-margin-top: 1rem;
 }
 
 /* Arriving from a card or the contents, the box flashes up to show where
    you've landed, then fades so it doesn't sit round the section for the rest
    of the read. */
-.owners-guide__section:target {
+.owners-guide__section:target,
+.owners-guide__subheading:target {
   animation: owners-guide-target-flash 1.8s ease-out forwards;
 }
 
@@ -2814,7 +2895,8 @@ ul.guide-cards {
 
 /* Without motion, a box that vanished at once would be no help: keep it. */
 @media (prefers-reduced-motion: reduce) {
-  .owners-guide__section:target {
+  .owners-guide__section:target,
+  .owners-guide__subheading:target {
     animation: none !important;
   }
 }
@@ -2896,8 +2978,148 @@ ul.guide-cards {
   padding-left: 1.25rem;
 }
 
+.owners-guide__purchasers {
+  display: block;
+  font-size: 0.875rem;
+}
+
 .owners-guide__requests li + li {
   margin-top: 0.25rem;
+}
+
+/* The kinds of purchase, three cards across, each a name and a line on
+   what it covers; one column on a phone. The element is named to outrank
+   the reset's ul[class]. */
+ul.owners-guide__kinds {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  margin: 0.75rem 0;
+  padding: 0;
+}
+
+@media (min-width: 36rem) {
+  ul.owners-guide__kinds {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.owners-guide__kinds > li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--owners-guide-data-edge);
+  border-radius: 6px;
+  background: #fff;
+  line-height: 1.5;
+}
+
+.owners-guide__kinds > li > strong {
+  line-height: 1.3;
+}
+
+.owners-guide__kinds > li > span {
+  color: var(--grey-color);
+  font-size: 0.875rem;
+}
+
+/* A tinted box for a note or an aside, in the margin notes' colours. It
+   keeps the section's usual gap above it. */
+.owners-guide__box {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  background: var(--owners-guide-note);
+  border: 1px solid var(--owners-guide-note-edge);
+  border-radius: 6px;
+}
+
+.owners-guide__box > i {
+  margin-right: 0.25rem;
+  color: var(--owners-guide-note-mark);
+}
+
+/* A sentence with an aside about it beside it on a wide screen, or under it
+   on a phone. */
+.owners-guide__beside {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.owners-guide__beside > * {
+  margin: 0;
+}
+
+@media (min-width: 40rem) {
+  .owners-guide__beside {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 18rem);
+    column-gap: 2rem;
+  }
+}
+
+/* A little more room either side of it than between paragraphs, so the
+   kinds of spending, the allowance and your own Purchase Areas read as
+   separate steps. */
+.owners-guide__section > .owners-guide__beside,
+.owners-guide__section > .owners-guide__beside + * {
+  margin-block-start: 2rem;
+}
+
+/* The four conditions owners decide for themselves, as small cards two to
+   a row: the money ones first, tinted green, then safety and other Areas,
+   tinted amber, each with its icon. One column on a phone, in the same
+   order. The element is named to outrank the reset's ul[class]. */
+ul.owners-guide__conditions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  margin: 0.75rem 0;
+  padding: 0;
+}
+
+@media (min-width: 36rem) {
+  ul.owners-guide__conditions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.owners-guide__condition {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid;
+  border-radius: 6px;
+  line-height: 1.4;
+}
+
+.owners-guide__condition > i {
+  flex: none;
+  width: 1.1em;
+  text-align: center;
+}
+
+.owners-guide__condition--money {
+  background: #f0f7f2;
+  border-color: #c8e0cf;
+}
+
+.owners-guide__condition--money > i {
+  color: var(--green-color);
+}
+
+.owners-guide__condition--care {
+  background: #fdf7e6;
+  border-color: #ebdba6;
+}
+
+.owners-guide__condition--care > i {
+  color: #8a6a1c;
 }
 
 .owners-guide__muted {
@@ -6063,4 +6285,103 @@ a.super-user-link:visited {
 
 a.super-user-link:hover {
   color: color-mix(in oklch, black 25%, var(--super-user-color));
+}
+
+/* What changed between versions of the Owners' Agreement: a bullet per
+   change, with a small toggle at the end of its line for the wording before
+   and after, which opens beneath it. Kept tight so the list stays short. */
+/* The reset's ul[class] would otherwise take the bullets away. */
+ul.agreement-changes {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+
+.agreement-changes > li {
+  margin-bottom: 0.2rem;
+}
+
+#changes h3 {
+  margin-block-start: 0.75rem;
+}
+
+#changes h3 + ul {
+  margin-block-start: 0.25rem;
+}
+
+/* Additions get a green +, removals a red minus, in place of the bullet. */
+.agreement-changes > li.agreement-change--added {
+  list-style-type: '+  ';
+}
+
+.agreement-changes > li.agreement-change--removed {
+  list-style-type: '−  ';
+}
+
+.agreement-change--added::marker {
+  color: var(--green-color);
+  font-weight: bold;
+}
+
+.agreement-change--removed::marker {
+  color: var(--red-color);
+  font-weight: bold;
+}
+
+/* What a change is about, e.g. "Training", ahead of the sentence. */
+.agreement-change__tag {
+  display: inline-block;
+  margin-right: 0.35rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  font-size: 0.8em;
+  color: var(--grey-color);
+}
+
+.agreement-change__wording {
+  display: inline;
+}
+
+.agreement-change__wording > summary {
+  display: inline;
+  list-style: none;
+  cursor: pointer;
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+.agreement-change__wording > summary::-webkit-details-marker {
+  display: none;
+}
+
+.agreement-change__wording[open] > div {
+  margin: 0.4rem 0 0.6rem;
+}
+
+.agreement-change__snippet {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.agreement-change__label {
+  color: var(--grey-color);
+  font-size: 0.9em;
+}
+
+.agreement-change__snippet blockquote {
+  margin: 0;
+  font-style: italic;
+}
+
+#changes mark {
+  background-color: color-mix(in oklch, white 75%, var(--green-color));
+  color: inherit;
+  padding: 0 0.1em;
+}
+
+#changes del {
+  background-color: color-mix(in oklch, white 88%, var(--red-color));
+  text-decoration-color: var(--red-color);
 }

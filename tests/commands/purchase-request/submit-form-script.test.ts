@@ -52,6 +52,7 @@ const renderPage = (
       summary: 'Saw blades',
       justification: 'Blunt',
       purchases,
+      purchaseType: consumable ? 'member-paid' : 'improvements',
       isMemberPaidConsumable: String(consumable),
       affectsOtherAreas: String(areas.length > 0),
       affectedAreaIds: [],
@@ -79,7 +80,7 @@ const renderPage = (
 };
 
 const setUp = (purchases: ReadonlyArray<TypedPurchase> = [], answers?: Answers) => {
-  renderPage(2, purchases, answers);
+  renderPage(3, purchases, answers);
   return document.getElementById('purchase-costs-form') as HTMLFormElement;
 };
 
@@ -450,7 +451,7 @@ describe('purchase request cost breakdown script', () => {
     it('shows a consumable needing a proposal for a safety risk', () => {
       const form = setUp([], {consumable: true, areas: [], risky: true});
       costing(form, '50');
-      expect(verdict(form).textContent).toContain('Paid for by members · Proposal needed');
+      expect(verdict(form).textContent).toContain('Recoverable consumable · Proposal needed');
     });
 
     it.each([
@@ -483,21 +484,21 @@ describe('the proposal notice under the budget on page 2', () => {
     document.querySelector('.purchase-budget + .purchase-verdict--proposal');
 
   it('is shown when the page 1 answers already mean a proposal', () => {
-    renderPage(2, [], {consumable: false, areas: [], risky: true});
+    renderPage(3, [], {consumable: false, areas: [], risky: true});
     expect(noticeUnderBudget()!.textContent).toContain(
       "You'll need to write a proposal"
     );
   });
 
   it('is not shown when it depends on the cost', () => {
-    renderPage(2);
+    renderPage(3);
     expect(noticeUnderBudget()).toBeNull();
   });
 });
 
 describe('purchase request page 1 script', () => {
   const setUpPage1 = (purchasingArea = woodShop) => {
-    renderPage(1, [], undefined, purchasingArea);
+    renderPage(2, [], undefined, purchasingArea);
     return document.getElementById('purchase-about-form') as HTMLFormElement;
   };
   const pick = (form: HTMLFormElement, id: string) => {
@@ -582,9 +583,11 @@ describe('purchase request page 1 script', () => {
         expect(reasons(form)).toHaveLength(1);
       });
 
-      it('is not shown for a consumable members pay for', () => {
-        const form = setUpPage1(spentUp);
-        pick(form, 'consumable-yes');
+      it('is not shown for a member-paid purchase', () => {
+        renderPage(2, [], {consumable: true, areas: [], risky: false}, spentUp);
+        const form = document.getElementById(
+          'purchase-about-form'
+        ) as HTMLFormElement;
         expect(reasons(form)).toStrictEqual([]);
       });
     });

@@ -23,6 +23,7 @@ import { ExternalStateDB } from './sync-worker/external-state-db';
 import {TimelineRow} from './training-quiz/plan-timeline-rebuild';
 import {TimelineRebuildSummary} from './training-quiz/rebuild-event-timeline';
 import {RecurlyWriteGateway} from './recurly-write/recurly-write-gateway';
+import {ReceiptFileStore} from './purchasing/receipt-files';
 
 export type Dependencies = {
   conf: Config;
@@ -74,4 +75,6 @@ export type Dependencies = {
   // The only way to change anything in Recurly - see "Recurly writes" in
   // AGENTS.md before using or extending it.
   recurlyWrite: RecurlyWriteGateway;
+  // Uploaded purchase receipts and invoices.
+  receiptFiles: ReceiptFileStore;
 };

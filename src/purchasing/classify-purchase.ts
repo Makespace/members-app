@@ -22,9 +22,10 @@ import {
 // says everything that applies, one sentence each.
 
 // How much a single budget purchase can cost before it needs a proposal, for
-// a purchasing area created now. Each purchasing area has its own, which a
+// a purchasing area created now: the single-purchase limit on Purchasers'
+// cards. Each purchasing area has its own, which a
 // super user can change; ones created before it could be set kept £1,000.
-export const DEFAULT_SMALL_PURCHASE_AMOUNT_PENCE = 50_000;
+export const DEFAULT_SMALL_PURCHASE_AMOUNT_PENCE = 30_000;
 
 type ClassificationInput = {
   isMemberPaidConsumable: boolean;

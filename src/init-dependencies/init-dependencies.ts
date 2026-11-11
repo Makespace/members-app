@@ -1,4 +1,5 @@
 import {Config} from '../configuration';
+import {receiptFileStore} from '../purchasing/receipt-files';
 import {Dependencies} from '../dependencies';
 import {createRateLimiter} from './rate-limit-sending-of-emails';
 import {sendEmail} from './send-email';
@@ -108,6 +109,7 @@ export const initDependencies = (
     getSheetData: getSheetData(extDB),
     getSheetDataByMemberNumber: getSheetDataByMemberNumber(extDB),
     recurlyWrite: initRecurlyWriteGateway(logger, conf.RECURLY_WRITE_TOKEN),
+    receiptFiles: receiptFileStore(eventDB),
     // getPassedQuizResults: getPassedQuizResults(dbClient),
     // getFailedQuizResults: getFailedQuizResults(dbClient),
   };

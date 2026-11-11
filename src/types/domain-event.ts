@@ -1,4 +1,5 @@
 import * as t from 'io-ts';
+import {PurchaseTypeCodec} from './purchase-type';
 import * as tt from 'io-ts-types';
 import {EmailAddressCodec} from './email-address';
 import {Actor} from './actor';
@@ -236,6 +237,34 @@ const PurchasingAreaSmallPurchaseAmountSet = defineEvent(
   }
 );
 
+// No longer recorded: from November 2026 until the 2027 budget system, a
+// single repair of this much or more needed a super user's approval. Kept so
+// events already recorded still read.
+const PurchasingAreaSmallRepairsAmountSet = defineEvent(
+  'PurchasingAreaSmallRepairsAmountSet',
+  {
+    purchasingAreaId: tt.UUID,
+    smallRepairsAmountPence: t.number,
+  }
+);
+
+// A super user sets the yearly allowance every Area is allocated, from a
+// budget year onwards. A purchasing area's usual budget is its areas'
+// allowances added together; see the purchasing read model.
+const PurchasingAllowanceSet = defineEvent('PurchasingAllowanceSet', {
+  fromBudgetYear: t.number,
+  allowancePerAreaPence: t.number,
+});
+
+// An extension to a purchasing area's yearly allowance for one budget year,
+// added on top of its usual budget; 0 removes it. It replaces any budget set
+// for that year with PurchasingAreaYearBudgetSet.
+const PurchasingAreaExtensionSet = defineEvent('PurchasingAreaExtensionSet', {
+  purchasingAreaId: tt.UUID,
+  budgetYear: t.number,
+  extensionPence: t.number,
+});
+
 // A different budget for one calendar year only, e.g. an extension: the
 // usual budget (PurchasingAreaBudgetSet) applies again the year after.
 const PurchasingAreaYearBudgetSet = defineEvent(
@@ -312,6 +341,9 @@ const PurchaseRequestSubmitted = defineEvent('PurchaseRequestSubmitted', {
   purchases: t.readonlyArray(PurchaseCodec),
   justification: t.string,
   isMemberPaidConsumable: t.boolean,
+  // Maintenance, improvements, non-recoverable or member-paid consumables; see
+  // src/types/purchase-type.ts. Requests sent before it was asked have none.
+  purchaseType: tt.withFallback(t.union([PurchaseTypeCodec, t.null]), null),
   // Other areas it affects, whose owners need a chance to give their input.
   affectedAreaIds: t.readonlyArray(tt.UUID),
   // A moderate to high health and safety risk that will need mitigating.
@@ -344,6 +376,31 @@ const PurchaseRequestApproved = defineEvent('PurchaseRequestApproved', {
   // What it really cost, when bought and different from what was asked.
   actualCostPence: tt.withFallback(t.union([t.number, t.null]), null),
 });
+
+// A bought purchase's receipt or invoice passed on to the accountant, by
+// hand or by email, so they can track the spending.
+const PurchaseRequestInvoiceSent = defineEvent('PurchaseRequestInvoiceSent', {
+  id: tt.UUID,
+});
+
+// Receipts or invoices (images or PDFs) uploaded for a bought purchase. The
+// files themselves are kept outside the event log (see
+// src/purchasing/receipt-files.ts); the sync worker emails them on to the
+// accountant, so uploading also counts as sending.
+const PurchaseRequestReceiptUploaded = defineEvent(
+  'PurchaseRequestReceiptUploaded',
+  {
+    id: tt.UUID,
+    files: t.readonlyArray(
+      t.strict({
+        fileId: tt.UUID,
+        filename: t.string,
+        mimeType: t.string,
+        sizeBytes: t.number,
+      })
+    ),
+  }
+);
 
 // An approved purchase request bought by a purchaser or super user.
 const PurchaseRequestBought = defineEvent('PurchaseRequestBought', {
@@ -956,7 +1013,10 @@ export const events = [
   PurchasingAreaRenamed,
   PurchasingAreaBudgetSet,
   PurchasingAreaSmallPurchaseAmountSet,
+  PurchasingAreaSmallRepairsAmountSet,
+  PurchasingAllowanceSet,
   PurchasingAreaYearBudgetSet,
+  PurchasingAreaExtensionSet,
   PurchasingAreaSpendRecorded,
   PurchasingAreaSpendRemoved,
   AreaAssignedToPurchasingArea,
@@ -967,6 +1027,8 @@ export const events = [
   PurchaseRequestApproved,
   PurchaseRequestDeclined,
   PurchaseRequestBought,
+  PurchaseRequestInvoiceSent,
+  PurchaseRequestReceiptUploaded,
   PurchaseRequestNotificationSent,
   SuperUserDeclared,
   SuperUserRevoked,
@@ -1054,7 +1116,10 @@ export const DomainEvent = t.union([
   PurchasingAreaRenamed.codec,
   PurchasingAreaBudgetSet.codec,
   PurchasingAreaSmallPurchaseAmountSet.codec,
+  PurchasingAreaSmallRepairsAmountSet.codec,
+  PurchasingAllowanceSet.codec,
   PurchasingAreaYearBudgetSet.codec,
+  PurchasingAreaExtensionSet.codec,
   PurchasingAreaSpendRecorded.codec,
   PurchasingAreaSpendRemoved.codec,
   AreaAssignedToPurchasingArea.codec,
@@ -1065,6 +1130,8 @@ export const DomainEvent = t.union([
   PurchaseRequestApproved.codec,
   PurchaseRequestDeclined.codec,
   PurchaseRequestBought.codec,
+  PurchaseRequestInvoiceSent.codec,
+  PurchaseRequestReceiptUploaded.codec,
   PurchaseRequestNotificationSent.codec,
   SuperUserDeclared.codec,
   SuperUserRevoked.codec,

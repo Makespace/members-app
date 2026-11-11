@@ -10,7 +10,7 @@ import {
 } from '../../types/html';
 import {formatPence} from '../../types/money';
 import {definedTerm} from '../shared-render/defined-term';
-import {GuideSection, guideSections} from './sections';
+import {GuideSection, guideSections, SubsectionId} from './sections';
 import {
   PurchasingAreaOfYours,
   ViewModel,
@@ -101,7 +101,7 @@ const activity = (purchasingArea: PurchasingAreaOfYours, monthNow: number) =>
     purchase${safe(purchasingArea.purchasesThisYear === 1 ? '' : 's')}
     ${spendSparkline(purchasingArea.spentByMonthPence, monthNow)}`;
 
-// Your areas in it go under the name, so the table needs only three columns
+// Its areas go under the name, yours in bold, so the table needs only three columns
 // beside the text; on a phone each row becomes a small block, labelled.
 const purchaseAreaRow =
   (monthNow: number) => (purchasingArea: PurchasingAreaOfYours) => html`
@@ -111,10 +111,13 @@ const purchaseAreaRow =
         >${sanitizeString(purchasingArea.name)}</a
       >
       <span class="owners-guide__your-areas owners-guide__muted"
-        >${purchasingArea.active ? html`` : html`<em>Not active yet.</em> `}Your
-        areas:
+        >${purchasingArea.active ? html`` : html`<em>Not active yet.</em> `}Areas:
         ${commaHtml(
-          purchasingArea.yourAreas.map(name => sanitizeString(name))
+          purchasingArea.areas.map(({name, yours}) =>
+            yours
+              ? html`<strong>${sanitizeString(name)}</strong>`
+              : sanitizeString(name)
+          )
         )}</span
       >
     </td>
@@ -197,6 +200,28 @@ const stillBeingWritten = html`
   </p>
 `;
 
+// Who approves and pays for an area's requests, when it has nominated
+// anybody: by name, as elsewhere in the guide, or member number without one.
+const purchasersOf = (purchasingArea: PurchasingAreaOfYours) =>
+  purchasingArea.purchasers.length === 0
+    ? html``
+    : html`<span class="owners-guide__purchasers owners-guide__muted"
+        >${safe(
+          purchasingArea.purchasers.length === 1 ? 'Purchaser' : 'Purchasers'
+        )}:
+        ${commaHtml(
+          purchasingArea.purchasers.map(purchaser =>
+            pipe(
+              purchaser.name,
+              O.match(
+                () => html`member ${safe(String(purchaser.memberNumber))}`,
+                name => html`${sanitizeString(name)}`
+              )
+            )
+          )
+        )}</span
+      >`;
+
 // Where to request a purchase for each of the reader's Purchase Areas: only
 // an active one takes requests. Says nothing to somebody in no Purchase Area.
 const requestAPurchase = (yours: YourAreas) =>
@@ -221,7 +246,8 @@ const requestAPurchase = (yours: YourAreas) =>
                             encodeURIComponent(purchasingArea.id)
                           )}"
                           >request a purchase</a
-                        >`
+                        >
+                        ${purchasersOf(purchasingArea)}`
                     : html`${sanitizeString(purchasingArea.name)}
                         <span class="owners-guide__muted"
                           >isn't taking requests yet. If you want your Area to
@@ -240,11 +266,13 @@ const requestAPurchase = (yours: YourAreas) =>
 // What the guide's defined terms mean, shown on hover wherever one is used.
 const definitions = {
   'purchase-area':
-    'Purchase Area: a collection of Areas that share a budget and make purchasing decisions collectively, authorised and actioned by their Purchaser.',
+    "Purchase Area: a collection of Areas that share a budget and make purchasing decisions collectively, authorised and actioned by their Purchaser. Its Yearly Budget is its Areas' yearly allowances added together.",
   'yearly-budget':
-    'Yearly Budget: a discretionary budget designed to give Owners flexibility over how they spend money. The per-year nominal budget (normally around £1000) is not a hard limit, or a target. Purchases can be approved outside of this budget, but they need to be written up as proposals and approved by the directors.',
+    "Yearly Budget: a single budget for all of a Purchase Area's maintenance, improvements and non-recoverable consumables. Every Area is allocated the same yearly allowance, which can change at the discretion of the directors, and a Purchase Area's Yearly Budget is its Areas' allowances added together, plus any Allowance Extension. It's designed to give Owners flexibility over how they spend money, and isn't a target.",
   'small-purchase-amount':
-    "Small Purchase Amount: a single purchase costing this much or more needs a proposal, even when it's within the Yearly Budget. It's normally £1000.",
+    "Small Purchase Amount: a single purchase costing this much or more needs a proposal, even when it's within the Yearly Budget. It's also the limit for a single purchase on a Purchaser's card. It's set by the directors and can change at their discretion; your Purchase Area's page shows the current amount.",
+  'allowance-extension':
+    "Allowance Extension: extra budget for one year for a Purchase Area, approved by the directors, for spending it can foresee that its yearly allowance won't cover. Ask for one by emailing the managers (management@makespace.org) and directors (directors@makespace.org) with what you expect to spend and why it's needed - ideally before the financial year starts, but you can ask at any time.",
   manager:
     'Manager: paid contractors who act as a coordinating function across Makespace, ensuring the smooth operation of the day-to-day running of the space, coordinating among the owners teams, guiding members to whatever/whoever they need, and coordinating between the directors and owners/members.',
   director:
@@ -267,6 +295,17 @@ const termsFor = () => {
     );
 };
 
+// A heading within a section, with the id the contents link to; its title
+// comes from the same list as the contents', so the two always agree.
+const subheading = (id: SubsectionId) => {
+  const found = guideSections
+    .flatMap(section => [...section.subsections])
+    .find(subsection => subsection.id === id);
+  return html`<h3 id="${safe(id)}" class="owners-guide__subheading">
+    ${safe(found?.title ?? id)}
+  </h3>`;
+};
+
 // The written part of each topic, by section id. A topic with nothing here yet
 // says so, so the cards on the owner page still land somewhere.
 const bodies = (
@@ -275,36 +314,108 @@ const bodies = (
   const term = termsFor();
   return {
     purchasing: html`
+      ${subheading('yearly-allowances')}
       <p>
-        Money is available for Owners' teams to pay for improvements and
-        repairs in their areas.
+        A yearly allowance is available to give owners autonomy over how they
+        purchase:
       </p>
+      <ul class="owners-guide__kinds">
+        <li>
+          <strong><span aria-hidden="true">⚙️</span> Maintenance</strong>
+          <span
+            ><strong>Routine services</strong> (e.g. replace laser filters),
+            <strong>unplanned repairs</strong> (e.g. a band saw blade broke)
+            and
+            <strong>like-for-like replacements</strong> (e.g. a new
+            jigsaw)</span
+          >
+        </li>
+        <li>
+          <strong><span aria-hidden="true">✨</span> Improvements</strong>
+          <span
+            >Expanding the functionality of your Area, including entirely
+            <strong>new equipment</strong> and <strong>upgrading</strong>
+            existing equipment with a replacement</span
+          >
+        </li>
+        <li>
+          <strong
+            ><span aria-hidden="true">🧵</span> Non-recoverable
+            consumables</strong
+          >
+          <span
+            >Things that are consumed, but not practical to be paid for by
+            members (e.g. solder)</span
+          >
+        </li>
+      </ul>
       <p>
-        In order to manage this, Areas are grouped into
-        ${term('purchase-area', 'Purchase Areas')} when they share financial
-        decisions.
+        The yearly allowance is a <strong>single budget</strong> that covers all of these
+        purchase types.
       </p>
-      <p>
-        In order to give owners a low friction way to make simple purchases,
-        ${term('purchase-area', 'Purchase Areas')} have a
-        ${term('yearly-budget', 'Yearly Budget')}, normally around £1000.
+      <p class="owners-guide__box" role="note">
+        <strong>Recoverable-consumables:</strong> As we expect the cost of recoverable consumables to be 'recovered' when
+        members pay for them (e.g. members paying for the 3D printer filament
+        they use) they aren't taken out of any budget.
       </p>
+      <div class="owners-guide__beside">
+        <p>
+          Every Area is allocated the same yearly allowance, which can change
+          at the discretion of the directors. Areas are grouped into
+          ${term('purchase-area', 'Purchase Areas')} when they often make
+          financial decisions together.
+        </p>
+        <aside class="owners-guide__box">
+          <i class="fa-regular fa-lightbulb" aria-hidden="true"></i>
+          A ${term('purchase-area', 'Purchase Area')}'s
+          ${term('yearly-budget', 'Yearly Budget')} is its Areas' allowances
+          combined.
+        </aside>
+      </div>
       ${yourData(
         viewModel,
         'purchasing',
         'the Purchase Areas that you are an Owner in',
         yourPurchaseAreas
       )}
-      <h3>How are purchasing decisions made and actioned?</h3>
+      ${subheading('allowance-extensions')}
       <p>
-        Owners have full autonomy to decide on purchases that aren't over the
-        ${term('small-purchase-amount', 'Small Purchase Amount')} (normally
-        £1000) and don't take the ${term('purchase-area', 'Purchase Area')}
-        over its ${term('yearly-budget', 'Yearly Budget')}.
+        The default yearly allowance per Area is designed to reduce purchasing
+        friction, but it's not intended to be restrictive. For this reason,
+        it's possible to request an extension to the yearly allowance if
+        reasonable justification is supplied.
       </p>
       <p>
+        If you can foresee spending on maintenance, improvements or
+        non-recoverable consumables that your
+        ${term('purchase-area', 'Purchase Area')}'s yearly allowance won't
+        cover, email the ${term('manager', 'managers')}
+        (<a href="mailto:management@makespace.org">management@makespace.org</a>)
+        and ${term('director', 'directors')}
+        (<a href="mailto:directors@makespace.org">directors@makespace.org</a>)
+        with:
+      </p>
+      <ul>
+        <li>what you expect to spend</li>
+        <li>why it's needed</li>
+      </ul>
+      <p>
+        The ${term('director', 'directors')} will approve or decline it.
+        Ideally ask before the financial year starts (1 January), but you can
+        ask at any time.
+      </p>
+      <p class="owners-guide__box" role="note">
+        <i class="fa-regular fa-lightbulb" aria-hidden="true"></i>
+        An ${term('allowance-extension', 'Allowance Extension')} keeps your
+        yearly allowance free for discretionary spending that doesn't need
+        approval. Individual purchases still go through
+        ${term('purchase-request', 'Purchase Requests')} as usual.
+      </p>
+      ${subheading('purchasing-decisions')}
+      <p>
         To suggest a purchase within your
-        ${term('purchase-area', 'Purchase Area')}, you can use the ${term('purchase-request', 'Purchase Request')} system.
+        ${term('purchase-area', 'Purchase Area')}, you can use the
+        ${term('purchase-request', 'Purchase Request')} system.
       </p>
       ${yourData(
         viewModel,
@@ -313,23 +424,70 @@ const bodies = (
         requestAPurchase
       )}
       <p>
-        You'll submit information on what you're buying and why, with an
-        itemised list for online stores.
+        ${term('purchase-area', 'Purchase Areas')} can nominate a
+        ${term('purchaser', 'Purchaser')} to approve
+        ${term('purchase-request', 'Purchase Requests')}, and this person will
+        be given the ability to make the purchase with a Capital on Tap card.
+        ${term('manager', 'Managers')} are also able to make purchases if no
+        ${term('purchaser', 'Purchaser')} is nominated or if a purchase exceeds
+        a card limit.
       </p>
+      ${subheading('simple-purchases')}
       <p>
-        ${term('purchase-request', 'Purchase Requests')} can be approved and paid for by
-        ${term('manager', 'Managers')}, ${term('director', 'Directors')} and
-        ${term('purchaser', 'Purchasers')} if a
-        ${term('purchase-area', 'Purchase Area')} has nominated someone to take
-        on that role.
+        The Owners in a ${term('purchase-area', 'Purchase Area')} have full
+        autonomy to decide on ${term('purchase-request', 'Purchase Requests')}
+        that:
       </p>
-      <h3>Purchases that need a Proposal before they can be approved</h3>
+      <ul class="owners-guide__conditions">
+        <li class="owners-guide__condition owners-guide__condition--money">
+          <i class="fa-regular fa-money-bill-1" aria-hidden="true"></i>
+          <span>Aren't over the
+          ${term('small-purchase-amount', 'Small Purchase Amount')}, which is
+          set by the directors and shown on your Purchase Area's page</span>
+        </li>
+        <li class="owners-guide__condition owners-guide__condition--money">
+          <i class="fa-regular fa-money-bill-1" aria-hidden="true"></i>
+          <span>Don't take the ${term('purchase-area', 'Purchase Area')} over its
+          ${term('yearly-budget', 'Yearly Budget')}</span>
+        </li>
+        <li class="owners-guide__condition owners-guide__condition--care">
+          <i class="fa-regular fa-comment" aria-hidden="true"></i>
+          <span>Won't potentially negatively impact other Areas</span>
+        </li>
+        <li class="owners-guide__condition owners-guide__condition--care">
+          <i class="fa-regular fa-comment" aria-hidden="true"></i>
+          <span>Won't potentially introduce a moderate to high health &amp; safety
+          risk</span>
+        </li>
+      </ul>
       <p>
-        If a ${term('purchase-request', 'Purchase Request')} has the potential
-        to negatively impact other areas, or introduces a moderate to high
-        health &amp; safety risk, a Proposal will need to be made before it can
-        be approved.
+        All other ${term('purchase-request', 'Purchase Requests')} need an
+        accompanying Proposal.
       </p>
+      ${subheading('proposals')}
+      <p>
+        You can submit a Proposal as part of your
+        ${term('purchase-request', 'Purchase Request')}, including pros/cons,
+        options considered and a risk assessment if necessary.
+      </p>
+      <ul class="owners-guide__conditions">
+        <li class="owners-guide__condition owners-guide__condition--care">
+          <i class="fa-regular fa-comment" aria-hidden="true"></i>
+          <span
+            >Proposals that impact multiple areas can be discussed at Owners
+            Meetings, or conversations can be facilitated by
+            ${term('manager', 'managers')}.</span
+          >
+        </li>
+        <li class="owners-guide__condition owners-guide__condition--care">
+          <i class="fa-regular fa-comment" aria-hidden="true"></i>
+          <span
+            >Proposals that potentially introduce health &amp; safety risks
+            need to be signed off by ${term('director', 'Directors')} at a
+            Board Meeting.</span
+          >
+        </li>
+      </ul>
     `,
   };
 };
@@ -355,6 +513,20 @@ export const render = (viewModel: ViewModel) => html`
             section =>
               html`<li>
                 <a href="#${safe(section.id)}">${safe(section.title)}</a>
+                ${section.subsections.length === 0
+                  ? html``
+                  : html`<ol class="owners-guide__toc-sub">
+                      ${joinHtml(
+                        section.subsections.map(
+                          subsection =>
+                            html`<li>
+                              <a href="#${safe(subsection.id)}"
+                                >${safe(subsection.contents)}</a
+                              >
+                            </li>`
+                        )
+                      )}
+                    </ol>`}
               </li>`
           )
         )}

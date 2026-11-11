@@ -1,7 +1,10 @@
 import * as O from 'fp-ts/Option';
+import {purchaseTypeLabel} from '../../types/purchase-type';
 import {pipe} from 'fp-ts/lib/function';
 import {DateTime} from 'luxon';
-import {html, safe, sanitizeString} from '../../types/html';
+import {html, joinHtml, safe, sanitizeString} from '../../types/html';
+import {receiptFilePath} from '../../purchasing/receipt-files';
+import {receiptPagePath} from '../../commands/purchase-request/decide-helpers';
 import {formatPence} from '../../types/money';
 import {
   PurchaseRequest,
@@ -32,6 +35,12 @@ type ViewModel = {
   canDecide: boolean;
   // Who marked it bought, once someone has.
   buyerName: O.Option<string>;
+  // Who first passed its receipt or invoice on to the accountant.
+  invoiceSenderName: O.Option<string>;
+  // Whoever bought it, the area's purchasers and super users.
+  canMarkInvoiceSent: boolean;
+  // Those, whoever requested it, the Management Team and the Directors.
+  canViewReceipts: boolean;
 };
 
 const money = (pence: number) => sanitizeString(formatPence(pence));
@@ -66,6 +75,76 @@ const renderBought = (request: PurchaseRequest, buyerName: O.Option<string>) =>
         <strong>Next:</strong> one of the area's purchasers (or a super user)
         pays for it and marks it as paid.
       </p>`;
+
+const renderReceipts = (request: PurchaseRequest, canView: boolean) =>
+  request.receipts.length === 0
+    ? html``
+    : html`<ul>
+        ${joinHtml(
+          request.receipts.map(
+            receipt =>
+              html`<li>
+                ${canView
+                  ? html`<a
+                      href="${safe(receiptFilePath(request.id, receipt.fileId))}"
+                      >${sanitizeString(receipt.filename)}</a
+                    >`
+                  : sanitizeString(receipt.filename)}
+                <span class="text-sm"
+                  >(uploaded
+                  ${displayDate(DateTime.fromJSDate(receipt.uploadedAt))})</span
+                >
+              </li>`
+          )
+        )}
+      </ul>`;
+
+// Once bought: whether its receipt or invoice has gone to the accountant,
+// and any that were uploaded.
+const renderInvoice = (
+  request: PurchaseRequest,
+  senderName: O.Option<string>,
+  canMark: boolean,
+  canView: boolean
+) =>
+  request.status !== 'bought' && request.status !== 'bought-directly'
+    ? html``
+    : html`<div class="stack">
+        ${pipe(
+          request.invoiceSentAt,
+          O.match(
+            () => html`<p>
+              <strong>Receipt or invoice:</strong> not yet sent to the
+              accountant.
+            </p>`,
+            at => html`<p>
+              <strong>Receipt or invoice:</strong> sent to the accountant
+              ${pipe(
+                senderName,
+                O.match(
+                  () => html``,
+                  name => html`by ${sanitizeString(name)}`
+                )
+              )}
+              on
+              ${displayDate(DateTime.fromJSDate(at))}${request.receipts
+                .length === 0
+                ? html` (handed over or emailed).`
+                : html`.`}
+            </p>`
+          )
+        )}
+        ${renderReceipts(request, canView)}
+        ${canMark
+          ? html`<div>
+              <a class="button" href="${safe(receiptPagePath(request.id))}"
+                >${O.isNone(request.invoiceSentAt)
+                  ? html`Send receipt or invoice`
+                  : html`Upload another receipt or invoice`}</a
+              >
+            </div>`
+          : html``}
+      </div>`;
 
 const renderDecision = (
   request: PurchaseRequest,
@@ -128,10 +207,13 @@ const renderDecision = (
         <strong>Next:</strong>
         ${request.approval === 'proposal'
           ? html`a director needs to approve this request and its proposal.`
-          : html`one of the area's purchasers (or a director) needs to approve
-            this request.`}
-        Nothing will be bought until they do, and it doesn't count against
-        the budget until then.
+          : request.approval === 'super-user'
+            ? html`a super user needs to approve this repair.`
+            : html`one of the area's purchasers (or a director) needs to
+              approve this request.`}
+        Nothing will be bought until they do${request.outcome === 'repair'
+          ? html`. Repairs don't count against the budget.`
+          : html`, and it doesn't count against the budget until then.`}
       </p>`;
   }
 };
@@ -161,6 +243,9 @@ export const render = ({
   deciderName,
   canDecide,
   buyerName,
+  invoiceSenderName,
+  canMarkInvoiceSent,
+  canViewReceipts,
 }: ViewModel) => {
   const areaName = pipe(
     purchasingArea,
@@ -197,6 +282,15 @@ export const render = ({
         <dl class="purchase-summary">
           <dt>Status</dt>
           <dd>${renderStatus(request)}</dd>
+          ${pipe(
+            request.purchaseType,
+            O.match(
+              () => html``,
+              type =>
+                html`<dt>Type</dt>
+                  <dd>${sanitizeString(purchaseTypeLabel(type))}</dd>`
+            )
+          )}
           <dt>Budget</dt>
           <dd>
             ${renderOutcome(request.outcome, request.approval, request.status)}
@@ -250,6 +344,12 @@ export const render = ({
           O.match(() => html``, renderProposal)
         )}
         ${renderDecision(request, deciderName, submitterName, buyerName)}
+        ${renderInvoice(
+          request,
+          invoiceSenderName,
+          canMarkInvoiceSent,
+          canViewReceipts
+        )}
         ${canDecide && request.status === 'awaiting-approval'
           ? renderDecide(request)
           : html``}

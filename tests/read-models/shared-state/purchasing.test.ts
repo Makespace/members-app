@@ -1,3 +1,4 @@
+import {pipe} from 'fp-ts/lib/function';
 import * as O from 'fp-ts/Option';
 import {faker} from '@faker-js/faker';
 import {UUID} from 'io-ts-types';
@@ -50,6 +51,7 @@ describe('purchasing areas in the read model', () => {
       ],
       justification: 'Needed',
       isMemberPaidConsumable: outcome === 'consumable',
+      purchaseType: null,
       affectedAreaIds: [],
       healthAndSafetyRisk: false,
       proposal: null,
@@ -98,11 +100,15 @@ describe('purchasing areas in the read model', () => {
         active: true,
         yearlyBudgetPence: 150_000,
         usualBudgetPence: 150_000,
+        allowancePerAreaPence: O.none,
+        extensionPence: 0,
+        nextYearExtensionPence: 0,
         smallPurchaseAmountPence: 100_000,
         areas: [],
         purchasers: [],
         budgetYear: 2026,
         spentThisYearPence: 0,
+        repairsThisYearPence: 0,
         recordedSpend: [],
         approvedSpendThisYearPence: 0,
         awaitingApprovalPence: 0,
@@ -230,6 +236,118 @@ describe('purchasing areas in the read model', () => {
           areaId: artSpaceId,
         })
       );
+    });
+
+    describe('and a yearly allowance per Area', () => {
+      const allowance = (fromBudgetYear: number, allowancePerAreaPence: number) =>
+        constructEvent('PurchasingAllowanceSet')({
+          actor: systemActor(),
+          fromBudgetYear,
+          allowancePerAreaPence,
+        });
+
+      describe('and an extension', () => {
+        const extension = (budgetYear: number, extensionPence: number) =>
+          constructEvent('PurchasingAreaExtensionSet')({
+            actor: systemActor(),
+            purchasingAreaId,
+            budgetYear,
+            extensionPence,
+          });
+
+        it('adds it on top of the usual budget', () => {
+          insert(allowance(2026, 100_000), extension(2026, 50_000));
+          expect(get()).toMatchObject({
+            usualBudgetPence: 200_000,
+            extensionPence: 50_000,
+            yearlyBudgetPence: 250_000,
+            remainingPence: 250_000,
+          });
+        });
+
+        it('still adds it when its areas change', () => {
+          insert(
+            allowance(2026, 100_000),
+            extension(2026, 50_000),
+            constructEvent('AreaUnassignedFromPurchasingArea')({
+              actor: systemActor(),
+              purchasingAreaId,
+              areaId: artSpaceId,
+            })
+          );
+          expect(get().yearlyBudgetPence).toBe(150_000);
+        });
+
+        it("keeps next year's apart from this year's", () => {
+          insert(allowance(2026, 100_000), extension(2027, 70_000));
+          expect(get()).toMatchObject({
+            extensionPence: 0,
+            nextYearExtensionPence: 70_000,
+            yearlyBudgetPence: 200_000,
+          });
+        });
+
+        it("takes over from a year's budget set the old way", () => {
+          insert(
+            allowance(2026, 100_000),
+            constructEvent('PurchasingAreaYearBudgetSet')({
+              actor: systemActor(),
+              purchasingAreaId,
+              budgetYear: 2026,
+              yearlyBudgetPence: 900_000,
+            }),
+            extension(2026, 10_000)
+          );
+          expect(get().yearlyBudgetPence).toBe(210_000);
+        });
+
+        it('is removed by setting it to nothing', () => {
+          insert(allowance(2026, 100_000), extension(2026, 50_000), extension(2026, 0));
+          expect(get()).toMatchObject({
+            extensionPence: 0,
+            yearlyBudgetPence: 200_000,
+          });
+        });
+      });
+
+      it("makes its usual budget its areas' allowances added together", () => {
+        insert(allowance(2026, 100_000));
+        expect(get()).toMatchObject({
+          usualBudgetPence: 200_000,
+          yearlyBudgetPence: 200_000,
+          remainingPence: 200_000,
+          allowancePerAreaPence: O.some(100_000),
+        });
+      });
+
+      it('uses the latest set from this year or before', () => {
+        insert(allowance(2025, 80_000), allowance(2026, 90_000), allowance(2027, 120_000));
+        expect(get().usualBudgetPence).toBe(180_000);
+      });
+
+      it('leaves the budget set by hand until one applies', () => {
+        insert(allowance(2027, 100_000));
+        expect(get()).toMatchObject({
+          usualBudgetPence: 150_000,
+          allowancePerAreaPence: O.none,
+        });
+      });
+
+      it("still lets this year's budget be set differently, e.g. extended", () => {
+        insert(
+          allowance(2026, 100_000),
+          constructEvent('PurchasingAreaYearBudgetSet')({
+            actor: systemActor(),
+            purchasingAreaId,
+            budgetYear: 2026,
+            yearlyBudgetPence: 350_000,
+          })
+        );
+        expect(get()).toMatchObject({
+          usualBudgetPence: 200_000,
+          yearlyBudgetPence: 350_000,
+        });
+      });
     });
 
     it('lists them by name', () => {
@@ -408,6 +526,54 @@ describe('purchasing areas in the read model', () => {
       );
       expect(requests).toHaveLength(6);
       expect(requests[0].id).toStrictEqual(latestId);
+    });
+
+    describe('the type of purchase', () => {
+      const typeOf = (id: UUID) =>
+        pipe(
+          framework.sharedReadModel.purchasing.getRequest(id),
+          O.chain(request => request.purchaseType)
+        );
+
+      it('is as chosen', () => {
+        const id = faker.string.uuid() as UUID;
+        insert({
+          ...submitted('budget', 1_000, 2026, id),
+          purchaseType: 'repairs',
+        });
+        expect(typeOf(id)).toStrictEqual(O.some('repairs'));
+      });
+
+      it('is member-paid for a consumable sent before it was asked', () => {
+        const id = faker.string.uuid() as UUID;
+        insert(submitted('consumable', 1_000, 2026, id));
+        expect(typeOf(id)).toStrictEqual(O.some('member-paid'));
+      });
+
+      it('is unknown for anything else sent before it was asked', () => {
+        const id = faker.string.uuid() as UUID;
+        insert(submitted('budget', 1_000, 2026, id));
+        expect(typeOf(id)).toStrictEqual(O.none);
+      });
+    });
+
+    it("counts an approved repair as repairs, not as spent from the budget", () => {
+      const before = get();
+      insert(...approvedRequest('repair', 30_000));
+      expect(get()).toMatchObject({
+        spentThisYearPence: before.spentThisYearPence,
+        remainingPence: before.remainingPence,
+        repairsThisYearPence: before.repairsThisYearPence + 30_000,
+      });
+    });
+
+    it("doesn't count a repair awaiting approval", () => {
+      const before = get();
+      insert(submitted('repair', 30_000));
+      expect(get()).toMatchObject({
+        awaitingApprovalPence: before.awaitingApprovalPence,
+        repairsThisYearPence: before.repairsThisYearPence,
+      });
     });
 
     it('counts the shop total as spent once approved', () => {

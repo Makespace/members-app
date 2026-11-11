@@ -1,4 +1,6 @@
-import {html, joinHtml, sanitizeString} from '../../types/html';
+import * as O from 'fp-ts/Option';
+import {pipe} from 'fp-ts/lib/function';
+import {html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {formatPence} from '../../types/money';
 import {renderRemaining} from '../../templates/remaining-budget';
 import {PurchasingArea} from '../../read-models/shared-state/return-types';
@@ -7,6 +9,8 @@ import {renderRecordPurchaseButton} from '../../templates/record-purchase-button
 
 type ViewModel = {
   budgetYear: number;
+  // The yearly allowance per Area for this budget year, if one applies.
+  allowancePerAreaPence: O.Option<number>;
   purchasingAreas: ReadonlyArray<PurchasingArea>;
   canManage: boolean;
   // Owners, purchasers and super users request purchases.
@@ -16,6 +20,26 @@ type ViewModel = {
 };
 
 const money = (pence: number) => sanitizeString(formatPence(pence));
+
+// This year's budget, and how far a one-off change for this year (e.g. an
+// extension) moves it from the usual one.
+const renderYearBudget = ({
+  yearlyBudgetPence,
+  usualBudgetPence,
+  extensionPence,
+}: PurchasingArea) => {
+  const difference = yearlyBudgetPence - usualBudgetPence;
+  return extensionPence > 0
+    ? html`${money(yearlyBudgetPence)}
+        <span class="tag tag--yellow">+${money(extensionPence)} extension</span>`
+    : difference === 0
+      ? money(yearlyBudgetPence)
+      : html`${money(yearlyBudgetPence)}
+          <span class="tag tag--yellow"
+            >${difference > 0 ? html`+` : html`-`}${money(Math.abs(difference))}
+            this year only</span
+          >`;
+};
 
 const renderRow = (purchasingArea: PurchasingArea) => html`
   <tr>
@@ -32,7 +56,22 @@ const renderRow = (purchasingArea: PurchasingArea) => html`
         ? html`<small>No areas yet</small>`
         : sanitizeString(purchasingArea.areas.map(area => area.name).join(', '))}
     </td>
-    <td>${money(purchasingArea.yearlyBudgetPence)}</td>
+    <td>
+      ${money(purchasingArea.usualBudgetPence)}
+      ${pipe(
+        purchasingArea.allowancePerAreaPence,
+        O.match(
+          () => html``,
+          allowance =>
+            html`<br /><small
+                >${purchasingArea.areas.length}
+                ${safe(purchasingArea.areas.length === 1 ? 'Area' : 'Areas')} ×
+                ${money(allowance)}</small
+              >`
+        )
+      )}
+    </td>
+    <td>${renderYearBudget(purchasingArea)}</td>
     <td>${money(purchasingArea.spentThisYearPence)}</td>
     <td>${renderRemaining(purchasingArea.remainingPence)}</td>
   </tr>
@@ -47,7 +86,8 @@ const renderTable = (viewModel: ViewModel) =>
             <tr>
               <th>Purchasing area</th>
               <th>Areas</th>
-              <th>Yearly budget</th>
+              <th>Usual budget</th>
+              <th>${viewModel.budgetYear} budget</th>
               <th>Spent in ${viewModel.budgetYear}</th>
               <th>Remaining</th>
             </tr>
@@ -62,12 +102,24 @@ export const render = (viewModel: ViewModel) => html`
   <div class="stack-large">
     <h1>Purchasing areas</h1>
     <p>
-      Each purchasing area holds a yearly budget (1 January to 31 December) for
-      one or more areas. It pays for keeping equipment running safely (repairs,
-      servicing, running costs, replacements) as well as improvements.
-      Things members pay for themselves (e.g. filament paid for on SumUp) are
+      Each purchasing area holds a single yearly budget (1 January to 31
+      December) for one or more areas, which pays for maintenance,
+      improvements and non-recoverable consumables. Recoverable consumables
+      members pay for themselves (e.g. filament paid for on SumUp) are
       recorded without counting against it.
     </p>
+    ${pipe(
+      viewModel.allowancePerAreaPence,
+      O.match(
+        () => html``,
+        allowance => html`<p>
+          Every Area is allocated ${money(allowance)} for
+          ${viewModel.budgetYear}, and a purchasing area's usual budget is its
+          Areas' allowances added together. A purchasing area can ask the
+          managers and directors for an extension.
+        </p>`
+      )
+    )}
     ${viewModel.canRequest
       ? html``
       : html`<p>
@@ -86,7 +138,14 @@ export const render = (viewModel: ViewModel) => html`
     ${viewModel.canBuyDirectly ? renderRecordPurchaseButton() : html``}
     ${viewModel.canManage
       ? superUserActions(
-          superUserButton('/purchasing-areas/create', html`Create purchasing area`)
+          html`${superUserButton(
+            '/purchasing-areas/create',
+            html`Create purchasing area`
+          )}
+          ${superUserButton(
+            '/purchasing-areas/set-allowance',
+            html`Set yearly allowance per Area`
+          )}`
         )
       : html``}
     ${renderTable(viewModel)}

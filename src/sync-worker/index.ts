@@ -18,6 +18,7 @@ import {syncMeetupTrainings} from './meetup/sync_meetup_trainings';
 import {fetchUpcomingMeetupEvents} from './meetup/fetch-meetup-events';
 import { Duration } from 'luxon';
 import {notifyPurchaseRequests} from './notify_purchase_requests';
+import {notifyPurchaseReceipts} from './notify_purchase_receipts';
 import {notifyTrainingSessions} from './notify_training_sessions';
 
 const HEARTBEAT_INTERVAL_MS = 20 * 1000;
@@ -164,6 +165,7 @@ async function syncExternDataPeriodically(
         await notifyRoleChanges(deps);
         await notifySiteNotifications(deps);
         await notifyPurchaseRequests(deps);
+        await notifyPurchaseReceipts(deps);
         await notifyTrainingSessions(deps);
         lastTroubleTicketNotify = Date.now();
       }

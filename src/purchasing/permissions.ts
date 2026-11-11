@@ -106,3 +106,79 @@ export const canDecide = (
 // approve it, so a purchaser can't record buying something that needed
 // director approval - a manager or director buys that.
 export const canMarkBought = canDecide;
+
+// Whoever bought it: who marked it bought, or who bought it directly.
+export const buyerOf = (request: PurchaseRequest): O.Option<number> => {
+  switch (request.status) {
+    case 'bought':
+      return request.boughtByMemberNumber;
+    case 'bought-directly':
+      return O.some(request.submittedByMemberNumber);
+    default:
+      return O.none;
+  }
+};
+
+// Bought, after approval or directly: its receipt or invoice can be sent on.
+export const isBought = (request: PurchaseRequest) =>
+  O.isSome(buyerOf(request));
+
+// A bought purchase whose receipt or invoice still needs passing on to the
+// accountant.
+export const needsInvoiceSent = (request: PurchaseRequest) =>
+  isBought(request) && O.isNone(request.invoiceSentAt);
+
+// Who can upload its receipt or invoice, or mark it as sent: whoever bought
+// it, the area's purchasers, and super users.
+export const canMarkInvoiceSent = (
+  rm: SharedReadModel,
+  actor: Actor,
+  request: PurchaseRequest
+) =>
+  O.isSome(buyerOf(request)) &&
+  (isAdminOrSuperUser({actor, rm}) ||
+    pipe(
+      memberNumberOf(actor),
+      O.exists(
+        memberNumber =>
+          pipe(
+            buyerOf(request),
+            O.exists(buyer => buyer === memberNumber)
+          ) ||
+          pipe(
+            rm.purchasing.get(request.purchasingAreaId, new Date()),
+            O.exists(area => isActivePurchaser(area, memberNumber))
+          )
+      )
+    ));
+
+// Who can see its uploaded receipts and invoices: anyone who could upload
+// them, whoever requested it, and the Management Team and Directors (who
+// read management@, where they are emailed). Not every member: an invoice can carry someone's
+// address or card details.
+export const canViewReceipts = (
+  rm: SharedReadModel,
+  areas: {MANAGEMENT_TEAM_AREA_ID: string; DIRECTORS_AREA_ID: string},
+  actor: Actor,
+  request: PurchaseRequest
+) =>
+  canMarkInvoiceSent(rm, actor, request) ||
+  pipe(
+    memberNumberOf(actor),
+    O.exists(
+      memberNumber =>
+        memberNumber === request.submittedByMemberNumber ||
+        pipe(
+          rm.members.getByMemberNumber(memberNumber),
+          O.exists(member =>
+            member.ownerOf.some(
+              owned =>
+                (areas.MANAGEMENT_TEAM_AREA_ID !== '' &&
+                  owned.id === areas.MANAGEMENT_TEAM_AREA_ID) ||
+                (areas.DIRECTORS_AREA_ID !== '' &&
+                  owned.id === areas.DIRECTORS_AREA_ID)
+            )
+          )
+        )
+    )
+  );
