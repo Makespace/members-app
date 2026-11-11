@@ -149,7 +149,7 @@ describe("the owner's guide's defined terms", () => {
       [...(conditions?.querySelectorAll('dfn') ?? [])].map(
         term => term.firstChild?.textContent
       )
-    ).toStrictEqual(['Small Purchase Amount', 'Small Repairs Amount', 'Purchase Area', 'Yearly Budget']);
+    ).toStrictEqual(['Small Purchase Amount', 'Purchase Area', 'Yearly Budget']);
   });
 
   it('explains Purchase Area where it is first used', () => {

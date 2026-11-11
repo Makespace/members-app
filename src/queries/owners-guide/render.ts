@@ -263,17 +263,21 @@ const requestAPurchase = (yours: YourAreas) =>
 // What the guide's defined terms mean, shown on hover wherever one is used.
 const definitions = {
   'purchase-area':
-    'Purchase Area: a collection of Areas that share a budget and make purchasing decisions collectively, authorised and actioned by their Purchaser.',
+    "Purchase Area: a collection of Areas that share a budget and make purchasing decisions collectively, authorised and actioned by their Purchaser. Its Yearly Budget is its Areas' yearly allowances added together.",
   'yearly-budget':
-    'Yearly Budget: a discretionary budget designed to give Owners flexibility over how they spend money. The per-year nominal budget (normally around £1000) is not a hard limit, or a target. Purchases can be approved outside of this budget, but they need to be written up as proposals and approved by the directors.',
+    "Yearly Budget: a single budget for all of a Purchase Area's maintenance, improvements and non-recoverable consumables. Every Area is allocated the same yearly allowance (£1000 for 2027, which can change year to year), and a Purchase Area's Yearly Budget is its Areas' allowances added together, plus any Expanded Allowance. It's designed to give Owners flexibility over how they spend money, and isn't a target.",
   'small-purchase-amount':
     "Small Purchase Amount: a single purchase costing this much or more needs a proposal, even when it's within the Yearly Budget. It's normally £1000.",
-  'repairs-and-running-costs':
-    "Repairs & Running Costs: operational costs of running your Area. They don't come out of the Yearly Budget.",
-  'small-repairs-amount':
-    "Small Repairs Amount: a single repair costing this much or more needs a super user's approval. It's normally £150.",
-  improvements: 'Improvements: expanding the functionality of your Area.',
-  'member-paid': 'Member-paid: members pay for these when they use them.',
+  'expanded-allowance':
+    "Expanded Allowance: extra budget for a year, approved by the directors, for spending an Area can already foresee that its yearly allowance won't cover. Ask for one by emailing the managers and directors with what the expected spends are and why they're needed - ideally before the financial year starts, but you can ask at any time.",
+  maintenance:
+    'Maintenance: keeping your Area running - routine services (e.g. replacing the Laser Cutter filters), unplanned repairs (e.g. a broken band saw blade) and like-for-like replacements (e.g. a new jigsaw).',
+  improvements:
+    'Improvements: expanding the functionality of your Area, including entirely new equipment and upgrading existing equipment with a replacement.',
+  'non-recoverable-consumables':
+    "Non-recoverable consumables: consumables members don't pay for when they use them, e.g. embroidery machine thread or solder.",
+  'recoverable-consumables':
+    'Recoverable consumables: consumables members pay for when they use them, e.g. laser materials or 3D printer filament.',
   manager:
     'Manager: paid contractors who act as a coordinating function across Makespace, ensuring the smooth operation of the day-to-day running of the space, coordinating among the owners teams, guiding members to whatever/whoever they need, and coordinating between the directors and owners/members.',
   director:
@@ -318,27 +322,39 @@ const bodies = (
       <p>Money is available for Owners' teams to pay for:</p>
       <ul class="owners-guide__kinds">
         <li>
-          <strong>Repairs &amp; Running Costs</strong>
-          <span>Operational costs of running your Area</span>
+          <strong>Maintenance</strong>
+          <span
+            >Routine services (e.g. the Laser Cutters need filters replacing),
+            unplanned repairs (e.g. someone broke the band saw blade) and
+            like-for-like replacements (e.g. a new jigsaw)</span
+          >
         </li>
         <li>
           <strong>Improvements</strong>
-          <span>Expanding the functionality of your Area</span>
+          <span
+            >Expanding the functionality of your Area, including entirely new
+            equipment and upgrading existing equipment with a replacement</span
+          >
         </li>
         <li>
-          <strong>Member-paid</strong>
-          <span>Members pay for these when they use them</span>
+          <strong>Non-recoverable consumables</strong>
+          <span>Such as embroidery machine thread or solder</span>
         </li>
       </ul>
       <p>
-        In order to manage this, Areas are grouped into
-        ${term('purchase-area', 'Purchase Areas')} when they share financial
-        decisions.
+        Recoverable consumables are paid for by members when they use them
+        (e.g. laser materials, 3D printer filament), so they sit outside of
+        this.
       </p>
       <p>
-        In order to give owners a low friction way to make simple purchases,
-        ${term('purchase-area', 'Purchase Areas')} have a
-        ${term('yearly-budget', 'Yearly Budget')}, normally around £1000.
+        Every Area is allocated the same yearly allowance: £1000 for 2027,
+        which can change year to year. Areas are grouped into
+        ${term('purchase-area', 'Purchase Areas')} when they often make
+        financial decisions together, and a
+        ${term('purchase-area', 'Purchase Area')}'s
+        ${term('yearly-budget', 'Yearly Budget')} is its Areas' allowances
+        combined. This gives owners a low friction way to make simple
+        purchases.
       </p>
       ${yourData(
         viewModel,
@@ -378,9 +394,7 @@ const bodies = (
           <i class="fa-regular fa-money-bill-1" aria-hidden="true"></i>
           <span>Aren't over the
           ${term('small-purchase-amount', 'Small Purchase Amount')} (normally
-          £1000) or the
-          ${term('small-repairs-amount', 'Small Repairs Amount')} (normally
-          £150)</span>
+          £1000)</span>
         </li>
         <li class="owners-guide__condition owners-guide__condition--money">
           <i class="fa-regular fa-money-bill-1" aria-hidden="true"></i>
@@ -400,15 +414,6 @@ const bodies = (
       <p>
         All other ${term('purchase-request', 'Purchase Requests')} need an
         accompanying Proposal.
-      </p>
-      <p>
-        ${term('repairs-and-running-costs', 'Repairs & Running Costs')} don't
-        come out of the ${term('yearly-budget', 'Yearly Budget')}. A
-        ${term('purchaser', 'Purchaser')} can approve a repair under the
-        ${term('small-repairs-amount', 'Small Repairs Amount')} (normally
-        £150); a larger one needs a super user's approval, but no Proposal
-        unless it could affect other Areas or introduce a health &amp; safety
-        risk.
       </p>
       ${subheading('proposals')}
       <p>
@@ -436,16 +441,17 @@ const bodies = (
       </ul>
       ${subheading('budgets')}
       <p>
-        ${term('improvements', 'Improvements')} come out of the
-        ${term('yearly-budget', 'yearly budget')}.
-        ${term('repairs-and-running-costs', 'Repairs and maintenance')} do not -
-        they're considered non-negotiable purchases, necessary to keep the
-        space functional and safe.
+        A ${term('purchase-area', 'Purchase Area')} has a single
+        ${term('yearly-budget', 'Yearly Budget')} for all types of spending:
+        ${term('maintenance', 'Maintenance')},
+        ${term('improvements', 'Improvements')} and
+        ${term('non-recoverable-consumables', 'Non-recoverable consumables')}
+        all come out of it.
       </p>
       <p>
-        ${term('member-paid', 'Member-paid')} purchases are paid for by members
-        when they are used, so they do not come out of the
-        ${term('yearly-budget', 'yearly budget')}.
+        ${term('recoverable-consumables', 'Recoverable consumables')} are paid
+        for by members when they are used, so they do not come out of the
+        ${term('yearly-budget', 'Yearly Budget')}.
       </p>
       ${subheading('over-budget')}
       <p>
@@ -456,9 +462,23 @@ const bodies = (
       <p>
         If a ${term('purchase-area', 'Purchase Area')} exceeds its budget, new
         ${term('purchase-request', 'purchase requests')} will have to be
-        approved by the board of ${term('director', 'directors')}. It's possible
-        to put in a request for a one-off extension to the
-        ${term('yearly-budget', 'Yearly Budget')}.
+        approved by the board of ${term('director', 'directors')}.
+      </p>
+      <p>
+        If your Area's yearly allowance won't be enough for the maintenance,
+        improvements and non-recoverable consumables you can already foresee,
+        you can ask for an
+        ${term('expanded-allowance', 'Expanded Allowance')}. Email the
+        ${term('manager', 'managers')} and ${term('director', 'directors')}
+        saying what the expected spends are and why they're needed, for the
+        ${term('director', 'directors')} to approve. Ideally ask before the
+        financial year starts (1 January), but you can ask at any time.
+      </p>
+      <p>
+        An ${term('expanded-allowance', 'Expanded Allowance')} keeps your
+        yearly allowance free for discretionary spending that doesn't need
+        approval. Individual purchases still go through
+        ${term('purchase-request', 'Purchase Requests')} as usual.
       </p>
     `,
   };
