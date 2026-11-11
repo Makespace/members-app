@@ -126,14 +126,6 @@ export const changes: AgreementChanges = {
             can be approved by the board.</mark
           >`,
         },
-        {
-          kind: 'removed',
-          tag: 'Encourage community',
-          summary: html`"Champion good working practices" was dropped.`,
-          before: html`Help grow a friendly community of members around your
-            equipment, <del>champion good working practices,</del> and
-            encourage members to become owners.`,
-        },
       ],
     },
     {
