@@ -319,7 +319,10 @@ const bodies = (
   const term = termsFor();
   return {
     purchasing: html`
-      <p>Purchasing is available for:</p>
+      <p>
+        A yearly allowance is available to give owners autonomy over how they
+        purchase:
+      </p>
       <ul class="owners-guide__kinds">
         <li>
           <strong><span aria-hidden="true">⚙️</span> Maintenance</strong>
@@ -340,17 +343,22 @@ const bodies = (
           >
         </li>
         <li>
-          <strong><span aria-hidden="true">🧵</span> Consumables</strong>
+          <strong
+            ><span aria-hidden="true">🧵</span> Non-recoverable
+            consumables</strong
+          >
           <span
-            >Including <strong>recoverable consumables</strong> that members
-            pay for when they use them (e.g. laser ply), and
-            <strong>non-recoverable consumables</strong> that are not paid for
-            (e.g. thread).</span
+            >Things that are consumed, but not practical to be paid for by
+            members (e.g. thread)</span
           >
         </li>
       </ul>
+      <p>
+        The yearly allowance is a single budget that covers all of these
+        purchase types.
+      </p>
       <p class="owners-guide__box" role="note">
-        As we expect the cost of recoverable consumables to be 'recovered' when
+        <strong>Recoverable-consumables:</strong> As we expect the cost of recoverable consumables to be 'recovered' when
         members pay for them (e.g. members paying for the 3D printer filament
         they use) they aren't taken out of any budget.
       </p>
