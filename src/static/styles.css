@@ -3015,17 +3015,35 @@ ul.owners-guide__kinds {
   font-size: 0.875rem;
 }
 
-/* The kinds within a kind, e.g. the two sorts of consumable. Named to
-   outrank the reset's ul[class]. */
-ul.owners-guide__kind-parts {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+/* A tinted box for a note or an aside, in the margin notes' colours. */
+.owners-guide__box {
   margin: 0;
-  padding-left: 1.1rem;
-  list-style: disc;
-  color: var(--grey-color);
+  padding: 0.6rem 0.85rem;
   font-size: 0.875rem;
+  line-height: 1.45;
+  background: var(--owners-guide-note);
+  border: 1px solid var(--owners-guide-note-edge);
+  border-radius: 6px;
+}
+
+.owners-guide__box > i {
+  margin-right: 0.25rem;
+  color: var(--owners-guide-note-mark);
+}
+
+/* A sentence with an aside about it beside it on a wide screen, or under it
+   on a phone. */
+.owners-guide__beside {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+@media (min-width: 40rem) {
+  .owners-guide__beside {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 18rem);
+  }
 }
 
 /* The four conditions owners decide for themselves, as small cards two to
