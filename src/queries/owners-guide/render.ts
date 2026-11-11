@@ -343,9 +343,9 @@ const bodies = (
           <strong>Consumables</strong>
           <span
             >Including <strong>recoverable consumables</strong> that members
-            pay for when they use them, and
-            <strong>non-recoverable consumables</strong> that are not paid
-            for.</span
+            pay for when they use them (e.g. laser ply), and
+            <strong>non-recoverable consumables</strong> that are not paid for
+            (e.g. thread).</span
           >
         </li>
       </ul>
