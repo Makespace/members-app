@@ -322,7 +322,7 @@ const bodies = (
       <p>Purchasing is available for:</p>
       <ul class="owners-guide__kinds">
         <li>
-          <strong>Maintenance</strong>
+          <strong><span aria-hidden="true">⚙️</span> Maintenance</strong>
           <span
             ><strong>Routine services</strong> (e.g. the Laser Cutters need
             filters replacing), <strong>unplanned repairs</strong> (e.g.
@@ -332,7 +332,7 @@ const bodies = (
           >
         </li>
         <li>
-          <strong>Improvements</strong>
+          <strong><span aria-hidden="true">✨</span> Improvements</strong>
           <span
             >Expanding the functionality of your Area, including entirely
             <strong>new equipment</strong> and <strong>upgrading</strong>
@@ -340,7 +340,7 @@ const bodies = (
           >
         </li>
         <li>
-          <strong>Consumables</strong>
+          <strong><span aria-hidden="true">🧵</span> Consumables</strong>
           <span
             >Including <strong>recoverable consumables</strong> that members
             pay for when they use them (e.g. laser ply), and
