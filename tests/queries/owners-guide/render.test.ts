@@ -25,7 +25,10 @@ const pat: PurchasingAreaPurchaser = {
 const workshops = {
   id: 'pa-1' as UUID,
   name: 'Workshops',
-  yourAreas: ['Metal Shop', 'Wood Shop'],
+  areas: [
+    {name: 'Metal Shop', yours: false},
+    {name: 'Wood Shop', yours: true},
+  ],
   active: true,
   yearlyBudgetPence: 100_000,
   remainingPence: 65_000,
@@ -57,11 +60,20 @@ const withWorkshops: YourAreas = {
 };
 
 describe("the owner's guide's Purchase Areas", () => {
+  it('lists all its areas, with your own in bold', () => {
+    const areas = purchasingSection(withWorkshops).querySelector(
+      'tbody tr .owners-guide__your-areas'
+    );
+    expect([...(areas?.querySelectorAll('strong') ?? [])].map(text)).toStrictEqual([
+      'Wood Shop',
+    ]);
+  });
+
   it('gives each with your areas in it, its Purchasers and what is left', () => {
     const row = purchasingSection(withWorkshops).querySelector('tbody tr');
 
     expect(cells(row)).toStrictEqual([
-      'Workshops Your areas: Metal Shop, Wood Shop',
+      'Workshops Areas: Metal Shop, Wood Shop',
       '3 purchases January: £0 February: £200 March: £150 April: £0',
       '£650 left of £1,000',
     ]);
@@ -96,7 +108,7 @@ describe("the owner's guide's Purchase Areas", () => {
     }).querySelector('tbody tr');
 
     expect(cells(row)[0]).toBe(
-      'Workshops Not active yet. Your areas: Metal Shop, Wood Shop'
+      'Workshops Not active yet. Areas: Metal Shop, Wood Shop'
     );
   });
 

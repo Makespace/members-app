@@ -101,7 +101,7 @@ const activity = (purchasingArea: PurchasingAreaOfYours, monthNow: number) =>
     purchase${safe(purchasingArea.purchasesThisYear === 1 ? '' : 's')}
     ${spendSparkline(purchasingArea.spentByMonthPence, monthNow)}`;
 
-// Your areas in it go under the name, so the table needs only three columns
+// Its areas go under the name, yours in bold, so the table needs only three columns
 // beside the text; on a phone each row becomes a small block, labelled.
 const purchaseAreaRow =
   (monthNow: number) => (purchasingArea: PurchasingAreaOfYours) => html`
@@ -111,10 +111,13 @@ const purchaseAreaRow =
         >${sanitizeString(purchasingArea.name)}</a
       >
       <span class="owners-guide__your-areas owners-guide__muted"
-        >${purchasingArea.active ? html`` : html`<em>Not active yet.</em> `}Your
-        areas:
+        >${purchasingArea.active ? html`` : html`<em>Not active yet.</em> `}Areas:
         ${commaHtml(
-          purchasingArea.yourAreas.map(name => sanitizeString(name))
+          purchasingArea.areas.map(({name, yours}) =>
+            yours
+              ? html`<strong>${sanitizeString(name)}</strong>`
+              : sanitizeString(name)
+          )
         )}</span
       >
     </td>

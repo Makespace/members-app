@@ -13,8 +13,8 @@ import {User} from '../../types';
 export type PurchasingAreaOfYours = {
   id: UUID;
   name: string;
-  // Only the reader's own areas it covers, by name.
-  yourAreas: ReadonlyArray<string>;
+  // Every area it covers, by name, and whether the reader owns it.
+  areas: ReadonlyArray<{name: string; yours: boolean}>;
   // Until a super user activates it, it takes no purchase requests.
   active: boolean;
   // This budget year's.
@@ -106,6 +106,7 @@ export const constructViewModel = (
     const {
       id,
       name,
+      areas,
       purchasers,
       active,
       yearlyBudgetPence,
@@ -113,7 +114,6 @@ export const constructViewModel = (
       budgetYear,
     } = purchasingArea.value;
     const requests = rm.purchasing.getRequests(id, budgetYear);
-    const existing = purchasingAreas.get(id);
     purchasingAreas.set(id, {
       id,
       name,
@@ -125,7 +125,12 @@ export const constructViewModel = (
       ).length,
       spentByMonthPence: spentByMonth(requests),
       purchasers,
-      yourAreas: [...(existing?.yourAreas ?? []), area.name],
+      areas: areas
+        .map(covered => ({
+          name: covered.name,
+          yours: owned.some(mine => mine.id === covered.id),
+        }))
+        .sort(byName),
     });
   }
 
