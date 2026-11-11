@@ -267,7 +267,7 @@ describe('purchasing areas in the read model', () => {
         });
       });
 
-      it("still lets this year's budget be set differently, e.g. expanded", () => {
+      it("still lets this year's budget be set differently, e.g. extended", () => {
         insert(
           allowance(2026, 100_000),
           constructEvent('PurchasingAreaYearBudgetSet')({

@@ -146,8 +146,7 @@ const renderBudget = (viewModel: ViewModel) => {
               `/purchasing-areas/set-year-budget?${query({
                 purchasingArea: purchasingArea.id,
               })}`,
-              html`Set ${purchasingArea.budgetYear}'s budget (expanded
-                allowance)`
+              html`Set ${purchasingArea.budgetYear}'s budget (extension)`
             )}
             ${O.isNone(purchasingArea.allowancePerAreaPence)
               ? superUserButton(

@@ -60,9 +60,8 @@ const renderForm = ({budgetYear, allowances}: ViewModel) =>
         <p>
           Every Area is allocated the same yearly allowance, and a purchasing
           area's usual budget is its Areas' allowances added together. It
-          applies from the year given until another is set. An expanded
-          allowance for one purchasing area is set as that year's budget on
-          its own page.
+          applies from the year given until another is set. An extension for
+          one purchasing area is set as that year's budget on its own page.
         </p>
         ${renderAllowances(allowances)}
         <form

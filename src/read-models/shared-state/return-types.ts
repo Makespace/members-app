@@ -193,7 +193,7 @@ export type PurchasingArea = PurchasingAreaSummary & {
   // differently for this year (e.g. extended).
   yearlyBudgetPence: number;
   // The budget every year has unless set differently for that year (e.g. an
-  // expanded allowance): its areas' allowances added together once a yearly
+  // extension): its areas' allowances added together once a yearly
   // allowance per Area applies, otherwise the one set for it by hand.
   usualBudgetPence: number;
   // The yearly allowance per Area for this budget year, if one applies.

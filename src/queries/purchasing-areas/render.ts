@@ -111,8 +111,8 @@ export const render = (viewModel: ViewModel) => html`
         allowance => html`<p>
           Every Area is allocated ${money(allowance)} for
           ${viewModel.budgetYear}, and a purchasing area's usual budget is its
-          Areas' allowances added together. An area can ask the managers and
-          directors for an expanded allowance.
+          Areas' allowances added together. A purchasing area can ask the
+          managers and directors for an extension.
         </p>`
       )
     )}
