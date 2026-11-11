@@ -265,7 +265,7 @@ const definitions = {
   'purchase-area':
     "Purchase Area: a collection of Areas that share a budget and make purchasing decisions collectively, authorised and actioned by their Purchaser. Its Yearly Budget is its Areas' yearly allowances added together.",
   'yearly-budget':
-    "Yearly Budget: a single budget for all of a Purchase Area's maintenance, improvements and non-recoverable consumables. Every Area is allocated the same yearly allowance (£1000 for 2027, which can change year to year), and a Purchase Area's Yearly Budget is its Areas' allowances added together, plus any Expanded Allowance. It's designed to give Owners flexibility over how they spend money, and isn't a target.",
+    "Yearly Budget: a single budget for all of a Purchase Area's maintenance, improvements and non-recoverable consumables. Every Area is allocated the same yearly allowance (£1000 for 2026, which can change year to year), and a Purchase Area's Yearly Budget is its Areas' allowances added together, plus any Expanded Allowance. It's designed to give Owners flexibility over how they spend money, and isn't a target.",
   'small-purchase-amount':
     "Small Purchase Amount: a single purchase costing this much or more needs a proposal, even when it's within the Yearly Budget. It's normally £1000.",
   'expanded-allowance':
@@ -347,7 +347,7 @@ const bodies = (
         this.
       </p>
       <p>
-        Every Area is allocated the same yearly allowance: £1000 for 2027,
+        Every Area is allocated the same yearly allowance: £1000 for 2026,
         which can change year to year. Areas are grouped into
         ${term('purchase-area', 'Purchase Areas')} when they often make
         financial decisions together, and a
