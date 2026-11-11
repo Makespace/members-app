@@ -237,9 +237,9 @@ const PurchasingAreaSmallPurchaseAmountSet = defineEvent(
   }
 );
 
-// A super user changes how much a single repair can cost before it needs a
-// super user's approval. Purchasing areas start at
-// DEFAULT_SMALL_REPAIRS_AMOUNT_PENCE until one is set.
+// No longer recorded: from November 2026 until the 2027 budget system, a
+// single repair of this much or more needed a super user's approval. Kept so
+// events already recorded still read.
 const PurchasingAreaSmallRepairsAmountSet = defineEvent(
   'PurchasingAreaSmallRepairsAmountSet',
   {

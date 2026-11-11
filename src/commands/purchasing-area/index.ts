@@ -6,8 +6,6 @@ import {setBudget} from './set-budget';
 import {setBudgetForm} from './set-budget-form';
 import {setSmallPurchaseAmount} from './set-small-purchase-amount';
 import {setSmallPurchaseAmountForm} from './set-small-purchase-amount-form';
-import {setSmallRepairsAmount} from './set-small-repairs-amount';
-import {setSmallRepairsAmountForm} from './set-small-repairs-amount-form';
 import {assignArea} from './assign-area';
 import {assignAreaForm} from './assign-area-form';
 import {unassignArea} from './unassign-area';
@@ -41,10 +39,6 @@ export const purchasingArea = {
   setSmallPurchaseAmount: {
     ...setSmallPurchaseAmount,
     ...setSmallPurchaseAmountForm,
-  },
-  setSmallRepairsAmount: {
-    ...setSmallRepairsAmount,
-    ...setSmallRepairsAmountForm,
   },
   assignArea: {
     ...assignArea,

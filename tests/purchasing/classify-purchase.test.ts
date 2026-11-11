@@ -6,7 +6,6 @@ import {
 const roomyBudget = {
   yearlyBudgetPence: 500_000,
   smallPurchaseAmountPence: 100_000,
-  smallRepairsAmountPence: 15_000,
   spentThisYearPence: 0,
 };
 
@@ -16,11 +15,9 @@ describe('classifyPurchase', () => {
         affectedAreaNames: [],
         healthAndSafetyRisk: false,
       isMemberPaidConsumable: true,
-      isRepair: false,
       amountPence: 250_000,
       yearlyBudgetPence: 0,
       smallPurchaseAmountPence: 100_000,
-      smallRepairsAmountPence: 15_000,
       spentThisYearPence: 0,
     });
 
@@ -43,11 +40,9 @@ describe('classifyPurchase', () => {
         affectedAreaNames: [],
         healthAndSafetyRisk: false,
         isMemberPaidConsumable: false,
-        isRepair: false,
         amountPence: 25_000,
         yearlyBudgetPence: 150_000,
         smallPurchaseAmountPence: 100_000,
-        smallRepairsAmountPence: 15_000,
         spentThisYearPence: 50_000,
       });
 
@@ -71,7 +66,6 @@ describe('classifyPurchase', () => {
         affectedAreaNames: [],
         healthAndSafetyRisk: false,
           isMemberPaidConsumable: false,
-          isRepair: false,
           amountPence: 63_000,
           ...roomyBudget,
         });
@@ -85,7 +79,6 @@ describe('classifyPurchase', () => {
         affectedAreaNames: [],
         healthAndSafetyRisk: false,
           isMemberPaidConsumable: false,
-          isRepair: false,
           amountPence: 100_000,
           ...roomyBudget,
         });
@@ -101,7 +94,6 @@ describe('classifyPurchase', () => {
         affectedAreaNames: [],
         healthAndSafetyRisk: false,
           isMemberPaidConsumable: false,
-          isRepair: false,
           amountPence: 99_999,
           ...roomyBudget,
         });
@@ -115,11 +107,9 @@ describe('classifyPurchase', () => {
         affectedAreaNames: [],
         healthAndSafetyRisk: false,
           isMemberPaidConsumable: false,
-          isRepair: false,
           amountPence: 250_000,
           yearlyBudgetPence: 1_000_000,
           smallPurchaseAmountPence: 100_000,
-          smallRepairsAmountPence: 15_000,
           spentThisYearPence: 0,
         });
         expect(result.outcome).toStrictEqual('budget-proposal-needed');
@@ -132,11 +122,9 @@ describe('classifyPurchase', () => {
         affectedAreaNames: [],
         healthAndSafetyRisk: false,
           isMemberPaidConsumable: false,
-          isRepair: false,
           amountPence: 30_000,
           yearlyBudgetPence: 100_000,
           smallPurchaseAmountPence: 100_000,
-          smallRepairsAmountPence: 15_000,
           spentThisYearPence: 70_000,
         });
         expect(result.outcome).toStrictEqual('budget');
@@ -151,11 +139,9 @@ describe('classifyPurchase', () => {
         affectedAreaNames: [],
         healthAndSafetyRisk: false,
           isMemberPaidConsumable: false,
-          isRepair: false,
           amountPence: 30_001,
           yearlyBudgetPence: 100_000,
           smallPurchaseAmountPence: 100_000,
-          smallRepairsAmountPence: 15_000,
           spentThisYearPence: 70_000,
         });
         expect(result.outcome).toStrictEqual('budget-proposal-needed');
@@ -171,11 +157,9 @@ describe('classifyPurchase', () => {
         affectedAreaNames: [],
         healthAndSafetyRisk: false,
           isMemberPaidConsumable: false,
-          isRepair: false,
           amountPence: 1,
           yearlyBudgetPence: 0,
           smallPurchaseAmountPence: 100_000,
-          smallRepairsAmountPence: 15_000,
           spentThisYearPence: 0,
         });
         expect(result.outcome).toStrictEqual('budget-proposal-needed');
@@ -188,11 +172,9 @@ describe('classifyPurchase', () => {
         affectedAreaNames: [],
         healthAndSafetyRisk: false,
           isMemberPaidConsumable: false,
-          isRepair: false,
           amountPence: 500,
           yearlyBudgetPence: 100_000,
           smallPurchaseAmountPence: 100_000,
-          smallRepairsAmountPence: 15_000,
           spentThisYearPence: 120_000,
         });
         expect(result.outcome).toStrictEqual('budget-proposal-needed');
@@ -203,11 +185,9 @@ describe('classifyPurchase', () => {
   describe('when it affects other areas or is a health and safety risk', () => {
     const within = {
       isMemberPaidConsumable: false,
-      isRepair: false,
       amountPence: 10_000,
       yearlyBudgetPence: 100_000,
       smallPurchaseAmountPence: 100_000,
-      smallRepairsAmountPence: 15_000,
       spentThisYearPence: 0,
       affectedAreaNames: [],
       healthAndSafetyRisk: false,
@@ -250,7 +230,6 @@ describe('classifyPurchase', () => {
       const result = classifyPurchase({
         ...within,
         isMemberPaidConsumable: true,
-        isRepair: false,
         healthAndSafetyRisk: true,
       });
       expect(result.outcome).toBe('consumable');
@@ -268,12 +247,10 @@ describe('classifyPurchase', () => {
 describe('earlyProposalReasons', () => {
   const nothingYet = {
     isMemberPaidConsumable: false,
-    isRepair: false,
     affectedAreaNames: [],
     healthAndSafetyRisk: false,
     yearlyBudgetPence: 100_000,
     smallPurchaseAmountPence: 100_000,
-    smallRepairsAmountPence: 15_000,
     spentThisYearPence: 40_000,
   };
 
@@ -339,61 +316,5 @@ describe('earlyProposalReasons', () => {
         earlyProposalReasons({...nothingYet, spentThisYearPence: 120_000})
       ).toHaveLength(1);
     });
-  });
-});
-
-describe('classifyPurchase for repairs and running costs', () => {
-  const repair = (amountPence: number, extra = {}) =>
-    classifyPurchase({
-      ...roomyBudget,
-      affectedAreaNames: [],
-      healthAndSafetyRisk: false,
-      isMemberPaidConsumable: false,
-      isRepair: true,
-      amountPence,
-      ...extra,
-    });
-
-  it("doesn't come out of the yearly budget, and a purchaser can approve one under the small repairs amount", () => {
-    expect(repair(14_999)).toMatchObject({outcome: 'repair', approval: 'none'});
-  });
-
-  it("needs a super user's approval, without a proposal, at the small repairs amount or more", () => {
-    expect(repair(15_000)).toMatchObject({
-      outcome: 'repair',
-      approval: 'super-user',
-    });
-    expect(repair(15_000).reason).toContain("£150.00 or more needs a super user's approval");
-  });
-
-  it("uses the purchasing area's own small repairs amount", () => {
-    expect(repair(20_000, {smallRepairsAmountPence: 25_000}).approval).toBe('none');
-  });
-
-  it("isn't held to the small purchase amount or the yearly budget", () => {
-    expect(
-      repair(14_000, {smallPurchaseAmountPence: 10_000, yearlyBudgetPence: 0})
-    ).toMatchObject({outcome: 'repair', approval: 'none'});
-  });
-
-  it('still needs a proposal when it affects other areas or carries a risk', () => {
-    expect(repair(1_000, {affectedAreaNames: ['Metal Shop']})).toMatchObject({
-      outcome: 'repair',
-      approval: 'proposal',
-    });
-    expect(repair(1_000, {healthAndSafetyRisk: true}).approval).toBe('proposal');
-  });
-
-  it("doesn't need a proposal early just because the budget is used up", () => {
-    expect(
-      earlyProposalReasons({
-        ...roomyBudget,
-        spentThisYearPence: roomyBudget.yearlyBudgetPence,
-        affectedAreaNames: [],
-        healthAndSafetyRisk: false,
-        isMemberPaidConsumable: false,
-        isRepair: true,
-      })
-    ).toStrictEqual([]);
   });
 });

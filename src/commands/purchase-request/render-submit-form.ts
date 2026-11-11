@@ -75,7 +75,6 @@ export type PurchasingAreaOption = {
   remainingPence: number;
   // A single budget purchase of this much or more needs a proposal.
   smallPurchaseAmountPence: number;
-  smallRepairsAmountPence: number;
 };
 
 // As typed so far, carried from page to page.
@@ -655,11 +654,9 @@ const earlyReasonsFor = (viewModel: PurchaseRequestFormViewModel) =>
         earlyProposalReasons({
           isMemberPaidConsumable:
             viewModel.answers.isMemberPaidConsumable !== 'false',
-          isRepair: viewModel.answers.purchaseType === 'repairs',
           affectedAreaNames: viewModel.affectedAreaNames,
           healthAndSafetyRisk: viewModel.answers.healthAndSafetyRisk === 'true',
           smallPurchaseAmountPence: purchasingArea.smallPurchaseAmountPence,
-          smallRepairsAmountPence: purchasingArea.smallRepairsAmountPence,
           yearlyBudgetPence: purchasingArea.yearlyBudgetPence,
           spentThisYearPence: purchasingArea.spentThisYearPence,
         })
@@ -681,7 +678,7 @@ const renderEarlyProposalIfNeeded = (reasons: ReadonlyArray<string>) =>
   reasons.length > 0 ? renderEarlyProposal(reasons) : html``;
 
 // The first page: what kind of purchase it is, as three cards to pick from.
-// Improvements come out of the yearly budget; repairs and member-paid ones
+// Repairs and improvements come out of the yearly budget; member-paid ones
 // don't, which is what decides the budget it comes out of later on.
 const renderTypePage = (viewModel: PurchaseRequestFormViewModel) => html`
   <form method="get" class="purchase-request__sections" id="purchase-type-form">
@@ -726,7 +723,6 @@ const renderAboutPage = (viewModel: PurchaseRequestFormViewModel) => html`
     data-consumable="${safe(
       String(viewModel.answers.isMemberPaidConsumable === 'true')
     )}"
-    data-repair="${safe(String(viewModel.answers.purchaseType === 'repairs'))}"
   >
     <input type="hidden" name="step" value="3" />
     ${hiddenInputs(carriedExcept(viewModel, askedOnAboutPage))}
@@ -787,11 +783,10 @@ ${sanitizeString(viewModel.answers.justification)}</textarea
 
 // A request's verdict on the page: where the money comes from, and whether a
 // proposal is needed - which a consumable can need too.
+// Repairs no longer get an outcome of their own; see classifyPurchase.
 type VerdictKey =
-  | Classification['outcome']
-  | 'consumable-proposal-needed'
-  | 'repair-super-user'
-  | 'repair-proposal-needed';
+  | Exclude<Classification['outcome'], 'repair'>
+  | 'consumable-proposal-needed';
 
 const verdictStyle: Record<
   VerdictKey,
@@ -825,26 +820,6 @@ const verdictStyle: Record<
     >`,
     heading: "This doesn't come out of your yearly budget",
   },
-  repair: {
-    modifier: 'consumable',
-    tag: html`<span class="tag tag--green">Repair</span>`,
-    heading:
-      "This doesn't come out of your yearly budget. A purchaser can approve it.",
-  },
-  'repair-super-user': {
-    modifier: 'budget',
-    tag: html`<span class="tag tag--yellow"
-      >Repair · Super user approval needed</span
-    >`,
-    heading:
-      "This doesn't come out of your yearly budget, but a super user needs to approve it",
-  },
-  'repair-proposal-needed': {
-    modifier: 'proposal',
-    tag: html`<span class="tag tag--red">Repair · Proposal needed</span>`,
-    heading:
-      "This doesn't come out of your yearly budget, but you'll need to write a proposal",
-  },
 };
 
 // One outcome's box: its colour, tag and heading, with the explanation and
@@ -873,9 +848,6 @@ const verdictKeys: ReadonlyArray<VerdictKey> = [
   'budget',
   'budget-proposal-needed',
   'outside-budget',
-  'repair',
-  'repair-super-user',
-  'repair-proposal-needed',
 ];
 
 // Super users and the area's purchasers can make the purchase themselves;
@@ -994,7 +966,6 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
     class="purchase-request__sections"
     id="purchase-costs-form"
     data-consumable="${safe(String(viewModel.answers.isMemberPaidConsumable === 'true'))}"
-    data-repair="${safe(String(viewModel.answers.purchaseType === 'repairs'))}"
     data-risky="${safe(String(viewModel.answers.healthAndSafetyRisk === 'true'))}"
     ${pipe(
       viewModel.chosen,
@@ -1003,8 +974,7 @@ const renderCostsPage = (viewModel: PurchaseRequestFormViewModel) => html`
         area =>
           html`data-budget-pence="${area.yearlyBudgetPence}"
           data-spent-pence="${area.spentThisYearPence}"
-          data-proposal-threshold-pence="${area.smallPurchaseAmountPence}"
-          data-repair-threshold-pence="${area.smallRepairsAmountPence}"`
+          data-proposal-threshold-pence="${area.smallPurchaseAmountPence}"`
       )
     )}
   >
@@ -1797,7 +1767,7 @@ const aboutScript = html`
         if (!chosen) return reasons;
         var budget = Number(chosen.dataset.budgetPence);
         var spent = Number(chosen.dataset.spentPence);
-        if (form.dataset.consumable === 'false' && form.dataset.repair !== 'true' && spent >= budget) {
+        if (form.dataset.consumable === 'false' && spent >= budget) {
           reasons.push("This year's spending is already " + money(spent) +
             ', using up the yearly budget of ' + money(budget) +
             ', so anything more from it needs a proposal.');
@@ -1865,7 +1835,6 @@ const costsScript = html`
       var budget = Number(form.dataset.budgetPence);
       var spent = Number(form.dataset.spentPence);
       var threshold = Number(form.dataset.proposalThresholdPence);
-      var repairThreshold = Number(form.dataset.repairThresholdPence);
       var buy = form.querySelector('[data-buy-directly]');
       var itemised = form.querySelector('[data-itemised]');
       var amountBox = form.querySelector('[data-direct-amount]');
@@ -1897,7 +1866,7 @@ const costsScript = html`
           ? names.join('')
           : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
       }
-      function classify(consumable, repair, amount, areaNames, risky, outsideBudget) {
+      function classify(consumable, amount, areaNames, risky, outsideBudget) {
         var others = [];
         if (areaNames.length) {
           others.push('It affects ' + listOf(areaNames) +
@@ -1920,23 +1889,6 @@ const costsScript = html`
             key: others.length ? 'consumable-proposal-needed' : 'consumable',
             reason: withOthers("Members pay for this, so it doesn't come out of the yearly budget."),
           };
-        }
-        if (repair) {
-          var notFromBudget = "Repairs and running costs don't come out of the yearly budget.";
-          if (others.length) {
-            return {key: 'repair-proposal-needed', reason: withOthers(notFromBudget)};
-          }
-          return amount >= repairThreshold
-            ? {
-                key: 'repair-super-user',
-                reason: notFromBudget + ' A repair of ' + money(repairThreshold) +
-                  " or more needs a super user's approval.",
-              }
-            : {
-                key: 'repair',
-                reason: notFromBudget + ' A purchaser can approve a repair under ' +
-                  money(repairThreshold) + '.',
-              };
         }
         if (amount >= threshold) {
           return {
@@ -1961,7 +1913,6 @@ const costsScript = html`
 
       // The answers from page 1.
       var consumable = form.dataset.consumable === 'true';
-      var repair = form.dataset.repair === 'true';
       var risky = form.dataset.risky === 'true';
       var areaNames = Array.prototype.map.call(
         form.querySelectorAll('[data-affected-areas] li'),
@@ -1991,11 +1942,6 @@ const costsScript = html`
           return "Purchases that affect other areas or carry a health and safety risk need a proposal, so they can't be bought directly.";
         }
         var needsProposal = /proposal-needed$/.test(result.key);
-        if (/^repair/.test(result.key)) {
-          return buy.dataset.buyerRole === 'purchaser' && result.key !== 'repair'
-            ? "This repair needs a super user's approval, so a purchaser can't buy it directly. Send it as a request for a super user to approve."
-            : '';
-        }
         if (buy.dataset.buyerRole === 'purchaser' && (needsProposal || total >= threshold)) {
           return "This needs a proposal, so a purchaser can't buy it directly. Send it as a request for a director to approve.";
         }
@@ -2013,7 +1959,7 @@ const costsScript = html`
           return;
         }
         var outside = form.querySelector('input[name="outsideBudget"]:checked');
-        var result = classify(consumable, repair, total, areaNames, risky,
+        var result = classify(consumable, total, areaNames, risky,
           buyingDirectly() && !!outside && outside.value === 'true');
         var template = form.querySelector('[data-verdict-template="' + result.key + '"]');
         verdict.innerHTML = template.innerHTML;

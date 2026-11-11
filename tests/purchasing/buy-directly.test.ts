@@ -7,9 +7,9 @@ describe('canBuyDirectly', () => {
     smallPurchaseAmountPence: 100_000,
     affectedAreaNames: [],
     healthAndSafetyRisk: false,
-    classification: {approval: 'none' as const, outcome: 'budget' as const},
+    classification: {approval: 'none' as const},
   };
-  const needingProposal = {...plain, classification: {approval: 'proposal' as const, outcome: 'budget-proposal-needed' as const}};
+  const needingProposal = {...plain, classification: {approval: 'proposal' as const}};
 
   it('lets a purchaser or super user buy what needs no proposal', () => {
     expect(canBuyDirectly('purchaser', plain)).toStrictEqual(E.right(true));
@@ -52,26 +52,5 @@ describe('canBuyDirectly', () => {
         E.isLeft(canBuyDirectly(role, {...needingProposal, healthAndSafetyRisk: true}))
       ).toBe(true);
     }
-  });
-});
-
-describe('canBuyDirectly for repairs', () => {
-  const repair = (approval: 'none' | 'super-user') => ({
-    amountPence: 120_000,
-    smallPurchaseAmountPence: 100_000,
-    affectedAreaNames: [],
-    healthAndSafetyRisk: false,
-    classification: {approval, outcome: 'repair' as const},
-  });
-
-  it('lets a purchaser buy a repair they could approve, even over the small purchase amount', () => {
-    expect(canBuyDirectly('purchaser', repair('none'))).toStrictEqual(E.right(true));
-  });
-
-  it("lets only a super user buy one needing a super user's approval", () => {
-    expect(E.isLeft(canBuyDirectly('purchaser', repair('super-user')))).toBe(true);
-    expect(canBuyDirectly('super-user', repair('super-user'))).toStrictEqual(
-      E.right(true)
-    );
   });
 });

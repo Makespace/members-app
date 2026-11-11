@@ -123,11 +123,6 @@ export const initRoutes = (
     ),
     ...command(
       'purchasing-areas',
-      'set-small-repairs-amount',
-      commands.purchasingArea.setSmallRepairsAmount
-    ),
-    ...command(
-      'purchasing-areas',
       'assign-area',
       commands.purchasingArea.assignArea
     ),

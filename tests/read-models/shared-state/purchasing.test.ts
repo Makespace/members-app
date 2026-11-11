@@ -101,7 +101,6 @@ describe('purchasing areas in the read model', () => {
         yearlyBudgetPence: 150_000,
         usualBudgetPence: 150_000,
         smallPurchaseAmountPence: 100_000,
-        smallRepairsAmountPence: 15_000,
         areas: [],
         purchasers: [],
         budgetYear: 2026,

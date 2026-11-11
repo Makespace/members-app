@@ -67,7 +67,8 @@ const budgetRequestsInYear =
       sum(budgetRows.filter(row => row.status === status));
     const approvedStatuses = ['approved', 'bought', 'bought-directly'];
     return {
-      // Repairs don't come out of the budget, but are still spending.
+      // Repairs sent while they didn't come out of the budget are still
+      // spending.
       repairsPence: sum(
         rows.filter(
           row =>
@@ -220,7 +221,6 @@ const expand =
       yearlyBudgetPence,
       usualBudgetPence: row.yearlyBudgetPence,
       smallPurchaseAmountPence: row.smallPurchaseAmountPence,
-      smallRepairsAmountPence: row.smallRepairsAmountPence,
       repairsThisYearPence: requests.repairsPence,
       recordedSpend,
       approvedSpendThisYearPence:
