@@ -101,7 +101,7 @@ const activity = (purchasingArea: PurchasingAreaOfYours, monthNow: number) =>
     purchase${safe(purchasingArea.purchasesThisYear === 1 ? '' : 's')}
     ${spendSparkline(purchasingArea.spentByMonthPence, monthNow)}`;
 
-// Your areas in it go under the name, so the table needs only three columns
+// Its areas go under the name, yours in bold, so the table needs only three columns
 // beside the text; on a phone each row becomes a small block, labelled.
 const purchaseAreaRow =
   (monthNow: number) => (purchasingArea: PurchasingAreaOfYours) => html`
@@ -111,10 +111,13 @@ const purchaseAreaRow =
         >${sanitizeString(purchasingArea.name)}</a
       >
       <span class="owners-guide__your-areas owners-guide__muted"
-        >${purchasingArea.active ? html`` : html`<em>Not active yet.</em> `}Your
-        areas:
+        >${purchasingArea.active ? html`` : html`<em>Not active yet.</em> `}Areas:
         ${commaHtml(
-          purchasingArea.yourAreas.map(name => sanitizeString(name))
+          purchasingArea.areas.map(({name, yours}) =>
+            yours
+              ? html`<strong>${sanitizeString(name)}</strong>`
+              : sanitizeString(name)
+          )
         )}</span
       >
     </td>
@@ -263,17 +266,13 @@ const requestAPurchase = (yours: YourAreas) =>
 // What the guide's defined terms mean, shown on hover wherever one is used.
 const definitions = {
   'purchase-area':
-    'Purchase Area: a collection of Areas that share a budget and make purchasing decisions collectively, authorised and actioned by their Purchaser.',
+    "Purchase Area: a collection of Areas that share a budget and make purchasing decisions collectively, authorised and actioned by their Purchaser. Its Yearly Budget is its Areas' yearly allowances added together.",
   'yearly-budget':
-    'Yearly Budget: a discretionary budget designed to give Owners flexibility over how they spend money. The per-year nominal budget (normally around £1000) is not a hard limit, or a target. Purchases can be approved outside of this budget, but they need to be written up as proposals and approved by the directors.',
+    "Yearly Budget: a single budget for all of a Purchase Area's maintenance, improvements and non-recoverable consumables. Every Area is allocated the same yearly allowance, which can change year to year, and a Purchase Area's Yearly Budget is its Areas' allowances added together, plus any Allowance Extension. It's designed to give Owners flexibility over how they spend money, and isn't a target.",
   'small-purchase-amount':
     "Small Purchase Amount: a single purchase costing this much or more needs a proposal, even when it's within the Yearly Budget. It's normally £1000.",
-  'repairs-and-running-costs':
-    "Repairs & Running Costs: operational costs of running your Area. They don't come out of the Yearly Budget.",
-  'small-repairs-amount':
-    "Small Repairs Amount: a single repair costing this much or more needs a super user's approval. It's normally £150.",
-  improvements: 'Improvements: expanding the functionality of your Area.',
-  'member-paid': 'Member-paid: members pay for these when they use them.',
+  'allowance-extension':
+    "Allowance Extension: extra budget for one year for a Purchase Area, approved by the directors, for spending it can foresee that its yearly allowance won't cover. Ask for one by emailing the managers (management@makespace.org) and directors (directors@makespace.org) with what you expect to spend and why it's needed - ideally before the financial year starts, but you can ask at any time.",
   manager:
     'Manager: paid contractors who act as a coordinating function across Makespace, ensuring the smooth operation of the day-to-day running of the space, coordinating among the owners teams, guiding members to whatever/whoever they need, and coordinating between the directors and owners/members.',
   director:
@@ -315,37 +314,103 @@ const bodies = (
   const term = termsFor();
   return {
     purchasing: html`
-      <p>Money is available for Owners' teams to pay for:</p>
+      ${subheading('yearly-allowances')}
+      <p>
+        A yearly allowance is available to give owners autonomy over how they
+        purchase:
+      </p>
       <ul class="owners-guide__kinds">
         <li>
-          <strong>Repairs &amp; Running Costs</strong>
-          <span>Operational costs of running your Area</span>
+          <strong><span aria-hidden="true">⚙️</span> Maintenance</strong>
+          <span
+            ><strong>Routine services</strong> (e.g. replace laser filters),
+            <strong>unplanned repairs</strong> (e.g. a band saw blade broke)
+            and
+            <strong>like-for-like replacements</strong> (e.g. a new
+            jigsaw)</span
+          >
         </li>
         <li>
-          <strong>Improvements</strong>
-          <span>Expanding the functionality of your Area</span>
+          <strong><span aria-hidden="true">✨</span> Improvements</strong>
+          <span
+            >Expanding the functionality of your Area, including entirely
+            <strong>new equipment</strong> and <strong>upgrading</strong>
+            existing equipment with a replacement</span
+          >
         </li>
         <li>
-          <strong>Member-paid</strong>
-          <span>Members pay for these when they use them</span>
+          <strong
+            ><span aria-hidden="true">🧵</span> Non-recoverable
+            consumables</strong
+          >
+          <span
+            >Things that are consumed, but not practical to be paid for by
+            members (e.g. thread)</span
+          >
         </li>
       </ul>
       <p>
-        In order to manage this, Areas are grouped into
-        ${term('purchase-area', 'Purchase Areas')} when they share financial
-        decisions.
+        The yearly allowance is a <strong>single budget</strong> that covers all of these
+        purchase types.
       </p>
-      <p>
-        In order to give owners a low friction way to make simple purchases,
-        ${term('purchase-area', 'Purchase Areas')} have a
-        ${term('yearly-budget', 'Yearly Budget')}, normally around £1000.
+      <p class="owners-guide__box" role="note">
+        <strong>Recoverable-consumables:</strong> As we expect the cost of recoverable consumables to be 'recovered' when
+        members pay for them (e.g. members paying for the 3D printer filament
+        they use) they aren't taken out of any budget.
       </p>
+      <div class="owners-guide__beside">
+        <p>
+          Every Area is allocated the same yearly allowance, which can change
+          year to year. Areas are grouped into
+          ${term('purchase-area', 'Purchase Areas')} when they often make
+          financial decisions together.
+        </p>
+        <aside class="owners-guide__box">
+          <i class="fa-regular fa-lightbulb" aria-hidden="true"></i>
+          A ${term('purchase-area', 'Purchase Area')}'s
+          ${term('yearly-budget', 'Yearly Budget')} is its Areas' allowances
+          combined.
+        </aside>
+      </div>
       ${yourData(
         viewModel,
         'purchasing',
         'the Purchase Areas that you are an Owner in',
         yourPurchaseAreas
       )}
+      ${subheading('allowance-extensions')}
+      <p>
+        The default yearly allowance per Area is designed to reduce purchasing
+        friction, but it's not intended to be restrictive. For this reason,
+        it's possible to request an extension to the yearly allowance if
+        reasonable justification is supplied.
+      </p>
+      <p>
+        If you can foresee spending on maintenance, improvements or
+        non-recoverable consumables that your
+        ${term('purchase-area', 'Purchase Area')}'s yearly allowance won't
+        cover, email the ${term('manager', 'managers')}
+        (<a href="mailto:management@makespace.org">management@makespace.org</a>)
+        and ${term('director', 'directors')}
+        (<a href="mailto:directors@makespace.org">directors@makespace.org</a>)
+        with:
+      </p>
+      <ul>
+        <li>what you expect to spend</li>
+        <li>why it's needed</li>
+      </ul>
+      <p>
+        The ${term('director', 'directors')} will approve or decline it.
+        Ideally ask before the financial year starts (1 January), but you can
+        ask at any time.
+      </p>
+      <p class="owners-guide__box" role="note">
+        <i class="fa-regular fa-lightbulb" aria-hidden="true"></i>
+        An ${term('allowance-extension', 'Allowance Extension')} keeps your
+        yearly allowance free for discretionary spending that doesn't need
+        approval. Individual purchases still go through
+        ${term('purchase-request', 'Purchase Requests')} as usual.
+      </p>
       ${subheading('purchasing-decisions')}
       <p>
         To suggest a purchase within your
@@ -378,9 +443,7 @@ const bodies = (
           <i class="fa-regular fa-money-bill-1" aria-hidden="true"></i>
           <span>Aren't over the
           ${term('small-purchase-amount', 'Small Purchase Amount')} (normally
-          £1000) or the
-          ${term('small-repairs-amount', 'Small Repairs Amount')} (normally
-          £150)</span>
+          £1000)</span>
         </li>
         <li class="owners-guide__condition owners-guide__condition--money">
           <i class="fa-regular fa-money-bill-1" aria-hidden="true"></i>
@@ -400,15 +463,6 @@ const bodies = (
       <p>
         All other ${term('purchase-request', 'Purchase Requests')} need an
         accompanying Proposal.
-      </p>
-      <p>
-        ${term('repairs-and-running-costs', 'Repairs & Running Costs')} don't
-        come out of the ${term('yearly-budget', 'Yearly Budget')}. A
-        ${term('purchaser', 'Purchaser')} can approve a repair under the
-        ${term('small-repairs-amount', 'Small Repairs Amount')} (normally
-        £150); a larger one needs a super user's approval, but no Proposal
-        unless it could affect other Areas or introduce a health &amp; safety
-        risk.
       </p>
       ${subheading('proposals')}
       <p>
@@ -434,32 +488,6 @@ const bodies = (
           >
         </li>
       </ul>
-      ${subheading('budgets')}
-      <p>
-        ${term('improvements', 'Improvements')} come out of the
-        ${term('yearly-budget', 'yearly budget')}.
-        ${term('repairs-and-running-costs', 'Repairs and maintenance')} do not -
-        they're considered non-negotiable purchases, necessary to keep the
-        space functional and safe.
-      </p>
-      <p>
-        ${term('member-paid', 'Member-paid')} purchases are paid for by members
-        when they are used, so they do not come out of the
-        ${term('yearly-budget', 'yearly budget')}.
-      </p>
-      ${subheading('over-budget')}
-      <p>
-        Budgets are indicative only, meant to reduce friction. They aren't
-        designed to be a hard limit on an Area's spending and they're not
-        designed to be a target either!
-      </p>
-      <p>
-        If a ${term('purchase-area', 'Purchase Area')} exceeds its budget, new
-        ${term('purchase-request', 'purchase requests')} will have to be
-        approved by the board of ${term('director', 'directors')}. It's possible
-        to put in a request for a one-off extension to the
-        ${term('yearly-budget', 'Yearly Budget')}.
-      </p>
     `,
   };
 };

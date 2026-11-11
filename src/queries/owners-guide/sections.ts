@@ -10,6 +10,16 @@ export const guideSections = [
     summary: 'How to buy things for your area and track your budget.',
     subsections: [
       {
+        id: 'yearly-allowances',
+        title: 'Yearly allowances',
+        contents: 'Yearly allowances',
+      },
+      {
+        id: 'allowance-extensions',
+        title: 'Requesting an extension to the yearly allowance',
+        contents: 'Extensions',
+      },
+      {
         id: 'purchasing-decisions',
         title: 'How are purchasing decisions made and actioned?',
         contents: 'Purchase Requests',
@@ -23,16 +33,6 @@ export const guideSections = [
         id: 'proposals',
         title: 'Purchase Requests that need a Proposal',
         contents: 'Proposals',
-      },
-      {
-        id: 'budgets',
-        title: 'What budget does my purchase come out of?',
-        contents: 'Budgets',
-      },
-      {
-        id: 'over-budget',
-        title: 'What happens if budgets are exceeded?',
-        contents: 'Going over budget',
       },
     ],
   },

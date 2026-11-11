@@ -84,6 +84,13 @@ describe("the owner's guide's purchasers", () => {
       })
     );
 
+  it("lists all of a purchasing area's areas, marking only the reader's own", () => {
+    expect(viewModelFor(purchaser).purchasingAreas[0].areas).toStrictEqual([
+      {name: 'Metal Shop', yours: false},
+      {name: 'Wood Shop', yours: true},
+    ]);
+  });
+
   it('gives each purchasing area their areas are in once, with its Purchasers', () => {
     const {purchasingAreas} = viewModelFor();
 
@@ -91,7 +98,10 @@ describe("the owner's guide's purchasers", () => {
     expect(purchasingAreas[0]).toMatchObject({
       id: workshops,
       name: 'Workshops',
-      yourAreas: ['Metal Shop', 'Wood Shop'],
+      areas: [
+        {name: 'Metal Shop', yours: true},
+        {name: 'Wood Shop', yours: true},
+      ],
       active: false,
       yearlyBudgetPence: 100_000,
       remainingPence: 100_000,

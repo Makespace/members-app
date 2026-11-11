@@ -3001,18 +3001,66 @@ ul.owners-guide__kinds {
 .owners-guide__kinds > li {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.4rem;
   margin: 0;
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1rem;
   border: 1px solid var(--owners-guide-data-edge);
   border-radius: 6px;
   background: #fff;
-  line-height: 1.4;
+  line-height: 1.5;
+}
+
+.owners-guide__kinds > li > strong {
+  line-height: 1.3;
 }
 
 .owners-guide__kinds > li > span {
   color: var(--grey-color);
   font-size: 0.875rem;
+}
+
+/* A tinted box for a note or an aside, in the margin notes' colours. It
+   keeps the section's usual gap above it. */
+.owners-guide__box {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  background: var(--owners-guide-note);
+  border: 1px solid var(--owners-guide-note-edge);
+  border-radius: 6px;
+}
+
+.owners-guide__box > i {
+  margin-right: 0.25rem;
+  color: var(--owners-guide-note-mark);
+}
+
+/* A sentence with an aside about it beside it on a wide screen, or under it
+   on a phone. */
+.owners-guide__beside {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.owners-guide__beside > * {
+  margin: 0;
+}
+
+@media (min-width: 40rem) {
+  .owners-guide__beside {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 18rem);
+    column-gap: 2rem;
+  }
+}
+
+/* A little more room either side of it than between paragraphs, so the
+   kinds of spending, the allowance and your own Purchase Areas read as
+   separate steps. */
+.owners-guide__section > .owners-guide__beside,
+.owners-guide__section > .owners-guide__beside + * {
+  margin-block-start: 2rem;
 }
 
 /* The four conditions owners decide for themselves, as small cards two to
