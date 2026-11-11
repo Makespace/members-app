@@ -268,9 +268,9 @@ const definitions = {
   'purchase-area':
     "Purchase Area: a collection of Areas that share a budget and make purchasing decisions collectively, authorised and actioned by their Purchaser. Its Yearly Budget is its Areas' yearly allowances added together.",
   'yearly-budget':
-    "Yearly Budget: a single budget for all of a Purchase Area's maintenance, improvements and non-recoverable consumables. Every Area is allocated the same yearly allowance, which can change year to year, and a Purchase Area's Yearly Budget is its Areas' allowances added together, plus any Allowance Extension. It's designed to give Owners flexibility over how they spend money, and isn't a target.",
+    "Yearly Budget: a single budget for all of a Purchase Area's maintenance, improvements and non-recoverable consumables. Every Area is allocated the same yearly allowance, which can change at the discretion of the directors, and a Purchase Area's Yearly Budget is its Areas' allowances added together, plus any Allowance Extension. It's designed to give Owners flexibility over how they spend money, and isn't a target.",
   'small-purchase-amount':
-    "Small Purchase Amount: a single purchase costing this much or more needs a proposal, even when it's within the Yearly Budget. It's normally £1000.",
+    "Small Purchase Amount: a single purchase costing this much or more needs a proposal, even when it's within the Yearly Budget. It's also the limit for a single purchase on a Purchaser's card. It's set by the directors and can change at their discretion; your Purchase Area's page shows the current amount.",
   'allowance-extension':
     "Allowance Extension: extra budget for one year for a Purchase Area, approved by the directors, for spending it can foresee that its yearly allowance won't cover. Ask for one by emailing the managers (management@makespace.org) and directors (directors@makespace.org) with what you expect to spend and why it's needed - ideally before the financial year starts, but you can ask at any time.",
   manager:
@@ -345,7 +345,7 @@ const bodies = (
           >
           <span
             >Things that are consumed, but not practical to be paid for by
-            members (e.g. thread)</span
+            members (e.g. solder)</span
           >
         </li>
       </ul>
@@ -361,7 +361,7 @@ const bodies = (
       <div class="owners-guide__beside">
         <p>
           Every Area is allocated the same yearly allowance, which can change
-          year to year. Areas are grouped into
+          at the discretion of the directors. Areas are grouped into
           ${term('purchase-area', 'Purchase Areas')} when they often make
           financial decisions together.
         </p>
@@ -442,8 +442,8 @@ const bodies = (
         <li class="owners-guide__condition owners-guide__condition--money">
           <i class="fa-regular fa-money-bill-1" aria-hidden="true"></i>
           <span>Aren't over the
-          ${term('small-purchase-amount', 'Small Purchase Amount')} (normally
-          £1000)</span>
+          ${term('small-purchase-amount', 'Small Purchase Amount')}, which is
+          set by the directors and shown on your Purchase Area's page</span>
         </li>
         <li class="owners-guide__condition owners-guide__condition--money">
           <i class="fa-regular fa-money-bill-1" aria-hidden="true"></i>
