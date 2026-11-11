@@ -38,6 +38,20 @@ const renderAllowances = (allowances: ReadonlyArray<PurchasingAllowance>) =>
         )}
       </ul>`;
 
+// The allowance this year has, in pounds, to start from; empty when none
+// has been set.
+const currentAllowance = (
+  budgetYear: number,
+  allowances: ReadonlyArray<PurchasingAllowance>
+) => {
+  const current = allowances
+    .filter(allowance => allowance.fromBudgetYear <= budgetYear)
+    .at(-1);
+  return current === undefined
+    ? ''
+    : (current.allowancePerAreaPence / 100).toFixed(2);
+};
+
 const renderForm = ({budgetYear, allowances}: ViewModel) =>
   pipe(
     html`
@@ -71,7 +85,7 @@ const renderForm = ({budgetYear, allowances}: ViewModel) =>
             inputmode="decimal"
             name="allowancePerArea"
             id="allowancePerArea"
-            value="1000.00"
+            value="${safe(currentAllowance(budgetYear, allowances))}"
             required
           />
           <button type="submit">Set allowance</button>
