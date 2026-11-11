@@ -28,7 +28,7 @@ const process: Command<SetAllowance>['process'] = input =>
     input.command.fromBudgetYear < 2000 || input.command.fromBudgetYear > 2100
       ? E.left(
           failureWithStatus(
-            'Please give a year such as 2027.',
+            'Please give a year such as 2026.',
             StatusCodes.BAD_REQUEST
           )()
         )
