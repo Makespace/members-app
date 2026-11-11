@@ -79,7 +79,7 @@ export type PurchasingAreaOption = {
 
 // As typed so far, carried from page to page.
 export type PurchaseRequestAnswers = {
-  // Repairs, improvements or member-paid, as chosen on the first page.
+  // Maintenance, improvements, non-recoverable or recoverable (member-paid) consumables, as chosen on the first page.
   purchaseType: string;
   purchasingAreaId: string;
   summary: string;
@@ -677,9 +677,9 @@ const renderEarlyProposal = (reasons: ReadonlyArray<string>) => html`
 const renderEarlyProposalIfNeeded = (reasons: ReadonlyArray<string>) =>
   reasons.length > 0 ? renderEarlyProposal(reasons) : html``;
 
-// The first page: what kind of purchase it is, as three cards to pick from.
-// Repairs and improvements come out of the yearly budget; member-paid ones
-// don't, which is what decides the budget it comes out of later on.
+// The first page: what kind of purchase it is, as cards to pick from.
+// Everything but recoverable (member-paid) consumables comes out of the
+// yearly budget, which is what decides the budget it comes out of later on.
 const renderTypePage = (viewModel: PurchaseRequestFormViewModel) => html`
   <form method="get" class="purchase-request__sections" id="purchase-type-form">
     <input type="hidden" name="step" value="2" />
@@ -794,7 +794,7 @@ const verdictStyle: Record<
 > = {
   consumable: {
     modifier: 'consumable',
-    tag: html`<span class="tag tag--green">Member-paid</span>`,
+    tag: html`<span class="tag tag--green">Recoverable consumable</span>`,
     heading: "This doesn't come out of your yearly budget",
   },
   budget: {
@@ -809,7 +809,7 @@ const verdictStyle: Record<
   },
   'consumable-proposal-needed': {
     modifier: 'proposal',
-    tag: html`<span class="tag tag--red">Member-paid · Proposal needed</span>`,
+    tag: html`<span class="tag tag--red">Recoverable consumable · Proposal needed</span>`,
     heading:
       "This doesn't come out of your yearly budget, but you'll need to write a proposal",
   },

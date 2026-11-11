@@ -324,7 +324,7 @@ const PurchaseRequestSubmitted = defineEvent('PurchaseRequestSubmitted', {
   purchases: t.readonlyArray(PurchaseCodec),
   justification: t.string,
   isMemberPaidConsumable: t.boolean,
-  // Repairs and running costs, improvements or member-paid; see
+  // Maintenance, improvements, non-recoverable or member-paid consumables; see
   // src/types/purchase-type.ts. Requests sent before it was asked have none.
   purchaseType: tt.withFallback(t.union([PurchaseTypeCodec, t.null]), null),
   // Other areas it affects, whose owners need a chance to give their input.

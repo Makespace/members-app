@@ -77,7 +77,7 @@ describe('purchase request page', () => {
 
   it('says what type of purchase it is, when known', () => {
     expect(page(false, {purchaseType: O.some('repairs')})).toContain(
-      'Repairs &amp; Running Costs'
+      'Maintenance'
     );
     expect(page(false)).not.toContain('<dt>Type</dt>');
   });

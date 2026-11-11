@@ -451,7 +451,7 @@ describe('purchase request cost breakdown script', () => {
     it('shows a consumable needing a proposal for a safety risk', () => {
       const form = setUp([], {consumable: true, areas: [], risky: true});
       costing(form, '50');
-      expect(verdict(form).textContent).toContain('Member-paid · Proposal needed');
+      expect(verdict(form).textContent).toContain('Recoverable consumable · Proposal needed');
     });
 
     it.each([

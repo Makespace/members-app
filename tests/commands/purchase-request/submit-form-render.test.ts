@@ -183,11 +183,12 @@ describe('purchase request form', () => {
     const page = render(onPage(1));
     const cards = () => [...page.querySelectorAll('.purchase-type-card')];
 
-    it('offers repairs, improvements and member-paid as cards', () => {
+    it('offers maintenance, improvements and both kinds of consumable as cards', () => {
       expect(cards().map(card => card.querySelector('strong')?.textContent)).toStrictEqual([
-        'Repairs & Running Costs',
+        'Maintenance',
         'Improvements',
-        'Member-paid',
+        'Non-recoverable consumables',
+        'Recoverable consumables',
       ]);
     });
 
@@ -197,6 +198,7 @@ describe('purchase request form', () => {
           card.querySelector('.purchase-type-card__budget')?.textContent?.trim()
         )
       ).toStrictEqual([
+        'Comes out of the yearly budget',
         'Comes out of the yearly budget',
         'Comes out of the yearly budget',
         "Doesn't come out of the yearly budget",
