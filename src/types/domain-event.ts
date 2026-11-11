@@ -248,6 +248,14 @@ const PurchasingAreaSmallRepairsAmountSet = defineEvent(
   }
 );
 
+// A super user sets the yearly allowance every Area is allocated, from a
+// budget year onwards. A purchasing area's usual budget is its areas'
+// allowances added together; see the purchasing read model.
+const PurchasingAllowanceSet = defineEvent('PurchasingAllowanceSet', {
+  fromBudgetYear: t.number,
+  allowancePerAreaPence: t.number,
+});
+
 // A different budget for one calendar year only, e.g. an extension: the
 // usual budget (PurchasingAreaBudgetSet) applies again the year after.
 const PurchasingAreaYearBudgetSet = defineEvent(
@@ -997,6 +1005,7 @@ export const events = [
   PurchasingAreaBudgetSet,
   PurchasingAreaSmallPurchaseAmountSet,
   PurchasingAreaSmallRepairsAmountSet,
+  PurchasingAllowanceSet,
   PurchasingAreaYearBudgetSet,
   PurchasingAreaSpendRecorded,
   PurchasingAreaSpendRemoved,
@@ -1098,6 +1107,7 @@ export const DomainEvent = t.union([
   PurchasingAreaBudgetSet.codec,
   PurchasingAreaSmallPurchaseAmountSet.codec,
   PurchasingAreaSmallRepairsAmountSet.codec,
+  PurchasingAllowanceSet.codec,
   PurchasingAreaYearBudgetSet.codec,
   PurchasingAreaSpendRecorded.codec,
   PurchasingAreaSpendRemoved.codec,

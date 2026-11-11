@@ -37,6 +37,7 @@ import {
   purchaseRequestNotificationsTable,
   purchasingAreaSpendTable,
   purchasingAreaYearBudgetsTable,
+  purchasingAllowancesTable,
   einkDisplaysTable,
   trainingSessionsTable,
   trainingSessionAttendeesTable,
@@ -1377,6 +1378,19 @@ const _updateState =
         if (rows.changes === 0) {
           throw new InconsistentEventError(`Unable to set small purchase amount of purchasing area ${event.purchasingAreaId} - unknown purchasing area`);
         }
+        break;
+      }
+      case 'PurchasingAllowanceSet': {
+        tx.insert(purchasingAllowancesTable)
+          .values({
+            fromBudgetYear: event.fromBudgetYear,
+            allowancePerAreaPence: event.allowancePerAreaPence,
+          })
+          .onConflictDoUpdate({
+            target: purchasingAllowancesTable.fromBudgetYear,
+            set: {allowancePerAreaPence: event.allowancePerAreaPence},
+          })
+          .run();
         break;
       }
       case 'PurchasingAreaYearBudgetSet': {

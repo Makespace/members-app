@@ -29,7 +29,8 @@ const renderForm = (purchasingArea: ViewModel) =>
           ${sanitizeString(purchasingArea.name)}
         </h1>
         <p>
-          For this year only, e.g. to extend it. The usual budget is
+          For this year only, e.g. an expanded allowance the directors have
+          approved. The usual budget is
           ${money(purchasingArea.usualBudgetPence)} a year, and applies again
           next year; set this year's back to that to undo a change.
           ${money(purchasingArea.spentThisYearPence)} has been spent so far in

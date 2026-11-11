@@ -17,10 +17,12 @@ import {
   purchasingAreaSpendTable,
   purchasingAreasTable,
   purchasingAreaYearBudgetsTable,
+  purchasingAllowancesTable,
 } from '../state';
 import {getMemberCoreByUserId} from '../member/get';
 import {
   PurchaseRequest,
+  PurchasingAllowance,
   PurchasingArea,
   PurchasingAreaPurchaser,
   PurchasingAreaSummary,
@@ -86,6 +88,28 @@ const budgetRequestsInYear =
       ),
     };
   };
+
+// Every yearly allowance per Area set, oldest first.
+export const getPurchasingAllowances =
+  (db: BetterSQLite3Database) => (): ReadonlyArray<PurchasingAllowance> =>
+    db
+      .select()
+      .from(purchasingAllowancesTable)
+      .orderBy(asc(purchasingAllowancesTable.fromBudgetYear))
+      .all();
+
+// The allowance per Area for a budget year: the latest set from that year or
+// before.
+const allowanceFor =
+  (db: BetterSQLite3Database) =>
+  (budgetYear: number): O.Option<number> =>
+    pipe(
+      getPurchasingAllowances(db)()
+        .filter(allowance => allowance.fromBudgetYear <= budgetYear)
+        .at(-1),
+      O.fromNullable,
+      O.map(allowance => allowance.allowancePerAreaPence)
+    );
 
 const getYearBudget =
   (db: BetterSQLite3Database) =>
@@ -210,16 +234,25 @@ const expand =
         .reduce((total, spend) => total + spend.amountPence, 0);
     const requests = budgetRequestsInYear(db)(row.id, budgetYear);
     const spentThisYearPence = requests.approvedPence + recordedOfKind('budget');
+    const allowancePerAreaPence = allowanceFor(db)(budgetYear);
+    const usualBudgetPence = pipe(
+      allowancePerAreaPence,
+      O.match(
+        () => row.yearlyBudgetPence,
+        allowance => allowance * areas.length
+      )
+    );
     const yearlyBudgetPence = pipe(
       getYearBudget(db)(row.id, budgetYear),
-      O.getOrElse(() => row.yearlyBudgetPence)
+      O.getOrElse(() => usualBudgetPence)
     );
     return {
       id: row.id,
       name: row.name,
       active: row.active,
       yearlyBudgetPence,
-      usualBudgetPence: row.yearlyBudgetPence,
+      usualBudgetPence,
+      allowancePerAreaPence,
       smallPurchaseAmountPence: row.smallPurchaseAmountPence,
       repairsThisYearPence: requests.repairsPence,
       recordedSpend,

@@ -192,8 +192,12 @@ export type PurchasingArea = PurchasingAreaSummary & {
   // This budget year's budget: the usual one, unless it has been set
   // differently for this year (e.g. extended).
   yearlyBudgetPence: number;
-  // The budget every year has unless set differently for that year.
+  // The budget every year has unless set differently for that year (e.g. an
+  // expanded allowance): its areas' allowances added together once a yearly
+  // allowance per Area applies, otherwise the one set for it by hand.
   usualBudgetPence: number;
+  // The yearly allowance per Area for this budget year, if one applies.
+  allowancePerAreaPence: O.Option<number>;
   // A single budget purchase of this much or more needs a proposal.
   smallPurchaseAmountPence: number;
   areas: ReadonlyArray<{id: UUID; name: string}>;
@@ -215,6 +219,11 @@ export type PurchasingArea = PurchasingAreaSummary & {
   remainingPence: number;
 };
 
+
+export type PurchasingAllowance = {
+  fromBudgetYear: number;
+  allowancePerAreaPence: number;
+};
 
 export type PurchaseRequest = {
   id: UUID;

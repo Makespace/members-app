@@ -458,6 +458,21 @@ export const purchasingAreaYearBudgetsTable = defineTable(
   }
 );
 
+// The yearly allowance per Area, each from a budget year until the next.
+export const purchasingAllowancesTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS purchasingAllowances (
+      fromBudgetYear INTEGER PRIMARY KEY,
+      allowancePerAreaPence INTEGER NOT NULL
+    )
+  `,
+  'purchasingAllowances' as const,
+  {
+    fromBudgetYear: integer('fromBudgetYear').notNull().primaryKey(),
+    allowancePerAreaPence: integer('allowancePerAreaPence').notNull(),
+  }
+);
+
 // Spending recorded directly against a purchasing area for a year; see
 // PurchasingAreaSpendRecorded. Removed rows are deleted.
 export const purchasingAreaSpendTable = defineTable(

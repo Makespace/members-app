@@ -89,6 +89,17 @@ const renderBudget = (viewModel: ViewModel) => {
                     >(usually ${money(purchasingArea.usualBudgetPence)})</span
                   >`
                 : html``}
+              ${pipe(
+                purchasingArea.allowancePerAreaPence,
+                O.match(
+                  () => html``,
+                  allowance => html`<span class="text-gray"
+                    >- ${purchasingArea.areas.length}
+                    ${safe(purchasingArea.areas.length === 1 ? 'Area' : 'Areas')}
+                    × ${money(allowance)} allowance</span
+                  >`
+                )
+              )}
             </td>
           </tr>
           <tr>
@@ -135,14 +146,17 @@ const renderBudget = (viewModel: ViewModel) => {
               `/purchasing-areas/set-year-budget?${query({
                 purchasingArea: purchasingArea.id,
               })}`,
-              html`Set ${purchasingArea.budgetYear}'s budget`
+              html`Set ${purchasingArea.budgetYear}'s budget (expanded
+                allowance)`
             )}
-            ${superUserButton(
-              `/purchasing-areas/set-budget?${query({
-                purchasingArea: purchasingArea.id,
-              })}`,
-              html`Set usual budget`
-            )}
+            ${O.isNone(purchasingArea.allowancePerAreaPence)
+              ? superUserButton(
+                  `/purchasing-areas/set-budget?${query({
+                    purchasingArea: purchasingArea.id,
+                  })}`,
+                  html`Set usual budget`
+                )
+              : html``}
             ${superUserButton(
               `/purchasing-areas/set-small-purchase-amount?${query({
                 purchasingArea: purchasingArea.id,
