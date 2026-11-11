@@ -301,9 +301,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         setSmallPurchaseAmount: frameworkify(
           commands.purchasingArea.setSmallPurchaseAmount
         ),
-        setSmallRepairsAmount: frameworkify(
-          commands.purchasingArea.setSmallRepairsAmount
-        ),
+        setAllowance: frameworkify(commands.purchasingArea.setAllowance),
         assignArea: frameworkify(commands.purchasingArea.assignArea),
         unassignArea: frameworkify(commands.purchasingArea.unassignArea),
         addPurchaser: frameworkify(commands.purchasingArea.addPurchaser),

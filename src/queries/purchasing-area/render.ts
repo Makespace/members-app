@@ -89,6 +89,17 @@ const renderBudget = (viewModel: ViewModel) => {
                     >(usually ${money(purchasingArea.usualBudgetPence)})</span
                   >`
                 : html``}
+              ${pipe(
+                purchasingArea.allowancePerAreaPence,
+                O.match(
+                  () => html``,
+                  allowance => html`<span class="text-gray"
+                    >- ${purchasingArea.areas.length}
+                    ${safe(purchasingArea.areas.length === 1 ? 'Area' : 'Areas')}
+                    × ${money(allowance)} allowance</span
+                  >`
+                )
+              )}
             </td>
           </tr>
           <tr>
@@ -98,16 +109,6 @@ const renderBudget = (viewModel: ViewModel) => {
               <span class="text-gray"
                 >- a single purchase of this much or more needs a
                 proposal</span
-              >
-            </td>
-          </tr>
-          <tr>
-            <th>Small repairs amount</th>
-            <td>
-              ${money(purchasingArea.smallRepairsAmountPence)}
-              <span class="text-gray"
-                >- repairs don't come out of the budget, but one costing this
-                much or more needs a super user's approval</span
               >
             </td>
           </tr>
@@ -145,26 +146,23 @@ const renderBudget = (viewModel: ViewModel) => {
               `/purchasing-areas/set-year-budget?${query({
                 purchasingArea: purchasingArea.id,
               })}`,
-              html`Set ${purchasingArea.budgetYear}'s budget`
+              html`Set ${purchasingArea.budgetYear}'s budget (extension)`
             )}
-            ${superUserButton(
-              `/purchasing-areas/set-budget?${query({
-                purchasingArea: purchasingArea.id,
-              })}`,
-              html`Set usual budget`
-            )}
+            ${O.isNone(purchasingArea.allowancePerAreaPence)
+              ? superUserButton(
+                  `/purchasing-areas/set-budget?${query({
+                    purchasingArea: purchasingArea.id,
+                  })}`,
+                  html`Set usual budget`
+                )
+              : html``}
             ${superUserButton(
               `/purchasing-areas/set-small-purchase-amount?${query({
                 purchasingArea: purchasingArea.id,
               })}`,
               html`Set small purchase amount`
             )}
-            ${superUserButton(
-              `/purchasing-areas/set-small-repairs-amount?${query({
-                purchasingArea: purchasingArea.id,
-              })}`,
-              html`Set small repairs amount`
-            )}
+
             ${superUserButton(
               `/purchasing-areas/rename?${query({
                 purchasingArea: purchasingArea.id,

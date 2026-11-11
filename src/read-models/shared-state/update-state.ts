@@ -37,6 +37,7 @@ import {
   purchaseRequestNotificationsTable,
   purchasingAreaSpendTable,
   purchasingAreaYearBudgetsTable,
+  purchasingAllowancesTable,
   einkDisplaysTable,
   trainingSessionsTable,
   trainingSessionAttendeesTable,
@@ -63,7 +64,6 @@ import { getEquipmentMinimal, resolveEquipmentByName } from './equipment/get';
 import { resolveAreaByName } from './area/get';
 import { generateUserId } from './member/generate-user-id';
 import {termEndsFor} from '../../owner-agreement/agreement';
-import {DEFAULT_SMALL_REPAIRS_AMOUNT_PENCE} from '../../purchasing/classify-purchase';
 import { gravatarHashFromEmail } from '../avatar';
 
 // Appends a board change-log row for a ticket status-change event. The
@@ -1318,7 +1318,6 @@ const _updateState =
             name: event.name,
             yearlyBudgetPence: event.yearlyBudgetPence,
             smallPurchaseAmountPence: event.smallPurchaseAmountPence,
-            smallRepairsAmountPence: DEFAULT_SMALL_REPAIRS_AMOUNT_PENCE,
             active: event.active,
             createdAt: event.recordedAt,
           })
@@ -1367,16 +1366,10 @@ const _updateState =
         }
         break;
       }
-      case 'PurchasingAreaSmallRepairsAmountSet': {
-        const rows = tx.update(purchasingAreasTable)
-          .set({smallRepairsAmountPence: event.smallRepairsAmountPence})
-          .where(eq(purchasingAreasTable.id, event.purchasingAreaId))
-          .run();
-        if (rows.changes === 0) {
-          throw new InconsistentEventError(`Unable to set small repairs amount of purchasing area ${event.purchasingAreaId} - unknown purchasing area`);
-        }
+      case 'PurchasingAreaSmallRepairsAmountSet':
+        // The small repairs amount was dropped with the 2027 budget system;
+        // any set before then no longer means anything.
         break;
-      }
       case 'PurchasingAreaSmallPurchaseAmountSet': {
         const rows = tx.update(purchasingAreasTable)
           .set({smallPurchaseAmountPence: event.smallPurchaseAmountPence})
@@ -1385,6 +1378,19 @@ const _updateState =
         if (rows.changes === 0) {
           throw new InconsistentEventError(`Unable to set small purchase amount of purchasing area ${event.purchasingAreaId} - unknown purchasing area`);
         }
+        break;
+      }
+      case 'PurchasingAllowanceSet': {
+        tx.insert(purchasingAllowancesTable)
+          .values({
+            fromBudgetYear: event.fromBudgetYear,
+            allowancePerAreaPence: event.allowancePerAreaPence,
+          })
+          .onConflictDoUpdate({
+            target: purchasingAllowancesTable.fromBudgetYear,
+            set: {allowancePerAreaPence: event.allowancePerAreaPence},
+          })
+          .run();
         break;
       }
       case 'PurchasingAreaYearBudgetSet': {

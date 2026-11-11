@@ -34,7 +34,6 @@ const woodShop = {
   purchaserMemberNumbers: [],
   yearlyBudgetPence: 100_000,
   smallPurchaseAmountPence: 100_000,
-  smallRepairsAmountPence: 15_000,
   spentThisYearPence: 42_000,
   remainingPence: 58_000,
 };
@@ -118,11 +117,9 @@ const onPage = (
         affectedAreaNames: [],
         healthAndSafetyRisk: false,
             isMemberPaidConsumable: false,
-            isRepair: false,
             amountPence: 25_000,
             yearlyBudgetPence: woodShop.yearlyBudgetPence,
             smallPurchaseAmountPence: 100_000,
-            smallRepairsAmountPence: 15_000,
             spentThisYearPence: woodShop.spentThisYearPence,
           }),
         })
@@ -186,11 +183,12 @@ describe('purchase request form', () => {
     const page = render(onPage(1));
     const cards = () => [...page.querySelectorAll('.purchase-type-card')];
 
-    it('offers repairs, improvements and member-paid as cards', () => {
+    it('offers maintenance, improvements and both kinds of consumable as cards', () => {
       expect(cards().map(card => card.querySelector('strong')?.textContent)).toStrictEqual([
-        'Repairs & Running Costs',
+        'Maintenance',
         'Improvements',
-        'Member-paid',
+        'Non-recoverable consumables',
+        'Recoverable consumables',
       ]);
     });
 
@@ -200,6 +198,7 @@ describe('purchase request form', () => {
           card.querySelector('.purchase-type-card__budget')?.textContent?.trim()
         )
       ).toStrictEqual([
+        'Comes out of the yearly budget',
         'Comes out of the yearly budget',
         'Comes out of the yearly budget',
         "Doesn't come out of the yearly budget",
@@ -252,7 +251,7 @@ describe('purchase request form', () => {
       expect(
         page.querySelector<HTMLElement>('[data-budget-verdict]')!.hidden
       ).toBe(true);
-      expect(page.querySelectorAll('template[data-verdict-template]')).toHaveLength(8);
+      expect(page.querySelectorAll('template[data-verdict-template]')).toHaveLength(5);
     });
 
     it('asks for detailed notes on each item', () => {
@@ -371,11 +370,9 @@ describe('purchase request form', () => {
               affectedAreaNames: ['Metal Shop'],
               healthAndSafetyRisk: true,
               isMemberPaidConsumable: false,
-              isRepair: false,
               amountPence: 25_000,
               yearlyBudgetPence: woodShop.yearlyBudgetPence,
               smallPurchaseAmountPence: 100_000,
-              smallRepairsAmountPence: 15_000,
               spentThisYearPence: woodShop.spentThisYearPence,
             }),
           }),
@@ -446,11 +443,9 @@ describe('purchase request form', () => {
         affectedAreaNames: [],
         healthAndSafetyRisk: false,
               isMemberPaidConsumable: false,
-              isRepair: false,
               amountPence: 60_000,
               yearlyBudgetPence: woodShop.yearlyBudgetPence,
               smallPurchaseAmountPence: 100_000,
-              smallRepairsAmountPence: 15_000,
               spentThisYearPence: woodShop.spentThisYearPence,
             }),
           }),
@@ -477,11 +472,9 @@ describe('purchase request form', () => {
               affectedAreaNames: [],
               healthAndSafetyRisk: risky,
               isMemberPaidConsumable: false,
-              isRepair: false,
               amountPence: risky ? 25_000 : 120_000,
               yearlyBudgetPence: woodShop.yearlyBudgetPence,
               smallPurchaseAmountPence: 100_000,
-              smallRepairsAmountPence: 15_000,
               spentThisYearPence: woodShop.spentThisYearPence,
             }),
           }),

@@ -100,8 +100,8 @@ describe('purchasing areas in the read model', () => {
         active: true,
         yearlyBudgetPence: 150_000,
         usualBudgetPence: 150_000,
+        allowancePerAreaPence: O.none,
         smallPurchaseAmountPence: 100_000,
-        smallRepairsAmountPence: 15_000,
         areas: [],
         purchasers: [],
         budgetYear: 2026,
@@ -234,6 +234,54 @@ describe('purchasing areas in the read model', () => {
           areaId: artSpaceId,
         })
       );
+    });
+
+    describe('and a yearly allowance per Area', () => {
+      const allowance = (fromBudgetYear: number, allowancePerAreaPence: number) =>
+        constructEvent('PurchasingAllowanceSet')({
+          actor: systemActor(),
+          fromBudgetYear,
+          allowancePerAreaPence,
+        });
+
+      it("makes its usual budget its areas' allowances added together", () => {
+        insert(allowance(2026, 100_000));
+        expect(get()).toMatchObject({
+          usualBudgetPence: 200_000,
+          yearlyBudgetPence: 200_000,
+          remainingPence: 200_000,
+          allowancePerAreaPence: O.some(100_000),
+        });
+      });
+
+      it('uses the latest set from this year or before', () => {
+        insert(allowance(2025, 80_000), allowance(2026, 90_000), allowance(2027, 120_000));
+        expect(get().usualBudgetPence).toBe(180_000);
+      });
+
+      it('leaves the budget set by hand until one applies', () => {
+        insert(allowance(2027, 100_000));
+        expect(get()).toMatchObject({
+          usualBudgetPence: 150_000,
+          allowancePerAreaPence: O.none,
+        });
+      });
+
+      it("still lets this year's budget be set differently, e.g. extended", () => {
+        insert(
+          allowance(2026, 100_000),
+          constructEvent('PurchasingAreaYearBudgetSet')({
+            actor: systemActor(),
+            purchasingAreaId,
+            budgetYear: 2026,
+            yearlyBudgetPence: 350_000,
+          })
+        );
+        expect(get()).toMatchObject({
+          usualBudgetPence: 200_000,
+          yearlyBudgetPence: 350_000,
+        });
+      });
     });
 
     it('lists them by name', () => {

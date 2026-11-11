@@ -424,7 +424,6 @@ export const purchasingAreasTable = defineTable(
       name TEXT NOT NULL,
       yearlyBudgetPence INTEGER NOT NULL,
       smallPurchaseAmountPence INTEGER NOT NULL,
-      smallRepairsAmountPence INTEGER NOT NULL,
       active INTEGER NOT NULL,
       createdAt INTEGER NOT NULL
     )
@@ -435,7 +434,6 @@ export const purchasingAreasTable = defineTable(
     name: text('name').notNull(),
     yearlyBudgetPence: integer('yearlyBudgetPence').notNull(),
     smallPurchaseAmountPence: integer('smallPurchaseAmountPence').notNull(),
-    smallRepairsAmountPence: integer('smallRepairsAmountPence').notNull(),
     active: integer('active', {mode: 'boolean'}).notNull(),
     createdAt: integer('createdAt', {mode: 'timestamp_ms'}).notNull(),
   }
@@ -457,6 +455,21 @@ export const purchasingAreaYearBudgetsTable = defineTable(
     purchasingAreaId: text('purchasingAreaId').notNull().$type<UUID>(),
     budgetYear: integer('budgetYear').notNull(),
     yearlyBudgetPence: integer('yearlyBudgetPence').notNull(),
+  }
+);
+
+// The yearly allowance per Area, each from a budget year until the next.
+export const purchasingAllowancesTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS purchasingAllowances (
+      fromBudgetYear INTEGER PRIMARY KEY,
+      allowancePerAreaPence INTEGER NOT NULL
+    )
+  `,
+  'purchasingAllowances' as const,
+  {
+    fromBudgetYear: integer('fromBudgetYear').notNull().primaryKey(),
+    allowancePerAreaPence: integer('allowancePerAreaPence').notNull(),
   }
 );
 

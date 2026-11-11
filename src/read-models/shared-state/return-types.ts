@@ -192,12 +192,14 @@ export type PurchasingArea = PurchasingAreaSummary & {
   // This budget year's budget: the usual one, unless it has been set
   // differently for this year (e.g. extended).
   yearlyBudgetPence: number;
-  // The budget every year has unless set differently for that year.
+  // The budget every year has unless set differently for that year (e.g. an
+  // extension): its areas' allowances added together once a yearly
+  // allowance per Area applies, otherwise the one set for it by hand.
   usualBudgetPence: number;
+  // The yearly allowance per Area for this budget year, if one applies.
+  allowancePerAreaPence: O.Option<number>;
   // A single budget purchase of this much or more needs a proposal.
   smallPurchaseAmountPence: number;
-  // A single repair of this much or more needs a super user's approval.
-  smallRepairsAmountPence: number;
   areas: ReadonlyArray<{id: UUID; name: string}>;
   purchasers: ReadonlyArray<PurchasingAreaPurchaser>;
   budgetYear: number;
@@ -206,7 +208,8 @@ export type PurchasingArea = PurchasingAreaSummary & {
   spentThisYearPence: number;
   // Recorded spending approved outside the budget, which doesn't count.
   approvedSpendThisYearPence: number;
-  // This year's approved repairs, which don't count against the budget.
+  // This year's approved repairs that were sent while repairs didn't count
+  // against the budget (November 2026); none since.
   repairsThisYearPence: number;
   // This year's requests still waiting for approval, which don't count yet.
   awaitingApprovalPence: number;
@@ -216,6 +219,11 @@ export type PurchasingArea = PurchasingAreaSummary & {
   remainingPence: number;
 };
 
+
+export type PurchasingAllowance = {
+  fromBudgetYear: number;
+  allowancePerAreaPence: number;
+};
 
 export type PurchaseRequest = {
   id: UUID;

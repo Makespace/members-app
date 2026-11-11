@@ -98,7 +98,7 @@ const whyYou = (
 const outcomeTag = (request: PurchaseRequest): Tag => {
   const base: Tag =
     request.outcome === 'consumable'
-      ? {label: 'Member-paid', colour: 'green'}
+      ? {label: 'Recoverable consumable', colour: 'green'}
       : request.outcome === 'repair'
         ? {label: 'Repair (not from the yearly budget)', colour: 'green'}
         : request.outcome === 'outside-budget'

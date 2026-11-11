@@ -7,7 +7,7 @@ import {
 
 const tags: Record<PurchaseRequestOutcome, {label: string; colour: string}> = {
   consumable: {
-    label: 'Member-paid (not from the yearly budget)',
+    label: 'Recoverable consumable (not from the yearly budget)',
     colour: 'green',
   },
   budget: {label: 'Yearly budget', colour: 'yellow'},
@@ -37,7 +37,7 @@ export const renderOutcome = (
   const tag =
     approval !== 'proposal' || status === undefined || status === 'awaiting-approval'
       ? outcome === 'consumable' && approval === 'proposal'
-        ? {label: 'Member-paid · Proposal needed', colour: 'red'}
+        ? {label: 'Recoverable consumable · Proposal needed', colour: 'red'}
         : outcome === 'repair' && approval === 'proposal'
           ? {label: 'Repair · Proposal needed', colour: 'red'}
           : tags[outcome]

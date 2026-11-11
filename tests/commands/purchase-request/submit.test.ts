@@ -323,6 +323,19 @@ describe('submit purchase request', () => {
     });
   });
 
+  it.each(['repairs', 'non-recoverable-consumables'])(
+    'takes %s out of the yearly budget, like improvements',
+    async purchaseType => {
+      expect(
+        await submitted(formBody({purchaseType, ...costing('2500.00')}))
+      ).toMatchObject({
+        outcome: 'budget-proposal-needed',
+        isMemberPaidConsumable: false,
+        purchaseType,
+      });
+    }
+  );
+
   it('needs the type of purchase chosen', () => {
     expect(
       submit.decode(formBody({purchaseType: ''}))._tag

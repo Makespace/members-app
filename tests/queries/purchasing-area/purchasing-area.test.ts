@@ -190,7 +190,7 @@ describe('purchasing area page', () => {
       actor: {tag: 'user', user: purchaser},
     });
     const text = pageFor(member).textContent;
-    expect(text).toContain('Member-paid (not from the yearly budget)');
+    expect(text).toContain('Recoverable consumable (not from the yearly budget)');
     expect(text).toContain('£1,500.00');
   });
 

@@ -237,9 +237,9 @@ const PurchasingAreaSmallPurchaseAmountSet = defineEvent(
   }
 );
 
-// A super user changes how much a single repair can cost before it needs a
-// super user's approval. Purchasing areas start at
-// DEFAULT_SMALL_REPAIRS_AMOUNT_PENCE until one is set.
+// No longer recorded: from November 2026 until the 2027 budget system, a
+// single repair of this much or more needed a super user's approval. Kept so
+// events already recorded still read.
 const PurchasingAreaSmallRepairsAmountSet = defineEvent(
   'PurchasingAreaSmallRepairsAmountSet',
   {
@@ -247,6 +247,14 @@ const PurchasingAreaSmallRepairsAmountSet = defineEvent(
     smallRepairsAmountPence: t.number,
   }
 );
+
+// A super user sets the yearly allowance every Area is allocated, from a
+// budget year onwards. A purchasing area's usual budget is its areas'
+// allowances added together; see the purchasing read model.
+const PurchasingAllowanceSet = defineEvent('PurchasingAllowanceSet', {
+  fromBudgetYear: t.number,
+  allowancePerAreaPence: t.number,
+});
 
 // A different budget for one calendar year only, e.g. an extension: the
 // usual budget (PurchasingAreaBudgetSet) applies again the year after.
@@ -324,7 +332,7 @@ const PurchaseRequestSubmitted = defineEvent('PurchaseRequestSubmitted', {
   purchases: t.readonlyArray(PurchaseCodec),
   justification: t.string,
   isMemberPaidConsumable: t.boolean,
-  // Repairs and running costs, improvements or member-paid; see
+  // Maintenance, improvements, non-recoverable or member-paid consumables; see
   // src/types/purchase-type.ts. Requests sent before it was asked have none.
   purchaseType: tt.withFallback(t.union([PurchaseTypeCodec, t.null]), null),
   // Other areas it affects, whose owners need a chance to give their input.
@@ -997,6 +1005,7 @@ export const events = [
   PurchasingAreaBudgetSet,
   PurchasingAreaSmallPurchaseAmountSet,
   PurchasingAreaSmallRepairsAmountSet,
+  PurchasingAllowanceSet,
   PurchasingAreaYearBudgetSet,
   PurchasingAreaSpendRecorded,
   PurchasingAreaSpendRemoved,
@@ -1098,6 +1107,7 @@ export const DomainEvent = t.union([
   PurchasingAreaBudgetSet.codec,
   PurchasingAreaSmallPurchaseAmountSet.codec,
   PurchasingAreaSmallRepairsAmountSet.codec,
+  PurchasingAllowanceSet.codec,
   PurchasingAreaYearBudgetSet.codec,
   PurchasingAreaSpendRecorded.codec,
   PurchasingAreaSpendRemoved.codec,
