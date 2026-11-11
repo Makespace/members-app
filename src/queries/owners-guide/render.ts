@@ -268,11 +268,11 @@ const definitions = {
   'purchase-area':
     "Purchase Area: a collection of Areas that share a budget and make purchasing decisions collectively, authorised and actioned by their Purchaser. Its Yearly Budget is its Areas' yearly allowances added together.",
   'yearly-budget':
-    "Yearly Budget: a single budget for all of a Purchase Area's maintenance, improvements and non-recoverable consumables. Every Area is allocated the same yearly allowance, which can change year to year, and a Purchase Area's Yearly Budget is its Areas' allowances added together, plus any Expanded Allowance. It's designed to give Owners flexibility over how they spend money, and isn't a target.",
+    "Yearly Budget: a single budget for all of a Purchase Area's maintenance, improvements and non-recoverable consumables. Every Area is allocated the same yearly allowance, which can change year to year, and a Purchase Area's Yearly Budget is its Areas' allowances added together, plus any Allowance Extension. It's designed to give Owners flexibility over how they spend money, and isn't a target.",
   'small-purchase-amount':
     "Small Purchase Amount: a single purchase costing this much or more needs a proposal, even when it's within the Yearly Budget. It's normally £1000.",
-  'expanded-allowance':
-    "Expanded Allowance: extra budget for a year, approved by the directors, for spending an Area can already foresee that its yearly allowance won't cover. Ask for one by emailing the managers and directors with what the expected spends are and why they're needed - ideally before the financial year starts, but you can ask at any time.",
+  'allowance-extension':
+    "Allowance Extension: extra budget for one year for a Purchase Area, approved by the directors, for spending it can foresee that its yearly allowance won't cover. Ask for one by emailing the managers and directors with what you expect to spend and why it's needed - ideally before the financial year starts, but you can ask at any time.",
   maintenance:
     'Maintenance: keeping your Area running - routine services (e.g. replace laser filters), unplanned repairs (e.g. a band saw blade broke) and like-for-like replacements (e.g. a new jigsaw).',
   improvements:
@@ -394,17 +394,24 @@ const bodies = (
         reasonable justification is supplied.
       </p>
       <p>
-        If your Area's yearly allowance won't be enough for the maintenance,
-        improvements and non-recoverable consumables you can already foresee,
-        you can ask for an
-        ${term('expanded-allowance', 'Expanded Allowance')}. Email the
-        ${term('manager', 'managers')} and ${term('director', 'directors')}
-        saying what the expected spends are and why they're needed, for the
-        ${term('director', 'directors')} to approve. Ideally ask before the
-        financial year starts (1 January), but you can ask at any time.
+        If you can foresee spending on maintenance, improvements or
+        non-recoverable consumables that your
+        ${term('purchase-area', 'Purchase Area')}'s yearly allowance won't
+        cover, email the ${term('manager', 'managers')} and
+        ${term('director', 'directors')} with:
       </p>
+      <ul>
+        <li>what you expect to spend</li>
+        <li>why it's needed</li>
+      </ul>
       <p>
-        An ${term('expanded-allowance', 'Expanded Allowance')} keeps your
+        The ${term('director', 'directors')} will approve or decline it.
+        Ideally ask before the financial year starts (1 January), but you can
+        ask at any time.
+      </p>
+      <p class="owners-guide__box" role="note">
+        <i class="fa-regular fa-lightbulb" aria-hidden="true"></i>
+        An ${term('allowance-extension', 'Allowance Extension')} keeps your
         yearly allowance free for discretionary spending that doesn't need
         approval. Individual purchases still go through
         ${term('purchase-request', 'Purchase Requests')} as usual.
@@ -502,14 +509,11 @@ const bodies = (
       </p>
       ${subheading('over-budget')}
       <p>
-        Budgets are indicative only, meant to reduce friction. They aren't
-        designed to be a hard limit on an Area's spending and they're not
-        designed to be a target either!
-      </p>
-      <p>
         If a ${term('purchase-area', 'Purchase Area')} exceeds its budget, new
         ${term('purchase-request', 'purchase requests')} will have to be
-        approved by the board of ${term('director', 'directors')}.
+        approved by the board of ${term('director', 'directors')}. To avoid
+        this, you can
+        <a href="#allowance-extensions">request an extension</a>.
       </p>
     `,
   };
