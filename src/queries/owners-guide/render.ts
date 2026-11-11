@@ -319,7 +319,7 @@ const bodies = (
   const term = termsFor();
   return {
     purchasing: html`
-      <p>Money is available for Owners' teams to pay for:</p>
+      <p>Purchasing is available for:</p>
       <ul class="owners-guide__kinds">
         <li>
           <strong>Maintenance</strong>
@@ -337,15 +337,20 @@ const bodies = (
           >
         </li>
         <li>
-          <strong>Non-recoverable consumables</strong>
-          <span>Such as embroidery machine thread or solder</span>
+          <strong>Consumables</strong>
+          <ul class="owners-guide__kind-parts">
+            <li>
+              Recoverable consumables - members pay for these when they use
+              them, e.g. 3D printer filament
+            </li>
+            <li>
+              Non-recoverable consumables - things that are consumed, but not
+              practical to be paid for by members, e.g. embroidery machine
+              thread
+            </li>
+          </ul>
         </li>
       </ul>
-      <p>
-        Recoverable consumables are paid for by members when they use them
-        (e.g. laser materials, 3D printer filament), so they sit outside of
-        this.
-      </p>
       <p>
         Every Area is allocated the same yearly allowance: £1000 for 2026,
         which can change year to year. Areas are grouped into

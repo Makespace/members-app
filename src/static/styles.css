@@ -3015,6 +3015,19 @@ ul.owners-guide__kinds {
   font-size: 0.875rem;
 }
 
+/* The kinds within a kind, e.g. the two sorts of consumable. Named to
+   outrank the reset's ul[class]. */
+ul.owners-guide__kind-parts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding-left: 1.1rem;
+  list-style: disc;
+  color: var(--grey-color);
+  font-size: 0.875rem;
+}
+
 /* The four conditions owners decide for themselves, as small cards two to
    a row: the money ones first, tinted green, then safety and other Areas,
    tinted amber, each with its icon. One column on a phone, in the same
