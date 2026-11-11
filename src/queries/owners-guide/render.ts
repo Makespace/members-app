@@ -271,7 +271,7 @@ const definitions = {
   'expanded-allowance':
     "Expanded Allowance: extra budget for a year, approved by the directors, for spending an Area can already foresee that its yearly allowance won't cover. Ask for one by emailing the managers and directors with what the expected spends are and why they're needed - ideally before the financial year starts, but you can ask at any time.",
   maintenance:
-    'Maintenance: keeping your Area running - routine services (e.g. replacing the Laser Cutter filters), unplanned repairs (e.g. a broken band saw blade) and like-for-like replacements (e.g. a new jigsaw).',
+    'Maintenance: keeping your Area running - routine services (e.g. replace laser filters), unplanned repairs (e.g. a band saw blade broke) and like-for-like replacements (e.g. a new jigsaw).',
   improvements:
     'Improvements: expanding the functionality of your Area, including entirely new equipment and upgrading existing equipment with a replacement.',
   'non-recoverable-consumables':
@@ -327,9 +327,9 @@ const bodies = (
         <li>
           <strong><span aria-hidden="true">⚙️</span> Maintenance</strong>
           <span
-            ><strong>Routine services</strong> (e.g. the Laser Cutters need
-            filters replacing), <strong>unplanned repairs</strong> (e.g.
-            someone broke the band saw blade) and
+            ><strong>Routine services</strong> (e.g. replace laser filters),
+            <strong>unplanned repairs</strong> (e.g. a band saw blade broke)
+            and
             <strong>like-for-like replacements</strong> (e.g. a new
             jigsaw)</span
           >
