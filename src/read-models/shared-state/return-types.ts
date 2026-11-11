@@ -198,6 +198,10 @@ export type PurchasingArea = PurchasingAreaSummary & {
   usualBudgetPence: number;
   // The yearly allowance per Area for this budget year, if one applies.
   allowancePerAreaPence: O.Option<number>;
+  // Extensions the directors approved, added on top of the usual budget:
+  // this budget year's, and next year's when recorded ahead. 0 when none.
+  extensionPence: number;
+  nextYearExtensionPence: number;
   // A single budget purchase of this much or more needs a proposal.
   smallPurchaseAmountPence: number;
   areas: ReadonlyArray<{id: UUID; name: string}>;

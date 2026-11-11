@@ -38,6 +38,7 @@ import {
   purchasingAreaSpendTable,
   purchasingAreaYearBudgetsTable,
   purchasingAllowancesTable,
+  purchasingAreaExtensionsTable,
   einkDisplaysTable,
   trainingSessionsTable,
   trainingSessionAttendeesTable,
@@ -1340,6 +1341,7 @@ const _updateState =
         tx.delete(purchasingAreaAreasTable).where(eq(purchasingAreaAreasTable.purchasingAreaId, id)).run();
         tx.delete(purchasersTable).where(eq(purchasersTable.purchasingAreaId, id)).run();
         tx.delete(purchasingAreaYearBudgetsTable).where(eq(purchasingAreaYearBudgetsTable.purchasingAreaId, id)).run();
+        tx.delete(purchasingAreaExtensionsTable).where(eq(purchasingAreaExtensionsTable.purchasingAreaId, id)).run();
         const rows = tx.delete(purchasingAreasTable).where(eq(purchasingAreasTable.id, id)).run();
         if (rows.changes === 0) {
           throw new InconsistentEventError(`Unable to remove purchasing area ${id} - unknown purchasing area`);
@@ -1391,6 +1393,26 @@ const _updateState =
             set: {allowancePerAreaPence: event.allowancePerAreaPence},
           })
           .run();
+        break;
+      }
+      case 'PurchasingAreaExtensionSet': {
+        const forYear = (table: typeof purchasingAreaExtensionsTable | typeof purchasingAreaYearBudgetsTable) =>
+          and(
+            eq(table.purchasingAreaId, event.purchasingAreaId),
+            eq(table.budgetYear, event.budgetYear)
+          );
+        // It takes over from a whole year's budget set the old way.
+        tx.delete(purchasingAreaYearBudgetsTable).where(forYear(purchasingAreaYearBudgetsTable)).run();
+        tx.delete(purchasingAreaExtensionsTable).where(forYear(purchasingAreaExtensionsTable)).run();
+        if (event.extensionPence > 0) {
+          tx.insert(purchasingAreaExtensionsTable)
+            .values({
+              purchasingAreaId: event.purchasingAreaId,
+              budgetYear: event.budgetYear,
+              extensionPence: event.extensionPence,
+            })
+            .run();
+        }
         break;
       }
       case 'PurchasingAreaYearBudgetSet': {

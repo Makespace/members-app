@@ -18,6 +18,8 @@ import {removePurchaser} from './remove-purchaser';
 import {removePurchaserForm} from './remove-purchaser-form';
 import {setYearBudget} from './set-year-budget';
 import {setYearBudgetForm} from './set-year-budget-form';
+import {setExtension} from './set-extension';
+import {setExtensionForm} from './set-extension-form';
 import {removeSpend} from './remove-spend';
 import {removeSpendForm} from './remove-spend-form';
 import {activate, deactivate} from './activation';
@@ -61,6 +63,10 @@ export const purchasingArea = {
   removePurchaser: {
     ...removePurchaser,
     ...removePurchaserForm,
+  },
+  setExtension: {
+    ...setExtension,
+    ...setExtensionForm,
   },
   setYearBudget: {
     ...setYearBudget,

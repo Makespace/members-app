@@ -458,6 +458,25 @@ export const purchasingAreaYearBudgetsTable = defineTable(
   }
 );
 
+// Extensions to a purchasing area's yearly allowance, by budget year; see
+// PurchasingAreaExtensionSet. A row is deleted when set to nothing.
+export const purchasingAreaExtensionsTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS purchasingAreaExtensions (
+      purchasingAreaId TEXT NOT NULL,
+      budgetYear INTEGER NOT NULL,
+      extensionPence INTEGER NOT NULL,
+      PRIMARY KEY (purchasingAreaId, budgetYear)
+    )
+  `,
+  'purchasingAreaExtensions' as const,
+  {
+    purchasingAreaId: text('purchasingAreaId').notNull().$type<UUID>(),
+    budgetYear: integer('budgetYear').notNull(),
+    extensionPence: integer('extensionPence').notNull(),
+  }
+);
+
 // The yearly allowance per Area, each from a budget year until the next.
 export const purchasingAllowancesTable = defineTable(
   sql`

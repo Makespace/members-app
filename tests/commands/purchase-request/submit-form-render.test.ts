@@ -184,11 +184,15 @@ describe('purchase request form', () => {
     const cards = () => [...page.querySelectorAll('.purchase-type-card')];
 
     it('offers maintenance, improvements and both kinds of consumable as cards', () => {
-      expect(cards().map(card => card.querySelector('strong')?.textContent)).toStrictEqual([
-        'Maintenance',
-        'Improvements',
-        'Non-recoverable consumables',
-        'Recoverable consumables',
+      expect(
+        cards().map(card =>
+          card.querySelector('strong')?.textContent?.replace(/\s+/g, ' ').trim()
+        )
+      ).toStrictEqual([
+        '⚙️ Maintenance',
+        '✨ Improvements',
+        '🧵 Non-recoverable consumables',
+        '🪙 Recoverable consumables',
       ]);
     });
 

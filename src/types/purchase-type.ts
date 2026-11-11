@@ -17,27 +17,33 @@ export type PurchaseType = t.TypeOf<typeof PurchaseTypeCodec>;
 export const purchaseTypes: ReadonlyArray<{
   type: PurchaseType;
   label: string;
+  // Shown beside the label on the request form, as in the owners' guide.
+  emoji: string;
   description: string;
 }> = [
   {
     type: 'repairs',
     label: 'Maintenance',
+    emoji: '⚙️',
     description:
       'Routine services, unplanned repairs and like-for-like replacements',
   },
   {
     type: 'improvements',
     label: 'Improvements',
+    emoji: '✨',
     description: 'New equipment, or upgrading existing equipment',
   },
   {
     type: 'non-recoverable-consumables',
     label: 'Non-recoverable consumables',
+    emoji: '🧵',
     description: "Consumables members don't pay for, e.g. solder",
   },
   {
     type: 'member-paid',
     label: 'Recoverable consumables',
+    emoji: '🪙',
     description: 'Members pay for these when they use them, e.g. filament',
   },
 ];
