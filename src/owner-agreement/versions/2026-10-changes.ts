@@ -113,7 +113,7 @@ export const changes: AgreementChanges = {
             and clean around it well.</del
           >`,
           after: html`<strong>Encourage community</strong> - …
-            <mark>Enable and encourage owners to keep equipment tidy and
+            <mark>Enable and encourage members to keep equipment tidy and
             clean.</mark>`,
         },
         {
