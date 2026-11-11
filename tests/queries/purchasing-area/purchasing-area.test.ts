@@ -299,7 +299,7 @@ describe('purchasing area page', () => {
     it('lists recorded spending, letting only super users set the year budget or remove it', () => {
       const removeLink = `href="/purchasing-areas/remove-spend?purchasingArea=${purchasingAreaId}&amp;spend=${spendId}"`;
       const forSuperUser = pageFor(superUser);
-      expect(forSuperUser.textContent).toContain(`Set ${now.getFullYear()}'s budget`);
+      expect(forSuperUser.textContent).toContain('Set extension');
       expect(forSuperUser.textContent).toContain('Set usual budget');
       expect(forSuperUser.html).toContain(removeLink);
       const forMember = pageFor(member);

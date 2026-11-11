@@ -18,6 +18,7 @@ import {
   purchasingAreasTable,
   purchasingAreaYearBudgetsTable,
   purchasingAllowancesTable,
+  purchasingAreaExtensionsTable,
 } from '../state';
 import {getMemberCoreByUserId} from '../member/get';
 import {
@@ -110,6 +111,20 @@ const allowanceFor =
       O.fromNullable,
       O.map(allowance => allowance.allowancePerAreaPence)
     );
+
+const getExtension =
+  (db: BetterSQLite3Database) =>
+  (purchasingAreaId: UUID, budgetYear: number): number =>
+    db
+      .select({extensionPence: purchasingAreaExtensionsTable.extensionPence})
+      .from(purchasingAreaExtensionsTable)
+      .where(
+        and(
+          eq(purchasingAreaExtensionsTable.purchasingAreaId, purchasingAreaId),
+          eq(purchasingAreaExtensionsTable.budgetYear, budgetYear)
+        )
+      )
+      .get()?.extensionPence ?? 0;
 
 const getYearBudget =
   (db: BetterSQLite3Database) =>
@@ -242,9 +257,12 @@ const expand =
         allowance => allowance * areas.length
       )
     );
+    const extensionPence = getExtension(db)(row.id, budgetYear);
+    // A whole year's budget set the old way stands until an extension
+    // replaces it.
     const yearlyBudgetPence = pipe(
       getYearBudget(db)(row.id, budgetYear),
-      O.getOrElse(() => usualBudgetPence)
+      O.getOrElse(() => usualBudgetPence + extensionPence)
     );
     return {
       id: row.id,
@@ -253,6 +271,8 @@ const expand =
       yearlyBudgetPence,
       usualBudgetPence,
       allowancePerAreaPence,
+      extensionPence,
+      nextYearExtensionPence: getExtension(db)(row.id, budgetYear + 1),
       smallPurchaseAmountPence: row.smallPurchaseAmountPence,
       repairsThisYearPence: requests.repairsPence,
       recordedSpend,

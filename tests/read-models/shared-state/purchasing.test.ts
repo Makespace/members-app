@@ -101,6 +101,8 @@ describe('purchasing areas in the read model', () => {
         yearlyBudgetPence: 150_000,
         usualBudgetPence: 150_000,
         allowancePerAreaPence: O.none,
+        extensionPence: 0,
+        nextYearExtensionPence: 0,
         smallPurchaseAmountPence: 100_000,
         areas: [],
         purchasers: [],
@@ -243,6 +245,70 @@ describe('purchasing areas in the read model', () => {
           fromBudgetYear,
           allowancePerAreaPence,
         });
+
+      describe('and an extension', () => {
+        const extension = (budgetYear: number, extensionPence: number) =>
+          constructEvent('PurchasingAreaExtensionSet')({
+            actor: systemActor(),
+            purchasingAreaId,
+            budgetYear,
+            extensionPence,
+          });
+
+        it('adds it on top of the usual budget', () => {
+          insert(allowance(2026, 100_000), extension(2026, 50_000));
+          expect(get()).toMatchObject({
+            usualBudgetPence: 200_000,
+            extensionPence: 50_000,
+            yearlyBudgetPence: 250_000,
+            remainingPence: 250_000,
+          });
+        });
+
+        it('still adds it when its areas change', () => {
+          insert(
+            allowance(2026, 100_000),
+            extension(2026, 50_000),
+            constructEvent('AreaUnassignedFromPurchasingArea')({
+              actor: systemActor(),
+              purchasingAreaId,
+              areaId: artSpaceId,
+            })
+          );
+          expect(get().yearlyBudgetPence).toBe(150_000);
+        });
+
+        it("keeps next year's apart from this year's", () => {
+          insert(allowance(2026, 100_000), extension(2027, 70_000));
+          expect(get()).toMatchObject({
+            extensionPence: 0,
+            nextYearExtensionPence: 70_000,
+            yearlyBudgetPence: 200_000,
+          });
+        });
+
+        it("takes over from a year's budget set the old way", () => {
+          insert(
+            allowance(2026, 100_000),
+            constructEvent('PurchasingAreaYearBudgetSet')({
+              actor: systemActor(),
+              purchasingAreaId,
+              budgetYear: 2026,
+              yearlyBudgetPence: 900_000,
+            }),
+            extension(2026, 10_000)
+          );
+          expect(get().yearlyBudgetPence).toBe(210_000);
+        });
+
+        it('is removed by setting it to nothing', () => {
+          insert(allowance(2026, 100_000), extension(2026, 50_000), extension(2026, 0));
+          expect(get()).toMatchObject({
+            extensionPence: 0,
+            yearlyBudgetPence: 200_000,
+          });
+        });
+      });
 
       it("makes its usual budget its areas' allowances added together", () => {
         insert(allowance(2026, 100_000));

@@ -26,15 +26,19 @@ const money = (pence: number) => sanitizeString(formatPence(pence));
 const renderYearBudget = ({
   yearlyBudgetPence,
   usualBudgetPence,
+  extensionPence,
 }: PurchasingArea) => {
   const difference = yearlyBudgetPence - usualBudgetPence;
-  return difference === 0
-    ? money(yearlyBudgetPence)
-    : html`${money(yearlyBudgetPence)}
-        <span class="tag tag--yellow"
-          >${difference > 0 ? html`+` : html`-`}${money(Math.abs(difference))}
-          this year only</span
-        >`;
+  return extensionPence > 0
+    ? html`${money(yearlyBudgetPence)}
+        <span class="tag tag--yellow">+${money(extensionPence)} extension</span>`
+    : difference === 0
+      ? money(yearlyBudgetPence)
+      : html`${money(yearlyBudgetPence)}
+          <span class="tag tag--yellow"
+            >${difference > 0 ? html`+` : html`-`}${money(Math.abs(difference))}
+            this year only</span
+          >`;
 };
 
 const renderRow = (purchasingArea: PurchasingArea) => html`

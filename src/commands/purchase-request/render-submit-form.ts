@@ -689,7 +689,7 @@ const renderTypePage = (viewModel: PurchaseRequestFormViewModel) => html`
       <div class="purchase-type-cards">
         ${joinHtml(
           purchaseTypes.map(
-            ({type, label, description}) => html`
+            ({type, label, emoji, description}) => html`
               <label class="purchase-type-card">
                 <input
                   type="radio"
@@ -698,7 +698,10 @@ const renderTypePage = (viewModel: PurchaseRequestFormViewModel) => html`
                   required
                   ${checkedIf(viewModel.answers.purchaseType === type)}
                 />
-                <strong>${sanitizeString(label)}</strong>
+                <strong
+                  ><span aria-hidden="true">${sanitizeString(emoji)}</span>
+                  ${sanitizeString(label)}</strong
+                >
                 <span>${sanitizeString(description)}</span>
                 <span class="purchase-type-card__budget text-sm"
                   >${type === 'member-paid'

@@ -256,6 +256,15 @@ const PurchasingAllowanceSet = defineEvent('PurchasingAllowanceSet', {
   allowancePerAreaPence: t.number,
 });
 
+// An extension to a purchasing area's yearly allowance for one budget year,
+// added on top of its usual budget; 0 removes it. It replaces any budget set
+// for that year with PurchasingAreaYearBudgetSet.
+const PurchasingAreaExtensionSet = defineEvent('PurchasingAreaExtensionSet', {
+  purchasingAreaId: tt.UUID,
+  budgetYear: t.number,
+  extensionPence: t.number,
+});
+
 // A different budget for one calendar year only, e.g. an extension: the
 // usual budget (PurchasingAreaBudgetSet) applies again the year after.
 const PurchasingAreaYearBudgetSet = defineEvent(
@@ -1007,6 +1016,7 @@ export const events = [
   PurchasingAreaSmallRepairsAmountSet,
   PurchasingAllowanceSet,
   PurchasingAreaYearBudgetSet,
+  PurchasingAreaExtensionSet,
   PurchasingAreaSpendRecorded,
   PurchasingAreaSpendRemoved,
   AreaAssignedToPurchasingArea,
@@ -1109,6 +1119,7 @@ export const DomainEvent = t.union([
   PurchasingAreaSmallRepairsAmountSet.codec,
   PurchasingAllowanceSet.codec,
   PurchasingAreaYearBudgetSet.codec,
+  PurchasingAreaExtensionSet.codec,
   PurchasingAreaSpendRecorded.codec,
   PurchasingAreaSpendRemoved.codec,
   AreaAssignedToPurchasingArea.codec,

@@ -83,12 +83,17 @@ const renderBudget = (viewModel: ViewModel) => {
             <th>Yearly budget</th>
             <td>
               ${money(purchasingArea.yearlyBudgetPence)}
-              ${purchasingArea.yearlyBudgetPence !==
-              purchasingArea.usualBudgetPence
+              ${purchasingArea.extensionPence > 0
                 ? html`<span class="text-gray"
-                    >(usually ${money(purchasingArea.usualBudgetPence)})</span
+                    >(usually ${money(purchasingArea.usualBudgetPence)}, plus a
+                    ${money(purchasingArea.extensionPence)} extension)</span
                   >`
-                : html``}
+                : purchasingArea.yearlyBudgetPence !==
+                    purchasingArea.usualBudgetPence
+                  ? html`<span class="text-gray"
+                      >(usually ${money(purchasingArea.usualBudgetPence)})</span
+                    >`
+                  : html``}
               ${pipe(
                 purchasingArea.allowancePerAreaPence,
                 O.match(
@@ -102,6 +107,15 @@ const renderBudget = (viewModel: ViewModel) => {
               )}
             </td>
           </tr>
+          ${purchasingArea.nextYearExtensionPence > 0
+            ? html`<tr>
+                <th>${purchasingArea.budgetYear + 1} extension</th>
+                <td>
+                  ${money(purchasingArea.nextYearExtensionPence)}
+                  <span class="text-gray">- approved for next year</span>
+                </td>
+              </tr>`
+            : html``}
           <tr>
             <th>Small purchase amount</th>
             <td>
@@ -143,10 +157,10 @@ const renderBudget = (viewModel: ViewModel) => {
       ${canManage
         ? superUserActions(html`
             ${superUserButton(
-              `/purchasing-areas/set-year-budget?${query({
+              `/purchasing-areas/set-extension?${query({
                 purchasingArea: purchasingArea.id,
               })}`,
-              html`Set ${purchasingArea.budgetYear}'s budget (extension)`
+              html`Set extension`
             )}
             ${O.isNone(purchasingArea.allowancePerAreaPence)
               ? superUserButton(
