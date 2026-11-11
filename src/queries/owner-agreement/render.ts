@@ -124,7 +124,21 @@ const renderChanges = (changes: AgreementChanges) => html`
           <ul class="agreement-changes">
             ${joinHtml(
               group.changes.map(
-                change => html`<li>
+                change => html`<li
+                  class="${change.kind
+                    ? safe(`agreement-change--${change.kind}`)
+                    : safe('')}"
+                >
+                  ${change.kind
+                    ? html`<span class="visually-hidden"
+                        >${safe(change.kind === 'added' ? 'Added' : 'Removed')}:
+                      </span>`
+                    : html``}
+                  ${change.tag
+                    ? html`<span class="agreement-change__tag"
+                        >${safe(change.tag)}</span
+                      >`
+                    : html``}
                   ${change.summary} ${renderWording(change)}
                 </li>`
               )

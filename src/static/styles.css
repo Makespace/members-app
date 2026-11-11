@@ -6254,6 +6254,36 @@ ul.agreement-changes {
   margin-block-start: 0.25rem;
 }
 
+/* Additions get a green +, removals a red minus, in place of the bullet. */
+.agreement-changes > li.agreement-change--added {
+  list-style-type: '+  ';
+}
+
+.agreement-changes > li.agreement-change--removed {
+  list-style-type: '−  ';
+}
+
+.agreement-change--added::marker {
+  color: var(--green-color);
+  font-weight: bold;
+}
+
+.agreement-change--removed::marker {
+  color: var(--red-color);
+  font-weight: bold;
+}
+
+/* What a change is about, e.g. "Training", ahead of the sentence. */
+.agreement-change__tag {
+  display: inline-block;
+  margin-right: 0.35rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  font-size: 0.8em;
+  color: var(--grey-color);
+}
+
 .agreement-change__wording {
   display: inline;
 }

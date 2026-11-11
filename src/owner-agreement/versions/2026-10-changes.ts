@@ -36,6 +36,13 @@ export const changes: AgreementChanges = {
             areas for stock and replacement parts.`,
         },
         {
+          summary: html`"Maintain" is now "Maintenance".`,
+          before: html`<strong><del>Maintain</del></strong> - Keep your
+            machines running and safe.`,
+          after: html`<strong><mark>Maintenance</mark></strong> - Ensure
+            equipment is functional and safe.`,
+        },
+        {
           summary: html`The liability section says "owners are" rather than
           "you are".`,
           before: html`<del>You are</del> not individually liable for the
@@ -46,21 +53,37 @@ export const changes: AgreementChanges = {
       ],
     },
     {
-      heading: 'Equipment responsibilities',
+      heading: 'Responsibilities',
       changes: [
         {
-          summary: html`Training now includes keeping it in line with risk
-          assessments, and supporting members' skills after they're
-          trained.`,
+          summary: html`Clarified that "relevant guidelines" for training
+          includes risk assessments.`,
           after: html`…keep it up to date and in line with relevant
-            guidelines<mark
-              >, including risk assessments. Facilitate skills development for
-              members after they're trained.</mark
-            >`,
+            guidelines<mark>, including risk assessments</mark>.`,
         },
         {
-          summary: html`New: revoking training if necessary. This was always
-          the rule; now it's written down.`,
+          summary: html`Clarified that being a point of contact includes
+          Google Groups <em>and</em> Discord.`,
+          before: html`Respond to member <del>emails</del> on Google
+            Groups.`,
+          after: html`Respond to member <mark>communications</mark> on Google
+            Groups <mark>&amp; Discord</mark>.`,
+        },
+        {
+          kind: 'added',
+          tag: 'Training',
+          summary: html`Facilitating skills development for members after
+          they're trained.`,
+          after: html`<mark
+            >Facilitate skills development for members after they're
+            trained.</mark
+          >`,
+        },
+        {
+          kind: 'added',
+          tag: 'New',
+          summary: html`Revoking training if necessary. This was always the
+          case, but it's now included in the agreement.`,
           after: html`<mark
             >Owners have the right and the responsibility to revoke the training
             of members who are misusing equipment (using the equipment in a
@@ -69,20 +92,21 @@ export const changes: AgreementChanges = {
           >`,
         },
         {
-          summary: html`"Maintain" is now "Maintenance", and includes
-          responding to trouble tickets.`,
-          before: html`<strong><del>Maintain</del></strong> - Keep your
-            machines running and safe.`,
-          after: html`<strong><mark>Maintenance</mark></strong> - Ensure
-            equipment is functional and safe.
+          kind: 'added',
+          tag: 'Maintenance',
+          summary: html`Now includes responding to trouble tickets.`,
+          after: html`Ensure equipment is functional and safe.
             <mark
               >Respond to trouble tickets - this is the mechanism by which
               members let owners know there are issues with machines.</mark
             >`,
         },
         {
-          summary: html`"Equipment area clean, clear and tidy" is no longer
-          its own item; tidiness is now part of encouraging community.`,
+          kind: 'added',
+          tag: 'Encourage community',
+          summary: html`Now includes enabling and encouraging members to keep
+          equipment tidy and clean, rather than considering this a direct
+          responsibility of owners.`,
           before: html`<del
             ><strong>Equipment area clean, clear and tidy</strong> - Keep the
             area around the machine clear of obstructions, keep tooling tidy,
@@ -93,56 +117,22 @@ export const changes: AgreementChanges = {
             clean.</mark>`,
         },
         {
-          summary: html`Being a point of contact now covers Discord as well as
-          Google Groups.`,
-          before: html`Respond to member <del>emails</del> on Google
-            Groups.`,
-          after: html`Respond to member <mark>communications</mark> on Google
-            Groups <mark>&amp; Discord</mark>.`,
-        },
-        {
-          summary: html`"Champion good working practices" was dropped from
-          encouraging community.`,
-          before: html`Help grow a friendly community of members around your
-            equipment, <del>champion good working practices,</del> and
-            encourage members to become owners.`,
-        },
-      ],
-    },
-    {
-      heading: 'Area responsibilities',
-      changes: [
-        {
-          summary: html`The "What is an area?" box adds that decisions in an
-          area can affect each other, and should be made together.`,
-          after: html`<mark
-              >Decisions about one equipment/system have the potential to
-              affect other equipment/systems within their area.</mark
-            >
-            … e.g. the band saw is in the secure workshop.
-            <mark
-              >Decisions that band saw owners make may impact other
-              users/owners of the secure workshop - these decisions should be
-              made collectively.</mark
-            >`,
-        },
-        {
-          summary: html`Coordination now asks owners to aim for one event per
-          six-month term.`,
-          after: html`…communication between owners within an area.
-            <mark
-              >Aim to put on an event for your area at least once in your six
-              month owner tenure. Examples: Leather Together, Pi Club, Wood
-              Club.</mark
-            >`,
-        },
-        {
-          summary: html`New: nominating new owners. This was always the rule;
-          now it's written down.`,
+          kind: 'added',
+          tag: 'New',
+          summary: html`Nominating new owners. This was always the case, but
+          it's now included in the agreement.`,
           after: html`<mark
             >A new owner needs to be nominated by an existing owner before they
             can be approved by the board.</mark
           >`,
+        },
+        {
+          kind: 'removed',
+          tag: 'Encourage community',
+          summary: html`"Champion good working practices" was dropped.`,
+          before: html`Help grow a friendly community of members around your
+            equipment, <del>champion good working practices,</del> and
+            encourage members to become owners.`,
         },
       ],
     },
