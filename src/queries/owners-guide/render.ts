@@ -354,7 +354,7 @@ const bodies = (
         </li>
       </ul>
       <p>
-        The yearly allowance is a single budget that covers all of these
+        The yearly allowance is a <strong>single budget</strong> that covers all of these
         purchase types.
       </p>
       <p class="owners-guide__box" role="note">
