@@ -43,6 +43,7 @@ describe('the trouble ticket summaries', () => {
   const raiseTicket = async (issue: string) => {
     await commit(
       constructEvent('TroubleTicketCreated')({
+        permission: 'area-owner',
         actor: {tag: 'system'},
         id: faker.string.uuid() as UUID,
         rowHash: faker.string.hexadecimal({length: 64}),
@@ -116,6 +117,24 @@ describe('the trouble ticket summaries', () => {
     expect(sentEmails[0].subject).toContain('this week');
     expect(sentEmails[0].text).toContain('the blade is blunt');
     expect(sentEmails[0].text).toContain('Band Saw');
+  });
+
+  it('excludes a ticket whose visibility changed before the summary was sent', async () => {
+    await raiseTicket('the blade is blunt');
+    const ticket = framework.sharedReadModel.troubleTickets.getAll()[0];
+    await commit(
+      constructEvent('TroubleTicketPermissionSet')({
+        actor: {tag: 'system'},
+        ticketId: ticket.id,
+        permission: 'manager',
+      })
+    );
+    await notifyDigests(deps());
+
+    expect(sentEmails).toHaveLength(0);
+    expect(
+      await framework.getAllEventsByType('MemberTicketDigestSent')
+    ).toHaveLength(0);
   });
 
   it('says how to stop getting them', async () => {

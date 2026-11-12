@@ -10,6 +10,7 @@ import {Route, get, post} from './types/route';
 import {authRoutes} from './authentication';
 import {queryToHandler, commandToHandlers, ping} from './http';
 import {formGet} from './http/form-get';
+import {formPost} from './http/form-post';
 import {bulkAddForm} from './commands/equipment/bulk-add-form';
 import {importFobsRoutes} from './paxton/import-fobs-routes';
 import {receiptRoutes} from './purchasing/receipt-routes';
@@ -24,6 +25,8 @@ import {
 } from './trouble-tickets/backfill-timeline';
 import {constantTimeEqual} from './http/constant-time-equal';
 import {bulkQuietResolve} from './trouble-tickets/bulk-quiet-resolve';
+import {backfillTicketPermission} from './trouble-tickets/backfill-permission';
+import {setPermissionPost} from './trouble-tickets/set-permission-post';
 import {publicRaiseRoutes} from './trouble-tickets/public-raise-routes';
 import {publicTrainingRoutes} from './training-sessions/public-training-routes';
 import {publicOwnersGuideRoutes} from './queries/owners-guide/public-route';
@@ -526,6 +529,28 @@ export const initRoutes = (
         res.status(200).send(summary);
       })
     ),
+    post(
+      '/api/trouble-tickets/backfill-permission',
+      expressAsyncHandler(async (req, res) => {
+        if (
+          !constantTimeEqual(
+            req.headers.authorization ?? '',
+            `Bearer ${conf.ADMIN_API_BEARER_TOKEN}`
+          )
+        ) {
+          res.status(401).send({message: 'Bad Bearer Token'});
+          return;
+        }
+        if (req.query.dryRun !== undefined && req.query.dryRun !== 'true') {
+          res.status(400).send({message: "dryRun must be exactly 'true'"});
+          return;
+        }
+        const summary = await backfillTicketPermission(deps)({
+          dryRun: req.query.dryRun === 'true',
+        });
+        res.status(200).send(summary);
+      })
+    ),
     // Bulk backlog closure: quietly resolve every open ticket submitted
     // before a date. Quiet resolves are skipped by the notification sweep, so
     // nobody is emailed. Already-resolved tickets are untouched, so a repeat
@@ -678,6 +703,25 @@ export const initRoutes = (
       commands.troubleTickets.setEquipment
     ),
     ...api('trouble-tickets', 'edit-title', commands.troubleTickets.editTitle),
+    ...api(
+      'trouble-tickets',
+      'set-permission',
+      commands.troubleTickets.setPermission
+    ),
+    get(
+      '/trouble-tickets/set-permission',
+      expressAsyncHandler(formGet(deps, commands.troubleTickets.setPermission))
+    ),
+    post(
+      '/trouble-tickets/set-permission',
+      expressAsyncHandler(setPermissionPost(deps))
+    ),
+    post(
+      '/trouble-tickets/set-plus-one',
+      expressAsyncHandler(
+        formPost(deps, commands.troubleTickets.setPlusOne, '/trouble-tickets/board')
+      )
+    ),
     query('/google', queries.logGoogleJson),
     ...authRoutes(deps, conf),
   ];

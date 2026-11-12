@@ -35,7 +35,7 @@ const process: Command<AssignTroubleTicketTo>['process'] = input =>
     ),
     TE.filterOrElse(
       () =>
-        assignableMembers(input.rm, input.command.ticketId).some(
+        assignableMembers(input.rm, input.command.ticketId, input.deps?.conf.MANAGEMENT_TEAM_AREA_ID).some(
           member => member.memberNumber === input.command.memberNumber
         ),
       () =>

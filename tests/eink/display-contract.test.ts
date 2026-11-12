@@ -41,6 +41,7 @@ describe('the e-ink display contract', () => {
   const raiseTicket = () =>
     framework.insertIntoSharedReadModel(
       constructEvent('TroubleTicketCreated')({
+        permission: 'area-owner',
         source: 'app',
         equipmentId,
         machine: '',
@@ -133,12 +134,12 @@ describe('the e-ink display contract', () => {
     expect(response.body.length).toBe(0);
   });
 
-  it('sends the image again once a ticket changes it', async () => {
+  it('keeps the same image when a member-only ticket changes', async () => {
     const etag = (await getImage()).headers.etag!;
     raiseTicket();
     const response = await getImage('', {'If-None-Match': etag});
-    expect(response.status).toBe(200);
-    expect(response.headers.etag).not.toBe(etag);
+    expect(response.status).toBe(304);
+    expect(response.headers.etag).toBe(etag);
   });
 
   it('holds a display that already has the image and asks to wait, then answers 304', async () => {
@@ -149,14 +150,14 @@ describe('the e-ink display contract', () => {
     expect(Date.now() - started).toBeGreaterThanOrEqual(900);
   });
 
-  it('answers a held display with the new image as soon as a ticket changes it', async () => {
+  it('keeps a display waiting when a member-only ticket changes', async () => {
     const etag = (await getImage()).headers.etag!;
     const started = Date.now();
     setTimeout(raiseTicket, 100);
-    const response = await getImage('?wait=30', {'If-None-Match': etag});
-    expect(response.status).toBe(200);
-    expect(response.headers.etag).not.toBe(etag);
-    expect(Date.now() - started).toBeLessThan(5_000);
+    const response = await getImage('?wait=1', {'If-None-Match': etag});
+    expect(response.status).toBe(304);
+    expect(response.headers.etag).toBe(etag);
+    expect(Date.now() - started).toBeGreaterThanOrEqual(900);
   });
 
   it('answers a held display with the new image as soon as it is moved to another machine', async () => {

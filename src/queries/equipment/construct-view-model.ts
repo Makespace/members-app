@@ -14,6 +14,7 @@ import {ViewModel} from './view-model';
 import {User} from '../../types';
 import {UUID} from 'io-ts-types';
 import {DateTime} from 'luxon';
+import {ticketVisibility} from '../../trouble-tickets/permission';
 import {StatusCodes} from 'http-status-codes';
 import {
   FullQuizResultsForEquipment,
@@ -71,10 +72,19 @@ export const constructViewModel =
         'isSuperUserOrTrainerOfArea',
         ({isSuperUser, isTrainer}) => isSuperUser || isTrainer
       ),
-      TE.let('tickets', ({equipment}) => {
+      TE.let('tickets', ({equipment, member}) => {
+        const canViewTicket = pipe(
+          member,
+          O.match(
+            () => () => false,
+            viewer => ticketVisibility(
+              deps.sharedReadModel, deps.conf.MANAGEMENT_TEAM_AREA_ID, viewer
+            )
+          )
+        );
         const forThisMachine = deps.sharedReadModel.troubleTickets
-          .getAll()
-          .filter(ticket => ticket.equipmentId === equipment.id);
+          .getByEquipment(equipment.id)
+          .filter(canViewTicket);
         // A rolling thirty days rather than the calendar month: "two
         // resolved recently" should not become "none" because it is the
         // first of the month.

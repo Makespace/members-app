@@ -200,6 +200,7 @@ const buildStage = (
       const id = faker.string.uuid() as UUID;
       await commit(
         constructEvent('TroubleTicketCreated')({
+          permission: 'area-owner',
           actor: {tag: 'system'},
           id,
           rowHash: faker.string.hexadecimal({length: 64}),

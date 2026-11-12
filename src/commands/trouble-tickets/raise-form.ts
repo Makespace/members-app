@@ -26,6 +26,7 @@ import {
   HONEYPOT_FIELD,
 } from '../../trouble-tickets/public-report-guard';
 import {logInPath} from '../../authentication/login/routes';
+import {ticketPermissionField} from '../../templates/ticket-permission-field';
 
 // selectedEquipmentId is preselected by a QR code or a link from an
 // equipment page.
@@ -355,6 +356,7 @@ export const renderRaiseForm = (viewModel: ViewModel) =>
           </p>
 
           ${aboutYou(viewModel)}
+          ${ticketPermissionField()}
 
           <p class="tt-form__closing">
             Thanks for letting us know about the issue. One of the owners of

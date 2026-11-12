@@ -97,6 +97,7 @@ describe('trouble ticket commands', () => {
     // submittedEquipment matches the equipment name so it resolves to equipmentId.
     insert(
       constructEvent('TroubleTicketCreated')({
+        permission: 'area-owner',
         source: 'sheet',
         equipmentId: null,
         machine: '',

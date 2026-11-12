@@ -40,7 +40,6 @@ describe('construct-view-model', () => {
     const result = await pipe(
       loggedInUser,
       constructViewModel(framework.depsForCommands, {
-        showAll: true,
         page: 1,
         status: O.none,
         only: O.none,
@@ -64,7 +63,6 @@ describe('construct-view-model', () => {
     const result = await pipe(
       loggedInUser,
       constructViewModel(framework.depsForCommands, {
-        showAll: true,
         page: 1,
         status: O.none,
         only: O.none,
@@ -74,25 +72,23 @@ describe('construct-view-model', () => {
     expect(result).toBeDefined();
   });
 
-  it('fails if the logged in user is not a super user', async () => {
+  it('lets a regular member open the board with no visible tickets', async () => {
     const result = await pipe(
       loggedInUser,
       constructViewModel(framework.depsForCommands, {
-        showAll: true,
         page: 1,
         status: O.none,
         only: O.none,
       })
     )();
 
-    expect(result).toStrictEqual(E.left(expect.anything()));
+    expect(getRightOrFail(result).tickets).toEqual([]);
   });
 
   it('fails if the user is unknown', async () => {
     const result = await pipe(
       unregisteredUser,
       constructViewModel(framework.depsForCommands, {
-        showAll: true,
         page: 1,
         status: O.none,
         only: O.none,

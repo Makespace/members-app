@@ -329,7 +329,7 @@ export const navBar = (
       </div>
       <div id="page-nav-secondary-actions" class="page-nav__secondary-actions">
         <a class="page-nav__action" href="/training">Get trained</a>
-        <a class="page-nav__action" href="/trouble-tickets"
+        <a class="page-nav__action" href="/trouble-tickets/board"
           >Trouble tickets</a
         >
         <div

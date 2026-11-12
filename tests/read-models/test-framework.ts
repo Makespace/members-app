@@ -288,6 +288,8 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         needsHelp: frameworkify(commands.troubleTickets.needsHelp),
         setEquipment: frameworkify(commands.troubleTickets.setEquipment),
         editTitle: frameworkify(commands.troubleTickets.editTitle),
+        setPermission: frameworkify(commands.troubleTickets.setPermission),
+        setPlusOne: frameworkify(commands.troubleTickets.setPlusOne),
       },
       mailbox: {
         archive: frameworkify(commands.mailbox.archive),

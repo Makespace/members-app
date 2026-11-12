@@ -143,7 +143,9 @@ export const notifyDigests = async (
         if (O.isNone(ticket)) {
           continue;
         }
-        const wanted = audienceFor(rm, ticket.value, happening.value).find(
+        const wanted = audienceFor(rm, ticket.value, happening.value, {
+          managementAreaId: deps.conf.MANAGEMENT_TEAM_AREA_ID,
+        }).find(
           entry =>
             entry.memberNumber === memberNumber && entry.digest === cadence
         );

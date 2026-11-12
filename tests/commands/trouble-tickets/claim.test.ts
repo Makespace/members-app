@@ -60,6 +60,7 @@ describe('claiming a ticket raised without logging in', () => {
         framework.sharedReadModel.getCurrentEventIndex()
       )(
         constructEvent('TroubleTicketCreated')({
+        permission: 'everybody',
           actor: {tag: 'public'},
           id: ticketId,
           rowHash: `app:${faker.string.uuid()}`,

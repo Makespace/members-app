@@ -11,7 +11,6 @@ export const troubleTickets: Query = deps => (user, _params, queryParams) =>
   pipe(
     user,
     constructViewModel(deps, {
-      showAll: queryParams.show === 'all',
       status: pipe(
         O.fromNullable(queryParams.status),
         O.filter((value): value is string => typeof value === 'string'),

@@ -19,11 +19,10 @@ import {
   allMemberNumbers,
 } from '../../read-models/shared-state/return-types';
 import {resolveFocus} from './focus';
-import {isManagementArea, ticketsVisibleTo} from './management-tickets';
+import {ticketsVisibleTo} from './management-tickets';
 import {StatusFilter} from './status-slug';
+import {TicketPermission} from '../../types/trouble-ticket-permission';
 
-// Rows per page. The board serves the viewer's own areas by default, but a
-// super-user's "show all" can span the whole backlog - keep the DOM bounded.
 export const PAGE_SIZE = 100;
 
 const STATUS_ORDER: ReadonlyArray<TroubleTicketStatus> = [
@@ -33,6 +32,12 @@ const STATUS_ORDER: ReadonlyArray<TroubleTicketStatus> = [
   'Parked',
   'Resolved',
 ];
+
+const PERMISSION_LABELS: Record<TicketPermission, string> = {
+  everybody: 'Everybody',
+  'area-owner': 'Area Owners',
+  manager: 'Management',
+};
 
 const actorName = (actor: Actor, rm: SharedReadModel): string => {
   switch (actor.tag) {
@@ -179,6 +184,19 @@ export const buildChangeLog = (
           details: [],
         });
         break;
+      case 'TroubleTicketPermissionSet':
+        entries.push({
+          status,
+          at: row.at,
+          actor,
+          emailedTo: row.emailedTo,
+          quiet: false,
+          summary: TicketPermission.is(row.details.permission)
+            ? `changed visibility to ${PERMISSION_LABELS[row.details.permission]}`
+            : 'changed who can view this ticket',
+          details: [],
+        });
+        break;
       case 'TroubleTicketTitleEdited':
         entries.push({
           status,
@@ -214,8 +232,7 @@ export const toScope =
   (
     equipmentById: ReadonlyMap<string, MinimalEquipment>,
     areaNameById: ReadonlyMap<string, string>,
-    viewer: Member,
-    managementTeamAreaId: string
+    viewer: Member
   ) =>
   (ticket: TroubleTicket): TicketScope => {
     const equipment = ticket.equipmentId
@@ -249,7 +266,7 @@ export const toScope =
       onMyTrainerMachine:
         ticket.equipmentId !== null &&
         viewer.trainerFor.some(t => t.equipment_id === ticket.equipmentId),
-      managementOnly: isManagementArea(areaId ?? null, managementTeamAreaId),
+      managementOnly: ticket.permission === 'manager',
     };
   };
 
@@ -270,6 +287,11 @@ export const toView =
     return {
       id: ticket.id,
       title: ticket.title,
+      permission: ticket.permission,
+      plusOneCount: ticket.plusOneMemberNumbers.length,
+      hasPlusOne: ticket.plusOneMemberNumbers.some(number =>
+        allMemberNumbers(viewer).includes(number)
+      ),
       status: ticket.status,
       submittedAt: ticket.submittedAt,
       submittedName: ticket.submittedName,
@@ -361,7 +383,6 @@ export const constructViewModel =
   (
     deps: Dependencies,
     options: {
-      showAll: boolean;
       page: number;
       // Filters applied before paging, so the page is a page of the filtered
       // set rather than a filtered page.
@@ -380,18 +401,9 @@ export const constructViewModel =
       rm.members.getByMemberNumber(user.memberNumber),
       TE.fromOption(
         failureWithStatus(
-          'Only owners and super-users can see this page',
+          'You are not logged in',
           StatusCodes.UNAUTHORIZED
         )
-      ),
-      TE.filterOrElse(
-        loggedInMember =>
-          loggedInMember.isSuperUser || loggedInMember.ownerOf.length > 0,
-        () =>
-          failureWithStatus(
-            'Only owners and super-users can see this page',
-            StatusCodes.FORBIDDEN
-          )()
       ),
       TE.map(loggedInMember => {
         const focus = resolveFocus(rm, {
@@ -406,10 +418,7 @@ export const constructViewModel =
         const areaNameById = new Map(
           rm.area.getAllMinimal().map(area => [area.id as string, area.name])
         );
-        // Correspondence with the management team is not every owner's to
-        // read, so those tickets never enter the board for anyone outside
-        // that team - before the counts, the filters or a focus can reach
-        // them.
+        // Apply each ticket's permission before any counts, filters or paging.
         const all = ticketsVisibleTo(
           rm,
           deps.conf.MANAGEMENT_TEAM_AREA_ID,
@@ -418,17 +427,10 @@ export const constructViewModel =
           toScope(
             equipmentById,
             areaNameById,
-            loggedInMember,
-            deps.conf.MANAGEMENT_TEAM_AREA_ID
+            loggedInMember
           )
         );
-        // Default to the viewer's own areas; a viewer who owns none (e.g. a
-        // super-user who isn't an owner) would see an empty page, so they get
-        // everything. ?show=all is the explicit escape hatch for owners.
-        // Asking for one machine means that machine, wherever it lives: the
-        // "your areas" default is about finding your way into a big backlog,
-        // and somebody who arrived from a machine has already done that.
-        const inFocus = pipe(
+        const scoped = pipe(
           focus,
           O.match(
             () => all,
@@ -446,13 +448,6 @@ export const constructViewModel =
               )
           )
         );
-        const scopedToMine =
-          O.isNone(focus) &&
-          !options.showAll &&
-          loggedInMember.ownerOf.length > 0;
-        const scoped = scopedToMine
-          ? inFocus.filter(scope => scope.inMyOwnerArea)
-          : inFocus;
         // Counted before the filters narrow anything, so each chip reports
         // what it would show.
         const statusCounts = countBy(
@@ -503,7 +498,6 @@ export const constructViewModel =
         return {
           focus,
           tickets: pageScopes.map(toView(rm, loggedInMember)),
-          scopedToMine,
           totalInScope: sorted.length,
           statusCounts,
           openCount,

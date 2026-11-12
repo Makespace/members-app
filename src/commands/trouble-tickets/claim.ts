@@ -16,6 +16,7 @@ import {allMemberNumbers} from '../../read-models/shared-state/return-types';
 import {TroubleTicket} from '../../types/trouble-ticket';
 import {ticketIdFromClaimToken} from '../../trouble-tickets/claim-token';
 import {Config} from '../../configuration';
+import {mayUseTicketClaimLink} from '../../trouble-tickets/permission';
 
 const codec = t.strict({token: t.string});
 
@@ -83,11 +84,21 @@ const process: Command<ClaimTroubleTicket>['process'] = input => {
       )()
     );
   }
+  const {conf} = input.deps;
   return pipe(
     ticketFromClaimToken(
       input.rm,
-      input.deps.conf.TOKEN_SECRET,
+      conf.TOKEN_SECRET,
       input.command.token
+    ),
+    E.filterOrElse(
+      ticket => pipe(
+        input.rm.members.getByMemberNumber(actor.user.memberNumber),
+        O.exists(member =>
+          mayUseTicketClaimLink(input.rm, conf.MANAGEMENT_TEAM_AREA_ID, member, ticket)
+        )
+      ),
+      () => failureWithStatus('No such trouble ticket', StatusCodes.NOT_FOUND)()
     ),
     E.chain(ticket => {
       switch (claimStateFor(input.rm, ticket, actor.user.memberNumber)) {
@@ -116,8 +127,6 @@ const process: Command<ClaimTroubleTicket>['process'] = input => {
   );
 };
 
-// Anybody holding the link may claim the ticket for themselves; the link is
-// the proof, and it was only sent to the address on the ticket.
 export const claim: Command<ClaimTroubleTicket> = {
   process,
   decode: codec.decode,

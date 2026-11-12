@@ -5,8 +5,6 @@ import {render} from './render';
 import {Query} from '../query';
 import {safe, toLoggedInContent} from '../../types/html';
 
-// The front door for trouble tickets: report a problem, or (for owners) go
-// through to the board.
 export const troubleTicketsHome: Query = deps => (user, _params, queryParams) =>
   pipe(
     user,

@@ -131,29 +131,24 @@ export const render = (viewModel: ViewModel) => html`
         <ul class="tt-home__stats">
           ${summary(viewModel)}
         </ul>
-        ${viewModel.canSeeBoard
-          ? html`<p>
-              <a
-                class="button"
-                href="${safe(
-                  pipe(
-                    viewModel.focus,
-                    O.match(
-                      () => '/trouble-tickets/board',
-                      focus =>
-                        `/trouble-tickets/board?${
-                          focus.kind === 'equipment' ? 'equipmentId' : 'areaId'
-                        }=${focus.slug}`
-                    )
-                  )
-                )}"
-                >View active tickets</a
-              >
-            </p>`
-          : html`<p class="tt-home__note">
-              The full list is worked by the owners of each area. They'll be in
-              touch about anything you've reported.
-            </p>`}
+        <p>
+          <a
+            class="button"
+            href="${safe(
+              pipe(
+                viewModel.focus,
+                O.match(
+                  () => '/trouble-tickets/board',
+                  focus =>
+                    `/trouble-tickets/board?${
+                      focus.kind === 'equipment' ? 'equipmentId' : 'areaId'
+                    }=${focus.slug}`
+                )
+              )
+            )}"
+            >View active tickets</a
+          >
+        </p>
       </section>
 
       <section class="tt-home__card stack">

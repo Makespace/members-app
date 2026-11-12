@@ -14,18 +14,7 @@ import {
   toView,
 } from '../trouble-tickets/construct-view-model';
 import {ticketsVisibleTo} from '../trouble-tickets/management-tickets';
-import {allMemberNumbers} from '../../read-models/shared-state/return-types';
 
-// One ticket, for its own page.
-//
-// The board is for owners and super-users, because it is the whole backlog.
-// A single ticket is a narrower thing: whoever reported it is sent a link to
-// it, and a link they cannot open is no link at all. So a reporter may read
-// their own ticket without owning anything.
-//
-// What nobody reaches this way is a ticket they could not already see on the
-// board - correspondence with the management team is filtered out before any
-// of this, for everybody outside that team, reporter or not.
 export const constructViewModel =
   (deps: Dependencies, ticketId: string) =>
   (user: User): TE.TaskEither<FailureWithStatus, TroubleTicketView> => {
@@ -59,19 +48,8 @@ export const constructViewModel =
         const scope = toScope(
           equipmentById,
           areaNameById,
-          viewer,
-          deps.conf.MANAGEMENT_TEAM_AREA_ID
+          viewer
         )(ticket);
-        // A member number can change; the ticket keeps the one it was raised
-        // with, so an old number still counts as theirs.
-        const theirs =
-          (ticket.submittedMemberNumber !== null &&
-            allMemberNumbers(viewer).includes(ticket.submittedMemberNumber)) ||
-          (ticket.submittedEmail !== null &&
-            ticket.submittedEmail === viewer.primaryEmailAddress);
-        if (!viewer.isSuperUser && !scope.inMyOwnerArea && !theirs) {
-          return TE.left(notFound());
-        }
         return TE.right({
           ...toView(rm, viewer)(scope),
           changeLog: buildChangeLog(

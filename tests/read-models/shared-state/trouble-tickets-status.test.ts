@@ -19,6 +19,7 @@ const troubleTicketCreated = (
   overrides: Partial<EventOfType<'TroubleTicketCreated'>> = {}
 ): EventOfType<'TroubleTicketCreated'> =>
   constructEvent('TroubleTicketCreated')({
+        permission: 'area-owner',
         source: 'sheet',
         equipmentId: null,
         machine: '',

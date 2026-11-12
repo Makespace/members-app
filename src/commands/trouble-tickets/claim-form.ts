@@ -10,6 +10,7 @@ import {failureWithStatus} from '../../types/failure-with-status';
 import {renderMemberNumber} from '../../templates/member-number';
 import {displayDate} from '../../templates/display-date';
 import {DateTime} from 'luxon';
+import {mayUseTicketClaimLink} from '../../trouble-tickets/permission';
 import {ClaimState, claimStateFor, ticketFromClaimToken} from './claim';
 
 type ViewModel = {
@@ -146,6 +147,10 @@ const constructForm: Form<ViewModel>['constructForm'] =
           E.map(ticket => ({token, ticket}))
         )
       ),
+      E.filterOrElse(({ticket}) => pipe(
+        readModel.members.getByMemberNumber(user.memberNumber),
+        O.exists(member => mayUseTicketClaimLink(readModel, deps.conf.MANAGEMENT_TEAM_AREA_ID, member, ticket))
+      ), () => failureWithStatus('No such trouble ticket', StatusCodes.NOT_FOUND)()),
       E.map(({token, ticket}) => {
         const member = readModel.members.getByMemberNumber(user.memberNumber);
         const onAccount = pipe(

@@ -34,6 +34,7 @@ describe('tickets raised from management email', () => {
         framework.sharedReadModel.getCurrentEventIndex()
       )(
         constructEvent('TroubleTicketCreated')({
+        permission: areaId === managementAreaId ? 'manager' : 'area-owner',
           id: faker.string.uuid() as UUID,
           rowHash: `email:${faker.string.uuid()}`,
           sheetId: 'email',
@@ -61,12 +62,11 @@ describe('tickets raised from management email', () => {
 
   const board = (
     user: typeof manager,
-    options: {showAll?: boolean; areaId?: string} = {}
+    options: {areaId?: string} = {}
   ) =>
     pipe(
       user,
       constructViewModel(deps, {
-        showAll: options.showAll ?? true,
         page: 1,
         status: O.none,
         only: O.none,
@@ -130,7 +130,7 @@ describe('tickets raised from management email', () => {
 
   describe('on the board', () => {
     it('are hidden from an owner of another area, even showing everything', async () => {
-      const view = await board(woodOwner, {showAll: true});
+      const view = await board(woodOwner);
 
       expect(issues(view.tickets)).toStrictEqual(['The band saw is blunt']);
       expect(view.totalInScope).toBe(1);
@@ -144,13 +144,13 @@ describe('tickets raised from management email', () => {
     });
 
     it('are not counted in the status chips for other owners', async () => {
-      const view = await board(woodOwner, {showAll: true});
+      const view = await board(woodOwner);
 
       expect(view.statusCounts.Todo).toBe(1);
     });
 
     it('are visible to an owner of the management area', async () => {
-      const view = await board(manager, {showAll: true});
+      const view = await board(manager);
 
       expect(issues(view.tickets)).toContain(
         'Something a member wrote to management'
@@ -159,7 +159,7 @@ describe('tickets raised from management email', () => {
 
     // Space admins and directors: the people who run the system anyway.
     it('are visible to a super-user', async () => {
-      const view = await board(superUser, {showAll: true});
+      const view = await board(superUser);
 
       expect(view.tickets).toHaveLength(2);
     });
@@ -167,7 +167,7 @@ describe('tickets raised from management email', () => {
     // Those who can see them are told they are private, so nobody takes one
     // for something every owner can read.
     it('are marked as management only, and nothing else is', async () => {
-      const view = await board(superUser, {showAll: true});
+      const view = await board(superUser);
       const marked = Object.fromEntries(
         view.tickets.map(ticket => [ticket.title, ticket.managementOnly])
       );
@@ -192,7 +192,7 @@ describe('tickets raised from management email', () => {
       expect(visible).toHaveLength(1);
     });
 
-    it('gives the management team all of them', () => {
+    it('gives the management team only manager tickets', () => {
       const visible = ticketsVisibleTo(
         framework.sharedReadModel,
         managementAreaId,
@@ -208,18 +208,16 @@ describe('tickets raised from management email', () => {
         }
       );
 
-      expect(visible).toHaveLength(2);
+      expect(visible).toHaveLength(1);
     });
 
-    // With nothing configured there is no management area to hide, and the
-    // rule must not start hiding tickets filed against no area at all.
-    it('hides nothing when no management area is configured', () => {
+    it('keeps manager tickets hidden when no management area is configured', () => {
       const visible = ticketsVisibleTo(framework.sharedReadModel, '', {
         isSuperUser: false,
-        ownerOf: [],
+        ownerOf: [{id: woodAreaId, name: 'Wood Shop', ownershipRecordedAt: new Date()}],
       });
 
-      expect(visible).toHaveLength(2);
+      expect(visible).toHaveLength(1);
     });
   });
 
@@ -229,7 +227,7 @@ describe('tickets raised from management email', () => {
     });
 
     it('are counted for the management team', async () => {
-      expect((await home(manager)).active).toBe(2);
+      expect((await home(manager)).active).toBe(1);
     });
   });
 });

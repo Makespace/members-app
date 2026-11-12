@@ -24,6 +24,7 @@ import {
 import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
 import {Actor} from '../../types';
 import {SharedReadModel} from '../../read-models/shared-state';
+import {Dependencies} from '../../dependencies';
 import {
   describeTicketChange,
   TicketChange,
@@ -71,6 +72,7 @@ type ActionConfig = {
   allowed?: (input: {
     actor: Actor;
     rm: SharedReadModel;
+    deps?: Dependencies;
     input: {ticketId: UUID};
   }) => boolean;
   forbidden?: string;
@@ -175,6 +177,7 @@ const troubleTicketActionForm = (
             (config.allowed ?? isTicketOwner)({
               actor: {tag: 'user', user},
               rm: readModel,
+              deps,
               input: {ticketId},
             }),
           () =>
@@ -205,7 +208,7 @@ const troubleTicketActionForm = (
                 title: ticket.title,
                 // Nobody already on it: assigning them again does nothing.
                 assignable: config.fieldsFor
-                  ? assignableMembers(readModel, ticketId).filter(
+                  ? assignableMembers(readModel, ticketId, deps.conf.MANAGEMENT_TEAM_AREA_ID).filter(
                       member =>
                         !ticket.assignedMemberNumbers.includes(
                           member.memberNumber
@@ -221,7 +224,7 @@ const troubleTicketActionForm = (
                     O.match(
                       () => [],
                       happening =>
-                        audienceFor(readModel, ticket, happening)
+                        audienceFor(readModel, ticket, happening, {managementAreaId: deps.conf.MANAGEMENT_TEAM_AREA_ID})
                           .filter(entry => entry.live)
                           .map(entry => entry.email)
                     )

@@ -55,7 +55,7 @@ export const apiPost =
         input: getCommandFrom(req.body, command),
       },
       sequenceS(TE.ApplySeq),
-      TE.filterOrElse(({actor, input}) => command.isAuthorized({actor, input, rm: deps.sharedReadModel}), () =>
+      TE.filterOrElse(({actor, input}) => command.isAuthorized({actor, input, rm: deps.sharedReadModel, deps}), () =>
         failureWithStatus(
           'You are not authorized to perform this action',
           StatusCodes.FORBIDDEN
