@@ -160,14 +160,14 @@ describe('navBar', () => {
     expect(link?.getAttribute('href')).toStrictEqual('/admin');
   });
 
-  // Everyone can report a problem, so everyone gets the link; the landing
-  // page decides what each member can go on to see.
-  it('renders the trouble-tickets link for every member', () => {
-    expect(renderNav(false, areas).textContent).toContain('Trouble tickets');
-    expect(renderNav(true, areas).textContent).toContain('Trouble tickets');
-    expect(renderNav(false, areas, true).textContent).toContain(
-      'Trouble tickets'
-    );
+  it('links every member directly to the ticket board', () => {
+    const boardLink = 'a[href="/trouble-tickets/board"]';
+    expect(renderNav(false, areas).querySelector(boardLink)?.textContent)
+      .toContain('Trouble tickets');
+    expect(renderNav(true, areas).querySelector(boardLink)?.textContent)
+      .toContain('Trouble tickets');
+    expect(renderNav(false, areas, true).querySelector(boardLink)?.textContent)
+      .toContain('Trouble tickets');
   });
 
   it('requests a simple profile image when no custom Gravatar exists', () => {

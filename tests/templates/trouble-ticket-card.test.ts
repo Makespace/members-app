@@ -2,6 +2,7 @@
  * @jest-environment jsdom
  */
 import * as O from 'fp-ts/Option';
+import {runInNewContext} from 'node:vm';
 import {faker} from '@faker-js/faker';
 import {UUID} from 'io-ts-types';
 import {ticketCard} from '../../src/templates/trouble-ticket-card';
@@ -15,6 +16,9 @@ const ticket = (
   overrides: Partial<TroubleTicketView> = {}
 ): TroubleTicketView => ({
   id: faker.string.uuid() as UUID,
+  permission: 'area-owner',
+  plusOneCount: 0,
+  hasPlusOne: false,
   title: 'Bandsaw is making a noise',
   status: 'Todo' as TroubleTicketStatus,
   submittedAt: new Date('2026-09-01T10:00:00.000Z'),
@@ -51,6 +55,127 @@ const renderCard = (view: TroubleTicketView) => {
   body.innerHTML = ticketCard(view);
   return body;
 };
+
+describe('ticket visibility dropdown', () => {
+  const renderEditableCard = () => {
+    document.body.innerHTML = ticketCard(ticket());
+    const script = document.querySelector<HTMLScriptElement>('.tt-visibility-field script')!;
+    const currentScript = jest.spyOn(document, 'currentScript', 'get').mockReturnValue(script);
+    try {
+      runInNewContext(script.textContent ?? '', {document});
+    } finally {
+      currentScript.mockRestore();
+    }
+    return document.body;
+  };
+
+  afterEach(() => document.body.replaceChildren());
+
+  it('lets an editor choose one group directly below Assigned and save it', () => {
+    const view = ticket({permission: 'area-owner'});
+    const card = renderCard(view);
+    const form = card.querySelector<HTMLFormElement>('form.tt-visibility')!;
+    const select = form.querySelector<HTMLSelectElement>('select[name="permission"]')!;
+    expect(form.method).toBe('post');
+    expect(new URL(form.action).pathname).toBe('/trouble-tickets/set-permission');
+    expect(select.labels?.[0].textContent).toContain('Visibility:');
+    expect(select.value).toBe('area-owner');
+    expect(Array.from(select.options, option => option.value)).toEqual([
+      'everybody', 'area-owner', 'manager',
+    ]);
+    expect(form.parentElement?.previousElementSibling?.tagName).toBe('BR');
+    expect(form.parentElement?.parentElement?.textContent).toMatch(/Assigned:[\s\S]*Visibility:/);
+    expect(card.querySelector('a[aria-label="Change visibility"]')).toBeNull();
+    select.value = 'manager';
+    const data = new FormData(form);
+    expect(data.get('ticketId')).toBe(view.id);
+    expect(data.getAll('permission')).toEqual(['manager']);
+    expect(form.querySelector('button[type="submit"]')?.textContent).toBe('Save');
+    expect(form.closest('p')).toBeNull();
+  });
+
+  it('shows text until Edit is clicked, and Cancel discards the unsaved selection', () => {
+    const card = renderEditableCard();
+    const form = card.querySelector<HTMLFormElement>('.tt-visibility')!;
+    const display = card.querySelector<HTMLDivElement>('.tt-visibility__display')!;
+    const edit = card.querySelector<HTMLAnchorElement>('.tt-visibility__edit')!;
+    const select = form.querySelector('select')!;
+    const submit = jest.fn();
+    form.addEventListener('submit', submit);
+
+    expect(form.hidden).toBe(true);
+    expect(display.hidden).toBe(false);
+    expect(display.textContent).toContain('Area Owners');
+    edit.click();
+    expect(form.hidden).toBe(false);
+    expect(display.hidden).toBe(true);
+    expect(edit.getAttribute('aria-expanded')).toBe('true');
+    expect(document.activeElement).toBe(select);
+
+    select.value = 'manager';
+    form.querySelector<HTMLButtonElement>('.tt-visibility__cancel')!.click();
+    expect(form.hidden).toBe(true);
+    expect(display.hidden).toBe(false);
+    expect(edit.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(edit);
+    expect(submit).not.toHaveBeenCalled();
+
+    edit.click();
+    expect(select.value).toBe('area-owner');
+  });
+
+  it('cancels editing with Escape and returns focus to Edit', () => {
+    const card = renderEditableCard();
+    const edit = card.querySelector<HTMLAnchorElement>('.tt-visibility__edit')!;
+    const form = card.querySelector<HTMLFormElement>('.tt-visibility')!;
+    const select = form.querySelector('select')!;
+    edit.click();
+    select.value = 'everybody';
+    select.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+
+    expect(form.hidden).toBe(true);
+    expect(select.value).toBe('area-owner');
+    expect(document.activeElement).toBe(edit);
+  });
+
+  it('selects the ticket’s current management visibility', () => {
+    const card = renderCard(ticket({permission: 'manager'}));
+    expect(card.querySelector<HTMLSelectElement>('select[name="permission"]')?.value).toBe('manager');
+  });
+
+  it('shows visibility without an editor for members who cannot change it', () => {
+    const card = renderCard(ticket({canChangeStatus: false, permission: 'everybody'}));
+    expect(card.querySelector('.tt-visibility')).toBeNull();
+    expect(card.textContent).toContain('Everybody');
+  });
+});
+
+describe('ticket +1 button', () => {
+  it('lets a reader vote from the header and return to the ticket', () => {
+    const view = ticket({canChangeStatus: false, plusOneCount: 3});
+    const card = renderCard(view);
+    const form = card.querySelector<HTMLFormElement>('.tt-card__header form')!;
+    const button = form.querySelector('button')!;
+    expect(form.method).toBe('post');
+    const action = new URL(form.action);
+    expect(action.pathname).toBe('/trouble-tickets/set-plus-one');
+    expect(action.searchParams.get('next')).toBe(`/trouble-tickets/view/${view.id}`);
+    expect(form.querySelector('input[name="ticketId"]')?.getAttribute('value')).toBe(view.id);
+    expect(form.querySelector('input[name="plusOne"]')?.getAttribute('value')).toBe('true');
+    expect(button.getAttribute('aria-pressed')).toBe('false');
+    expect(button.getAttribute('aria-label')).toContain('3 votes');
+    expect(button.querySelector('img')?.getAttribute('src')).toBe('/static/makespace-plus-one.svg');
+    expect(button.textContent?.trim()).toBe('3');
+  });
+
+  it('shows the selected state and submits removal when already voted', () => {
+    const card = renderCard(ticket({hasPlusOne: true, plusOneCount: 1}));
+    const button = card.querySelector('.tt-plus-one button')!;
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    expect(button.getAttribute('aria-label')).toContain('Remove your +1');
+    expect(card.querySelector('input[name="plusOne"]')?.getAttribute('value')).toBe('false');
+  });
+});
 
 // A ticket raised from the mailbox is one step removed from the email that
 // prompted it, where the sender's own words and any reply live.
@@ -126,15 +251,13 @@ describe('who submitted a ticket', () => {
   });
 });
 
-// Nothing on the card sends an email. Every change goes through its
-// confirmation page, which says who will be emailed and what it will say -
-// the one-click "resolve silently" went round that, and is gone.
+// Status changes require confirmation showing who will be emailed.
 describe('trouble ticket card actions', () => {
-  it('offers no one-click resolve; every action goes through its page', () => {
+  it('offers no one-click resolve; status actions go through their pages', () => {
     const dom = renderCard(ticket());
 
     expect(dom.querySelector('form.tt-quiet-resolve')).toBeNull();
-    expect(dom.querySelectorAll('form')).toHaveLength(0);
+    expect(dom.querySelectorAll('form:not(.tt-plus-one):not(.tt-visibility)')).toHaveLength(0);
     expect(
       dom.querySelector('a[href^="/trouble-tickets/resolve?"]')
     ).not.toBeNull();

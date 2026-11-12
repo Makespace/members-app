@@ -1,5 +1,6 @@
 import * as t from 'io-ts';
 import * as E from 'fp-ts/Either';
+import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {pipe} from 'fp-ts/lib/function';
 import {formatValidationErrors} from 'io-ts-reporters';
@@ -17,6 +18,8 @@ import {failureWithStatus} from '../../types/failure-with-status';
 import {getInboxThread} from '../../read-models/external-state/gmail-inbox';
 import {splitQuotedText} from '../../templates/quoted-reply';
 import {isManagementTeam} from '../authentication-helpers/is-management-team';
+import {ticketVisibility} from '../../trouble-tickets/permission';
+import {ticketPermissionField} from '../../templates/ticket-permission-field';
 
 type ViewModel = {
   conversationId: string;
@@ -49,9 +52,8 @@ const renderForm: Form<ViewModel>['renderForm'] = viewModel =>
       <div class="stack tt-form">
         <h1>Create a ticket from this email</h1>
         <p>
-          The ticket goes on the management team's board. The sender is
-          recorded as who raised it, but is not emailed - any reply belongs in
-          the conversation.
+          The ticket starts in the management area, with the sender listed as
+          its reporter. Reply in the email conversation.
         </p>
         ${existingTickets(viewModel)}
         <form
@@ -90,6 +92,7 @@ ${sanitizeString(viewModel.body)}</textarea
             <small class="tt-form__hint">Optional.</small>
             <textarea name="steps" rows="3"></textarea>
           </label>
+          ${ticketPermissionField()}
           <button type="submit">Create ticket</button>
         </form>
       </div>
@@ -145,6 +148,14 @@ const constructForm: Form<ViewModel>['constructForm'] =
       ),
       TE.map(messages => {
         const first = messages[0];
+        const canViewTicket = pipe(
+          readModel.members.getByMemberNumber(user.memberNumber),
+          O.match(
+            () => () => false,
+            member =>
+              ticketVisibility(readModel, deps.conf.MANAGEMENT_TEAM_AREA_ID, member)
+          )
+        );
         return {
           conversationId: first.gmailMessageId,
           subject: cleanSubject(first.subject),
@@ -152,6 +163,7 @@ const constructForm: Form<ViewModel>['constructForm'] =
           body: splitQuotedText(first.bodyText ?? '').reply,
           existing: readModel.troubleTickets
             .getByMailboxConversation(first.gmailMessageId)
+            .filter(canViewTicket)
             .map(ticket => ({title: ticket.title, status: ticket.status})),
         };
       })

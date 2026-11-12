@@ -36,7 +36,8 @@ type TroubleTicketsImageModel = {
   // The machine's page, for the QR code.
   pageUrl: string;
   today: Date;
-  tickets: ReadonlyArray<DisplayTicket>;
+  // null means this viewer cannot read tickets, not that the machine is clear.
+  tickets: ReadonlyArray<DisplayTicket> | null;
 };
 
 export const openTickets = (
@@ -328,14 +329,17 @@ const draw =
 
     // Headline: can I use it? The two "don't" answers get a band of their
     // own; the rest is plain bold text. Two lines at most, for narrow panels.
-    const state = machineState(model.tickets);
+    const tickets = model.tickets ?? [];
+    const state = machineState(tickets);
     const banded = state === 'unsafe' || state === 'not-working';
     const inset = banded ? 2 * layout.pad : layout.pad;
     const headlineLine = Math.round(layout.headline * 1.25);
     ctx.font = font(layout.headline, true);
     const headlineLines = wrap(
       ctx,
-      headline(state, model.tickets.length),
+      model.tickets === null
+        ? 'Sign in to view trouble tickets'
+        : headline(state, tickets.length),
       width - 2 * inset,
       2
     );
@@ -392,8 +396,8 @@ const draw =
     const metaLine = Math.round(layout.meta * 1.5);
     const gap = Math.round(layout.pad * 0.8);
 
-    for (const [i, ticket] of model.tickets.entries()) {
-      const remaining = model.tickets.length - i;
+    for (const [i, ticket] of tickets.entries()) {
+      const remaining = tickets.length - i;
       // Keep room for the "N more" line under any entry that is not the last.
       const reserve = remaining > 1 ? metaLine + gap : 0;
       const room = bottom - reserve - y;

@@ -13,6 +13,7 @@ import {ReminderStage} from '../owner-agreement/reminder-stage';
 import {PurchaseCodec} from '../purchasing/purchases';
 import {ProposalCodec} from '../purchasing/proposal';
 import {RecordedSpendKindCodec} from './recorded-spend-kind';
+import {TicketPermission} from './trouble-ticket-permission';
 
 const defineEvent = <A extends string, T extends t.Props>(
   type: A,
@@ -858,11 +859,14 @@ const TrainingQuizCompleted = defineEvent('TrainingQuizCompleted', {
 });
 
 // A trouble ticket submitted via the Google Form, migrated from (or newly
-// scraped from) the trouble-ticket sheet cache. Stores only the raw facts from
-// the sheet row - member and equipment resolution happen downstream. The
+// scraped from) the trouble-ticket sheet cache. Stores the submitted facts
+// and initial audience; member and equipment resolution happen downstream. The
 // submitter-provided identity fields are unverified free-form input. `rowHash`
 // is a stable dedup key so the same row is never imported twice.
 const TroubleTicketCreated = defineEvent('TroubleTicketCreated', {
+  // Undefined only when replaying events from before ticket visibility existed.
+  // New writers always supply a group; the backfill records legacy choices.
+  permission: t.union([TicketPermission, t.undefined]),
   id: tt.UUID,
   rowHash: t.string,
   sheetId: t.string,
@@ -958,6 +962,17 @@ const TroubleTicketEquipmentSet = defineEvent('TroubleTicketEquipmentSet', {
 const TroubleTicketTitleEdited = defineEvent('TroubleTicketTitleEdited', {
   ticketId: tt.UUID,
   title: t.string,
+});
+
+const TroubleTicketPermissionSet = defineEvent('TroubleTicketPermissionSet', {
+  ticketId: tt.UUID,
+  permission: TicketPermission,
+});
+
+const TroubleTicketPlusOneSet = defineEvent('TroubleTicketPlusOneSet', {
+  ticketId: tt.UUID,
+  memberNumber: t.number,
+  plusOne: t.boolean,
 });
 
 // A member took a ticket raised without logging in onto their account, by
@@ -1068,6 +1083,8 @@ export const events = [
   TroubleTicketNeedsHelp,
   TroubleTicketEquipmentSet,
   TroubleTicketTitleEdited,
+  TroubleTicketPermissionSet,
+  TroubleTicketPlusOneSet,
   TroubleTicketClaimed,
   TroubleTicketNotificationSent,
   MemberNotificationPreferenceSet,
@@ -1171,6 +1188,8 @@ export const DomainEvent = t.union([
   TroubleTicketNeedsHelp.codec,
   TroubleTicketEquipmentSet.codec,
   TroubleTicketTitleEdited.codec,
+  TroubleTicketPermissionSet.codec,
+  TroubleTicketPlusOneSet.codec,
   TroubleTicketClaimed.codec,
   TroubleTicketNotificationSent.codec,
   MemberNotificationPreferenceSet.codec,

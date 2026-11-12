@@ -5,6 +5,7 @@ import {EmailAddressCodec} from '../types/email-address';
 import {SharedReadModel} from '../read-models/shared-state';
 import {Member} from '../read-models/shared-state/return-types';
 import {TroubleTicket} from '../types/trouble-ticket';
+import {ticketVisibility} from './permission';
 import {
   allScopes,
   Choice,
@@ -220,7 +221,7 @@ export const audienceFor = (
   // typed, which is where they are waiting for it - matched to a member or
   // not, and whatever that member's preferences say, because the page they
   // submitted told them it would. The member does not get it twice.
-  options: {publicReport?: boolean} = {}
+  options: {publicReport?: boolean; managementAreaId?: string} = {}
 ): ReadonlyArray<Audience> => {
   const confirmToGivenAddress =
     options.publicReport === true && happening === 'reported';
@@ -243,7 +244,8 @@ export const audienceFor = (
   // matched or not.
   const reporterAtGivenAddress: ReadonlyArray<Audience> =
     (ticket.submittedMemberNumber === null || confirmToGivenAddress) &&
-    ticket.submittedEmail !== null
+    ticket.submittedEmail !== null &&
+    confirmToGivenAddress
       ? pipe(
           EmailAddressCodec.decode(ticket.submittedEmail),
           E.match(
@@ -264,34 +266,37 @@ export const audienceFor = (
   return [
     ...reporterAtGivenAddress,
     ...candidates(rm, ticket)
-    .filter(
-      member =>
-        !(
-          confirmToGivenAddress &&
-          reporterAtGivenAddress.length > 0 &&
-          member.memberNumber === ticket.submittedMemberNumber
-        )
-    )
-    .map(member => {
-      const scopes = preferencesFor(
-        member,
-        equipment,
-        areas,
-        rm.notificationPreferences.forMember(member.memberNumber)
-      );
-      const delivery = deliveryForTicket(
-        scopes,
-        member.memberNumber,
-        ticket,
-        areaOfEquipment
-      );
-      return {
-        memberNumber: member.memberNumber,
-        email: member.primaryEmailAddress,
-        ...delivery,
-        theirs: ticket.submittedMemberNumber === member.memberNumber,
-      };
-    })
+      .filter(member =>
+        ticketVisibility(rm, options.managementAreaId ?? '', member)(ticket)
+      )
+      .filter(
+        member =>
+          !(
+            confirmToGivenAddress &&
+            reporterAtGivenAddress.length > 0 &&
+            member.memberNumber === ticket.submittedMemberNumber
+          )
+      )
+      .map(member => {
+        const scopes = preferencesFor(
+          member,
+          equipment,
+          areas,
+          rm.notificationPreferences.forMember(member.memberNumber)
+        );
+        const delivery = deliveryForTicket(
+          scopes,
+          member.memberNumber,
+          ticket,
+          areaOfEquipment
+        );
+        return {
+          memberNumber: member.memberNumber,
+          email: member.primaryEmailAddress,
+          ...delivery,
+          theirs: ticket.submittedMemberNumber === member.memberNumber,
+        };
+      })
       .filter(
         entry =>
           (entry.live || entry.digest !== null) &&

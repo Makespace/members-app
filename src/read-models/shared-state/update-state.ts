@@ -23,6 +23,8 @@ import {
   trainingStatsNotificationTable,
   deletedTroubleTicketRowHashesTable,
   troubleTicketAssigneesTable,
+  troubleTicketPlusOnesTable,
+  memberNumbersTable,
   troubleTicketChangeLogTable,
   troubleTicketNotificationsTable,
   troubleTicketsTable,
@@ -1047,6 +1049,8 @@ const _updateState =
         tx.insert(troubleTicketsTable)
           .values({
             id: event.id,
+            // Legacy tickets fail closed until the permission backfill runs.
+            permission: event.permission ?? 'manager',
             rowHash: event.rowHash,
             status: 'Todo',
             title: event.title !== '' ? event.title : event.issue,
@@ -1245,6 +1249,56 @@ const _updateState =
           .onConflictDoNothing()
           .run();
         event.recipientMemberNumbers.forEach(countNotificationEmail(tx));
+        break;
+      }
+      case 'TroubleTicketPlusOneSet': {
+        const userId = findUserIdByMemberNumber(tx)(event.memberNumber);
+        const ticket = tx
+          .select({id: troubleTicketsTable.id})
+          .from(troubleTicketsTable)
+          .where(eq(troubleTicketsTable.id, event.ticketId))
+          .get();
+        if (O.isNone(userId) || ticket === undefined) {
+          throw new InconsistentEventError(
+            'Unable to +1 an unknown ticket or member'
+          );
+        }
+        if (event.plusOne) {
+          tx.insert(troubleTicketPlusOnesTable)
+            .values({ticketId: event.ticketId, memberNumber: event.memberNumber})
+            .onConflictDoNothing()
+            .run();
+        } else {
+          tx.delete(troubleTicketPlusOnesTable)
+            .where(
+              and(
+                eq(troubleTicketPlusOnesTable.ticketId, event.ticketId),
+                inArray(
+                  troubleTicketPlusOnesTable.memberNumber,
+                  tx.select({number: memberNumbersTable.memberNumber})
+                    .from(memberNumbersTable)
+                    .where(eq(memberNumbersTable.userId, userId.value))
+                )
+              )
+            )
+            .run();
+        }
+        break;
+      }
+      case 'TroubleTicketPermissionSet': {
+        const rows = tx
+          .update(troubleTicketsTable)
+          .set({permission: event.permission})
+          .where(eq(troubleTicketsTable.id, event.ticketId))
+          .run();
+        if (rows.changes === 0) {
+          throw new InconsistentEventError(
+            `Unable to set permission for unknown trouble ticket '${event.ticketId}'`
+          );
+        }
+        recordTicketChange(tx, event, {
+          permission: event.permission,
+        });
         break;
       }
       case 'TroubleTicketTitleEdited': {

@@ -1,4 +1,5 @@
 import * as E from 'fp-ts/Either';
+import {ticketVisibility} from '../trouble-tickets/permission';
 import * as O from 'fp-ts/Option';
 import {pipe} from 'fp-ts/lib/function';
 import mjml2html from 'mjml';
@@ -218,9 +219,13 @@ export const notifyTroubleTicketChanges = async (
       event.type === 'TroubleTicketCreated' && event.source === 'public';
     const audience = audienceFor(rm, ticket.value, happening.value, {
       publicReport,
+      managementAreaId: deps.conf.MANAGEMENT_TEAM_AREA_ID,
     }).filter(entry => entry.live);
     const recipients = pipe(
       assignee,
+      O.filter(member =>
+        ticketVisibility(rm, deps.conf.MANAGEMENT_TEAM_AREA_ID, member)(ticket.value)
+      ),
       O.match(
         () => audience,
         member =>

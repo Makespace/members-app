@@ -2179,6 +2179,14 @@ ul.purchase-checkboxes {
 
 /* Card header: badge alongside the title */
 .tt-card__header {
+  --tt-heading-font-size: 1.17em;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+}
+
+.tt-card__heading {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
@@ -2186,7 +2194,123 @@ ul.purchase-checkboxes {
 }
 
 .tt-card__header h3 {
+  font-size: var(--tt-heading-font-size);
   margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.tt-plus-one {
+  display: flex;
+  margin: 0;
+}
+
+.tt-visibility-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.tt-visibility__display,
+.tt-visibility {
+  grid-area: 1 / 1;
+}
+
+/* Keep the text's height reserved while editing, including when it wraps. */
+.tt-visibility__display[hidden] {
+  display: block;
+  visibility: hidden;
+}
+
+.tt-visibility {
+  display: flex;
+  align-self: start;
+  align-items: center;
+  flex-wrap: nowrap;
+  min-width: 0;
+  gap: 0 6px;
+  margin: 0;
+}
+
+.tt-visibility[hidden] {
+  display: none;
+}
+
+.tt-visibility__edit {
+  margin-left: 8px;
+}
+
+.tt-visibility select,
+.tt-visibility button {
+  font: inherit;
+  height: 1lh;
+  min-height: 0;
+  margin: 0;
+  padding: 0 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.tt-visibility label,
+.tt-visibility button {
+  flex: none;
+  white-space: nowrap;
+}
+
+.tt-visibility button:active {
+  transform: none;
+}
+
+.tt-visibility .tt-visibility__cancel {
+  color: var(--text-color);
+  background: white;
+}
+
+.tt-visibility .tt-visibility__cancel:hover {
+  background: var(--tooltip-color);
+}
+
+.tt-visibility select {
+  min-width: 0;
+  max-width: 100%;
+  color: var(--text-color);
+  background: white;
+}
+
+.tt-plus-one__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 0;
+  height: 1lh;
+  margin: 0;
+  padding: 0 6px 0 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: white;
+  color: var(--text-color);
+  font-size: var(--tt-heading-font-size);
+  line-height: inherit;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.tt-plus-one__button img {
+  display: block;
+  flex: none;
+  width: auto;
+  height: 100%;
+}
+
+.tt-plus-one__button:hover,
+.tt-plus-one__button[aria-pressed='true'] {
+  border-color: #8fbf00;
+  background: #f2f8df;
+}
+
+.tt-plus-one__button:focus-visible {
+  outline: 2px solid #f96400;
+  outline-offset: 3px;
 }
 
 /* Status filter bar */
@@ -2486,7 +2610,7 @@ body:has(.tt-wrapper) {
   overflow: hidden;
 }
 
-/* Too narrow for five columns: each ticket becomes a block, its cells
+/* Too narrow for the table: each ticket becomes a block, its cells
    stacked and labelled. */
 @media screen and (max-width: 48rem) {
   .tt-table,
@@ -3572,7 +3696,8 @@ ul.owners-guide__conditions {
   display: block;
 }
 
-.tt-form select {
+.tt-form select,
+.tt-permission-field select {
   display: block;
   width: 100%;
   margin: 0.5rem 0 0;
@@ -3580,6 +3705,41 @@ ul.owners-guide__conditions {
   border: 2px solid var(--text-color);
   background: white;
   box-sizing: border-box;
+}
+
+.tt-permission-field {
+  display: block;
+}
+
+.tt-permission-field > * + * {
+  margin-block-start: 0.5rem;
+}
+
+.tt-permission-field__control {
+  display: block;
+  position: relative;
+}
+
+.tt-permission-field select {
+  appearance: none;
+  min-height: 3rem;
+  margin: 0;
+  padding: 0.8rem 3rem 0.8rem 1rem;
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+.tt-permission-field__control::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 1.2rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid var(--text-color);
+  border-bottom: 2px solid var(--text-color);
+  transform: translateY(-75%) rotate(45deg);
+  pointer-events: none;
 }
 
 .tt-form textarea,

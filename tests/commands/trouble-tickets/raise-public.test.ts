@@ -83,6 +83,21 @@ describe('raising a trouble ticket without logging in', () => {
       )
     );
 
+  it('records the chosen visibility without treating it as proof of membership', async () => {
+    expect(await raised({permission: 'everybody', reporterMemberNumber: '77'}))
+      .toMatchObject({
+        type: 'TroubleTicketCreated',
+        permission: 'everybody',
+        submittedMemberNumber: null,
+        providedMemberNumber: 77,
+      });
+  });
+
+  it('can limit a new public report to the management team', async () => {
+    expect(await raised({permission: 'manager'}))
+      .toMatchObject({permission: 'manager'});
+  });
+
   describe('working out who it is from', () => {
     it("puts it on the account whose email address they gave", async () => {
       expect(
@@ -150,6 +165,11 @@ describe('raising a trouble ticket without logging in', () => {
   });
 
   describe('what it refuses', () => {
+    it('rejects an invalid visibility group', () => {
+      expect(E.isLeft(raisePublic.decode(posted({permission: 'private'}))))
+        .toBe(true);
+    });
+
     it('an email address that is not one', () => {
       expect(
         E.isLeft(raisePublic.decode(posted({reporterEmail: 'not an email'})))

@@ -14,7 +14,7 @@ import {TestFramework, initTestFramework} from '../read-models/test-framework';
 
 const SUBMITTER = 61;
 
-describe('confirming a newly raised ticket', () => {
+describe('confirming a newly raised ticket the recipient can view', () => {
   let framework: TestFramework;
   let sentEmails: Email[];
   let deps: NotifyTroubleTicketDependencies;
@@ -29,6 +29,7 @@ describe('confirming a newly raised ticket', () => {
   const addTicket = async (source: 'app' | 'sheet' | 'email') =>
     commit(
       constructEvent('TroubleTicketCreated')({
+        permission: 'everybody',
         actor: systemActor(),
         id: faker.string.uuid() as UUID,
         rowHash: faker.string.hexadecimal({length: 64}),
@@ -115,6 +116,7 @@ describe('confirming a newly raised ticket', () => {
     });
     await commit(
       constructEvent('TroubleTicketCreated')({
+        permission: 'everybody',
         actor: systemActor(),
         id: faker.string.uuid() as UUID,
         rowHash: faker.string.hexadecimal({length: 64}),
@@ -189,7 +191,7 @@ describe('confirming a newly raised ticket', () => {
     expect(sentEmails[0].recipient).toStrictEqual('submitter@test.com');
   });
 
-  it('tells the member who wrote in to management', async () => {
+  it('tells the member who wrote in when the email ticket is shared with everybody', async () => {
     await addTicket('email');
 
     await notifyTroubleTicketChanges(deps);

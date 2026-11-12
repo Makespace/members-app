@@ -12,6 +12,9 @@ import {park} from './park';
 import {needsHelp} from './needs-help';
 import {setEquipment} from './set-equipment';
 import {editTitle} from './edit-title';
+import {setPermission} from './set-permission';
+import {setPlusOne} from './set-plus-one';
+import {permissionForm} from './permission-form';
 import {
   assignForm,
   assignToForm,
@@ -37,4 +40,6 @@ export const troubleTickets = {
   needsHelp: {...needsHelp, ...needsHelpForm},
   setEquipment,
   editTitle,
+  setPermission: {...setPermission, ...permissionForm},
+  setPlusOne,
 };

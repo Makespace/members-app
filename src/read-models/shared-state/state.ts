@@ -6,6 +6,7 @@ import {
   TroubleTicketResponse,
   TroubleTicketStatus,
 } from '../../types/trouble-ticket';
+import {TicketPermission} from '../../types/trouble-ticket-permission';
 import {MailboxArchiveReason} from '../../types/mailbox-archive-reason';
 import {
   PurchaseApproval,
@@ -725,6 +726,7 @@ export const troubleTicketsTable = defineTable(
       equipmentId TEXT,
       areaId TEXT,
       mailboxConversationId TEXT,
+      permission TEXT NOT NULL CHECK (permission IN ('everybody', 'area-owner', 'manager')),
       responseJson TEXT NOT NULL
     )
   `,
@@ -752,6 +754,7 @@ export const troubleTicketsTable = defineTable(
     areaId: text('areaId').$type<UUID>(),
     // The mailbox conversation the ticket was raised from, when it was.
     mailboxConversationId: text('mailboxConversationId'),
+    permission: text('permission').$type<TicketPermission>().notNull(),
     responseJson: text('responseJson', {mode: 'json'})
       .notNull()
       .$type<TroubleTicketResponse>(),
@@ -819,6 +822,30 @@ export const troubleTicketAssigneesTable = defineTable(
       'trouble_ticket_assignees_ticket_user_unique'
     ).on(table.ticketId, table.userId),
   })
+);
+
+// Votes follow member numbers through account merges. Queries collapse linked
+// numbers to one member; removing a vote clears all their linked numbers.
+export const troubleTicketPlusOnesTable = defineTable(
+  sql`
+    CREATE TABLE IF NOT EXISTS troubleTicketPlusOnes (
+      ticketId TEXT NOT NULL,
+      memberNumber INTEGER NOT NULL,
+      PRIMARY KEY(ticketId, memberNumber),
+      FOREIGN KEY (ticketId) REFERENCES troubleTickets(id) ON DELETE CASCADE,
+      FOREIGN KEY (memberNumber) REFERENCES memberNumbers(memberNumber) ON DELETE CASCADE
+    )
+  `,
+  'troubleTicketPlusOnes' as const,
+  {
+    ticketId: text('ticketId')
+      .notNull()
+      .$type<UUID>()
+      .references(() => troubleTicketsTable.id, {onDelete: 'cascade'}),
+    memberNumber: integer('memberNumber')
+      .notNull()
+      .references(() => memberNumbersTable.memberNumber, {onDelete: 'cascade'}),
+  }
 );
 
 // One row per ticket status-change event, so the board can render change

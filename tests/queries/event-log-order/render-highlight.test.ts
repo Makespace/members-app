@@ -38,6 +38,7 @@ const area = (): DomainEvent =>
 
 const ticket = (submittedAtMs: number): DomainEvent =>
   constructEvent('TroubleTicketCreated')({
+        permission: 'area-owner',
         source: 'sheet',
         equipmentId: null,
         machine: '',

@@ -12,6 +12,7 @@ import {renderMemberNumber} from './member-number';
 import {STATUS_SLUG} from '../queries/trouble-tickets/status-slug';
 import {displayDate} from './display-date';
 import {TroubleTicketStatus} from '../types/trouble-ticket';
+import {ticketPlusOne} from './trouble-ticket-plus-one';
 
 // How a trouble ticket is drawn. Shared so the board, the ticket's own page
 // and anything else showing one are the same thing rather than three that
@@ -108,6 +109,91 @@ export const renderAssignees = (assignees: ReadonlyArray<AssigneeView>) =>
   assignees.length === 0
     ? html`<em>Nobody assigned</em>`
     : commaHtml(assignees.map(renderAssignee));
+
+const renderVisibility = (ticket: TroubleTicketView): Html => {
+  const audience = {
+    everybody: 'Everybody',
+    'area-owner': 'Area Owners',
+    manager: 'Management',
+  }[ticket.permission];
+  if (!ticket.canChangeStatus) {
+    return html`<div><strong>Visibility:</strong> ${sanitizeString(audience)}</div>`;
+  }
+  return html`
+    <div class="tt-visibility-field">
+      <div class="tt-visibility__display">
+        <strong>Visibility:</strong> ${sanitizeString(audience)}
+        <a
+          href="/trouble-tickets/set-permission?ticketId=${safe(ticket.id)}"
+          class="tt-visibility__edit"
+          aria-label="Edit visibility"
+          aria-controls="ticket-permission-form-${safe(ticket.id)}"
+          aria-expanded="false"
+          >Edit</a
+        >
+      </div>
+    <form
+      id="ticket-permission-form-${safe(ticket.id)}"
+      class="tt-visibility"
+      method="post"
+      action="/trouble-tickets/set-permission"
+      hidden
+    >
+      <input type="hidden" name="ticketId" value="${safe(ticket.id)}" />
+      <label for="ticket-permission-${safe(ticket.id)}"><strong>Visibility:</strong></label>
+      <select
+        id="ticket-permission-${safe(ticket.id)}"
+        name="permission"
+        required
+        title="Super-users always have access"
+      >
+        <option value="everybody" ${ticket.permission === 'everybody' ? html`selected` : html``}>
+          Everybody
+        </option>
+        <option value="area-owner" ${ticket.permission === 'area-owner' ? html`selected` : html``}>
+          Area Owners
+        </option>
+        <option value="manager" ${ticket.permission === 'manager' ? html`selected` : html``}>
+          Management
+        </option>
+      </select>
+      <button type="submit" aria-label="Save visibility">Save</button>
+      <button type="button" class="tt-visibility__cancel">Cancel</button>
+    </form>
+      <script>
+        (function () {
+          var field = document.currentScript.parentElement;
+          var display = field.querySelector('.tt-visibility__display');
+          var edit = field.querySelector('.tt-visibility__edit');
+          var form = field.querySelector('form');
+          var select = form.querySelector('select');
+          var cancel = form.querySelector('.tt-visibility__cancel');
+          function stopEditing() {
+            form.reset();
+            form.hidden = true;
+            display.hidden = false;
+            edit.setAttribute('aria-expanded', 'false');
+            edit.focus();
+          }
+          edit.addEventListener('click', function (event) {
+            event.preventDefault();
+            display.hidden = true;
+            form.hidden = false;
+            edit.setAttribute('aria-expanded', 'true');
+            select.focus();
+          });
+          cancel.addEventListener('click', stopEditing);
+          form.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              stopEditing();
+            }
+          });
+        })();
+      </script>
+    </div>
+  `;
+};
 
 // Tickets in the management team's area are kept to that team and to
 // super-users. Say so wherever one is shown, so nobody who can see it takes
@@ -303,24 +389,28 @@ export const ticketCard = (
     data-scopes="${safe(scopes)}"
   >
     <div class="tt-card__header">
-      ${statusBadge(ticket.status)} ${managementOnlyMarker(ticket)}
-      <h3>
-        ${linkTitle
-          ? html`<a href="/trouble-tickets/view/${safe(encodeURIComponent(ticket.id))}"
-              >${sanitizeString(ticket.title)}</a
-            >`
-          : html`${sanitizeString(ticket.title)}`}
-      </h3>
+      <div class="tt-card__heading">
+        ${statusBadge(ticket.status)} ${managementOnlyMarker(ticket)}
+        <h3>
+          ${linkTitle
+            ? html`<a href="/trouble-tickets/view/${safe(encodeURIComponent(ticket.id))}"
+                >${sanitizeString(ticket.title)}</a
+              >`
+            : html`${sanitizeString(ticket.title)}`}
+        </h3>
+      </div>
+      ${ticketPlusOne(ticket, `/trouble-tickets/view/${encodeURIComponent(ticket.id)}`)}
     </div>
-    <p>
+    <div>
       <strong>Equipment:</strong> ${renderEquipment(ticket)}${renderArea(
         ticket
       )}<br />
       <strong>Submitted by:</strong> ${renderSubmitter(ticket)} on
       ${displayDate(DateTime.fromJSDate(ticket.submittedAt))}<br />
-      <strong>Assigned:</strong> ${renderAssignees(ticket.assignees)}
+      <strong>Assigned:</strong> ${renderAssignees(ticket.assignees)}<br />
+      ${renderVisibility(ticket)}
       ${renderOrigin(ticket)}
-    </p>
+    </div>
     <dl>
       <dt><strong>Machine status</strong></dt>
       <dd>${sanitizeString(ticket.response.status)}</dd>

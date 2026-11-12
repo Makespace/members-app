@@ -6,6 +6,7 @@ import {
   TroubleTicketStatus,
 } from '../../types/trouble-ticket';
 import {Focus} from './focus';
+import {TicketPermission} from '../../types/trouble-ticket-permission';
 import {StatusFilter} from './status-slug';
 
 export type AssigneeView = {
@@ -32,6 +33,9 @@ export type ChangeLogEntry = {
 export type TroubleTicketView = {
   id: UUID;
   title: string;
+  permission: TicketPermission;
+  plusOneCount: number;
+  hasPlusOne: boolean;
   status: TroubleTicketStatus;
   submittedAt: Date;
   submittedName: string | null;
@@ -56,11 +60,8 @@ export type TroubleTicketView = {
   assignedToMe: boolean;
   inMyOwnerArea: boolean;
   onMyTrainerMachine: boolean;
-  // In the management team's area, so only that team and super-users can see
-  // it. Marked as such wherever it is shown.
   managementOnly: boolean;
-  // Whether the viewer may change this ticket's status (trainer on its machine, or a
-  // super-user). Drives whether the action buttons are shown.
+  // Requires area ownership and visibility, or super-user access.
   canChangeStatus: boolean;
   // Whether the viewer may assign the ticket to somebody else.
   canAssignOthers: boolean;
@@ -78,9 +79,6 @@ export type ViewModel = {
   // describes what is in focus.
   focus: O.Option<Focus>;
   tickets: ReadonlyArray<BoardTicketView>;
-  // True when the board is showing only the viewer's own areas (the default
-  // for owners); false = everything (?show=all, or a viewer with no areas).
-  scopedToMine: boolean;
   // Tickets matching the current filters, across all pages.
   totalInScope: number;
   // How many tickets each filter would show, over everything in scope - not

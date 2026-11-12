@@ -200,14 +200,16 @@ describe('displayImage', () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  it('changes its ETag when a ticket is raised against the machine', () => {
+  it('excludes every member-only group from the shared display', () => {
     const etag = (res: FakeResponse) =>
       res.setHeader.mock.calls.find(([name]) => name === 'ETag')?.[1];
     const before = etag(handle(makeReq('1', {})));
     expect(etag(handle(makeReq('1', {})))).toBe(before);
 
+    const ticketId = faker.string.uuid() as UUID;
     framework.insertIntoSharedReadModel(
       constructEvent('TroubleTicketCreated')({
+        permission: 'area-owner',
         source: 'app',
         equipmentId,
         machine: '',
@@ -216,7 +218,7 @@ describe('displayImage', () => {
         mailboxConversationId: '',
         providedMemberNumber: null,
         actor: arbitraryActor(),
-        id: faker.string.uuid() as UUID,
+        id: ticketId,
         rowHash: faker.string.hexadecimal({length: 64}),
         sheetId: '',
         submittedAt: new Date('2026-09-01'),
@@ -232,7 +234,25 @@ describe('displayImage', () => {
       })
     );
 
-    expect(etag(handle(makeReq('1', {})))).not.toBe(before);
+    expect(etag(handle(makeReq('1', {})))).toBe(before);
+    framework.insertIntoSharedReadModel(
+      constructEvent('TroubleTicketPermissionSet')({
+        ticketId,
+        actor: arbitraryActor(),
+        permission: 'manager',
+      })
+    );
+    expect(etag(handle(makeReq('1', {})))).toBe(before);
+
+    // "Everybody" means logged-in members, not a shared display token.
+    framework.insertIntoSharedReadModel(
+      constructEvent('TroubleTicketPermissionSet')({
+        ticketId,
+        actor: arbitraryActor(),
+        permission: 'everybody',
+      })
+    );
+    expect(etag(handle(makeReq('1', {})))).toBe(before);
   });
 
   it('changes its ETag when the display is moved to another machine', async () => {
@@ -292,6 +312,7 @@ describe('displayImage for a display that asks to wait', () => {
   const raiseTicket = (onEquipment: UUID) =>
     framework.insertIntoSharedReadModel(
       constructEvent('TroubleTicketCreated')({
+        permission: 'area-owner',
         source: 'app',
         equipmentId: onEquipment,
         machine: '',
@@ -371,12 +392,11 @@ describe('displayImage for a display that asks to wait', () => {
       expect(etagOf(res)).toBe(currentEtag);
     });
 
-    it('sends the new image as soon as a ticket changes it', () => {
+    it('keeps waiting when a member-only ticket changes', () => {
       jest.advanceTimersByTime(5_000);
       raiseTicket(equipmentId);
       jest.advanceTimersByTime(1_000);
-      expect(res.send).toHaveBeenCalledTimes(1);
-      expect(etagOf(res)).not.toBe(currentEtag);
+      expect(res.send).not.toHaveBeenCalled();
     });
 
     it('sends the new image as soon as the display is cleared', async () => {

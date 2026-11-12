@@ -44,7 +44,11 @@ const getActorFrom = (session: unknown, deps: Dependencies) =>
 const nextCodec = t.strict({next: path});
 
 export const formPost =
-  <T>(deps: Dependencies, command: Command<T>, successTarget: string) =>
+  <T>(
+    deps: Dependencies,
+    command: Command<T>,
+    successTarget: string | ((req: Request) => string)
+  ) =>
   async (req: Request, res: Response<CompleteHtmlDocument>) => {
     // Look at comments to see the core ideas of this pipe / how this works.
     await pipe(
@@ -55,7 +59,7 @@ export const formPost =
         input: getCommandFrom(req.body, command),
       },
       sequenceS(TE.ApplySeq),
-      TE.filterOrElse(({actor, input}) => command.isAuthorized({actor, rm: deps.sharedReadModel, input}), () =>
+      TE.filterOrElse(({actor, input}) => command.isAuthorized({actor, rm: deps.sharedReadModel, input, deps}), () =>
         failureWithStatus(
           'You are not authorized to perform this action',
           StatusCodes.FORBIDDEN
@@ -77,7 +81,11 @@ export const formPost =
               req.query,
               nextCodec.decode,
               E.map(q => q.next),
-              E.getOrElse(() => successTarget)
+              E.getOrElse(() =>
+                typeof successTarget === 'string'
+                  ? successTarget
+                  : successTarget(req)
+              )
             )
           )
       )

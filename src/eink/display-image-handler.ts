@@ -9,7 +9,6 @@ import {constantTimeEqual} from '../http/constant-time-equal';
 import {equipmentPageUrl} from '../templates/slug';
 import {
   msUntilLondonMidnight,
-  openTickets,
   renderTroubleTicketsImage,
 } from './trouble-tickets-image';
 import {renderNotSetUpImage} from './not-set-up-image';
@@ -135,11 +134,8 @@ const currentImage =
                 equipment.name
               ),
               today: new Date(),
-              tickets: openTickets(
-                deps.sharedReadModel.troubleTickets.getByEquipment(
-                  equipment.id
-                )
-              ),
+              // Display tokens do not identify a member in any visibility group.
+              tickets: null,
             },
             options.width,
             options.height,

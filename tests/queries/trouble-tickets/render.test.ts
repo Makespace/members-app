@@ -13,6 +13,9 @@ import {TroubleTicketStatus} from '../../../src/types/trouble-ticket';
 
 const ticket = (overrides: Partial<BoardTicketView> = {}): BoardTicketView => ({
   id: faker.string.uuid() as UUID,
+  permission: 'area-owner',
+  plusOneCount: 0,
+  hasPlusOne: false,
   title: 'Bandsaw is making a noise',
   status: 'Todo' as TroubleTicketStatus,
   submittedAt: new Date('2026-09-01T10:00:00.000Z'),
@@ -45,7 +48,6 @@ const ticket = (overrides: Partial<BoardTicketView> = {}): BoardTicketView => ({
 const viewModel = (tickets: ReadonlyArray<BoardTicketView>): ViewModel => ({
   focus: O.none,
   tickets,
-  scopedToMine: false,
   totalInScope: tickets.length,
   statusCounts: {
     Todo: 0,
@@ -78,8 +80,40 @@ describe('the board as a table', () => {
     ...renderBoard(viewModel(tickets)).querySelectorAll('tbody tr'),
   ];
 
+  it('offers ticket submission on an empty board', () => {
+    expect(
+      renderBoard(viewModel([])).querySelector(
+        'a[href="/trouble-tickets/raise"]'
+      )?.textContent
+    ).toContain('Submit a trouble ticket');
+  });
+
+  it('lets a member clear a relationship filter even when no tickets match', () => {
+    const board = renderBoard({
+      ...viewModel([]),
+      activeScope: O.some('my-area'),
+      scopeCounts: {'my-area': 0},
+    });
+    const myArea = [...board.querySelectorAll('.tt-filter__label--active')]
+      .find(link => link.textContent?.includes('My area'));
+
+    expect(myArea?.getAttribute('href')).toBe('/trouble-tickets/board');
+    expect(board.textContent).toContain('No trouble tickets in this view.');
+  });
+
   it('gives each ticket one row', () => {
     expect(rowsOf([ticket(), ticket(), ticket()])).toHaveLength(3);
+  });
+
+  it('keeps +1 controls off the board', () => {
+    const board = renderBoard(
+      viewModel([ticket({hasPlusOne: true, plusOneCount: 2})])
+    );
+
+    expect(board.querySelector('.tt-plus-one')).toBeNull();
+    expect([...board.querySelectorAll('th')].map(cell => cell.textContent?.trim()))
+      .toEqual(['Status', 'Ticket', 'Where', 'Submitted', 'Assigned']);
+    expect(board.querySelectorAll('tbody tr td')).toHaveLength(5);
   });
 
   it("links each ticket's title to its own page", () => {
@@ -204,7 +238,7 @@ describe('the Open filter', () => {
 
   it('links to status=open, keeping the rest of the view', () => {
     expect(chip(viewModel([ticket()]))?.getAttribute('href')).toBe(
-      '/trouble-tickets/board?show=all&status=open'
+      '/trouble-tickets/board?status=open'
     );
   });
 
@@ -216,7 +250,7 @@ describe('the Open filter', () => {
 
     expect(active?.classList).toContain('tt-filter__label--active');
     expect(active?.getAttribute('href')).toBe(
-      '/trouble-tickets/board?show=all'
+      '/trouble-tickets/board'
     );
   });
 });
@@ -242,6 +276,13 @@ describe('the board pointed at one machine', () => {
     expect(page([]).querySelector('h1')?.textContent).toContain('Band Saw');
   });
 
+  it('keeps the machine selected when submitting a ticket from the board', () => {
+    expect(
+      page([]).querySelector('a[href^="/trouble-tickets/raise"]')
+        ?.getAttribute('href')
+    ).toBe(`/trouble-tickets/raise?equipmentId=${focused.id}`);
+  });
+
   it('offers the area and everything as ways to widen', () => {
     const links = [...page([]).querySelectorAll('.tt-focus a')].map(
       node => node.getAttribute('href') ?? ''
@@ -249,7 +290,7 @@ describe('the board pointed at one machine', () => {
 
     expect(links).toContain('/trouble-tickets/board?areaId=wood-shop');
     // "All tickets" means all of them, not the viewer's own areas.
-    expect(links).toContain('/trouble-tickets/board?show=all');
+    expect(links).toContain('/trouble-tickets/board');
   });
 
   it('keeps the machine when a status filter is clicked', () => {
