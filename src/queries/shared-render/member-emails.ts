@@ -3,6 +3,7 @@ import {MemberEmail} from '../../read-models/shared-state/return-types';
 import {Html, html, joinHtml, sanitizeString} from '../../types/html';
 import { EmailAddress } from '../../types/email-address';
 import { SEND_EMAIL_VERIFICATION_COOLDOWN_MS } from '../../configuration';
+import {displayTime} from '../../templates/display-date';
 
 const sortMemberEmailByVerifiedThenAddedDate = (
   a: MemberEmail,
@@ -42,7 +43,7 @@ const sendVerifyEmail = (memberNumber: number, email: MemberEmail) => {
       (Date.now() - email.verificationLastSent.value.getTime()) < SEND_EMAIL_VERIFICATION_COOLDOWN_MS
     )
   ) {
-    return html`Verification Email Sent At ${sanitizeString(email.verificationLastSent.value.toLocaleTimeString())}!`
+    return html`Verification Email Sent At ${displayTime(email.verificationLastSent.value)}!`
   }
   return html`
     <a

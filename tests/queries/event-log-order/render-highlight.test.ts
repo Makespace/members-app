@@ -81,6 +81,27 @@ const renderPage = (vm: ViewModel) => {
 };
 
 describe('/event-log-order highlight', () => {
+  it('uses the London date and time for summer events near midnight', () => {
+    const at = Date.parse('2026-07-01T23:05:12Z');
+    const events = [stored(1, at, area()), stored(2, at + HOUR, area())];
+    const {ordered: _ordered, ...analysis} = analyzeTimeline(events);
+    const page = renderPage({
+      ...analysis,
+      truncate: false,
+      highlightPrefix: 'Area',
+      selected: {
+        requestedIndex: 1,
+        found: true,
+        window: [{eventIndex: 1, type: 'AreaCreated', recordedAtMs: at, isSelected: true}],
+        detailJson: null,
+        blockLabel: '1',
+      },
+    });
+    expect(page.textContent).toContain('2 Jul 2026');
+    expect(page.textContent).toContain('02/07/2026, 00:05:12');
+    expect(page.textContent).not.toContain('1 Jul 2026');
+  });
+
   it('marks matching events with dots at their positions', () => {
     const page = renderPage(buildViewModel('TroubleTicket'));
     const dots = page.querySelectorAll('svg circle');

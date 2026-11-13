@@ -119,7 +119,7 @@ describe('the Get trained calendar', () => {
     ).toContain('Metal Lathe');
   });
 
-  it('says how soon each day is, with times as timetables write them', () => {
+  it('says how soon each day is, with 24-hour times', () => {
     const body = page(viewModel());
 
     expect(textOf(body.querySelector('#day-2026-10-30 h2'))).toBe(
@@ -129,7 +129,7 @@ describe('the Get trained calendar', () => {
       'Tuesday 3 November in 5 days'
     );
     expect(textOf(body.querySelector('#day-2026-10-30 .training-row__time'))).toBe(
-      '17.00–19.00'
+      '17:00–19:00'
     );
   });
 
