@@ -1,4 +1,6 @@
 import {DateTime} from 'luxon';
+import {APP_TIME_ZONE, londonDateTime} from '../../date-time';
+import {displayDateOnly} from '../../templates/display-date';
 import {html, joinHtml, safe, sanitizeString} from '../../types/html';
 import {
   Block,
@@ -39,11 +41,11 @@ const BLOCK_COLOURS = [
 
 const round = (n: number): number => Math.round(n * 10) / 10;
 
-const fmtDate = (ms: number): string =>
-  DateTime.fromMillis(ms).toFormat('yyyy-LL-dd');
-
 const fmtDateTime = (ms: number): string =>
-  DateTime.fromMillis(ms).toFormat('yyyy-LL-dd HH:mm:ss');
+  londonDateTime(ms).toLocaleString({
+    ...DateTime.DATETIME_SHORT_WITH_SECONDS,
+    hourCycle: 'h23',
+  });
 
 // An event_index rendered as a link to its own detail view.
 const indexLink = (index: number) =>
@@ -101,11 +103,14 @@ const renderYearGrid = (
   vm: ViewModel,
   yOf: (ms: number) => number
 ): string => {
-  const firstYear = DateTime.fromMillis(vm.minRecordedAtMs).year;
-  const lastYear = DateTime.fromMillis(vm.maxRecordedAtMs).year;
+  const firstYear = londonDateTime(vm.minRecordedAtMs).year;
+  const lastYear = londonDateTime(vm.maxRecordedAtMs).year;
   const lines: string[] = [];
   for (let year = firstYear; year <= lastYear; year++) {
-    const ms = DateTime.fromObject({year, month: 1, day: 1}).toMillis();
+    const ms = DateTime.fromObject(
+      {year, month: 1, day: 1},
+      {zone: APP_TIME_ZONE}
+    ).toMillis();
     if (ms < vm.minRecordedAtMs || ms > vm.maxRecordedAtMs) {
       continue;
     }
@@ -312,8 +317,8 @@ const renderBlockRow = (block: Block, colour: string) => html`
     <td>${indexLink(block.startEventIndex)}–${indexLink(block.endEventIndex)}</td>
     <td>${block.count}</td>
     <td>
-      ${safe(fmtDate(block.firstRecordedAtMs))} →
-      ${safe(fmtDate(block.lastRecordedAtMs))}
+      ${displayDateOnly(block.firstRecordedAtMs)} →
+      ${displayDateOnly(block.lastRecordedAtMs)}
     </td>
     <td>${renderOverlap(block)}</td>
     <td>${renderEventTypeCounts(block)}</td>
@@ -557,7 +562,6 @@ const renderHighlightSummary = (vm: ViewModel) => {
           p.position >= block.startPosition && p.position <= block.endPosition
       ).length > 0
   ).length;
-  const fmt = (ms: number) => DateTime.fromMillis(ms).toISODate() ?? '?';
   return html`
     <p>
       Highlighting
@@ -568,8 +572,8 @@ const renderHighlightSummary = (vm: ViewModel) => {
       ${Math.min(...indexes.slice(0, 1).concat(indexes))}–${Math.max(
         ...indexes.slice(0, 1).concat(indexes)
       )},
-      recordedAt ${safe(fmt(Math.min(...times.slice(0, 1).concat(times))))} –
-      ${safe(fmt(Math.max(...times.slice(0, 1).concat(times))))}, spread across
+      recordedAt ${displayDateOnly(Math.min(...times.slice(0, 1).concat(times)))} –
+      ${displayDateOnly(Math.max(...times.slice(0, 1).concat(times)))}, spread across
       <strong>${blocksHit} of ${vm.blocks.length}</strong> blocks.
       <a href="${safe(base)}${vm.truncate ? safe('?truncate=1') : ''}">clear</a>
     </p>
