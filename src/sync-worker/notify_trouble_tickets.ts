@@ -41,6 +41,7 @@ const NOTIFY_TYPES = [
   'TroubleTicketResolved',
   'TroubleTicketParked',
   'TroubleTicketNeedsHelp',
+  'TroubleTicketUpdatePosted',
 ] as const;
 
 type NotifyEvent = StoredEventOfType<(typeof NOTIFY_TYPES)[number]>;

@@ -947,6 +947,14 @@ const TroubleTicketNeedsHelp = defineEvent('TroubleTicketNeedsHelp', {
   whyDidntWork: t.string,
 });
 
+// Progress on a ticket that doesn't change its status - "I've ordered a new
+// part", "the part is stuck in customs". A ticket can have any number. The
+// submitter is told, like any other change.
+const TroubleTicketUpdatePosted = defineEvent('TroubleTicketUpdatePosted', {
+  ticketId: tt.UUID,
+  update: t.string,
+});
+
 // An owner overrides which equipment a ticket relates to (null re-buckets to
 // Unassigned).
 const TroubleTicketEquipmentSet = defineEvent('TroubleTicketEquipmentSet', {
@@ -1066,6 +1074,7 @@ export const events = [
   TroubleTicketResolved,
   TroubleTicketParked,
   TroubleTicketNeedsHelp,
+  TroubleTicketUpdatePosted,
   TroubleTicketEquipmentSet,
   TroubleTicketTitleEdited,
   TroubleTicketClaimed,
@@ -1169,6 +1178,7 @@ export const DomainEvent = t.union([
   TroubleTicketResolved.codec,
   TroubleTicketParked.codec,
   TroubleTicketNeedsHelp.codec,
+  TroubleTicketUpdatePosted.codec,
   TroubleTicketEquipmentSet.codec,
   TroubleTicketTitleEdited.codec,
   TroubleTicketClaimed.codec,

@@ -169,6 +169,14 @@ const renderActions = (ticket: TroubleTicketView): Html => {
     STATUS_SLUG.Resolved,
     'Emails the submitter what you did - unless you choose not to'
   );
+  // Progress that doesn't move the ticket on, so it is coloured by the
+  // status it stays in.
+  const postUpdate = action(
+    'post-update',
+    'Post update',
+    STATUS_SLUG[ticket.status],
+    'Emails the submitter your update, without changing the status'
+  );
   // Handing the ticket to somebody else: super-users only, for now.
   const assignTo = ticket.canAssignOthers
     ? action(
@@ -185,7 +193,7 @@ const renderActions = (ticket: TroubleTicketView): Html => {
       </div>`;
     case 'In Progress':
       return html`<div class="tt-actions">
-        ${resolve}
+        ${postUpdate} ${resolve}
         ${action(
           'needs-help',
           'Needs Help',
@@ -203,7 +211,7 @@ const renderActions = (ticket: TroubleTicketView): Html => {
     case 'Needs Help':
     case 'Parked':
       return html`<div class="tt-actions">
-        ${assign('Mark In Progress')} ${assignTo} ${resolve}
+        ${assign('Mark In Progress')} ${postUpdate} ${assignTo} ${resolve}
       </div>`;
     case 'Resolved':
       return html``;

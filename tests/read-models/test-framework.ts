@@ -286,6 +286,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         resolve: frameworkify(commands.troubleTickets.resolve),
         park: frameworkify(commands.troubleTickets.park),
         needsHelp: frameworkify(commands.troubleTickets.needsHelp),
+        postUpdate: frameworkify(commands.troubleTickets.postUpdate),
         setEquipment: frameworkify(commands.troubleTickets.setEquipment),
         editTitle: frameworkify(commands.troubleTickets.editTitle),
       },
