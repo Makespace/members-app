@@ -19,7 +19,8 @@ export type TicketChange =
       pathToResolution: string;
       intermediateActions: string;
     }
-  | {type: 'TroubleTicketNeedsHelp'; whatTried: string; whyDidntWork: string};
+  | {type: 'TroubleTicketNeedsHelp'; whatTried: string; whyDidntWork: string}
+  | {type: 'TroubleTicketUpdatePosted'; update: string};
 
 // The change, as the email describes it.
 export const describeTicketChange = (
@@ -46,6 +47,8 @@ export const describeTicketChange = (
       return `${actor} parked this ticket.\n\nWhy: ${change.whyParked}\nPath to resolution: ${change.pathToResolution}\nIntermediate actions: ${change.intermediateActions}`;
     case 'TroubleTicketNeedsHelp':
       return `${actor} looked at this ticket but needs help, so it's open for another trainer to pick up.\n\nWhat they tried: ${change.whatTried}\nWhy it didn't work: ${change.whyDidntWork}`;
+    case 'TroubleTicketUpdatePosted':
+      return `${actor} posted an update on this ticket.\n\n${change.update}`;
   }
 };
 

@@ -10,6 +10,7 @@ import {assignTo} from './assign-to';
 import {resolve} from './resolve';
 import {park} from './park';
 import {needsHelp} from './needs-help';
+import {postUpdate} from './post-update';
 import {setEquipment} from './set-equipment';
 import {editTitle} from './edit-title';
 import {
@@ -18,6 +19,7 @@ import {
   resolveForm,
   needsHelpForm,
   parkForm,
+  postUpdateForm,
 } from './action-form';
 
 // Actions that own a confirmation page combine their command with a Form so
@@ -35,6 +37,7 @@ export const troubleTickets = {
   resolve: {...resolve, ...resolveForm},
   park: {...park, ...parkForm},
   needsHelp: {...needsHelp, ...needsHelpForm},
+  postUpdate: {...postUpdate, ...postUpdateForm},
   setEquipment,
   editTitle,
 };

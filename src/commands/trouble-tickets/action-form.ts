@@ -376,6 +376,18 @@ export const needsHelpForm = troubleTicketActionForm({
   submitLabel: 'Flag Needs Help',
 });
 
+export const postUpdateForm = troubleTicketActionForm({
+  verb: 'post-update',
+  pageTitle: 'Post an update',
+  intro: html`This adds an update to the ticket's change log without changing
+  its status, and emails the submitter. Post as many as you like while you
+  work on it - for example "I've ordered a new part", then "the part is stuck
+  in customs".`,
+  change: {type: 'TroubleTicketUpdatePosted', update: YOUR_ANSWER},
+  fields: textField('update', 'What is the latest?'),
+  submitLabel: 'Post update',
+});
+
 export const parkForm = troubleTicketActionForm({
   verb: 'park',
   pageTitle: 'Park ticket',

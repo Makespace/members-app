@@ -1201,6 +1201,21 @@ const _updateState =
         }
         break;
       }
+      case 'TroubleTicketUpdatePosted': {
+        const ticket = tx
+          .select({id: troubleTicketsTable.id})
+          .from(troubleTicketsTable)
+          .where(eq(troubleTicketsTable.id, event.ticketId))
+          .get();
+        if (ticket === undefined) {
+          throw new InconsistentEventError(
+            `Unable to post an update on unknown trouble ticket '${event.ticketId}'`
+          );
+        }
+        // Progress only: the status stays where it is.
+        recordTicketChange(tx, event, {update: event.update});
+        break;
+      }
       case 'TroubleTicketEquipmentSet': {
         const rows = tx
           .update(troubleTicketsTable)
