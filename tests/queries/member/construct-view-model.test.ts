@@ -44,25 +44,74 @@ describe('construct-view-model', () => {
     });
   });
 
-  it('returns the recurly status for the member being viewed', async () => {
+  describe('recurly status', () => {
     const anotherUser = arbitraryUser();
-    await framework.commands.memberNumbers.linkNumberToEmail({
-      memberNumber: anotherUser.memberNumber,
-      email: anotherUser.emailAddress,
-      name: undefined,
-      formOfAddress: undefined,
-    });
-    await insertRecurlySubscription(framework.extDB, {
-      email: anotherUser.emailAddress,
-      hasActiveSubscription: true,
+    beforeEach(async () => {
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        memberNumber: anotherUser.memberNumber,
+        email: anotherUser.emailAddress,
+        name: undefined,
+        formOfAddress: undefined,
+      });
     });
 
-    const viewModel = await constructViewModel(
-      framework,
-      superUser
-    )(anotherUser.memberNumber)();
+    describe('member has an active subscription', () => {
+      beforeEach(async () => {
+        await insertRecurlySubscription(framework.extDB, {
+          email: anotherUser.emailAddress,
+          hasActiveSubscription: true,
+        });
+      });
 
-    expect(getRightOrFail(viewModel).recurlyStatus).toStrictEqual('active');
+      it('is active when viewed by a super user', async () => {
+        const viewModel = await constructViewModel(
+          framework,
+          superUser
+        )(anotherUser.memberNumber)();
+
+        expect(getRightOrFail(viewModel).recurlyStatus).toStrictEqual('active');
+      });
+
+      it('is active when viewed by another member, while keeping emails redacted', async () => {
+        const viewModel = await constructViewModel(
+          framework,
+          unprivilegedUser
+        )(anotherUser.memberNumber)();
+
+        const model = getRightOrFail(viewModel);
+        expect(model.recurlyStatus).toStrictEqual('active');
+        expect(model.member.primaryEmailAddress).toStrictEqual('******');
+        expect(model.member.emails.map(email => email.emailAddress)).toStrictEqual([
+          '******',
+        ]);
+        expect(model.billing).toStrictEqual(O.none);
+      });
+
+      it('is active when viewed by the member themselves', async () => {
+        const viewModel = await constructViewModel(
+          framework,
+          anotherUser
+        )(anotherUser.memberNumber)();
+
+        const model = getRightOrFail(viewModel);
+        expect(model.recurlyStatus).toStrictEqual('active');
+        expect(model.member.primaryEmailAddress).toStrictEqual(anotherUser.emailAddress);
+      });
+    });
+
+    it('does not use the viewing member\'s active subscription for an inactive member', async () => {
+      await insertRecurlySubscription(framework.extDB, {
+        email: unprivilegedUser.emailAddress,
+        hasActiveSubscription: true,
+      });
+
+      const viewModel = await constructViewModel(
+        framework,
+        unprivilegedUser
+      )(anotherUser.memberNumber)();
+
+      expect(getRightOrFail(viewModel).recurlyStatus).toStrictEqual('inactive');
+    });
   });
 
   // Billing detail is fetched only for the people who chase it. Keeping it out

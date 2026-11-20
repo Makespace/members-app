@@ -5,8 +5,14 @@ import {v4} from 'uuid';
 import {Form} from '../../types/form';
 import {html, safe, toLoggedInContentWithBackLink} from '../../types/html';
 import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
+import {budgetYearOf} from '../../purchasing/budget-year';
 
-type ViewModel = {id: UUID};
+type ViewModel = {
+  id: UUID;
+  // Once a yearly allowance per Area applies, its budget comes from its
+  // Areas, so there's none to ask for.
+  allowanceApplies: boolean;
+};
 
 const renderForm = (viewModel: ViewModel) =>
   pipe(
@@ -21,15 +27,21 @@ const renderForm = (viewModel: ViewModel) =>
         <form action="/purchasing-areas/create" method="post">
           <label for="name">What is it called?</label>
           <input type="text" name="name" id="name" required />
-          <label for="yearlyBudget">Yearly budget (£)</label>
-          <input
-            type="text"
-            inputmode="decimal"
-            name="yearlyBudget"
-            id="yearlyBudget"
-            placeholder="e.g. 1500.00"
-            required
-          />
+          ${viewModel.allowanceApplies
+            ? html`<p>
+                  Its yearly budget is its Areas' yearly allowances added
+                  together.
+                </p>
+                <input type="hidden" name="yearlyBudget" value="0.00" />`
+            : html`<label for="yearlyBudget">Yearly budget (£)</label>
+                <input
+                  type="text"
+                  inputmode="decimal"
+                  name="yearlyBudget"
+                  id="yearlyBudget"
+                  placeholder="e.g. 1500.00"
+                  required
+                />`}
           <input type="hidden" name="id" value="${viewModel.id}" />
           <button type="submit">Create purchasing area</button>
         </form>
@@ -43,6 +55,16 @@ const renderForm = (viewModel: ViewModel) =>
 
 export const createForm: Form<ViewModel> = {
   renderForm,
-  constructForm: () => () => TE.right({id: v4() as UUID}),
+  constructForm:
+    () =>
+    ({readModel}) =>
+      TE.right({
+        id: v4() as UUID,
+        allowanceApplies: readModel.purchasing
+          .allowances()
+          .some(
+            allowance => allowance.fromBudgetYear <= budgetYearOf(new Date())
+          ),
+      }),
   formIsAuthorized: isAdminOrSuperUser,
 };

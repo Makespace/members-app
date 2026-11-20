@@ -40,4 +40,5 @@ export interface SyncWorkerDependencies {
   lastQuizSync: Dependencies['lastQuizSync'];
   getSheetData: Dependencies['getSheetData'];
   pullRecurlyData: (syncInterval: Duration) => Promise<void>;
+  receiptFiles: Dependencies['receiptFiles'];
 }

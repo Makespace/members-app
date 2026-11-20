@@ -5,6 +5,7 @@ import {sanitizeString} from '../types/html';
 import {formatPence} from '../types/money';
 import {PurchaseRequest} from '../read-models/shared-state/return-types';
 import {NotificationReason, Recipient} from './notification-recipients';
+import {awaitedApproval} from '../templates/purchase-request-status';
 
 // The email sent about a purchase request; who gets it is decided in
 // notification-recipients.ts. It looks like the request pages: a heading,
@@ -97,8 +98,10 @@ const whyYou = (
 const outcomeTag = (request: PurchaseRequest): Tag => {
   const base: Tag =
     request.outcome === 'consumable'
-      ? {label: 'Paid for by members', colour: 'green'}
-      : request.outcome === 'outside-budget'
+      ? {label: 'Recoverable consumable', colour: 'green'}
+      : request.outcome === 'repair'
+        ? {label: 'Repair (not from the yearly budget)', colour: 'green'}
+        : request.outcome === 'outside-budget'
         ? {label: 'Approved outside the yearly budget', colour: 'blue'}
         : {label: 'Yearly budget', colour: 'yellow'};
   if (request.approval !== 'proposal') {
@@ -122,7 +125,7 @@ const notificationSubject = (
 ): string => {
   switch (kind) {
     case 'new':
-      if (request.approval === 'none') {
+      if (request.approval === 'none' || request.approval === 'super-user') {
         return `Purchase request to approve: ${request.summary}`;
       }
       return recipient.reasons.includes('affected-area-owner')
@@ -162,7 +165,7 @@ const contentFor = (
   ];
   switch (kind) {
     case 'new': {
-      const director = request.approval === 'proposal';
+      const awaited = awaitedApproval(request);
       const affects = recipient.reasons.includes('affected-area-owner');
       const lines = [
         ...reasons,
@@ -177,17 +180,18 @@ const contentFor = (
         tags: [
           outcomeTag(request),
           {
-            label: `Awaiting ${director ? 'director' : 'purchaser'} approval`,
+            label: `Awaiting ${awaited} approval`,
             colour: 'grey',
           },
         ],
         intro: `${context.requesterName} has asked to buy this for ${context.areaName}.`,
-        details: director
-          ? [
-              ...details,
-              ['Needs director approval because', request.outcomeReason],
-            ]
-          : details,
+        details:
+          request.approval === 'none'
+            ? details
+            : [
+                ...details,
+                [`Needs ${awaited} approval because`, request.outcomeReason],
+              ],
         box: recipient.canDecide
           ? {tone: 'action', title: 'Please approve or decline it.', lines}
           : affects

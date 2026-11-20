@@ -33,6 +33,7 @@ describe('assigning areas to purchasing areas', () => {
       name,
       yearlyBudgetPence: 0,
       active: true,
+      smallPurchaseAmountPence: 100_000,
     });
   const areaCreated = constructEvent('AreaCreated')({
     actor: arbitraryActor(),

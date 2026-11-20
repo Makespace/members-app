@@ -11,9 +11,14 @@ const tags: Record<PurchaseRequestStatus, {label: string; colour: string}> = {
 };
 
 // Whose approval a request waits for: a director's when it needs a
-// proposal, otherwise a purchaser's for its area.
+// proposal, a super user's for a large repair, otherwise a purchaser's for
+// its area.
 export const awaitedApproval = ({approval}: Pick<PurchaseRequest, 'approval'>) =>
-  approval === 'proposal' ? 'director' : 'purchaser';
+  approval === 'proposal'
+    ? 'director'
+    : approval === 'super-user'
+      ? 'super user'
+      : 'purchaser';
 
 // Where a purchase request has got to, as a tag.
 export const renderStatus = ({

@@ -1,5 +1,5 @@
 import * as E from 'fp-ts/Either';
-import {Classification, PROPOSAL_THRESHOLD_PENCE} from './classify-purchase';
+import {Classification} from './classify-purchase';
 
 // Super users and a purchasing area's purchasers can make a purchase
 // themselves (e.g. with Capital on Tap) instead of sending a request for a
@@ -16,11 +16,14 @@ export const canBuyDirectly = (
   role: BuyerRole,
   {
     amountPence,
+    smallPurchaseAmountPence,
     affectedAreaNames,
     healthAndSafetyRisk,
     classification,
   }: {
     amountPence: number;
+    // The purchasing area's: see classifyPurchase.
+    smallPurchaseAmountPence: number;
     affectedAreaNames: ReadonlyArray<string>;
     healthAndSafetyRisk: boolean;
     classification: Pick<Classification, 'approval'>;
@@ -37,12 +40,13 @@ export const canBuyDirectly = (
     );
   }
   // Only a super user can go ahead with one that would otherwise need a
-  // proposal for its cost (£1,000 or more, or over the budget). The £1,000
-  // limit holds for purchasers even when members pay for it.
+  // proposal for its cost (the small purchase amount or more, or over the
+  // budget). The small purchase amount holds for purchasers even when members
+  // pay for it.
   if (
     role === 'purchaser' &&
     (classification.approval === 'proposal' ||
-      amountPence >= PROPOSAL_THRESHOLD_PENCE)
+      amountPence >= smallPurchaseAmountPence)
   ) {
     return E.left(
       "This needs a proposal, so a purchaser can't buy it directly. Send it as a request for a director to approve."

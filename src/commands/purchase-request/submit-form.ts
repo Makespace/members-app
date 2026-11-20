@@ -10,7 +10,6 @@ import {safe, toLoggedInContentWithBackLink} from '../../types/html';
 import {budgetYearOf} from '../../purchasing/budget-year';
 import {
   classifyPurchase,
-  PROPOSAL_THRESHOLD_PENCE,
 } from '../../purchasing/classify-purchase';
 import {
   normalisePurchases,
@@ -20,6 +19,7 @@ import {
   typedPurchases,
 } from '../../purchasing/purchases';
 import {SharedReadModel} from '../../read-models/shared-state';
+import {PurchaseTypeCodec} from '../../types/purchase-type';
 import {readRequestedStep} from '../../templates/multi-page-form';
 import {RawProposal, typedProposal} from '../../purchasing/proposal';
 import {BuyerRole, canBuyDirectly} from '../../purchasing/buy-directly';
@@ -75,6 +75,7 @@ const purchasingAreasFor = (
     areaNames: purchasingArea.areas.map(area => area.name),
     yearlyBudgetPence: purchasingArea.yearlyBudgetPence,
     spentThisYearPence: purchasingArea.spentThisYearPence,
+    smallPurchaseAmountPence: purchasingArea.smallPurchaseAmountPence,
     remainingPence: purchasingArea.remainingPence,
   }));
 
@@ -114,12 +115,27 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
       purchasingAreas.length === 1
         ? purchasingAreas[0].id
         : readAnswer(input, 'purchasingArea');
+    const purchaseType = pipe(
+      PurchaseTypeCodec.decode(readAnswer(input, 'purchaseType')),
+      O.fromEither
+    );
     const answers: PurchaseRequestAnswers = {
+      purchaseType: pipe(
+        purchaseType,
+        O.getOrElse((): string => '')
+      ),
       purchasingAreaId: readAnswer(input, 'purchasingAreaId') || startingArea,
       summary: readAnswer(input, 'summary'),
       justification: readAnswer(input, 'justification'),
       purchases: readPurchases(input),
-      isMemberPaidConsumable: readAnswer(input, 'isMemberPaidConsumable'),
+      // Answered by the type of purchase chosen on the first page.
+      isMemberPaidConsumable: pipe(
+        purchaseType,
+        O.match(
+          () => '',
+          type => String(type === 'member-paid')
+        )
+      ),
       affectsOtherAreas: readAnswer(input, 'affectsOtherAreas'),
       affectedAreaIds: readAll(input, 'affectedAreaIds'),
       healthAndSafetyRisk: readAnswer(input, 'healthAndSafetyRisk'),
@@ -209,6 +225,7 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
       O.apS('healthAndSafetyRisk', risky),
       O.map(({area, totalPence, isMemberPaidConsumable, healthAndSafetyRisk}) => ({
         totalPence,
+        smallPurchaseAmountPence: area.smallPurchaseAmountPence,
         classification: classifyPurchase({
           approvedOutsideBudget:
             buyingDirectly &&
@@ -218,6 +235,7 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
           healthAndSafetyRisk,
           isMemberPaidConsumable,
           amountPence: totalPence,
+          smallPurchaseAmountPence: area.smallPurchaseAmountPence,
           yearlyBudgetPence: area.yearlyBudgetPence,
           spentThisYearPence: area.spentThisYearPence,
         }),
@@ -235,6 +253,7 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
         pipe(
           canBuyDirectly(buyerRole, {
             amountPence: found.totalPence,
+            smallPurchaseAmountPence: found.smallPurchaseAmountPence,
             affectedAreaNames,
             healthAndSafetyRisk: pipe(risky, O.exists(Boolean)),
             classification: found.classification,
@@ -251,12 +270,12 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
       ...(answers.justification === '' ? ['why it is needed'] : []),
     ];
     const problemsOn = [
+      O.isNone(purchaseType)
+        ? ['Please choose what kind of purchase this is.']
+        : [],
       [
         ...(aboutMissing.length > 0
           ? [`Please give ${aboutMissing.join(', ')} before moving on.`]
-          : []),
-        ...(O.isNone(consumable)
-          ? ['Please say whether members pay for it.']
           : []),
         ...(O.isNone(affectsOthers)
           ? ['Please say whether it could negatively impact other areas.']
@@ -296,7 +315,6 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
       ),
       budgetYear: budgetYearOf(now),
       purchasingAreas,
-      proposalThresholdPence: PROPOSAL_THRESHOLD_PENCE,
       step,
       answers,
       problems: requested > step ? problemsOn[step - 1] : [],
@@ -305,7 +323,7 @@ const constructForm: Form<PurchaseRequestFormViewModel>['constructForm'] =
       affectedAreaNames,
       buyerRole,
       result:
-        step === 3
+        step === PAGE_LABELS.length
           ? pipe(
               O.Do,
               O.apS('purchases', O.fromEither(purchases)),

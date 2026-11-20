@@ -43,7 +43,7 @@ describe('submit purchase request', () => {
   const formBody = (overrides: Record<string, unknown> = {}) => ({
     id: faker.string.uuid(),
     purchasingAreaId,
-    isMemberPaidConsumable: 'false',
+    purchaseType: 'improvements',
     affectsOtherAreas: 'false',
     healthAndSafetyRisk: 'false',
     summary: 'Sewing machine',
@@ -146,6 +146,7 @@ describe('submit purchase request', () => {
         name: 'Textiles',
         yearlyBudgetPence: 150_000,
         active: true,
+        smallPurchaseAmountPence: 100_000,
       }),
       constructEvent('AreaAssignedToPurchasingArea')({
         actor: arbitraryActor(),
@@ -212,6 +213,34 @@ describe('submit purchase request', () => {
         formBody({outcome: 'consumable'})
       );
       expect(event.outcome).toStrictEqual('budget');
+    });
+  });
+
+  describe("the purchasing area's small purchase amount", () => {
+    it('lets a purchase under it come from the budget', async () => {
+      expect((await submitted(formBody(costing('600')))).outcome).toStrictEqual(
+        'budget'
+      );
+    });
+
+    describe('once lowered to £500', () => {
+      beforeEach(() => {
+        insert(
+          constructEvent('PurchasingAreaSmallPurchaseAmountSet')({
+            actor: arbitraryActor(),
+            purchasingAreaId,
+            smallPurchaseAmountPence: 50_000,
+          })
+        );
+      });
+
+      it('needs a proposal for a purchase of that much or more', async () => {
+        const event = await submitted(formBody(costing('600')));
+        expect(event.outcome).toStrictEqual('budget-proposal-needed');
+        expect(event.outcomeReason).toContain(
+          'A single purchase of £500.00 or more needs a proposal.'
+        );
+      });
     });
   });
 
@@ -284,7 +313,7 @@ describe('submit purchase request', () => {
   describe('a consumable members pay for', () => {
     it("is recorded as a consumable, needing no approval", async () => {
       const event = await submitted(
-        formBody({isMemberPaidConsumable: 'true', ...costing('2500.00')})
+        formBody({purchaseType: 'member-paid', ...costing('2500.00')})
       );
       expect(event).toMatchObject({
         outcome: 'consumable',
@@ -294,10 +323,29 @@ describe('submit purchase request', () => {
     });
   });
 
-  it('needs the consumable question answered', () => {
+  it.each(['repairs', 'non-recoverable-consumables'])(
+    'takes %s out of the yearly budget, like improvements',
+    async purchaseType => {
+      expect(
+        await submitted(formBody({purchaseType, ...costing('2500.00')}))
+      ).toMatchObject({
+        outcome: 'budget-proposal-needed',
+        isMemberPaidConsumable: false,
+        purchaseType,
+      });
+    }
+  );
+
+  it('needs the type of purchase chosen', () => {
     expect(
-      submit.decode(formBody({isMemberPaidConsumable: ''}))._tag
+      submit.decode(formBody({purchaseType: ''}))._tag
     ).toStrictEqual('Left');
+  });
+
+  it('records the type of purchase', async () => {
+    expect(
+      (await submitted(formBody({purchaseType: 'repairs'}))).purchaseType
+    ).toStrictEqual('repairs');
   });
 
   describe('other areas and health and safety', () => {
@@ -357,7 +405,7 @@ describe('submit purchase request', () => {
 
     it('can need a proposal for a consumable without using the budget', async () => {
       const event = await submitted(
-        formBody({isMemberPaidConsumable: 'true', healthAndSafetyRisk: 'true'})
+        formBody({purchaseType: 'member-paid', healthAndSafetyRisk: 'true'})
       );
       expect(event).toMatchObject({outcome: 'consumable', approval: 'proposal'});
     });

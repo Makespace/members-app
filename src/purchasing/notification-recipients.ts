@@ -144,6 +144,13 @@ export const recipientsForNewRequest = (
     add(people, fellBack ? 'super-user' : 'purchaser');
     return without(request.submittedByMemberNumber);
   }
+  // A large repair: only a super user can approve it, and no proposal needs
+  // discussing.
+  if (request.approval === 'super-user') {
+    const {people, fellBack} = directorsOf(rm, areas);
+    add(people, fellBack ? 'super-user' : 'director');
+    return without(request.submittedByMemberNumber);
+  }
   const management = ownersOf(rm, areas.MANAGEMENT_TEAM_AREA_ID);
   const directors = ownersOf(rm, areas.DIRECTORS_AREA_ID);
   add(management, 'management-team');

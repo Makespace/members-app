@@ -21,9 +21,18 @@ export const purchasingAreas: Query = deps => user => {
     O.exists(m => m.isSuperUser)
   );
   const purchasingAreas = deps.sharedReadModel.purchasing.getAll(now);
+  const budgetYear = budgetYearOf(now);
   return pipe(
     render({
-      budgetYear: budgetYearOf(now),
+      budgetYear,
+      allowancePerAreaPence: pipe(
+        deps.sharedReadModel.purchasing
+          .allowances()
+          .filter(allowance => allowance.fromBudgetYear <= budgetYear)
+          .at(-1),
+        O.fromNullable,
+        O.map(allowance => allowance.allowancePerAreaPence)
+      ),
       purchasingAreas,
       canManage: isSuperUser,
       canRequest: purchasingAreas.some(purchasingArea =>

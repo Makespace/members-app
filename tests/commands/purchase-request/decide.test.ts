@@ -33,7 +33,7 @@ describe('approving or declining a purchase request', () => {
     await framework.commands.purchaseRequest.submit({
       id,
       purchasingAreaId,
-      isMemberPaidConsumable: false,
+      purchaseType: 'improvements',
       affectsOtherAreas: false,
       affectedAreaIds: undefined,
       healthAndSafetyRisk: false,
@@ -94,6 +94,7 @@ describe('approving or declining a purchase request', () => {
         name: 'Wood Shop',
         yearlyBudgetPence: 500_000,
         active: true,
+        smallPurchaseAmountPence: 100_000,
       }),
       constructEvent('AreaAssignedToPurchasingArea')({
         actor: arbitraryActor(),

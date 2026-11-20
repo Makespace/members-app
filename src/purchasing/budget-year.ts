@@ -7,7 +7,8 @@ import {PurchaseRequestOutcome} from '../types/purchase-request-outcome';
 export const budgetYearOf = (date: Date): number =>
   DateTime.fromJSDate(date, {zone: 'Europe/London'}).year;
 
-// Everything members don't pay for comes out of the yearly budget - once a
-// super user has approved it; see the purchasing read model.
+// Everything but member-paid purchases, repairs and purchases approved
+// outside it comes out of the yearly budget - once approved; see the
+// purchasing read model.
 export const countsAgainstBudget = (outcome: PurchaseRequestOutcome): boolean =>
-  outcome !== 'consumable' && outcome !== 'outside-budget';
+  outcome !== 'consumable' && outcome !== 'outside-budget' && outcome !== 'repair';

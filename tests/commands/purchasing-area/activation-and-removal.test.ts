@@ -62,6 +62,7 @@ describe('activating, deactivating and removing a purchasing area', () => {
           name: 'Wood Shop',
           yearlyBudgetPence: 100_000,
           active: false,
+          smallPurchaseAmountPence: 100_000,
         })
       );
     });
@@ -97,6 +98,7 @@ describe('activating, deactivating and removing a purchasing area', () => {
           name: 'Wood Shop',
           yearlyBudgetPence: 100_000,
           active: true,
+          smallPurchaseAmountPence: 100_000,
         })
       );
     });

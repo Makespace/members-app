@@ -1,9 +1,10 @@
 import * as O from 'fp-ts/Option';
 import {body as original} from './2024-original';
 import {pages as october2026} from './2026-10';
-import {AgreementPage} from './types';
+import {changes as october2026Changes} from './2026-10-changes';
+import {AgreementChanges, AgreementPage} from './types';
 
-export type {AgreementPage} from './types';
+export type {AgreementChanges, AgreementPage} from './types';
 
 // Every version of the Owners' Agreement there has been, oldest first. A
 // signature records the key of the version signed, so what someone agreed to
@@ -15,6 +16,8 @@ export type AgreementVersion = {
   // How long a signature lasts before it needs renewing; null if it doesn't.
   termMonths: number | null;
   pages: ReadonlyArray<AgreementPage>;
+  // What changed from what came before, if written up.
+  changes: O.Option<AgreementChanges>;
 };
 
 // Signatures from before versioning were all of the original agreement.
@@ -26,12 +29,14 @@ export const agreementVersions: ReadonlyArray<AgreementVersion> = [
     title: 'The original agreement (2024)',
     termMonths: null,
     pages: [{label: 'The agreement', body: original}],
+    changes: O.none,
   },
   {
     key: '2026-10',
     title: 'The Owners’ Agreement (October 2026)',
     termMonths: 6,
     pages: october2026,
+    changes: O.some(october2026Changes),
   },
 ];
 

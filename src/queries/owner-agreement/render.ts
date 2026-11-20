@@ -1,10 +1,11 @@
 import * as O from 'fp-ts/Option';
-import {html, joinHtml, safe} from '../../types/html';
+import {html, Html, joinHtml, safe} from '../../types/html';
 import {
   ownerAgreementStatus,
   SignedOwnerAgreement,
 } from '../../owner-agreement/agreement';
 import {
+  AgreementChanges,
   AgreementPage,
   agreementVersions,
   AgreementVersion,
@@ -89,6 +90,66 @@ const renderAbout = ({version, signed, now}: ViewModel) => {
   </div>`;
 };
 
+const renderSnippet = (label: string, snippet: Html | undefined) =>
+  snippet === undefined
+    ? html``
+    : html`<div class="agreement-change__snippet">
+        <span class="agreement-change__label">${safe(label)}</span>
+        <blockquote>${snippet}</blockquote>
+      </div>`;
+
+// The wording before and after, folded away until asked for.
+const renderWording = (change: AgreementChanges['groups'][number]['changes'][number]) =>
+  change.before === undefined && change.after === undefined
+    ? html``
+    : html`<details class="agreement-change__wording">
+        <summary>show wording</summary>
+        <div class="stack">
+          ${renderSnippet('Before', change.before)}
+          ${renderSnippet('Now', change.after)}
+        </div>
+      </details>`;
+
+// What changed from what came before: a bullet per change, each with the
+// wording before and after to open if wanted (struck-through wording is
+// gone, highlighted wording is new).
+const renderChanges = (changes: AgreementChanges) => html`
+  <section id="changes" class="stack">
+    <h2>What changed</h2>
+    <p>Changes since ${safe(changes.comparedWith)}.</p>
+    ${joinHtml(
+      changes.groups.map(
+        group => html`
+          <h3>${safe(group.heading)}</h3>
+          <ul class="agreement-changes">
+            ${joinHtml(
+              group.changes.map(
+                change => html`<li
+                  class="${change.kind
+                    ? safe(`agreement-change--${change.kind}`)
+                    : safe('')}"
+                >
+                  ${change.kind
+                    ? html`<span class="visually-hidden"
+                        >${safe(change.kind === 'added' ? 'Added' : 'Removed')}:
+                      </span>`
+                    : html``}
+                  ${change.tag
+                    ? html`<span class="agreement-change__tag"
+                        >${safe(change.tag)}</span
+                      >`
+                    : html``}
+                  ${change.summary} ${renderWording(change)}
+                </li>`
+              )
+            )}
+          </ul>
+        `
+      )
+    )}
+  </section>
+`;
+
 const renderVersions = ({version, signed}: ViewModel) => html`
   <h2>All versions</h2>
   <ul>
@@ -124,6 +185,9 @@ export const render = (viewModel: ViewModel) => {
     <div class="stack prose">
       <h1>${safe(viewModel.version.title)}</h1>
       ${renderAbout(viewModel)}
+      ${O.isSome(viewModel.version.changes)
+        ? html`<p><a href="#changes">See what changed</a></p>`
+        : html``}
       ${joinHtml(
         viewModel.version.pages.map(
           page => html`
@@ -137,6 +201,9 @@ export const render = (viewModel: ViewModel) => {
           `
         )
       )}
+      ${O.isSome(viewModel.version.changes)
+        ? renderChanges(viewModel.version.changes.value)
+        : html``}
       ${renderVersions(viewModel)}
     </div>
   `;

@@ -7,7 +7,7 @@ import {
 
 const tags: Record<PurchaseRequestOutcome, {label: string; colour: string}> = {
   consumable: {
-    label: 'Paid for by members (not from the yearly budget)',
+    label: 'Recoverable consumable (not from the yearly budget)',
     colour: 'green',
   },
   budget: {label: 'Yearly budget', colour: 'yellow'},
@@ -16,13 +16,14 @@ const tags: Record<PurchaseRequestOutcome, {label: string; colour: string}> = {
     colour: 'red',
   },
   'outside-budget': {label: 'Approved outside the yearly budget', colour: 'blue'},
+  repair: {label: 'Repair (not from the yearly budget)', colour: 'green'},
 };
 
 // The budget it came from, without saying whether a proposal was needed.
 const withoutProposal = (outcome: PurchaseRequestOutcome) =>
   outcome === 'budget-proposal-needed' ? tags.budget : tags[outcome];
 
-// The outcome, as a tag. A consumable usually needs nothing, but can still
+// The outcome, as a tag. A member-paid one usually needs nothing, but can still
 // need a proposal (e.g. for a risk assessment). "Proposal needed" is red
 // only while it's still needed: once a request is approved it says the
 // proposal was approved, and once declined or bought directly (a super user
@@ -36,8 +37,10 @@ export const renderOutcome = (
   const tag =
     approval !== 'proposal' || status === undefined || status === 'awaiting-approval'
       ? outcome === 'consumable' && approval === 'proposal'
-        ? {label: 'Paid for by members · Proposal needed', colour: 'red'}
-        : tags[outcome]
+        ? {label: 'Recoverable consumable · Proposal needed', colour: 'red'}
+        : outcome === 'repair' && approval === 'proposal'
+          ? {label: 'Repair · Proposal needed', colour: 'red'}
+          : tags[outcome]
       : status === 'approved' || status === 'bought'
         ? {label: `${base.label} · Proposal approved`, colour: base.colour}
         : base;

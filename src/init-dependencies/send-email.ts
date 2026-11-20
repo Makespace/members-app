@@ -17,6 +17,9 @@ export const sendEmail =
             subject: email.subject,
             text: email.text,
             html: email.html,
+            attachments: email.attachments?.map(attachment => ({
+              ...attachment,
+            })),
           }),
         identity
       ),

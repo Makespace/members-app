@@ -13,6 +13,7 @@ import {ensureEventTableExists} from '../../src/init-dependencies/event-store/en
 import {Actor, DomainEvent} from '../../src/types';
 import {pipe} from 'fp-ts/lib/function';
 import {commands, Command} from '../../src/commands';
+import {receiptFileStore} from '../../src/purchasing/receipt-files';
 import {commitEvent} from '../../src/init-dependencies/event-store/commit-event';
 import {arbitraryActor, getRightOrFail, getTaskEitherRightOrFail} from '../helpers';
 import * as libsqlClient from '@libsql/client';
@@ -146,6 +147,7 @@ export const initTestFramework = async (): Promise<TestFramework> => {
     getDeletedEventByIndex: getDeletedEventByIndex(eventDB),
     // No write token, so any Recurly write is refused rather than sent.
     recurlyWrite: initRecurlyWriteGateway(logger, undefined),
+    receiptFiles: receiptFileStore(eventDB),
   };
 
   const frameworkify =
@@ -297,11 +299,16 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         create: frameworkify(commands.purchasingArea.create),
         rename: frameworkify(commands.purchasingArea.rename),
         setBudget: frameworkify(commands.purchasingArea.setBudget),
+        setSmallPurchaseAmount: frameworkify(
+          commands.purchasingArea.setSmallPurchaseAmount
+        ),
+        setAllowance: frameworkify(commands.purchasingArea.setAllowance),
         assignArea: frameworkify(commands.purchasingArea.assignArea),
         unassignArea: frameworkify(commands.purchasingArea.unassignArea),
         addPurchaser: frameworkify(commands.purchasingArea.addPurchaser),
         removePurchaser: frameworkify(commands.purchasingArea.removePurchaser),
         setYearBudget: frameworkify(commands.purchasingArea.setYearBudget),
+        setExtension: frameworkify(commands.purchasingArea.setExtension),
         removeSpend: frameworkify(commands.purchasingArea.removeSpend),
         activate: frameworkify(commands.purchasingArea.activate),
         deactivate: frameworkify(commands.purchasingArea.deactivate),
@@ -312,6 +319,8 @@ export const initTestFramework = async (): Promise<TestFramework> => {
         approve: frameworkify(commands.purchaseRequest.approve),
         decline: frameworkify(commands.purchaseRequest.decline),
         markBought: frameworkify(commands.purchaseRequest.markBought),
+        markInvoiceSent: frameworkify(commands.purchaseRequest.markInvoiceSent),
+        uploadReceipt: frameworkify(commands.purchaseRequest.uploadReceipt),
       },
       trainingSessions: {
         signUp: frameworkify(commands.trainingSessions.signUp),

@@ -12,6 +12,7 @@ import {queryToHandler, commandToHandlers, ping} from './http';
 import {formGet} from './http/form-get';
 import {bulkAddForm} from './commands/equipment/bulk-add-form';
 import {importFobsRoutes} from './paxton/import-fobs-routes';
+import {receiptRoutes} from './purchasing/receipt-routes';
 import {canSetNotificationPreferences} from './commands/notification-preferences/set';
 import {apiToHandlers} from './http/api-to-handlers';
 import {emailHandler} from './http/email-handler';
@@ -25,6 +26,7 @@ import {constantTimeEqual} from './http/constant-time-equal';
 import {bulkQuietResolve} from './trouble-tickets/bulk-quiet-resolve';
 import {publicRaiseRoutes} from './trouble-tickets/public-raise-routes';
 import {publicTrainingRoutes} from './training-sessions/public-training-routes';
+import {publicOwnersGuideRoutes} from './queries/owners-guide/public-route';
 import {publicReportGuard} from './trouble-tickets/public-report-guard';
 import {displayImage, displayImageRoute} from './eink/display-image-handler';
 import * as t from 'io-ts';
@@ -54,6 +56,7 @@ export const initRoutes = (
     query('/humans', queries.humans),
     query('/roadmap', queries.roadmap),
     query('/owner-agreement', queries.ownerAgreement),
+    // /owners-guide itself is public: see owners-guide/public-route.
     query('/event-log', queries.log),
     query('/event-log-order', queries.eventLogOrder),
     query('/event-log-order/:index', queries.eventLogOrder),
@@ -115,6 +118,16 @@ export const initRoutes = (
     ),
     ...command(
       'purchasing-areas',
+      'set-small-purchase-amount',
+      commands.purchasingArea.setSmallPurchaseAmount
+    ),
+    ...command(
+      'purchasing-areas',
+      'set-allowance',
+      commands.purchasingArea.setAllowance
+    ),
+    ...command(
+      'purchasing-areas',
       'assign-area',
       commands.purchasingArea.assignArea
     ),
@@ -137,6 +150,11 @@ export const initRoutes = (
       'purchasing-areas',
       'set-year-budget',
       commands.purchasingArea.setYearBudget
+    ),
+    ...command(
+      'purchasing-areas',
+      'set-extension',
+      commands.purchasingArea.setExtension
     ),
     ...command(
       'purchasing-areas',
@@ -163,6 +181,19 @@ export const initRoutes = (
       'mark-bought',
       commands.purchaseRequest.markBought
     ),
+    ...command(
+      'purchase-requests',
+      'mark-invoice-sent',
+      commands.purchaseRequest.markInvoiceSent
+    ),
+    // The receipt step: upload the receipt or invoice, or mark it sent.
+    get(
+      '/purchase-requests/send-receipt',
+      expressAsyncHandler(
+        formGet(deps, commands.purchaseRequest.markInvoiceSent)
+      )
+    ),
+    ...receiptRoutes(deps),
     get('/purchase-request', (_req, res) =>
       res.redirect('/purchase-requests/submit')
     ),
@@ -624,6 +655,7 @@ export const initRoutes = (
     // The form is public: see public-raise-routes. The API stays as it was.
     ...publicRaiseRoutes(deps, publicReportGuard(conf)),
     ...publicTrainingRoutes(deps),
+    ...publicOwnersGuideRoutes(deps),
     ...api('trouble-tickets', 'raise', commands.troubleTickets.raise),
     // The link in the confirmation of a report made without logging in.
     ...command('trouble-tickets', 'claim', commands.troubleTickets.claim),

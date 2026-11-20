@@ -15,6 +15,10 @@ import {
   splitByHow,
   waitingForTraining,
 } from '../shared-render/waiting-for-training';
+import {
+  OwnerAgreementStatus,
+  ownerAgreementStatus,
+} from '../../owner-agreement/agreement';
 
 export type TrainedMachine = {
   id: string;
@@ -48,6 +52,8 @@ export type ViewModel = {
   isSuperUser: boolean;
   // By name.
   ownedAreas: ReadonlyArray<OwnedArea>;
+  // Where the viewer stands with the Owners' Agreement.
+  agreement: OwnerAgreementStatus;
   now: Date;
 };
 
@@ -101,7 +107,12 @@ export const constructViewModel = (
   const rm = deps.sharedReadModel;
   const member = rm.members.getByMemberNumber(user.memberNumber);
   if (O.isNone(member)) {
-    return TE.right({isSuperUser: false, ownedAreas: [], now});
+    return TE.right({
+      isSuperUser: false,
+      ownedAreas: [],
+      agreement: ownerAgreementStatus(O.none, now),
+      now,
+    });
   }
   const trains = new Set(
     member.value.trainerFor.map(item => item.equipment_id as string)
@@ -152,6 +163,7 @@ export const constructViewModel = (
     waitingOn(deps, machineIds, now),
     TE.map(waiting => ({
       isSuperUser: member.value.isSuperUser,
+      agreement: ownerAgreementStatus(member.value.ownerAgreement, now),
       now,
       ownedAreas: areas.map(({area, machines}) => ({
         id: area.id,

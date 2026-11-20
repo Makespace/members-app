@@ -25,8 +25,9 @@ export const constructViewModel =
       return E.left(failureWithStatus('No such user', StatusCodes.NOT_FOUND)());
     }
 
+    const memberDetails = deps.sharedReadModel.members.getByMemberNumber(memberNumber);
     const memberScoped = deps.sharedReadModel.members.getAsActor(user)(memberNumber);
-    if (O.isNone(memberScoped)) {
+    if (O.isNone(memberDetails) || O.isNone(memberScoped)) {
       return E.left(failureWithStatus('No such member', StatusCodes.NOT_FOUND)());
     }
 
@@ -43,7 +44,8 @@ export const constructViewModel =
       member: memberScoped.value,
       isSuperUser,
       trainingMatrix: constructTrainingMatrix(memberScoped.value, deps.sharedReadModel, quizData.right),
-      recurlyStatus: await getRecurlyStatusForMember(deps.extDB)(memberScoped.value),
+      // Subscription matching needs the member's emails before display redaction.
+      recurlyStatus: await getRecurlyStatusForMember(deps.extDB)(memberDetails.value),
       // Somebody's billing history is for the people who chase it, not for
       // them and not for anybody else. Not fetched at all unless the viewer is
       // one of those people, so it cannot reach a template by accident.
