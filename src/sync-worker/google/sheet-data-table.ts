@@ -67,7 +67,7 @@ export const troubleTicketDataTable = sqliteTable(
     row_index: integer('row_index').notNull(),
     response_submitted: integer('response_submitted', {
       mode: 'timestamp_ms',
-    }).notNull(),
+    }),
     cached_at: integer('cached_at', {mode: 'timestamp_ms'}).notNull(),
     submitted_email: text('submitted_email'),
     submitted_equipment: text('submitted_equipment'),
