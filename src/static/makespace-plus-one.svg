@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Plus one</title>
+  <desc id="desc">A ticket endorsement icon inspired by Makespace, with bold orange and lime-green shapes on a transparent background.</desc>
+  <defs>
+    <clipPath id="plus"><path d="M44 218H112V150H188V218H256V294H188V362H112V294H44Z"/></clipPath>
+    <clipPath id="one"><path d="M292 182L351 124Q371 104 399 104H456V408H378V203L346 235Z"/></clipPath>
+  </defs>
+  <g clip-path="url(#plus)"><path fill="#f96400" d="M0 0H512V256H0Z"/><path fill="#8fbf00" d="M0 256H512V512H0Z"/></g>
+  <g clip-path="url(#one)"><path fill="#8fbf00" d="M0 0H512V256H0Z"/><path fill="#f96400" d="M0 256H512V512H0Z"/></g>
+</svg>

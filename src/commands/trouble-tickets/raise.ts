@@ -1,3 +1,4 @@
+import {defaultTicketPermission} from '../../trouble-tickets/default-permission';
 import {constructEvent, DomainEvent} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
@@ -14,6 +15,7 @@ import {
 import {Actor} from '../../types/actor';
 import {SharedReadModel} from '../../read-models/shared-state';
 import {UUID} from 'io-ts-types';
+import {TicketPermission} from '../../types/trouble-ticket-permission';
 
 // The machine-status answers, in the order they appear on the form. Stored as
 // a single readable string on the ticket, like the Google Form's answer.
@@ -76,7 +78,7 @@ export const problemFields = {
   steps: tt.withFallback(trimmed, ''),
 };
 
-const baseCodec = t.strict(problemFields);
+const baseCodec = t.type(problemFields);
 
 type Problem = t.TypeOf<typeof baseCodec>;
 
@@ -86,7 +88,14 @@ export const isCompleteReport = (input: Problem): boolean =>
   input.issue !== '' &&
   (isPicked(input.equipmentId) || input.otherEquipmentDetail !== '');
 
-const codec = t.refinement(baseCodec, isCompleteReport, 'RaiseTroubleTicket');
+const codec = t.refinement(
+  t.exact(t.intersection([
+    baseCodec,
+    t.partial({permission: TicketPermission}),
+  ])),
+  isCompleteReport,
+  'RaiseTroubleTicket'
+);
 
 type RaiseTroubleTicket = t.TypeOf<typeof codec>;
 
@@ -103,7 +112,9 @@ export const ticketCreated = (
   problem: Problem,
   reporter: Reporter,
   source: 'app' | 'public',
-  actor: Actor
+  actor: Actor,
+  managementAreaId: string,
+  permission?: TicketPermission
 ): TE.TaskEither<FailureWithStatus, O.Option<DomainEvent>> => {
   const picked = isPicked(problem.equipmentId);
   const equipment = picked
@@ -118,6 +129,9 @@ export const ticketCreated = (
   return TE.right(
     O.some(
       constructEvent('TroubleTicketCreated')({
+        permission: permission ?? defaultTicketPermission(rm, managementAreaId, {
+          equipmentId: picked ? (problem.equipmentId as UUID) : null,
+        }),
         id: v4() as UUID,
         // Tickets raised in the app have no sheet row; the hash is only a
         // uniqueness key, and a fresh uuid can never collide with an import.
@@ -181,7 +195,9 @@ const process: Command<RaiseTroubleTicket>['process'] = input => {
       ),
     },
     'app',
-    input.command.actor
+    input.command.actor,
+    input.deps?.conf.MANAGEMENT_TEAM_AREA_ID ?? '',
+    input.command.permission
   );
 };
 

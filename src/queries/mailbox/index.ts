@@ -1,3 +1,4 @@
+import {ticketVisibility} from '../../trouble-tickets/permission';
 import {pipe} from 'fp-ts/lib/function';
 import * as TE from 'fp-ts/TaskEither';
 import {StatusCodes} from 'http-status-codes';
@@ -819,6 +820,15 @@ export const mailbox: Query = deps => (user, params, queryParams) =>
                   area => `/trouble-tickets/board?areaId=${toSlug(area.name)}`
                 )
               );
+              const canViewTicket = pipe(
+                deps.sharedReadModel.members.getByMemberNumber(user.memberNumber),
+                O.match(
+                  () => () => false,
+                  member => ticketVisibility(
+                    deps.sharedReadModel, deps.conf.MANAGEMENT_TEAM_AREA_ID, member
+                  )
+                )
+              );
               return renderDetail(
                 messages,
                 {
@@ -830,6 +840,7 @@ export const mailbox: Query = deps => (user, params, queryParams) =>
                   .find(reason => reason !== undefined),
                 deps.sharedReadModel.troubleTickets
                   .getByMailboxConversation(messages[0].gmailMessageId)
+                  .filter(canViewTicket)
                   .map(ticket => ({title: ticket.title, status: ticket.status})),
                 boardHref
               );

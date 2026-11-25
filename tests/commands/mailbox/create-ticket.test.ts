@@ -1,8 +1,11 @@
 import {faker} from '@faker-js/faker';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {createTicket} from '../../../src/commands/mailbox/create-ticket';
-import {EmailAddress} from '../../../src/types';
+import {constructEvent, EmailAddress} from '../../../src/types';
+import {createTicketForm} from '../../../src/commands/mailbox/create-ticket-form';
+import {mailbox} from '../../../src/queries/mailbox';
 import {Actor} from '../../../src/types/actor';
+import {TicketPermission} from '../../../src/types/trouble-ticket-permission';
 import {Dependencies} from '../../../src/dependencies';
 import {gmailMessageTable} from '../../../src/sync-worker/gmail/gmail-message-table';
 import {getLeftOrFail, getRightOrFail, getSomeOrFail} from '../../helpers';
@@ -106,6 +109,7 @@ describe('creating a ticket from a mailbox conversation', () => {
       title: string;
       issue: string;
       steps: string;
+      permission: TicketPermission;
     }> = {},
     withDeps: Dependencies = deps
   ) =>
@@ -127,6 +131,7 @@ describe('creating a ticket from a mailbox conversation', () => {
 
     expect(event).toMatchObject({
       type: 'TroubleTicketCreated',
+      permission: 'manager',
       source: 'email',
       areaId,
       title: 'Laser cutter grinding',
@@ -138,6 +143,31 @@ describe('creating a ticket from a mailbox conversation', () => {
       equipmentId: null,
       actor: manager,
     });
+  });
+
+  it('records an explicitly selected visibility instead of the management default', async () => {
+    const decoded = getRightOrFail(createTicket.decode({
+      conversationId: FIRST_ID,
+      title: 'A shared problem',
+      issue: 'Please help',
+      permission: 'everybody',
+    }));
+    const event = getSomeOrFail(getRightOrFail(await run(manager, decoded)));
+
+    expect(event).toMatchObject({
+      type: 'TroubleTicketCreated',
+      permission: 'everybody',
+      areaId,
+    });
+  });
+
+  it('rejects an invalid visibility in the submitted form', () => {
+    expect(getLeftOrFail(createTicket.decode({
+      conversationId: FIRST_ID,
+      title: 'A problem',
+      issue: 'Please help',
+      permission: 'private',
+    }))).toBeDefined();
   });
 
   // The link may name any message of the conversation; the ticket is paired
@@ -152,6 +182,56 @@ describe('creating a ticket from a mailbox conversation', () => {
 
   it('is for the management team only', async () => {
     expect(getLeftOrFail(await run(member)).status).toBe(403);
+  });
+
+  it('hides linked ticket titles from managers excluded by its visibility group', async () => {
+    const event = getSomeOrFail(getRightOrFail(await run(manager)));
+    if (event.type !== 'TroubleTicketCreated') {
+      throw new Error('Expected a ticket creation event');
+    }
+    framework.insertIntoSharedReadModel(event);
+    await framework.commands.area.addOwner({areaId, memberNumber: 2});
+    const viewer = {
+      memberNumber: 2,
+      emailAddress: 'manager@example.com' as EmailAddress,
+    };
+    const form = () => createTicketForm.constructForm({conversationId: FIRST_ID})({
+      user: viewer, deps, readModel: framework.sharedReadModel,
+    })();
+    expect(getRightOrFail(await form()).existing).toHaveLength(1);
+
+    const equipmentId = faker.string.uuid() as UUID;
+    const workshopId = faker.string.uuid() as UUID;
+    await framework.commands.area.create({
+      id: workshopId,
+      name: 'Workshop' as NonEmptyString,
+    });
+    await framework.commands.equipment.add({
+      id: equipmentId,
+      areaId: workshopId,
+      name: 'Laser cutter' as NonEmptyString,
+    });
+    framework.insertIntoSharedReadModel(
+      constructEvent('TroubleTicketEquipmentSet')({
+        actor: manager,
+        ticketId: event.id,
+        equipmentId,
+      })
+    );
+    framework.insertIntoSharedReadModel(
+      constructEvent('TroubleTicketPermissionSet')({
+        actor: manager,
+        ticketId: event.id,
+        permission: 'area-owner',
+      })
+    );
+    expect(getRightOrFail(await form()).existing).toEqual([]);
+    const page = getRightOrFail(await mailbox(deps)(viewer, {id: FIRST_ID}, {})());
+    if (page._tag !== 'LoggedInContent') {
+      throw new Error('Expected a mailbox page');
+    }
+    expect(page.body).toContain('/mailbox/create-ticket');
+    expect(page.body).not.toContain('Raised from this conversation:');
   });
 
   it('refuses a conversation that is not in the mailbox', async () => {

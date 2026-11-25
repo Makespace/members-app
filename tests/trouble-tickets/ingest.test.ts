@@ -1,7 +1,11 @@
 import {faker} from '@faker-js/faker';
+import {NonEmptyString, UUID} from 'io-ts-types';
 import {TroubleTicketDataTable} from '../../src/sync-worker/google/sheet-data-table';
 import {runTroubleTicketIngest} from '../../src/trouble-tickets/ingest';
-import {TestFramework, initTestFramework} from '../read-models/test-framework';
+import {
+  TestFramework,
+  initTestFramework,
+} from '../read-models/test-framework';
 
 describe('runTroubleTicketIngest (going-forward poller)', () => {
   let framework: TestFramework;
@@ -23,8 +27,7 @@ describe('runTroubleTicketIngest (going-forward poller)', () => {
     submitted_membership_number: memberNumber,
     submitted_response_json: JSON.stringify({
       "What's the status of the machine?": 'Down',
-      'What error or issue did you encounter.  Please include events and observations about what actually happened.':
-        `Issue from member ${memberNumber}`,
+      'What error or issue did you encounter.  Please include events and observations about what actually happened.': `Issue from member ${memberNumber}`,
     }),
   });
 
@@ -51,7 +54,10 @@ describe('runTroubleTicketIngest (going-forward poller)', () => {
     const events = await framework.getAllEventsByType('TroubleTicketCreated');
     expect(events).toHaveLength(2);
     // Poller-generated events must be attributed to the system, not an admin.
-    expect(events.map(e => e.actor)).toEqual([{tag: 'system'}, {tag: 'system'}]);
+    expect(events.map(e => e.actor)).toEqual([
+      {tag: 'system'},
+      {tag: 'system'},
+    ]);
     // The historical submission time rides in the payload, not recordedAt.
     expect(events.map(e => e.submittedAt)).toEqual([
       new Date('2026-01-01T00:00:00.000Z'),
@@ -69,6 +75,29 @@ describe('runTroubleTicketIngest (going-forward poller)', () => {
     expect(
       await framework.getAllEventsByType('TroubleTicketCreated')
     ).toHaveLength(1);
+  });
+
+  it('uses the management configuration when assigning an imported ticket’s permission', async () => {
+    const areaId = faker.string.uuid() as UUID;
+    framework.depsForCommands.conf.MANAGEMENT_TEAM_AREA_ID = areaId;
+    await framework.commands.area.create({
+      id: areaId,
+      name: 'Management' as NonEmptyString,
+    });
+    await framework.commands.area.addNameAlias({
+      areaId,
+      alias: 'Committee' as NonEmptyString,
+    });
+    await framework.updateTroubleTicketCache(sheetId, [
+      {...ticketRow(2, 1234), submitted_equipment: 'Committee'},
+      ticketRow(3, 5678),
+    ]);
+    await runTroubleTicketIngest(framework.depsForCommands)();
+    expect(
+      (await framework.getAllEventsByType('TroubleTicketCreated')).map(
+        event => event.permission
+      )
+    ).toEqual(['manager', 'area-owner']);
   });
 
   it('survives a re-pull that shifts row indexes (hash excludes row_index)', async () => {

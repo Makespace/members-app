@@ -25,6 +25,7 @@ export type Command<T> = {
   isAuthorized: (input: {
     actor: Actor;
     rm: SharedReadModel;
+    deps?: Dependencies;
     input: T;
   }) => boolean;
 };

@@ -1,3 +1,4 @@
+import {defaultTicketPermission} from '../../trouble-tickets/default-permission';
 import {constructEvent} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
@@ -53,6 +54,11 @@ const process: Command<CreateTroubleTicket>['process'] = input => {
       ? O.none
       : O.some(
           constructEvent('TroubleTicketCreated')({
+            permission: defaultTicketPermission(
+              input.rm,
+              input.deps?.conf.MANAGEMENT_TEAM_AREA_ID ?? '',
+              input.command
+            ),
             id: input.command.id,
             rowHash,
             sheetId: SEED_SHEET_ID,

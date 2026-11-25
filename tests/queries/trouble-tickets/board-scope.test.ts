@@ -89,13 +89,11 @@ describe('/trouble-tickets scope and pagination', () => {
       page?: number;
       equipmentId?: string;
       areaId?: string;
-      showAll?: boolean;
     }
   ) =>
     pipe(
       user,
       constructViewModel(framework.depsForCommands, {
-        showAll: filters.showAll ?? true,
         page: filters.page ?? 1,
         status: O.fromNullable(filters.status),
         only: O.fromNullable(filters.only),
@@ -105,11 +103,10 @@ describe('/trouble-tickets scope and pagination', () => {
       T.map(getRightOrFail)
     )();
 
-  const view = (user: typeof owner, showAll: boolean, page = 1) =>
+  const view = (user: typeof owner, page = 1) =>
     pipe(
       user,
       constructViewModel(framework.depsForCommands, {
-        showAll,
         page,
         status: O.none,
         only: O.none,
@@ -117,22 +114,36 @@ describe('/trouble-tickets scope and pagination', () => {
       T.map(getRightOrFail)
     )();
 
-  it('defaults an owner to just their areas', async () => {
-    const vm = await view(owner, false);
-    expect(vm.scopedToMine).toBe(true);
-    expect(vm.totalInScope).toBe(1);
-    expect(vm.tickets[0].areaName).toMatchObject({value: 'Wood Shop'});
+  it('shows an owner all permitted tickets by default, including other areas', async () => {
+    const laserTicket = framework.sharedReadModel.troubleTickets
+      .getAll()
+      .find(ticket => ticket.submittedEquipment === 'Trotec')!;
+    await framework.commands.troubleTickets.setPermission({
+      ticketId: laserTicket.id,
+      permission: 'everybody',
+      actor: {tag: 'token', token: 'admin'},
+    });
+
+    const vm = await view(owner);
+    expect(vm.totalInScope).toBe(2);
+    expect(vm.tickets.map(ticket => ticket.areaName)).toEqual(
+      expect.arrayContaining([O.some('Wood Shop'), O.some('Laser Cutters')])
+    );
+    expect(vm.statusCounts.Todo).toBe(2);
+    expect(vm.scopeCounts['my-area']).toBe(1);
+
+    const myArea = await viewFiltered(owner, {only: 'my-area'});
+    expect(myArea.tickets).toHaveLength(1);
+    expect(myArea.tickets[0].areaName).toEqual(O.some('Wood Shop'));
   });
 
-  it('show=all reveals everything to an owner', async () => {
-    const vm = await view(owner, true);
-    expect(vm.scopedToMine).toBe(false);
-    expect(vm.totalInScope).toBe(3);
+  it('excludes tickets the viewer cannot read from the default board', async () => {
+    const vm = await view(owner);
+    expect(vm.totalInScope).toBe(1);
   });
 
   it('a super-user with no areas sees everything by default', async () => {
-    const vm = await view(superUser, false);
-    expect(vm.scopedToMine).toBe(false);
+    const vm = await view(superUser);
     expect(vm.totalInScope).toBe(3);
   });
 
@@ -140,12 +151,12 @@ describe('/trouble-tickets scope and pagination', () => {
     for (let i = 0; i < PAGE_SIZE; i++) {
       await framework.commands.troubleTickets.record(ticket('Trotec'));
     }
-    const first = await view(superUser, true, 1);
+    const first = await view(superUser, 1);
     expect(first.tickets).toHaveLength(PAGE_SIZE);
     expect(first.pageCount).toBe(2);
-    const second = await view(superUser, true, 2);
+    const second = await view(superUser, 2);
     expect(second.tickets).toHaveLength(3);
-    const clamped = await view(superUser, true, 99);
+    const clamped = await view(superUser, 99);
     expect(clamped.page).toBe(2);
   });
 
@@ -192,7 +203,7 @@ describe('/trouble-tickets scope and pagination', () => {
 
     describe('with one ticket resolved', () => {
       beforeEach(async () => {
-        const [first] = (await view(superUser, true)).tickets;
+        const [first] = (await view(superUser)).tickets;
         await framework.commands.troubleTickets.resolve({
           ticketId: first.id,
           summary: 'Fixed it',
@@ -268,14 +279,12 @@ describe('/trouble-tickets scope and pagination', () => {
       expect(resolved.statusCounts.Todo).toBe(1);
     });
 
-    it("answers for a machine outside the viewer's own areas", async () => {
+    it("hides private tickets outside the viewer’s own areas", async () => {
       const board = await viewFiltered(owner, {
         equipmentId: 'laser-cutters-trotec',
-        showAll: false,
       });
 
-      expect(board.tickets).toHaveLength(1);
-      expect(board.scopedToMine).toBe(false);
+      expect(board.tickets).toHaveLength(0);
     });
 
     it('widens to the whole area when asked', async () => {
@@ -300,7 +309,7 @@ describe('/trouble-tickets scope and pagination', () => {
   });
 
   it('shows who has taken a ticket on', async () => {
-    const [woodTicket] = (await view(owner, false)).tickets;
+    const [woodTicket] = (await view(owner)).tickets;
     await framework.commands.troubleTickets.assign({
       ticketId: woodTicket.id,
       comment: '',
@@ -313,7 +322,7 @@ describe('/trouble-tickets scope and pagination', () => {
       },
     });
 
-    const vm = await view(owner, false);
+    const vm = await view(owner);
     const refreshed = vm.tickets.find(t => t.id === woodTicket.id);
     expect(refreshed?.status).toBe('In Progress');
     expect(refreshed?.assignedToMe).toBe(true);

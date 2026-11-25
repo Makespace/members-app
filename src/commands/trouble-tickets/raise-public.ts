@@ -9,6 +9,7 @@ import {failureWithStatus} from '../../types/failure-with-status';
 import {EmailAddress, EmailAddressCodec} from '../../types/email-address';
 import {SharedReadModel} from '../../read-models/shared-state';
 import {Member} from '../../read-models/shared-state/return-types';
+import {TicketPermission} from '../../types/trouble-ticket-permission';
 import {
   isCompleteReport,
   problemFields,
@@ -49,12 +50,15 @@ const optionalMemberNumber = new t.Type<number | null, unknown, unknown>(
 );
 
 const codec = t.refinement(
-  t.strict({
-    ...problemFields,
-    reporterName: tt.withFallback(trimmed, ''),
-    reporterEmail: optionalEmail,
-    reporterMemberNumber: optionalMemberNumber,
-  }),
+  t.exact(t.intersection([
+    t.type({
+      ...problemFields,
+      reporterName: tt.withFallback(trimmed, ''),
+      reporterEmail: optionalEmail,
+      reporterMemberNumber: optionalMemberNumber,
+    }),
+    t.partial({permission: TicketPermission}),
+  ])),
   isCompleteReport,
   'RaisePublicTroubleTicket'
 );
@@ -132,7 +136,9 @@ const process: Command<RaisePublicTroubleTicket>['process'] = input => {
       memberNumber: input.command.reporterMemberNumber,
     }),
     'public',
-    input.command.actor
+    input.command.actor,
+    input.deps?.conf.MANAGEMENT_TEAM_AREA_ID ?? '',
+    input.command.permission
   );
 };
 

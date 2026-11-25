@@ -11,9 +11,6 @@ import {
   initTestFramework,
 } from '../../read-models/test-framework';
 
-// A ticket at its own address. The board is the whole backlog and belongs to
-// owners; one ticket is narrower, because whoever reported it is sent a link
-// to it and a link they cannot open is no link at all.
 describe('one trouble ticket on its own page', () => {
   let framework: TestFramework;
   let deps: Dependencies;
@@ -36,6 +33,7 @@ describe('one trouble ticket on its own page', () => {
         framework.sharedReadModel.getCurrentEventIndex()
       )(
         constructEvent('TroubleTicketCreated')({
+          permission: options.areaId === managementAreaId ? 'manager' : 'area-owner',
           id: options.id,
           rowHash: faker.string.hexadecimal({length: 64}),
           sheetId: 'sheet',
@@ -123,14 +121,13 @@ describe('one trouble ticket on its own page', () => {
     expect(getRightOrFail(result).title).toStrictEqual('The blade is blunt');
   });
 
-  // The whole point of the address: the email about it links here.
-  it('shows the person who reported it their own ticket, though they own nothing', async () => {
+  it('does not grant the reporter implicit access to an area-owner ticket', async () => {
     const id = faker.string.uuid() as UUID;
     await raise({id, reportedBy: reporter});
 
     const result = await open(reporter, id);
 
-    expect(E.isRight(result)).toBe(true);
+    expect(result).toMatchObject(E.left({status: 404}));
   });
 
   it('tells somebody with no connection to it that there is no such ticket', async () => {

@@ -1,6 +1,6 @@
 import {pipe} from 'fp-ts/lib/function';
 import {BetterSQLite3Database} from 'drizzle-orm/better-sqlite3';
-import {desc, eq, inArray, isNull} from 'drizzle-orm';
+import {desc, eq, inArray, isNull, sql} from 'drizzle-orm';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import {UUID} from 'io-ts-types';
@@ -10,6 +10,8 @@ import {
   troubleTicketChangeLogTable,
   troubleTicketNotificationsTable,
   troubleTicketsTable,
+  troubleTicketPlusOnesTable,
+  memberNumbersTable,
 } from '../state';
 import {TroubleTicket} from '../../../types/trouble-ticket';
 import {Actor} from '../../../types/actor';
@@ -96,11 +98,15 @@ const assigneesByTicket = (
 };
 
 const transformRow =
-  (assignees: ReadonlyMap<string, ReadonlyArray<number>>) =>
+  (
+    assignees: ReadonlyMap<string, ReadonlyArray<number>>,
+    plusOnes: ReadonlyMap<string, ReadonlyArray<number>>
+  ) =>
   (row: Row): TroubleTicket => ({
     id: row.id,
     status: row.status,
     title: row.title,
+    permission: row.permission,
     submittedAt: row.submittedAt,
     submittedName: row.submittedName,
     submittedMemberNumber: row.submittedMemberNumber,
@@ -111,6 +117,7 @@ const transformRow =
     areaId: row.areaId ?? null,
     mailboxConversationId: row.mailboxConversationId ?? null,
     assignedMemberNumbers: assignees.get(row.id) ?? [],
+    plusOneMemberNumbers: plusOnes.get(row.id) ?? [],
     response: row.responseJson,
   });
 
@@ -122,7 +129,30 @@ const withAssignees = (
     db,
     rows.map(r => r.id)
   );
-  return pipe(rows, RA.map(transformRow(assignees)));
+  const plusOnes = new Map<string, number[]>();
+  if (rows.length > 0) {
+    const votes = db
+      .select({
+        ticketId: troubleTicketPlusOnesTable.ticketId,
+        memberNumber: sql<number>`min(${troubleTicketPlusOnesTable.memberNumber})`,
+      })
+      .from(troubleTicketPlusOnesTable)
+      .innerJoin(
+        memberNumbersTable,
+        eq(memberNumbersTable.memberNumber, troubleTicketPlusOnesTable.memberNumber)
+      )
+      .where(
+        inArray(troubleTicketPlusOnesTable.ticketId, rows.map(row => row.id))
+      )
+      .groupBy(troubleTicketPlusOnesTable.ticketId, memberNumbersTable.userId)
+      .all();
+    for (const vote of votes) {
+      const numbers = plusOnes.get(vote.ticketId) ?? [];
+      numbers.push(vote.memberNumber);
+      plusOnes.set(vote.ticketId, numbers);
+    }
+  }
+  return pipe(rows, RA.map(transformRow(assignees, plusOnes)));
 };
 
 // Whether change-notification emails have already been sent for the

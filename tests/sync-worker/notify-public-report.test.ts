@@ -43,6 +43,7 @@ describe('emails about a ticket raised without logging in', () => {
     const id = faker.string.uuid() as UUID;
     await commit(
       constructEvent('TroubleTicketCreated')({
+        permission: 'area-owner',
         actor: source === 'public' ? {tag: 'public'} : systemActor(),
         id,
         rowHash: `app:${faker.string.uuid()}`,
@@ -194,9 +195,8 @@ describe('emails about a ticket raised without logging in', () => {
     });
   });
 
-  // The ticket's title starts out as the issue text, and an update quotes
-  // it, so an update to an address on no account must not.
-  it('keeps what they typed out of later updates to an address on no account', async () => {
+  // A public acknowledgement does not grant access to subsequent updates.
+  it('sends no later ticket content to an address on no account', async () => {
     const ticketId = await raise({
       submittedMemberNumber: null,
       providedMemberNumber: null,
@@ -215,17 +215,11 @@ describe('emails about a ticket raised without logging in', () => {
     );
     await notifyTroubleTicketChanges(deps);
 
-    const [update] = to('personal@elsewhere.com');
-    expect(update.subject).toStrictEqual('Trouble ticket update: Band Saw');
-    expect(update.text).toContain('Replaced the blade');
-    expect(update.text).toContain('/trouble-tickets/claim?token=');
-    for (const part of [update.subject, update.text, update.html]) {
-      expect(part).not.toContain('spam.example');
-    }
+    expect(to('personal@elsewhere.com')).toEqual([]);
   });
 
-  it('reminds a logged-in member of their number when confirming their report', async () => {
-    await raise(
+  it('reminds a member of their number when they can view their report', async () => {
+    const ticketId = await raise(
       {
         submittedMemberNumber: MEMBER,
         providedMemberNumber: null,
@@ -233,6 +227,10 @@ describe('emails about a ticket raised without logging in', () => {
       },
       'app'
     );
+
+    await commit(constructEvent('TroubleTicketPermissionSet')({
+      ticketId, permission: 'everybody', actor: systemActor(),
+    }));
 
     await notifyTroubleTicketChanges(deps);
 

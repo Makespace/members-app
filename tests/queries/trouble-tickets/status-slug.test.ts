@@ -21,7 +21,6 @@ const STATUSES: ReadonlyArray<TroubleTicketStatus> = [
 const emptyBoard = (): ViewModel => ({
   focus: O.none,
   tickets: [],
-  scopedToMine: false,
   totalInScope: 0,
   statusCounts: {
     Todo: 0,

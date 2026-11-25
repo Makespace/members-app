@@ -15,6 +15,7 @@ import {
 } from '../../read-models/external-state/gmail-inbox';
 import {senderAddress, senderName} from '../../types/email-sender';
 import {managementOnly} from './conversation';
+import {TicketPermission} from '../../types/trouble-ticket-permission';
 
 const trimmed = new t.Type<string, unknown, unknown>(
   'trimmed',
@@ -23,12 +24,15 @@ const trimmed = new t.Type<string, unknown, unknown>(
   t.identity
 );
 
-const baseCodec = t.strict({
-  conversationId: t.string,
-  title: trimmed,
-  issue: trimmed,
-  steps: tt.withFallback(trimmed, ''),
-});
+const baseCodec = t.exact(t.intersection([
+  t.type({
+    conversationId: t.string,
+    title: trimmed,
+    issue: trimmed,
+    steps: tt.withFallback(trimmed, ''),
+  }),
+  t.partial({permission: TicketPermission}),
+]));
 
 // A ticket needs a name and a problem; the rest can wait.
 const codec = t.refinement(
@@ -96,6 +100,7 @@ const ticketFrom = (
       ? O.none
       : input.rm.members.getByEmail(address as EmailAddress, false);
   return constructEvent('TroubleTicketCreated')({
+    permission: input.command.permission ?? 'manager',
     id: v4() as UUID,
     // No sheet row behind this; the hash is only a uniqueness key.
     rowHash: `email:${v4()}`,

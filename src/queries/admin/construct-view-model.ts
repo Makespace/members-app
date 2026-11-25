@@ -1,3 +1,4 @@
+import {ticketVisibility} from '../../trouble-tickets/permission';
 import * as O from 'fp-ts/Option';
 import * as RA from 'fp-ts/ReadonlyArray';
 import * as TE from 'fp-ts/TaskEither';
@@ -140,6 +141,7 @@ export const constructViewModel = (
   );
   const open = rm.troubleTickets
     .getAll()
+    .filter(ticketVisibility(rm, deps.conf.MANAGEMENT_TEAM_AREA_ID, member.value))
     .filter(ticket => ticket.status !== 'Resolved');
   const openInArea = (areaId: string) =>
     open.filter(

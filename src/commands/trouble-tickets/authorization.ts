@@ -6,10 +6,41 @@ import {SharedReadModel} from '../../read-models/shared-state';
 import {isAdminOrSuperUser} from '../authentication-helpers/is-admin-or-super-user';
 import {allMemberNumbers} from '../../read-models/shared-state/return-types';
 import {isEquipmentOwner} from '../authentication-helpers/is-equipment-owner';
+import {Dependencies} from '../../dependencies';
+import {ticketVisibility} from '../../trouble-tickets/permission';
+
+const canViewTicketAsActor = (input: {
+  actor: Actor;
+  rm: SharedReadModel;
+  deps?: Dependencies;
+  input: {ticketId: UUID};
+}): boolean =>
+  isAdminOrSuperUser(input) ||
+  (input.actor.tag === 'user' &&
+    pipe(
+      input.rm.members.getByMemberNumber(input.actor.user.memberNumber),
+      O.chain(member =>
+        pipe(
+          input.rm.troubleTickets.getById(input.input.ticketId),
+          O.filter(
+            ticketVisibility(
+              input.rm,
+              input.deps?.conf.MANAGEMENT_TEAM_AREA_ID ?? '',
+              member
+            )
+          )
+        )
+      ),
+      O.isSome
+    ));
 
 // True when the actor owns the given area (user actors only - admin/super is
 // checked separately by the callers).
-const isAreaOwner = (actor: Actor, rm: SharedReadModel, areaId: UUID): boolean =>
+const isAreaOwner = (
+  actor: Actor,
+  rm: SharedReadModel,
+  areaId: UUID
+): boolean =>
   actor.tag === 'user' &&
   pipe(
     rm.area.get(areaId),
@@ -47,16 +78,18 @@ const ticketAreaId = (rm: SharedReadModel, ticketId: UUID): O.Option<UUID> =>
 export const isTicketOwner = (input: {
   actor: Actor;
   rm: SharedReadModel;
+  deps?: Dependencies;
   input: {ticketId: UUID};
 }): boolean =>
   isAdminOrSuperUser({actor: input.actor, rm: input.rm}) ||
-  pipe(
-    ticketAreaId(input.rm, input.input.ticketId),
-    O.match(
-      () => false,
-      areaId => isAreaOwner(input.actor, input.rm, areaId)
-    )
-  );
+  (canViewTicketAsActor(input) &&
+    pipe(
+      ticketAreaId(input.rm, input.input.ticketId),
+      O.match(
+        () => false,
+        areaId => isAreaOwner(input.actor, input.rm, areaId)
+      )
+    ));
 
 // Setting a ticket's equipment requires ownership of either the current or the target
 // equipment's area (or admin/super user) - so an owner can pull a ticket onto equipment
@@ -64,10 +97,14 @@ export const isTicketOwner = (input: {
 export const canSetTicketEquipment = (input: {
   actor: Actor;
   rm: SharedReadModel;
+  deps?: Dependencies;
   input: {ticketId: UUID; equipmentId: UUID | null};
 }): boolean => {
   if (isAdminOrSuperUser({actor: input.actor, rm: input.rm})) {
     return true;
+  }
+  if (!canViewTicketAsActor(input)) {
+    return false;
   }
   const ownsTarget =
     input.input.equipmentId !== null &&
@@ -96,7 +133,8 @@ export type AssignableMember = {
 
 export const assignableMembers = (
   rm: SharedReadModel,
-  ticketId: UUID
+  ticketId: UUID,
+  managementAreaId = ''
 ): ReadonlyArray<AssignableMember> => {
   const byNumber = new Map<number, AssignableMember>();
   for (const member of rm.members.findAllSuperUsers()) {
@@ -119,7 +157,17 @@ export const assignableMembers = (
   );
   const label = (member: AssignableMember) =>
     O.getOrElse(() => `Member ${member.memberNumber}`)(member.name);
-  return [...byNumber.values()].sort((a, b) =>
-    label(a).localeCompare(label(b))
-  );
+  const ticket = rm.troubleTickets.getById(ticketId);
+  return [...byNumber.values()]
+    .filter(candidate =>
+      pipe(
+        rm.members.getByMemberNumber(candidate.memberNumber),
+        O.exists(
+          member =>
+            O.isSome(ticket) &&
+            ticketVisibility(rm, managementAreaId, member)(ticket.value)
+        )
+      )
+    )
+    .sort((a, b) => label(a).localeCompare(label(b)));
 };

@@ -4,6 +4,7 @@ import {pipe} from 'fp-ts/lib/function';
 import {faker} from '@faker-js/faker';
 import {NonEmptyString, UUID} from 'io-ts-types';
 import {constructViewModel} from '../../../src/queries/trouble-tickets-home/construct-view-model';
+import {render} from '../../../src/queries/trouble-tickets-home/render';
 import {getRightOrFail} from '../../helpers';
 import {TestFramework, initTestFramework} from '../../read-models/test-framework';
 import {EmailAddress} from '../../../src/types';
@@ -70,6 +71,12 @@ describe('the trouble tickets landing page, pointed at one thing', () => {
     await framework.commands.troubleTickets.record(ticket('Band Saw'));
     await framework.commands.troubleTickets.record(ticket('Band Saw'));
     await framework.commands.troubleTickets.record(ticket('Trotec'));
+    for (const created of framework.sharedReadModel.troubleTickets.getAll()) {
+      await framework.commands.troubleTickets.setPermission({
+        ticketId: created.id, permission: 'everybody',
+        actor: {tag: 'token', token: 'admin'},
+      });
+    }
   });
 
   afterEach(() => {
@@ -85,6 +92,21 @@ describe('the trouble tickets landing page, pointed at one thing', () => {
 
   it('counts everything when pointed at nothing', async () => {
     expect((await view({})).active).toBe(3);
+  });
+
+  it('offers the board to a regular member even with no visible tickets', async () => {
+    for (const created of framework.sharedReadModel.troubleTickets.getAll()) {
+      await framework.commands.troubleTickets.setPermission({
+        ticketId: created.id,
+        permission: 'area-owner',
+        actor: {tag: 'token', token: 'admin'},
+      });
+    }
+    const home = await view({});
+
+    expect(home.active).toBe(0);
+    expect(render(home)).toContain('href="/trouble-tickets/board"');
+    expect(render(home)).toContain('View active tickets');
   });
 
   it('counts only the machine it is pointed at', async () => {

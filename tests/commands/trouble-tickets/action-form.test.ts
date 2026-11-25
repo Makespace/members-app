@@ -1,3 +1,5 @@
+import {Int} from 'io-ts';
+import {EmailAddress} from '../../../src/types';
 import * as E from 'fp-ts/Either';
 import {pipe} from 'fp-ts/lib/function';
 import {faker} from '@faker-js/faker';
@@ -138,12 +140,16 @@ describe('trouble-ticket action form (assign)', () => {
 
     it('names the recipient and shows the email, with the actor in it', async () => {
       const withSubmitter = faker.string.uuid() as UUID;
+      await framework.commands.memberNumbers.linkNumberToEmail({
+        memberNumber: 500, email: 'sam@example.com' as EmailAddress,
+        name: undefined, formOfAddress: undefined,
+      });
       await framework.commands.troubleTickets.record({
         id: withSubmitter,
         rowHash: faker.string.alphanumeric(64) as NonEmptyString,
         sheetId: faker.string.alphanumeric(10) as NonEmptyString,
         submittedAt: faker.date.past(),
-        submittedMemberNumber: null,
+        submittedMemberNumber: 500 as Int,
         submittedEmail: 'sam@example.com',
         submittedName: 'Sam Submitter',
         submittedEquipment: 'Metal Lathe',
@@ -154,6 +160,9 @@ describe('trouble-ticket action form (assign)', () => {
         steps: '',
       });
 
+      await framework.commands.troubleTickets.setPermission({
+        ticketId: withSubmitter, permission: 'everybody',
+      });
       const viewModel = await getTaskEitherRightOrFail(
         constructFor(trainer, withSubmitter)
       );

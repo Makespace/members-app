@@ -1,6 +1,6 @@
 import {faker} from '@faker-js/faker';
 import * as TE from 'fp-ts/TaskEither';
-import {UUID} from 'io-ts-types';
+import {NonEmptyString, UUID} from 'io-ts-types';
 import {constructEvent, Email} from '../../src/types';
 import {EmailAddress} from '../../src/types/email-address';
 import {Config} from '../../src/configuration';
@@ -58,6 +58,7 @@ describe('notifyTroubleTicketChanges', () => {
     );
     await commit(
       constructEvent('TroubleTicketCreated')({
+        permission: 'everybody',
         source: 'sheet',
         equipmentId: null,
         machine: '',
@@ -199,6 +200,10 @@ describe('notifyTroubleTicketChanges', () => {
     beforeEach(async () => {
       await link(ASSIGNER, 'Ada Admin');
       await link(ASSIGNEE, 'Tara Trainer');
+      await commit(constructEvent('TroubleTicketPermissionSet')({
+        ticketId, actor: systemActor(),
+        permission: 'everybody',
+      }));
       await settle();
     });
 
@@ -237,6 +242,37 @@ describe('notifyTroubleTicketChanges', () => {
       expect(notified[notified.length - 1].recipients).toContain(
         'member7@test.com'
       );
+    });
+
+    it('rechecks visibility before sending a pending assignment notification', async () => {
+      const managementId = faker.string.uuid() as UUID;
+      await framework.commands.area.create({
+        id: managementId,
+        name: 'Management' as NonEmptyString,
+      });
+      await framework.commands.area.addOwner({
+        areaId: managementId,
+        memberNumber: SUBMITTER,
+      });
+      deps.conf.MANAGEMENT_TEAM_AREA_ID = managementId;
+      await assignedBy(ASSIGNER);
+      await commit(
+        constructEvent('TroubleTicketPermissionSet')({
+          ticketId,
+          actor: systemActor(),
+          permission: 'manager',
+        })
+      );
+      await notifyTroubleTicketChanges(deps);
+
+      expect(emailTo('member7@test.com')).toBeUndefined();
+      expect(emailTo('submitter@test.com')?.text).toContain('Tara Trainer');
+      const notified = await framework.getAllEventsByType(
+        'TroubleTicketNotificationSent'
+      );
+      expect(notified[notified.length - 1].recipients).toEqual([
+        'submitter@test.com',
+      ]);
     });
 
     // Picking a ticket up yourself is not news to you.

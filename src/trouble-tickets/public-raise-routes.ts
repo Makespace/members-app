@@ -161,8 +161,7 @@ const reportedPage = publicPage(safe('Thanks for your report'))(html`
   <div class="stack">
     <h1>Thanks for letting us know</h1>
     <p>
-      The owners of the equipment have your report and will pick it up from
-      here.
+      We've received your report.
     </p>
     <p>
       If you gave an email address, a confirmation is on its way. It has a

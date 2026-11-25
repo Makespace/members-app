@@ -39,6 +39,7 @@ describe('introducing the notifications to somebody new', () => {
       framework.sharedReadModel.getCurrentEventIndex()
     )(
       constructEvent('TroubleTicketCreated')({
+        permission: 'area-owner',
         actor: {tag: 'system'},
         id: faker.string.uuid() as UUID,
         rowHash: faker.string.hexadecimal({length: 64}),

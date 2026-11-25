@@ -37,7 +37,6 @@ export type ViewModel = {
   // Owners and trainers get the counts they can act on.
   inMyAreas: O.Option<number>;
   onMyMachines: O.Option<number>;
-  canSeeBoard: boolean;
 };
 
 type FocusParams = {equipmentId?: string; areaId?: string};
@@ -189,7 +188,6 @@ export const constructViewModel =
                       myMachines.has(ticket.equipmentId)
                   ).length
                 ),
-          canSeeBoard: member.isSuperUser || member.ownerOf.length > 0,
         };
       })
     );

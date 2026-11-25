@@ -5,7 +5,7 @@ import {UUID} from 'io-ts-types';
 import {constructEvent} from '../../../src/types';
 import {EmailAddress} from '../../../src/types/email-address';
 import {UserActor} from '../../../src/types/actor';
-import {getTaskEitherRightOrFail, systemActor} from '../../helpers';
+import {getRightOrFail, getTaskEitherRightOrFail, systemActor} from '../../helpers';
 import {NOT_LISTED, raise} from '../../../src/commands/trouble-tickets/raise';
 import {
   TestFramework,
@@ -71,6 +71,33 @@ describe('raising a trouble ticket in the app', () => {
   });
 
   describe('what it records', () => {
+    it('records the selected visibility on creation, including for a regular member', async () => {
+      const decoded = getRightOrFail(raise.decode(input({permission: 'everybody'})));
+      const result = await getTaskEitherRightOrFail(
+        raise.process({
+          command: {...decoded, actor: memberActor},
+          rm: framework.sharedReadModel,
+        })
+      );
+
+      expect(O.toNullable(result)).toMatchObject({
+        type: 'TroubleTicketCreated',
+        permission: 'everybody',
+      });
+    });
+
+    it('records Management visibility for a new equipment ticket', async () => {
+      const decoded = getRightOrFail(raise.decode(input({permission: 'manager'})));
+      const result = await getTaskEitherRightOrFail(
+        raise.process({
+          command: {...decoded, actor: memberActor},
+          rm: framework.sharedReadModel,
+        })
+      );
+
+      expect(O.toNullable(result)).toMatchObject({permission: 'manager'});
+    });
+
     it('links the picked equipment directly, with no name to resolve', async () => {
       const result = await getTaskEitherRightOrFail(
         raise.process({
@@ -169,6 +196,12 @@ describe('raising a trouble ticket in the app', () => {
   });
 
   describe('what it refuses', () => {
+    it('rejects invalid, empty, or null visibility instead of using a default', () => {
+      expect(E.isLeft(raise.decode(input({permission: 'private'})))).toBe(true);
+      expect(E.isLeft(raise.decode(input({permission: ''})))).toBe(true);
+      expect(E.isLeft(raise.decode(input({permission: null})))).toBe(true);
+    });
+
     it('still needs the unlisted machine described', () => {
       expect(
         E.isLeft(

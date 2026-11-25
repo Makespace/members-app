@@ -1,3 +1,4 @@
+import {defaultTicketPermission} from './default-permission';
 import * as E from 'fp-ts/Either';
 import {v4 as uuidv4} from 'uuid';
 import {UUID} from 'io-ts-types';
@@ -52,7 +53,7 @@ const SAMPLE_SIZE = 5;
 // the rewrite renumbers the whole log either way, and each run is
 // independently idempotent.
 export const planTroubleTicketBackfill =
-  (deps: Pick<Dependencies, 'sharedReadModel' | 'extDB'>) =>
+  (deps: Pick<Dependencies, 'sharedReadModel' | 'extDB' | 'conf'>) =>
   async (before?: Date): Promise<TroubleTicketBackfillPlan> => {
     // Dedup below reads the shared read model, which is eventually consistent;
     // refresh first so recently-appended events are visible.
@@ -83,6 +84,11 @@ export const planTroubleTicketBackfill =
     const inserts: ReadonlyArray<TimelineRow> = toInsert.map(candidate => {
       const event = {
         ...constructEvent('TroubleTicketCreated')({
+          permission: defaultTicketPermission(
+            deps.sharedReadModel,
+            deps.conf.MANAGEMENT_TEAM_AREA_ID,
+            candidate
+          ),
           id: uuidv4() as UUID,
           rowHash: candidate.rowHash,
           sheetId: candidate.sheetId,

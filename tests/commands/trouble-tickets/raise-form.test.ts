@@ -5,12 +5,14 @@ import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
 import {raise} from '../../../src/commands/trouble-tickets/raise';
 import {raiseForm} from '../../../src/commands/trouble-tickets/raise-form';
+import {raisePublic} from '../../../src/commands/trouble-tickets/raise-public';
+import {createTicketForm} from '../../../src/commands/mailbox/create-ticket-form';
 
 // The form and the command each had their own idea of what "not listed"
 // posts, and the tests checked each against itself. This one feeds what the
 // form actually posts into what the command actually accepts.
 describe('the report-a-problem form and its command', () => {
-  const page = () => {
+  const page = (publicForm = false) => {
     const body = document.createElement('body');
     body.innerHTML = raiseForm.renderForm({
       areas: [{id: 'area-1', name: 'Wood Shop'}],
@@ -27,10 +29,72 @@ describe('the report-a-problem form and its command', () => {
       ],
       selectedEquipmentId: O.none,
       selectedAreaId: O.none,
-      publicForm: O.none,
+      publicForm: publicForm ? O.some({formToken: 'test-token'}) : O.none,
     }).body;
     return body;
   };
+
+  it('defaults to Everybody with no blank visibility option', () => {
+    const select = page().querySelector<HTMLSelectElement>('select[name="permission"]')!;
+
+    expect(select).not.toBeNull();
+    expect(select.required).toBe(true);
+    expect(select.value).toBe('everybody');
+    expect(select.checkValidity()).toBe(true);
+    const advanced = select.closest('details')!;
+    expect(advanced.open).toBe(false);
+    expect(advanced.querySelector('summary')?.textContent).toBe('Advanced');
+    expect(new FormData(select.form!).get('permission')).toBe('everybody');
+    expect(select.labels?.[0].textContent).toContain('Visibility');
+    expect([...select.options].map(option => option.value))
+      .toEqual(['everybody', 'area-owner', 'manager']);
+    expect([...select.options].filter(option => !option.disabled).map(option => option.textContent?.trim()))
+      .toEqual(['Everybody', 'Area Owners', 'Management']);
+    expect(select.labels?.[0].textContent).toContain('Only the selected group and super-users');
+
+    for (const permission of ['everybody', 'area-owner', 'manager']) {
+      select.value = permission;
+      expect(select.checkValidity()).toBe(true);
+      const decoded = raise.decode({
+        equipmentId: notListedValue(),
+        otherEquipmentDetail: 'The vice',
+        issue: 'Broken',
+        permission: select.value,
+      });
+      expect(E.isRight(decoded) && decoded.right.permission).toBe(permission);
+    }
+  });
+
+  it('also offers visibility on the public report form', () => {
+    const select = page(true).querySelector<HTMLSelectElement>('select[name="permission"]')!;
+    expect(select.value).toBe('everybody');
+    expect(select.checkValidity()).toBe(true);
+    select.value = 'manager';
+
+    const decoded = raisePublic.decode({
+      equipmentId: notListedValue(),
+      otherEquipmentDetail: 'The vice',
+      issue: 'Broken',
+      permission: select.value,
+    });
+    expect(E.isRight(decoded) && decoded.right.permission).toBe('manager');
+  });
+
+  it('defaults mailbox ticket creation to Everybody', () => {
+    const body = document.createElement('body');
+    body.innerHTML = createTicketForm.renderForm({
+      conversationId: 'thread',
+      subject: 'A problem',
+      sender: 'member@example.com',
+      body: 'Please help',
+      existing: [],
+    }).body;
+    const select = body.querySelector<HTMLSelectElement>('select[name="permission"]')!;
+
+    expect(select.value).toBe('everybody');
+    expect([...select.options].map(option => option.value))
+      .toEqual(['everybody', 'area-owner', 'manager']);
+  });
 
   const notListedValue = () => {
     const option = [

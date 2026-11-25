@@ -15,6 +15,4 @@ export const render = (ticket: TroubleTicketView) => html`
 `;
 
 export const pageTitle = (ticket: TroubleTicketView) =>
-  ticket.title === ''
-    ? safe('Trouble ticket')
-    : sanitizeString(ticket.title);
+  ticket.title === '' ? safe('Trouble ticket') : sanitizeString(ticket.title);

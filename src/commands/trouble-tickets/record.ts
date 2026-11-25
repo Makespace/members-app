@@ -1,9 +1,11 @@
+import {defaultTicketPermission} from '../../trouble-tickets/default-permission';
 import {constructEvent} from '../../types';
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
 import * as O from 'fp-ts/Option';
 import * as TE from 'fp-ts/TaskEither';
 import {Command} from '../command';
+import {Dependencies} from '../../dependencies';
 import {isAdminSuperUserOrSystem} from '../authentication-helpers/is-admin-super-user-or-system';
 
 // rowHash is the global dedup sentinel (and unique in the read model), so it
@@ -27,17 +29,25 @@ const codec = t.strict({
 });
 
 type RecordTroubleTicket = t.TypeOf<typeof codec>;
+type RecordInput = Omit<
+  Parameters<Command<RecordTroubleTicket>['process']>[0],
+  'deps'
+> & {deps?: Pick<Dependencies, 'conf'>};
 
-// Records one trouble-ticket submission as an event, unless a row with the same
-// hash has already been imported (dedup). Stores only the raw sheet facts - no
-// member or equipment resolution.
-const process: Command<RecordTroubleTicket>['process'] = input =>
+const process = (
+  input: RecordInput
+): ReturnType<Command<RecordTroubleTicket>['process']> =>
   TE.right(
     input.rm.troubleTickets.hasRowHash(input.command.rowHash)
       ? O.none
       : O.some(
           constructEvent('TroubleTicketCreated')({
             ...input.command,
+            permission: defaultTicketPermission(
+              input.rm,
+              input.deps?.conf.MANAGEMENT_TEAM_AREA_ID ?? '',
+              input.command
+            ),
             // Imported from the sheet: no picked equipment, no confirmation
             // email.
             source: 'sheet',
@@ -51,8 +61,8 @@ const process: Command<RecordTroubleTicket>['process'] = input =>
         )
   );
 
-export const record: Command<RecordTroubleTicket> = {
+export const record = {
   process,
   decode: codec.decode,
   isAuthorized: isAdminSuperUserOrSystem,
-};
+} satisfies Command<RecordTroubleTicket>;

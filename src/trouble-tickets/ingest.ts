@@ -19,7 +19,7 @@ const SYSTEM_ACTOR: Actor = {tag: 'system'};
 // commitEvent rather than applyCommand for the same reason.
 type TroubleTicketIngestDeps = Pick<
   Dependencies,
-  'sharedReadModel' | 'extDB' | 'commitEvent' | 'logger'
+  'sharedReadModel' | 'extDB' | 'commitEvent' | 'logger' | 'conf'
 >;
 
 type TroubleTicketIngestSummary = {
@@ -86,6 +86,7 @@ export const runTroubleTicketIngest =
             actor: SYSTEM_ACTOR,
           },
           rm: deps.sharedReadModel,
+          deps: {conf: deps.conf},
         }),
         TE.chain(maybeEvent =>
           O.isSome(maybeEvent)

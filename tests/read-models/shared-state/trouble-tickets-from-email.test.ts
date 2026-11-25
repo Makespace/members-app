@@ -12,6 +12,7 @@ describe('a trouble ticket raised from the mailbox', () => {
 
   const created = (over: Record<string, unknown> = {}) =>
     constructEvent('TroubleTicketCreated')({
+      permission: 'area-owner',
       id: faker.string.uuid() as UUID,
       rowHash: faker.string.hexadecimal({length: 64}),
       sheetId: 'email',

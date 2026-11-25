@@ -21,6 +21,8 @@ const ticket = (
   assignedMemberNumbers: ReadonlyArray<number> = []
 ): TroubleTicket => ({
   id: faker.string.uuid() as UUID,
+  permission: 'area-owner',
+  plusOneMemberNumbers: [],
   status,
   title,
   submittedAt,
@@ -250,6 +252,16 @@ describe('renderTroubleTicketsImage', () => {
     expect(() =>
       renderTroubleTicketsImage(withAnswer('It is unsafe'), 64, 64)
     ).not.toThrow();
+  });
+
+  it('does not report a clear machine when tickets are unavailable to the viewer', () => {
+    const restricted = renderTroubleTicketsImage(
+      {...model, tickets: null}, 1280, 720
+    );
+    const clear = renderTroubleTicketsImage(
+      {...model, tickets: []}, 1280, 720
+    );
+    expect(restricted).not.toEqual(clear);
   });
 
   it('copes with more tickets than fit, and titles longer than a line', () => {

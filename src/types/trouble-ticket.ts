@@ -1,5 +1,6 @@
 import * as t from 'io-ts';
 import * as tt from 'io-ts-types';
+import {TicketPermission} from './trouble-ticket-permission';
 
 // The parsed free-text answers of a trouble ticket submission. Shared by the ingest
 // path, the event payload and the read model. Missing answers are defaulted to ''.
@@ -30,6 +31,7 @@ export const TroubleTicket = t.strict({
   status: TroubleTicketStatus,
   // Editable title; defaults to the form's "issue" text at creation.
   title: t.string,
+  permission: TicketPermission,
   submittedAt: tt.DateFromISOString,
   submittedName: t.union([t.string, t.null]),
   submittedMemberNumber: t.union([t.number, t.null]),
@@ -45,6 +47,9 @@ export const TroubleTicket = t.strict({
   mailboxConversationId: t.union([t.string, t.null]),
   // Member numbers of trainers currently assigned to the ticket.
   assignedMemberNumbers: t.readonlyArray(t.number),
+  // One voting number per person; linked numbers count once.
+  // The representative number may be a past member number.
+  plusOneMemberNumbers: t.readonlyArray(t.number),
   response: TroubleTicketResponse,
 });
 export type TroubleTicket = t.TypeOf<typeof TroubleTicket>;

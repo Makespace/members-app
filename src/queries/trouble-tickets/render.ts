@@ -45,15 +45,11 @@ const boardUrl = (
   const params = new URLSearchParams();
   const focus =
     change.focus !== undefined ? change.focus : O.toNullable(viewModel.focus);
-  // A focus replaces the your-areas/everything distinction: it is already a
-  // narrower question than either.
   if (focus !== null) {
     params.set(
       focus.kind === 'equipment' ? 'equipmentId' : 'areaId',
       focus.slug
     );
-  } else if (!viewModel.scopedToMine) {
-    params.set('show', 'all');
   }
   const status =
     change.status !== undefined
@@ -238,18 +234,9 @@ const renderScopeAndPages = (vm: ViewModel) => {
   }
   return html`
     <p class="tt-summary">
-      ${
-        vm.scopedToMine
-          ? html`Showing <strong>${vm.totalInScope}</strong> ticket${
-                vm.totalInScope === 1 ? '' : safe('s')
-              }
-              in <strong>your areas</strong> ·
-              <a href="/trouble-tickets/board?show=all">show all areas</a>`
-          : html`Showing <strong>all ${vm.totalInScope}</strong> ticket${
-                vm.totalInScope === 1 ? '' : safe('s')
-              }
-              · <a href="/trouble-tickets/board">show just your areas</a>`
-      }
+      Showing <strong>${vm.totalInScope}</strong> ticket${
+        vm.totalInScope === 1 ? '' : safe('s')
+      } you can view
       ${vm.pageCount > 1 ? html`· ${renderPager(vm)}` : html``}
     </p>
   `;
@@ -385,12 +372,26 @@ const renderTitle = (vm: ViewModel) =>
     )
   );
 
+const renderHeader = (vm: ViewModel) => html`
+  <h1>${renderTitle(vm)}</h1>
+  <p>
+    <a href="${safe(pipe(
+      vm.focus,
+      O.match(
+        () => '/trouble-tickets/raise',
+        focus => `/trouble-tickets/raise?${focus.kind === 'equipment' ? 'equipmentId' : 'areaId'}=${encodeURIComponent(focus.id)}`
+      )
+    ))}">Submit a trouble ticket</a>
+  </p>
+`;
+
 export const render = (viewModel: ViewModel) => {
   if (viewModel.tickets.length === 0) {
     return html`
       <div class="stack">
-        <h1>${renderTitle(viewModel)}</h1>
+        ${renderHeader(viewModel)}
         ${renderScopeAndPages(viewModel)} ${renderStatusFilters(viewModel)}
+        ${renderScopeFilters(viewModel)}
         <p>No trouble tickets in this view.</p>
         ${renderUnresolvedNames(viewModel)}
       </div>
@@ -400,7 +401,7 @@ export const render = (viewModel: ViewModel) => {
   // something everyone reading the board needs first, so they come last.
   return html`
     <div class="stack tt-wrapper">
-      <h1>${renderTitle(viewModel)}</h1>
+      ${renderHeader(viewModel)}
       ${renderScopeAndPages(viewModel)} ${renderStatusFilters(viewModel)}
       ${renderScopeFilters(viewModel)} ${renderTable(viewModel.tickets)}
       ${

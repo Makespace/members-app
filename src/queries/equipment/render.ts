@@ -544,12 +544,7 @@ const equipmentCards = (viewModel: ViewModel) => {
             `/trouble-tickets/raise?equipmentId=${id}`,
             'Open a ticket'
           )}
-          ${viewModel.isSuperUserOrOwnerOfArea || viewModel.isSuperUser
-            ? cardButton(
-                `/trouble-tickets/board?equipmentId=${id}`,
-                'View tickets'
-              )
-            : html``}
+          ${cardButton(`/trouble-tickets/board?equipmentId=${id}`, 'View tickets')}
         </p>
       </section>
       ${viewModel.equipment.category === 'red'

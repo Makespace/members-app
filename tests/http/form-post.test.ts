@@ -45,6 +45,25 @@ const makeRes = (): FakeResponse =>
   }) as unknown as FakeResponse;
 
 describe('formPost redirect on success', () => {
+  it('calculates a destination after successfully processing the command', async () => {
+    let processed = false;
+    const command = {
+      ...alwaysOkCommand,
+      process: () => {
+        processed = true;
+        return TE.right(O.none);
+      },
+    };
+    const destination = jest.fn(() => processed ? '/saved' : '/not-saved');
+    const req = makeReq({});
+    const res = makeRes();
+
+    await formPost(makeDeps(), command, destination)(req, res);
+
+    expect(destination).toHaveBeenCalledWith(req);
+    expect(res.redirect).toHaveBeenCalledWith('/saved');
+  });
+
   it('falls back to the provided successTarget when no ?next= query param is present', async () => {
     const res = makeRes();
 
