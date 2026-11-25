@@ -45,12 +45,10 @@ type Row = {
 const london = (date: Date) =>
   DateTime.fromJSDate(date).setZone(ZONE).setLocale('en-GB');
 
-// "18.00–21.00": a dot is quieter between hours and minutes than a colon, and
-// is how British timetables have long written it.
 const times = (row: Pick<Row, 'startsAt' | 'endsAt'>) =>
   safe(
-    `${london(row.startsAt).toFormat('HH.mm')}–${london(row.endsAt).toFormat(
-      'HH.mm'
+    `${london(row.startsAt).toFormat('HH:mm')}–${london(row.endsAt).toFormat(
+      'HH:mm'
     )}`
   );
 

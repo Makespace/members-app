@@ -26,6 +26,7 @@ import {
 import {eq} from 'drizzle-orm';
 import {renderMembersAsList} from '../../templates/member-link-list';
 import {UUID} from 'io-ts-types';
+import {displayDateOnly} from '../../templates/display-date';
 
 type Member = {
   memberNumber: number;
@@ -63,7 +64,7 @@ const render_signed_status = (member: Member) =>
     member.agreementSigned,
     O.match(
       () => renderOwnerAgreementInviteButton(member.memberNumber),
-      date => html`Signed: ${safe(date.toLocaleDateString())}`
+      date => html`Signed: ${displayDateOnly(date)}`
     )
   );
 

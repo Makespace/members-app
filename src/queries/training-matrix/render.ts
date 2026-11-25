@@ -1,6 +1,7 @@
 import * as O from 'fp-ts/Option';
 import { EquipmentId } from '../../types/equipment-id';
-import { html, HtmlSubstitution, joinHtml, Safe, safe, sanitizeString } from '../../types/html';
+import { commaHtml, html, HtmlSubstitution, joinHtml, safe, sanitizeString } from '../../types/html';
+import { displayDateOnly } from '../../templates/display-date';
 import { tooltipWith} from '../shared-render/tool-tip';
 import { FullQuizResultsForMember } from '../../read-models/external-state/equipment-quiz';
 import { UUID } from 'io-ts-types';
@@ -9,14 +10,14 @@ const GREEN_TICK = html`✅`;
 const WAVY_DASH = html`〰️`;
 const PLACEHOLDER = html`-`;
 
-const renderYes = (when: O.Option<Date>) => O.isSome(when) ? tooltipWith(html`Since ${when.value.toLocaleDateString() as Safe}`, GREEN_TICK) : PLACEHOLDER;
+const renderYes = (when: O.Option<Date>) => O.isSome(when) ? tooltipWith(html`Since ${displayDateOnly(when.value)}`, GREEN_TICK) : PLACEHOLDER;
 
 const renderEquipmentQuizStatus = (equipment_quiz: TrainingMatrix[0]['equipment'][0]['equipment_quiz']) => {
   if (equipment_quiz.passedAt.length > 0) {
-    return tooltipWith(equipment_quiz.passedAt.map(d => d.toLocaleDateString()).join(',') as Safe, GREEN_TICK);
+    return tooltipWith(commaHtml(equipment_quiz.passedAt.map(displayDateOnly)), GREEN_TICK);
   }
   if (equipment_quiz.attempted.length > 0) {
-    return tooltipWith(equipment_quiz.attempted.map(d => html`${d.percentage}% - ${d.response_submitted.toLocaleDateString() as Safe}`).join(',') as Safe, WAVY_DASH);
+    return tooltipWith(commaHtml(equipment_quiz.attempted.map(d => html`${d.percentage}% - ${displayDateOnly(d.response_submitted)}`)), WAVY_DASH);
   }
   return PLACEHOLDER;
 };
