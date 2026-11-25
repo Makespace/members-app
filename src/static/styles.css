@@ -999,6 +999,64 @@ fieldset {
   border: 0;
 }
 
+/* One question on a form: a bold label, an optional grey hint directly under
+   it, then the control. The group carries the spacing between questions, so
+   a hint always reads as belonging to the label above it rather than the
+   field below. */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0 0 2rem;
+}
+
+.form-group > input,
+.form-group > textarea,
+.form-group > .stack > input {
+  margin: 0;
+}
+
+.form-group > .stack {
+  align-self: stretch;
+}
+
+.form-group > select {
+  min-width: 14rem;
+  padding: 0.6rem;
+  border: 2px solid var(--text-color);
+  background: white;
+}
+
+.form-label {
+  font-weight: bold;
+  font-size: 1.15rem;
+  padding: 0;
+}
+
+/* A legend sits outside its fieldset's flex layout, so the gap misses it. */
+legend.form-label {
+  margin-bottom: 0.4rem;
+}
+
+.form-hint {
+  margin: 0;
+  color: var(--grey-color);
+}
+
+/* A button that does something within the form, rather than submitting it. */
+button.button-secondary {
+  margin-top: 0.6rem;
+  color: var(--text-color);
+  font-size: 100%;
+  background: #f3f2f1;
+  border-bottom-color: #929191;
+}
+
+button.button-secondary:hover {
+  background: #dbdad9;
+}
+
 .fieldset-item {
   display: flex;
   flex-wrap: wrap;
