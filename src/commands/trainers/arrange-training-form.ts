@@ -83,78 +83,99 @@ const renderForm = (viewModel: ViewModel) =>
           name="equipmentId"
           value="${viewModel.equipment.id}"
         />
-        <label for="date">Day</label>
-        <input
-          type="date"
-          name="date"
-          id="date"
-          min="${safe(viewModel.today)}"
-          required
-          ${viewModel.duplicating ? html`autofocus` : html``}
-        />
-        <label for="startTime">Start time</label>
-        <input
-          type="time"
-          name="startTime"
-          id="startTime"
-          value="${sanitizeString(viewModel.prefill.startTime)}"
-          required
-        />
-        <label for="endTime">End time</label>
-        <input
-          type="time"
-          name="endTime"
-          id="endTime"
-          value="${sanitizeString(viewModel.prefill.endTime)}"
-          required
-        />
-        <label for="spaces">Number of spaces</label>
-        <input
-          type="number"
-          name="spaces"
-          id="spaces"
-          min="1"
-          max="${safe(String(MAX_SPACES))}"
-          step="1"
-          value="${sanitizeString(viewModel.prefill.spaces)}"
-          required
-        />
-        <label for="signUpsCloseHoursBefore">Close sign-ups</label>
-        <select name="signUpsCloseHoursBefore" id="signUpsCloseHoursBefore">
-          ${joinHtml(
-            SIGN_UPS_CLOSE_CHOICES.map(
-              hours =>
-                html`<option
-                  value="${safe(String(hours))}"
-                  ${hours === viewModel.prefill.signUpsCloseHoursBefore
-                    ? html`selected`
-                    : html``}
-                >
-                  ${safe(describeSignUpsClose(hours))}
-                </option>`
-            )
-          )}
-        </select>
-        <p class="form-hint">
-          After this, members can no longer sign up themselves, so you know who
-          is coming before you set off.
-        </p>
-        <label for="description">Description</label>
-        <textarea
-          name="description"
-          id="description"
-          rows="4"
-          maxlength="${safe(String(MAX_DESCRIPTION_LENGTH))}"
-        >
+        <div class="form-group">
+          <label class="form-label" for="date">Day</label>
+          <input
+            type="date"
+            name="date"
+            id="date"
+            min="${safe(viewModel.today)}"
+            required
+            ${viewModel.duplicating ? html`autofocus` : html``}
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="startTime">Start time</label>
+          <input
+            type="time"
+            name="startTime"
+            id="startTime"
+            value="${sanitizeString(viewModel.prefill.startTime)}"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="endTime">End time</label>
+          <input
+            type="time"
+            name="endTime"
+            id="endTime"
+            value="${sanitizeString(viewModel.prefill.endTime)}"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="spaces">Number of spaces</label>
+          <input
+            type="number"
+            name="spaces"
+            id="spaces"
+            min="1"
+            max="${safe(String(MAX_SPACES))}"
+            step="1"
+            value="${sanitizeString(viewModel.prefill.spaces)}"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="signUpsCloseHoursBefore"
+            >Close sign-ups</label
+          >
+          <p class="form-hint" id="signUpsCloseHoursBefore-hint">
+            After this, members can no longer sign up themselves, so you know
+            who is coming before you set off.
+          </p>
+          <select
+            name="signUpsCloseHoursBefore"
+            id="signUpsCloseHoursBefore"
+            aria-describedby="signUpsCloseHoursBefore-hint"
+          >
+            ${joinHtml(
+              SIGN_UPS_CLOSE_CHOICES.map(
+                hours =>
+                  html`<option
+                    value="${safe(String(hours))}"
+                    ${hours === viewModel.prefill.signUpsCloseHoursBefore
+                      ? html`selected`
+                      : html``}
+                  >
+                    ${safe(describeSignUpsClose(hours))}
+                  </option>`
+              )
+            )}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="description">Description</label>
+          <p class="form-hint" id="description-hint">
+            Shown to members looking for a training. Links are written
+            [like this](https://example.com).
+          </p>
+          <textarea
+            name="description"
+            id="description"
+            rows="4"
+            maxlength="${safe(String(MAX_DESCRIPTION_LENGTH))}"
+            aria-describedby="description-hint"
+          >
 ${sanitizeString(viewModel.prefill.description)}</textarea
-        >
-        <p class="form-hint">
-          Shown to members looking for a training. Links are written
-          [like this](https://example.com).
-        </p>
-        <fieldset>
-          <legend>Members already booked in (optional)</legend>
-          <p>
+          >
+        </div>
+        <fieldset class="form-group" aria-describedby="training-attendees-hint">
+          <legend class="form-label">
+            Members already booked in (optional)
+          </legend>
+          <p class="form-hint" id="training-attendees-hint">
             If you have arranged this training with someone directly, add them
             here. They take up some of the spaces, and the rest stay open for
             others to join.
@@ -185,7 +206,11 @@ ${sanitizeString(viewModel.prefill.description)}</textarea
               placeholder="Start typing a name or member number"
             />
           </div>
-          <button type="button" id="training-add-attendee">
+          <button
+            type="button"
+            class="button-secondary"
+            id="training-add-attendee"
+          >
             Add another member
           </button>
           <script>

@@ -60,14 +60,21 @@ const renderForm = (viewModel: ViewModel) =>
                   name="sessionId"
                   value="${safe(viewModel.session.id)}"
                 />
-                <label for="reason">Reason (optional)</label>
-                <textarea
-                  name="reason"
-                  id="reason"
-                  rows="3"
-                  maxlength="${safe(String(MAX_REASON_LENGTH))}"
-                ></textarea>
-                <p class="form-hint">Included in the email to them.</p>
+                <div class="form-group">
+                  <label class="form-label" for="reason"
+                    >Reason (optional)</label
+                  >
+                  <p class="form-hint" id="reason-hint">
+                    Included in the email to them.
+                  </p>
+                  <textarea
+                    name="reason"
+                    id="reason"
+                    rows="3"
+                    maxlength="${safe(String(MAX_REASON_LENGTH))}"
+                    aria-describedby="reason-hint"
+                  ></textarea>
+                </div>
                 <button type="submit">Cancel this training</button>
               </form>
             `}
